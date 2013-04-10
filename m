@@ -1,200 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934231Ab3DJDbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 23:31:00 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:39135 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754949Ab3DJDa7 (ORCPT
+	id S1765547Ab3DJDs0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 23:48:26 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:60883 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab3DJDsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 23:30:59 -0400
-Message-ID: <5164DCE7.8080906@linux.vnet.ibm.com>
-Date: Wed, 10 Apr 2013 11:30:47 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: [PATCH] sched: wake-affine throttle
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041003-8256-0000-0000-00000701CCD6
+	Tue, 9 Apr 2013 23:48:24 -0400
+Date: Wed, 10 Apr 2013 13:48:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrey Smirnov <andrew.smirnov@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: linux-next: manual merge of the mfd tree with the v4l-dvb tree
+Message-Id: <20130410134813.b1bff6027f64f14d75d43927@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__10_Apr_2013_13_48_13_+1000_BHXyCuoTN3K1V.mc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Log since RFC:
-	1. Throttle only when wake-affine failed. (thanks to PeterZ)
-	2. Do throttle inside wake_affine(). (thanks to PeterZ)
-	3. Other small fix.
+--Signature=_Wed__10_Apr_2013_13_48_13_+1000_BHXyCuoTN3K1V.mc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Recently testing show that wake-affine stuff cause regression on pgbench, the
-hiding rat was finally catched out.
+Hi Samuel,
 
-wake-affine stuff is always trying to pull wakee close to waker, by theory,
-this will benefit us if waker's cpu cached hot data for wakee, or the extreme
-ping-pong case.
+Today's linux-next merge of the mfd tree got a conflict in
+drivers/mfd/Kconfig between commit 3f8ec5df11aa ("[media] mfd: Add header
+files and Kbuild plumbing for SI476x MFD core") from the v4l-dvb tree and
+commit ab85b120e692 ("mfd: Kconfig alphabetical re-ordering") from the
+mfd tree.
 
-However, the whole stuff is somewhat blindly, load balance is the only factor
-to be guaranteed, and since the stuff itself is time-consuming, some workload
-suffered, pgbench is just the one who has been found.
+I fixed it up (I think - see below) and can carry the fix as necessary
+(no action is required).
 
-Thus, throttle the wake-affine stuff for such workload is necessary.
+diff --cc drivers/mfd/Kconfig
+index b6bb6d5,2f3ce18..0000000
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@@ -977,68 -920,38 +920,51 @@@ config MFD_WL1273_COR
+  	  driver connects the radio-wl1273 V4L2 module and the wl1273
+  	  audio codec.
+ =20
+ +config MFD_SI476X_CORE
+ +	tristate "Support for Silicon Laboratories 4761/64/68 AM/FM radio."
+ +	depends on I2C
+ +	select MFD_CORE
+ +	select REGMAP_I2C
+ +	help
+ +	  This is the core driver for the SI476x series of AM/FM
+ +	  radio. This MFD driver connects the radio-si476x V4L2 module
+ +	  and the si476x audio codec.
+ +
+ +	  To compile this driver as a module, choose M here: the
+ +	  module will be called si476x-core.
+ +
+- config MFD_OMAP_USB_HOST
+- 	bool "Support OMAP USBHS core and TLL driver"
+- 	depends on USB_EHCI_HCD_OMAP || USB_OHCI_HCD_OMAP3
+- 	default y
+- 	help
+- 	  This is the core driver for the OAMP EHCI and OHCI drivers.
+- 	  This MFD driver does the required setup functionalities for
+- 	  OMAP USB Host drivers.
+-=20
+- config MFD_PM8XXX
+- 	tristate
+-=20
+- config MFD_PM8921_CORE
+- 	tristate "Qualcomm PM8921 PMIC chip"
+- 	depends on MSM_SSBI
++ config MFD_LM3533
++ 	tristate "TI/National Semiconductor LM3533 Lighting Power chip"
++ 	depends on I2C
+  	select MFD_CORE
+- 	select MFD_PM8XXX
++ 	select REGMAP_I2C
++ 	depends on GENERIC_HARDIRQS
+  	help
+- 	  If you say yes to this option, support will be included for the
+- 	  built-in PM8921 PMIC chip.
+-=20
+- 	  This is required if your board has a PM8921 and uses its features,
+- 	  such as: MPPs, GPIOs, regulators, interrupts, and PWM.
+-=20
+- 	  Say M here if you want to include support for PM8921 chip as a module.
+- 	  This will build a module called "pm8921-core".
++ 	  Say yes here to enable support for National Semiconductor / TI
++ 	  LM3533 Lighting Power chips.
+ =20
+- config MFD_PM8XXX_IRQ
+- 	bool "Support for Qualcomm PM8xxx IRQ features"
+- 	depends on MFD_PM8XXX
+- 	default y if MFD_PM8XXX
+- 	help
+- 	  This is the IRQ driver for Qualcomm PM 8xxx PMIC chips.
++ 	  This driver provides common support for accessing the device;
++ 	  additional drivers must be enabled in order to use the LED,
++ 	  backlight or ambient-light-sensor functionality of the device.
+ =20
+- 	  This is required to use certain other PM 8xxx features, such as GPIO
+- 	  and MPP.
++ config MFD_TIMBERDALE
++ 	tristate "Timberdale FPGA"
++ 	select MFD_CORE
++ 	depends on PCI && GPIOLIB
++ 	---help---
++ 	This is the core driver for the timberdale FPGA. This device is a
++ 	multifunction device which exposes numerous platform devices.
+ =20
+- config TPS65911_COMPARATOR
+- 	tristate
++ 	The timberdale FPGA can be found on the Intel Atom development board
++ 	for in-vehicle infontainment, called Russellville.
+ =20
+- config MFD_TPS65090
+- 	bool "TPS65090 Power Management chips"
++ config MFD_TC3589X
++ 	bool "Toshiba TC35892 and variants"
+  	depends on I2C=3Dy && GENERIC_HARDIRQS
+  	select MFD_CORE
+- 	select REGMAP_I2C
+- 	select REGMAP_IRQ
+  	help
+- 	  If you say yes here you get support for the TPS65090 series of
+- 	  Power Management chips.
++ 	  Support for the Toshiba TC35892 and variants I/O Expander.
++=20
+  	  This driver provides common support for accessing the device,
+  	  additional drivers must be enabled in order to use the
+  	  functionality of the device.
 
-This patch introduced a new knob 'sysctl_sched_wake_affine_interval' with the
-default value 1ms (default minimum balance interval), which means wake-affine
-will keep silent for 1ms after it returned false.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-By turning the new knob, those workload who suffered will have the chance to
-stop the regression.
+--Signature=_Wed__10_Apr_2013_13_48_13_+1000_BHXyCuoTN3K1V.mc
+Content-Type: application/pgp-signature
 
-Test:
-	Test with 12 cpu X86 server and tip 3.9.0-rc2.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-				default
-		    base	1ms interval	 10ms interval	 100ms interval
-| db_size | clients |  tps  |	|  tps  | 	 |  tps  |	   |  tps  |
-+---------+---------+-------+-  +-------+        +-------+         +-------+
-| 21 MB   |       1 | 10572 |   | 10804 |        | 10802 |         | 10801 |
-| 21 MB   |       2 | 21275 |   | 21533 |        | 21400 |         | 21498 |
-| 21 MB   |       4 | 41866 |   | 42158 |        | 42410 |         | 42306 |
-| 21 MB   |       8 | 53931 |   | 55796 |        | 58608 | +8.67%  | 59916 | +11.10%
-| 21 MB   |      12 | 50956 |   | 52266 |        | 54586 | +7.12%  | 55982 | +9.86%
-| 21 MB   |      16 | 49911 |   | 52862 | +5.91% | 55668 | +11.53% | 57255 | +14.71%
-| 21 MB   |      24 | 46046 |   | 48820 | +6.02% | 54269 | +17.86% | 58113 | +26.21%
-| 21 MB   |      32 | 43405 |   | 46635 | +7.44% | 53690 | +23.70% | 57729 | +33.00%
-| 7483 MB |       1 |  7734 |   |  8013 |        |  8046 |         |  7879 |
-| 7483 MB |       2 | 19375 |   | 19459 |        | 19448 |         | 19421 |
-| 7483 MB |       4 | 37408 |   | 37780 |        | 37937 |         | 37819 |
-| 7483 MB |       8 | 49033 |   | 50389 |        | 51636 | +5.31%  | 52294 | +6.65%
-| 7483 MB |      12 | 45525 |   | 47794 | +4.98% | 49828 | +9.45%  | 50571 | +11.08%
-| 7483 MB |      16 | 45731 |   | 47921 | +4.79% | 50203 | +9.78%  | 52033 | +13.78%
-| 7483 MB |      24 | 41533 |   | 44301 | +6.67% | 49697 | +19.66% | 53833 | +29.62%
-| 7483 MB |      32 | 36370 |   | 38301 | +5.31% | 48146 | +32.38% | 52795 | +45.16%
-| 15 GB   |       1 |  7576 |   |  7926 |        |  7722 |         |  7969 |
-| 15 GB   |       2 | 19157 |   | 19284 |        | 19294 |         | 19304 |
-| 15 GB   |       4 | 37285 |   | 37539 |        | 37281 |         | 37508 |
-| 15 GB   |       8 | 48718 |   | 49176 |        | 50836 | +4.35%  | 51239 | +5.17%
-| 15 GB   |      12 | 45167 |   | 47180 | +4.45% | 49206 | +8.94%  | 50126 | +10.98%
-| 15 GB   |      16 | 45270 |   | 47293 | +4.47% | 49638 | +9.65%  | 51748 | +14.31%
-| 15 GB   |      24 | 40984 |   | 43366 | +5.81% | 49356 | +20.43% | 53157 | +29.70%
-| 15 GB   |      32 | 35918 |   | 37632 | +4.77% | 47923 | +33.42% | 52241 | +45.45%
+iQIcBAEBCAAGBQJRZOD9AAoJEECxmPOUX5FEaK4P/2EIOIJUQIibR4gRBmvHuwKS
+xSBL+OjZBj0tMznscQEWSDdVw49iP9LG2dh7cE201NvR0/mj8OgmJGYJfnGi+oSA
+lLKck0/KwzBTyKcmNv59FXXLzpSs4N3WpHoBkXfq+5nUOJIrXW+En09bJPIj3pt0
+PbLFpXvSHc+gZ9OuC3DFFuyCOVEoYygWGJKI6Y+iNSq8wb00TAmQrl8yCjvZpgiQ
+Jm07b96MCQGNVi9HWo1wvECNhNkmCd+v7qGEBNjR4y5CZ4+j53C+TVAqXtfzfjjM
+3Xm6lwK84WcF52XBUP2oUsH+r+/sRYQpZpF97MFHcMRknJxeu6Gk3J+zSsxOJ0Ov
+zBWk7WzutnTKwFAKPRTTS+Kg4i7tHIhyma5SoQcllyDALTKtHQ4SOvuTHJb3NdJK
+HAUggrRLsym4AuunH428BCeSROyIikn/qumiwx82JSRNIDsMoVAj1e3nbhkN89Il
+ZxxXbNMmmoxdb9Jf7VTQsAO7mMatyRcdUMGcI1zqRn/GzjPskPlBMYpVMISgYfXL
+8twKmkjPqEb5CUmJDN+AR3kQT01rEc1uRlTVjygCupe6NLBR+fAZFgzOaK9QyAIM
+oXE9LcuNQku01vwbY5Panx8uwcuMNhV7/9YAqfGSD2lPh5p81r5D1bsFhxxBj01n
+4CZ5jVGLyvaFXWwTO2gR
+=DDFS
+-----END PGP SIGNATURE-----
 
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
----
- include/linux/sched.h |    5 +++++
- kernel/sched/fair.c   |   31 +++++++++++++++++++++++++++++++
- kernel/sysctl.c       |   10 ++++++++++
- 3 files changed, 46 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d35d2b6..e9efd3a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1197,6 +1197,10 @@ enum perf_event_task_context {
- 	perf_nr_task_contexts,
- };
- 
-+#ifdef CONFIG_SMP
-+extern unsigned int sysctl_sched_wake_affine_interval;
-+#endif
-+
- struct task_struct {
- 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
- 	void *stack;
-@@ -1207,6 +1211,7 @@ struct task_struct {
- #ifdef CONFIG_SMP
- 	struct llist_node wake_entry;
- 	int on_cpu;
-+	unsigned long next_wake_affine;
- #endif
- 	int on_rq;
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7a33e59..68eedd7 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3087,6 +3087,22 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
- 
- #endif
- 
-+/*
-+ * Default is 1ms, to prevent the wake_affine() stuff working too frequently.
-+ */
-+unsigned int sysctl_sched_wake_affine_interval = 1U;
-+
-+static inline int wake_affine_throttled(struct task_struct *p)
-+{
-+	return time_before(jiffies, p->next_wake_affine);
-+}
-+
-+static inline void wake_affine_throttle(struct task_struct *p)
-+{
-+	p->next_wake_affine = jiffies +
-+			msecs_to_jiffies(sysctl_sched_wake_affine_interval);
-+}
-+
- static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- {
- 	s64 this_load, load;
-@@ -3096,6 +3112,9 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	unsigned long weight;
- 	int balanced;
- 
-+	if (wake_affine_throttled(p))
-+		return 0;
-+
- 	idx	  = sd->wake_idx;
- 	this_cpu  = smp_processor_id();
- 	prev_cpu  = task_cpu(p);
-@@ -3167,6 +3186,18 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 
- 		return 1;
- 	}
-+
-+	/*
-+	 * wake_affine() stuff try to pull wakee to the cpu
-+	 * around waker, this will benefit us if the data
-+	 * cached on waker cpu is hot for wakee, or the extreme
-+	 * ping-pong case.
-+	 *
-+	 * However, do such blindly work too frequently will
-+	 * cause regression to some workload, thus, each time
-+	 * when wake_affine() failed, throttle it for a while.
-+	 */
-+	wake_affine_throttle(p);
- 	return 0;
- }
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index afc1dc6..6ebfc18 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -437,6 +437,16 @@ static struct ctl_table kern_table[] = {
- 		.extra1		= &one,
- 	},
- #endif
-+#ifdef CONFIG_SMP
-+	{
-+		.procname	= "sched_wake_affine_interval",
-+		.data		= &sysctl_sched_wake_affine_interval,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+	},
-+#endif
- #ifdef CONFIG_PROVE_LOCKING
- 	{
- 		.procname	= "prove_locking",
--- 
-1.7.4.1
-
+--Signature=_Wed__10_Apr_2013_13_48_13_+1000_BHXyCuoTN3K1V.mc--
