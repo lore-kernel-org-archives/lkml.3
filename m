@@ -1,131 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936926Ab3DJPKj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:10:39 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62664 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932795Ab3DJPKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:10:37 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 10 Apr 2013 08:10:41 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
-        kexec@lists.infradead.org, wim@iguana.be,
-        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
-Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130410151041.GA6670@roeck-us.net>
-References: <516259D2.7000805@redhat.com>
- <20130408124858.GC79013@redhat.com>
- <20130408151509.GA20919@roeck-us.net>
- <20130409144431.GL79013@redhat.com>
- <20130409145228.GA1111@roeck-us.net>
- <20130409151423.GM79013@redhat.com>
- <20130409160757.GA27050@roeck-us.net>
- <20130410134039.GV79013@redhat.com>
- <20130410135123.GB15456@roeck-us.net>
- <20130410142055.GW79013@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130410142055.GW79013@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S936798Ab3DJPOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:14:51 -0400
+Received: from nbd.name ([46.4.11.11]:35445 "EHLO nbd.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761303Ab3DJPOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 11:14:51 -0400
+From: John Crispin <blogic@openwrt.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        Gabor Juhos <juhosg@openwrt.org>, John Crispin <blogic@openwrt.org>
+Subject: [PATCH V2] GPIO: MIPS: ralink: adds ralink gpio support
+Date: Wed, 10 Apr 2013 17:10:50 +0200
+Message-Id: <1365606650-28542-1-git-send-email-blogic@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 10:20:55AM -0400, Don Zickus wrote:
-> On Wed, Apr 10, 2013 at 06:51:23AM -0700, Guenter Roeck wrote:
-> > On Wed, Apr 10, 2013 at 09:40:39AM -0400, Don Zickus wrote:
-> > > On Tue, Apr 09, 2013 at 09:07:58AM -0700, Guenter Roeck wrote:
-> > > > > > Just look for the use of mod_timer in the watchdog directory.
-> > > > > 
-> > > > > So looking at the mod_timer logic in various drivers, it seems regardless
-> > > > > if the /dev/watchdog device is opened or not, if it is running, it will
-> > > > > automagically kick the watchdog.
-> > > > > 
-> > > > yes
-> > > > 
-> > > > > This seems that we can avoid pulling in userspace pieces for this.  Just
-> > > > > load the driver and the hardware starts getting kicked.
-> > > > > 
-> > > > Only if it is already running. Also, you don't want to rely on it, because you
-> > > > lose protection against user space issues.
-> > > 
-> > > IOW if something goes wrong with a runaway userspace app, the kernel
-> > > blindly continues to kick the watchdog, which masks the problem, right?
-> > > 
-> > That would be wrong if any of the drivers does that. The kernel should stop
-> > kicking after the software timeout expires.
-> > 
-> > For example, if the HW needs to be kicked every second, and the high level
-> > timeout is set to one minute, the driver should keep kicking the hardware
-> > watchdog for one minute and then stop doing it if /dev/watchdog was opened
-> > and userspace is silent. 
-> 
-> Ah ok.
-> 
-> > 
-> > > > 
-> > > > A second use is if the hw watchdog needs to be pinged more often than user
-> > > > space can provide. Some of the HW watchdogs need a ping in one-second intervals
-> > > > or even faster.
-> > > > 
-> > > > > Is that true?  And if so, do all drivers detect if the hardware is already
-> > > > > running during their init?  Or is it based on the first device open?
-> > > > > 
-> > > > It is usually done in the probe function.
-> > > 
-> > > Ok.  Thanks for the understanding of how the softdog stuff works.
-> > > 
-> > > However, we still have the problem that if the machine panics and we want
-> > > to jump into the kdump kernel, we need to 'kick' the watchdog one more
-> > > time.  This provides us a sane sync point for determining how long we have
-> > > to load the watchdog driver in the second kernel before the hardware
-> > > reboots us.  Otherwise the reboots are pretty random and nothing is
-> > > guaranteed.
-> > > 
-> > > Hence the need for some sort of patch resembling the one I posted.
-> > > 
-> > > Soooooooo, any thoughts about that patch and what changes I should make?
-> > > :-)
-> > > 
-> > The FIXME is a problem, and I think the name and scope would have to be
-> > more generic (watchdog_kick ?). Also, it doesn't solve the problem
-> > of having multiple open watchdogs (my system has three, for example),
-> > and it doesn't check if the watchdog is running.
-> 
-> Ok.  I didn't know the watchdog subsystem well enough, so I just took
-> stabs in the dark about how things should work.  I appreciate the
-> feedback.
-> 
-> I could make the name more generic.  I wasn't sure if the watchdog
-> community would frown on that.  The FIXME is a problem, I am not sure how
+Add gpio driver for Ralink SoC. This driver makes the gpio core on
+RT2880, RT305x, rt3352, rt3662, rt3883, rt5350 and mt7620 work.
 
-I don't know what others think, but I would prefer a more generic name.
-That its current use is for kdump is besides the point; there could be
-other valid uses.
+Signed-off-by: John Crispin <blogic@openwrt.org>
+---
+Changes in V2
+* devm_ioremap_resource() return code was not handled properly
 
-> to handle the 'fail' scenario (can't get the mutex with trylock).  And I
+ .../devicetree/bindings/gpio/gpio-ralink.txt       |   33 ++++
+ arch/mips/Kconfig                                  |    1 +
+ arch/mips/include/asm/mach-ralink/gpio.h           |   24 +++
+ drivers/gpio/Kconfig                               |    6 +
+ drivers/gpio/Makefile                              |    1 +
+ drivers/gpio/gpio-ralink.c                         |  177 ++++++++++++++++++++
+ 6 files changed, 242 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-ralink.txt
+ create mode 100644 arch/mips/include/asm/mach-ralink/gpio.h
+ create mode 100644 drivers/gpio/gpio-ralink.c
 
-I would just return without doing anything. After all, if the mutex is held,
-it is possible if not likely that the code crashed _in_ the watchdog code,
-so it might be better to just let it crash and burn in that case.
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-ralink.txt b/Documentation/devicetree/bindings/gpio/gpio-ralink.txt
+new file mode 100644
+index 0000000..399a5a5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-ralink.txt
+@@ -0,0 +1,33 @@
++Ralink SoC GPIO controller
++
++Ralink System on a Chip have 1 or more banks of gpios. Each bank can have up
++to 32 gpios. The layout of the registers varies between banks and SoC.
++
++Required properties:
++- compatible : Should be "ralink,rt2880-gpio"
++- reg : Address and length of the register set for the device
++- #gpio-cells : Should be two.  The first cell is the pin number and
++  the second cell is used to specify optional parameters (currently
++  unused).
++- gpio-controller : Marks the device node as a gpio controller.
++- ralink,num-gpios : The number of GPIOs that this bank has
++- ralink,register-map : Each banks register layout depends on the bank
++  id and the SoC it is on. To make the driver flexible we need to define
++  the layout inside the DT.
++
++Example:
++
++palmbus@10000000 {
++	gpio0: gpio@600 {
++		compatible = "ralink,rt5350-gpio", "ralink,rt2880-gpio";
++		reg = <0x600 0x34>;
++
++		#gpio-cells = <2>;
++		gpio-controller;
++
++		ralink,num-gpios = <24>;
++		ralink,register-map = [ 00 04 08 0c
++					20 24 28 2c
++					30 34 ];
++	};
++};
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index e4da4f8..b237c50 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -443,6 +443,7 @@ config RALINK
+ 	select SYS_HAS_EARLY_PRINTK
+ 	select HAVE_MACH_CLKDEV
+ 	select CLKDEV_LOOKUP
++	select ARCH_REQUIRE_GPIOLIB
+ 
+ config SGI_IP22
+ 	bool "SGI IP22 (Indy/Indigo2)"
+diff --git a/arch/mips/include/asm/mach-ralink/gpio.h b/arch/mips/include/asm/mach-ralink/gpio.h
+new file mode 100644
+index 0000000..f68ee16
+--- /dev/null
++++ b/arch/mips/include/asm/mach-ralink/gpio.h
+@@ -0,0 +1,24 @@
++/*
++ *  Ralink SoC GPIO API support
++ *
++ *  Copyright (C) 2008-2009 Gabor Juhos <juhosg@openwrt.org>
++ *  Copyright (C) 2008 Imre Kaloz <kaloz@openwrt.org>
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under the terms of the GNU General Public License version 2 as published
++ *  by the Free Software Foundation.
++ *
++ */
++
++#ifndef __ASM_MACH_RALINK_GPIO_H
++#define __ASM_MACH_RALINK_GPIO_H
++
++#define ARCH_NR_GPIOS	128
++#include <asm-generic/gpio.h>
++
++#define gpio_get_value	__gpio_get_value
++#define gpio_set_value	__gpio_set_value
++#define gpio_cansleep	__gpio_cansleep
++#define gpio_to_irq	__gpio_to_irq
++
++#endif /* __ASM_MACH_RALINK_GPIO_H */
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 93aaadf..29add97 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -204,6 +204,12 @@ config GPIO_PXA
+ 	help
+ 	  Say yes here to support the PXA GPIO device
+ 
++config GPIO_RALINK
++	bool "Ralink GPIO Support"
++	depends on RALINK
++	help
++	  Say yes here to support the Ralink SoC GPIO device
++
+ config GPIO_SPEAR_SPICS
+ 	bool "ST SPEAr13xx SPI Chip Select as GPIO support"
+ 	depends on PLAT_SPEAR
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 22e07bc..f7b6603 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -55,6 +55,7 @@ obj-$(CONFIG_GPIO_PCF857X)	+= gpio-pcf857x.o
+ obj-$(CONFIG_GPIO_PCH)		+= gpio-pch.o
+ obj-$(CONFIG_GPIO_PL061)	+= gpio-pl061.o
+ obj-$(CONFIG_GPIO_PXA)		+= gpio-pxa.o
++obj-$(CONFIG_GPIO_RALINK)	+= gpio-ralink.o
+ obj-$(CONFIG_GPIO_RC5T583)	+= gpio-rc5t583.o
+ obj-$(CONFIG_GPIO_RDC321X)	+= gpio-rdc321x.o
+ obj-$(CONFIG_PLAT_SAMSUNG)	+= gpio-samsung.o
+diff --git a/drivers/gpio/gpio-ralink.c b/drivers/gpio/gpio-ralink.c
+new file mode 100644
+index 0000000..7f94d16
+--- /dev/null
++++ b/drivers/gpio/gpio-ralink.c
+@@ -0,0 +1,177 @@
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published
++ * by the Free Software Foundation.
++ *
++ * Copyright (C) 2009-2011 Gabor Juhos <juhosg@openwrt.org>
++ * Copyright (C) 2013 John Crispin <blogic@openwrt.org>
++ */
++
++#include <linux/module.h>
++#include <linux/io.h>
++#include <linux/err.h>
++#include <linux/gpio.h>
++#include <linux/spinlock.h>
++#include <linux/platform_device.h>
++
++enum ralink_gpio_reg {
++	GPIO_REG_INT = 0,
++	GPIO_REG_EDGE,
++	GPIO_REG_RENA,
++	GPIO_REG_FENA,
++	GPIO_REG_DATA,
++	GPIO_REG_DIR,
++	GPIO_REG_POL,
++	GPIO_REG_SET,
++	GPIO_REG_RESET,
++	GPIO_REG_TOGGLE,
++	GPIO_REG_MAX
++};
++
++struct ralink_gpio_chip {
++	struct gpio_chip chip;
++	u8 regs[GPIO_REG_MAX];
++
++	spinlock_t lock;
++	void __iomem *membase;
++};
++
++static inline struct ralink_gpio_chip *to_ralink_gpio(struct gpio_chip *chip)
++{
++	struct ralink_gpio_chip *rg;
++
++	rg = container_of(chip, struct ralink_gpio_chip, chip);
++	return rg;
++}
++
++static inline void rt_gpio_w32(struct ralink_gpio_chip *rg, u8 reg, u32 val)
++{
++	iowrite32(val, rg->membase + rg->regs[reg]);
++}
++
++static inline u32 rt_gpio_r32(struct ralink_gpio_chip *rg, u8 reg)
++{
++	return ioread32(rg->membase + rg->regs[reg]);
++}
++
++static void ralink_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct ralink_gpio_chip *rg = to_ralink_gpio(chip);
++
++	rt_gpio_w32(rg, (value) ? GPIO_REG_SET : GPIO_REG_RESET, BIT(offset));
++}
++
++static int ralink_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct ralink_gpio_chip *rg = to_ralink_gpio(chip);
++
++	return !!(rt_gpio_r32(rg, GPIO_REG_DATA) & BIT(offset));
++}
++
++static int ralink_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
++{
++	struct ralink_gpio_chip *rg = to_ralink_gpio(chip);
++	unsigned long flags;
++	u32 t;
++
++	spin_lock_irqsave(&rg->lock, flags);
++	t = rt_gpio_r32(rg, GPIO_REG_DIR);
++	t &= ~BIT(offset);
++	rt_gpio_w32(rg, GPIO_REG_DIR, t);
++	spin_unlock_irqrestore(&rg->lock, flags);
++
++	return 0;
++}
++
++static int ralink_gpio_direction_output(struct gpio_chip *chip,
++					unsigned offset, int value)
++{
++	struct ralink_gpio_chip *rg = to_ralink_gpio(chip);
++	unsigned long flags;
++	u32 t;
++
++	spin_lock_irqsave(&rg->lock, flags);
++	ralink_gpio_set(chip, offset, value);
++	t = rt_gpio_r32(rg, GPIO_REG_DIR);
++	t |= BIT(offset);
++	rt_gpio_w32(rg, GPIO_REG_DIR, t);
++	spin_unlock_irqrestore(&rg->lock, flags);
++
++	return 0;
++}
++
++static int ralink_gpio_probe(struct platform_device *pdev)
++{
++	struct device_node *np = pdev->dev.of_node;
++	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	struct ralink_gpio_chip *gc;
++	const __be32 *ngpio;
++
++	if (!res) {
++		dev_err(&pdev->dev, "failed to find resource\n");
++		return -ENOMEM;
++	}
++
++	gc = devm_kzalloc(&pdev->dev,
++				sizeof(struct ralink_gpio_chip), GFP_KERNEL);
++	if (!gc)
++		return -ENOMEM;
++
++	gc->membase = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(gc->membase)) {
++		dev_err(&pdev->dev, "cannot remap I/O memory region\n");
++		return PTR_ERR(gc->membase);
++	}
++
++	if (of_property_read_u8_array(np, "ralink,register-map",
++			gc->regs, GPIO_REG_MAX)) {
++		dev_err(&pdev->dev, "failed to read register definition\n");
++		return -EINVAL;
++	}
++
++	ngpio = of_get_property(np, "ralink,num-gpios", NULL);
++	if (!ngpio) {
++		dev_err(&pdev->dev, "failed to read number of pins\n");
++		return -EINVAL;
++	}
++
++	spin_lock_init(&gc->lock);
++
++	gc->chip.label = dev_name(&pdev->dev);
++	gc->chip.of_node = np;
++	gc->chip.base = -1;
++	gc->chip.ngpio = be32_to_cpu(*ngpio);
++	gc->chip.direction_input = ralink_gpio_direction_input;
++	gc->chip.direction_output = ralink_gpio_direction_output;
++	gc->chip.get = ralink_gpio_get;
++	gc->chip.set = ralink_gpio_set;
++
++	/* set polarity to low for all lines */
++	rt_gpio_w32(gc, GPIO_REG_POL, 0);
++
++	dev_info(&pdev->dev, "registering %d gpios\n", gc->chip.ngpio);
++
++	return gpiochip_add(&gc->chip);
++}
++
++static const struct of_device_id ralink_gpio_match[] = {
++	{ .compatible = "ralink,rt2880-gpio" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, ralink_gpio_match);
++
++static struct platform_driver ralink_gpio_driver = {
++	.probe = ralink_gpio_probe,
++	.driver = {
++		.name = "rt2880_gpio",
++		.owner = THIS_MODULE,
++		.of_match_table = ralink_gpio_match,
++	},
++};
++
++static int __init ralink_gpio_init(void)
++{
++	return platform_driver_register(&ralink_gpio_driver);
++}
++
++subsys_initcall(ralink_gpio_init);
+-- 
+1.7.10.4
 
-> have no idea how to even find out if multiple watchdogs are open on the
-> system.  Is there a list I could walk?  And with regard to 'watchdog is
-
-/* the dev_t structure to store the dynamically allocated watchdog devices */
-static dev_t watchdog_devt;
-
-One way to look up the allocated watchdogs might be to loop through all kobj
-instances for the major device using kobj_lookup. Don't know if there is a
-better way.
-
-> running', I thought 'watchdog_active' would do that.  But again, I could
-> be misreading the code.
-> 
-You are right. Missed that part, sorry.
-
-Guenter
