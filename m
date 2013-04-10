@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937222Ab3DJWrZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:47:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56108 "EHLO
+	id S936443Ab3DJXLy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:11:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937171Ab3DJWrT (ORCPT
+	with ESMTP id S937227Ab3DJWr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:19 -0400
+	Wed, 10 Apr 2013 18:47:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jakub Kicinski <jakub.kicinski@intel.com>,
-        Phil Schmitt <phillip.j.schmitt@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 23/64] ixgbe: fix registration order of driver and DCA nofitication
-Date: Wed, 10 Apr 2013 15:46:20 -0700
-Message-Id: <20130410224338.528826421@linuxfoundation.org>
+        Jouni Malinen <j@w1.fi>, Johannes Berg <johannes.berg@intel.com>
+Subject: [ 35/64] mac80211: fix remain-on-channel cancel crash
+Date: Wed, 10 Apr 2013 15:46:32 -0700
+Message-Id: <20130410224341.344435533@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -29,48 +26,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jakub Kicinski <jakub.kicinski@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit f01fc1a82c2ee68726b400fadb156bd623b5f2f1 upstream.
+commit 3fbd45ca8d1c98f3c2582ef8bc70ade42f70947b upstream.
 
-ixgbe_notify_dca cannot be called before driver registration
-because it expects driver's klist_devices to be allocated and
-initialized. While on it make sure debugfs files are removed
-when registration fails.
+If a ROC item is canceled just as it expires, the work
+struct may be scheduled while it is running (and waiting
+for the mutex). This results in it being run after being
+freed, which obviously crashes.
 
-Signed-off-by: Jakub Kicinski <jakub.kicinski@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+To fix this don't free it when aborting is requested but
+instead mark it as "to be freed", which makes the work a
+no-op and allows freeing it outside.
+
+Reported-by: Jouni Malinen <j@w1.fi>
+Tested-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ net/mac80211/cfg.c         |    6 ++++--
+ net/mac80211/ieee80211_i.h |    3 ++-
+ net/mac80211/offchannel.c  |   23 +++++++++++++++++------
+ 3 files changed, 23 insertions(+), 9 deletions(-)
 
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -7858,12 +7858,19 @@ static int __init ixgbe_init_module(void
- 	ixgbe_dbg_init();
- #endif /* CONFIG_DEBUG_FS */
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -2499,7 +2499,7 @@ static int ieee80211_cancel_roc(struct i
+ 			list_del(&dep->list);
+ 			mutex_unlock(&local->mtx);
  
-+	ret = pci_register_driver(&ixgbe_driver);
-+	if (ret) {
-+#ifdef CONFIG_DEBUG_FS
-+		ixgbe_dbg_exit();
-+#endif /* CONFIG_DEBUG_FS */
-+		return ret;
-+	}
-+
- #ifdef CONFIG_IXGBE_DCA
- 	dca_register_notify(&dca_notifier);
- #endif
+-			ieee80211_roc_notify_destroy(dep);
++			ieee80211_roc_notify_destroy(dep, true);
+ 			return 0;
+ 		}
  
--	ret = pci_register_driver(&ixgbe_driver);
--	return ret;
-+	return 0;
+@@ -2539,7 +2539,7 @@ static int ieee80211_cancel_roc(struct i
+ 			ieee80211_start_next_roc(local);
+ 		mutex_unlock(&local->mtx);
+ 
+-		ieee80211_roc_notify_destroy(found);
++		ieee80211_roc_notify_destroy(found, true);
+ 	} else {
+ 		/* work may be pending so use it all the time */
+ 		found->abort = true;
+@@ -2549,6 +2549,8 @@ static int ieee80211_cancel_roc(struct i
+ 
+ 		/* work will clean up etc */
+ 		flush_delayed_work(&found->work);
++		WARN_ON(!found->to_be_freed);
++		kfree(found);
+ 	}
+ 
+ 	return 0;
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -346,6 +346,7 @@ struct ieee80211_roc_work {
+ 	struct ieee80211_channel *chan;
+ 
+ 	bool started, abort, hw_begun, notified;
++	bool to_be_freed;
+ 
+ 	unsigned long hw_start_time;
+ 
+@@ -1363,7 +1364,7 @@ void ieee80211_offchannel_return(struct
+ void ieee80211_roc_setup(struct ieee80211_local *local);
+ void ieee80211_start_next_roc(struct ieee80211_local *local);
+ void ieee80211_roc_purge(struct ieee80211_sub_if_data *sdata);
+-void ieee80211_roc_notify_destroy(struct ieee80211_roc_work *roc);
++void ieee80211_roc_notify_destroy(struct ieee80211_roc_work *roc, bool free);
+ void ieee80211_sw_roc_work(struct work_struct *work);
+ void ieee80211_handle_roc_started(struct ieee80211_roc_work *roc);
+ 
+--- a/net/mac80211/offchannel.c
++++ b/net/mac80211/offchannel.c
+@@ -299,10 +299,13 @@ void ieee80211_start_next_roc(struct iee
+ 	}
  }
  
- module_init(ixgbe_init_module);
+-void ieee80211_roc_notify_destroy(struct ieee80211_roc_work *roc)
++void ieee80211_roc_notify_destroy(struct ieee80211_roc_work *roc, bool free)
+ {
+ 	struct ieee80211_roc_work *dep, *tmp;
+ 
++	if (WARN_ON(roc->to_be_freed))
++		return;
++
+ 	/* was never transmitted */
+ 	if (roc->frame) {
+ 		cfg80211_mgmt_tx_status(&roc->sdata->wdev,
+@@ -318,9 +321,12 @@ void ieee80211_roc_notify_destroy(struct
+ 						   GFP_KERNEL);
+ 
+ 	list_for_each_entry_safe(dep, tmp, &roc->dependents, list)
+-		ieee80211_roc_notify_destroy(dep);
++		ieee80211_roc_notify_destroy(dep, true);
+ 
+-	kfree(roc);
++	if (free)
++		kfree(roc);
++	else
++		roc->to_be_freed = true;
+ }
+ 
+ void ieee80211_sw_roc_work(struct work_struct *work)
+@@ -333,6 +339,9 @@ void ieee80211_sw_roc_work(struct work_s
+ 
+ 	mutex_lock(&local->mtx);
+ 
++	if (roc->to_be_freed)
++		goto out_unlock;
++
+ 	if (roc->abort)
+ 		goto finish;
+ 
+@@ -372,7 +381,7 @@ void ieee80211_sw_roc_work(struct work_s
+  finish:
+ 		list_del(&roc->list);
+ 		started = roc->started;
+-		ieee80211_roc_notify_destroy(roc);
++		ieee80211_roc_notify_destroy(roc, !roc->abort);
+ 
+ 		if (started) {
+ 			drv_flush(local, false);
+@@ -412,7 +421,7 @@ static void ieee80211_hw_roc_done(struct
+ 
+ 	list_del(&roc->list);
+ 
+-	ieee80211_roc_notify_destroy(roc);
++	ieee80211_roc_notify_destroy(roc, true);
+ 
+ 	/* if there's another roc, start it now */
+ 	ieee80211_start_next_roc(local);
+@@ -462,12 +471,14 @@ void ieee80211_roc_purge(struct ieee8021
+ 	list_for_each_entry_safe(roc, tmp, &tmp_list, list) {
+ 		if (local->ops->remain_on_channel) {
+ 			list_del(&roc->list);
+-			ieee80211_roc_notify_destroy(roc);
++			ieee80211_roc_notify_destroy(roc, true);
+ 		} else {
+ 			ieee80211_queue_delayed_work(&local->hw, &roc->work, 0);
+ 
+ 			/* work will clean up etc */
+ 			flush_delayed_work(&roc->work);
++			WARN_ON(!roc->to_be_freed);
++			kfree(roc);
+ 		}
+ 	}
+ 
 
 
