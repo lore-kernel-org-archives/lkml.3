@@ -1,95 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937102Ab3DJQhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:37:46 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:60291 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934881Ab3DJQhp (ORCPT
+	id S965065Ab3DJQkB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:40:01 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34577 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468Ab3DJQj7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:37:45 -0400
-Message-ID: <51659556.3070502@gmail.com>
-Date: Wed, 10 Apr 2013 09:37:42 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Wed, 10 Apr 2013 12:39:59 -0400
+Message-ID: <516595DC.4090307@arm.com>
+Date: Wed, 10 Apr 2013 17:39:56 +0100
+From: Serban Constantinescu <Serban.Constantinescu@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Wladislav Wiebe <wladislav.kw@gmail.com>
-CC: ralf@linux-mips.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: Makefile: workaround printk recursion bug
-References: <51652CF5.1080009@gmail.com>
-In-Reply-To: <51652CF5.1080009@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?windows-1252?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Subject: Re: [PATCH v2 6/7] staging: android: binder: fix alignment issues
+References: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com> <1365501657-4213-7-git-send-email-serban.constantinescu@arm.com> <CAMP5Xgew5_F2De2+7Ny39iww2Un6hC8B3aYNV7CEawovkFg1Og@mail.gmail.com>
+In-Reply-To: <CAMP5Xgew5_F2De2+7Ny39iww2Un6hC8B3aYNV7CEawovkFg1Og@mail.gmail.com>
+X-OriginalArrivalTime: 10 Apr 2013 16:39:54.0534 (UTC) FILETIME=[0798A460:01CE360A]
+X-MC-Unique: 113041017395800201
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 02:12 AM, Wladislav Wiebe wrote:
+On 10/04/13 00:58, Arve Hjønnevåg wrote:
+> On Tue, Apr 9, 2013 at 3:00 AM, Serban Constantinescu
+> <serban.constantinescu@arm.com> wrote:
+>> The Android userspace aligns the data written to the binder buffers to
+>> 4bytes. Thus for 32bit platforms or 64bit platforms running an 32bit
+>> Android userspace we can have a buffer looking like this:
+>>
+>> platform    buffer(binder_cmd   pointer)      size
+>> 32/32                 32b         32b          8B
+>> 64/32                 32b         64b          12B
+>> 64/64                 32b         64b          12B
+>>
+>> Thus the kernel needs to check that the buffer size is aligned to 4bytes
+>> not to (void *) that will be 8bytes on 64bit machines.
+>>
+>> The change does not affect existing 32bit ABI.
+>>
 >
-> From: Wladislav Wiebe <wladislav.kw@gmail.com>
->
-> Function tracing is broken due to removal of selecting FRAME_POINTER with
-> FUNCTION_TRACER as result of commit: b732d439cb43336cd6d7e804ecb2c81193ef63b0
->
-> Latest commit ad8c396936e328f5344e1881afde9e28d5f2045f "MIPS: Unbreak
-> function tracer for 64-bit kernel." fixes just the early startup hang,
-> but on MIPS64/CAVIUM_OCTEON2 are still random printk recursion bugs
-> which cause also Kernel hangs, especially on late startup phase when
-> network drivers get loaded. This patch enable for CAVIUM_OCTEON2/64 Bit
-> architecture -fno-omit-frame-pointer cflag when FUNCTION_TRACER get
-> enabled. This will fix random Kernel hangs with "BUG: recent printk
-> recursion!" from linux/kernel/printk.c.
->
-> Maybe there exist a other solution in mcount handling, since in the
-> commit message from Al Cooper is mentioned that "MIPS frame pointers are
-> generally considered to be useless because they cannot be used to unwind
-> the stack. Unfortunately the MIPS function tracing code has bugs that
-> are masked by the use of frame pointers. This commit fixes the bugs so
-> that MIPS frame pointers don't need to be enabled."
->
-> But this is just a solution for MIPS32 - on a symmetric multiprocessing
-> @MIPS64/CAVIUM_OCTEON2 it doesn't work properly.
+> Do we not want the pointers to be 8 byte aligned on 64bit platforms?
 
-There are a couple of problems that I see with this patch:
+No since here we do not align pointers we align binder_buffers and 
+offsets in a buffer.
 
-1) It doesn't handle non-OCTEON2.  Surely other 64-bit targets are 
-effected as well
+Let's assume that from the userspace we receive a sequence of BC_INCREFS 
+and BC_FREE_BUFFER. According to their definitions the buffer would look 
+like:
 
-2) You don't say how it is broken or how this fixes it.
+Buffer:
+[addr]		[element]
+0		BC_INCREFS
+4		__u32
+8		BC_FREE_BUFFER
+12		void *        //(8 bytes for 64bit or 4 bytes for 32bit)
 
-3) Function graph tracing on 3.9.0-rc6 compiled with gcc-4.7.0 works 
-fine for me without this.  So I see no need to clog up the make files 
-with a rats nest of ifdef
+Thus the data_size(sizeof(Buffer)) will be 20 bytes for 64bit 
+systems(4bytes aligned). Same explanation for offp where it represents 
+the offset form the start of the buffer to a flat_binder_object(for 
+example here the offset to void* - 12bytes).
 
-Without more information about why this  is needed, I would have to say NAK.
 
-David Daney
-
->
-> Signed-off-by: Wladislav Wiebe <wladislav.kw@gmail.com>
-> ---
->   arch/mips/Makefile |    9 +++++++++
->   1 file changed, 9 insertions(+)
->
-> diff --git a/arch/mips/Makefile b/arch/mips/Makefile
-> index 6f7978f..8befe31 100644
-> --- a/arch/mips/Makefile
-> +++ b/arch/mips/Makefile
-> @@ -119,6 +119,15 @@ cflags-$(CONFIG_SB1XXX_CORELIS)	+= $(call cc-option,-mno-sched-prolog) \
->   				   -fno-omit-frame-pointer
->
->   #
-> +# FTrace depended compiler options, currently only needed by MIPS64/OCTEON2.
-> +#
-> +ifdef CONFIG_64BIT
-> +ifdef CONFIG_CAVIUM_OCTEON2
-> +cflags-$(CONFIG_FUNCTION_TRACER) += $(call cc-option,-fno-omit-frame-pointer)
-> +endif
-> +endif
-> +
-> +#
->   # CPU-dependent compiler/assembler options for optimization.
->   #
->   cflags-$(CONFIG_CPU_R3000)	+= -march=r3000
->
+Thanks,
+Serban
 
