@@ -1,144 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936978Ab3DJP5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:57:50 -0400
-Received: from usindpps04.hds.com ([207.126.252.17]:57994 "EHLO
-	usindpps04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935423Ab3DJP5r convert rfc822-to-8bit (ORCPT
+	id S937014Ab3DJP5z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:57:55 -0400
+Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:47728
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935423Ab3DJP5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:57:47 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Luis Henriques <luis.henriques@canonical.com>,
-        Lingzhu Xiang <lxiang@redhat.com>
-CC: Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Josh Boyer" <jwboyer@redhat.com>, Michael Schroeder <mls@suse.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>, Matt Fleming <matt.fleming@intel.com>
-Subject: RE: [PATCH 097/102] efivars: explicitly calculate length of
- VariableName
-Thread-Topic: [PATCH 097/102] efivars: explicitly calculate length of
- VariableName
-Thread-Index: AQHOND7bQHiwJI7P/0OH5AOo+H1C9JjOwlMAgADEK4CAAB7QAP//+SYg
-Date: Wed, 10 Apr 2013 15:57:12 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF8D09E@USINDEM103.corp.hds.com>
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
- <1365414657-29191-98-git-send-email-luis.henriques@canonical.com>
- <1365547506.5814.36.camel@deadeye.wl.decadent.org.uk>
- <51653E81.4090102@redhat.com> <20130410121730.GB3049@hercules>
-In-Reply-To: <20130410121730.GB3049@hercules>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.73.11]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 10 Apr 2013 11:57:51 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(z551bizd799hzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0ML1R04-02-8S9-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <iommu@lists.linux-foundation.org>, <joro@8bytes.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Subject: [PATCH 2/2 V5] iommu/amd: Add logic to decode AMD IOMMU event flag
+Date: Wed, 10 Apr 2013 10:57:39 -0500
+Message-ID: <1365609459-3378-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-X-Proofpoint-SPF-Result: pass
-X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
- ~all
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8626,1.0.431,0.0.0000
- definitions=2013-04-10_07:2013-04-10,2013-04-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
- definitions=main-1304100138
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+
+Add logic to decode AMD IOMMU event flag based on information from AMD IOMMU specification.
+This should simplify debugging IOMMU errors.  Also, dump DTE information in some additional
+cases.
+
+Example (default): The flags is now decoded.
+AMD-Vi: Event logged [INVALID_DEVICE_REQUEST device=51:00.0 address=0x0000000000000000 flags:G Nx Usr I P W N-Pm Rsv Tl type(0x7)]
+AMD-Vi: DTE[0..3]: 600000dfa760b403 0000000000000014 200000dfaba60c11 0000000000000000
+
+Example (amd-iommu=verbose): The flags and error types are decoded
+AMD-Vi: Event logged [INVALID_DEVICE_REQUEST device=51:00.0 address=0x0000000000000000 flags:G Nx Usr I P W N-Pm Rsv Tl]
+AMD-Vi: Error type details: (0x7) Invalid transaction to the system management address range
+AMD-Vi: DTE[0..3]: 600000dfa760b403 0000000000000014 200000dfaba60c11 0000000000000000
+
+Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+V5:
+	* Keeping flag decode in 1 line (as requested by Joerg)
+	* Use "amd-iommu=verbose" for additional printing
+V4:
+	* Change print out format to reduce noise
+	* Remove "(Note:...)"
+V3:
+	* Move comments to end of line
+	* Shorten the print out to be within one line
+V2:
+	* Fix printing format to reduce noise
+	* Use string table instead of switch/case
+	* Use pr_cont instead of printk
+
+---
+ drivers/iommu/amd_iommu.c |  215 +++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 168 insertions(+), 47 deletions(-)
+
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index b287ca3..beb61dd 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -601,13 +601,118 @@ static void amd_iommu_stats_init(void)
+  *
+  ****************************************************************************/
+ 
++struct _event_log_flags {
++	u32	gn:1,		/* 16 */
++		nx:1,		/* 17 */
++		us:1,		/* 18 */
++		 i:1,		/* 19 */
++		pr:1,		/* 20 */
++		rw:1,		/* 21 */
++		pe:1,		/* 22 */
++		rz:1,		/* 23 */
++		tr:1,		/* 24 */
++		type:3,		/* [27:25] */
++		_reserved_:20;	/* Reserved */
++};
++
++static const char * const _type_field_encodings[] = {
++	"Reserved",		/* 00 */
++	"Master Abort",		/* 01 */
++	"Target Abort",		/* 10 */
++	"Data Error",		/* 11 */
++};
++
++static const char * const _invalid_trnsac_desc[] = {
++	"Read request or non-posted write in the interrupt "
++		 "addres range",				/* 000 */
++	"Pretranslated transaction received from an "
++		"I/O device that has I=0 or V=0 in DTE",	/* 001 */
++	"Port I/O space transaction received from an "
++		"I/O device that has IoCtl=00b in DTE",		/* 010 */
++	"Posted write to invalid address range",		/* 011 */
++	"Invalid read request or non-posted write",		/* 100 */
++	"Posted write to the interrupt/EOI range from an "
++		"I/O device that has IntCtl=00b in DTE",	/* 101 */
++	"Posted write to a reserved interrupt address range",	/* 110 */
++	"Invalid transaction to the system management "
++		"address range",				/* 111 */
++};
++
++static const char * const _invalid_trnslt_desc[] = {
++	"Translation request received from an I/O device "
++		"that has I=0, or has V=0, or has V=1 and "
++		"TV=0 in DTE",					/* 000 */
++	"Translation request in invalid address range",		/* 001 */
++	"Invalid translation request",				/* 010 */
++	"Reserved",						/* 011 */
++	"Reserved",						/* 100 */
++	"Reserved",						/* 101 */
++	"Reserved",						/* 110 */
++	"Reserved",						/* 111 */
++};
++
++static void dump_detail_error(struct _event_log_flags *p, int ev_type)
++{
++	u32 err_type = p->type;
++
++	pr_err("AMD-Vi: Error type details: (0x%x) ", err_type);
++	if ((ev_type == EVENT_TYPE_DEV_TAB_ERR)  ||
++	    (ev_type == EVENT_TYPE_PAGE_TAB_ERR) ||
++	    (ev_type == EVENT_TYPE_CMD_HARD_ERR)) {
++		if (err_type < ARRAY_SIZE(_type_field_encodings)) {
++			pr_cont("%s\n",
++				_type_field_encodings[err_type]);
++		}
++	} else if (ev_type == EVENT_TYPE_INV_DEV_REQ) {
++		if (p->tr == 0) {
++			if (err_type < ARRAY_SIZE(_invalid_trnslt_desc))
++				pr_cont("%s\n",
++					_invalid_trnslt_desc[err_type]);
++		} else {
++			if (err_type < ARRAY_SIZE(_invalid_trnsac_desc))
++				pr_cont("%s\n",
++					_invalid_trnsac_desc[err_type]);
++		}
++	}
++}
++
++static void dump_flags(int flags, int ev_type)
++{
++	struct _event_log_flags *p = (struct _event_log_flags *) &flags;
++	u32 err_type = p->type;
++
++	pr_cont(" flags:%s %s %s %s %s %s %s %s %s",
++		(p->gn ? "G" : "N"),
++		(p->nx ? "Nx" : "Ex"),
++		(p->us ? "Usr" : "Sup"),
++		(p->i  ? "I" : "M"),
++		(p->pr ? "P" : "NP"),
++		(p->rw ? "W" : "R"),
++		(p->pe ? "N-Pm" : "Pm"),
++		(p->rz ? "Rsv" : "Ill"),
++		(p->tr ? "Tl" : "Ta"));
++
++	/* Error type only needed for certain events */
++	if (!amd_iommu_verbose) {
++		if ((ev_type == EVENT_TYPE_DEV_TAB_ERR)  ||
++		    (ev_type == EVENT_TYPE_PAGE_TAB_ERR) ||
++		    (ev_type == EVENT_TYPE_CMD_HARD_ERR) ||
++		    (ev_type == EVENT_TYPE_INV_DEV_REQ))
++			pr_cont(" type(0x%x)]\n", err_type);
++	} else {
++		pr_cont("]\n");
++		dump_detail_error(p, ev_type);
++	}
++}
++
+ static void dump_dte_entry(u16 devid)
+ {
+ 	int i;
+ 
++	pr_err("AMD-Vi: DTE[0..3]:");
+ 	for (i = 0; i < 4; ++i)
+-		pr_err("AMD-Vi: DTE[%d]: %016llx\n", i,
+-			amd_iommu_dev_table[devid].data[i]);
++		pr_cont(" %016llx", amd_iommu_dev_table[devid].data[i]);
++	pr_cont("\n");
+ }
+ 
+ static void dump_command(unsigned long phys_addr)
+@@ -619,81 +724,96 @@ static void dump_command(unsigned long phys_addr)
+ 		pr_err("AMD-Vi: CMD[%d]: %08x\n", i, cmd->data[i]);
+ }
+ 
+-static void iommu_print_event(struct amd_iommu *iommu, void *__evt)
++void amd_iommu_print_event(int type, int devid, int domid,
++			      int flags, u64 address)
+ {
+-	int type, devid, domid, flags;
+-	volatile u32 *event = __evt;
+-	int count = 0;
+-	u64 address;
+-
+-retry:
+-	type    = (event[1] >> EVENT_TYPE_SHIFT)  & EVENT_TYPE_MASK;
+-	devid   = (event[0] >> EVENT_DEVID_SHIFT) & EVENT_DEVID_MASK;
+-	domid   = (event[1] >> EVENT_DOMID_SHIFT) & EVENT_DOMID_MASK;
+-	flags   = (event[1] >> EVENT_FLAGS_SHIFT) & EVENT_FLAGS_MASK;
+-	address = (u64)(((u64)event[3]) << 32) | event[2];
+-
+-	if (type == 0) {
+-		/* Did we hit the erratum? */
+-		if (++count == LOOP_TIMEOUT) {
+-			pr_err("AMD-Vi: No event written to event log\n");
+-			return;
+-		}
+-		udelay(1);
+-		goto retry;
+-	}
+-
+-	printk(KERN_ERR "AMD-Vi: Event logged [");
++	pr_err("AMD-Vi: Event logged [");
+ 
+ 	switch (type) {
+ 	case EVENT_TYPE_ILL_DEV:
+-		printk("ILLEGAL_DEV_TABLE_ENTRY device=%02x:%02x.%x "
+-		       "address=0x%016llx flags=0x%04x]\n",
++		pr_cont("ILLEGAL_DEV_TABLE_ENTRY device=%02x:%02x.%x "
++		       "address=0x%016llx",
+ 		       PCI_BUS(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+-		       address, flags);
++		       address);
++		dump_flags(flags, type);
+ 		dump_dte_entry(devid);
+ 		break;
+ 	case EVENT_TYPE_IO_FAULT:
+-		printk("IO_PAGE_FAULT device=%02x:%02x.%x "
+-		       "domain=0x%04x address=0x%016llx flags=0x%04x]\n",
++		pr_cont("IO_PAGE_FAULT device=%02x:%02x.%x "
++		       "domain=0x%04x address=0x%016llx",
+ 		       PCI_BUS(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+-		       domid, address, flags);
++		       domid, address);
++		dump_flags(flags, type);
++		dump_dte_entry(devid);
+ 		break;
+ 	case EVENT_TYPE_DEV_TAB_ERR:
+-		printk("DEV_TAB_HARDWARE_ERROR device=%02x:%02x.%x "
+-		       "address=0x%016llx flags=0x%04x]\n",
++		pr_cont("DEV_TAB_HARDWARE_ERROR device=%02x:%02x.%x "
++		       "address=0x%016llx",
+ 		       PCI_BUS(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+-		       address, flags);
++		       address);
++		dump_flags(flags, type);
+ 		break;
+ 	case EVENT_TYPE_PAGE_TAB_ERR:
+-		printk("PAGE_TAB_HARDWARE_ERROR device=%02x:%02x.%x "
+-		       "domain=0x%04x address=0x%016llx flags=0x%04x]\n",
++		pr_cont("PAGE_TAB_HARDWARE_ERROR device=%02x:%02x.%x "
++		       "domain=0x%04x address=0x%016llx",
+ 		       PCI_BUS(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+-		       domid, address, flags);
++		       domid, address);
++		dump_flags(flags, type);
+ 		break;
+ 	case EVENT_TYPE_ILL_CMD:
+-		printk("ILLEGAL_COMMAND_ERROR address=0x%016llx]\n", address);
++		pr_cont("ILLEGAL_COMMAND_ERROR address=0x%016llx\n",
++			address);
+ 		dump_command(address);
+ 		break;
+ 	case EVENT_TYPE_CMD_HARD_ERR:
+-		printk("COMMAND_HARDWARE_ERROR address=0x%016llx "
+-		       "flags=0x%04x]\n", address, flags);
++		pr_cont("COMMAND_HARDWARE_ERROR address=0x%016llx",
++			address);
++		dump_flags(flags, type);
+ 		break;
+ 	case EVENT_TYPE_IOTLB_INV_TO:
+-		printk("IOTLB_INV_TIMEOUT device=%02x:%02x.%x "
++		pr_cont("IOTLB_INV_TIMEOUT device=%02x:%02x.%x "
+ 		       "address=0x%016llx]\n",
+ 		       PCI_BUS(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+ 		       address);
+ 		break;
+ 	case EVENT_TYPE_INV_DEV_REQ:
+-		printk("INVALID_DEVICE_REQUEST device=%02x:%02x.%x "
+-		       "address=0x%016llx flags=0x%04x]\n",
++		pr_cont("INVALID_DEVICE_REQUEST device=%02x:%02x.%x "
++		       "address=0x%016llx",
+ 		       PCI_BUS(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+-		       address, flags);
++		       address);
++		dump_flags(flags, type);
++		dump_dte_entry(devid);
+ 		break;
+ 	default:
+-		printk(KERN_ERR "UNKNOWN type=0x%02x]\n", type);
++		pr_cont("UNKNOWN type=0x%02x\n", type);
+ 	}
++}
++
++static void iommu_handle_event(struct amd_iommu *iommu, void *__evt)
++{
++	int type, devid, domid, flags;
++	u32 *event = __evt;
++	int count = 0;
++	u64 address;
++
++retry:
++	type    = (event[1] >> EVENT_TYPE_SHIFT)  & EVENT_TYPE_MASK;
++	devid   = (event[0] >> EVENT_DEVID_SHIFT) & EVENT_DEVID_MASK;
++	domid   = (event[1] >> EVENT_DOMID_SHIFT) & EVENT_DOMID_MASK;
++	flags   = (event[1] >> EVENT_FLAGS_SHIFT) & EVENT_FLAGS_MASK;
++	address = (u64)(((u64)event[3]) << 32) | event[2];
++
++	if (type == 0) {
++		/* Did we hit the erratum? */
++		if (++count == LOOP_TIMEOUT) {
++			pr_err("AMD-Vi: No event written to event log\n");
++			return;
++		}
++		udelay(1);
++		goto retry;
++	}
++
++	amd_iommu_print_event(type, devid, domid, flags, address);
+ 
+ 	memset(__evt, 0, 4 * sizeof(u32));
+ }
+@@ -709,7 +829,7 @@ static void iommu_poll_events(struct amd_iommu *iommu)
+ 	tail = readl(iommu->mmio_base + MMIO_EVT_TAIL_OFFSET);
+ 
+ 	while (head != tail) {
+-		iommu_print_event(iommu, iommu->evt_buf + head);
++		iommu_handle_event(iommu, iommu->evt_buf + head);
+ 		head = (head + EVENT_ENTRY_SIZE) % iommu->evt_buf_size;
+ 	}
+ 
+@@ -3268,6 +3388,7 @@ static int __init alloc_passthrough_domain(void)
+ 
+ 	return 0;
+ }
++
+ static int amd_iommu_domain_init(struct iommu_domain *dom)
+ {
+ 	struct protection_domain *domain;
+-- 
+1.7.10.4
 
 
-> -----Original Message-----
-> From: Luis Henriques [mailto:luis.henriques@canonical.com]
-> Sent: Wednesday, April 10, 2013 8:18 AM
-> To: Lingzhu Xiang
-> Cc: Ben Hutchings; Seiji Aguchi; linux-kernel@vger.kernel.org; stable@vger.kernel.org; kernel-team@lists.ubuntu.com; Matthew
-> Garrett; Josh Boyer; Michael Schroeder; Lee, Chun-Yi; Matt Fleming
-> Subject: Re: [PATCH 097/102] efivars: explicitly calculate length of VariableName
-> 
-> On Wed, Apr 10, 2013 at 06:27:13PM +0800, Lingzhu Xiang wrote:
-> > On 04/10/2013 06:45 AM, Ben Hutchings wrote:
-> > >On Mon, 2013-04-08 at 10:50 +0100, Luis Henriques wrote:
-> > >>3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
-> > >>
-> > >>------------------
-> > >>
-> > >>From: Matt Fleming <matt.fleming@intel.com>
-> > >>
-> > >>commit ec50bd32f1672d38ddce10fb1841cbfda89cfe9a upstream.
-> > >>
-> > >>It's not wise to assume VariableNameSize represents the length of
-> > >>VariableName, as not all firmware updates VariableNameSize in the
-> > >>same way (some don't update it at all if EFI_SUCCESS is returned).
-> > >>There are even implementations out there that update
-> > >>VariableNameSize with values that are both larger than the string
-> > >>returned in VariableName and smaller than the buffer passed to
-> > >>GetNextVariableName(), which resulted in the following bug report
-> > >>from Michael Schroeder,
-> > >>
-> > >>   > On HP z220 system (firmware version 1.54), some EFI variables are
-> > >>   > incorrectly named :
-> > >>   >
-> > >>   > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-> > >>   > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > >>   > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > >>   > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > >>   >
-> > >> /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d
-> > >> -00e098032b8c
-> > >>
-> > >>The issue here is that because we blindly use VariableNameSize
-> > >>without verifying its value, we can potentially read garbage values
-> > >>from the buffer containing VariableName if VariableNameSize is
-> > >>larger than the length of VariableName.
-> > >>
-> > >>Since VariableName is a string, we can calculate its size by
-> > >>searching for the terminating NULL character.
-> > >>
-> > >>Reported-by: Frederic Crozat <fcrozat@suse.com>
-> > >>Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-> > >>Cc: Josh Boyer <jwboyer@redhat.com>
-> > >>Cc: Michael Schroeder <mls@suse.com>
-> > >>Cc: Lee, Chun-Yi <jlee@suse.com>
-> > >>Cc: Lingzhu Xiang <lxiang@redhat.com>
-> > >>Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-> > >>Signed-off-by: Matt Fleming <matt.fleming@intel.com> [ Backported
-> > >>for 3.4-stable. Removed workqueue code added in a93bc0c 3.9-rc1. ]
-> > >[...]
-> > >
-> > >I thought the workqueue addition was a worthwhile fix in its own
-> > >right, so for 3.2.y I cherry-picked that as well.
-> >
-> > FWIW, the workqueue patch is 1/2 of this patchset[1] fixing closely
-> > related problems. The other one is 81fa4e58.
-> >
-> > [1]: http://article.gmane.org/gmane.linux.kernel/1439570
-> >
-> > I tried to avoid pulling too much for stable because the patchset is
-> > quite large and I suspect the problem it fixes is only theoretical.
-> > I reported the original bug but was unable to break anything except
-> > getting call traces with various CONFIG_DEBUG_*.
-> >
-> > What's your opinion, Seiji?
-> 
-> Ok, so just to clarify: you're suggesting me to pick the following commits:
-> 
-> 81fa4e581d9283f7992a0d8c534bb141eb840a14 efivars: Disable external interrupt while holding efivars->lock
-> a93bc0c6e07ed9bac44700280e65e2945d864fd4 efi_pstore: Introducing workqueue updating sysfs
-> ec50bd32f1672d38ddce10fb1841cbfda89cfe9a efivars: explicitly calculate length of VariableName
-> e971318bbed610e28bb3fde9d548e6aaf0a6b02e efivars: Handle duplicate names from get_next_variable()
-
-I agree to add these commits to a stable tree.
-
-Seiji
-
-> 
-> Is this correct?
-> 
-> Cheers,
-> --
-> Luis
