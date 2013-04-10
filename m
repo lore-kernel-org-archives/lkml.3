@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab3DJTaq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 15:30:46 -0400
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:53751 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab3DJTao (ORCPT
+	id S934499Ab3DJTdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 15:33:04 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:49459 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab3DJTdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 15:30:44 -0400
-Message-ID: <5165BDE1.7010908@inktank.com>
-Date: Wed, 10 Apr 2013 14:30:41 -0500
-From: Alex Elder <elder@inktank.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 10 Apr 2013 15:33:01 -0400
 MIME-Version: 1.0
-To: Laurent Barbe <laurent@ksperis.com>
-CC: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rbd: revalidate_disk upon rbd resize
-References: <1365609989-14493-1-git-send-email-laurent@ksperis.com>
-In-Reply-To: <1365609989-14493-1-git-send-email-laurent@ksperis.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1365622074.4235.37.camel@jlt4.sipsolutions.net>
+References: <1365593728-5720-1-git-send-email-mcgrof@do-not-panic.com>
+ <1365593728-5720-7-git-send-email-mcgrof@do-not-panic.com>
+ <1365600139.4235.4.camel@jlt4.sipsolutions.net> <CAB=NE6UpP-X1NCTNRnoSdv_bk3ioZdg5bO1zz0U0dqeWVxZdLw@mail.gmail.com>
+ <1365614413.4235.29.camel@jlt4.sipsolutions.net> <CAB=NE6VAfAvjRs0uZ=jpMjfP5Dz-zEHu3N7t8AUAofZAggrEEQ@mail.gmail.com>
+ <1365618018.4235.35.camel@jlt4.sipsolutions.net> <CAB=NE6VKT11k95Szi4NmigKCgMJ1XJoU3+rACbJpnWwUpCC1EA@mail.gmail.com>
+ <1365622074.4235.37.camel@jlt4.sipsolutions.net>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 10 Apr 2013 12:32:36 -0700
+X-Google-Sender-Auth: o7jycji34LiiSj7jNQfstObsLIE
+Message-ID: <CAB=NE6W8wZbwGiCCq2n2LObNreWhxd-uFU7CrX5yJw2Uik9hAg@mail.gmail.com>
+Subject: Re: [PATCH 06/18] compat: backport ASYNC_DOMAIN_EXCLUSIVE()
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        Dan Williams <dcbw@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 11:06 AM, Laurent Barbe wrote:
-> If rbd disk is open and rbd resize is done, new size is not visible by
-> filesystem.
-> Like is done in virtio-blk and dm driver, revalidate_disk() permits to
-> update the bd_inode size.
+On Wed, Apr 10, 2013 at 12:27 PM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Wed, 2013-04-10 at 12:19 -0700, Luis R. Rodriguez wrote:
+>
+>> > However, it seems entirely pointless to backport just a small part of
+>> > the API?
+>>
+>> Oh I agree don't get me wrong, however porting kernel/async.c seems
+>> like a rather separate effort worth considering. As-is though I have
+>> not seen any negative impact though to keep older subsystems from
+>> compiling, ie its a no-op for older kernels as I see it.
+>
+> I guess that's what I don't understand -- I don't see usages of
+> ASYNC_DOMAIN_EXCLUSIVE in any header files, and in e.g. regulator/core.c
+> you'd also need the functions async_schedule_domain() etc. So where does
+> this help even compiling?
 
-Looks good to me.  I'll take this in via the ceph-client tree.
-Thanks a lot.
+You know what, sorry this was left over from when I tried to backport
+the regulatory to the core of compat, and since I decided to not even
+go there given that it relies on init sections on the vmlinux we can
+safely discard this patch (although what I said still hold, just not
+needed).
 
-Reviewed-by: Alex Elder <elder@inktank.com>
-
-> Signed-off-by: Laurent Barbe <laurent@ksperis.com>
-> ---
->  drivers/block/rbd.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-> index f556f8a..1963025 100644
-> --- a/drivers/block/rbd.c
-> +++ b/drivers/block/rbd.c
-> @@ -2293,6 +2293,7 @@ static void rbd_update_mapping_size(struct rbd_device *rbd_dev)
->  	dout("setting size to %llu sectors", (unsigned long long) size);
->  	rbd_dev->mapping.size = (u64) size;
->  	set_capacity(rbd_dev->disk, size);
-> +	revalidate_disk(rbd_dev->disk);
->  }
->  
->  /*
-> 
-
+  Luis
