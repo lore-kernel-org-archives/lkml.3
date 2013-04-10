@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936047Ab3DJR0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:26:14 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:46370 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934849Ab3DJR0N (ORCPT
+	id S936357Ab3DJR0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:26:40 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:52068 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934793Ab3DJR0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:26:13 -0400
-Date: Wed, 10 Apr 2013 13:26:05 -0400 (EDT)
-From: Eric Paris <eparis@redhat.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: viro@zeniv.linux.org.uk, yongjun wei <yongjun_wei@trendmicro.com.cn>,
-        linux-kernel@vger.kernel.org
-Message-ID: <170253117.11083340.1365614765343.JavaMail.root@redhat.com>
-In-Reply-To: <CAPgLHd-M-q-xf+mp3VTAabxXS3bOjZ4g8EWLeE2NdjC2O7qCSA@mail.gmail.com>
-References: <CAPgLHd-M-q-xf+mp3VTAabxXS3bOjZ4g8EWLeE2NdjC2O7qCSA@mail.gmail.com>
-Subject: Re: [PATCH -next] audit: remove duplicated include from audit.c
+	Wed, 10 Apr 2013 13:26:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF20 (Linux)/8.0.3_GA_5664)
-Thread-Topic: audit: remove duplicated include from audit.c
-Thread-Index: Hnw2l3jhYl01E8T1er7ugWf7fQUFkg==
+In-Reply-To: <1365614413.4235.29.camel@jlt4.sipsolutions.net>
+References: <1365593728-5720-1-git-send-email-mcgrof@do-not-panic.com>
+ <1365593728-5720-7-git-send-email-mcgrof@do-not-panic.com>
+ <1365600139.4235.4.camel@jlt4.sipsolutions.net> <CAB=NE6UpP-X1NCTNRnoSdv_bk3ioZdg5bO1zz0U0dqeWVxZdLw@mail.gmail.com>
+ <1365614413.4235.29.camel@jlt4.sipsolutions.net>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Wed, 10 Apr 2013 10:26:17 -0700
+X-Google-Sender-Auth: _IrKCNfLfgeLvKUHEd7R9rPd-5U
+Message-ID: <CAB=NE6VAfAvjRs0uZ=jpMjfP5Dz-zEHu3N7t8AUAofZAggrEEQ@mail.gmail.com>
+Subject: Re: [PATCH 06/18] compat: backport ASYNC_DOMAIN_EXCLUSIVE()
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        Dan Williams <dcbw@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-net/netlink.h includes linux/netlink.h but linux/netlink.h does not include net/netlink.h
+On Wed, Apr 10, 2013 at 10:20 AM, Johannes Berg
+<johannes@sipsolutions.net> wrote:
+> On Wed, 2013-04-10 at 10:13 -0700, Luis R. Rodriguez wrote:
+>> On Wed, Apr 10, 2013 at 6:22 AM, Johannes Berg
+>> <johannes@sipsolutions.net> wrote:
+>> > On Wed, 2013-04-10 at 04:35 -0700, Luis R. Rodriguez wrote:
+>> >> From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+>> >>
+>> >> For older kernels this is simply a matter of using
+>> >> LIST_HEAD.
+>> >
+>> > Hmm, how is that useful if it will not have any effect?
+>>
+>> The core of the handling is done in the internal asynch code and
+>> that's kept hidden from the users of this -- so far.
+>
+> I guess I'd have to review the async API,
 
-since the audit code uses the nlmsg_* functions provided in net/netlink.h it seems we need this include.
+Yeap, reviewing the commit noted would help too.
 
-since the audit code uses netlink_unicast provided in linux/netlink.h it seems we need that include.
+> but now this wouldn't do
+> anything?
 
-I don't see duplication even if by chance one of them would have included the other...
+Nope.
 
------ Original Message -----
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Remove duplicated include.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  kernel/audit.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 488f85f..9377913 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -58,7 +58,6 @@
->  #ifdef CONFIG_SECURITY
->  #include <linux/security.h>
->  #endif
-> -#include <net/netlink.h>
->  #include <linux/freezer.h>
->  #include <linux/tty.h>
->  #include <linux/pid_namespace.h>
-> 
-> 
+> What's the use of just this when you don't have things like
+> async_schedule_domain() and async_synchronize_full_domain(), regulator
+> stuff wouldn't compile I think?
+
+You mean is not having the full asynch that deals with all registered
+domains likely to have an issue on the useres of
+async_synchronize_full_domain() ? Lets better ask Dan.
+
+> I guess I'm a bit confused what kind of effect this has.
+
+Nothing, really. If we had a user of it in other ways we'd fail
+compiling anyway but right now its a simple direct replacement.
+
+  Luis
