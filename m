@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935160Ab3DJVTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 17:19:38 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:36762 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762176Ab3DJVTg (ORCPT
+	id S934912Ab3DJVXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 17:23:42 -0400
+Received: from lan.nucleusys.com ([92.247.61.126]:58341 "EHLO
+	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1761639Ab3DJVXl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 17:19:36 -0400
-Date: Wed, 10 Apr 2013 17:19:33 -0400 (EDT)
-From: Eric Paris <eparis@redhat.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Message-ID: <2119919725.12278128.1365628773876.JavaMail.root@redhat.com>
-In-Reply-To: <51653C7A.6030405@asianux.com>
-References: <51653645.90401@asianux.com> <51653C7A.6030405@asianux.com>
-Subject: Re: [PATCH] kernel: auditfilter: looping issue, memory leak if has
- 2 or more AUDIT_FILTERKEYs
+	Wed, 10 Apr 2013 17:23:41 -0400
+X-Greylist: delayed 1059 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Apr 2013 17:23:40 EDT
+Date: Thu, 11 Apr 2013 00:23:33 +0300 (EEST)
+From: Petko Manolov <petkan@nucleusys.com>
+X-X-Sender: petkan@fry
+To: "David S. Miller" <davem@davemloft.net>
+cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] MAINTAINERS
+Message-ID: <alpine.DEB.2.02.1304110017280.9358@fry>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.12]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF20 (Linux)/8.0.3_GA_5664)
-Thread-Topic: kernel: auditfilter: looping issue, memory leak if has 2 or more AUDIT_FILTERKEYs
-Thread-Index: ebZgkmbTD6XhkQheVQ+96n7yrHv23A==
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463750422-1647130071-1365628700=:9358"
+Content-ID: <alpine.DEB.2.02.1304110021060.9358@fry>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
->   b. has an new issue for AUDIT_DIR:
->        after AUDIT_DIR succeed, it will set rule->tree.
->        next, the other case fail, then will call audit_free_rule.
->        but audit_free_rule will not free rule->tree.
+---1463750422-1647130071-1365628700=:9358
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-ID: <alpine.DEB.2.02.1304110018521.9358@fry>
 
-Definitely a couple of leaks here...
+A bit of personal information change.  The diff is against most 
+recent 'net-next'.
 
-I'm seeing leaks on size 8, 64, and 128.
 
-Al, what do you think?  Should I be calling audit_put_tree() in the error case if entry->tree != NULL?  The audit trees are some of the most complex code in the kernel I think.
+cheers,
+Petko
+---1463750422-1647130071-1365628700=:9358
+Content-Type: TEXT/X-DIFF; name=MAINTAINERS.diff; charset=us-ascii
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.DEB.2.02.1304110018200.9358@fry>
+Content-Description: 
+Content-Disposition: attachment; filename=MAINTAINERS.diff
+
+ZGlmZiAtLWdpdCBhL01BSU5UQUlORVJTIGIvTUFJTlRBSU5FUlMNCmluZGV4
+IGMzOWJkYzMuLjg2M2Q4Y2IgMTAwNjQ0DQotLS0gYS9NQUlOVEFJTkVSUw0K
+KysrIGIvTUFJTlRBSU5FUlMNCkBAIC04MzU4LDkgKzgzNTgsMTAgQEAgUzoJ
+TWFpbnRhaW5lZA0KIEY6CWRyaXZlcnMvdXNiL3NlcmlhbC9vcHRpb24uYw0K
+IA0KIFVTQiBQRUdBU1VTIERSSVZFUg0KLU06CVBldGtvIE1hbm9sb3YgPHBl
+dGthbkB1c2Vycy5zb3VyY2Vmb3JnZS5uZXQ+DQorTToJUGV0a28gTWFub2xv
+diA8cGV0a2FuQG51Y2xldXN5cy5jb20+DQogTDoJbGludXgtdXNiQHZnZXIu
+a2VybmVsLm9yZw0KIEw6CW5ldGRldkB2Z2VyLmtlcm5lbC5vcmcNCitUOgln
+aXQgZ2l0Oi8vZ2l0LmNvZGUuc2YubmV0L3AvcGVnYXN1czIvZ2l0DQogVzoJ
+aHR0cDovL3BlZ2FzdXMyLnNvdXJjZWZvcmdlLm5ldC8NCiBTOglNYWludGFp
+bmVkDQogRjoJZHJpdmVycy9uZXQvdXNiL3BlZ2FzdXMuKg0KQEAgLTgzODAs
+OSArODM4MSwxMCBAQCBTOglTdXBwb3J0ZWQNCiBGOglkcml2ZXJzL3VzYi9j
+bGFzcy91c2JscC5jDQogDQogVVNCIFJUTDgxNTAgRFJJVkVSDQotTToJUGV0
+a28gTWFub2xvdiA8cGV0a2FuQHVzZXJzLnNvdXJjZWZvcmdlLm5ldD4NCitN
+OglQZXRrbyBNYW5vbG92IDxwZXRrYW5AbnVjbGV1c3lzLmNvbT4NCiBMOgls
+aW51eC11c2JAdmdlci5rZXJuZWwub3JnDQogTDoJbmV0ZGV2QHZnZXIua2Vy
+bmVsLm9yZw0KK1Q6CWdpdCBnaXQ6Ly9naXQuY29kZS5zZi5uZXQvcC9wZWdh
+c3VzMi9naXQNCiBXOglodHRwOi8vcGVnYXN1czIuc291cmNlZm9yZ2UubmV0
+Lw0KIFM6CU1haW50YWluZWQNCiBGOglkcml2ZXJzL25ldC91c2IvcnRsODE1
+MC5jDQo=
+
+---1463750422-1647130071-1365628700=:9358--
