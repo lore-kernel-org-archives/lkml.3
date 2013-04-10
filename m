@@ -1,68 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964977Ab3DJPq2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:46:28 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:54433 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933709Ab3DJPqZ (ORCPT
+	id S936911Ab3DJPrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:47:04 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:33569 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760638Ab3DJPrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:46:25 -0400
+	Wed, 10 Apr 2013 11:47:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130410140925.GD3672@sgi.com>
-References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
-	<1365087258-7169-2-git-send-email-Waiman.Long@hp.com>
-	<20130408124223.GA10093@gmail.com>
-	<CA+55aFztAtpiGK9e_Ed=Kk4jAWNTahv9OEb0+fgp52Api1s7Mw@mail.gmail.com>
-	<20130410140925.GD3672@sgi.com>
-Date: Wed, 10 Apr 2013 08:46:24 -0700
-X-Google-Sender-Auth: rFR3hQdHsKwTwcituqsfgW3boqw
-Message-ID: <CA+55aFwrC-yKfpnJxA7RUoooR94-KJsuXHt03Mez0FiP9VBc4g@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/3] mutex: Make more scalable by doing less atomic operations
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Waiman Long <Waiman.Long@hp.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1365098483-26821-1-git-send-email-juhosg@openwrt.org>
+References: <1365098483-26821-1-git-send-email-juhosg@openwrt.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 10 Apr 2013 09:46:40 -0600
+Message-ID: <CAErSpo5OrFCaax++wA+iUoHEDG=fwAJXRe=B6EEQS=EEQ5iKWw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pci/of: remove weak annotation of pcibios_get_phb_of_node
+To: Gabor Juhos <juhosg@openwrt.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 7:09 AM, Robin Holt <holt@sgi.com> wrote:
-> On Mon, Apr 08, 2013 at 07:38:39AM -0700, Linus Torvalds wrote:
->>
->> I forget where we saw the case where we should *not* read the initial
->> value, though. Anybody remember?
+On Thu, Apr 4, 2013 at 12:01 PM, Gabor Juhos <juhosg@openwrt.org> wrote:
+> Due to the __weak annotation in the forward declaration
+> of the 'pcibios_get_phb_of_node' function GCC will emit
+> a weak symbol for this functions even if the actual
+> implementation does not use the weak attribute.
 >
-> I think you might be remembering ia64.  Fairly early on, I recall there
-> being a change in the spinlocks where we did not check them before just
-> trying to acquire.
+> If an architecture tries to override the function
+> by providing its own implementation there will be
+> multiple weak symbols with the same name in the
+> object files. When the kernel is linked from the
+> object files the linking order determines which
+> implementation will be used in the final image.
+>
+> On x86 and on powerpc the architecture specific
+> version gets used:
+>
+>   $ readelf -s  arch/x86/kernel/built-in.o drivers/pci/built-in.o \
+>     vmlinux.o | grep pcibios_get_phb_of_node
+>     3338: 00029b80    86 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+>     1701: 00012710    77 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+>    52072: 0002a170    86 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+>   $
+>
+>   $ powerpc-openwrt-linux-uclibc-readelf -s arch/powerpc/kernel/built-in.o \
+>     drivers/pci/built-in.o vmlinux.o | grep pcibios_get_phb_of_node
+>     1001: 0000cbb8    12 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+>     1484: 0001471c    88 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+>    28652: 0000d6f8    12 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+>   $
+>
+> However on MIPS, the linker puts the default
+> implementation into the final image:
+>
+>   $ mipsel-openwrt-linux-readelf -s arch/mips/pci/built-in.o \
+>     drivers/pci/built-in.o vmlinux.o | grep pcibios_get_phb_of_node
+>       86: 0000046c    12 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
+>     1430: 00012e2c   104 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
+>    31898: 0017e4ec   104 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
+>   $
+>
+> Rename the default implementation and remove the
+> __weak annotation of that. This ensures that there
+> will be no multiple weak symbols with the same name
+> in the object files. In order to keep the expected
+> behaviour, call the architecture specific function
+> if the weak symbol is resolved.
+>
+> Also move the renamed function to the top instead
+> of adding a new forward declaration for that.
+>
+> Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+> ---
+> Notes:
+>
+> Unfortunately I'm not a binutils/gcc expert, so
+> I don't know if this is the expected behaviour
+> of those or not.
+>
+> Removing the __weak annotation from the forward
+> declaration of 'pcibios_get_phb_of_node' in
+> 'include/linux/pci.h' also fixes the problem.
+>
+> The microblaze architecture also provides its own
+> implementation. The behaviour of that is not tested
+> but I assume that the linker chooses the arch specific
+> implementation on that as well similarly to the
+> x86/powerpc.
+>
+> The MIPS version is implemented in the followup
+> patch.
+>
+> Removing the __weak annotation from the forward
+> declaration of 'pcibios_get_phb_of_node' in
+> 'include/linux/pci.h' also fixes the problem.
 
-No, I think I found the one I was thinking of. It was the x86-32
-version of atomic64_xchg() and atomic64_add_return(). We used to
-actually read the old value in order to make the cmpxchg succeed on
-the first try most of the time, but when it was cold in the cache that
-actually hurt us. We were better off just picking a random value as
-our first one, even if it resulted in the loop triggering, because for
-the cold-cache case that avoids the unnecessary "bring in in shared
-for the read, just to write to it later".
+I think removing the __weak annotation from the declaration in
+include/linux/pci.h is the correct solution.
 
-Commits 3a8d1788b37435baf6c296f4ea8beb4fa4955f44 and in particular
-824975ef190e7dcb77718d1cc2cb53769b16d918.
+__weak is an attribute of a function definition, not an attribute of
+the interface, so I don't think it makes any sense to have it in
+pci.h.
 
-Of course, a good OoO CPU would see the write happening later to the
-same address, and bring things in for exclusive access immediately.
-And it's possible that newer CPU's do that, but we did see this as
-being an issue.
+Bjorn
 
-            Linus
+> -Gabor
+> ---
+>  drivers/pci/of.c |   41 +++++++++++++++++++++++------------------
+>  1 file changed, 23 insertions(+), 18 deletions(-)
+>
+> diff --git a/drivers/pci/of.c b/drivers/pci/of.c
+> index f092993..5794840 100644
+> --- a/drivers/pci/of.c
+> +++ b/drivers/pci/of.c
+> @@ -15,10 +15,32 @@
+>  #include <linux/of_pci.h>
+>  #include "pci.h"
+>
+> +static struct device_node *__pcibios_get_phb_of_node(struct pci_bus *bus)
+> +{
+> +       /* This should only be called for PHBs */
+> +       if (WARN_ON(bus->self || bus->parent))
+> +               return NULL;
+> +
+> +       if (pcibios_get_phb_of_node)
+> +               return pcibios_get_phb_of_node(bus);
+> +
+> +       /* Look for a node pointer in either the intermediary device we
+> +        * create above the root bus or it's own parent. Normally only
+> +        * the later is populated.
+> +        */
+> +       if (bus->bridge->of_node)
+> +               return of_node_get(bus->bridge->of_node);
+> +       if (bus->bridge->parent && bus->bridge->parent->of_node)
+> +               return of_node_get(bus->bridge->parent->of_node);
+> +
+> +       return NULL;
+> +}
+> +
+>  void pci_set_of_node(struct pci_dev *dev)
+>  {
+>         if (!dev->bus->dev.of_node)
+>                 return;
+> +
+>         dev->dev.of_node = of_pci_find_child_device(dev->bus->dev.of_node,
+>                                                     dev->devfn);
+>  }
+> @@ -32,7 +54,7 @@ void pci_release_of_node(struct pci_dev *dev)
+>  void pci_set_bus_of_node(struct pci_bus *bus)
+>  {
+>         if (bus->self == NULL)
+> -               bus->dev.of_node = pcibios_get_phb_of_node(bus);
+> +               bus->dev.of_node = __pcibios_get_phb_of_node(bus);
+>         else
+>                 bus->dev.of_node = of_node_get(bus->self->dev.of_node);
+>  }
+> @@ -42,20 +64,3 @@ void pci_release_bus_of_node(struct pci_bus *bus)
+>         of_node_put(bus->dev.of_node);
+>         bus->dev.of_node = NULL;
+>  }
+> -
+> -struct device_node * __weak pcibios_get_phb_of_node(struct pci_bus *bus)
+> -{
+> -       /* This should only be called for PHBs */
+> -       if (WARN_ON(bus->self || bus->parent))
+> -               return NULL;
+> -
+> -       /* Look for a node pointer in either the intermediary device we
+> -        * create above the root bus or it's own parent. Normally only
+> -        * the later is populated.
+> -        */
+> -       if (bus->bridge->of_node)
+> -               return of_node_get(bus->bridge->of_node);
+> -       if (bus->bridge->parent && bus->bridge->parent->of_node)
+> -               return of_node_get(bus->bridge->parent->of_node);
+> -       return NULL;
+> -}
+> --
+> 1.7.10
+>
