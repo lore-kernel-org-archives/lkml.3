@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937648Ab3DJWu6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:50:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56677 "EHLO
+	id S965050Ab3DJWvm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:51:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56698 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937447Ab3DJWuz (ORCPT
+	with ESMTP id S937647Ab3DJWu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:50:55 -0400
+	Wed, 10 Apr 2013 18:50:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 10/19] ftrace: Consistently restore trace function on sysctl enabling
-Date: Wed, 10 Apr 2013 15:50:33 -0700
-Message-Id: <20130410225027.866600257@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [ 17/19] x86-32, mm: Rip out x86_32 NUMA remapping code
+Date: Wed, 10 Apr 2013 15:50:40 -0700
+Message-Id: <20130410225028.591009147@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
 References: <20130410225026.833809117@linuxfoundation.org>
@@ -27,40 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kiszka <jan.kiszka@siemens.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
 
-commit 5000c418840b309251c5887f0b56503aae30f84c upstream.
+commit f03574f2d5b2d6229dcdf2d322848065f72953c7 upstream.
 
-If we reenable ftrace via syctl, we currently set ftrace_trace_function
-based on the previous simplistic algorithm. This is inconsistent with
-what update_ftrace_function does. So better call that helper instead.
+This code was an optimization for 32-bit NUMA systems.
 
-Link: http://lkml.kernel.org/r/5151D26F.1070702@siemens.com
+It has probably been the cause of a number of subtle bugs over
+the years, although the conditions to excite them would have
+been hard to trigger.  Essentially, we remap part of the kernel
+linear mapping area, and then sometimes part of that area gets
+freed back in to the bootmem allocator.  If those pages get
+used by kernel data structures (say mem_map[] or a dentry),
+there's no big deal.  But, if anyone ever tried to use the
+linear mapping for these pages _and_ cared about their physical
+address, bad things happen.
 
-Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+For instance, say you passed __GFP_ZERO to the page allocator
+and then happened to get handed one of these pages, it zero the
+remapped page, but it would make a pte to the _old_ page.
+There are probably a hundred other ways that it could screw
+with things.
+
+We don't need to hang on to performance optimizations for
+these old boxes any more.  All my 32-bit NUMA systems are long
+dead and buried, and I probably had access to more than most
+people.
+
+This code is causing real things to break today:
+
+	https://lkml.org/lkml/2013/1/9/376
+
+I looked in to actually fixing this, but it requires surgery
+to way too much brittle code, as well as stuff like
+per_cpu_ptr_to_phys().
+
+[ hpa: Cc: this for -stable, since it is a memory corruption issue.
+  However, an alternative is to simply mark NUMA as depends BROKEN
+  rather than EXPERIMENTAL in the X86_32 subclause... ]
+
+Link: http://lkml.kernel.org/r/20130131005616.1C79F411@kernel.stglabs.ibm.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/ftrace.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/x86/Kconfig            |    4 ----
+ arch/x86/mm/numa.c          |    3 ---
+ arch/x86/mm/numa_internal.h |    6 ------
+ 3 files changed, 13 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3934,12 +3934,8 @@ ftrace_enable_sysctl(struct ctl_table *t
- 		ftrace_startup_sysctl();
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1219,10 +1219,6 @@ config HAVE_ARCH_BOOTMEM
+ 	def_bool y
+ 	depends on X86_32 && NUMA
  
- 		/* we are starting ftrace again */
--		if (ftrace_ops_list != &ftrace_list_end) {
--			if (ftrace_ops_list->next == &ftrace_list_end)
--				ftrace_trace_function = ftrace_ops_list->func;
--			else
--				ftrace_trace_function = ftrace_ops_list_func;
--		}
-+		if (ftrace_ops_list != &ftrace_list_end)
-+			update_ftrace_function();
+-config HAVE_ARCH_ALLOC_REMAP
+-	def_bool y
+-	depends on X86_32 && NUMA
+-
+ config ARCH_HAVE_MEMORY_PRESENT
+ 	def_bool y
+ 	depends on X86_32 && DISCONTIGMEM
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -207,9 +207,6 @@ static void __init setup_node_data(int n
+ 	if (end && (end - start) < NODE_MIN_SIZE)
+ 		return;
  
- 	} else {
- 		/* stopping ftrace calls (just send to ftrace_stub) */
+-	/* initialize remap allocator before aligning to ZONE_ALIGN */
+-	init_alloc_remap(nid, start, end);
+-
+ 	start = roundup(start, ZONE_ALIGN);
+ 
+ 	printk(KERN_INFO "Initmem setup node %d %016Lx-%016Lx\n",
+--- a/arch/x86/mm/numa_internal.h
++++ b/arch/x86/mm/numa_internal.h
+@@ -21,12 +21,6 @@ void __init numa_reset_distance(void);
+ 
+ void __init x86_numa_init(void);
+ 
+-#ifdef CONFIG_X86_64
+-static inline void init_alloc_remap(int nid, u64 start, u64 end)	{ }
+-#else
+-void __init init_alloc_remap(int nid, u64 start, u64 end);
+-#endif
+-
+ #ifdef CONFIG_NUMA_EMU
+ void __init numa_emulation(struct numa_meminfo *numa_meminfo,
+ 			   int numa_dist_cnt);
 
 
