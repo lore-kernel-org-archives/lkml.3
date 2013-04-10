@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935970Ab3DJA0S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 20:26:18 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57757 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762821Ab3DJA0O (ORCPT
+	id S964962Ab3DJA2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 20:28:21 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:36602 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935549Ab3DJA0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 20:26:14 -0400
+	Tue, 9 Apr 2013 20:26:17 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
@@ -16,110 +16,98 @@ Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Bob Liu <bob.liu@oracle.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 02/10] staging: zcache: remove zcache_freeze
-Date: Wed, 10 Apr 2013 08:25:52 +0800
-Message-Id: <1365553560-32258-3-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 03/10] staging: ramster: Provide accessory functions for counter increase
+Date: Wed, 10 Apr 2013 08:25:53 +0800
+Message-Id: <1365553560-32258-4-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1365553560-32258-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1365553560-32258-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041000-7014-0000-0000-000002D44C41
+x-cbid: 13041000-1618-0000-0000-000003A79A7B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default value of zcache_freeze is false and it won't be modified by
-other codes. Remove zcache_freeze since no routine can disable zcache
-during system running.
+This patch enables these functions to be wrapped and 
+can disable/enable this with CONFIG_DEBUG_FS.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/zcache-main.c |   55 +++++++++++-----------------------
- 1 file changed, 18 insertions(+), 37 deletions(-)
+ drivers/staging/zcache/ramster/ramster.c |   34 ++++++++++++++++++++----------
+ 1 file changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index e23d814..fe6801a 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1118,15 +1118,6 @@ free_and_out:
- #endif /* CONFIG_ZCACHE_WRITEBACK */
- 
- /*
-- * When zcache is disabled ("frozen"), pools can be created and destroyed,
-- * but all puts (and thus all other operations that require memory allocation)
-- * must fail.  If zcache is unfrozen, accepts puts, then frozen again,
-- * data consistency requires all puts while frozen to be converted into
-- * flushes.
-- */
--static bool zcache_freeze;
--
--/*
-  * This zcache shrinker interface reduces the number of ephemeral pageframes
-  * used by zcache to approximately the same as the total number of LRU_FILE
-  * pageframes in use, and now also reduces the number of persistent pageframes
-@@ -1221,44 +1212,34 @@ int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
- {
- 	struct tmem_pool *pool;
- 	struct tmem_handle th;
--	int ret = -1;
-+	int ret = 0;
- 	void *pampd = NULL;
- 
- 	BUG_ON(!irqs_disabled());
- 	pool = zcache_get_pool_by_id(cli_id, pool_id);
- 	if (unlikely(pool == NULL))
- 		goto out;
--	if (!zcache_freeze) {
--		ret = 0;
--		th.client_id = cli_id;
--		th.pool_id = pool_id;
--		th.oid = *oidp;
--		th.index = index;
--		pampd = zcache_pampd_create((char *)page, size, raw,
--				ephemeral, &th);
--		if (pampd == NULL) {
--			ret = -ENOMEM;
--			if (ephemeral)
--				inc_zcache_failed_eph_puts();
--			else
--				inc_zcache_failed_pers_puts();
--		} else {
--			if (ramster_enabled)
--				ramster_do_preload_flnode(pool);
--			ret = tmem_put(pool, oidp, index, 0, pampd);
--			if (ret < 0)
--				BUG();
--		}
--		zcache_put_pool(pool);
-+
-+	th.client_id = cli_id;
-+	th.pool_id = pool_id;
-+	th.oid = *oidp;
-+	th.index = index;
-+	pampd = zcache_pampd_create((char *)page, size, raw,
-+			ephemeral, &th);
-+	if (pampd == NULL) {
-+		ret = -ENOMEM;
-+		if (ephemeral)
-+			inc_zcache_failed_eph_puts();
-+		else
-+			inc_zcache_failed_pers_puts();
- 	} else {
--		inc_zcache_put_to_flush();
- 		if (ramster_enabled)
- 			ramster_do_preload_flnode(pool);
--		if (atomic_read(&pool->obj_count) > 0)
--			/* the put fails whether the flush succeeds or not */
--			(void)tmem_flush_page(pool, oidp, index);
--		zcache_put_pool(pool);
-+		ret = tmem_put(pool, oidp, index, 0, pampd);
-+		if (ret < 0)
-+			BUG();
- 	}
-+	zcache_put_pool(pool);
- out:
- 	return ret;
+diff --git a/drivers/staging/zcache/ramster/ramster.c b/drivers/staging/zcache/ramster/ramster.c
+index 01fc672..b60e884 100644
+--- a/drivers/staging/zcache/ramster/ramster.c
++++ b/drivers/staging/zcache/ramster/ramster.c
+@@ -67,12 +67,32 @@ static int ramster_remote_target_nodenum __read_mostly = -1;
+ static long ramster_flnodes;
+ static atomic_t ramster_flnodes_atomic = ATOMIC_INIT(0);
+ static unsigned long ramster_flnodes_max;
++static inline void inc_ramster_flnodes(void)
++{
++	ramster_flnodes = atomic_inc_return(&ramster_flnodes_atomic);
++	if (ramster_flnodes > ramster_flnodes_max)
++		ramster_flnodes_max = ramster_flnodes;
++}
+ static ssize_t ramster_foreign_eph_pages;
+ static atomic_t ramster_foreign_eph_pages_atomic = ATOMIC_INIT(0);
+ static ssize_t ramster_foreign_eph_pages_max;
++static inline void inc_ramster_foreign_eph_pages(void)
++{
++	ramster_foreign_eph_pages = atomic_inc_return(
++			&ramster_foreign_eph_pages_atomic);
++	if (ramster_foreign_eph_pages > ramster_foreign_eph_pages_max)
++		ramster_foreign_eph_pages_max = ramster_foreign_eph_pages;
++}
+ static ssize_t ramster_foreign_pers_pages;
+ static atomic_t ramster_foreign_pers_pages_atomic = ATOMIC_INIT(0);
+ static ssize_t ramster_foreign_pers_pages_max;
++static inline void inc_ramster_foreign_pers_pages(void)
++{
++	ramster_foreign_pers_pages = atomic_inc_return(
++		&ramster_foreign_pers_pages_atomic);
++	if (ramster_foreign_pers_pages > ramster_foreign_pers_pages_max)
++		ramster_foreign_pers_pages_max = ramster_foreign_pers_pages;
++}
+ static ssize_t ramster_eph_pages_remoted;
+ static ssize_t ramster_pers_pages_remoted;
+ static ssize_t ramster_eph_pages_remote_failed;
+@@ -159,9 +179,7 @@ static struct flushlist_node *ramster_flnode_alloc(struct tmem_pool *pool)
+ 	flnode = kp->flnode;
+ 	BUG_ON(flnode == NULL);
+ 	kp->flnode = NULL;
+-	ramster_flnodes = atomic_inc_return(&ramster_flnodes_atomic);
+-	if (ramster_flnodes > ramster_flnodes_max)
+-		ramster_flnodes_max = ramster_flnodes;
++	inc_ramster_flnodes();
+ 	return flnode;
  }
+ 
+@@ -471,10 +489,7 @@ void ramster_count_foreign_pages(bool eph, int count)
+ 	BUG_ON(count != 1 && count != -1);
+ 	if (eph) {
+ 		if (count > 0) {
+-			c = atomic_inc_return(
+-					&ramster_foreign_eph_pages_atomic);
+-			if (c > ramster_foreign_eph_pages_max)
+-				ramster_foreign_eph_pages_max = c;
++			inc_ramster_foreign_eph_pages();
+ 		} else {
+ 			c = atomic_dec_return(&ramster_foreign_eph_pages_atomic);
+ 			WARN_ON_ONCE(c < 0);
+@@ -482,10 +497,7 @@ void ramster_count_foreign_pages(bool eph, int count)
+ 		ramster_foreign_eph_pages = c;
+ 	} else {
+ 		if (count > 0) {
+-			c = atomic_inc_return(
+-					&ramster_foreign_pers_pages_atomic);
+-			if (c > ramster_foreign_pers_pages_max)
+-				ramster_foreign_pers_pages_max = c;
++			inc_ramster_foreign_pers_pages();
+ 		} else {
+ 			c = atomic_dec_return(
+ 					&ramster_foreign_pers_pages_atomic);
 -- 
 1.7.10.4
 
