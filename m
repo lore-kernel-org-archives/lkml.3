@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937244Ab3DJWr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:47:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56155 "EHLO
+	id S964890Ab3DJXLP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:11:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56175 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937171Ab3DJWr0 (ORCPT
+	with ESMTP id S937236Ab3DJWr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:26 -0400
+	Wed, 10 Apr 2013 18:47:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Wolf <mjw@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [ 33/64] powerpc: pSeries_lpar_hpte_remove fails from Adjunct partition being performed before the ANDCOND test
-Date: Wed, 10 Apr 2013 15:46:30 -0700
-Message-Id: <20130410224340.834587574@linuxfoundation.org>
+        Li Fei <fei.li@intel.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [ 37/64] hwspinlock: fix __hwspin_lock_request error path
+Date: Wed, 10 Apr 2013 15:46:34 -0700
+Message-Id: <20130410224341.841988414@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -27,42 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Wolf <mjw@linux.vnet.ibm.com>
+From: Li Fei <fei.li@intel.com>
 
-commit 9fb2640159f9d4f5a2a9d60e490482d4cbecafdb upstream.
+commit c10b90d85a5126d25c89cbaa50dc9fdd1c4d001a upstream.
 
-Some versions of pHyp will perform the adjunct partition test before the
-ANDCOND test.  The result of this is that H_RESOURCE can be returned and
-cause the BUG_ON condition to occur. The HPTE is not removed.  So add a
-check for H_RESOURCE, it is ok if this HPTE is not removed as
-pSeries_lpar_hpte_remove is looking for an HPTE to remove and not a
-specific HPTE to remove.  So it is ok to just move on to the next slot
-and try again.
+Even in failed case of pm_runtime_get_sync, the usage_count
+is incremented. In order to keep the usage_count with correct
+value and runtime power management to behave correctly, call
+pm_runtime_put_noidle in such case.
 
-Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+In __hwspin_lock_request, module_put is also called before
+return in pm_runtime_get_sync failed case.
+
+Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Li Fei <fei.li@intel.com>
+[edit commit log]
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/lpar.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/hwspinlock/hwspinlock_core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -186,7 +186,13 @@ static long pSeries_lpar_hpte_remove(uns
- 					   (0x1UL << 4), &dummy1, &dummy2);
- 		if (lpar_rc == H_SUCCESS)
- 			return i;
--		BUG_ON(lpar_rc != H_NOT_FOUND);
-+
-+		/*
-+		 * The test for adjunct partition is performed before the
-+		 * ANDCOND test.  H_RESOURCE may be returned, so we need to
-+		 * check for that as well.
-+		 */
-+		BUG_ON(lpar_rc != H_NOT_FOUND && lpar_rc != H_RESOURCE);
+--- a/drivers/hwspinlock/hwspinlock_core.c
++++ b/drivers/hwspinlock/hwspinlock_core.c
+@@ -416,6 +416,8 @@ static int __hwspin_lock_request(struct
+ 	ret = pm_runtime_get_sync(dev);
+ 	if (ret < 0) {
+ 		dev_err(dev, "%s: can't power on device\n", __func__);
++		pm_runtime_put_noidle(dev);
++		module_put(dev->driver->owner);
+ 		return ret;
+ 	}
  
- 		slot_offset++;
- 		slot_offset &= 0x7;
 
 
