@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934932Ab3DJANb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 20:13:31 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42392 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765437Ab3DJAN3 (ORCPT
+	id S934327Ab3DJAOm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 20:14:42 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:59113 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762266Ab3DJAOl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 20:13:29 -0400
-Date: Wed, 10 Apr 2013 10:13:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the omap_dss2 tree with Linus' tree
-Message-Id: <20130410101317.0fa466659e2376aada964540@canb.auug.org.au>
-In-Reply-To: <5163E925.4060601@ti.com>
-References: <20130408143623.bbf18647b96df42b8b8ec6a0@canb.auug.org.au>
-	<5163E925.4060601@ti.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__10_Apr_2013_10_13_17_+1000_ARzuh/zW.KXa9/Lc"
+	Tue, 9 Apr 2013 20:14:41 -0400
+Message-ID: <5164AEEB.8050409@gmail.com>
+Date: Wed, 10 Apr 2013 08:14:35 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Andrew Shewmaker <agshew@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        ric.masonn@gmail.com
+Subject: Re: [PATCH v8 3/3] mm: reinititalise user and admin reserves if memory
+ is added or removed
+References: <20130408190738.GC2321@localhost.localdomain> <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org> <20130408210039.GA3396@localhost.localdomain> <20130409151906.2ee55116ca9e3abd80a90e3e@linux-foundation.org> <CAF-E8XEq9AE0z472QMWPbY-8YgvDsjx3FhEKRsVx7Bc_=AEn_Q@mail.gmail.com> <5164ACBB.2040704@gmail.com> <CAF-E8XEGz4Q7-KWP8-cam1x4vQmpy-s_j3CAW6sUe4T5f_vsoQ@mail.gmail.com>
+In-Reply-To: <CAF-E8XEGz4Q7-KWP8-cam1x4vQmpy-s_j3CAW6sUe4T5f_vsoQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__10_Apr_2013_10_13_17_+1000_ARzuh/zW.KXa9/Lc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/10/2013 08:11 AM, Andrew Shewmaker wrote:
+> On Tue, Apr 9, 2013 at 6:05 PM, Simon Jeons <simon.jeons@gmail.com> wrote:
+>> Hi Andrew,
+>>
+>> On 04/10/2013 07:56 AM, Andrew Shewmaker wrote:
+>>> On Tue, Apr 9, 2013 at 4:19 PM, Andrew Morton <akpm@linux-foundation.org>
+>>> wrote:
+>>>> On Mon, 8 Apr 2013 17:00:40 -0400 Andrew Shewmaker <agshew@gmail.com>
+>>>> wrote:
+>>>>
+>>>>> Should I add the memory notifier code to mm/nommu.c too?
+>>>>> I'm guessing that if a system doesn't have an mmu that it also
+>>>>> won't be hotplugging memory.
+>>>> I doubt if we need to worry about memory hotplug on nommu machines,
+>>>> so just do the minimum which is required to get nommu to compile
+>>>> and link.  That's probably "nothing".
+>>> I haven't gotten myself set up to compile a nommu architecture, so I'll
+>>> post
+>>> my next version, and work on verifying it compiles and links later. But I
+>>> I probably won't be able to get to that for a week and a half ... I'm
+>>> leaving
+>>> on my honeymoon in the next couple days :)
+>>
+>> How to compile a  nommu architecture? just config in menu config or a
+>> physical machine?
+> I was going to set up a qemu arm guest. Please, anyone, let me know if
+> there's an easier way to test nommu builds on x86.
 
-Hi Tomi,
+AFAK, arm7 is nommu.
 
-On Tue, 9 Apr 2013 13:10:45 +0300 Tomi Valkeinen <tomi.valkeinen@ti.com> wr=
-ote:
->
-> I wonder what I should do about this conflict. Both the fix in Linus'
-> tree and the new code come from fbdev tree (I'm currently handling fbdev
-> patches), and it feels a bit silly to have conflicts between the fixes
-> and new commits from the same subsystem tree.
 
-Since you really should have that fix in your -next branch as well (for
-testing), I would merge the same branch that Linus merged i.e. I would
-merge commit 090da752cdd6 ("video:uvesafb: Fix dereference NULL pointer
-code path") since that is already in your tree (presumably as a separate
-branch or tag).  I would also put a comment in the merge commit itself
-explaining why you did it.
-
-> I could just leave the conflict be, or I could merge the fix into the
-> fbdev-next branch. Do you know if there's a rule of thumb I should
-> follow here?
-
-The normal rule is to leave it to me and Linus, but since both sides of
-the conflict came your own tree, I think the above makes more sense.
-
-[cc'd Linus for any conflicting opinion]
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__10_Apr_2013_10_13_17_+1000_ARzuh/zW.KXa9/Lc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRZK6dAAoJEECxmPOUX5FE6wEP/2C/VmKDvw+h7Gv3QF2q655N
-SbkOfZ02ETdHlYygQyvmOmt2BrIZ3bNH5zFnMnZiG0hE2pv9YXIEn04kFiZFpem6
-nkrSICwbrjm2KjOXpKQAKU4eoYqotKBwOxvknIR9vKEFu4MW8PhmOV/GfLKsgMlH
-ojx54/E177ubwlbxANZBE1v423GyBNl8q7fpx+TOQERChBqZ4slRvIBsI/Pf+cBC
-01v4CfZNNZzK10gXsjVnJRoGoSwowG/u1NP5u3Jm0tH08+Gq4nRMapqB/gW289Zq
-paCrkwidilCZG2p5utgaUd7ioEUat9guHqiBTwgoFN26KlNHk6Q8L+w/n9mAOOGW
-7OzA22IPH+b1ABxNPu0NC8bKQtitWx32NMpSl1rAnbO1OQ5hvQcQB6MNo1QS3fke
-oVWeAAjqeIczCNc8GQPl7nKgGUJDH46NXjow8kfPGwktA0UipahtS+aBuCyfIDix
-fdI4ECrBSLDoeyEENiEYuHOJdebd4McsWFcz45V66MOyduFrk+Ksd+Qcp1AakKmc
-1t2P8fQLlp+/cDCiuP1lybnZNZoBpK+56ococ+BhA89P1HvMax2tt8p3fdMyv7v5
-wN+p3dawI+PXBggm5AUbzbxflJE/0oqcpv8HhfBna/7eWv5vgBI+gBeH03zCuRR6
-dDfiTkAlpAxHLspHqZYC
-=9kgd
------END PGP SIGNATURE-----
-
---Signature=_Wed__10_Apr_2013_10_13_17_+1000_ARzuh/zW.KXa9/Lc--
