@@ -1,78 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965160Ab3DJRRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:17:17 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:62684 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965106Ab3DJRRQ (ORCPT
+	id S965134Ab3DJRUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:20:10 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:63380 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964833Ab3DJRUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:17:16 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 10 Apr 2013 10:17:22 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: David Teigland <teigland@redhat.com>
-Cc: Don Zickus <dzickus@redhat.com>, Dave Young <dyoung@redhat.com>,
-        linux-watchdog@vger.kernel.org, kexec@lists.infradead.org,
-        wim@iguana.be, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
-Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130410171722.GC19533@roeck-us.net>
-References: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
- <516259D2.7000805@redhat.com>
- <20130408124858.GC79013@redhat.com>
- <20130408151509.GA20919@roeck-us.net>
- <20130409144431.GL79013@redhat.com>
- <20130409145228.GA1111@roeck-us.net>
- <20130409151423.GM79013@redhat.com>
- <20130409160757.GA27050@roeck-us.net>
- <20130410134039.GV79013@redhat.com>
- <20130410164914.GA18946@redhat.com>
+	Wed, 10 Apr 2013 13:20:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130410164914.GA18946@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hfvyygxac.wl%tiwai@suse.de>
+References: <s5h38vqjhk6.wl%tiwai@suse.de> <CAErSpo57ObGbTwLV+ji4bAtGBfT4=Y3wK1mFQdQGAx9oBcRZww@mail.gmail.com>
+ <s5hfvyygxac.wl%tiwai@suse.de>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 10 Apr 2013 11:19:48 -0600
+Message-ID: <CAErSpo67gae_AvB_0SJbbpkaydT8iKCH3_Eg30et1RXVVE860w@mail.gmail.com>
+Subject: Re: [PATCH] pciehp: Add pciehp_surprise module option
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Oliver Neukum <oneukum@suse.de>, Michal Marek <mmarek@suse.cz>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 12:49:14PM -0400, David Teigland wrote:
-> On Wed, Apr 10, 2013 at 09:40:39AM -0400, Don Zickus wrote:
-> > However, we still have the problem that if the machine panics and we want
-> > to jump into the kdump kernel, we need to 'kick' the watchdog one more
-> > time.  This provides us a sane sync point for determining how long we have
-> > to load the watchdog driver in the second kernel before the hardware
-> > reboots us.  Otherwise the reboots are pretty random and nothing is
-> > guaranteed.
-> 
-> Some time ago I submitted this patch
-> http://www.spinics.net/lists/linux-watchdog/msg01477.html
-> 
-> to get rid of the one "extraneous" ping that was causing me trouble.
-> I'd still like to see merged, but haven't had time to follow up.
-> 
-The use case makes sense to me, so it gets my Ack. Did Wim ever comment on it ?
+On Wed, Apr 10, 2013 at 10:34 AM, Takashi Iwai <tiwai@suse.de> wrote:
+> Hi Bjorn,
+>
+> sorry for the late follow up as I was on vacation and has been busy
+> for other tasks.  Since this topic went to nirvana, I try to whip
+> again...
+>
+> At Mon, 25 Mar 2013 10:58:40 -0600,
+> Bjorn Helgaas wrote:
+>>
+>> On Wed, Mar 20, 2013 at 8:02 AM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > We encountered a problem that on some HP machines the Realtek PCI-e
+>> > card reader device appears only when you inserted a card before the
+>> > cold boot.  While debugging, it turned out that the device is actually
+>> > handled via PCI-e hotplug in some level.  The device sends a presence
+>> > change notification, and pciehp receives it, but it's ignored because
+>> > of lack of the hotplug surprise (PCI_EXP_SLTCAP_HPS) capability bit.
+>> > Once when this check passes, everything starts working -- the device
+>> > appears upon plugging the card properly.
+>> >
+>> > There are a few other bug reports indicating the similar problems
+>> > (e.g. on recent Dell laptops), and I guess the culprit is same.
+>>
+>> Can you point us at these bug reports, e.g., with URLs?  Hopefully
+>> they will contain complete dmesg logs and "lspci -vv" outputs so we
+>> can debug this a bit more.
+>
+> The machine isn't in market yet, so we cannot expose all things, but I
+> attach the lspci snippet of the relevant parts, pci-e ports and the
+> card reader, at least.  If you need anything else, let me know.
+>
+> As Oliver and Michal already replied, Windows (both 7/8) identifies
+> the device without modification.  This implies that Windows handles
+> the hotplug no matter whether the surprise bit is set or not, either
+> globally or device-specifically.  But, since this is pretty new
+> hardware, we highly doubt it's done in a white-list basis.
+>
+>> I'm strongly opposed to adding a module option to work around this
+>> issue because the user experience is unacceptable.  We can't expect
+>> users to debug the problem and discover the option.
+>>
+>> I'm also opposed to a DMI quirk system because I think it's very
+>> likely that this device works correctly under Windows, and I doubt
+>> very much that Windows has to include the equivalent of DMI quirks.
+>> So we should, at least in principle, be able to figure out how to make
+>> it work, too.
+>
+> In order to get things a bit straight, let me list up the things we
+> found again:
+>
+> - The Realtek card reader devices doesn't appear in lspci at the
+>   fresh boot in multiple kernel versions from 3.0 to 3.9.
+>
+> - Once when the card is inserted, it issues the hotplug IRQ event.
+>
+> - pciehp receives and handles the event but it doesn't add/remove the
+>   device actually because the corresponding controller has no surprise
+>   bit.
+>
+>   When forcibly enabling the hotplug device addition by my patch, it
+>   starts working.  The device is added at card insert.  The removal
+>   doesn't trigger on our system, but the event itself seems
+>   generated.
+>
+> - The surprise bit can't be changed as it's supposed to be read-only
+>   register bits.  Thus no PCI quirk seems possible, and it has to be
+>   fixed in pciehp.
+>
+> - Another way to detect the PCI card reader device is to perform
+>      echo 1 > /sys/bus/pci/rescan
+>   with a memory card inserted.  It doesn't work without the card,
+>   and it is less sophisticated than pciehp, of course.
+>
+> Right now, we applied a patch for pciehp to ignore the surprise bit
+> per basis of DMI string match.  This works, but doesn't scale; if the
+> same problem happens on a similar model, the driver must be compiled
+> again.  A module option would be really convenient for that, although
+> I understand your concern, too.
+>
+> Of course, an alternative (and more radical) solution is to remove the
+> surprise bit check completely from pciehp, as Matthew suggested in the
+> thread.  What risk would it bring?
 
-Thanks,
-Guenter
+I think we need to ignore the surprise bit as Matthew suggested.
 
-> I have a use case where I need to guarantee that the watchdog
-> will *not* be pinged unless my userland daemon does the ping.
-> If my daemon is killed, the close() generates a ping that I
-> don't intend.  This kdump ping looks like it would be another
-> instance that I'd need to suppress.  Perhaps by renaming my flag
-> WDOG_NO_EXTRA_PING and checking it both in release and in
-> kick_for_kdump?
-> 
-> (My daemon associates watchdog pings with shared storage heartbeats.
-> Based on the heartbeats, hosts in a cluster can calculate when an
-> unresponsive host last pinged its watchdog, and can be fairly
-> certain that the "dead" host has been reset by its watchdog 60
-> seconds later.  This is used as an alternative to i/o fencing
-> where we're protecting data on shared storage from corruption
-> after host failures.  If there are uncontrolled watchdog pings,
-> then hosts don't know when a dead host might have last pinged
-> its watchdog, since it is no longer based on the last timestamp
-> it wrote to shared storage.)
-> 
-> Dave
-> 
+Alex raised an issue with this (secondary bus reset causes a device
+remove followed by device add), so we'd have to work through that
+somehow.  I think doing the remove/add would actually be more correct
+because we would be doing the whole device initialization after the
+reset.  We currently save/restore some device state around the reset,
+but that's a piecemeal approach that is certain to miss internal
+hidden state.  But I don't know how to deal with the KVM implications
+of remove/add.
+
+Bjorn
