@@ -1,184 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936425Ab3DJRaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:30:11 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:29198 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965258Ab3DJR3j (ORCPT
+	id S936677Ab3DJRbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:31:13 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:49147 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936514Ab3DJRbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:29:39 -0400
-From: Toshi Kani <toshi.kani@hp.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        linuxram@us.ibm.com, guz.fnst@cn.fujitsu.com, tmac@hp.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        tangchen@cn.fujitsu.com, jiang.liu@huawei.com,
-        Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v3 2/3] resource: Add release_mem_region_adjustable()
-Date: Wed, 10 Apr 2013 11:17:00 -0600
-Message-Id: <1365614221-685-3-git-send-email-toshi.kani@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365614221-685-1-git-send-email-toshi.kani@hp.com>
-References: <1365614221-685-1-git-send-email-toshi.kani@hp.com>
+	Wed, 10 Apr 2013 13:31:09 -0400
+Date: Wed, 10 Apr 2013 13:31:03 -0400 (EDT)
+From: Eric Paris <eparis@redhat.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Message-ID: <1216477171.11118824.1365615063121.JavaMail.root@redhat.com>
+In-Reply-To: <5161347B.8090604@asianux.com>
+References: <5161347B.8090604@asianux.com>
+Subject: Re: [PATCH] kernel: audit: beautify code, for extern function,
+ better to check its parameters by itself
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF20 (Linux)/8.0.3_GA_5664)
+Thread-Topic: kernel: audit: beautify code, for extern function, better to check its parameters by itself
+Thread-Index: jg9aahtYnAMiaslW9ht41kjXI4YW3w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added release_mem_region_adjustable(), which releases a requested
-region from a currently busy memory resource.  This interface
-adjusts the matched memory resource accordingly even if the
-requested region does not match exactly but still fits into.
+----- Original Message -----
+> 
+>   __audit_socketcall is an extern function.
+>   better to check its parameters by itself.
+> 
+>     also can return error code, when fail (find invalid parameters).
+>     also use macro instead of real hard code number
+>     also give related comments for it.
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  include/linux/audit.h |   12 ++++++++----
+>  kernel/auditsc.c      |    9 ++++++---
+>  net/socket.c          |    6 ++++--
+>  3 files changed, 18 insertions(+), 9 deletions(-)
+> 
+> diff --git a/include/linux/audit.h b/include/linux/audit.h
 
-This new interface is intended for memory hot-delete.  During
-bootup, memory resources are inserted from the boot descriptor
-table, such as EFI Memory Table and e820.  Each memory resource
-entry usually covers the whole contigous memory range.  Memory
-hot-delete request, on the other hand, may target to a particular
-range of memory resource, and its size can be much smaller than
-the whole contiguous memory.  Since the existing release interfaces
-like __release_region() require a requested region to be exactly
-matched to a resource entry, they do not allow a partial resource
-to be released.
+> @@ -354,7 +358,7 @@ static inline int audit_bprm(struct linux_binprm *bprm)
+>  {
+>  	return 0;
+>  }
+> -static inline void audit_socketcall(int nargs, unsigned long *args)
+> +static inline int audit_socketcall(int nargs, unsigned long *args)
+>  { }
+>  static inline void audit_fd_pair(int fd1, int fd2)
+>  { }
 
-This new interface is restrictive (i.e. release under certain
-conditions), which is consistent with other release interfaces,
-__release_region() and __release_resource().  Additional release
-conditions, such as an overlapping region to a resource entry,
-can be supported after they are confirmed as valid cases.
+This now returns a value but you forgot to return a value.  Thus this would not even build...   I fixed it up myself.
 
-There is no change to the existing interfaces since their restriction
-is valid for I/O resources.
-
-Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-Reviewed-by : Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
----
- include/linux/ioport.h |    4 ++
- kernel/resource.c      |  100 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 104 insertions(+)
-
-diff --git a/include/linux/ioport.h b/include/linux/ioport.h
-index 85ac9b9b..961d4dc 100644
---- a/include/linux/ioport.h
-+++ b/include/linux/ioport.h
-@@ -192,6 +192,10 @@ extern struct resource * __request_region(struct resource *,
- extern int __check_region(struct resource *, resource_size_t, resource_size_t);
- extern void __release_region(struct resource *, resource_size_t,
- 				resource_size_t);
-+#ifdef CONFIG_MEMORY_HOTPLUG
-+extern int release_mem_region_adjustable(struct resource *, resource_size_t,
-+				resource_size_t);
-+#endif
- 
- static inline int __deprecated check_region(resource_size_t s,
- 						resource_size_t n)
-diff --git a/kernel/resource.c b/kernel/resource.c
-index ae246f9..08791c8 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -1021,6 +1021,106 @@ void __release_region(struct resource *parent, resource_size_t start,
- }
- EXPORT_SYMBOL(__release_region);
- 
-+#ifdef CONFIG_MEMORY_HOTPLUG
-+/**
-+ * release_mem_region_adjustable - release a previously reserved memory region
-+ * @parent: parent resource descriptor
-+ * @start: resource start address
-+ * @size: resource region size
-+ *
-+ * This interface is intended for memory hot-delete.  The requested region
-+ * is released from a currently busy memory resource.  The requested region
-+ * must either match exactly or fit into a single busy resource entry.  In
-+ * the latter case, the remaining resource is adjusted accordingly.
-+ * Existing children of the busy memory resource must be immutable in the
-+ * request.
-+ *
-+ * Note:
-+ * - Additional release conditions, such as overlapping region, can be
-+ *   supported after they are confirmed as valid cases.
-+ * - When a busy memory resource gets split into two entries, the code
-+ *   assumes that all children remain in the lower address entry for
-+ *   simplicity.  Enhance this logic when necessary.
-+ */
-+int release_mem_region_adjustable(struct resource *parent,
-+			resource_size_t start, resource_size_t size)
-+{
-+	struct resource **p;
-+	struct resource *res, *new;
-+	resource_size_t end;
-+	int ret = -EINVAL;
-+
-+	end = start + size - 1;
-+	if ((start < parent->start) || (end > parent->end))
-+		return ret;
-+
-+	p = &parent->child;
-+	write_lock(&resource_lock);
-+
-+	while ((res = *p)) {
-+		if (res->start >= end)
-+			break;
-+
-+		/* look for the next resource if it does not fit into */
-+		if (res->start > start || res->end < end) {
-+			p = &res->sibling;
-+			continue;
-+		}
-+
-+		if (!(res->flags & IORESOURCE_MEM))
-+			break;
-+
-+		if (!(res->flags & IORESOURCE_BUSY)) {
-+			p = &res->child;
-+			continue;
-+		}
-+
-+		/* found the target resource; let's adjust accordingly */
-+		if (res->start == start && res->end == end) {
-+			/* free the whole entry */
-+			*p = res->sibling;
-+			kfree(res);
-+			ret = 0;
-+		} else if (res->start == start && res->end != end) {
-+			/* adjust the start */
-+			ret = __adjust_resource(res, end + 1,
-+						res->end - end);
-+		} else if (res->start != start && res->end == end) {
-+			/* adjust the end */
-+			ret = __adjust_resource(res, res->start,
-+						start - res->start);
-+		} else {
-+			/* split into two entries */
-+			new = kzalloc(sizeof(struct resource), GFP_KERNEL);
-+			if (!new) {
-+				ret = -ENOMEM;
-+				break;
-+			}
-+			new->name = res->name;
-+			new->start = end + 1;
-+			new->end = res->end;
-+			new->flags = res->flags;
-+			new->parent = res->parent;
-+			new->sibling = res->sibling;
-+			new->child = NULL;
-+
-+			ret = __adjust_resource(res, res->start,
-+						start - res->start);
-+			if (ret) {
-+				kfree(new);
-+				break;
-+			}
-+			res->sibling = new;
-+		}
-+
-+		break;
-+	}
-+
-+	write_unlock(&resource_lock);
-+	return ret;
-+}
-+#endif	/* CONFIG_MEMORY_HOTPLUG */
-+
- /*
-  * Managed region resource
-  */
+-Eric
