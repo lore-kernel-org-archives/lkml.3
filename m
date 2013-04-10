@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935932Ab3DJLvB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 07:51:01 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:50606 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932987Ab3DJLvA (ORCPT
+	id S965057Ab3DJLvk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 07:51:40 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10737 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932987Ab3DJLvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 07:51:00 -0400
-Date: Wed, 10 Apr 2013 13:50:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH 2/7] sched: Update rq clock on nohz CPU before setting
- fair group shares
-Message-ID: <20130410115056.GA30852@gmail.com>
-References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
- <1365266760-24725-3-git-send-email-fweisbec@gmail.com>
- <1365499591.30071.3.camel@laptop>
- <CAFTL4hxcQyv_J4ky8wL0rzVemWPpBcjuCV=FeHBvXn5Bht-3OA@mail.gmail.com>
- <1365577512.30071.11.camel@laptop>
- <20130410100620.GA28402@gmail.com>
- <1365591767.30071.45.camel@laptop>
- <20130410110650.GD28828@gmail.com>
- <1365594427.30071.61.camel@laptop>
+	Wed, 10 Apr 2013 07:51:37 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 10 Apr 2013 04:51:17 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>
+CC: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 2/2] ARM: tegra: pluto: populate key mapping
+Date: Wed, 10 Apr 2013 17:17:34 +0530
+Message-ID: <1365594454-20614-2-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1365594454-20614-1-git-send-email-ldewangan@nvidia.com>
+References: <1365594454-20614-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365594427.30071.61.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Keys on Pluto interfaced through Tegra KBC controller
+in key matrix topology.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+Add the key mapping for the keys
 
-> On Wed, 2013-04-10 at 13:06 +0200, Ingo Molnar wrote:
-> 
-> > There's just a handful of high level entry points, right? schedule(), wakeup, 
-> > scheduler tick, maybe notifiers - anything else? 
-> 
-> I suppose there's some cgroup muck and the various system calls; most
-> of them should be covered if we take some lower level primitives or so.
-> 
-> We could 'simply' hijack rq->lock and clear the state every time we
-> acquire or release it.. maybe have an exemption for the balance double
-> lock ops.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+The system is booted on Pluto with the fastboot.
 
-That would be feasible ...
+ arch/arm/boot/dts/tegra114-pluto.dts |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-Thanks,
+diff --git a/arch/arm/boot/dts/tegra114-pluto.dts b/arch/arm/boot/dts/tegra114-pluto.dts
+index 6bbc8ef..290c9ce 100644
+--- a/arch/arm/boot/dts/tegra114-pluto.dts
++++ b/arch/arm/boot/dts/tegra114-pluto.dts
+@@ -14,6 +14,23 @@
+ 		status = "okay";
+ 	};
+ 
++	kbc {
++		status = "okay";
++		nvidia,debounce-delay-ms = <640>;
++		nvidia,repeat-delay-ms = <1>;
++		nvidia,kbc-row-pins = <0 1 2>;
++		nvidia,kbc-col-pins = <11 12 13>;
++		linux,keymap = < 0x00000074	/* KEY_POWER */
++				 0x00010073	/* KEY_VOLUMEUP */
++				 0x00020072	/* KEY_VOLUMEDOWN */
++				 0x010000D9	/* KEY_SEARCH */
++				 0x010100D4	/* KEY_CAMERA */
++				 0x010200D2	/* KEY_CAMERA_FOCUS */
++				 0x02000066	/* KEY_HOME */
++				 0x0201009E	/* KEY_BACK */
++				 0x0202008B>;	/* KEY_MENU */
++	};
++
+ 	pmc {
+ 		nvidia,invert-interrupt;
+ 	};
+-- 
+1.7.1.1
 
-	Ingo
