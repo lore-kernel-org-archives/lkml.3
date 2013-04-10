@@ -1,177 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760111Ab3DJVPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 17:15:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:63368 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975Ab3DJVPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 17:15:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,450,1363158000"; 
-   d="scan'208";a="317390195"
-Date: Wed, 10 Apr 2013 23:15:13 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Tomas Winkler <tomas.winkler@intel.com>, arnd@arndb.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 1/3] mei: nfc: Initial nfc implementation
-Message-ID: <20130410211513.GJ4874@zurbaran>
-References: <1365464495-17642-1-git-send-email-tomas.winkler@intel.com>
- <1365464495-17642-2-git-send-email-tomas.winkler@intel.com>
- <20130410172551.GA1881@kroah.com>
- <20130410191945.GH4874@zurbaran>
- <20130410200312.GC5681@kroah.com>
+	id S932987Ab3DJVS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 17:18:27 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:60283 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759399Ab3DJVSZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 17:18:25 -0400
+Date: Wed, 10 Apr 2013 14:18:17 -0700
+From: Tejun Heo <tj@kernel.org>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org
+Cc: rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
+        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
+        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
+        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
+        jonas@southpole.se, rkuo@codeaurora.org, schwidefsky@de.ibm.com,
+        liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
+        vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
+        ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com
+Subject: [PATCH UPDATED v2 1/7] x86: don't show trace into stacktrace
+ machinery
+Message-ID: <20130410211817.GH17641@mtj.dyndns.org>
+References: <1365016497-32033-1-git-send-email-tj@kernel.org>
+ <1365016497-32033-2-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130410200312.GC5681@kroah.com>
+In-Reply-To: <1365016497-32033-2-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 01:03:12PM -0700, Greg KH wrote:
-> On Wed, Apr 10, 2013 at 09:19:45PM +0200, Samuel Ortiz wrote:
-> > On Wed, Apr 10, 2013 at 10:25:51AM -0700, Greg KH wrote:
-> > > On Tue, Apr 09, 2013 at 02:41:33AM +0300, Tomas Winkler wrote:
-> > > > From: Samuel Ortiz <sameo@linux.intel.com>
-> > > > 
-> > > > NFC ME device is exported through the MEI bus to be consumed by the
-> > > > NFC subsystem.
-> > > > 
-> > > > NFC is represented by two mei clients: An info one and the actual
-> > > > NFC one. In order to properly build the ME id we first need to retrieve
-> > > > the firmware information from the info client and then disconnect from it.
-> > > 
-> > > I still don't understand why you aren't tieing this into the existing
-> > > nfc kernel api.  What am I missing?
-> > We can't tie this into the existing NFC kernel API because mei/nfc.c is not an
-> > NFC driver, it's an ME specific shim layer that does not do anything NFC (as
-> > in NFC Forum specified) related.
-> 
-> Then why call it "NFC" if you don't want to confuse everyone :)
-I couldn't come up with a better name for code that handles the NFC quirks for
-the MEI driver...
+>From d2a454b1b1b93e8a8ecc3639f6641b100dbddfe5 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Wed, 10 Apr 2013 14:16:51 -0700
 
+When dumping stacktrace, frames of the stacktrace code itself aren't
+interesting.  Implement dump_trace_current_frame() helper which can be
+used by (eventual) users of dump_trace() to determine the stack and
+frame pointers of the current frame so that frames beyond that point
+are ignored by dump_trace().
+
+show_stack() and save_stack_trace[_tsk]() are updated to use the
+helper and now ignore frames beyond their own.  This brings
+show_stack(NULL, NULL)'s behavior in line with dump_stack().
+
+Also add dump_trace_warn_current_frame() which is used by dump_trace()
+implementations to whine about callers which dump %current but don't
+specify the frame to dump to catch mistakes.
+
+The original patch just updated show_stack().  Applying it to other
+users and addition of warning are suggested by Ingo.
+
+v2: Removed double negation in the warning message as suggested by
+    Borislav.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+---
+ arch/x86/include/asm/stacktrace.h | 35 +++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/dumpstack.c       | 11 ++++++++++-
+ arch/x86/kernel/dumpstack_32.c    |  2 ++
+ arch/x86/kernel/dumpstack_64.c    |  2 ++
+ arch/x86/kernel/stacktrace.c      | 12 ++++++++++--
+ 5 files changed, 59 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
+index 70bbe39..c610ab1 100644
+--- a/arch/x86/include/asm/stacktrace.h
++++ b/arch/x86/include/asm/stacktrace.h
+@@ -73,14 +73,49 @@ stack_frame(struct task_struct *task, struct pt_regs *regs)
+ 	/* bp is the last reg pushed by switch_to */
+ 	return *(unsigned long *)task->thread.sp;
+ }
++
++/* sanity check helper for dump_trace(), see dump_trace_current_frame() */
++static inline void
++dump_trace_warn_current_frame(struct task_struct *task, struct pt_regs *regs,
++			      unsigned long bp)
++{
++	if ((!task || task == current) && !regs && !bp)
++		printk(KERN_WARNING "dump_trace: %pf specified neither frame nor regs for %%current\n",
++		       __builtin_return_address(0));
++}
+ #else
+ static inline unsigned long
+ stack_frame(struct task_struct *task, struct pt_regs *regs)
+ {
+ 	return 0;
+ }
++
++static inline void
++dump_trace_warn_current_frame(struct task_struct *task, struct pt_regs *regs,
++			      unsigned long bp)
++{ }
+ #endif
  
-> > At that point in the code the only thing we know is that there is an NFC
-> > device behind the ME. As I said, it can be any NFC device, but it's not an
-> > Intel specific or ME specific NFC hardware, it's just a regular NFC one
-> > (pn544, microread, etc...) that is only accessible through the ME. The typical
-> > setup is where you access the NFC hardware through i2c, SPI or USB, but here
-> > it's "hidden" behind the ME.
-> 
-> Ok, but once you "unhide" it, it needs to talk through the in-kernel NFC
-> api, 
-I think there's still some misunderstanding here, so let's take an analogy:
-Imagine that we could have a 802.11 chipset behind the ME, and that it
-could be an Intel iwlwifi one, or an Atheros ath9k one, depending on the reply
-to a specific ME command that we send at init time. Would you then be
-suggesting that I'd have to implement the 802.11 drivers in mei/mei_wifi.c,
-while all the logic for those drivers are already implemented under
-drivers/net/wireless ? If I use the in-kernel NFC APIs, this is exactly what I
-would have to do.
-
-
-> not some other random interface.
-Which random interface ? This code adds a device on the MEI bus and the
-corresponding NFC driver (drivers/nfc) will be using the MEI bus API to send
-the NFC frames it gets from the in-kernel NFC stack.
-
-
-
-> > The patch below sends the needed commands to the ME in order to fetch some
-> > information (vendor ID, radio ID) and understand which exact chipset
-> > is physically hooked to the ME (0x0, 0x0 -> microread, 0x1, 0x1 -> pn544).
-> > Once that's done, we can add the right device on the ME bus (This is done on
-> > patch #2), the same way you would add an NFC device to the USB bus when your
-> > USB host controller tells you about the vendor and product IDs.
-> > So after patch #1 and #2, we have an NFC device on the ME and this could be
-> > e.g. a pn544. We do have a driver for pn544 under drivers/nfc/ which will hook
-> > into the NFC kernel APIs once probed (The pn544 is missing an mei.c file that
-> > will register itself as an mei_cl driver for "pn544", as described in
-> > Documentation/misc-devices/mei/mei-client-bus.txt). So the NFC kernel APIs are
-> > called from the actual NFC driver, because mei/nfc.c is not an NFC driver,
-> > it's a NFC specific ME layer that is needed to register the right device (as
-> > in the kernel device/driver model) on the MEI bus.
-> 
-> So when will you send the patch for the pn544 driver?
-I did for the microread one, check drivers/nfc/microread/mei.c. Actually, this
-could help clearing some of the confusion.
-
-
-> > > >  include/uapi/linux/mei/nfc.h  | 135 +++++++++++++++++++++++
-> > > 
-> > > Based on our previous off-list emails, you said that this .h file is
-> > > needed for the userspace api.  But the nfc userspace api is through the
-> > > nfc API, which doesn't use any of the structures defined here.  So who
-> > > exactly uses this file?
-> > You're right, an NFC application that would use the kernel NFC APIs (AF_NFC
-> > and the NFC generic netlink one) will not need this header.
-> > But the Android stack does not use any of the NFC kernel APIs, it implements
-> > the whole NFC stack in userspace and typically sends raw HCI frames to a dumb
-> > kernel driver (not upstreamed) through /dev/pn544 for example.
-> 
-> That's horrible, 
-You're preaching to the choir here. I did start the whole NFC kernel
-subsystem precisely because I found the whole Android NFC architecture
-horrible.
-
-> use the in-kernel apis, don't create your own, 
-I am _not_ using my own APIs, I maintain the NFC daemon (neard) that precisely
-uses those APIs.
-
-
-> and
-> Android should be using the correct apis as well.
-Yes, but that's not happening. The Android folks even moved away from the
-kernel Bluetooth APIs by switching to bluedroid.
-
-
-> If it isn't, we don't
-> have to support it here, in fact, I would strongly suggest that we not,
-> so as it gets properly changed.
-This was our initial intention when putting all those structures and commands
-under drivers/misc/mei/nfc.h but you were against it for technical reasons.
-Once I explained to you that:
-
-"Because the Android NFC stacks running on platforms where the NFC chip is
-sitting behind the ME will send data buffer containing those specific
-structures to /dev/mei directly. So those will cross the user/kernel
-boundary."
-
-You agreed that this should be placed under uapi. I'm fine moving it back to
-mei/nfc.h, but not under a GPL licensed mei/nfc.c.
-
-> In fact, why don't you change it?
-Why don't I change the Android NFC architecture ? Not being a Google employee
-would be a good reason I guess. And Google choosing to externalize all of
-their NFC development to an NFC manufacturer (That obviously has business
-reasons to lock Android OEMs into its own stack) would second that...
-
-FWIW, I did replace the initial drivers/nfc/pn544.c code that was pushed for
-supporting the Android stack with a proper driver that's entirely based on the
-kernel NFC APIs.
-
-> > That works fine with the typical case where your pn544 is directly accessible
-> > through i2c. But if it's sitting behind the ME, you will need to send
-> > commands exported through this file to fetch the vendor and radio IDs, but
-> > also to send those HCI frames that the vanilla Android stack builds after
-> > encapsulating them into a struct mei_nfc_cmd. And this is all done through the
-> > /dev/mei interface.
-> 
-> No NFC data should be going through /dev/mei, use the proper kernel apis
-> please.
-Not my choice, I'm sorry. And I'm not the one who's going to implement the
-adaptation layer for the Android stack to properly work over /dev/mei, other
-folks at Intel will.
-If an Android OEM decides he wants a pn544 NFC chipset behind an x86 ME, then
-NFC data will go through /dev/mei. I don't like it, but this is a business
-decision I have no control over.
-
-Cheers,
-Samuel.
-
++/**
++ * dump_trace_current_frame - stack and frame pointers for the current frame
++ * @sp: output argument for the stack pointer
++ * @bp: output argument for the frame pointer
++ *
++ * When dumping %current, dump_trace() wants its caller to specify the top
++ * frame so that it doesn't end up showing unncessary traces into stack
++ * dumping machinery.  This helper can be used to determine @sp and @bp to
++ * pass to dump_trace() when dumping %current.  This functions is
++ * __always_inline so that it records the frame of the caller.
++ */
++static __always_inline
++void dump_trace_current_frame(unsigned long **sp, unsigned long *bp)
++{
++	unsigned long stack;
++
++	*sp = &stack;
++	*bp = stack_frame(current, NULL);
++}
++
+ extern void
+ show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
+ 		   unsigned long *stack, unsigned long bp, char *log_lvl);
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index c8797d5..6e5e3ab 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -176,7 +176,16 @@ void show_trace(struct task_struct *task, struct pt_regs *regs,
+ 
+ void show_stack(struct task_struct *task, unsigned long *sp)
+ {
+-	show_stack_log_lvl(task, NULL, sp, 0, "");
++	unsigned long bp = 0;
++
++	/*
++	 * Stack frames below this one aren't interesting.  Don't show them
++	 * if we're printing for %current.
++	 */
++	if (!sp && (!task || task == current))
++		dump_trace_current_frame(&sp, &bp);
++
++	show_stack_log_lvl(task, NULL, sp, bp, "");
+ }
+ 
+ /*
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index 1038a41..8cc7c4a 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -23,6 +23,8 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+ {
+ 	int graph = 0;
+ 
++	dump_trace_warn_current_frame(task, regs, bp);
++
+ 	if (!task)
+ 		task = current;
+ 
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index b653675..349a8a9 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -123,6 +123,8 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+ 	int graph = 0;
+ 	unsigned long dummy;
+ 
++	dump_trace_warn_current_frame(task, regs, bp);
++
+ 	if (!task)
+ 		task = current;
+ 
+diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
+index fdd0c64..0908a50 100644
+--- a/arch/x86/kernel/stacktrace.c
++++ b/arch/x86/kernel/stacktrace.c
+@@ -60,7 +60,10 @@ static const struct stacktrace_ops save_stack_ops_nosched = {
+  */
+ void save_stack_trace(struct stack_trace *trace)
+ {
+-	dump_trace(current, NULL, NULL, 0, &save_stack_ops, trace);
++	unsigned long *sp, bp;
++
++	dump_trace_current_frame(&sp, &bp);
++	dump_trace(current, NULL, sp, bp, &save_stack_ops, trace);
+ 	if (trace->nr_entries < trace->max_entries)
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
+@@ -75,7 +78,12 @@ void save_stack_trace_regs(struct pt_regs *regs, struct stack_trace *trace)
+ 
+ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
+ {
+-	dump_trace(tsk, NULL, NULL, 0, &save_stack_ops_nosched, trace);
++	unsigned long *sp = NULL, bp = 0;
++
++	if (!tsk || tsk == current)
++		dump_trace_current_frame(&sp, &bp);
++
++	dump_trace(tsk, NULL, sp, bp, &save_stack_ops_nosched, trace);
+ 	if (trace->nr_entries < trace->max_entries)
+ 		trace->entries[trace->nr_entries++] = ULONG_MAX;
+ }
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.8.1.4
+
