@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936587Ab3DJNxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 09:53:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59484 "EHLO
+	id S936609Ab3DJNyq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 09:54:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59500 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935117Ab3DJNxc (ORCPT
+	with ESMTP id S1760323Ab3DJNyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:53:32 -0400
-Date: Wed, 10 Apr 2013 06:53:21 -0700
-From: tip-bot for Sasha Levin <tipbot@zytor.com>
-Message-ID: <tip-8184004ed7a0bc9538f5e825615c29fc52466bab@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
+	Wed, 10 Apr 2013 09:54:45 -0400
+Date: Wed, 10 Apr 2013 06:54:32 -0700
+From: tip-bot for Paul Bolle <tipbot@zytor.com>
+Message-ID: <tip-cd69aa6b383c6a6373bff2204190cadf451ebcc3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, pebolle@tiscali.nl, hpa@zytor.com,
         mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
+Reply-To: mingo@kernel.org, hpa@zytor.com, pebolle@tiscali.nl,
         linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1363795105-5884-1-git-send-email-sasha.levin@oracle.com>
-References: <1363795105-5884-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1363262077.1335.71.camel@x61.thuisdomein>
+References: <1363262077.1335.71.camel@x61.thuisdomein>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] locking/rtmutex/tester:
-  Set correct permissions on sysfs files
-Git-Commit-ID: 8184004ed7a0bc9538f5e825615c29fc52466bab
+Subject: [tip:x86/mm] x86/mm: Re-enable DEBUG_TLBFLUSH for X86_32
+Git-Commit-ID: cd69aa6b383c6a6373bff2204190cadf451ebcc3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,52 +27,46 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 10 Apr 2013 06:53:26 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 10 Apr 2013 06:54:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8184004ed7a0bc9538f5e825615c29fc52466bab
-Gitweb:     http://git.kernel.org/tip/8184004ed7a0bc9538f5e825615c29fc52466bab
-Author:     Sasha Levin <sasha.levin@oracle.com>
-AuthorDate: Wed, 20 Mar 2013 11:58:25 -0400
+Commit-ID:  cd69aa6b383c6a6373bff2204190cadf451ebcc3
+Gitweb:     http://git.kernel.org/tip/cd69aa6b383c6a6373bff2204190cadf451ebcc3
+Author:     Paul Bolle <pebolle@tiscali.nl>
+AuthorDate: Thu, 14 Mar 2013 12:54:37 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 10 Apr 2013 14:48:37 +0200
+CommitDate: Wed, 10 Apr 2013 14:53:12 +0200
 
-locking/rtmutex/tester: Set correct permissions on sysfs files
+x86/mm: Re-enable DEBUG_TLBFLUSH for X86_32
 
-sysfs started complaining about cases where permissions don't
-match what's in the sysfs ops structure (such as allowing read
-without a "show" callback).
+CONFIG_INVLPG got removed in commit
+094ab1db7cb7833cd4c820acd868fc26acf3f08e ("x86, 386 removal:
+Remove CONFIG_INVLPG").
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: williams@redhat.com
-Link: http://lkml.kernel.org/r/1363795105-5884-1-git-send-email-sasha.levin@oracle.com
+That commit left one instance of CONFIG_INVLPG untouched, effectively
+disabling DEBUG_TLBFLUSH for X86_32. Since all currently supported
+x86 CPUs should now be able to support that option, just drop the entire
+sub-dependency.
+
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Link: http://lkml.kernel.org/r/1363262077.1335.71.camel@x61.thuisdomein
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/rtmutex-tester.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/Kconfig.debug | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/rtmutex-tester.c b/kernel/rtmutex-tester.c
-index 7890b10..1d96dd0 100644
---- a/kernel/rtmutex-tester.c
-+++ b/kernel/rtmutex-tester.c
-@@ -14,6 +14,7 @@
- #include <linux/spinlock.h>
- #include <linux/timer.h>
- #include <linux/freezer.h>
-+#include <linux/stat.h>
+diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
+index b322f12..16f7383 100644
+--- a/arch/x86/Kconfig.debug
++++ b/arch/x86/Kconfig.debug
+@@ -131,7 +131,7 @@ config DOUBLEFAULT
  
- #include "rtmutex.h"
+ config DEBUG_TLBFLUSH
+ 	bool "Set upper limit of TLB entries to flush one-by-one"
+-	depends on DEBUG_KERNEL && (X86_64 || X86_INVLPG)
++	depends on DEBUG_KERNEL
+ 	---help---
  
-@@ -366,8 +367,8 @@ static ssize_t sysfs_test_status(struct device *dev, struct device_attribute *at
- 	return curr - buf;
- }
- 
--static DEVICE_ATTR(status, 0600, sysfs_test_status, NULL);
--static DEVICE_ATTR(command, 0600, NULL, sysfs_test_command);
-+static DEVICE_ATTR(status, S_IRUSR, sysfs_test_status, NULL);
-+static DEVICE_ATTR(command, S_IWUSR, NULL, sysfs_test_command);
- 
- static struct bus_type rttest_subsys = {
- 	.name = "rttest",
+ 	X86-only for now.
