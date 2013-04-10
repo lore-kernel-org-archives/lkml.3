@@ -1,50 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936108Ab3DJK07 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:26:59 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52760
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751985Ab3DJK06 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:26:58 -0400
-Message-ID: <1365589603.30071.37.camel@laptop>
-Subject: Re: [RFC GIT PULL] nohz: Full dynticks rq clock handling
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>
-Date: Wed, 10 Apr 2013 12:26:43 +0200
-In-Reply-To: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
-References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S936800Ab3DJK1m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:27:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897Ab3DJK1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 06:27:41 -0400
+Message-ID: <51653E81.4090102@redhat.com>
+Date: Wed, 10 Apr 2013 18:27:13 +0800
+From: Lingzhu Xiang <lxiang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Matthew Garrett <mjg59@srcf.ucam.org>,
+        Josh Boyer <jwboyer@redhat.com>, Michael Schroeder <mls@suse.com>,
+        "Lee, Chun-Yi" <jlee@suse.com>, Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH 097/102] efivars: explicitly calculate length of VariableName
+References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>  <1365414657-29191-98-git-send-email-luis.henriques@canonical.com> <1365547506.5814.36.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1365547506.5814.36.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/10/2013 06:45 AM, Ben Hutchings wrote:
+> On Mon, 2013-04-08 at 10:50 +0100, Luis Henriques wrote:
+>> 3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
+>>
+>> ------------------
+>>
+>> From: Matt Fleming <matt.fleming@intel.com>
+>>
+>> commit ec50bd32f1672d38ddce10fb1841cbfda89cfe9a upstream.
+>>
+>> It's not wise to assume VariableNameSize represents the length of
+>> VariableName, as not all firmware updates VariableNameSize in the same
+>> way (some don't update it at all if EFI_SUCCESS is returned). There
+>> are even implementations out there that update VariableNameSize with
+>> values that are both larger than the string returned in VariableName
+>> and smaller than the buffer passed to GetNextVariableName(), which
+>> resulted in the following bug report from Michael Schroeder,
+>>
+>>    > On HP z220 system (firmware version 1.54), some EFI variables are
+>>    > incorrectly named :
+>>    >
+>>    > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
+>>    > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+>>    > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+>>    > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
+>>    > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
+>>
+>> The issue here is that because we blindly use VariableNameSize without
+>> verifying its value, we can potentially read garbage values from the
+>> buffer containing VariableName if VariableNameSize is larger than the
+>> length of VariableName.
+>>
+>> Since VariableName is a string, we can calculate its size by searching
+>> for the terminating NULL character.
+>>
+>> Reported-by: Frederic Crozat <fcrozat@suse.com>
+>> Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+>> Cc: Josh Boyer <jwboyer@redhat.com>
+>> Cc: Michael Schroeder <mls@suse.com>
+>> Cc: Lee, Chun-Yi <jlee@suse.com>
+>> Cc: Lingzhu Xiang <lxiang@redhat.com>
+>> Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+>> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+>> [ Backported for 3.4-stable. Removed workqueue code added in a93bc0c 3.9-rc1. ]
+> [...]
+>
+> I thought the workqueue addition was a worthwhile fix in its own right,
+> so for 3.2.y I cherry-picked that as well.
 
-Another thing I just noticed; our update_curr() assumes its called at
-least once every 4 odd seconds (2^32 ns like).
+FWIW, the workqueue patch is 1/2 of this patchset[1] fixing closely 
+related problems. The other one is 81fa4e58.
 
-update_curr() is 'required' for things like task runtime stats and
-everything that hangs off of that like cputimers etc.
+[1]: http://article.gmane.org/gmane.linux.kernel/1439570
 
-Now I'm not entirely sure how the nr_running==1 nohz case deals with
-this, but I can imagine it might take a while. In this case we might
-need to 'fix' update_curr() to not asume the time delta fits in 32
-bits.
+I tried to avoid pulling too much for stable because the patchset is 
+quite large and I suspect the problem it fixes is only theoretical. I 
+reported the original bug but was unable to break anything except 
+getting call traces with various CONFIG_DEBUG_*.
 
+What's your opinion, Seiji?
+
+
+Lingzhu Xiang
