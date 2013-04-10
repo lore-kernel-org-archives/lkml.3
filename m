@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964830Ab3DJNku (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 09:40:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31958 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752576Ab3DJNkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:40:49 -0400
-Date: Wed, 10 Apr 2013 09:40:39 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
-        kexec@lists.infradead.org, wim@iguana.be,
-        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
-Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130410134039.GV79013@redhat.com>
-References: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
- <516259D2.7000805@redhat.com>
- <20130408124858.GC79013@redhat.com>
- <20130408151509.GA20919@roeck-us.net>
- <20130409144431.GL79013@redhat.com>
- <20130409145228.GA1111@roeck-us.net>
- <20130409151423.GM79013@redhat.com>
- <20130409160757.GA27050@roeck-us.net>
+	id S936040Ab3DJNlj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 09:41:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59325 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759688Ab3DJNli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 09:41:38 -0400
+Date: Wed, 10 Apr 2013 06:41:22 -0700
+From: tip-bot for Li Zefan <tipbot@zytor.com>
+Message-ID: <tip-543bc0e76e6bb84300eaf9833edc5a481f788678@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, lizefan@huawei.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, lizefan@huawei.com
+In-Reply-To: <515536A9.5000700@huawei.com>
+References: <515536A9.5000700@huawei.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched/cpuacct:
+  Remove redundant NULL checks in cpuacct_charge()
+Git-Commit-ID: 543bc0e76e6bb84300eaf9833edc5a481f788678
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130409160757.GA27050@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 10 Apr 2013 06:41:28 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 09:07:58AM -0700, Guenter Roeck wrote:
-> > > Just look for the use of mod_timer in the watchdog directory.
-> > 
-> > So looking at the mod_timer logic in various drivers, it seems regardless
-> > if the /dev/watchdog device is opened or not, if it is running, it will
-> > automagically kick the watchdog.
-> > 
-> yes
-> 
-> > This seems that we can avoid pulling in userspace pieces for this.  Just
-> > load the driver and the hardware starts getting kicked.
-> > 
-> Only if it is already running. Also, you don't want to rely on it, because you
-> lose protection against user space issues.
+Commit-ID:  543bc0e76e6bb84300eaf9833edc5a481f788678
+Gitweb:     http://git.kernel.org/tip/543bc0e76e6bb84300eaf9833edc5a481f788678
+Author:     Li Zefan <lizefan@huawei.com>
+AuthorDate: Fri, 29 Mar 2013 14:37:29 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 10 Apr 2013 13:54:18 +0200
 
-IOW if something goes wrong with a runaway userspace app, the kernel
-blindly continues to kick the watchdog, which masks the problem, right?
+sched/cpuacct: Remove redundant NULL checks in cpuacct_charge()
 
-> 
-> A second use is if the hw watchdog needs to be pinged more often than user
-> space can provide. Some of the HW watchdogs need a ping in one-second intervals
-> or even faster.
-> 
-> > Is that true?  And if so, do all drivers detect if the hardware is already
-> > running during their init?  Or is it based on the first device open?
-> > 
-> It is usually done in the probe function.
+This is a micro optimization for the hot path.
 
-Ok.  Thanks for the understanding of how the softdog stuff works.
+- We don't need to check if @ca is NULL in parent_ca().
+- We don't need to check if @ca is NULL in the beginning of the for loop.
 
-However, we still have the problem that if the machine panics and we want
-to jump into the kdump kernel, we need to 'kick' the watchdog one more
-time.  This provides us a sane sync point for determining how long we have
-to load the watchdog driver in the second kernel before the hardware
-reboots us.  Otherwise the reboots are pretty random and nothing is
-guaranteed.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/515536A9.5000700@huawei.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/cpuacct.c | 6 +++++-
+ kernel/sched/cpuacct.h | 2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-Hence the need for some sort of patch resembling the one I posted.
-
-Soooooooo, any thoughts about that patch and what changes I should make?
-:-)
-
-Cheers,
-Don
+diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
+index 72bd971..b2aaaba 100644
+--- a/kernel/sched/cpuacct.c
++++ b/kernel/sched/cpuacct.c
+@@ -210,9 +210,13 @@ void cpuacct_charge(struct task_struct *tsk, u64 cputime)
+ 
+ 	ca = task_ca(tsk);
+ 
+-	for (; ca; ca = parent_ca(ca)) {
++	while (true) {
+ 		u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
+ 		*cpuusage += cputime;
++
++		ca = parent_ca(ca);
++		if (!ca)
++			break;
+ 	}
+ 
+ 	rcu_read_unlock();
+diff --git a/kernel/sched/cpuacct.h b/kernel/sched/cpuacct.h
+index bd0409b..45c1682 100644
+--- a/kernel/sched/cpuacct.h
++++ b/kernel/sched/cpuacct.h
+@@ -36,7 +36,7 @@ static inline struct cpuacct *task_ca(struct task_struct *tsk)
+ 
+ static inline struct cpuacct *parent_ca(struct cpuacct *ca)
+ {
+-	if (!ca || !ca->css.cgroup->parent)
++	if (!ca->css.cgroup->parent)
+ 		return NULL;
+ 	return cgroup_ca(ca->css.cgroup->parent);
+ }
