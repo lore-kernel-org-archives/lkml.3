@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937390Ab3DJWrq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:47:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56239 "EHLO
+	id S965086Ab3DJXEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:04:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56287 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937338Ab3DJWri (ORCPT
+	with ESMTP id S937383Ab3DJWrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:38 -0400
+	Wed, 10 Apr 2013 18:47:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [ 51/64] Revert "PCI/ACPI: Request _OSC control before scanning PCI root bus"
-Date: Wed, 10 Apr 2013 15:46:48 -0700
-Message-Id: <20130410224345.244195942@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 61/64] NFSv4: Doh! Typo in the fix to nfs41_walk_client_list
+Date: Wed, 10 Apr 2013 15:46:58 -0700
+Message-Id: <20130410224347.825093150@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -28,200 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjorn Helgaas <bhelgaas@google.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit b8178f130e25c1bdac1c33e0996f1ff6e20ec08e upstream.
+commit eb04e0ac198cec3bab407ad220438dfa65c19c67 upstream.
 
-This reverts commit 8c33f51df406e1a1f7fa4e9b244845b7ebd61fa6.
+Make sure that we set the status to 0 on success. Missed in testing
+because it never appears when doing multiple mounts to _different_
+servers.
 
-Conflicts:
-	drivers/acpi/pci_root.c
-
-This commit broke some pre-1.1 PCIe devices by leaving them with
-ASPM enabled.  Previously, we had disabled ASPM on these devices
-because many of them don't implement it correctly (per 149e1637).
-
-Requesting _OSC control early means that aspm_disabled may be set
-before we scan the PCI bus and configure link ASPM state.  But the
-ASPM configuration currently skips the check for pre-PCIe 1.1 devices
-when aspm_disabled is set, like this:
-
-    acpi_pci_root_add
-      acpi_pci_osc_support
-        if (flags != base_flags)
-          pcie_no_aspm
-            aspm_disabled = 1
-      pci_acpi_scan_root
-        ...
-          pcie_aspm_init_link_state
-            pcie_aspm_sanity_check
-              if (!aspm_disabled)
-                /* check for pre-PCIe 1.1 device */
-
-Therefore, setting aspm_disabled early means that we leave ASPM enabled
-on these pre-PCIe 1.1 devices, which is a regression for some devices.
-
-The best fix would be to clean up the ASPM init so we can evaluate
-_OSC before scanning the bug (that way boot-time and hot-add discovery
-will work the same), but that requires significant rework.
-
-For now, we'll just revert the _OSC change as the lowest-risk fix.
-
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=55211
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Acked-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/acpi/pci_root.c |  121 +++++++++++++++++++++++-------------------------
- 1 file changed, 59 insertions(+), 62 deletions(-)
+ fs/nfs/nfs4client.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -454,7 +454,6 @@ static int acpi_pci_root_add(struct acpi
- 	acpi_handle handle;
- 	struct acpi_device *child;
- 	u32 flags, base_flags;
--	bool is_osc_granted = false;
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -482,6 +482,7 @@ int nfs41_walk_client_list(struct nfs_cl
  
- 	root = kzalloc(sizeof(struct acpi_pci_root), GFP_KERNEL);
- 	if (!root)
-@@ -525,60 +524,6 @@ static int acpi_pci_root_add(struct acpi
- 	flags = base_flags = OSC_PCI_SEGMENT_GROUPS_SUPPORT;
- 	acpi_pci_osc_support(root, flags);
- 
--	/* Indicate support for various _OSC capabilities. */
--	if (pci_ext_cfg_avail())
--		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
--	if (pcie_aspm_support_enabled()) {
--		flags |= OSC_ACTIVE_STATE_PWR_SUPPORT |
--		OSC_CLOCK_PWR_CAPABILITY_SUPPORT;
--	}
--	if (pci_msi_enabled())
--		flags |= OSC_MSI_SUPPORT;
--	if (flags != base_flags) {
--		status = acpi_pci_osc_support(root, flags);
--		if (ACPI_FAILURE(status)) {
--			dev_info(&device->dev, "ACPI _OSC support "
--				"notification failed, disabling PCIe ASPM\n");
--			pcie_no_aspm();
--			flags = base_flags;
--		}
--	}
--	if (!pcie_ports_disabled
--	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
--		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
--			| OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
--			| OSC_PCI_EXPRESS_PME_CONTROL;
--
--		if (pci_aer_available()) {
--			if (aer_acpi_firmware_first())
--				dev_dbg(&device->dev,
--					"PCIe errors handled by BIOS.\n");
--			else
--				flags |= OSC_PCI_EXPRESS_AER_CONTROL;
--		}
--
--		dev_info(&device->dev,
--			"Requesting ACPI _OSC control (0x%02x)\n", flags);
--
--		status = acpi_pci_osc_control_set(device->handle, &flags,
--				       OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
--		if (ACPI_SUCCESS(status)) {
--			is_osc_granted = true;
--			dev_info(&device->dev,
--				"ACPI _OSC control (0x%02x) granted\n", flags);
--		} else {
--			is_osc_granted = false;
--			dev_info(&device->dev,
--				"ACPI _OSC request failed (%s), "
--				"returned control mask: 0x%02x\n",
--				acpi_format_exception(status), flags);
--		}
--	} else {
--		dev_info(&device->dev,
--			"Unable to request _OSC control "
--			"(_OSC support mask: 0x%02x)\n", flags);
--	}
--
- 	/*
- 	 * TBD: Need PCI interface for enumeration/configuration of roots.
- 	 */
-@@ -618,14 +563,66 @@ static int acpi_pci_root_add(struct acpi
- 	list_for_each_entry(child, &device->children, node)
- 		acpi_pci_bridge_scan(child);
- 
--	/* ASPM setting */
--	if (is_osc_granted) {
--		if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM)
--			pcie_clear_aspm(root->bus);
-+	/* Indicate support for various _OSC capabilities. */
-+	if (pci_ext_cfg_avail())
-+		flags |= OSC_EXT_PCI_CONFIG_SUPPORT;
-+	if (pcie_aspm_support_enabled())
-+		flags |= OSC_ACTIVE_STATE_PWR_SUPPORT |
-+			OSC_CLOCK_PWR_CAPABILITY_SUPPORT;
-+	if (pci_msi_enabled())
-+		flags |= OSC_MSI_SUPPORT;
-+	if (flags != base_flags) {
-+		status = acpi_pci_osc_support(root, flags);
-+		if (ACPI_FAILURE(status)) {
-+			dev_info(root->bus->bridge, "ACPI _OSC support "
-+				"notification failed, disabling PCIe ASPM\n");
-+			pcie_no_aspm();
-+			flags = base_flags;
-+		}
-+	}
-+
-+	if (!pcie_ports_disabled
-+	    && (flags & ACPI_PCIE_REQ_SUPPORT) == ACPI_PCIE_REQ_SUPPORT) {
-+		flags = OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL
-+			| OSC_PCI_EXPRESS_NATIVE_HP_CONTROL
-+			| OSC_PCI_EXPRESS_PME_CONTROL;
-+
-+		if (pci_aer_available()) {
-+			if (aer_acpi_firmware_first())
-+				dev_dbg(root->bus->bridge,
-+					"PCIe errors handled by BIOS.\n");
-+			else
-+				flags |= OSC_PCI_EXPRESS_AER_CONTROL;
-+		}
-+
-+		dev_info(root->bus->bridge,
-+			"Requesting ACPI _OSC control (0x%02x)\n", flags);
-+
-+		status = acpi_pci_osc_control_set(device->handle, &flags,
-+					OSC_PCI_EXPRESS_CAP_STRUCTURE_CONTROL);
-+		if (ACPI_SUCCESS(status)) {
-+			dev_info(root->bus->bridge,
-+				"ACPI _OSC control (0x%02x) granted\n", flags);
-+			if (acpi_gbl_FADT.boot_flags & ACPI_FADT_NO_ASPM) {
-+				/*
-+				 * We have ASPM control, but the FADT indicates
-+				 * that it's unsupported. Clear it.
-+				 */
-+				pcie_clear_aspm(root->bus);
-+			}
-+		} else {
-+			dev_info(root->bus->bridge,
-+				"ACPI _OSC request failed (%s), "
-+				"returned control mask: 0x%02x\n",
-+				acpi_format_exception(status), flags);
-+			pr_info("ACPI _OSC control for PCIe not granted, "
-+				"disabling ASPM\n");
-+			pcie_no_aspm();
-+		}
- 	} else {
--		pr_info("ACPI _OSC control for PCIe not granted, "
--			"disabling ASPM\n");
--		pcie_no_aspm();
-+		dev_info(root->bus->bridge,
-+			 "Unable to request _OSC control "
-+			 "(_OSC support mask: 0x%02x)\n", flags);
- 	}
- 
- 	pci_acpi_add_bus_pm_notifier(device, root->bus);
+ 		atomic_inc(&pos->cl_count);
+ 		*result = pos;
++		status = 0;
+ 		dprintk("NFS: <-- %s using nfs_client = %p ({%d})\n",
+ 			__func__, pos, atomic_read(&pos->cl_count));
+ 		break;
 
 
