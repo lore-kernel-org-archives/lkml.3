@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965208Ab3DJW4B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:56:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56645 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937570Ab3DJWus (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S937571Ab3DJWus (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 10 Apr 2013 18:50:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56632 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937428Ab3DJWuq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 18:50:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Todd Poynor <toddpoynor@google.com>, "Theodore Tso" <tytso@mit.edu>,
-        Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>,
-        Lukas Czerner <lczerner@redhat.com>
-Subject: [ 06/19] ext4: fixup 64-bit divides in 3.0-stable backport of upstream fix
-Date: Wed, 10 Apr 2013 15:50:29 -0700
-Message-Id: <20130410225027.476235073@linuxfoundation.org>
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Mark Jackson <mpfj-list@mimc.co.uk>
+Subject: [ 02/19] UBIFS: make space fixup work in the remount case
+Date: Wed, 10 Apr 2013 15:50:25 -0700
+Message-Id: <20130410225027.073747912@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
 References: <20130410225026.833809117@linuxfoundation.org>
@@ -28,51 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Todd Poynor <toddpoynor@google.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-Replace C division operators with div64_u64 for divides introduced in:
-commit 503f4bdcc078e7abee273a85ce322de81b18a224
-ext4: use atomic64_t for the per-flexbg free_clusters count
+commit 67e753ca41782913d805ff4a8a2b0f60b26b7915 upstream.
 
-Specific to the 3.0-stable backport of the upstream patch.
+The UBIFS space fixup is a useful feature which allows to fixup the "broken"
+flash space at the time of the first mount. The "broken" space is usually the
+result of using a "dumb" industrial flasher which is not able to skip empty
+NAND pages and just writes all 0xFFs to the empty space, which has grave
+side-effects for UBIFS when UBIFS trise to write useful data to those empty
+pages.
 
-Signed-off-by: Todd Poynor <toddpoynor@google.com>
-Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
-Cc: Lukas Czerner <lczerner@redhat.com>
+The fix-up feature works roughly like this:
+1. mkfs.ubifs sets the fixup flag in UBIFS superblock when creating the image
+   (see -F option)
+2. when the file-system is mounted for the first time, UBIFS notices the fixup
+   flag and re-writes the entire media atomically, which may take really a lot
+   of time.
+3. UBIFS clears the fixup flag in the superblock.
+
+This works fine when the file system is mounted R/W for the very first time.
+But it did not really work in the case when we first mount the file-system R/O,
+and then re-mount R/W. The reason was that we started the fixup procedure too
+late, which we cannot really do because we have to fixup the space before it
+starts being used.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reported-by: Mark Jackson <mpfj-list@mimc.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/ialloc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ fs/ubifs/super.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -22,6 +22,7 @@
- #include <linux/random.h>
- #include <linux/bitops.h>
- #include <linux/blkdev.h>
-+#include <linux/math64.h>
- #include <asm/byteorder.h>
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -1583,6 +1583,12 @@ static int ubifs_remount_rw(struct ubifs
+ 	c->remounting_rw = 1;
+ 	c->ro_mount = 0;
  
- #include "ext4.h"
-@@ -356,7 +357,7 @@ static int find_group_flex(struct super_
++	if (c->space_fixup) {
++		err = ubifs_fixup_free_space(c);
++		if (err)
++			return err;
++	}
++
+ 	err = check_free_space(c);
+ 	if (err)
+ 		goto out;
+@@ -1699,12 +1705,6 @@ static int ubifs_remount_rw(struct ubifs
+ 		err = dbg_check_space_info(c);
+ 	}
  
- find_close_to_parent:
- 	flexbg_free_blocks = atomic64_read(&flex_group[best_flex].free_blocks);
--	flex_freeb_ratio = flexbg_free_blocks * 100 / blocks_per_flex;
-+	flex_freeb_ratio = div64_u64(flexbg_free_blocks * 100, blocks_per_flex);
- 	if (atomic_read(&flex_group[best_flex].free_inodes) &&
- 	    flex_freeb_ratio > free_block_ratio)
- 		goto found_flexbg;
-@@ -371,7 +372,7 @@ find_close_to_parent:
- 			continue;
+-	if (c->space_fixup) {
+-		err = ubifs_fixup_free_space(c);
+-		if (err)
+-			goto out;
+-	}
+-
+ 	mutex_unlock(&c->umount_mutex);
+ 	return err;
  
- 		flexbg_free_blocks = atomic64_read(&flex_group[i].free_blocks);
--		flex_freeb_ratio = flexbg_free_blocks * 100 / blocks_per_flex;
-+		flex_freeb_ratio = div64_u64(flexbg_free_blocks * 100, blocks_per_flex);
- 
- 		if (flex_freeb_ratio > free_block_ratio &&
- 		    (atomic_read(&flex_group[i].free_inodes))) {
 
 
