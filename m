@@ -1,139 +1,526 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936078Ab3DJNd5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 09:33:57 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:50148 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752659Ab3DJNdy (ORCPT
+	id S935906Ab3DJNg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 09:36:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59258 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab3DJNg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:33:54 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org
-Cc: james.hogan@imgtec.com, trivial@kernel.org,
-        Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial]documentation:devicetree: Fix various typo in devicetree 
-Date: Wed, 10 Apr 2013 22:33:46 +0900
-Message-Id: <1365600826-19773-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.2.451.gbfd70c5
+	Wed, 10 Apr 2013 09:36:58 -0400
+Date: Wed, 10 Apr 2013 06:36:33 -0700
+From: tip-bot for Li Zefan <tipbot@zytor.com>
+Message-ID: <tip-2e76c24d72372db35f226a49c2b99d0fd8cfd400@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, lizefan@huawei.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, tglx@linutronix.de, lizefan@huawei.com
+In-Reply-To: <5155366F.5060404@huawei.com>
+References: <5155366F.5060404@huawei.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Split cpuacct code out of core.c
+Git-Commit-ID: 2e76c24d72372db35f226a49c2b99d0fd8cfd400
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 10 Apr 2013 06:36:39 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix spelling typos in Documentation/devicetree/bindings.
+Commit-ID:  2e76c24d72372db35f226a49c2b99d0fd8cfd400
+Gitweb:     http://git.kernel.org/tip/2e76c24d72372db35f226a49c2b99d0fd8cfd400
+Author:     Li Zefan <lizefan@huawei.com>
+AuthorDate: Fri, 29 Mar 2013 14:36:31 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 10 Apr 2013 13:54:15 +0200
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+sched: Split cpuacct code out of core.c
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/5155366F.5060404@huawei.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- Documentation/devicetree/bindings/i2c/i2c-s3c2410.txt             | 2 +-
- Documentation/devicetree/bindings/leds/tca6507.txt                | 2 +-
- Documentation/devicetree/bindings/metag/meta-intc.txt             | 2 +-
- Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt  | 2 +-
- Documentation/devicetree/bindings/pinctrl/brcm,bcm2835-gpio.txt   | 2 +-
- Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt  | 2 +-
- Documentation/devicetree/bindings/regulator/max8997-regulator.txt | 2 +-
- Documentation/devicetree/bindings/usb/samsung-usbphy.txt          | 2 +-
- 8 files changed, 8 insertions(+), 8 deletions(-)
+ kernel/sched/Makefile  |   1 +
+ kernel/sched/core.c    | 220 -----------------------------------------------
+ kernel/sched/cpuacct.c | 227 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 228 insertions(+), 220 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-s3c2410.txt b/Documentation/devicetree/bindings/i2c/i2c-s3c2410.txt
-index f98d4c5..296eb45 100644
---- a/Documentation/devicetree/bindings/i2c/i2c-s3c2410.txt
-+++ b/Documentation/devicetree/bindings/i2c/i2c-s3c2410.txt
-@@ -26,7 +26,7 @@ Required for all cases except "samsung,s3c2440-hdmiphy-i2c":
-     - pinctrl-names: Should contain only one value - "default".
+diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
+index f06d249..deaf90e 100644
+--- a/kernel/sched/Makefile
++++ b/kernel/sched/Makefile
+@@ -16,3 +16,4 @@ obj-$(CONFIG_SMP) += cpupri.o
+ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
+ obj-$(CONFIG_SCHEDSTATS) += stats.o
+ obj-$(CONFIG_SCHED_DEBUG) += debug.o
++obj-$(CONFIG_CGROUP_CPUACCT) += cpuacct.o
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index f5e1aa5..c28222f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -8043,226 +8043,6 @@ struct cgroup_subsys cpu_cgroup_subsys = {
  
- Optional properties:
--  - samsung,i2c-slave-addr: Slave address in multi-master enviroment. If not
-+  - samsung,i2c-slave-addr: Slave address in multi-master environment. If not
-     specified, default value is 0.
-   - samsung,i2c-max-bus-freq: Desired frequency in Hz of the bus. If not
-     specified, the default value in Hz is 100000.
-diff --git a/Documentation/devicetree/bindings/leds/tca6507.txt b/Documentation/devicetree/bindings/leds/tca6507.txt
-index 2b6693b..80ff3df 100644
---- a/Documentation/devicetree/bindings/leds/tca6507.txt
-+++ b/Documentation/devicetree/bindings/leds/tca6507.txt
-@@ -1,4 +1,4 @@
--LEDs conected to tca6507
-+LEDs connected to tca6507
+ #endif	/* CONFIG_CGROUP_SCHED */
  
- Required properties:
- - compatible : should be : "ti,tca6507".
-diff --git a/Documentation/devicetree/bindings/metag/meta-intc.txt b/Documentation/devicetree/bindings/metag/meta-intc.txt
-index 8c47dcb..80994ad 100644
---- a/Documentation/devicetree/bindings/metag/meta-intc.txt
-+++ b/Documentation/devicetree/bindings/metag/meta-intc.txt
-@@ -12,7 +12,7 @@ Required properties:
-       handle 32 interrupt sources).
- 
-     - interrupt-controller: The presence of this property identifies the node
--      as an interupt controller. No property value shall be defined.
-+      as an interrupt controller. No property value shall be defined.
- 
-     - #interrupt-cells: Specifies the number of cells needed to encode an
-       interrupt source. The type shall be a <u32> and the value shall be 2.
-diff --git a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
-index bc50899..648d60e 100644
---- a/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/atmel,at91-pinctrl.txt
-@@ -1,6 +1,6 @@
- * Atmel AT91 Pinmux Controller
- 
--The AT91 Pinmux Controler, enables the IC
-+The AT91 Pinmux Controller, enables the IC
- to share one PAD to several functional blocks. The sharing is done by
- multiplexing the PAD input/output signals. For each PAD there are up to
- 8 muxing options (called periph modes). Since different modules require
-diff --git a/Documentation/devicetree/bindings/pinctrl/brcm,bcm2835-gpio.txt b/Documentation/devicetree/bindings/pinctrl/brcm,bcm2835-gpio.txt
-index 8edc20e..2569866 100644
---- a/Documentation/devicetree/bindings/pinctrl/brcm,bcm2835-gpio.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/brcm,bcm2835-gpio.txt
-@@ -5,7 +5,7 @@ controller, and pinmux/control device.
- 
- Required properties:
- - compatible: "brcm,bcm2835-gpio"
--- reg: Should contain the physical address of the GPIO module's registes.
-+- reg: Should contain the physical address of the GPIO module's registers.
- - gpio-controller: Marks the device node as a GPIO controller.
- - #gpio-cells : Should be two. The first cell is the pin number and the
-   second cell is used to specify optional parameters:
-diff --git a/Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt b/Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt
-index 9a599d2..0347d83 100644
---- a/Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt
-+++ b/Documentation/devicetree/bindings/power_supply/qnap-poweroff.txt
-@@ -2,7 +2,7 @@
- 
- QNAP NAS devices have a microcontroller controlling the main power
- supply. This microcontroller is connected to UART1 of the Kirkwood and
--Orion5x SoCs. Sending the charactor 'A', at 19200 baud, tells the
-+Orion5x SoCs. Sending the character 'A', at 19200 baud, tells the
- microcontroller to turn the power off. This driver adds a handler to
- pm_power_off which is called to turn the power off.
- 
-diff --git a/Documentation/devicetree/bindings/regulator/max8997-regulator.txt b/Documentation/devicetree/bindings/regulator/max8997-regulator.txt
-index 9fd69a1..9e5e51d 100644
---- a/Documentation/devicetree/bindings/regulator/max8997-regulator.txt
-+++ b/Documentation/devicetree/bindings/regulator/max8997-regulator.txt
-@@ -28,7 +28,7 @@ Required properties:
-     safe operating voltage).
- 
-     If either of the 'max8997,pmic-buck[1/2/5]-uses-gpio-dvs' optional
--    property is specified, then all the eigth voltage values for the
-+    property is specified, then all the eight voltage values for the
-     'max8997,pmic-buck[1/2/5]-dvs-voltage' should be specified.
- 
- Optional properties:
-diff --git a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
-index 0331949..adddcf4 100644
---- a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
-+++ b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
-@@ -4,7 +4,7 @@ The Samsung's phy transceiver is used for controlling usb phy for
- s3c-hsotg as well as ehci-s5p and ohci-exynos usb controllers
- across Samsung SOCs.
- TODO: Adding the PHY binding with controller(s) according to the under
--developement generic PHY driver.
-+development generic PHY driver.
- 
- Required properties:
- 
--- 
-1.8.2.451.gbfd70c5
-
+-#ifdef CONFIG_CGROUP_CPUACCT
+-
+-/*
+- * CPU accounting code for task groups.
+- *
+- * Based on the work by Paul Menage (menage@google.com) and Balbir Singh
+- * (balbir@in.ibm.com).
+- */
+-
+-struct cpuacct root_cpuacct;
+-
+-/* create a new cpu accounting group */
+-static struct cgroup_subsys_state *cpuacct_css_alloc(struct cgroup *cgrp)
+-{
+-	struct cpuacct *ca;
+-
+-	if (!cgrp->parent)
+-		return &root_cpuacct.css;
+-
+-	ca = kzalloc(sizeof(*ca), GFP_KERNEL);
+-	if (!ca)
+-		goto out;
+-
+-	ca->cpuusage = alloc_percpu(u64);
+-	if (!ca->cpuusage)
+-		goto out_free_ca;
+-
+-	ca->cpustat = alloc_percpu(struct kernel_cpustat);
+-	if (!ca->cpustat)
+-		goto out_free_cpuusage;
+-
+-	return &ca->css;
+-
+-out_free_cpuusage:
+-	free_percpu(ca->cpuusage);
+-out_free_ca:
+-	kfree(ca);
+-out:
+-	return ERR_PTR(-ENOMEM);
+-}
+-
+-/* destroy an existing cpu accounting group */
+-static void cpuacct_css_free(struct cgroup *cgrp)
+-{
+-	struct cpuacct *ca = cgroup_ca(cgrp);
+-
+-	free_percpu(ca->cpustat);
+-	free_percpu(ca->cpuusage);
+-	kfree(ca);
+-}
+-
+-static u64 cpuacct_cpuusage_read(struct cpuacct *ca, int cpu)
+-{
+-	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
+-	u64 data;
+-
+-#ifndef CONFIG_64BIT
+-	/*
+-	 * Take rq->lock to make 64-bit read safe on 32-bit platforms.
+-	 */
+-	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
+-	data = *cpuusage;
+-	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
+-#else
+-	data = *cpuusage;
+-#endif
+-
+-	return data;
+-}
+-
+-static void cpuacct_cpuusage_write(struct cpuacct *ca, int cpu, u64 val)
+-{
+-	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
+-
+-#ifndef CONFIG_64BIT
+-	/*
+-	 * Take rq->lock to make 64-bit write safe on 32-bit platforms.
+-	 */
+-	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
+-	*cpuusage = val;
+-	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
+-#else
+-	*cpuusage = val;
+-#endif
+-}
+-
+-/* return total cpu usage (in nanoseconds) of a group */
+-static u64 cpuusage_read(struct cgroup *cgrp, struct cftype *cft)
+-{
+-	struct cpuacct *ca = cgroup_ca(cgrp);
+-	u64 totalcpuusage = 0;
+-	int i;
+-
+-	for_each_present_cpu(i)
+-		totalcpuusage += cpuacct_cpuusage_read(ca, i);
+-
+-	return totalcpuusage;
+-}
+-
+-static int cpuusage_write(struct cgroup *cgrp, struct cftype *cftype,
+-								u64 reset)
+-{
+-	struct cpuacct *ca = cgroup_ca(cgrp);
+-	int err = 0;
+-	int i;
+-
+-	if (reset) {
+-		err = -EINVAL;
+-		goto out;
+-	}
+-
+-	for_each_present_cpu(i)
+-		cpuacct_cpuusage_write(ca, i, 0);
+-
+-out:
+-	return err;
+-}
+-
+-static int cpuacct_percpu_seq_read(struct cgroup *cgroup, struct cftype *cft,
+-				   struct seq_file *m)
+-{
+-	struct cpuacct *ca = cgroup_ca(cgroup);
+-	u64 percpu;
+-	int i;
+-
+-	for_each_present_cpu(i) {
+-		percpu = cpuacct_cpuusage_read(ca, i);
+-		seq_printf(m, "%llu ", (unsigned long long) percpu);
+-	}
+-	seq_printf(m, "\n");
+-	return 0;
+-}
+-
+-static const char *cpuacct_stat_desc[] = {
+-	[CPUACCT_STAT_USER] = "user",
+-	[CPUACCT_STAT_SYSTEM] = "system",
+-};
+-
+-static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
+-			      struct cgroup_map_cb *cb)
+-{
+-	struct cpuacct *ca = cgroup_ca(cgrp);
+-	int cpu;
+-	s64 val = 0;
+-
+-	for_each_online_cpu(cpu) {
+-		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
+-		val += kcpustat->cpustat[CPUTIME_USER];
+-		val += kcpustat->cpustat[CPUTIME_NICE];
+-	}
+-	val = cputime64_to_clock_t(val);
+-	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_USER], val);
+-
+-	val = 0;
+-	for_each_online_cpu(cpu) {
+-		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
+-		val += kcpustat->cpustat[CPUTIME_SYSTEM];
+-		val += kcpustat->cpustat[CPUTIME_IRQ];
+-		val += kcpustat->cpustat[CPUTIME_SOFTIRQ];
+-	}
+-
+-	val = cputime64_to_clock_t(val);
+-	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_SYSTEM], val);
+-
+-	return 0;
+-}
+-
+-static struct cftype files[] = {
+-	{
+-		.name = "usage",
+-		.read_u64 = cpuusage_read,
+-		.write_u64 = cpuusage_write,
+-	},
+-	{
+-		.name = "usage_percpu",
+-		.read_seq_string = cpuacct_percpu_seq_read,
+-	},
+-	{
+-		.name = "stat",
+-		.read_map = cpuacct_stats_show,
+-	},
+-	{ }	/* terminate */
+-};
+-
+-/*
+- * charge this task's execution time to its accounting group.
+- *
+- * called with rq->lock held.
+- */
+-void cpuacct_charge(struct task_struct *tsk, u64 cputime)
+-{
+-	struct cpuacct *ca;
+-	int cpu;
+-
+-	if (unlikely(!cpuacct_subsys.active))
+-		return;
+-
+-	cpu = task_cpu(tsk);
+-
+-	rcu_read_lock();
+-
+-	ca = task_ca(tsk);
+-
+-	for (; ca; ca = parent_ca(ca)) {
+-		u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
+-		*cpuusage += cputime;
+-	}
+-
+-	rcu_read_unlock();
+-}
+-
+-struct cgroup_subsys cpuacct_subsys = {
+-	.name = "cpuacct",
+-	.css_alloc = cpuacct_css_alloc,
+-	.css_free = cpuacct_css_free,
+-	.subsys_id = cpuacct_subsys_id,
+-	.base_cftypes = files,
+-};
+-#endif	/* CONFIG_CGROUP_CPUACCT */
+-
+ void dump_cpu_task(int cpu)
+ {
+ 	pr_info("Task dump for CPU %d:\n", cpu);
+diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
+new file mode 100644
+index 0000000..50ec24b
+--- /dev/null
++++ b/kernel/sched/cpuacct.c
+@@ -0,0 +1,227 @@
++#include <linux/cgroup.h>
++#include <linux/slab.h>
++#include <linux/percpu.h>
++#include <linux/spinlock.h>
++#include <linux/cpumask.h>
++#include <linux/seq_file.h>
++#include <linux/rcupdate.h>
++#include <linux/kernel_stat.h>
++
++#include "sched.h"
++
++/*
++ * CPU accounting code for task groups.
++ *
++ * Based on the work by Paul Menage (menage@google.com) and Balbir Singh
++ * (balbir@in.ibm.com).
++ */
++
++struct cpuacct root_cpuacct;
++
++/* create a new cpu accounting group */
++static struct cgroup_subsys_state *cpuacct_css_alloc(struct cgroup *cgrp)
++{
++	struct cpuacct *ca;
++
++	if (!cgrp->parent)
++		return &root_cpuacct.css;
++
++	ca = kzalloc(sizeof(*ca), GFP_KERNEL);
++	if (!ca)
++		goto out;
++
++	ca->cpuusage = alloc_percpu(u64);
++	if (!ca->cpuusage)
++		goto out_free_ca;
++
++	ca->cpustat = alloc_percpu(struct kernel_cpustat);
++	if (!ca->cpustat)
++		goto out_free_cpuusage;
++
++	return &ca->css;
++
++out_free_cpuusage:
++	free_percpu(ca->cpuusage);
++out_free_ca:
++	kfree(ca);
++out:
++	return ERR_PTR(-ENOMEM);
++}
++
++/* destroy an existing cpu accounting group */
++static void cpuacct_css_free(struct cgroup *cgrp)
++{
++	struct cpuacct *ca = cgroup_ca(cgrp);
++
++	free_percpu(ca->cpustat);
++	free_percpu(ca->cpuusage);
++	kfree(ca);
++}
++
++static u64 cpuacct_cpuusage_read(struct cpuacct *ca, int cpu)
++{
++	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
++	u64 data;
++
++#ifndef CONFIG_64BIT
++	/*
++	 * Take rq->lock to make 64-bit read safe on 32-bit platforms.
++	 */
++	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
++	data = *cpuusage;
++	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
++#else
++	data = *cpuusage;
++#endif
++
++	return data;
++}
++
++static void cpuacct_cpuusage_write(struct cpuacct *ca, int cpu, u64 val)
++{
++	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
++
++#ifndef CONFIG_64BIT
++	/*
++	 * Take rq->lock to make 64-bit write safe on 32-bit platforms.
++	 */
++	raw_spin_lock_irq(&cpu_rq(cpu)->lock);
++	*cpuusage = val;
++	raw_spin_unlock_irq(&cpu_rq(cpu)->lock);
++#else
++	*cpuusage = val;
++#endif
++}
++
++/* return total cpu usage (in nanoseconds) of a group */
++static u64 cpuusage_read(struct cgroup *cgrp, struct cftype *cft)
++{
++	struct cpuacct *ca = cgroup_ca(cgrp);
++	u64 totalcpuusage = 0;
++	int i;
++
++	for_each_present_cpu(i)
++		totalcpuusage += cpuacct_cpuusage_read(ca, i);
++
++	return totalcpuusage;
++}
++
++static int cpuusage_write(struct cgroup *cgrp, struct cftype *cftype,
++								u64 reset)
++{
++	struct cpuacct *ca = cgroup_ca(cgrp);
++	int err = 0;
++	int i;
++
++	if (reset) {
++		err = -EINVAL;
++		goto out;
++	}
++
++	for_each_present_cpu(i)
++		cpuacct_cpuusage_write(ca, i, 0);
++
++out:
++	return err;
++}
++
++static int cpuacct_percpu_seq_read(struct cgroup *cgroup, struct cftype *cft,
++				   struct seq_file *m)
++{
++	struct cpuacct *ca = cgroup_ca(cgroup);
++	u64 percpu;
++	int i;
++
++	for_each_present_cpu(i) {
++		percpu = cpuacct_cpuusage_read(ca, i);
++		seq_printf(m, "%llu ", (unsigned long long) percpu);
++	}
++	seq_printf(m, "\n");
++	return 0;
++}
++
++static const char * const cpuacct_stat_desc[] = {
++	[CPUACCT_STAT_USER] = "user",
++	[CPUACCT_STAT_SYSTEM] = "system",
++};
++
++static int cpuacct_stats_show(struct cgroup *cgrp, struct cftype *cft,
++			      struct cgroup_map_cb *cb)
++{
++	struct cpuacct *ca = cgroup_ca(cgrp);
++	int cpu;
++	s64 val = 0;
++
++	for_each_online_cpu(cpu) {
++		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
++		val += kcpustat->cpustat[CPUTIME_USER];
++		val += kcpustat->cpustat[CPUTIME_NICE];
++	}
++	val = cputime64_to_clock_t(val);
++	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_USER], val);
++
++	val = 0;
++	for_each_online_cpu(cpu) {
++		struct kernel_cpustat *kcpustat = per_cpu_ptr(ca->cpustat, cpu);
++		val += kcpustat->cpustat[CPUTIME_SYSTEM];
++		val += kcpustat->cpustat[CPUTIME_IRQ];
++		val += kcpustat->cpustat[CPUTIME_SOFTIRQ];
++	}
++
++	val = cputime64_to_clock_t(val);
++	cb->fill(cb, cpuacct_stat_desc[CPUACCT_STAT_SYSTEM], val);
++
++	return 0;
++}
++
++static struct cftype files[] = {
++	{
++		.name = "usage",
++		.read_u64 = cpuusage_read,
++		.write_u64 = cpuusage_write,
++	},
++	{
++		.name = "usage_percpu",
++		.read_seq_string = cpuacct_percpu_seq_read,
++	},
++	{
++		.name = "stat",
++		.read_map = cpuacct_stats_show,
++	},
++	{ }	/* terminate */
++};
++
++/*
++ * charge this task's execution time to its accounting group.
++ *
++ * called with rq->lock held.
++ */
++void cpuacct_charge(struct task_struct *tsk, u64 cputime)
++{
++	struct cpuacct *ca;
++	int cpu;
++
++	if (unlikely(!cpuacct_subsys.active))
++		return;
++
++	cpu = task_cpu(tsk);
++
++	rcu_read_lock();
++
++	ca = task_ca(tsk);
++
++	for (; ca; ca = parent_ca(ca)) {
++		u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
++		*cpuusage += cputime;
++	}
++
++	rcu_read_unlock();
++}
++
++struct cgroup_subsys cpuacct_subsys = {
++	.name = "cpuacct",
++	.css_alloc = cpuacct_css_alloc,
++	.css_free = cpuacct_css_free,
++	.subsys_id = cpuacct_subsys_id,
++	.base_cftypes = files,
++};
