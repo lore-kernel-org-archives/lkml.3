@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965167Ab3DJXCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:02:40 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:40147 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S937392Ab3DJXCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 19:02:39 -0400
-Date: Wed, 10 Apr 2013 18:02:35 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
-Message-ID: <20130410230234.GB8112@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20130403193743.GB29151@sgi.com>
- <20130408155701.GB19974@gmail.com>
- <5162EC1A.4050204@zytor.com>
- <20130408165916.GA3672@sgi.com>
- <20130410111620.GB29752@gmail.com>
- <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
- <20130410152911.GA3011@sgi.com>
- <20130410165934.GB21951@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130410165934.GB21951@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S965096Ab3DJWtw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:49:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56491 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965050Ab3DJWtv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 18:49:51 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Girish K S <ks.giri@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 03/29] spi/s3c64xx: modified error interrupt handling and init
+Date: Wed, 10 Apr 2013 15:49:21 -0700
+Message-Id: <20130410224804.429394648@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
+References: <20130410224804.061806042@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 06:59:34PM +0200, Ingo Molnar wrote:
-> * Russ Anderson <rja@sgi.com> wrote:
-> 
-> > Yes, I have a test patch that replaces for_each_online_cpu(cpu) with a cpu 
-> > bitmask in disable_nonboot_cpus().  The lower level routines already take a 
-> > bitmask.  It allows __stop_machine() to be called just once.  That change 
-> > reduces shutdown time on a 1024 cpu machine from 16 minutes 4 minutes.  
-> > Significant improvement, but not good enough.
-> > 
-> > The next significant bottleneck is __cpu_notify().  Tried creating worker 
-> > threads to parallelize the shutdown, but the problem is __cpu_notify() is not 
-> > thread safe.  Putting a lock around it caused all the worker threads to fight 
-> > over the lock.
-> 
-> 4 minutes bootup is 240 seconds, with 1024 CPUs that's about 240 msecs per CPU.
-> 
-> That sounds a lot, given that unlike bootup there's not much real work to be done 
-> during shutdown - we don't initialize anything, etc.
-> 
-> Maybe much of those 240 msecs are spent in some stupid udelay loop or so, which 
-> could be made parallel?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I was hoping for a stupid udelay when I first started looking
-at this code, but found nothing obvious.
+------------------
 
-The bulk of the time (after making the cpu bitmask change) is
-spent in __cpu_notify(), as explained above.
+From: Girish K S <girishks2000@gmail.com>
+
+commit 375981f2e14868be16cafbffd34a4f16a6ee01c6 upstream.
+
+The status of the interrupt is available in the status register,
+so reading the clear pending register and writing back the same
+value will not actually clear the pending interrupts. This patch
+modifies the interrupt handler to read the status register and
+clear the corresponding pending bit in the clear pending register.
+
+Modified the hwInit function to clear all the pending interrupts.
+
+Signed-off-by: Girish K S <ks.giri@samsung.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/spi/spi-s3c64xx.c |   41 +++++++++++++++++++++++++----------------
+ 1 file changed, 25 insertions(+), 16 deletions(-)
+
+--- a/drivers/spi/spi-s3c64xx.c
++++ b/drivers/spi/spi-s3c64xx.c
+@@ -889,25 +889,30 @@ static irqreturn_t s3c64xx_spi_irq(int i
+ {
+ 	struct s3c64xx_spi_driver_data *sdd = data;
+ 	struct spi_master *spi = sdd->master;
+-	unsigned int val;
+-
+-	val = readl(sdd->regs + S3C64XX_SPI_PENDING_CLR);
+-
+-	val &= S3C64XX_SPI_PND_RX_OVERRUN_CLR |
+-		S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
+-		S3C64XX_SPI_PND_TX_OVERRUN_CLR |
+-		S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
++	unsigned int val, clr = 0;
+ 
+-	writel(val, sdd->regs + S3C64XX_SPI_PENDING_CLR);
++	val = readl(sdd->regs + S3C64XX_SPI_STATUS);
+ 
+-	if (val & S3C64XX_SPI_PND_RX_OVERRUN_CLR)
++	if (val & S3C64XX_SPI_ST_RX_OVERRUN_ERR) {
++		clr = S3C64XX_SPI_PND_RX_OVERRUN_CLR;
+ 		dev_err(&spi->dev, "RX overrun\n");
+-	if (val & S3C64XX_SPI_PND_RX_UNDERRUN_CLR)
++	}
++	if (val & S3C64XX_SPI_ST_RX_UNDERRUN_ERR) {
++		clr |= S3C64XX_SPI_PND_RX_UNDERRUN_CLR;
+ 		dev_err(&spi->dev, "RX underrun\n");
+-	if (val & S3C64XX_SPI_PND_TX_OVERRUN_CLR)
++	}
++	if (val & S3C64XX_SPI_ST_TX_OVERRUN_ERR) {
++		clr |= S3C64XX_SPI_PND_TX_OVERRUN_CLR;
+ 		dev_err(&spi->dev, "TX overrun\n");
+-	if (val & S3C64XX_SPI_PND_TX_UNDERRUN_CLR)
++	}
++	if (val & S3C64XX_SPI_ST_TX_UNDERRUN_ERR) {
++		clr |= S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
+ 		dev_err(&spi->dev, "TX underrun\n");
++	}
++
++	/* Clear the pending irq by setting and then clearing it */
++	writel(clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
++	writel(0, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -931,9 +936,13 @@ static void s3c64xx_spi_hwinit(struct s3
+ 	writel(0, regs + S3C64XX_SPI_MODE_CFG);
+ 	writel(0, regs + S3C64XX_SPI_PACKET_CNT);
+ 
+-	/* Clear any irq pending bits */
+-	writel(readl(regs + S3C64XX_SPI_PENDING_CLR),
+-				regs + S3C64XX_SPI_PENDING_CLR);
++	/* Clear any irq pending bits, should set and clear the bits */
++	val = S3C64XX_SPI_PND_RX_OVERRUN_CLR |
++		S3C64XX_SPI_PND_RX_UNDERRUN_CLR |
++		S3C64XX_SPI_PND_TX_OVERRUN_CLR |
++		S3C64XX_SPI_PND_TX_UNDERRUN_CLR;
++	writel(val, regs + S3C64XX_SPI_PENDING_CLR);
++	writel(0, regs + S3C64XX_SPI_PENDING_CLR);
+ 
+ 	writel(0, regs + S3C64XX_SPI_SWAP_CFG);
+ 
 
 
-> Would it be possible to create a 'reboot but stop at the end and reactivate all 
-> CPUs again' reboot flag, so that it can all be NMI-profiled, to see where the true 
-> bottleneck is? A naked disable_nonboot_cpus() call in essence.
-
-My testing was similar.  I hacked a kernel module to call
-disable_nonboot_cpus() and enable_nonboot_cpus() and used
-printks to narrow down the slow functions.  That points
-at the cpu notifier call chain.  It's not clear if any
-of the functions on the call chain take a long time, or
-just going sequentially through the list for all cpus just
-takes a long time.
-
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
