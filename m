@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936675Ab3DJA1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 20:27:49 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60189 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762821Ab3DJA0V (ORCPT
+	id S935970Ab3DJA0S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 20:26:18 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57757 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762821Ab3DJA0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 20:26:21 -0400
+	Tue, 9 Apr 2013 20:26:14 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
@@ -16,337 +16,110 @@ Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Bob Liu <bob.liu@oracle.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 05/10] staging: ramster: Move debugfs code out of ramster.c file
-Date: Wed, 10 Apr 2013 08:25:55 +0800
-Message-Id: <1365553560-32258-6-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH 02/10] staging: zcache: remove zcache_freeze
+Date: Wed, 10 Apr 2013 08:25:52 +0800
+Message-Id: <1365553560-32258-3-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1365553560-32258-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1365553560-32258-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041000-3568-0000-0000-00000366F941
+x-cbid: 13041000-7014-0000-0000-000002D44C41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note that at this point there is no CONFIG_RAMSTER_DEBUG
-option in the Kconfig. So in effect all of the counters
-are nop until that option gets re-introduced in:
-zcache/ramster/debug: Add RAMSTE_DEBUG Kconfig entry
+The default value of zcache_freeze is false and it won't be modified by
+other codes. Remove zcache_freeze since no routine can disable zcache
+during system running.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/Makefile          |    1 +
- drivers/staging/zcache/ramster/debug.c   |   70 ++++++++++++++++++
- drivers/staging/zcache/ramster/debug.h   |   76 ++++++++++++++++++++
- drivers/staging/zcache/ramster/ramster.c |  115 ++----------------------------
- 4 files changed, 152 insertions(+), 110 deletions(-)
- create mode 100644 drivers/staging/zcache/ramster/debug.c
- create mode 100644 drivers/staging/zcache/ramster/debug.h
+ drivers/staging/zcache/zcache-main.c |   55 +++++++++++-----------------------
+ 1 file changed, 18 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/staging/zcache/Makefile b/drivers/staging/zcache/Makefile
-index 24fd6aa..7d48b1b 100644
---- a/drivers/staging/zcache/Makefile
-+++ b/drivers/staging/zcache/Makefile
-@@ -3,5 +3,6 @@ zcache-$(CONFIG_ZCACHE_DEBUG) += debug.o
- zcache-$(CONFIG_RAMSTER)	+=	ramster/ramster.o ramster/r2net.o
- zcache-$(CONFIG_RAMSTER)	+=	ramster/nodemanager.o ramster/tcp.o
- zcache-$(CONFIG_RAMSTER)	+=	ramster/heartbeat.o ramster/masklog.o
-+zcache-$(CONFIG_RAMSTER_DEBUG) += ramster/debug.o
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index e23d814..fe6801a 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1118,15 +1118,6 @@ free_and_out:
+ #endif /* CONFIG_ZCACHE_WRITEBACK */
  
- obj-$(CONFIG_ZCACHE)	+=	zcache.o
-diff --git a/drivers/staging/zcache/ramster/debug.c b/drivers/staging/zcache/ramster/debug.c
-new file mode 100644
-index 0000000..76861e4
---- /dev/null
-+++ b/drivers/staging/zcache/ramster/debug.c
-@@ -0,0 +1,70 @@
-+#include <linux/atomic.h>
-+#include "debug.h"
-+
-+#ifdef CONFIG_DEBUG_FS
-+#include <linux/debugfs.h>
-+#define zdfs    debugfs_create_size_t
-+#define zdfs64  debugfs_create_u64
-+
-+ssize_t ramster_eph_pages_remoted;
-+ssize_t ramster_pers_pages_remoted;
-+ssize_t ramster_eph_pages_remote_failed;
-+ssize_t ramster_pers_pages_remote_failed;
-+ssize_t ramster_remote_eph_pages_succ_get;
-+ssize_t ramster_remote_pers_pages_succ_get;
-+ssize_t ramster_remote_eph_pages_unsucc_get;
-+ssize_t ramster_remote_pers_pages_unsucc_get;
-+ssize_t ramster_pers_pages_remote_nomem;
-+ssize_t ramster_remote_objects_flushed;
-+ssize_t ramster_remote_object_flushes_failed;
-+ssize_t ramster_remote_pages_flushed;
-+ssize_t ramster_remote_page_flushes_failed;
-+
-+int __init ramster_debugfs_init(void)
-+{
-+	struct dentry *root = debugfs_create_dir("ramster", NULL);
-+	if (root == NULL)
-+		return -ENXIO;
-+
-+	zdfs("eph_pages_remoted", S_IRUGO, root, &ramster_eph_pages_remoted);
-+	zdfs("pers_pages_remoted", S_IRUGO, root, &ramster_pers_pages_remoted);
-+	zdfs("eph_pages_remote_failed", S_IRUGO, root,
-+		&ramster_eph_pages_remote_failed);
-+	zdfs("pers_pages_remote_failed", S_IRUGO, root,
-+		&ramster_pers_pages_remote_failed);
-+	zdfs("remote_eph_pages_succ_get", S_IRUGO, root,
-+		&ramster_remote_eph_pages_succ_get);
-+	zdfs("remote_pers_pages_succ_get", S_IRUGO, root,
-+		&ramster_remote_pers_pages_succ_get);
-+	zdfs("remote_eph_pages_unsucc_get", S_IRUGO, root,
-+		&ramster_remote_eph_pages_unsucc_get);
-+	zdfs("remote_pers_pages_unsucc_get", S_IRUGO, root,
-+		&ramster_remote_pers_pages_unsucc_get);
-+	zdfs("pers_pages_remote_nomem", S_IRUGO, root,
-+		&ramster_pers_pages_remote_nomem);
-+	zdfs("remote_objects_flushed", S_IRUGO, root,
-+		&ramster_remote_objects_flushed);
-+	zdfs("remote_pages_flushed", S_IRUGO, root,
-+		&ramster_remote_pages_flushed);
-+	zdfs("remote_object_flushes_failed", S_IRUGO, root,
-+		&ramster_remote_object_flushes_failed);
-+	zdfs("remote_page_flushes_failed", S_IRUGO, root,
-+		&ramster_remote_page_flushes_failed);
-+	zdfs("foreign_eph_pages", S_IRUGO, root,
-+		&ramster_foreign_eph_pages);
-+	zdfs("foreign_eph_pages_max", S_IRUGO, root,
-+		&ramster_foreign_eph_pages_max);
-+	zdfs("foreign_pers_pages", S_IRUGO, root,
-+		&ramster_foreign_pers_pages);
-+	zdfs("foreign_pers_pages_max", S_IRUGO, root,
-+		&ramster_foreign_pers_pages_max);
-+	return 0;
-+}
-+#undef  zdebugfs
-+#undef  zdfs64
-+#else
-+static inline int ramster_debugfs_init(void)
-+{
-+	return 0;
-+}
-+#endif
-diff --git a/drivers/staging/zcache/ramster/debug.h b/drivers/staging/zcache/ramster/debug.h
-new file mode 100644
-index 0000000..feba601
---- /dev/null
-+++ b/drivers/staging/zcache/ramster/debug.h
-@@ -0,0 +1,76 @@
-+#ifdef CONFIG_RAMSTER_DEBUG
-+
-+extern long ramster_flnodes;
-+static atomic_t ramster_flnodes_atomic = ATOMIC_INIT(0);
-+extern unsigned long ramster_flnodes_max;
-+static inline void inc_ramster_flnodes(void)
-+{
-+	ramster_flnodes = atomic_inc_return(&ramster_flnodes_atomic);
-+	if (ramster_flnodes > ramster_flnodes_max)
-+		ramster_flnodes_max = ramster_flnodes;
-+}
-+static inline void dec_ramster_flnodes(void)
-+{
-+	ramster_flnodes = atomic_dec_return(&ramster_flnodes_atomic);
-+}
-+extern ssize_t ramster_foreign_eph_pages;
-+static atomic_t ramster_foreign_eph_pages_atomic = ATOMIC_INIT(0);
-+extern ssize_t ramster_foreign_eph_pages_max;
-+static inline void inc_ramster_foreign_eph_pages(void)
-+{
-+	ramster_foreign_eph_pages = atomic_inc_return(
-+		&ramster_foreign_eph_pages_atomic);
-+	if (ramster_foreign_eph_pages > ramster_foreign_eph_pages_max)
-+		ramster_foreign_eph_pages_max = ramster_foreign_eph_pages;
-+}
-+static inline void dec_ramster_foreign_eph_pages(void)
-+{
-+	ramster_foreign_eph_pages = atomic_dec_return(
-+		&ramster_foreign_eph_pages_atomic);
-+}
-+extern ssize_t ramster_foreign_pers_pages;
-+static atomic_t ramster_foreign_pers_pages_atomic = ATOMIC_INIT(0);
-+extern ssize_t ramster_foreign_pers_pages_max;
-+static inline void inc_ramster_foreign_pers_pages(void)
-+{
-+	ramster_foreign_pers_pages = atomic_inc_return(
-+		&ramster_foreign_pers_pages_atomic);
-+	if (ramster_foreign_pers_pages > ramster_foreign_pers_pages_max)
-+		ramster_foreign_pers_pages_max = ramster_foreign_pers_pages;
-+}
-+static inline void dec_ramster_foreign_pers_pages(void)
-+{
-+	ramster_foreign_pers_pages = atomic_dec_return(
-+		&ramster_foreign_pers_pages_atomic);
-+}
-+
-+extern ssize_t ramster_eph_pages_remoted;
-+extern ssize_t ramster_pers_pages_remoted;
-+extern ssize_t ramster_eph_pages_remote_failed;
-+extern ssize_t ramster_pers_pages_remote_failed;
-+extern ssize_t ramster_remote_eph_pages_succ_get;
-+extern ssize_t ramster_remote_pers_pages_succ_get;
-+extern ssize_t ramster_remote_eph_pages_unsucc_get;
-+extern ssize_t ramster_remote_pers_pages_unsucc_get;
-+extern ssize_t ramster_pers_pages_remote_nomem;
-+extern ssize_t ramster_remote_objects_flushed;
-+extern ssize_t ramster_remote_object_flushes_failed;
-+extern ssize_t ramster_remote_pages_flushed;
-+extern ssize_t ramster_remote_page_flushes_failed;
-+
-+int ramster_debugfs_init(void);
-+
-+#else
-+
-+static inline void inc_ramster_flnodes(void) { };
-+static inline void dec_ramster_flnodes(void) { };
-+static inline void inc_ramster_foreign_eph_pages(void) { };
-+static inline void dec_ramster_foreign_eph_pages(void) { };
-+static inline void inc_ramster_foreign_pers_pages(void) { };
-+static inline void dec_ramster_foreign_pers_pages(void) { };
-+
-+static inline int ramster_debugfs_init(void)
-+{
-+	return 0;
-+}
-+#endif
-diff --git a/drivers/staging/zcache/ramster/ramster.c b/drivers/staging/zcache/ramster/ramster.c
-index c3d7f96..20ca3e8 100644
---- a/drivers/staging/zcache/ramster/ramster.c
-+++ b/drivers/staging/zcache/ramster/ramster.c
-@@ -42,6 +42,7 @@
- #include "ramster.h"
- #include "ramster_nodemanager.h"
- #include "tcp.h"
-+#include "debug.h"
- 
- #define RAMSTER_TESTING
- 
-@@ -63,118 +64,12 @@ static atomic_t ramster_remote_pers_pages = ATOMIC_INIT(0);
- static bool ramster_nodes_manual_up[MANUAL_NODES] __read_mostly;
- static int ramster_remote_target_nodenum __read_mostly = -1;
- 
--/* these counters are made available via debugfs */
--static long ramster_flnodes;
--static atomic_t ramster_flnodes_atomic = ATOMIC_INIT(0);
--static unsigned long ramster_flnodes_max;
--static inline void inc_ramster_flnodes(void)
--{
--	ramster_flnodes = atomic_inc_return(&ramster_flnodes_atomic);
--	if (ramster_flnodes > ramster_flnodes_max)
--		ramster_flnodes_max = ramster_flnodes;
--}
--static inline void dec_ramster_flnodes(void)
--{
--	ramster_flnodes = atomic_dec_return(&ramster_flnodes_atomic);
--}
--static ssize_t ramster_foreign_eph_pages;
--static atomic_t ramster_foreign_eph_pages_atomic = ATOMIC_INIT(0);
--static ssize_t ramster_foreign_eph_pages_max;
--static inline void inc_ramster_foreign_eph_pages(void)
--{
--	ramster_foreign_eph_pages = atomic_inc_return(
--			&ramster_foreign_eph_pages_atomic);
--	if (ramster_foreign_eph_pages > ramster_foreign_eph_pages_max)
--		ramster_foreign_eph_pages_max = ramster_foreign_eph_pages;
--}
--static inline void dec_ramster_foreign_eph_pages(void)
--{
--	ramster_foreign_eph_pages = atomic_dec_return(
--			&ramster_foreign_eph_pages_atomic);
--}
--static ssize_t ramster_foreign_pers_pages;
--static atomic_t ramster_foreign_pers_pages_atomic = ATOMIC_INIT(0);
--static ssize_t ramster_foreign_pers_pages_max;
--static inline void inc_ramster_foreign_pers_pages(void)
--{
--	ramster_foreign_pers_pages = atomic_inc_return(
--		&ramster_foreign_pers_pages_atomic);
--	if (ramster_foreign_pers_pages > ramster_foreign_pers_pages_max)
--		ramster_foreign_pers_pages_max = ramster_foreign_pers_pages;
--}
--static inline void dec_ramster_foreign_pers_pages(void)
--{
--	ramster_foreign_pers_pages = atomic_dec_return(
--		&ramster_foreign_pers_pages_atomic);
--}
--static ssize_t ramster_eph_pages_remoted;
--static ssize_t ramster_pers_pages_remoted;
--static ssize_t ramster_eph_pages_remote_failed;
--static ssize_t ramster_pers_pages_remote_failed;
--static ssize_t ramster_remote_eph_pages_succ_get;
--static ssize_t ramster_remote_pers_pages_succ_get;
--static ssize_t ramster_remote_eph_pages_unsucc_get;
--static ssize_t ramster_remote_pers_pages_unsucc_get;
--static ssize_t ramster_pers_pages_remote_nomem;
--static ssize_t ramster_remote_objects_flushed;
--static ssize_t ramster_remote_object_flushes_failed;
--static ssize_t ramster_remote_pages_flushed;
--static ssize_t ramster_remote_page_flushes_failed;
-+/* Used by this code. */
-+long ramster_flnodes;
-+ssize_t ramster_foreign_eph_pages;
-+ssize_t ramster_foreign_pers_pages;
- /* FIXME frontswap selfshrinking knobs in debugfs? */
- 
--#ifdef CONFIG_DEBUG_FS
--#include <linux/debugfs.h>
--#define	zdfs	debugfs_create_size_t
--#define	zdfs64	debugfs_create_u64
--static int __init ramster_debugfs_init(void)
--{
--	struct dentry *root = debugfs_create_dir("ramster", NULL);
--	if (root == NULL)
--		return -ENXIO;
+ /*
+- * When zcache is disabled ("frozen"), pools can be created and destroyed,
+- * but all puts (and thus all other operations that require memory allocation)
+- * must fail.  If zcache is unfrozen, accepts puts, then frozen again,
+- * data consistency requires all puts while frozen to be converted into
+- * flushes.
+- */
+-static bool zcache_freeze;
 -
--	zdfs("eph_pages_remoted", S_IRUGO, root, &ramster_eph_pages_remoted);
--	zdfs("pers_pages_remoted", S_IRUGO, root, &ramster_pers_pages_remoted);
--	zdfs("eph_pages_remote_failed", S_IRUGO, root,
--			&ramster_eph_pages_remote_failed);
--	zdfs("pers_pages_remote_failed", S_IRUGO, root,
--			&ramster_pers_pages_remote_failed);
--	zdfs("remote_eph_pages_succ_get", S_IRUGO, root,
--			&ramster_remote_eph_pages_succ_get);
--	zdfs("remote_pers_pages_succ_get", S_IRUGO, root,
--			&ramster_remote_pers_pages_succ_get);
--	zdfs("remote_eph_pages_unsucc_get", S_IRUGO, root,
--			&ramster_remote_eph_pages_unsucc_get);
--	zdfs("remote_pers_pages_unsucc_get", S_IRUGO, root,
--			&ramster_remote_pers_pages_unsucc_get);
--	zdfs("pers_pages_remote_nomem", S_IRUGO, root,
--			&ramster_pers_pages_remote_nomem);
--	zdfs("remote_objects_flushed", S_IRUGO, root,
--			&ramster_remote_objects_flushed);
--	zdfs("remote_pages_flushed", S_IRUGO, root,
--			&ramster_remote_pages_flushed);
--	zdfs("remote_object_flushes_failed", S_IRUGO, root,
--			&ramster_remote_object_flushes_failed);
--	zdfs("remote_page_flushes_failed", S_IRUGO, root,
--			&ramster_remote_page_flushes_failed);
--	zdfs("foreign_eph_pages", S_IRUGO, root,
--			&ramster_foreign_eph_pages);
--	zdfs("foreign_eph_pages_max", S_IRUGO, root,
--			&ramster_foreign_eph_pages_max);
--	zdfs("foreign_pers_pages", S_IRUGO, root,
--			&ramster_foreign_pers_pages);
--	zdfs("foreign_pers_pages_max", S_IRUGO, root,
--			&ramster_foreign_pers_pages_max);
--	return 0;
--}
--#undef	zdebugfs
--#undef	zdfs64
--#else
--static inline int ramster_debugfs_init(void)
--{
--	return 0;
--}
--#endif
--
- static LIST_HEAD(ramster_rem_op_list);
- static DEFINE_SPINLOCK(ramster_rem_op_list_lock);
- static DEFINE_PER_CPU(struct ramster_preload, ramster_preloads);
+-/*
+  * This zcache shrinker interface reduces the number of ephemeral pageframes
+  * used by zcache to approximately the same as the total number of LRU_FILE
+  * pageframes in use, and now also reduces the number of persistent pageframes
+@@ -1221,44 +1212,34 @@ int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
+ {
+ 	struct tmem_pool *pool;
+ 	struct tmem_handle th;
+-	int ret = -1;
++	int ret = 0;
+ 	void *pampd = NULL;
+ 
+ 	BUG_ON(!irqs_disabled());
+ 	pool = zcache_get_pool_by_id(cli_id, pool_id);
+ 	if (unlikely(pool == NULL))
+ 		goto out;
+-	if (!zcache_freeze) {
+-		ret = 0;
+-		th.client_id = cli_id;
+-		th.pool_id = pool_id;
+-		th.oid = *oidp;
+-		th.index = index;
+-		pampd = zcache_pampd_create((char *)page, size, raw,
+-				ephemeral, &th);
+-		if (pampd == NULL) {
+-			ret = -ENOMEM;
+-			if (ephemeral)
+-				inc_zcache_failed_eph_puts();
+-			else
+-				inc_zcache_failed_pers_puts();
+-		} else {
+-			if (ramster_enabled)
+-				ramster_do_preload_flnode(pool);
+-			ret = tmem_put(pool, oidp, index, 0, pampd);
+-			if (ret < 0)
+-				BUG();
+-		}
+-		zcache_put_pool(pool);
++
++	th.client_id = cli_id;
++	th.pool_id = pool_id;
++	th.oid = *oidp;
++	th.index = index;
++	pampd = zcache_pampd_create((char *)page, size, raw,
++			ephemeral, &th);
++	if (pampd == NULL) {
++		ret = -ENOMEM;
++		if (ephemeral)
++			inc_zcache_failed_eph_puts();
++		else
++			inc_zcache_failed_pers_puts();
+ 	} else {
+-		inc_zcache_put_to_flush();
+ 		if (ramster_enabled)
+ 			ramster_do_preload_flnode(pool);
+-		if (atomic_read(&pool->obj_count) > 0)
+-			/* the put fails whether the flush succeeds or not */
+-			(void)tmem_flush_page(pool, oidp, index);
+-		zcache_put_pool(pool);
++		ret = tmem_put(pool, oidp, index, 0, pampd);
++		if (ret < 0)
++			BUG();
+ 	}
++	zcache_put_pool(pool);
+ out:
+ 	return ret;
+ }
 -- 
 1.7.10.4
 
