@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935568Ab3DJVtL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 17:49:11 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:46363 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759399Ab3DJVtJ (ORCPT
+	id S936877Ab3DJVue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 17:50:34 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:54711 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762364Ab3DJVud convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 17:49:09 -0400
-Date: Wed, 10 Apr 2013 14:49:07 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND][PATCH v5 2/3] fix hugetlb memory check in
- vma_dump_size()
-In-Reply-To: <1365610669-16625-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-Message-ID: <alpine.DEB.2.02.1304101448390.1526@chino.kir.corp.google.com>
-References: <1365610669-16625-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1365610669-16625-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 10 Apr 2013 17:50:33 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <51655D16.1020908@arm.com>
+References: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com>
+	<1365501657-4213-5-git-send-email-serban.constantinescu@arm.com>
+	<CAMP5Xgfb2NYN8j16XKx3hrvk1gnRCX+yx2Uk_fxSE=OM74y5fQ@mail.gmail.com>
+	<51655D16.1020908@arm.com>
+Date: Wed, 10 Apr 2013 14:50:32 -0700
+Message-ID: <CAMP5Xgdd_o3G-bTjeGPaX9o6+6z26DnBuvkNO_mRbkOiL5P2ZA@mail.gmail.com>
+Subject: Re: [PATCH v2 4/7] staging: android: binder: fix BINDER_SET_MAX_THREADS
+ declaration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Serban Constantinescu <Serban.Constantinescu@arm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Apr 2013, Naoya Horiguchi wrote:
+On Wed, Apr 10, 2013 at 5:37 AM, Serban Constantinescu
+<Serban.Constantinescu@arm.com> wrote:
+> On 10/04/13 00:53, Arve Hjønnevåg wrote:
+>>
+>> On Tue, Apr 9, 2013 at 3:00 AM, Serban Constantinescu
+>> <serban.constantinescu@arm.com> wrote:
+>>>
+>>> This change will fix the BINDER_SET_MAX_THREADS ioctl to use __s32
+>>> instead of size_t for setting the max threads. Thus using the same
+>>> handler for 32 and 64bit kernels.
+>>>
+>>> This value is stored internally in struct binder_proc as an int and
+>>> is set to 15 on open_binder() in the libbinder API (thus no need for
+>>> a 64bit size_t on 64bit platforms).
+>>>
+>>
+>> Why switch to a signed type?
+>
+>
+> The value passed through BINDER_SET_MAX_THREADS ioctl is stored in a
+> binder_proc structure as an int.It also mimics the use of pid_t(typedef int
+> __kernel_pid_t).
+>
 
-> Documentation/filesystems/proc.txt says about coredump_filter bitmask,
-> 
->   Note bit 0-4 doesn't effect any hugetlb memory. hugetlb memory are only
->   effected by bit 5-6.
-> 
-> However current code can go into the subsequent flag checks of bit 0-4
-> for vma(VM_HUGETLB). So this patch inserts 'return' and makes it work
-> as written in the document.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> Reviewed-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: stable@vger.kernel.org
+This is a thread count not a pid.
 
-Acked-by: David Rientjes <rientjes@google.com>
+> However using __s32 or __u32 here would have the same effect since the ioctl
+> macro will compute both as sizeof(32bit).
+>
+> Let me know if you would like this changed to __u32.
+>
 
-Stable for 2.6.34+.
+The user-space api uses a size_t, so __u32 would be a closer match.
+Keeping it a size_t would also work since this value is not shared
+between processes.
+
+--
+Arve Hjønnevåg
