@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936660Ab3DJIP4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 04:15:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47338 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936266Ab3DJIPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 04:15:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,444,1363158000"; 
-   d="scan'208";a="320176362"
-Message-ID: <51652035.5000802@linux.intel.com>
-Date: Wed, 10 Apr 2013 11:17:57 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio / ACPI: Handle ACPI events in accordance with the
- spec
-References: <3043137.BtEKcMiXSu@vostro.rjw.lan> <20130410075319.GN21818@intel.com>
-In-Reply-To: <20130410075319.GN21818@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S935980Ab3DJISq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 04:18:46 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:41597 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab3DJISo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 04:18:44 -0400
+Date: Wed, 10 Apr 2013 18:18:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: linux-next: build warning after merge of the akpm tree
+Message-Id: <20130410181836.e3d308a710e35f540f57b779@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__10_Apr_2013_18_18_36_+1000_UzIo=9.HkblMCYzs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 10:53 AM, Mika Westerberg wrote:
-> On Tue, Apr 09, 2013 at 03:57:25PM +0200, Rafael J. Wysocki wrote:
->> +void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
->> +{
->> +	acpi_handle handle;
->> +	acpi_status status;
->> +	struct list_head *evt_pins;
->> +	struct acpi_gpio_evt_pin *evt_pin, *ep;
->> +
->> +	if (!chip->dev || !chip->to_irq)
->> +		return;
->> +
->> +	handle = ACPI_HANDLE(chip->dev);
->> +	if (!handle)
->> +		return;
->> +
->> +	status = acpi_get_data(handle, acpi_gpio_evt_dh, (void **)&evt_pins);
->> +	if (ACPI_FAILURE(status))
->> +		return;
->> +
->> +	list_for_each_entry_safe_reverse(evt_pin, ep, evt_pins, node) {
->> +		devm_free_irq(chip->dev, evt_pin->irq, evt_pin);
->
-> How about using normal request/free_irq() functions for both _EVT and
-> non-_EVT events? Since we now need to call acpi_gpiochip_free_interrupts()
-> anyway, I don't see the point using devm_* functions here.
->
+--Signature=_Wed__10_Apr_2013_18_18_36_+1000_UzIo=9.HkblMCYzs
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Then we need to create a list of non-_EVT events, or add them to the 
-evt_pins list.
+Hi Andrew,
 
+After merging the akpm tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
+
+include/linux/genalloc.h:109:3: warning: 'struct device' declared inside pa=
+rameter list [enabled by default]
+include/linux/genalloc.h:109:3: warning: its scope is only this definition =
+or declaration, which is probably not what you want [enabled by default]
+include/linux/genalloc.h:110:49: warning: 'struct device' declared inside p=
+arameter list [enabled by default]
+
+Introduced by commit 3f364a866cf1 ("genalloc: add devres support, allow
+to find a managed pool by device")
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__10_Apr_2013_18_18_36_+1000_UzIo=9.HkblMCYzs
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRZSBcAAoJEECxmPOUX5FEcKwP/3mgbVqLTr9SYTXrWlG117N5
+VXrFql03QTM+PXO24cSGb3m6UZhyi9Luz6h1ibGNzrtnmbvFktXSlyhrYw8wjaDo
+fQDpqzecImCRIfmVPhkb4dW6wmrLtFd70Eczk4sJn9HfM9H81ciS+hLuQvhnUbQJ
+z63LJyadOs6NTNocmdT3YoBaWuxtlQtmbunjXhOc0m159BHR7A/XwJqN016IBOAm
+8U0buL8Vu17ADixiNHvXpJtjbC1v+c27G8Q36eU7Jya95z61IY6A7YtSakuNINsk
+M03/S1BBA9R6GGALwbYGppdIBRYQfzgkKPTNa8GOXlg2bq2iY/3E1ZMXd3pefEWv
+CmpYUvoi3vOcbXzUKOC0MIS9pozakyqzxCNcnILC8y+9NAVZd+kvux+oVLGnN62L
+rIZ28J9jftrY9sr53U4/8jBCaV07MIxhA4gQDwc7txhM++AMdXLuOEnf6bJpILiQ
+N7Z7h3A/nXbmQS2+VCphmaU2tXXAfAsD/yLiWQXZ4J/bEiQ3KBJ7YGiQFlBuPjCQ
+WwWceBPNIeB35X9lyKNfMfyMazNAsjLp/XOH1d9SlUxcXJke42axPk6qaJ6xUojM
+o9cFpTi92o8Jz2K4hPxBKhSs6QbrVKpKdShL2XdBelVgy587qnZokWxuIDqRQooW
+Ea59aEhi3KICyBjAY66F
+=PzsU
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__10_Apr_2013_18_18_36_+1000_UzIo=9.HkblMCYzs--
