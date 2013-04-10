@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937540Ab3DJXGO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:06:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56272 "EHLO
+	id S937553Ab3DJXGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:06:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56268 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937363Ab3DJWrn (ORCPT
+	with ESMTP id S937288Ab3DJWrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:43 -0400
+	Wed, 10 Apr 2013 18:47:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lauri Kasanen <cand@gmx.com>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 49/64] drm/i915: Fix build failure
-Date: Wed, 10 Apr 2013 15:46:46 -0700
-Message-Id: <20130410224344.793164797@linuxfoundation.org>
+        Martins <andrissr@inbox.lv>, Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: [ 57/64] drm/i915: add quirk to invert brightness on eMachines e725
+Date: Wed, 10 Apr 2013 15:46:54 -0700
+Message-Id: <20130410224346.833407168@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -26,37 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lauri Kasanen <cand@gmx.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 27b7c63a7c509d797c151e95a641e1d94d94bbd9 upstream.
+commit 01e3a8feb40e54b962a20fa7eb595c5efef5e109 upstream.
 
-ERROR: "__build_bug_on_failed" [drivers/gpu/drm/i915/i915.ko] undefined!
-
-Originally reported at http://www.gossamer-threads.com/lists/linux/kernel/1631803
-FDO bug #62775
-
-This needs to be backported to both 3.7 and 3.8 stable trees. Doesn't apply straight,
-but it's a quick change.
-
-Signed-off-by: Lauri Kasanen <cand@gmx.com>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=62775
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=31522#c35
+[Note: There are more than one broken setups in the bug. This fixes one.]
+Reported-by: Martins <andrissr@inbox.lv>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Josh Boyer <jwboyer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_display.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -43,7 +43,7 @@ eb_create(int size)
- {
- 	struct eb_objects *eb;
- 	int count = PAGE_SIZE / sizeof(struct hlist_head) / 2;
--	BUILD_BUG_ON(!is_power_of_2(PAGE_SIZE / sizeof(struct hlist_head)));
-+	BUILD_BUG_ON_NOT_POWER_OF_2(PAGE_SIZE / sizeof(struct hlist_head));
- 	while (count > size)
- 		count >>= 1;
- 	eb = kzalloc(count*sizeof(struct hlist_head) +
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8904,6 +8904,9 @@ static struct intel_quirk intel_quirks[]
+ 
+ 	/* Acer/eMachines G725 */
+ 	{ 0x2a42, 0x1025, 0x0210, quirk_invert_brightness },
++
++	/* Acer/eMachines e725 */
++	{ 0x2a42, 0x1025, 0x0212, quirk_invert_brightness },
+ };
+ 
+ static void intel_init_quirks(struct drm_device *dev)
 
 
