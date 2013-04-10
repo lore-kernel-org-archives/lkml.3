@@ -1,98 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936745Ab3DJBSg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 21:18:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:58315 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358Ab3DJBSf (ORCPT
+	id S936171Ab3DJB1I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 21:27:08 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:36456 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760406Ab3DJB1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 21:18:35 -0400
-Message-ID: <5164BDE9.3010706@canonical.com>
-Date: Tue, 09 Apr 2013 21:18:33 -0400
-From: James M Leddy <james.leddy@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 9 Apr 2013 21:27:06 -0400
+Message-ID: <5164BFE3.4040204@linux.vnet.ibm.com>
+Date: Tue, 09 Apr 2013 21:26:59 -0400
+From: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 1/1][RESUBMIT] input: fix weird issue of synaptics psmouse
- sync lost after resume
-References: <1365553843-11951-1-git-send-email-james.leddy@canonical.com>
-In-Reply-To: <1365553843-11951-1-git-send-email-james.leddy@canonical.com>
-Content-Type: multipart/mixed;
- boundary="------------000803050402050403040205"
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Roland Dreier <roland@kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
+Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
+References: <20130324155153.GA8597@redhat.com> <515F3160.4020007@linux.vnet.ibm.com> <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com> <515F3948.40205@linux.vnet.ibm.com> <CAG4TOxPNHZadLjq6-HuOExf1XXLO6AYyvRQ1L09i6qVeA5dbLQ@mail.gmail.com> <515F42EE.8060203@linux.vnet.ibm.com> <20130409190350.GB8212@redhat.com>
+In-Reply-To: <20130409190350.GB8212@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041001-7282-0000-0000-0000160248B2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000803050402050403040205
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+With respect, I'm going to offload testing this patch back to the author =)
+because I'm trying to address all of Paolo's other minor issues
+with the RDMA patch before we can merge.
 
-From: Eric Miao <eric.miao@canonical.com>
+Since dynamic page registration (as you requested) is now fully
+implemented, this patch is less urgent since we now have a
+mechanism in place to avoid page pinning on both sides of the migration.
 
-In summary, the symptom is intermittent key events lost after resume
-on some machines with synaptics touchpad (seems this is synaptics _only_),
-and key events loss is due to serio port reconnect after psmouse sync lost.
-Removing psmouse and inserting it back during the suspend/resume process
-is able to work around the issue, so the difference between
-psmouse_connect()
-and psmouse_reconnect() is the key to the root cause of this problem.
+- Michael
 
-After comparing the two different paths, synaptics driver has its own
-implementation of synaptics_reconnect(), and the missing psmouse_probe()
-seems significant, the patch below added psmouse_probe() to the reconnect
-process, and has been verified many times that the issue could not be
-reliably
-reproduced.
+On 04/09/2013 03:03 PM, Michael S. Tsirkin wrote:
+> presumably is_dup_page reads the page, so should not break COW ...
+>
+> I'm not sure about the cgroups swap limit - you might have
+> too many non COW pages so attempting to fault them all in
+> makes you exceed the limit. You really should look at
+> what is going on in the pagemap, to see if there's
+> measureable gain from the patch.
+>
+>
+> On Fri, Apr 05, 2013 at 05:32:30PM -0400, Michael R. Hines wrote:
+>> Well, I have the "is_dup_page()" commented out.......when RDMA is
+>> activated.....
+>>
+>> Is there something else in QEMU that could be touching the page that
+>> I don't know about?
+>>
+>> - Michael
+>>
+>>
+>> On 04/05/2013 05:03 PM, Roland Dreier wrote:
+>>> On Fri, Apr 5, 2013 at 1:51 PM, Michael R. Hines
+>>> <mrhines@linux.vnet.ibm.com> wrote:
+>>>> Sorry, I was wrong. ignore the comments about cgroups. That's still broken.
+>>>> (i.e. trying to register RDMA memory while using a cgroup swap limit cause
+>>>> the process get killed).
+>>>>
+>>>> But the GIFT flag patch works (my understanding is that GIFT flag allows the
+>>>> adapter to transmit stale memory information, it does not have anything to
+>>>> do with cgroups specifically).
+>>> The point of the GIFT patch is to avoid triggering copy-on-write so
+>>> that memory doesn't blow up during migration.  If that doesn't work
+>>> then there's no point to the patch.
+>>>
+>>>   - R.
+>>>
 
-There are two PS/2 commands in psmouse_probe():
-
-  1. PSMOUSE_CMD_GETID
-  2. PSMOUSE_CMD_RESET_DIS
-
-Only the PSMOUSE_CMD_GETID seems to be significant. The
-PSMOUSE_CMD_RESET_DIS is irrelevant to this issue after trying
-several times.  So we have only implemented this patch to issue
-the PSMOUSE_CMD_GETID so far.
-
-Tested-by: Daniel Manrique <daniel.manrique@canonical.com>
-Signed-off-by: James M Leddy <james.leddy@canonical.com>
----
- drivers/input/mouse/synaptics.c |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/input/mouse/synaptics.c
-b/drivers/input/mouse/synaptics.c
-index 12d12ca..3438a9d 100644
---- a/drivers/input/mouse/synaptics.c
-+++ b/drivers/input/mouse/synaptics.c
-@@ -1355,6 +1355,7 @@ static int synaptics_reconnect(struct psmouse
-*psmouse)
- {
- 	struct synaptics_data *priv = psmouse->private;
- 	struct synaptics_data old_priv = *priv;
-+	unsigned char param[2];
- 	int retry = 0;
- 	int error;
- @@ -1370,6 +1371,7 @@ static int synaptics_reconnect(struct psmouse
-*psmouse)
- 			 */
- 			ssleep(1);
- 		}
-+		ps2_command(&psmouse->ps2dev, param, PSMOUSE_CMD_GETID);
- 		error = synaptics_detect(psmouse, 0);
- 	} while (error && ++retry < 3);
- -- 1.7.9.5
-
-
-
-
---------------000803050402050403040205
-Content-Type: text/plain; charset=UTF-8;
- name="Attached Message Part"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="Attached Message Part"
-
-
---------------000803050402050403040205--
