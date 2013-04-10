@@ -1,109 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935247Ab3DJLph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 07:45:37 -0400
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:52242 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752541Ab3DJLpe (ORCPT
+	id S935641Ab3DJLrW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 07:47:22 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52740 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752175Ab3DJLrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 07:45:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130410071144.08ef2983@corrin.poochiereds.net>
-References: <1365511227-17626-1-git-send-email-piastry@etersoft.ru>
-	<1365511227-17626-5-git-send-email-piastry@etersoft.ru>
-	<20130410071144.08ef2983@corrin.poochiereds.net>
-Date: Wed, 10 Apr 2013 15:45:33 +0400
-X-Google-Sender-Auth: zCp9JhL5XDFb47yBuOEDg02PLIE
-Message-ID: <CAKywueSPh2vXvS1HRmJHZUApo_YxWjcp4_2ZXgb1RHafS=A98w@mail.gmail.com>
-Subject: Re: [PATCH v5 4/7] CIFS: Use NT_CREATE_ANDX command for forcemand mounts
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: Jeff Layton <jlayton@samba.org>
-Cc: linux-kernel@vger.kernel.org, linux-cifs <linux-cifs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
-        wine-devel@winehq.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 10 Apr 2013 07:47:21 -0400
+Message-ID: <1365594427.30071.61.camel@laptop>
+Subject: Re: [PATCH 2/7] sched: Update rq clock on nohz CPU before setting
+ fair group shares
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>
+Date: Wed, 10 Apr 2013 13:47:07 +0200
+In-Reply-To: <20130410110650.GD28828@gmail.com>
+References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
+	 <1365266760-24725-3-git-send-email-fweisbec@gmail.com>
+	 <1365499591.30071.3.camel@laptop>
+	 <CAFTL4hxcQyv_J4ky8wL0rzVemWPpBcjuCV=FeHBvXn5Bht-3OA@mail.gmail.com>
+	 <1365577512.30071.11.camel@laptop> <20130410100620.GA28402@gmail.com>
+	 <1365591767.30071.45.camel@laptop> <20130410110650.GD28828@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/10 Jeff Layton <jlayton@samba.org>:
-> On Tue,  9 Apr 2013 16:40:24 +0400
-> Pavel Shilovsky <piastry@etersoft.ru> wrote:
->
->> forcemand mount option now lets us use Windows mandatory style of
->> byte-range locks even if server supports posix ones - switches on
->> Windows locking mechanism. Share flags is another locking mehanism
->> provided by Windows semantic that can be used by NT_CREATE_ANDX
->> command. This patch combines all Windows locking mechanism in one
->> mount option by using NT_CREATE_ANDX to open files if forcemand is on.
->>
->> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
->> ---
->>  fs/cifs/dir.c  | 1 +
->>  fs/cifs/file.c | 6 ++++--
->>  2 files changed, 5 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
->> index d4331de..8587021 100644
->> --- a/fs/cifs/dir.c
->> +++ b/fs/cifs/dir.c
->> @@ -217,6 +217,7 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
->>       }
->>
->>       if (tcon->unix_ext && cap_unix(tcon->ses) && !tcon->broken_posix_open &&
->> +         ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
->>           (CIFS_UNIX_POSIX_PATH_OPS_CAP &
->>                       le64_to_cpu(tcon->fsUnixInfo.Capability))) {
->>               rc = cifs_posix_open(full_path, &newinode, inode->i_sb, mode,
->> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
->> index 9394b2b..19038a4 100644
->> --- a/fs/cifs/file.c
->> +++ b/fs/cifs/file.c
->> @@ -455,8 +455,9 @@ int cifs_open(struct inode *inode, struct file *file)
->>       else
->>               oplock = 0;
->>
->> -     if (!tcon->broken_posix_open && tcon->unix_ext &&
->> -         cap_unix(tcon->ses) && (CIFS_UNIX_POSIX_PATH_OPS_CAP &
->> +     if (!tcon->broken_posix_open && tcon->unix_ext && cap_unix(tcon->ses)
->> +         && ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
->> +         (CIFS_UNIX_POSIX_PATH_OPS_CAP &
->>                               le64_to_cpu(tcon->fsUnixInfo.Capability))) {
->>               /* can not refresh inode info since size could be stale */
->>               rc = cifs_posix_open(full_path, &inode, inode->i_sb,
->> @@ -624,6 +625,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
->>               oplock = 0;
->>
->>       if (tcon->unix_ext && cap_unix(tcon->ses) &&
->> +         ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
->>           (CIFS_UNIX_POSIX_PATH_OPS_CAP &
->>                               le64_to_cpu(tcon->fsUnixInfo.Capability))) {
->>               /*
->
-> I'm trying to understand why "forcemand" would matter here. Wouldn't
-> you just want to switch to using NT_CREATE_ANDX if O_DENY* is set
-> instead? What happens if I didn't mount with forcemand and then try to
-> use O_DENY*?
+On Wed, 2013-04-10 at 13:06 +0200, Ingo Molnar wrote:
 
-If cifs client mounts Samba share and negotiates posix extensions, it
-uses trans2 command to open files. In this case O_DENY* flags that are
-passed to open syscall won't be sent to the server and the file won't
-be locked. This patch gives us an opportunity to make the client
-always use NT_CREATE_ANDX command to open file - in this case O_DENY*
-flags won't be missed.
+> There's just a handful of high level entry points, right? schedule(), wakeup, 
+> scheduler tick, maybe notifiers - anything else? 
 
-You are right, we can leave forcemand option without changes and use
-an appropriate smb command depending on openflags we have. Another
-possibility is to make the client use NT_CREATE_ANDX command if new
-'sharelock' VFS mount options is specified.  If we mount a share with
-sharelock mount option, we need O_DENY* flags sent to the server, but
-the only one way to do it is to use NT_CREATE_ANDX command all the
-time we need to open a file - so, using trans2 open command doesn't
-make any sense in the case of 'sharelock' mounts.
+I suppose there's some cgroup muck and the various system calls; most
+of them should be covered if we take some lower level primitives or so.
 
-Thoughts?
+We could 'simply' hijack rq->lock and clear the state every time we
+acquire or release it.. maybe have an exemption for the balance double
+lock ops.
 
---
-Best regards,
-Pavel Shilovsky.
+> Documenting/listing those would 
+> be nice anyway, near the top of kernel/sched/core.c or so.
+
+Sure and it might have to do.. I just prefer an option that's less
+prone to human failure; being both paranoid and lazy :-)
+
+> The other approach would be to periodically clear the flag from the timer tick. 
+> That would catch invalid rq->clock use probabilistically.
+
+Right, but once we have the most common paths covered it is very very
+unlikely we'll hit the weird corner cases like this. But it is an
+option.
+
+> > I'd clear at the beginning, but that's more or less the same thing.
+> > 
+> > We have the .sched.text section but I'm not sure we've been consistent enough 
+> > with that to be useful. But otherwise we'd be able to clear on section 
+> > entry/exit or so.
+> 
+> Hm, I'm not sure that can be made to work sanely.
+
+Yeah.. one option is to make all code in kernel/sched/ part of
+.sched.text but that might be overkill -- not to mention we'd have to
+peel things like completions and wait_queues out of sched/kernel/core.c
+but that seems like a good idea anyway.
+
