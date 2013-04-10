@@ -1,129 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937297Ab3DJSYs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 14:24:48 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:44240 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937254Ab3DJSYp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 14:24:45 -0400
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+	id S937312Ab3DJSYx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 14:24:53 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38536 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S937027Ab3DJSYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 14:24:51 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCHv9 3/8] debugfs: add get/set for atomic types
-Date: Wed, 10 Apr 2013 13:18:55 -0500
-Message-Id: <1365617940-21623-4-git-send-email-sjenning@linux.vnet.ibm.com>
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+        Simon Jeons <simon.jeons@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH v3 09/11] mm/page_alloc: factor zone_pageset_init() out of setup_zone_pageset()
+Date: Wed, 10 Apr 2013 11:23:37 -0700
+Message-Id: <1365618219-17154-10-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1365617940-21623-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1365617940-21623-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1365618219-17154-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1365618219-17154-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041018-2398-0000-0000-00001325522E
+x-cbid: 13041018-7182-0000-0000-0000062D9941
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-debugfs currently lack the ability to create attributes
-that set/get atomic_t values.
-
-This patch adds support for this through a new
-debugfs_create_atomic_t() function.
-
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- fs/debugfs/file.c       | 42 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/debugfs.h |  2 ++
- 2 files changed, 44 insertions(+)
+ mm/page_alloc.c | 27 +++++++++++++++------------
+ 1 file changed, 15 insertions(+), 12 deletions(-)
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index c5ca6ae..fa26d5b 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -21,6 +21,7 @@
- #include <linux/debugfs.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/atomic.h>
- 
- static ssize_t default_read_file(struct file *file, char __user *buf,
- 				 size_t count, loff_t *ppos)
-@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b0762c7..749b6e1 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4076,22 +4076,25 @@ static void setup_pagelist_highmark(struct per_cpu_pageset *p,
+ 	pageset_update(&p->pcp, high, batch);
  }
- EXPORT_SYMBOL_GPL(debugfs_create_size_t);
  
-+static int debugfs_atomic_t_set(void *data, u64 val)
++static void __meminit zone_pageset_init(struct zone *zone, int cpu)
 +{
-+	atomic_set((atomic_t *)data, val);
-+	return 0;
-+}
-+static int debugfs_atomic_t_get(void *data, u64 *val)
-+{
-+	*val = atomic_read((atomic_t *)data);
-+	return 0;
-+}
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
-+			debugfs_atomic_t_set, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
++	struct per_cpu_pageset *pcp = per_cpu_ptr(zone->pageset, cpu);
 +
-+/**
-+ * debugfs_create_atomic_t - create a debugfs file that is used to read and
-+ * write an atomic_t value
-+ * @name: a pointer to a string containing the name of the file to create.
-+ * @mode: the permission that the file should have
-+ * @parent: a pointer to the parent dentry for this file.  This should be a
-+ *          directory dentry if set.  If this parameter is %NULL, then the
-+ *          file will be created in the root of the debugfs filesystem.
-+ * @value: a pointer to the variable that the file should read to and write
-+ *         from.
-+ */
-+struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-+				 struct dentry *parent, atomic_t *value)
-+{
-+	/* if there are no write bits set, make read only */
-+	if (!(mode & S_IWUGO))
-+		return debugfs_create_file(name, mode, parent, value,
-+					&fops_atomic_t_ro);
-+	/* if there are no read bits set, make write only */
-+	if (!(mode & S_IRUGO))
-+		return debugfs_create_file(name, mode, parent, value,
-+					&fops_atomic_t_wo);
-+
-+	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
++	pageset_init(pcp);
++	if (percpu_pagelist_fraction)
++		setup_pagelist_highmark(pcp,
++			(zone->managed_pages /
++				percpu_pagelist_fraction));
++	else
++		pageset_set_batch(pcp, zone_batchsize(zone));
 +}
-+EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
++
+ static void __meminit setup_zone_pageset(struct zone *zone)
+ {
+ 	int cpu;
+-
+ 	zone->pageset = alloc_percpu(struct per_cpu_pageset);
+-
+-	for_each_possible_cpu(cpu) {
+-		struct per_cpu_pageset *pcp = per_cpu_ptr(zone->pageset, cpu);
+-
+-		setup_pageset(pcp, zone_batchsize(zone));
+-
+-		if (percpu_pagelist_fraction)
+-			setup_pagelist_highmark(pcp,
+-				(zone->managed_pages /
+-					percpu_pagelist_fraction));
+-	}
++	for_each_possible_cpu(cpu)
++		zone_pageset_init(zone, cpu);
+ }
  
- static ssize_t read_file_bool(struct file *file, char __user *user_buf,
- 			      size_t count, loff_t *ppos)
-diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-index 63f2465..d68b4ea 100644
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
- 				  struct dentry *parent, u64 *value);
- struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
- 				     struct dentry *parent, size_t *value);
-+struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-+				     struct dentry *parent, atomic_t *value);
- struct dentry *debugfs_create_bool(const char *name, umode_t mode,
- 				  struct dentry *parent, u32 *value);
- 
+ /*
 -- 
 1.8.2.1
 
