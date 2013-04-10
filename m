@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935428Ab3DJNcR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 09:32:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:6509 "EHLO mga09.intel.com"
+	id S935448Ab3DJNc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 09:32:56 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41222 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754678Ab3DJNcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:32:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,447,1363158000"; 
-   d="scan'208";a="315987078"
-Date: Wed, 10 Apr 2013 06:31:57 -0700
-From: Andi Kleen <ak@linux.intel.com>
+	id S1752466Ab3DJNcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 09:32:55 -0400
+Date: Wed, 10 Apr 2013 15:32:51 +0200
+From: Borislav Petkov <bp@alien8.de>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf, x86: Allow setting period 1
-Message-ID: <20130410133157.GG22166@tassilo.jf.intel.com>
-References: <1362785070-12860-1-git-send-email-andi@firstfloor.org>
- <20130410125808.GC12978@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 0/4] x86: FPU detection in C
+Message-ID: <20130410133251.GC6857@pd.tnic>
+References: <1365436666-9837-1-git-send-email-bp@alien8.de>
+ <20130410110840.GA29752@gmail.com>
+ <20130410122411.GE13394@pd.tnic>
+ <20130410122527.GB8686@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130410125808.GC12978@gmail.com>
+In-Reply-To: <20130410122527.GB8686@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 02:58:08PM +0200, Ingo Molnar wrote:
-> 
-> * Andi Kleen <andi@firstfloor.org> wrote:
-> 
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > I had some requests for setting period 1, so that every event of something
-> > is caught.  To my knowledge there is no limit to 1 on Intel hardware.
-> > Just remove the check for minimum 2
-> > 
-> > If specific CPUs have problems we can black list them.
-> 
-> How have you tested this? The commit that added this quirk mentions very high perf 
-> load triggering badness unless this quirk is added.
+(let's test the reply-to-all settings now :-))
 
-Profiling a couple of simple loads on Westmere and IvyBridge: mostly AIM7 and
-kernel builds. You can get throttling of course, but no excessive load.
+On Wed, Apr 10, 2013 at 02:25:27PM +0200, Ingo Molnar wrote:
+> In my builds I disable that. So I'd suggest to disable that bit in the
+> .config and retry.
 
-The original quirk was done long ago before the modern event throttling
-infrastructure may have been completely in place, right?
+Yep, did that and was able to reproduce the issue in qemu. At a first
+glance, it looks like we're calling kmalloc too early but I need to
+verify this is actually the case. Stay tuned.
 
--Andi
+Thanks.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
