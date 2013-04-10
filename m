@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936891Ab3DJJCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 05:02:05 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:41995 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935724Ab3DJJCC (ORCPT
+	id S965029Ab3DJJDj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 05:03:39 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49037 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752269Ab3DJJDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 05:02:02 -0400
-Date: Wed, 10 Apr 2013 11:01:59 +0200
-From: Florian Westphal <fw@strlen.de>
-To: CAI Qian <caiqian@redhat.com>
-Cc: netdev@vger.kernel.org, stable@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, netfilter-devel@breakpoint.cc
-Subject: Re: [BUG] Fatal exception in interrupt - nf_nat_cleanup_conntrack
- during IPv6 tests
-Message-ID: <20130410090158.GF3013@breakpoint.cc>
-References: <605030311.1990960.1365563720663.JavaMail.root@redhat.com>
- <1089062823.1991307.1365563878922.JavaMail.root@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1089062823.1991307.1365563878922.JavaMail.root@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 10 Apr 2013 05:03:37 -0400
+Date: Wed, 10 Apr 2013 19:03:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: <Yuantian.Tang@freescale.com>
+Cc: <grant.likely@secretlab.ca>, devicetree-discuss@lists.ozlabs.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com
+Subject: Re: [PATCH] of: remove the unnecessary of_node_put for
+ of_parse_phandle_with_args()
+Message-Id: <20130410190327.a70d4c3798509d664aef2f13@canb.auug.org.au>
+In-Reply-To: <1365490569-32455-1-git-send-email-Yuantian.Tang@freescale.com>
+References: <1365490569-32455-1-git-send-email-Yuantian.Tang@freescale.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__10_Apr_2013_19_03_27_+1000_9m892t2Uqn+3AqyV"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CAI Qian <caiqian@redhat.com> wrote:
+--Signature=_Wed__10_Apr_2013_19_03_27_+1000_9m892t2Uqn+3AqyV
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[ CC'd nf-devel ]
+Hi,
 
-> Just hit this very often during IPv6 tests in both the latest stable
-> and mainline kernel.
-> 
-> [ 3597.206166] Modules linked in:
-[..]
-> nf_nat_ipv4(F-)
-[..]
+On Tue, 9 Apr 2013 14:56:09 +0800 <Yuantian.Tang@freescale.com> wrote:
+>
+> From: Tang Yuantian <yuantian.tang@freescale.com>
+>=20
+> As the function itself says it is caller's responsibility to call the
+> of_node_put().  So, remove it on success to keep the reference count
+> correct.
+>=20
+> Signed-off-by: Tang Yuantian <Yuantian.Tang@freescale.com>
+> ---
+>  drivers/of/base.c | 3 ---
+>  1 file changed, 3 deletions(-)
+>=20
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 321d3ef..e8b4c28 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1168,9 +1168,6 @@ static int __of_parse_phandle_with_args(const struc=
+t device_node *np,
+>  					out_args->args[i] =3D be32_to_cpup(list++);
+>  			}
+> =20
+> -			/* Found it! return success */
+> -			if (node)
+> -				of_node_put(node);
 
-> [ 3597.804861] RIP: 0010:[<ffffffffa03227f2>]  [<ffffffffa03227f2>] nf_nat_cleanup_conntrack+0x42/0x70 [nf_nat] 
-> [ 3597.855207] RSP: 0018:ffff880202c63d40  EFLAGS: 00010246 
-> [ 3597.881350] RAX: 0000000000000000 RBX: ffff8801ac7bec28 RCX: ffff8801d0eedbe0 
-> [ 3597.917226] RDX: dead000000200200 RSI: 0000000000000011 RDI: ffffffffa03265b8 
-[..]
+Actually, if out_args is NULL, you should do the of_node_put(node), so
+probably the correct fix is to add an "else" before the above "if" (and
+move the comment).
 
-> [ 3598.421036]  <IRQ>  
-> [ 3598.430467]  [<ffffffffa0305bb4>] __nf_ct_ext_destroy+0x44/0x60 [nf_conntrack] 
-> [ 3598.499191]  [<ffffffffa02fd3fe>] nf_conntrack_free+0x2e/0x70 [nf_conntrack] 
-> [ 3598.534121]  [<ffffffffa02febed>] destroy_conntrack+0xbd/0x110 [nf_conntrack] 
-> [ 3598.569981]  [<ffffffff81532187>] nf_conntrack_destroy+0x17/0x20 
-> [ 3598.599579]  [<ffffffffa02fe77c>] death_by_timeout+0xdc/0x1b0 [nf_conntrack]
-[..]
-> [ 3599.241868] Code: 83 ec 08 0f b6 58 11 84 db 74 43 48 01 c3 48 83 7b 20 00 74 39 48 c7 c7 b8 65 32 a0 e8 98 fc 2e e1 48 8b 03 48 8b 53 08 48 85 c0 <48> 89 02 74 04 48 89 50 08 48 ba 00 02 20 00 00 00 ad de 48 c7  
-> [ 3599.337037] RIP  [<ffffffffa03227f2>] nf_nat_cleanup_conntrack+0x42/0x70 [nf_nat] 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Looks like we tried to remove bysource hash twice (rdx is
-LIST_POISON_2).
+--Signature=_Wed__10_Apr_2013_19_03_27_+1000_9m892t2Uqn+3AqyV
+Content-Type: application/pgp-signature
 
-I wonder if this would explain it:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-static void nf_nat_l4proto_clean(u8 l3proto, u8 l4proto)
-{
-[..]
-      /* Step 1 - remove from bysource hash */
-      clean.hash = true;
-      for_each_net(net)
-                nf_ct_iterate_cleanup(net, nf_nat_proto_clean, &clean);
+iQIbBAEBCAAGBQJRZSrfAAoJEECxmPOUX5FEshsP9j/SviOKe9soG62CzsCGGtr3
+6sIf7zvVuQmdb/AIrhzxwGOdESRn8MWqPjIoAHZUpAnStrkPF5q3dBVUx+aMERJD
+185Dmz3OoU0lpZHwNu5fNYAqVbNc/8hoU+EJc9unh/6zVTcBoxjSg4aTHj/tXbJt
+Z9pfCggA/hiKHrreO8wHLxt4XEYpyp+t6DYhNVM7PBiz21Of7Ve21SWQ4etxjRip
+geleVMs4ruyZ/QmnWld32ac9EwuiD+XeVKtT0fjofG5islE3xwLLPTdpJKB56wNm
+D2UfWu4yaZkXzRXdVdagChKCfCbOBMDfhrnJHQ5hGKJvPEfDBek1UN5tu30CDqJZ
+p9BtjaUbr+k4dKmsBX1sJCmWBuKK+b5N6BwJVu4BJCo5na00xVP8NY/5qyW0oMVL
+7djeLLv0c6NXXWMWRjvBvuTyB63V5/f9vQlksThX2WlJs7h21V56eq4gzjQps3Ur
+TkHFEfB7xtWdPDRmdH1+pKqXwId2lmWFcMlhVKcAC1sY3VMRtc9wUl3t8yb0SDCF
+k3taNF+DycVXb3KAF5+8/PRvs92nk7EhKEXa0ocK+l98R74U9TKSPMMiP5vByQvH
+RIjid/6TmAOPxYHPEl1ZHqam1V69YThHl76SFC+jnbGsiPfTtmrLsVNvS3R6bKnf
+xmU/r+9YRMZZHGH4agw=
+=QBxe
+-----END PGP SIGNATURE-----
 
-A nfct->timer fires and a conntrack is free'd before step 2 memsets the
-nat extension.  In that case, we would try to delete nat->bysource
-again?
+--Signature=_Wed__10_Apr_2013_19_03_27_+1000_9m892t2Uqn+3AqyV--
