@@ -1,184 +1,416 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937072Ab3DJRmM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:42:12 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:36411
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1763029Ab3DJRmK convert rfc822-to-8bit (ORCPT
+	id S937127Ab3DJRmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:42:22 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:34104 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937080Ab3DJRmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:42:10 -0400
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -2
-X-BigFish: PS-2(zz98dI9371I542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bh8275dhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: RE: [PATCH 1/1] Drivers: hv: vmbus: Add additional distro specific
- Kconfig options
-Thread-Topic: [PATCH 1/1] Drivers: hv: vmbus: Add additional distro specific
- Kconfig options
-Thread-Index: AQHONgFIqa2eusdO/ECLJzZ4butuKpjPmheAgAADVpCAAAjhAIAACDyA
-Date: Wed, 10 Apr 2013 17:37:41 +0000
-Message-ID: <a6d2f8d7a9bf48cda759bf7029192c4d@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1365610097-10955-1-git-send-email-kys@microsoft.com>
- <20130410154957.GA13849@kroah.com>
- <a3b67bf6e11c462d826c1fc4957c3da9@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130410163340.GA21840@kroah.com>
-In-Reply-To: <20130410163340.GA21840@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.124.4]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB062.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC107.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(24454001)(377454001)(13464002)(51704002)(189002)(199002)(54316002)(5343635001)(6806001)(79102001)(49866001)(5343655001)(63696002)(80022001)(56816002)(76482001)(65816001)(56776001)(4396001)(77982001)(31966008)(74502001)(46102001)(59766001)(81542001)(20776003)(50466001)(69226001)(47776003)(50986001)(23726001)(33646001)(46406002)(54356001)(16676001)(53806001)(47446002)(47736001)(74662001)(81342001)(51856001)(47976001)(24736002)(550254004);DIR:OUT;SFP:;SCL:1;SRVR:BN1AFFO11HUB013;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0812095267
+	Wed, 10 Apr 2013 13:42:19 -0400
+Message-ID: <1365614999.32127.103.camel@misato.fc.hp.com>
+Subject: Re: [patch] mm, hotplug: avoid compiling memory hotremove functions
+ when disabled
+From: Toshi Kani <toshi.kani@hp.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-mm@kvack.org
+Date: Wed, 10 Apr 2013 11:29:59 -0600
+In-Reply-To: <alpine.DEB.2.02.1304092302540.3916@chino.kir.corp.google.com>
+References: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
+	 <20130408134438.2a4388a07163e10a37158eed@linux-foundation.org>
+	 <1365454703.32127.8.camel@misato.fc.hp.com>
+	 <alpine.DEB.2.02.1304092155220.25293@chino.kir.corp.google.com>
+	 <alpine.DEB.2.02.1304092302540.3916@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2013-04-09 at 23:07 -0700, David Rientjes wrote:
+> __remove_pages() is only necessary for CONFIG_MEMORY_HOTREMOVE.  PowerPC
+> pseries will return -EOPNOTSUPP if unsupported.
+> 
+> Adding an #ifdef causes several other functions it depends on to also
+> become unnecessary, which saves in .text when disabled (it's disabled in
+> most defconfigs besides powerpc, including x86).  remove_memory_block()
+> becomes static since it is not referenced outside of
+> drivers/base/memory.c.
+> 
+> Build tested on x86 and powerpc with CONFIG_MEMORY_HOTREMOVE both enabled
+> and disabled.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
+
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+
+Thanks,
+-Toshi
 
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Wednesday, April 10, 2013 12:34 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; jasowang@redhat.com
-> Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Add additional distro specific Kconfig
-> options
+> ---
+>  arch/powerpc/platforms/pseries/hotplug-memory.c | 12 +++++
+>  drivers/base/memory.c                           | 44 +++++++--------
+>  include/linux/memory.h                          |  3 +-
+>  include/linux/memory_hotplug.h                  |  4 +-
+>  mm/memory_hotplug.c                             | 68 +++++++++++------------
+>  mm/sparse.c                                     | 72 +++++++++++++------------
+>  6 files changed, 113 insertions(+), 90 deletions(-)
 > 
-> On Wed, Apr 10, 2013 at 04:12:24PM +0000, KY Srinivasan wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > > Sent: Wednesday, April 10, 2013 11:50 AM
-> > > To: KY Srinivasan
-> > > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
-> olaf@aepfle.de;
-> > > apw@canonical.com; jasowang@redhat.com
-> > > Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Add additional distro specific
-> Kconfig
-> > > options
-> > >
-> > > On Wed, Apr 10, 2013 at 09:08:17AM -0700, K. Y. Srinivasan wrote:
-> > > > The guest ID captures information about the guest and has room for
-> > > > distributions to add distro specific information. Add Kconfig options
-> > > > to support distro specific information to be managed easily.
-> > > >
-> > > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > > > ---
-> > > >  drivers/hv/Kconfig        |   14 ++++++++++++++
-> > > >  drivers/hv/hv.c           |    4 +++-
-> > > >  drivers/hv/hyperv_vmbus.h |    2 +-
-> > > >  3 files changed, 18 insertions(+), 2 deletions(-)
-> > > >
-> > > > diff --git a/drivers/hv/Kconfig b/drivers/hv/Kconfig
-> > > > index 0403b51..d2ca9c7 100644
-> > > > --- a/drivers/hv/Kconfig
-> > > > +++ b/drivers/hv/Kconfig
-> > > > @@ -19,4 +19,18 @@ config HYPERV_BALLOON
-> > > >  	help
-> > > >  	  Select this option to enable Hyper-V Balloon driver.
-> > > >
-> > > > +config HYPERV_GUEST_D1
-> > > > +	hex "Distro specific information"
-> > > > +	range 0x00 0xff
-> > > > +	default 0
-> > > > +	help
-> > > > +	  This specifies the Distro vendor
-> > >
-> > > And just what is a distro supposed to set the value here to?  For
-> > > example, what would Arch Linux pick?  Fedora?  RHEL?  SLES?  openSUSE?
-> > > You do know that there are more than 0xff different Linux distro
-> > > "vendors"?  Do they all just get to pick a number that they like?
-> >
-> > MSFT is planning to manage this space; we will assign distributions
-> > unique numbers that they can use here.
-> 
-> And how will that happen?  A single line in a Kconfig file doesn't cut
-> it, sorry.
-> 
-> What's wrong with lanana.org managing it instead?  That's who manages
-> all of the rest of the kernel-limited resources.
-> 
-> And what happens when you have more than 256?  We already know that's
-> not going to be enough numbers, why start out already with an obsolete
-> range?
-
-Greg,
-You are reading more into this than there is. As it stands now (without this patch), the code
-that constructs the guest OS ID has place holders for adding in some distro specific tags into
-this ID. Look at the function generate_guest_id() in  hyperv_vmbus.h. Currently these values are
-hard-coded to 0. All I am doing here is to present a more maintainable way of customizing these.
-The default values for these are currently 0 and even with this patch, the default values will continue
-to be 0. However, if a distro chooses to modify these defaults, with this patch they can do so in a more
-maintainable way - they could set this config parameter on a per-tree basis.
-
-This information will potentially be used to automate the support infrastructure. We feel that with 24 bits
-between the two distro specific tags, we have enough bits to differentiate the distros that may run on 
-our platform.
- 
-> 
-> > > > +config HYPERV_GUEST_D2
-> > > > +	hex "Additional Distro specific information"
-> > > > +	range 0x0000 0xffff
-> > > > +	default 0
-> > > > +	help
-> > > > +	  Additional Distro specific kernel version information
-> > >
-> > > Again, what is a distro supposed to do here?  What's wrong with the
-> > > kernel version information that the kernel already has?  Can't you just
-> > > use that string?
-> >
-> > We already have the kernel version information. Distros can choose to
-> > use this as they please. We are recommending that they use this field
-> > to track some distro specific build number.
-> 
-> That's in the kernel version already, why put it here again?
-> 
-> Again, you need _way_ more than just a single Kconfig line for new
-> configuration options where you expect distros to set a value to a
-> unique thing,
-> 
-> And lastly, you do know about /etc/os-release, the cross-distro,
-> standardized way to specify distro version and build information,
-> right?  Why aren't you just using that instead of creating your own
-> "unique" way of defining the exact same thing?
-> 
-> Don't create a new standard just when we all finally picked one to
-> follow, it makes it look like you don't think what the community decided
-> on is valid, which isn't a wise decision.
-
-As I said, we are not proposing any new standard here. KVP currently retrieves info
-from /etc/os-release. The tooling on the Windows host uses the guest OS ID MSR to identify guest
-operating systems running on the host . With what we currently have, we can detect that it is Linux based
-on the information we use to construct the OS ID. This information also includes the kernel version number
-as well. This patch merely makes it easy to add distro specific tags. It is entirely up to distros to decide if they want to
-add these tags. The default values are 0 for both these fields and they continue to be 0.
-
-Regards,
-
-K. Y
+> diff --git a/arch/powerpc/platforms/pseries/hotplug-memory.c b/arch/powerpc/platforms/pseries/hotplug-memory.c
+> --- a/arch/powerpc/platforms/pseries/hotplug-memory.c
+> +++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
+> @@ -72,6 +72,7 @@ unsigned long memory_block_size_bytes(void)
+>  	return get_memblock_size();
+>  }
+>  
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>  static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
+>  {
+>  	unsigned long start, start_pfn;
+> @@ -153,6 +154,17 @@ static int pseries_remove_memory(struct device_node *np)
+>  	ret = pseries_remove_memblock(base, lmb_size);
+>  	return ret;
+>  }
+> +#else
+> +static inline int pseries_remove_memblock(unsigned long base,
+> +					  unsigned int memblock_size)
+> +{
+> +	return -EOPNOTSUPP;
+> +}
+> +static inline int pseries_remove_memory(struct device_node *np)
+> +{
+> +	return -EOPNOTSUPP;
+> +}
+> +#endif /* CONFIG_MEMORY_HOTREMOVE */
+>  
+>  static int pseries_add_memory(struct device_node *np)
+>  {
+> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -93,16 +93,6 @@ int register_memory(struct memory_block *memory)
+>  	return error;
+>  }
+>  
+> -static void
+> -unregister_memory(struct memory_block *memory)
+> -{
+> -	BUG_ON(memory->dev.bus != &memory_subsys);
+> -
+> -	/* drop the ref. we got in remove_memory_block() */
+> -	kobject_put(&memory->dev.kobj);
+> -	device_unregister(&memory->dev);
+> -}
+> -
+>  unsigned long __weak memory_block_size_bytes(void)
+>  {
+>  	return MIN_MEMORY_BLOCK_SIZE;
+> @@ -637,8 +627,28 @@ static int add_memory_section(int nid, struct mem_section *section,
+>  	return ret;
+>  }
+>  
+> -int remove_memory_block(unsigned long node_id, struct mem_section *section,
+> -		int phys_device)
+> +/*
+> + * need an interface for the VM to add new memory regions,
+> + * but without onlining it.
+> + */
+> +int register_new_memory(int nid, struct mem_section *section)
+> +{
+> +	return add_memory_section(nid, section, NULL, MEM_OFFLINE, HOTPLUG);
+> +}
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +static void
+> +unregister_memory(struct memory_block *memory)
+> +{
+> +	BUG_ON(memory->dev.bus != &memory_subsys);
+> +
+> +	/* drop the ref. we got in remove_memory_block() */
+> +	kobject_put(&memory->dev.kobj);
+> +	device_unregister(&memory->dev);
+> +}
+> +
+> +static int remove_memory_block(unsigned long node_id,
+> +			       struct mem_section *section, int phys_device)
+>  {
+>  	struct memory_block *mem;
+>  
+> @@ -661,15 +671,6 @@ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+>  	return 0;
+>  }
+>  
+> -/*
+> - * need an interface for the VM to add new memory regions,
+> - * but without onlining it.
+> - */
+> -int register_new_memory(int nid, struct mem_section *section)
+> -{
+> -	return add_memory_section(nid, section, NULL, MEM_OFFLINE, HOTPLUG);
+> -}
+> -
+>  int unregister_memory_section(struct mem_section *section)
+>  {
+>  	if (!present_section(section))
+> @@ -677,6 +678,7 @@ int unregister_memory_section(struct mem_section *section)
+>  
+>  	return remove_memory_block(0, section, 0);
+>  }
+> +#endif /* CONFIG_MEMORY_HOTREMOVE */
+>  
+>  /*
+>   * offline one memory block. If the memory block has been offlined, do nothing.
+> diff --git a/include/linux/memory.h b/include/linux/memory.h
+> --- a/include/linux/memory.h
+> +++ b/include/linux/memory.h
+> @@ -114,9 +114,10 @@ extern void unregister_memory_notifier(struct notifier_block *nb);
+>  extern int register_memory_isolate_notifier(struct notifier_block *nb);
+>  extern void unregister_memory_isolate_notifier(struct notifier_block *nb);
+>  extern int register_new_memory(int, struct mem_section *);
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>  extern int unregister_memory_section(struct mem_section *);
+> +#endif
+>  extern int memory_dev_init(void);
+> -extern int remove_memory_block(unsigned long, struct mem_section *, int);
+>  extern int memory_notify(unsigned long val, void *v);
+>  extern int memory_isolate_notify(unsigned long val, void *v);
+>  extern struct memory_block *find_memory_block_hinted(struct mem_section *,
+> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+> --- a/include/linux/memory_hotplug.h
+> +++ b/include/linux/memory_hotplug.h
+> @@ -97,13 +97,13 @@ extern void __online_page_free(struct page *page);
+>  #ifdef CONFIG_MEMORY_HOTREMOVE
+>  extern bool is_pageblock_removable_nolock(struct page *page);
+>  extern int arch_remove_memory(u64 start, u64 size);
+> +extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
+> +	unsigned long nr_pages);
+>  #endif /* CONFIG_MEMORY_HOTREMOVE */
+>  
+>  /* reasonably generic interface to expand the physical pages in a zone  */
+>  extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
+>  	unsigned long nr_pages);
+> -extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
+> -	unsigned long nr_pages);
+>  
+>  #ifdef CONFIG_NUMA
+>  extern int memory_add_physaddr_to_nid(u64 start);
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -436,6 +436,40 @@ static int __meminit __add_section(int nid, struct zone *zone,
+>  	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
+>  }
+>  
+> +/*
+> + * Reasonably generic function for adding memory.  It is
+> + * expected that archs that support memory hotplug will
+> + * call this function after deciding the zone to which to
+> + * add the new pages.
+> + */
+> +int __ref __add_pages(int nid, struct zone *zone, unsigned long phys_start_pfn,
+> +			unsigned long nr_pages)
+> +{
+> +	unsigned long i;
+> +	int err = 0;
+> +	int start_sec, end_sec;
+> +	/* during initialize mem_map, align hot-added range to section */
+> +	start_sec = pfn_to_section_nr(phys_start_pfn);
+> +	end_sec = pfn_to_section_nr(phys_start_pfn + nr_pages - 1);
+> +
+> +	for (i = start_sec; i <= end_sec; i++) {
+> +		err = __add_section(nid, zone, i << PFN_SECTION_SHIFT);
+> +
+> +		/*
+> +		 * EEXIST is finally dealt with by ioresource collision
+> +		 * check. see add_memory() => register_memory_resource()
+> +		 * Warning will be printed if there is collision.
+> +		 */
+> +		if (err && (err != -EEXIST))
+> +			break;
+> +		err = 0;
+> +	}
+> +
+> +	return err;
+> +}
+> +EXPORT_SYMBOL_GPL(__add_pages);
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>  /* find the smallest valid pfn in the range [start_pfn, end_pfn) */
+>  static int find_smallest_section_pfn(int nid, struct zone *zone,
+>  				     unsigned long start_pfn,
+> @@ -658,39 +692,6 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
+>  	return 0;
+>  }
+>  
+> -/*
+> - * Reasonably generic function for adding memory.  It is
+> - * expected that archs that support memory hotplug will
+> - * call this function after deciding the zone to which to
+> - * add the new pages.
+> - */
+> -int __ref __add_pages(int nid, struct zone *zone, unsigned long phys_start_pfn,
+> -			unsigned long nr_pages)
+> -{
+> -	unsigned long i;
+> -	int err = 0;
+> -	int start_sec, end_sec;
+> -	/* during initialize mem_map, align hot-added range to section */
+> -	start_sec = pfn_to_section_nr(phys_start_pfn);
+> -	end_sec = pfn_to_section_nr(phys_start_pfn + nr_pages - 1);
+> -
+> -	for (i = start_sec; i <= end_sec; i++) {
+> -		err = __add_section(nid, zone, i << PFN_SECTION_SHIFT);
+> -
+> -		/*
+> -		 * EEXIST is finally dealt with by ioresource collision
+> -		 * check. see add_memory() => register_memory_resource()
+> -		 * Warning will be printed if there is collision.
+> -		 */
+> -		if (err && (err != -EEXIST))
+> -			break;
+> -		err = 0;
+> -	}
+> -
+> -	return err;
+> -}
+> -EXPORT_SYMBOL_GPL(__add_pages);
+> -
+>  /**
+>   * __remove_pages() - remove sections of pages from a zone
+>   * @zone: zone from which pages need to be removed
+> @@ -726,6 +727,7 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(__remove_pages);
+> +#endif /* CONFIG_MEMORY_HOTREMOVE */
+>  
+>  int set_online_page_callback(online_page_callback_t callback)
+>  {
+> diff --git a/mm/sparse.c b/mm/sparse.c
+> --- a/mm/sparse.c
+> +++ b/mm/sparse.c
+> @@ -620,6 +620,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+>  
+>  	vmemmap_free(start, end);
+>  }
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>  static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+>  {
+>  	unsigned long start = (unsigned long)memmap;
+> @@ -627,6 +628,7 @@ static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+>  
+>  	vmemmap_free(start, end);
+>  }
+> +#endif /* CONFIG_MEMORY_HOTREMOVE */
+>  #else
+>  static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
+>  {
+> @@ -664,6 +666,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+>  			   get_order(sizeof(struct page) * nr_pages));
+>  }
+>  
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>  static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+>  {
+>  	unsigned long maps_section_nr, removing_section_nr, i;
+> @@ -690,40 +693,9 @@ static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+>  			put_page_bootmem(page);
+>  	}
+>  }
+> +#endif /* CONFIG_MEMORY_HOTREMOVE */
+>  #endif /* CONFIG_SPARSEMEM_VMEMMAP */
+>  
+> -static void free_section_usemap(struct page *memmap, unsigned long *usemap)
+> -{
+> -	struct page *usemap_page;
+> -	unsigned long nr_pages;
+> -
+> -	if (!usemap)
+> -		return;
+> -
+> -	usemap_page = virt_to_page(usemap);
+> -	/*
+> -	 * Check to see if allocation came from hot-plug-add
+> -	 */
+> -	if (PageSlab(usemap_page) || PageCompound(usemap_page)) {
+> -		kfree(usemap);
+> -		if (memmap)
+> -			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
+> -		return;
+> -	}
+> -
+> -	/*
+> -	 * The usemap came from bootmem. This is packed with other usemaps
+> -	 * on the section which has pgdat at boot time. Just keep it as is now.
+> -	 */
+> -
+> -	if (memmap) {
+> -		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
+> -			>> PAGE_SHIFT;
+> -
+> -		free_map_bootmem(memmap, nr_pages);
+> -	}
+> -}
+> -
+>  /*
+>   * returns the number of sections whose mem_maps were properly
+>   * set.  If this is <=0, then that means that the passed-in
+> @@ -800,6 +772,39 @@ static inline void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
+>  }
+>  #endif
+>  
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +static void free_section_usemap(struct page *memmap, unsigned long *usemap)
+> +{
+> +	struct page *usemap_page;
+> +	unsigned long nr_pages;
+> +
+> +	if (!usemap)
+> +		return;
+> +
+> +	usemap_page = virt_to_page(usemap);
+> +	/*
+> +	 * Check to see if allocation came from hot-plug-add
+> +	 */
+> +	if (PageSlab(usemap_page) || PageCompound(usemap_page)) {
+> +		kfree(usemap);
+> +		if (memmap)
+> +			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
+> +		return;
+> +	}
+> +
+> +	/*
+> +	 * The usemap came from bootmem. This is packed with other usemaps
+> +	 * on the section which has pgdat at boot time. Just keep it as is now.
+> +	 */
+> +
+> +	if (memmap) {
+> +		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
+> +			>> PAGE_SHIFT;
+> +
+> +		free_map_bootmem(memmap, nr_pages);
+> +	}
+> +}
+> +
+>  void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
+>  {
+>  	struct page *memmap = NULL;
+> @@ -819,4 +824,5 @@ void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
+>  	clear_hwpoisoned_pages(memmap, PAGES_PER_SECTION);
+>  	free_section_usemap(memmap, usemap);
+>  }
+> -#endif
+> +#endif /* CONFIG_MEMORY_HOTREMOVE */
+> +#endif /* CONFIG_MEMORY_HOTPLUG */
 
 
