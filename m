@@ -1,76 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935932Ab3DJCcD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 22:32:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:59157 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1765455Ab3DJCcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 22:32:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,443,1363158000"; 
-   d="scan'208";a="292697252"
-Message-ID: <5164CEF9.1080005@intel.com>
-Date: Wed, 10 Apr 2013 10:31:21 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: "mingo@redhat.com" <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        gregkh@linuxfoundation.org,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, rafael.j.wysocki@intel.com,
-        jkosina@suse.cz, Clark Williams <clark.williams@gmail.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>, keescook@chromium.org,
-        Mel Gorman <mgorman@suse.de>, riel@redhat.com
-Subject: Re: [patch v3 6/8] sched: consider runnable load average in move_tasks
-References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <1364873008-3169-7-git-send-email-alex.shi@intel.com> <CAKfTPtBoV3KoSHuTnZVrvPdCM+5ckFGXfM11oCB1Le_Zmy1hYQ@mail.gmail.com> <5163CBE6.4070209@intel.com> <CAKfTPtDbiv2ACgem7k7YxcxgwGA4-JY1LcAg0B_XOVaOeE8aeQ@mail.gmail.com> <5163EF9E.4030005@intel.com> <CAKfTPtAY3HpFhWiW=-P0_oBss2XhKJYRQJvFHqqapcZ7O0P6kQ@mail.gmail.com> <51642A47.9060602@intel.com> <CAKfTPtA9heicJvotYevr8Ua-tqObvAGTQHHZvkB8SCnSgoFr+Q@mail.gmail.com>
-In-Reply-To: <CAKfTPtA9heicJvotYevr8Ua-tqObvAGTQHHZvkB8SCnSgoFr+Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S935724Ab3DJCei (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 22:34:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:35902 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762730Ab3DJCeg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 22:34:36 -0400
+Message-ID: <1365561254.5814.44.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.8.y] drm/i915: add quirk to invert brightness on
+ eMachines e725
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Josh Boyer <jwboyer@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@intel.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 10 Apr 2013 03:34:14 +0100
+In-Reply-To: <20130409142230.GD32476@hansolo.jdub.homelinux.org>
+References: <20130409123833.GC32476@hansolo.jdub.homelinux.org>
+	 <87y5crpzct.fsf@intel.com>
+	 <20130409142230.GD32476@hansolo.jdub.homelinux.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-KcRV7n0IDH0Z39tWh2Qq"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:e0f7:a9f9:4e26:347a
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 11:16 PM, Vincent Guittot wrote:
->> > Thanks a lot for info sharing! Vincent.
->> >
->> > But I checked the rq->avg and task->se.avg, seems none of them are
->> > possible be updated on different CPU at the same time. So my printk
->> > didn't catch this with benchmark kbuild and aim7 on my SNB EP box.
-> The problem can happen because reader and writer are accessing the
-> variable asynchronously and on different CPUs
-> 
-> CPUA write runnable_avg_sum
-> CPUB read runnable_avg_sum
-> CPUB read runnable_avg_period
-> CPUA write runnable_avg_period
-> 
-> I agree that the time window, during which this can occur, is short
-> but not impossible
 
-May I didn't say clear. Vincent.
+--=-KcRV7n0IDH0Z39tWh2Qq
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-member of rq struct include avg, should be protected by rq->lock when
-other cpu want to access them. Or be accessed only by local cpu. So they
-should be no above situation.
-And for per task avg, the task is impossible to be on different cpu at
-the same time. so there are also no above problem.
+On Tue, 2013-04-09 at 10:22 -0400, Josh Boyer wrote:
+> On Tue, Apr 09, 2013 at 05:12:18PM +0300, Jani Nikula wrote:
+> > On Tue, 09 Apr 2013, Josh Boyer <jwboyer@redhat.com> wrote:
+> > > Upstream commit 01e3a8feb40e54b962a20fa7eb595c5efef5e109
+> >=20
+> > This patch seems to be the above commit and
+> >=20
+> > commit 1ffff60320879830e469e26062c18f75236822ba
+> > Author: Jani Nikula <jani.nikula@intel.com>
+> > Date:   Tue Jan 22 12:50:34 2013 +0200
+> >=20
+> >     drm/i915: add quirk to invert brightness on eMachines G725
+> >=20
+> > squashed together. There's a separate bug for that too:
+> > https://bugs.freedesktop.org/show_bug.cgi?id=3D59628
+>=20
+> Oh...  that actually does seem to be the case.  I did a cherry-pick
+> of just the commit I mentioned on top of 3.8.6 and it seems I resolved
+> the conflict by including in changes for both.  The conflict came up as:
+>=20
+> <<<<<<< HEAD
+>         /* Acer Aspire 4736Z */
+>         { 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
+> =3D=3D=3D=3D=3D=3D=3D
+>         /* Acer/eMachines G725 */
+>         { 0x2a42, 0x1025, 0x0210, quirk_invert_brightness },
+>=20
+>         /* Acer/eMachines e725 */
+>         { 0x2a42, 0x1025, 0x0212, quirk_invert_brightness },
+> >>>>>>> 01e3a8f... drm/i915: add quirk to invert brightness on eMachines =
+e725
+>=20
+> Thanks for catching that.
+>=20
+> > I think both are okay for stable, but by the stable rules you should
+> > probably split this up, with the appropriate upstream references in
+> > both. Or do whatever the stable team tells you to do. ;)
+>=20
+> Yeah.  I'm happy to split them up and send them out separately.  Or if
+> Greg wants to just list both upstream commit IDs with a single backport,
+> that would also be fine.
 
-I thought the problem may exists for middle level entity, but seems task
-group has each of entity on every cpu. So there is no this problem too.
+I cherry-picked the following series for Debian:
 
-So, you may better to hold rq->lock when check the buddy cpu info.
+[pre-3.8]
+7bd90909bbf9 drm/i915: panel: invert brightness via parameter
+4dca20efb1a9 drm/i915: panel: invert brightness via quirk
+5a15ab5b93e4 drm/i915: panel: invert brightness acer aspire 5734z
+5f85f176c2f1 DRM/i915: Add QUIRK_INVERT_BRIGHTNESS for NCR machines.
+[post-3.8]
+1ffff6032087 drm/i915: add quirk to invert brightness on eMachines G725
+01e3a8feb40e drm/i915: add quirk to invert brightness on eMachines e725
+5559ecadad5a drm/i915: add quirk to invert brightness on Packard Bell NCL20
 
-Correct me if sth wrong. :)
+Should these all be applied to the various 3.x.y stable branches?
 
--- 
-Thanks Alex
+Ben.
+
+--=20
+Ben Hutchings
+The program is absolutely right; therefore, the computer must be wrong.
+
+--=-KcRV7n0IDH0Z39tWh2Qq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUWTPpue/yOyVhhEJAQrRtA/6AtBASNBMgN/Lo/mvdyX4o3LHwQIb03q0
+fnwA3HKfJWxRsSDXnkfr9ktC5zR42gvVyhuooue5zvhIfh7rMycAwuKBZ3kRhyib
+3K/KsDHD4CS+UA/uAVdmB0mwmF0/3DD+YK0dvQjke+v2MEp0QIxfjkMl9RyhPe/z
+5YCGNG46cRy078f3f+/DrIRjyJgpDmLnjNQ1SQmWtfXLxnY+bFFszaAe7g8IoavG
+tved53EGgvIMX0I/uz7POwM+PSRL3OMzn5ZHPuxtraKFrmZdWMmGf0rqktXjkp+N
+7LDccJsoVfpzJ4RJt6J+Box0kAOd/j0vkVXNLegnv0niEF13SMdpLPOhoRwWOKKi
+++K6sZ9XP6PIZm0PQE6LodTLLNCbzC2Rfgx79nE/LPd4E3eaClwF3mBZYUgZXweE
+oVIMSY+QGjokgrQqMN87qYlUYWrJieAZ2jNvl3rJRRTVXnQ1tneKi8Ym9XjOF6YG
+n77bnwlNq8+ohdRrimyUQF5PZw/VV5o70ItB/GD37uDzcJvVxj50ju+iPeAv/Ozz
+xabZdze8NnwgKQ/ucJ7KNNAb6HKd+51dFdwZ77ujtDGE4SxtVpMxmEeoS+f6cPlN
+DdRzzQ4mxB1x/Z+js+y+J9DDX/gEtU8u0aOv+seE9oSN//i8pycSWkLMKlYM2WCK
+oVi2vp6gtSs=
+=nf5F
+-----END PGP SIGNATURE-----
+
+--=-KcRV7n0IDH0Z39tWh2Qq--
