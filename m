@@ -1,48 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935217Ab3DJAFW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 20:05:22 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:65461 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762270Ab3DJAFV (ORCPT
+	id S1765597Ab3DJAJh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 20:09:37 -0400
+Received: from mail-da0-f49.google.com ([209.85.210.49]:35012 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762270Ab3DJAJf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 20:05:21 -0400
-Message-ID: <5164ACBB.2040704@gmail.com>
-Date: Wed, 10 Apr 2013 08:05:15 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 9 Apr 2013 20:09:35 -0400
 MIME-Version: 1.0
-To: Andrew Shewmaker <agshew@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        ric.masonn@gmail.com
-Subject: Re: [PATCH v8 3/3] mm: reinititalise user and admin reserves if memory
- is added or removed
-References: <20130408190738.GC2321@localhost.localdomain> <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org> <20130408210039.GA3396@localhost.localdomain> <20130409151906.2ee55116ca9e3abd80a90e3e@linux-foundation.org> <CAF-E8XEq9AE0z472QMWPbY-8YgvDsjx3FhEKRsVx7Bc_=AEn_Q@mail.gmail.com>
-In-Reply-To: <CAF-E8XEq9AE0z472QMWPbY-8YgvDsjx3FhEKRsVx7Bc_=AEn_Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1365501657-4213-8-git-send-email-serban.constantinescu@arm.com>
+References: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com>
+	<1365501657-4213-8-git-send-email-serban.constantinescu@arm.com>
+Date: Tue, 9 Apr 2013 17:09:35 -0700
+Message-ID: <CAMP5Xgf+hAyo+W17zMfcdSk6+PaK+eHho_Dz=XphbojE=JGA8Q@mail.gmail.com>
+Subject: Re: [PATCH v2 7/7] staging: android: binder: replace types with
+ portable ones
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Serban Constantinescu <serban.constantinescu@arm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
-On 04/10/2013 07:56 AM, Andrew Shewmaker wrote:
-> On Tue, Apr 9, 2013 at 4:19 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
->> On Mon, 8 Apr 2013 17:00:40 -0400 Andrew Shewmaker <agshew@gmail.com> wrote:
->>
->>> Should I add the memory notifier code to mm/nommu.c too?
->>> I'm guessing that if a system doesn't have an mmu that it also
->>> won't be hotplugging memory.
->> I doubt if we need to worry about memory hotplug on nommu machines,
->> so just do the minimum which is required to get nommu to compile
->> and link.  That's probably "nothing".
-> I haven't gotten myself set up to compile a nommu architecture, so I'll post
-> my next version, and work on verifying it compiles and links later. But I
-> I probably won't be able to get to that for a week and a half ... I'm leaving
-> on my honeymoon in the next couple days :)
+On Tue, Apr 9, 2013 at 3:00 AM, Serban Constantinescu
+<serban.constantinescu@arm.com> wrote:
+> Since this driver is meant to be used on different types of processors
+> and a portable driver should specify the size a variable expects to be
+> this patch changes the types used throughout the binder interface.
+>
+> We use "userspace" types since this header will be exported and used by
+> the Android filesystem.
+>
+> The patch does not change in any way the functionality of the binder driver.
+>
+> Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+> ---
+>  drivers/staging/android/binder.h |   26 +++++++++++++-------------
+>  1 file changed, 13 insertions(+), 13 deletions(-)
+>
+> diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+> index 8789baa..f3ffacd 100644
+> --- a/drivers/staging/android/binder.h
+> +++ b/drivers/staging/android/binder.h
+> @@ -123,10 +123,10 @@ struct binder_transaction_data {
+>                 void    *ptr;   /* target descriptor of return transaction */
+>         } target;
+>         void            *cookie;        /* target object cookie */
+> -       unsigned int    code;           /* transaction command */
+> +       __u32           code;           /* transaction command */
+>
+>         /* General information about the transaction. */
+> -       unsigned int    flags;
+> +       __u32           flags;
+>         pid_t           sender_pid;
+>         uid_t           sender_euid;
+>         size_t          data_size;      /* number of bytes of data */
+> @@ -143,7 +143,7 @@ struct binder_transaction_data {
+>                         /* offsets from buffer to flat_binder_object structs */
+>                         const void __user       *offsets;
+>                 } ptr;
+> -               uint8_t buf[8];
+> +               __u8    buf[8];
+>         } data;
+>  };
+>
+> @@ -153,18 +153,18 @@ struct binder_ptr_cookie {
+>  };
+>
+>  struct binder_pri_desc {
+> -       int priority;
+> -       int desc;
+> +       __s32 priority;
+> +       __s32 desc;
+>  };
+>
+>  struct binder_pri_ptr_cookie {
+> -       int priority;
+> +       __s32 priority;
+>         void *ptr;
+>         void *cookie;
+>  };
+>
+>  enum binder_driver_return_protocol {
+> -       BR_ERROR = _IOR('r', 0, int),
+> +       BR_ERROR = _IOR('r', 0, __s32),
+>         /*
+>          * int: error code
+>          */
+> @@ -178,7 +178,7 @@ enum binder_driver_return_protocol {
+>          * binder_transaction_data: the received command.
+>          */
+>
+> -       BR_ACQUIRE_RESULT = _IOR('r', 4, int),
+> +       BR_ACQUIRE_RESULT = _IOR('r', 4, __s32),
+>         /*
+>          * not currently supported
+>          * int: 0 if the last bcATTEMPT_ACQUIRE was not successful.
+> @@ -258,7 +258,7 @@ enum binder_driver_command_protocol {
+>          * binder_transaction_data: the sent command.
+>          */
+>
+> -       BC_ACQUIRE_RESULT = _IOW('c', 2, int),
+> +       BC_ACQUIRE_RESULT = _IOW('c', 2, __s32),
+>         /*
+>          * not currently supported
+>          * int:  0 if the last BR_ATTEMPT_ACQUIRE was not successful.
+> @@ -270,10 +270,10 @@ enum binder_driver_command_protocol {
+>          * void *: ptr to transaction data received on a read
+>          */
+>
+> -       BC_INCREFS = _IOW('c', 4, int),
+> -       BC_ACQUIRE = _IOW('c', 5, int),
+> -       BC_RELEASE = _IOW('c', 6, int),
+> -       BC_DECREFS = _IOW('c', 7, int),
+> +       BC_INCREFS = _IOW('c', 4, __s32),
+> +       BC_ACQUIRE = _IOW('c', 5, __s32),
+> +       BC_RELEASE = _IOW('c', 6, __s32),
+> +       BC_DECREFS = _IOW('c', 7, __s32),
 
-How to compile a  nommu architecture? just config in menu config or a 
-physical machine?
+These four are actually read as unsigned values, so it would be better
+to use __u32 here.
+
+>         /*
+>          * int: descriptor
+>          */
+> --
+> 1.7.9.5
+>
 
 
+
+--
+Arve Hjønnevåg
