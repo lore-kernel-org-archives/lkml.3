@@ -1,41 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937518Ab3DJW7p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:59:45 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:55026 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937424Ab3DJW7n (ORCPT
+	id S937538Ab3DJXAA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:00:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56564 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937464Ab3DJWuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:59:43 -0400
-Date: Wed, 10 Apr 2013 15:59:41 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Tomas Winkler <tomas.winkler@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 1/3] mei: nfc: Initial nfc implementation
-Message-ID: <20130410225941.GA4647@kroah.com>
-References: <1365464495-17642-1-git-send-email-tomas.winkler@intel.com>
- <20130410200312.GC5681@kroah.com>
- <20130410211513.GJ4874@zurbaran>
- <201304110029.38938.arnd@arndb.de>
- <20130410225205.GN4874@zurbaran>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130410225205.GN4874@zurbaran>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Apr 2013 18:50:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [ 20/29] spinlocks and preemption points need to be at least compiler barriers
+Date: Wed, 10 Apr 2013 15:49:38 -0700
+Message-Id: <20130410224806.152999875@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
+References: <20130410224804.061806042@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 12:52:05AM +0200, Samuel Ortiz wrote:
-> > If someone seriously wants to use /dev/mei in that way, they can easily
-> > provide the header file themselves, or patch the kernel in any way necessary.
-> I'm fine with moving nfc.h back to drivers/misc/mei/
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Great, then please move it into the .c file, as it doesn't need to be a
-.h file.
+------------------
 
-thanks,
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-greg k-h
+commit 386afc91144b36b42117b0092893f15bc8798a80 upstream.
+
+In UP and non-preempt respectively, the spinlocks and preemption
+disable/enable points are stubbed out entirely, because there is no
+regular code that can ever hit the kind of concurrency they are meant to
+protect against.
+
+However, while there is no regular code that can cause scheduling, we
+_do_ end up having some exceptional (literally!) code that can do so,
+and that we need to make sure does not ever get moved into the critical
+region by the compiler.
+
+In particular, get_user() and put_user() is generally implemented as
+inline asm statements (even if the inline asm may then make a call
+instruction to call out-of-line), and can obviously cause a page fault
+and IO as a result.  If that inline asm has been scheduled into the
+middle of a preemption-safe (or spinlock-protected) code region, we
+obviously lose.
+
+Now, admittedly this is *very* unlikely to actually ever happen, and
+we've not seen examples of actual bugs related to this.  But partly
+exactly because it's so hard to trigger and the resulting bug is so
+subtle, we should be extra careful to get this right.
+
+So make sure that even when preemption is disabled, and we don't have to
+generate any actual *code* to explicitly tell the system that we are in
+a preemption-disabled region, we need to at least tell the compiler not
+to move things around the critical region.
+
+This patch grew out of the same discussion that caused commits
+79e5f05edcbf ("ARC: Add implicit compiler barrier to raw_local_irq*
+functions") and 3e2e0d2c222b ("tile: comment assumption about
+__insn_mtspr for <asm/irqflags.h>") to come about.
+
+Note for stable: use discretion when/if applying this.  As mentioned,
+this bug may never have actually bitten anybody, and gcc may never have
+done the required code motion for it to possibly ever trigger in
+practice.
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ include/linux/preempt.h     |   20 +++++++++++++-------
+ include/linux/spinlock_up.h |   29 ++++++++++++++++++-----------
+ 2 files changed, 31 insertions(+), 18 deletions(-)
+
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -93,14 +93,20 @@ do { \
+ 
+ #else /* !CONFIG_PREEMPT_COUNT */
+ 
+-#define preempt_disable()		do { } while (0)
+-#define sched_preempt_enable_no_resched()	do { } while (0)
+-#define preempt_enable_no_resched()	do { } while (0)
+-#define preempt_enable()		do { } while (0)
++/*
++ * Even if we don't have any preemption, we need preempt disable/enable
++ * to be barriers, so that we don't have things like get_user/put_user
++ * that can cause faults and scheduling migrate into our preempt-protected
++ * region.
++ */
++#define preempt_disable()		barrier()
++#define sched_preempt_enable_no_resched()	barrier()
++#define preempt_enable_no_resched()	barrier()
++#define preempt_enable()		barrier()
+ 
+-#define preempt_disable_notrace()		do { } while (0)
+-#define preempt_enable_no_resched_notrace()	do { } while (0)
+-#define preempt_enable_notrace()		do { } while (0)
++#define preempt_disable_notrace()		barrier()
++#define preempt_enable_no_resched_notrace()	barrier()
++#define preempt_enable_notrace()		barrier()
+ 
+ #endif /* CONFIG_PREEMPT_COUNT */
+ 
+--- a/include/linux/spinlock_up.h
++++ b/include/linux/spinlock_up.h
+@@ -16,7 +16,10 @@
+  * In the debug case, 1 means unlocked, 0 means locked. (the values
+  * are inverted, to catch initialization bugs)
+  *
+- * No atomicity anywhere, we are on UP.
++ * No atomicity anywhere, we are on UP. However, we still need
++ * the compiler barriers, because we do not want the compiler to
++ * move potentially faulting instructions (notably user accesses)
++ * into the locked sequence, resulting in non-atomic execution.
+  */
+ 
+ #ifdef CONFIG_DEBUG_SPINLOCK
+@@ -25,6 +28,7 @@
+ static inline void arch_spin_lock(arch_spinlock_t *lock)
+ {
+ 	lock->slock = 0;
++	barrier();
+ }
+ 
+ static inline void
+@@ -32,6 +36,7 @@ arch_spin_lock_flags(arch_spinlock_t *lo
+ {
+ 	local_irq_save(flags);
+ 	lock->slock = 0;
++	barrier();
+ }
+ 
+ static inline int arch_spin_trylock(arch_spinlock_t *lock)
+@@ -39,32 +44,34 @@ static inline int arch_spin_trylock(arch
+ 	char oldval = lock->slock;
+ 
+ 	lock->slock = 0;
++	barrier();
+ 
+ 	return oldval > 0;
+ }
+ 
+ static inline void arch_spin_unlock(arch_spinlock_t *lock)
+ {
++	barrier();
+ 	lock->slock = 1;
+ }
+ 
+ /*
+  * Read-write spinlocks. No debug version.
+  */
+-#define arch_read_lock(lock)		do { (void)(lock); } while (0)
+-#define arch_write_lock(lock)		do { (void)(lock); } while (0)
+-#define arch_read_trylock(lock)	({ (void)(lock); 1; })
+-#define arch_write_trylock(lock)	({ (void)(lock); 1; })
+-#define arch_read_unlock(lock)		do { (void)(lock); } while (0)
+-#define arch_write_unlock(lock)	do { (void)(lock); } while (0)
++#define arch_read_lock(lock)		do { barrier(); (void)(lock); } while (0)
++#define arch_write_lock(lock)		do { barrier(); (void)(lock); } while (0)
++#define arch_read_trylock(lock)	({ barrier(); (void)(lock); 1; })
++#define arch_write_trylock(lock)	({ barrier(); (void)(lock); 1; })
++#define arch_read_unlock(lock)		do { barrier(); (void)(lock); } while (0)
++#define arch_write_unlock(lock)	do { barrier(); (void)(lock); } while (0)
+ 
+ #else /* DEBUG_SPINLOCK */
+ #define arch_spin_is_locked(lock)	((void)(lock), 0)
+ /* for sched.c and kernel_lock.c: */
+-# define arch_spin_lock(lock)		do { (void)(lock); } while (0)
+-# define arch_spin_lock_flags(lock, flags)	do { (void)(lock); } while (0)
+-# define arch_spin_unlock(lock)	do { (void)(lock); } while (0)
+-# define arch_spin_trylock(lock)	({ (void)(lock); 1; })
++# define arch_spin_lock(lock)		do { barrier(); (void)(lock); } while (0)
++# define arch_spin_lock_flags(lock, flags)	do { barrier(); (void)(lock); } while (0)
++# define arch_spin_unlock(lock)	do { barrier(); (void)(lock); } while (0)
++# define arch_spin_trylock(lock)	({ barrier(); (void)(lock); 1; })
+ #endif /* DEBUG_SPINLOCK */
+ 
+ #define arch_spin_is_contended(lock)	(((void)(lock), 0))
+
+
