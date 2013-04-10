@@ -1,76 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935229Ab3DJTl7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 15:41:59 -0400
-Received: from mail-da0-f45.google.com ([209.85.210.45]:51015 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934822Ab3DJTl4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 15:41:56 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] timekeeping: Make sure to notify hrtimers when TAI offset changes
-Date: Wed, 10 Apr 2013 12:41:49 -0700
-Message-Id: <1365622909-953-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S935671Ab3DJTmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 15:42:04 -0400
+Received: from www.sr71.net ([198.145.64.142]:38546 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935722Ab3DJTmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 15:42:00 -0400
+Message-ID: <5165C087.4060404@sr71.net>
+Date: Wed, 10 Apr 2013 12:41:59 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Borislav Petkov <bp@alien8.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
+ wrong cpu
+References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos> <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net> <alpine.LFD.2.02.1304092036431.21884@ionos> <alpine.LFD.2.02.1304092126150.21884@ionos> <51647C30.3050109@sr71.net> <alpine.LFD.2.02.1304101024010.21884@ionos> <alpine.LFD.2.02.1304101250320.21884@ionos>
+In-Reply-To: <alpine.LFD.2.02.1304101250320.21884@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas, here's a bugfix I just caught with my 3.10 queue. Mind
-adding this to tip/timers/core?
+I think I got a full trace this time:
 
-thanks
--john
+	http://sr71.net/~dave/linux/bigbox-trace.1365621899.txt.gz
 
+The last timestamp is pretty close to the timestamp on the console:
 
-Now that we have CLOCK_TAI timers, make sure we notify hrtimer
-code when TAI offset is changed.
+[ 2071.033434] smpboot_thread_fn():
+[ 2071.033455] smpboot_thread_fn() cpu: 22 159
+[ 2071.033470] td->cpu: 22
+[ 2071.033475] smp_processor_id(): 21
+[ 2071.033486] comm: migration/%u
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- kernel/time/timekeeping.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index c4d2a87..675f720 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -607,6 +607,7 @@ void timekeeping_set_tai_offset(s32 tai_offset)
- 	__timekeeping_set_tai_offset(tk, tai_offset);
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
-+	clock_was_set();
- }
- 
- /**
-@@ -1639,7 +1640,7 @@ int do_adjtimex(struct timex *txc)
- 	struct timekeeper *tk = &timekeeper;
- 	unsigned long flags;
- 	struct timespec ts;
--	s32 tai;
-+	s32 orig_tai, tai;
- 	int ret;
- 
- 	/* Validate the data before disabling interrupts */
-@@ -1663,10 +1664,13 @@ int do_adjtimex(struct timex *txc)
- 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
- 	write_seqcount_begin(&timekeeper_seq);
- 
--	tai = tk->tai_offset;
-+	orig_tai = tai = tk->tai_offset;
- 	ret = __do_adjtimex(txc, &ts, &tai);
- 
--	__timekeeping_set_tai_offset(tk, tai);
-+	if (tai != orig_tai) {
-+		__timekeeping_set_tai_offset(tk, tai);
-+		clock_was_set_delayed();
-+	}
- 	write_seqcount_end(&timekeeper_seq);
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
- 
--- 
-1.7.10.4
 
