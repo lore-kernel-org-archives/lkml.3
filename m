@@ -1,109 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936347Ab3DJIUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 04:20:24 -0400
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.195]:20075 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936022Ab3DJIUU (ORCPT
+	id S964871Ab3DJI1t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 04:27:49 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:63910 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935049Ab3DJI1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 04:20:20 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-12.tower-46.messagelabs.com!1365582007!33481540!3
-X-Originating-IP: [66.77.174.14]
-X-StarScan-Received: 
-X-StarScan-Version: 6.8.6.1; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <516520AA.8030300@digi.com>
-Date: Wed, 10 Apr 2013 10:19:54 +0200
-From: Hector Palacios <hector.palacios@digi.com>
-Organization: Digi International
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 10 Apr 2013 04:27:45 -0400
 MIME-Version: 1.0
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "aletes.xgr@gmail.com" <aletes.xgr@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>
-Subject: Re: [PATCH v2 2/2] mmc: mxs-mmc: add non-removable property
-References: <1365166070-9370-1-git-send-email-mkl@pengutronix.de> <1365166070-9370-3-git-send-email-mkl@pengutronix.de> <51643053.7030302@digi.com> <516431F9.8010302@digi.com> <51644302.6000109@pengutronix.de>
-In-Reply-To: <51644302.6000109@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20130409222707.GB20739@home.goodmis.org>
+References: <20130228102452.15191.22673.stgit@patser>
+	<20130228102502.15191.14146.stgit@patser>
+	<1364900432.18374.24.camel@laptop>
+	<515AF1C1.7080508@canonical.com>
+	<1364921954.20640.22.camel@laptop>
+	<1365076908.2609.94.camel@laptop>
+	<20130404133123.GW2228@phenom.ffwll.local>
+	<1365093516.2609.109.camel@laptop>
+	<20130409222707.GB20739@home.goodmis.org>
+Date: Wed, 10 Apr 2013 10:27:44 +0200
+Message-ID: <CAKMK7uH7mW9HK6_ZO8OhwQLBUJE3LBizweth1cvZdjVBzOGa=Q@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks, v2
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        rob clark <robclark@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09 Apr 2013 06:34:10 PM CEST, Marc Kleine-Budde wrote:
-> On 04/09/2013 05:21 PM, Hector Palacios wrote:
->> On 04/09/2013 05:14 PM, Hector Palacios wrote:
->>> @@ -95,7 +97,8 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
->>>           struct mxs_mmc_host *host = mmc_priv(mmc);
->>>           struct mxs_ssp *ssp = &host->ssp;
->>>
->>> -       return !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
->>> +       return host->non_removable || host->broken_cd ||
->>> +              !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
->>>                    BM_SSP_STATUS_CARD_DETECT);
->>>    }
+On Wed, Apr 10, 2013 at 12:27 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, Apr 04, 2013 at 06:38:36PM +0200, Peter Zijlstra wrote:
+>> On Thu, 2013-04-04 at 15:31 +0200, Daniel Vetter wrote:
+>> > Hm, I guess your aim with the TASK_DEADLOCK wakeup is to bound the
+>> > wait
+>> > times of older task.
 >>
->> Sorry, I missed your original XOR here, when merging my changes:
+>> No, imagine the following:
+>>
+>> struct ww_mutex A, B;
+>> struct mutex C;
+>>
+>>       task-O  task-Y  task-X
+>>               A
+>>               B
+>>                       C
+>>               C
+>>       B
+>>
+>> At this point O finds that Y owns B and thus we want to make Y 'yield'
+>> B to make allow B progress. Since Y is blocked, we'll send a wakeup.
+>> However Y is blocked on a different locking primitive; one that doesn't
+>> collaborate in the -EDEADLK scheme therefore we don't want the wakeup to
+>> succeed.
 >
-> Can you send an incremental patch against my 2/2 with your
-> Signed-off-by, I'll squash your patch into mine and repost the series.
+> I'm confused to why the above is a problem. Task-X will eventually
+> release C, and then Y will release B and O will get to continue. Do we
+> have to drop them once the owner is blocked? Can't we follow the chain
+> like the PI code does?
 
-Sure. Here it is:
+Just waiting until every task already holding a lock completes and
+unlucks it is indeed a viable solution - it's the currently
+implemented algorithm in ttm and Maarten's current patches.
 
->From 18f6199947bc2681d2d63b307506019535018646 Mon Sep 17 00:00:00 2001
-From: Hector Palacios <hector.palacios@digi.com>
-Date: Wed, 10 Apr 2013 09:16:31 +0200
-Subject: [PATCH] mmc: mxs-mmc: handle 'broken-cd' property
+The nice thing with Peter's wakeup idea on top is:
+- It bounds blocked times.
+- And (at least I think so) it's the key thing making PI boosting
+possible without any ugly PI inversion deadlocks happening. See
 
-According to bindings documentation for mmc, the property 'broken-cd'
-can be used to indicate card-detection is not available and polling
-must be used instead. This patch retrieves this property
-and sets a custom flag. On the get_cd() hook, it returns 1 if
-the flag is set, to always assume the card is present.
+Message-ID: <CAKMK7uEUdtiDDCRPwpiumkrST6suFY7YuQcPAXR_nJ0XHKzsAw@mail.gmail.com>
 
-Signed-off-by: Hector Palacios <hector.palacios@digi.com>
----
- drivers/mmc/host/mxs-mmc.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
-index 75dee88..10c07a8 100644
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -73,6 +73,7 @@ struct mxs_mmc_host {
-        int                             wp_gpio;
-        bool                            wp_inverted;
-        bool                            cd_inverted;
-+       bool                            broken_cd;
-        bool                            non_removable;
- };
-
-@@ -97,7 +98,7 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
-        struct mxs_mmc_host *host = mmc_priv(mmc);
-        struct mxs_ssp *ssp = &host->ssp;
-
--       return host->non_removable ||
-+       return host->non_removable || host->broken_cd ||
-                !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
-                  BM_SSP_STATUS_CARD_DETECT) ^ host->cd_inverted;
- }
-@@ -689,6 +690,7 @@ static int mxs_mmc_probe(struct platform_device 
-*pdev)
-                mmc->caps |= MMC_CAP_4_BIT_DATA;
-        else if (bus_width == 8)
-                mmc->caps |= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
-+       host->broken_cd = of_property_read_bool(np, "broken-cd");
-        host->non_removable = of_property_read_bool(np, 
-"non-removable");
-        if (host->non_removable)
-                mmc->caps |= MMC_CAP_NONREMOVABLE;
+for my current reasoning about this (I have not yet managed to poke a
+hole into it).
+-Daniel
 --
-1.8.2
-
-
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
