@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937172Ab3DJWrT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:47:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56095 "EHLO
+	id S937192Ab3DJXOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:14:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56119 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937145Ab3DJWrR (ORCPT
+	with ESMTP id S937176Ab3DJWrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:17 -0400
+	Wed, 10 Apr 2013 18:47:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adam Jackson <ajax@redhat.com>, Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 17/64] drm/i915: Be sure to turn hsync/vsync back on at crt enable (v2)
-Date: Wed, 10 Apr 2013 15:46:14 -0700
-Message-Id: <20130410224337.012108012@linuxfoundation.org>
+        Shan Hai <shan.hai@windriver.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 25/64] libata: Set max sector to 65535 for Slimtype DVD A DS8A8SH drive
+Date: Wed, 10 Apr 2013 15:46:22 -0700
+Message-Id: <20130410224338.969971806@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -26,103 +26,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Jackson <ajax@redhat.com>
+From: Shan Hai <shan.hai@windriver.com>
 
-commit 637f44d24f8868ee5a597a99e7874fdd150d4cba upstream.
+commit a32450e127fc6e5ca6d958ceb3cfea4d30a00846 upstream.
 
-commit f40ebd6bcbbd0d30591f42dc16be52b5086a366b
-Author: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-Date:   Tue Mar 5 14:24:48 2013 +0100
+The Slimtype DVD A  DS8A8SH drive locks up when max sector is smaller than
+65535, and the blow backtrace is observed on locking up:
 
-    drm/i915: Turn off hsync and vsync on ADPA when disabling crt
+INFO: task flush-8:32:1130 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+flush-8:32      D ffffffff8180cf60     0  1130      2 0x00000000
+ ffff880273aef618 0000000000000046 0000000000000005 ffff880273aee000
+ ffff880273aee000 ffff880273aeffd8 ffff880273aee010 ffff880273aee000
+ ffff880273aeffd8 ffff880273aee000 ffff88026e842ea0 ffff880274a10000
+Call Trace:
+ [<ffffffff8168fc2d>] schedule+0x5d/0x70
+ [<ffffffff8168fccc>] io_schedule+0x8c/0xd0
+ [<ffffffff81324461>] get_request+0x731/0x7d0
+ [<ffffffff8133dc60>] ? cfq_allow_merge+0x50/0x90
+ [<ffffffff81083aa0>] ? wake_up_bit+0x40/0x40
+ [<ffffffff81320443>] ? bio_attempt_back_merge+0x33/0x110
+ [<ffffffff813248ea>] blk_queue_bio+0x23a/0x3f0
+ [<ffffffff81322176>] generic_make_request+0xc6/0x120
+ [<ffffffff81322308>] submit_bio+0x138/0x160
+ [<ffffffff811d7596>] ? bio_alloc_bioset+0x96/0x120
+ [<ffffffff811d1f61>] submit_bh+0x1f1/0x220
+ [<ffffffff811d48b8>] __block_write_full_page+0x228/0x340
+ [<ffffffff811d3650>] ? attach_nobh_buffers+0xc0/0xc0
+ [<ffffffff811d8960>] ? I_BDEV+0x10/0x10
+ [<ffffffff811d8960>] ? I_BDEV+0x10/0x10
+ [<ffffffff811d4ab6>] block_write_full_page_endio+0xe6/0x100
+ [<ffffffff811d4ae5>] block_write_full_page+0x15/0x20
+ [<ffffffff811d9268>] blkdev_writepage+0x18/0x20
+ [<ffffffff81142527>] __writepage+0x17/0x40
+ [<ffffffff811438ba>] write_cache_pages+0x34a/0x4a0
+ [<ffffffff81142510>] ? set_page_dirty+0x70/0x70
+ [<ffffffff81143a61>] generic_writepages+0x51/0x80
+ [<ffffffff81143ab0>] do_writepages+0x20/0x50
+ [<ffffffff811c9ed6>] __writeback_single_inode+0xa6/0x2b0
+ [<ffffffff811ca861>] writeback_sb_inodes+0x311/0x4d0
+ [<ffffffff811caaa6>] __writeback_inodes_wb+0x86/0xd0
+ [<ffffffff811cad43>] wb_writeback+0x1a3/0x330
+ [<ffffffff816916cf>] ? _raw_spin_lock_irqsave+0x3f/0x50
+ [<ffffffff811b8362>] ? get_nr_inodes+0x52/0x70
+ [<ffffffff811cb0ac>] wb_do_writeback+0x1dc/0x260
+ [<ffffffff8168dd34>] ? schedule_timeout+0x204/0x240
+ [<ffffffff811cb232>] bdi_writeback_thread+0x102/0x2b0
+ [<ffffffff811cb130>] ? wb_do_writeback+0x260/0x260
+ [<ffffffff81083550>] kthread+0xc0/0xd0
+ [<ffffffff81083490>] ? kthread_worker_fn+0x1b0/0x1b0
+ [<ffffffff8169a3ec>] ret_from_fork+0x7c/0xb0
+ [<ffffffff81083490>] ? kthread_worker_fn+0x1b0/0x1b0
 
-properly disabled the hsync/vsync logic at disable time, but neglected
-to re-enable them at enable time.
+ The above trace was triggered by
+   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
 
-v2: In the enable hook, restore the connector's expected DPMS level
-instead of forcing ON.  Do this by stashing a back pointer to the
-connector in the crt (suggested by danvet) since otherwise it's awkward
-to look up.
+ It was previously working by accident, since another bug introduced
+ by 4dce8ba94c7 (libata: Use 'bool' return value for ata_id_XXX) caused
+ all drives to use maxsect=65535.
 
-Signed-off-by: Adam Jackson <ajax@redhat.com>
-[danvet: Added more verbose commit citation and cc: stable tag. Also,
-make it compile. Then self-lart and try to assign the right pointer.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_crt.c |   40 ++++++++++++++++-----------------------
- 1 file changed, 17 insertions(+), 23 deletions(-)
+ drivers/ata/libata-core.c |    4 ++++
+ include/linux/libata.h    |    1 +
+ 2 files changed, 5 insertions(+)
 
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -45,6 +45,9 @@
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -2437,6 +2437,9 @@ int ata_dev_configure(struct ata_device
+ 		dev->max_sectors = min_t(unsigned int, ATA_MAX_SECTORS_128,
+ 					 dev->max_sectors);
  
- struct intel_crt {
- 	struct intel_encoder base;
-+	/* DPMS state is stored in the connector, which we need in the
-+	 * encoder's enable/disable callbacks */
-+	struct intel_connector *connector;
- 	bool force_hotplug_required;
- 	u32 adpa_reg;
- };
-@@ -81,29 +84,6 @@ static bool intel_crt_get_hw_state(struc
- 	return true;
- }
- 
--static void intel_disable_crt(struct intel_encoder *encoder)
--{
--	struct drm_i915_private *dev_priv = encoder->base.dev->dev_private;
--	struct intel_crt *crt = intel_encoder_to_crt(encoder);
--	u32 temp;
--
--	temp = I915_READ(crt->adpa_reg);
--	temp |= ADPA_HSYNC_CNTL_DISABLE | ADPA_VSYNC_CNTL_DISABLE;
--	temp &= ~ADPA_DAC_ENABLE;
--	I915_WRITE(crt->adpa_reg, temp);
--}
--
--static void intel_enable_crt(struct intel_encoder *encoder)
--{
--	struct drm_i915_private *dev_priv = encoder->base.dev->dev_private;
--	struct intel_crt *crt = intel_encoder_to_crt(encoder);
--	u32 temp;
--
--	temp = I915_READ(crt->adpa_reg);
--	temp |= ADPA_DAC_ENABLE;
--	I915_WRITE(crt->adpa_reg, temp);
--}
--
- /* Note: The caller is required to filter out dpms modes not supported by the
-  * platform. */
- static void intel_crt_set_dpms(struct intel_encoder *encoder, int mode)
-@@ -135,6 +115,19 @@ static void intel_crt_set_dpms(struct in
- 	I915_WRITE(crt->adpa_reg, temp);
- }
- 
-+static void intel_disable_crt(struct intel_encoder *encoder)
-+{
-+	intel_crt_set_dpms(encoder, DRM_MODE_DPMS_OFF);
-+}
++	if (dev->horkage & ATA_HORKAGE_MAX_SEC_LBA48)
++		dev->max_sectors = ATA_MAX_SECTORS_LBA48;
 +
-+static void intel_enable_crt(struct intel_encoder *encoder)
-+{
-+	struct intel_crt *crt = intel_encoder_to_crt(encoder);
-+
-+	intel_crt_set_dpms(encoder, crt->connector->base.dpms);
-+}
-+
-+
- static void intel_crt_dpms(struct drm_connector *connector, int mode)
- {
- 	struct drm_device *dev = connector->dev;
-@@ -746,6 +739,7 @@ void intel_crt_init(struct drm_device *d
- 	}
+ 	if (ap->ops->dev_config)
+ 		ap->ops->dev_config(dev);
  
- 	connector = &intel_connector->base;
-+	crt->connector = intel_connector;
- 	drm_connector_init(dev, &intel_connector->base,
- 			   &intel_crt_connector_funcs, DRM_MODE_CONNECTOR_VGA);
+@@ -4098,6 +4101,7 @@ static const struct ata_blacklist_entry
+ 	/* Weird ATAPI devices */
+ 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
+ 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
++	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
  
+ 	/* Devices we expect to fail diagnostics */
+ 
+--- a/include/linux/libata.h
++++ b/include/linux/libata.h
+@@ -398,6 +398,7 @@ enum {
+ 	ATA_HORKAGE_NOSETXFER	= (1 << 14),	/* skip SETXFER, SATA only */
+ 	ATA_HORKAGE_BROKEN_FPDMA_AA	= (1 << 15),	/* skip AA */
+ 	ATA_HORKAGE_DUMP_ID	= (1 << 16),	/* dump IDENTIFY data */
++	ATA_HORKAGE_MAX_SEC_LBA48 = (1 << 17),	/* Set max sects to 65535 */
+ 
+ 	 /* DMA mask for user DMA control: User visible values; DO NOT
+ 	    renumber */
 
 
