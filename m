@@ -1,49 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936151Ab3DJA4I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 20:56:08 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:59457 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765432Ab3DJA4G (ORCPT
+	id S936119Ab3DJA6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 20:58:07 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45567 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762735Ab3DJA6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 20:56:06 -0400
+	Tue, 9 Apr 2013 20:58:05 -0400
+X-AuditID: 9c930179-b7b2aae000000518-0c-5164b91911fb
+Date: Wed, 10 Apr 2013 09:58:01 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Hugh Dickins <hughd@google.com>, Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>, Bob Liu <bob.liu@oracle.com>,
+        Shuah Khan <shuah@gonehiking.org>
+Subject: Re: zsmalloc defrag (Was: [PATCH] mm: remove compressed copy from
+ zram in-memory)
+Message-ID: <20130410005801.GH6836@blaptop>
+References: <1365400862-9041-1-git-send-email-minchan@kernel.org>
+ <f3c8ef05-a880-47db-86dd-156038fc7d0f@default>
+ <20130409012719.GB3467@blaptop>
+ <20130409013606.GC3467@blaptop>
+ <51647F94.6000907@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20130409072801.GB31193@intel.com>
-References: <20130326223953.15072.26605.stgit@djiang5-linux2.ch.intel.com>
-	<20130409072801.GB31193@intel.com>
-Date: Tue, 9 Apr 2013 17:56:04 -0700
-X-Google-Sender-Auth: qpbWkqV--wkA3c5eAqmPoh01N1c
-Message-ID: <CAA9_cmewnoSrcLp6Wb0b+rhqS23s5uwPq5Dih0ThtDQG7QARiQ@mail.gmail.com>
-Subject: Re: [PATCH 00/10] Add Intel Atom S1200 seris ioatdma support
-From: Dan Williams <djbw@fb.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dave Jiang <dave.jiang@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <51647F94.6000907@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 12:28 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Tue, Mar 26, 2013 at 03:42:29PM -0700, Dave Jiang wrote:
->> The following series adds support for the Intel Atom S1200 product family
->> ioatdma. This ioatdma also implements a set of version v3.3 features such as 16
->> sources PQ, descriptor write back error status, and does not have many of the
->> silicon bugs that the 3.2 line of hardware has due to a brand new implemention.
->>
->> The series is dependent on the haswell update patch sent prior.
-> Hey Dan,
->
-> Are you okay with the series. Merge window is very close...
->
+Hi Seth,
 
-[resend, last one got html formatted/rejected]
+On Tue, Apr 09, 2013 at 03:52:36PM -0500, Seth Jennings wrote:
+> On 04/08/2013 08:36 PM, Minchan Kim wrote:
+> > On Tue, Apr 09, 2013 at 10:27:19AM +0900, Minchan Kim wrote:
+> >> Hi Dan,
+> >>
+> >> On Mon, Apr 08, 2013 at 09:32:38AM -0700, Dan Magenheimer wrote:
+> >>>> From: Minchan Kim [mailto:minchan@kernel.org]
+> >>>> Sent: Monday, April 08, 2013 12:01 AM
+> >>>> Subject: [PATCH] mm: remove compressed copy from zram in-memory
+> >>>
+> >>> (patch removed)
+> >>>
+> >>>> Fragment ratio is almost same but memory consumption and compile time
+> >>>> is better. I am working to add defragment function of zsmalloc.
+> >>>
+> >>> Hi Minchan --
+> >>>
+> >>> I would be very interested in your design thoughts on
+> >>> how you plan to add defragmentation for zsmalloc.  In
+> >>
+> >> What I can say now about is only just a word "Compaction".
+> >> As you know, zsmalloc has a transparent handle so we can do whatever
+> >> under user. Of course, there is a tradeoff between performance 
+> >> and memory efficiency. I'm biased to latter for embedded usecase.
+> >>
+> >> And I might post it because as you know well, zsmalloc
+> > 
+> > Incomplete sentense,
+> > 
+> > I might not post it until promoting zsmalloc because as you know well,
+> > zsmalloc/zram's all new stuffs are blocked into staging tree.
+> > Even if we could add it into staging, as you know well, staging is where
+> > every mm guys ignore so we end up needing another round to promote it. sigh.
+> 
+> Yes. The lack of compaction/defragmentation support in zsmalloc has not
+> been raised as an obstacle to mainline acceptance so I think we should
+> wait to add new features to a yet-to-be accepted codebase.
+> 
+> Also, I think this feature is more important to zram than it is to
+> zswap/zcache as they can do writeback to free zpages.  In other words,
+> the fragmentation is a transient issue for zswap/zcache since writeback
+> to the swap device is possible.
 
-Hi Vinod, thanks for the ping.
+Other benefit derived from compaction work is that we can pick a zpage
+from zspage and move it into somewhere. It means core mm could control
+pages in zsmalloc freely.
 
-Chatted with Dave patches 1-3 and 5-8, and 10 are reviewed/acked.  For
-patch 4 and 9 we think we have a slightly cleaner way to organize the
-quirk handling and an update will be coming.
+> 
+> Thanks,
+> Seth
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
---
-Dan
+-- 
+Kind regards,
+Minchan Kim
