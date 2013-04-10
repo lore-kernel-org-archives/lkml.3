@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936745Ab3DJD1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 23:27:51 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28262 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934499Ab3DJD1s (ORCPT
+	id S936755Ab3DJD2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 23:28:25 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:26586 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932712Ab3DJD11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 23:27:48 -0400
+	Tue, 9 Apr 2013 23:27:27 -0400
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 To: <rostedt@goodmis.org>, <fweisbec@gmail.com>, <mingo@redhat.com>,
         <linux-kernel@vger.kernel.org>
 CC: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [PATCH v3 01/12] tracing: move trace_array definition into include/linux/trace_array.h
-Date: Wed, 10 Apr 2013 11:26:22 +0800
-Message-ID: <1365564393-10972-2-git-send-email-jovi.zhangwei@huawei.com>
+Subject: [PATCH v3 10/12] tracing: use per trace_array clock_id instead of global trace_clock_id
+Date: Wed, 10 Apr 2013 11:26:31 +0800
+Message-ID: <1365564393-10972-11-git-send-email-jovi.zhangwei@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
 References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
@@ -27,272 +27,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-Prepare for expose event tracing infrastructure.
-(struct trace_array shall be use by external modules)
+tracing clock id already changed into per trace_array variable,
+but there still use global trace_clock_id, which value always is 0 now.
 
 Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 ---
- include/linux/trace_array.h |  117 +++++++++++++++++++++++++++++++++++++++++++
- kernel/trace/trace.h        |  116 +-----------------------------------------
- 2 files changed, 118 insertions(+), 115 deletions(-)
- create mode 100644 include/linux/trace_array.h
+ kernel/trace/trace.c |    8 +++-----
+ kernel/trace/trace.h |    2 --
+ 2 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/trace_array.h b/include/linux/trace_array.h
-new file mode 100644
-index 0000000..c5b7a13
---- /dev/null
-+++ b/include/linux/trace_array.h
-@@ -0,0 +1,117 @@
-+#ifndef _LINUX_KERNEL_TRACE_ARRAY_H
-+#define _LINUX_KERNEL_TRACE_ARRAY_H
-+
-+#ifdef CONFIG_FTRACE_SYSCALLS
-+#include <asm/unistd.h>		/* For NR_SYSCALLS	     */
-+#include <asm/syscall.h>	/* some archs define it here */
-+#endif
-+
-+struct trace_cpu {
-+	struct trace_array	*tr;
-+	struct dentry		*dir;
-+	int			cpu;
-+};
-+
-+/*
-+ * The CPU trace array - it consists of thousands of trace entries
-+ * plus some other descriptor data: (for example which task started
-+ * the trace, etc.)
-+ */
-+struct trace_array_cpu {
-+	struct trace_cpu	trace_cpu;
-+	atomic_t		disabled;
-+	void			*buffer_page;	/* ring buffer spare */
-+
-+	unsigned long		entries;
-+	unsigned long		saved_latency;
-+	unsigned long		critical_start;
-+	unsigned long		critical_end;
-+	unsigned long		critical_sequence;
-+	unsigned long		nice;
-+	unsigned long		policy;
-+	unsigned long		rt_priority;
-+	unsigned long		skipped_entries;
-+	cycle_t			preempt_timestamp;
-+	pid_t			pid;
-+	kuid_t			uid;
-+	char			comm[TASK_COMM_LEN];
-+};
-+
-+struct tracer;
-+
-+struct trace_buffer {
-+	struct trace_array		*tr;
-+	struct ring_buffer		*buffer;
-+	struct trace_array_cpu __percpu	*data;
-+	cycle_t				time_start;
-+	int				cpu;
-+};
-+
-+/*
-+ * The trace array - an array of per-CPU trace arrays. This is the
-+ * highest level data structure that individual tracers deal with.
-+ * They have on/off state as well:
-+ */
-+struct trace_array {
-+	struct list_head	list;
-+	char			*name;
-+	struct trace_buffer	trace_buffer;
-+#ifdef CONFIG_TRACER_MAX_TRACE
-+	/*
-+	 * The max_buffer is used to snapshot the trace when a maximum
-+	 * latency is reached, or when the user initiates a snapshot.
-+	 * Some tracers will use this to store a maximum trace while
-+	 * it continues examining live traces.
-+	 *
-+	 * The buffers for the max_buffer are set up the same as the trace_buffer
-+	 * When a snapshot is taken, the buffer of the max_buffer is swapped
-+	 * with the buffer of the trace_buffer and the buffers are reset for
-+	 * the trace_buffer so the tracing can continue.
-+	 */
-+	struct trace_buffer	max_buffer;
-+	bool			allocated_snapshot;
-+#endif
-+	int			buffer_disabled;
-+	struct trace_cpu	trace_cpu;	/* place holder */
-+#ifdef CONFIG_FTRACE_SYSCALLS
-+	int			sys_refcount_enter;
-+	int			sys_refcount_exit;
-+	DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
-+	DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
-+#endif
-+	int			stop_count;
-+	int			clock_id;
-+	struct tracer		*current_trace;
-+	unsigned int		flags;
-+	raw_spinlock_t		start_lock;
-+	struct dentry		*dir;
-+	struct dentry		*options;
-+	struct dentry		*percpu_dir;
-+	struct dentry		*event_dir;
-+	struct list_head	systems;
-+	struct list_head	events;
-+	struct task_struct	*waiter;
-+	int			ref;
-+};
-+
-+enum {
-+	TRACE_ARRAY_FL_GLOBAL	= (1 << 0)
-+};
-+
-+extern struct list_head ftrace_trace_arrays;
-+
-+/*
-+ * The global tracer (top) should be the first trace array added,
-+ * but we check the flag anyway.
-+ */
-+static inline struct trace_array *top_trace_array(void)
-+{
-+	struct trace_array *tr;
-+
-+	tr = list_entry(ftrace_trace_arrays.prev,
-+			typeof(*tr), list);
-+	WARN_ON(!(tr->flags & TRACE_ARRAY_FL_GLOBAL));
-+	return tr;
-+}
-+
-+#endif /* _LINUX_KERNEL_TRACE_ARRAY_H */
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index dd0c122..ee4e110 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -652,8 +652,6 @@ static struct {
+ 	ARCH_TRACE_CLOCKS
+ };
+ 
+-int trace_clock_id;
+-
+ /*
+  * trace_parser_get_init - gets the buffer for trace parser
+  */
+@@ -2806,7 +2804,7 @@ __tracing_open(struct inode *inode, struct file *file, bool snapshot)
+ 		iter->iter_flags |= TRACE_FILE_ANNOTATE;
+ 
+ 	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
+-	if (trace_clocks[trace_clock_id].in_ns)
++	if (trace_clocks[tr->clock_id].in_ns)
+ 		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
+ 
+ 	/* stop the trace while dumping if we are not opening "snapshot" */
+@@ -3805,7 +3803,7 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
+ 		iter->iter_flags |= TRACE_FILE_LAT_FMT;
+ 
+ 	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
+-	if (trace_clocks[trace_clock_id].in_ns)
++	if (trace_clocks[tr->clock_id].in_ns)
+ 		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
+ 
+ 	iter->cpu_file = tc->cpu;
+@@ -5075,7 +5073,7 @@ tracing_stats_read(struct file *filp, char __user *ubuf,
+ 	cnt = ring_buffer_bytes_cpu(trace_buf->buffer, cpu);
+ 	trace_seq_printf(s, "bytes: %ld\n", cnt);
+ 
+-	if (trace_clocks[trace_clock_id].in_ns) {
++	if (trace_clocks[tr->clock_id].in_ns) {
+ 		/* local or global for trace_clock */
+ 		t = ns2usecs(ring_buffer_oldest_event_ts(trace_buf->buffer, cpu));
+ 		usec_rem = do_div(t, USEC_PER_SEC);
 diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 9e01458..a8acfcd 100644
+index bb3fd1b..9b8afa7 100644
 --- a/kernel/trace/trace.h
 +++ b/kernel/trace/trace.h
-@@ -12,11 +12,7 @@
- #include <linux/hw_breakpoint.h>
- #include <linux/trace_seq.h>
- #include <linux/ftrace_event.h>
--
--#ifdef CONFIG_FTRACE_SYSCALLS
--#include <asm/unistd.h>		/* For NR_SYSCALLS	     */
--#include <asm/syscall.h>	/* some archs define it here */
--#endif
-+#include <linux/trace_array.h>
+@@ -588,8 +588,6 @@ enum print_line_t print_trace_line(struct trace_iterator *iter);
  
- enum trace_type {
- 	__TRACE_FIRST_TYPE = 0,
-@@ -133,116 +129,6 @@ enum trace_flag_type {
+ extern unsigned long trace_flags;
  
- #define TRACE_BUF_SIZE		1024
- 
--struct trace_array;
+-extern int trace_clock_id;
 -
--struct trace_cpu {
--	struct trace_array	*tr;
--	struct dentry		*dir;
--	int			cpu;
--};
--
--/*
-- * The CPU trace array - it consists of thousands of trace entries
-- * plus some other descriptor data: (for example which task started
-- * the trace, etc.)
-- */
--struct trace_array_cpu {
--	struct trace_cpu	trace_cpu;
--	atomic_t		disabled;
--	void			*buffer_page;	/* ring buffer spare */
--
--	unsigned long		entries;
--	unsigned long		saved_latency;
--	unsigned long		critical_start;
--	unsigned long		critical_end;
--	unsigned long		critical_sequence;
--	unsigned long		nice;
--	unsigned long		policy;
--	unsigned long		rt_priority;
--	unsigned long		skipped_entries;
--	cycle_t			preempt_timestamp;
--	pid_t			pid;
--	kuid_t			uid;
--	char			comm[TASK_COMM_LEN];
--};
--
--struct tracer;
--
--struct trace_buffer {
--	struct trace_array		*tr;
--	struct ring_buffer		*buffer;
--	struct trace_array_cpu __percpu	*data;
--	cycle_t				time_start;
--	int				cpu;
--};
--
--/*
-- * The trace array - an array of per-CPU trace arrays. This is the
-- * highest level data structure that individual tracers deal with.
-- * They have on/off state as well:
-- */
--struct trace_array {
--	struct list_head	list;
--	char			*name;
--	struct trace_buffer	trace_buffer;
--#ifdef CONFIG_TRACER_MAX_TRACE
--	/*
--	 * The max_buffer is used to snapshot the trace when a maximum
--	 * latency is reached, or when the user initiates a snapshot.
--	 * Some tracers will use this to store a maximum trace while
--	 * it continues examining live traces.
--	 *
--	 * The buffers for the max_buffer are set up the same as the trace_buffer
--	 * When a snapshot is taken, the buffer of the max_buffer is swapped
--	 * with the buffer of the trace_buffer and the buffers are reset for
--	 * the trace_buffer so the tracing can continue.
--	 */
--	struct trace_buffer	max_buffer;
--	bool			allocated_snapshot;
--#endif
--	int			buffer_disabled;
--	struct trace_cpu	trace_cpu;	/* place holder */
--#ifdef CONFIG_FTRACE_SYSCALLS
--	int			sys_refcount_enter;
--	int			sys_refcount_exit;
--	DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
--	DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
--#endif
--	int			stop_count;
--	int			clock_id;
--	struct tracer		*current_trace;
--	unsigned int		flags;
--	raw_spinlock_t		start_lock;
--	struct dentry		*dir;
--	struct dentry		*options;
--	struct dentry		*percpu_dir;
--	struct dentry		*event_dir;
--	struct list_head	systems;
--	struct list_head	events;
--	struct task_struct	*waiter;
--	int			ref;
--};
--
--enum {
--	TRACE_ARRAY_FL_GLOBAL	= (1 << 0)
--};
--
--extern struct list_head ftrace_trace_arrays;
--
--/*
-- * The global tracer (top) should be the first trace array added,
-- * but we check the flag anyway.
-- */
--static inline struct trace_array *top_trace_array(void)
--{
--	struct trace_array *tr;
--
--	tr = list_entry(ftrace_trace_arrays.prev,
--			typeof(*tr), list);
--	WARN_ON(!(tr->flags & TRACE_ARRAY_FL_GLOBAL));
--	return tr;
--}
--
- #define FTRACE_CMP_TYPE(var, type) \
- 	__builtin_types_compatible_p(typeof(var), type *)
+ /* Standard output formatting function used for function return traces */
+ #ifdef CONFIG_FUNCTION_GRAPH_TRACER
  
 -- 
 1.7.9.7
