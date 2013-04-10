@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937179Ab3DJKet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:34:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54090 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937158Ab3DJKer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:34:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,445,1363158000"; 
-   d="scan'208";a="320238863"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        ben-linux@fluff.org, Jean Delvare <khali@linux-fr.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 7/7] i2c-designware: switch to use runtime PM autosuspend
-Date: Wed, 10 Apr 2013 13:36:42 +0300
-Message-Id: <1365590202-1623-7-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365590202-1623-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1365590202-1623-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S937207Ab3DJKfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:35:17 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:50364 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936214Ab3DJKfN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 06:35:13 -0400
+Date: Wed, 10 Apr 2013 12:35:08 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org,
+        rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
+        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
+        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
+        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
+        jonas@southpole.se, rkuo@codeaurora.org, schwidefsky@de.ibm.com,
+        liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
+        vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
+        ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com
+Subject: Re: [PATCH 1/7] x86: don't show trace beyond show_stack(NULL, NULL)
+Message-ID: <20130410103508.GD28505@gmail.com>
+References: <1365016497-32033-1-git-send-email-tj@kernel.org>
+ <1365016497-32033-2-git-send-email-tj@kernel.org>
+ <20130408160811.GA20612@gmail.com>
+ <20130408175734.GH3021@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130408175734.GH3021@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using autosuspend helps to reduce the resume latency in situations where
-another I2C message is going to be started soon. For example with HID over
-I2C touch panels we get several messages in a short period of time while
-the touch panel is in use.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- drivers/i2c/busses/i2c-designware-core.c    |    3 ++-
- drivers/i2c/busses/i2c-designware-pcidrv.c  |    3 ++-
- drivers/i2c/busses/i2c-designware-platdrv.c |    3 ++-
- 3 files changed, 6 insertions(+), 3 deletions(-)
+* Tejun Heo <tj@kernel.org> wrote:
 
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 7c10c5b..21fbb34 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -600,7 +600,8 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	ret = -EIO;
- 
- done:
--	pm_runtime_put(dev->dev);
-+	pm_runtime_mark_last_busy(dev->dev);
-+	pm_runtime_put_autosuspend(dev->dev);
- 	mutex_unlock(&dev->lock);
- 
- 	return ret;
-diff --git a/drivers/i2c/busses/i2c-designware-pcidrv.c b/drivers/i2c/busses/i2c-designware-pcidrv.c
-index aacb64e..c8797e2 100644
---- a/drivers/i2c/busses/i2c-designware-pcidrv.c
-+++ b/drivers/i2c/busses/i2c-designware-pcidrv.c
-@@ -291,7 +291,8 @@ static int i2c_dw_pci_probe(struct pci_dev *pdev,
- 	/* Increase reference counter */
- 	get_device(&pdev->dev);
- 
--	pm_runtime_put_noidle(&pdev->dev);
-+	pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-+	pm_runtime_use_autosuspend(&pdev->dev);
- 	pm_runtime_allow(&pdev->dev);
- 
- 	return 0;
-diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index 0735ccf..b47c586 100644
---- a/drivers/i2c/busses/i2c-designware-platdrv.c
-+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -172,9 +172,10 @@ static int dw_i2c_probe(struct platform_device *pdev)
- 	/* Increase reference counter */
- 	get_device(&pdev->dev);
- 
-+	pm_runtime_set_autosuspend_delay(&pdev->dev, 1000);
-+	pm_runtime_use_autosuspend(&pdev->dev);
- 	pm_runtime_set_active(&pdev->dev);
- 	pm_runtime_enable(&pdev->dev);
--	pm_runtime_put(&pdev->dev);
- 
- 	return 0;
- }
--- 
-1.7.10.4
+> Hello, Ingo.
+> 
+> On Mon, Apr 08, 2013 at 06:08:11PM +0200, Ingo Molnar wrote:
+> > >  void show_stack(struct task_struct *task, unsigned long *sp)
+> > >  {
+> > > -	show_stack_log_lvl(task, NULL, sp, 0, "");
+> > > +	unsigned long bp = 0;
+> > > +	unsigned long stack;
+> > > +
+> > > +	/*
+> > > +	 * Stack frames below this one aren't interesting.  Don't show them
+> > > +	 * if we're printing for %current.
+> > > +	 */
+> > > +	if (!sp && (!task || task == current)) {
+> > > +		sp = &stack;
+> > > +		bp = stack_frame(current, NULL);
+> > > +	}
+> > > +
+> > > +	show_stack_log_lvl(task, NULL, sp, bp, "");
+> > 
+> > Hm, show_regs() has a similar problem AFAICS.
+> 
+> Doesn't seem so.  show_regs() have pt_regs which gets passed to
+> dump_trace() and then used to determine the frame being dumped.
+> e.g. BUG() takes pt_regs from the faulting frame and thus doesn't show
+> anything beyond it.
 
+Ok - but my other observation probably holds, that the bp == 0 special case in 
+dump_trace() should be changed to a [printk()-ed] warning or so? No user will pass 
+in bp == 0 legitimately, AFAICS.
+
+Thanks,
+
+	Ingo
