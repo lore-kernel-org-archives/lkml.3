@@ -1,57 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936197Ab3DJNNf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 09:13:35 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:33192 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751746Ab3DJNNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:13:33 -0400
-Date: Wed, 10 Apr 2013 09:12:45 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-Message-ID: <20130410131245.GC4862@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-	Jiri Slaby <jslaby@suse.cz>
-References: <20130402142717.GH32241@suse.de>
- <20130402150651.GB31577@thunk.org>
- <20130410105608.GC1910@suse.de>
+	id S934203Ab3DJNOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 09:14:07 -0400
+Received: from mail-qe0-f50.google.com ([209.85.128.50]:48863 "EHLO
+	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab3DJNOE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 09:14:04 -0400
+Message-ID: <51656592.7070806@gmail.com>
+Date: Wed, 10 Apr 2013 08:13:54 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130410105608.GC1910@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Andrew Murray <Andrew.Murray@arm.com>
+CC: rob.herring@calxeda.com, siva.kallam@samsung.com,
+        linux-pci@vger.kernel.org, Liviu.Dudau@arm.com, paulus@samba.org,
+        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
+        jg1.han@samsung.com, jgunthorpe@obsidianresearch.com,
+        devicetree-discuss@lists.ozlabs.org, kgene.kim@samsung.com,
+        bhelgaas@google.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, suren.reddy@samsung.com,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michal Simek <monstr@monstr.eu>
+Subject: Re: [PATCH v5 1/3] of/pci: Unify pci_process_bridge_OF_ranges from
+ Microblaze and PowerPC
+References: <1365578969-30966-1-git-send-email-Andrew.Murray@arm.com> <1365578969-30966-2-git-send-email-Andrew.Murray@arm.com>
+In-Reply-To: <1365578969-30966-2-git-send-email-Andrew.Murray@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 11:56:08AM +0100, Mel Gorman wrote:
-> During major activity there is likely to be "good" behaviour
-> with stalls roughly every 30 seconds roughly corresponding to
-> dirty_expire_centiseconds. As you'd expect, the flusher thread is stuck
-> when this happens.
+Adding Ben H and Michal...
+
+On 04/10/2013 02:29 AM, Andrew Murray wrote:
+> The pci_process_bridge_OF_ranges function, used to parse the "ranges"
+> property of a PCI host device, is found in both Microblaze and PowerPC
+> architectures. These implementations are nearly identical. This patch
+> moves this common code to a common place.
 > 
->   237 ?        00:00:00 flush-8:0
-> [<ffffffff811a35b9>] sleep_on_buffer+0x9/0x10
-> [<ffffffff811a35ee>] __lock_buffer+0x2e/0x30
-> [<ffffffff8123a21f>] do_get_write_access+0x43f/0x4b0
+> Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
 
-If we're stalling on lock_buffer(), that implies that buffer was being
-written, and for some reason it was taking a very long time to
-complete.
+One comment below. Otherwise,
 
-It might be worthwhile to put a timestamp in struct dm_crypt_io, and
-record the time when a particular I/O encryption/decryption is getting
-queued to the kcryptd workqueues, and when they finally squirt out.
+Reviewed-by: Rob Herring <rob.herring@calxeda.com>
 
-Something else that might be worth trying is to add WQ_HIGHPRI to the
-workqueue flags and see if that makes a difference.
+You need also need acks from Ben and Michal.
 
-	  	    	   	- Ted
+[...]
+
+> +		/* Act based on address space type */
+> +		res = NULL;
+> +		switch ((pci_space >> 24) & 0x3) {
+> +		case 1:		/* PCI IO space */
+> +			pr_info("  IO 0x%016llx..0x%016llx -> 0x%016llx\n",
+> +			       cpu_addr, cpu_addr + size - 1, pci_addr);
+> +
+> +			/* We support only one IO range */
+> +			if (hose->pci_io_size) {
+> +				pr_info(" \\--> Skipped (too many) !\n");
+> +				continue;
+> +			}
+> +#if defined(CONFIG_PPC32) || defined(CONFIG_MICROBLAZE)
+
+How about "if (!IS_ENABLED(CONFIG_64BIT))" instead.
+
+> +			/* On 32 bits, limit I/O space to 16MB */
+> +			if (size > 0x01000000)
+> +				size = 0x01000000;
+> +
+> +			/* 32 bits needs to map IOs here */
+> +			hose->io_base_virt = ioremap(cpu_addr, size);
+> +
+> +			/* Expect trouble if pci_addr is not 0 */
+> +			if (primary)
+> +				isa_io_base =
+> +					(unsigned long)hose->io_base_virt;
+> +#endif /* CONFIG_PPC32 || CONFIG_MICROBLAZE */
+> +			/* pci_io_size and io_base_phys always represent IO
+> +			 * space starting at 0 so we factor in pci_addr
+> +			 */
+> +			hose->pci_io_size = pci_addr + size;
+> +			hose->io_base_phys = cpu_addr - pci_addr;
+
