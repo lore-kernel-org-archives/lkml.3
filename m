@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965032Ab3DJWzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:55:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56650 "EHLO
+	id S965208Ab3DJW4B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:56:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56645 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937428Ab3DJWus (ORCPT
+	with ESMTP id S937570Ab3DJWus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Apr 2013 18:50:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shan Hai <shan.hai@windriver.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 07/19] libata: Use integer return value for atapi_command_packet_set
-Date: Wed, 10 Apr 2013 15:50:30 -0700
-Message-Id: <20130410225027.576115395@linuxfoundation.org>
+        Todd Poynor <toddpoynor@google.com>, "Theodore Tso" <tytso@mit.edu>,
+        Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>,
+        Lukas Czerner <lczerner@redhat.com>
+Subject: [ 06/19] ext4: fixup 64-bit divides in 3.0-stable backport of upstream fix
+Date: Wed, 10 Apr 2013 15:50:29 -0700
+Message-Id: <20130410225027.476235073@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
 References: <20130410225026.833809117@linuxfoundation.org>
@@ -26,37 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Todd Poynor <toddpoynor@google.com>
 
-commit d8668fcb0b257d9fdcfbe5c172a99b8d85e1cd82 upstream.
+Replace C division operators with div64_u64 for divides introduced in:
+commit 503f4bdcc078e7abee273a85ce322de81b18a224
+ext4: use atomic64_t for the per-flexbg free_clusters count
 
-The function returns type of ATAPI drives so it should return integer value.
-The commit 4dce8ba94c7 (libata: Use 'bool' return value for ata_id_XXX) since
-v2.6.39 changed the type of return value from int to bool, the change would
-cause all of the ATAPI class drives to be treated as TYPE_TAPE and the
-max_sectors of the drives to be set to 65535 because of the commit
-f8d8e5799b7(libata: increase 128 KB / cmd limit for ATAPI tape drives), for the
-function would return true for all ATAPI class drives and the TYPE_TAPE is
-defined as 0x01.
+Specific to the 3.0-stable backport of the upstream patch.
 
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Todd Poynor <toddpoynor@google.com>
+Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Christoph Biedl <linux-kernel.bfrz@manchmal.in-ulm.de>
+Cc: Lukas Czerner <lczerner@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ata.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/ialloc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/include/linux/ata.h
-+++ b/include/linux/ata.h
-@@ -937,7 +937,7 @@ static inline int atapi_cdb_len(const u1
- 	}
- }
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -22,6 +22,7 @@
+ #include <linux/random.h>
+ #include <linux/bitops.h>
+ #include <linux/blkdev.h>
++#include <linux/math64.h>
+ #include <asm/byteorder.h>
  
--static inline bool atapi_command_packet_set(const u16 *dev_id)
-+static inline int atapi_command_packet_set(const u16 *dev_id)
- {
- 	return (dev_id[ATA_ID_CONFIG] >> 8) & 0x1f;
- }
+ #include "ext4.h"
+@@ -356,7 +357,7 @@ static int find_group_flex(struct super_
+ 
+ find_close_to_parent:
+ 	flexbg_free_blocks = atomic64_read(&flex_group[best_flex].free_blocks);
+-	flex_freeb_ratio = flexbg_free_blocks * 100 / blocks_per_flex;
++	flex_freeb_ratio = div64_u64(flexbg_free_blocks * 100, blocks_per_flex);
+ 	if (atomic_read(&flex_group[best_flex].free_inodes) &&
+ 	    flex_freeb_ratio > free_block_ratio)
+ 		goto found_flexbg;
+@@ -371,7 +372,7 @@ find_close_to_parent:
+ 			continue;
+ 
+ 		flexbg_free_blocks = atomic64_read(&flex_group[i].free_blocks);
+-		flex_freeb_ratio = flexbg_free_blocks * 100 / blocks_per_flex;
++		flex_freeb_ratio = div64_u64(flexbg_free_blocks * 100, blocks_per_flex);
+ 
+ 		if (flex_freeb_ratio > free_block_ratio &&
+ 		    (atomic_read(&flex_group[i].free_inodes))) {
 
 
