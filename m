@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934131Ab3DJL4x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 07:56:53 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:61197 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818Ab3DJL4v (ORCPT
+	id S934127Ab3DJL7J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 07:59:09 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:44805 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab3DJL7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 07:56:51 -0400
-Date: Wed, 10 Apr 2013 13:56:47 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>, Jacob Shin <jacob.shin@amd.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86 <x86@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/3] perf, amd: Support for Family 16h L2I
- Performance Counters
-Message-ID: <20130410115647.GA8083@gmail.com>
-References: <1365521034-4496-1-git-send-email-jacob.shin@amd.com>
- <1365586878.30071.33.camel@laptop>
- <CABPqkBRTaMV9FNmX6qRJAHaO8yTyiqF=EzmeC7Gp7=e-7Bo-gA@mail.gmail.com>
- <1365594552.30071.63.camel@laptop>
- <1365594957.30071.66.camel@laptop>
+	Wed, 10 Apr 2013 07:59:07 -0400
+Date: Wed, 10 Apr 2013 13:59:02 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
+        Tomas Melin <tomas.melin@iki.fi>,
+        Chris Wilson <chris@chris-wilson.co.uk>, stable@vger.kernel.org
+Subject: Re: [PATCH] drm/i915: don't check inconsistent modeset state when
+ force-restoring
+Message-ID: <20130410115901.GA4502@netboy>
+References: <20130409172820.GC27612@phenom.ffwll.local>
+ <1365537090-11518-1-git-send-email-daniel.vetter@ffwll.ch>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365594957.30071.66.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1365537090-11518-1-git-send-email-daniel.vetter@ffwll.ch>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 09, 2013 at 09:51:30PM +0200, Daniel Vetter wrote:
+> It will be only consistent once we've restored all the crtcs. Since a
+> bunch of other callers also want to just restore a single crtc, add a
+> boolean to disable checking only where it doesn't make sense.
+> 
+> Note that intel_modeset_setup_hw_state already has a call to
+> intel_modeset_check_state at the end, so we don't reduce the amount of
+> checking.
+> 
+> v2: Try harder not to create a big patch (Chris).
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+To what does tree does this patch apply?
 
-> On Wed, 2013-04-10 at 13:49 +0200, Peter Zijlstra wrote:
-> 
-> > Hmm.. the 15h old interface bits got merged? I thought I kept telling
-> > that should be done like the intel uncore stuff since the hardware
-> > interface wasn't retarded anymore.
-> 
-> Ah well, that crap seems to have slipped in in Feb when I was still a
-> near vegetable and not paying much attention.
-> 
-> /me curses a bit.
-> 
-> I don't suppose we can deprecate it and remove this stuff? 
-
-I think we can - if there's a functional replacement.
+Tried v3.8.6 and master d02a9a89.
 
 Thanks,
-
-	Ingo
+Richard
