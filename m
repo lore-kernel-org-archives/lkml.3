@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936701Ab3DJBFT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 21:05:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53928 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934865Ab3DJBFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 21:05:17 -0400
-Message-ID: <5164B93A.1050706@zytor.com>
-Date: Tue, 09 Apr 2013 17:58:34 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S936505Ab3DJBHk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 21:07:40 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:40336 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756358Ab3DJBHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 21:07:39 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjYSAOO6ZFF5LMW7/2dsb2JhbABRgwa8PYUcBAGBFhd0gh8BAQQBJxMcHAcFCwgDDgoJDBkPBSUDIROIDgW/GBWNYoEdBwqDNwOWeJEQgx0q
+Date: Wed, 10 Apr 2013 11:07:34 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/10] mm: vmscan: Have kswapd shrink slab only once per
+ priority
+Message-ID: <20130410010734.GR17758@dastard>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-9-git-send-email-mgorman@suse.de>
+ <20130409065325.GA4411@lge.com>
+ <20130409111358.GB2002@suse.de>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Eric Northup <digitaleric@google.com>, Kees Cook <keescook@chromium.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Subject: Re: Readonly GDT
-References: <20130408224328.GA17641@www.outflux.net>  <51634935.9010905@zytor.com> <alpine.LFD.2.02.1304091122490.21884@ionos>  <CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com>  <51645D6F.7070705@zytor.com>  <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>  <51646054.3090509@zytor.com>  <CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com>  <CAG7+5M3==rndLLak9cZBKKdgQMmJMpSP_jpQd8HOVGp6LhUAgw@mail.gmail.com>  <5164B5BD.5050702@zytor.com> <1365555234.25498.91.camel@gandalf.local.home>
-In-Reply-To: <1365555234.25498.91.camel@gandalf.local.home>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409111358.GB2002@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 05:53 PM, Steven Rostedt wrote:
-> On Tue, 2013-04-09 at 17:43 -0700, H. Peter Anvin wrote:
->> OK, thinking about the GDT here.
->>
->> The GDT is quite small -- 256 bytes on i386, 128 bytes on x86-64.  As
->> such, we probably don't want to allocate a full page to it for only
->> that.  This means that in order to create a readonly mapping we have to
->> pack GDTs from different CPUs together in the same pages, *or* we
->> tolerate that other things on the same page gets reflected in the same
->> mapping.
+On Tue, Apr 09, 2013 at 12:13:59PM +0100, Mel Gorman wrote:
+> On Tue, Apr 09, 2013 at 03:53:25PM +0900, Joonsoo Kim wrote:
 > 
-> What about grouping via nodes?
+> > I think that outside of zone loop is better place to run shrink_slab(),
+> > because shrink_slab() is not directly related to a specific zone.
+> > 
 > 
-
-Would be nicer for locality, although probably adds [even] more complexity.
-
-We don't really care about 32-bit NUMA anymore -- it keeps getting
-suggested for deletion, even.  For 64-bit it might make sense to just
-reflect out of the percpu area even though it munches address space.
-
->>
->> However, the packing solution has the advantage of reducing address
->> space consumption which matters on 32 bits: even on i386 we can easily
->> burn a megabyte of address space for 4096 processors, but burning 16
->> megabytes starts to hurt.
+> This is true and has been the case for a long time. The slab shrinkers
+> are not zone aware and it is complicated by the fact that slab usage can
+> indirectly pin memory on other zones.
+......
+> > And this is a question not related to this patch.
+> > Why nr_slab is used here to decide zone->all_unreclaimable?
 > 
-> Having 4096 32 bit processors, you deserve what you get. ;-)
+> Slab is not directly associated with a slab but as reclaiming slab can
+> free memory from unpredictable zones we do not consider a zone to be
+> fully unreclaimable until we cannot shrink slab any more.
+
+This is something the numa aware shrinkers will greatly help with -
+instead of being a global shrink it becomes a
+node-the-zone-belongs-to shrink, and so....
+
+> You may be thinking that this is extremely heavy handed and you're
+> right, it is.
+
+... it is much less heavy handed than the current code...
+
+> > nr_slab is not directly related whether a specific zone is reclaimable
+> > or not, and, moreover, nr_slab is not directly related to number of
+> > reclaimed pages. It just say some objects in the system are freed.
+> > 
 > 
+> All true, it's the indirect relation between slab objects and the memory
+> that is freed when slab objects are reclaimed that has to be taken into
+> account.
 
-Well, the main problem is that it might get difficult to make this a
-runtime thing; it more likely ends up being a compile-time bit.
+Node awareness within the shrinker infrastructure and LRUs make the
+relationship much more direct ;)
 
-	-hpa
+Cheers,
 
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
