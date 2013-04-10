@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763035Ab3DJXKh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:10:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56183 "EHLO
+	id S935212Ab3DJXKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:10:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56179 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937250Ab3DJWra (ORCPT
+	with ESMTP id S937246Ab3DJWr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:30 -0400
+	Wed, 10 Apr 2013 18:47:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
         Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [ 39/64] remoteproc: fix error path of handle_vdev
-Date: Wed, 10 Apr 2013 15:46:36 -0700
-Message-Id: <20130410224342.287479200@linuxfoundation.org>
+Subject: [ 38/64] remoteproc/ste: fix memory leak on shutdown
+Date: Wed, 10 Apr 2013 15:46:35 -0700
+Message-Id: <20130410224342.073305659@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -30,38 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sjur Brændeland <sjur.brandeland@stericsson.com>
+From: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
 
-commit cde42e076c1cdd69a1f955d66ff6596bad3d2105 upstream.
+commit 1cd425b660bd5b4f41b9175b0b7bf3828ce88144 upstream.
 
-Remove the vdev entry from the list before freeing it,
-otherwise rproc->vdevs will explode.
+Fixes coherent memory leakage, caused by non-deallocated
+firmware image chunk.
 
+Signed-off-by: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 Acked-by: Ido Yariv <ido@wizery.com>
-[edit subject, minor commit log edit, cc stable]
+[slightly edit subject and commit log]
 Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/remoteproc/remoteproc_core.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/remoteproc/ste_modem_rproc.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -370,10 +370,12 @@ static int rproc_handle_vdev(struct rpro
- 	/* it is now safe to add the virtio device */
- 	ret = rproc_add_virtio_dev(rvdev, rsc->id);
- 	if (ret)
--		goto free_rvdev;
-+		goto remove_rvdev;
+--- a/drivers/remoteproc/ste_modem_rproc.c
++++ b/drivers/remoteproc/ste_modem_rproc.c
+@@ -240,6 +240,8 @@ static int sproc_drv_remove(struct platf
+ 
+ 	/* Unregister as remoteproc device */
+ 	rproc_del(sproc->rproc);
++	dma_free_coherent(sproc->rproc->dev.parent, SPROC_FW_SIZE,
++			  sproc->fw_addr, sproc->fw_dma_addr);
+ 	rproc_put(sproc->rproc);
+ 
+ 	mdev->drv_data = NULL;
+@@ -297,10 +299,13 @@ static int sproc_probe(struct platform_d
+ 	/* Register as a remoteproc device */
+ 	err = rproc_add(rproc);
+ 	if (err)
+-		goto free_rproc;
++		goto free_mem;
  
  	return 0;
  
-+remove_rvdev:
-+	list_del(&rvdev->node);
- free_rvdev:
- 	kfree(rvdev);
- 	return ret;
++free_mem:
++	dma_free_coherent(rproc->dev.parent, SPROC_FW_SIZE,
++			  sproc->fw_addr, sproc->fw_dma_addr);
+ free_rproc:
+ 	/* Reset device data upon error */
+ 	mdev->drv_data = NULL;
 
 
