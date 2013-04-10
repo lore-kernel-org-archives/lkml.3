@@ -1,25 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937679Ab3DJWvF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:51:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56707 "EHLO
+	id S937669Ab3DJWvD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:51:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56701 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937651Ab3DJWu7 (ORCPT
+	with ESMTP id S937447Ab3DJWu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:50:59 -0400
+	Wed, 10 Apr 2013 18:50:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Ivo van Doorn <IvDoorn@gmail.com>,
-        Gertjan van Wingerde <gwingerde@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        netdev@vger.kernel.org
-Subject: [ 19/19] rt2x00: rt2x00pci_regbusy_read() - only print register access failure once
-Date: Wed, 10 Apr 2013 15:50:42 -0700
-Message-Id: <20130410225028.798223336@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        Marco Cesarano <marco@marvell.com>, Bing Zhao <bzhao@marvell.com>
+Subject: [ 18/19] Revert "mwifiex: cancel cmd timer and free curr_cmd in shutdown process
+Date: Wed, 10 Apr 2013 15:50:41 -0700
+Message-Id: <20130410225028.687898651@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
 References: <20130410225026.833809117@linuxfoundation.org>
@@ -32,43 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tim Gardner <tim.gardner@canonical.com>
+revert commit b9f1f48ce20a1b923429c216669d03b5a900a8cf which is commit
+084c7189acb3f969c855536166042e27f5dd703f upstream.
 
-commit 83589b30f1e1dc9898986293c9336b8ce1705dec upstream.
+It shouldn't have been applied to the 3.0-stable tree.
 
-BugLink: http://bugs.launchpad.net/bugs/1128840
-
-It appears that when this register read fails it never recovers, so
-I think there is no need to repeat the same error message ad infinitum.
-
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-Cc: Ivo van Doorn <IvDoorn@gmail.com>
-Cc: Gertjan van Wingerde <gwingerde@gmail.com>
-Cc: Helmut Schaa <helmut.schaa@googlemail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: users@rt2x00.serialmonkey.com
-Cc: netdev@vger.kernel.org
-Cc: stable@vger.kernel.org
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Marco Cesarano <marco@marvell.com>
+Reported-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rt2x00/rt2x00pci.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/mwifiex/init.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
---- a/drivers/net/wireless/rt2x00/rt2x00pci.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
-@@ -52,8 +52,8 @@ int rt2x00pci_regbusy_read(struct rt2x00
- 		udelay(REGISTER_BUSY_DELAY);
+--- a/drivers/net/wireless/mwifiex/init.c
++++ b/drivers/net/wireless/mwifiex/init.c
+@@ -561,14 +561,6 @@ mwifiex_shutdown_drv(struct mwifiex_adap
+ 		return ret;
  	}
  
--	ERROR(rt2x00dev, "Indirect register access failed: "
--	      "offset=0x%.08x, value=0x%.08x\n", offset, *reg);
-+	printk_once(KERN_ERR "%s() Indirect register access failed: "
-+	      "offset=0x%.08x, value=0x%.08x\n", __func__, offset, *reg);
- 	*reg = ~0;
+-	/* cancel current command */
+-	if (adapter->curr_cmd) {
+-		dev_warn(adapter->dev, "curr_cmd is still in processing\n");
+-		del_timer(&adapter->cmd_timer);
+-		mwifiex_insert_cmd_to_free_q(adapter, adapter->curr_cmd);
+-		adapter->curr_cmd = NULL;
+-	}
+-
+ 	/* shut down mwifiex */
+ 	dev_dbg(adapter->dev, "info: shutdown mwifiex...\n");
  
- 	return 0;
 
 
