@@ -1,117 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964991Ab3DJHY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 03:24:28 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:50417 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab3DJHY0 (ORCPT
+	id S934994Ab3DJHYo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 03:24:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:47920 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab3DJHYm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 03:24:26 -0400
-Subject: [PATCH 8/8] Read common partition via pstore
-To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: jkenisto@linux.vnet.ibm.com, mahesh@linux.vnet.ibm.com, anton@samba.org,
-        ananth@in.ibm.com
-Date: Wed, 10 Apr 2013 12:54:12 +0530
-Message-ID: <20130410072412.20150.13002.stgit@aruna-ThinkPad-T420>
-In-Reply-To: <20130410071835.20150.56489.stgit@aruna-ThinkPad-T420>
-References: <20130410071835.20150.56489.stgit@aruna-ThinkPad-T420>
-User-Agent: StGit/0.16-41-gd1dd
+	Wed, 10 Apr 2013 03:24:42 -0400
+Date: Wed, 10 Apr 2013 09:24:18 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Phillip Susi <psusi@ubuntu.com>, CAI Qian <caiqian@redhat.com>,
+        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running
+ xfstests case #78]
+Message-ID: <20130410072418.GW12244@kernel.dk>
+References: <14055702.547701.1364891947331.JavaMail.root@redhat.com>
+ <20130402090047.GF3670@kernel.dk>
+ <985125161.581860.1364895066584.JavaMail.root@redhat.com>
+ <20130402094834.GA4667@kernel.dk>
+ <20130403114142.GP4667@kernel.dk>
+ <515C4D9D.10103@ubuntu.com>
+ <515DE2FE.1080201@ubuntu.com>
+ <20130409065519.GH17758@dastard>
+ <20130409070139.GS12244@kernel.dk>
+ <20130409070832.GI17758@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041007-9574-0000-0000-00000767624C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409070832.GI17758@dastard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch exploits pstore infrastructure to read the details
-from NVRAM's common partition.
+On Tue, Apr 09 2013, Dave Chinner wrote:
+> On Tue, Apr 09, 2013 at 09:01:39AM +0200, Jens Axboe wrote:
+> > On Tue, Apr 09 2013, Dave Chinner wrote:
+> > > On Thu, Apr 04, 2013 at 04:30:54PM -0400, Phillip Susi wrote:
+> > > > > I have not tested it yet, but I am pretty sure it won't work.  It
+> > > > > looks like the patch changes the BLKRRPART path to go ahead and remove
+> > > > > existing partitions when GENHD_FL_NO_PARTSCAN is set.  loop doesn't
+> > > > > issue the BLKRRPART ioctl when !LO_FLAGS_PARTSCAN so this won't help.
+> > > > >  I think loop needs to set GENHD_FL_NO_PARTSCAN and then issue the
+> > > > > ioctl regardless of the LO_FLAGS_PARTSCAN flag to get the partitions
+> > > > > to be removed.  I will try to test tonight.
+> > > > 
+> > > > After testing, my initial thoughts appeared to have been correct.  I had
+> > > > to modify the patch as follows.  To test, simply do:
+> > > > 
+> > > > truncate -s 10m img
+> > > > losetup /dev/loop0 img
+> > > > parted /dev/loop0
+> > > > mklabel msdos
+> > > > mkpart primary ext2 1m 2m
+> > > > quit
+> > > > ls /dev/loop0*
+> > > > 
+> > > > Note the /dev/loop0p1 node.  Run losetup -d /dev/loop0 and see if it is
+> > > > still there.
+> > > 
+> > > Jens, can we get one of these fixes merged quickly? xfstests is
+> > > unusable on any kernel more recent than 3.9-rc4 because of these
+> > > problems....
+> > 
+> > Yep, did the revert yesterday and it's going out today.
+> 
+> Great, I didn't see an update in the latest -rc, so I wanted to make
+> sure it hadn't fallen through he cracks....
 
-Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
----
- arch/powerpc/platforms/pseries/nvram.c |   17 ++++++++++++++++-
- fs/pstore/inode.c                      |    3 +++
- include/linux/pstore.h                 |    1 +
- 3 files changed, 20 insertions(+), 1 deletion(-)
+Got pushed out yesterday, it is now upstream.
 
-diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
-index b65a670..542dc7e 100644
---- a/arch/powerpc/platforms/pseries/nvram.c
-+++ b/arch/powerpc/platforms/pseries/nvram.c
-@@ -84,6 +84,12 @@ static struct nvram_os_partition of_config_partition = {
- 	.index = -1,
- 	.os_partition = false
- };
-+
-+static struct nvram_os_partition common_partition = {
-+	.name = "common",
-+	.index = -1,
-+	.os_partition = false
-+};
- #endif
- 
- struct oops_log_info {
-@@ -157,6 +163,7 @@ static enum pstore_type_id nvram_type_ids[] = {
- 	PSTORE_TYPE_DMESG,
- 	PSTORE_TYPE_RTAS,
- 	PSTORE_TYPE_OF,
-+	PSTORE_TYPE_COMMON,
- 	-1
- };
- static int read_type;
-@@ -770,7 +777,7 @@ static int nvram_pstore_write(enum pstore_type_id type,
- }
- 
- /*
-- * Reads the oops/panic report, rtas-log and of-config partition.
-+ * Reads the oops/panic report, rtas-log, of-config and common partition.
-  * Returns the length of the data we read from each partition.
-  * Returns 0 if we've been called before.
-  */
-@@ -806,6 +813,14 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
- 		time->tv_sec = 0;
- 		time->tv_nsec = 0;
- 		break;
-+	case PSTORE_TYPE_COMMON:
-+		sig = NVRAM_SIG_SYS;
-+		part = &common_partition;
-+		*type = PSTORE_TYPE_COMMON;
-+		*id = PSTORE_TYPE_COMMON;
-+		time->tv_sec = 0;
-+		time->tv_nsec = 0;
-+		break;
- 	default:
- 		return 0;
- 	}
-diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
-index c3d1846..11cae64 100644
---- a/fs/pstore/inode.c
-+++ b/fs/pstore/inode.c
-@@ -330,6 +330,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
- 	case PSTORE_TYPE_OF:
- 		sprintf(name, "of-%s-%lld", psname, id);
- 		break;
-+	case PSTORE_TYPE_COMMON:
-+		sprintf(name, "common-%s-%lld", psname, id);
-+		break;
- 	case PSTORE_TYPE_UNKNOWN:
- 		sprintf(name, "unknown-%s-%lld", psname, id);
- 		break;
-diff --git a/include/linux/pstore.h b/include/linux/pstore.h
-index a23d7d2..08224c2 100644
---- a/include/linux/pstore.h
-+++ b/include/linux/pstore.h
-@@ -38,6 +38,7 @@ enum pstore_type_id {
- 	/* PPC64 partition types */
- 	PSTORE_TYPE_RTAS	= 10,
- 	PSTORE_TYPE_OF		= 11,
-+	PSTORE_TYPE_COMMON	= 12,
- 	PSTORE_TYPE_UNKNOWN	= 255
- };
- 
+-- 
+Jens Axboe
 
