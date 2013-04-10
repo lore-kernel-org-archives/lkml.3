@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935980Ab3DJISq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 04:18:46 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:41597 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab3DJISo (ORCPT
+	id S936347Ab3DJIUY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 04:20:24 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.195]:20075 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936022Ab3DJIUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 04:18:44 -0400
-Date: Wed, 10 Apr 2013 18:18:36 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: linux-next: build warning after merge of the akpm tree
-Message-Id: <20130410181836.e3d308a710e35f540f57b779@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__10_Apr_2013_18_18_36_+1000_UzIo=9.HkblMCYzs"
+	Wed, 10 Apr 2013 04:20:20 -0400
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-12.tower-46.messagelabs.com!1365582007!33481540!3
+X-Originating-IP: [66.77.174.14]
+X-StarScan-Received: 
+X-StarScan-Version: 6.8.6.1; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <516520AA.8030300@digi.com>
+Date: Wed, 10 Apr 2013 10:19:54 +0200
+From: Hector Palacios <hector.palacios@digi.com>
+Organization: Digi International
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "aletes.xgr@gmail.com" <aletes.xgr@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH v2 2/2] mmc: mxs-mmc: add non-removable property
+References: <1365166070-9370-1-git-send-email-mkl@pengutronix.de> <1365166070-9370-3-git-send-email-mkl@pengutronix.de> <51643053.7030302@digi.com> <516431F9.8010302@digi.com> <51644302.6000109@pengutronix.de>
+In-Reply-To: <51644302.6000109@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__10_Apr_2013_18_18_36_+1000_UzIo=9.HkblMCYzs
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue 09 Apr 2013 06:34:10 PM CEST, Marc Kleine-Budde wrote:
+> On 04/09/2013 05:21 PM, Hector Palacios wrote:
+>> On 04/09/2013 05:14 PM, Hector Palacios wrote:
+>>> @@ -95,7 +97,8 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
+>>>           struct mxs_mmc_host *host = mmc_priv(mmc);
+>>>           struct mxs_ssp *ssp = &host->ssp;
+>>>
+>>> -       return !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+>>> +       return host->non_removable || host->broken_cd ||
+>>> +              !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+>>>                    BM_SSP_STATUS_CARD_DETECT);
+>>>    }
+>>
+>> Sorry, I missed your original XOR here, when merging my changes:
+>
+> Can you send an incremental patch against my 2/2 with your
+> Signed-off-by, I'll squash your patch into mine and repost the series.
 
-Hi Andrew,
+Sure. Here it is:
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
+>From 18f6199947bc2681d2d63b307506019535018646 Mon Sep 17 00:00:00 2001
+From: Hector Palacios <hector.palacios@digi.com>
+Date: Wed, 10 Apr 2013 09:16:31 +0200
+Subject: [PATCH] mmc: mxs-mmc: handle 'broken-cd' property
 
-include/linux/genalloc.h:109:3: warning: 'struct device' declared inside pa=
-rameter list [enabled by default]
-include/linux/genalloc.h:109:3: warning: its scope is only this definition =
-or declaration, which is probably not what you want [enabled by default]
-include/linux/genalloc.h:110:49: warning: 'struct device' declared inside p=
-arameter list [enabled by default]
+According to bindings documentation for mmc, the property 'broken-cd'
+can be used to indicate card-detection is not available and polling
+must be used instead. This patch retrieves this property
+and sets a custom flag. On the get_cd() hook, it returns 1 if
+the flag is set, to always assume the card is present.
 
-Introduced by commit 3f364a866cf1 ("genalloc: add devres support, allow
-to find a managed pool by device")
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+---
+ drivers/mmc/host/mxs-mmc.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---Signature=_Wed__10_Apr_2013_18_18_36_+1000_UzIo=9.HkblMCYzs
-Content-Type: application/pgp-signature
+diff --git a/drivers/mmc/host/mxs-mmc.c b/drivers/mmc/host/mxs-mmc.c
+index 75dee88..10c07a8 100644
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@ -73,6 +73,7 @@ struct mxs_mmc_host {
+        int                             wp_gpio;
+        bool                            wp_inverted;
+        bool                            cd_inverted;
++       bool                            broken_cd;
+        bool                            non_removable;
+ };
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+@@ -97,7 +98,7 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
+        struct mxs_mmc_host *host = mmc_priv(mmc);
+        struct mxs_ssp *ssp = &host->ssp;
 
-iQIcBAEBCAAGBQJRZSBcAAoJEECxmPOUX5FEcKwP/3mgbVqLTr9SYTXrWlG117N5
-VXrFql03QTM+PXO24cSGb3m6UZhyi9Luz6h1ibGNzrtnmbvFktXSlyhrYw8wjaDo
-fQDpqzecImCRIfmVPhkb4dW6wmrLtFd70Eczk4sJn9HfM9H81ciS+hLuQvhnUbQJ
-z63LJyadOs6NTNocmdT3YoBaWuxtlQtmbunjXhOc0m159BHR7A/XwJqN016IBOAm
-8U0buL8Vu17ADixiNHvXpJtjbC1v+c27G8Q36eU7Jya95z61IY6A7YtSakuNINsk
-M03/S1BBA9R6GGALwbYGppdIBRYQfzgkKPTNa8GOXlg2bq2iY/3E1ZMXd3pefEWv
-CmpYUvoi3vOcbXzUKOC0MIS9pozakyqzxCNcnILC8y+9NAVZd+kvux+oVLGnN62L
-rIZ28J9jftrY9sr53U4/8jBCaV07MIxhA4gQDwc7txhM++AMdXLuOEnf6bJpILiQ
-N7Z7h3A/nXbmQS2+VCphmaU2tXXAfAsD/yLiWQXZ4J/bEiQ3KBJ7YGiQFlBuPjCQ
-WwWceBPNIeB35X9lyKNfMfyMazNAsjLp/XOH1d9SlUxcXJke42axPk6qaJ6xUojM
-o9cFpTi92o8Jz2K4hPxBKhSs6QbrVKpKdShL2XdBelVgy587qnZokWxuIDqRQooW
-Ea59aEhi3KICyBjAY66F
-=PzsU
------END PGP SIGNATURE-----
+-       return host->non_removable ||
++       return host->non_removable || host->broken_cd ||
+                !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+                  BM_SSP_STATUS_CARD_DETECT) ^ host->cd_inverted;
+ }
+@@ -689,6 +690,7 @@ static int mxs_mmc_probe(struct platform_device 
+*pdev)
+                mmc->caps |= MMC_CAP_4_BIT_DATA;
+        else if (bus_width == 8)
+                mmc->caps |= MMC_CAP_4_BIT_DATA | MMC_CAP_8_BIT_DATA;
++       host->broken_cd = of_property_read_bool(np, "broken-cd");
+        host->non_removable = of_property_read_bool(np, 
+"non-removable");
+        if (host->non_removable)
+                mmc->caps |= MMC_CAP_NONREMOVABLE;
+--
+1.8.2
 
---Signature=_Wed__10_Apr_2013_18_18_36_+1000_UzIo=9.HkblMCYzs--
+
+
