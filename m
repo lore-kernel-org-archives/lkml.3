@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759172Ab3DJVGF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 17:06:05 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:44159 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab3DJVGC (ORCPT
+	id S1759688Ab3DJVGu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 17:06:50 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:46613 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab3DJVGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 17:06:02 -0400
-Message-ID: <1365627922.2452.32.camel@falcor1.watson.ibm.com>
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Josh Boyer <jwboyer@gmail.com>,
-        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 10 Apr 2013 17:05:22 -0400
-In-Reply-To: <20130410194209.GF6602@redhat.com>
-References: <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
-	 <20130205181926.GA13942@srcf.ucam.org> <20130205183436.GC12853@redhat.com>
-	 <CALLzPKavbsZgHoJrk5iQ0F1fO21SaeEHmCVCh1G1UKCKB3WZZQ@mail.gmail.com>
-	 <20130405135000.GB6299@redhat.com>
-	 <1365450229.3847.56.camel@falcor1.watson.ibm.com>
-	 <20130408200904.GI28292@redhat.com>
-	 <CA+5PVA43U_kDSV7p0zhQwmK9pwbVb8qAUePU8svQvoPbDA9iCQ@mail.gmail.com>
-	 <20130409143852.GH6320@redhat.com>
-	 <1365563230.3074.107.camel@falcor1.watson.ibm.com>
-	 <20130410194209.GF6602@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041021-2876-0000-0000-00000752E7A5
+	Wed, 10 Apr 2013 17:06:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <3043137.BtEKcMiXSu@vostro.rjw.lan>
+References: <3043137.BtEKcMiXSu@vostro.rjw.lan>
+Date: Wed, 10 Apr 2013 23:06:48 +0200
+Message-ID: <CACRpkdZ+Tj2tdQsY7dM+ZJHDeO=HdnYtQ8fWVAXRbP0zpG8ijA@mail.gmail.com>
+Subject: Re: [PATCH] gpio / ACPI: Handle ACPI events in accordance with the spec
+From: Linus Walleij <linus.walleij@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 15:42 -0400, Vivek Goyal wrote:
-> On Tue, Apr 09, 2013 at 11:07:10PM -0400, Mimi Zohar wrote:
-> 
-> [..]
-> > The module keyring is a special case.  Loading these keys from the
-> > kernel and, presumably, locking the keyring is probably fine.  In the
-> > case of IMA, however, files will be signed by any number of package
-> > owners.  If the _ima keyring is locked by the kernel, how would you add
-> > these other keys?
-> 
-> Who are package owners here. IOW, in typical IMA setup, where are the keys
-> and when are these keys loaded in ima keyring?
+On Tue, Apr 9, 2013 at 3:57 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 
-Suppose I install third party packages not signed by the distro, but by
-the package owner (eg. google, rpmfusion, ...).  Not only does the
-package signature need to be verified on installation, but the files
-need to be installed with signatures.  For IMA to enforce file
-integrity, the package owner's public key needs to be added to the _ima
-keyring.
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> Commit 0d1c28a (gpiolib-acpi: Add ACPI5 event model support to gpio.)
+> that added support for ACPI events signalled through GPIO interrupts
+> covered only GPIO pins whose numbers are less than or equal to 255.
+> However, there may be GPIO pins with numbers greater than 255 and
+> the ACPI spec (ACPI 5.0, Section 5.6.5.1) requires the _EVT method
+> to be used for handling events corresponding to those pins.
+>
+> Moreover, according to the spec, _EVT is the default mechanism
+> for handling all ACPI events signalled through GPIO interrupts,
+> so if the _Exx/_Lxx method is not present for the given pin,
+> _EVT should be used instead.  If present, though, _Exx/_Lxx take
+> precedence over _EVT which shouldn't be executed in that case
+> (ACPI 5.0, Section 5.6.5.3).
+>
+> Modify acpi_gpiochip_request_interrupts() to follow the spec as
+> described above and add acpi_gpiochip_free_interrupts() needed
+> to free interrupts associated with _EVT.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-> If we trust root and keys can be loaded any time later, then signed
-> initramfs will not solve the problem either.
+Patch applied with Mika's ACK, thanks!
 
-Locking the keyring in the kernel will limit the set of permitted keys
-to only those specified in UEFI db or builtin.  Locking the keyring in
-the "early" initramfs, will allow the system owner, whose key is in the
-UEFI db, to specify additional keys, such as those for third party
-packages.  Not all public keys belong in the UEFI db.
+It's not like I fully understand it, but I totally trust you guys.
 
-Mimi
-
+Yours,
+Linus Walleij
