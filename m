@@ -1,43 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936370Ab3DJM6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 08:58:14 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:51980 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932521Ab3DJM6N (ORCPT
+	id S935712Ab3DJNCC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 09:02:02 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:34903 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab3DJNCA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 08:58:13 -0400
-Date: Wed, 10 Apr 2013 14:58:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH] perf, x86: Allow setting period 1
-Message-ID: <20130410125808.GC12978@gmail.com>
-References: <1362785070-12860-1-git-send-email-andi@firstfloor.org>
+	Wed, 10 Apr 2013 09:02:00 -0400
+Message-ID: <516562C5.2050306@arm.com>
+Date: Wed, 10 Apr 2013 14:01:57 +0100
+From: Serban Constantinescu <Serban.Constantinescu@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1362785070-12860-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?windows-1252?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Subject: Re: [PATCH v2 3/7] staging: android: binder: fix binder interface
+ for 64bit compat layer
+References: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com> <1365501657-4213-4-git-send-email-serban.constantinescu@arm.com> <CAMP5XgdNi4BV-aWDGhmFgNGceGoT2msdU_rA4U=wqs6xtYRc_A@mail.gmail.com>
+In-Reply-To: <CAMP5XgdNi4BV-aWDGhmFgNGceGoT2msdU_rA4U=wqs6xtYRc_A@mail.gmail.com>
+X-OriginalArrivalTime: 10 Apr 2013 13:01:55.0586 (UTC) FILETIME=[93EF8E20:01CE35EB]
+X-MC-Unique: 113041014015810801
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10/04/13 00:48, Arve Hjønnevåg wrote:
+>> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+>> index 5794cf6..a2cdd9e 100644
+>> --- a/drivers/staging/android/binder.c
+>> +++ b/drivers/staging/android/binder.c
+> ...
+>> @@ -1700,7 +1700,7 @@ err_no_context_mgr_node:
+>> }
+>>
+>> int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
+>> - void __user *buffer, int size, signed long *consumed)
+>> + void __user *buffer, size_t size, size_t *consumed)
+>
+> What is this change for? You changed from a signed type to an unsigned
+> type which seems unrelated to adding 64 bit support.
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+This change is related to the userspace handling of the struct 
+binder_write_read. The userspace writes write_size and read_size as 
+size_t values(size_t Parcel::dataSize(), size_t Parcel::dataCapacity()).
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> I had some requests for setting period 1, so that every event of something
-> is caught.  To my knowledge there is no limit to 1 on Intel hardware.
-> Just remove the check for minimum 2
-> 
-> If specific CPUs have problems we can black list them.
+On return from a BINDER_WRITE_READ ioctl write_consumed and 
+read_consumed are checked against positive values(these values will 
+represent the difference between the start of the buffer cursor and the 
+current buffer start - positive values since buffer cursor = buffer 
+start ++).
 
-How have you tested this? The commit that added this quirk mentions very high perf 
-load triggering badness unless this quirk is added.
+However if there is any plan for these values to be handled as signed 
+longs at some point we can change the patch such that we modify just the 
+function prototype to:
 
-Thanks,
+> int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
+>  -               void __user *buffer, int size, signed long *consumed)
+>  +               void __user *buffer, signed long size, signed long *consumed)
 
-	Ingo
+I will break this change into its own patch such that it is easier to 
+grasp.
+
+>
+> ...
+>> diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+>> index dbe81ce..8012921 100644
+>> --- a/drivers/staging/android/binder.h
+>> +++ b/drivers/staging/android/binder.h
+>> @@ -48,13 +48,13 @@ enum {
+>> */
+>> struct flat_binder_object {
+>> /* 8 bytes for large_flat_header. */
+>> - unsigned long type;
+>> - unsigned long flags;
+>> + __u32 type;
+>> + __u32 flags;
+>>
+>> /* 8 bytes of data. */
+>> union {
+>> void __user *binder; /* local object */
+>> - signed long handle; /* remote object */
+>> + __s32 handle; /* remote object */
+>
+> Why limit the handle to 32 bits when the pointer that it shares
+> storage with need to be 64 bit on 64 bit systems?
+
+Here I have mirrored the type being passed in handle - a file 
+descriptor(when type == BINDER_TYPE_FD) or a handle - 32bit(when type == 
+BINDER_TYPE_HANDLE). This will avoid some casting when handle is used 
+inside the kernel/userspace(as 32bit value on 64bit systems). However 
+this change does not limit the extension of the API since we can read 
+the value as 64bit - binder(on 64bit systems).
+
+I can remove this change if you consider that is the better solution.
+
+>> };
+>>
+>> /* extra data associated with local object */
+>> @@ -67,18 +67,18 @@ struct flat_binder_object {
+>> */
+>>
+>> struct binder_write_read {
+>> - signed long write_size; /* bytes to write */
+>> - signed long write_consumed; /* bytes consumed by driver */
+>> + size_t write_size; /* bytes to write */
+>> + size_t write_consumed; /* bytes consumed by driver */
+>> unsigned long write_buffer;
+>> - signed long read_size; /* bytes to read */
+>> - signed long read_consumed; /* bytes consumed by driver */
+>> + size_t read_size; /* bytes to read */
+>> + size_t read_consumed; /* bytes consumed by driver */
+>
+> What is this change for? You changed from a signed type to an unsigned
+> type which seems unrelated to adding 64 bit support.
+
+See above explanation for binder_thread_write() change, I will break 
+this into its own patch.
+
+>> unsigned long read_buffer;
+>> };
+>>
+>> /* Use with BINDER_VERSION, driver fills in fields. */
+>> struct binder_version {
+>> /* driver protocol version -- increment with incompatible change */
+>> - signed long protocol_version;
+>> + __s32 protocol_version;
+>
+> How does user-space know if it should use 32 bit or 64 bit pointers.
+> Without this change, the BINDER_VERSION ioctl would only match when
+> the size of long matches.
+
+The userspace can check the values returned by uname(). That will 
+determine if the kernel is 32 or 64bit and depending on this select what 
+binder structures to use. Next a BINDER_VERSION ioctl will fail on 64bit 
+kernels using protocol_version as 64bit signed long(that is old kernel 
+versions with no 64bit support).
+
+Leaving this value as signed long would mean that older versions of the 
+binder(without 64bit support) will pass the check. Furthermore the 
+protocol version will probably never exceed the values that could be 
+represented on 32bit. It will also mean that BINDER_VERSION will have a 
+different userspace/kernel handler for 64/32 systems.
+
+Let me know what are your thoughts related to these changes,
+Thanks for your feedback,
+Serban
+
