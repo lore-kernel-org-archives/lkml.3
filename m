@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936156Ab3DJLZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 07:25:04 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35583 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935845Ab3DJLZB (ORCPT
+	id S936273Ab3DJL0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 07:26:00 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46294 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762484Ab3DJLZ6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 07:25:01 -0400
-Date: Wed, 10 Apr 2013 13:24:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Frank Ch. Eigler" <fche@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sourceware.org>
-Subject: Re: systemtap broken by removal of register_timer_hook
-Message-ID: <20130410112456.GA29886@gmail.com>
-References: <20130403075017.GA2534@suse.de>
- <CAFTL4hyYezB2ZxM-GJ70VoxOeRSG64V6u+nX2hTuhF30R-GdPg__32168.962484184$1364986928$gmane$org@mail.gmail.com>
- <y0mvc83u79f.fsf@fche.csb>
- <CAFTL4hxx_GHoa4uguSAtY0A=cC43qJPKvpqaoguS-WAjFj+HSw@mail.gmail.com>
- <20130403144428.GA15432@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130403144428.GA15432@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Apr 2013 07:25:58 -0400
+X-Originating-IP: 83.155.44.161
+Message-ID: <1365593153.30420.1.camel@novo>
+Subject: Re: [PATCH] HID: appleir: add support for Apple ir devices
+From: Bastien Nocera <hadess@hadess.net>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Fabien <fabien.andre@gmail.com>, Jarod Wilson <jarod@redhat.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 10 Apr 2013 13:25:53 +0200
+In-Reply-To: <alpine.LNX.2.00.1304092155330.17280@pobox.suse.cz>
+References: <1365438651-32623-1-git-send-email-benjamin.tissoires@redhat.com>
+	 <alpine.LNX.2.00.1304092155330.17280@pobox.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.0 (3.8.0-1.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Frank Ch. Eigler <fche@redhat.com> wrote:
-
-> Hi -
+On Tue, 2013-04-09 at 22:10 +0200, Jiri Kosina wrote:
+> On Mon, 8 Apr 2013, Benjamin Tissoires wrote:
 > 
-> On Wed, Apr 03, 2013 at 02:49:53PM +0200, Frederic Weisbecker wrote:
+> > This driver was originally written by James McKenzie, updated by
+> > Greg Kroah-Hartman, further updated by Bastien Nocera, with suspend
+> > support added.
+> > I ported it to the HID subsystem, in order to simplify it a litle
+> > and allow lirc to use it through hiddev.
+> > 
+> > More recent versions of the IR receiver are also supported through
+> > a patch by Alex Karpenko. The patch also adds support for the 2nd
+> > and 5th generation of the controller, and the menu key on newer
+> > brushed metal remotes.
+> > 
+> > Tested-by: Fabien André <fabien.andre@gmail.com>
+> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> > ---
+> > Hi guys,
+> > 
+> > this is the re-spin of Bastien's patch submitted last november.
+> > I ported it to use the hid subsystem, reducing the size of the driver
+> > to 355 lines instead of 527.
 > 
-> > Sounds good, would you like to propose a version? We are also
-> > interested in a timer tick event tracepoint for dynticks debugging.
+> Thanks. Generally, I like the idea of appleir being on the hid bus.
 > 
-> How about this?
-> 
-> Author: Frank Ch. Eigler <fche@redhat.com>
-> Date:   Wed Apr 3 10:35:21 2013 -0400
-> 
->     profiling: add profile_tick tracepoint
->     
->     Commit ba6fdda4 removed the timer_hook mechanism for modules to listen
->     to profiling timer ticks (without having to set up more complicated
->     perf mechanisms).  To reduce the impact on out-of-tree users, a
->     TRACE_EVENT-flavoured tracepoint is added in its place.  Tested with
->     perf and systemtap.
+> Bastien, could you please provide your Ack (and most importantly also 
+> Tested-by?).
 
-I'd suggest mentioning SystemTap here as the driving motivation. SystemTap 
-triggered a generic kernel improvement here, no need to hide its identity!
+At a glance, the patch looks good to me, but I don't have access to
+hardware to test this (unsurprisingly given that my original patch is at
+least 2 years old).
 
-Thanks,
+Cheers
 
-	Ingo
+
