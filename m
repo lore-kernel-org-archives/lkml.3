@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521Ab3DJHtK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 03:49:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:33173 "EHLO mga03.intel.com"
+	id S935258Ab3DJH4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 03:56:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37723 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751574Ab3DJHtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 03:49:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,444,1363158000"; 
-   d="scan'208";a="284137662"
-Date: Wed, 10 Apr 2013 10:53:19 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        grant.likely@secretlab.ca,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio / ACPI: Handle ACPI events in accordance with the
- spec
-Message-ID: <20130410075319.GN21818@intel.com>
-References: <3043137.BtEKcMiXSu@vostro.rjw.lan>
+	id S1751818Ab3DJH43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 03:56:29 -0400
+Message-ID: <51651B2B.90206@suse.cz>
+Date: Wed, 10 Apr 2013 09:56:27 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3043137.BtEKcMiXSu@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: generate generic headers before recursing into
+ scripts
+References: <CA+V-a8vYsBLVH-3Bm35Sv9K9ZMTcMB4_P_V3kBjyuEKDozPi5w@mail.gmail.com> <1363949290.3528.37.camel@linaro1.home> <m2ip48d62f.fsf@igel.home> <CA+V-a8srtwdf1H2JQwbkyMFhXopPEA90RM8Hy+UunM6Mm7-d1w@mail.gmail.com> <m2k3ob1tar.fsf_-_@igel.home>
+In-Reply-To: <m2k3ob1tar.fsf_-_@igel.home>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 03:57:25PM +0200, Rafael J. Wysocki wrote:
-> +void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
-> +{
-> +	acpi_handle handle;
-> +	acpi_status status;
-> +	struct list_head *evt_pins;
-> +	struct acpi_gpio_evt_pin *evt_pin, *ep;
-> +
-> +	if (!chip->dev || !chip->to_irq)
-> +		return;
-> +
-> +	handle = ACPI_HANDLE(chip->dev);
-> +	if (!handle)
-> +		return;
-> +
-> +	status = acpi_get_data(handle, acpi_gpio_evt_dh, (void **)&evt_pins);
-> +	if (ACPI_FAILURE(status))
-> +		return;
-> +
-> +	list_for_each_entry_safe_reverse(evt_pin, ep, evt_pins, node) {
-> +		devm_free_irq(chip->dev, evt_pin->irq, evt_pin);
+On 9.4.2013 19:57, Andreas Schwab wrote:
+> The headers are now needed inside scripts/mod since 6543bec
+> ("mod/file2alias: make modalias generation safe for cross compiling").
+> 
+> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+> ---
+> Prabhakar Lad <prabhakar.csengg@gmail.com> writes:
+> 
+>> Whats the status of it ?
+> 
+> I think it has sufficiently been tested by now.
 
-How about using normal request/free_irq() functions for both _EVT and
-non-_EVT events? Since we now need to call acpi_gpiochip_free_interrupts()
-anyway, I don't see the point using devm_* functions here.
+Thanks a lot, I added it to kbuild.git#rc-fixes.
 
-> +		list_del(&evt_pin->node);
-> +		kfree(evt_pin);
-> +	}
-> +
-> +	acpi_detach_data(handle, acpi_gpio_evt_dh);
-> +	kfree(evt_pins);
-> +}
-> +EXPORT_SYMBOL(acpi_gpiochip_free_interrupts);
+Michal
+
