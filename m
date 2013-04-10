@@ -1,83 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935980Ab3DJH7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 03:59:14 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:44192 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab3DJH7N (ORCPT
+	id S936145Ab3DJIBx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 04:01:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:42341 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab3DJIBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 03:59:13 -0400
+	Wed, 10 Apr 2013 04:01:52 -0400
+From: Philip Avinash <avinashphilip@ti.com>
+To: <nsekhar@ti.com>, <linux@arm.linux.org.uk>,
+        <thierry.reding@avionic-design.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
+        <jacmet@sunsite.dk>, Philip Avinash <avinashphilip@ti.com>
+Subject: [PATCH v4] ARM: davinci: da850: add EHRPWM & ECAP DT node
+Date: Wed, 10 Apr 2013 13:32:19 +0530
+Message-ID: <1365580939-16839-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <1365578814.30071.19.camel@laptop>
-References: <1365084959-28374-1-git-send-email-vincent.guittot@linaro.org>
-	<1365497406.2609.162.camel@laptop>
-	<CAKfTPtDJa5Am+jEHSzy+hhh+9=GcR9YXzKV-DAH3D3Hq6uMHog@mail.gmail.com>
-	<1365578814.30071.19.camel@laptop>
-Date: Wed, 10 Apr 2013 09:59:11 +0200
-Message-ID: <CAKfTPtAHVreu_PcyM3g_q0smBM3P0N=miJG36x6+JWYutLgA5w@mail.gmail.com>
-Subject: Re: [PATCH v4] sched: fix wrong rq's runnable_avg update with rt tasks
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 April 2013 09:26, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2013-04-09 at 11:06 +0200, Vincent Guittot wrote:
->> >> +void idle_enter(struct rq *this_rq)
->> >> +{
->> >> +       update_rq_runnable_avg(this_rq, 1);
->> >> +}
->
->> >> +void idle_exit(struct rq *this_rq)
->> >> +{
->> >> +       update_rq_runnable_avg(this_rq, 0);
->> >> +}
->> >
->> > These seem like fairly unfortunate names to expose to the global
->> > namespace, why not expose update_rq_runnable_avg() instead?
->>
->> Just to gather in one place all cfs actions that should be done when
->> exiting idle even if we only have update_rq_runnable_avg right now. I
->> have distinguished that from idle_balance because this sequence can't
->> generate extra context switch like idle_balance and they would finally
->> not be called in the same time
->
-> OK, but could we then please give then more scheduler specific names?
-> It just seems to me that idle_enter/idle_exit() are very obvious
-> function names for unrelated things.
->
-> How about calling it idle_{enter,exit}_fair; so that once other classes
-> grow hooks we can do something like:
+Add da850 EHRPWM & ECAP DT node along with pin-mux details for EHRPWM1.
+Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
+clock.
 
-My primary goal was to align with idle_balance name but
-idle_{enter,exit}_fair is better
+Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+---
+Changes since v3:
+	- add pin mux info for EHRPWM1.
 
-In the same way, should we change idle_balance to idle_balance_fair ?
+Changes since v1:
+	- Reusing ti,am33xx<ecap/ehrpwm> as compatible field as both IP's are
+	  similar with am33xx platform and da850 has no platform specific
+	  dependency.
 
-and since we don't have Steve's irq constraint anymore, we could move
-idle_balance in the beginning of the function pick_next_task_fair ? We
-will not have spurious switch context and we will remove fair function
-from __schedule function
+ arch/arm/boot/dts/da850.dtsi     |   42 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-davinci/da8xx-dt.c |    5 +++++
+ 2 files changed, 47 insertions(+)
 
-Vincent
->
-> static void pre_schedule_idle(struct rq *rq, struct task_struct *p)
-> {
->         struct sched_class *class;
->
->         for_each_class(class) {
->                 if (class->idle_enter)
->                         class->idle_enter(rq);
->         }
-> }
->
-> or whatnot..
->
+diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+index 3ade343..3bff30d 100644
+--- a/arch/arm/boot/dts/da850.dtsi
++++ b/arch/arm/boot/dts/da850.dtsi
+@@ -71,6 +71,18 @@
+ 					0x28 0x00222222  0x00ffffff
+ 				>;
+ 			};
++			ehrpwm1a_pins: pinmux_ehrpwm1a_pins {
++				pinctrl-single,bits = <
++					/* EPWM1A */
++					0x14 0x00000002 0x0000000f
++				>;
++			};
++			ehrpwm1b_pins: pinmux_ehrpwm1b_pins {
++				pinctrl-single,bits = <
++					/* EPWM1B */
++					0x14 0x00000020 0x000000f0
++				>;
++			};
+ 		};
+ 		serial0: serial@1c42000 {
+ 			compatible = "ns16550a";
+@@ -122,6 +134,36 @@
+ 			interrupts = <16>;
+ 			status = "disabled";
+ 		};
++		ehrpwm0: ehrpwm@01f00000 {
++			compatible = "ti,da850-ehrpwm", "ti,am33xx-ehrpwm";
++			#pwm-cells = <3>;
++			reg = <0x300000 0x2000>;
++			status = "disabled";
++		};
++		ehrpwm1: ehrpwm@01f02000 {
++			compatible = "ti,da850-ehrpwm", "ti,am33xx-ehrpwm";
++			#pwm-cells = <3>;
++			reg = <0x302000 0x2000>;
++			status = "disabled";
++		};
++		ecap0: ecap@01f06000 {
++			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
++			#pwm-cells = <3>;
++			reg = <0x306000 0x80>;
++			status = "disabled";
++		};
++		ecap1: ecap@01f07000 {
++			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
++			#pwm-cells = <3>;
++			reg = <0x307000 0x80>;
++			status = "disabled";
++		};
++		ecap2: ecap@01f08000 {
++			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
++			#pwm-cells = <3>;
++			reg = <0x308000 0x80>;
++			status = "disabled";
++		};
+ 	};
+ 	nand_cs3@62000000 {
+ 		compatible = "ti,davinci-nand";
+diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
+index d83de8f..05bb9a2 100644
+--- a/arch/arm/mach-davinci/da8xx-dt.c
++++ b/arch/arm/mach-davinci/da8xx-dt.c
+@@ -41,6 +41,11 @@ struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
+ 	OF_DEV_AUXDATA("ti,davinci-i2c", 0x01c22000, "i2c_davinci.1", NULL),
+ 	OF_DEV_AUXDATA("ti,davinci-wdt", 0x01c21000, "watchdog", NULL),
+ 	OF_DEV_AUXDATA("ti,da830-mmc", 0x01c40000, "da830-mmc.0", NULL),
++	OF_DEV_AUXDATA("ti,da850-ehrpwm", 0x01f00000, "ehrpwm", NULL),
++	OF_DEV_AUXDATA("ti,da850-ehrpwm", 0x01f02000, "ehrpwm", NULL),
++	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f06000, "ecap", NULL),
++	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f07000, "ecap", NULL),
++	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f08000, "ecap", NULL),
+ 	{}
+ };
+ 
+-- 
+1.7.9.5
+
