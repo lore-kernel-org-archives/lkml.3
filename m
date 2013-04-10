@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965132Ab3DJQtL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:49:11 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:38635 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936102Ab3DJQtJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:49:09 -0400
-Message-ID: <1365611810.32127.100.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2 2/3] resource: Add release_mem_region_adjustable()
-From: Toshi Kani <toshi.kani@hp.com>
-To: David Rientjes <rientjes@google.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
-        guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com
-Date: Wed, 10 Apr 2013 10:36:50 -0600
-In-Reply-To: <alpine.DEB.2.02.1304092315180.3916@chino.kir.corp.google.com>
-References: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
-	 <1365440996-30981-3-git-send-email-toshi.kani@hp.com>
-	 <alpine.DEB.2.02.1304092315180.3916@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S937160Ab3DJQt1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:49:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22206 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936102Ab3DJQtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 12:49:23 -0400
+Date: Wed, 10 Apr 2013 12:49:14 -0400
+From: David Teigland <teigland@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Guenter Roeck <linux@roeck-us.net>, Dave Young <dyoung@redhat.com>,
+        linux-watchdog@vger.kernel.org, kexec@lists.infradead.org,
+        wim@iguana.be, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
+Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130410164914.GA18946@redhat.com>
+References: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
+ <516259D2.7000805@redhat.com>
+ <20130408124858.GC79013@redhat.com>
+ <20130408151509.GA20919@roeck-us.net>
+ <20130409144431.GL79013@redhat.com>
+ <20130409145228.GA1111@roeck-us.net>
+ <20130409151423.GM79013@redhat.com>
+ <20130409160757.GA27050@roeck-us.net>
+ <20130410134039.GV79013@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130410134039.GV79013@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 23:16 -0700, David Rientjes wrote:
-> On Mon, 8 Apr 2013, Toshi Kani wrote:
-> 
-> > Added release_mem_region_adjustable(), which releases a requested
-> > region from a currently busy memory resource.  This interface
-> > adjusts the matched memory resource accordingly even if the
-> > requested region does not match exactly but still fits into.
-> > 
-> > This new interface is intended for memory hot-delete.  During
-> > bootup, memory resources are inserted from the boot descriptor
-> > table, such as EFI Memory Table and e820.  Each memory resource
-> > entry usually covers the whole contigous memory range.  Memory
-> > hot-delete request, on the other hand, may target to a particular
-> > range of memory resource, and its size can be much smaller than
-> > the whole contiguous memory.  Since the existing release interfaces
-> > like __release_region() require a requested region to be exactly
-> > matched to a resource entry, they do not allow a partial resource
-> > to be released.
-> > 
-> > There is no change to the existing interfaces since their restriction
-> > is valid for I/O resources.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> 
-> Should this emit a warning for attempting to free a non-existant region 
-> like __release_region() does?
+On Wed, Apr 10, 2013 at 09:40:39AM -0400, Don Zickus wrote:
+> However, we still have the problem that if the machine panics and we want
+> to jump into the kdump kernel, we need to 'kick' the watchdog one more
+> time.  This provides us a sane sync point for determining how long we have
+> to load the watchdog driver in the second kernel before the hardware
+> reboots us.  Otherwise the reboots are pretty random and nothing is
+> guaranteed.
 
-Since __release_region() is a void function, it needs to emit a warning
-within the func.  I made release_mem_region_adjustable() as an int
-function so that the caller can receive an error and decide what to do
-based on its operation.  I changed the caller __remove_pages() to emit a
-warning message in PATCH 3/3 in this case.
+Some time ago I submitted this patch
+http://www.spinics.net/lists/linux-watchdog/msg01477.html
 
-> I think it would be better to base this off my patch and surround it with 
-> #ifdef CONFIG_MEMORY_HOTREMOVE as suggested by Andrew.  There shouldn't be 
-> any conflicts.
+to get rid of the one "extraneous" ping that was causing me trouble.
+I'd still like to see merged, but haven't had time to follow up.
 
-Yes, I realized that CONFIG_MEMORY_HOTREMOVE was a better choice, but I
-had to use CONFIG_MEMORY_HOTPLUG at this time.  So, thanks for doing the
-cleanup!
+I have a use case where I need to guarantee that the watchdog
+will *not* be pinged unless my userland daemon does the ping.
+If my daemon is killed, the close() generates a ping that I
+don't intend.  This kdump ping looks like it would be another
+instance that I'd need to suppress.  Perhaps by renaming my flag
+WDOG_NO_EXTRA_PING and checking it both in release and in
+kick_for_kdump?
 
-Since it's already rc6, I will keep my patchset independent for now.  I
-will make minor change to update CONFIG_MEMORY_HOTPLUG to
-CONFIG_MEMORY_HOTREMOVE after your patch gets accepted -- either by
-sending a separate patch (if my patchset is already accepted) or
-updating my current patchset (if my patchset is not accepted yet).
+(My daemon associates watchdog pings with shared storage heartbeats.
+Based on the heartbeats, hosts in a cluster can calculate when an
+unresponsive host last pinged its watchdog, and can be fairly
+certain that the "dead" host has been reset by its watchdog 60
+seconds later.  This is used as an alternative to i/o fencing
+where we're protecting data on shared storage from corruption
+after host failures.  If there are uncontrolled watchdog pings,
+then hosts don't know when a dead host might have last pinged
+its watchdog, since it is no longer based on the last timestamp
+it wrote to shared storage.)
 
-Thanks!
--Toshi
-
+Dave
