@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937141Ab3DJJ5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 05:57:21 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:34914 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab3DJJ5U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 05:57:20 -0400
-Date: Wed, 10 Apr 2013 11:57:16 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        kernel-hardening@lists.openwall.com,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
-        Eric Northup <digitaleric@google.com>
-Subject: Re: [PATCH] x86: make IDT read-only
-Message-ID: <20130410095716.GF24443@gmail.com>
-References: <20130408224328.GA17641@www.outflux.net>
- <51634935.9010905@zytor.com>
- <877gkc596d.fsf@xmission.com>
+	id S1752119Ab3DJJ66 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 05:58:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57137 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750806Ab3DJJ64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 05:58:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,445,1363158000"; 
+   d="scan'208";a="284187213"
+Date: Wed, 10 Apr 2013 11:58:52 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrey Smirnov <andrew.smirnov@gmail.com>
+Subject: Re: linux-next: manual merge of the mfd tree with the v4l-dvb tree
+Message-ID: <20130410095852.GB4874@zurbaran>
+References: <20130410134813.b1bff6027f64f14d75d43927@canb.auug.org.au>
+ <20130410064253.GA4874@zurbaran>
+ <20130410064828.6c946ad8@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <877gkc596d.fsf@xmission.com>
+In-Reply-To: <20130410064828.6c946ad8@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mauro,
 
-* Eric W. Biederman <ebiederm@xmission.com> wrote:
-
-> "H. Peter Anvin" <hpa@zytor.com> writes:
+On Wed, Apr 10, 2013 at 06:48:28AM -0300, Mauro Carvalho Chehab wrote:
+> Em Wed, 10 Apr 2013 08:42:53 +0200
+> Samuel Ortiz <sameo@linux.intel.com> escreveu:
 > 
-> > On 04/08/2013 03:43 PM, Kees Cook wrote:
-> >> This makes the IDT unconditionally read-only. This primarily removes
-> >> the IDT from being a target for arbitrary memory write attacks. It has
-> >> an added benefit of also not leaking (via the "sidt" instruction) the
-> >> kernel base offset, if it has been relocated.
-> >> 
-> >> Signed-off-by: Kees Cook <keescook@chromium.org>
-> >> Cc: Eric Northup <digitaleric@google.com>
-> >
-> > Also, tglx: does this interfere with your per-cpu IDT efforts?
+> > Hi Stephen,
+> > 
+> > On Wed, Apr 10, 2013 at 01:48:13PM +1000, Stephen Rothwell wrote:
+> > > Hi Samuel,
+> > > 
+> > > Today's linux-next merge of the mfd tree got a conflict in
+> > > drivers/mfd/Kconfig between commit 3f8ec5df11aa ("[media] mfd: Add header
+> > > files and Kbuild plumbing for SI476x MFD core") from the v4l-dvb tree and
+> > > commit ab85b120e692 ("mfd: Kconfig alphabetical re-ordering") from the
+> > > mfd tree.
+> > I'm surprised the v4l-dvb tree is carrying this patchset because I haven't
+> > ACKed it. 
 > 
-> Given that we don't change any IDT entries why would anyone want a
-> per-cpu IDT?  The cache lines should easily be shared accross all
-> processors.
+> Sorry. Not sure why I understood that you gave your ack. Perhaps I miss-read
+> one of the comments of that thread.
+No worries, really. This has been a long thread...
 
-That's true iif they are cached.
 
-If not then it's a remote DRAM access cache miss for all CPUs except the node that 
-holds that memory.
+> > I was planning to take the MFD bits of it and provide Mauro a branch
+> > to pull from (Including the mfd/Kconfig change).
+> > Mauro, could we please go that way instead ? This conflict does not look
+> > pretty to me.
+> 
+> Sure. Do you have such branch already? As the patches are on my main
+> tree[1], 
+I don't have it yet. I asked Andrei to add a header to one of the MFD patches
+because his patchset is currently not bisectable (The MFD patches include a
+media/ header that is created later in the patchset). Once he has that done,
+I'll create a branch for you to merge. I'll let you know when that's ready.
 
-> Or are there some giant NUMA machines that trigger cache misses when accessing 
-> the IDT and the penalty for pulling the cache line across the NUMA fabric is 
-> prohibitive?
+Cheers,
+Samuel.
 
-IDT accesses for pure userspace execution are pretty rare. So we are not just 
-talking about huge NUMA machines here but about ordinary NUMA machines taking a 
-remote cache miss hit for the first IRQ or other IDT-accessing operation they do 
-after some cache-intense user-space processing.
-
-It's a small effect, but it exists and improving it would be legitimate.
-
-Thanks,
-
-	Ingo
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
