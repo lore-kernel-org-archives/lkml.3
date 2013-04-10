@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937591Ab3DJXD7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:03:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56488 "EHLO
+	id S937606Ab3DJXE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:04:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56484 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964989Ab3DJWtu (ORCPT
+	with ESMTP id S937339Ab3DJWtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:49:50 -0400
+	Wed, 10 Apr 2013 18:49:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 02/29] regmap: cache Fix regcache-rbtree sync
-Date: Wed, 10 Apr 2013 15:49:20 -0700
-Message-Id: <20130410224804.315980557@linuxfoundation.org>
+Subject: [ 01/29] ASoC: dma-sh7760: Fix compile error
+Date: Wed, 10 Apr 2013 15:49:19 -0700
+Message-Id: <20130410224804.216072087@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -29,37 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 8abac3ba51b5525354e9b2ec0eed1c9e95c905d9 upstream.
+commit 417a1178f1bf3cdc606376b3ded3a22489fbb3eb upstream.
 
-The last register block, which falls into the specified range, is not handled
-correctly. The formula which calculates the number of register which should be
-synced is inverse (and off by one). E.g. if all registers in that block should
-be synced only one is synced, and if only one should be synced all (but one) are
-synced. To calculate the number of registers that need to be synced we need to
-subtract the number of the first register in the block from the max register
-number and add one. This patch updates the code accordingly.
+The dma-sh7760 currently fails with the following compile error:
+	sound/soc/sh/dma-sh7760.c:346:2: error: unknown field 'pcm_ops' specified in initializer
+	sound/soc/sh/dma-sh7760.c:346:2: warning: initialization from incompatible pointer type
+	sound/soc/sh/dma-sh7760.c:347:2: error: unknown field 'pcm_new' specified in initializer
+	sound/soc/sh/dma-sh7760.c:347:2: warning: initialization makes integer from pointer without a cast
+	sound/soc/sh/dma-sh7760.c:348:2: error: unknown field 'pcm_free' specified in initializer
+	sound/soc/sh/dma-sh7760.c:348:2: warning: initialization from incompatible pointer type
+	sound/soc/sh/dma-sh7760.c: In function 'sh7760_soc_platform_probe':
+	sound/soc/sh/dma-sh7760.c:353:2: warning: passing argument 2 of 'snd_soc_register_platform' from incompatible pointer type
+	include/sound/soc.h:368:5: note: expected 'struct snd_soc_platform_driver *' but argument is of type 'struct snd_soc_platform *'
 
-The issue was introduced in commit ac8d91c ("regmap: Supply ranges to the sync
-operations").
+This is due the misnaming of the snd_soc_platform_driver type name and 'ops'
+field. The issue was introduced in commit f0fba2a("ASoC: multi-component - ASoC
+Multi-Component Support").
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/regmap/regcache-rbtree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/sh/dma-sh7760.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -392,7 +392,7 @@ static int regcache_rbtree_sync(struct r
- 			base = 0;
+--- a/sound/soc/sh/dma-sh7760.c
++++ b/sound/soc/sh/dma-sh7760.c
+@@ -342,8 +342,8 @@ static int camelot_pcm_new(struct snd_so
+ 	return 0;
+ }
  
- 		if (max < rbnode->base_reg + rbnode->blklen)
--			end = rbnode->base_reg + rbnode->blklen - max;
-+			end = max - rbnode->base_reg + 1;
- 		else
- 			end = rbnode->blklen;
- 
+-static struct snd_soc_platform sh7760_soc_platform = {
+-	.pcm_ops 	= &camelot_pcm_ops,
++static struct snd_soc_platform_driver sh7760_soc_platform = {
++	.ops		= &camelot_pcm_ops,
+ 	.pcm_new	= camelot_pcm_new,
+ 	.pcm_free	= camelot_pcm_free,
+ };
 
 
