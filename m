@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936503Ab3DJNK4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 09:10:56 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:58975 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935453Ab3DJNKz (ORCPT
+	id S936034Ab3DJNMI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 09:12:08 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:46827 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab3DJNMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:10:55 -0400
-Date: Wed, 10 Apr 2013 15:10:50 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Li Zefan <lizefan@huawei.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/7] sched: Split cpuacct
-Message-ID: <20130410131050.GA15934@gmail.com>
-References: <5155365F.1010203@huawei.com>
- <1364553251.5053.83.camel@laptop>
- <20130410131010.GA15728@gmail.com>
+	Wed, 10 Apr 2013 09:12:06 -0400
+X-IronPort-AV: E=Sophos;i="4.87,447,1363158000"; 
+   d="scan'208";a="37200069"
+Message-ID: <51656524.10708@codeaurora.org>
+Date: Wed, 10 Apr 2013 09:12:04 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130410131010.GA15728@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Will Deacon <will.deacon@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v2] arm64: Fix task tracing
+References: <20130408153132.GQ17476@mudshark.cambridge.arm.com> <1365510814-21343-1-git-send-email-cov@codeaurora.org> <20130410114126.GB26992@mudshark.cambridge.arm.com>
+In-Reply-To: <20130410114126.GB26992@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Will,
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+On 04/10/2013 07:41 AM, Will Deacon wrote:
+> On Tue, Apr 09, 2013 at 01:33:34PM +0100, Christopher Covington wrote:
+>> For accurate accounting pass contextidr_thread_switch the prev
+>> task pointer, since cpu_switch_to has at that point changed the
+>> the stack pointer.
+>>
+>> Signed-off-by: Christopher Covington <cov@codeaurora.org>
+> 
+> Thanks Christopher -- I assume that using prev did resolve your issues?
 
-> 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Fri, 2013-03-29 at 14:36 +0800, Li Zefan wrote:
-> > 
-> > > - This patchset splits cpuacct out of core scheduler code.
-> > > - Plus two small optimizations.
-> > > 
-> > 
-> > > ---
-> > >  kernel/sched/Makefile  |   1 +
-> > >  kernel/sched/core.c    | 228 +----------------------------------------------
-> > >  kernel/sched/cpuacct.c | 303 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> > >  kernel/sched/cpuacct.h |  22 +++++
-> > >  kernel/sched/cputime.c |  18 +---
-> > >  kernel/sched/sched.h   |  48 +---------
-> > >  6 files changed, 330 insertions(+), 290 deletions(-)
-> > 
-> > Looks good from a quick glance, thanks for doing this.
-> > 
-> > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> 
-> Looks good to me too, so I added it to tip:sched/core.
-> 
-> The only breakage it cased was on UML:
-> 
-> home/mingo/tip/kernel/sched/cpuacct.c:94:2: error: implicit declaration of 
-> function 'ERR_PTR' [-Werror=implicit-function-declaration]
-> 
-> I suspect it's a previously hidden header file dependency assumption and the patch 
-> below will fix it.
+Yes indeed. We're now able to see in simulation that if a userspace process
+uses 100% CPU, its thread ID, rather than what was usually some random
+kthread, gets written out most of the time. I donno if that meets your
+criteria for a "real" use case, but I hope it's at least sufficient testing of
+the code for now.
 
-diff --git a/kernel/sched/cpuacct.c b/kernel/sched/cpuacct.c
-index ef57ab6..dbb7e2c 100644
---- a/kernel/sched/cpuacct.c
-+++ b/kernel/sched/cpuacct.c
-@@ -6,6 +6,7 @@
- #include <linux/seq_file.h>
- #include <linux/rcupdate.h>
- #include <linux/kernel_stat.h>
-+#include <linux/err.h>
- 
- #include "sched.h"
- 
+Thanks,
+Christopher
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
