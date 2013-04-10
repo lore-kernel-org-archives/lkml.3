@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935212Ab3DJXKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:10:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56179 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937246Ab3DJWr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S937244Ab3DJWr3 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 10 Apr 2013 18:47:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56155 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937171Ab3DJWr0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 18:47:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        Ido Yariv <ido@wizery.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [ 38/64] remoteproc/ste: fix memory leak on shutdown
-Date: Wed, 10 Apr 2013 15:46:35 -0700
-Message-Id: <20130410224342.073305659@linuxfoundation.org>
+        Michael Wolf <mjw@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: [ 33/64] powerpc: pSeries_lpar_hpte_remove fails from Adjunct partition being performed before the ANDCOND test
+Date: Wed, 10 Apr 2013 15:46:30 -0700
+Message-Id: <20130410224340.834587574@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,49 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
+From: Michael Wolf <mjw@linux.vnet.ibm.com>
 
-commit 1cd425b660bd5b4f41b9175b0b7bf3828ce88144 upstream.
+commit 9fb2640159f9d4f5a2a9d60e490482d4cbecafdb upstream.
 
-Fixes coherent memory leakage, caused by non-deallocated
-firmware image chunk.
+Some versions of pHyp will perform the adjunct partition test before the
+ANDCOND test.  The result of this is that H_RESOURCE can be returned and
+cause the BUG_ON condition to occur. The HPTE is not removed.  So add a
+check for H_RESOURCE, it is ok if this HPTE is not removed as
+pSeries_lpar_hpte_remove is looking for an HPTE to remove and not a
+specific HPTE to remove.  So it is ok to just move on to the next slot
+and try again.
 
-Signed-off-by: Dmitry Tarnyagin <dmitry.tarnyagin@stericsson.com>
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-Acked-by: Ido Yariv <ido@wizery.com>
-[slightly edit subject and commit log]
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/remoteproc/ste_modem_rproc.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/powerpc/platforms/pseries/lpar.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/remoteproc/ste_modem_rproc.c
-+++ b/drivers/remoteproc/ste_modem_rproc.c
-@@ -240,6 +240,8 @@ static int sproc_drv_remove(struct platf
+--- a/arch/powerpc/platforms/pseries/lpar.c
++++ b/arch/powerpc/platforms/pseries/lpar.c
+@@ -186,7 +186,13 @@ static long pSeries_lpar_hpte_remove(uns
+ 					   (0x1UL << 4), &dummy1, &dummy2);
+ 		if (lpar_rc == H_SUCCESS)
+ 			return i;
+-		BUG_ON(lpar_rc != H_NOT_FOUND);
++
++		/*
++		 * The test for adjunct partition is performed before the
++		 * ANDCOND test.  H_RESOURCE may be returned, so we need to
++		 * check for that as well.
++		 */
++		BUG_ON(lpar_rc != H_NOT_FOUND && lpar_rc != H_RESOURCE);
  
- 	/* Unregister as remoteproc device */
- 	rproc_del(sproc->rproc);
-+	dma_free_coherent(sproc->rproc->dev.parent, SPROC_FW_SIZE,
-+			  sproc->fw_addr, sproc->fw_dma_addr);
- 	rproc_put(sproc->rproc);
- 
- 	mdev->drv_data = NULL;
-@@ -297,10 +299,13 @@ static int sproc_probe(struct platform_d
- 	/* Register as a remoteproc device */
- 	err = rproc_add(rproc);
- 	if (err)
--		goto free_rproc;
-+		goto free_mem;
- 
- 	return 0;
- 
-+free_mem:
-+	dma_free_coherent(rproc->dev.parent, SPROC_FW_SIZE,
-+			  sproc->fw_addr, sproc->fw_dma_addr);
- free_rproc:
- 	/* Reset device data upon error */
- 	mdev->drv_data = NULL;
+ 		slot_offset++;
+ 		slot_offset &= 0x7;
 
 
