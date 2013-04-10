@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936699Ab3DJD1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 23:27:45 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:26679 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934499Ab3DJD1m (ORCPT
+	id S936745Ab3DJD1v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 23:27:51 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:28262 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934499Ab3DJD1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 23:27:42 -0400
+	Tue, 9 Apr 2013 23:27:48 -0400
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 To: <rostedt@goodmis.org>, <fweisbec@gmail.com>, <mingo@redhat.com>,
         <linux-kernel@vger.kernel.org>
 CC: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [PATCH v3 03/12] tracing: expose event tracing infrastructure
-Date: Wed, 10 Apr 2013 11:26:24 +0800
-Message-ID: <1365564393-10972-4-git-send-email-jovi.zhangwei@huawei.com>
+Subject: [PATCH v3 01/12] tracing: move trace_array definition into include/linux/trace_array.h
+Date: Wed, 10 Apr 2013 11:26:22 +0800
+Message-ID: <1365564393-10972-2-git-send-email-jovi.zhangwei@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
 References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
@@ -27,311 +27,273 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-Currently event tracing only can be use for ftrace and perf,
-there don't have any mechanism to let modules(like external tracing tool)
-register callback tracing function.
-
-Event tracing implement based on tracepoint, compare with raw tracepoint,
-event tracing infrastructure provide built-in structured event annotate format,
-this feature should expose to external user.
-
-For example, simple pseudo ktap script demonstrate how to use this event
-tracing expose change.
-
-function event_trace(e)
-{
-        printf("%s", e.annotate);
-}
-
-os.trace("sched:sched_switch", event_trace);
-os.trace("irq:softirq_raise", event_trace);
-
-The running result:
-sched_switch: prev_comm=rcu_sched prev_pid=10 prev_prio=120 prev_state=S ==> next_comm=swapper/1 next_pid=0 next_prio=120
-softirq_raise: vec=1 [action=TIMER]
-...
-
-This expose change can be use by other tracing tool, like systemtap/lttng,
-if they would implement this.
-
-This patch introduce struct event_trace_ops in trace_array, it have
-two callback functions, pre_trace and do_trace.
-when ftrace_raw_event_<call> function hit, it will call all
-registered event_trace_ops.
-
-the benefit of this change is kernel size shrink ~18K
-
-(the kernel size will reduce more when perf tracing code
-converting to use this mechanism in future)
-
-text    data     bss     dec     hex filename
-7402131  804364 3149824 11356319         ad489f vmlinux.old
-7383115  804684 3149824 11337623         acff97 vmlinux.new
+Prepare for expose event tracing infrastructure.
+(struct trace_array shall be use by external modules)
 
 Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 ---
- include/linux/ftrace_event.h |   21 +++++++++++++
- include/linux/trace_array.h  |    1 +
- include/trace/ftrace.h       |   69 +++++++++++++-----------------------------
- kernel/trace/trace.c         |    4 ++-
- kernel/trace/trace.h         |    2 ++
- kernel/trace/trace_events.c  |   51 +++++++++++++++++++++++++++++++
- 6 files changed, 99 insertions(+), 49 deletions(-)
+ include/linux/trace_array.h |  117 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/trace/trace.h        |  116 +-----------------------------------------
+ 2 files changed, 118 insertions(+), 115 deletions(-)
+ create mode 100644 include/linux/trace_array.h
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 4e28b01..4b55272 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -6,6 +6,7 @@
- #include <linux/percpu.h>
- #include <linux/hardirq.h>
- #include <linux/perf_event.h>
-+#include <linux/trace_array.h>
- 
- struct trace_array;
- struct trace_buffer;
-@@ -245,6 +246,26 @@ struct ftrace_event_call {
- #endif
- };
- 
+diff --git a/include/linux/trace_array.h b/include/linux/trace_array.h
+new file mode 100644
+index 0000000..c5b7a13
+--- /dev/null
++++ b/include/linux/trace_array.h
+@@ -0,0 +1,117 @@
++#ifndef _LINUX_KERNEL_TRACE_ARRAY_H
++#define _LINUX_KERNEL_TRACE_ARRAY_H
++
++#ifdef CONFIG_FTRACE_SYSCALLS
++#include <asm/unistd.h>		/* For NR_SYSCALLS	     */
++#include <asm/syscall.h>	/* some archs define it here */
++#endif
++
++struct trace_cpu {
++	struct trace_array	*tr;
++	struct dentry		*dir;
++	int			cpu;
++};
 +
 +/*
-+ * trace_descriptor_t is purpose for passing arguments between
-+ * pre_trace and do_trace function.
++ * The CPU trace array - it consists of thousands of trace entries
++ * plus some other descriptor data: (for example which task started
++ * the trace, etc.)
 + */
-+struct trace_descriptor_t {
-+	struct ring_buffer_event *event;
-+	struct ring_buffer *buffer;
-+	unsigned long irq_flags;
-+	int pc;
++struct trace_array_cpu {
++	struct trace_cpu	trace_cpu;
++	atomic_t		disabled;
++	void			*buffer_page;	/* ring buffer spare */
++
++	unsigned long		entries;
++	unsigned long		saved_latency;
++	unsigned long		critical_start;
++	unsigned long		critical_end;
++	unsigned long		critical_sequence;
++	unsigned long		nice;
++	unsigned long		policy;
++	unsigned long		rt_priority;
++	unsigned long		skipped_entries;
++	cycle_t			preempt_timestamp;
++	pid_t			pid;
++	kuid_t			uid;
++	char			comm[TASK_COMM_LEN];
 +};
 +
-+/* callback function for tracing */
-+struct event_trace_ops {
-+	void *(*pre_trace)(struct ftrace_event_file *file,
-+			   int entry_size, void *data);
-+	void (*do_trace)(struct ftrace_event_file *file, void *entry,
-+			 int entry_size, void *data);
++struct tracer;
++
++struct trace_buffer {
++	struct trace_array		*tr;
++	struct ring_buffer		*buffer;
++	struct trace_array_cpu __percpu	*data;
++	cycle_t				time_start;
++	int				cpu;
 +};
 +
- struct trace_array;
- struct ftrace_subsystem_dir;
- 
-diff --git a/include/linux/trace_array.h b/include/linux/trace_array.h
-index c5b7a13..b362c5f 100644
---- a/include/linux/trace_array.h
-+++ b/include/linux/trace_array.h
-@@ -56,6 +56,7 @@ struct trace_array {
- 	struct list_head	list;
- 	char			*name;
- 	struct trace_buffer	trace_buffer;
-+	struct event_trace_ops	*ops;
- #ifdef CONFIG_TRACER_MAX_TRACE
- 	/*
- 	 * The max_buffer is used to snapshot the trace when a maximum
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 4bda044..743e754 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -401,41 +401,28 @@ static inline notrace int ftrace_get_offsets_##call(			\
-  *
-  * static struct ftrace_event_call event_<call>;
-  *
-- * static void ftrace_raw_event_<call>(void *__data, proto)
-+ * static notrace void ftrace_raw_event_##call(void *__data, proto)
-  * {
-  *	struct ftrace_event_file *ftrace_file = __data;
-- *	struct ftrace_event_call *event_call = ftrace_file->event_call;
-- *	struct ftrace_data_offsets_<call> __maybe_unused __data_offsets;
-- *	struct ring_buffer_event *event;
-- *	struct ftrace_raw_<call> *entry; <-- defined in stage 1
-- *	struct ring_buffer *buffer;
-- *	unsigned long irq_flags;
-- *	int __data_size;
-- *	int pc;
-+ *	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;
-+ *	struct trace_descriptor_t __desc;
-+ *	struct event_trace_ops *ops = ftrace_file->tr->ops;
-+ *	struct ftrace_raw_##call *entry; <-- defined in stage 1
-+ *	int __data_size, __entry_size;
-  *
-- *	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,
-- *		     &ftrace_file->flags))
-- *		return;
-- *
-- *	local_save_flags(irq_flags);
-- *	pc = preempt_count();
-- *
-- *	__data_size = ftrace_get_offsets_<call>(&__data_offsets, args);
-+ *	__data_size = ftrace_get_offsets_##call(&__data_offsets, args);
-+ *	__entry_size = sizeof(*entry) + __data_size;
-  *
-- *	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
-- *				  event_<call>->event.type,
-- *				  sizeof(*entry) + __data_size,
-- *				  irq_flags, pc);
-- *	if (!event)
-+ *	entry = ops->pre_trace(ftrace_file, __entry_size, &__desc);
-+ *	if (!entry)
-  *		return;
-- *	entry	= ring_buffer_event_data(event);
-+ *
-+ *	tstruct
-  *
-  *	{ <assign>; }  <-- Here we assign the entries by the __field and
-  *			   __array macros.
-  *
-- *	if (!filter_current_check_discard(buffer, event_call, entry, event))
-- *		trace_nowake_buffer_unlock_commit(buffer,
-- *						   event, irq_flags, pc);
-+ *	ops->do_trace(ftrace_file, entry, __entry_size, &__desc);
-  * }
-  *
-  * static struct trace_event ftrace_event_type_<call> = {
-@@ -513,38 +500,24 @@ static notrace void							\
- ftrace_raw_event_##call(void *__data, proto)				\
- {									\
- 	struct ftrace_event_file *ftrace_file = __data;			\
--	struct ftrace_event_call *event_call = ftrace_file->event_call;	\
- 	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
--	struct ring_buffer_event *event;				\
-+	struct trace_descriptor_t __desc;				\
-+	struct event_trace_ops *ops = ftrace_file->tr->ops;		\
- 	struct ftrace_raw_##call *entry;				\
--	struct ring_buffer *buffer;					\
--	unsigned long irq_flags;					\
--	int __data_size;						\
--	int pc;								\
-+	int __data_size, __entry_size;					\
- 									\
--	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT,			\
--		     &ftrace_file->flags))				\
--		return;							\
--									\
--	local_save_flags(irq_flags);					\
--	pc = preempt_count();						\
-+	__data_size = ftrace_get_offsets_##call(&__data_offsets, args);	\
-+	__entry_size = sizeof(*entry) + __data_size;			\
- 									\
--	__data_size = ftrace_get_offsets_##call(&__data_offsets, args); \
--									\
--	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,	\
--				 event_call->event.type,		\
--				 sizeof(*entry) + __data_size,		\
--				 irq_flags, pc);			\
--	if (!event)							\
-+	entry = ops->pre_trace(ftrace_file, __entry_size, &__desc);	\
-+	if (!entry)							\
- 		return;							\
--	entry	= ring_buffer_event_data(event);			\
- 									\
- 	tstruct								\
- 									\
- 	{ assign; }							\
- 									\
--	if (!filter_current_check_discard(buffer, event_call, entry, event)) \
--		trace_buffer_unlock_commit(buffer, event, irq_flags, pc); \
-+	ops->do_trace(ftrace_file, entry, __entry_size, &__desc);	\
- }
- /*
-  * The ftrace_test_probe is compiled out, it is only here as a build time check
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 829b2be..224b152 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -189,7 +189,7 @@ unsigned long long ns2usecs(cycle_t nsec)
-  * pages for the buffer for that CPU. Each CPU has the same number
-  * of pages allocated for its buffer.
-  */
--static struct trace_array	global_trace;
-+static struct trace_array	global_trace = {.ops = &ftrace_events_ops};
- 
- LIST_HEAD(ftrace_trace_arrays);
- 
-@@ -5773,6 +5773,8 @@ static int new_instance_create(const char *name)
- 
- 	list_add(&tr->list, &ftrace_trace_arrays);
- 
-+	tr->ops = &ftrace_events_ops;
++/*
++ * The trace array - an array of per-CPU trace arrays. This is the
++ * highest level data structure that individual tracers deal with.
++ * They have on/off state as well:
++ */
++struct trace_array {
++	struct list_head	list;
++	char			*name;
++	struct trace_buffer	trace_buffer;
++#ifdef CONFIG_TRACER_MAX_TRACE
++	/*
++	 * The max_buffer is used to snapshot the trace when a maximum
++	 * latency is reached, or when the user initiates a snapshot.
++	 * Some tracers will use this to store a maximum trace while
++	 * it continues examining live traces.
++	 *
++	 * The buffers for the max_buffer are set up the same as the trace_buffer
++	 * When a snapshot is taken, the buffer of the max_buffer is swapped
++	 * with the buffer of the trace_buffer and the buffers are reset for
++	 * the trace_buffer so the tracing can continue.
++	 */
++	struct trace_buffer	max_buffer;
++	bool			allocated_snapshot;
++#endif
++	int			buffer_disabled;
++	struct trace_cpu	trace_cpu;	/* place holder */
++#ifdef CONFIG_FTRACE_SYSCALLS
++	int			sys_refcount_enter;
++	int			sys_refcount_exit;
++	DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
++	DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
++#endif
++	int			stop_count;
++	int			clock_id;
++	struct tracer		*current_trace;
++	unsigned int		flags;
++	raw_spinlock_t		start_lock;
++	struct dentry		*dir;
++	struct dentry		*options;
++	struct dentry		*percpu_dir;
++	struct dentry		*event_dir;
++	struct list_head	systems;
++	struct list_head	events;
++	struct task_struct	*waiter;
++	int			ref;
++};
 +
- 	mutex_unlock(&trace_types_lock);
- 
- 	return 0;
++enum {
++	TRACE_ARRAY_FL_GLOBAL	= (1 << 0)
++};
++
++extern struct list_head ftrace_trace_arrays;
++
++/*
++ * The global tracer (top) should be the first trace array added,
++ * but we check the flag anyway.
++ */
++static inline struct trace_array *top_trace_array(void)
++{
++	struct trace_array *tr;
++
++	tr = list_entry(ftrace_trace_arrays.prev,
++			typeof(*tr), list);
++	WARN_ON(!(tr->flags & TRACE_ARRAY_FL_GLOBAL));
++	return tr;
++}
++
++#endif /* _LINUX_KERNEL_TRACE_ARRAY_H */
 diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index a8acfcd..0a1f4be 100644
+index 9e01458..a8acfcd 100644
 --- a/kernel/trace/trace.h
 +++ b/kernel/trace/trace.h
-@@ -493,6 +493,8 @@ extern unsigned long nsecs_to_usecs(unsigned long nsecs);
+@@ -12,11 +12,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/trace_seq.h>
+ #include <linux/ftrace_event.h>
+-
+-#ifdef CONFIG_FTRACE_SYSCALLS
+-#include <asm/unistd.h>		/* For NR_SYSCALLS	     */
+-#include <asm/syscall.h>	/* some archs define it here */
+-#endif
++#include <linux/trace_array.h>
  
- extern unsigned long tracing_thresh;
+ enum trace_type {
+ 	__TRACE_FIRST_TYPE = 0,
+@@ -133,116 +129,6 @@ enum trace_flag_type {
  
-+extern struct event_trace_ops ftrace_events_ops;
-+
- #ifdef CONFIG_TRACER_MAX_TRACE
- extern unsigned long tracing_max_latency;
+ #define TRACE_BUF_SIZE		1024
  
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 53582e9..09ca479 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -241,6 +241,57 @@ void trace_event_enable_cmd_record(bool enable)
- 	mutex_unlock(&event_mutex);
- }
+-struct trace_array;
+-
+-struct trace_cpu {
+-	struct trace_array	*tr;
+-	struct dentry		*dir;
+-	int			cpu;
+-};
+-
+-/*
+- * The CPU trace array - it consists of thousands of trace entries
+- * plus some other descriptor data: (for example which task started
+- * the trace, etc.)
+- */
+-struct trace_array_cpu {
+-	struct trace_cpu	trace_cpu;
+-	atomic_t		disabled;
+-	void			*buffer_page;	/* ring buffer spare */
+-
+-	unsigned long		entries;
+-	unsigned long		saved_latency;
+-	unsigned long		critical_start;
+-	unsigned long		critical_end;
+-	unsigned long		critical_sequence;
+-	unsigned long		nice;
+-	unsigned long		policy;
+-	unsigned long		rt_priority;
+-	unsigned long		skipped_entries;
+-	cycle_t			preempt_timestamp;
+-	pid_t			pid;
+-	kuid_t			uid;
+-	char			comm[TASK_COMM_LEN];
+-};
+-
+-struct tracer;
+-
+-struct trace_buffer {
+-	struct trace_array		*tr;
+-	struct ring_buffer		*buffer;
+-	struct trace_array_cpu __percpu	*data;
+-	cycle_t				time_start;
+-	int				cpu;
+-};
+-
+-/*
+- * The trace array - an array of per-CPU trace arrays. This is the
+- * highest level data structure that individual tracers deal with.
+- * They have on/off state as well:
+- */
+-struct trace_array {
+-	struct list_head	list;
+-	char			*name;
+-	struct trace_buffer	trace_buffer;
+-#ifdef CONFIG_TRACER_MAX_TRACE
+-	/*
+-	 * The max_buffer is used to snapshot the trace when a maximum
+-	 * latency is reached, or when the user initiates a snapshot.
+-	 * Some tracers will use this to store a maximum trace while
+-	 * it continues examining live traces.
+-	 *
+-	 * The buffers for the max_buffer are set up the same as the trace_buffer
+-	 * When a snapshot is taken, the buffer of the max_buffer is swapped
+-	 * with the buffer of the trace_buffer and the buffers are reset for
+-	 * the trace_buffer so the tracing can continue.
+-	 */
+-	struct trace_buffer	max_buffer;
+-	bool			allocated_snapshot;
+-#endif
+-	int			buffer_disabled;
+-	struct trace_cpu	trace_cpu;	/* place holder */
+-#ifdef CONFIG_FTRACE_SYSCALLS
+-	int			sys_refcount_enter;
+-	int			sys_refcount_exit;
+-	DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
+-	DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
+-#endif
+-	int			stop_count;
+-	int			clock_id;
+-	struct tracer		*current_trace;
+-	unsigned int		flags;
+-	raw_spinlock_t		start_lock;
+-	struct dentry		*dir;
+-	struct dentry		*options;
+-	struct dentry		*percpu_dir;
+-	struct dentry		*event_dir;
+-	struct list_head	systems;
+-	struct list_head	events;
+-	struct task_struct	*waiter;
+-	int			ref;
+-};
+-
+-enum {
+-	TRACE_ARRAY_FL_GLOBAL	= (1 << 0)
+-};
+-
+-extern struct list_head ftrace_trace_arrays;
+-
+-/*
+- * The global tracer (top) should be the first trace array added,
+- * but we check the flag anyway.
+- */
+-static inline struct trace_array *top_trace_array(void)
+-{
+-	struct trace_array *tr;
+-
+-	tr = list_entry(ftrace_trace_arrays.prev,
+-			typeof(*tr), list);
+-	WARN_ON(!(tr->flags & TRACE_ARRAY_FL_GLOBAL));
+-	return tr;
+-}
+-
+ #define FTRACE_CMP_TYPE(var, type) \
+ 	__builtin_types_compatible_p(typeof(var), type *)
  
-+static void *ftrace_events_pre_trace(struct ftrace_event_file *file,
-+				     int entry_size, void *data)
-+{
-+	struct ftrace_event_call *event_call = file->event_call;
-+	struct trace_descriptor_t *desc = data;
-+	struct ring_buffer_event *event;
-+	struct ring_buffer *buffer;
-+	unsigned long irq_flags;
-+	int pc;
-+
-+	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &file->flags))
-+		return NULL;
-+
-+	local_save_flags(irq_flags);
-+	pc = preempt_count();
-+
-+	event = trace_event_buffer_lock_reserve(&buffer, file,
-+						event_call->event.type,
-+						entry_size, irq_flags, pc);
-+
-+	if (!event)
-+		return NULL;
-+
-+	desc->event = event;
-+	desc->buffer = buffer;
-+	desc->irq_flags = irq_flags;
-+	desc->pc = pc;
-+
-+	return ring_buffer_event_data(event);
-+}
-+
-+static void ftrace_events_do_trace(struct ftrace_event_file *file, void *entry,
-+				   int entry_size, void *data)
-+{
-+	struct ftrace_event_call *event_call = file->event_call;
-+	struct trace_descriptor_t *desc = data;
-+	struct ring_buffer_event *event = desc->event;
-+	struct ring_buffer *buffer = desc->buffer;
-+	unsigned long irq_flags = desc->irq_flags;
-+	int pc = desc->pc;
-+
-+	if (!filter_current_check_discard(buffer, event_call, entry, event))
-+		trace_buffer_unlock_commit(buffer, event, irq_flags, pc);
-+}
-+
-+struct event_trace_ops ftrace_events_ops = {
-+	.pre_trace = ftrace_events_pre_trace,
-+	.do_trace  = ftrace_events_do_trace,
-+};
-+
-+
- static int __ftrace_event_enable_disable(struct ftrace_event_file *file,
- 					 int enable, int soft_disable)
- {
 -- 
 1.7.9.7
 
