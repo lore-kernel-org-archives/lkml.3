@@ -1,153 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937008Ab3DJP4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:56:33 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:57295 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754584Ab3DJP4b (ORCPT
+	id S937021Ab3DJP4o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:56:44 -0400
+Received: from mail-qe0-f49.google.com ([209.85.128.49]:45269 "EHLO
+	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310Ab3DJP4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:56:31 -0400
-Message-ID: <51658BA9.7030508@free-electrons.com>
-Date: Wed, 10 Apr 2013 17:56:25 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 10 Apr 2013 11:56:41 -0400
 MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] clk: Add device tree binding to clk-fixed-factor
-References: <1365608443-30350-1-git-send-email-christian.ruppert@abilis.com>
-In-Reply-To: <1365608443-30350-1-git-send-email-christian.ruppert@abilis.com>
-X-Enigmail-Version: 1.5.1
+In-Reply-To: <20130409151906.2ee55116ca9e3abd80a90e3e@linux-foundation.org>
+References: <20130408190738.GC2321@localhost.localdomain> <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org>
+ <20130408210039.GA3396@localhost.localdomain> <20130409151906.2ee55116ca9e3abd80a90e3e@linux-foundation.org>
+From: Andrew Shewmaker <agshew@gmail.com>
+Date: Wed, 10 Apr 2013 09:56:20 -0600
+Message-ID: <CAF-E8XHdkqCUJf28z9GMBNUE84Murdsk=T-CoXoXgkLyrwk2-A@mail.gmail.com>
+Subject: Re: [PATCH v8 3/3] mm: reinititalise user and admin reserves if
+ memory is added or removed
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Simon Jeons <simon.jeons@gmail.com>, ric.masonn@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christian,
+On Tue, Apr 9, 2013 at 4:19 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Mon, 8 Apr 2013 17:00:40 -0400 Andrew Shewmaker <agshew@gmail.com> wrote:
+>
+>> Should I add the memory notifier code to mm/nommu.c too?
+>> I'm guessing that if a system doesn't have an mmu that it also
+>> won't be hotplugging memory.
+>
+> I doubt if we need to worry about memory hotplug on nommu machines,
+> so just do the minimum which is required to get nommu to compile
+> and link.  That's probably "nothing".
 
-On 04/10/2013 05:40 PM, Christian Ruppert wrote:
-> This patch adds a device tree binding for the simple fixed factor clock
-> divider/multiplier of the common clock tree binding.
-
-This patch remind me of something :
-http://lists.infradead.org/pipermail/linux-arm-kernel/2012-August/116405.html
-
-Do you have a use case for it, this time?
-
-My version have been hold off waiting for an user for it.
-Will you need it for a driver?
-
-Regards,
-
-> 
-> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> ---
->  .../bindings/clock/fixed-factor-clkdiv.txt         |   24 +++++++++++++++
->  drivers/clk/clk-fixed-factor.c                     |   32 ++++++++++++++++++++
->  include/linux/clk-provider.h                       |    1 +
->  3 files changed, 57 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt b/Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt
-> new file mode 100644
-> index 0000000..352bac4
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt
-> @@ -0,0 +1,24 @@
-> +Device Tree Clock bindings for plat-tb10x
-> +
-> +This binding uses the common clock binding[1].
-> +
-> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +
-> +Required properties:
-> +- compatible : shall be "fixed-factor-clkdiv"
-> +- #clock-cells: from common clock binding; shall be set to 0
-> +- clocks: shall be the input parent clock phandle for the clock.
-> +- clock-mult: defines the multiplication factor of the output clock frequency
-> +  wrt. the input clock frequency.
-> +- clock-div: defines the division factor of the output clock frequency wrt.
-> +  the input clock frequency.
-> +
-> +Example:
-> +cpu_clk: clkdiv_cpu {	/* CPU clock derived from pll0. 1/2 of pll frequency */
-> +	compatible = "fixed-factor-clkdiv";
-> +	#clock-cells = <0>;
-> +	clocks = <&pll0>;
-> +	clock-mult = <1>;
-> +	clock-div = <2>;
-> +	clock-output-names = "cpu_clk";
-> +};
-> diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
-> index 1ef271e..85e45f1 100644
-> --- a/drivers/clk/clk-fixed-factor.c
-> +++ b/drivers/clk/clk-fixed-factor.c
-> @@ -11,6 +11,7 @@
->  #include <linux/clk-provider.h>
->  #include <linux/slab.h>
->  #include <linux/err.h>
-> +#include <linux/of.h>
->  
->  /*
->   * DOC: basic fixed multiplier and divider clock that cannot gate
-> @@ -96,3 +97,34 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
->  
->  	return clk;
->  }
-> +
-> +#ifdef CONFIG_OF
-> +/**
-> + * of_fixed_factor_clkdiv_setup() - Set up simple fixed factor clock divider
-> + */
-> +void of_fixed_factor_clkdiv_setup(struct device_node *node)
-> +{
-> +	struct clk *clk;
-> +	const char *clk_name = node->name;
-> +	const char *parent_name;
-> +	u32 mult, div;
-> +
-> +	if (of_property_read_u32(node, "clock-mult", &mult))
-> +		return;
-> +
-> +	if (of_property_read_u32(node, "clock-div", &div))
-> +		return;
-> +
-> +	parent_name = of_clk_get_parent_name(node, 0);
-> +
-> +	of_property_read_string(node, "clock-output-names", &clk_name);
-> +
-> +	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
-> +					mult, div);
-> +	if (!IS_ERR(clk))
-> +		of_clk_add_provider(node, of_clk_src_simple_get, clk);
-> +}
-> +EXPORT_SYMBOL_GPL(of_fixed_factor_clkdiv_setup);
-> +CLK_OF_DECLARE(fixed_clkdiv, "fixed-factor-clkdiv",
-> +		of_fixed_factor_clkdiv_setup);
-> +#endif
-> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-> index 7f197d7..d4937cf 100644
-> --- a/include/linux/clk-provider.h
-> +++ b/include/linux/clk-provider.h
-> @@ -184,6 +184,7 @@ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
->  		unsigned long fixed_rate);
->  
->  void of_fixed_clk_setup(struct device_node *np);
-> +void of_fixed_factor_clkdiv_setup(struct device_node *node);
->  
->  /**
->   * struct clk_gate - gating clock
-> 
+I don't know why I didn't think to look for a cross-compiler package first.
+Anyway, nommu compiles and links without error when I disable suspend and
+switch from slub to slab. Those errors didn't appear to have anything to do
+with mm/nommu.c
 
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+--
+Andrew Shewmaker
