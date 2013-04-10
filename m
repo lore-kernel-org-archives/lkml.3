@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936881Ab3DJOSf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:18:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59725 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935504Ab3DJOSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 10:18:34 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <5165502902000078000CC022@nat28.tlf.novell.com>
-References: <20130408224328.GA17641@www.outflux.net> <51634935.9010905@zytor.com> <alpine.LFD.2.02.1304091122490.21884@ionos> <CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com> <51645D6F.7070705@zytor.com> <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com> <51646054.3090509@zytor.com> <CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com> <CAG7+5M3==rndLLak9cZBKKdgQMmJMpSP_jpQd8HOVGp6LhUAgw@mail.gmail.com> <5164B5BD.5050702@zytor.com> <5165502902000078000CC022@nat28.tlf.novell.com>
+	id S936758Ab3DJOTR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:19:17 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:40713 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760120Ab3DJOTP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 10:19:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [Xen-devel] Readonly GDT
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 10 Apr 2013 07:16:33 -0700
-To: Jan Beulich <JBeulich@suse.com>
-CC: Borislav Petkov <borislav.petkov@amd.com>,
-        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Eric Northup <digitaleric@google.com>, Julien Tinnes <jln@google.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Alex Shi <alex.shi@intel.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>
-Message-ID: <4a955c26-e4f2-40da-9ddc-6aaaf766d8da@email.android.com>
+In-Reply-To: <20130410122611.GB17541@sepie.suse.cz>
+References: <1365585879-5321-1-git-send-email-geert@linux-m68k.org>
+	<51653C5D.4060408@suse.cz>
+	<CAMuHMdXEvLMz5rRjQrhENxJ6UHRnPCtzyNg=hqitspuY88G7sA@mail.gmail.com>
+	<20130410122611.GB17541@sepie.suse.cz>
+Date: Wed, 10 Apr 2013 16:19:14 +0200
+X-Google-Sender-Auth: Ew8GDnfSXopi1v2uS2ucgOW5mYU
+Message-ID: <CAMuHMdUHiiBEZm7eFYtL3PqCXF6PjscbFKjiJ33BEwQ+YLKOXQ@mail.gmail.com>
+Subject: Re: [PATCH/RFC] m68k: Add -ffreestanding to KBUILD_CFLAGS
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-m68k <linux-m68k@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Right... the TSS does get written to during a task switch.
+Hi Michal,
 
-Jan Beulich <JBeulich@suse.com> wrote:
+On Wed, Apr 10, 2013 at 2:26 PM, Michal Marek <mmarek@suse.cz> wrote:
+> On Wed, Apr 10, 2013 at 12:59:44PM +0200, Geert Uytterhoeven wrote:
+>> On Wed, Apr 10, 2013 at 12:18 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> > On 10.4.2013 11:24, Geert Uytterhoeven wrote:
+>> > My understanding is, that with -fnobuiltin, the compiler is not allowed
+>> > to make assumptions about functions if it does not see their definition,
+>> > even if they resemble standard functions. E.g. on x86_64, strlen() is
+>> > out-of-line, so gcc would have to assume, that strcmp() has side
+>> > effects. How about just naming the m68k inline function 'strlen'?
+>>
+>> Having an inline function named "strlen" is not sufficient, as it needs an
+>> (exported) symbol named "strlen" at link time or module load time.
+>
+> Really? MIPS and Xtensa both have an inline version of strcpy() and no
+> exported strcpy symbol. An I would naively assume, that if the compiler
+> sees a static inline definition of a function, then it will not generate
+> a function call. Although, the C standard does require the standard
+> library functions be available as external functions, so the compiler
+> would not be necessarily wrong :-/. Anyway, can you try if this
+> (untested) patch fixes the issue?
 
->>>> On 10.04.13 at 02:43, "H. Peter Anvin" <hpa@zytor.com> wrote:
->> OK, thinking about the GDT here.
->> 
->> The GDT is quite small -- 256 bytes on i386, 128 bytes on x86-64.  As
->> such, we probably don't want to allocate a full page to it for only
->> that.  This means that in order to create a readonly mapping we have
->to
->> pack GDTs from different CPUs together in the same pages, *or* we
->> tolerate that other things on the same page gets reflected in the
->same
->> mapping.
->
->I think a read-only GDT is incompatible with exceptions delivered
->through task gates (i.e. double fault on 32-bit), so I would assume
->this needs to remain a 64-bit only thing.
->
->> However, the packing solution has the advantage of reducing address
->> space consumption which matters on 32 bits: even on i386 we can
->easily
->> burn a megabyte of address space for 4096 processors, but burning 16
->> megabytes starts to hurt.
->
->Packing would have the additional benefit of Xen not needing to
->become a special case in yet another area (because pages
->containing live descriptor table entries need to be read-only for
->PV guests, and need to consist of only descriptor table entries).
->
->Jan
+Thanks for the patch, but modpost still fails with
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+ERROR: "strlen" [net/ipv4/ip_tunnel.ko] undefined!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
