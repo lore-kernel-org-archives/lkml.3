@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937167Ab3DJXRE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:17:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56074 "EHLO
+	id S937217Ab3DJXR4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:17:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56056 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937100Ab3DJWrN (ORCPT
+	with ESMTP id S937027Ab3DJWrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:13 -0400
+	Wed, 10 Apr 2013 18:47:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pawel Zawora <pzawora@gmail.com>, Jan Kara <jack@suse.cz>
-Subject: [ 12/64] reiserfs: Fix warning and inode leak when deleting inode with xattrs
-Date: Wed, 10 Apr 2013 15:46:09 -0700
-Message-Id: <20130410224335.880004898@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 19/64] Revert "drivers/rtc/rtc-at91rm9200.c: use a variable for storing IMR"
+Date: Wed, 10 Apr 2013 15:46:16 -0700
+Message-Id: <20130410224337.495023810@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -26,39 +28,188 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 35e5cbc0af240778e61113286c019837e06aeec6 upstream.
+commit e24b0bfa2f0446ffaad2661040be23668133aef8 upstream.
 
-After commit 21d8a15a (lookup_one_len: don't accept . and ..) reiserfs
-started failing to delete xattrs from inode. This was due to a buggy
-test for '.' and '..' in fill_with_dentries() which resulted in passing
-'.' and '..' entries to lookup_one_len() in some cases. That returned
-error and so we failed to iterate over all xattrs of and inode.
+This reverts commit 0ef1594c017521ea89278e80fe3f80dafb17abde.
 
-Fix the test in fill_with_dentries() along the lines of the one in
-lookup_one_len().
+This patch introduced a few races which cannot be easily fixed with a
+small follow-up patch. Furthermore, the SoC with the broken hardware
+register, which this patch intended to add support for, can only be used
+with device trees, which this driver currently does not support.
 
-Reported-by: Pawel Zawora <pzawora@gmail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+[ Here is the discussion that led to this "revert" patch:
+  https://lkml.org/lkml/2013/4/3/176 ]
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/reiserfs/xattr.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-at91rm9200.c |   50 ++++++++++++++++---------------------------
+ drivers/rtc/rtc-at91rm9200.h |    1 
+ 2 files changed, 20 insertions(+), 31 deletions(-)
 
---- a/fs/reiserfs/xattr.c
-+++ b/fs/reiserfs/xattr.c
-@@ -187,8 +187,8 @@ fill_with_dentries(void *buf, const char
- 	if (dbuf->count == ARRAY_SIZE(dbuf->dentries))
- 		return -ENOSPC;
+--- a/drivers/rtc/rtc-at91rm9200.c
++++ b/drivers/rtc/rtc-at91rm9200.c
+@@ -44,7 +44,6 @@ static DECLARE_COMPLETION(at91_rtc_updat
+ static unsigned int at91_alarm_year = AT91_RTC_EPOCH;
+ static void __iomem *at91_rtc_regs;
+ static int irq;
+-static u32 at91_rtc_imr;
  
--	if (name[0] == '.' && (name[1] == '\0' ||
--			       (name[1] == '.' && name[2] == '\0')))
-+	if (name[0] == '.' && (namelen < 2 ||
-+			       (namelen == 2 && name[1] == '.')))
- 		return 0;
+ /*
+  * Decode time/date into rtc_time structure
+@@ -109,11 +108,9 @@ static int at91_rtc_settime(struct devic
+ 	cr = at91_rtc_read(AT91_RTC_CR);
+ 	at91_rtc_write(AT91_RTC_CR, cr | AT91_RTC_UPDCAL | AT91_RTC_UPDTIM);
  
- 	dentry = lookup_one_len(name, dbuf->xadir, namelen);
+-	at91_rtc_imr |= AT91_RTC_ACKUPD;
+ 	at91_rtc_write(AT91_RTC_IER, AT91_RTC_ACKUPD);
+ 	wait_for_completion(&at91_rtc_updated);	/* wait for ACKUPD interrupt */
+ 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD);
+-	at91_rtc_imr &= ~AT91_RTC_ACKUPD;
+ 
+ 	at91_rtc_write(AT91_RTC_TIMR,
+ 			  bin2bcd(tm->tm_sec) << 0
+@@ -145,7 +142,7 @@ static int at91_rtc_readalarm(struct dev
+ 	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon, tm->tm_year);
+ 	tm->tm_year = at91_alarm_year - 1900;
+ 
+-	alrm->enabled = (at91_rtc_imr & AT91_RTC_ALARM)
++	alrm->enabled = (at91_rtc_read(AT91_RTC_IMR) & AT91_RTC_ALARM)
+ 			? 1 : 0;
+ 
+ 	pr_debug("%s(): %4d-%02d-%02d %02d:%02d:%02d\n", __func__,
+@@ -171,7 +168,6 @@ static int at91_rtc_setalarm(struct devi
+ 	tm.tm_sec = alrm->time.tm_sec;
+ 
+ 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
+-	at91_rtc_imr &= ~AT91_RTC_ALARM;
+ 	at91_rtc_write(AT91_RTC_TIMALR,
+ 		  bin2bcd(tm.tm_sec) << 0
+ 		| bin2bcd(tm.tm_min) << 8
+@@ -184,7 +180,6 @@ static int at91_rtc_setalarm(struct devi
+ 
+ 	if (alrm->enabled) {
+ 		at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
+-		at91_rtc_imr |= AT91_RTC_ALARM;
+ 		at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
+ 	}
+ 
+@@ -201,12 +196,9 @@ static int at91_rtc_alarm_irq_enable(str
+ 
+ 	if (enabled) {
+ 		at91_rtc_write(AT91_RTC_SCCR, AT91_RTC_ALARM);
+-		at91_rtc_imr |= AT91_RTC_ALARM;
+ 		at91_rtc_write(AT91_RTC_IER, AT91_RTC_ALARM);
+-	} else {
++	} else
+ 		at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ALARM);
+-		at91_rtc_imr &= ~AT91_RTC_ALARM;
+-	}
+ 
+ 	return 0;
+ }
+@@ -215,10 +207,12 @@ static int at91_rtc_alarm_irq_enable(str
+  */
+ static int at91_rtc_proc(struct device *dev, struct seq_file *seq)
+ {
++	unsigned long imr = at91_rtc_read(AT91_RTC_IMR);
++
+ 	seq_printf(seq, "update_IRQ\t: %s\n",
+-			(at91_rtc_imr & AT91_RTC_ACKUPD) ? "yes" : "no");
++			(imr & AT91_RTC_ACKUPD) ? "yes" : "no");
+ 	seq_printf(seq, "periodic_IRQ\t: %s\n",
+-			(at91_rtc_imr & AT91_RTC_SECEV) ? "yes" : "no");
++			(imr & AT91_RTC_SECEV) ? "yes" : "no");
+ 
+ 	return 0;
+ }
+@@ -233,7 +227,7 @@ static irqreturn_t at91_rtc_interrupt(in
+ 	unsigned int rtsr;
+ 	unsigned long events = 0;
+ 
+-	rtsr = at91_rtc_read(AT91_RTC_SR) & at91_rtc_imr;
++	rtsr = at91_rtc_read(AT91_RTC_SR) & at91_rtc_read(AT91_RTC_IMR);
+ 	if (rtsr) {		/* this interrupt is shared!  Is it ours? */
+ 		if (rtsr & AT91_RTC_ALARM)
+ 			events |= (RTC_AF | RTC_IRQF);
+@@ -297,7 +291,6 @@ static int __init at91_rtc_probe(struct
+ 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD | AT91_RTC_ALARM |
+ 					AT91_RTC_SECEV | AT91_RTC_TIMEV |
+ 					AT91_RTC_CALEV);
+-	at91_rtc_imr = 0;
+ 
+ 	ret = request_irq(irq, at91_rtc_interrupt,
+ 				IRQF_SHARED,
+@@ -337,7 +330,6 @@ static int __exit at91_rtc_remove(struct
+ 	at91_rtc_write(AT91_RTC_IDR, AT91_RTC_ACKUPD | AT91_RTC_ALARM |
+ 					AT91_RTC_SECEV | AT91_RTC_TIMEV |
+ 					AT91_RTC_CALEV);
+-	at91_rtc_imr = 0;
+ 	free_irq(irq, pdev);
+ 
+ 	rtc_device_unregister(rtc);
+@@ -350,35 +342,31 @@ static int __exit at91_rtc_remove(struct
+ 
+ /* AT91RM9200 RTC Power management control */
+ 
+-static u32 at91_rtc_bkpimr;
+-
++static u32 at91_rtc_imr;
+ 
+ static int at91_rtc_suspend(struct device *dev)
+ {
+ 	/* this IRQ is shared with DBGU and other hardware which isn't
+ 	 * necessarily doing PM like we are...
+ 	 */
+-	at91_rtc_bkpimr = at91_rtc_imr & (AT91_RTC_ALARM|AT91_RTC_SECEV);
+-	if (at91_rtc_bkpimr) {
+-		if (device_may_wakeup(dev)) {
++	at91_rtc_imr = at91_rtc_read(AT91_RTC_IMR)
++			& (AT91_RTC_ALARM|AT91_RTC_SECEV);
++	if (at91_rtc_imr) {
++		if (device_may_wakeup(dev))
+ 			enable_irq_wake(irq);
+-		} else {
+-			at91_rtc_write(AT91_RTC_IDR, at91_rtc_bkpimr);
+-			at91_rtc_imr &= ~at91_rtc_bkpimr;
+-		}
+-}
++		else
++			at91_rtc_write(AT91_RTC_IDR, at91_rtc_imr);
++	}
+ 	return 0;
+ }
+ 
+ static int at91_rtc_resume(struct device *dev)
+ {
+-	if (at91_rtc_bkpimr) {
+-		if (device_may_wakeup(dev)) {
++	if (at91_rtc_imr) {
++		if (device_may_wakeup(dev))
+ 			disable_irq_wake(irq);
+-		} else {
+-			at91_rtc_imr |= at91_rtc_bkpimr;
+-			at91_rtc_write(AT91_RTC_IER, at91_rtc_bkpimr);
+-		}
++		else
++			at91_rtc_write(AT91_RTC_IER, at91_rtc_imr);
+ 	}
+ 	return 0;
+ }
+--- a/drivers/rtc/rtc-at91rm9200.h
++++ b/drivers/rtc/rtc-at91rm9200.h
+@@ -64,6 +64,7 @@
+ #define	AT91_RTC_SCCR		0x1c			/* Status Clear Command Register */
+ #define	AT91_RTC_IER		0x20			/* Interrupt Enable Register */
+ #define	AT91_RTC_IDR		0x24			/* Interrupt Disable Register */
++#define	AT91_RTC_IMR		0x28			/* Interrupt Mask Register */
+ 
+ #define	AT91_RTC_VER		0x2c			/* Valid Entry Register */
+ #define		AT91_RTC_NVTIM		(1 <<  0)		/* Non valid Time */
 
 
