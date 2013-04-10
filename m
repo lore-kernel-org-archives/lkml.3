@@ -1,268 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936089Ab3DJCmN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 22:42:13 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42367 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933440Ab3DJCmM (ORCPT
+	id S936082Ab3DJCsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 22:48:55 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:42339 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab3DJCsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 22:42:12 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: matt.fleming@intel.com
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: [PATCH 1/3] efi: Determine how much space is used by boot services-only variables
-Date: Tue,  9 Apr 2013 22:41:55 -0400
-Message-Id: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com>
-X-Mailer: git-send-email 1.8.1.2
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 2001:470:1f07:1371:6267:20ff:fec3:2318
-X-SA-Exim-Mail-From: matthew.garrett@nebula.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 9 Apr 2013 22:48:54 -0400
+X-AuditID: 9c930197-b7b50ae00000018c-89-5164d310e7cb
+Date: Wed, 10 Apr 2013 11:48:48 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jason Evans <je@fb.com>, sanjay@google.com,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 0/4] Support vranges on files
+Message-ID: <20130410024848.GA21292@blaptop>
+References: <1365033144-15156-1-git-send-email-john.stultz@linaro.org>
+ <20130404065509.GE7675@blaptop>
+ <515DBA70.8010606@linaro.org>
+ <20130405075504.GA32126@blaptop>
+ <20130408004638.GA6394@blaptop>
+ <5163629A.4070202@linaro.org>
+ <20130409021801.GD3467@blaptop>
+ <51638AB6.6000803@linaro.org>
+ <20130409050742.GB6836@blaptop>
+ <516497E4.1000001@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <516497E4.1000001@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EFI variables can be flagged as being accessible only within boot services.
-This makes it awkward for us to figure out how much space they use at
-runtime. In theory we could figure this out by simply comparing the results
-from QueryVariableInfo() to the space used by all of our variables, but
-that fails if the platform doesn't garbage collect on every boot. Thankfully,
-calling QueryVariableInfo() while still inside boot services gives a more
-reliable answer. This patch passes that information from the EFI boot stub
-up to the efivars code, letting us calculate a reasonably accurate value.
+On Tue, Apr 09, 2013 at 03:36:20PM -0700, John Stultz wrote:
+> On 04/08/2013 10:07 PM, Minchan Kim wrote:
+> >On Mon, Apr 08, 2013 at 08:27:50PM -0700, John Stultz wrote:
+> >>marked volatile, it should remain volatile until someone who has the
+> >>file open marks it as non-volatile.  The only time we clear the
+> >>volatility is when the file is closed by all users.
+> >Yes. We need it that clear volatile ranges when the file is closed
+> >by ball users. That's what we need and blow my concern out.
+> 
+> Ok, sorry this wasn't more clear. In all the implementations I've
+> pushed, the volatility only persists as long as someone holds the
+> file open. Once its closed by all users, the volatility is cleared.
 
-Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
----
- arch/x86/boot/compressed/eboot.c      | 47 +++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/efi.h            | 10 ++++++++
- arch/x86/include/uapi/asm/bootparam.h |  1 +
- arch/x86/platform/efi/efi.c           | 24 ++++++++++++++++++
- drivers/firmware/efivars.c            | 29 +++++++++++++++++++++
- 5 files changed, 111 insertions(+)
+I now confirmed it with your implementation.
+Sorry for the confusing without looking into your code in detail. :(
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index c205035..8615f75 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -251,6 +251,51 @@ static void find_bits(unsigned long mask, u8 *pos, u8 *size)
- 	*size = len;
- }
- 
-+static efi_status_t setup_efi_vars(struct boot_params *params)
-+{
-+	struct setup_data *data;
-+	struct efi_var_bootdata *efidata;
-+	u64 store_size, remaining_size, var_size;
-+	efi_status_t status;
-+
-+	if (!sys_table->runtime->query_variable_info)
-+		return EFI_UNSUPPORTED;
-+
-+	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
-+
-+	while (data && data->next)
-+		data = (struct setup_data *)(unsigned long)data->next;
-+
-+	status = efi_call_phys4(sys_table->runtime->query_variable_info,
-+				EFI_VARIABLE_NON_VOLATILE |
-+				EFI_VARIABLE_BOOTSERVICE_ACCESS |
-+				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
-+				&remaining_size, &var_size);
-+
-+	if (status != EFI_SUCCESS)
-+		return status;
-+
-+	status = efi_call_phys3(sys_table->boottime->allocate_pool,
-+				EFI_LOADER_DATA, sizeof(*efidata), &efidata);
-+
-+	if (status != EFI_SUCCESS)
-+		return status;
-+
-+	efidata->data.type = SETUP_EFI_VARS;
-+	efidata->data.len = sizeof(struct efi_var_bootdata) -
-+		sizeof(struct setup_data);
-+	efidata->data.next = 0;
-+	efidata->store_size = store_size;
-+	efidata->remaining_size = remaining_size;
-+	efidata->max_var_size = var_size;
-+
-+	if (data)
-+		data->next = (unsigned long)efidata;
-+	else
-+		params->hdr.setup_data = (unsigned long)efidata;
-+
-+}
-+
- static efi_status_t setup_efi_pci(struct boot_params *params)
- {
- 	efi_pci_io_protocol *pci;
-@@ -1157,6 +1202,8 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
- 
- 	setup_graphics(boot_params);
- 
-+	setup_efi_vars(boot_params);
-+
- 	setup_efi_pci(boot_params);
- 
- 	status = efi_call_phys3(sys_table->boottime->allocate_pool,
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 60c89f3..6c3a154 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -93,6 +93,9 @@ extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
- 
- #endif /* CONFIG_X86_32 */
- 
-+extern u64 efi_var_store_size;
-+extern u64 efi_var_remaining_size;
-+extern u64 efi_var_max_var_size;
- extern int add_efi_memmap;
- extern unsigned long x86_efi_facility;
- extern void efi_set_executable(efi_memory_desc_t *md, bool executable);
-@@ -102,6 +105,13 @@ extern void efi_call_phys_epilog(void);
- extern void efi_unmap_memmap(void);
- extern void efi_memory_uc(u64 addr, unsigned long size);
- 
-+struct efi_var_bootdata {
-+	struct setup_data data;
-+	u64 store_size;
-+	u64 remaining_size;
-+	u64 max_var_size;
-+};
-+
- #ifdef CONFIG_EFI
- 
- static inline bool efi_is_native(void)
-diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
-index c15ddaf..0874424 100644
---- a/arch/x86/include/uapi/asm/bootparam.h
-+++ b/arch/x86/include/uapi/asm/bootparam.h
-@@ -6,6 +6,7 @@
- #define SETUP_E820_EXT			1
- #define SETUP_DTB			2
- #define SETUP_PCI			3
-+#define SETUP_EFI_VARS			4
- 
- /* ram_size flags */
- #define RAMDISK_IMAGE_START_MASK	0x07FF
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index c89c245..659da48 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -71,6 +71,13 @@ static efi_system_table_t efi_systab __initdata;
- 
- unsigned long x86_efi_facility;
- 
-+u64 efi_var_store_size;
-+EXPORT_SYMBOL(efi_var_store_size);
-+u64 efi_var_remaining_size;
-+EXPORT_SYMBOL(efi_var_remaining_size);
-+u64 efi_var_max_var_size;
-+EXPORT_SYMBOL(efi_var_max_var_size);
-+
- /*
-  * Returns 1 if 'facility' is enabled, 0 otherwise.
-  */
-@@ -682,6 +689,9 @@ void __init efi_init(void)
- 	char vendor[100] = "unknown";
- 	int i = 0;
- 	void *tmp;
-+	struct setup_data *data;
-+	struct efi_var_bootdata *efi_var_data;
-+	u64 pa_data;
- 
- #ifdef CONFIG_X86_32
- 	if (boot_params.efi_info.efi_systab_hi ||
-@@ -699,6 +709,20 @@ void __init efi_init(void)
- 	if (efi_systab_init(efi_phys.systab))
- 		return;
- 
-+	pa_data = boot_params.hdr.setup_data;
-+	while (pa_data) {
-+		data = early_ioremap(pa_data, sizeof(*efi_var_data));
-+		if (data->type == SETUP_EFI_VARS) {
-+			efi_var_data = (struct efi_var_bootdata *)data;
-+
-+			efi_var_store_size = efi_var_data->store_size;
-+			efi_var_remaining_size = efi_var_data->remaining_size;
-+			efi_var_max_var_size = efi_var_data->max_var_size;
-+		}
-+		pa_data = data->next;
-+		early_iounmap(data, sizeof(*efi_var_data));
-+	}
-+
- 	set_bit(EFI_SYSTEM_TABLES, &x86_efi_facility);
- 
- 	/*
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index bf15d81..684a118 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -85,6 +85,7 @@
- #include <linux/ramfs.h>
- #include <linux/pagemap.h>
- 
-+#include <asm/efi.h>
- #include <asm/uaccess.h>
- 
- #define EFIVARS_VERSION "0.08"
-@@ -139,6 +140,8 @@ struct efivar_attribute {
- 
- static struct efivars __efivars;
- static struct efivar_operations ops;
-+static u64 boot_var_size;
-+static u64 boot_used_size;
- 
- #define PSTORE_EFI_ATTRIBUTES \
- 	(EFI_VARIABLE_NON_VOLATILE | \
-@@ -2002,6 +2005,9 @@ int register_efivars(struct efivars *efivars,
- 	efi_char16_t *variable_name;
- 	unsigned long variable_name_size = 1024;
- 	int error = 0;
-+	struct efivar_entry *entry;
-+	struct efi_variable *var;
-+	u64 active_size = 0;
- 
- 	variable_name = kzalloc(variable_name_size, GFP_KERNEL);
- 	if (!variable_name) {
-@@ -2074,6 +2080,25 @@ int register_efivars(struct efivars *efivars,
- 		}
- 	} while (status != EFI_NOT_FOUND);
- 
-+	if (boot_used_size) {
-+		list_for_each_entry(entry, &efivars->list, list) {
-+			var = &entry->var;
-+			status = get_var_data(efivars, var);
-+
-+			if (status ||
-+			    !(var->Attributes & EFI_VARIABLE_NON_VOLATILE))
-+				continue;
-+
-+			active_size += var->DataSize;
-+			active_size += utf16_strsize(var->VariableName, 1024);
-+		}
-+
-+		if (active_size < boot_used_size)
-+			boot_var_size = boot_used_size - active_size;
-+		else
-+			printk(KERN_WARNING FW_BUG  "efivars: Inconsistent initial sizes\n");
-+	}
-+
- 	error = create_efivars_bin_attributes(efivars);
- 	if (error)
- 		unregister_efivars(efivars);
-@@ -2121,6 +2146,10 @@ efivars_init(void)
- 	ops.get_next_variable = efi.get_next_variable;
- 	ops.query_variable_store = efi_query_variable_store;
- 
-+#ifdef CONFIG_X86
-+	boot_used_size = efi_var_store_size - efi_var_remaining_size;
-+#endif
-+
- 	error = register_efivars(&__efivars, &ops, efi_kobj);
- 	if (error)
- 		goto err_put;
+> 
+> Hopefully that calms your worries here. :)
+
+Yeb.
+
+> 
+> 
+> 
+> >>I think the concern about surprising an application that isn't
+> >>expecting volatility is odd, since if an application jumped in and
+> >>punched a hole in the data, that could surprise other applications
+> >>as well.  If you're going to use a file that can be shared,
+> >>applications have to deal with potential changes to that file by
+> >>others.
+> >True. My concern is delayed punching without any client of fd and
+> >there is no interface to detect some range of file is volatile state or
+> >not. It means anyone mapped a file with shared could encunter SIGBUS
+> >although he try to best effort to check it with lsof before using.
+> 
+> I'll grant the SIGBUG semantics create the potential for stranger
+> behavior then usual, but I think the use cases are still attractive
+> enough to try to make it work.
+
+Indeed.
+
+> 
+> 
+> >>To me, the value in using volatile ranges on the file data is
+> >>exactly because the file data can be shared. So it makes sense to me
+> >>to have the volatility state be like the data in the file. I guess
+> >>the only exception in my case is that if all the references to a
+> >>file are closed, we can clear the volatility (since we don't have a
+> >>sane way for the volatility to persist past that point).
+> >Agree if you provide to clear out volatility when file are closed by
+> >all stakeholder.
+> 
+> Agreed.
+> 
+> 
+> >>One question that might help resolve this: Would having some sort of
+> >>volatility checking interface be helpful in easing your concern
+> >>about applications being surprised by volatility?
+> >If we can provide above things, I think we don't need such interface
+> >until someone want it with reasonable logic.
+> 
+> Sure, I just wanted to know if you saw a need right away. For now we
+> can leave it be.
+> 
+> >>True. And performance needs to be good if this hinting interface is
+> >>to be used easily. Although I worry about performance trumping sane
+> >>semantics. So let me try to implement the desired behavior and we
+> >>can measure the difference.
+> >NP. But keep in mind that mmap_sem was really terrible for performance
+> >when I took a expereiment(ie, concurrent page fault by many threads
+> >while a thread calls mmap).
+> >I guess primary reason is CONFIG_MUTEX_SPIN_ON_OWNER.
+> >So at least, we should avoid it by introducing new mode like
+> >VOLATILE_ANON|VOLATILE_FILE|VOLATILE_BOTH if we want to
+> >support mvrange-file and mvragne interface was thing userland people
+> >really want although ashmem have used fd-based model.
+> 
+> The VOLATILE_ANON|VOLATILE_FILE|VOLATILE_BOTH may be an interesting
+> compromise.
+> 
+> Though, if one marks a VOLATILE_ANON range on an address that's an
+> mmaped file, how do we detect this and provide a sane error value
+> without checking the vmas?
+> 
+
+Should we check vma?
+If there are conflict with existing vrange type, just return an -EINVAL?
+
+> 
+> thanks
+> -john
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.8.1.2
-
+Kind regards,
+Minchan Kim
