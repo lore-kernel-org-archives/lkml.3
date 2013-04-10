@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934484Ab3DJT2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 15:28:07 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:32797 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab3DJT2G (ORCPT
+	id S932982Ab3DJTaq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 15:30:46 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:53751 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab3DJTao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 15:28:06 -0400
-Message-ID: <1365622074.4235.37.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 06/18] compat: backport ASYNC_DOMAIN_EXCLUSIVE()
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        Dan Williams <dcbw@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Apr 2013 21:27:54 +0200
-In-Reply-To: <CAB=NE6VKT11k95Szi4NmigKCgMJ1XJoU3+rACbJpnWwUpCC1EA@mail.gmail.com> (sfid-20130410_212018_257275_49D74B5B)
-References: <1365593728-5720-1-git-send-email-mcgrof@do-not-panic.com>
-	 <1365593728-5720-7-git-send-email-mcgrof@do-not-panic.com>
-	 <1365600139.4235.4.camel@jlt4.sipsolutions.net>
-	 <CAB=NE6UpP-X1NCTNRnoSdv_bk3ioZdg5bO1zz0U0dqeWVxZdLw@mail.gmail.com>
-	 <1365614413.4235.29.camel@jlt4.sipsolutions.net>
-	 <CAB=NE6VAfAvjRs0uZ=jpMjfP5Dz-zEHu3N7t8AUAofZAggrEEQ@mail.gmail.com>
-	 <1365618018.4235.35.camel@jlt4.sipsolutions.net>
-	 <CAB=NE6VKT11k95Szi4NmigKCgMJ1XJoU3+rACbJpnWwUpCC1EA@mail.gmail.com>
-	 (sfid-20130410_212018_257275_49D74B5B)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
+	Wed, 10 Apr 2013 15:30:44 -0400
+Message-ID: <5165BDE1.7010908@inktank.com>
+Date: Wed, 10 Apr 2013 14:30:41 -0500
+From: Alex Elder <elder@inktank.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Laurent Barbe <laurent@ksperis.com>
+CC: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rbd: revalidate_disk upon rbd resize
+References: <1365609989-14493-1-git-send-email-laurent@ksperis.com>
+In-Reply-To: <1365609989-14493-1-git-send-email-laurent@ksperis.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 12:19 -0700, Luis R. Rodriguez wrote:
+On 04/10/2013 11:06 AM, Laurent Barbe wrote:
+> If rbd disk is open and rbd resize is done, new size is not visible by
+> filesystem.
+> Like is done in virtio-blk and dm driver, revalidate_disk() permits to
+> update the bd_inode size.
 
-> > However, it seems entirely pointless to backport just a small part of
-> > the API?
+Looks good to me.  I'll take this in via the ceph-client tree.
+Thanks a lot.
+
+Reviewed-by: Alex Elder <elder@inktank.com>
+
+> Signed-off-by: Laurent Barbe <laurent@ksperis.com>
+> ---
+>  drivers/block/rbd.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
-> Oh I agree don't get me wrong, however porting kernel/async.c seems
-> like a rather separate effort worth considering. As-is though I have
-> not seen any negative impact though to keep older subsystems from
-> compiling, ie its a no-op for older kernels as I see it.
-
-I guess that's what I don't understand -- I don't see usages of
-ASYNC_DOMAIN_EXCLUSIVE in any header files, and in e.g. regulator/core.c
-you'd also need the functions async_schedule_domain() etc. So where does
-this help even compiling?
-
-johannes
+> diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+> index f556f8a..1963025 100644
+> --- a/drivers/block/rbd.c
+> +++ b/drivers/block/rbd.c
+> @@ -2293,6 +2293,7 @@ static void rbd_update_mapping_size(struct rbd_device *rbd_dev)
+>  	dout("setting size to %llu sectors", (unsigned long long) size);
+>  	rbd_dev->mapping.size = (u64) size;
+>  	set_capacity(rbd_dev->disk, size);
+> +	revalidate_disk(rbd_dev->disk);
+>  }
+>  
+>  /*
+> 
 
