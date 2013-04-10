@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936549Ab3DJV7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 17:59:20 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:61169 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761894Ab3DJV7S (ORCPT
+	id S937016Ab3DJWAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:00:42 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:48100 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934226Ab3DJWAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 17:59:18 -0400
-Date: Wed, 10 Apr 2013 14:59:15 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, akpm@linux-foundation.org,
-        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>, Minchan Kim <minchan@kernel.org>
-Subject: Re: [PATCH 30/33] block, aio: batch completion for bios/kiocbs
-Message-ID: <20130410215915.GB30871@google.com>
-References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
- <1363883754-27966-31-git-send-email-koverstreet@google.com>
- <20130402194803.GA5703@thunk.org>
+	Wed, 10 Apr 2013 18:00:40 -0400
+Message-ID: <5165E103.3020106@gmail.com>
+Date: Thu, 11 Apr 2013 00:00:35 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130402194803.GA5703@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Randy Dunlap <rdunlap@infradead.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-media <linux-media@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: linux-next: Tree for Apr 10 (media and OF)
+References: <20130410184852.92a3a02bbe5c3a040be76365@canb.auug.org.au> <5165DB54.90508@infradead.org>
+In-Reply-To: <5165DB54.90508@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 03:48:03PM -0400, Theodore Ts'o wrote:
-> On Thu, Mar 21, 2013 at 09:35:51AM -0700, Kent Overstreet wrote:
-> > +		if (unlikely(req->ki_ctx != ctx)) {
-> > +			kioctx_ring_unlock(ctx, tail);
-> > +
-> > +			ctx = req->ki_ctx;
-> > +			tail = kioctx_ring_lock(ctx);
-> > +		}
-> 
-> The only place where you're calling kioctx_ring_lock() is above, which
-> is part of an unlock/lock pair.
-> 
-> There is also a kioctx_ring_unlock at the end of batch_complete_aio():
-> 
-> > +	kioctx_ring_unlock(ctx, tail);
-> > +	local_irq_restore(flags);
-> > +	rcu_read_unlock();
-> 
-> But I'm not seeing a matching kioctx_ring_lock() before the while loop
-> in batch_complete_aio(), nor anywhere else in the file.  And since
-> kioctx_ring_lock() is a static function....
-> 
-> Am I missing something?
+On 04/10/2013 11:36 PM, Randy Dunlap wrote:
+> On 04/10/13 01:48, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20130409:
+>>
+>
+>
+> on i386:
+>
+> ERROR: "of_get_next_parent" [drivers/media/v4l2-core/videodev.ko] undefined!
+>
+>
+> 'of_get_next_parent()' should be exported for use by modules...?
 
-We start out with ctx == NULL - we handle the initial kiocb the same way
-we handle a kiocb with a different kioctx as the last one.
+Yes, there was already a patch submitted for this [1]. Hopefully it gets
+picked soon so we don't see such errors. That's my oversight, sorry 
+about it.
+
+[1] http://www.spinics.net/lists/linux-media/msg61994.html
+
+Thanks,
+Sylwester
