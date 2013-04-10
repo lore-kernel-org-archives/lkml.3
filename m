@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936838Ab3DJU1Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 16:27:16 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:43698 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936708Ab3DJU1K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 16:27:10 -0400
-Message-ID: <5165CAE0.3070207@cogentembedded.com>
-Date: Thu, 11 Apr 2013 00:26:08 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Lennert Buytenhek <buytenh@wantstofly.org>, Andrew Lunn <andrew@lunn.ch>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Florian Fainelli <florian@openwrt.org>, netdev@vger.kernel.org,
+	id S936868Ab3DJU2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 16:28:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55144 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934822Ab3DJU2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 16:28:54 -0400
+Date: Wed, 10 Apr 2013 16:28:42 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, WANG Chao <chaowang@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: mv643xx_eth: use managed devm_kzalloc
-References: <1365615483-26318-1-git-send-email-sebastian.hesselbarth@gmail.com> <5165B264.6000605@cogentembedded.com> <5165C8E4.7030401@gmail.com>
-In-Reply-To: <5165C8E4.7030401@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH -v4 0/4] x86, kdump: Fix crashkernel high with old
+ kexec-tools
+Message-ID: <20130410202842.GG6602@redhat.com>
+References: <1365622759-2133-1-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365622759-2133-1-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 12:17 AM, Sebastian Hesselbarth wrote:
->
->>
->>> This patch moves shared private data kzalloc to managed devm_kzalloc 
->>> and
->>> cleans now unneccessary kfree and error handling.
->>>
->>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>> ---
->>> Note that there is also an ioremap call, that could be transferred to
->>> devm_ioremap_resource. But as long as mv643xx_eth and mvmdio iomem
->>> resources overlap, this will throw -EBUSY.
->>>
->>> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
->>> Cc: Andrew Lunn <andrew@lunn.ch>
->>> Cc: Jason Cooper <jason@lakedaemon.net>
->>> Cc: Florian Fainelli <florian@openwrt.org>
->>> Cc: netdev@vger.kernel.org
->>> Cc: linux-kernel@vger.kernel.org
->>> ---
->>> drivers/net/ethernet/marvell/mv643xx_eth.c | 17 ++++-------------
->>> 1 file changed, 4 insertions(+), 13 deletions(-)
->>>
->>> diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c
->>> b/drivers/net/ethernet/marvell/mv643xx_eth.c
->>> index bbe6104..955baab 100644
->>> --- a/drivers/net/ethernet/marvell/mv643xx_eth.c
->>> +++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
->>> @@ -2547,25 +2547,22 @@ static int mv643xx_eth_shared_probe(struct
->>> platform_device *pdev)
->>> struct mv643xx_eth_shared_private *msp;
->>> const struct mbus_dram_target_info *dram;
->>> struct resource *res;
->>> - int ret;
->>> if (!mv643xx_eth_version_printed++)
->>> pr_notice("MV-643xx 10/100/1000 ethernet driver version %s\n",
->>> mv643xx_eth_driver_version);
->>> - ret = -EINVAL;
->>> res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>> if (res == NULL)
->>> - goto out;
->>> + return -EINVAL;
->>> - ret = -ENOMEM;
->>> - msp = kzalloc(sizeof(*msp), GFP_KERNEL);
->>> + msp = devm_kzalloc(&pdev->dev, sizeof(*msp), GFP_KERNEL);
->>> if (msp == NULL)
->>> - goto out;
->>> + return -ENOMEM;
->>> msp->base = ioremap(res->start, resource_size(res));
->>> if (msp->base == NULL)
->>> - goto out_free;
->>> + return -EADDRNOTAVAIL;
->>
->> -ENOMEM usually.
->
-> Sergei,
->
-> I was looking at the example for devm_request_and_ioremap() in
-> lib/devres.c. There it is -EADDRNOTAVAIL which is returned on
-> failing ioremap.
+On Wed, Apr 10, 2013 at 12:39:15PM -0700, Yinghai Lu wrote:
+> Vivek found some problems with old kexec-tools.
+> 
+> We keep the old crashkernel=X to old behavoir, so it will not break
+> old kexec-tools.
+> Add crashkernel=X,high to support new kexec-tools that supports loading high.
+> when high is used, memblock will search from top to low.
+> if the allocated one is above 4G, kernel will try to auto allocate
+> 72M under 4G for swiotlb.
+> user could crashkernel=Y,low to change 72M to other value.
+> 
+> -v2:	reorder the patch sequences
+> 	crashkernel=X,high, crashkernel=Y,low only handle simple form.
+> 	crashkernel=X will override crashkernel=X;high crashkernel=Y;low
+> -v3:	update description in kernel-parameters.txt
+> 	update get_last_crashkernel and _simple checking about suffix.
+> -v4:	update to use ,high again, and also not abuse parse_crashkernel_simple
+> 
 
-    This is a recommended value to return if this function fails, to be 
-precise --
-regardless of the reason.
-    With mere ioremap(), the value has always been -ENOMEM.
+This series looks good to me.
 
-WBR, Sergei
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
+Vivek
