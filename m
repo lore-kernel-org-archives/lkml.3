@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936302Ab3DJIaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 04:30:04 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55781 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab3DJIaA (ORCPT
+	id S936660Ab3DJIdd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 04:33:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:38782 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935214Ab3DJIda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 04:30:00 -0400
-Date: Wed, 10 Apr 2013 10:29:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dave Hansen <dave@sr71.net>
-cc: Borislav Petkov <bp@alien8.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
- wrong cpu
-In-Reply-To: <51647C30.3050109@sr71.net>
-Message-ID: <alpine.LFD.2.02.1304101024010.21884@ionos>
-References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos>
- <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net> <alpine.LFD.2.02.1304092036431.21884@ionos> <alpine.LFD.2.02.1304092126150.21884@ionos>
- <51647C30.3050109@sr71.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 10 Apr 2013 04:33:30 -0400
+Date: Wed, 10 Apr 2013 18:33:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the akpm tree
+Message-Id: <20130410183320.106df2fad7059cb72df921d1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__10_Apr_2013_18_33_20_+1000_rdBwx5ky08u1y.B="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Apr 2013, Dave Hansen wrote:
+--Signature=_Wed__10_Apr_2013_18_33_20_+1000_rdBwx5ky08u1y.B=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 04/09/2013 12:30 PM, Thomas Gleixner wrote:
-> > On Tue, 9 Apr 2013, Thomas Gleixner wrote:
-> > Thought more about it and found, that the stupid binding only works
-> > when the task is really descheduled. So there is a small window left,
-> > which could lead to this. Revised patch below.
-> > 
-> > Anyway a trace for that issue would be appreciated nevertheless.
-> 
-> Here you go:
-> 
-> 	http://sr71.net/~dave/linux/bigbox.1365539189.txt.gz
+Hi Andrew,
 
-Hmm. Unfortunately migration/146 is not in the trace.
- 
-Can you please apply the patch below? That avoids the oops, but might
-hang an online operation. Though the machine should stay up and you
-should be able to retrieve the trace.
+After merging the akpm tree, today's linux-next build (powerpc
+ppc44x_defconfig) produced these warnings:
 
-Thanks,
+ipc/util.c: In function 'ipc_init':
+ipc/util.c:105:2: warning: statement with no effect [-Wunused-value]
+mm/slub.c: In function 'kmem_cache_init':
+mm/slub.c:3600:2: warning: statement with no effect [-Wunused-value]
 
-	tglx
----
-Index: linux-2.6/kernel/smpboot.c
-===================================================================
---- linux-2.6.orig/kernel/smpboot.c
-+++ linux-2.6/kernel/smpboot.c
-@@ -131,7 +131,10 @@ static int smpboot_thread_fn(void *data)
- 			continue;
- 		}
- 
--		BUG_ON(td->cpu != smp_processor_id());
-+		if (td->cpu != smp_processor_id()) {
-+			tracing_off();
-+			schedule();
-+		}
- 
- 		/* Check for state change setup */
- 		switch (td->status) {
+Introduced by commit 23e9e430f87e ("include/linux/memory.h: implement
+register_hotmemory_notifier()").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__10_Apr_2013_18_33_20_+1000_rdBwx5ky08u1y.B=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRZSPQAAoJEECxmPOUX5FEqm8QAIii8DnKCac4QcOoEPCD+t4a
+CYp/96wJgnOe+xQ4TtCpNBE70nR5TmJEkIiLq38mElVJVp2gsaki6433AO/RrTF3
+XsYCn9v85m4K0n7aFBzSznX9racYXEXY2AdBm/3GFhTtlYRjXK3RqHZobAOqJhk6
+TyU4sonIBm605/2X770cO70Hksq8IBRvqLfA1Njuqh/INr/3h15/mF5HqFetFqC9
+92gHc2ehLsH3d/WPLOgiZ+UZDs7s3WIcs+sg2Ch5JuvapVqkFoMCN/8n52zc6sY6
+cNTZ5zQggdIMmCJflkEMYl+EMlbIGthzW0h+aVTSQMH4rjdV5gyen+zJhhfERbzP
+l30iK1nZkjsKXVkDn/7cMqTTl9BN2kPPqR5tVbQ7y39eIrQ67RTnWD7aJzlDv6sD
+IyiWIiPCCJjIGdGUtqR3flG7D12z7e0dg+dRnuogAZybus1m0ipHLjj84S7ub4wI
+fsIn37bPR2vqcjg2tm2pIUH2pvTt8y6QUCukCSnVcT7audZpIfpelYBSVpLvFjBg
+pZQ8LQEdxtxIALWdUq3CCsROLnWSFyGD4RDKVG0kk9vA0BqsIFqghXE3mmGcCavr
+DCUkOYGSO9MVv/5uBv77V3d7ObtD7Qaw5cjyfDKanq9PzQJ5+JMeqdl0SHgi9+Ho
+5F7sXAT9RsRGyUROSUi3
+=LpPX
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__10_Apr_2013_18_33_20_+1000_rdBwx5ky08u1y.B=--
