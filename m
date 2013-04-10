@@ -1,66 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965119Ab3DJQ7j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:59:39 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:55070 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936983Ab3DJQ7i (ORCPT
+	id S965183Ab3DJRAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:00:16 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23135 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965054Ab3DJRAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:59:38 -0400
-Date: Wed, 10 Apr 2013 18:59:34 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Russ Anderson <rja@sgi.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
-Message-ID: <20130410165934.GB21951@gmail.com>
-References: <20130403193743.GB29151@sgi.com>
- <20130408155701.GB19974@gmail.com>
- <5162EC1A.4050204@zytor.com>
- <20130408165916.GA3672@sgi.com>
- <20130410111620.GB29752@gmail.com>
- <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
- <20130410152911.GA3011@sgi.com>
+	Wed, 10 Apr 2013 13:00:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+3woJs0643Skj0zTGEaPi6
+Date: Wed, 10 Apr 2013 10:00:05 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>
+Cc: Sebastian Reichel <sre@debian.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCH] RX-51: Fix probe order of SPI devices
+Message-ID: <20130410170001.GY10155@atomide.com>
+References: <1364724561-18045-1-git-send-email-pali.rohar@gmail.com>
+ <201303311318.41846@pali>
+ <20130402163138.GS10155@atomide.com>
+ <201304101615.19400@pali>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130410152911.GA3011@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201304101615.19400@pali>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Russ Anderson <rja@sgi.com> wrote:
-
-> Yes, I have a test patch that replaces for_each_online_cpu(cpu) with a cpu 
-> bitmask in disable_nonboot_cpus().  The lower level routines already take a 
-> bitmask.  It allows __stop_machine() to be called just once.  That change 
-> reduces shutdown time on a 1024 cpu machine from 16 minutes 4 minutes.  
-> Significant improvement, but not good enough.
+* Pali Rohár <pali.rohar@gmail.com> [130410 07:20]:
+> On Tuesday 02 April 2013 18:31:38 Tony Lindgren wrote:
+> > * Pali Rohár <pali.rohar@gmail.com> [130331 04:23]:
+> > > On Sunday 31 March 2013 12:52:23 Sebastian Reichel wrote:
+> > > > On Sun, Mar 31, 2013 at 12:09:21PM +0200, Pali Rohár wrote:
+> > > > > From: Joni Lapilainen <joni.lapilainen@gmail.com>
+> > > > > 
+> > > > > Without this patch LCD panel on Nokia RX-51 is still
+> > > > > black
+> > > > > 
+> > > > > Signed-off-by: Joni Lapilainen
+> > > > > <joni.lapilainen@gmail.com> Signed-off-by: Pali Rohár
+> > > > > <pali.rohar@gmail.com>
+> > > > 
+> > > > Tested-by: Sebastian Reichel <sre@debian.org>
+> > > > 
+> > > > Please note, that this patch has actually been proposed by
+> > > > Aaro Koskinen <aaro.koskinen@iki.fi> quite some time ago
+> > > > [0].
+> > > > 
+> > > > [0]
+> > > > http://permalink.gmane.org/gmane.linux.ports.arm.omap/8172
+> > > > 9
+> > > > 
+> > > > -- Sebastian
+> > > 
+> > > CCing Aaro.
+> > 
+> > Any ideas why this is happening?
+> > 
+> > Is the touch screen controller somehow pulling one of the SPI
+> > lines before it's reset? I don't think there's any other
+> > connection between the LCD and touch controller besides the
+> > SPI lines?
+> > 
+> > In any case there should be something in the description why
+> > this is needed..
+> > 
+> > Regards,
+> > 
+> > Tony
 > 
-> The next significant bottleneck is __cpu_notify().  Tried creating worker 
-> threads to parallelize the shutdown, but the problem is __cpu_notify() is not 
-> thread safe.  Putting a lock around it caused all the worker threads to fight 
-> over the lock.
+> Hi Tony, look at this Aaro's email:
+> http://permalink.gmane.org/gmane.linux.ports.arm.omap/81729
 
-4 minutes bootup is 240 seconds, with 1024 CPUs that's about 240 msecs per CPU.
+OK can we have that summarized in the patch description please?
 
-That sounds a lot, given that unlike bootup there's not much real work to be done 
-during shutdown - we don't initialize anything, etc.
+Regards,
 
-Maybe much of those 240 msecs are spent in some stupid udelay loop or so, which 
-could be made parallel?
-
-Would it be possible to create a 'reboot but stop at the end and reactivate all 
-CPUs again' reboot flag, so that it can all be NMI-profiled, to see where the true 
-bottleneck is? A naked disable_nonboot_cpus() call in essence.
-
-Thanks,
-
-	Ingo
+Tony
