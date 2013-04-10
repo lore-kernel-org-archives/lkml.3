@@ -1,69 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936274Ab3DJUGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 16:06:13 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:60023 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936034Ab3DJUGL (ORCPT
+	id S936261Ab3DJUH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 16:07:27 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:38979 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755554Ab3DJUHZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 16:06:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130409164101.GA20001@roeck-us.net>
-References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
-	<1365441321-21952-3-git-send-email-kevin.strasser@linux.intel.com>
-	<CACRpkdYrGK_SPbiRssFUrg2vMvWbYO_iXsy+aZr99tyFtk88Uw@mail.gmail.com>
-	<20130409164101.GA20001@roeck-us.net>
-Date: Wed, 10 Apr 2013 22:06:10 +0200
-Message-ID: <CACRpkdYOoZQP_mc3j0z-qTepN7tvA6rpL9E1rc-4D+AyL9_5XQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] gpio: Kontron PLD gpio driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Kevin Strasser <kevin.strasser@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michael Brunner <michael.brunner@kontron.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Ben Dooks <ben-linux@fluff.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        Darren Hart <dvhart@linux.intel.com>, Michael Brunner <mibru@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 10 Apr 2013 16:07:25 -0400
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
+Cc: DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Tomas Melin <tomas.melin@iki.fi>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>, stable@vger.kernel.org
+Subject: [PATCH] drm/i915: don't check inconsistent modeset state when force-restoring
+Date: Wed, 10 Apr 2013 22:10:21 +0200
+Message-Id: <1365624621-5683-1-git-send-email-daniel.vetter@ffwll.ch>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <CAKMK7uGTqSdq_V=Pu-BGNhhTqOn=fz5-LvUXBXpGQJqzL1QOUQ@mail.gmail.com>
+References: <CAKMK7uGTqSdq_V=Pu-BGNhhTqOn=fz5-LvUXBXpGQJqzL1QOUQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 6:41 PM, Guenter Roeck <linux@roeck-us.net> wrote:
-> On Tue, Apr 09, 2013 at 10:46:15AM +0200, Linus Walleij wrote:
->> On Mon, Apr 8, 2013 at 7:15 PM, Kevin Strasser
->> <kevin.strasser@linux.intel.com> wrote:
->>
->> > From: Michael Brunner <michael.brunner@kontron.com>
->> >
->> > Add gpio support for the on-board PLD found on some Kontron embedded
->> > modules.
->> >
->> > Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
->> > Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
->>
->> This looks very generic, setting and clearing bits in bytesized
->> registers.
->>
->> Can you please attempt to use generic GPIO for this?
->>
-> Linus,
->
-> I looked into it, but for my part I seem to be missing how the generic GPIO code
-> permits locking access to the hardware (PLD) and setting the PLD's page register.
-> In other words, I don't immediately see how to call kempld_get_mutex_set_index()
-> from the generic GPIO code. The other drivers using generic GPIO code don't
-> seem to have that requirement.
+It will be only consistent once we've restored all the crtcs. Since a
+bunch of other callers also want to just restore a single crtc, add a
+boolean to disable checking only where it doesn't make sense.
 
-Ah yes, I was totally wrong here.
+Note that intel_modeset_setup_hw_state already has a call to
+intel_modeset_check_state at the end, so we don't reduce the amount of
+checking.
 
-I thought it was MMIO while it is indeed through an MFD proxy.
+v2: Try harder not to create a big patch (Chris).
 
-I'll have a second look then...
+v3: Even smaller (still Chris). Also fix a trailing space.
 
-Yours,
-Linus Walleij
+v4: Rebased on top of 3.9-rc6.
+
+References: https://lkml.org/lkml/2013/3/16/60
+Cc: Tomas Melin <tomas.melin@iki.fi>
+Cc: Richard Cochran <richardcochran@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: stable@vger.kernel.org
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/i915/intel_display.c |   32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index b20d501..5f1eb50 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7771,9 +7771,9 @@ intel_modeset_check_state(struct drm_device *dev)
+ 	}
+ }
+ 
+-int intel_set_mode(struct drm_crtc *crtc,
+-		   struct drm_display_mode *mode,
+-		   int x, int y, struct drm_framebuffer *fb)
++static int __intel_set_mode(struct drm_crtc *crtc,
++			    struct drm_display_mode *mode,
++			    int x, int y, struct drm_framebuffer *fb)
+ {
+ 	struct drm_device *dev = crtc->dev;
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+@@ -7863,8 +7863,6 @@ done:
+ 	if (ret && crtc->enabled) {
+ 		crtc->hwmode = *saved_hwmode;
+ 		crtc->mode = *saved_mode;
+-	} else {
+-		intel_modeset_check_state(dev);
+ 	}
+ 
+ out:
+@@ -7872,6 +7870,20 @@ out:
+ 	return ret;
+ }
+ 
++int intel_set_mode(struct drm_crtc *crtc,
++		     struct drm_display_mode *mode,
++		     int x, int y, struct drm_framebuffer *fb)
++{
++	int ret;
++
++	ret = __intel_set_mode(crtc, mode, x, y, fb);
++
++	if (ret == 0)
++		intel_modeset_check_state(crtc->dev);
++
++	return ret;
++}
++
+ void intel_crtc_restore_mode(struct drm_crtc *crtc)
+ {
+ 	intel_set_mode(crtc, &crtc->mode, crtc->x, crtc->y, crtc->fb);
+@@ -9172,8 +9184,16 @@ void intel_modeset_setup_hw_state(struct drm_device *dev,
+ 	}
+ 
+ 	if (force_restore) {
++		/*
++		 * We need to use raw interfaces for restoring state to avoid
++		 * checking (bogus) intermediate states.
++		 */
+ 		for_each_pipe(pipe) {
+-			intel_crtc_restore_mode(dev_priv->pipe_to_crtc_mapping[pipe]);
++			struct drm_crtc *crtc =
++				dev_priv->pipe_to_crtc_mapping[pipe];
++
++			__intel_set_mode(crtc, &crtc->mode, crtc->x, crtc->y,
++					 crtc->fb);
+ 		}
+ 
+ 		i915_redisable_vga(dev);
+-- 
+1.7.10.4
+
