@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936099Ab3DJA2j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 20:28:39 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:47632 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765442Ab3DJA0N (ORCPT
+	id S935885Ab3DJA3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 20:29:24 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:56747 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762821Ab3DJA3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 20:26:13 -0400
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <bob.liu@oracle.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH 00/10] staging: zcache/ramster: fix and ramster/debugfs improvement
-Date: Wed, 10 Apr 2013 08:25:50 +0800
-Message-Id: <1365553560-32258-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.5.4
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041000-9574-0000-0000-0000076645FC
+	Tue, 9 Apr 2013 20:29:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <5164AEF5.9020202@zytor.com>
+References: <20130409163932.GA19130@www.outflux.net>
+	<5164AEF5.9020202@zytor.com>
+Date: Tue, 9 Apr 2013 17:29:22 -0700
+X-Google-Sender-Auth: Mm6nkGnGnWd8hFzhhYdzs8JvyTM
+Message-ID: <CAGXu5jKweun6jzioXBNjs8rguGSs+SvLqoVKjucNmytiJH_WDA@mail.gmail.com>
+Subject: Re: [PATCH v2] x86: use fixed read-only IDT
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Eric Northup <digitaleric@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix bugs in zcache and rips out the debug counters out of ramster.c and 
-sticks them in a debug.c file. Introduce accessory functions for counters 
-increase/decrease, they are available when config RAMSTER_DEBUG, otherwise 
-they are empty non-debug functions. Using an array to initialize/use debugfs 
-attributes to make them neater. Dan Magenheimer confirm these works 
-are needed. http://marc.info/?l=linux-mm&m=136535713106882&w=2
+On Tue, Apr 9, 2013 at 5:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/09/2013 09:39 AM, Kees Cook wrote:
+>> -
+>>  static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+>>  {
+>>       /* calling is from identify_secondary_cpu() ? */
+>> @@ -206,8 +192,7 @@ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+>>       /*
+>>        * All current models of Pentium and Pentium with MMX technology CPUs
+>>        * have the F0 0F bug, which lets nonprivileged users lock up the
+>> -      * system.
+>> -      * Note that the workaround only should be initialized once...
+>> +      * system. Announce that the fault handler will be checking for it.
+>>        */
+>>       c->f00f_bug = 0;
+>>       if (!paravirt_enabled() && c->x86 == 5) {
+>> @@ -215,7 +200,6 @@ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+>>
+>>               c->f00f_bug = 1;
+>>               if (!f00f_workaround_enabled) {
+>> -                     trap_init_f00f_bug();
+>>                       printk(KERN_NOTICE "Intel Pentium with F0 0F bug - workaround enabled.\n");
+>>                       f00f_workaround_enabled = 1;
+>>               }
+>
+> Why do we care about this message anymore?  It provides no relevant user
+> information, the flag itself is already in /proc/cpuinfo, and the
+> message is likely to be wrong since all it does is look for an Intel CPU
+> with family == 5.
 
-Patch 1~2 fix bugs in zcache
+I have no objection to removing it, but with CONFIG_F00F_BUG, the trap
+handler does still do some checking, and I figured this message was
+there to notify people about it.
 
-Patch 3~8 rips out the debug counters out of ramster.c and sticks them 
-		  in a debug.c file 
+-Kees
 
-Patch 9 fix coding style issue introduced in zcache2 cleanups 
-        (s/int/bool + debugfs movement) patchset 
-
-Patch 10 add how-to for ramster 
-
-Dan Magenheimer (1):
-	staging: ramster: add how-to for ramster
-	
-Wanpeng Li (9):
-	staging: zcache: fix account foregin counters against zero-filled pages
-	staging: zcache: remove zcache_freeze  
-	staging: ramster: Provide accessory functions for counter increase
-	staging: ramster: Provide accessory functions for counter decrease
-	staging: ramster: Move debugfs code out of ramster.c files
-	staging: ramster/debug: Use an array to initialize/use debugfs attributes
-	staging: ramster/debug: Add RAMSTER_DEBUG Kconfig entry
-	staging: ramster: Add incremental accessory counters
-	staging: zcache/debug: fix coding style
-
- drivers/staging/zcache/Kconfig           |    8 +
- drivers/staging/zcache/Makefile          |    1 +
- drivers/staging/zcache/debug.h           |   36 ++---
- drivers/staging/zcache/ramster/HOWTO.txt |  257 ++++++++++++++++++++++++++++++
- drivers/staging/zcache/ramster/debug.c   |   66 ++++++++
- drivers/staging/zcache/ramster/debug.h   |  104 ++++++++++++
- drivers/staging/zcache/ramster/ramster.c |  145 ++++-------------
- drivers/staging/zcache/zcache-main.c     |   63 +++-----
- 8 files changed, 505 insertions(+), 175 deletions(-)
- create mode 100644 drivers/staging/zcache/ramster/HOWTO.txt
- create mode 100644 drivers/staging/zcache/ramster/debug.c
- create mode 100644 drivers/staging/zcache/ramster/debug.h
-
--- 
-1.7.10.4
-
+--
+Kees Cook
+Chrome OS Security
