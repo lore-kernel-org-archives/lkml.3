@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964981Ab3DJItj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 04:49:39 -0400
-Received: from drsnuggles.stderr.nl ([94.142.244.14]:38464 "EHLO
+	id S965106Ab3DJIt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 04:49:59 -0400
+Received: from drsnuggles.stderr.nl ([94.142.244.14]:38454 "EHLO
 	drsnuggles.stderr.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936347Ab3DJIt3 (ORCPT
+	with ESMTP id S936380Ab3DJItA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 04:49:29 -0400
-Date: Wed, 10 Apr 2013 10:49:27 +0200
+	Wed, 10 Apr 2013 04:49:00 -0400
+Date: Wed, 10 Apr 2013 10:48:54 +0200
 From: Matthijs Kooijman <matthijs@stdin.nl>
-To: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] checkpatch: Only warn for empty lines before closing
- braces by themselves
-Message-ID: <20130410084927.GR13691@login.drsnuggles.stderr.nl>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] checkpatch: Don't suggest clean scripts when all related
+ errors are suppressed
+Message-ID: <20130410084854.GQ13691@login.drsnuggles.stderr.nl>
 Mail-Followup-To: Matthijs Kooijman <matthijs@stdin.nl>,
 	Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
 	linux-kernel@vger.kernel.org
@@ -34,60 +34,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This check was intended to catch extra newlines at the end of a function
-definition, but it would trigger on any closing brace, including those
-of inline functions and macro definitions, triggering false positives.
-Now, only closing braces on a line by themselves trigger this check.
+Before, the message "whitespace errors detected, you may wish to use
+scripts/cleanpatch or scripts/cleanfile" was emitted when two specific
+errors were detected, even when they were suppressed with --ignore or
+--test-only.
 
-Tested with:
-
-$ cat test.h
-/* test.h - Test file */
-
-static inline int foo(void) { return 0; }
-
-static inline int bar(void)
-{
-        return 1;
-
-}
-
-$ ./scripts/checkpatch.pl --strict -f test.h # Before this commit
-CHECK: Blank lines aren't necessary before a close brace '}'
-+
-+static inline int foo(void) { return 0; }
-
-CHECK: Blank lines aren't necessary before a close brace '}'
-+
-+}
-
-total: 0 errors, 0 warnings, 2 checks, 9 lines checked
-
-$ ./scripts/checkpatch.pl --strict -f test.h # After this commit
-CHECK: Blank lines aren't necessary before a close brace '}'
-+
-+}
-
-total: 0 errors, 0 warnings, 1 checks, 9 lines checked
+Now, the message is only emitted if any of the related errors were
+actually emitted as well.
 
 Signed-off-by: Matthijs Kooijman <matthijs@stdin.nl>
 ---
- scripts/checkpatch.pl | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/checkpatch.pl | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
 diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 532c41b..f962c30 100755
+index 64021da..532c41b 100755
 --- a/scripts/checkpatch.pl
 +++ b/scripts/checkpatch.pl
-@@ -3236,7 +3236,7 @@ sub process {
+@@ -1278,19 +1278,25 @@ sub ERROR {
+ 	if (report("ERROR", $_[0], $_[1])) {
+ 		our $clean = 0;
+ 		our $cnt_error++;
++		return 1;
+ 	}
++	return 0;
+ }
+ sub WARN {
+ 	if (report("WARNING", $_[0], $_[1])) {
+ 		our $clean = 0;
+ 		our $cnt_warn++;
++		return 1;
+ 	}
++	return 0;
+ }
+ sub CHK {
+ 	if ($check && report("CHECK", $_[0], $_[1])) {
+ 		our $clean = 0;
+ 		our $cnt_chk++;
++		return 1;
+ 	}
++	return 0;
+ }
+ 
+ sub check_absolute_file {
+@@ -1701,9 +1707,10 @@ sub process {
+ 
+ 		} elsif ($rawline =~ /^\+.*\S\s+$/ || $rawline =~ /^\+\s+$/) {
+ 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+-			ERROR("TRAILING_WHITESPACE",
+-			      "trailing whitespace\n" . $herevet);
+-			$rpt_cleaners = 1;
++			if (ERROR("TRAILING_WHITESPACE",
++				  "trailing whitespace\n" . $herevet)) {
++				$rpt_cleaners = 1;
++			}
  		}
  
- # check for unnecessary blank lines around braces
--		if (($line =~ /^..*}\s*$/ && $prevline =~ /^.\s*$/)) {
-+		if (($line =~ /^.\s*}\s*$/ && $prevline =~ /^.\s*$/)) {
- 			CHK("BRACES",
- 			    "Blank lines aren't necessary before a close brace '}'\n" . $hereprev);
+ # check for Kconfig help text having a real description
+@@ -1829,9 +1836,10 @@ sub process {
+ 		if ($rawline =~ /^\+\s* \t\s*\S/ ||
+ 		    $rawline =~ /^\+\s*        \s*/) {
+ 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
+-			ERROR("CODE_INDENT",
+-			      "code indent should use tabs where possible\n" . $herevet);
+-			$rpt_cleaners = 1;
++			if (ERROR("CODE_INDENT",
++				  "code indent should use tabs where possible\n" . $herevet)) {
++				$rpt_cleaners = 1;
++			}
  		}
+ 
+ # check for space before tabs.
 -- 
 1.8.0
 
