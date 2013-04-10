@@ -1,209 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936600Ab3DJOIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:08:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54596 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936525Ab3DJOI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 10:08:29 -0400
-Date: Wed, 10 Apr 2013 15:08:24 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
- requirements for kswapd
-Message-ID: <20130410140824.GC3710@suse.de>
-References: <1365505625-9460-1-git-send-email-mgorman@suse.de>
- <1365505625-9460-3-git-send-email-mgorman@suse.de>
- <516511DF.5020805@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <516511DF.5020805@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S936673Ab3DJOJP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:09:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22784 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760108Ab3DJOJO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 10:09:14 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZzSxI7jMevMA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=mVTtbqeYs4EA:10 a=TxvQE9YX0FHs4Y0EX7MA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365602951.9609.10.camel@gandalf.local.home>
+Subject: Re: [RT LATENCY] 249 microsecond latency caused by slub's
+ unfreeze_partials() code.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Pekka Enberg <penberg@kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>
+Date: Wed, 10 Apr 2013 10:09:11 -0400
+In-Reply-To: <0000013df43f6fe0-8b71a9f4-bad1-417e-ab44-797c5ba2aecd-000000@email.amazonses.com>
+References: <1364355032.6345.200.camel@gandalf.local.home>
+	 <20130327061351.GB17125@lge.com>
+	 <alpine.DEB.2.02.1303281227520.16200@gentwo.org>
+	 <0000013db20ca149-0064fbb8-2f81-4323-9095-a38f6abb79c5-000000@email.amazonses.com>
+	 <CAP=VYLr4i=39ywFCrmG-XuvUFmmXpyj6dYgG44JJoUJhpN6uuQ@mail.gmail.com>
+	 <alpine.DEB.2.02.1304011025550.12690@gentwo.org>
+	 <0000013dc63b3a87-6ce88b75-d011-407e-8dde-da73c3a7f5fd-000000@email.amazonses.com>
+	 <20130402004217.GA16699@lge.com>
+	 <1365424372.25498.6.camel@gandalf.local.home>
+	 <CAOJsxLH2axjptbMj9caH0Wo_OqPZRVB20q7uT6f9dVtPZZxb_w@mail.gmail.com>
+	 <20130410073143.GF5872@lge.com>
+	 <0000013df43f6fe0-8b71a9f4-bad1-417e-ab44-797c5ba2aecd-000000@email.amazonses.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 04:16:47PM +0900, Kamezawa Hiroyuki wrote:
-> (2013/04/09 20:06), Mel Gorman wrote:
-> > Simplistically, the anon and file LRU lists are scanned proportionally
-> > depending on the value of vm.swappiness although there are other factors
-> > taken into account by get_scan_count().  The patch "mm: vmscan: Limit
-> > the number of pages kswapd reclaims" limits the number of pages kswapd
-> > reclaims but it breaks this proportional scanning and may evenly shrink
-> > anon/file LRUs regardless of vm.swappiness.
-> > 
-> > This patch preserves the proportional scanning and reclaim. It does mean
-> > that kswapd will reclaim more than requested but the number of pages will
-> > be related to the high watermark.
-> > 
-> > [mhocko@suse.cz: Correct proportional reclaim for memcg and simplify]
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > ---
-> >   mm/vmscan.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++--------
-> >   1 file changed, 46 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 4835a7a..0742c45 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1825,13 +1825,21 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
-> >   	enum lru_list lru;
-> >   	unsigned long nr_reclaimed = 0;
-> >   	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
-> > +	unsigned long nr_anon_scantarget, nr_file_scantarget;
-> >   	struct blk_plug plug;
-> > +	bool scan_adjusted = false;
-> >   
-> >   	get_scan_count(lruvec, sc, nr);
-> >   
-> > +	/* Record the original scan target for proportional adjustments later */
-> > +	nr_file_scantarget = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE] + 1;
-> > +	nr_anon_scantarget = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON] + 1;
-> > +
+On Wed, 2013-04-10 at 14:00 +0000, Christoph Lameter wrote:
+> On Wed, 10 Apr 2013, Joonsoo Kim wrote:
 > 
-> I'm sorry I couldn't understand the calc...
+> > > Christoph, Joonsoo, comments?
+> >
+> > Steven's comment is reasonable to me.
+> >
+> > If there is no objection from Christoph,
+> > let's drop a patch in which I implement Christoph's idea.
 > 
-> Assume here
->         nr_file_scantarget = 100
->         nr_anon_file_target = 100.
+> Fine with me.
+> 
+> I do not like passing a reference just because we have to
+> return an additional counter. Adds a lot of overhead.
 > 
 
-I think you might have meant nr_anon_scantarget here instead of
-nr_anon_file_target.
+The reference is only passed to acquire_slab() which is a static inline
+function that's only called by this function. You would think that gcc
+can optimize that to remove the "lot of overhead".
 
-> 
-> >   	blk_start_plug(&plug);
-> >   	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
-> >   					nr[LRU_INACTIVE_FILE]) {
-> > +		unsigned long nr_anon, nr_file, percentage;
-> > +
-> >   		for_each_evictable_lru(lru) {
-> >   			if (nr[lru]) {
-> >   				nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
-> > @@ -1841,17 +1849,47 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
-> >   							    lruvec, sc);
-> >   			}
-> >   		}
-> > +
-> > +		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
-> > +			continue;
-> > +
-> >   		/*
-> > -		 * On large memory systems, scan >> priority can become
-> > -		 * really large. This is fine for the starting priority;
-> > -		 * we want to put equal scanning pressure on each zone.
-> > -		 * However, if the VM has a harder time of freeing pages,
-> > -		 * with multiple processes reclaiming pages, the total
-> > -		 * freeing target can get unreasonably large.
-> > +		 * For global direct reclaim, reclaim only the number of pages
-> > +		 * requested. Less care is taken to scan proportionally as it
-> > +		 * is more important to minimise direct reclaim stall latency
-> > +		 * than it is to properly age the LRU lists.
-> >   		 */
-> > -		if (nr_reclaimed >= nr_to_reclaim &&
-> > -		    sc->priority < DEF_PRIORITY)
-> > +		if (global_reclaim(sc) && !current_is_kswapd())
-> >   			break;
-> > +
-> > +		/*
-> > +		 * For kswapd and memcg, reclaim at least the number of pages
-> > +		 * requested. Ensure that the anon and file LRUs shrink
-> > +		 * proportionally what was requested by get_scan_count(). We
-> > +		 * stop reclaiming one LRU and reduce the amount scanning
-> > +		 * proportional to the original scan target.
-> > +		 */
-> > +		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
-> > +		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
-> > +
->
-> Then, nr_file = 80, nr_anon=70.
-> 
+-- Steve
 
-As we scan evenly in SCAN_CLUSTER_MAX groups of pages, this wouldn't happen
-but for the purposes of discussions, lets assume it did.
 
-> 
-> > +		if (nr_file > nr_anon) {
-> > +			lru = LRU_BASE;
-> > +			percentage = nr_anon * 100 / nr_anon_scantarget;
-> > +		} else {
-> > +			lru = LRU_FILE;
-> > +			percentage = nr_file * 100 / nr_file_scantarget;
-> > +		}
-> 
-> the percentage will be 70.
-> 
-
-Yes.
-
-> > +
-> > +		/* Stop scanning the smaller of the LRU */
-> > +		nr[lru] = 0;
-> > +		nr[lru + LRU_ACTIVE] = 0;
-> > +
->
-> this will stop anon scan.
-> 
-
-Yes.
-
-> > +		/* Reduce scanning of the other LRU proportionally */
-> > +		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
-> > +		nr[lru] = nr[lru] * percentage / 100;;
-> > +		nr[lru + LRU_ACTIVE] = nr[lru + LRU_ACTIVE] * percentage / 100;
-> > +
-> 
-> finally, in the next iteration,
-> 
->               nr[file] = 80 * 0.7 = 56.
->              
-> After loop, anon-scan is 30 pages , file-scan is 76(20+56) pages..
-> 
-
-Well spotted, this would indeed reclaim too many pages from the other
-LRU. I wanted to avoid recording the original scan targets as it's an
-extra 40 bytes on the stack but it's unavoidable.
-
-> I think the calc here should be
-> 
->    nr[lru] = nr_lru_scantarget * percentage / 100 - nr[lru]
-> 
->    Here, 80-70=10 more pages to scan..should be proportional.
-> 
-
-nr[lru] at the end there is pages remaining to be scanned not pages
-scanned already. Did you mean something like this?
-
-nr[lru] = scantarget[lru] * percentage / 100 - (scantarget[lru] - nr[lru])
-
-With care taken to ensure we do not underflow? Something like
-
-        unsigned long nr[NR_LRU_LISTS];
-        unsigned long targets[NR_LRU_LISTS];
-
-...
-
-	memcpy(targets, nr, sizeof(nr));
-
-...
-
-        nr[lru] = targets[lru] * percentage / 100;
-        nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
-
-        lru += LRU_ACTIVE;
-        nr[lru] = targets[lru] * percentage / 100;
-        nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
-
-?
-
--- 
-Mel Gorman
-SUSE Labs
