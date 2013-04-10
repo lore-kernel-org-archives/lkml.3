@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937115Ab3DJQbp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:31:45 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:33798 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936705Ab3DJQbn (ORCPT
+	id S937125Ab3DJQcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:32:04 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:45470 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936705Ab3DJQcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:31:43 -0400
+	Wed, 10 Apr 2013 12:32:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <87sj2yzn1a.fsf@xmission.com>
-References: <20130408224328.GA17641@www.outflux.net>
-	<51634935.9010905@zytor.com>
-	<877gkc596d.fsf@xmission.com>
-	<20130410095716.GF24443@gmail.com>
-	<87sj2yzn1a.fsf@xmission.com>
-Date: Wed, 10 Apr 2013 09:31:41 -0700
-Message-ID: <CAG7+5M06h_UEy39OQqdT7Z6r-85q_R9zHHKGO6F2PX2pgT6U9g@mail.gmail.com>
-Subject: Re: [PATCH] x86: make IDT read-only
-From: Eric Northup <digitaleric@google.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Xen Devel <xen-devel@lists.xensource.com>,
-        lf-virt <virtualization@lists.linux-foundation.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+In-Reply-To: <1365610669-16625-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1365610669-16625-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1365610669-16625-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Wed, 10 Apr 2013 12:31:39 -0400
+X-Google-Sender-Auth: hEtg0ZqrR0jJRWOavlOQroptQkU
+Message-ID: <CAHGf_=o6+RxyutMxai-82eHQDrx5KfiJ0-MCjqAO-nkbp1eiCA@mail.gmail.com>
+Subject: Re: [RESEND][PATCH v5 3/3] hugetlbfs: add swap entry check in follow_hugetlb_page()
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 3:40 AM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Ingo Molnar <mingo@kernel.org> writes:
+On Wed, Apr 10, 2013 at 12:17 PM, Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com> wrote:
+> # I suspended Reviewed and Acked given for the previous version, because
+> # it has a non-minor change. If you want to restore it, please let me know.
+> -----
+> With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
+> initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
+> error happens on a hugepage and the affected processes try to access
+> the error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0)
+> in get_page().
 >
->> * Eric W. Biederman <ebiederm@xmission.com> wrote:
->>
->>> "H. Peter Anvin" <hpa@zytor.com> writes:
->>>
->>> > On 04/08/2013 03:43 PM, Kees Cook wrote:
->>> >> This makes the IDT unconditionally read-only. This primarily removes
->>> >> the IDT from being a target for arbitrary memory write attacks. It has
->>> >> an added benefit of also not leaking (via the "sidt" instruction) the
->>> >> kernel base offset, if it has been relocated.
->>> >>
->>> >> Signed-off-by: Kees Cook <keescook@chromium.org>
->>> >> Cc: Eric Northup <digitaleric@google.com>
->>> >
->>> > Also, tglx: does this interfere with your per-cpu IDT efforts?
->>>
->>> Given that we don't change any IDT entries why would anyone want a
->>> per-cpu IDT?  The cache lines should easily be shared accross all
->>> processors.
->>
->> That's true iif they are cached.
->>
->> If not then it's a remote DRAM access cache miss for all CPUs except the node that
->> holds that memory.
->>
->>> Or are there some giant NUMA machines that trigger cache misses when accessing
->>> the IDT and the penalty for pulling the cache line across the NUMA fabric is
->>> prohibitive?
->>
->> IDT accesses for pure userspace execution are pretty rare. So we are not just
->> talking about huge NUMA machines here but about ordinary NUMA machines taking a
->> remote cache miss hit for the first IRQ or other IDT-accessing operation they do
->> after some cache-intense user-space processing.
->>
->> It's a small effect, but it exists and improving it would be
->> legitimate.
+> The reason for this bug is that coredump-related code doesn't recognise
+> "hugepage hwpoison entry" with which a pmd entry is replaced when a memory
+> error occurs on a hugepage.
+> In other words, physical address information is stored in different bit layout
+> between hugepage hwpoison entry and pmd entry, so follow_hugetlb_page()
+> which is called in get_dump_page() returns a wrong page from a given address.
 >
-> If the effect is measurable I agree it is a legitimate optimization.  At
-> one point there was a suggestion to make the code in the IDT vectors
-> differ based on the which interrupt was registed.  While that can also
-> reduce cache misses that can get hairy very quickly, and of course that
-> would require read-write IDTs.
+> The expected behavior is like this:
+>
+>   absent   is_swap_pte   FOLL_DUMP   Expected behavior
+>   -------------------------------------------------------------------
+>    true     false         false       hugetlb_fault
+>    false    true          false       hugetlb_fault
+>    false    false         false       return page
+>    true     false         true        skip page (to avoid allocation)
+>    false    true          true        hugetlb_fault
+>    false    false         true        return page
+>
+> With this patch, we can call hugetlb_fault() and take proper actions
+> (we wait for migration entries, fail with VM_FAULT_HWPOISON_LARGE for
+> hwpoisoned entries,) and as the result we can dump all hugepages except
+> for hwpoisoned ones.
+>
+> ChangeLog v5:
+>  - improve comment and description.
+>
+> ChangeLog v4:
+>  - move is_swap_page() to right place.
+>
+> ChangeLog v3:
+>  - add comment about using is_swap_pte()
+>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: stable@vger.kernel.org
 
-read-write IDT or GDT are fine: map them twice, once read+write, once
-read-only.  Point the GDTR and IDTR at the read-only alias.
-
->
-> My only practical concern with duplicating the IDT tables per cpu is (a)
-> there are generic idt handlers that remain unduplicated reducing the
-> benefit and this is essentially the same optimization as making the
-> entire kernel text per cpu which last time it was examined was not an
-> optimization worth making.  So I wonder if just a subset of the
-> optimization is worth making.
->
-> Eric
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
