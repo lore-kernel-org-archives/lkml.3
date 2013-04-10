@@ -1,110 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937127Ab3DJJws (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 05:52:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21476 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937107Ab3DJJwp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 05:52:45 -0400
-Date: Wed, 10 Apr 2013 11:51:54 +0200 (CEST)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-1-230.brq.redhat.com
-To: Jan Kara <jack@suse.cz>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, reiserfs-devel@vger.kernel.org
-Subject: Re: [PATCH v3 09/18] reiserfs: use ->invalidatepage() length
- argument
-In-Reply-To: <20130409132756.GE13672@quack.suse.cz>
-Message-ID: <alpine.LFD.2.00.1304101151130.10609@dhcp-1-230.brq.redhat.com>
-References: <1365498867-27782-1-git-send-email-lczerner@redhat.com> <1365498867-27782-10-git-send-email-lczerner@redhat.com> <20130409132756.GE13672@quack.suse.cz>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S937107Ab3DJJyF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 05:54:05 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:54328 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab3DJJyC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 05:54:02 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: Santosh Y <santoshsy@gmail.com>
+Date: Wed, 10 Apr 2013 18:53:41 +0900
+Message-ID: <CALMYJDs1Ds34Sm0FTuiG8WE=w_foOxkTqdy5hZAkFkGsUapRWg@mail.gmail.com>
+Subject: Re: scsi: ufs: add support for query requests
+To: draviv@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, vinayak holikatti <vinholikatti@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Apr 2013, Jan Kara wrote:
+linux-ufs@vger.kernel.org is for UFS filesystem.
 
-> Date: Tue, 9 Apr 2013 15:27:56 +0200
-> From: Jan Kara <jack@suse.cz>
-> To: Lukas Czerner <lczerner@redhat.com>
-> Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
->     linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
->     reiserfs-devel@vger.kernel.org
-> Subject: Re: [PATCH v3 09/18] reiserfs: use ->invalidatepage() length argument
-> 
-> On Tue 09-04-13 11:14:18, Lukas Czerner wrote:
-> > ->invalidatepage() aop now accepts range to invalidate so we can make
-> > use of it in reiserfs_invalidatepage()
->   Hum, reiserfs is probably never going to support punch hole. So shouldn't
-> we rather WARN and return without doing anything if stop !=
-> PAGE_CACHE_SIZE?
-> 
-> 								Honza
+> The API for submitting a query request is ufs_query_request() in
+> ufs_core.c. This function is responsible for:
 
-Hi,
+This can be part of ufshcd.c which is actually the core file, no need
+to create a new core file for the function.
 
-I can not even think of the case when this would happen since it
-could not happen before either. However in the case it happens the
-code will do what's expected. So I do not have any strong preference
-about this one, but I do not think it's necessary to WARN here. If
-you still insist on the WARN, let me know and I'll resend the patch.
+> +
+> +#define UFS_QUERY_RESERVED_SCSI_CMD_SIZE 10
+> +
 
-Thanks for the reviews!
--Lukas
+Move this to ufs.h, The name seems too big, it can be changed to
+UFS_QUERY_CMD_SIZE.
 
-> > 
-> > Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> > Cc: reiserfs-devel@vger.kernel.org
-> > ---
-> >  fs/reiserfs/inode.c |    9 +++++++--
-> >  1 files changed, 7 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-> > index 808e02e..e963164 100644
-> > --- a/fs/reiserfs/inode.c
-> > +++ b/fs/reiserfs/inode.c
-> > @@ -2975,11 +2975,13 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
-> >  	struct buffer_head *head, *bh, *next;
-> >  	struct inode *inode = page->mapping->host;
-> >  	unsigned int curr_off = 0;
-> > +	unsigned int stop = offset + length;
-> > +	int partial_page = (offset || length < PAGE_CACHE_SIZE);
-> >  	int ret = 1;
-> >  
-> >  	BUG_ON(!PageLocked(page));
-> >  
-> > -	if (offset == 0)
-> > +	if (!partial_page)
-> >  		ClearPageChecked(page);
-> >  
-> >  	if (!page_has_buffers(page))
-> > @@ -2991,6 +2993,9 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
-> >  		unsigned int next_off = curr_off + bh->b_size;
-> >  		next = bh->b_this_page;
-> >  
-> > +		if (next_off > stop)
-> > +			goto out;
-> > +
-> >  		/*
-> >  		 * is this block fully invalidated?
-> >  		 */
-> > @@ -3009,7 +3014,7 @@ static void reiserfs_invalidatepage(struct page *page, unsigned int offset,
-> >  	 * The get_block cached value has been unconditionally invalidated,
-> >  	 * so real IO is not possible anymore.
-> >  	 */
-> > -	if (!offset && ret) {
-> > +	if (!partial_page && ret) {
-> >  		ret = try_to_release_page(page, 0);
-> >  		/* maybe should BUG_ON(!ret); - neilb */
-> >  	}
-> > -- 
-> > 1.7.7.6
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> + if (!hba || !query || !response) {
+> +               pr_err("%s: NULL pointer hba = %p, query = %p response = %p",
+> +                                   __func__, hba, query, response);
+> + return -EINVAL;
+> + }
+
+The function will be called withing the driver, So, no need for these
+checks. The caller will/must pass the correct parameters.
+
+> + /*
+> + * A SCSI command structure is composed from opcode at the
+> + * begining and 0 at the end.
+> + */
+> + memset(cmd, 0, UFS_QUERY_RESERVED_SCSI_CMD_SIZE);
+> + cmd[0] = UFS_QUERY_RESERVED_SCSI_CMD;
+
+Remove memset. Anyway only the first byte is being checked in
+ufshcd_is_query_req();
+
+> + * ufshcd_is_valid_query_rsp - checks if controller TR response is valid
+> + * @ucd_rsp_ptr: pointer to response UPIU
+> + *
+> + * This function checks the response UPIU for valid transaction type in
+> + * response field
+> + * Returns 0 on success, non-zero on failure
+> + */
+> +static inline int
+> +ufshcd_is_valid_query_rsp(struct utp_upiu_rsp *ucd_rsp_ptr)
+
+Combine this with ufshcd_is_valid_req_rsp(), accordingly handle it in
+ufshcd_transfer_rsp_status().
+
+> +static inline void ufshcd_copy_query_response(struct ufs_hba *hba,
+> + struct ufshcd_lrb *lrbp)
+> +{
+> + struct ufs_query_res *query_res = hba->query.response;
+> + u8 *descp = (u8 *)&lrbp->ucd_rsp_ptr + GENERAL_UPIU_REQUEST_SIZE;
+
+This can be done inside the following if condition i.e. if
+(hba->query.descriptor != NULL).
+and change the condition to if (!hba->query.descriptor).
+
+> + /* Get the descriptor */
+> + if (hba->query.descriptor != NULL && lrbp->ucd_rsp_ptr->qr.opcode ==
+> + UPIU_QUERY_OPCODE_READ_DESC) {
+
+
+> +static int ufshcd_compose_upiu(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
+> +{
+> + struct utp_upiu_req *ucd_req_ptr;
+
+Remove ucd_req_ptr, it is not doing anything.
+
+> + if (!lrbp || !lrbp->cmd || !lrbp->ucd_req_ptr ||
+> +                                     !lrbp->utr_descriptor_ptr) {
+> +            if (!lrbp)
+> +                      pr_err("%s: lrbp can not be NULL", __func__);
+> +               if (!lrbp->cmd)
+> +                      pr_err("%s: lrbp->cmd can not be NULL", __func__);
+> +                if (!lrbp->ucd_req_ptr)
+> +                      pr_err("%s: ucd_req_ptr can not be NULL", __func__);
+> +                 if (!lrbp->utr_descriptor_ptr)
+> +                      pr_err("%s: utr_descriptor_ptr can not be NULL",
+> +                                     __func__);
+> +                  ret = -EINVAL;
+> +                  goto exit;
+> + }
+
+These are redundant, remove them.
+
+> + if (ufshcd_is_query_req(lrbp))
+> + lrbp->command_type = UTP_CMD_TYPE_DEV_MANAGE;
+> + else
+> + lrbp->command_type = UTP_CMD_TYPE_SCSI;
+
+>  /* form UPIU before issuing the command */
+> - ufshcd_compose_upiu(lrbp);
+> + ufshcd_compose_upiu(hba, lrbp);
+> err = ufshcd_map_sg(lrbp);
+>  if (err)
+>         goto out;
+
+Why call ufshcd_map_sg() and scsi_dma_unmap() in
+ufshcd_transfer_req_compl() for requests of type
+UTP_CMD_TYPE_DEV_MANAGE?
+
+> ufshcd_transfer_rsp_status(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
+
+> + if (ufshcd_is_query_req(lrbp))
+> + result = ufshcd_is_valid_query_rsp(lrbp->ucd_rsp_ptr);
+> + else
+> + result = ufshcd_is_valid_req_rsp(lrbp->ucd_rsp_ptr);
+> +
+
+As already mentioned you can combine these.
+
+> +/* Query response result code */
+> +enum {
+> + QUERY_RESULT_SUCCESS = 0x00,
+> + QUERY_RESULT_NOT_READABLE = 0xF6,
+> + QUERY_RESULT_NOT_WRITEABLE = 0xF7,
+> + QUERY_RESULT_ALREADY_WRITTEN = 0xF8,
+> + QUERY_RESULT_INVALID_LENGTH = 0xF9,
+> + QUERY_RESULT_INVALID_VALUE = 0xFA,
+> + QUERY_RESULT_INVALID_SELECTOR = 0xFB,
+> + QUERY_RESULT_INVALID_INDEX = 0xFC,
+> + QUERY_RESULT_INVALID_IDN = 0xFD,
+> + QUERY_RESULT_INVALID_OPCODE = 0xFE,
+> + QUERY_RESULT_GENERAL_FAILURE = 0xFF,
+> +};
+
+Move this to ufs.h.
+
+
+--
+~Santosh
