@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937204Ab3DJR7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:59:19 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:36048 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934904Ab3DJR7S (ORCPT
+	id S936811Ab3DJSBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 14:01:24 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:53965 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765431Ab3DJSBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:59:18 -0400
-Message-ID: <5165A874.50804@candelatech.com>
-Date: Wed, 10 Apr 2013 10:59:16 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Wed, 10 Apr 2013 14:01:23 -0400
+Date: Wed, 10 Apr 2013 11:01:17 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, paulus@samba.org,
+        acme@ghostprotocols.net, eranian@google.com, namhyung.kim@lge.com,
+        lizefan@huawei.com, mhocko@suse.cz, kamezawa.hiroyu@jp.fujitsu.com,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] perf, cgroup: implement hierarchy support for
+ perf_event controller
+Message-ID: <20130410180117.GB17641@mtj.dyndns.org>
+References: <1365474213-13354-1-git-send-email-tj@kernel.org>
+ <1365579146.30071.24.camel@laptop>
+ <20130410093755.GC24443@gmail.com>
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: Jitter and latency benchmarks with netlink / nl80211
-References: <CAB=NE6XH8wGbFhmB54Y0BUB2N-PbzUBvN+arH5F_BAkEa=DjUw@mail.gmail.com>
-In-Reply-To: <CAB=NE6XH8wGbFhmB54Y0BUB2N-PbzUBvN+arH5F_BAkEa=DjUw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130410093755.GC24443@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 10:55 AM, Luis R. Rodriguez wrote:
-> Curious if anyone has worked on latency and jitter benchmarks in using
-> netlink, specifically with nl80211. Has anyone benchmarked this? Ben,
-> have you? If not for nl80211 perhaps this has been done before for
-> other netlink families?
+Hello,
 
-You mean timing related to netlink configuration/report requests?
+On Wed, Apr 10, 2013 at 11:37:55AM +0200, Ingo Molnar wrote:
+> Yeah - at least for larger changes that's a good workflow.
+> 
+> For smaller changes we can pick one or the other tree. Tejun, do these changes 
+> create any conflicts with the current tip:master tree? If not then you could carry 
+> these changes in your tree. If there's significant conflicts then it might be 
+> better to rebase this on top of perf/core and pull them into perf/core. (assuming 
+> there's no other cgroups prereq patches beyond the ones in this series.)
 
-We have lots of ways to measure wifi packet throughput latencies
-and jitter (to/from userspace and/or to/from pktgen), but it doesn't use
-netlink....
+The only conflict is a trivial #include one in
+include/linux/res_counter.h which is unrelated to this series.  I'll
+commit these to cgroup/for-3.10.
 
-Thanks,
-Ben
+Thanks!
 
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+tejun
