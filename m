@@ -1,141 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937261Ab3DJKi2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:38:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:57085 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751711Ab3DJKep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:34:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,445,1363158000"; 
-   d="scan'208";a="315911800"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        ben-linux@fluff.org, Jean Delvare <khali@linux-fr.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH v2 5/7] i2c-designware: enable/disable the controller properly
-Date: Wed, 10 Apr 2013 13:36:40 +0300
-Message-Id: <1365590202-1623-5-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365590202-1623-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1365590202-1623-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S937303Ab3DJKip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:38:45 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:50894 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936177Ab3DJKil (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 06:38:41 -0400
+X-AuditID: cbfee68d-b7f786d000005188-4e-5165412f3d8b
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org, balbi@ti.com,
+        rob.herring@calxeda.com, thomas.abraham@linaro.org,
+        grant.likely@secretlab.ca, dianders@chromium.org, jg1.han@samsung.com,
+        p.paneri@samsung.com
+References: <1363334534-21901-1-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1363334534-21901-1-git-send-email-gautam.vivek@samsung.com>
+Subject: RE: [PATCH v5 0/3] ARM: Exynos5250: Enabling dwc3-exynos driver
+Date: Wed, 10 Apr 2013 19:38:39 +0900
+Message-id: <310201ce35d7$90821cd0$b1865670$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4hU7AN6iJdbMUXQeCi+cs2NLm38AUg343Q
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t8zQ119x9RAg93PrC0O3q+3eHlI0+LA
+	7IesFmeXHWSzaLtykN3i1ZmNbBaXF15itVjYtoTF4vKuOWwWM87vY7JYtKyV2eL8lk4mi8Mr
+	DjBZHJuxhNGBz2PB5yvsHrMbLrJ43Lm2h83j/IyFjB59W1Yxevx8qeNx/MZ2Jo/Pm+QCOKK4
+	bFJSczLLUov07RK4Mnbvuc9esIu7YteedcwNjM84uhg5OSQETCT670xkhbDFJC7cW8/WxcjF
+	ISSwjFFi5bvbrDBFHzfsZQKxhQSmM0r8maoCUfSXUWLv2U1gCTYBDYnD75+xgyREBKYwSjxt
+	ucgM4jAL3GOUOLz5G0sXIwdQi4fEtldsIA2cAp4Svy70MYLYwkDh5zd7wGwWAVWJBQ9PMoGU
+	8wrYSpxdagcS5hUQlPgx+R4LiM0soCWxfudxJghbXmLzmrfMIOUSAuoSj/7qgoRFBIwkDp/5
+	BFUuIrHvxTtGkGskBHZwSDz/9oMZYpWAxLfJh1ggemUlNh1ghvhXUuLgihssExglZiHZPAvJ
+	5llINs9CsmIBI8sqRtHUguSC4qT0IkO94sTc4tK8dL3k/NxNjJDU0LuD8fYB60OMyUDrJzJL
+	iSbnA1NLXkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4
+	pRoYp31ycb1tpXn68aa+i+ryy8UPtHb4if2a+7Qnr86x6tnfA89twspULDRO3uepUP/sKH7o
+	0FH3a5NPdulUvF39wSPtvKX46t17G3d/jz4gvkRpvsIMD0ODlS63yq/MctRu6L18qGuWX0aW
+	uE6Y8Zno+7wlHk/DZ8/QuJw3b8njiw941a50n2/8rcRSnJFoqMVcVJwIAHmEwWQjAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLKsWRmVeSWpSXmKPExsVy+t9jQV19x9RAgxO7zSwO3q+3eHlI0+LA
+	7IesFmeXHWSzaLtykN3i1ZmNbBaXF15itVjYtoTF4vKuOWwWM87vY7JYtKyV2eL8lk4mi8Mr
+	DjBZHJuxhNGBz2PB5yvsHrMbLrJ43Lm2h83j/IyFjB59W1Yxevx8qeNx/MZ2Jo/Pm+QCOKIa
+	GG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgM5WUihL
+	zCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWbs3nOfvWAXd8WuPeuYGxifcXQx
+	cnJICJhIfNywlwnCFpO4cG89G4gtJDCdUeLPVJUuRi4g+y+jxN6zm8CK2AQ0JA6/f8YOkhAR
+	mMIo8bTlIjOIwyxwj1Hi8OZvLF2MHEAtHhLbXoFN4hTwlPh1oY8RxBYGCj+/2QNmswioSix4
+	eJIJpJxXwFbi7FI7kDCvgKDEj8n3WEBsZgEtifU7jzNB2PISm9e8ZQYplxBQl3j0VxckLCJg
+	JHH4zCeochGJfS/eMU5gFJqFZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6
+	yfm5mxjBieeZ9A7GVQ0WhxgFOBiVeHgXGKYECrEmlhVX5h5ilOBgVhLhtdBKDRTiTUmsrEot
+	yo8vKs1JLT7EmAz050RmKdHkfGBSzCuJNzQ2MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2
+	ampBahHMFiYOTqkGxnnaW9trP8xgeGwwZ/GMot1LuhODfGSEF9i83HDNaU2ul/O+0NalTWb9
+	NpNkpQ+pPvNn5b48S89C9tEJtoXGovv+2L7iXt6967dXhz9zcqNJvJi9l+GqeWbs/u9Xui6a
+	uu3362Wr7J1CeOq8V3spFL9O27P5gD/TEp9Z7y7/ztmtzH3oX3vrZiWW4oxEQy3mouJEALCA
+	wySAAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The correct way to disable or enable the controller is to wait until the
-DW_IC_ENABLE_STATUS register bit matches the bit we program into DW_IC_ENABLE
-register. This procedure is described in the DesignWare I2C databook.
+Vivek Gautam wrote:
+> 
+> This patch-set is in continuation with patch-series:
+> [PATCH v4 0/4] Enable ehci, ohci and dwc3 devices on exynos5250
+> out of which follwowing patches have been picked up:
+> ARM: Exynos5250: Enabling ehci-s5p driver
+> ARM: Exynos5250: Enabling ohci-exynos driver
+> 
+> Based on following patch-set for Samsung's usb PHY enablement:
+> [PATCH v4 0/2] ARM: Exynos5250: Enabling samsung usb phy
+> 
+> and further depends on dwc3-exynos driver patch-set:
+> [PATCH 0/2] dwc3: exynos: Device tree fixes
+> 
+> Changes from v4:
+>  - Aligning with the recently merged common clock framework, thereby
+>    no place for clock file changes. ;-)
+>  - Adding proper binding documentation as per latest bindings changes in
+>    dwc3 driver (dwc3/core.c as well as for dwc3-exynos.c change reflected
+>    by above patch-set.
+>  - Bifurcating the patch to separate our Documentation, arch and dts
+> changes.
+> 
+> Vivek Gautam (3):
+>   usb: Add device tree bindings for dwc3-exynos
+>   ARM: exynos5250: dts: Enabling dwc3-exynos driver
+>   ARM: exynos5: Enable XHCI support on exynos5
+> 
+>  .../devicetree/bindings/usb/exynos-usb.txt         |   34
+> ++++++++++++++++++++
+>  arch/arm/boot/dts/exynos5250.dtsi                  |   20 ++++++++++-
+>  arch/arm/mach-exynos/Kconfig                       |    1 +
+>  3 files changed, 53 insertions(+), 2 deletions(-)
+> 
+> --
+> 1.7.6.5
 
-By doing this we can be sure that the controller is in correct state once
-the function returns.
+Applied this series, thanks.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
-Changes to v1:
-	- Added comment about why we sleep 25us after each iteration.
-	- } while (timeout--); instead of } while (timeout-- > 0);
-
- drivers/i2c/busses/i2c-designware-core.c |   34 ++++++++++++++++++++++++------
- 1 file changed, 28 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 94fd818..5cc4ebf 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -68,6 +68,7 @@
- #define DW_IC_TXFLR		0x74
- #define DW_IC_RXFLR		0x78
- #define DW_IC_TX_ABRT_SOURCE	0x80
-+#define DW_IC_ENABLE_STATUS	0x9c
- #define DW_IC_COMP_PARAM_1	0xf4
- #define DW_IC_COMP_TYPE		0xfc
- #define DW_IC_COMP_TYPE_VALUE	0x44570140
-@@ -248,6 +249,27 @@ static u32 i2c_dw_scl_lcnt(u32 ic_clk, u32 tLOW, u32 tf, int offset)
- 	return ((ic_clk * (tLOW + tf) + 5000) / 10000) - 1 + offset;
- }
- 
-+static void __i2c_dw_enable(struct dw_i2c_dev *dev, bool enable)
-+{
-+	int timeout = 100;
-+
-+	do {
-+		dw_writel(dev, enable, DW_IC_ENABLE);
-+		if ((dw_readl(dev, DW_IC_ENABLE_STATUS) & 1) == enable)
-+			return;
-+
-+		/*
-+		 * Wait 10 times the signaling period of the highest I2C
-+		 * transfer supported by the driver (for 400KHz this is
-+		 * 25us) as described in the DesignWare I2C databook.
-+		 */
-+		usleep_range(25, 250);
-+	} while (timeout--);
-+
-+	dev_warn(dev->dev, "timeout in %sabling adapter\n",
-+		 enable ? "en" : "dis");
-+}
-+
- /**
-  * i2c_dw_init() - initialize the designware i2c master hardware
-  * @dev: device private data
-@@ -278,7 +300,7 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
- 	}
- 
- 	/* Disable the adapter */
--	dw_writel(dev, 0, DW_IC_ENABLE);
-+	__i2c_dw_enable(dev, false);
- 
- 	/* set standard and fast speed deviders for high/low periods */
- 
-@@ -345,7 +367,7 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
- 	u32 ic_con;
- 
- 	/* Disable the adapter */
--	dw_writel(dev, 0, DW_IC_ENABLE);
-+	__i2c_dw_enable(dev, false);
- 
- 	/* set the slave (target) address */
- 	dw_writel(dev, msgs[dev->msg_write_idx].addr, DW_IC_TAR);
-@@ -359,7 +381,7 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
- 	dw_writel(dev, ic_con, DW_IC_CON);
- 
- 	/* Enable the adapter */
--	dw_writel(dev, 1, DW_IC_ENABLE);
-+	__i2c_dw_enable(dev, true);
- 
- 	/* Enable interrupts */
- 	dw_writel(dev, DW_IC_INTR_DEFAULT_MASK, DW_IC_INTR_MASK);
-@@ -565,7 +587,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	/* no error */
- 	if (likely(!dev->cmd_err)) {
- 		/* Disable the adapter */
--		dw_writel(dev, 0, DW_IC_ENABLE);
-+		__i2c_dw_enable(dev, false);
- 		ret = num;
- 		goto done;
- 	}
-@@ -700,7 +722,7 @@ EXPORT_SYMBOL_GPL(i2c_dw_isr);
- void i2c_dw_enable(struct dw_i2c_dev *dev)
- {
-        /* Enable the adapter */
--	dw_writel(dev, 1, DW_IC_ENABLE);
-+	__i2c_dw_enable(dev, true);
- }
- EXPORT_SYMBOL_GPL(i2c_dw_enable);
- 
-@@ -713,7 +735,7 @@ EXPORT_SYMBOL_GPL(i2c_dw_is_enabled);
- void i2c_dw_disable(struct dw_i2c_dev *dev)
- {
- 	/* Disable controller */
--	dw_writel(dev, 0, DW_IC_ENABLE);
-+	__i2c_dw_enable(dev, false);
- 
- 	/* Disable all interupts */
- 	dw_writel(dev, 0, DW_IC_INTR_MASK);
--- 
-1.7.10.4
+- Kukjin
 
