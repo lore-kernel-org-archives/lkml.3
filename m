@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759676Ab3DJVIi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 17:08:38 -0400
-Received: from mga03.intel.com ([143.182.124.21]:42053 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975Ab3DJVIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 17:08:37 -0400
-X-ExtLoop1: 1
+	id S936032Ab3DJVIn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 17:08:43 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:6070 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760111Ab3DJVIk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 17:08:40 -0400
 X-IronPort-AV: E=Sophos;i="4.87,450,1363158000"; 
-   d="scan'208";a="284474554"
-Subject: [PATCH] update earlyprintk documentation (and kill x86 copy)
-To: linux-kernel@vger.kernel.org
-Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org, x86@kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Wed, 10 Apr 2013 14:03:38 -0700
-Message-Id: <20130410210338.E2930E98@viggo.jf.intel.com>
+   d="scan'208";a="37345525"
+From: Michael Bohan <mbohan@codeaurora.org>
+To: tglx@linutronix.de
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH 1/2] hrtimer: Consider preemption when migrating hrtimer cpu_bases
+Date: Wed, 10 Apr 2013 14:07:47 -0700
+Message-Id: <1365628068-32738-2-git-send-email-mbohan@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1365628068-32738-1-git-send-email-mbohan@codeaurora.org>
+References: <1365628068-32738-1-git-send-email-mbohan@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When switching to a new cpu_base in switch_hrtimer_base(), we
+briefly enable preemption by unlocking the cpu_base lock in two
+places. During this interval it's possible for the running thread
+to be swapped to a different CPU.
 
-Documentation/kernel-parameters.txt and
-Documentation/x86/x86_64/boot-options.txt contain virtually identical
-text describing earlyprintk.
+Consider the following example:
 
-This consolidates the two copies and updates the documentation a
-bit.  No one ever documented the:
+CPU #0                                 CPU #1
+----                                   ----
+hrtimer_start()                        ...
+ lock_hrtimer_base()
+ switch_hrtimer_base()
+  this_cpu = 0;
+  target_cpu_base = 0;
+  raw_spin_unlock(&cpu_base->lock)
+<migrate to CPU 1>
+...                                    this_cpu == 0
+                                       cpu == this_cpu
+                                       timer->base = CPU #0
+                                       timer->base != LOCAL_CPU
 
-	earlyprintk=serial,0x1008,115200
+Since the cached this_cpu is no longer accurate, we'll skip the
+hrtimer_check_target() check. Once we eventually go to program
+the hardware, we'll decide not to do so since it knows the real
+CPU that we're running on is not the same as the chosen base. As
+a consequence, we may end up missing the hrtimer's deadline.
 
-syntax, nor mentioned that ARM is now a supported earlyprintk arch.
+Fix this by updating the local CPU number each time we retake a
+cpu_base lock in switch_hrtimer_base().
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Another possibility is to disable preemption across the whole of
+switch_hrtimer_base. This looks suboptimal since preemption
+would be disabled while waiting for lock(s).
+
+Signed-off-by: Michael Bohan <mbohan@codeaurora.org>
 ---
+ kernel/hrtimer.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
- linux.git-davehans/Documentation/kernel-parameters.txt       |   16 +++++++++--
- linux.git-davehans/Documentation/x86/x86_64/boot-options.txt |   14 ---------
- 2 files changed, 14 insertions(+), 16 deletions(-)
-
-diff -puN Documentation/kernel-parameters.txt~early-printk-morettys Documentation/kernel-parameters.txt
---- linux.git/Documentation/kernel-parameters.txt~early-printk-morettys	2013-04-10 13:30:37.422949520 -0700
-+++ linux.git-davehans/Documentation/kernel-parameters.txt	2013-04-10 13:30:37.428949526 -0700
-@@ -757,19 +757,31 @@ bytes respectively. Such letter suffixes
- 			(mmio) or 32-bit (mmio32).
- 			The options are the same as for ttyS, above.
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index cc47812..3f0bce9 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -225,10 +225,12 @@ again:
+ 		raw_spin_unlock(&base->cpu_base->lock);
+ 		raw_spin_lock(&new_base->cpu_base->lock);
  
--	earlyprintk=	[X86,SH,BLACKFIN]
-+	earlyprintk=	[X86,SH,BLACKFIN,ARM]
- 			earlyprintk=vga
- 			earlyprintk=xen
- 			earlyprintk=serial[,ttySn[,baudrate]]
-+			earlyprintk=serial[,0x...[,baudrate]]
- 			earlyprintk=ttySn[,baudrate]
- 			earlyprintk=dbgp[debugController#]
- 
-+			earlyprintk is useful when the kernel crashes before
-+			the normal console is initialized. It is not enabled by
-+			default because it has some cosmetic problems.
++		this_cpu = smp_processor_id();
 +
- 			Append ",keep" to not disable it when the real console
- 			takes over.
- 
- 			Only vga or serial or usb debug port at a time.
- 
--			Currently only ttyS0 and ttyS1 are supported.
-+			Currently only ttyS0 and ttyS1 may be specified by
-+			name.  Other I/O ports may be explicitly specified
-+			on some architectures (x86 and arm at least) by
-+			replacing ttySn with an I/O port address, like this:
-+				earlyprintk=serial,0x1008,115200
-+			You can find the port for a given device in
-+			/proc/tty/driver/serial:
-+				2: uart:ST16650V2 port:00001008 irq:18 ...
- 
- 			Interaction with the standard serial driver is not
- 			very good.
-diff -puN Documentation/x86/x86_64/boot-options.txt~early-printk-morettys Documentation/x86/x86_64/boot-options.txt
---- linux.git/Documentation/x86/x86_64/boot-options.txt~early-printk-morettys	2013-04-10 13:30:37.424949522 -0700
-+++ linux.git-davehans/Documentation/x86/x86_64/boot-options.txt	2013-04-10 13:30:37.428949526 -0700
-@@ -91,20 +91,6 @@ APICs
- 		 apicmaintimer. Useful when your PIT timer is totally
- 		 broken.
- 
--Early Console
--
--   syntax: earlyprintk=vga
--           earlyprintk=serial[,ttySn[,baudrate]]
--
--   The early console is useful when the kernel crashes before the
--   normal console is initialized. It is not enabled by
--   default because it has some cosmetic problems.
--   Append ,keep to not disable it when the real console takes over.
--   Only vga or serial at a time, not both.
--   Currently only ttyS0 and ttyS1 are supported.
--   Interaction with the standard serial driver is not very good.
--   The VGA output is eventually overwritten by the real console.
--
- Timing
- 
-   notsc
-_
+ 		if (cpu != this_cpu && hrtimer_check_target(timer, new_base)) {
+-			cpu = this_cpu;
+ 			raw_spin_unlock(&new_base->cpu_base->lock);
+ 			raw_spin_lock(&base->cpu_base->lock);
++			cpu = smp_processor_id();
+ 			timer->base = base;
+ 			goto again;
+ 		}
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
