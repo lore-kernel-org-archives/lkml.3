@@ -1,62 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936560Ab3DJUV3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 16:21:29 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56226 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936370Ab3DJUV1 (ORCPT
+	id S936644Ab3DJUVe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 16:21:34 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:64440 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936370Ab3DJUVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 16:21:27 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/sQ9zI5LPdebqNTkfQkGSn
-Date: Wed, 10 Apr 2013 13:21:21 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Roger Quadros <rogerq@ti.com>, Mike Turquette <mturquette@linaro.org>,
-        linux-usb@vger.kernel.org,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org,
-        lkml <linux-kernel@vger.kernel.org>, balbi@ti.com,
-        grygorii.strashko@ti.com, linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support
- for AUXCLKs
-Message-ID: <20130410202121.GM10155@atomide.com>
-References: <20130405155851.GA10155@atomide.com>
- <5163E589.1040809@ti.com>
- <20130409164928.GL10155@atomide.com>
- <20130409174319.GP10155@atomide.com>
- <20130409204900.GA8815@kahuna>
- <20130410080630.14359.68178@quantum>
- <5165453E.6090503@ti.com>
- <20130410173921.GA31017@kahuna>
- <20130410184919.GJ10155@atomide.com>
- <CAGo_u6rqN6YFQ6vX87-Cg28RbiR9UU2JHgLecOU5Nd=B5XPUEA@mail.gmail.com>
+	Wed, 10 Apr 2013 16:21:31 -0400
+Date: Wed, 10 Apr 2013 22:21:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH v5 3/3] hugetlbfs: add swap entry check in
+ follow_hugetlb_page()
+Message-ID: <20130410202127.GA30063@dhcp22.suse.cz>
+References: <1365610669-16625-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1365610669-16625-4-git-send-email-n-horiguchi@ah.jp.nec.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGo_u6rqN6YFQ6vX87-Cg28RbiR9UU2JHgLecOU5Nd=B5XPUEA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1365610669-16625-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [130410 12:23]:
-> On Wed, Apr 10, 2013 at 1:49 PM, Tony Lindgren <tony@atomide.com> wrote:
-> >
-> > We can avoid the concern of storing the struct clk * and do the
-> > look up lazily on consumer driver probe by setting a dummy struct
-> > clk * here. Then replace of_clk_src_simple_get() with a custom
-> > omap_clk_src_get() that does the lookup and replaces the struct
-> > clk * with the real one.
-> Hmm.. this is interesting. will give it a try. Thanks on the suggestion.
+On Wed 10-04-13 12:17:49, Naoya Horiguchi wrote:
+> # I suspended Reviewed and Acked given for the previous version, because
+> # it has a non-minor change. If you want to restore it, please let me know.
+> -----
+> With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
+> initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
+> error happens on a hugepage and the affected processes try to access
+> the error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0)
+> in get_page().
+> 
+> The reason for this bug is that coredump-related code doesn't recognise
+> "hugepage hwpoison entry" with which a pmd entry is replaced when a memory
+> error occurs on a hugepage.
+> In other words, physical address information is stored in different bit layout
+> between hugepage hwpoison entry and pmd entry, so follow_hugetlb_page()
+> which is called in get_dump_page() returns a wrong page from a given address.
+> 
+> The expected behavior is like this:
+> 
+>   absent   is_swap_pte   FOLL_DUMP   Expected behavior
+>   -------------------------------------------------------------------
+>    true     false         false       hugetlb_fault
+>    false    true          false       hugetlb_fault
+>    false    false         false       return page
+>    true     false         true        skip page (to avoid allocation)
+>    false    true          true        hugetlb_fault
+>    false    false         true        return page
+> 
+> With this patch, we can call hugetlb_fault() and take proper actions
+> (we wait for migration entries, fail with VM_FAULT_HWPOISON_LARGE for
+> hwpoisoned entries,) and as the result we can dump all hugepages except
+> for hwpoisoned ones.
+> 
+> ChangeLog v5:
+>  - improve comment and description.
+> 
+> ChangeLog v4:
+>  - move is_swap_page() to right place.
+> 
+> ChangeLog v3:
+>  - add comment about using is_swap_pte()
+> 
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: stable@vger.kernel.org
 
-Setting the struct clk * to NULL initially might work too, but that
-needs to be checked.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Regards,
+Thanks!
+> ---
+>  mm/hugetlb.c | 12 +++++++++++-
+>  1 file changed, 11 insertions(+), 1 deletion(-)
+> 
+> diff --git v3.9-rc3.orig/mm/hugetlb.c v3.9-rc3/mm/hugetlb.c
+> index 0d1705b..bf26ee8 100644
+> --- v3.9-rc3.orig/mm/hugetlb.c
+> +++ v3.9-rc3/mm/hugetlb.c
+> @@ -2983,7 +2983,17 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			break;
+>  		}
+>  
+> -		if (absent ||
+> +		/*
+> +		 * We need call hugetlb_fault for both hugepages under migration
+> +		 * (in which case hugetlb_fault waits for the migration,) and
+> +		 * hwpoisoned hugepages (in which case we need to prevent the
+> +		 * caller from accessing to them.) In order to do this, we use
+> +		 * here is_swap_pte instead of is_hugetlb_entry_migration and
+> +		 * is_hugetlb_entry_hwpoisoned. This is because it simply covers
+> +		 * both cases, and because we can't follow correct pages
+> +		 * directly from any kind of swap entries.
+> +		 */
+> +		if (absent || is_swap_pte(huge_ptep_get(pte)) ||
+>  		    ((flags & FOLL_WRITE) && !pte_write(huge_ptep_get(pte)))) {
+>  			int ret;
+>  
+> -- 
+> 1.7.11.7
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Tony
+-- 
+Michal Hocko
+SUSE Labs
