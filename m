@@ -1,105 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937303Ab3DJKip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:38:45 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:50894 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936177Ab3DJKil (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:38:41 -0400
-X-AuditID: cbfee68d-b7f786d000005188-4e-5165412f3d8b
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, linux-usb@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org, balbi@ti.com,
-        rob.herring@calxeda.com, thomas.abraham@linaro.org,
-        grant.likely@secretlab.ca, dianders@chromium.org, jg1.han@samsung.com,
-        p.paneri@samsung.com
-References: <1363334534-21901-1-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1363334534-21901-1-git-send-email-gautam.vivek@samsung.com>
-Subject: RE: [PATCH v5 0/3] ARM: Exynos5250: Enabling dwc3-exynos driver
-Date: Wed, 10 Apr 2013 19:38:39 +0900
-Message-id: <310201ce35d7$90821cd0$b1865670$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4hU7AN6iJdbMUXQeCi+cs2NLm38AUg343Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsVy+t8zQ119x9RAg93PrC0O3q+3eHlI0+LA
-	7IesFmeXHWSzaLtykN3i1ZmNbBaXF15itVjYtoTF4vKuOWwWM87vY7JYtKyV2eL8lk4mi8Mr
-	DjBZHJuxhNGBz2PB5yvsHrMbLrJ43Lm2h83j/IyFjB59W1Yxevx8qeNx/MZ2Jo/Pm+QCOKK4
-	bFJSczLLUov07RK4Mnbvuc9esIu7YteedcwNjM84uhg5OSQETCT670xkhbDFJC7cW8/WxcjF
-	ISSwjFFi5bvbrDBFHzfsZQKxhQSmM0r8maoCUfSXUWLv2U1gCTYBDYnD75+xgyREBKYwSjxt
-	ucgM4jAL3GOUOLz5G0sXIwdQi4fEtldsIA2cAp4Svy70MYLYwkDh5zd7wGwWAVWJBQ9PMoGU
-	8wrYSpxdagcS5hUQlPgx+R4LiM0soCWxfudxJghbXmLzmrfMIOUSAuoSj/7qgoRFBIwkDp/5
-	BFUuIrHvxTtGkGskBHZwSDz/9oMZYpWAxLfJh1ggemUlNh1ghvhXUuLgihssExglZiHZPAvJ
-	5llINs9CsmIBI8sqRtHUguSC4qT0IkO94sTc4tK8dL3k/NxNjJDU0LuD8fYB60OMyUDrJzJL
-	iSbnA1NLXkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4
-	pRoYp31ycb1tpXn68aa+i+ryy8UPtHb4if2a+7Qnr86x6tnfA89twspULDRO3uepUP/sKH7o
-	0FH3a5NPdulUvF39wSPtvKX46t17G3d/jz4gvkRpvsIMD0ODlS63yq/MctRu6L18qGuWX0aW
-	uE6Y8Zno+7wlHk/DZ8/QuJw3b8njiw941a50n2/8rcRSnJFoqMVcVJwIAHmEwWQjAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLKsWRmVeSWpSXmKPExsVy+t9jQV19x9RAgxO7zSwO3q+3eHlI0+LA
-	7IesFmeXHWSzaLtykN3i1ZmNbBaXF15itVjYtoTF4vKuOWwWM87vY7JYtKyV2eL8lk4mi8Mr
-	DjBZHJuxhNGBz2PB5yvsHrMbLrJ43Lm2h83j/IyFjB59W1Yxevx8qeNx/MZ2Jo/Pm+QCOKIa
-	GG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgM5WUihL
-	zCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWbs3nOfvWAXd8WuPeuYGxifcXQx
-	cnJICJhIfNywlwnCFpO4cG89G4gtJDCdUeLPVJUuRi4g+y+jxN6zm8CK2AQ0JA6/f8YOkhAR
-	mMIo8bTlIjOIwyxwj1Hi8OZvLF2MHEAtHhLbXoFN4hTwlPh1oY8RxBYGCj+/2QNmswioSix4
-	eJIJpJxXwFbi7FI7kDCvgKDEj8n3WEBsZgEtifU7jzNB2PISm9e8ZQYplxBQl3j0VxckLCJg
-	JHH4zCeochGJfS/eMU5gFJqFZNIsJJNmIZk0C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6
-	yfm5mxjBieeZ9A7GVQ0WhxgFOBiVeHgXGKYECrEmlhVX5h5ilOBgVhLhtdBKDRTiTUmsrEot
-	yo8vKs1JLT7EmAz050RmKdHkfGBSzCuJNzQ2MTOyNDKzMDIxNydNWEmc92CrdaCQQHpiSWp2
-	ampBahHMFiYOTqkGxnnaW9trP8xgeGwwZ/GMot1LuhODfGSEF9i83HDNaU2ul/O+0NalTWb9
-	NpNkpQ+pPvNn5b48S89C9tEJtoXGovv+2L7iXt6967dXhz9zcqNJvJi9l+GqeWbs/u9Xui6a
-	uu3362Wr7J1CeOq8V3spFL9O27P5gD/TEp9Z7y7/ztmtzH3oX3vrZiWW4oxEQy3mouJEALCA
-	wySAAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S965164Ab3DJKjH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:39:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:63542 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751549Ab3DJKeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 06:34:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,445,1363158000"; 
+   d="scan'208";a="317104721"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        ben-linux@fluff.org, Jean Delvare <khali@linux-fr.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 1/7] i2c-designware: move to managed functions (devm_*)
+Date: Wed, 10 Apr 2013 13:36:36 +0300
+Message-Id: <1365590202-1623-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Gautam wrote:
-> 
-> This patch-set is in continuation with patch-series:
-> [PATCH v4 0/4] Enable ehci, ohci and dwc3 devices on exynos5250
-> out of which follwowing patches have been picked up:
-> ARM: Exynos5250: Enabling ehci-s5p driver
-> ARM: Exynos5250: Enabling ohci-exynos driver
-> 
-> Based on following patch-set for Samsung's usb PHY enablement:
-> [PATCH v4 0/2] ARM: Exynos5250: Enabling samsung usb phy
-> 
-> and further depends on dwc3-exynos driver patch-set:
-> [PATCH 0/2] dwc3: exynos: Device tree fixes
-> 
-> Changes from v4:
->  - Aligning with the recently merged common clock framework, thereby
->    no place for clock file changes. ;-)
->  - Adding proper binding documentation as per latest bindings changes in
->    dwc3 driver (dwc3/core.c as well as for dwc3-exynos.c change reflected
->    by above patch-set.
->  - Bifurcating the patch to separate our Documentation, arch and dts
-> changes.
-> 
-> Vivek Gautam (3):
->   usb: Add device tree bindings for dwc3-exynos
->   ARM: exynos5250: dts: Enabling dwc3-exynos driver
->   ARM: exynos5: Enable XHCI support on exynos5
-> 
->  .../devicetree/bindings/usb/exynos-usb.txt         |   34
-> ++++++++++++++++++++
->  arch/arm/boot/dts/exynos5250.dtsi                  |   20 ++++++++++-
->  arch/arm/mach-exynos/Kconfig                       |    1 +
->  3 files changed, 53 insertions(+), 2 deletions(-)
-> 
-> --
-> 1.7.6.5
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-Applied this series, thanks.
+This makes the error handling much more simpler than open-coding everything
+and in addition makes the probe function smaller and tidier.
 
-- Kukjin
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+Changes to v1:
+	- dropped redundant dev_err() after devm_ioremap_resource().
+
+ drivers/i2c/busses/i2c-designware-platdrv.c |   73 +++++++--------------------
+ 1 file changed, 19 insertions(+), 54 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+index e3085c4..94b3a4d 100644
+--- a/drivers/i2c/busses/i2c-designware-platdrv.c
++++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+@@ -92,7 +92,7 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ {
+ 	struct dw_i2c_dev *dev;
+ 	struct i2c_adapter *adap;
+-	struct resource *mem, *ioarea;
++	struct resource *mem;
+ 	int irq, r;
+ 
+ 	/* NOTE: driver uses the static register mapping */
+@@ -108,32 +108,25 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 		return irq; /* -ENXIO */
+ 	}
+ 
+-	ioarea = request_mem_region(mem->start, resource_size(mem),
+-			pdev->name);
+-	if (!ioarea) {
+-		dev_err(&pdev->dev, "I2C region already claimed\n");
+-		return -EBUSY;
+-	}
++	dev = devm_kzalloc(&pdev->dev, sizeof(struct dw_i2c_dev), GFP_KERNEL);
++	if (!dev)
++		return -ENOMEM;
+ 
+-	dev = kzalloc(sizeof(struct dw_i2c_dev), GFP_KERNEL);
+-	if (!dev) {
+-		r = -ENOMEM;
+-		goto err_release_region;
+-	}
++	dev->base = devm_ioremap_resource(&pdev->dev, mem);
++	if (IS_ERR(dev->base))
++		return PTR_ERR(dev->base);
+ 
+ 	init_completion(&dev->cmd_complete);
+ 	mutex_init(&dev->lock);
+-	dev->dev = get_device(&pdev->dev);
++	dev->dev = &pdev->dev;
+ 	dev->irq = irq;
+ 	platform_set_drvdata(pdev, dev);
+ 
+-	dev->clk = clk_get(&pdev->dev, NULL);
++	dev->clk = devm_clk_get(&pdev->dev, NULL);
+ 	dev->get_clk_rate_khz = i2c_dw_get_clk_rate_khz;
+ 
+-	if (IS_ERR(dev->clk)) {
+-		r = -ENODEV;
+-		goto err_free_mem;
+-	}
++	if (IS_ERR(dev->clk))
++		return PTR_ERR(dev->clk);
+ 	clk_prepare_enable(dev->clk);
+ 
+ 	dev->functionality =
+@@ -146,13 +139,6 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 	dev->master_cfg =  DW_IC_CON_MASTER | DW_IC_CON_SLAVE_DISABLE |
+ 		DW_IC_CON_RESTART_EN | DW_IC_CON_SPEED_FAST;
+ 
+-	dev->base = ioremap(mem->start, resource_size(mem));
+-	if (dev->base == NULL) {
+-		dev_err(&pdev->dev, "failure mapping io resources\n");
+-		r = -EBUSY;
+-		goto err_unuse_clocks;
+-	}
+-
+ 	/* Try first if we can configure the device from ACPI */
+ 	r = dw_i2c_acpi_configure(pdev);
+ 	if (r) {
+@@ -164,13 +150,14 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 	}
+ 	r = i2c_dw_init(dev);
+ 	if (r)
+-		goto err_iounmap;
++		return r;
+ 
+ 	i2c_dw_disable_int(dev);
+-	r = request_irq(dev->irq, i2c_dw_isr, IRQF_SHARED, pdev->name, dev);
++	r = devm_request_irq(&pdev->dev, dev->irq, i2c_dw_isr, IRQF_SHARED,
++			pdev->name, dev);
+ 	if (r) {
+ 		dev_err(&pdev->dev, "failure requesting irq %i\n", dev->irq);
+-		goto err_iounmap;
++		return r;
+ 	}
+ 
+ 	adap = &dev->adapter;
+@@ -186,57 +173,35 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 	r = i2c_add_numbered_adapter(adap);
+ 	if (r) {
+ 		dev_err(&pdev->dev, "failure adding adapter\n");
+-		goto err_free_irq;
++		return r;
+ 	}
+ 	of_i2c_register_devices(adap);
+ 	acpi_i2c_register_devices(adap);
+ 
++	/* Increase reference counter */
++	get_device(&pdev->dev);
++
+ 	pm_runtime_set_active(&pdev->dev);
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_put(&pdev->dev);
+ 
+ 	return 0;
+-
+-err_free_irq:
+-	free_irq(dev->irq, dev);
+-err_iounmap:
+-	iounmap(dev->base);
+-err_unuse_clocks:
+-	clk_disable_unprepare(dev->clk);
+-	clk_put(dev->clk);
+-	dev->clk = NULL;
+-err_free_mem:
+-	put_device(&pdev->dev);
+-	kfree(dev);
+-err_release_region:
+-	release_mem_region(mem->start, resource_size(mem));
+-
+-	return r;
+ }
+ 
+ static int dw_i2c_remove(struct platform_device *pdev)
+ {
+ 	struct dw_i2c_dev *dev = platform_get_drvdata(pdev);
+-	struct resource *mem;
+ 
+ 	pm_runtime_get_sync(&pdev->dev);
+ 
+ 	i2c_del_adapter(&dev->adapter);
+ 	put_device(&pdev->dev);
+ 
+-	clk_disable_unprepare(dev->clk);
+-	clk_put(dev->clk);
+-	dev->clk = NULL;
+-
+ 	i2c_dw_disable(dev);
+-	free_irq(dev->irq, dev);
+-	kfree(dev);
+ 
+ 	pm_runtime_put(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+ 
+-	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	release_mem_region(mem->start, resource_size(mem));
+ 	return 0;
+ }
+ 
+-- 
+1.7.10.4
 
