@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964953Ab3DJWtF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:49:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56290 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937392Ab3DJWrq (ORCPT
+	id S937414Ab3DJWtL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:49:11 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:34974 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937392Ab3DJWtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:46 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 62/64] can: gw: use kmem_cache_free() instead of kfree()
-Date: Wed, 10 Apr 2013 15:46:59 -0700
-Message-Id: <20130410224348.102974556@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
-References: <20130410224333.114387235@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Wed, 10 Apr 2013 18:49:08 -0400
+Date: Wed, 10 Apr 2013 15:49:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] char/misc fixes for 3.9-rc6
+Message-ID: <20130410224906.GA1019@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
 
-------------------
+  Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+are available in the git repository at:
 
-commit 3480a2125923e4b7a56d79efc76743089bf273fc upstream.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.9-rc6
 
-Memory allocated by kmem_cache_alloc() should be freed using
-kmem_cache_free(), not kfree().
+for you to fetch changes up to 6d4f0139d642c45411a47879325891ce2a7c164a:
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+  misc/vmw_vmci: Add dependency on CONFIG_NET (2013-04-03 11:53:39 -0700)
+
+----------------------------------------------------------------
+Char/Misc fix for 3.9-rc6
+
+Here is a single Kconfig dependancy build fix for 3.9.
+
+It's been in linux-next for a while, and fixes a problem that has been
+reported multiple times.
+
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- net/can/gw.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+----------------------------------------------------------------
+Guenter Roeck (1):
+      misc/vmw_vmci: Add dependency on CONFIG_NET
 
---- a/net/can/gw.c
-+++ b/net/can/gw.c
-@@ -436,7 +436,7 @@ static int cgw_notifier(struct notifier_
- 			if (gwj->src.dev == dev || gwj->dst.dev == dev) {
- 				hlist_del(&gwj->list);
- 				cgw_unregister_filter(gwj);
--				kfree(gwj);
-+				kmem_cache_free(cgw_cache, gwj);
- 			}
- 		}
- 	}
-@@ -829,7 +829,7 @@ static void cgw_remove_all_jobs(void)
- 	hlist_for_each_entry_safe(gwj, n, nx, &cgw_list, list) {
- 		hlist_del(&gwj->list);
- 		cgw_unregister_filter(gwj);
--		kfree(gwj);
-+		kmem_cache_free(cgw_cache, gwj);
- 	}
- }
- 
-@@ -885,7 +885,7 @@ static int cgw_remove_job(struct sk_buff
- 
- 		hlist_del(&gwj->list);
- 		cgw_unregister_filter(gwj);
--		kfree(gwj);
-+		kmem_cache_free(cgw_cache, gwj);
- 		err = 0;
- 		break;
- 	}
-
-
+ drivers/misc/vmw_vmci/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
