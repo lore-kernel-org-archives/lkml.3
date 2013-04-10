@@ -1,109 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937147Ab3DJWrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:47:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56042 "EHLO
+	id S937232Ab3DJXPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:15:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56847 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937029Ab3DJWrI (ORCPT
+	with ESMTP id S937029Ab3DJXPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:08 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 07/64] HID: magicmouse: fix race between input_register() and probe()
-Date: Wed, 10 Apr 2013 15:46:04 -0700
-Message-Id: <20130410224334.839399776@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
-References: <20130410224333.114387235@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Wed, 10 Apr 2013 19:15:09 -0400
+Date: Wed, 10 Apr 2013 16:15:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Robin Holt <holt@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Alex Thorlton <athorlton@sgi.com>
+Subject: Re: [PATCH] Sys V shared memory limited to 8TiB.
+Message-Id: <20130410161507.b12128ee3df446eb9b86d8cf@linux-foundation.org>
+In-Reply-To: <20130410023924.GX3658@sgi.com>
+References: <20130410023924.GX3658@sgi.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 9 Apr 2013 21:39:24 -0500 Robin Holt <holt@sgi.com> wrote:
 
-------------------
+> Trying to run an application which was trying to put data into half
+> of memory using shmget(), we found that having a shmall value below
+> 8EiB-8TiB would prevent us from using anything more than 8TiB.  By setting
+> kernel.shmall greater that 8EiB-8TiB would make the job work.
+> 
+> In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+You have way too much memory.
 
-commit f1a9a149abc86903e81dd1b2e720f3f89874384b upstream.
+> ipc/shm.c:
+>  458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+>  459 {
+> ...
+>  465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
+> ...
+>  474         if (ns->shm_tot + numpages > ns->shm_ctlall)
+>  475                 return -ENOSPC;
+>
+> ...
+>
+> --- a/include/linux/ipc_namespace.h
+> +++ b/include/linux/ipc_namespace.h
+> @@ -43,8 +43,8 @@ struct ipc_namespace {
+>  
+>  	size_t		shm_ctlmax;
+>  	size_t		shm_ctlall;
+> +	unsigned long	shm_tot;
+>  	int		shm_ctlmni;
+> -	int		shm_tot;
+>  	/*
+>  	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
+>  	 * of shmctl()
 
-Since kernel 3.7, it appears that the input registration occured before
-the end of magicmouse_setup_input(). This is shown by receiving a lot of
-"EV_SYN SYN_REPORT 1" instead of normal "EV_SYN SYN_REPORT 0".
-This value means that the output buffer is full, and the user space
-is loosing events.
+I reviewed everything for fallout from this and don't see any obvious
+issues.
 
-Using .input_configured guarantees that the race is not occuring, and that
-the call of "input_set_events_per_packet(input, 60)" is taken into account
-by input_register().
+I do wonder about the appropriateness of the unsigned long type.  Most
+(but by no means all) code in this area uses size_t, and the
+above-quoted ns->shm_ctlall is size_t.
 
-Fixes:
-https://bugzilla.redhat.com/show_bug.cgi?id=908604
+And the above-quoted num_pages is `int'.  Both the size and signedness
+of `int' make no sense - what happens if the incoming ipc_params.u.size
+is >2G?
 
-Reported-and-Tested-By: Clarke Wixon <cwixon@usa.net>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+So I'll add this, and ask whether ipc_namespace.shm_tot should be size_t?
 
----
- drivers/hid/hid-magicmouse.c |   29 ++++++++++++++++++++---------
- 1 file changed, 20 insertions(+), 9 deletions(-)
-
---- a/drivers/hid/hid-magicmouse.c
-+++ b/drivers/hid/hid-magicmouse.c
-@@ -462,6 +462,21 @@ static int magicmouse_input_mapping(stru
- 	return 0;
- }
- 
-+static void magicmouse_input_configured(struct hid_device *hdev,
-+		struct hid_input *hi)
-+
-+{
-+	struct magicmouse_sc *msc = hid_get_drvdata(hdev);
-+
-+	int ret = magicmouse_setup_input(msc->input, hdev);
-+	if (ret) {
-+		hid_err(hdev, "magicmouse setup input failed (%d)\n", ret);
-+		/* clean msc->input to notify probe() of the failure */
-+		msc->input = NULL;
-+	}
-+}
-+
-+
- static int magicmouse_probe(struct hid_device *hdev,
- 	const struct hid_device_id *id)
- {
-@@ -493,15 +508,10 @@ static int magicmouse_probe(struct hid_d
- 		goto err_free;
- 	}
- 
--	/* We do this after hid-input is done parsing reports so that
--	 * hid-input uses the most natural button and axis IDs.
--	 */
--	if (msc->input) {
--		ret = magicmouse_setup_input(msc->input, hdev);
--		if (ret) {
--			hid_err(hdev, "magicmouse setup input failed (%d)\n", ret);
--			goto err_stop_hw;
--		}
-+	if (!msc->input) {
-+		hid_err(hdev, "magicmouse input not registered\n");
-+		ret = -ENOMEM;
-+		goto err_stop_hw;
- 	}
- 
- 	if (id->product == USB_DEVICE_ID_APPLE_MAGICMOUSE)
-@@ -568,6 +578,7 @@ static struct hid_driver magicmouse_driv
- 	.remove = magicmouse_remove,
- 	.raw_event = magicmouse_raw_event,
- 	.input_mapping = magicmouse_input_mapping,
-+	.input_configured = magicmouse_input_configured,
- };
- 
- static int __init magicmouse_init(void)
-
+--- a/ipc/shm.c~ipc-sysv-shared-memory-limited-to-8tib-fix
++++ a/ipc/shm.c
+@@ -462,7 +462,7 @@ static int newseg(struct ipc_namespace *
+ 	size_t size = params->u.size;
+ 	int error;
+ 	struct shmid_kernel *shp;
+-	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
++	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	struct file * file;
+ 	char name[13];
+ 	int id;
+_
 
