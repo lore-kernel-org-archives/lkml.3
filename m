@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936542Ab3DJOBk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:01:40 -0400
-Received: from mga03.intel.com ([143.182.124.21]:55949 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936721Ab3DJN6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:58:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,447,1363158000"; 
-   d="scan'208";a="284281386"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [PATCH 1/9] serial: 8250_dma: TX cleanup
-Date: Wed, 10 Apr 2013 16:58:24 +0300
-Message-Id: <1365602312-25436-2-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365602312-25436-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1365602312-25436-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S936677Ab3DJOCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:02:38 -0400
+Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:38970 "EHLO
+	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935014Ab3DJOCh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 10:02:37 -0400
+X-Greylist: delayed 310 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Apr 2013 10:02:37 EDT
+Date: Wed, 10 Apr 2013 13:57:25 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH 2/3] mm, slub: count freed pages via rcu as this task's
+ reclaimed_slab
+In-Reply-To: <20130410052619.GD5872@lge.com>
+Message-ID: <0000013df43c9afa-0cba04ce-4a5b-435e-acc4-5ee5a1cfeb6b-000000@email.amazonses.com>
+References: <1365470478-645-1-git-send-email-iamjoonsoo.kim@lge.com> <1365470478-645-2-git-send-email-iamjoonsoo.kim@lge.com> <0000013def3255c0-87577820-0ad9-46ac-8498-0589db4e7180-000000@email.amazonses.com> <20130410052619.GD5872@lge.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 54.240.9.62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing one unneeded uart_write_wakeup(). There is no need
-to start PIO transfer unless DMA fails, so this also changes
-serial8250_tx_dma() to return 0 unless that is the case.
+On Wed, 10 Apr 2013, Joonsoo Kim wrote:
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/tty/serial/8250/8250_dma.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+> Hello, Christoph.
+>
+> On Tue, Apr 09, 2013 at 02:28:06PM +0000, Christoph Lameter wrote:
+> > On Tue, 9 Apr 2013, Joonsoo Kim wrote:
+> >
+> > > Currently, freed pages via rcu is not counted for reclaimed_slab, because
+> > > it is freed in rcu context, not current task context. But, this free is
+> > > initiated by this task, so counting this into this task's reclaimed_slab
+> > > is meaningful to decide whether we continue reclaim, or not.
+> > > So change code to count these pages for this task's reclaimed_slab.
+> >
+> > slab->reclaim_state guides the reclaim actions in vmscan.c. With this
+> > patch slab->reclaim_state could get quite a high value without new pages being
+> > available for allocation. slab->reclaim_state will only be updated
+> > when the RCU period ends.
+>
+> Okay.
+>
+> In addition, there is a little place who use SLAB_DESTROY_BY_RCU.
+> I will drop this patch[2/3] and [3/3] for next spin.
 
-diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-index b9f7fd2..ce2518d 100644
---- a/drivers/tty/serial/8250/8250_dma.c
-+++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -33,10 +33,8 @@ static void __dma_tx_complete(void *param)
- 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
- 		uart_write_wakeup(&p->port);
- 
--	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&p->port)) {
-+	if (!uart_circ_empty(xmit) && !uart_tx_stopped(&p->port))
- 		serial8250_tx_dma(p);
--		uart_write_wakeup(&p->port);
--	}
- }
- 
- static void __dma_rx_complete(void *param)
-@@ -67,12 +65,11 @@ int serial8250_tx_dma(struct uart_8250_port *p)
- 	struct circ_buf			*xmit = &p->port.state->xmit;
- 	struct dma_async_tx_descriptor	*desc;
- 
--	if (dma->tx_running)
--		return -EBUSY;
-+	if (uart_tx_stopped(&p->port) || dma->tx_running ||
-+	    uart_circ_empty(xmit))
-+		return 0;
- 
- 	dma->tx_size = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
--	if (!dma->tx_size)
--		return -EINVAL;
- 
- 	desc = dmaengine_prep_slave_single(dma->txchan,
- 					   dma->tx_addr + xmit->tail,
--- 
-1.7.10.4
+What you have discoverd is an issue that we have so far overlooked. Could
+you add comments to both places explaining the situation? RCU is used for
+some inode and the dentry cache. Failing to account for these frees could
+pose a problem. One solution would be to ensure that we get through an RCU
+quiescent period in the slabs reclaim. If we can ensure that then your
+patch may be ok.
+
 
