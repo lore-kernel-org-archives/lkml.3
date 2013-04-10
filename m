@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab3DJHeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 03:34:46 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52074
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750729Ab3DJHen (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 03:34:43 -0400
-Message-ID: <1365579270.30071.25.camel@laptop>
-Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks,
- v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        rob clark <robclark@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Date: Wed, 10 Apr 2013 09:34:30 +0200
-In-Reply-To: <20130409224223.GD20739@home.goodmis.org>
-References: <20130228102452.15191.22673.stgit@patser>
-	 <20130228102502.15191.14146.stgit@patser>
-	 <1364900432.18374.24.camel@laptop> <515AF1C1.7080508@canonical.com>
-	 <1364921954.20640.22.camel@laptop> <1365076908.2609.94.camel@laptop>
-	 <20130404133123.GW2228@phenom.ffwll.local>
-	 <CAKMK7uG_qLQrZUdE_LRANm7qXPvGUisBx-k=+y=F2gA3=odkrQ@mail.gmail.com>
-	 <20130409224223.GD20739@home.goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S965122Ab3DJHkn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 03:40:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37210 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751400Ab3DJHkl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 03:40:41 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Early microcode signing in secure boot environment -  Was: x86, microcode: Use common get_ramdisk_image()
+Date: Wed, 10 Apr 2013 09:40:38 +0200
+Message-ID: <17075291.dMPGPSzlWd@skinner.arch.suse.de>
+Organization: SUSE Products GmbH
+User-Agent: KMail/4.10 (Linux/3.7.10-1.1-desktop; KDE/4.10.0; x86_64; ; )
+In-Reply-To: <5164F9E9.3010909@cn.fujitsu.com>
+References: <1365119186-23487-1-git-send-email-yinghai@kernel.org> <1365119186-23487-3-git-send-email-yinghai@kernel.org> <5164F9E9.3010909@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 18:42 -0400, Steven Rostedt wrote:
-> What about setting an age as soon as it starts the process
-> of grabbing one of these locks? And it keeps the age until it
-> successfully grabs and releases all the locks again. It wont reset if
-> it
-> had to drop the locks and start over.
+Hello,
 
+On Wednesday, April 10, 2013 01:34:33 PM Tang Chen wrote:
+> On 04/05/2013 07:46 AM, Yinghai Lu wrote:
+> > Use common get_ramdisk_image() to get ramdisk start phys address.
+> > 
+> > We need this to get correct ramdisk adress for 64bit bzImage that
+> > initrd can be loaded above 4G by kexec-tools.disk_size;
 
-That is indeed the proposed mechanism. It ensures FIFO fairness between
-the various threads that try to acquire a set.
+don't know whether this question came up when this feature got
+submitted (if yes a pointer would be appreciated).
 
+Is there a concept how signed microcode can get verified when applied early,
+like it is done via firmware loader?
+
+If not, early microcode loading is not really usable in secure boot
+environment, right?
+
+Thanks,
+
+    Thomas
