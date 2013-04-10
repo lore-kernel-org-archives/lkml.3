@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936800Ab3DJK1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:27:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17375 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751897Ab3DJK1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:27:41 -0400
-Message-ID: <51653E81.4090102@redhat.com>
-Date: Wed, 10 Apr 2013 18:27:13 +0800
-From: Lingzhu Xiang <lxiang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S964819Ab3DJK2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:28:35 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:38546 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425Ab3DJK2e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 06:28:34 -0400
+Date: Wed, 10 Apr 2013 12:28:29 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH RFC 1/3] mutex: Make more scalable by doing less atomic
+ operations
+Message-ID: <20130410102829.GA28505@gmail.com>
+References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
+ <1365087258-7169-2-git-send-email-Waiman.Long@hp.com>
+ <20130408124223.GA10093@gmail.com>
+ <51630168.40403@hp.com>
 MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>,
-        Luis Henriques <luis.henriques@canonical.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Josh Boyer <jwboyer@redhat.com>, Michael Schroeder <mls@suse.com>,
-        "Lee, Chun-Yi" <jlee@suse.com>, Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 097/102] efivars: explicitly calculate length of VariableName
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>  <1365414657-29191-98-git-send-email-luis.henriques@canonical.com> <1365547506.5814.36.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1365547506.5814.36.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51630168.40403@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 06:45 AM, Ben Hutchings wrote:
-> On Mon, 2013-04-08 at 10:50 +0100, Luis Henriques wrote:
->> 3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
->>
->> ------------------
->>
->> From: Matt Fleming <matt.fleming@intel.com>
->>
->> commit ec50bd32f1672d38ddce10fb1841cbfda89cfe9a upstream.
->>
->> It's not wise to assume VariableNameSize represents the length of
->> VariableName, as not all firmware updates VariableNameSize in the same
->> way (some don't update it at all if EFI_SUCCESS is returned). There
->> are even implementations out there that update VariableNameSize with
->> values that are both larger than the string returned in VariableName
->> and smaller than the buffer passed to GetNextVariableName(), which
->> resulted in the following bug report from Michael Schroeder,
->>
->>    > On HP z220 system (firmware version 1.54), some EFI variables are
->>    > incorrectly named :
->>    >
->>    > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
->>    > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
->>    > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
->>    > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
->>    > /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d-00e098032b8c
->>
->> The issue here is that because we blindly use VariableNameSize without
->> verifying its value, we can potentially read garbage values from the
->> buffer containing VariableName if VariableNameSize is larger than the
->> length of VariableName.
->>
->> Since VariableName is a string, we can calculate its size by searching
->> for the terminating NULL character.
->>
->> Reported-by: Frederic Crozat <fcrozat@suse.com>
->> Cc: Matthew Garrett <mjg59@srcf.ucam.org>
->> Cc: Josh Boyer <jwboyer@redhat.com>
->> Cc: Michael Schroeder <mls@suse.com>
->> Cc: Lee, Chun-Yi <jlee@suse.com>
->> Cc: Lingzhu Xiang <lxiang@redhat.com>
->> Cc: Seiji Aguchi <seiji.aguchi@hds.com>
->> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
->> [ Backported for 3.4-stable. Removed workqueue code added in a93bc0c 3.9-rc1. ]
-> [...]
+
+* Waiman Long <Waiman.Long@hp.com> wrote:
+
+> > Furthermore, since you are seeing this effect so profoundly, have you 
+> > considered using another approach, such as queueing all the poll-waiters in 
+> > some fashion?
+> >
+> > That would optimize your workload additionally: removing the 'stampede' of 
+> > trylock attempts when an unlock happens - only a single wait-poller would get 
+> > the lock.
 >
-> I thought the workqueue addition was a worthwhile fix in its own right,
-> so for 3.2.y I cherry-picked that as well.
+> The mutex code in the slowpath has already put the waiters into a sleep queue 
+> and wait up only one at a time.
 
-FWIW, the workqueue patch is 1/2 of this patchset[1] fixing closely 
-related problems. The other one is 81fa4e58.
+Yes - but I'm talking about spin/poll-waiters.
 
-[1]: http://article.gmane.org/gmane.linux.kernel/1439570
+> [...] However, there are 2 additional source of mutex lockers besides those in 
+> the sleep queue:
+>
+> 1. New tasks trying to acquire the mutex and currently in the fast path.
+> 2. Mutex spinners (CONFIG_MUTEX_SPIN_ON_OWNER on) who are spinning
+> on the owner field and ready to acquire the mutex once the owner
+> field change.
+> 
+> The 2nd and 3rd patches are my attempts to limit the second types of mutex 
+> lockers.
 
-I tried to avoid pulling too much for stable because the patchset is 
-quite large and I suspect the problem it fixes is only theoretical. I 
-reported the original bug but was unable to break anything except 
-getting call traces with various CONFIG_DEBUG_*.
+Even the 1st patch seems to do that, it limits the impact of spin-loopers, right?
 
-What's your opinion, Seiji?
+I'm fine with patch #1 [your numbers are proof enough that it helps while the low 
+client count effect seems to be in the noise] - the questions that seem open to me 
+are:
 
+ - Could the approach in patch #1 be further improved by an additional patch that 
+   adds queueing to the _spinners_ in some fashion - like ticket spin locks try to
+   do in essence? Not queue the blocked waiters (they are already queued), but the
+   active spinners. This would have additional benefits, especially with a high
+   CPU count and a high NUMA factor, by removing the stampede effect as owners get 
+   switched.
 
-Lingzhu Xiang
+ - Why does patch #2 have an effect? (it shouldn't at first glance) It has a 
+   non-trivial cost, it increases the size of 'struct mutex' by 8 bytes, which 
+   structure is embedded in numerous kernel data structures. When doing 
+   comparisons I'd suggest comparing it not to just vanilla, but to a patch that
+   only extends the struct mutex data structure (and changes no code) - this
+   allows the isolation of cache layout change effects.
+
+ - Patch #3 is rather ugly - and my hope would be that if spinners are queued in
+   some fashion it becomes unnecessary.
+
+Thanks,
+
+	Ingo
