@@ -1,416 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937127Ab3DJRmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:42:22 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:34104 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937080Ab3DJRmT (ORCPT
+	id S937160Ab3DJRqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:46:23 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:53406 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935157Ab3DJRqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:42:19 -0400
-Message-ID: <1365614999.32127.103.camel@misato.fc.hp.com>
-Subject: Re: [patch] mm, hotplug: avoid compiling memory hotremove functions
- when disabled
-From: Toshi Kani <toshi.kani@hp.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org
-Date: Wed, 10 Apr 2013 11:29:59 -0600
-In-Reply-To: <alpine.DEB.2.02.1304092302540.3916@chino.kir.corp.google.com>
-References: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
-	 <20130408134438.2a4388a07163e10a37158eed@linux-foundation.org>
-	 <1365454703.32127.8.camel@misato.fc.hp.com>
-	 <alpine.DEB.2.02.1304092155220.25293@chino.kir.corp.google.com>
-	 <alpine.DEB.2.02.1304092302540.3916@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Apr 2013 13:46:21 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: matt.fleming@intel.com
+Cc: linux-efi@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH V4 3/3] efi: Distinguish between "remaining space" and actually used space
+Date: Wed, 10 Apr 2013 13:46:07 -0400
+Message-Id: <1365615967-27346-3-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1365615967-27346-1-git-send-email-matthew.garrett@nebula.com>
+References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com>
+ <1365615967-27346-1-git-send-email-matthew.garrett@nebula.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:6267:20ff:fec3:2318
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 23:07 -0700, David Rientjes wrote:
-> __remove_pages() is only necessary for CONFIG_MEMORY_HOTREMOVE.  PowerPC
-> pseries will return -EOPNOTSUPP if unsupported.
-> 
-> Adding an #ifdef causes several other functions it depends on to also
-> become unnecessary, which saves in .text when disabled (it's disabled in
-> most defconfigs besides powerpc, including x86).  remove_memory_block()
-> becomes static since it is not referenced outside of
-> drivers/base/memory.c.
-> 
-> Build tested on x86 and powerpc with CONFIG_MEMORY_HOTREMOVE both enabled
-> and disabled.
-> 
-> Signed-off-by: David Rientjes <rientjes@google.com>
+EFI implementations distinguish between space that is actively used by a
+variable and space that merely hasn't been garbage collected yet. Space
+that hasn't yet been garbage collected isn't available for use and so isn't
+counted in the remaining_space field returned by QueryVariableInfo().
 
-Acked-by: Toshi Kani <toshi.kani@hp.com>
+Combined with commit 68d9298 this can cause problems. Some implementations
+don't garbage collect until the remaining space is smaller than the maximum
+variable size, and as a result check_var_size() will always fail once more
+than 50% of the variable store has been used even if most of that space is
+marked as available for garbage collection. The user is unable to create
+new variables, and deleting variables doesn't increase the remaining space.
 
-Thanks,
--Toshi
+The problem that 68d9298 was attempting to avoid was one where certain
+platforms fail if the actively used space is greater than 50% of the
+available storage space. We should be able to calculate that by simply
+summing the size of each available variable and subtracting that from
+the total storage space. With luck this will fix the problem described in
+https://bugzilla.kernel.org/show_bug.cgi?id=55471 without permitting
+damage to occur to the machines 68d9298 was attempting to fix.
 
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+---
+ drivers/firmware/efivars.c | 104 +++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 101 insertions(+), 3 deletions(-)
 
-> ---
->  arch/powerpc/platforms/pseries/hotplug-memory.c | 12 +++++
->  drivers/base/memory.c                           | 44 +++++++--------
->  include/linux/memory.h                          |  3 +-
->  include/linux/memory_hotplug.h                  |  4 +-
->  mm/memory_hotplug.c                             | 68 +++++++++++------------
->  mm/sparse.c                                     | 72 +++++++++++++------------
->  6 files changed, 113 insertions(+), 90 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/pseries/hotplug-memory.c b/arch/powerpc/platforms/pseries/hotplug-memory.c
-> --- a/arch/powerpc/platforms/pseries/hotplug-memory.c
-> +++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
-> @@ -72,6 +72,7 @@ unsigned long memory_block_size_bytes(void)
->  	return get_memblock_size();
->  }
->  
-> +#ifdef CONFIG_MEMORY_HOTREMOVE
->  static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
->  {
->  	unsigned long start, start_pfn;
-> @@ -153,6 +154,17 @@ static int pseries_remove_memory(struct device_node *np)
->  	ret = pseries_remove_memblock(base, lmb_size);
->  	return ret;
->  }
-> +#else
-> +static inline int pseries_remove_memblock(unsigned long base,
-> +					  unsigned int memblock_size)
-> +{
-> +	return -EOPNOTSUPP;
-> +}
-> +static inline int pseries_remove_memory(struct device_node *np)
-> +{
-> +	return -EOPNOTSUPP;
-> +}
-> +#endif /* CONFIG_MEMORY_HOTREMOVE */
->  
->  static int pseries_add_memory(struct device_node *np)
->  {
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -93,16 +93,6 @@ int register_memory(struct memory_block *memory)
->  	return error;
->  }
->  
-> -static void
-> -unregister_memory(struct memory_block *memory)
-> -{
-> -	BUG_ON(memory->dev.bus != &memory_subsys);
-> -
-> -	/* drop the ref. we got in remove_memory_block() */
-> -	kobject_put(&memory->dev.kobj);
-> -	device_unregister(&memory->dev);
-> -}
-> -
->  unsigned long __weak memory_block_size_bytes(void)
->  {
->  	return MIN_MEMORY_BLOCK_SIZE;
-> @@ -637,8 +627,28 @@ static int add_memory_section(int nid, struct mem_section *section,
->  	return ret;
->  }
->  
-> -int remove_memory_block(unsigned long node_id, struct mem_section *section,
-> -		int phys_device)
-> +/*
-> + * need an interface for the VM to add new memory regions,
-> + * but without onlining it.
-> + */
-> +int register_new_memory(int nid, struct mem_section *section)
-> +{
-> +	return add_memory_section(nid, section, NULL, MEM_OFFLINE, HOTPLUG);
-> +}
-> +
-> +#ifdef CONFIG_MEMORY_HOTREMOVE
-> +static void
-> +unregister_memory(struct memory_block *memory)
-> +{
-> +	BUG_ON(memory->dev.bus != &memory_subsys);
-> +
-> +	/* drop the ref. we got in remove_memory_block() */
-> +	kobject_put(&memory->dev.kobj);
-> +	device_unregister(&memory->dev);
-> +}
-> +
-> +static int remove_memory_block(unsigned long node_id,
-> +			       struct mem_section *section, int phys_device)
->  {
->  	struct memory_block *mem;
->  
-> @@ -661,15 +671,6 @@ int remove_memory_block(unsigned long node_id, struct mem_section *section,
->  	return 0;
->  }
->  
-> -/*
-> - * need an interface for the VM to add new memory regions,
-> - * but without onlining it.
-> - */
-> -int register_new_memory(int nid, struct mem_section *section)
-> -{
-> -	return add_memory_section(nid, section, NULL, MEM_OFFLINE, HOTPLUG);
-> -}
-> -
->  int unregister_memory_section(struct mem_section *section)
->  {
->  	if (!present_section(section))
-> @@ -677,6 +678,7 @@ int unregister_memory_section(struct mem_section *section)
->  
->  	return remove_memory_block(0, section, 0);
->  }
-> +#endif /* CONFIG_MEMORY_HOTREMOVE */
->  
->  /*
->   * offline one memory block. If the memory block has been offlined, do nothing.
-> diff --git a/include/linux/memory.h b/include/linux/memory.h
-> --- a/include/linux/memory.h
-> +++ b/include/linux/memory.h
-> @@ -114,9 +114,10 @@ extern void unregister_memory_notifier(struct notifier_block *nb);
->  extern int register_memory_isolate_notifier(struct notifier_block *nb);
->  extern void unregister_memory_isolate_notifier(struct notifier_block *nb);
->  extern int register_new_memory(int, struct mem_section *);
-> +#ifdef CONFIG_MEMORY_HOTREMOVE
->  extern int unregister_memory_section(struct mem_section *);
-> +#endif
->  extern int memory_dev_init(void);
-> -extern int remove_memory_block(unsigned long, struct mem_section *, int);
->  extern int memory_notify(unsigned long val, void *v);
->  extern int memory_isolate_notify(unsigned long val, void *v);
->  extern struct memory_block *find_memory_block_hinted(struct mem_section *,
-> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-> --- a/include/linux/memory_hotplug.h
-> +++ b/include/linux/memory_hotplug.h
-> @@ -97,13 +97,13 @@ extern void __online_page_free(struct page *page);
->  #ifdef CONFIG_MEMORY_HOTREMOVE
->  extern bool is_pageblock_removable_nolock(struct page *page);
->  extern int arch_remove_memory(u64 start, u64 size);
-> +extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
-> +	unsigned long nr_pages);
->  #endif /* CONFIG_MEMORY_HOTREMOVE */
->  
->  /* reasonably generic interface to expand the physical pages in a zone  */
->  extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
->  	unsigned long nr_pages);
-> -extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
-> -	unsigned long nr_pages);
->  
->  #ifdef CONFIG_NUMA
->  extern int memory_add_physaddr_to_nid(u64 start);
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -436,6 +436,40 @@ static int __meminit __add_section(int nid, struct zone *zone,
->  	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
->  }
->  
-> +/*
-> + * Reasonably generic function for adding memory.  It is
-> + * expected that archs that support memory hotplug will
-> + * call this function after deciding the zone to which to
-> + * add the new pages.
-> + */
-> +int __ref __add_pages(int nid, struct zone *zone, unsigned long phys_start_pfn,
-> +			unsigned long nr_pages)
-> +{
-> +	unsigned long i;
-> +	int err = 0;
-> +	int start_sec, end_sec;
-> +	/* during initialize mem_map, align hot-added range to section */
-> +	start_sec = pfn_to_section_nr(phys_start_pfn);
-> +	end_sec = pfn_to_section_nr(phys_start_pfn + nr_pages - 1);
-> +
-> +	for (i = start_sec; i <= end_sec; i++) {
-> +		err = __add_section(nid, zone, i << PFN_SECTION_SHIFT);
-> +
-> +		/*
-> +		 * EEXIST is finally dealt with by ioresource collision
-> +		 * check. see add_memory() => register_memory_resource()
-> +		 * Warning will be printed if there is collision.
-> +		 */
-> +		if (err && (err != -EEXIST))
-> +			break;
-> +		err = 0;
-> +	}
-> +
-> +	return err;
-> +}
-> +EXPORT_SYMBOL_GPL(__add_pages);
-> +
-> +#ifdef CONFIG_MEMORY_HOTREMOVE
->  /* find the smallest valid pfn in the range [start_pfn, end_pfn) */
->  static int find_smallest_section_pfn(int nid, struct zone *zone,
->  				     unsigned long start_pfn,
-> @@ -658,39 +692,6 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
->  	return 0;
->  }
->  
-> -/*
-> - * Reasonably generic function for adding memory.  It is
-> - * expected that archs that support memory hotplug will
-> - * call this function after deciding the zone to which to
-> - * add the new pages.
-> - */
-> -int __ref __add_pages(int nid, struct zone *zone, unsigned long phys_start_pfn,
-> -			unsigned long nr_pages)
-> -{
-> -	unsigned long i;
-> -	int err = 0;
-> -	int start_sec, end_sec;
-> -	/* during initialize mem_map, align hot-added range to section */
-> -	start_sec = pfn_to_section_nr(phys_start_pfn);
-> -	end_sec = pfn_to_section_nr(phys_start_pfn + nr_pages - 1);
-> -
-> -	for (i = start_sec; i <= end_sec; i++) {
-> -		err = __add_section(nid, zone, i << PFN_SECTION_SHIFT);
-> -
-> -		/*
-> -		 * EEXIST is finally dealt with by ioresource collision
-> -		 * check. see add_memory() => register_memory_resource()
-> -		 * Warning will be printed if there is collision.
-> -		 */
-> -		if (err && (err != -EEXIST))
-> -			break;
-> -		err = 0;
-> -	}
-> -
-> -	return err;
-> -}
-> -EXPORT_SYMBOL_GPL(__add_pages);
-> -
->  /**
->   * __remove_pages() - remove sections of pages from a zone
->   * @zone: zone from which pages need to be removed
-> @@ -726,6 +727,7 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(__remove_pages);
-> +#endif /* CONFIG_MEMORY_HOTREMOVE */
->  
->  int set_online_page_callback(online_page_callback_t callback)
->  {
-> diff --git a/mm/sparse.c b/mm/sparse.c
-> --- a/mm/sparse.c
-> +++ b/mm/sparse.c
-> @@ -620,6 +620,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
->  
->  	vmemmap_free(start, end);
->  }
-> +#ifdef CONFIG_MEMORY_HOTREMOVE
->  static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
->  {
->  	unsigned long start = (unsigned long)memmap;
-> @@ -627,6 +628,7 @@ static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
->  
->  	vmemmap_free(start, end);
->  }
-> +#endif /* CONFIG_MEMORY_HOTREMOVE */
->  #else
->  static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
->  {
-> @@ -664,6 +666,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
->  			   get_order(sizeof(struct page) * nr_pages));
->  }
->  
-> +#ifdef CONFIG_MEMORY_HOTREMOVE
->  static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
->  {
->  	unsigned long maps_section_nr, removing_section_nr, i;
-> @@ -690,40 +693,9 @@ static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
->  			put_page_bootmem(page);
->  	}
->  }
-> +#endif /* CONFIG_MEMORY_HOTREMOVE */
->  #endif /* CONFIG_SPARSEMEM_VMEMMAP */
->  
-> -static void free_section_usemap(struct page *memmap, unsigned long *usemap)
-> -{
-> -	struct page *usemap_page;
-> -	unsigned long nr_pages;
-> -
-> -	if (!usemap)
-> -		return;
-> -
-> -	usemap_page = virt_to_page(usemap);
-> -	/*
-> -	 * Check to see if allocation came from hot-plug-add
-> -	 */
-> -	if (PageSlab(usemap_page) || PageCompound(usemap_page)) {
-> -		kfree(usemap);
-> -		if (memmap)
-> -			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
-> -		return;
-> -	}
-> -
-> -	/*
-> -	 * The usemap came from bootmem. This is packed with other usemaps
-> -	 * on the section which has pgdat at boot time. Just keep it as is now.
-> -	 */
-> -
-> -	if (memmap) {
-> -		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
-> -			>> PAGE_SHIFT;
-> -
-> -		free_map_bootmem(memmap, nr_pages);
-> -	}
-> -}
-> -
->  /*
->   * returns the number of sections whose mem_maps were properly
->   * set.  If this is <=0, then that means that the passed-in
-> @@ -800,6 +772,39 @@ static inline void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
->  }
->  #endif
->  
-> +#ifdef CONFIG_MEMORY_HOTREMOVE
-> +static void free_section_usemap(struct page *memmap, unsigned long *usemap)
-> +{
-> +	struct page *usemap_page;
-> +	unsigned long nr_pages;
-> +
-> +	if (!usemap)
-> +		return;
-> +
-> +	usemap_page = virt_to_page(usemap);
-> +	/*
-> +	 * Check to see if allocation came from hot-plug-add
-> +	 */
-> +	if (PageSlab(usemap_page) || PageCompound(usemap_page)) {
-> +		kfree(usemap);
-> +		if (memmap)
-> +			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
-> +		return;
-> +	}
-> +
-> +	/*
-> +	 * The usemap came from bootmem. This is packed with other usemaps
-> +	 * on the section which has pgdat at boot time. Just keep it as is now.
-> +	 */
-> +
-> +	if (memmap) {
-> +		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
-> +			>> PAGE_SHIFT;
-> +
-> +		free_map_bootmem(memmap, nr_pages);
-> +	}
-> +}
-> +
->  void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
->  {
->  	struct page *memmap = NULL;
-> @@ -819,4 +824,5 @@ void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
->  	clear_hwpoisoned_pages(memmap, PAGES_PER_SECTION);
->  	free_section_usemap(memmap, usemap);
->  }
-> -#endif
-> +#endif /* CONFIG_MEMORY_HOTREMOVE */
-> +#endif /* CONFIG_MEMORY_HOTPLUG */
-
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 60e7d8f..33a2be0 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -104,6 +104,13 @@ MODULE_VERSION(EFIVARS_VERSION);
+  */
+ #define GUID_LEN 36
+ 
++/*
++ * There's some additional metadata associated with each
++ * variable. Intel's reference implementation is 60 bytes - bump that
++ * to account for potential alignment constraints
++ */
++#define VAR_METADATA_SIZE 64
++
+ static bool efivars_pstore_disable =
+ 	IS_ENABLED(CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE);
+ 
+@@ -405,6 +412,52 @@ validate_var(struct efi_variable *var, u8 *data, unsigned long len)
+ }
+ 
+ static efi_status_t
++get_var_size_locked(struct efivars *efivars, struct efi_variable *var)
++{
++	efi_status_t status;
++	void *dummy;
++
++	var->DataSize = 0;
++	status = efivars->ops->get_variable(var->VariableName,
++					    &var->VendorGuid,
++					    &var->Attributes,
++					    &var->DataSize,
++					    var->Data);
++
++	if (status != EFI_BUFFER_TOO_SMALL)
++		return status;
++
++	dummy = kmalloc(var->DataSize, GFP_ATOMIC);
++
++	status = efivars->ops->get_variable(var->VariableName,
++					    &var->VendorGuid,
++					    &var->Attributes,
++					    &var->DataSize,
++					    dummy);
++
++	kfree(dummy);
++
++	return status;
++}
++
++static efi_status_t
++get_var_size(struct efivars *efivars, struct efi_variable *var)
++{
++	efi_status_t status;
++	unsigned long flags;
++
++	spin_lock_irqsave(&efivars->lock, flags);
++	status = get_var_size_locked(efivars, var);
++	spin_unlock_irqrestore(&efivars->lock, flags);
++
++	if (status != EFI_SUCCESS) {
++		printk(KERN_WARNING "efivars: Failed to get var size 0x%lx!\n",
++			status);
++	}
++	return status;
++}
++
++static efi_status_t
+ get_var_data_locked(struct efivars *efivars, struct efi_variable *var)
+ {
+ 	efi_status_t status;
+@@ -415,6 +468,10 @@ get_var_data_locked(struct efivars *efivars, struct efi_variable *var)
+ 					    &var->Attributes,
+ 					    &var->DataSize,
+ 					    var->Data);
++
++	if (status != EFI_SUCCESS)
++		var->DataSize = 0;
++
+ 	return status;
+ }
+ 
+@@ -440,8 +497,18 @@ check_var_size_locked(struct efivars *efivars, u32 attributes,
+ 			unsigned long size)
+ {
+ 	u64 storage_size, remaining_size, max_size;
++	struct efivar_entry *entry;
++	struct efi_variable *var;
+ 	efi_status_t status;
+ 	const struct efivar_operations *fops = efivars->ops;
++	unsigned long active_size = 0;
++
++	/*
++	 * Any writes other than EFI_VARIABLE_NON_VOLATILE will only hit
++	 * RAM, not flash, so ignore them.
++	 */
++	if (!(attributes & EFI_VARIABLE_NON_VOLATILE))
++		return EFI_SUCCESS;
+ 
+ 	if (!efivars->ops->query_variable_info)
+ 		return EFI_UNSUPPORTED;
+@@ -452,8 +519,39 @@ check_var_size_locked(struct efivars *efivars, u32 attributes,
+ 	if (status != EFI_SUCCESS)
+ 		return status;
+ 
+-	if (!storage_size || size > remaining_size || size > max_size ||
+-	    (remaining_size - size) < (storage_size / 2))
++	list_for_each_entry(entry, &efivars->list, list) {
++		var = &entry->var;
++		status = EFI_SUCCESS;
++
++		if (var->DataSize == 0)
++			status = get_var_size_locked(efivars, var);
++
++		if (status || !(var->Attributes & EFI_VARIABLE_NON_VOLATILE))
++				continue;
++
++		active_size += var->DataSize;
++		active_size += utf16_strsize(var->VariableName, 1024);
++		active_size += VAR_METADATA_SIZE;
++	}
++
++	/*
++	 * Add on the size of any boot services-only variables
++	 */
++	active_size += boot_var_size;
++
++	/*
++	 * Some firmware implementations refuse to boot if there's insufficient
++	 * space in the variable store. We account for that by refusing the
++	 * write if permitting it would reduce the available space to under
++	 * 50%. However, some firmware won't reclaim variable space until
++	 * after the used (not merely the actively used) space drops below
++	 * a threshold. We can approximate that case with the value calculated
++	 * above. If both the firmware and our calculations indicate that the
++	 * available space would drop below 50%, refuse the write.
++	 */
++	if (!storage_size || size > remaining_size ||
++	    ((active_size + size + VAR_METADATA_SIZE > storage_size / 2) &&
++	     (remaining_size - size < storage_size / 2)))
+ 		return EFI_OUT_OF_RESOURCES;
+ 
+ 	return status;
+@@ -2095,7 +2193,7 @@ int register_efivars(struct efivars *efivars,
+ 	if (boot_used_size) {
+ 		list_for_each_entry(entry, &efivars->list, list) {
+ 			var = &entry->var;
+-			status = get_var_data(efivars, var);
++			status = get_var_size(efivars, var);
+ 
+ 			if (status ||
+ 			    !(var->Attributes & EFI_VARIABLE_NON_VOLATILE))
+-- 
+1.8.1.2
 
