@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937289Ab3DJWrb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:47:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56158 "EHLO
+	id S937407Ab3DJWrr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:47:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56245 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937226Ab3DJWr0 (ORCPT
+	with ESMTP id S937339Ab3DJWrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:26 -0400
+	Wed, 10 Apr 2013 18:47:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stone Piao <piaoyun@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 34/64] mwifiex: limit channel number not to overflow memory
-Date: Wed, 10 Apr 2013 15:46:31 -0700
-Message-Id: <20130410224341.127143683@linuxfoundation.org>
+        Richard Guy Briggs <rbriggs@redhat.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 52/64] thermal: return an error on failure to register thermal class
+Date: Wed, 10 Apr 2013 15:46:49 -0700
+Message-Id: <20130410224345.504941844@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -27,33 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stone Piao <piaoyun@marvell.com>
+From: Richard Guy Briggs <rbriggs@redhat.com>
 
-commit 901ceba4e81e9dd6b4a3c4c37ee22000a6c5c65f upstream.
+commit da28d966f6aa942ae836d09729f76a1647932309 upstream.
 
-Limit the channel number in scan request, or the driver scan
-config structure memory will be overflowed.
+The return code from the registration of the thermal class is used to
+unallocate resources, but this failure isn't passed back to the caller of
+thermal_init.  Return this failure back to the caller.
 
-Signed-off-by: Stone Piao <piaoyun@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This bug was introduced in changeset 4cb18728 which overwrote the return code
+when the variable was re-used to catch the return code of the registration of
+the genetlink thermal socket family.
+
+Signed-off-by: Richard Guy Briggs <rbriggs@redhat.com>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/cfg80211.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/thermal/thermal_sys.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -1846,7 +1846,8 @@ mwifiex_cfg80211_scan(struct wiphy *wiph
- 		}
+--- a/drivers/thermal/thermal_sys.c
++++ b/drivers/thermal/thermal_sys.c
+@@ -1807,6 +1807,7 @@ static int __init thermal_init(void)
+ 		idr_destroy(&thermal_cdev_idr);
+ 		mutex_destroy(&thermal_idr_lock);
+ 		mutex_destroy(&thermal_list_lock);
++		return result;
  	}
- 
--	for (i = 0; i < request->n_channels; i++) {
-+	for (i = 0; i < min_t(u32, request->n_channels,
-+			      MWIFIEX_USER_SCAN_CHAN_MAX); i++) {
- 		chan = request->channels[i];
- 		priv->user_scan_cfg->chan_list[i].chan_number = chan->hw_value;
- 		priv->user_scan_cfg->chan_list[i].radio_type = chan->band;
+ 	result = genetlink_init();
+ 	return result;
 
 
