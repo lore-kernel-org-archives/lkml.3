@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765121Ab3DJGq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 02:46:27 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:48096 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab3DJGqZ (ORCPT
+	id S935760Ab3DJGsf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 02:48:35 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37081 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751382Ab3DJGse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 02:46:25 -0400
-Message-ID: <1365576380.4283.5.camel@phoenix>
-Subject: [PATCH RFT 2/2] regulator: ab8500: Optimize
- ab8540_aux3_regulator_get_voltage_sel
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 10 Apr 2013 14:46:20 +0800
-In-Reply-To: <1365576052.4283.2.camel@phoenix>
-References: <1365576052.4283.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	Wed, 10 Apr 2013 02:48:34 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <51650B1F.1060607@jp.fujitsu.com>
+Date: Wed, 10 Apr 2013 15:47:59 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims
+ at each priority
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <1365505625-9460-2-git-send-email-mgorman@suse.de>
+In-Reply-To: <1365505625-9460-2-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can save a register read operation in some case if read
-expand_register first.
-If info->expand_register.voltage_mask bit is set, no need to read
-voltage_reg.
+(2013/04/09 20:06), Mel Gorman wrote:
+> The number of pages kswapd can reclaim is bound by the number of pages it
+> scans which is related to the size of the zone and the scanning priority. In
+> many cases the priority remains low because it's reset every SWAP_CLUSTER_MAX
+> reclaimed pages but in the event kswapd scans a large number of pages it
+> cannot reclaim, it will raise the priority and potentially discard a large
+> percentage of the zone as sc->nr_to_reclaim is ULONG_MAX. The user-visible
+> effect is a reclaim "spike" where a large percentage of memory is suddenly
+> freed. It would be bad enough if this was just unused memory but because
+> of how anon/file pages are balanced it is possible that applications get
+> pushed to swap unnecessarily.
+> 
+> This patch limits the number of pages kswapd will reclaim to the high
+> watermark. Reclaim will still overshoot due to it not being a hard limit as
+> shrink_lruvec() will ignore the sc.nr_to_reclaim at DEF_PRIORITY but it
+> prevents kswapd reclaiming the world at higher priorities. The number of
+> pages it reclaims is not adjusted for high-order allocations as kswapd will
+> reclaim excessively if it is to balance zones for high-order allocations.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+>
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/ab8500.c |   42 ++++++++++++++++++------------------------
- 1 file changed, 18 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 222a63e..7a86fe6 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -521,7 +521,7 @@ static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
- 
- static int ab8540_aux3_regulator_get_voltage_sel(struct regulator_dev *rdev)
- {
--	int ret, val;
-+	int ret;
- 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
- 	u8 regval, regval_expand;
- 
-@@ -531,18 +531,25 @@ static int ab8540_aux3_regulator_get_voltage_sel(struct regulator_dev *rdev)
- 	}
- 
- 	ret = abx500_get_register_interruptible(info->dev,
--			info->voltage_bank, info->voltage_reg, &regval);
--
-+			info->expand_register.voltage_bank,
-+			info->expand_register.voltage_reg, &regval_expand);
- 	if (ret < 0) {
- 		dev_err(rdev_get_dev(rdev),
--			"couldn't read voltage reg for regulator\n");
-+			"couldn't read voltage expand reg for regulator\n");
- 		return ret;
- 	}
- 
--	ret = abx500_get_register_interruptible(info->dev,
--			info->expand_register.voltage_bank,
--			info->expand_register.voltage_reg, &regval_expand);
-+	dev_vdbg(rdev_get_dev(rdev),
-+		 "%s-get_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-+		 info->desc.name, info->expand_register.voltage_bank,
-+		 info->expand_register.voltage_reg,
-+		 info->expand_register.voltage_mask, regval_expand);
-+
-+	if (regval_expand & info->expand_register.voltage_mask)
-+		return info->expand_register.voltage_limit;
- 
-+	ret = abx500_get_register_interruptible(info->dev,
-+			info->voltage_bank, info->voltage_reg, &regval);
- 	if (ret < 0) {
- 		dev_err(rdev_get_dev(rdev),
- 			"couldn't read voltage reg for regulator\n");
-@@ -550,24 +557,11 @@ static int ab8540_aux3_regulator_get_voltage_sel(struct regulator_dev *rdev)
- 	}
- 
- 	dev_vdbg(rdev_get_dev(rdev),
--		"%s-get_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
--		" 0x%x\n",
--		info->desc.name, info->voltage_bank, info->voltage_reg,
--		info->voltage_mask, regval);
--	dev_vdbg(rdev_get_dev(rdev),
--		"%s-get_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
--		" 0x%x\n",
--		info->desc.name, info->expand_register.voltage_bank,
--		info->expand_register.voltage_reg,
--		info->expand_register.voltage_mask, regval_expand);
--
--	if (regval_expand&(info->expand_register.voltage_mask))
--		/* Vaux3 has a different layout */
--		val = info->expand_register.voltage_limit;
--	else
--		val = (regval & info->voltage_mask) >> info->voltage_shift;
-+		 "%s-get_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-+		 info->desc.name, info->voltage_bank, info->voltage_reg,
-+		 info->voltage_mask, regval);
- 
--	return val;
-+	return (regval & info->voltage_mask) >> info->voltage_shift;
- }
- 
- static int ab8500_regulator_set_voltage_sel(struct regulator_dev *rdev,
--- 
-1.7.10.4
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
 
 
