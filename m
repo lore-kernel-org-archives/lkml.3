@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935194Ab3DJCRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 22:17:19 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:59814 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab3DJCRR (ORCPT
+	id S935549Ab3DJCVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 22:21:21 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:51991 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1765455Ab3DJCVT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 22:17:17 -0400
+	Tue, 9 Apr 2013 22:21:19 -0400
+Date: Wed, 10 Apr 2013 10:21:13 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Fixes for 3.9
+Message-ID: <20130410022112.GA32025@gondor.apana.org.au>
+References: <20100903060055.GA28915@gondor.apana.org.au>
+ <20100903110722.GA31826@gondor.apana.org.au>
+ <20101215115035.GA25248@gondor.apana.org.au>
+ <20110216053911.GA10999@gondor.apana.org.au>
+ <20110328071322.GA6569@gondor.apana.org.au>
+ <20110629235153.GA16559@gondor.apana.org.au>
+ <20120126024342.GA12492@gondor.apana.org.au>
+ <20120823083242.GA23102@gondor.apana.org.au>
+ <20121109093005.GA25632@gondor.apana.org.au>
+ <20130328082841.GA7425@gondor.apana.org.au>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7DhyVwNng=uBR=YMC3ZMFUtV-MDuukjMMGFxMmgHZR=w@mail.gmail.com>
-References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
-	<1363217302-14383-27-git-send-email-yinghai@kernel.org>
-	<CAErSpo7DhyVwNng=uBR=YMC3ZMFUtV-MDuukjMMGFxMmgHZR=w@mail.gmail.com>
-Date: Tue, 9 Apr 2013 19:17:16 -0700
-X-Google-Sender-Auth: EN5_pnF81sP3xJfE_uD5_MGPgzs
-Message-ID: <CAE9FiQXZYrnx1n6Oh33k7DYWPujy9XSxE20JFGAYohcE_EvVhQ@mail.gmail.com>
-Subject: Re: [PATCH v3 26/27] PCI: Make quirk_io_region to use addon_res
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130328082841.GA7425@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 2:35 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> This patch has two changes that need to be separated:
->
->   1) Refactoring quirk_io_region() so the pci_read_config_word() is
-> done by quirk_io_region() rather than the caller.
->   2) Whatever pci_dev resource changes we end up making.
->
-> I think part 1 can be done at any time and is probably not controversial.
+Hi Linus:
 
-ok, will put that separated one to be first one in the next reversion
-of patchset.
+This push fixes a GCM bug that breaks IPsec and a compile problem
+in ux500.
 
-Thanks
+Please pull from
 
-Yinghai
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+or
+
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+
+Jussi Kivilinna (1):
+      crypto: gcm - fix assumption that assoc has one segment
+
+Linus Walleij (1):
+      crypto: ux500 - add missing comma
+
+ crypto/gcm.c                          |   17 ++++++++++++++---
+ drivers/crypto/ux500/cryp/cryp_core.c |    2 +-
+ 2 files changed, 15 insertions(+), 4 deletions(-)
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
