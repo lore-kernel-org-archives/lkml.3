@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935318Ab3DJHFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 03:05:22 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47580 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab3DJHFV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 03:05:21 -0400
-Message-ID: <1365577512.30071.11.camel@laptop>
-Subject: Re: [PATCH 2/7] sched: Update rq clock on nohz CPU before setting
- fair group shares
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>
-Date: Wed, 10 Apr 2013 09:05:12 +0200
-In-Reply-To: <CAFTL4hxcQyv_J4ky8wL0rzVemWPpBcjuCV=FeHBvXn5Bht-3OA@mail.gmail.com>
-References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
-	 <1365266760-24725-3-git-send-email-fweisbec@gmail.com>
-	 <1365499591.30071.3.camel@laptop>
-	 <CAFTL4hxcQyv_J4ky8wL0rzVemWPpBcjuCV=FeHBvXn5Bht-3OA@mail.gmail.com>
+	id S935760Ab3DJHGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 03:06:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58217 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752184Ab3DJHGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 03:06:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,444,1363158000"; 
+   d="scan'208";a="292774043"
+Message-ID: <1365577575.2183.70.camel@rzhang1-mobl4>
+Subject: Re: [PATCH] thermal: step_wise: set throttle target within thermal
+ instance limits
+From: Zhang Rui <rui.zhang@intel.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 10 Apr 2013 15:06:15 +0800
+In-Reply-To: <1365544787-22940-1-git-send-email-abrestic@chromium.org>
+References: <1365544787-22940-1-git-send-email-abrestic@chromium.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 15:21 +0200, Frederic Weisbecker wrote:
+On Tue, 2013-04-09 at 14:59 -0700, Andrew Bresticker wrote:
+> When selecting a target cooling state in get_target_state(), make sure
+> that the state is at least as high as the minimum when the temperature
+> is rising and at least as low as the maximum when the temperature is
+> falling.  This is necessary because, in the THREAML_TREND_RAISING and
+> THERMAL_TREND_DROPPING cases, the current state may only be incremented
+> or decremented by one even if it is outside the bounds of the thermal
+> instance.  This might occur, for example, if the CPU is heating up
+> and hits a thermal trip point for the first time when it's frequency
+> is much higher than the range specified by the thermal instance
+> corresponding to the trip point.
 > 
-> Also please check those two patches in my series, it's a draft for an
-> rq clock debug framework. For now it's just a brainless stale clock
-> check but that's a start:
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+
+applied.
+
+thanks,
+rui
+> ---
+>  drivers/thermal/step_wise.c | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
 > 
-> * http://thread.gmane.org/gmane.linux.kernel/1470769/focus=1470786
-> * http://thread.gmane.org/gmane.linux.kernel/1470769/focus=1470750
+> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+> index 407cde3..ca4f79f 100644
+> --- a/drivers/thermal/step_wise.c
+> +++ b/drivers/thermal/step_wise.c
+> @@ -59,9 +59,12 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+>  
+>  	switch (trend) {
+>  	case THERMAL_TREND_RAISING:
+> -		if (throttle)
+> +		if (throttle) {
+>  			cur_state = cur_state < instance->upper ?
+>  				    (cur_state + 1) : instance->upper;
+> +			if (cur_state < instance->lower)
+> +				cur_state = instance->lower;
+> +		}
+>  		break;
+>  	case THERMAL_TREND_RAISE_FULL:
+>  		if (throttle)
+> @@ -71,8 +74,11 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+>  		if (cur_state == instance->lower) {
+>  			if (!throttle)
+>  				cur_state = -1;
+> -		} else
+> +		} else {
+>  			cur_state -= 1;
+> +			if (cur_state > instance->upper)
+> +				cur_state = instance->upper;
+> +		}
+>  		break;
+>  	case THERMAL_TREND_DROP_FULL:
+>  		if (cur_state == instance->lower) {
 
-Right.. I was thinking of something like function-graph trace, where
-we'd mark the context (fgraph_data I think its called) of the function
-calling update_rq_clock() (and inherit this state on all child
-contexts) and then verify the current context has this marker set when
-we read ->clock.
-
-
-Now clearly that would not work for something like:
-
-  a()
-   b()
-    update_rq_clock()
-   c()
-    read_rq_clock()
-
-since we'd loose the marker once we pop b, but I'm not sure how common
-this is.
-
-Also, we could issue a warning when calling update_rq_clock() and the
-marker is already set.
-
-There's a further issue where we need to track the rq we updated vs the
-rq we're reading, but I think even without that this might be of some
-help.
-
-
-I think Mike once tried something along the lines of keeping a per rq
-state that got cleared at the end of schedule() but that doesn't catch
-things like the migrate handlers I think.
 
