@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936914Ab3DJOYl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:24:41 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:55632 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936896Ab3DJOYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 10:24:39 -0400
+	id S936929Ab3DJO3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:29:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59830 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759532Ab3DJO3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 10:29:46 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130410120228.GC8083@gmail.com>
+References: <1364489605-5443-1-git-send-email-sgruszka@redhat.com> <1364489605-5443-5-git-send-email-sgruszka@redhat.com> <20130410120228.GC8083@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <0000013df43c9afa-0cba04ce-4a5b-435e-acc4-5ee5a1cfeb6b-000000@email.amazonses.com>
-References: <1365470478-645-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1365470478-645-2-git-send-email-iamjoonsoo.kim@lge.com>
-	<0000013def3255c0-87577820-0ad9-46ac-8498-0589db4e7180-000000@email.amazonses.com>
-	<20130410052619.GD5872@lge.com>
-	<0000013df43c9afa-0cba04ce-4a5b-435e-acc4-5ee5a1cfeb6b-000000@email.amazonses.com>
-Date: Wed, 10 Apr 2013 23:24:38 +0900
-Message-ID: <CAAmzW4PZ4ODR5gjYczmoNBYP-yk7q6MTNdOO4A_qux0xCFH_Gg@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mm, slub: count freed pages via rcu as this task's reclaimed_slab
-From: JoonSoo Kim <js1304@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC 4/4] cputime: remove scaling
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 10 Apr 2013 07:29:21 -0700
+To: Ingo Molnar <mingo@kernel.org>, Stanislaw Gruszka <sgruszka@redhat.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, rostedt@goodmis.org,
+        akpm@linux-foundation.org, tglx@linutronix.de,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <11f12774-5353-4380-82d0-e22707e11729@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/10 Christoph Lameter <cl@linux.com>:
-> On Wed, 10 Apr 2013, Joonsoo Kim wrote:
->
->> Hello, Christoph.
->>
->> On Tue, Apr 09, 2013 at 02:28:06PM +0000, Christoph Lameter wrote:
->> > On Tue, 9 Apr 2013, Joonsoo Kim wrote:
->> >
->> > > Currently, freed pages via rcu is not counted for reclaimed_slab, because
->> > > it is freed in rcu context, not current task context. But, this free is
->> > > initiated by this task, so counting this into this task's reclaimed_slab
->> > > is meaningful to decide whether we continue reclaim, or not.
->> > > So change code to count these pages for this task's reclaimed_slab.
->> >
->> > slab->reclaim_state guides the reclaim actions in vmscan.c. With this
->> > patch slab->reclaim_state could get quite a high value without new pages being
->> > available for allocation. slab->reclaim_state will only be updated
->> > when the RCU period ends.
->>
->> Okay.
->>
->> In addition, there is a little place who use SLAB_DESTROY_BY_RCU.
->> I will drop this patch[2/3] and [3/3] for next spin.
->
-> What you have discoverd is an issue that we have so far overlooked. Could
-> you add comments to both places explaining the situation?
+I have a patch that does scaling by multiply for 64-bit architectures.  I probably should clean it up and send it in.  I need to see if it fixes this problem.
 
-Yes, I can.
-
-> RCU is used for
-> some inode and the dentry cache. Failing to account for these frees could
-> pose a problem. One solution would be to ensure that we get through an RCU
-> quiescent period in the slabs reclaim. If we can ensure that then your
-> patch may be ok.
-
-Hmm... I don't perfectly understand RCU code and it's quiescent
-period. But, yes, it
-can be one of possible solutions in my quick thought. Currently, I
-have no ability to
-do that, so I skip to think about this.
-
-Thanks.
+Ingo Molnar <mingo@kernel.org> wrote:
 
 >
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>* Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+>
+>> Scaling cputime cause problems, bunch of them was fixed, but still is
+>possible 
+>> to hit multiplication overflow issue, which make {u,s}time values
+>incorrect. 
+>> This problem has no good solution in kernel.
+>
+>Wasn't 128-bit math a solution to the overflow problems? 128-bit math
+>isn't nice, 
+>but at least for multiplication it's defensible.
+>
+>> This patch remove scaling code and export raw values of {u,t}ime .
+>Procps 
+>> programs can use newly introduced sum_exec_runtime to find out
+>precisely 
+>> calculated process cpu time and scale utime, stime values
+>accordingly.
+>> 
+>> Unfortunately times(2) syscall has no such option.
+>> 
+>> This change affect kernels compiled without
+>CONFIG_VIRT_CPU_ACCOUNTING_*.
+>
+>So, the concern here is that 'top hiding' code can now hide again. It's
+>also that 
+>we are not really solving the problem, we are pushing it to user-space
+>- which in 
+>the best case gets updated to solve the problem in some similar fashion
+>- and in 
+>the worst case does not get updated or does it in a buggy way.
+>
+>So while user-space has it a bit easier because it can do floating
+>point math, is 
+>there really no workable solution to the current kernel side integer
+>overflow bug? 
+>I really prefer robust kernel side accounting/instrumentation.
+>
+>Thanks,
+>
+>	Ingo
+
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
