@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936171Ab3DJB1I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 21:27:08 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:36456 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760406Ab3DJB1G (ORCPT
+	id S933510Ab3DJB3b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 21:29:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3822 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab3DJB3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 21:27:06 -0400
-Message-ID: <5164BFE3.4040204@linux.vnet.ibm.com>
-Date: Tue, 09 Apr 2013 21:26:59 -0400
-From: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 9 Apr 2013 21:29:30 -0400
+X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=fiP1z3OLIGkA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=ooVxu4AzOFAA:10 a=OLL_FvSJAAAA:8 a=oJhWRaJ256ViM1SqrekA:9 a=CjuIK1q_8ugA:10 a=MDkxqzIZLf4A:10 a=XTI3l5cWQc4A:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Date: Tue, 9 Apr 2013 21:29:27 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        "Michael D. Setzer II" <msetzerii@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Error in linux-3.0.72 build.
+Message-ID: <20130410012926.GE20739@home.goodmis.org>
+References: <515FF835.28644.1FF1E@msetzerii.gmail.com>
+ <20130406124101.GA7816@thunk.org>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Roland Dreier <roland@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
-References: <20130324155153.GA8597@redhat.com> <515F3160.4020007@linux.vnet.ibm.com> <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com> <515F3948.40205@linux.vnet.ibm.com> <CAG4TOxPNHZadLjq6-HuOExf1XXLO6AYyvRQ1L09i6qVeA5dbLQ@mail.gmail.com> <515F42EE.8060203@linux.vnet.ibm.com> <20130409190350.GB8212@redhat.com>
-In-Reply-To: <20130409190350.GB8212@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041001-7282-0000-0000-0000160248B2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130406124101.GA7816@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With respect, I'm going to offload testing this patch back to the author =)
-because I'm trying to address all of Paolo's other minor issues
-with the RDMA patch before we can merge.
+On Sat, Apr 06, 2013 at 08:41:01AM -0400, Theodore Ts'o wrote:
+> On Sat, Apr 06, 2013 at 08:25:57PM +1000, Michael D. Setzer II wrote:
+> > Just downloaded new kernels, and find this error in build.
+> 
+> Patch is here: 
+> 
+> http://www.spinics.net/lists/linux-ext4/msg37598.html
+> 
+> Explanation of why it's needed is here:
+> 
+> http://www.spinics.net/lists/linux-ext4/msg37600.html
+> 
+> Greg has queued it for the next stable release.
+> 
 
-Since dynamic page registration (as you requested) is now fully
-implemented, this patch is less urgent since we now have a
-mechanism in place to avoid page pinning on both sides of the migration.
+Grumble, I just stumbled over this for the 3.0-rt release. I guess
+3.0-rt will have to wait till the next stable is out.
 
-- Michael
-
-On 04/09/2013 03:03 PM, Michael S. Tsirkin wrote:
-> presumably is_dup_page reads the page, so should not break COW ...
->
-> I'm not sure about the cgroups swap limit - you might have
-> too many non COW pages so attempting to fault them all in
-> makes you exceed the limit. You really should look at
-> what is going on in the pagemap, to see if there's
-> measureable gain from the patch.
->
->
-> On Fri, Apr 05, 2013 at 05:32:30PM -0400, Michael R. Hines wrote:
->> Well, I have the "is_dup_page()" commented out.......when RDMA is
->> activated.....
->>
->> Is there something else in QEMU that could be touching the page that
->> I don't know about?
->>
->> - Michael
->>
->>
->> On 04/05/2013 05:03 PM, Roland Dreier wrote:
->>> On Fri, Apr 5, 2013 at 1:51 PM, Michael R. Hines
->>> <mrhines@linux.vnet.ibm.com> wrote:
->>>> Sorry, I was wrong. ignore the comments about cgroups. That's still broken.
->>>> (i.e. trying to register RDMA memory while using a cgroup swap limit cause
->>>> the process get killed).
->>>>
->>>> But the GIFT flag patch works (my understanding is that GIFT flag allows the
->>>> adapter to transmit stale memory information, it does not have anything to
->>>> do with cgroups specifically).
->>> The point of the GIFT patch is to avoid triggering copy-on-write so
->>> that memory doesn't blow up during migration.  If that doesn't work
->>> then there's no point to the patch.
->>>
->>>   - R.
->>>
+-- Steve
 
