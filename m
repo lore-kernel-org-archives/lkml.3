@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937597Ab3DJWzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:55:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56654 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937587Ab3DJWut (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S937586Ab3DJWut (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 10 Apr 2013 18:50:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56628 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937401Ab3DJWup (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 18:50:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pawel Zawora <pzawora@gmail.com>, Jan Kara <jack@suse.cz>
-Subject: [ 03/19] reiserfs: Fix warning and inode leak when deleting inode with xattrs
-Date: Wed, 10 Apr 2013 15:50:26 -0700
-Message-Id: <20130410225027.171506481@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 01/19] ASoC: dma-sh7760: Fix compile error
+Date: Wed, 10 Apr 2013 15:50:24 -0700
+Message-Id: <20130410225026.982896657@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
 References: <20130410225026.833809117@linuxfoundation.org>
@@ -26,39 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 35e5cbc0af240778e61113286c019837e06aeec6 upstream.
+commit 417a1178f1bf3cdc606376b3ded3a22489fbb3eb upstream.
 
-After commit 21d8a15a (lookup_one_len: don't accept . and ..) reiserfs
-started failing to delete xattrs from inode. This was due to a buggy
-test for '.' and '..' in fill_with_dentries() which resulted in passing
-'.' and '..' entries to lookup_one_len() in some cases. That returned
-error and so we failed to iterate over all xattrs of and inode.
+The dma-sh7760 currently fails with the following compile error:
+	sound/soc/sh/dma-sh7760.c:346:2: error: unknown field 'pcm_ops' specified in initializer
+	sound/soc/sh/dma-sh7760.c:346:2: warning: initialization from incompatible pointer type
+	sound/soc/sh/dma-sh7760.c:347:2: error: unknown field 'pcm_new' specified in initializer
+	sound/soc/sh/dma-sh7760.c:347:2: warning: initialization makes integer from pointer without a cast
+	sound/soc/sh/dma-sh7760.c:348:2: error: unknown field 'pcm_free' specified in initializer
+	sound/soc/sh/dma-sh7760.c:348:2: warning: initialization from incompatible pointer type
+	sound/soc/sh/dma-sh7760.c: In function 'sh7760_soc_platform_probe':
+	sound/soc/sh/dma-sh7760.c:353:2: warning: passing argument 2 of 'snd_soc_register_platform' from incompatible pointer type
+	include/sound/soc.h:368:5: note: expected 'struct snd_soc_platform_driver *' but argument is of type 'struct snd_soc_platform *'
 
-Fix the test in fill_with_dentries() along the lines of the one in
-lookup_one_len().
+This is due the misnaming of the snd_soc_platform_driver type name and 'ops'
+field. The issue was introduced in commit f0fba2a("ASoC: multi-component - ASoC
+Multi-Component Support").
 
-Reported-by: Pawel Zawora <pzawora@gmail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/reiserfs/xattr.c |    4 ++--
+ sound/soc/sh/dma-sh7760.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/reiserfs/xattr.c
-+++ b/fs/reiserfs/xattr.c
-@@ -187,8 +187,8 @@ fill_with_dentries(void *buf, const char
- 	if (dbuf->count == ARRAY_SIZE(dbuf->dentries))
- 		return -ENOSPC;
+--- a/sound/soc/sh/dma-sh7760.c
++++ b/sound/soc/sh/dma-sh7760.c
+@@ -342,8 +342,8 @@ static int camelot_pcm_new(struct snd_ca
+ 	return 0;
+ }
  
--	if (name[0] == '.' && (name[1] == '\0' ||
--			       (name[1] == '.' && name[2] == '\0')))
-+	if (name[0] == '.' && (namelen < 2 ||
-+			       (namelen == 2 && name[1] == '.')))
- 		return 0;
- 
- 	dentry = lookup_one_len(name, dbuf->xadir, namelen);
+-static struct snd_soc_platform sh7760_soc_platform = {
+-	.pcm_ops 	= &camelot_pcm_ops,
++static struct snd_soc_platform_driver sh7760_soc_platform = {
++	.ops		= &camelot_pcm_ops,
+ 	.pcm_new	= camelot_pcm_new,
+ 	.pcm_free	= camelot_pcm_free,
+ };
 
 
