@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936700Ab3DJOAI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:00:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:65142 "EHLO mga03.intel.com"
+	id S936894Ab3DJOBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:01:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:20948 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936487Ab3DJN6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:58:46 -0400
+	id S936729Ab3DJN6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 09:58:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,447,1363158000"; 
-   d="scan'208";a="284281434"
+   d="scan'208";a="284281393"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [PATCH 6/9] serial: 8250_dw: Support clk framework also with ACPI
-Date: Wed, 10 Apr 2013 16:58:29 +0300
-Message-Id: <1365602312-25436-7-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCH 2/9] serial: 8250_dma: Fix RX handling
+Date: Wed, 10 Apr 2013 16:58:25 +0300
+Message-Id: <1365602312-25436-3-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365602312-25436-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1365602312-25436-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -22,73 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Lynxpoint LPSS peripheral clocks are now handled in clk
-framework so the drivers do not need to take care of them
-manually. In dw8250_probe_acpi(), the uartclk is now taken
-from the driver_data only if it was not already set.
+Overrun, parity and framing errors should be handled in
+8250_core. This also adds check for the dma_status and exits
+if the channel is not idle.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
- drivers/tty/serial/8250/8250_dw.c |   18 +++++-------------
- 1 file changed, 5 insertions(+), 13 deletions(-)
+ drivers/tty/serial/8250/8250_dma.c |   23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index d6aea85..de7a186 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -36,9 +36,6 @@
- #define DW_UART_CPR	0xf4 /* Component Parameter Register */
- #define DW_UART_UCV	0xf8 /* UART Component Version */
+diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
+index ce2518d..6643061 100644
+--- a/drivers/tty/serial/8250/8250_dma.c
++++ b/drivers/tty/serial/8250/8250_dma.c
+@@ -101,20 +101,29 @@ int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
+ 	struct dma_tx_state		state;
+ 	int				dma_status;
  
--/* Intel Low Power Subsystem specific */
--#define LPSS_PRV_CLOCK_PARAMS 0x800
--
- /* Component Parameter Register bits */
- #define DW_UART_CPR_ABP_DATA_WIDTH	(3 << 0)
- #define DW_UART_CPR_AFCE_MODE		(1 << 4)
-@@ -226,7 +223,6 @@ static int dw8250_probe_acpi(struct uart_port *p)
- {
- 	const struct acpi_device_id *id;
- 	acpi_status status;
--	u32 reg;
- 
- 	id = acpi_match_device(p->dev->driver->acpi_match_table, p->dev);
- 	if (!id)
-@@ -236,7 +232,9 @@ static int dw8250_probe_acpi(struct uart_port *p)
- 	p->serial_in = dw8250_serial_in32;
- 	p->serial_out = dw8250_serial_out32;
- 	p->regshift = 2;
--	p->uartclk = (unsigned int)id->driver_data;
+-	/*
+-	 * If RCVR FIFO trigger level was not reached, complete the transfer and
+-	 * let 8250.c copy the remaining data.
+-	 */
+-	if ((iir & 0x3f) == UART_IIR_RX_TIMEOUT) {
+-		dma_status = dmaengine_tx_status(dma->rxchan, dma->rx_cookie,
+-						&state);
++	dma_status = dmaengine_tx_status(dma->rxchan, dma->rx_cookie, &state);
 +
-+	if (!p->uartclk)
-+		p->uartclk = (unsigned int)id->driver_data;
- 
- 	status = acpi_walk_resources(ACPI_HANDLE(p->dev), METHOD_NAME__CRS,
- 				     dw8250_acpi_walk_resource, p);
-@@ -246,12 +244,6 @@ static int dw8250_probe_acpi(struct uart_port *p)
- 		return -ENODEV;
++	switch (iir & 0x3f) {
++	case UART_IIR_RLSI:
++		/* 8250_core handles errors and break interrupts */
++		return -EIO;
++	case UART_IIR_RX_TIMEOUT:
++		/*
++		 * If RCVR FIFO trigger level was not reached, complete the
++		 * transfer and let 8250_core copy the remaining data.
++		 */
+ 		if (dma_status == DMA_IN_PROGRESS) {
+ 			dmaengine_pause(dma->rxchan);
+ 			__dma_rx_complete(p);
+ 		}
+ 		return -ETIMEDOUT;
++	default:
++		break;
  	}
  
--	/* Fix Haswell issue where the clocks do not get enabled */
--	if (!strcmp(id->id, "INT33C4") || !strcmp(id->id, "INT33C5")) {
--		reg = readl(p->membase + LPSS_PRV_CLOCK_PARAMS);
--		writel(reg | 1, p->membase + LPSS_PRV_CLOCK_PARAMS);
--	}
--
- 	return 0;
- }
- #else
-@@ -425,8 +417,8 @@ static const struct of_device_id dw8250_of_match[] = {
- MODULE_DEVICE_TABLE(of, dw8250_of_match);
- 
- static const struct acpi_device_id dw8250_acpi_match[] = {
--	{ "INT33C4", 100000000 },
--	{ "INT33C5", 100000000 },
-+	{ "INT33C4", 0 },
-+	{ "INT33C5", 0 },
- 	{ },
- };
- MODULE_DEVICE_TABLE(acpi, dw8250_acpi_match);
++	if (dma_status)
++		return 0;
++
+ 	desc = dmaengine_prep_slave_single(dma->rxchan, dma->rx_addr,
+ 					   dma->rx_size, DMA_DEV_TO_MEM,
+ 					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
 -- 
 1.7.10.4
 
