@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937021Ab3DJP4o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:56:44 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:45269 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310Ab3DJP4l (ORCPT
+	id S936911Ab3DJP4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:56:32 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:57869 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753774Ab3DJP4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:56:41 -0400
+	Wed, 10 Apr 2013 11:56:30 -0400
+Date: Wed, 10 Apr 2013 08:56:28 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
+Subject: Re: [PATCH] driver core: add uid and gid to devtmpfs
+Message-ID: <20130410155628.GA14723@kroah.com>
+References: <20130406165600.GA29660@kroah.com>
+ <CACVXFVNctGZ5hs-sBuA8MxO8NJtGkQREURiVJbFRVSO9WLO-JA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130409151906.2ee55116ca9e3abd80a90e3e@linux-foundation.org>
-References: <20130408190738.GC2321@localhost.localdomain> <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org>
- <20130408210039.GA3396@localhost.localdomain> <20130409151906.2ee55116ca9e3abd80a90e3e@linux-foundation.org>
-From: Andrew Shewmaker <agshew@gmail.com>
-Date: Wed, 10 Apr 2013 09:56:20 -0600
-Message-ID: <CAF-E8XHdkqCUJf28z9GMBNUE84Murdsk=T-CoXoXgkLyrwk2-A@mail.gmail.com>
-Subject: Re: [PATCH v8 3/3] mm: reinititalise user and admin reserves if
- memory is added or removed
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        Simon Jeons <simon.jeons@gmail.com>, ric.masonn@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACVXFVNctGZ5hs-sBuA8MxO8NJtGkQREURiVJbFRVSO9WLO-JA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 4:19 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Mon, 8 Apr 2013 17:00:40 -0400 Andrew Shewmaker <agshew@gmail.com> wrote:
->
->> Should I add the memory notifier code to mm/nommu.c too?
->> I'm guessing that if a system doesn't have an mmu that it also
->> won't be hotplugging memory.
->
-> I doubt if we need to worry about memory hotplug on nommu machines,
-> so just do the minimum which is required to get nommu to compile
-> and link.  That's probably "nothing".
+On Wed, Apr 10, 2013 at 05:12:17PM +0800, Ming Lei wrote:
+> On Sun, Apr 7, 2013 at 12:56 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > @@ -201,14 +206,14 @@ static int handle_create(const char *nod
+> >         if (IS_ERR(dentry))
+> >                 return PTR_ERR(dentry);
+> >
+> > -       err = vfs_mknod(path.dentry->d_inode,
+> > -                       dentry, mode, dev->devt);
+> > +       err = vfs_mknod(path.dentry->d_inode, dentry, mode, dev->devt);
+> >         if (!err) {
+> >                 struct iattr newattrs;
+> >
+> > -               /* fixup possibly umasked mode */
+> >                 newattrs.ia_mode = mode;
+> > -               newattrs.ia_valid = ATTR_MODE;
+> > +               newattrs.ia_uid = uid;
+> > +               newattrs.ia_gid = gid;
+> 
+> drivers/base/devtmpfs.c: In function 'handle_create':
+> drivers/base/devtmpfs.c:214:19: error: incompatible types when
+> assigning to type 'kuid_t' from type 'uid_t'
+> drivers/base/devtmpfs.c:215:19: error: incompatible types when
+> assigning to type 'kgid_t' from type 'gid_t'
+> make[2]: *** [drivers/base/devtmpfs.o] Error 1
 
-I don't know why I didn't think to look for a cross-compiler package first.
-Anyway, nommu compiles and links without error when I disable suspend and
-switch from slub to slab. Those errors didn't appear to have anything to do
-with mm/nommu.c
+I can't duplicate this here, what options am I missing?
 
+> Looks the below patch may fix it.
+> --
+> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+> index fda5256..e268fc5 100644
+> --- a/drivers/base/devtmpfs.c
+> +++ b/drivers/base/devtmpfs.c
+> @@ -211,8 +211,8 @@ static int handle_create(const char *nodename,
+> umode_t mode, uid_t uid,
+>  		struct iattr newattrs;
+> 
+>  		newattrs.ia_mode = mode;
+> -		newattrs.ia_uid = uid;
+> -		newattrs.ia_gid = gid;
+> +		newattrs.ia_uid = KUIDT_INIT(uid);
+> +		newattrs.ia_gid = KGIDT_INIT(gid);
+>  		newattrs.ia_valid = ATTR_MODE|ATTR_UID|ATTR_GID;
+>  		mutex_lock(&dentry->d_inode->i_mutex);
+>  		notify_change(dentry, &newattrs);
+> 
 
---
-Andrew Shewmaker
+Care to resend this in a format I can apply it in?  :)
+
+thanks,
+
+greg k-h
