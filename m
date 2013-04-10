@@ -1,125 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936680Ab3DJXMe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:12:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56149 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937204Ab3DJWrY (ORCPT
+	id S936841Ab3DJXMm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:12:42 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49739 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934530Ab3DJXMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:24 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Whitehead <mwhitehe@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 21/64] EISA/PCI: Init EISA early, before PNP
-Date: Wed, 10 Apr 2013 15:46:18 -0700
-Message-Id: <20130410224338.052175970@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
-References: <20130410224333.114387235@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Wed, 10 Apr 2013 19:12:40 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 10 Apr 2013 16:12:48 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] hrtimer, add expiry time overflow check in
+ hrtimer_interrupt
+Message-ID: <20130410231248.GA6159@roeck-us.net>
+References: <1365425235-26191-1-git-send-email-prarit@redhat.com>
+ <5163264B.3050707@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5163264B.3050707@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8-stable review patch.  If anyone has any objections, please let me know.
+On Mon, Apr 08, 2013 at 01:19:23PM -0700, John Stultz wrote:
+> On 04/08/2013 05:47 AM, Prarit Bhargava wrote:
+> >2nd submit: I did quite a bit of testing with this patch and I don't see any
+> >ill effects.  I've tested across several large and small x86 systems, and a
+> >ppc system for good measure.
+> >
+> >P.
+> >
+> >----8<---
+> >`
+> >The settimeofday01 test in the LTP testsuite effectively does
+> >
+> >         gettimeofday(current time);
+> >         settimeofday(Jan 1, 1970 + 100 seconds);
+> >         settimeofday(current time);
+> >
+> >This test causes a stack trace to be displayed on the console during the
+> >setting of timeofday to Jan 1, 1970 + 100 seconds:
+> >
+> >[  131.066751] ------------[ cut here ]------------
+> >[  131.096448] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x135/0x140()
+> >[  131.104935] Hardware name: Dinar
+> >[  131.108150] Modules linked in: sg nfsv3 nfs_acl nfsv4 auth_rpcgss nfs dns_resolver fscache lockd sunrpc nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tables kvm_amd kvm sp5100_tco bnx2 i2c_piix4 crc32c_intel k10temp fam15h_power ghash_clmulni_intel amd64_edac_mod pcspkr serio_raw edac_mce_amd edac_core microcode xfs libcrc32c sr_mod sd_mod cdrom ata_generic crc_t10dif pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ahci pata_atiixp libahci libata usb_storage i2c_core dm_mirror dm_region_hash dm_log dm_mod
+> >[  131.176784] Pid: 0, comm: swapper/28 Not tainted 3.8.0+ #6
+> >[  131.182248] Call Trace:
+> >[  131.184684]  <IRQ>  [<ffffffff810612af>] warn_slowpath_common+0x7f/0xc0
+> >[  131.191312]  [<ffffffff8106130a>] warn_slowpath_null+0x1a/0x20
+> >[  131.197131]  [<ffffffff810b9fd5>] clockevents_program_event+0x135/0x140
+> >[  131.203721]  [<ffffffff810bb584>] tick_program_event+0x24/0x30
+> >[  131.209534]  [<ffffffff81089ab1>] hrtimer_interrupt+0x131/0x230
+> >[  131.215437]  [<ffffffff814b9600>] ? cpufreq_p4_target+0x130/0x130
+> >[  131.221509]  [<ffffffff81619119>] smp_apic_timer_interrupt+0x69/0x99
+> >[  131.227839]  [<ffffffff8161805d>] apic_timer_interrupt+0x6d/0x80
+> >[  131.233816]  <EOI>  [<ffffffff81099745>] ? sched_clock_cpu+0xc5/0x120
+> >[  131.240267]  [<ffffffff814b9ff0>] ? cpuidle_wrap_enter+0x50/0xa0
+> >[  131.246252]  [<ffffffff814b9fe9>] ? cpuidle_wrap_enter+0x49/0xa0
+> >[  131.252238]  [<ffffffff814ba050>] cpuidle_enter_tk+0x10/0x20
+> >[  131.257877]  [<ffffffff814b9c89>] cpuidle_idle_call+0xa9/0x260
+> >[  131.263692]  [<ffffffff8101c42f>] cpu_idle+0xaf/0x120
+> >[  131.268727]  [<ffffffff815f8971>] start_secondary+0x255/0x257
+> >[  131.274449] ---[ end trace 1151a50552231615 ]---
+> >
+> >When we change the system time to a low value like this, the value of
+> >timekeeper->offs_real will be a negative value.
+> >
+> >It seems that the WARN occurs because an hrtimer has been started in the time
+> >between the releasing of the timekeeper lock and the IPI call (via a call to
+> >on_each_cpu) in clock_was_set() in the do_settimeofday() code.  The end result
+> >is that a REALTIME_CLOCK timer has been added with softexpires = expires =
+> >KTIME_MAX.  The hrtimer_interrupt() fires/is called and the loop at
+> >kernel/hrtimer.c:1289 is executed.  In this loop the code subtracts the
+> >clock base's offset (which was set to timekeeper->offs_real in
+> >do_settimeofday()) from the current hrtimer_cpu_base->expiry value (which
+> >was KTIME_MAX):
+> >
+> >	KTIME_MAX - (a negative value) = overflow
+> >
+> >A simple check for an overflow can resolve this problem.  Using KTIME_MAX
+> >instead of the overflow value will result in the hrtimer function being run,
+> >and the reprogramming of the timer after that.
+> >
+> >Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> >Cc: Thomas Gleixner <tglx@linutronix.de>
+> >Cc: John Stultz <john.stultz@linaro.org>
+> 
+> Prarit: Should this be tagged for -stable?
+> 
+Please. I am hitting this problem with 3.8.6 on powerpc. The patch fixes it for
+me.
 
-------------------
+Tested-by: Guenter Roeck <linux@roeck-us.net>
 
-From: Yinghai Lu <yinghai@kernel.org>
-
-commit c5fb301ae83bec6892e54984e6ec765c47df8e10 upstream.
-
-Matthew reported kernels fail the pci_eisa probe and are later successful
-with the virtual_eisa_root_init force probe without slot0.
-
-The reason for that is: PNP probing is before pci_eisa_init gets called
-as pci_eisa_init is called via pci_driver.
-
-pnp 00:0f has 0xc80 - 0xc84 reserved.
-[    9.700409] pnp 00:0f: [io  0x0c80-0x0c84]
-
-so eisa_probe will fail from pci_eisa_init
-				==>eisa_root_register
-					==>eisa_probe path.
-as force_probe is not set in pci_eisa_root, it will bail early when
-slot0 is not probed and initialized.
-
-Try to use subsys_initcall_sync instead, and will keep following sequence:
-	pci_subsys_init
-	pci_eisa_init_early
-	pnpacpi_init/isapnp_init
-
-After this patch EISA can be initialized properly, and PNP overlapping
-resource will not be reserved.
-[   10.104434] system 00:0f: [io  0x0c80-0x0c84] could not be reserved
-
-Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
-Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/eisa/pci_eisa.c |   41 ++++++++++++++++++++++-------------------
- 1 file changed, 22 insertions(+), 19 deletions(-)
-
---- a/drivers/eisa/pci_eisa.c
-+++ b/drivers/eisa/pci_eisa.c
-@@ -19,8 +19,7 @@
- /* There is only *one* pci_eisa device per machine, right ? */
- static struct eisa_root_device pci_eisa_root;
- 
--static int __init pci_eisa_init(struct pci_dev *pdev,
--				const struct pci_device_id *ent)
-+static int __init pci_eisa_init(struct pci_dev *pdev)
- {
- 	int rc;
- 
-@@ -45,22 +44,26 @@ static int __init pci_eisa_init(struct p
- 	return 0;
- }
- 
--static struct pci_device_id pci_eisa_pci_tbl[] = {
--	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
--	  PCI_CLASS_BRIDGE_EISA << 8, 0xffff00, 0 },
--	{ 0, }
--};
--
--static struct pci_driver __refdata pci_eisa_driver = {
--	.name		= "pci_eisa",
--	.id_table	= pci_eisa_pci_tbl,
--	.probe		= pci_eisa_init,
--};
--
--static int __init pci_eisa_init_module (void)
-+/*
-+ * We have to call pci_eisa_init_early() before pnpacpi_init()/isapnp_init().
-+ *   Otherwise pnp resource will get enabled early and could prevent eisa
-+ *   to be initialized.
-+ * Also need to make sure pci_eisa_init_early() is called after
-+ * x86/pci_subsys_init().
-+ * So need to use subsys_initcall_sync with it.
-+ */
-+static int __init pci_eisa_init_early(void)
- {
--	return pci_register_driver (&pci_eisa_driver);
--}
-+	struct pci_dev *dev = NULL;
-+	int ret;
-+
-+	for_each_pci_dev(dev)
-+		if ((dev->class >> 8) == PCI_CLASS_BRIDGE_EISA) {
-+			ret = pci_eisa_init(dev);
-+			if (ret)
-+				return ret;
-+		}
- 
--device_initcall(pci_eisa_init_module);
--MODULE_DEVICE_TABLE(pci, pci_eisa_pci_tbl);
-+	return 0;
-+}
-+subsys_initcall_sync(pci_eisa_init_early);
-
-
+Guenter
