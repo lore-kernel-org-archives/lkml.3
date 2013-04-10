@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937476Ab3DJWuG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:50:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56556 "EHLO
+	id S937499Ab3DJW7c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:59:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56569 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937459Ab3DJWuD (ORCPT
+	with ESMTP id S937469Ab3DJWuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:50:03 -0400
+	Wed, 10 Apr 2013 18:50:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Moore <pmoore@redhat.com>, Will Drewry <wad@chromium.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 18/29] x86: remove the x32 syscall bitmask from syscall_get_nr()
-Date: Wed, 10 Apr 2013 15:49:36 -0700
-Message-Id: <20130410224805.965513423@linuxfoundation.org>
+        Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 21/29] crypto: gcm - fix assumption that assoc has one segment
+Date: Wed, 10 Apr 2013 15:49:39 -0700
+Message-Id: <20130410224806.244331282@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -28,63 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
 
-commit 8b4b9f27e57584f3d90e0bb84cf800ad81cfe3a1 upstream.
+commit d3dde52209ab571e4e2ec26c66f85ad1355f7475 upstream.
 
-Commit fca460f95e928bae373daa8295877b6905bc62b8 simplified the x32
-implementation by creating a syscall bitmask, equal to 0x40000000, that
-could be applied to x32 syscalls such that the masked syscall number
-would be the same as a x86_64 syscall.  While that patch was a nice
-way to simplify the code, it went a bit too far by adding the mask to
-syscall_get_nr(); returning the masked syscall numbers can cause
-confusion with callers that expect syscall numbers matching the x32
-ABI, e.g. unmasked syscall numbers.
+rfc4543(gcm(*)) code for GMAC assumes that assoc scatterlist always contains
+only one segment and only makes use of this first segment. However ipsec passes
+assoc with three segments when using 'extended sequence number' thus in this
+case rfc4543(gcm(*)) fails to function correctly. Patch fixes this issue.
 
-This patch fixes this by simply removing the mask from syscall_get_nr()
-while preserving the other changes from the original commit.  While
-there are several syscall_get_nr() callers in the kernel, most simply
-check that the syscall number is greater than zero, in this case this
-patch will have no effect.  Of those remaining callers, they appear
-to be few, seccomp and ftrace, and from my testing of seccomp without
-this patch the original commit definitely breaks things; the seccomp
-filter does not correctly filter the syscalls due to the difference in
-syscall numbers in the BPF filter and the value from syscall_get_nr().
-Applying this patch restores the seccomp BPF filter functionality on
-x32.
-
-I've tested this patch with the seccomp BPF filters as well as ftrace
-and everything looks reasonable to me; needless to say general usage
-seemed fine as well.
-
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Link: http://lkml.kernel.org/r/20130215172143.12549.10292.stgit@localhost
-Cc: Will Drewry <wad@chromium.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
+Tested-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/syscall.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ crypto/gcm.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/arch/x86/include/asm/syscall.h
-+++ b/arch/x86/include/asm/syscall.h
-@@ -27,13 +27,13 @@ extern const unsigned long sys_call_tabl
-  */
- static inline int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
- {
--	return regs->orig_ax & __SYSCALL_MASK;
-+	return regs->orig_ax;
- }
+--- a/crypto/gcm.c
++++ b/crypto/gcm.c
+@@ -44,6 +44,7 @@ struct crypto_rfc4543_ctx {
  
- static inline void syscall_rollback(struct task_struct *task,
- 				    struct pt_regs *regs)
- {
--	regs->ax = regs->orig_ax & __SYSCALL_MASK;
-+	regs->ax = regs->orig_ax;
- }
+ struct crypto_rfc4543_req_ctx {
+ 	u8 auth_tag[16];
++	u8 assocbuf[32];
+ 	struct scatterlist cipher[1];
+ 	struct scatterlist payload[2];
+ 	struct scatterlist assoc[2];
+@@ -1142,9 +1143,19 @@ static struct aead_request *crypto_rfc45
+ 	scatterwalk_crypto_chain(payload, dst, vdst == req->iv + 8, 2);
+ 	assoclen += 8 + req->cryptlen - (enc ? 0 : authsize);
  
- static inline long syscall_get_error(struct task_struct *task,
+-	sg_init_table(assoc, 2);
+-	sg_set_page(assoc, sg_page(req->assoc), req->assoc->length,
+-		    req->assoc->offset);
++	if (req->assoc->length == req->assoclen) {
++		sg_init_table(assoc, 2);
++		sg_set_page(assoc, sg_page(req->assoc), req->assoc->length,
++			    req->assoc->offset);
++	} else {
++		BUG_ON(req->assoclen > sizeof(rctx->assocbuf));
++
++		scatterwalk_map_and_copy(rctx->assocbuf, req->assoc, 0,
++					 req->assoclen, 0);
++
++		sg_init_table(assoc, 2);
++		sg_set_buf(assoc, rctx->assocbuf, req->assoclen);
++	}
+ 	scatterwalk_crypto_chain(assoc, payload, 0, 2);
+ 
+ 	aead_request_set_tfm(subreq, ctx->child);
 
 
