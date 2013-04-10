@@ -1,147 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936708Ab3DJVoP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 17:44:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55657 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935612Ab3DJVoN (ORCPT
+	id S936874Ab3DJVqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 17:46:11 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:34301 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935291Ab3DJVqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 17:44:13 -0400
-Date: Wed, 10 Apr 2013 14:44:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
-        linuxram@us.ibm.com, guz.fnst@cn.fujitsu.com, tmac@hp.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        tangchen@cn.fujitsu.com, jiang.liu@huawei.com
-Subject: Re: [PATCH v3 2/3] resource: Add release_mem_region_adjustable()
-Message-Id: <20130410144412.395bf9f2fb8192920175e30a@linux-foundation.org>
-In-Reply-To: <1365614221-685-3-git-send-email-toshi.kani@hp.com>
-References: <1365614221-685-1-git-send-email-toshi.kani@hp.com>
-	<1365614221-685-3-git-send-email-toshi.kani@hp.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Apr 2013 17:46:09 -0400
+Date: Wed, 10 Apr 2013 14:46:07 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH v5 1/3] hugetlbfs: stop setting VM_DONTDUMP in
+ initializing vma(VM_HUGETLB)
+In-Reply-To: <1365610669-16625-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Message-ID: <alpine.DEB.2.02.1304101445520.1526@chino.kir.corp.google.com>
+References: <1365610669-16625-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1365610669-16625-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Apr 2013 11:17:00 -0600 Toshi Kani <toshi.kani@hp.com> wrote:
+On Wed, 10 Apr 2013, Naoya Horiguchi wrote:
 
-> Added release_mem_region_adjustable(), which releases a requested
-> region from a currently busy memory resource.  This interface
-> adjusts the matched memory resource accordingly even if the
-> requested region does not match exactly but still fits into.
+> Currently we fail to include any data on hugepages into coredump,
+> because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
+> introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
+> mm->reserved_vm counter". This looks to me a serious regression,
+> so let's fix it.
 > 
-> This new interface is intended for memory hot-delete.  During
-> bootup, memory resources are inserted from the boot descriptor
-> table, such as EFI Memory Table and e820.  Each memory resource
-> entry usually covers the whole contigous memory range.  Memory
-> hot-delete request, on the other hand, may target to a particular
-> range of memory resource, and its size can be much smaller than
-> the whole contiguous memory.  Since the existing release interfaces
-> like __release_region() require a requested region to be exactly
-> matched to a resource entry, they do not allow a partial resource
-> to be released.
+> ChangeLog v3:
+>  - move 'return 0' into a separate patch
 > 
-> This new interface is restrictive (i.e. release under certain
-> conditions), which is consistent with other release interfaces,
-> __release_region() and __release_resource().  Additional release
-> conditions, such as an overlapping region to a resource entry,
-> can be supported after they are confirmed as valid cases.
+> ChangeLog v2:
+>  - add 'return 0' in hugepage memory check
 > 
-> There is no change to the existing interfaces since their restriction
-> is valid for I/O resources.
-> 
-> ...
->
-> +int release_mem_region_adjustable(struct resource *parent,
-> +			resource_size_t start, resource_size_t size)
-> +{
-> +	struct resource **p;
-> +	struct resource *res, *new;
-> +	resource_size_t end;
-> +	int ret = -EINVAL;
-> +
-> +	end = start + size - 1;
-> +	if ((start < parent->start) || (end > parent->end))
-> +		return ret;
-> +
-> +	p = &parent->child;
-> +	write_lock(&resource_lock);
-> +
-> +	while ((res = *p)) {
-> +		if (res->start >= end)
-> +			break;
-> +
-> +		/* look for the next resource if it does not fit into */
-> +		if (res->start > start || res->end < end) {
-> +			p = &res->sibling;
-> +			continue;
-> +		}
-> +
-> +		if (!(res->flags & IORESOURCE_MEM))
-> +			break;
-> +
-> +		if (!(res->flags & IORESOURCE_BUSY)) {
-> +			p = &res->child;
-> +			continue;
-> +		}
-> +
-> +		/* found the target resource; let's adjust accordingly */
-> +		if (res->start == start && res->end == end) {
-> +			/* free the whole entry */
-> +			*p = res->sibling;
-> +			kfree(res);
-> +			ret = 0;
-> +		} else if (res->start == start && res->end != end) {
-> +			/* adjust the start */
-> +			ret = __adjust_resource(res, end + 1,
-> +						res->end - end);
-> +		} else if (res->start != start && res->end == end) {
-> +			/* adjust the end */
-> +			ret = __adjust_resource(res, res->start,
-> +						start - res->start);
-> +		} else {
-> +			/* split into two entries */
-> +			new = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: stable@vger.kernel.org
 
-Nope, we can't perform a GFP_KERNEL allocation under write_lock().
+Acked-by: David Rientjes <rientjes@google.com>
 
-Was this code path runtime tested?  If no, please try
-to find a way to test it.  If yes, please see
-Documentation/SubmitChecklist section 12 and use that in the future.
-
-I'll switch it to GFP_ATOMIC.  Which is horridly lame but the
-allocation is small and alternatives are unobvious.
-
-> +			if (!new) {
-> +				ret = -ENOMEM;
-> +				break;
-> +			}
-> +			new->name = res->name;
-> +			new->start = end + 1;
-> +			new->end = res->end;
-> +			new->flags = res->flags;
-> +			new->parent = res->parent;
-> +			new->sibling = res->sibling;
-> +			new->child = NULL;
-> +
-> +			ret = __adjust_resource(res, res->start,
-> +						start - res->start);
-> +			if (ret) {
-> +				kfree(new);
-> +				break;
-> +			}
-> +			res->sibling = new;
-> +		}
-> +
-> +		break;
-> +	}
-> +
-> +	write_unlock(&resource_lock);
-> +	return ret;
-> +}
-> +#endif	/* CONFIG_MEMORY_HOTPLUG */
-
+Stable for 3.7+.
