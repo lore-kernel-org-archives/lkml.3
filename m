@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936109Ab3DJMMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 08:12:45 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:49615 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936027Ab3DJMMn (ORCPT
+	id S936220Ab3DJMOP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 08:14:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53387 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935141Ab3DJMOO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 08:12:43 -0400
+	Wed, 10 Apr 2013 08:14:14 -0400
+Date: Wed, 10 Apr 2013 14:13:50 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: Jan Kara <jack@suse.cz>
+Cc: Jongman Heo <jongman.heo@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Phillip Susi <psusi@ubuntu.com>
+Subject: Re: [3.9-rc5 regression, BISECTED] INFO: task umount:29671 blocked
+ for more than 120 seconds
+Message-ID: <20130410121350.GB12244@kernel.dk>
+References: <20130410120639.GC11686@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20130410115647.GA8083@gmail.com>
-References: <1365521034-4496-1-git-send-email-jacob.shin@amd.com>
-	<1365586878.30071.33.camel@laptop>
-	<CABPqkBRTaMV9FNmX6qRJAHaO8yTyiqF=EzmeC7Gp7=e-7Bo-gA@mail.gmail.com>
-	<1365594552.30071.63.camel@laptop>
-	<1365594957.30071.66.camel@laptop>
-	<20130410115647.GA8083@gmail.com>
-Date: Wed, 10 Apr 2013 14:12:42 +0200
-Message-ID: <CABPqkBQS3ikJWd6yXjjSKdEW3M2pNYzTSs2d56=VTx=aomWUYg@mail.gmail.com>
-Subject: Re: [PATCH RESEND 0/3] perf, amd: Support for Family 16h L2I
- Performance Counters
-From: Stephane Eranian <eranian@google.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Jacob Shin <jacob.shin@amd.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86 <x86@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130410120639.GC11686@quack.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 1:56 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Peter Zijlstra <peterz@infradead.org> wrote:
->
->> On Wed, 2013-04-10 at 13:49 +0200, Peter Zijlstra wrote:
->>
->> > Hmm.. the 15h old interface bits got merged? I thought I kept telling
->> > that should be done like the intel uncore stuff since the hardware
->> > interface wasn't retarded anymore.
->>
->> Ah well, that crap seems to have slipped in in Feb when I was still a
->> near vegetable and not paying much attention.
->>
->> /me curses a bit.
->>
->> I don't suppose we can deprecate it and remove this stuff?
->
-> I think we can - if there's a functional replacement.
->
-Does the existing code expose a type in sysfs?
-If not then you cannot do this transparently, I am afraid
-because the syntax would be different, i.e., not cpu/...
+On Wed, Apr 10 2013, Jan Kara wrote:
+> Axboe <axboe@kernel.dk>, Phillip Susi <psusi@ubuntu.com>
+> Bcc: 
+> Subject: Re: [3.9-rc5 regression, BISECTED] INFO: task umount:29671 blocked
+>  for more than 120 seconds
+> Reply-To: 
+> In-Reply-To: <12072206.85601365230982200.JavaMail.weblogic@epml02>
+> 
+>   Hello,
+> 
+> On Sat 06-04-13 06:49:42, Jongman Heo wrote:
+> > Once I reported this issue (on 1st Apr), and have just done git bisect.
+> > 
+> > I hit kernel hang with 3.9-rc5, during unmount (the device was mounted via loop device, in case it matters).
+>   This is known problem and I think already fixed. BTW, it's good to CC
+> author of the patch and the relevant maintainer when you bisected the
+> problem to a particular patch.
 
-I reviewed the code and tested it. But at the time, I thought
-you had agreed on the approach used.
+Yep it is, revert went into Linus -git yesterday. And agree on CC'ing
+the patch author and maintainer, it's the best way to ensure that it
+gets the proper attention it deserves.
+
+-- 
+Jens Axboe
+
