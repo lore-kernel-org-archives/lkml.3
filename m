@@ -1,164 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765176Ab3DJHRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 03:17:19 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43258 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311Ab3DJHRR (ORCPT
+	id S936283Ab3DJHRw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 03:17:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35661 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab3DJHRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 03:17:17 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <516511DF.5020805@jp.fujitsu.com>
-Date: Wed, 10 Apr 2013 16:16:47 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning requirements
- for kswapd
-References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <1365505625-9460-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1365505625-9460-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Apr 2013 03:17:50 -0400
+Date: Wed, 10 Apr 2013 17:17:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Kukjin Kim <kgene.kim@samsung.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: linux-next: manual merge of the arm-soc tree with the pm tree
+Message-Id: <20130410171743.2ffa67388b330991228a6775@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__10_Apr_2013_17_17_43_+1000_ooEOTyZZyygsQj8M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/09 20:06), Mel Gorman wrote:
-> Simplistically, the anon and file LRU lists are scanned proportionally
-> depending on the value of vm.swappiness although there are other factors
-> taken into account by get_scan_count().  The patch "mm: vmscan: Limit
-> the number of pages kswapd reclaims" limits the number of pages kswapd
-> reclaims but it breaks this proportional scanning and may evenly shrink
-> anon/file LRUs regardless of vm.swappiness.
-> 
-> This patch preserves the proportional scanning and reclaim. It does mean
-> that kswapd will reclaim more than requested but the number of pages will
-> be related to the high watermark.
-> 
-> [mhocko@suse.cz: Correct proportional reclaim for memcg and simplify]
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
->   mm/vmscan.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++--------
->   1 file changed, 46 insertions(+), 8 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 4835a7a..0742c45 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1825,13 +1825,21 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->   	enum lru_list lru;
->   	unsigned long nr_reclaimed = 0;
->   	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
-> +	unsigned long nr_anon_scantarget, nr_file_scantarget;
->   	struct blk_plug plug;
-> +	bool scan_adjusted = false;
->   
->   	get_scan_count(lruvec, sc, nr);
->   
-> +	/* Record the original scan target for proportional adjustments later */
-> +	nr_file_scantarget = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE] + 1;
-> +	nr_anon_scantarget = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON] + 1;
-> +
+--Signature=_Wed__10_Apr_2013_17_17_43_+1000_ooEOTyZZyygsQj8M
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm sorry I couldn't understand the calc...
+Hi all,
 
-Assume here
-        nr_file_scantarget = 100
-        nr_anon_file_target = 100.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-s3c24xx/Kconfig between commit 785f40040874 ("cpufreq:
+s3c24xx: move cpufreq driver to drivers/cpufreq") from the pm tree and
+commits fb278af74b28 ("ARM: S3C24XX: Removed unneeded dependency on
+CPU_S3C2410") and a4e4d22c6f53 ("ARM: S3C24XX: Removed unneeded
+dependency on CPU_S3C2412") from the arm-soc tree.
 
+I fixed it up by removing the sections from arch/arm/mach-s3c24xx/Kconfig
+and can carry thefix as necessary (no action is required).
 
->   	blk_start_plug(&plug);
->   	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
->   					nr[LRU_INACTIVE_FILE]) {
-> +		unsigned long nr_anon, nr_file, percentage;
-> +
->   		for_each_evictable_lru(lru) {
->   			if (nr[lru]) {
->   				nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
-> @@ -1841,17 +1849,47 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->   							    lruvec, sc);
->   			}
->   		}
-> +
-> +		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
-> +			continue;
-> +
->   		/*
-> -		 * On large memory systems, scan >> priority can become
-> -		 * really large. This is fine for the starting priority;
-> -		 * we want to put equal scanning pressure on each zone.
-> -		 * However, if the VM has a harder time of freeing pages,
-> -		 * with multiple processes reclaiming pages, the total
-> -		 * freeing target can get unreasonably large.
-> +		 * For global direct reclaim, reclaim only the number of pages
-> +		 * requested. Less care is taken to scan proportionally as it
-> +		 * is more important to minimise direct reclaim stall latency
-> +		 * than it is to properly age the LRU lists.
->   		 */
-> -		if (nr_reclaimed >= nr_to_reclaim &&
-> -		    sc->priority < DEF_PRIORITY)
-> +		if (global_reclaim(sc) && !current_is_kswapd())
->   			break;
-> +
-> +		/*
-> +		 * For kswapd and memcg, reclaim at least the number of pages
-> +		 * requested. Ensure that the anon and file LRUs shrink
-> +		 * proportionally what was requested by get_scan_count(). We
-> +		 * stop reclaiming one LRU and reduce the amount scanning
-> +		 * proportional to the original scan target.
-> +		 */
-> +		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
-> +		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
-> +
-Then, nr_file = 80, nr_anon=70.
+P.S. those arm-soc tree commits have a bad Author email address ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__10_Apr_2013_17_17_43_+1000_ooEOTyZZyygsQj8M
+Content-Type: application/pgp-signature
 
-> +		if (nr_file > nr_anon) {
-> +			lru = LRU_BASE;
-> +			percentage = nr_anon * 100 / nr_anon_scantarget;
-> +		} else {
-> +			lru = LRU_FILE;
-> +			percentage = nr_file * 100 / nr_file_scantarget;
-> +		}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-the percentage will be 70.
+iQIcBAEBCAAGBQJRZRIXAAoJEECxmPOUX5FEugUP/20P7BgYgGzsw2Cfx8MaWqyv
+YFMKmEt1qXR7qRk4Yog2g8eJ/EvgZVg1xUOO5vV0TbUZOZYigDRBxPwfNTLLCD2y
+ex0XpZ/ZvMD3EcRSA5LxteCN2GKU0P7XzdJ5YVK8rCn92fBTuuktNPGUHu439Ow0
+oizsWDs5ZFKi15l+3zvBRIK3B1wknYLAcTirda//xycf3M75+QTXO2PODzonlOIx
+Kia9NdZHfqlT+Wj626fFNdYvaXIm39a9hVuJ0wDSyKUazGJwmWEI/recdbtEELZu
+ApIF1dwsH/qB0PIjYIrADtu80ifUNrt5Aejqb82NUDZGvOhBOH6Wm6EqEZFoEA8U
+ymdy2iowNjtjPZfeo0tAum26sNmSsmC62vICyU1eFquB7/4GwiXNmy2KxAVXJi3q
+lXAb+1QoE+jA+OqQ/NEpZy59YvBcMT7IubsV8JXcMBNvNS5KI0A07ToJYk0Qwve6
+iU0ld65s8dwpnSOX7Ic3AT9QDxdrieOQiaWXFv0ty+eis7TH1mmgkNAfO7oF9vMF
+aE8kOURBzEaKSil7TLtQqsJ0Sfi+o3wG5FUqeUJM/EHqlsZulCtBz4WjVgHcw5Je
+edD+bPjOUHfZXDK25utzzV/8z/VH6d0UoVUG/ZVa+0dLf/TyH3oAERHmMwLtLSIE
+vhEjDq98tW/tsQ1ET4d9
+=kNLL
+-----END PGP SIGNATURE-----
 
-> +
-> +		/* Stop scanning the smaller of the LRU */
-> +		nr[lru] = 0;
-> +		nr[lru + LRU_ACTIVE] = 0;
-> +
-this will stop anon scan.
-
-> +		/* Reduce scanning of the other LRU proportionally */
-> +		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
-> +		nr[lru] = nr[lru] * percentage / 100;;
-> +		nr[lru + LRU_ACTIVE] = nr[lru + LRU_ACTIVE] * percentage / 100;
-> +
-
-finally, in the next iteration,
-
-              nr[file] = 80 * 0.7 = 56.
-             
-After loop, anon-scan is 30 pages , file-scan is 76(20+56) pages..
-
-I think the calc here should be
-
-   nr[lru] = nr_lru_scantarget * percentage / 100 - nr[lru]
-
-   Here, 80-70=10 more pages to scan..should be proportional.
-
-Am I misunderstanding ?
-
-Thanks,
--Kame
-
-
+--Signature=_Wed__10_Apr_2013_17_17_43_+1000_ooEOTyZZyygsQj8M--
