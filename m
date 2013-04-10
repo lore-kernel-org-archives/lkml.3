@@ -1,57 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937041Ab3DJQK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:10:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36392 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753774Ab3DJQK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:10:58 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH v5 2/3] fix hugetlb memory check in vma_dump_size()
-Date: Wed, 10 Apr 2013 12:09:16 -0400
-Message-Id: <1365610157-15290-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1365610157-15290-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1365610157-15290-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S937044Ab3DJQMT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:12:19 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:36708 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936574Ab3DJQMQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 12:12:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+	<1363217302-14383-4-git-send-email-yinghai@kernel.org>
+	<CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
+Date: Wed, 10 Apr 2013 09:12:15 -0700
+X-Google-Sender-Auth: dwo9XG9cv7e99McsKmNjyw9eIGY
+Message-ID: <CAE9FiQV=Wv0SKKyrpauh6u2jkCYyWAthFH0FcXqGw5zKLnnQVQ@mail.gmail.com>
+Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation/filesystems/proc.txt says about coredump_filter bitmask,
+On Thu, Apr 4, 2013 at 3:18 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> From: Ram Pai <linuxram@us.ibm.com>
+>>
+>> Currently pci_dev structure holds an array of 17 PCI resources; six base
+>> BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
+>> A bridge device just needs the 4 bridge resources. A non-bridge device
+>> just needs the six base resources and one ROM resource. The sriov
+>> resources are needed only if the device has SRIOV capability.
+>>
+>> The pci_dev structure needs to be re-organized to avoid unnecessary
+>> bloating.  However too much code outside the pci-bus driver, assumes the
+>> internal details of the pci_dev structure, thus making it hard to
+>> re-organize the datastructure.
+>>
+>> As a first step this patch provides generic methods to access the
+>> resource structure of the pci_dev.
+>>
+>> Finally we can re-organize the resource structure in the pci_dev
+>> structure and correspondingly update the methods.
+>>
+>> -v2: Consolidated iterator interface as per Bjorn's suggestion.
+>> -v3: Add the idx back - Yinghai Lu
+>> -v7: Change to use bitmap for searching - Yinghai Lu
+>> -v8: Fix acpiphp module compiling error that is found by
+>>         Steven Newbury <steve@snewbury.org.uk> - Yinghai Lu
+>>
+>> Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  drivers/pci/probe.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+>>  include/linux/pci.h |   24 ++++++++++++++++++++++++
+>>  2 files changed, 72 insertions(+)
+>>
+>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>> index 1df75f7..ac751a6 100644
+>> --- a/drivers/pci/probe.c
+>> +++ b/drivers/pci/probe.c
+>> @@ -123,6 +123,54 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
+>>         return -1;
+>>  }
+>>
+>> +static void __init_res_idx_mask(unsigned long *mask, int flag)
+>> +{
+>> +       bitmap_zero(mask, PCI_NUM_RESOURCES);
+>> +       if (flag & PCI_STD_RES)
+>> +               bitmap_set(mask, PCI_STD_RESOURCES,
+>> +                       PCI_STD_RESOURCE_END - PCI_STD_RESOURCES + 1);
+>> +       if (flag & PCI_ROM_RES)
+>> +               bitmap_set(mask, PCI_ROM_RESOURCE, 1);
+>> +#ifdef CONFIG_PCI_IOV
+>> +       if (flag & PCI_IOV_RES)
+>> +               bitmap_set(mask, PCI_IOV_RESOURCES,
+>> +                       PCI_IOV_RESOURCE_END - PCI_IOV_RESOURCES + 1);
+>> +#endif
+>> +       if (flag & PCI_BRIDGE_RES)
+>> +               bitmap_set(mask, PCI_BRIDGE_RESOURCES,
+>> +                       PCI_BRIDGE_RESOURCE_END - PCI_BRIDGE_RESOURCES + 1);
+>> +}
+>> +
+>> +static DECLARE_BITMAP(res_idx_mask[1 << PCI_RES_BLOCK_NUM], PCI_NUM_RESOURCES);
+>> +static int __init pci_res_idx_mask_init(void)
+>> +{
+>> +       int i;
+>> +
+>> +       for (i = 0; i < (1 << PCI_RES_BLOCK_NUM); i++)
+>> +               __init_res_idx_mask(res_idx_mask[i], i);
+>> +
+>> +       return 0;
+>> +}
+>> +postcore_initcall(pci_res_idx_mask_init);
+>> +
+>> +static inline unsigned long *get_res_idx_mask(int flag)
+>> +{
+>> +       return res_idx_mask[flag & ((1 << PCI_RES_BLOCK_NUM) - 1)];
+>> +}
+>> +
+>> +int pci_next_resource_idx(int i, int flag)
+>> +{
+>> +       i++;
+>> +       if (i < PCI_NUM_RESOURCES)
+>> +               i = find_next_bit(get_res_idx_mask(flag), PCI_NUM_RESOURCES, i);
+>> +
+>> +       if (i < PCI_NUM_RESOURCES)
+>> +               return i;
+>> +
+>> +       return -1;
+>> +}
+>> +EXPORT_SYMBOL(pci_next_resource_idx);
+>> +
+>>  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
+>>  {
+>>         u64 size = mask & maxbase;      /* Find the significant bits */
+>> diff --git a/include/linux/pci.h b/include/linux/pci.h
+>> index aefff8b..127a856 100644
+>> --- a/include/linux/pci.h
+>> +++ b/include/linux/pci.h
+>> @@ -341,6 +341,30 @@ struct pci_dev {
+>>  struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
+>>  int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
+>>
+>> +#define PCI_STD_RES            (1<<0)
+>> +#define PCI_ROM_RES            (1<<1)
+>> +#define PCI_IOV_RES            (1<<2)
+>> +#define PCI_BRIDGE_RES         (1<<3)
+>> +#define PCI_RES_BLOCK_NUM      4
+>> +
+>> +#define PCI_ALL_RES            (PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
+>> +#define PCI_NOSTD_RES          (PCI_ALL_RES & ~PCI_STD_RES)
+>> +#define PCI_NOIOV_RES          (PCI_ALL_RES & ~PCI_IOV_RES)
+>> +#define PCI_NOROM_RES          (PCI_ALL_RES & ~PCI_ROM_RES)
+>> +#define PCI_NOBRIDGE_RES       (PCI_ALL_RES & ~PCI_BRIDGE_RES)
+>> +#define PCI_STD_ROM_RES                (PCI_STD_RES | PCI_ROM_RES)
+>> +#define PCI_STD_IOV_RES                (PCI_STD_RES | PCI_IOV_RES)
+>> +#define PCI_STD_ROM_IOV_RES    (PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
+>> +
+>> +int pci_next_resource_idx(int i, int flag);
+>> +
+>> +#define for_each_pci_resource(dev, res, i, flag)       \
+>> +       for (i = pci_next_resource_idx(-1, flag),       \
+>> +               res = pci_dev_resource_n(dev, i);       \
+>> +            res;                                       \
+>> +            i = pci_next_resource_idx(i, flag),        \
+>> +               res = pci_dev_resource_n(dev, i))
+>> +
+>>  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
+>>  {
+>>  #ifdef CONFIG_PCI_IOV
+>
+> I think this turned out to be a disaster, with all the bitmaps and
+> helper functions.  Filtering in the bodies of the
+> for_each_pci_resource() users has *got* to be better.  That probably
+> requires a wrapper struct around the struct resource.  Or possibly
+> having a wrapper struct with a "type" or "flags" field would make
+> filtering in for_each_pci_resources() itself cleaner to implement.
 
-  Note bit 0-4 doesn't effect any hugetlb memory. hugetlb memory are only
-  effected by bit 5-6.
+Do you mean have extra struct that will wrapper resource ?
+and the struct will have type that will tell that resource is PCI bridge
+resource or other std/sriov resource?
 
-However current code can go into the subsequent flag checks of bit 0-4
-for vma(VM_HUGETLB). So this patch inserts 'return' and makes it work
-as written in the document.
+then that struct need to have BAR in it.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: stable@vger.kernel.org
----
- fs/binfmt_elf.c | 1 +
- 1 file changed, 1 insertion(+)
+that looks like addon_res that is added in this patchset.
 
-diff --git v3.9-rc3.orig/fs/binfmt_elf.c v3.9-rc3/fs/binfmt_elf.c
-index 3939829..86af964 100644
---- v3.9-rc3.orig/fs/binfmt_elf.c
-+++ v3.9-rc3/fs/binfmt_elf.c
-@@ -1137,6 +1137,7 @@ static unsigned long vma_dump_size(struct vm_area_struct *vma,
- 			goto whole;
- 		if (!(vma->vm_flags & VM_SHARED) && FILTER(HUGETLB_PRIVATE))
- 			goto whole;
-+		return 0;
- 	}
- 
- 	/* Do not dump I/O mapped devices or special mappings */
--- 
-1.7.11.7
+but for the std/bridge/sriov, idx is used all the way and in all over
+the drivers.
 
+>
+> I think it would also help if we got rid of all the "PCI_NO*_RES"
+> definitions and just had the users explicitly specify what they *do*
+> want.
+
+yes, remove PCI_NO*_RES should be more clean
+
+Thanks
+
+Yinghai
