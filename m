@@ -1,167 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936955Ab3DJPlL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:41:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:61551 "EHLO mga09.intel.com"
+	id S936990Ab3DJPlW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:41:22 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:19948 "EHLO mail.abilis.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932747Ab3DJPlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:41:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,447,1363158000"; 
-   d="scan'208";a="316049901"
-Message-ID: <516588E2.4030901@linux.intel.com>
-Date: Wed, 10 Apr 2013 08:44:34 -0700
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Daniel Leung <daniel.leung@linux.intel.com>
-CC: Jiri Kosina <jkosina@suse.cz>, srinivas.pandruvada@intel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: hid-sensor-hub: do not process feature reports in
- raw_event
-References: <1363886546-6517-1-git-send-email-daniel.leung@linux.intel.com>    <51507136.4020308@linux.intel.com>    <alpine.LNX.2.00.1303271608500.23442@pobox.suse.cz>    <38514.10.7.197.74.1365440092.squirrel@linux.intel.com> <33544.10.7.197.74.1365551736.squirrel@linux.intel.com>
-In-Reply-To: <33544.10.7.197.74.1365551736.squirrel@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932747Ab3DJPlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 11:41:19 -0400
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Mike Turquette <mturquette@linaro.org>, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Christian Ruppert <christian.ruppert@abilis.com>
+Subject: [PATCH] clk: Add device tree binding to clk-fixed-factor
+Date: Wed, 10 Apr 2013 17:40:43 +0200
+Message-Id: <1365608443-30350-1-git-send-email-christian.ruppert@abilis.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Daniel.
+This patch adds a device tree binding for the simple fixed factor clock
+divider/multiplier of the common clock tree binding.
 
-I don't know if this should be fixed in client drivers since other 
-drivers may have this issue.
+Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+---
+ .../bindings/clock/fixed-factor-clkdiv.txt         |   24 +++++++++++++++
+ drivers/clk/clk-fixed-factor.c                     |   32 ++++++++++++++++++++
+ include/linux/clk-provider.h                       |    1 +
+ 3 files changed, 57 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt
 
-I interpret the return value of hdrv->raw_event as :
-"<0"     : Error. The driver has parsed the message and found issue
-"==0"  :    No error and driver has consumed report
-">0" : Not an error and driver has not parsed or consumed the event
-
-In this case hid-sensor-hub didn't parse message to return any error or 
-to say consumed.
-
-May be hid-core.c
-
-        if (hdrv && hdrv->raw_event && hid_match_report(hid, report)) {
-                 ret = hdrv->raw_event(hid, report, data, size);
-                 if (ret < 0) {
-                         goto unlock;
-                 }
-         }
-
-
-I think Jiri can have better idea.
-
-Thanks,
-Srinivas
-
-
-On 04/09/2013 04:55 PM, Daniel Leung wrote:
->>> On Mon, 25 Mar 2013, Srinivas Pandruvada wrote:
->>>
->>>> Daniel,
->>>>
->>>> I am looking at 3.9.rc1.
->>>> The only place I see the raw_event callback is called from
->>>> hid/hid_input_report(). hid_input_report is called with type
->>>> HID_INPUT_REPORT
->>>> in all cases, except hid_ctrl(), where it can be different depending on
->>>> xx.report->type. But here, the return value is not checked.
->>>>
->>>> Do you know the call chain for HID_FETURE_REPORT, where this is
->>>> creating
->>>> problem?
->>> This was exactly what I was wondering about when I have seen the initial
->>> patch a few weeks ago.
->>>
->>> Daniel, could you please elaborate? Is there a out-of-tree driver for
->>> Acer
->>> Iconia W700?
->> Sorry for the late reply. I was out of town and was having difficulties
->> accessing the mail server.
->>
->> For the call path, here is what I got (using WARN_ON()):
->>
->> <4>[  150.943775] ------------[ cut here ]------------
->> <4>[  150.943861] WARNING: at
->> ../../../../../../../../../../home/dleung/android/ia/private/jb-mr1-internal/kernel/intel/drivers/hid/hid-sensor-hub.c:418
->> sensor_hub_raw_event+0x2d0/0x3b0 [hid_sensor_hub]()
->> <4>[  150.944028] Hardware name: ICONIA W700
->> <7>[  150.944071] Modules linked in: hid_sensor_als hid_sensor_gyro_3d
->> hid_sensor_accel_3d uvcvideo videobuf2_vmalloc videobuf2_memops
->> videobuf2_core btusb bluetooth hid_multitouch ath9k ath9k_common ath9k_hw
->> ath snd_hda_codec_hdmi snd_hda_codec_realtek ip6table_raw snd_hda_intel
->> iptable_raw snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_timer snd
->> soundcore hid_sensor_trigger hid_sensor_iio_common hid_sensor_hub
->> industrialio_triggered_buffer kfifo_buf industrialio coretemp
->> <7>[  150.944132] Pid: 0, comm: swapper/1 Not tainted
->> 3.8.0-aia1-00043-gd7fd780-dirty #2
->> <7>[  150.944136] Call Trace:
->> <7>[  150.944141]  <IRQ>  [<ffffffff8105b5bf>]
->> warn_slowpath_common+0x7f/0xc0
->> <7>[  150.944163]  [<ffffffff8105b61a>] warn_slowpath_null+0x1a/0x20
->> <7>[  150.944173]  [<ffffffffa00315e0>] sensor_hub_raw_event+0x2d0/0x3b0
->> [hid_sensor_hub]
->> <7>[  150.944184]  [<ffffffff819021e7>] ?
->> _raw_spin_unlock_irqrestore+0x57/0x70
->> <7>[  150.944195]  [<ffffffff816ccce3>] hid_input_report+0x283/0x2d0
->> <7>[  150.944203]  [<ffffffff816d9faf>] hid_ctrl+0x9f/0x180
->> <7>[  150.944212]  [<ffffffff815b2087>] usb_hcd_giveback_urb+0x77/0x110
->> <7>[  150.944222]  [<ffffffff8160073f>] xhci_irq+0x60f/0x1530
->> <7>[  150.944230]  [<ffffffff810df0fe>] ? handle_edge_irq+0x1e/0x130
->> <7>[  150.944239]  [<ffffffff810af04f>] ?
->> __lock_acquire.isra.31+0x28f/0xa70
->> <7>[  150.944247]  [<ffffffff81601671>] xhci_msi_irq+0x11/0x20
->> <7>[  150.944258]  [<ffffffff810dc395>] handle_irq_event_percpu+0x55/0x210
->> <7>[  150.944267]  [<ffffffff810dc598>] handle_irq_event+0x48/0x70
->> <7>[  150.944273]  [<ffffffff810df157>] handle_edge_irq+0x77/0x130
->> <7>[  150.944283]  [<ffffffff81004180>] handle_irq+0x60/0x150
->> <7>[  150.944293]  [<ffffffff81906406>] ?
->> atomic_notifier_call_chain+0x16/0x20
->> <7>[  150.944302]  [<ffffffff8190c38a>] do_IRQ+0x5a/0xe0
->> <7>[  150.944309]  [<ffffffff8190266f>] common_interrupt+0x6f/0x6f
->> <7>[  150.944313]  <EOI>  [<ffffffff816a97f5>] ?
->> cpuidle_wrap_enter+0x55/0xa0
->> <7>[  150.944327]  [<ffffffff816a97f1>] ? cpuidle_wrap_enter+0x51/0xa0
->> <7>[  150.944334]  [<ffffffff816a9850>] cpuidle_enter_tk+0x10/0x20
->> <7>[  150.944341]  [<ffffffff816a940f>] cpuidle_idle_call+0xaf/0x2b0
->> <7>[  150.944350]  [<ffffffff8100b3aa>] cpu_idle+0xda/0x130
->> <7>[  150.944360]  [<ffffffff818f081d>] start_secondary+0x266/0x268
->> <4>[  150.944365] ---[ end trace 32319d39ebee5616 ]---
->>
->>
->> You can see that it went through hid_ctrl().
->>
->>  From what I can gather using usbmon, the sensor hub sends the feature
->> report correctly. However, the in-kernel struct is not updated when the
->> report comes in. Therefore, the report from sensor_hub_report() is always
->> zero-filled. When calling sensor_hub_set_feature(), those zeros are being
->> sent back to the device. The feature report contains fields for power
->> state and reporting state. If they are set to zero, the firmware does not
->> know what to do as zero means undefined state. Both power and reporting
->> states have to be set for sensor to report values. Given the zero-filled
->> report, and we can only deal with one field in sensor_hub_set_feature(),
->> setting power state to non-zero also sends zero (i.e. undefined state) to
->> the reporting state field, and vice versa.
->>
->> The sensor hub on Acer Iconia W700 is using drivers/hid/hid-sensor-hub.c.
->> I also played with Sony Vaio Duo 11 a while back (before having this
->> patch), and was having trouble turning on gyroscope. I suspect it is
->> caused by the same issue. The sensor hub on Acer is from STMicro, while
->> the one in Vaio Duo is from Freescale.
-> Just to clarify a little bit on the issue.
->
-> Although hid_ctrl() does not care the return value of hid_input_report(),
-> the issue is within hid_input_report(). In drivers/hid/hid-core.c:1317
-> where raw_event() is called, if return is non-zero, the following call of
-> hid_report_raw_event() is skipped. This call is needed to have the
-> in-kernel struct updated with the actual feature report from device.
->
->
-> Daniel
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+diff --git a/Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt b/Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt
+new file mode 100644
+index 0000000..352bac4
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt
+@@ -0,0 +1,24 @@
++Device Tree Clock bindings for plat-tb10x
++
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++Required properties:
++- compatible : shall be "fixed-factor-clkdiv"
++- #clock-cells: from common clock binding; shall be set to 0
++- clocks: shall be the input parent clock phandle for the clock.
++- clock-mult: defines the multiplication factor of the output clock frequency
++  wrt. the input clock frequency.
++- clock-div: defines the division factor of the output clock frequency wrt.
++  the input clock frequency.
++
++Example:
++cpu_clk: clkdiv_cpu {	/* CPU clock derived from pll0. 1/2 of pll frequency */
++	compatible = "fixed-factor-clkdiv";
++	#clock-cells = <0>;
++	clocks = <&pll0>;
++	clock-mult = <1>;
++	clock-div = <2>;
++	clock-output-names = "cpu_clk";
++};
+diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
+index 1ef271e..85e45f1 100644
+--- a/drivers/clk/clk-fixed-factor.c
++++ b/drivers/clk/clk-fixed-factor.c
+@@ -11,6 +11,7 @@
+ #include <linux/clk-provider.h>
+ #include <linux/slab.h>
+ #include <linux/err.h>
++#include <linux/of.h>
+ 
+ /*
+  * DOC: basic fixed multiplier and divider clock that cannot gate
+@@ -96,3 +97,34 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
+ 
+ 	return clk;
+ }
++
++#ifdef CONFIG_OF
++/**
++ * of_fixed_factor_clkdiv_setup() - Set up simple fixed factor clock divider
++ */
++void of_fixed_factor_clkdiv_setup(struct device_node *node)
++{
++	struct clk *clk;
++	const char *clk_name = node->name;
++	const char *parent_name;
++	u32 mult, div;
++
++	if (of_property_read_u32(node, "clock-mult", &mult))
++		return;
++
++	if (of_property_read_u32(node, "clock-div", &div))
++		return;
++
++	parent_name = of_clk_get_parent_name(node, 0);
++
++	of_property_read_string(node, "clock-output-names", &clk_name);
++
++	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
++					mult, div);
++	if (!IS_ERR(clk))
++		of_clk_add_provider(node, of_clk_src_simple_get, clk);
++}
++EXPORT_SYMBOL_GPL(of_fixed_factor_clkdiv_setup);
++CLK_OF_DECLARE(fixed_clkdiv, "fixed-factor-clkdiv",
++		of_fixed_factor_clkdiv_setup);
++#endif
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 7f197d7..d4937cf 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -184,6 +184,7 @@ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+ 		unsigned long fixed_rate);
+ 
+ void of_fixed_clk_setup(struct device_node *np);
++void of_fixed_factor_clkdiv_setup(struct device_node *node);
+ 
+ /**
+  * struct clk_gate - gating clock
+-- 
+1.7.1
 
