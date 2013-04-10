@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937669Ab3DJWvD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:51:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56701 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937447Ab3DJWu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S937648Ab3DJWu6 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 10 Apr 2013 18:50:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56677 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937447Ab3DJWuz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 18:50:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Marco Cesarano <marco@marvell.com>, Bing Zhao <bzhao@marvell.com>
-Subject: [ 18/19] Revert "mwifiex: cancel cmd timer and free curr_cmd in shutdown process
-Date: Wed, 10 Apr 2013 15:50:41 -0700
-Message-Id: <20130410225028.687898651@linuxfoundation.org>
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 10/19] ftrace: Consistently restore trace function on sysctl enabling
+Date: Wed, 10 Apr 2013 15:50:33 -0700
+Message-Id: <20130410225027.866600257@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
 References: <20130410225026.833809117@linuxfoundation.org>
@@ -27,36 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-revert commit b9f1f48ce20a1b923429c216669d03b5a900a8cf which is commit
-084c7189acb3f969c855536166042e27f5dd703f upstream.
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-It shouldn't have been applied to the 3.0-stable tree.
+commit 5000c418840b309251c5887f0b56503aae30f84c upstream.
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Marco Cesarano <marco@marvell.com>
-Reported-by: Bing Zhao <bzhao@marvell.com>
+If we reenable ftrace via syctl, we currently set ftrace_trace_function
+based on the previous simplistic algorithm. This is inconsistent with
+what update_ftrace_function does. So better call that helper instead.
+
+Link: http://lkml.kernel.org/r/5151D26F.1070702@siemens.com
+
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/init.c |    8 --------
- 1 file changed, 8 deletions(-)
+ kernel/trace/ftrace.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/init.c
-+++ b/drivers/net/wireless/mwifiex/init.c
-@@ -561,14 +561,6 @@ mwifiex_shutdown_drv(struct mwifiex_adap
- 		return ret;
- 	}
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3934,12 +3934,8 @@ ftrace_enable_sysctl(struct ctl_table *t
+ 		ftrace_startup_sysctl();
  
--	/* cancel current command */
--	if (adapter->curr_cmd) {
--		dev_warn(adapter->dev, "curr_cmd is still in processing\n");
--		del_timer(&adapter->cmd_timer);
--		mwifiex_insert_cmd_to_free_q(adapter, adapter->curr_cmd);
--		adapter->curr_cmd = NULL;
--	}
--
- 	/* shut down mwifiex */
- 	dev_dbg(adapter->dev, "info: shutdown mwifiex...\n");
+ 		/* we are starting ftrace again */
+-		if (ftrace_ops_list != &ftrace_list_end) {
+-			if (ftrace_ops_list->next == &ftrace_list_end)
+-				ftrace_trace_function = ftrace_ops_list->func;
+-			else
+-				ftrace_trace_function = ftrace_ops_list_func;
+-		}
++		if (ftrace_ops_list != &ftrace_list_end)
++			update_ftrace_function();
  
+ 	} else {
+ 		/* stopping ftrace calls (just send to ftrace_stub) */
 
 
