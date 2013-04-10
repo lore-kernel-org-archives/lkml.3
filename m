@@ -1,189 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936856Ab3DJKbO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:31:14 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:35035 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935892Ab3DJKbL (ORCPT
+	id S936887Ab3DJKbe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:31:34 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:8530 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936140Ab3DJKbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:31:11 -0400
-Date: Wed, 10 Apr 2013 12:34:09 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        rob clark <robclark@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-Subject: Re: [PATCH v2 2/3] mutex: add support for reservation style locks, v2
-Message-ID: <20130410103408.GI27612@phenom.ffwll.local>
-Mail-Followup-To: Peter Zijlstra <peterz@infradead.org>,
-	Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-	linux-arch@vger.kernel.org, x86@kernel.org,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	dri-devel <dri-devel@lists.freedesktop.org>,
-	"linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-	rob clark <robclark@gmail.com>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"linux-media@vger.kernel.org" <linux-media@vger.kernel.org>
-References: <20130228102452.15191.22673.stgit@patser>
- <20130228102502.15191.14146.stgit@patser>
- <1364900432.18374.24.camel@laptop>
- <515AF1C1.7080508@canonical.com>
- <1364921954.20640.22.camel@laptop>
- <1365076908.2609.94.camel@laptop>
- <20130404133123.GW2228@phenom.ffwll.local>
- <CAKMK7uG_qLQrZUdE_LRANm7qXPvGUisBx-k=+y=F2gA3=odkrQ@mail.gmail.com>
- <1365417564.2609.153.camel@laptop>
- <20130408115026.GL2228@phenom.ffwll.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130408115026.GL2228@phenom.ffwll.local>
-X-Operating-System: Linux phenom 3.7.0-rc4+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Apr 2013 06:31:31 -0400
+X-AuditID: cbfee68d-b7f786d000005188-78-51653f8146df
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org, balbi@ti.com, rob.herring@calxeda.com,
+        thomas.abraham@linaro.org, grant.likely@secretlab.ca,
+        dianders@chromium.org, jg1.han@samsung.com, p.paneri@samsung.com
+References: <1363334171-21812-1-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1363334171-21812-1-git-send-email-gautam.vivek@samsung.com>
+Subject: RE: [PATCH v4 0/2] ARM: Exynos5250: Enabling samsung usb phy
+Date: Wed, 10 Apr 2013 19:31:29 +0900
+Message-id: <310001ce35d6$901546b0$b03fd410$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac4hUtjhrvxLxxXmRTOUAM4gSYJATQUg0EpA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+ZgW6jfWqgQd8EfYuD9+stXh7StDgw
+	+yGrxdllB9ks2q4cZLd4dWYjm8XlhZdYLS7vmsNmMeP8PiaLRctamS3Ob+lksji84gCTxbEZ
+	SxgdeD0WfL7C7jG74SKLx51re9g8zs9YyOjRt2UVo8fPlzoex29sZ/L4vEkugCOKyyYlNSez
+	LLVI3y6BK+P83APMBffZKnpWpjYwbmXtYuTkkBAwkfhzZRc7hC0mceHeerYuRi4OIYFljBL3
+	7x1ghym6c+YeVGI6o8ThK1dYIJy/jBJTvx9iA6liE9CQOPz+GViHiMAkRokTawVAbGaBw4wS
+	S/7WgthCAh4SdzpWMoPYnAKeEhOXvmMBsYUFXCV+bzgJ1ssioCpxrfM+I4jNK2ArsXFZAzOE
+	LSjxY/I9FoiZWhLrdx5ngrDlJTaveQtUwwF0qbrEo7+6ECcYSWxb8QKqRERi34t3jCA3Swgs
+	5ZB49usMI8QuAYlvkw+xQPTKSmw6wAzxsKTEwRU3WCYwSsxCsnkWks2zkGyehWTFAkaWVYyi
+	qQXJBcVJ6UWGesWJucWleel6yfm5mxghCaF3B+PtA9aHGJOB1k9klhJNzgcmlLySeENjMyML
+	UxNTYyNzSzPShJXEedVarAOFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MPqYOzdtWTsrYEuQ
+	32Gri4lnphXbHZwZPKEz+uolz2tdf+cvk5lxuDu2+qbO47alKtLhJVfk1KL37DRInmv8JSJr
+	UUeP/Mbcowd2zW3lVDGoCfYKURO4yN4UWZf43O5L/ZSfm56mpiyUSsmW2D+7YrXdpjat4/9E
+	LfVTVSNvMnmx364R09r1RImlOCPRUIu5qDgRAHJOLmgeAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBKsWRmVeSWpSXmKPExsVy+t9jQd1G+9RAg6stWhYH79dbvDykaXFg
+	9kNWi7PLDrJZtF05yG7x6sxGNovLCy+xWlzeNYfNYsb5fUwWi5a1Mluc39LJZHF4xQEmi2Mz
+	ljA68Hos+HyF3WN2w0UWjzvX9rB5nJ+xkNGjb8sqRo+fL3U8jt/YzuTxeZNcAEdUA6NNRmpi
+	SmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtDFSgpliTmlQKGA
+	xOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCOsaM83MPMBfcZ6voWZnawLiVtYuRk0NCwETi
+	zpl7bBC2mMSFe+uBbC4OIYHpjBKHr1xhgXD+MkpM/X4IrIpNQEPi8Ptn7CC2iMAkRokTawVA
+	bGaBw4wSS/7WgthCAh4SdzpWMoPYnAKeEhOXvmMBsYUFXCV+bzgJ1ssioCpxrfM+I4jNK2Ar
+	sXFZAzOELSjxY/I9FoiZWhLrdx5ngrDlJTaveQtUwwF0qbrEo7+6ECcYSWxb8QKqRERi34t3
+	jBMYhWYhmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6RXnFibnFpXrpecn7uJkZwunkmvYNx
+	VYPFIUYBDkYlHt4FhimBQqyJZcWVuYcYJTiYlUR4LbRSA4V4UxIrq1KL8uOLSnNSiw8xJgM9
+	OpFZSjQ5H5gK80riDY1NzIwsjcwsjEzMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSzhYmDU6qB
+	0fnKf+Xoz5tloyfp1BZ7prLtzdyxaYvTiwVS85qtFnzbMMlG4apw5+T38vzC1qs+bxBM/hg0
+	3brznbz59UY/H924l6Hq7alH1atuOUU7JHts1s/quT9pulLtJr7whAtpl87ftk5Riel7qLx5
+	PcP25lkFa8O3Hrmw9sGdtjT+LuNXKbKz/TZGKrEUZyQaajEXFScCAO1v3oN7AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 01:50:26PM +0200, Daniel Vetter wrote:
-> On Mon, Apr 08, 2013 at 12:39:24PM +0200, Peter Zijlstra wrote:
-> > On Thu, 2013-04-04 at 18:56 +0200, Daniel Vetter wrote:
-> > > Presuming I'm still following we should be able to fix this with the
-> > > new sleep state TASK_DEADLOCK and a flag somewhere in the thread info
-> > > (let's call it PF_GTFO for simplicity).
-> > 
-> > I'm reading "Get The F*ck Out" ? I like the name, except PF_flags are
-> > unsuitable since they are not atomic and we'd need to set it from
-> > another thread.
+Vivek Gautam wrote:
 > 
-> I think the PF_ flag is a non-starter for a different reason, too. To make
-> different clases of ww_mutexes nest properly, we need to make sure that we
-> don't dead/live-lock trying to wake up a task holdinga ww_mutex of class
-> A, while that task is trying to acquire ww_mutexes of class B. Picture:
+> Based on 'for-next' of linux-samsung tree with following patches
+> from Doug on top:
+> usb: Document clocks in samsung, exynos4210-ehci/ohci bindings
+> ARM: dts: add usb 2.0 clock references to exynos5250 device tree
 > 
-> 	task 1			task 2			task 3
-> 							holds lock B
-> 	ticket_A = acquire_start(class A)
-> 	ww_mutex_lock(lock A, ticket_A)			busy doing something
+> Also depending upon following patch-series for Samsung-usb-phy driver:
+> [PATCH v7 0/2] Adding USB 3.0 DRD-phy support for exynos5250
 > 
-> 	ticket_B = acquire_start(class B)
-> 	ww_mutex_lock(lock B, ticket_B)
-> 	-> contention with task 3
-> 				
-> 				ticket_task2 = acquire_start(class A)
-> 				ww_mutex_lock(lock A, ticket_task2)
-> 				-> contention with task 1
+> Changes from v3:
+> Added 'clocks' and 'clock-names' entry also in device nodes, aligning
+> with common clock framework for Samsung's SoCs.
 > 
-> If we go with the PF_GTFO task flag, task 2 will set it on task 1
-> (handwave locking/atomicity again here ;-). But taks 1 will only back off
-> from any locks in class B. Or at least I think we should impose that
-> restriction, since otherwise a ww_mutex acquire loop will leak out badly
-> abstraction-wise and making nesting pretty much impossible in practice.
+> Vivek Gautam (2):
+>   ARM: Exynos5250: Enabling samsung-usb2phy driver
+>   ARM: Exynos5250: Enabling samsung-usb3phy driver
 > 
-> But if we really want nesting to work transparently, then task 1 should be
-> allowed to continue taking locks from class A (after an acquire_end(class
-> B) call ofc). But then it will have missed the wakeup from task 2, so task
-> 2 blocks for too long and task 1 doesn't back off from further acquiring
-> locks in class A.
+>  arch/arm/boot/dts/exynos5250.dtsi |   29 +++++++++++++++++++++++++++++
+>  1 files changed, 29 insertions(+), 0 deletions(-)
 > 
-> Presuming my reasoning for the rt case isn't broken, this break deadlock
-> avoidance if we sort by (rt_prio, ticket).
-> 
-> So I think we need to move the PF_GTFO flag to the ticket to make sure
-> that task1 will notice that there's contention with one of the locks it
-> holds from class A and that it better gtfo asap (i.e. back off, drop all
-> currently held locks in class A and go into the slowpath).
-> 
-> But I still need to think the nesting case through a bit more (and draw
-> some diagrams), so not sure yet. One thing I still need to ponder is how
-> to best stack tickets (for tasks doing nested ww_mutex locking) and where
-> all we need a pointer to relevant tickets and what kind of fun this
-> entails ... I need to ponder this some more.
+> --
+> 1.7.6.5
 
-Ok, so I think the nesting case should all work if we have a
-per-task/ticket flag to signal contention. The point I've mused over a bit
-is how to get at both the flag and the corresponding task to do the
-wakeup. I think for non-rt the simplest way is to store a pointer to the
-ticket in the ww_mutex, and the ticket the holds both the contention flag
-and a pointer to the task. Lifetime of that stuff would be protected by
-the wait_lock from disappearing untimely, which should allow the
-lock/unlock fastpaths to set/clear it non-atomically - only careful places
-is in the contented unlock slowpath. So rough api sketch for nesting
-ww_mutexes:
+OK, applied, thanks.
 
-struct ww_class {
-	atomic_t next_ticket;
-	/* virtual lock to annotate the acquire_start/end sections. */
-	struct lock_class_key acquire_key;
-	/* lockdep class of all ww_mutexes in this class */
-	struct lock_class_key mutex_key;
-	/* for debug/tracepts */
-	const char *name 
-};
+- Kukjin
 
-DEFINE_WW_CLASS(name) /* ... and all the other usual magic init funcitons */
-
-struct ww_acquire_ctx {
-	struct task_struct *task; /* invariant */
-	usinged ticket; /* invariant */
-	/* atomic is probably overkill, but need to review the resulting
-	 * code with all the barriers first. */
-	atomic_t contention;
-}
-
-void ww_acquire_start(struct ww_acuire_ctx *ctx, struct ww_class *class);
-void ww_acquire_end(struct ww_acuire_ctx *ctx);
-
-Originally I've thought we could store the pointer to the current acquire
-ctx in task_struct (since we need that handy for PI boosting anyway), but
-that makes things a bit ugly with nesting. Having a (somewhat) redundant
-pointer to the acquiring taks in the ctx seemed less evil.
-
-struct ww_mutex {
-	struct mutex base;
-	struct ww_acquire_ctx *holding_ctx;
-}
-
-I've considered whether we should try to pull clever tricks like with
-lockdep keys and make the ww_class more implicit (by auto-instantiating it
-somewhere and adding a pointer to it in each ww_mutex). But I think we
-should not hide this complexity, but instead make it explicit.
-
-All the ww_mutex_(un)lock* variants would then also need to take the
-context instead of the ticket. Besides the usual return codes matching the
-normal mutex functions we'd have:
-
--EDEADLK: Deadlock detected (or got kicked by a higher-prio task in RT),
-drop all currently held locks (of the same class) and block on this lock
-(since it's the contention point) with ww_mutex_lock_slow.
-
--EALREADY: Lock already held by the same acquire context. We need this to
-be able to efficiently yell at evil userspace.
-
-If ww_mutex_lock goes into the slowpath and it's not one of the above
-cases (i.e. wait, not wound) then it sets the contention flag
-(unconditionally) and wakes up the current holder iff the current holder
-is in the TASK_DEADLOCK state.
-
-If ww_mutex_lock gets woken up it checks the contextion flag on the
-acquire context. If it is set it backs off and returns -EDEADLK. Obviously
-it also needs to check that before blocking, and we might even want to
-check unconditionally before attempting any lock operation (to ensure we
-get out of the way of higher-prio tasks quicker).
-
-One thing we probably need is to make TASK_DEADLOCK a flag, since we still
-want the different interruptible types of blocking. At least i915 goes to
-great lengths to make sure that we take every lock which could be held
-while waiting for the gpu with interruptible sleeps (or at least
-killable).
-
-Did I miss anything?
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
