@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936590Ab3DJMWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 08:22:38 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53123 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab3DJMWh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 08:22:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 7/8] dmaengine: ste_dma40: Use the BIT macro to replace ugly '(1 << x)'s
-Date: Wed, 10 Apr 2013 14:22:31 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Harvey Harrison <harvey.harrison@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, linus.walleij@stericsson.com
-References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org> <201304092112.56039.arnd@arndb.de> <20130410093412.GI25316@gmail.com>
-In-Reply-To: <20130410093412.GI25316@gmail.com>
+	id S935731Ab3DJMYQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 08:24:16 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42359 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897Ab3DJMYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 08:24:15 -0400
+Date: Wed, 10 Apr 2013 14:24:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH 0/4] x86: FPU detection in C
+Message-ID: <20130410122411.GE13394@pd.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+	Borislav Petkov <bp@suse.de>
+References: <1365436666-9837-1-git-send-email-bp@alien8.de>
+ <20130410110840.GA29752@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304101422.31601.arnd@arndb.de>
-X-Provags-ID: V02:K0:Zz0GQf62p7nKna1OYKLdgK5HY5fphmaHWl/IOn6n8L2
- baQ8Rj0WjEobi32EzvPdfbsfgJeou1FkD5xjjPsVB8r800erH5
- tt0DkGlMb8+6QfZWWqU9hM2GwHVWLtB9gJOL1aZod/LYEuRQ10
- Da/t1ADZ9mB5mEYr2yOHdN1vibtLGOtQI17uTpuh+QGyIxhQ4k
- +coR3cFuo5RG8vjMIUf+nrvVXDxPrj/KlASb25enmoPwRYn6up
- xZwBV/NcEOoVYJtMGuvc7dI9MZyZh6UCQPSVAwEa73mqqSeI5+
- 1s7jglkpxjvBykJUcqGaJ0Q2EQ8qgar4jFp9f22yPBDHcNBoGk
- DE6lBO4Nd0oGBZ2WIeXk=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130410110840.GA29752@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 April 2013, Lee Jones wrote:
-> On Tue, 09 Apr 2013, Arnd Bergmann wrote:
+On Wed, Apr 10, 2013 at 01:08:40PM +0200, Ingo Molnar wrote:
+> Config attached.
 
-> > Yes, good point. The macro is only used in one place, to compare
-> > two compile-time constant values, but we should define macros in
-> > drivers that are already provided by the kernel.
-> 
-> Okay, it looks like the generic implementation has brackets in it,
-> which isn't allowed for this particular usecase.
+How do you even build this? I tried tip:x86/cpu but it fails here:
 
-Ah, right.
+drivers/misc/lkdtm.c: In function ‘recursive_loop.constprop.3’:
+drivers/misc/lkdtm.c:276:1: warning: the frame size of 1028 bytes is larger than 1024 bytes [-Wframe-larger-than=]
+In file included from /w/kernel/linux-2.6/arch/x86/include/asm/uaccess.h:537:0,
+                 from include/linux/uaccess.h:5,
+                 from include/linux/highmem.h:8,
+                 from include/linux/pagemap.h:10,
+                 from fs/binfmt_misc.c:27:
+/w/kernel/linux-2.6/arch/x86/include/asm/uaccess_32.h: In function ‘parse_command.part.2’:
+/w/kernel/linux-2.6/arch/x86/include/asm/uaccess_32.h:211:26: error: call to ‘copy_from_user_overflow’ declared with attribute error: copy_from_user() buffer size is not provably correct
+make[1]: *** [fs/binfmt_misc.o] Error 1
+make[1]: *** Waiting for unfinished jobs....
+make: *** [fs] Error 2
+make: *** Waiting for unfinished jobs....
 
-> I'll fix this one instead.
+because of CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y.
 
-Probably not worth then. You could open-code the comparison where
-it is used and remove the macro if you want, but I probably
-would not bother.
+Thanks.
 
-	Arnd
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
