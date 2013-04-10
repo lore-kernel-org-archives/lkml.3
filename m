@@ -1,56 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937086Ab3DJQ3a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:29:30 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:39043 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932992Ab3DJQ32 (ORCPT
+	id S937078Ab3DJQat (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:30:49 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:60938 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936994Ab3DJQas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:29:28 -0400
-Message-ID: <5165934B.6050802@linux.vnet.ibm.com>
-Date: Wed, 10 Apr 2013 12:28:59 -0400
-From: "Michael R. Hines" <mrhines@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 10 Apr 2013 12:30:48 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 10 Apr 2013 09:30:56 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
+        kexec@lists.infradead.org, wim@iguana.be,
+        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
+Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130410163056.GB23891@roeck-us.net>
+References: <20130408151509.GA20919@roeck-us.net>
+ <20130409144431.GL79013@redhat.com>
+ <20130409145228.GA1111@roeck-us.net>
+ <20130409151423.GM79013@redhat.com>
+ <20130409160757.GA27050@roeck-us.net>
+ <20130410134039.GV79013@redhat.com>
+ <20130410135123.GB15456@roeck-us.net>
+ <20130410142055.GW79013@redhat.com>
+ <20130410151041.GA6670@roeck-us.net>
+ <20130410161739.GY79013@redhat.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Roland Dreier <roland@kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Yishai Hadas <yishaih@mellanox.com>, Christoph Lameter <cl@linux.com>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, qemu-devel@nongnu.org
-Subject: Re: [PATCHv2] rdma: add a new IB_ACCESS_GIFT flag
-References: <CAL1RGDU2jtrRrxi6srsH_ADiYGvJbCpCT3UvoLGTX3cvQ=s0kQ@mail.gmail.com> <515F3948.40205@linux.vnet.ibm.com> <CAG4TOxPNHZadLjq6-HuOExf1XXLO6AYyvRQ1L09i6qVeA5dbLQ@mail.gmail.com> <515F42EE.8060203@linux.vnet.ibm.com> <20130409190350.GB8212@redhat.com> <5164BFE3.4040204@linux.vnet.ibm.com> <20130410032449.GA12777@redhat.com> <5164EB5F.80403@linux.vnet.ibm.com> <20130410053255.GC12777@redhat.com> <516589C8.1040606@linux.vnet.ibm.com> <20130410150539.GA24381@redhat.com>
-In-Reply-To: <20130410150539.GA24381@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041016-3620-0000-0000-000001FA1F28
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130410161739.GY79013@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 11:05 AM, Michael S. Tsirkin wrote:
-> On Wed, Apr 10, 2013 at 11:48:24AM -0400, Michael R. Hines wrote:
->> There's a very nice, simple client/server RDMA application on the
->> internet you can use to test your patch.
->>
->> http://thegeekinthecorner.wordpress.com/2010/09/28/
->> rdma-read-and-write-with-ib-verbs/
->>
->> This guy provides the source code which dumps several gigabytes over RDMA
->> to the other side.
->>
->> There's no need to run QEMU to test your patch,
->> assuming you have access to infiniband hardware.
->>
->> - Michael
->
-> Does this app have any COW pages?
+On Wed, Apr 10, 2013 at 12:17:39PM -0400, Don Zickus wrote:
+> On Wed, Apr 10, 2013 at 08:10:41AM -0700, Guenter Roeck wrote:
+> > On Wed, Apr 10, 2013 at 10:20:55AM -0400, Don Zickus wrote:
+> > > On Wed, Apr 10, 2013 at 06:51:23AM -0700, Guenter Roeck wrote:
+> > > > On Wed, Apr 10, 2013 at 09:40:39AM -0400, Don Zickus wrote:
+> > > > > On Tue, Apr 09, 2013 at 09:07:58AM -0700, Guenter Roeck wrote:
+> > > > > > > > Just look for the use of mod_timer in the watchdog directory.
+> > > > > > > 
+> > > > > > > So looking at the mod_timer logic in various drivers, it seems regardless
+> > > > > > > if the /dev/watchdog device is opened or not, if it is running, it will
+> > > > > > > automagically kick the watchdog.
+> > > > > > > 
+> > > > > > yes
+> > > > > > 
+> > > > > > > This seems that we can avoid pulling in userspace pieces for this.  Just
+> > > > > > > load the driver and the hardware starts getting kicked.
+> > > > > > > 
+> > > > > > Only if it is already running. Also, you don't want to rely on it, because you
+> > > > > > lose protection against user space issues.
+> > > > > 
+> > > > > IOW if something goes wrong with a runaway userspace app, the kernel
+> > > > > blindly continues to kick the watchdog, which masks the problem, right?
+> > > > > 
+> > > > That would be wrong if any of the drivers does that. The kernel should stop
+> > > > kicking after the software timeout expires.
+> > > > 
+> > > > For example, if the HW needs to be kicked every second, and the high level
+> > > > timeout is set to one minute, the driver should keep kicking the hardware
+> > > > watchdog for one minute and then stop doing it if /dev/watchdog was opened
+> > > > and userspace is silent. 
+> > > 
+> > > Ah ok.
+> > > 
+> > > > 
+> > > > > > 
+> > > > > > A second use is if the hw watchdog needs to be pinged more often than user
+> > > > > > space can provide. Some of the HW watchdogs need a ping in one-second intervals
+> > > > > > or even faster.
+> > > > > > 
+> > > > > > > Is that true?  And if so, do all drivers detect if the hardware is already
+> > > > > > > running during their init?  Or is it based on the first device open?
+> > > > > > > 
+> > > > > > It is usually done in the probe function.
+> > > > > 
+> > > > > Ok.  Thanks for the understanding of how the softdog stuff works.
+> > > > > 
+> > > > > However, we still have the problem that if the machine panics and we want
+> > > > > to jump into the kdump kernel, we need to 'kick' the watchdog one more
+> > > > > time.  This provides us a sane sync point for determining how long we have
+> > > > > to load the watchdog driver in the second kernel before the hardware
+> > > > > reboots us.  Otherwise the reboots are pretty random and nothing is
+> > > > > guaranteed.
+> > > > > 
+> > > > > Hence the need for some sort of patch resembling the one I posted.
+> > > > > 
+> > > > > Soooooooo, any thoughts about that patch and what changes I should make?
+> > > > > :-)
+> > > > > 
+> > > > The FIXME is a problem, and I think the name and scope would have to be
+> > > > more generic (watchdog_kick ?). Also, it doesn't solve the problem
+> > > > of having multiple open watchdogs (my system has three, for example),
+> > > > and it doesn't check if the watchdog is running.
+> > > 
+> > > Ok.  I didn't know the watchdog subsystem well enough, so I just took
+> > > stabs in the dark about how things should work.  I appreciate the
+> > > feedback.
+> > > 
+> > > I could make the name more generic.  I wasn't sure if the watchdog
+> > > community would frown on that.  The FIXME is a problem, I am not sure how
+> > 
+> > I don't know what others think, but I would prefer a more generic name.
+> > That its current use is for kdump is besides the point; there could be
+> > other valid uses.
+> 
+> Ok.
+> 
+> > 
+> > > to handle the 'fail' scenario (can't get the mutex with trylock).  And I
+> > 
+> > I would just return without doing anything. After all, if the mutex is held,
+> > it is possible if not likely that the code crashed _in_ the watchdog code,
+> > so it might be better to just let it crash and burn in that case.
+> 
+> Hmm. Interesting point.  So you are implying most watchdog mutex locks surround
+> quickly executed code that are not called often.  And if we do catch the
+> mutex being held it is either because the watchdog code has failed (bad)
+> or just bad timing :-).
+> 
+Hopefully all locks are for short periods of time ;).
 
-It can easily be made to be. It's just a couple of C source files.
+Since the lock is per device, it would either mean that the code has crashed
+there, or that some other entity is busy dealing with the device, presumably
+trying to ping it. Either case, I think the best (safest) way to deal with
+the situation would be to ignore it.
 
-I've only used it for basic testing.
+> For now I can just do the trylock and return on failure, printing a big
+> fat warning for post-debug purposes.  If it becomes a bigger problem, we
+> can refine the approach later I guess.
+> 
+Ok.
 
+> > 
+> > > have no idea how to even find out if multiple watchdogs are open on the
+> > > system.  Is there a list I could walk?  And with regard to 'watchdog is
+> > 
+> > /* the dev_t structure to store the dynamically allocated watchdog devices */
+> > static dev_t watchdog_devt;
+> > 
+> > One way to look up the allocated watchdogs might be to loop through all kobj
+> > instances for the major device using kobj_lookup. Don't know if there is a
+> > better way.
+> 
+> I can poke at that to see if I can get something to work.  Thanks.
+> 
+> > 
+> > > running', I thought 'watchdog_active' would do that.  But again, I could
+> > > be misreading the code.
+> > > 
+> > You are right. Missed that part, sorry.
+> 
+> No problem, just wanted to make sure I was understanding things correctly.
+> 
+> Again thanks for the feedback.  I'll spin a V2.
+> 
+Make sure you add the kexec maintainer to Cc and get an Ack.
+
+Guenter
