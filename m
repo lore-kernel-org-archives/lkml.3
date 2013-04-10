@@ -1,123 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965134Ab3DJRUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:20:10 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:63380 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964833Ab3DJRUI (ORCPT
+	id S965149Ab3DJRWm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:22:42 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:33421 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752108Ab3DJRWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:20:08 -0400
+	Wed, 10 Apr 2013 13:22:41 -0400
+Date: Wed, 10 Apr 2013 19:22:36 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: Russ Anderson <rja@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
+Message-ID: <20130410172236.GE21951@gmail.com>
+References: <20130403193743.GB29151@sgi.com>
+ <20130408155701.GB19974@gmail.com>
+ <5162EC1A.4050204@zytor.com>
+ <20130408165916.GA3672@sgi.com>
+ <20130410111620.GB29752@gmail.com>
+ <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
+ <20130410152911.GA3011@sgi.com>
+ <20130410165934.GB21951@gmail.com>
+ <20130410171420.GF3658@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <s5hfvyygxac.wl%tiwai@suse.de>
-References: <s5h38vqjhk6.wl%tiwai@suse.de> <CAErSpo57ObGbTwLV+ji4bAtGBfT4=Y3wK1mFQdQGAx9oBcRZww@mail.gmail.com>
- <s5hfvyygxac.wl%tiwai@suse.de>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 10 Apr 2013 11:19:48 -0600
-Message-ID: <CAErSpo67gae_AvB_0SJbbpkaydT8iKCH3_Eg30et1RXVVE860w@mail.gmail.com>
-Subject: Re: [PATCH] pciehp: Add pciehp_surprise module option
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Oliver Neukum <oneukum@suse.de>, Michal Marek <mmarek@suse.cz>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130410171420.GF3658@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 10:34 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> Hi Bjorn,
->
-> sorry for the late follow up as I was on vacation and has been busy
-> for other tasks.  Since this topic went to nirvana, I try to whip
-> again...
->
-> At Mon, 25 Mar 2013 10:58:40 -0600,
-> Bjorn Helgaas wrote:
->>
->> On Wed, Mar 20, 2013 at 8:02 AM, Takashi Iwai <tiwai@suse.de> wrote:
->> > We encountered a problem that on some HP machines the Realtek PCI-e
->> > card reader device appears only when you inserted a card before the
->> > cold boot.  While debugging, it turned out that the device is actually
->> > handled via PCI-e hotplug in some level.  The device sends a presence
->> > change notification, and pciehp receives it, but it's ignored because
->> > of lack of the hotplug surprise (PCI_EXP_SLTCAP_HPS) capability bit.
->> > Once when this check passes, everything starts working -- the device
->> > appears upon plugging the card properly.
->> >
->> > There are a few other bug reports indicating the similar problems
->> > (e.g. on recent Dell laptops), and I guess the culprit is same.
->>
->> Can you point us at these bug reports, e.g., with URLs?  Hopefully
->> they will contain complete dmesg logs and "lspci -vv" outputs so we
->> can debug this a bit more.
->
-> The machine isn't in market yet, so we cannot expose all things, but I
-> attach the lspci snippet of the relevant parts, pci-e ports and the
-> card reader, at least.  If you need anything else, let me know.
->
-> As Oliver and Michal already replied, Windows (both 7/8) identifies
-> the device without modification.  This implies that Windows handles
-> the hotplug no matter whether the surprise bit is set or not, either
-> globally or device-specifically.  But, since this is pretty new
-> hardware, we highly doubt it's done in a white-list basis.
->
->> I'm strongly opposed to adding a module option to work around this
->> issue because the user experience is unacceptable.  We can't expect
->> users to debug the problem and discover the option.
->>
->> I'm also opposed to a DMI quirk system because I think it's very
->> likely that this device works correctly under Windows, and I doubt
->> very much that Windows has to include the equivalent of DMI quirks.
->> So we should, at least in principle, be able to figure out how to make
->> it work, too.
->
-> In order to get things a bit straight, let me list up the things we
-> found again:
->
-> - The Realtek card reader devices doesn't appear in lspci at the
->   fresh boot in multiple kernel versions from 3.0 to 3.9.
->
-> - Once when the card is inserted, it issues the hotplug IRQ event.
->
-> - pciehp receives and handles the event but it doesn't add/remove the
->   device actually because the corresponding controller has no surprise
->   bit.
->
->   When forcibly enabling the hotplug device addition by my patch, it
->   starts working.  The device is added at card insert.  The removal
->   doesn't trigger on our system, but the event itself seems
->   generated.
->
-> - The surprise bit can't be changed as it's supposed to be read-only
->   register bits.  Thus no PCI quirk seems possible, and it has to be
->   fixed in pciehp.
->
-> - Another way to detect the PCI card reader device is to perform
->      echo 1 > /sys/bus/pci/rescan
->   with a memory card inserted.  It doesn't work without the card,
->   and it is less sophisticated than pciehp, of course.
->
-> Right now, we applied a patch for pciehp to ignore the surprise bit
-> per basis of DMI string match.  This works, but doesn't scale; if the
-> same problem happens on a similar model, the driver must be compiled
-> again.  A module option would be really convenient for that, although
-> I understand your concern, too.
->
-> Of course, an alternative (and more radical) solution is to remove the
-> surprise bit check completely from pciehp, as Matthew suggested in the
-> thread.  What risk would it bring?
 
-I think we need to ignore the surprise bit as Matthew suggested.
+* Robin Holt <holt@sgi.com> wrote:
 
-Alex raised an issue with this (secondary bus reset causes a device
-remove followed by device add), so we'd have to work through that
-somehow.  I think doing the remove/add would actually be more correct
-because we would be doing the whole device initialization after the
-reset.  We currently save/restore some device state around the reset,
-but that's a piecemeal approach that is certain to miss internal
-hidden state.  But I don't know how to deal with the KVM implications
-of remove/add.
+> On Wed, Apr 10, 2013 at 06:59:34PM +0200, Ingo Molnar wrote:
+> > 
+> > * Russ Anderson <rja@sgi.com> wrote:
+> > 
+> > > Yes, I have a test patch that replaces for_each_online_cpu(cpu) with a cpu 
+> > > bitmask in disable_nonboot_cpus().  The lower level routines already take a 
+> > > bitmask.  It allows __stop_machine() to be called just once.  That change 
+> > > reduces shutdown time on a 1024 cpu machine from 16 minutes 4 minutes.  
+> > > Significant improvement, but not good enough.
+> > > 
+> > > The next significant bottleneck is __cpu_notify().  Tried creating worker 
+> > > threads to parallelize the shutdown, but the problem is __cpu_notify() is not 
+> > > thread safe.  Putting a lock around it caused all the worker threads to fight 
+> > > over the lock.
+> > 
+> > 4 minutes bootup is 240 seconds, with 1024 CPUs that's about 240 msecs per CPU.
+> > 
+> > That sounds a lot, given that unlike bootup there's not much real work to be done 
+> > during shutdown - we don't initialize anything, etc.
+> > 
+> > Maybe much of those 240 msecs are spent in some stupid udelay loop or so, which 
+> > could be made parallel?
+> > 
+> > Would it be possible to create a 'reboot but stop at the end and reactivate all 
+> > CPUs again' reboot flag, so that it can all be NMI-profiled, to see where the true 
+> > bottleneck is? A naked disable_nonboot_cpus() call in essence.
+> 
+> What, exactly, are you proposing with the NMI profiling? [...]
 
-Bjorn
+I'm proposing to make 'reboot' overhead profilable, via a debug hack:
+
+        echo 1 > /proc/sys/kernel/magic_dont_fully_reboot_flag
+
+	perf record reboot
+
+perf is using NMIs to profile - and since much of cpu_down() is with irqs 
+disabled, NMI profiling would be needed to see inside the overhead.
+
+(Assuming the 240 msecs is CPU overhead, not waiting for some IRQ/IPI event.)
+
+Thanks,
+
+	Ingo
