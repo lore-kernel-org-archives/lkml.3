@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936636Ab3DJIHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 04:07:32 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:50573 "EHLO arroyo.ext.ti.com"
+	id S936660Ab3DJIP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 04:15:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:47338 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425Ab3DJIH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 04:07:26 -0400
-Message-ID: <51651DB6.2050504@ti.com>
-Date: Wed, 10 Apr 2013 11:07:18 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S936266Ab3DJIPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 04:15:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,444,1363158000"; 
+   d="scan'208";a="320176362"
+Message-ID: <51652035.5000802@linux.intel.com>
+Date: Wed, 10 Apr 2013 11:17:57 +0300
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Archit Taneja <archit@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] OMAPDSS: nec-nl8048 panel: Use dev_pm_ops
-References: <1365326053-16248-1-git-send-email-lars@metafoo.de>
-In-Reply-To: <1365326053-16248-1-git-send-email-lars@metafoo.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enig3FCD09A59EE8B38FF4AF6CA8"
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio / ACPI: Handle ACPI events in accordance with the
+ spec
+References: <3043137.BtEKcMiXSu@vostro.rjw.lan> <20130410075319.GN21818@intel.com>
+In-Reply-To: <20130410075319.GN21818@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enig3FCD09A59EE8B38FF4AF6CA8
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 04/10/2013 10:53 AM, Mika Westerberg wrote:
+> On Tue, Apr 09, 2013 at 03:57:25PM +0200, Rafael J. Wysocki wrote:
+>> +void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
+>> +{
+>> +	acpi_handle handle;
+>> +	acpi_status status;
+>> +	struct list_head *evt_pins;
+>> +	struct acpi_gpio_evt_pin *evt_pin, *ep;
+>> +
+>> +	if (!chip->dev || !chip->to_irq)
+>> +		return;
+>> +
+>> +	handle = ACPI_HANDLE(chip->dev);
+>> +	if (!handle)
+>> +		return;
+>> +
+>> +	status = acpi_get_data(handle, acpi_gpio_evt_dh, (void **)&evt_pins);
+>> +	if (ACPI_FAILURE(status))
+>> +		return;
+>> +
+>> +	list_for_each_entry_safe_reverse(evt_pin, ep, evt_pins, node) {
+>> +		devm_free_irq(chip->dev, evt_pin->irq, evt_pin);
+>
+> How about using normal request/free_irq() functions for both _EVT and
+> non-_EVT events? Since we now need to call acpi_gpiochip_free_interrupts()
+> anyway, I don't see the point using devm_* functions here.
+>
 
-On 2013-04-07 12:14, Lars-Peter Clausen wrote:
-> Use dev_pm_ops instead of the deprecated legacy suspend/resume callback=
-s.
->=20
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> ---
->  .../video/omap2/displays/panel-nec-nl8048hl11-01b.c  | 20 ++++++++++++=
-++++----
->  1 file changed, 16 insertions(+), 4 deletions(-)
+Then we need to create a list of non-_EVT events, or add them to the 
+evt_pins list.
 
-Thanks, looks good to me. I'll add to fbdev misc patches.
-
- Tomi
-
-
-
---------------enig3FCD09A59EE8B38FF4AF6CA8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRZR22AAoJEPo9qoy8lh71uFQQAJmWtDVTVXn0ape+VYW20Oon
-Ga8y5D/q8gZFwHGB0UVjLsEiGY9wIbNh86IqZ36A7Y21m5mVlhOpa2RAKYzQEupy
-AkKKZ8BUa4CIMfdCUZNUZ29S5f94pDZZevoJImPujmnRcJVJgOZhDYN5OlHKPFKR
-jyhnEDWbl2lFuUB5tncg1KOttCT3jf0AZ9c0tb2MgpIjZN8RvJJuZ0QQCc8olm1s
-96j+uDDXvYg5p8SCWh1EfHMMTJo5rtXadxskxknxEd8FFPeFE/u9XE9NmfSg0xxK
-omlQmSlMfc+ebtcHujR33gijjkTde3NxdRdVoyNpaxzCAZKMAjM6jRuc7/gJnLsT
-+xP9NZ1r2JyOUkoR9KhmZ5skIFUObtBnxR5pGK+Yxk4UmEU/oEIJ6UeSCj2KAuqM
-/7NKx5qohaePrtIaZ2/odI/R1+Px9O4FcqzwdXVVcmpRa5AMcbL/4xuIlOgq8q01
-R0ml9A+4+zoFgJThI9H/araXSvsVe3mrH3onpV0kE5oyLfsevEbEHf9Y3xnSusQx
-hE06ch61YofRnRDFY9lzZxw8IbOHxsyc/0bsA+p3+VklNLsqpWrPSH/yeXNYudn1
-EjcjZEWoaFHPmba+TlVPJcMUYMY/hUnfGywXzPzblxOerfLyitnOOG42c8BGa3pj
-u//K5Tn5m4J3du8ZlLX5
-=j0rv
------END PGP SIGNATURE-----
-
---------------enig3FCD09A59EE8B38FF4AF6CA8--
