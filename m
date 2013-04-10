@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937025Ab3DJW3u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:29:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53766 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933050Ab3DJW3r (ORCPT
+	id S936920Ab3DJWaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:30:16 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56153 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756630Ab3DJWaO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:29:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [char-misc-next 1/3] mei: nfc: Initial nfc implementation
-Date: Thu, 11 Apr 2013 00:29:38 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        Tomas Winkler <tomas.winkler@intel.com>, linux-kernel@vger.kernel.org
-References: <1365464495-17642-1-git-send-email-tomas.winkler@intel.com> <20130410200312.GC5681@kroah.com> <20130410211513.GJ4874@zurbaran>
-In-Reply-To: <20130410211513.GJ4874@zurbaran>
+	Wed, 10 Apr 2013 18:30:14 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304110029.38938.arnd@arndb.de>
-X-Provags-ID: V02:K0:7Jah2eUSAMpyp1iWNJMUp4LWOsexetsZMW1i+Az7Sy3
- 39cOB0MrkY7M7vqYt5bB88NrPUjzQkBC7Q9zAJTNul9K7NDDKF
- sxBPvFy6zL/MhZ6mjn6ciaekT1doBFxOvs1TC66aJnJ/ktCvHX
- xScjyj8G9fPDwPpCqPTg0PgcyyeArjbqP1GVNJqo98NgXfDF25
- aTPkvGkBdPYOKwdU/n9IAwN69dhgoAlFxJdPIlU+oCV3m1XuhC
- jXFYXHMKsbiPITveQE2xzQbNqyyihW77ruCgeaWQSegZhm1OXR
- XyJoZ3omUmPaAyfqVvJ7WB/zikLmgrWaJlimYAEJ2gIKUiOpbC
- PPc6LOV/57YHbuivnqnA=
+In-Reply-To: <516595DC.4090307@arm.com>
+References: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com>
+	<1365501657-4213-7-git-send-email-serban.constantinescu@arm.com>
+	<CAMP5Xgew5_F2De2+7Ny39iww2Un6hC8B3aYNV7CEawovkFg1Og@mail.gmail.com>
+	<516595DC.4090307@arm.com>
+Date: Wed, 10 Apr 2013 15:30:13 -0700
+Message-ID: <CAMP5XgdrAkt72Ra8J2ecHexo+UcF7eGiLTj2gEL0mOoxHgL_ig@mail.gmail.com>
+Subject: Re: [PATCH v2 6/7] staging: android: binder: fix alignment issues
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Serban Constantinescu <Serban.Constantinescu@arm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 10 April 2013, Samuel Ortiz wrote:
-> > > That works fine with the typical case where your pn544 is directly accessible
-> > > through i2c. But if it's sitting behind the ME, you will need to send
-> > > commands exported through this file to fetch the vendor and radio IDs, but
-> > > also to send those HCI frames that the vanilla Android stack builds after
-> > > encapsulating them into a struct mei_nfc_cmd. And this is all done through the
-> > > /dev/mei interface.
-> > 
-> > No NFC data should be going through /dev/mei, use the proper kernel apis
-> > please.
-> Not my choice, I'm sorry. And I'm not the one who's going to implement the
-> adaptation layer for the Android stack to properly work over /dev/mei, other
-> folks at Intel will.
-> If an Android OEM decides he wants a pn544 NFC chipset behind an x86 ME, then
-> NFC data will go through /dev/mei. I don't like it, but this is a business
-> decision I have no control over.
+On Wed, Apr 10, 2013 at 9:39 AM, Serban Constantinescu
+<Serban.Constantinescu@arm.com> wrote:
+> On 10/04/13 00:58, Arve Hjønnevåg wrote:
+>>
+>> On Tue, Apr 9, 2013 at 3:00 AM, Serban Constantinescu
+>> <serban.constantinescu@arm.com> wrote:
+>>>
+>>> The Android userspace aligns the data written to the binder buffers to
+>>> 4bytes. Thus for 32bit platforms or 64bit platforms running an 32bit
+>>> Android userspace we can have a buffer looking like this:
+>>>
+>>> platform    buffer(binder_cmd   pointer)      size
+>>> 32/32                 32b         32b          8B
+>>> 64/32                 32b         64b          12B
+>>> 64/64                 32b         64b          12B
+>>>
+>>> Thus the kernel needs to check that the buffer size is aligned to 4bytes
+>>> not to (void *) that will be 8bytes on 64bit machines.
+>>>
+>>> The change does not affect existing 32bit ABI.
+>>>
+>>
+>> Do we not want the pointers to be 8 byte aligned on 64bit platforms?
+>
+>
+> No since here we do not align pointers we align binder_buffers and offsets
+> in a buffer.
+>
 
-Welcome to the crap that we have to deal with on ARM all the time. Seriously,
-you may not be able to stop people from doing something stupid, but you
-should not pave their way. Exporting a header file to user space, when the
-only possible use of that header is to do the wrong thing helps nobody.
+Do any 64 bit systems align pointers in a struct to 8 bytes? If so, we
+should keep the start address of the struct 8 byte aligned as well.
 
-If someone seriously wants to use /dev/mei in that way, they can easily
-provide the header file themselves, or patch the kernel in any way necessary.
+> Let's assume that from the userspace we receive a sequence of BC_INCREFS and
+> BC_FREE_BUFFER. According to their definitions the buffer would look like:
+>
+> Buffer:
+> [addr]          [element]
+> 0               BC_INCREFS
+> 4               __u32
+> 8               BC_FREE_BUFFER
+> 12              void *        //(8 bytes for 64bit or 4 bytes for 32bit)
+>
+> Thus the data_size(sizeof(Buffer)) will be 20 bytes for 64bit systems(4bytes
+> aligned). Same explanation for offp where it represents the offset form the
+> start of the buffer to a flat_binder_object(for example here the offset to
+> void* - 12bytes).
+>
 
-	Arnd
+Does this work on every 64 bit system?
+
+--
+Arve Hjønnevåg
