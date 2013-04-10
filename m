@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936911Ab3DJPuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:50:04 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:53314 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab3DJPuC (ORCPT
+	id S936955Ab3DJPvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:51:21 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:3669 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110Ab3DJPvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:50:02 -0400
-Date: Wed, 10 Apr 2013 08:49:57 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, jasowang@redhat.com
-Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Add additional distro specific
- Kconfig options
-Message-ID: <20130410154957.GA13849@kroah.com>
-References: <1365610097-10955-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365610097-10955-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Apr 2013 11:51:20 -0400
+Message-ID: <1365608342.32127.77.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2 1/3] resource: Add __adjust_resource() for internal
+ use
+From: Toshi Kani <toshi.kani@hp.com>
+To: David Rientjes <rientjes@google.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
+        guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com
+Date: Wed, 10 Apr 2013 09:39:02 -0600
+In-Reply-To: <alpine.DEB.2.02.1304092310170.3916@chino.kir.corp.google.com>
+References: <1365440996-30981-1-git-send-email-toshi.kani@hp.com>
+	 <1365440996-30981-2-git-send-email-toshi.kani@hp.com>
+	 <alpine.DEB.2.02.1304092310170.3916@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 09:08:17AM -0700, K. Y. Srinivasan wrote:
-> The guest ID captures information about the guest and has room for
-> distributions to add distro specific information. Add Kconfig options
-> to support distro specific information to be managed easily.
+On Tue, 2013-04-09 at 23:10 -0700, David Rientjes wrote:
+> On Mon, 8 Apr 2013, Toshi Kani wrote:
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/hv/Kconfig        |   14 ++++++++++++++
->  drivers/hv/hv.c           |    4 +++-
->  drivers/hv/hyperv_vmbus.h |    2 +-
->  3 files changed, 18 insertions(+), 2 deletions(-)
+> > Added __adjust_resource(), which is called by adjust_resource()
+> > internally after the resource_lock is held.  There is no interface
+> > change to adjust_resource().  This change allows other functions
+> > to call __adjust_resource() internally while the resource_lock is
+> > held.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 > 
-> diff --git a/drivers/hv/Kconfig b/drivers/hv/Kconfig
-> index 0403b51..d2ca9c7 100644
-> --- a/drivers/hv/Kconfig
-> +++ b/drivers/hv/Kconfig
-> @@ -19,4 +19,18 @@ config HYPERV_BALLOON
->  	help
->  	  Select this option to enable Hyper-V Balloon driver.
->  
-> +config HYPERV_GUEST_D1
-> +	hex "Distro specific information"
-> +	range 0x00 0xff
-> +	default 0
-> +	help
-> +	  This specifies the Distro vendor
+> Acked-by: David Rientjes <rientjes@google.com>
 
-And just what is a distro supposed to set the value here to?  For
-example, what would Arch Linux pick?  Fedora?  RHEL?  SLES?  openSUSE?
-You do know that there are more than 0xff different Linux distro
-"vendors"?  Do they all just get to pick a number that they like?
+Great!  Thanks David!
+-Toshi
 
-> +config HYPERV_GUEST_D2
-> +	hex "Additional Distro specific information"
-> +	range 0x0000 0xffff
-> +	default 0
-> +	help
-> +	  Additional Distro specific kernel version information
-
-Again, what is a distro supposed to do here?  What's wrong with the
-kernel version information that the kernel already has?  Can't you just
-use that string?
-
-greg k-h
