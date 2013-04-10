@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965071Ab3DJRRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:17:00 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:43148 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108Ab3DJRQ7 (ORCPT
+	id S965160Ab3DJRRR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:17:17 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62684 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965106Ab3DJRRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:16:59 -0400
-Date: Wed, 10 Apr 2013 19:16:54 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH RFC 1/3] mutex: Make more scalable by doing less atomic
- operations
-Message-ID: <20130410171654.GD21951@gmail.com>
-References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
- <1365087258-7169-2-git-send-email-Waiman.Long@hp.com>
- <20130408124223.GA10093@gmail.com>
- <CA+55aFztAtpiGK9e_Ed=Kk4jAWNTahv9OEb0+fgp52Api1s7Mw@mail.gmail.com>
- <5163042F.9000404@hp.com>
- <20130410103144.GC28505@gmail.com>
- <51658ADB.4050204@hp.com>
+	Wed, 10 Apr 2013 13:17:16 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 10 Apr 2013 10:17:22 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: David Teigland <teigland@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>, Dave Young <dyoung@redhat.com>,
+        linux-watchdog@vger.kernel.org, kexec@lists.infradead.org,
+        wim@iguana.be, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
+Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130410171722.GC19533@roeck-us.net>
+References: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
+ <516259D2.7000805@redhat.com>
+ <20130408124858.GC79013@redhat.com>
+ <20130408151509.GA20919@roeck-us.net>
+ <20130409144431.GL79013@redhat.com>
+ <20130409145228.GA1111@roeck-us.net>
+ <20130409151423.GM79013@redhat.com>
+ <20130409160757.GA27050@roeck-us.net>
+ <20130410134039.GV79013@redhat.com>
+ <20130410164914.GA18946@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51658ADB.4050204@hp.com>
+In-Reply-To: <20130410164914.GA18946@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Waiman Long <Waiman.Long@hp.com> wrote:
-
-> On 04/10/2013 06:31 AM, Ingo Molnar wrote:
-> >* Waiman Long<Waiman.Long@hp.com>  wrote:
-> >
-> >>>That said, the MUTEX_SHOULD_XCHG_COUNT macro should die. Why shouldn't all
-> >>>architectures just consider negative counts to be locked? It doesn't matter
-> >>>that some might only ever see -1.
-> >>I think so too. However, I don't have the machines to test out other
-> >>architectures. The MUTEX_SHOULD_XCHG_COUNT is just a safety measure to make sure
-> >>that my code won't screw up the kernel in other architectures. Once it is
-> >>confirmed that a negative count other than -1 is fine for all the other
-> >>architectures, the macro can certainly go.
-> >I'd suggest to just remove it in an additional patch, Cc:-ing
-> >linux-arch@vger.kernel.org. The change is very likely to be fine, if not then it's
-> >easy to revert it.
-> >
-> >Thanks,
-> >
-> >	Ingo
->
-> Yes, I can do that. So can I put your name down as reviewer or ack'er for the 
-> 1st patch?
-
-Since I'll typically the maintainer applying & pushing kernel/mutex.c changes to 
-Linus via the locking tree, the commit will get a Signed-off-by from me once you 
-resend the latest state of things - no need to add my Acked-by or Reviewed-by 
-right now.
-
-I'm still hoping for another patch from you that adds queueing to the spinners ... 
-That approach could offer better performance than current patches 1,2,3. In 
-theory.
-
-I'd prefer that approach because you have a testcase that shows the problem and 
-you are willing to maximize performance with it - so we could make sure we have 
-reached maximum performance instead of dropping patches #2, #3, reaching partial 
-performance with patch #1, without having a real full resolution.
+On Wed, Apr 10, 2013 at 12:49:14PM -0400, David Teigland wrote:
+> On Wed, Apr 10, 2013 at 09:40:39AM -0400, Don Zickus wrote:
+> > However, we still have the problem that if the machine panics and we want
+> > to jump into the kdump kernel, we need to 'kick' the watchdog one more
+> > time.  This provides us a sane sync point for determining how long we have
+> > to load the watchdog driver in the second kernel before the hardware
+> > reboots us.  Otherwise the reboots are pretty random and nothing is
+> > guaranteed.
+> 
+> Some time ago I submitted this patch
+> http://www.spinics.net/lists/linux-watchdog/msg01477.html
+> 
+> to get rid of the one "extraneous" ping that was causing me trouble.
+> I'd still like to see merged, but haven't had time to follow up.
+> 
+The use case makes sense to me, so it gets my Ack. Did Wim ever comment on it ?
 
 Thanks,
+Guenter
 
-	Ingo
+> I have a use case where I need to guarantee that the watchdog
+> will *not* be pinged unless my userland daemon does the ping.
+> If my daemon is killed, the close() generates a ping that I
+> don't intend.  This kdump ping looks like it would be another
+> instance that I'd need to suppress.  Perhaps by renaming my flag
+> WDOG_NO_EXTRA_PING and checking it both in release and in
+> kick_for_kdump?
+> 
+> (My daemon associates watchdog pings with shared storage heartbeats.
+> Based on the heartbeats, hosts in a cluster can calculate when an
+> unresponsive host last pinged its watchdog, and can be fairly
+> certain that the "dead" host has been reset by its watchdog 60
+> seconds later.  This is used as an alternative to i/o fencing
+> where we're protecting data on shared storage from corruption
+> after host failures.  If there are uncontrolled watchdog pings,
+> then hosts don't know when a dead host might have last pinged
+> its watchdog, since it is no longer based on the last timestamp
+> it wrote to shared storage.)
+> 
+> Dave
+> 
