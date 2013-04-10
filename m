@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937342Ab3DJXJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:09:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56208 "EHLO
+	id S937326Ab3DJXJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:09:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56204 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937297Ab3DJWre (ORCPT
+	with ESMTP id S937292Ab3DJWrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:34 -0400
+	Wed, 10 Apr 2013 18:47:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Harvey <charvey@matrox.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 44/64] drm/mgag200: Index 24 in extended CRTC registers is 24 in hex, not decimal.
-Date: Wed, 10 Apr 2013 15:46:41 -0700
-Message-Id: <20130410224343.623453009@linuxfoundation.org>
+        Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 43/64] crypto: gcm - fix assumption that assoc has one segment
+Date: Wed, 10 Apr 2013 15:46:40 -0700
+Message-Id: <20130410224343.327780087@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -27,71 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Harvey <charvey@matrox.com>
+From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
 
-commit 1812a3db0874be1d1524086da9e84397b800f546 upstream.
+commit d3dde52209ab571e4e2ec26c66f85ad1355f7475 upstream.
 
-This change properly enables the "requester" in G200ER cards that is
-responsible for getting pixels out of memory and clocking them out to
-the screen.
+rfc4543(gcm(*)) code for GMAC assumes that assoc scatterlist always contains
+only one segment and only makes use of this first segment. However ipsec passes
+assoc with three segments when using 'extended sequence number' thus in this
+case rfc4543(gcm(*)) fails to function correctly. Patch fixes this issue.
 
-Signed-off-by: Christopher Harvey <charvey@matrox.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Reported-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
+Tested-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/mgag200/mgag200_mode.c |   13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+ crypto/gcm.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -751,8 +751,6 @@ static int mga_crtc_mode_set(struct drm_
- 	int i;
- 	unsigned char misc = 0;
- 	unsigned char ext_vga[6];
--	unsigned char ext_vga_index24;
--	unsigned char dac_index90 = 0;
- 	u8 bppshift;
+--- a/crypto/gcm.c
++++ b/crypto/gcm.c
+@@ -44,6 +44,7 @@ struct crypto_rfc4543_ctx {
  
- 	static unsigned char dacvalue[] = {
-@@ -803,7 +801,6 @@ static int mga_crtc_mode_set(struct drm_
- 		option2 = 0x0000b000;
- 		break;
- 	case G200_ER:
--		dac_index90 = 0;
- 		break;
- 	}
+ struct crypto_rfc4543_req_ctx {
+ 	u8 auth_tag[16];
++	u8 assocbuf[32];
+ 	struct scatterlist cipher[1];
+ 	struct scatterlist payload[2];
+ 	struct scatterlist assoc[2];
+@@ -1142,9 +1143,19 @@ static struct aead_request *crypto_rfc45
+ 	scatterwalk_crypto_chain(payload, dst, vdst == req->iv + 8, 2);
+ 	assoclen += 8 + req->cryptlen - (enc ? 0 : authsize);
  
-@@ -852,10 +849,8 @@ static int mga_crtc_mode_set(struct drm_
- 		WREG_DAC(i, dacvalue[i]);
- 	}
+-	sg_init_table(assoc, 2);
+-	sg_set_page(assoc, sg_page(req->assoc), req->assoc->length,
+-		    req->assoc->offset);
++	if (req->assoc->length == req->assoclen) {
++		sg_init_table(assoc, 2);
++		sg_set_page(assoc, sg_page(req->assoc), req->assoc->length,
++			    req->assoc->offset);
++	} else {
++		BUG_ON(req->assoclen > sizeof(rctx->assocbuf));
++
++		scatterwalk_map_and_copy(rctx->assocbuf, req->assoc, 0,
++					 req->assoclen, 0);
++
++		sg_init_table(assoc, 2);
++		sg_set_buf(assoc, rctx->assocbuf, req->assoclen);
++	}
+ 	scatterwalk_crypto_chain(assoc, payload, 0, 2);
  
--	if (mdev->type == G200_ER) {
--		WREG_DAC(0x90, dac_index90);
--	}
--
-+	if (mdev->type == G200_ER)
-+		WREG_DAC(0x90, 0);
- 
- 	if (option)
- 		pci_write_config_dword(dev->pdev, PCI_MGA_OPTION, option);
-@@ -952,8 +947,6 @@ static int mga_crtc_mode_set(struct drm_
- 	if (mdev->type == G200_WB)
- 		ext_vga[1] |= 0x88;
- 
--	ext_vga_index24 = 0x05;
--
- 	/* Set pixel clocks */
- 	misc = 0x2d;
- 	WREG8(MGA_MISC_OUT, misc);
-@@ -965,7 +958,7 @@ static int mga_crtc_mode_set(struct drm_
- 	}
- 
- 	if (mdev->type == G200_ER)
--		WREG_ECRT(24, ext_vga_index24);
-+		WREG_ECRT(0x24, 0x5);
- 
- 	if (mdev->type == G200_EV) {
- 		WREG_ECRT(6, 0);
+ 	aead_request_set_tfm(subreq, ctx->child);
 
 
