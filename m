@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937571Ab3DJWus (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:50:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56632 "EHLO
+	id S937544Ab3DJW4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:56:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56642 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937428Ab3DJWuq (ORCPT
+	with ESMTP id S937470Ab3DJWur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:50:46 -0400
+	Wed, 10 Apr 2013 18:50:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Mark Jackson <mpfj-list@mimc.co.uk>
-Subject: [ 02/19] UBIFS: make space fixup work in the remount case
-Date: Wed, 10 Apr 2013 15:50:25 -0700
-Message-Id: <20130410225027.073747912@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 05/19] ALSA: hda - fix typo in proc output
+Date: Wed, 10 Apr 2013 15:50:28 -0700
+Message-Id: <20130410225027.371703168@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
 References: <20130410225026.833809117@linuxfoundation.org>
@@ -27,66 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 67e753ca41782913d805ff4a8a2b0f60b26b7915 upstream.
+commit aeb3a97222832e5457c4b72d72235098ce4bfe8d upstream.
 
-The UBIFS space fixup is a useful feature which allows to fixup the "broken"
-flash space at the time of the first mount. The "broken" space is usually the
-result of using a "dumb" industrial flasher which is not able to skip empty
-NAND pages and just writes all 0xFFs to the empty space, which has grave
-side-effects for UBIFS when UBIFS trise to write useful data to those empty
-pages.
+Rename "Digitial In" to "Digital In". This function is only used for
+proc output, so should not cause any problems to change.
 
-The fix-up feature works roughly like this:
-1. mkfs.ubifs sets the fixup flag in UBIFS superblock when creating the image
-   (see -F option)
-2. when the file-system is mounted for the first time, UBIFS notices the fixup
-   flag and re-writes the entire media atomically, which may take really a lot
-   of time.
-3. UBIFS clears the fixup flag in the superblock.
-
-This works fine when the file system is mounted R/W for the very first time.
-But it did not really work in the case when we first mount the file-system R/O,
-and then re-mount R/W. The reason was that we started the fixup procedure too
-late, which we cannot really do because we have to fixup the space before it
-starts being used.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reported-by: Mark Jackson <mpfj-list@mimc.co.uk>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/super.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ sound/pci/hda/hda_codec.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1583,6 +1583,12 @@ static int ubifs_remount_rw(struct ubifs
- 	c->remounting_rw = 1;
- 	c->ro_mount = 0;
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -157,7 +157,7 @@ const char *snd_hda_get_jack_type(u32 cf
+ 		"Line Out", "Speaker", "HP Out", "CD",
+ 		"SPDIF Out", "Digital Out", "Modem Line", "Modem Hand",
+ 		"Line In", "Aux", "Mic", "Telephony",
+-		"SPDIF In", "Digitial In", "Reserved", "Other"
++		"SPDIF In", "Digital In", "Reserved", "Other"
+ 	};
  
-+	if (c->space_fixup) {
-+		err = ubifs_fixup_free_space(c);
-+		if (err)
-+			return err;
-+	}
-+
- 	err = check_free_space(c);
- 	if (err)
- 		goto out;
-@@ -1699,12 +1705,6 @@ static int ubifs_remount_rw(struct ubifs
- 		err = dbg_check_space_info(c);
- 	}
- 
--	if (c->space_fixup) {
--		err = ubifs_fixup_free_space(c);
--		if (err)
--			goto out;
--	}
--
- 	mutex_unlock(&c->umount_mutex);
- 	return err;
- 
+ 	return jack_types[(cfg & AC_DEFCFG_DEVICE)
 
 
