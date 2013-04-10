@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934287Ab3DJLKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 07:10:08 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:33775 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab3DJLKG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 07:10:06 -0400
-Date: Wed, 10 Apr 2013 21:09:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tang Yuantian-B29983 <B29983@freescale.com>
-Cc: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
-Subject: Re: [PATCH] of: remove the unnecessary of_node_put for
- of_parse_phandle_with_args()
-Message-Id: <20130410210950.972df35671f7fa5573ef2d7b@canb.auug.org.au>
-In-Reply-To: <D07C73A334FF604B95B3CBD2A545D07B0B128AE0@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1365490569-32455-1-git-send-email-Yuantian.Tang@freescale.com>
-	<20130410190327.a70d4c3798509d664aef2f13@canb.auug.org.au>
-	<D07C73A334FF604B95B3CBD2A545D07B0B128AE0@039-SN2MPN1-013.039d.mgd.msft.net>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__10_Apr_2013_21_09_50_+1000_qXeBHYRWuh+e7ml+"
+	id S935060Ab3DJLNt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 07:13:49 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:55371 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897Ab3DJLNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 07:13:48 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio / ACPI: Handle ACPI events in accordance with the spec
+Date: Wed, 10 Apr 2013 13:21:33 +0200
+Message-ID: <3671696.3lKYhb22Mf@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc4+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130410105426.GB1283@intel.com>
+References: <3043137.BtEKcMiXSu@vostro.rjw.lan> <7616728.CEZnGS3Ki9@vostro.rjw.lan> <20130410105426.GB1283@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__10_Apr_2013_21_09_50_+1000_qXeBHYRWuh+e7ml+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wednesday, April 10, 2013 01:54:26 PM Mika Westerberg wrote:
+> On Wed, Apr 10, 2013 at 12:39:21PM +0200, Rafael J. Wysocki wrote:
+> > On Wednesday, April 10, 2013 12:17:47 PM Mika Westerberg wrote:
+> > > On Wed, Apr 10, 2013 at 11:17:57AM +0300, Mathias Nyman wrote:
+> > > > On 04/10/2013 10:53 AM, Mika Westerberg wrote:
+> > > > >On Tue, Apr 09, 2013 at 03:57:25PM +0200, Rafael J. Wysocki wrote:
+> > > > >>+void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
+> > > > >>+{
+> > > > >>+	acpi_handle handle;
+> > > > >>+	acpi_status status;
+> > > > >>+	struct list_head *evt_pins;
+> > > > >>+	struct acpi_gpio_evt_pin *evt_pin, *ep;
+> > > > >>+
+> > > > >>+	if (!chip->dev || !chip->to_irq)
+> > > > >>+		return;
+> > > > >>+
+> > > > >>+	handle = ACPI_HANDLE(chip->dev);
+> > > > >>+	if (!handle)
+> > > > >>+		return;
+> > > > >>+
+> > > > >>+	status = acpi_get_data(handle, acpi_gpio_evt_dh, (void **)&evt_pins);
+> > > > >>+	if (ACPI_FAILURE(status))
+> > > > >>+		return;
+> > > > >>+
+> > > > >>+	list_for_each_entry_safe_reverse(evt_pin, ep, evt_pins, node) {
+> > > > >>+		devm_free_irq(chip->dev, evt_pin->irq, evt_pin);
+> > > > >
+> > > > >How about using normal request/free_irq() functions for both _EVT and
+> > > > >non-_EVT events? Since we now need to call acpi_gpiochip_free_interrupts()
+> > > > >anyway, I don't see the point using devm_* functions here.
+> > > > >
+> > > > 
+> > > > Then we need to create a list of non-_EVT events, or add them to the
+> > > > evt_pins list.
+> > > 
+> > > Good point. Maybe we can add them to the evt_pins list and handle the same
+> > > way as _EVT (except that we need to call _Exx and _Lxx methods instead of
+> > > _EVT)?
+> > 
+> > The difference is that the evt_pins data is only needed for _EVT execution,
+> > because _EVT takes the pin argument.  _Lxx/_Exx don't take arguments and
+> > there's no need to add extra data structures for them, as devm_ does what's
+> > needed.
+> 
+> OK, thanks for the explanation.
+> 
+> > Of course, plain request/free_irq may be used for the _EVT events only
+> > at the expense of a little more complexity in acpi_gpiochip_request_interrupts().
+> 
+> I'm not sure whether it is a good thing to mix devm_ and plain request/free
+> here.
 
-Hi,
+Yes, that was my motivation for doing it the way I did it.
 
-On Wed, 10 Apr 2013 09:06:11 +0000 Tang Yuantian-B29983 <B29983@freescale.c=
-om> wrote:
->
-> Yes, I already sent out the v2 patch.
-> Please see: http://patchwork.ozlabs.org/patch/235288/
+> And more complexity is always bad so I guess we can stay with this
+> implementation now.
 
-Thanks.  I should read all my email before replying to it :-)
+> Feel free to add my
+> 
+> Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Cool, thanks!
 
---Signature=_Wed__10_Apr_2013_21_09_50_+1000_qXeBHYRWuh+e7ml+
-Content-Type: application/pgp-signature
+I wonder if Linus or Grant have any objections, though.  Guys?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+The patch has more to do with ACPI than with GPIO and I think it would be
+good to follow the spec from the outset here, so I'd like to push it for
+v3.10.
 
-iQIcBAEBCAAGBQJRZUh+AAoJEECxmPOUX5FEeAEP/0CDnfupqEJGQK/TSg8+gfG8
-jota7lb/iIaPnxryLAZRlkUC+qGvrd5ZPokbbZhYeDPcTuDGSqBuTBwtP03Fa05D
-Ihw5OkO17uJzcEcP0LBYvdHRcMxVNT1ag5nuT9Dk9phjTS++JQC85aBzatZJN+/i
-wEn37tbdHIOayb9HYHjA7/0e8dDx+QJdA9tag4lZ/dm0zD44KEF3ynUFbH2FeAQs
-03Ptkv6PKcWfmCniMGaODDauy4tmtFuLteOPx7rqLLX1zd/DRTsr6JdRup5S/8q+
-6g2TTr37xFd5hfCLE2QZPiIyxualsCgsWkVcfRFr22LGY5auNZ0oNd2IxP5CfArv
-pqxJtBzBxfDZ7mtAMZlhxeEzy3JetNPGWga9MJ7w/En97O9406f49dDZn+022m4N
-aSyJyTzR7q0NbvzzfMt+wEa6ntWiK1zs3Gixf1Do4a1cJ23rjqga3rpGMZwrSFwr
-DLmUdwJaVoORil0Hn1S5OfmGa+UwgL55raJYOmIcm3AmiOpw4zRtpUh/NCQuxsLY
-tzoZ3tQ5Ind0mc2mbgeUN+jFp9O0agjK6qM7pZi7K+t7kgaCvnPAWNR1Emvw5o98
-7gU67bByN+FjrOc2lRYFRzr7EQ/7GtmPMC59g+tAP8lK51wV8xNtywLb/3Zf9fZs
-fd53wL/NgPRUadbj9BxY
-=au+7
------END PGP SIGNATURE-----
+Thanks,
+Rafael
 
---Signature=_Wed__10_Apr_2013_21_09_50_+1000_qXeBHYRWuh+e7ml+--
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
