@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937676Ab3DJWxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:53:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56680 "EHLO
+	id S937643Ab3DJWxF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:53:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56686 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937543Ab3DJWu4 (ORCPT
+	with ESMTP id S937637Ab3DJWu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Apr 2013 18:50:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Wolf <mjw@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [ 11/19] powerpc: pSeries_lpar_hpte_remove fails from Adjunct partition being performed before the ANDCOND test
-Date: Wed, 10 Apr 2013 15:50:34 -0700
-Message-Id: <20130410225027.962276673@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [ 12/19] spinlocks and preemption points need to be at least compiler barriers
+Date: Wed, 10 Apr 2013 15:50:35 -0700
+Message-Id: <20130410225028.064676253@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
 References: <20130410225026.833809117@linuxfoundation.org>
@@ -27,42 +28,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Wolf <mjw@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 9fb2640159f9d4f5a2a9d60e490482d4cbecafdb upstream.
+commit 386afc91144b36b42117b0092893f15bc8798a80 upstream.
 
-Some versions of pHyp will perform the adjunct partition test before the
-ANDCOND test.  The result of this is that H_RESOURCE can be returned and
-cause the BUG_ON condition to occur. The HPTE is not removed.  So add a
-check for H_RESOURCE, it is ok if this HPTE is not removed as
-pSeries_lpar_hpte_remove is looking for an HPTE to remove and not a
-specific HPTE to remove.  So it is ok to just move on to the next slot
-and try again.
+In UP and non-preempt respectively, the spinlocks and preemption
+disable/enable points are stubbed out entirely, because there is no
+regular code that can ever hit the kind of concurrency they are meant to
+protect against.
 
-Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+However, while there is no regular code that can cause scheduling, we
+_do_ end up having some exceptional (literally!) code that can do so,
+and that we need to make sure does not ever get moved into the critical
+region by the compiler.
+
+In particular, get_user() and put_user() is generally implemented as
+inline asm statements (even if the inline asm may then make a call
+instruction to call out-of-line), and can obviously cause a page fault
+and IO as a result.  If that inline asm has been scheduled into the
+middle of a preemption-safe (or spinlock-protected) code region, we
+obviously lose.
+
+Now, admittedly this is *very* unlikely to actually ever happen, and
+we've not seen examples of actual bugs related to this.  But partly
+exactly because it's so hard to trigger and the resulting bug is so
+subtle, we should be extra careful to get this right.
+
+So make sure that even when preemption is disabled, and we don't have to
+generate any actual *code* to explicitly tell the system that we are in
+a preemption-disabled region, we need to at least tell the compiler not
+to move things around the critical region.
+
+This patch grew out of the same discussion that caused commits
+79e5f05edcbf ("ARC: Add implicit compiler barrier to raw_local_irq*
+functions") and 3e2e0d2c222b ("tile: comment assumption about
+__insn_mtspr for <asm/irqflags.h>") to come about.
+
+Note for stable: use discretion when/if applying this.  As mentioned,
+this bug may never have actually bitten anybody, and gcc may never have
+done the required code motion for it to possibly ever trigger in
+practice.
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/lpar.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ include/linux/preempt.h     |   20 +++++++++++++-------
+ include/linux/spinlock_up.h |   29 ++++++++++++++++++-----------
+ 2 files changed, 31 insertions(+), 18 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -377,7 +377,13 @@ static long pSeries_lpar_hpte_remove(uns
- 					   (0x1UL << 4), &dummy1, &dummy2);
- 		if (lpar_rc == H_SUCCESS)
- 			return i;
--		BUG_ON(lpar_rc != H_NOT_FOUND);
-+
-+		/*
-+		 * The test for adjunct partition is performed before the
-+		 * ANDCOND test.  H_RESOURCE may be returned, so we need to
-+		 * check for that as well.
-+		 */
-+		BUG_ON(lpar_rc != H_NOT_FOUND && lpar_rc != H_RESOURCE);
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -82,14 +82,20 @@ do { \
  
- 		slot_offset++;
- 		slot_offset &= 0x7;
+ #else
+ 
+-#define preempt_disable()		do { } while (0)
+-#define preempt_enable_no_resched()	do { } while (0)
+-#define preempt_enable()		do { } while (0)
+-#define preempt_check_resched()		do { } while (0)
++/*
++ * Even if we don't have any preemption, we need preempt disable/enable
++ * to be barriers, so that we don't have things like get_user/put_user
++ * that can cause faults and scheduling migrate into our preempt-protected
++ * region.
++ */
++#define preempt_disable()		barrier()
++#define preempt_enable_no_resched()	barrier()
++#define preempt_enable()		barrier()
++#define preempt_check_resched()		barrier()
+ 
+-#define preempt_disable_notrace()		do { } while (0)
+-#define preempt_enable_no_resched_notrace()	do { } while (0)
+-#define preempt_enable_notrace()		do { } while (0)
++#define preempt_disable_notrace()		barrier()
++#define preempt_enable_no_resched_notrace()	barrier()
++#define preempt_enable_notrace()		barrier()
+ 
+ #endif
+ 
+--- a/include/linux/spinlock_up.h
++++ b/include/linux/spinlock_up.h
+@@ -16,7 +16,10 @@
+  * In the debug case, 1 means unlocked, 0 means locked. (the values
+  * are inverted, to catch initialization bugs)
+  *
+- * No atomicity anywhere, we are on UP.
++ * No atomicity anywhere, we are on UP. However, we still need
++ * the compiler barriers, because we do not want the compiler to
++ * move potentially faulting instructions (notably user accesses)
++ * into the locked sequence, resulting in non-atomic execution.
+  */
+ 
+ #ifdef CONFIG_DEBUG_SPINLOCK
+@@ -25,6 +28,7 @@
+ static inline void arch_spin_lock(arch_spinlock_t *lock)
+ {
+ 	lock->slock = 0;
++	barrier();
+ }
+ 
+ static inline void
+@@ -32,6 +36,7 @@ arch_spin_lock_flags(arch_spinlock_t *lo
+ {
+ 	local_irq_save(flags);
+ 	lock->slock = 0;
++	barrier();
+ }
+ 
+ static inline int arch_spin_trylock(arch_spinlock_t *lock)
+@@ -39,32 +44,34 @@ static inline int arch_spin_trylock(arch
+ 	char oldval = lock->slock;
+ 
+ 	lock->slock = 0;
++	barrier();
+ 
+ 	return oldval > 0;
+ }
+ 
+ static inline void arch_spin_unlock(arch_spinlock_t *lock)
+ {
++	barrier();
+ 	lock->slock = 1;
+ }
+ 
+ /*
+  * Read-write spinlocks. No debug version.
+  */
+-#define arch_read_lock(lock)		do { (void)(lock); } while (0)
+-#define arch_write_lock(lock)		do { (void)(lock); } while (0)
+-#define arch_read_trylock(lock)	({ (void)(lock); 1; })
+-#define arch_write_trylock(lock)	({ (void)(lock); 1; })
+-#define arch_read_unlock(lock)		do { (void)(lock); } while (0)
+-#define arch_write_unlock(lock)	do { (void)(lock); } while (0)
++#define arch_read_lock(lock)		do { barrier(); (void)(lock); } while (0)
++#define arch_write_lock(lock)		do { barrier(); (void)(lock); } while (0)
++#define arch_read_trylock(lock)	({ barrier(); (void)(lock); 1; })
++#define arch_write_trylock(lock)	({ barrier(); (void)(lock); 1; })
++#define arch_read_unlock(lock)		do { barrier(); (void)(lock); } while (0)
++#define arch_write_unlock(lock)	do { barrier(); (void)(lock); } while (0)
+ 
+ #else /* DEBUG_SPINLOCK */
+ #define arch_spin_is_locked(lock)	((void)(lock), 0)
+ /* for sched.c and kernel_lock.c: */
+-# define arch_spin_lock(lock)		do { (void)(lock); } while (0)
+-# define arch_spin_lock_flags(lock, flags)	do { (void)(lock); } while (0)
+-# define arch_spin_unlock(lock)	do { (void)(lock); } while (0)
+-# define arch_spin_trylock(lock)	({ (void)(lock); 1; })
++# define arch_spin_lock(lock)		do { barrier(); (void)(lock); } while (0)
++# define arch_spin_lock_flags(lock, flags)	do { barrier(); (void)(lock); } while (0)
++# define arch_spin_unlock(lock)	do { barrier(); (void)(lock); } while (0)
++# define arch_spin_trylock(lock)	({ barrier(); (void)(lock); 1; })
+ #endif /* DEBUG_SPINLOCK */
+ 
+ #define arch_spin_is_contended(lock)	(((void)(lock), 0))
 
 
