@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936648Ab3DJM1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 08:27:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58718 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab3DJM1V (ORCPT
+	id S936654Ab3DJM2c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 08:28:32 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:36578 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab3DJM2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 08:27:21 -0400
-Date: Wed, 10 Apr 2013 05:27:02 -0700
-From: tip-bot for Libin <tipbot@zytor.com>
-Message-ID: <tip-b9b0853a4b377f84a5e6ed091816a9a2d6b10918@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        huawei.libin@huawei.com, peterz@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        huawei.libin@huawei.com, peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1364814841-49156-1-git-send-email-huawei.libin@huawei.com>
-References: <1364814841-49156-1-git-send-email-huawei.libin@huawei.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Fix comment in rebalance_domains()
-Git-Commit-ID: b9b0853a4b377f84a5e6ed091816a9a2d6b10918
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 10 Apr 2013 08:28:31 -0400
+Date: Wed, 10 Apr 2013 14:28:26 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Jacob Shin <jacob.shin@amd.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86 <x86@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/3] perf, amd: Support for Family 16h L2I
+ Performance Counters
+Message-ID: <20130410122826.GD8686@gmail.com>
+References: <1365521034-4496-1-git-send-email-jacob.shin@amd.com>
+ <1365586878.30071.33.camel@laptop>
+ <CABPqkBRTaMV9FNmX6qRJAHaO8yTyiqF=EzmeC7Gp7=e-7Bo-gA@mail.gmail.com>
+ <1365594552.30071.63.camel@laptop>
+ <1365594957.30071.66.camel@laptop>
+ <20130410115647.GA8083@gmail.com>
+ <CABPqkBQS3ikJWd6yXjjSKdEW3M2pNYzTSs2d56=VTx=aomWUYg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 10 Apr 2013 05:27:08 -0700 (PDT)
+In-Reply-To: <CABPqkBQS3ikJWd6yXjjSKdEW3M2pNYzTSs2d56=VTx=aomWUYg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b9b0853a4b377f84a5e6ed091816a9a2d6b10918
-Gitweb:     http://git.kernel.org/tip/b9b0853a4b377f84a5e6ed091816a9a2d6b10918
-Author:     Libin <huawei.libin@huawei.com>
-AuthorDate: Mon, 1 Apr 2013 19:14:01 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 10 Apr 2013 13:39:57 +0200
 
-sched: Fix comment in rebalance_domains()
+* Stephane Eranian <eranian@google.com> wrote:
 
-A comment in function rebalance_domains() mentions
-arch_init_sched_domains(), but that function does not exist
-anymore. The proper function is init_sched_domains().
+> On Wed, Apr 10, 2013 at 1:56 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> >> On Wed, 2013-04-10 at 13:49 +0200, Peter Zijlstra wrote:
+> >>
+> >> > Hmm.. the 15h old interface bits got merged? I thought I kept telling
+> >> > that should be done like the intel uncore stuff since the hardware
+> >> > interface wasn't retarded anymore.
+> >>
+> >> Ah well, that crap seems to have slipped in in Feb when I was still a
+> >> near vegetable and not paying much attention.
+> >>
+> >> /me curses a bit.
+> >>
+> >> I don't suppose we can deprecate it and remove this stuff?
+> >
+> > I think we can - if there's a functional replacement.
+> >
+> Does the existing code expose a type in sysfs?
+> If not then you cannot do this transparently, I am afraid
+> because the syntax would be different, i.e., not cpu/...
 
-Signed-off-by: Libin <huawei.libin@huawei.com>
-Cc: <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1364814841-49156-1-git-send-email-huawei.libin@huawei.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+That could be compatibility-bridged over in tooling?
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bf8ab4f..155783b 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5466,7 +5466,7 @@ void update_max_interval(void)
-  * It checks each scheduling domain to see if it is due to be balanced,
-  * and initiates a balancing operation if so.
-  *
-- * Balancing parameters are set up in arch_init_sched_domains.
-+ * Balancing parameters are set up in init_sched_domains.
-  */
- static void rebalance_domains(int cpu, enum cpu_idle_type idle)
- {
+I doubt these events are in heavy use.
+
+> I reviewed the code and tested it. But at the time, I thought
+> you had agreed on the approach used.
+
+I did - but PeterZ has a point, so it would be nice if we could improve on that.
+
+Thanks,
+
+	Ingo
