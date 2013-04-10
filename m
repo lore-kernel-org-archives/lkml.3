@@ -1,80 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935756Ab3DJTnY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 15:43:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42524 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934797Ab3DJTnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 15:43:22 -0400
-Date: Wed, 10 Apr 2013 15:42:09 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Josh Boyer <jwboyer@gmail.com>,
-        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-Message-ID: <20130410194209.GF6602@redhat.com>
-References: <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
- <20130205181926.GA13942@srcf.ucam.org>
- <20130205183436.GC12853@redhat.com>
- <CALLzPKavbsZgHoJrk5iQ0F1fO21SaeEHmCVCh1G1UKCKB3WZZQ@mail.gmail.com>
- <20130405135000.GB6299@redhat.com>
- <1365450229.3847.56.camel@falcor1.watson.ibm.com>
- <20130408200904.GI28292@redhat.com>
- <CA+5PVA43U_kDSV7p0zhQwmK9pwbVb8qAUePU8svQvoPbDA9iCQ@mail.gmail.com>
- <20130409143852.GH6320@redhat.com>
- <1365563230.3074.107.camel@falcor1.watson.ibm.com>
+	id S936012Ab3DJTn2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 15:43:28 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:46665 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934797Ab3DJTnZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 15:43:25 -0400
+Date: Wed, 10 Apr 2013 19:43:25 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: tony@atomide.com
+cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kishon Vijay Abraham I <kishon@ti.com>, rnayak@ti.com,
+        b-cousson@ti.com, linux@arm.linux.org.uk, Keerthy <j-keerthy@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] ARM: OMAP4: hwmod data: make 'ocp2scp_usb_phy_phy_48m"
+ as the main clock (fwd)
+Message-ID: <alpine.DEB.2.00.1304101941550.25123@utopia.booyaka.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365563230.3074.107.camel@falcor1.watson.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: MULTIPART/Mixed; BOUNDARY="843723315-1840391867-1365622592=:25123"
+Content-ID: <alpine.DEB.2.00.1304101937000.25123@utopia.booyaka.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 11:07:10PM -0400, Mimi Zohar wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-[..]
-> The module keyring is a special case.  Loading these keys from the
-> kernel and, presumably, locking the keyring is probably fine.  In the
-> case of IMA, however, files will be signed by any number of package
-> owners.  If the _ima keyring is locked by the kernel, how would you add
-> these other keys?
+--843723315-1840391867-1365622592=:25123
+Content-Type: TEXT/PLAIN; CHARSET=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-ID: <alpine.DEB.2.00.1304101937001.25123@utopia.booyaka.com>
 
-Who are package owners here. IOW, in typical IMA setup, where are the keys
-and when are these keys loaded in ima keyring?
 
-If we trust root and keys can be loaded any time later, then signed
-initramfs will not solve the problem either.
+Hi Tony,
 
-So this boils down to again not trusting root. So secureboot will not
-trust root and IMA does. 
+could you send this one upstream for v3.9-rc fixes?  Should prevent=20
+a MUSB regression in v3.9, mostly due to my own incompetence.
 
-May be we need an additional IMA keyring which gets locked by kernel
-(like module keyring). And during signing, we need to encode keyring
-info in file signatuer. IMA will parse keyring info and try to verify
-signature against that specified keyring.
 
-/sbin/kexec signing can happen in such a way that we tell IMA to verify
-against this locked keyring say, ima_kernel.
+- Paul
 
-And in regular ima keyring, root can continue to load its own keys in
-usual way even in secureboot mode.
+---------- Forwarded message ----------
+Date: Wed, 10 Apr 2013 19:41:38 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, rnayak@ti.com, b-cousson@ti.com=
+,
+    tony@atomide.com, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+    Keerthy <j-keerthy@ti.com>
+Subject: [PATCH v2] ARM: OMAP4: hwmod data: make
+    'ocp2scp_usb_phy_phy_48m" as the main clock
 
-Just that sys_kexec() will have to call into IMA to make sure that
-/sbin/kexec's integrity was verified using keys in ima_kernel keyring 
-and not using keys in _ima keyring.
+From: Kishon Vijay Abraham I <kishon@ti.com>
 
-IOW, apart from integrity results, we will have to store the keyring
-info too in results which should be queryable by the client. And then
-client can decide how to interpret integrity results.
+Commit 92702df3570e ("ARM: OMAP4: PM: fix PM regression introduced by recen=
+t
+clock cleanup") makes the 'ocp2scp_usb_phy_phy_48m' as optional
+functional clock causing regression in MUSB. But this 48MHz clock is a
+mandatory clock for usb phy attached to ocp2scp and hence made as the main
+clock for ocp2scp.
 
-Or we can just export the APIs from IMA (which don't do any caching) and
-client can specify keyring to verify against as a parameter.
+Cc: Keerthy <j-keerthy@ti.com>
+Cc: Beno=C3=AEt Cousson <b-cousson@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+[paul@pwsan.com: add comment to the hwmod data to try to prevent any
+ future mistakes here]
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+---
 
-Thoughts?
+Nothing further received from Kishon per the request:
 
-Thanks
-Vivek
+http://marc.info/?l=3Dlinux-omap&m=3D136554118302342&w=3D2
+
+Since the deadline for v3.9-rc fixes is quite close, have added the=20
+comment myself, and have confirmed that this patch does not cause=20
+additional PM regressions on 4460 Panda-ES in the tests here.
+
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-oma=
+p2/omap_hwmod_44xx_data.c
+index 9e05765..eaba9dc 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -2714,16 +2714,22 @@ static struct omap_ocp2scp_dev ocp2scp_dev_attr[] =
+=3D {
+ =09{ }
+ };
+=20
+-static struct omap_hwmod_opt_clk ocp2scp_usb_phy_opt_clks[] =3D {
+-=09{ .role =3D "48mhz", .clk =3D "ocp2scp_usb_phy_phy_48m" },
+-};
+-
+ /* ocp2scp_usb_phy */
+ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod =3D {
+ =09.name=09=09=3D "ocp2scp_usb_phy",
+ =09.class=09=09=3D &omap44xx_ocp2scp_hwmod_class,
+ =09.clkdm_name=09=3D "l3_init_clkdm",
+-=09.main_clk=09=3D "func_48m_fclk",
++=09/*
++=09 * ocp2scp_usb_phy_phy_48m is provided by the OMAP4 PRCM IP
++=09 * block as an "optional clock," and normally should never be
++=09 * specified as the main_clk for an OMAP IP block.  However it
++=09 * turns out that this clock is actually the main clock for
++=09 * the ocp2scp_usb_phy IP block:
++=09 * http://lists.infradead.org/pipermail/linux-arm-kernel/2012-September=
+/119943.html
++=09 * So listing ocp2scp_usb_phy_phy_48m as a main_clk here seems
++=09 * to be the best workaround.
++=09 */
++=09.main_clk=09=3D "ocp2scp_usb_phy_phy_48m",
+ =09.prcm =3D {
+ =09=09.omap4 =3D {
+ =09=09=09.clkctrl_offs =3D OMAP4_CM_L3INIT_USBPHYOCP2SCP_CLKCTRL_OFFSET,
+@@ -2732,8 +2738,6 @@ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwm=
+od =3D {
+ =09=09},
+ =09},
+ =09.dev_attr=09=3D ocp2scp_dev_attr,
+-=09.opt_clks=09=3D ocp2scp_usb_phy_opt_clks,
+-=09.opt_clks_cnt=09=3D ARRAY_SIZE(ocp2scp_usb_phy_opt_clks),
+ };
+=20
+ /*
+--=20
+1.7.10.4
+--843723315-1840391867-1365622592=:25123--
