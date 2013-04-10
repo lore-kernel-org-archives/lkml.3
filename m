@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935483Ab3DJWRf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:17:35 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48701 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750919Ab3DJWRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:17:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,450,1363158000"; 
-   d="scan'208";a="225733625"
-Date: Thu, 11 Apr 2013 00:17:21 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] mfd: tps65090: Add compatible string for charger subnode
-Message-ID: <20130410221721.GM4874@zurbaran>
-References: <1365614095-5846-1-git-send-email-rklein@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365614095-5846-1-git-send-email-rklein@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S936843Ab3DJWT6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:19:58 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52584 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935612Ab3DJWTz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 18:19:55 -0400
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: linux-sh@vger.kernel.org
+Cc: Vinod Koul <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: [PATCH/RFC 6/6] ARM: shmobile: kzm9g-reference: add DMA channels to the MMCIF DT
+Date: Thu, 11 Apr 2013 00:19:49 +0200
+Message-Id: <1365632389-2249-7-git-send-email-g.liakhovetski@gmx.de>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1365632389-2249-1-git-send-email-g.liakhovetski@gmx.de>
+References: <1365632389-2249-1-git-send-email-g.liakhovetski@gmx.de>
+X-Provags-ID: V02:K0:x0m7R77YTyBOQQQxscrabl/zaV1KyQdIhXUhDoOBJst
+ 5f2c9bIWjtIPO91DpCZ2Z5EPtXY6kA81ftz/4RieK/G5wHfTY0
+ z5vZWFNu5ZUjzPSicG7UEA0zPguaCDhjbYRYypu84SITBrgdBC
+ 7+FOOea0EYIcMaeS4gt7op5wnohAE8+q+4GqHfBz/oO1T95yF8
+ a2auHswszqnRRRZAtSnZfZ47oEPuyBaecBz5Tv4PV69xySNZyF
+ MiDizl7fnLuWmcKV6ju9UPu/r9B9kwg1kuL91BKYuldxKPUr3B
+ Yt+dB7f8+vnSyVB+jzz71sJWEu8TBTsnsNESuhJoU/MsoiZk99
+ Numu47e+XJ7sM0IwZ/LSvqjydIEsYw1R/rjTILqVNndwgwnymp
+ q5F2/hoCES2EQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rhyland,
+The MMCIF driver can use DMA for data transfer, add suitable
+Device Tree bindings.
 
-On Wed, Apr 10, 2013 at 01:14:55PM -0400, Rhyland Klein wrote:
-> This patch adds the of_compatible value for the tps65090 charger
-> subnode used when loading the driver to find its properties
-> and of_node.
-> 
-> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
-> ---
->  drivers/mfd/tps65090.c |    1 +
->  1 file changed, 1 insertion(+)
-Applied, thanks. And sorry for taking the wrong version.
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+---
+ arch/arm/boot/dts/sh73a0-kzm9g-reference.dts |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-Cheers,
-Samuel.
-
+diff --git a/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts b/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts
+index ed9dd45..e1d0d5d 100644
+--- a/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts
++++ b/arch/arm/boot/dts/sh73a0-kzm9g-reference.dts
+@@ -156,6 +156,9 @@
+ 	bus-width = <8>;
+ 	vmmc-supply = <&reg_1p8v>;
+ 	status = "okay";
++	dmas = <&dma0 0xd1
++		&dma0 0xd2>;
++	dma-names = "tx", "rx";
+ };
+ 
+ &sdhi0 {
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.2.5
+
