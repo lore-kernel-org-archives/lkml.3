@@ -1,142 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934287Ab3DJKPx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:15:53 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:48026 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546Ab3DJKPv convert rfc822-to-8bit (ORCPT
+	id S935191Ab3DJKQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:16:48 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:19705 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab3DJKQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:15:51 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-52-51653bd5eb4c
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "=?utf-8?Q?'Heiko_St=C3=BCbner'?=" <heiko@sntech.de>,
-        "'Grant Likely'" <grant.likely@secretlab.ca>,
-        "'Rob Herring'" <rob.herring@calxeda.com>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-References: <201302180103.53084.heiko@sntech.de>
-In-reply-to: <201302180103.53084.heiko@sntech.de>
-Subject: RE: [PATCH v2 0/3] ARM: S3C24XX: Add devicetree support for s3c2416
-Date: Wed, 10 Apr 2013 19:15:48 +0900
-Message-id: <30ff01ce35d4$5f4920d0$1ddb6270$%kim@samsung.com>
+	Wed, 10 Apr 2013 06:16:46 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-bc-51653c0c9fea
+Date: Wed, 10 Apr 2013 10:16:44 +0000 (GMT)
+From: EUNBONG SONG <eunb.song@samsung.com>
+Subject: [PATCH] staging: Enhance cpu load-balance octeon ethernet driver
+To: david.daney@cavium.com
+Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Reply-to: eunb.song@samsung.com
 MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4Na3cIBs6ksCE0RZ2rWo4XC6jkogoaFgaA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t8zfd2r1qmBBtu+ilkcmP2Q1eLVmY1s
-	Fv8fvWa12PT4GqvF5V1z2CxmnN/HZHF4xQEmi2MzljA6cHgs+HyF3ePOtT1sHpuX1Hucn7GQ
-	0ePnSx2P7dfmMXt83iQXwB7FZZOSmpNZllqkb5fAlXHlyRrmgu8SFV+2PmBtYGwS7mLk5JAQ
-	MJF41HucBcIWk7hwbz1bFyMXh5DAMkaJwxs3MHcxcoAVPVtgARGfzigx5f4JdpAGIYG/jBK3
-	/wiB2GwCGhKH3z9jBykSEdjPKPH6fAsriMMsMIFRYsX6PrBJQgIGEjN2+YI0cAoYSky9dg1s
-	s7CAj8Tun98YQWwWAVWJo2+/gC3gFbCV6P9ygQ3CFpT4MfkeC8gYZgF1iSlTckHCzALaEk/e
-	XWCFuFNd4tFfXZCwiICRxN3lTawQJSIS+168YwS5RkKgl0Pi39wL7BCrBCS+TT7EAtErK7Hp
-	ADMkHCQlDq64wQJ09ywki2chLJ6FZPEsJBsWMLKsYhRNLUguKE5KLzLRK07MLS7NS9dLzs/d
-	xAiJ6Qk7GO8dsD7EmAy0fSKzlGhyPjAl5JXEGxqbGVmYmpgaG5lbmpEmrCTOq95iHSgkkJ5Y
-	kpqdmlqQWhRfVJqTWnyIkYmDU6qBUdBRzL9yapiCROCU1OzDt2MWcLTp9F7aOVX0iHvgq76Q
-	xdedBHSzTRYFmVaeWrns3Ka3za6NanM1a9g+3/zA4cW+RtH0nXlQZvEqza2G0qbt++UjLr30
-	FLv6LXgZw4H+p5q7LJYJzfjupPMjJLbouX2nZuOi5e8OfTp62PzZ5N3vv7xKED03U4mlOCPR
-	UIu5qDgRAC13/lX/AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJKsWRmVeSWpSXmKPExsVy+t9jQd2r1qmBBofeCFocmP2Q1eLVmY1s
-	Fv8fvWa12PT4GqvF5V1z2CxmnN/HZHF4xQEmi2MzljA6cHgs+HyF3ePOtT1sHpuX1Hucn7GQ
-	0ePnSx2P7dfmMXt83iQXwB7VwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQ
-	l5ibaqvk4hOg65aZA3SUkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwjjHj
-	ypM1zAXfJSq+bH3A2sDYJNzFyMEhIWAi8WyBRRcjJ5ApJnHh3nq2LkYuDiGB6YwSU+6fYAdJ
-	CAn8ZZS4/UcIxGYT0JA4/P4ZO0iRiMB+RonX51tYQRxmgQmMEivW9zGDTBUSMJCYscsXpIFT
-	wFBi6rVrLCC2sICPxO6f3xhBbBYBVYmjb7+ALeAVsJXo/3KBDcIWlPgx+R4LyBhmAXWJKVNy
-	QcLMAtoST95dYIW4WV3i0V9dkLCIgJHE3eVNrBAlIhL7XrxjnMAoNAvJoFkIg2YhGTQLSccC
-	RpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMEJ45nUDsaVDRaHGAU4GJV4eD30UwKFWBPL
-	iitzDzFKcDArifBaaKUGCvGmJFZWpRblxxeV5qQWH2JMBnpzIrOUaHI+MJnllcQbGpuYGVka
-	mVkYmZibkyasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVAOjyp06hjkHhE8IWfy2F7v26uOp
-	klNOU/8d5TCxO/lrZnxm2eNVbsoGx5IWXW2blR0dOU3M610Rp9698OVpjKsWP1/060nvY8n/
-	p6e82sK+w2lbizKzu5yjct8j5l4x0WtxFzqWLlofK98mxBbw6FBOmtetlMazbr+yzE4XHeXc
-	sCa+3otzzm4OJZbijERDLeai4kQAMQu5YlwDAAA=
+X-MTR: 20130410100350345@eunb.song
+Msgkey: 20130410100350345@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130410100350345@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <3910056.318101365589004261.JavaMail.weblogic@epml02>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjleLIzCtJLcpLzFFi42I5/e+Zri6PTWqgweED5haXd81hc2D0+LxJ
+	LoAxissmJTUnsyy1SN8ugSvjT+MypoJbvBVLn29ia2BcwdvFyMkhJKAi0fL/OyOILSFgItG8
+	aDszhC0mceHeerYuRi6gmmWMEjNmfGeBKTq37BUzRGI+o8TKhrdsIAkWAVWJvbtXgxWxCWhL
+	vP3ygLWLkYNDWMBL4skMDpCwiIC8xJonz9lBbGYBD4ntmzcyQhwhLzH59GWwOK+AoMTJmU+g
+	dilJTLjawQgRV5ZoPfURKi4hMWv6BVYIm1diRvtTqLicxLSva6AekJY4P2sDI8wzi78/horz
+	Sxy7vYMJ5DSQ3if3g2HG7N78hQ3CFpCYeuYgVKu6RO+mJnYIm09izcK3LDBjdp1azgzTe3/L
+	XCaItxQlpnQ/hHpRS+LLj31s6N7iFXCU2LD9FcsERuVZSFKzkLTPQtKOrGYBI8sqRtHUguSC
+	4qT0IlO94sTc4tK8dL3k/NxNjJC0MHEH4/0D1ocYk4ExMpFZSjQ5H5hW8kriDY3NjCxMTUyN
+	jcwtzUgTVhLnVW+xDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAuH/xbD++3q0JK6PqXJ69
+	63KWfLheOeNVbJN5lFzJh4wP0XzcO5yaf05hk1uptZ3t2i8NluTuW1v/Ha57xvi0TGue9K+a
+	qSohp5afffPJ82P0V5F0fT+FTeKxW85yal54c8Ldfv+qltodW1xm3WLJqXORV5EokhNVn2C9
+	d/q7un6rp0leU5m2K7EUZyQaajEXFScCAE1zySIhAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2DF0em9RAg9nfTSwu75rD5sDo8XmT
+	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
+	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6JQayVoYGBkSlQVUJG
+	xp/GZUwFt3grlj7fxNbAuIK3i5GTQ0hARaLl/3dGEFtCwETi3LJXzBC2mMSFe+vZuhi5gGrm
+	M0qsbHjLBpJgEVCV2Lt7NQuIzSagLfH2ywPWLkYODmEBL4knMzhAwiIC8hJrnjxnB7GZBTwk
+	tm/eyAixS15i8unLYHFeAUGJkzOfsEDsUpKYcLWDESKuLNF66iNUXEJi1vQLrBA2r8SM9qdQ
+	cTmJaV/XQN0pLXF+1gZGmJsXf38MFeeXOHZ7BxPIaSC9T+4Hw4zZvfkLG4QtIDH1zEGoVnWJ
+	3k1N7BA2n8SahW9ZYMbsOrWcGab3/pa5TBBvKUpM6X4I9aKWxJcf+9jQvcUr4CixYfsrlgmM
+	crOQpGYhaZ+FpB1ZzQJGllWMoqkFyQXFSekVhnrFibnFpXnpesn5uZsYwQnq2cIdjF/OWx9i
+	FOBgVOLhXWiYEijEmlhWXJl7iFGCg1lJhNdCKzVQiDclsbIqtSg/vqg0J7X4EGMyMP4mMkuJ
+	JucDk2deSbyhsYGxoaGluYGpoZEFacJK4rxPW60DhQTSE0tSs1NTC1KLYLYwcXBKNTDu3/fD
+	wE/gzvkbt9kve9eub7zwvf3XT/WVfxUdEh7dEUv7XXL0r/sjs8KnETufzZ/8ZrVky/sfv2vr
+	S87POvri+82YtheT5ghPT1OpEeRc7F3UerjvOPPR5e7fjTo2iG5cU2BROe+oxN1TE3bZbn95
+	n3FO3v95C7O+75sW5OlcdKGJJZg/fMGu2UosxRmJhlrMRcWJAOy89omUAwAA
 DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3AAGmjb011087
 
-Heiko St√ºbner wrote:
-> 
-> This is the second installment of beginning devicetree support the
-> Samsung S3C24xx architectures and focuses on the s3c2416 for now.
-> 
-> Included is the devicetree support for the s3c24xx irq controller and
-> basic support for smdk2416 boards, which can sucessfully boot.
-> 
-> 
-> After the discussion with Thomas Abraham on v1 and staring to long at all
-> of
-> this, I'm not even sure if having the interrupt mapping in the binding
-> is the correct way to go anymore.
-> 
-> The key positive aspect of this solution is, that after everything is
-> running
-> via dt all the SoC specific mapping tables in the driver can go away,
-> cutting
-> its length in half.
-> 
-> The other option would be as Thomas suggested to define specific irq-
-> controller
-> types (i.e. s3c2416-intc, s3c2443-intc, ... resulting in 16 types) and
-> keep
-> the mapping data in the code, as it is now.
-> 
-> So I would be very thankful for a bit of guidance on what is the better
-> way.
-> 
-> 
-> The series depends on the finalized s3c24xx irq rework, which probably
-> won't
-> make it into 3.9 and also the clocksource dt support by Tomasz Figa, which
-> are not in any tree yet.
-> 
-> 
-> Changes since v1:
-> - adapt to changes in the underlying s3c24xx irq rework
->   = more shared init code
-> - use irqchip infrastructure
-> - limit number of possible irq-types to not encode implementation details
->   into the binding
-> - include new samsung-clocksource
-> 
-> Heiko Stuebner (3):
->   ARM: S3C24XX: move irq driver to drivers/irqchip
->   irqchip: irq-s3c24xx: add devicetree support
->   ARM: S3C24XX: Add devicetree support and dt-board file for s3c2416 SoCs
-> 
->  .../interrupt-controller/samsung,s3c24xx-irq.txt   |   53 ++++++
->  arch/arm/boot/dts/Makefile                         |    1 +
->  arch/arm/boot/dts/s3c2416-smdk2416.dts             |   79 ++++++++
->  arch/arm/boot/dts/s3c2416.dtsi                     |  193 ++++++++++++++++++++
->  arch/arm/boot/dts/s3c24xx.dtsi                     |  165 +++++++++++++++++
->  arch/arm/mach-s3c24xx/Kconfig                      |   10 +
->  arch/arm/mach-s3c24xx/Makefile                     |    3 +-
->  arch/arm/mach-s3c24xx/mach-s3c2416-dt.c            |   91 +++++++++
->  drivers/irqchip/Makefile                           |    1 +
->  .../irq.c => drivers/irqchip/irq-s3c24xx.c         |  128 +++++++++++++
->  10 files changed, 723 insertions(+), 1 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/interrupt-
-> controller/samsung,s3c24xx-irq.txt
->  create mode 100644 arch/arm/boot/dts/s3c2416-smdk2416.dts
->  create mode 100644 arch/arm/boot/dts/s3c2416.dtsi
->  create mode 100644 arch/arm/boot/dts/s3c24xx.dtsi
->  create mode 100644 arch/arm/mach-s3c24xx/mach-s3c2416-dt.c
->  rename arch/arm/mach-s3c24xx/irq.c => drivers/irqchip/irq-s3c24xx.c (92%)
-> 
-> --
-> 1.7.2.3
 
-Basically, looks good to me and thanks for your effort.
+Currently, CPU for RX napi handler is scheduled when backlog packet count is greater than budget * cores_in_use.
+If more cpus are used for RX napi handler, there is low possibility backlog packet count is greater than budget * cores_in_use.
+This patch makes CPU for RX napi handler is scheduled when backlog packet count is greater than budget.
+I tested with patch and the result is more cpu is scheduled in traffic congestion situation.
 
-BTW, if you don't mind, would be better to send to upstream next time. Because I need to consider other s3c24xx SoCs for DT...
+Signed-off-by: EunBong Song <eunb.song@samsung.com>
+---
+ drivers/staging/octeon/ethernet-rx.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks.
-
-- Kukjin
-
+diff --git a/drivers/staging/octeon/ethernet-rx.c b/drivers/staging/octeon/ethernet-rx.c
+index 34afc16..13f9eae 100644
+--- a/drivers/staging/octeon/ethernet-rx.c
++++ b/drivers/staging/octeon/ethernet-rx.c
+@@ -300,7 +300,7 @@ static int cvm_oct_napi_poll(struct napi_struct *napi, int budget)
+ 			int cores_in_use = core_state.baseline_cores - atomic_read(&core_state.available_cores);
+ 			counts.u64 = cvmx_read_csr(CVMX_POW_WQ_INT_CNTX(pow_receive_group));
+ 			backlog = counts.s.iq_cnt + counts.s.ds_cnt;
+-			if (backlog > budget * cores_in_use && napi != NULL)
++			if (backlog > budget && napi != NULL)
+ 				cvm_oct_enable_one_cpu();
+ 		}
+ 
+-- 
+1.7.0.4
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
