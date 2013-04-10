@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964928Ab3DJXND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:13:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56140 "EHLO
+	id S936901Ab3DJXNB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:13:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56142 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937200Ab3DJWrX (ORCPT
+	with ESMTP id S937086Ab3DJWrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:23 -0400
+	Wed, 10 Apr 2013 18:47:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: [ 29/64] PCI/ACPI: Always resume devices on ACPI wakeup notifications
-Date: Wed, 10 Apr 2013 15:46:26 -0700
-Message-Id: <20130410224339.797464063@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 30/64] PCI/PM: Disable runtime PM of PCIe ports
+Date: Wed, 10 Apr 2013 15:46:27 -0700
+Message-Id: <20130410224340.082440337@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -31,57 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 24ad0ef9c8b946ed2abe681e4e44f4a1e643d882 upstream.
+commit de7d5f729c72638f41d7c17487bccb1c570ff144 upstream.
 
-It turns out that the _Lxx control methods provided by some BIOSes
-clear the PME Status bit of PCI devices they handle, which means that
-pci_acpi_wake_dev() cannot really use that bit to check whether or
-not the device has signalled wakeup.
+The runtime PM of PCIe ports turns out to be quite fragile, as in
+some cases things work while in some other cases they don't and we
+don't seem to have a good way to determine whether or not they are
+going to work in advance.
 
-One symptom of the problem is, for example, that when an affected PCI
-USB controller is runtime-suspended, then plugging in a new USB device
-into one of the controller's ports will not wake up the controller,
-which should happen.
+For this reason, avoid enabling runtime PM for PCIe ports by
+keeping their runtime PM reference counters always above 0 for the
+time being.
 
-For this reason, make pci_acpi_wake_dev() always attempt to resume
-the device it is called for regardless of the device's PME Status bit
-value (that bit still has to be cleared if set at this point,
-though).
+When a PCIe port is suspended, it can no longer report events like
+hotplug, so hotplug below the port may not work, as in the bug
+report below.
 
-Reported-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+[bhelgaas: changelog, stable]
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=53811
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Matthew Garrett <mjg59@srcf.ucam.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pci-acpi.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/pci/pcie/portdrv_pci.c |   13 -------------
+ 1 file changed, 13 deletions(-)
 
---- a/drivers/pci/pci-acpi.c
-+++ b/drivers/pci/pci-acpi.c
-@@ -53,14 +53,15 @@ static void pci_acpi_wake_dev(acpi_handl
- 		return;
- 	}
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -185,14 +185,6 @@ static const struct dev_pm_ops pcie_port
+ #endif /* !PM */
  
--	if (!pci_dev->pm_cap || !pci_dev->pme_support
--	     || pci_check_pme_status(pci_dev)) {
--		if (pci_dev->pme_poll)
--			pci_dev->pme_poll = false;
-+	/* Clear PME Status if set. */
-+	if (pci_dev->pme_support)
-+		pci_check_pme_status(pci_dev);
+ /*
+- * PCIe port runtime suspend is broken for some chipsets, so use a
+- * black list to disable runtime PM for these chipsets.
+- */
+-static const struct pci_device_id port_runtime_pm_black_list[] = {
+-	{ /* end: all zeroes */ }
+-};
+-
+-/*
+  * pcie_portdrv_probe - Probe PCI-Express port devices
+  * @dev: PCI-Express port device being probed
+  *
+@@ -225,16 +217,11 @@ static int pcie_portdrv_probe(struct pci
+ 	 * it by default.
+ 	 */
+ 	dev->d3cold_allowed = false;
+-	if (!pci_match_id(port_runtime_pm_black_list, dev))
+-		pm_runtime_put_noidle(&dev->dev);
+-
+ 	return 0;
+ }
  
--		pci_wakeup_event(pci_dev);
--		pm_runtime_resume(&pci_dev->dev);
--	}
-+	if (pci_dev->pme_poll)
-+		pci_dev->pme_poll = false;
-+
-+	pci_wakeup_event(pci_dev);
-+	pm_runtime_resume(&pci_dev->dev);
- 
- 	if (pci_dev->subordinate)
- 		pci_pme_wakeup_bus(pci_dev->subordinate);
+ static void pcie_portdrv_remove(struct pci_dev *dev)
+ {
+-	if (!pci_match_id(port_runtime_pm_black_list, dev))
+-		pm_runtime_get_noresume(&dev->dev);
+ 	pcie_port_device_remove(dev);
+ 	pci_disable_device(dev);
+ }
 
 
