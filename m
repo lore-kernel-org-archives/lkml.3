@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936901Ab3DJXNB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:13:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56142 "EHLO
+	id S937198Ab3DJWrX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:47:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56114 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937086Ab3DJWrY (ORCPT
+	with ESMTP id S937145Ab3DJWrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:24 -0400
+	Wed, 10 Apr 2013 18:47:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 30/64] PCI/PM: Disable runtime PM of PCIe ports
-Date: Wed, 10 Apr 2013 15:46:27 -0700
-Message-Id: <20130410224340.082440337@linuxfoundation.org>
+        Shan Hai <shan.hai@windriver.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 24/64] libata: Use integer return value for atapi_command_packet_set
+Date: Wed, 10 Apr 2013 15:46:21 -0700
+Message-Id: <20130410224338.764090004@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -27,66 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Shan Hai <shan.hai@windriver.com>
 
-commit de7d5f729c72638f41d7c17487bccb1c570ff144 upstream.
+commit d8668fcb0b257d9fdcfbe5c172a99b8d85e1cd82 upstream.
 
-The runtime PM of PCIe ports turns out to be quite fragile, as in
-some cases things work while in some other cases they don't and we
-don't seem to have a good way to determine whether or not they are
-going to work in advance.
+The function returns type of ATAPI drives so it should return integer value.
+The commit 4dce8ba94c7 (libata: Use 'bool' return value for ata_id_XXX) since
+v2.6.39 changed the type of return value from int to bool, the change would
+cause all of the ATAPI class drives to be treated as TYPE_TAPE and the
+max_sectors of the drives to be set to 65535 because of the commit
+f8d8e5799b7(libata: increase 128 KB / cmd limit for ATAPI tape drives), for the
+function would return true for all ATAPI class drives and the TYPE_TAPE is
+defined as 0x01.
 
-For this reason, avoid enabling runtime PM for PCIe ports by
-keeping their runtime PM reference counters always above 0 for the
-time being.
-
-When a PCIe port is suspended, it can no longer report events like
-hotplug, so hotplug below the port may not work, as in the bug
-report below.
-
-[bhelgaas: changelog, stable]
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=53811
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/pcie/portdrv_pci.c |   13 -------------
- 1 file changed, 13 deletions(-)
+ include/linux/ata.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -185,14 +185,6 @@ static const struct dev_pm_ops pcie_port
- #endif /* !PM */
- 
- /*
-- * PCIe port runtime suspend is broken for some chipsets, so use a
-- * black list to disable runtime PM for these chipsets.
-- */
--static const struct pci_device_id port_runtime_pm_black_list[] = {
--	{ /* end: all zeroes */ }
--};
--
--/*
-  * pcie_portdrv_probe - Probe PCI-Express port devices
-  * @dev: PCI-Express port device being probed
-  *
-@@ -225,16 +217,11 @@ static int pcie_portdrv_probe(struct pci
- 	 * it by default.
- 	 */
- 	dev->d3cold_allowed = false;
--	if (!pci_match_id(port_runtime_pm_black_list, dev))
--		pm_runtime_put_noidle(&dev->dev);
--
- 	return 0;
+--- a/include/linux/ata.h
++++ b/include/linux/ata.h
+@@ -954,7 +954,7 @@ static inline int atapi_cdb_len(const u1
+ 	}
  }
  
- static void pcie_portdrv_remove(struct pci_dev *dev)
+-static inline bool atapi_command_packet_set(const u16 *dev_id)
++static inline int atapi_command_packet_set(const u16 *dev_id)
  {
--	if (!pci_match_id(port_runtime_pm_black_list, dev))
--		pm_runtime_get_noresume(&dev->dev);
- 	pcie_port_device_remove(dev);
- 	pci_disable_device(dev);
+ 	return (dev_id[ATA_ID_CONFIG] >> 8) & 0x1f;
  }
 
 
