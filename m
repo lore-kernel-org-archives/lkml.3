@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937501Ab3DJXDp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:03:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56496 "EHLO
+	id S937591Ab3DJXD7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:03:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56488 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965051Ab3DJWtw (ORCPT
+	with ESMTP id S964989Ab3DJWtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:49:52 -0400
+	Wed, 10 Apr 2013 18:49:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerhard Sittig <gerhard.sittig@ifm.com>,
-        Anatolij Gustschin <agust@denx.de>,
+        Lars-Peter Clausen <lars@metafoo.de>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 04/29] spi/mpc512x-psc: optionally keep PSC SS asserted across xfer segmensts
-Date: Wed, 10 Apr 2013 15:49:22 -0700
-Message-Id: <20130410224804.528751852@linuxfoundation.org>
+Subject: [ 02/29] regmap: cache Fix regcache-rbtree sync
+Date: Wed, 10 Apr 2013 15:49:20 -0700
+Message-Id: <20130410224804.315980557@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -28,43 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatolij Gustschin <agust@denx.de>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 1ad849aee5f53353ed88d9cd3d68a51b03a7d44f upstream.
+commit 8abac3ba51b5525354e9b2ec0eed1c9e95c905d9 upstream.
 
-Some SPI slave devices require asserted chip select signal across
-multiple transfer segments of an SPI message. Currently the driver
-always de-asserts the internal SS signal for every single transfer
-segment of the message and ignores the 'cs_change' flag of the
-transfer description. Disable the internal chip select (SS) only
-if this is needed and indicated by the 'cs_change' flag.
+The last register block, which falls into the specified range, is not handled
+correctly. The formula which calculates the number of register which should be
+synced is inverse (and off by one). E.g. if all registers in that block should
+be synced only one is synced, and if only one should be synced all (but one) are
+synced. To calculate the number of registers that need to be synced we need to
+subtract the number of the first register in the block from the max register
+number and add one. This patch updates the code accordingly.
 
-Without this change, each partial transfer of a surrounding
-multi-part SPI transaction might erroneously change the SS
-signal, which might prevent slaves from answering the request
-that was sent in a previous transfer segment because the
-transaction could be considered aborted (SS was de-asserted
-before reading the response).
+The issue was introduced in commit ac8d91c ("regmap: Supply ranges to the sync
+operations").
 
-Reported-by: Gerhard Sittig <gerhard.sittig@ifm.com>
-Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-mpc512x-psc.c |    2 +-
+ drivers/base/regmap/regcache-rbtree.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/spi/spi-mpc512x-psc.c
-+++ b/drivers/spi/spi-mpc512x-psc.c
-@@ -164,7 +164,7 @@ static int mpc512x_psc_spi_transfer_rxtx
+--- a/drivers/base/regmap/regcache-rbtree.c
++++ b/drivers/base/regmap/regcache-rbtree.c
+@@ -392,7 +392,7 @@ static int regcache_rbtree_sync(struct r
+ 			base = 0;
  
- 		for (i = count; i > 0; i--) {
- 			data = tx_buf ? *tx_buf++ : 0;
--			if (len == EOFBYTE)
-+			if (len == EOFBYTE && t->cs_change)
- 				setbits32(&fifo->txcmd, MPC512x_PSC_FIFO_EOF);
- 			out_8(&fifo->txdata_8, data);
- 			len--;
+ 		if (max < rbnode->base_reg + rbnode->blklen)
+-			end = rbnode->base_reg + rbnode->blklen - max;
++			end = max - rbnode->base_reg + 1;
+ 		else
+ 			end = rbnode->blklen;
+ 
 
 
