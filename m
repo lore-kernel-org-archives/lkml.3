@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936531Ab3DJMUj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 08:20:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63370 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936465Ab3DJMUi convert rfc822-to-8bit (ORCPT
+	id S936590Ab3DJMWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 08:22:38 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:53123 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab3DJMWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 08:20:38 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <87k3oa65hx.fsf@rustcorp.com.au>
-References: <87k3oa65hx.fsf@rustcorp.com.au> <1365543543-17522-1-git-send-email-david.a.cohen@intel.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: dhowells@redhat.com, David Cohen <david.a.cohen@intel.com>,
-        linux-kernel@vger.kernel.org, mark.gross@intel.com
-Subject: Re: [PATCH v2] MODSIGN: do not send garbage to stderr when enabling modules signature
+	Wed, 10 Apr 2013 08:22:37 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 7/8] dmaengine: ste_dma40: Use the BIT macro to replace ugly '(1 << x)'s
+Date: Wed, 10 Apr 2013 14:22:31 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Harvey Harrison <harvey.harrison@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, linus.walleij@stericsson.com
+References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org> <201304092112.56039.arnd@arndb.de> <20130410093412.GI25316@gmail.com>
+In-Reply-To: <20130410093412.GI25316@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 10 Apr 2013 13:20:33 +0100
-Message-ID: <10221.1365596433@warthog.procyon.org.uk>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304101422.31601.arnd@arndb.de>
+X-Provags-ID: V02:K0:Zz0GQf62p7nKna1OYKLdgK5HY5fphmaHWl/IOn6n8L2
+ baQ8Rj0WjEobi32EzvPdfbsfgJeou1FkD5xjjPsVB8r800erH5
+ tt0DkGlMb8+6QfZWWqU9hM2GwHVWLtB9gJOL1aZod/LYEuRQ10
+ Da/t1ADZ9mB5mEYr2yOHdN1vibtLGOtQI17uTpuh+QGyIxhQ4k
+ +coR3cFuo5RG8vjMIUf+nrvVXDxPrj/KlASb25enmoPwRYn6up
+ xZwBV/NcEOoVYJtMGuvc7dI9MZyZh6UCQPSVAwEa73mqqSeI5+
+ 1s7jglkpxjvBykJUcqGaJ0Q2EQ8qgar4jFp9f22yPBDHcNBoGk
+ DE6lBO4Nd0oGBZ2WIeXk=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rusty Russell <rusty@rustcorp.com.au> wrote:
+On Wednesday 10 April 2013, Lee Jones wrote:
+> On Tue, 09 Apr 2013, Arnd Bergmann wrote:
 
-> From: David Cohen <david.a.cohen@intel.com>
-> Subject: MODSIGN: do not send garbage to stderr when enabling modules signature
+> > Yes, good point. The macro is only used in one place, to compare
+> > two compile-time constant values, but we should define macros in
+> > drivers that are already provided by the kernel.
 > 
-> When compiling kernel with -jN (N > 1), all warning/error messages
-> printed while openssl is generating key pair may get mixed dots and
-> other symbols openssl sends to stderr. This patch makes sure openssl
-> logs go to default stdout.
-> 
-> Example of the garbage on stderr:
-> 
-> crypto/anubis.c:581: warning: ‘inter’ is used uninitialized in this function
-> Generating a 4096 bit RSA private key
-> .........
-> drivers/gpu/drm/i915/i915_gem_gtt.c: In function ‘gen6_ggtt_insert_entries’:
-> drivers/gpu/drm/i915/i915_gem_gtt.c:440: warning: ‘addr’ may be used uninitialized in this function
-> .net/mac80211/tx.c: In function ‘ieee80211_subif_start_xmit’:
-> net/mac80211/tx.c:1780: warning: ‘chanctx_conf’ may be used uninitialized in this function
-> ..drivers/isdn/hardware/mISDN/hfcpci.c: In function ‘hfcpci_softirq’:
-> .....drivers/isdn/hardware/mISDN/hfcpci.c:2298: warning: ignoring return value of ‘driver_for_each_device’, declared with attribute warn_unused_result
-> 
-> Signed-off-by: David Cohen <david.a.cohen@intel.com>
-> Reviewed-by: mark gross <mark.gross@intel.com>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> Okay, it looks like the generic implementation has brackets in it,
+> which isn't allowed for this particular usecase.
 
-Acked-by: David Howells <dhowells@redhat.com>
+Ah, right.
+
+> I'll fix this one instead.
+
+Probably not worth then. You could open-code the comparison where
+it is used and remove the macro if you want, but I probably
+would not bother.
+
+	Arnd
+
