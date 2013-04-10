@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937181Ab3DJSYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 14:24:34 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42610 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934446Ab3DJSYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 14:24:31 -0400
+	id S937297Ab3DJSYs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 14:24:48 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:44240 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937254Ab3DJSYp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 14:24:45 -0400
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
@@ -24,102 +25,105 @@ Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
         Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCHv9 2/8] zsmalloc: add documentation
-Date: Wed, 10 Apr 2013 13:18:54 -0500
-Message-Id: <1365617940-21623-3-git-send-email-sjenning@linux.vnet.ibm.com>
+Subject: [PATCHv9 3/8] debugfs: add get/set for atomic types
+Date: Wed, 10 Apr 2013 13:18:55 -0500
+Message-Id: <1365617940-21623-4-git-send-email-sjenning@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1365617940-21623-1-git-send-email-sjenning@linux.vnet.ibm.com>
 References: <1365617940-21623-1-git-send-email-sjenning@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041018-5806-0000-0000-000020ACC1E6
+x-cbid: 13041018-2398-0000-0000-00001325522E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a documentation file for zsmalloc at
-Documentation/vm/zsmalloc.txt
+debugfs currently lack the ability to create attributes
+that set/get atomic_t values.
 
+This patch adds support for this through a new
+debugfs_create_atomic_t() function.
+
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 ---
- Documentation/vm/zsmalloc.txt | 68 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
- create mode 100644 Documentation/vm/zsmalloc.txt
+ fs/debugfs/file.c       | 42 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/debugfs.h |  2 ++
+ 2 files changed, 44 insertions(+)
 
-diff --git a/Documentation/vm/zsmalloc.txt b/Documentation/vm/zsmalloc.txt
-new file mode 100644
-index 0000000..85aa617
---- /dev/null
-+++ b/Documentation/vm/zsmalloc.txt
-@@ -0,0 +1,68 @@
-+zsmalloc Memory Allocator
+diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
+index c5ca6ae..fa26d5b 100644
+--- a/fs/debugfs/file.c
++++ b/fs/debugfs/file.c
+@@ -21,6 +21,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/atomic.h>
+ 
+ static ssize_t default_read_file(struct file *file, char __user *buf,
+ 				 size_t count, loff_t *ppos)
+@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ }
+ EXPORT_SYMBOL_GPL(debugfs_create_size_t);
+ 
++static int debugfs_atomic_t_set(void *data, u64 val)
++{
++	atomic_set((atomic_t *)data, val);
++	return 0;
++}
++static int debugfs_atomic_t_get(void *data, u64 *val)
++{
++	*val = atomic_read((atomic_t *)data);
++	return 0;
++}
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
++			debugfs_atomic_t_set, "%llu\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
++DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
 +
-+Overview
-+
-+zmalloc a new slab-based memory allocator,
-+zsmalloc, for storing compressed pages.  It is designed for
-+low fragmentation and high allocation success rate on
-+large object, but <= PAGE_SIZE allocations.
-+
-+zsmalloc differs from the kernel slab allocator in two primary
-+ways to achieve these design goals.
-+
-+zsmalloc never requires high order page allocations to back
-+slabs, or "size classes" in zsmalloc terms. Instead it allows
-+multiple single-order pages to be stitched together into a
-+"zspage" which backs the slab.  This allows for higher allocation
-+success rate under memory pressure.
-+
-+Also, zsmalloc allows objects to span page boundaries within the
-+zspage.  This allows for lower fragmentation than could be had
-+with the kernel slab allocator for objects between PAGE_SIZE/2
-+and PAGE_SIZE.  With the kernel slab allocator, if a page compresses
-+to 60% of it original size, the memory savings gained through
-+compression is lost in fragmentation because another object of
-+the same size can't be stored in the leftover space.
-+
-+This ability to span pages results in zsmalloc allocations not being
-+directly addressable by the user.  The user is given an
-+non-dereferencable handle in response to an allocation request.
-+That handle must be mapped, using zs_map_object(), which returns
-+a pointer to the mapped region that can be used.  The mapping is
-+necessary since the object data may reside in two different
-+noncontigious pages.
-+
-+For 32-bit systems, zsmalloc has the added benefit of being
-+able to back slabs with HIGHMEM pages, something not possible
-+with the kernel slab allocators (SLAB or SLUB).
-+
-+Usage:
-+
-+#include <linux/zsmalloc.h>
-+
-+/* create a new pool */
-+struct zs_pool *pool = zs_create_pool("mypool", GFP_KERNEL);
-+
-+/* allocate a 256 byte object */
-+unsigned long handle = zs_malloc(pool, 256);
-+
-+/*
-+ * Map the object to get a dereferenceable pointer in "read-write mode"
-+ * (see zsmalloc.h for additional modes)
++/**
++ * debugfs_create_atomic_t - create a debugfs file that is used to read and
++ * write an atomic_t value
++ * @name: a pointer to a string containing the name of the file to create.
++ * @mode: the permission that the file should have
++ * @parent: a pointer to the parent dentry for this file.  This should be a
++ *          directory dentry if set.  If this parameter is %NULL, then the
++ *          file will be created in the root of the debugfs filesystem.
++ * @value: a pointer to the variable that the file should read to and write
++ *         from.
 + */
-+void *ptr = zs_map_object(pool, handle, ZS_MM_RW);
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				 struct dentry *parent, atomic_t *value)
++{
++	/* if there are no write bits set, make read only */
++	if (!(mode & S_IWUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_ro);
++	/* if there are no read bits set, make write only */
++	if (!(mode & S_IRUGO))
++		return debugfs_create_file(name, mode, parent, value,
++					&fops_atomic_t_wo);
 +
-+/* do something with ptr */
-+
-+/*
-+ * Unmap the object when done dealing with it. You should try to
-+ * minimize the time for which the object is mapped since preemption
-+ * is disabled during the mapped period.
-+ */
-+zs_unmap_object(pool, handle);
-+
-+/* free the object */
-+zs_free(pool, handle);
-+
-+/* destroy the pool */
-+zs_destroy_pool(pool); 
++	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
++}
++EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
+ 
+ static ssize_t read_file_bool(struct file *file, char __user *user_buf,
+ 			      size_t count, loff_t *ppos)
+diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
+index 63f2465..d68b4ea 100644
+--- a/include/linux/debugfs.h
++++ b/include/linux/debugfs.h
+@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
+ 				  struct dentry *parent, u64 *value);
+ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
+ 				     struct dentry *parent, size_t *value);
++struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
++				     struct dentry *parent, atomic_t *value);
+ struct dentry *debugfs_create_bool(const char *name, umode_t mode,
+ 				  struct dentry *parent, u32 *value);
+ 
 -- 
 1.8.2.1
 
