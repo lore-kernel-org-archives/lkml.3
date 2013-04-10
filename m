@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935970Ab3DJJNk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 05:13:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13520 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750797Ab3DJJNh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 05:13:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,444,1363158000"; 
-   d="scan'208";a="292821198"
-Date: Wed, 10 Apr 2013 12:17:47 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio / ACPI: Handle ACPI events in accordance with the
- spec
-Message-ID: <20130410091747.GO21818@intel.com>
-References: <3043137.BtEKcMiXSu@vostro.rjw.lan>
- <20130410075319.GN21818@intel.com>
- <51652035.5000802@linux.intel.com>
+	id S936452Ab3DJJQh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 05:16:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59412 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab3DJJQg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 05:16:36 -0400
+Message-ID: <51652DDF.8000100@pengutronix.de>
+Date: Wed, 10 Apr 2013 11:16:15 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51652035.5000802@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hector Palacios <hector.palacios@digi.com>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "aletes.xgr@gmail.com" <aletes.xgr@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marek Vasut <marex@denx.de>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [PATCH v2 2/2] mmc: mxs-mmc: add non-removable property
+References: <1365166070-9370-1-git-send-email-mkl@pengutronix.de> <1365166070-9370-3-git-send-email-mkl@pengutronix.de> <51643053.7030302@digi.com> <516431F9.8010302@digi.com> <51644302.6000109@pengutronix.de> <516520AA.8030300@digi.com>
+In-Reply-To: <516520AA.8030300@digi.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2EQSCXBSGRPTCXDAGAJSR"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 11:17:57AM +0300, Mathias Nyman wrote:
-> On 04/10/2013 10:53 AM, Mika Westerberg wrote:
-> >On Tue, Apr 09, 2013 at 03:57:25PM +0200, Rafael J. Wysocki wrote:
-> >>+void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
-> >>+{
-> >>+	acpi_handle handle;
-> >>+	acpi_status status;
-> >>+	struct list_head *evt_pins;
-> >>+	struct acpi_gpio_evt_pin *evt_pin, *ep;
-> >>+
-> >>+	if (!chip->dev || !chip->to_irq)
-> >>+		return;
-> >>+
-> >>+	handle = ACPI_HANDLE(chip->dev);
-> >>+	if (!handle)
-> >>+		return;
-> >>+
-> >>+	status = acpi_get_data(handle, acpi_gpio_evt_dh, (void **)&evt_pins);
-> >>+	if (ACPI_FAILURE(status))
-> >>+		return;
-> >>+
-> >>+	list_for_each_entry_safe_reverse(evt_pin, ep, evt_pins, node) {
-> >>+		devm_free_irq(chip->dev, evt_pin->irq, evt_pin);
-> >
-> >How about using normal request/free_irq() functions for both _EVT and
-> >non-_EVT events? Since we now need to call acpi_gpiochip_free_interrupts()
-> >anyway, I don't see the point using devm_* functions here.
-> >
-> 
-> Then we need to create a list of non-_EVT events, or add them to the
-> evt_pins list.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2EQSCXBSGRPTCXDAGAJSR
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-Good point. Maybe we can add them to the evt_pins list and handle the same
-way as _EVT (except that we need to call _Exx and _Lxx methods instead of
-_EVT)?
+On 04/10/2013 10:19 AM, Hector Palacios wrote:
+> On Tue 09 Apr 2013 06:34:10 PM CEST, Marc Kleine-Budde wrote:
+>> On 04/09/2013 05:21 PM, Hector Palacios wrote:
+>>> On 04/09/2013 05:14 PM, Hector Palacios wrote:
+>>>> @@ -95,7 +97,8 @@ static int mxs_mmc_get_cd(struct mmc_host *mmc)
+>>>>           struct mxs_mmc_host *host =3D mmc_priv(mmc);
+>>>>           struct mxs_ssp *ssp =3D &host->ssp;
+>>>>
+>>>> -       return !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+>>>> +       return host->non_removable || host->broken_cd ||
+>>>> +              !(readl(ssp->base + HW_SSP_STATUS(ssp)) &
+>>>>                    BM_SSP_STATUS_CARD_DETECT);
+>>>>    }
+>>>
+>>> Sorry, I missed your original XOR here, when merging my changes:
+>>
+>> Can you send an incremental patch against my 2/2 with your
+>> Signed-off-by, I'll squash your patch into mine and repost the series.=
+
+>=20
+> Sure. Here it is:
+>=20
+> From 18f6199947bc2681d2d63b307506019535018646 Mon Sep 17 00:00:00 2001
+> From: Hector Palacios <hector.palacios@digi.com>
+> Date: Wed, 10 Apr 2013 09:16:31 +0200
+> Subject: [PATCH] mmc: mxs-mmc: handle 'broken-cd' property
+>=20
+> According to bindings documentation for mmc, the property 'broken-cd'
+> can be used to indicate card-detection is not available and polling
+> must be used instead. This patch retrieves this property
+> and sets a custom flag. On the get_cd() hook, it returns 1 if
+> the flag is set, to always assume the card is present.
+>=20
+> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+
+Thanks, your patch description is so good, I'll keep your patch as 3
+and repost the whole series.
+
+Marc
+
+P.S.:
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+------enig2EQSCXBSGRPTCXDAGAJSR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlFlLecACgkQjTAFq1RaXHP10ACaA2KGRg959+/WhqB72oOuOjXm
+SGsAn3xtU3Vo9ZYXimFgXiXFvDu3gnZY
+=orlO
+-----END PGP SIGNATURE-----
+
+------enig2EQSCXBSGRPTCXDAGAJSR--
