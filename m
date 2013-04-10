@@ -1,158 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935691Ab3DJGm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 02:42:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:8922 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280Ab3DJGm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 02:42:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,444,1363158000"; 
-   d="scan'208";a="225396069"
-Date: Wed, 10 Apr 2013 08:42:53 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrey Smirnov <andrew.smirnov@gmail.com>
-Subject: Re: linux-next: manual merge of the mfd tree with the v4l-dvb tree
-Message-ID: <20130410064253.GA4874@zurbaran>
-References: <20130410134813.b1bff6027f64f14d75d43927@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130410134813.b1bff6027f64f14d75d43927@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1765121Ab3DJGq1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 02:46:27 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:48096 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab3DJGqZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 02:46:25 -0400
+Message-ID: <1365576380.4283.5.camel@phoenix>
+Subject: [PATCH RFT 2/2] regulator: ab8500: Optimize
+ ab8540_aux3_regulator_get_voltage_sel
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 10 Apr 2013 14:46:20 +0800
+In-Reply-To: <1365576052.4283.2.camel@phoenix>
+References: <1365576052.4283.2.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+We can save a register read operation in some case if read
+expand_register first.
+If info->expand_register.voltage_mask bit is set, no need to read
+voltage_reg.
 
-On Wed, Apr 10, 2013 at 01:48:13PM +1000, Stephen Rothwell wrote:
-> Hi Samuel,
-> 
-> Today's linux-next merge of the mfd tree got a conflict in
-> drivers/mfd/Kconfig between commit 3f8ec5df11aa ("[media] mfd: Add header
-> files and Kbuild plumbing for SI476x MFD core") from the v4l-dvb tree and
-> commit ab85b120e692 ("mfd: Kconfig alphabetical re-ordering") from the
-> mfd tree.
-I'm surprised the v4l-dvb tree is carrying this patchset because I haven't
-ACKed it. I was planning to take the MFD bits of it and provide Mauro a branch
-to pull from (Including the mfd/Kconfig change).
-Mauro, could we please go that way instead ? This conflict does not look
-pretty to me.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/ab8500.c |   42 ++++++++++++++++++------------------------
+ 1 file changed, 18 insertions(+), 24 deletions(-)
 
-Cheers,
-Samuel.
-
-
-> I fixed it up (I think - see below) and can carry the fix as necessary
-> (no action is required).
-> 
-> diff --cc drivers/mfd/Kconfig
-> index b6bb6d5,2f3ce18..0000000
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@@ -977,68 -920,38 +920,51 @@@ config MFD_WL1273_COR
->   	  driver connects the radio-wl1273 V4L2 module and the wl1273
->   	  audio codec.
->   
->  +config MFD_SI476X_CORE
->  +	tristate "Support for Silicon Laboratories 4761/64/68 AM/FM radio."
->  +	depends on I2C
->  +	select MFD_CORE
->  +	select REGMAP_I2C
->  +	help
->  +	  This is the core driver for the SI476x series of AM/FM
->  +	  radio. This MFD driver connects the radio-si476x V4L2 module
->  +	  and the si476x audio codec.
->  +
->  +	  To compile this driver as a module, choose M here: the
->  +	  module will be called si476x-core.
->  +
-> - config MFD_OMAP_USB_HOST
-> - 	bool "Support OMAP USBHS core and TLL driver"
-> - 	depends on USB_EHCI_HCD_OMAP || USB_OHCI_HCD_OMAP3
-> - 	default y
-> - 	help
-> - 	  This is the core driver for the OAMP EHCI and OHCI drivers.
-> - 	  This MFD driver does the required setup functionalities for
-> - 	  OMAP USB Host drivers.
-> - 
-> - config MFD_PM8XXX
-> - 	tristate
-> - 
-> - config MFD_PM8921_CORE
-> - 	tristate "Qualcomm PM8921 PMIC chip"
-> - 	depends on MSM_SSBI
-> + config MFD_LM3533
-> + 	tristate "TI/National Semiconductor LM3533 Lighting Power chip"
-> + 	depends on I2C
->   	select MFD_CORE
-> - 	select MFD_PM8XXX
-> + 	select REGMAP_I2C
-> + 	depends on GENERIC_HARDIRQS
->   	help
-> - 	  If you say yes to this option, support will be included for the
-> - 	  built-in PM8921 PMIC chip.
-> - 
-> - 	  This is required if your board has a PM8921 and uses its features,
-> - 	  such as: MPPs, GPIOs, regulators, interrupts, and PWM.
-> - 
-> - 	  Say M here if you want to include support for PM8921 chip as a module.
-> - 	  This will build a module called "pm8921-core".
-> + 	  Say yes here to enable support for National Semiconductor / TI
-> + 	  LM3533 Lighting Power chips.
->   
-> - config MFD_PM8XXX_IRQ
-> - 	bool "Support for Qualcomm PM8xxx IRQ features"
-> - 	depends on MFD_PM8XXX
-> - 	default y if MFD_PM8XXX
-> - 	help
-> - 	  This is the IRQ driver for Qualcomm PM 8xxx PMIC chips.
-> + 	  This driver provides common support for accessing the device;
-> + 	  additional drivers must be enabled in order to use the LED,
-> + 	  backlight or ambient-light-sensor functionality of the device.
->   
-> - 	  This is required to use certain other PM 8xxx features, such as GPIO
-> - 	  and MPP.
-> + config MFD_TIMBERDALE
-> + 	tristate "Timberdale FPGA"
-> + 	select MFD_CORE
-> + 	depends on PCI && GPIOLIB
-> + 	---help---
-> + 	This is the core driver for the timberdale FPGA. This device is a
-> + 	multifunction device which exposes numerous platform devices.
->   
-> - config TPS65911_COMPARATOR
-> - 	tristate
-> + 	The timberdale FPGA can be found on the Intel Atom development board
-> + 	for in-vehicle infontainment, called Russellville.
->   
-> - config MFD_TPS65090
-> - 	bool "TPS65090 Power Management chips"
-> + config MFD_TC3589X
-> + 	bool "Toshiba TC35892 and variants"
->   	depends on I2C=y && GENERIC_HARDIRQS
->   	select MFD_CORE
-> - 	select REGMAP_I2C
-> - 	select REGMAP_IRQ
->   	help
-> - 	  If you say yes here you get support for the TPS65090 series of
-> - 	  Power Management chips.
-> + 	  Support for the Toshiba TC35892 and variants I/O Expander.
-> + 
->   	  This driver provides common support for accessing the device,
->   	  additional drivers must be enabled in order to use the
->   	  functionality of the device.
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-
-
-
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index 222a63e..7a86fe6 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -521,7 +521,7 @@ static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ 
+ static int ab8540_aux3_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ {
+-	int ret, val;
++	int ret;
+ 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+ 	u8 regval, regval_expand;
+ 
+@@ -531,18 +531,25 @@ static int ab8540_aux3_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ 	}
+ 
+ 	ret = abx500_get_register_interruptible(info->dev,
+-			info->voltage_bank, info->voltage_reg, &regval);
+-
++			info->expand_register.voltage_bank,
++			info->expand_register.voltage_reg, &regval_expand);
+ 	if (ret < 0) {
+ 		dev_err(rdev_get_dev(rdev),
+-			"couldn't read voltage reg for regulator\n");
++			"couldn't read voltage expand reg for regulator\n");
+ 		return ret;
+ 	}
+ 
+-	ret = abx500_get_register_interruptible(info->dev,
+-			info->expand_register.voltage_bank,
+-			info->expand_register.voltage_reg, &regval_expand);
++	dev_vdbg(rdev_get_dev(rdev),
++		 "%s-get_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
++		 info->desc.name, info->expand_register.voltage_bank,
++		 info->expand_register.voltage_reg,
++		 info->expand_register.voltage_mask, regval_expand);
++
++	if (regval_expand & info->expand_register.voltage_mask)
++		return info->expand_register.voltage_limit;
+ 
++	ret = abx500_get_register_interruptible(info->dev,
++			info->voltage_bank, info->voltage_reg, &regval);
+ 	if (ret < 0) {
+ 		dev_err(rdev_get_dev(rdev),
+ 			"couldn't read voltage reg for regulator\n");
+@@ -550,24 +557,11 @@ static int ab8540_aux3_regulator_get_voltage_sel(struct regulator_dev *rdev)
+ 	}
+ 
+ 	dev_vdbg(rdev_get_dev(rdev),
+-		"%s-get_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
+-		" 0x%x\n",
+-		info->desc.name, info->voltage_bank, info->voltage_reg,
+-		info->voltage_mask, regval);
+-	dev_vdbg(rdev_get_dev(rdev),
+-		"%s-get_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
+-		" 0x%x\n",
+-		info->desc.name, info->expand_register.voltage_bank,
+-		info->expand_register.voltage_reg,
+-		info->expand_register.voltage_mask, regval_expand);
+-
+-	if (regval_expand&(info->expand_register.voltage_mask))
+-		/* Vaux3 has a different layout */
+-		val = info->expand_register.voltage_limit;
+-	else
+-		val = (regval & info->voltage_mask) >> info->voltage_shift;
++		 "%s-get_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
++		 info->desc.name, info->voltage_bank, info->voltage_reg,
++		 info->voltage_mask, regval);
+ 
+-	return val;
++	return (regval & info->voltage_mask) >> info->voltage_shift;
+ }
+ 
+ static int ab8500_regulator_set_voltage_sel(struct regulator_dev *rdev,
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.10.4
+
+
+
