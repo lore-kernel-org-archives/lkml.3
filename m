@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936870Ab3DJOP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:15:26 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:47700 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936040Ab3DJOPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 10:15:24 -0400
-From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] RX-51: Fix probe order of SPI devices
-Date: Wed, 10 Apr 2013 16:15:19 +0200
-User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.2; x86_64; ; )
-Cc: Sebastian Reichel <sre@debian.org>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-References: <1364724561-18045-1-git-send-email-pali.rohar@gmail.com> <201303311318.41846@pali> <20130402163138.GS10155@atomide.com>
-In-Reply-To: <20130402163138.GS10155@atomide.com>
+	id S936881Ab3DJOSf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:18:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59725 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935504Ab3DJOSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 10:18:34 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <5165502902000078000CC022@nat28.tlf.novell.com>
+References: <20130408224328.GA17641@www.outflux.net> <51634935.9010905@zytor.com> <alpine.LFD.2.02.1304091122490.21884@ionos> <CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com> <51645D6F.7070705@zytor.com> <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com> <51646054.3090509@zytor.com> <CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com> <CAG7+5M3==rndLLak9cZBKKdgQMmJMpSP_jpQd8HOVGp6LhUAgw@mail.gmail.com> <5164B5BD.5050702@zytor.com> <5165502902000078000CC022@nat28.tlf.novell.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1422385.Cm4OgzPyZM";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304101615.19400@pali>
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [Xen-devel] Readonly GDT
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 10 Apr 2013 07:16:33 -0700
+To: Jan Beulich <JBeulich@suse.com>
+CC: Borislav Petkov <borislav.petkov@amd.com>,
+        Kees Cook <keescook@chromium.org>, Will Drewry <wad@chromium.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Eric Northup <digitaleric@google.com>, Julien Tinnes <jln@google.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Alex Shi <alex.shi@intel.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>
+Message-ID: <4a955c26-e4f2-40da-9ddc-6aaaf766d8da@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1422385.Cm4OgzPyZM
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: quoted-printable
+Right... the TSS does get written to during a task switch.
 
-On Tuesday 02 April 2013 18:31:38 Tony Lindgren wrote:
-> * Pali Roh=C3=A1r <pali.rohar@gmail.com> [130331 04:23]:
-> > On Sunday 31 March 2013 12:52:23 Sebastian Reichel wrote:
-> > > On Sun, Mar 31, 2013 at 12:09:21PM +0200, Pali Roh=C3=A1r wrote:
-> > > > From: Joni Lapilainen <joni.lapilainen@gmail.com>
-> > > >=20
-> > > > Without this patch LCD panel on Nokia RX-51 is still
-> > > > black
-> > > >=20
-> > > > Signed-off-by: Joni Lapilainen
-> > > > <joni.lapilainen@gmail.com> Signed-off-by: Pali Roh=C3=A1r
-> > > > <pali.rohar@gmail.com>
-> > >=20
-> > > Tested-by: Sebastian Reichel <sre@debian.org>
-> > >=20
-> > > Please note, that this patch has actually been proposed by
-> > > Aaro Koskinen <aaro.koskinen@iki.fi> quite some time ago
-> > > [0].
-> > >=20
-> > > [0]
-> > > http://permalink.gmane.org/gmane.linux.ports.arm.omap/8172
-> > > 9
-> > >=20
-> > > -- Sebastian
-> >=20
-> > CCing Aaro.
->=20
-> Any ideas why this is happening?
->=20
-> Is the touch screen controller somehow pulling one of the SPI
-> lines before it's reset? I don't think there's any other
-> connection between the LCD and touch controller besides the
-> SPI lines?
->=20
-> In any case there should be something in the description why
-> this is needed..
->=20
-> Regards,
->=20
-> Tony
+Jan Beulich <JBeulich@suse.com> wrote:
 
-Hi Tony, look at this Aaro's email:
-http://permalink.gmane.org/gmane.linux.ports.arm.omap/81729
+>>>> On 10.04.13 at 02:43, "H. Peter Anvin" <hpa@zytor.com> wrote:
+>> OK, thinking about the GDT here.
+>> 
+>> The GDT is quite small -- 256 bytes on i386, 128 bytes on x86-64.  As
+>> such, we probably don't want to allocate a full page to it for only
+>> that.  This means that in order to create a readonly mapping we have
+>to
+>> pack GDTs from different CPUs together in the same pages, *or* we
+>> tolerate that other things on the same page gets reflected in the
+>same
+>> mapping.
+>
+>I think a read-only GDT is incompatible with exceptions delivered
+>through task gates (i.e. double fault on 32-bit), so I would assume
+>this needs to remain a 64-bit only thing.
+>
+>> However, the packing solution has the advantage of reducing address
+>> space consumption which matters on 32 bits: even on i386 we can
+>easily
+>> burn a megabyte of address space for 4096 processors, but burning 16
+>> megabytes starts to hurt.
+>
+>Packing would have the additional benefit of Xen not needing to
+>become a special case in yet another area (because pages
+>containing live descriptor table entries need to be read-only for
+>PV guests, and need to consist of only descriptor table entries).
+>
+>Jan
 
-=2D-=20
-Pali Roh=C3=A1r
-pali.rohar@gmail.com
-
---nextPart1422385.Cm4OgzPyZM
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEABECAAYFAlFlc/cACgkQi/DJPQPkQ1KEgACeIBJYaHTBmQT1+XOTc8ni40jV
-/agAn2ash3zy4hRxLCg9eTc2tA025T6A
-=W6fK
------END PGP SIGNATURE-----
-
---nextPart1422385.Cm4OgzPyZM--
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
