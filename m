@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937115Ab3DJXRy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:17:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56062 "EHLO
+	id S937076Ab3DJWrK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:47:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56040 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937085Ab3DJWrL (ORCPT
+	with ESMTP id S937027Ab3DJWrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:11 -0400
+	Wed, 10 Apr 2013 18:47:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Stancek <jstancek@redhat.com>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 20/64] mm: prevent mmap_cache race in find_vma()
-Date: Wed, 10 Apr 2013 15:46:17 -0700
-Message-Id: <20130410224337.744726432@linuxfoundation.org>
+        David Daney <david.daney@cavium.com>,
+        Jim Quinlan <jim2101024@gmail.com>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org
+Subject: [ 06/64] MIPS: Fix logic errors in bitops.c
+Date: Wed, 10 Apr 2013 15:46:03 -0700
+Message-Id: <20130410224334.584076940@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -28,78 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Stancek <jstancek@redhat.com>
+From: David Daney <david.daney@cavium.com>
 
-commit b6a9b7f6b1f21735a7456d534dc0e68e61359d2c upstream.
+commit 0c81157b46c533139d6be721d41617020c59a2c3 upstream.
 
-find_vma() can be called by multiple threads with read lock
-held on mm->mmap_sem and any of them can update mm->mmap_cache.
-Prevent compiler from re-fetching mm->mmap_cache, because other
-readers could update it in the meantime:
+commit 92d11594f6 (MIPS: Remove irqflags.h dependency from bitops.h)
+factored some of the bitops code out into a separate file
+(arch/mips/lib/bitops.c).  Unfortunately the logic converting a bit
+mask into a boolean result was lost in some of the functions.  We had:
 
-               thread 1                             thread 2
-                                        |
-  find_vma()                            |  find_vma()
-    struct vm_area_struct *vma = NULL;  |
-    vma = mm->mmap_cache;               |
-    if (!(vma && vma->vm_end > addr     |
-        && vma->vm_start <= addr)) {    |
-                                        |    mm->mmap_cache = vma;
-    return vma;                         |
-     ^^ compiler may optimize this      |
-        local variable out and re-read  |
-        mm->mmap_cache                  |
+   int res;
+   unsigned long shifted_result_bit;
+   .
+   .
+   .
+   res = shifted_result_bit;
+   return res;
 
-This issue can be reproduced with gcc-4.8.0-1 on s390x by running
-mallocstress testcase from LTP, which triggers:
+Which truncates off the high 32 bits (thus yielding an incorrect
+value) on 64-bit systems.
 
-  kernel BUG at mm/rmap.c:1088!
-    Call Trace:
-     ([<000003d100c57000>] 0x3d100c57000)
-      [<000000000023a1c0>] do_wp_page+0x2fc/0xa88
-      [<000000000023baae>] handle_pte_fault+0x41a/0xac8
-      [<000000000023d832>] handle_mm_fault+0x17a/0x268
-      [<000000000060507a>] do_protection_exception+0x1e2/0x394
-      [<0000000000603a04>] pgm_check_handler+0x138/0x13c
-      [<000003fffcf1f07a>] 0x3fffcf1f07a
-    Last Breaking-Event-Address:
-      [<000000000024755e>] page_add_new_anon_rmap+0xc2/0x168
+The manifestation of this is that a non-SMP 64-bit kernel will not
+boot as the bitmap operations in bootmem.c are all screwed up.
 
-Thanks to Jakub Jelinek for his insight on gcc and helping to
-track this down.
-
-Signed-off-by: Jan Stancek <jstancek@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David Daney <david.daney@cavium.com>
+Cc:  linux-mips@linux-mips.org
+Cc: Jim Quinlan <jim2101024@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/4965/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmap.c  |    2 +-
- mm/nommu.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/mips/lib/bitops.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1922,7 +1922,7 @@ struct vm_area_struct *find_vma(struct m
+--- a/arch/mips/lib/bitops.c
++++ b/arch/mips/lib/bitops.c
+@@ -90,12 +90,12 @@ int __mips_test_and_set_bit(unsigned lon
+ 	unsigned bit = nr & SZLONG_MASK;
+ 	unsigned long mask;
+ 	unsigned long flags;
+-	unsigned long res;
++	int res;
  
- 	/* Check the cache first. */
- 	/* (Cache hit rate is typically around 35%.) */
--	vma = mm->mmap_cache;
-+	vma = ACCESS_ONCE(mm->mmap_cache);
- 	if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
- 		struct rb_node *rb_node;
+ 	a += nr >> SZLONG_LOG;
+ 	mask = 1UL << bit;
+ 	raw_local_irq_save(flags);
+-	res = (mask & *a);
++	res = (mask & *a) != 0;
+ 	*a |= mask;
+ 	raw_local_irq_restore(flags);
+ 	return res;
+@@ -116,12 +116,12 @@ int __mips_test_and_set_bit_lock(unsigne
+ 	unsigned bit = nr & SZLONG_MASK;
+ 	unsigned long mask;
+ 	unsigned long flags;
+-	unsigned long res;
++	int res;
  
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -819,7 +819,7 @@ struct vm_area_struct *find_vma(struct m
- 	struct vm_area_struct *vma;
+ 	a += nr >> SZLONG_LOG;
+ 	mask = 1UL << bit;
+ 	raw_local_irq_save(flags);
+-	res = (mask & *a);
++	res = (mask & *a) != 0;
+ 	*a |= mask;
+ 	raw_local_irq_restore(flags);
+ 	return res;
+@@ -141,12 +141,12 @@ int __mips_test_and_clear_bit(unsigned l
+ 	unsigned bit = nr & SZLONG_MASK;
+ 	unsigned long mask;
+ 	unsigned long flags;
+-	unsigned long res;
++	int res;
  
- 	/* check the cache first */
--	vma = mm->mmap_cache;
-+	vma = ACCESS_ONCE(mm->mmap_cache);
- 	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
- 		return vma;
+ 	a += nr >> SZLONG_LOG;
+ 	mask = 1UL << bit;
+ 	raw_local_irq_save(flags);
+-	res = (mask & *a);
++	res = (mask & *a) != 0;
+ 	*a &= ~mask;
+ 	raw_local_irq_restore(flags);
+ 	return res;
+@@ -166,12 +166,12 @@ int __mips_test_and_change_bit(unsigned
+ 	unsigned bit = nr & SZLONG_MASK;
+ 	unsigned long mask;
+ 	unsigned long flags;
+-	unsigned long res;
++	int res;
  
+ 	a += nr >> SZLONG_LOG;
+ 	mask = 1UL << bit;
+ 	raw_local_irq_save(flags);
+-	res = (mask & *a);
++	res = (mask & *a) != 0;
+ 	*a ^= mask;
+ 	raw_local_irq_restore(flags);
+ 	return res;
 
 
