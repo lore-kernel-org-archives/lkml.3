@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab3DJFwQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 01:52:16 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:53994 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab3DJFwP (ORCPT
+	id S1752819Ab3DJFxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 01:53:36 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:61471 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728Ab3DJFxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 01:52:15 -0400
-Date: Tue, 9 Apr 2013 22:52:11 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Toshi Kani <toshi.kani@hp.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
-        guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com
-Subject: Re: [PATCH v2 0/3] Support memory hot-delete to boot memory
-In-Reply-To: <1365454703.32127.8.camel@misato.fc.hp.com>
-Message-ID: <alpine.DEB.2.02.1304092155220.25293@chino.kir.corp.google.com>
-References: <1365440996-30981-1-git-send-email-toshi.kani@hp.com> <20130408134438.2a4388a07163e10a37158eed@linux-foundation.org> <1365454703.32127.8.camel@misato.fc.hp.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 10 Apr 2013 01:53:34 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUW12caZHDfgCV6E-1T4ExBPmu5bBNSqCzDwjUeidfRUPA@mail.gmail.com>
+References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com>
+	<31778276.CDMUtaAAnc@vostro.rjw.lan>
+	<CA+icZUXXHb9vmcNuFmYha34SV7xch2S8OcgZ+cLVVnNebs5pNQ@mail.gmail.com>
+	<CAKohpok+9dRaENjBfnN9gZF3zvFU9v19xV_eFfcM3Pj6Cv=S2w@mail.gmail.com>
+	<CA+icZUWH5Ni9koj4V8Ws8jJ7smwmU7JuUWBFh=aiCqkrCpqB5A@mail.gmail.com>
+	<CAKohponzmLzPN8ua3p4TCt2waZCQCd+4Znh+tSQ4MBjcy+Ss6A@mail.gmail.com>
+	<CA+icZUW12caZHDfgCV6E-1T4ExBPmu5bBNSqCzDwjUeidfRUPA@mail.gmail.com>
+Date: Wed, 10 Apr 2013 07:53:32 +0200
+Message-ID: <CA+icZUUEExm5Mktxoj6=UdzBe5HUzskktKWdHNOKaFXVHaySBg@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 8 Apr 2013, Toshi Kani wrote:
+On Wed, Apr 10, 2013 at 7:41 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Tue, Apr 9, 2013 at 6:51 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> On 9 April 2013 21:38, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> With x=3 the system gets in an unuseable state.
+>>>
+>>>      root# echo 0 > /sys/devices/system/cpu/cpu3/online
+>>>
+>>> I could not write my reply and had to do a hard/cold reboot.
+>>> The dmesg log I saw looked similiar to my digicam-shot.
+>>
+>> Few things i need from you. First is output of cpufreq-info. Then
+>> all the steps you did to reproduce above? Removed any other cpus?
+>>
+>
+> Here is the output of cpufreq-info of the stable distro-kernel I am using.
+> If you need the one from the "BROKEN" kernel, please let me know.
+>
+> - Sedat -
 
-> > So we don't need this new code if CONFIG_MEMORY_HOTPLUG=n?  If so, can
-> > we please arrange for it to not be present if the user doesn't need it?
-> 
-> Good point!  Yes, since the new function is intended for memory
-> hot-delete and is only called from __remove_pages() in
-> mm/memory_hotplug.c, it should be added as #ifdef CONFIG_MEMORY_HOTPLUG
-> in PATCH 2/3.
-> 
-> I will make the change, and send an updated patch to PATCH 2/3.
-> 
+Hmm, I see that the kernel-sources itself ships a...
 
-It should actually depend on CONFIG_MEMORY_HOTREMOVE, but the pseries 
-OF_RECONFIG_DETACH_NODE code seems to be the only code that doesn't 
-make that distinction.  CONFIG_MEMORY_HOTREMOVE acts as a wrapper to 
-protect configs that don't have ARCH_ENABLE_MEMORY_HOTREMOVE, so we'll 
-want to keep it around and presumably that powerpc code depends on it as 
-well.
+./tools/power/cpupower/utils/cpufreq-info.c
+
+IIRC current 'make deb-pkg' does not build the tools, but I have seen
+a patch on linux-kbuild ML.
+Can I build cpufreq-info.c afterwards? Do I need a already-compiled build-dir?
+
+Thanks in advance for answering my questions.
+
+BTW, I have found a nice article on LWN "cpupowerutils - cpufrequtils
+extended with quite some features" (see [1]).
+
+- Sedat -
+
+[1] http://lwn.net/Articles/433002/
