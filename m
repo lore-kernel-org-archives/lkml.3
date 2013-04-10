@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965199Ab3DJXHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:07:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56256 "EHLO
+	id S937380Ab3DJXHu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:07:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56249 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937348Ab3DJWrk (ORCPT
+	with ESMTP id S937343Ab3DJWrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:40 -0400
+	Wed, 10 Apr 2013 18:47:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jonghwan Choi <jhbird.choi@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [ 54/64] cpufreq: exynos: Get booting freq value in exynos_cpufreq_init
-Date: Wed, 10 Apr 2013 15:46:51 -0700
-Message-Id: <20130410224346.047988607@linuxfoundation.org>
+        Maxim Mikityanskiy <maxtram95@gmail.com>,
+        Anisse Astier <anisse@astier.eu>, "Lee, Chun-Yi" <jlee@suse.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: [ 53/64] msi-wmi: Fix memory leak
+Date: Wed, 10 Apr 2013 15:46:50 -0700
+Message-Id: <20130410224345.793251684@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -27,41 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonghwan Choi <jhbird.choi@samsung.com>
+From: Maxim Mikityanskiy <maxtram95@gmail.com>
 
-commit 6e45eb12fd1c741d556bf264ee98853b5f3104e5 upstream.
+commit 51c94491c82c3d9029f6e87a1a153db321d88e35 upstream.
 
-Boot_freq is for saving booting freq. But exynos_cpufreq_cpu_init
-is called in hotplug. If boot_freq is existed in exynos_cpufreq_cpu_init,
-boot_freq could be changed.
+Fix memory leak - don't forget to kfree ACPI object when returning from
+msi_wmi_notify() after suppressing key event.
 
+Signed-off-by: Maxim Mikityanskiy <maxtram95@gmail.com>
+Acked-by: Anisse Astier <anisse@astier.eu>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/cpufreq/exynos-cpufreq.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -222,8 +222,6 @@ static int exynos_cpufreq_cpu_init(struc
+---
+ drivers/platform/x86/msi-wmi.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+--- a/drivers/platform/x86/msi-wmi.c
++++ b/drivers/platform/x86/msi-wmi.c
+@@ -176,7 +176,7 @@ static void msi_wmi_notify(u32 value, vo
+ 				pr_debug("Suppressed key event 0x%X - "
+ 					 "Last press was %lld us ago\n",
+ 					 key->code, ktime_to_us(diff));
+-				return;
++				goto msi_wmi_notify_exit;
+ 			}
+ 			last_pressed[key->code - SCANCODE_BASE] = cur;
  
- 	cpufreq_frequency_table_get_attr(exynos_info->freq_table, policy->cpu);
- 
--	locking_frequency = exynos_getspeed(0);
--
- 	/* set the transition latency value */
- 	policy->cpuinfo.transition_latency = 100000;
- 
-@@ -288,6 +286,8 @@ static int __init exynos_cpufreq_init(vo
- 		goto err_vdd_arm;
- 	}
- 
-+	locking_frequency = exynos_getspeed(0);
+@@ -195,6 +195,8 @@ static void msi_wmi_notify(u32 value, vo
+ 			pr_info("Unknown key pressed - %x\n", eventcode);
+ 	} else
+ 		pr_info("Unknown event received\n");
 +
- 	register_pm_notifier(&exynos_cpufreq_nb);
++msi_wmi_notify_exit:
+ 	kfree(response.pointer);
+ }
  
- 	if (cpufreq_register_driver(&exynos_driver)) {
 
 
