@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936869Ab3DJJBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 05:01:11 -0400
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:41162 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752709Ab3DJJBI (ORCPT
+	id S936891Ab3DJJCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 05:02:05 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:41995 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935724Ab3DJJCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 05:01:08 -0400
-Message-ID: <51652A41.4080502@stericsson.com>
-Date: Wed, 10 Apr 2013 11:00:49 +0200
-From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 10 Apr 2013 05:02:02 -0400
+Date: Wed, 10 Apr 2013 11:01:59 +0200
+From: Florian Westphal <fw@strlen.de>
+To: CAI Qian <caiqian@redhat.com>
+Cc: netdev@vger.kernel.org, stable@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, netfilter-devel@breakpoint.cc
+Subject: Re: [BUG] Fatal exception in interrupt - nf_nat_cleanup_conntrack
+ during IPv6 tests
+Message-ID: <20130410090158.GF3013@breakpoint.cc>
+References: <605030311.1990960.1365563720663.JavaMail.root@redhat.com>
+ <1089062823.1991307.1365563878922.JavaMail.root@redhat.com>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: regulator: ab8500-ext: Strange set_mode behavior when info->cfg->hwreq
- is set
-References: <1365519681.3946.4.camel@phoenix>
-In-Reply-To: <1365519681.3946.4.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1089062823.1991307.1365563878922.JavaMail.root@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 05:01 PM, Axel Lin wrote:
-> Hi,
->
-> I see below code && comments in enable() function:
->
->          /*
->           * To satisfy both HW high power request and SW request, the regulator
->           * must be on in high power.
->           */
->          if (info->cfg && info->cfg->hwreq)
->                  *regval = info->update_val_hp;
->
->
-> I'm not very clear about the comment and the code.
->
-> 1) Does that mean the device does not allow set REGULATOR_MODE_IDLE when
-> info->cfg->hwreq is set?
-Yes.
-> current code looks strange because when info->cfg->hwreq is set:
-> set_mode() allows set REGULATOR_MODE_IDLE and get_mode() returns the status
-> is REGULATOR_MODE_IDLE. However, current code actually write info->update_val_hp
-> to the register (which means it is in REGULATOR_MODE_NORMAL mode).
->
-> If the device does not allow set REGULATOR_MODE_IDLE when info->cfg->hwreq is
-> set, we probably needs to return error in set REGULATOR_MODE_IDLE case.
-I understand that this requires some explanation.
+CAI Qian <caiqian@redhat.com> wrote:
 
-The ab8500 hardware supports a special hardwarerequest mode where the 
-regulator can be automatically activated in HP mode by a HW signal. The 
-same two register bits are used for setting this mode or to control the 
-regulator between off/LP mode/HP mode:
-- 0b00 = off,
-- 0b01 = HP (high power) mode,
-- 0b10 = HW request,
-- 0b11 = LP (low power) mode.
+[ CC'd nf-devel ]
 
-So these external regulators are designed to be controlled by either HW 
-request OR control from software. In practice, we had a case where we 
-wanted to combine SW and HW requests and fall-back to HW request when 
-there is no SW request dynamically. This is what the code aims to do: if 
-the regulator is configured to support HW request, it may be set to HP 
-at any time by HW signals. If a SW request is put on the regulator from 
-the regulator framework, it must go to HP mode to satisfy requests from 
-both HW and SW, LP mode is not sufficient.
+> Just hit this very often during IPv6 tests in both the latest stable
+> and mainline kernel.
+> 
+> [ 3597.206166] Modules linked in:
+[..]
+> nf_nat_ipv4(F-)
+[..]
 
-I designed the code so that the regulator framework does not know about 
-the HW request mode, as if this was handled by the hardware itself. In 
-some cases, when the regulator framework requests LP mode and there is 
-no HW request, we will set HP mode anyway. There is no way to avoid 
-itfor the external regulators.
->
-> Or 2) Does above comment mean the device needs set to REGULATOR_MODE_NORMAL
-> when the regulator is switching from off to on? Which means it allows setting
-> the regulator to REGULATOR_MODE_IDLE if the regulator is already on.
->
-> If this is the case, we cannot call enable() in set_mode() because current code
-> in set_mode() will write to register only when the regulator is already on.
-> Calling enable() always write info->update_val_hp to the register.
-> Thus it should just call abx500_mask_and_set_register_interruptible() directly
-> to update the register.
-I am not sure what you mean here. Maybe above comments answer your question.
->
-> comments?
->
-> Regards,
-> Axel
->
-I hope this clarifies. Regards,
+> [ 3597.804861] RIP: 0010:[<ffffffffa03227f2>]  [<ffffffffa03227f2>] nf_nat_cleanup_conntrack+0x42/0x70 [nf_nat] 
+> [ 3597.855207] RSP: 0018:ffff880202c63d40  EFLAGS: 00010246 
+> [ 3597.881350] RAX: 0000000000000000 RBX: ffff8801ac7bec28 RCX: ffff8801d0eedbe0 
+> [ 3597.917226] RDX: dead000000200200 RSI: 0000000000000011 RDI: ffffffffa03265b8 
+[..]
 
-Bengt
+> [ 3598.421036]  <IRQ>  
+> [ 3598.430467]  [<ffffffffa0305bb4>] __nf_ct_ext_destroy+0x44/0x60 [nf_conntrack] 
+> [ 3598.499191]  [<ffffffffa02fd3fe>] nf_conntrack_free+0x2e/0x70 [nf_conntrack] 
+> [ 3598.534121]  [<ffffffffa02febed>] destroy_conntrack+0xbd/0x110 [nf_conntrack] 
+> [ 3598.569981]  [<ffffffff81532187>] nf_conntrack_destroy+0x17/0x20 
+> [ 3598.599579]  [<ffffffffa02fe77c>] death_by_timeout+0xdc/0x1b0 [nf_conntrack]
+[..]
+> [ 3599.241868] Code: 83 ec 08 0f b6 58 11 84 db 74 43 48 01 c3 48 83 7b 20 00 74 39 48 c7 c7 b8 65 32 a0 e8 98 fc 2e e1 48 8b 03 48 8b 53 08 48 85 c0 <48> 89 02 74 04 48 89 50 08 48 ba 00 02 20 00 00 00 ad de 48 c7  
+> [ 3599.337037] RIP  [<ffffffffa03227f2>] nf_nat_cleanup_conntrack+0x42/0x70 [nf_nat] 
+
+Looks like we tried to remove bysource hash twice (rdx is
+LIST_POISON_2).
+
+I wonder if this would explain it:
+
+static void nf_nat_l4proto_clean(u8 l3proto, u8 l4proto)
+{
+[..]
+      /* Step 1 - remove from bysource hash */
+      clean.hash = true;
+      for_each_net(net)
+                nf_ct_iterate_cleanup(net, nf_nat_proto_clean, &clean);
+
+A nfct->timer fires and a conntrack is free'd before step 2 memsets the
+nat extension.  In that case, we would try to delete nat->bysource
+again?
