@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936911Ab3DJP4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:56:32 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:57869 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab3DJP4a (ORCPT
+	id S1752731Ab3DJP5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:57:36 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:10558
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751322Ab3DJP5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:56:30 -0400
-Date: Wed, 10 Apr 2013 08:56:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
-Subject: Re: [PATCH] driver core: add uid and gid to devtmpfs
-Message-ID: <20130410155628.GA14723@kroah.com>
-References: <20130406165600.GA29660@kroah.com>
- <CACVXFVNctGZ5hs-sBuA8MxO8NJtGkQREURiVJbFRVSO9WLO-JA@mail.gmail.com>
+	Wed, 10 Apr 2013 11:57:34 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0ML1QZL-02-8RF-02
+X-M-MSG: 
+From: <suravee.suthikulpanit@amd.com>
+To: <iommu@lists.linux-foundation.org>, <joro@8bytes.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Subject: [PATCH 0/2] iommu/amd: iommu/amd: Show detail event log when using amd-iommu=verbose
+Date: Wed, 10 Apr 2013 10:57:04 -0500
+Message-ID: <1365609424-3315-1-git-send-email-suravee.suthikulpanit@amd.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACVXFVNctGZ5hs-sBuA8MxO8NJtGkQREURiVJbFRVSO9WLO-JA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 05:12:17PM +0800, Ming Lei wrote:
-> On Sun, Apr 7, 2013 at 12:56 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > @@ -201,14 +206,14 @@ static int handle_create(const char *nod
-> >         if (IS_ERR(dentry))
-> >                 return PTR_ERR(dentry);
-> >
-> > -       err = vfs_mknod(path.dentry->d_inode,
-> > -                       dentry, mode, dev->devt);
-> > +       err = vfs_mknod(path.dentry->d_inode, dentry, mode, dev->devt);
-> >         if (!err) {
-> >                 struct iattr newattrs;
-> >
-> > -               /* fixup possibly umasked mode */
-> >                 newattrs.ia_mode = mode;
-> > -               newattrs.ia_valid = ATTR_MODE;
-> > +               newattrs.ia_uid = uid;
-> > +               newattrs.ia_gid = gid;
-> 
-> drivers/base/devtmpfs.c: In function 'handle_create':
-> drivers/base/devtmpfs.c:214:19: error: incompatible types when
-> assigning to type 'kuid_t' from type 'uid_t'
-> drivers/base/devtmpfs.c:215:19: error: incompatible types when
-> assigning to type 'kgid_t' from type 'gid_t'
-> make[2]: *** [drivers/base/devtmpfs.o] Error 1
+From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 
-I can't duplicate this here, what options am I missing?
+This patch set add detail event log information for AMD IOMMU in dmesg when booting with
+"amd-iommu=verbose".
 
-> Looks the below patch may fix it.
-> --
-> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-> index fda5256..e268fc5 100644
-> --- a/drivers/base/devtmpfs.c
-> +++ b/drivers/base/devtmpfs.c
-> @@ -211,8 +211,8 @@ static int handle_create(const char *nodename,
-> umode_t mode, uid_t uid,
->  		struct iattr newattrs;
-> 
->  		newattrs.ia_mode = mode;
-> -		newattrs.ia_uid = uid;
-> -		newattrs.ia_gid = gid;
-> +		newattrs.ia_uid = KUIDT_INIT(uid);
-> +		newattrs.ia_gid = KGIDT_INIT(gid);
->  		newattrs.ia_valid = ATTR_MODE|ATTR_UID|ATTR_GID;
->  		mutex_lock(&dentry->d_inode->i_mutex);
->  		notify_change(dentry, &newattrs);
-> 
+Suravee Suthikulpanit (2):
+  iommu/amd: Adding new command line option "amd-iommu=verbose"
+  iommu/amd: Add logic to decode AMD IOMMU event flag
 
-Care to resend this in a format I can apply it in?  :)
+ drivers/iommu/amd_iommu.c       |  215 ++++++++++++++++++++++++++++++---------
+ drivers/iommu/amd_iommu_init.c  |    4 +
+ drivers/iommu/amd_iommu_types.h |    2 +
+ 3 files changed, 174 insertions(+), 47 deletions(-)
 
-thanks,
+-- 
+1.7.10.4
 
-greg k-h
+
