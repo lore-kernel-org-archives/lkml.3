@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965148Ab3DJWt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:49:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56504 "EHLO
+	id S937573Ab3DJXC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:02:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56518 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965050Ab3DJWtx (ORCPT
+	with ESMTP id S965153Ab3DJWt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:49:53 -0400
+	Wed, 10 Apr 2013 18:49:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pawel Zawora <pzawora@gmail.com>, Jan Kara <jack@suse.cz>
-Subject: [ 06/29] reiserfs: Fix warning and inode leak when deleting inode with xattrs
-Date: Wed, 10 Apr 2013 15:49:24 -0700
-Message-Id: <20130410224804.722290987@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 09/29] ALSA: hda - fix typo in proc output
+Date: Wed, 10 Apr 2013 15:49:27 -0700
+Message-Id: <20130410224805.042942796@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -26,39 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 35e5cbc0af240778e61113286c019837e06aeec6 upstream.
+commit aeb3a97222832e5457c4b72d72235098ce4bfe8d upstream.
 
-After commit 21d8a15a (lookup_one_len: don't accept . and ..) reiserfs
-started failing to delete xattrs from inode. This was due to a buggy
-test for '.' and '..' in fill_with_dentries() which resulted in passing
-'.' and '..' entries to lookup_one_len() in some cases. That returned
-error and so we failed to iterate over all xattrs of and inode.
+Rename "Digitial In" to "Digital In". This function is only used for
+proc output, so should not cause any problems to change.
 
-Fix the test in fill_with_dentries() along the lines of the one in
-lookup_one_len().
-
-Reported-by: Pawel Zawora <pzawora@gmail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/reiserfs/xattr.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/hda_codec.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/reiserfs/xattr.c
-+++ b/fs/reiserfs/xattr.c
-@@ -187,8 +187,8 @@ fill_with_dentries(void *buf, const char
- 	if (dbuf->count == ARRAY_SIZE(dbuf->dentries))
- 		return -ENOSPC;
+--- a/sound/pci/hda/hda_codec.c
++++ b/sound/pci/hda/hda_codec.c
+@@ -165,7 +165,7 @@ const char *snd_hda_get_jack_type(u32 cf
+ 		"Line Out", "Speaker", "HP Out", "CD",
+ 		"SPDIF Out", "Digital Out", "Modem Line", "Modem Hand",
+ 		"Line In", "Aux", "Mic", "Telephony",
+-		"SPDIF In", "Digitial In", "Reserved", "Other"
++		"SPDIF In", "Digital In", "Reserved", "Other"
+ 	};
  
--	if (name[0] == '.' && (name[1] == '\0' ||
--			       (name[1] == '.' && name[2] == '\0')))
-+	if (name[0] == '.' && (namelen < 2 ||
-+			       (namelen == 2 && name[1] == '.')))
- 		return 0;
- 
- 	dentry = lookup_one_len(name, dbuf->xadir, namelen);
+ 	return jack_types[(cfg & AC_DEFCFG_DEVICE)
 
 
