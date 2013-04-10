@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936755Ab3DJD2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 23:28:25 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:26586 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932712Ab3DJD11 (ORCPT
+	id S936171Ab3DJD1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 23:27:24 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:28074 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934274Ab3DJD1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 23:27:27 -0400
+	Tue, 9 Apr 2013 23:27:19 -0400
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 To: <rostedt@goodmis.org>, <fweisbec@gmail.com>, <mingo@redhat.com>,
         <linux-kernel@vger.kernel.org>
 CC: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [PATCH v3 10/12] tracing: use per trace_array clock_id instead of global trace_clock_id
-Date: Wed, 10 Apr 2013 11:26:31 +0800
-Message-ID: <1365564393-10972-11-git-send-email-jovi.zhangwei@huawei.com>
+Subject: [PATCH v3 12/12] libtraceevent: add libtraceevent prefix in warning message
+Date: Wed, 10 Apr 2013 11:26:33 +0800
+Message-ID: <1365564393-10972-13-git-send-email-jovi.zhangwei@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
 References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
@@ -27,68 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-tracing clock id already changed into per trace_array variable,
-but there still use global trace_clock_id, which value always is 0 now.
+Now using perf tracepoint, perf output some warning message
+which hard to understand what's wrong in perf.
+
+[root@jovi perf]# ./perf stat -e timer:* ls
+  Warning: unknown op '{'
+  Warning: unknown op '{'
+...
+
+Actually these warning message is caused by libtraceevent format
+parsing code.
+
+So add libtraceevent prefix to identify this more clearly.
+
+(we should remove all those warning message when running perf stat in future,
+it's not necessary to parse event format when running perf stat)
 
 Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 ---
- kernel/trace/trace.c |    8 +++-----
- kernel/trace/trace.h |    2 --
- 2 files changed, 3 insertions(+), 7 deletions(-)
+ tools/lib/traceevent/event-parse.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index dd0c122..ee4e110 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -652,8 +652,6 @@ static struct {
- 	ARCH_TRACE_CLOCKS
- };
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index 82b0606..a3971d2 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -47,7 +47,7 @@ static int show_warning = 1;
+ #define do_warning(fmt, ...)				\
+ 	do {						\
+ 		if (show_warning)			\
+-			warning(fmt, ##__VA_ARGS__);	\
++			warning("libtraceevent: "fmt, ##__VA_ARGS__);	\
+ 	} while (0)
  
--int trace_clock_id;
--
- /*
-  * trace_parser_get_init - gets the buffer for trace parser
-  */
-@@ -2806,7 +2804,7 @@ __tracing_open(struct inode *inode, struct file *file, bool snapshot)
- 		iter->iter_flags |= TRACE_FILE_ANNOTATE;
- 
- 	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
--	if (trace_clocks[trace_clock_id].in_ns)
-+	if (trace_clocks[tr->clock_id].in_ns)
- 		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
- 
- 	/* stop the trace while dumping if we are not opening "snapshot" */
-@@ -3805,7 +3803,7 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
- 		iter->iter_flags |= TRACE_FILE_LAT_FMT;
- 
- 	/* Output in nanoseconds only if we are using a clock in nanoseconds. */
--	if (trace_clocks[trace_clock_id].in_ns)
-+	if (trace_clocks[tr->clock_id].in_ns)
- 		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
- 
- 	iter->cpu_file = tc->cpu;
-@@ -5075,7 +5073,7 @@ tracing_stats_read(struct file *filp, char __user *ubuf,
- 	cnt = ring_buffer_bytes_cpu(trace_buf->buffer, cpu);
- 	trace_seq_printf(s, "bytes: %ld\n", cnt);
- 
--	if (trace_clocks[trace_clock_id].in_ns) {
-+	if (trace_clocks[tr->clock_id].in_ns) {
- 		/* local or global for trace_clock */
- 		t = ns2usecs(ring_buffer_oldest_event_ts(trace_buf->buffer, cpu));
- 		usec_rem = do_div(t, USEC_PER_SEC);
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index bb3fd1b..9b8afa7 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -588,8 +588,6 @@ enum print_line_t print_trace_line(struct trace_iterator *iter);
- 
- extern unsigned long trace_flags;
- 
--extern int trace_clock_id;
--
- /* Standard output formatting function used for function return traces */
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- 
+ static void init_input_buf(const char *buf, unsigned long long size)
 -- 
 1.7.9.7
 
