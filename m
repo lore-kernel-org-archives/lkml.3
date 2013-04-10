@@ -1,402 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934934Ab3DJGHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 02:07:39 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:36365 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab3DJGHh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 02:07:37 -0400
-Date: Tue, 9 Apr 2013 23:07:34 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Toshi Kani <toshi.kani@hp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org
-Subject: [patch] mm, hotplug: avoid compiling memory hotremove functions when
- disabled
-In-Reply-To: <alpine.DEB.2.02.1304092155220.25293@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1304092302540.3916@chino.kir.corp.google.com>
-References: <1365440996-30981-1-git-send-email-toshi.kani@hp.com> <20130408134438.2a4388a07163e10a37158eed@linux-foundation.org> <1365454703.32127.8.camel@misato.fc.hp.com> <alpine.DEB.2.02.1304092155220.25293@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S935141Ab3DJGHs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 02:07:48 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45344 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934966Ab3DJGHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 02:07:44 -0400
+Message-ID: <516501A0.4000004@ti.com>
+Date: Wed, 10 Apr 2013 11:37:28 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Kevin Hilman <khilman@linaro.org>, <vaibhav.bedia@ti.com>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [PATCHv3] driver: serial: prevent UART console idle on suspend
+ while using "no_console_suspend"
+References: <1365167733-28083-1-git-send-email-sourav.poddar@ti.com>	<87mwtclvua.fsf@linaro.org> <516463D2.2070008@ti.com> <87obdnh6au.fsf@linaro.org>
+In-Reply-To: <87obdnh6au.fsf@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__remove_pages() is only necessary for CONFIG_MEMORY_HOTREMOVE.  PowerPC
-pseries will return -EOPNOTSUPP if unsupported.
+Hi,
+On Wednesday 10 April 2013 12:37 AM, Kevin Hilman wrote:
+> Sourav Poddar<sourav.poddar@ti.com>  writes:
+>
+>> Hi Kevin,
+>> On Friday 05 April 2013 11:10 PM, Kevin Hilman wrote:
+>>> Sourav Poddar<sourav.poddar@ti.com>   writes:
+>>>
+>>>> With dt boot, uart wakeup after suspend is non functional while using
+>>>> "no_console_suspend" in the bootargs. With "no_console_suspend" used, we
+>>>> should prevent the runtime suspend of the uart port which is getting used
+>>>> as an console.
+>>>>
+>>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>>> Cc: Felipe Balbi<balbi@ti.com>
+>>>> Cc: Rajendra nayak<rnayak@ti.com>
+>>>> Tested on omap5430evm, omap4430sdp.
+>>>>
+>>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+>>> Rather than make these special checks inside the driver's runtime PM
+>>> callbacks, you should just disable runtime PM (pm_runtime_disable())
+>>>
+>>> Then, this should be broken into 2 patches.
+>>>
+>>> 1) serial core: add the '->is_console' flag.  (nit on naming: don't call
+>>>      it port_is_console, since the struct is already a uart_port)
+>>>
+>>> 2) In the OMAP UART driver's ->prepare callback, check the is_console flag
+>>>      and pm_runtime_disable() accordingly  (then pm_runtime_enable() in
+>>>      the drivers's ->complete callback.
+>>>
+>>> Kevin
+>> I was working on your above suggestions, but realised there is not
+>> only console
+>> uart which has the requirement of keeping the clocks enabled while going on
+>> suspend.
+>>
+>> If you see arch/arm/boot/dts/am33xx.dtsi, there is a ocmcram which has
+>> "no_idle_on_suspend" property used.
+> Can you please ask the AM33xx folks how (and why) this is being used?
+>
+> I don't see/find a driver for this device in mainline, so without a
+> driver this flag will not be used.
+>
+Looping in Vaibhav Bedia for ocmcram..
 
-Adding an #ifdef causes several other functions it depends on to also
-become unnecessary, which saves in .text when disabled (it's disabled in
-most defconfigs besides powerpc, including x86).  remove_memory_block()
-becomes static since it is not referenced outside of
-drivers/base/memory.c.
+[Vaibhav]:
+   There is a discussion going on about a cleaner way of handling
+   ti, no_idle_on_suspend" part (as this is a sort of hack). We got a way
+   around for UART ($subject) by making serial core/driver handle this 
+for us.
+   But with this, we will delete codes around "no_idle_on_suspend" flag in
+   omap_device file.
 
-Build tested on x86 and powerpc with CONFIG_MEMORY_HOTREMOVE both enabled
-and disabled.
+   But, we realised that its not only UART which requires the clocks to 
+be active
+   whie going for suspend. There is a dts entry for ocmcram also.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/powerpc/platforms/pseries/hotplug-memory.c | 12 +++++
- drivers/base/memory.c                           | 44 +++++++--------
- include/linux/memory.h                          |  3 +-
- include/linux/memory_hotplug.h                  |  4 +-
- mm/memory_hotplug.c                             | 68 +++++++++++------------
- mm/sparse.c                                     | 72 +++++++++++++------------
- 6 files changed, 113 insertions(+), 90 deletions(-)
+   As Kevin also pointed out, we don't see a driver for this device in 
+mainline, It would be
+   great if you can explain how its getting used?
 
-diff --git a/arch/powerpc/platforms/pseries/hotplug-memory.c b/arch/powerpc/platforms/pseries/hotplug-memory.c
---- a/arch/powerpc/platforms/pseries/hotplug-memory.c
-+++ b/arch/powerpc/platforms/pseries/hotplug-memory.c
-@@ -72,6 +72,7 @@ unsigned long memory_block_size_bytes(void)
- 	return get_memblock_size();
- }
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
- static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
- {
- 	unsigned long start, start_pfn;
-@@ -153,6 +154,17 @@ static int pseries_remove_memory(struct device_node *np)
- 	ret = pseries_remove_memblock(base, lmb_size);
- 	return ret;
- }
-+#else
-+static inline int pseries_remove_memblock(unsigned long base,
-+					  unsigned int memblock_size)
-+{
-+	return -EOPNOTSUPP;
-+}
-+static inline int pseries_remove_memory(struct device_node *np)
-+{
-+	return -EOPNOTSUPP;
-+}
-+#endif /* CONFIG_MEMORY_HOTREMOVE */
- 
- static int pseries_add_memory(struct device_node *np)
- {
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -93,16 +93,6 @@ int register_memory(struct memory_block *memory)
- 	return error;
- }
- 
--static void
--unregister_memory(struct memory_block *memory)
--{
--	BUG_ON(memory->dev.bus != &memory_subsys);
--
--	/* drop the ref. we got in remove_memory_block() */
--	kobject_put(&memory->dev.kobj);
--	device_unregister(&memory->dev);
--}
--
- unsigned long __weak memory_block_size_bytes(void)
- {
- 	return MIN_MEMORY_BLOCK_SIZE;
-@@ -637,8 +627,28 @@ static int add_memory_section(int nid, struct mem_section *section,
- 	return ret;
- }
- 
--int remove_memory_block(unsigned long node_id, struct mem_section *section,
--		int phys_device)
-+/*
-+ * need an interface for the VM to add new memory regions,
-+ * but without onlining it.
-+ */
-+int register_new_memory(int nid, struct mem_section *section)
-+{
-+	return add_memory_section(nid, section, NULL, MEM_OFFLINE, HOTPLUG);
-+}
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+static void
-+unregister_memory(struct memory_block *memory)
-+{
-+	BUG_ON(memory->dev.bus != &memory_subsys);
-+
-+	/* drop the ref. we got in remove_memory_block() */
-+	kobject_put(&memory->dev.kobj);
-+	device_unregister(&memory->dev);
-+}
-+
-+static int remove_memory_block(unsigned long node_id,
-+			       struct mem_section *section, int phys_device)
- {
- 	struct memory_block *mem;
- 
-@@ -661,15 +671,6 @@ int remove_memory_block(unsigned long node_id, struct mem_section *section,
- 	return 0;
- }
- 
--/*
-- * need an interface for the VM to add new memory regions,
-- * but without onlining it.
-- */
--int register_new_memory(int nid, struct mem_section *section)
--{
--	return add_memory_section(nid, section, NULL, MEM_OFFLINE, HOTPLUG);
--}
--
- int unregister_memory_section(struct mem_section *section)
- {
- 	if (!present_section(section))
-@@ -677,6 +678,7 @@ int unregister_memory_section(struct mem_section *section)
- 
- 	return remove_memory_block(0, section, 0);
- }
-+#endif /* CONFIG_MEMORY_HOTREMOVE */
- 
- /*
-  * offline one memory block. If the memory block has been offlined, do nothing.
-diff --git a/include/linux/memory.h b/include/linux/memory.h
---- a/include/linux/memory.h
-+++ b/include/linux/memory.h
-@@ -114,9 +114,10 @@ extern void unregister_memory_notifier(struct notifier_block *nb);
- extern int register_memory_isolate_notifier(struct notifier_block *nb);
- extern void unregister_memory_isolate_notifier(struct notifier_block *nb);
- extern int register_new_memory(int, struct mem_section *);
-+#ifdef CONFIG_MEMORY_HOTREMOVE
- extern int unregister_memory_section(struct mem_section *);
-+#endif
- extern int memory_dev_init(void);
--extern int remove_memory_block(unsigned long, struct mem_section *, int);
- extern int memory_notify(unsigned long val, void *v);
- extern int memory_isolate_notify(unsigned long val, void *v);
- extern struct memory_block *find_memory_block_hinted(struct mem_section *,
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -97,13 +97,13 @@ extern void __online_page_free(struct page *page);
- #ifdef CONFIG_MEMORY_HOTREMOVE
- extern bool is_pageblock_removable_nolock(struct page *page);
- extern int arch_remove_memory(u64 start, u64 size);
-+extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
-+	unsigned long nr_pages);
- #endif /* CONFIG_MEMORY_HOTREMOVE */
- 
- /* reasonably generic interface to expand the physical pages in a zone  */
- extern int __add_pages(int nid, struct zone *zone, unsigned long start_pfn,
- 	unsigned long nr_pages);
--extern int __remove_pages(struct zone *zone, unsigned long start_pfn,
--	unsigned long nr_pages);
- 
- #ifdef CONFIG_NUMA
- extern int memory_add_physaddr_to_nid(u64 start);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -436,6 +436,40 @@ static int __meminit __add_section(int nid, struct zone *zone,
- 	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
- }
- 
-+/*
-+ * Reasonably generic function for adding memory.  It is
-+ * expected that archs that support memory hotplug will
-+ * call this function after deciding the zone to which to
-+ * add the new pages.
-+ */
-+int __ref __add_pages(int nid, struct zone *zone, unsigned long phys_start_pfn,
-+			unsigned long nr_pages)
-+{
-+	unsigned long i;
-+	int err = 0;
-+	int start_sec, end_sec;
-+	/* during initialize mem_map, align hot-added range to section */
-+	start_sec = pfn_to_section_nr(phys_start_pfn);
-+	end_sec = pfn_to_section_nr(phys_start_pfn + nr_pages - 1);
-+
-+	for (i = start_sec; i <= end_sec; i++) {
-+		err = __add_section(nid, zone, i << PFN_SECTION_SHIFT);
-+
-+		/*
-+		 * EEXIST is finally dealt with by ioresource collision
-+		 * check. see add_memory() => register_memory_resource()
-+		 * Warning will be printed if there is collision.
-+		 */
-+		if (err && (err != -EEXIST))
-+			break;
-+		err = 0;
-+	}
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(__add_pages);
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
- /* find the smallest valid pfn in the range [start_pfn, end_pfn) */
- static int find_smallest_section_pfn(int nid, struct zone *zone,
- 				     unsigned long start_pfn,
-@@ -658,39 +692,6 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
- 	return 0;
- }
- 
--/*
-- * Reasonably generic function for adding memory.  It is
-- * expected that archs that support memory hotplug will
-- * call this function after deciding the zone to which to
-- * add the new pages.
-- */
--int __ref __add_pages(int nid, struct zone *zone, unsigned long phys_start_pfn,
--			unsigned long nr_pages)
--{
--	unsigned long i;
--	int err = 0;
--	int start_sec, end_sec;
--	/* during initialize mem_map, align hot-added range to section */
--	start_sec = pfn_to_section_nr(phys_start_pfn);
--	end_sec = pfn_to_section_nr(phys_start_pfn + nr_pages - 1);
--
--	for (i = start_sec; i <= end_sec; i++) {
--		err = __add_section(nid, zone, i << PFN_SECTION_SHIFT);
--
--		/*
--		 * EEXIST is finally dealt with by ioresource collision
--		 * check. see add_memory() => register_memory_resource()
--		 * Warning will be printed if there is collision.
--		 */
--		if (err && (err != -EEXIST))
--			break;
--		err = 0;
--	}
--
--	return err;
--}
--EXPORT_SYMBOL_GPL(__add_pages);
--
- /**
-  * __remove_pages() - remove sections of pages from a zone
-  * @zone: zone from which pages need to be removed
-@@ -726,6 +727,7 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(__remove_pages);
-+#endif /* CONFIG_MEMORY_HOTREMOVE */
- 
- int set_online_page_callback(online_page_callback_t callback)
- {
-diff --git a/mm/sparse.c b/mm/sparse.c
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -620,6 +620,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
- 
- 	vmemmap_free(start, end);
- }
-+#ifdef CONFIG_MEMORY_HOTREMOVE
- static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- 	unsigned long start = (unsigned long)memmap;
-@@ -627,6 +628,7 @@ static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- 
- 	vmemmap_free(start, end);
- }
-+#endif /* CONFIG_MEMORY_HOTREMOVE */
- #else
- static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
- {
-@@ -664,6 +666,7 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
- 			   get_order(sizeof(struct page) * nr_pages));
- }
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
- static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- 	unsigned long maps_section_nr, removing_section_nr, i;
-@@ -690,40 +693,9 @@ static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- 			put_page_bootmem(page);
- 	}
- }
-+#endif /* CONFIG_MEMORY_HOTREMOVE */
- #endif /* CONFIG_SPARSEMEM_VMEMMAP */
- 
--static void free_section_usemap(struct page *memmap, unsigned long *usemap)
--{
--	struct page *usemap_page;
--	unsigned long nr_pages;
--
--	if (!usemap)
--		return;
--
--	usemap_page = virt_to_page(usemap);
--	/*
--	 * Check to see if allocation came from hot-plug-add
--	 */
--	if (PageSlab(usemap_page) || PageCompound(usemap_page)) {
--		kfree(usemap);
--		if (memmap)
--			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
--		return;
--	}
--
--	/*
--	 * The usemap came from bootmem. This is packed with other usemaps
--	 * on the section which has pgdat at boot time. Just keep it as is now.
--	 */
--
--	if (memmap) {
--		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
--			>> PAGE_SHIFT;
--
--		free_map_bootmem(memmap, nr_pages);
--	}
--}
--
- /*
-  * returns the number of sections whose mem_maps were properly
-  * set.  If this is <=0, then that means that the passed-in
-@@ -800,6 +772,39 @@ static inline void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
- }
- #endif
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+static void free_section_usemap(struct page *memmap, unsigned long *usemap)
-+{
-+	struct page *usemap_page;
-+	unsigned long nr_pages;
-+
-+	if (!usemap)
-+		return;
-+
-+	usemap_page = virt_to_page(usemap);
-+	/*
-+	 * Check to see if allocation came from hot-plug-add
-+	 */
-+	if (PageSlab(usemap_page) || PageCompound(usemap_page)) {
-+		kfree(usemap);
-+		if (memmap)
-+			__kfree_section_memmap(memmap, PAGES_PER_SECTION);
-+		return;
-+	}
-+
-+	/*
-+	 * The usemap came from bootmem. This is packed with other usemaps
-+	 * on the section which has pgdat at boot time. Just keep it as is now.
-+	 */
-+
-+	if (memmap) {
-+		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
-+			>> PAGE_SHIFT;
-+
-+		free_map_bootmem(memmap, nr_pages);
-+	}
-+}
-+
- void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
- {
- 	struct page *memmap = NULL;
-@@ -819,4 +824,5 @@ void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
- 	clear_hwpoisoned_pages(memmap, PAGES_PER_SECTION);
- 	free_section_usemap(memmap, usemap);
- }
--#endif
-+#endif /* CONFIG_MEMORY_HOTREMOVE */
-+#endif /* CONFIG_MEMORY_HOTPLUG */
+   You can find the complete discussion on v3 here:
+      https://lkml.org/lkml/2013/4/5/239
+
+>>      ocmcram: ocmcram@40300000 {
+>>                          compatible = "ti,am3352-ocmcram";
+>>                          reg =<0x40300000 0x10000>;
+>>                          ti,hwmods = "ocmcram";
+>>                          ti,no_idle_on_suspend;
+>>          };
+>> This property gets checked in omap_device file and correspondingly
+>> od->flags is set.
+>>
+>> Based on your above inputs, the patches which I cooked up is
+>> inlined[1]. Though, the below
+>> patches works fine for uart case. The patches will effect ocmcram case
+>> and I am inling them
+>> "just for discussion".
+> Could you also have a look at Russell's suggestion for getting rid of
+> the 'is_console' flag.
+>
+[Kevin]: Yes, will do that.
+> Thanks,
+>
+> Kevin
+~Sourav
