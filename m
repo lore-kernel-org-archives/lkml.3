@@ -1,122 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935862Ab3DJGzl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 02:55:41 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:45964 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725Ab3DJGzj (ORCPT
+	id S935906Ab3DJG4e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 02:56:34 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:54838 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab3DJG4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 02:55:39 -0400
+	Wed, 10 Apr 2013 02:56:32 -0400
 MIME-Version: 1.0
-In-Reply-To: <51650185.9060905@linux.vnet.ibm.com>
-References: <1364873008-3169-1-git-send-email-alex.shi@intel.com>
-	<1364873008-3169-7-git-send-email-alex.shi@intel.com>
-	<CAKfTPtBoV3KoSHuTnZVrvPdCM+5ckFGXfM11oCB1Le_Zmy1hYQ@mail.gmail.com>
-	<51650185.9060905@linux.vnet.ibm.com>
-Date: Wed, 10 Apr 2013 08:55:37 +0200
-Message-ID: <CAKfTPtDUfLTXuYcROhWmzqu6_QY0LM8EvmYoRtJw9wneK0yyCw@mail.gmail.com>
-Subject: Re: [patch v3 6/8] sched: consider runnable load average in move_tasks
+In-Reply-To: <CAKfTPtD6MK9ogq7mOijSxLSsH0n65Xra48XfRSB3DFs35GT=2g@mail.gmail.com>
+References: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com>
+	<CAOh2x=nPJa0GReiN=OHLG=m4Gq51F=4VppdaQL20xi-aUa8x2Q@mail.gmail.com>
+	<20130409123719.7399d5ad@amdc308.digital.local>
+	<CAKohpomL-mdx6DdFiGwJzDSeWr6Gw-_F4T-D-Jz9TNH5MSgjbw@mail.gmail.com>
+	<20130409184440.4cd87c1b@amdc308.digital.local>
+	<CAKfTPtD6MK9ogq7mOijSxLSsH0n65Xra48XfRSB3DFs35GT=2g@mail.gmail.com>
+Date: Wed, 10 Apr 2013 08:56:31 +0200
+Message-ID: <CAKfTPtBvcUfyMTFC3tNb=MyfEODXjo8MTOrqi2MjUmFnnPZCow@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/2] cpufreq: Introduce LAB cpufreq governor.
 From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>, Alex Shi <alex.shi@intel.com>
-Cc: "mingo@redhat.com" <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
-        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        gregkh@linuxfoundation.org,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Len Brown <len.brown@intel.com>, rafael.j.wysocki@intel.com,
-        jkosina@suse.cz, Clark Williams <clark.williams@gmail.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>, keescook@chromium.org,
-        Mel Gorman <mgorman@suse.de>, riel@redhat.com
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 April 2013 08:07, Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
-> On 04/09/2013 03:08 PM, Vincent Guittot wrote:
->> On 2 April 2013 05:23, Alex Shi <alex.shi@intel.com> wrote:
->>> Except using runnable load average in background, move_tasks is also
->>> the key functions in load balance. We need consider the runnable load
->>> average in it in order to the apple to apple load comparison.
->>>
->>> Signed-off-by: Alex Shi <alex.shi@intel.com>
->>> ---
->>>  kernel/sched/fair.c | 11 ++++++++++-
->>>  1 file changed, 10 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
->>> index 1f9026e..bf4e0d4 100644
->>> --- a/kernel/sched/fair.c
->>> +++ b/kernel/sched/fair.c
->>> @@ -3966,6 +3966,15 @@ static unsigned long task_h_load(struct task_struct *p);
->>>
->>>  static const unsigned int sched_nr_migrate_break = 32;
->>>
->>> +static unsigned long task_h_load_avg(struct task_struct *p)
->>> +{
->>> +       u32 period = p->se.avg.runnable_avg_period;
->>> +       if (!period)
->>> +               return 0;
->>> +
->>> +       return task_h_load(p) * p->se.avg.runnable_avg_sum / period;
+On 9 April 2013 20:52, Vincent Guittot <vincent.guittot@linaro.org> wrote:
+>
+>
+> On Tuesday, 9 April 2013, Lukasz Majewski <l.majewski@samsung.com> wrote:
+>> Hi Viresh and Vincent,
 >>
->> How do you ensure that runnable_avg_period and runnable_avg_sum are
->> coherent ? an update of the statistic can occur in the middle of your
->> sequence.
+>>> On 9 April 2013 16:07, Lukasz Majewski <l.majewski@samsung.com> wrote:
+>>> >> On Mon, Apr 1, 2013 at 1:54 PM, Jonghwa Lee
+>>> > Our approach is a bit different than cpufreq_ondemand one. Ondemand
+>>> > takes the per CPU idle time, then on that basis calculates per cpu
+>>> > load. The next step is to choose the highest load and then use this
+>>> > value to properly scale frequency.
+>>> >
+>>> > On the other hand LAB tries to model different behavior:
+>>> >
+>>> > As a first step we applied Vincent Guittot's "pack small tasks" [*]
+>>> > patch to improve "race to idle" behavior:
+>>> >
+>>> > http://article.gmane.org/gmane.linux.kernel/1371435/match=sched+pack+small+tasks
+>>>
+>>> Luckily he is part of my team :)
+>>>
+>>> http://www.linaro.org/linux-on-arm/meet-the-team/power-management
+>>>
+>>> BTW, he is using ondemand governor for all his work.
+>>>
+>>> > Afterwards, we decided to investigate different approach for power
+>>> > governing:
+>>> >
+>>> > Use the number of sleeping CPUs (not the maximal per-CPU load) to
+>>> > change frequency. We thereof depend on [*] to "pack" as many tasks
+>>> > to CPU as possible and allow other to sleep.
+>>>
+>>> He packs only small tasks.
+>>
+>> What's about packing not only small tasks? I will investigate the
+>> possibility to aggressively pack (even with a cost of performance
+>> degradation) as many tasks as possible to a single CPU.
 >
-> Hi, Vincent
+> Hi Lukasz,
 >
-> Don't we have the 'rq->lock' to protect it?
+> I've got same comment on my current patch and I'm preparing a new version
+> that can pack tasks more agressively based on the same buddy mecanism. This
+> will be done at the cost of performance of course.
 >
-> move_tasks() was invoked with double locked, for all the se on src and
-> dst rq, no update should happen, isn't it?
-
-you're right, the double lock protect against concurrent access my
-remark doesn't apply here
-
-Regards,
-Vincent
-
 >
-> Regards,
-> Michael Wang
 >
 >>
->> Vincent
+>> It seems a good idea for a power consumption reduction.
+>
+> In fact, it's not always true and depends several inputs like the number of
+> tasks that run simultaneously
+>
+>
 >>
->>> +}
->>> +
->>>  /*
->>>   * move_tasks tries to move up to imbalance weighted load from busiest to
->>>   * this_rq, as part of a balancing operation within domain "sd".
->>> @@ -4001,7 +4010,7 @@ static int move_tasks(struct lb_env *env)
->>>                 if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
->>>                         goto next;
+>>> And if there are many small tasks we are
+>>> packing, then load must be high and so ondemand gov will increase
+>>> freq.
+>>
+>> This is of course true for "packing" all tasks to a single CPU. If we
+>> stay at the power consumption envelope, we can even overclock the
+>> frequency.
+>>
+>> But what if other - lets say 3 CPUs - are under heavy workload?
+>> Ondemand will switch frequency to maximum, and as Jonghwa pointed out
+>> this can cause dangerous temperature increase.
+>
+> IIUC, your main concern is to stay in a power consumption budget to not over
+> heat and have to face the side effect of high temperature like a decrease of
+> power efficiency. So your governor modifies the max frequency based on the
+> number of running/idle CPU to have an almost stable power consumtpion ?
+>
+> Have you also looked at the power clamp driver that have similar target ?
+>
+>
+> Vincent
+>
+>
+>>
 >>>
->>> -               load = task_h_load(p);
->>> +               load = task_h_load_avg(p);
+>>> > Contrary, when all cores are heavily loaded, we decided to reduce
+>>> > frequency by around 30%. With this approach user experience
+>>> > recution is still acceptable (with much less power consumption).
 >>>
->>>                 if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
->>>                         goto next;
+>>> Don't know.. running many cpus at lower freq for long duration will
+>>> probably take more power than running them at high freq for short
+>>> duration and making system idle again.
+>>>
+>>> > We have posted this "RFC" patch mainly for discussion, and I think
+>>> > it fits its purpose :-).
+>>>
+>>> Yes, no issues with your RFC idea.. its perfect..
+>>>
+>>> @Vincent: Can you please follow this thread a bit and tell us what
+>>> your views are?
+>>>
 >>> --
->>> 1.7.12
->>>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+>>> viresh
 >>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>> --
+>> Best regards,
+>>
+>> Lukasz Majewski
+>>
+>> Samsung R&D Poland (SRPOL) | Linux Platform Group
+>>
