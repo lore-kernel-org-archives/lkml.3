@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936837Ab3DJJ40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 05:56:26 -0400
-Received: from statler.bytemark.co.uk ([212.110.162.18]:42190 "EHLO
-	statler.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab3DJJ4Z (ORCPT
+	id S937141Ab3DJJ5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 05:57:21 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:34914 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab3DJJ5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 05:56:25 -0400
-X-Greylist: delayed 1327 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Apr 2013 05:56:25 EDT
-Date: Wed, 10 Apr 2013 10:33:46 +0100
-From: Andy Whitcroft <apw@shadowen.org>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: Re: [PATCH] checkpatch: Warn on comparisons to true and false
-Message-ID: <20130410093346.GO7511@dm>
-References: <1365563834.27174.12.camel@joe-AO722>
+	Wed, 10 Apr 2013 05:57:20 -0400
+Date: Wed, 10 Apr 2013 11:57:16 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Kees Cook <keescook@chromium.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        kernel-hardening@lists.openwall.com,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
+        Eric Northup <digitaleric@google.com>
+Subject: Re: [PATCH] x86: make IDT read-only
+Message-ID: <20130410095716.GF24443@gmail.com>
+References: <20130408224328.GA17641@www.outflux.net>
+ <51634935.9010905@zytor.com>
+ <877gkc596d.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365563834.27174.12.camel@joe-AO722>
+In-Reply-To: <877gkc596d.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 08:17:14PM -0700, Joe Perches wrote:
-> Comparisons of A to true and false are better written
-> as A and !A.
-> 
-> Bleat a message on use.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  scripts/checkpatch.pl | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 3fb6d86..080e7f6 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -3538,6 +3538,23 @@ sub process {
->  			     "Using yield() is generally wrong. See yield() kernel-doc (sched/core.c)\n"  . $herecurr);
->  		}
->  
-> +# check for comparisons against true and false
-> +		if ($line =~ /\+\s*(.*?)($Lval)\s*(==|\!=)\s*(true|false)\b(.*)$/i) {
-> +			my $lead = $1;
-> +			my $arg = $2;
-> +			my $test = $3;
-> +			my $otype = $4;
-> +			my $trail = $5;
-> +			my $type = lc($otype);
-> +			my $op = "!";
-> +			if (("$test" eq "==" && "$type" eq "true") ||
-> +			    ("$test" eq "!=" && "$type" eq "false")) {
-> +				$op = "";
-> +			}
-> +			WARN("BOOL_COMPARISON",
-> +			     "Using comparison to $otype is poor style. Use '${lead}${op}${arg}${trail}'\n" . $herecurr);
 
-In a complex case such as  a + b == false  will this do the right thing?
-Not that I am sure that adding bools makes sense but assuming there is
-some valid complex lval.
+* Eric W. Biederman <ebiederm@xmission.com> wrote:
 
--apw
+> "H. Peter Anvin" <hpa@zytor.com> writes:
+> 
+> > On 04/08/2013 03:43 PM, Kees Cook wrote:
+> >> This makes the IDT unconditionally read-only. This primarily removes
+> >> the IDT from being a target for arbitrary memory write attacks. It has
+> >> an added benefit of also not leaking (via the "sidt" instruction) the
+> >> kernel base offset, if it has been relocated.
+> >> 
+> >> Signed-off-by: Kees Cook <keescook@chromium.org>
+> >> Cc: Eric Northup <digitaleric@google.com>
+> >
+> > Also, tglx: does this interfere with your per-cpu IDT efforts?
+> 
+> Given that we don't change any IDT entries why would anyone want a
+> per-cpu IDT?  The cache lines should easily be shared accross all
+> processors.
+
+That's true iif they are cached.
+
+If not then it's a remote DRAM access cache miss for all CPUs except the node that 
+holds that memory.
+
+> Or are there some giant NUMA machines that trigger cache misses when accessing 
+> the IDT and the penalty for pulling the cache line across the NUMA fabric is 
+> prohibitive?
+
+IDT accesses for pure userspace execution are pretty rare. So we are not just 
+talking about huge NUMA machines here but about ordinary NUMA machines taking a 
+remote cache miss hit for the first IRQ or other IDT-accessing operation they do 
+after some cache-intense user-space processing.
+
+It's a small effect, but it exists and improving it would be legitimate.
+
+Thanks,
+
+	Ingo
