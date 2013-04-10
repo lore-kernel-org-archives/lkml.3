@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937502Ab3DJXBn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:01:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56530 "EHLO
+	id S937416Ab3DJWt7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:49:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56513 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937435Ab3DJWuA (ORCPT
+	with ESMTP id S965050Ab3DJWt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:50:00 -0400
+	Wed, 10 Apr 2013 18:49:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shan Hai <shan.hai@windriver.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 12/29] libata: Use integer return value for atapi_command_packet_set
-Date: Wed, 10 Apr 2013 15:49:30 -0700
-Message-Id: <20130410224805.377523384@linuxfoundation.org>
+        Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 08/29] ALSA: hda - Enabling Realtek ALC 671 codec
+Date: Wed, 10 Apr 2013 15:49:26 -0700
+Message-Id: <20130410224804.946032200@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -26,37 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>
 
-commit d8668fcb0b257d9fdcfbe5c172a99b8d85e1cd82 upstream.
+commit 1d87caa69c04008e09f5ff47b5e6acb6116febc7 upstream.
 
-The function returns type of ATAPI drives so it should return integer value.
-The commit 4dce8ba94c7 (libata: Use 'bool' return value for ata_id_XXX) since
-v2.6.39 changed the type of return value from int to bool, the change would
-cause all of the ATAPI class drives to be treated as TYPE_TAPE and the
-max_sectors of the drives to be set to 65535 because of the commit
-f8d8e5799b7(libata: increase 128 KB / cmd limit for ATAPI tape drives), for the
-function would return true for all ATAPI class drives and the TYPE_TAPE is
-defined as 0x01.
+* Added the device ID to the modalias list and assinged ALC662 patches
+for it
+* Added 4 port support for the device ID 0671 in alc662_parse_auto_config
 
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ata.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/include/linux/ata.h
-+++ b/include/linux/ata.h
-@@ -937,7 +937,7 @@ static inline int atapi_cdb_len(const u1
- 	}
- }
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6629,7 +6629,8 @@ static int alc662_parse_auto_config(stru
+ 	const hda_nid_t *ssids;
  
--static inline bool atapi_command_packet_set(const u16 *dev_id)
-+static inline int atapi_command_packet_set(const u16 *dev_id)
- {
- 	return (dev_id[ATA_ID_CONFIG] >> 8) & 0x1f;
- }
+ 	if (codec->vendor_id == 0x10ec0272 || codec->vendor_id == 0x10ec0663 ||
+-	    codec->vendor_id == 0x10ec0665 || codec->vendor_id == 0x10ec0670)
++	    codec->vendor_id == 0x10ec0665 || codec->vendor_id == 0x10ec0670 ||
++	    codec->vendor_id == 0x10ec0671)
+ 		ssids = alc663_ssids;
+ 	else
+ 		ssids = alc662_ssids;
+@@ -7056,6 +7057,7 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x10ec0665, .name = "ALC665", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0668, .name = "ALC668", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0670, .name = "ALC670", .patch = patch_alc662 },
++	{ .id = 0x10ec0671, .name = "ALC671", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0680, .name = "ALC680", .patch = patch_alc680 },
+ 	{ .id = 0x10ec0880, .name = "ALC880", .patch = patch_alc880 },
+ 	{ .id = 0x10ec0882, .name = "ALC882", .patch = patch_alc882 },
 
 
