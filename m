@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936708Ab3DJSKM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 14:10:12 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:37316 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765431Ab3DJSKK (ORCPT
+	id S936274Ab3DJSSc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 14:18:32 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:48929 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760271Ab3DJSSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 14:10:10 -0400
-Message-ID: <5165AB00.2000605@candelatech.com>
-Date: Wed, 10 Apr 2013 11:10:08 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Wed, 10 Apr 2013 14:18:31 -0400
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: Jitter and latency benchmarks with netlink / nl80211
-References: <CAB=NE6XH8wGbFhmB54Y0BUB2N-PbzUBvN+arH5F_BAkEa=DjUw@mail.gmail.com> <5165A874.50804@candelatech.com> <CAB=NE6U_0E+y8jc_0O3+9pmUyLXX9CuSMYMMWk__4Q8-+-AHTg@mail.gmail.com>
-In-Reply-To: <CAB=NE6U_0E+y8jc_0O3+9pmUyLXX9CuSMYMMWk__4Q8-+-AHTg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1364887357.4208.6.camel@amber.site>
+References: <1364586399.4216.312.camel@amber.site>
+	<201303302020.44584.marek.vasut@gmail.com>
+	<20130330232559.GA12864@roeck-us.net>
+	<201303311919.06030.marek.vasut@gmail.com>
+	<1364814403.4943.7.camel@amber.site>
+	<20130401153247.GA13517@sirena.org.uk>
+	<1364887357.4208.6.camel@amber.site>
+Date: Wed, 10 Apr 2013 20:18:30 +0200
+Message-ID: <CACRpkdZ+ku_-SBTXwwwRDh7F2TXzpgpAF3k+Ksn98BNYXximXw@mail.gmail.com>
+Subject: Re: gpio-ucb1400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jean Delvare <jdelvare@suse.de>, Samuel Ortiz <sameo@linux.intel.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 11:05 AM, Luis R. Rodriguez wrote:
-> On Wed, Apr 10, 2013 at 10:59 AM, Ben Greear <greearb@candelatech.com> wrote:
->> On 04/10/2013 10:55 AM, Luis R. Rodriguez wrote:
->>>
->>> Curious if anyone has worked on latency and jitter benchmarks in using
->>> netlink, specifically with nl80211. Has anyone benchmarked this? Ben,
->>> have you? If not for nl80211 perhaps this has been done before for
->>> other netlink families?
->>
->>
->> You mean timing related to netlink configuration/report requests?
+On Tue, Apr 2, 2013 at 9:22 AM, Jean Delvare <jdelvare@suse.de> wrote:
+
+> Well Marek proposed a cleanup which looked good [1], several times
+> apparently, but it was never applied.
 >
-> Yes.
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2010-October/028656.html
 
-No, I haven't bothered to do this...  The way we use netlink is
-mostly asynchronous..ie we just listen for events and process them
-as they come in.  Most of our configuration would be driven through 'iw',
-'wpa_supplicant', 'ip', etc, and much of our stats gathering is through
-the ethool get-stats API.
+Marek, could you rebase and repost this and set Samuel, me & Grant on
+the To: line so we can ACK this and have it merged into Sam's tree then?
 
-I would imagine any latency would be highly dependent on other applications
-taking RTNL (for instance, creating/deleting lots of virtual stations,
-mac-vlans, ip-address changes, etc).
-
-Thanks,
-Ben
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+Yours,
+Linus Walleij
