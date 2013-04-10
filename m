@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937615Ab3DJWuv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:50:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56637 "EHLO
+	id S937679Ab3DJWvF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:51:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56707 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937447Ab3DJWuq (ORCPT
+	with ESMTP id S937651Ab3DJWu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:50:46 -0400
+	Wed, 10 Apr 2013 18:50:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mengdong Lin <mengdong.lin@intel.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 04/19] ALSA: hda - bug fix on return value when getting HDMI ELD info
-Date: Wed, 10 Apr 2013 15:50:27 -0700
-Message-Id: <20130410225027.271964003@linuxfoundation.org>
+        Tim Gardner <tim.gardner@canonical.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org
+Subject: [ 19/19] rt2x00: rt2x00pci_regbusy_read() - only print register access failure once
+Date: Wed, 10 Apr 2013 15:50:42 -0700
+Message-Id: <20130410225028.798223336@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
 References: <20130410225026.833809117@linuxfoundation.org>
@@ -28,34 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mengdong Lin <mengdong.lin@intel.com>
+From: Tim Gardner <tim.gardner@canonical.com>
 
-commit 2ef5692efad330b67a234e2c49edad38538751e7 upstream.
+commit 83589b30f1e1dc9898986293c9336b8ce1705dec upstream.
 
-In function snd_hdmi_get_eld(), the variable 'ret' should be initialized to 0.
-Otherwise it will be returned uninitialized as non-zero after ELD info is got
-successfully. Thus hdmi_present_sense() will always assume ELD info is invalid
-by mistake, and /proc file system cannot show the proper ELD info.
+BugLink: http://bugs.launchpad.net/bugs/1128840
 
-Signed-off-by: Mengdong Lin <mengdong.lin@intel.com>
-Acked-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+It appears that when this register read fails it never recovers, so
+I think there is no need to repeat the same error message ad infinitum.
+
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Cc: Ivo van Doorn <IvDoorn@gmail.com>
+Cc: Gertjan van Wingerde <gwingerde@gmail.com>
+Cc: Helmut Schaa <helmut.schaa@googlemail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: users@rt2x00.serialmonkey.com
+Cc: netdev@vger.kernel.org
+Cc: stable@vger.kernel.org
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_eld.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/rt2x00/rt2x00pci.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_eld.c
-+++ b/sound/pci/hda/hda_eld.c
-@@ -322,7 +322,7 @@ int snd_hdmi_get_eld(struct hdmi_eld *el
- 		     struct hda_codec *codec, hda_nid_t nid)
- {
- 	int i;
--	int ret;
-+	int ret = 0;
- 	int size;
- 	unsigned char *buf;
+--- a/drivers/net/wireless/rt2x00/rt2x00pci.c
++++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
+@@ -52,8 +52,8 @@ int rt2x00pci_regbusy_read(struct rt2x00
+ 		udelay(REGISTER_BUSY_DELAY);
+ 	}
  
+-	ERROR(rt2x00dev, "Indirect register access failed: "
+-	      "offset=0x%.08x, value=0x%.08x\n", offset, *reg);
++	printk_once(KERN_ERR "%s() Indirect register access failed: "
++	      "offset=0x%.08x, value=0x%.08x\n", __func__, offset, *reg);
+ 	*reg = ~0;
+ 
+ 	return 0;
 
 
