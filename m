@@ -1,52 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936919Ab3DJRu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:50:28 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:57043 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933146Ab3DJRu1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:50:27 -0400
-Date: Wed, 10 Apr 2013 10:50:25 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Add additional distro specific
- Kconfig options
-Message-ID: <20130410175025.GA4644@kroah.com>
-References: <1365610097-10955-1-git-send-email-kys@microsoft.com>
- <20130410154957.GA13849@kroah.com>
- <a3b67bf6e11c462d826c1fc4957c3da9@SN2PR03MB061.namprd03.prod.outlook.com>
- <20130410163340.GA21840@kroah.com>
- <a6d2f8d7a9bf48cda759bf7029192c4d@SN2PR03MB061.namprd03.prod.outlook.com>
+	id S936933Ab3DJRzW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:55:22 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:49284 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1761586Ab3DJRzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 13:55:21 -0400
+Date: Wed, 10 Apr 2013 12:55:19 -0500
+From: Robin Holt <holt@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Robin Holt <holt@sgi.com>, Russ Anderson <rja@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
+Message-ID: <20130410175519.GG3658@sgi.com>
+References: <20130403193743.GB29151@sgi.com>
+ <20130408155701.GB19974@gmail.com>
+ <5162EC1A.4050204@zytor.com>
+ <20130408165916.GA3672@sgi.com>
+ <20130410111620.GB29752@gmail.com>
+ <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
+ <20130410152911.GA3011@sgi.com>
+ <20130410165934.GB21951@gmail.com>
+ <20130410171420.GF3658@sgi.com>
+ <20130410172236.GE21951@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <a6d2f8d7a9bf48cda759bf7029192c4d@SN2PR03MB061.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130410172236.GE21951@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 05:37:41PM +0000, KY Srinivasan wrote:
-> You are reading more into this than there is. As it stands now
-> (without this patch), the code that constructs the guest OS ID has
-> place holders for adding in some distro specific tags into this ID.
+On Wed, Apr 10, 2013 at 07:22:36PM +0200, Ingo Molnar wrote:
+> 
+> * Robin Holt <holt@sgi.com> wrote:
+> 
+> > On Wed, Apr 10, 2013 at 06:59:34PM +0200, Ingo Molnar wrote:
+> > > 
+> > > * Russ Anderson <rja@sgi.com> wrote:
+> > > 
+> > > > Yes, I have a test patch that replaces for_each_online_cpu(cpu) with a cpu 
+> > > > bitmask in disable_nonboot_cpus().  The lower level routines already take a 
+> > > > bitmask.  It allows __stop_machine() to be called just once.  That change 
+> > > > reduces shutdown time on a 1024 cpu machine from 16 minutes 4 minutes.  
+> > > > Significant improvement, but not good enough.
+> > > > 
+> > > > The next significant bottleneck is __cpu_notify().  Tried creating worker 
+> > > > threads to parallelize the shutdown, but the problem is __cpu_notify() is not 
+> > > > thread safe.  Putting a lock around it caused all the worker threads to fight 
+> > > > over the lock.
+> > > 
+> > > 4 minutes bootup is 240 seconds, with 1024 CPUs that's about 240 msecs per CPU.
+> > > 
+> > > That sounds a lot, given that unlike bootup there's not much real work to be done 
+> > > during shutdown - we don't initialize anything, etc.
+> > > 
+> > > Maybe much of those 240 msecs are spent in some stupid udelay loop or so, which 
+> > > could be made parallel?
+> > > 
+> > > Would it be possible to create a 'reboot but stop at the end and reactivate all 
+> > > CPUs again' reboot flag, so that it can all be NMI-profiled, to see where the true 
+> > > bottleneck is? A naked disable_nonboot_cpus() call in essence.
+> > 
+> > What, exactly, are you proposing with the NMI profiling? [...]
+> 
+> I'm proposing to make 'reboot' overhead profilable, via a debug hack:
+> 
+>         echo 1 > /proc/sys/kernel/magic_dont_fully_reboot_flag
+> 
+> 	perf record reboot
+> 
+> perf is using NMIs to profile - and since much of cpu_down() is with irqs 
+> disabled, NMI profiling would be needed to see inside the overhead.
+> 
+> (Assuming the 240 msecs is CPU overhead, not waiting for some IRQ/IPI event.)
 
-I understand that, the fact that you now want this to be a configurable
-value at build time, yet provide exactly NO information to anyone as to
-what to set the values to, what the values mean, or anything else about
-these values this is why I am rejecting this patch.
+Let me give it a try.
 
-If you are already properly handling os-release, then there is no need
-for these values to mean anything for a Linux guest, as it would be
-totally redundant, and probably wrong (hint, the same kernel binary can
-be running on different os userspace layers.)
-
-sorry,
-
-greg k-h
+Robin
