@@ -1,44 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964879Ab3DJOgA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:36:00 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51679 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760108Ab3DJOf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 10:35:59 -0400
-Message-ID: <1365604558.27174.36.camel@joe-AO722>
-Subject: Re: checkpatch: kill the bogus camelcase check
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Wed, 10 Apr 2013 07:35:58 -0700
-In-Reply-To: <20130410132628.GV7511@dm>
-References: <1365544254.2946.53.camel@dabdike> <20130410132628.GV7511@dm>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S936959Ab3DJOjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:39:32 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57499 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936278Ab3DJOjb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 10:39:31 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        devicetree-discuss@lists.ozlabs.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] mfd: wm8994: Add some OF properties
+Date: Wed, 10 Apr 2013 15:39:23 +0100
+Message-Id: <1365604763-13122-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1365604763-13122-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1365604763-13122-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 14:26 +0100, Andy Whitcroft wrote:
-> On Tue, Apr 09, 2013 at 02:50:54PM -0700, James Bottomley wrote:
-> > It's making checkpatch unusable on most drivers because it's spewing
-> > tons of bogus warnings.  The problem is the assumption that studly caps
-> > is always wrong: it isn't if the variables are named after the various
-> > conventions in the hardware programming guides (which are usually
-> > written by Microsoft people).
-> > 
-> > In order to encourage people to use checkpatch, it has to be *useful* it
-> > can't stray too far into dogmatic things like this that are essentially
-> > unfixable by most people who submit patches.
-> > 
-> > Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-> 
-> Joe, perhaps this could become a strict check?
+Add properties for some of the more important bits of platform data and
+fill out the binding document.
 
-or maybe exclude drivers/scsi and include/scsi/
+Not all of the current platform data is suitable for the sort of fixed
+configuration that is done using DT, some of it should have runtime
+mechanisms added instead and some is unlikely to ever be used in practical
+systems.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+
+Untested at present.
+
+ Documentation/devicetree/bindings/sound/wm8994.txt |   56 +++++++++++++-
+ drivers/mfd/wm8994-core.c                          |   81 +++++++++++++++++++-
+ 2 files changed, 134 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/sound/wm8994.txt b/Documentation/devicetree/bindings/sound/wm8994.txt
+index 7a7eb1e..51edc5f 100644
+--- a/Documentation/devicetree/bindings/sound/wm8994.txt
++++ b/Documentation/devicetree/bindings/sound/wm8994.txt
+@@ -5,14 +5,68 @@ on the board).
+ 
+ Required properties:
+ 
+-  - compatible : "wlf,wm1811", "wlf,wm8994", "wlf,wm8958"
++  - compatible : One of "wlf,wm1811", "wlf,wm8994" or "wlf,wm8958"
+ 
+   - reg : the I2C address of the device for I2C, the chip select
+           number for SPI.
+ 
++  - gpio-controller : Indicates this device is a GPIO controller.
++  - #gpio-cells : Must be 2. The first cell is the pin number and the
++    second cell is used to specify optional parameters (currently unused).
++
++  - AVDD2-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
++    SPKVDD1-supply, SPKVDD2-supply : power supplies for the device, as covered
++    in Documentation/devicetree/bindings/regulator/regulator.txt
++
++Optional properties:
++
++  - interrupts : The interrupt line the IRQ signal for the device is
++    connected to.  This is optional, if it is not connected then none
++    of the interrupt related properties should be specified.
++  - interrupt-controller : These devices contain interrupt controllers
++    and may provide interrupt services to other devices if they have an
++    interrupt line connected.
++  - interrupt-parent : The parent interrupt controller.
++  - #interrupt-cells: the number of cells to describe an IRQ, this should be 2.
++    The first cell is the IRQ number.
++    The second cell is the flags, encoded as the trigger masks from
++    Documentation/devicetree/bindings/interrupts.txt
++
++  - gpio-cfg : A list of GPIO configuration register values. If absent,
++    no configuration of these registers is performed. If any value is
++    over 0xffff then the register will be left as default. If present 11
++    values must be supplied.
++
++  - micbias-cfg : Three MICBIAS register values for WM1811 or
++    WM8958.  If absent the register defaults will be used.
++
++  - ldo1ena : GPIO specifier for control of LDO1ENA input to device.
++  - ldo2ena : GPIO specifier for control of LDO2ENA input to device.
++
++  - lineout1-se : If present LINEOUT1 is in single ended mode.
++  - lineout2-se : If present LINEOUT2 is in single ended mode.
++
++  - lineout1-feedback : If present LINEOUT1 has common mode feedback connected.
++  - lineout2-feedback : If present LINEOUT2 has common mode feedback connected.
++
++  - ldoena-always-driven : If present LDOENA is always driven
++
+ Example:
+ 
+ codec: wm8994@1a {
+ 	compatible = "wlf,wm8994";
+ 	reg = <0x1a>;
++
++	gpio-controoler;
++	#gpio-cells = <2>;
++
++        lineout1-se;
++
++	AVDD2-supply = <&regulator>;
++	CPVDD-supply = <&regulator>;
++	DBVDD1-supply = <&regulator>;
++	DBVDD2-supply = <&regulator>;
++	DBVDD3-supply = <&regulator>;
++	SPKVDD1-supply = <&regulator>;
++	SPKVDD2-supply = <&regulator>;
+ };
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 3f8d591..3f87f25 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -19,6 +19,9 @@
+ #include <linux/err.h>
+ #include <linux/delay.h>
+ #include <linux/mfd/core.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/consumer.h>
+@@ -396,6 +399,68 @@ static const struct reg_default wm1811_reva_patch[] = {
+ 	{ 0x102, 0x0 },
+ };
+ 
++#ifdef CONFIG_OF
++static int wm8994_set_pdata_from_of(struct wm8994 *wm8994)
++{
++	struct device_node *np = wm8994->dev->of_node;
++	struct wm8994_pdata *pdata = &wm8994->pdata;
++	int i;
++
++	if (!np)
++		return 0;
++
++	if (of_property_read_u32_array(np, "gpio-cfg", pdata->gpio_defaults,
++				       ARRAY_SIZE(pdata->gpio_defaults)) >= 0) {
++		for (i = 0; i < ARRAY_SIZE(pdata->gpio_defaults); i++) {
++			if (wm8994->pdata.gpio_defaults[i] == 0) {
++				pdata->gpio_defaults[i]
++					= WM8994_CONFIGURE_GPIO;
++			} else if (pdata->gpio_defaults[i] == 0xffffffff) {
++				pdata->gpio_defaults[i] = 0;
++			} else if (pdata->gpio_defaults[i] > 0xffff) {
++				dev_err(wm8994->dev,
++					"Invalid gpio-cfg[%d] %x\n",
++					i, pdata->gpio_defaults[i]);
++				return -EINVAL;
++			}
++		}
++	}
++
++	of_property_read_u32_array(np, "micbias-cfg", pdata->micbias,
++				   ARRAY_SIZE(pdata->micbias));
++
++	pdata->lineout1_diff = true;
++	pdata->lineout2_diff = true;
++	if (of_find_property(np, "lineout1-se", NULL))
++		pdata->lineout1_diff = false;
++	if (of_find_property(np, "lineout2-se", NULL))
++		pdata->lineout2_diff = false;
++
++	if (of_find_property(np, "lineout1-feedback", NULL))
++		pdata->lineout1fb = true;
++	if (of_find_property(np, "lineout2-feedback", NULL))
++		pdata->lineout2fb = true;
++
++	if (of_find_property(np, "ldoena-always-driven", NULL))
++		pdata->lineout2fb = true;
++
++	pdata->ldo[0].enable = of_get_named_gpio(np, "ldo1ena", 0);
++	if (pdata->ldo[0].enable < 0)
++		pdata->ldo[0].enable = 0;
++
++	pdata->ldo[1].enable = of_get_named_gpio(np, "ldo2ena", 0);
++	if (pdata->ldo[1].enable < 0)
++		pdata->ldo[1].enable = 0;
++
++	return 0;
++}
++#else
++static int wm8994_set_pdata_from_of(struct wm8994 *wm8994)
++{
++	return 0;
++}
++#endif
++
+ /*
+  * Instantiate the generic non-control parts of the device.
+  */
+@@ -414,6 +479,10 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 	}
+ 	pdata = &wm8994->pdata;
+ 
++	ret = wm8994_set_pdata_from_of(wm8994);
++	if (ret != 0)
++		return ret;
++
+ 	dev_set_drvdata(wm8994->dev, wm8994);
+ 
+ 	/* Add the on-chip regulators first for bootstrapping */
+@@ -683,6 +752,7 @@ MODULE_DEVICE_TABLE(of, wm8994_of_match);
+ static int wm8994_i2c_probe(struct i2c_client *i2c,
+ 				      const struct i2c_device_id *id)
+ {
++	const struct of_device_id *of_id;
+ 	struct wm8994 *wm8994;
+ 	int ret;
+ 
+@@ -693,7 +763,14 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
+ 	i2c_set_clientdata(i2c, wm8994);
+ 	wm8994->dev = &i2c->dev;
+ 	wm8994->irq = i2c->irq;
+-	wm8994->type = id->driver_data;
++
++	if (i2c->dev.of_node) {
++		of_id = of_match_device(wm8994_of_match, &i2c->dev);
++		if (of_id)
++			wm8994->type = (int)of_id->data;
++	} else {
++		wm8994->type = id->driver_data;
++	}
+ 
+ 	wm8994->regmap = devm_regmap_init_i2c(i2c, &wm8994_base_regmap_config);
+ 	if (IS_ERR(wm8994->regmap)) {
+@@ -733,7 +810,7 @@ static struct i2c_driver wm8994_i2c_driver = {
+ 		.name = "wm8994",
+ 		.owner = THIS_MODULE,
+ 		.pm = &wm8994_pm_ops,
+-		.of_match_table = wm8994_of_match,
++		.of_match_table = of_match_ptr(wm8994_of_match),
+ 	},
+ 	.probe = wm8994_i2c_probe,
+ 	.remove = wm8994_i2c_remove,
+-- 
+1.7.10.4
 
