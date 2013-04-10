@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965215Ab3DJXIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:08:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56224 "EHLO
+	id S937313Ab3DJWrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:47:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56197 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937322Ab3DJWrg (ORCPT
+	with ESMTP id S937226Ab3DJWrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:36 -0400
+	Wed, 10 Apr 2013 18:47:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Bryan Schumaker <bjschuma@netapp.com>
-Subject: [ 48/64] NFSv4/4.1: Fix bugs in nfs4[01]_walk_client_list
-Date: Wed, 10 Apr 2013 15:46:45 -0700
-Message-Id: <20130410224344.522225885@linuxfoundation.org>
+        Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Magnus Myrstedt <magnus.p.persson@stericsson.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 42/64] crypto: ux500 - add missing comma
+Date: Wed, 10 Apr 2013 15:46:39 -0700
+Message-Id: <20130410224343.051755359@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -28,132 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 7b1f1fd1842e6ede25183c267ae733a7f67f00bc upstream.
+commit d47cbd5bcee7c7a08fc0283dda465375fa1b1fda upstream.
 
-It is unsafe to use list_for_each_entry_safe() here, because
-when we drop the nn->nfs_client_lock, we pin the _current_ list
-entry and ensure that it stays in the list, but we don't do the
-same for the _next_ list entry. Use of list_for_each_entry() is
-therefore the correct thing to do.
+Commit 4f31f5b19eb0418a847b989abc9ac22af1991fe2
+"PM / crypto / ux500: Use struct dev_pm_ops for power management"
+add a new line to the driver struct but missed to add a
+trailing comma, causing build errors when crypto is
+selected. This adds the missing comma.
 
-Also fix the refcounting in nfs41_walk_client_list().
+This was not noticed until now because the crypto block
+is not in the ux500 defconfig. A separate patch will
+be submitted to fix this.
 
-Finally, ensure that the nfs_client has finished being initialised
-and, in the case of NFSv4.1, that the session is set up.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Chuck Lever <chuck.lever@oracle.com>
-Cc: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Magnus Myrstedt <magnus.p.persson@stericsson.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4client.c |   44 ++++++++++++++++++++++++++++----------------
- 1 file changed, 28 insertions(+), 16 deletions(-)
+ drivers/crypto/ux500/cryp/cryp_core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -300,7 +300,7 @@ int nfs40_walk_client_list(struct nfs_cl
- 			   struct rpc_cred *cred)
- {
- 	struct nfs_net *nn = net_generic(new->cl_net, nfs_net_id);
--	struct nfs_client *pos, *n, *prev = NULL;
-+	struct nfs_client *pos, *prev = NULL;
- 	struct nfs4_setclientid_res clid = {
- 		.clientid	= new->cl_clientid,
- 		.confirm	= new->cl_confirm,
-@@ -308,10 +308,23 @@ int nfs40_walk_client_list(struct nfs_cl
- 	int status = -NFS4ERR_STALE_CLIENTID;
- 
- 	spin_lock(&nn->nfs_client_lock);
--	list_for_each_entry_safe(pos, n, &nn->nfs_client_list, cl_share_link) {
-+	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
- 		/* If "pos" isn't marked ready, we can't trust the
- 		 * remaining fields in "pos" */
--		if (pos->cl_cons_state < NFS_CS_READY)
-+		if (pos->cl_cons_state > NFS_CS_READY) {
-+			atomic_inc(&pos->cl_count);
-+			spin_unlock(&nn->nfs_client_lock);
-+
-+			if (prev)
-+				nfs_put_client(prev);
-+			prev = pos;
-+
-+			status = nfs_wait_client_init_complete(pos);
-+			spin_lock(&nn->nfs_client_lock);
-+			if (status < 0)
-+				continue;
-+		}
-+		if (pos->cl_cons_state != NFS_CS_READY)
- 			continue;
- 
- 		if (pos->rpc_ops != new->rpc_ops)
-@@ -423,16 +436,16 @@ int nfs41_walk_client_list(struct nfs_cl
- 			   struct rpc_cred *cred)
- {
- 	struct nfs_net *nn = net_generic(new->cl_net, nfs_net_id);
--	struct nfs_client *pos, *n, *prev = NULL;
-+	struct nfs_client *pos, *prev = NULL;
- 	int status = -NFS4ERR_STALE_CLIENTID;
- 
- 	spin_lock(&nn->nfs_client_lock);
--	list_for_each_entry_safe(pos, n, &nn->nfs_client_list, cl_share_link) {
-+	list_for_each_entry(pos, &nn->nfs_client_list, cl_share_link) {
- 		/* If "pos" isn't marked ready, we can't trust the
- 		 * remaining fields in "pos", especially the client
- 		 * ID and serverowner fields.  Wait for CREATE_SESSION
- 		 * to finish. */
--		if (pos->cl_cons_state < NFS_CS_READY) {
-+		if (pos->cl_cons_state > NFS_CS_READY) {
- 			atomic_inc(&pos->cl_count);
- 			spin_unlock(&nn->nfs_client_lock);
- 
-@@ -440,18 +453,17 @@ int nfs41_walk_client_list(struct nfs_cl
- 				nfs_put_client(prev);
- 			prev = pos;
- 
--			nfs4_schedule_lease_recovery(pos);
- 			status = nfs_wait_client_init_complete(pos);
--			if (status < 0) {
--				nfs_put_client(pos);
--				spin_lock(&nn->nfs_client_lock);
--				continue;
-+			if (status == 0) {
-+				nfs4_schedule_lease_recovery(pos);
-+				status = nfs4_wait_clnt_recover(pos);
- 			}
--			status = pos->cl_cons_state;
- 			spin_lock(&nn->nfs_client_lock);
- 			if (status < 0)
- 				continue;
- 		}
-+		if (pos->cl_cons_state != NFS_CS_READY)
-+			continue;
- 
- 		if (pos->rpc_ops != new->rpc_ops)
- 			continue;
-@@ -469,17 +481,17 @@ int nfs41_walk_client_list(struct nfs_cl
- 			continue;
- 
- 		atomic_inc(&pos->cl_count);
--		spin_unlock(&nn->nfs_client_lock);
-+		*result = pos;
- 		dprintk("NFS: <-- %s using nfs_client = %p ({%d})\n",
- 			__func__, pos, atomic_read(&pos->cl_count));
--
--		*result = pos;
--		return 0;
-+		break;
+--- a/drivers/crypto/ux500/cryp/cryp_core.c
++++ b/drivers/crypto/ux500/cryp/cryp_core.c
+@@ -1750,7 +1750,7 @@ static struct platform_driver cryp_drive
+ 	.shutdown = ux500_cryp_shutdown,
+ 	.driver = {
+ 		.owner = THIS_MODULE,
+-		.name  = "cryp1"
++		.name  = "cryp1",
+ 		.pm    = &ux500_cryp_pm,
  	}
- 
- 	/* No matching nfs_client found. */
- 	spin_unlock(&nn->nfs_client_lock);
- 	dprintk("NFS: <-- %s status = %d\n", __func__, status);
-+	if (prev)
-+		nfs_put_client(prev);
- 	return status;
- }
- #endif	/* CONFIG_NFS_V4_1 */
+ };
 
 
