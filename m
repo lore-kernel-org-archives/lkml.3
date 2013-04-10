@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965285Ab3DJR3m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:29:42 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:29223 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935423Ab3DJR3k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965273Ab3DJR3k (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 10 Apr 2013 13:29:40 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:16844 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965200Ab3DJR3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 13:29:37 -0400
 From: Toshi Kani <toshi.kani@hp.com>
 To: akpm@linux-foundation.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
@@ -14,9 +14,9 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
         isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
         tangchen@cn.fujitsu.com, jiang.liu@huawei.com,
         Toshi Kani <toshi.kani@hp.com>
-Subject: [PATCH v3 3/3] mm: Change __remove_pages() to call release_mem_region_adjustable()
-Date: Wed, 10 Apr 2013 11:17:01 -0600
-Message-Id: <1365614221-685-4-git-send-email-toshi.kani@hp.com>
+Subject: [PATCH v3 1/3] resource: Add __adjust_resource() for internal use
+Date: Wed, 10 Apr 2013 11:16:59 -0600
+Message-Id: <1365614221-685-2-git-send-email-toshi.kani@hp.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365614221-685-1-git-send-email-toshi.kani@hp.com>
 References: <1365614221-685-1-git-send-email-toshi.kani@hp.com>
@@ -24,53 +24,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed __remove_pages() to call release_mem_region_adjustable().
-This allows a requested memory range to be released from
-the iomem_resource table even if it does not match exactly to
-an resource entry but still fits into.  The resource entries
-initialized at bootup usually cover the whole contiguous
-memory ranges and may not necessarily match with the size of
-memory hot-delete requests.
-
-If release_mem_region_adjustable() failed, __remove_pages() emits
-a warning message and continues to proceed as it was the case
-with release_mem_region().  release_mem_region(), which is defined
-to __release_region(), emits a warning message and returns no error
-since a void function.
+Added __adjust_resource(), which is called by adjust_resource()
+internally after the resource_lock is held.  There is no interface
+change to adjust_resource().  This change allows other functions
+to call __adjust_resource() internally while the resource_lock is
+held.
 
 Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 Reviewed-by : Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Acked-by: David Rientjes <rientjes@google.com>
 ---
- mm/memory_hotplug.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ kernel/resource.c |   35 ++++++++++++++++++++++-------------
+ 1 file changed, 22 insertions(+), 13 deletions(-)
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 57decb2..c916582 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -705,8 +705,10 @@ EXPORT_SYMBOL_GPL(__add_pages);
- int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
- 		 unsigned long nr_pages)
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 73f35d4..ae246f9 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -706,24 +706,13 @@ void insert_resource_expand_to_fit(struct resource *root, struct resource *new)
+ 	write_unlock(&resource_lock);
+ }
+ 
+-/**
+- * adjust_resource - modify a resource's start and size
+- * @res: resource to modify
+- * @start: new start value
+- * @size: new size
+- *
+- * Given an existing resource, change its start and size to match the
+- * arguments.  Returns 0 on success, -EBUSY if it can't fit.
+- * Existing children of the resource are assumed to be immutable.
+- */
+-int adjust_resource(struct resource *res, resource_size_t start, resource_size_t size)
++static int __adjust_resource(struct resource *res, resource_size_t start,
++				resource_size_t size)
  {
--	unsigned long i, ret = 0;
-+	unsigned long i;
- 	int sections_to_remove;
-+	resource_size_t start, size;
-+	int ret = 0;
+ 	struct resource *tmp, *parent = res->parent;
+ 	resource_size_t end = start + size - 1;
+ 	int result = -EBUSY;
  
- 	/*
- 	 * We can only remove entire sections
-@@ -714,7 +716,12 @@ int __remove_pages(struct zone *zone, unsigned long phys_start_pfn,
- 	BUG_ON(phys_start_pfn & ~PAGE_SECTION_MASK);
- 	BUG_ON(nr_pages % PAGES_PER_SECTION);
+-	write_lock(&resource_lock);
+-
+ 	if (!parent)
+ 		goto skip;
  
--	release_mem_region(phys_start_pfn << PAGE_SHIFT, nr_pages * PAGE_SIZE);
-+	start = phys_start_pfn << PAGE_SHIFT;
-+	size = nr_pages * PAGE_SIZE;
-+	ret = release_mem_region_adjustable(&iomem_resource, start, size);
-+	if (ret)
-+		pr_warn("Unable to release resource <%016llx-%016llx> (%d)\n",
-+				start, start + size - 1, ret);
+@@ -751,6 +740,26 @@ skip:
+ 	result = 0;
  
- 	sections_to_remove = nr_pages / PAGES_PER_SECTION;
- 	for (i = 0; i < sections_to_remove; i++) {
+  out:
++	return result;
++}
++
++/**
++ * adjust_resource - modify a resource's start and size
++ * @res: resource to modify
++ * @start: new start value
++ * @size: new size
++ *
++ * Given an existing resource, change its start and size to match the
++ * arguments.  Returns 0 on success, -EBUSY if it can't fit.
++ * Existing children of the resource are assumed to be immutable.
++ */
++int adjust_resource(struct resource *res, resource_size_t start,
++			resource_size_t size)
++{
++	int result;
++
++	write_lock(&resource_lock);
++	result = __adjust_resource(res, start, size);
+ 	write_unlock(&resource_lock);
+ 	return result;
+ }
