@@ -1,80 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937058Ab3DJJmj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 05:42:39 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:56730 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933036Ab3DJJmi convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:15:1>);
-	Wed, 10 Apr 2013 05:42:38 -0400
-Message-Id: <5165502902000078000CC022@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 10 Apr 2013 10:42:33 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Borislav Petkov" <borislav.petkov@amd.com>,
-        "Kees Cook" <keescook@chromium.org>, "Will Drewry" <wad@chromium.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Steven Rostedt" <rostedt@goodmis.org>,
-        "Eric Northup" <digitaleric@google.com>,
-        "Julien Tinnes" <jln@google.com>,
-        "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "Alex Shi" <alex.shi@intel.com>,
-        "Alexander Duyck" <alexander.h.duyck@intel.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Ingo Molnar" <mingo@redhat.com>,
-        "Marcelo Tosatti" <mtosatti@redhat.com>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Dan Rosenberg" <drosenberg@vsecurity.com>
-Subject: Re: [Xen-devel] Readonly GDT
-References: <20130408224328.GA17641@www.outflux.net>
- <51634935.9010905@zytor.com> <alpine.LFD.2.02.1304091122490.21884@ionos>
- <CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com>
- <51645D6F.7070705@zytor.com>
- <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>
- <51646054.3090509@zytor.com>
- <CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com>
- <CAG7+5M3==rndLLak9cZBKKdgQMmJMpSP_jpQd8HOVGp6LhUAgw@mail.gmail.com>
- <5164B5BD.5050702@zytor.com>
-In-Reply-To: <5164B5BD.5050702@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S936390Ab3DJJoH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 05:44:07 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55268 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758441Ab3DJJoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 05:44:03 -0400
+Message-ID: <51653450.2010200@ti.com>
+Date: Wed, 10 Apr 2013 15:13:44 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+CC: Kevin Hilman <khilman@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Balbi, Felipe" <balbi@ti.com>, "Nayak, Rajendra" <rnayak@ti.com>
+Subject: Re: [PATCHv3] driver: serial: prevent UART console idle on suspend
+ while using "no_console_suspend"
+References: <1365167733-28083-1-git-send-email-sourav.poddar@ti.com>	<87mwtclvua.fsf@linaro.org> <516463D2.2070008@ti.com> <87obdnh6au.fsf@linaro.org> <516501A0.4000004@ti.com> <B5906170F1614E41A8A28DE3B8D121433ED96446@DBDE01.ent.ti.com>
+In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433ED96446@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 10.04.13 at 02:43, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> OK, thinking about the GDT here.
-> 
-> The GDT is quite small -- 256 bytes on i386, 128 bytes on x86-64.  As
-> such, we probably don't want to allocate a full page to it for only
-> that.  This means that in order to create a readonly mapping we have to
-> pack GDTs from different CPUs together in the same pages, *or* we
-> tolerate that other things on the same page gets reflected in the same
-> mapping.
+Hi Vaibhav,
+On Wednesday 10 April 2013 11:49 AM, Bedia, Vaibhav wrote:
+> Hi Sourav, Kevin,
+>
+> On Wed, Apr 10, 2013 at 11:37:28, Poddar, Sourav wrote:
+>> Hi,
+>> On Wednesday 10 April 2013 12:37 AM, Kevin Hilman wrote:
+>>> Sourav Poddar<sourav.poddar@ti.com>   writes:
+>>>
+>>>> Hi Kevin,
+>>>> On Friday 05 April 2013 11:10 PM, Kevin Hilman wrote:
+>>>>> Sourav Poddar<sourav.poddar@ti.com>    writes:
+>>>>>
+>>>>>> With dt boot, uart wakeup after suspend is non functional while using
+>>>>>> "no_console_suspend" in the bootargs. With "no_console_suspend" used, we
+>>>>>> should prevent the runtime suspend of the uart port which is getting used
+>>>>>> as an console.
+>>>>>>
+>>>>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>>>>>> Cc: Felipe Balbi<balbi@ti.com>
+>>>>>> Cc: Rajendra nayak<rnayak@ti.com>
+>>>>>> Tested on omap5430evm, omap4430sdp.
+>>>>>>
+>>>>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+>>>>> Rather than make these special checks inside the driver's runtime PM
+>>>>> callbacks, you should just disable runtime PM (pm_runtime_disable())
+>>>>>
+>>>>> Then, this should be broken into 2 patches.
+>>>>>
+>>>>> 1) serial core: add the '->is_console' flag.  (nit on naming: don't call
+>>>>>       it port_is_console, since the struct is already a uart_port)
+>>>>>
+>>>>> 2) In the OMAP UART driver's ->prepare callback, check the is_console flag
+>>>>>       and pm_runtime_disable() accordingly  (then pm_runtime_enable() in
+>>>>>       the drivers's ->complete callback.
+>>>>>
+>>>>> Kevin
+>>>> I was working on your above suggestions, but realised there is not
+>>>> only console
+>>>> uart which has the requirement of keeping the clocks enabled while going on
+>>>> suspend.
+>>>>
+>>>> If you see arch/arm/boot/dts/am33xx.dtsi, there is a ocmcram which has
+>>>> "no_idle_on_suspend" property used.
+>>> Can you please ask the AM33xx folks how (and why) this is being used?
+>>>
+>>> I don't see/find a driver for this device in mainline, so without a
+>>> driver this flag will not be used.
+>>>
+>> Looping in Vaibhav Bedia for ocmcram..
+>>
+>> [Vaibhav]:
+>>     There is a discussion going on about a cleaner way of handling
+>>     ti, no_idle_on_suspend" part (as this is a sort of hack). We got a way
+>>     around for UART ($subject) by making serial core/driver handle this
+>> for us.
+>>     But with this, we will delete codes around "no_idle_on_suspend" flag in
+>>     omap_device file.
+>>
+>>     But, we realised that its not only UART which requires the clocks to
+>> be active
+>>     whie going for suspend. There is a dts entry for ocmcram also.
+>>
+>>     As Kevin also pointed out, we don't see a driver for this device in
+>> mainline, It would be
+>>     great if you can explain how its getting used?
+>>
+>>     You can find the complete discussion on v3 here:
+>>        https://lkml.org/lkml/2013/4/5/239
+>>
+> The flag in question is used to ensure that the clock to OCMC RAM is not
+> disabled by the PM code.
+>
+>  From the changelog which added this flag:
+>
+> "Note: OCMC RAM is part of the PER power domain and supports
+>   retention. The assembly code for low power entry/exit will
+>   run from OCMC RAM. To ensure that the OMAP PM code does not
+>   attempt to disable the clock to OCMC RAM as part of the
+>   suspend process add the no_idle_on_suspend flag."
+>
+> We had discussed about the usage of this flag in the RFC version
+> of the patch [1].
+>
+Yes, had a look at that and found your situation similar to UART.
 
-I think a read-only GDT is incompatible with exceptions delivered
-through task gates (i.e. double fault on 32-bit), so I would assume
-this needs to remain a 64-bit only thing.
-
-> However, the packing solution has the advantage of reducing address
-> space consumption which matters on 32 bits: even on i386 we can easily
-> burn a megabyte of address space for 4096 processors, but burning 16
-> megabytes starts to hurt.
-
-Packing would have the additional benefit of Xen not needing to
-become a special case in yet another area (because pages
-containing live descriptor table entries need to be read-only for
-PV guests, and need to consist of only descriptor table entries).
-
-Jan
+But how exactly this gets used, I mean I don't  see any drivers/ in mainline
+making use of this compatible string  "ti,am3352-ocmcram".  ?
+> Regards,
+> Vaibhav
+>
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2012-November/129510.html
 
