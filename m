@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936425Ab3DJSIN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 14:08:13 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:65194 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760271Ab3DJSIL (ORCPT
+	id S936708Ab3DJSKM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 14:10:12 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:37316 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765431Ab3DJSKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 14:08:11 -0400
-Date: Wed, 10 Apr 2013 11:08:06 -0700
-From: Tejun Heo <tj@kernel.org>
-To: mingo@redhat.com
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, acme@ghostprotocols.net,
-        eranian@google.com, namhyung.kim@lge.com, lizefan@huawei.com,
-        mhocko@suse.cz, kamezawa.hiroyu@jp.fujitsu.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] perf, cgroup: implement hierarchy support for
- perf_event controller
-Message-ID: <20130410180806.GC17641@mtj.dyndns.org>
-References: <1365474213-13354-1-git-send-email-tj@kernel.org>
+	Wed, 10 Apr 2013 14:10:10 -0400
+Message-ID: <5165AB00.2000605@candelatech.com>
+Date: Wed, 10 Apr 2013 11:10:08 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365474213-13354-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: linux-wireless <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: Jitter and latency benchmarks with netlink / nl80211
+References: <CAB=NE6XH8wGbFhmB54Y0BUB2N-PbzUBvN+arH5F_BAkEa=DjUw@mail.gmail.com> <5165A874.50804@candelatech.com> <CAB=NE6U_0E+y8jc_0O3+9pmUyLXX9CuSMYMMWk__4Q8-+-AHTg@mail.gmail.com>
+In-Reply-To: <CAB=NE6U_0E+y8jc_0O3+9pmUyLXX9CuSMYMMWk__4Q8-+-AHTg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 07:23:30PM -0700, Tejun Heo wrote:
-> perf_event cgroup controller is one of the remaining few with broken
-> hierarchy support.  It turns out it's pretty easy to implement - the
-> only thing necessary is making perf_cgroup_match() return %true also
-> when the cgroup of the current task is a descendant of the event's
-> cgroup.  This patchset implements cgroup_is_descendant() and uses it
-> to implement hierarchy support in perf_event controller.
+On 04/10/2013 11:05 AM, Luis R. Rodriguez wrote:
+> On Wed, Apr 10, 2013 at 10:59 AM, Ben Greear <greearb@candelatech.com> wrote:
+>> On 04/10/2013 10:55 AM, Luis R. Rodriguez wrote:
+>>>
+>>> Curious if anyone has worked on latency and jitter benchmarks in using
+>>> netlink, specifically with nl80211. Has anyone benchmarked this? Ben,
+>>> have you? If not for nl80211 perhaps this has been done before for
+>>> other netlink families?
+>>
+>>
+>> You mean timing related to netlink configuration/report requests?
+>
+> Yes.
 
-Applied to cgroup/for-3.10.
+No, I haven't bothered to do this...  The way we use netlink is
+mostly asynchronous..ie we just listen for events and process them
+as they come in.  Most of our configuration would be driven through 'iw',
+'wpa_supplicant', 'ip', etc, and much of our stats gathering is through
+the ethool get-stats API.
 
-Thanks.
+I would imagine any latency would be highly dependent on other applications
+taking RTNL (for instance, creating/deleting lots of virtual stations,
+mac-vlans, ip-address changes, etc).
+
+Thanks,
+Ben
 
 -- 
-tejun
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
