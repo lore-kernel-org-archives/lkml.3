@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935970Ab3DJB5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 21:57:19 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:47076 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935423Ab3DJB5S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 21:57:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <1365547416-z92y6qa9-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1363983835-20184-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1363983835-20184-10-git-send-email-n-horiguchi@ah.jp.nec.com>
- <515F68BB.3010601@gmail.com> <1365538036-pu7x5mck-mutt-n-horiguchi@ah.jp.nec.com>
- <CAHGf_=o+GQ9PJy=rkO1zxhd81NpyTvDQA7phN8StX2+EQ+ZE=g@mail.gmail.com> <1365547416-z92y6qa9-mutt-n-horiguchi@ah.jp.nec.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 9 Apr 2013 21:56:58 -0400
-Message-ID: <CAHGf_=oL7dORGCJZtLxrwc9cGgrakAsfAOJ4xx659nDmQd=rcw@mail.gmail.com>
-Subject: Re: [PATCH 09/10] memory-hotplug: enable memory hotplug to handle hugepage
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Hillf Danton <dhillf@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S935724Ab3DJCG7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 22:06:59 -0400
+Received: from mga01.intel.com ([192.55.52.88]:28950 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762266Ab3DJCG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 22:06:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,441,1363158000"; 
+   d="scan'208";a="316937046"
+Message-ID: <1365559613.2183.7.camel@rzhang1-mobl4>
+Subject: Re: [PATCH] thermal: exynos: fix handling of invalid frequency
+ table entries
+From: Zhang Rui <rui.zhang@intel.com>
+To: Andrew Bresticker <abrestic@chromium.org>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Date: Wed, 10 Apr 2013 10:06:53 +0800
+In-Reply-To: <1365544758-15245-1-git-send-email-abrestic@chromium.org>
+References: <1365544758-15245-1-git-send-email-abrestic@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 6:43 PM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> On Tue, Apr 09, 2013 at 05:27:44PM -0400, KOSAKI Motohiro wrote:
->> >> numa_node_id() is really silly. This might lead to allocate from offlining node.
->> >
->> > Right, it should've been alloc_huge_page().
->> >
->> >> and, offline_pages() should mark hstate as isolated likes normal pages for prohibiting
->> >> new allocation at first.
->> >
->> > It seems that alloc_migrate_target() calls alloc_page() for normal pages
->> > and the destination pages can be in the same node with the source pages
->> > (new page allocation from the same memblock are prohibited.)
->>
->> No. It can't. memory hotplug change buddy attribute to MIGRATE_ISOLTE at first.
->> then alloc_page() never allocate from source node. however huge page don't use
->> buddy. then we need another trick.
->
-> MIGRATE_ISOLTE is changed only within the range [start_pfn, end_pfn)
-> given as the argument of __offline_pages (see also start_isolate_page_range),
-> so it's set only for pages within the single memblock to be offlined.
+Hi, Andrew,
 
-When partial memory hot remove, that's correct behavior. different
-node is not required.
+can you please verify
+commit 	fc35b35cbe24ef021ea9acfba21e54da958df747
+commit 57df8106932b57427df1eaaa13871857f75b1194
+at
+http://git.kernel.org/cgit/linux/kernel/git/rzhang/linux.git/log/?h=thermal
+fixes the problem for you?
+
+thanks,
+rui 
+    
+On Tue, 2013-04-09 at 14:59 -0700, Andrew Bresticker wrote:
+> Similar to the error described in "thermal: cpu_cooling: fix handling
+> of invalid frequency table entries," exynos_get_frequency_level() will
+> enter an infinite loop if any CPU frequency table entries are invalid.
+> This patch fixes the handling of invalid frequency entries so that
+> there is no infinite loop and the correct level is returned.
+> 
+> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> ---
+>  drivers/thermal/exynos_thermal.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+> index d5e6267..524b2a0 100644
+> --- a/drivers/thermal/exynos_thermal.c
+> +++ b/drivers/thermal/exynos_thermal.c
+> @@ -237,7 +237,7 @@ static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
+>  
+>  static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
+>  {
+> -	int i = 0, ret = -EINVAL;
+> +	int i, level = 0, ret = -EINVAL;
+>  	struct cpufreq_frequency_table *table = NULL;
+>  #ifdef CONFIG_CPU_FREQ
+>  	table = cpufreq_frequency_get_table(cpu);
+> @@ -245,12 +245,12 @@ static int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
+>  	if (!table)
+>  		return ret;
+>  
+> -	while (table[i].frequency != CPUFREQ_TABLE_END) {
+> +	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+>  		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+>  			continue;
+>  		if (table[i].frequency == freq)
+> -			return i;
+> -		i++;
+> +			return level;
+> +		level++;
+>  	}
+>  	return ret;
+>  }
 
 
-> BTW, in previous discussion I already agreed with checking migrate type
-> in hugepage allocation code (maybe it will be in dequeue_huge_page_vma(),)
-> so what you concern should be solved in the next post.
-
-Umm.. Maybe I missed such discussion. Do you have a pointer?
-
-
->> > So if we want to avoid new page allocation from the same node,
->> > this is the problem both for normal and huge pages.
->> >
->> > BTW, is it correct to think that all users of memory hotplug assume
->> > that they want to hotplug a whole node (not the part of it?)
->>
->> Both are valid use case. admin can isolate a part of memory for isolating
->> broken memory range.
->>
->> but I'm sure almost user want to remove whole node.
->
-> OK. So I think about "allocation in the nearest neighbor node",
-> although it can be in separate patch if it's hard to implement.
-
-That's fine.
