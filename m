@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab3DJF1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 01:27:31 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43748 "EHLO arroyo.ext.ti.com"
+	id S1752473Ab3DJF2L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 01:28:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20552 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752102Ab3DJF13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 01:27:29 -0400
-Message-ID: <5164F82D.3090501@ti.com>
-Date: Wed, 10 Apr 2013 10:57:09 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1752372Ab3DJF2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 01:28:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,444,1363158000"; 
+   d="scan'208";a="315793878"
+Message-ID: <5164F84D.6020202@intel.com>
+Date: Wed, 10 Apr 2013 13:27:41 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>, <khilman@linaro.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-serial@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: Re: [PATCHv3] driver: serial: prevent UART console idle on suspend
- while using "no_console_suspend"
-References: <1365167733-28083-1-git-send-email-sourav.poddar@ti.com> <20130408171432.GY30923@n2100.arm.linux.org.uk>
-In-Reply-To: <20130408171432.GY30923@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: wake-affine throttle
+References: <5164DCE7.8080906@linux.vnet.ibm.com> <5164E7A0.80408@intel.com> <5164F47D.6060006@linux.vnet.ibm.com>
+In-Reply-To: <5164F47D.6060006@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
-On Monday 08 April 2013 10:44 PM, Russell King - ARM Linux wrote:
-> On Fri, Apr 05, 2013 at 06:45:33PM +0530, Sourav Poddar wrote:
->> With dt boot, uart wakeup after suspend is non functional while using
->> "no_console_suspend" in the bootargs. With "no_console_suspend" used, we
->> should prevent the runtime suspend of the uart port which is getting used
->> as an console.
->>
->> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
->> Cc: Felipe Balbi<balbi@ti.com>
->> Cc: Rajendra nayak<rnayak@ti.com>
->> Tested on omap5430evm, omap4430sdp.
->>
->> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
->> ---
->> v2->v3
->> Based on Kevin Hilman and Santosh Shilimkar comments, modified
->> serial core/driver layer to bypass runtime suspend
->> for console uart while using "no_console_suspend".
->>
->> This patch is based on Santosh Shilimkar serial patch[1]
-> Rather than introducing this "port_is_console" thing, please move
-> uart_console() into the serial_core.h header file, making it an inline
-> function, and use that in omap-serial.c.
->
-> Remember to fix drivers/tty/serial/mpc52xx_uart.c as well for that change.
-Thanks for the pointer. Will take care of your suggestions
-in the next version.
+On 04/10/2013 01:11 PM, Michael Wang wrote:
+>> > BTW, could you try the kbulid, hackbench and aim for this?
+> Sure, the patch has already been tested with aim7, also the hackbench,
+> kbench, and ebizzy, no notable changes on my box with the default 1ms
+> interval.
 
-~Sourav
+That's fine.
+
+-- 
+Thanks Alex
