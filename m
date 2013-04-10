@@ -1,278 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936960Ab3DJKpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:45:21 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:56106 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586Ab3DJKpU (ORCPT
+	id S937011Ab3DJKr3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:47:29 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:35451 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936446Ab3DJKr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:45:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130410113854.31734308@amdc308.digital.local>
-References: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com>
-	<CAOh2x=nPJa0GReiN=OHLG=m4Gq51F=4VppdaQL20xi-aUa8x2Q@mail.gmail.com>
-	<20130409123719.7399d5ad@amdc308.digital.local>
-	<CAKohpomL-mdx6DdFiGwJzDSeWr6Gw-_F4T-D-Jz9TNH5MSgjbw@mail.gmail.com>
-	<20130409184440.4cd87c1b@amdc308.digital.local>
-	<CAKfTPtD6MK9ogq7mOijSxLSsH0n65Xra48XfRSB3DFs35GT=2g@mail.gmail.com>
-	<20130410104452.661902af@amdc308.digital.local>
-	<CAKfTPtDOG94CU=y9oohuJA-bqGpNFehTnebcvTcnQf5iYjwJTA@mail.gmail.com>
-	<20130410113854.31734308@amdc308.digital.local>
-Date: Wed, 10 Apr 2013 12:45:17 +0200
-Message-ID: <CAKfTPtB7yk7Qi3GCJnAjCXGgiSWsAS1mycnO_ap6WFtne+yX3g@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/2] cpufreq: Introduce LAB cpufreq governor.
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>,
-        sanjay rawat <sanjay.rawat@linaro.org>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 10 Apr 2013 06:47:28 -0400
+Subject: Re: [PATCH v3] X.509: Support parse long form of length octets in
+ Authority Key Identifier
+From: joeyli <jlee@suse.com>
+To: dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, rusty@rustcorp.com.au
+In-Reply-To: <1364547153-1416-1-git-send-email-jlee@suse.com>
+References: <1364547153-1416-1-git-send-email-jlee@suse.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Apr 2013 18:46:33 +0800
+Message-ID: <1365590793.14856.52.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 April 2013 11:38, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> Hi Vincent,
->
->> On 10 April 2013 10:44, Lukasz Majewski <l.majewski@samsung.com>
->> wrote:
->> > Hi Vincent,
->> >
->> >>
->> >>
->> >> On Tuesday, 9 April 2013, Lukasz Majewski <l.majewski@samsung.com>
->> >> wrote:
->> >> > Hi Viresh and Vincent,
->> >> >
->> >> >> On 9 April 2013 16:07, Lukasz Majewski <l.majewski@samsung.com>
->> >> >> wrote:
->> >> >> >> On Mon, Apr 1, 2013 at 1:54 PM, Jonghwa Lee
->> >> >> > Our approach is a bit different than cpufreq_ondemand one.
->> >> >> > Ondemand takes the per CPU idle time, then on that basis
->> >> >> > calculates per cpu load. The next step is to choose the
->> >> >> > highest load and then use this value to properly scale
->> >> >> > frequency.
->> >> >> >
->> >> >> > On the other hand LAB tries to model different behavior:
->> >> >> >
->> >> >> > As a first step we applied Vincent Guittot's "pack small
->> >> >> > tasks" [*] patch to improve "race to idle" behavior:
->> >> >> > http://article.gmane.org/gmane.linux.kernel/1371435/match=sched+pack+small+tasks
->> >> >>
->> >> >> Luckily he is part of my team :)
->> >> >>
->> >> >> http://www.linaro.org/linux-on-arm/meet-the-team/power-management
->> >> >>
->> >> >> BTW, he is using ondemand governor for all his work.
->> >> >>
->> >> >> > Afterwards, we decided to investigate different approach for
->> >> >> > power governing:
->> >> >> >
->> >> >> > Use the number of sleeping CPUs (not the maximal per-CPU
->> >> >> > load) to change frequency. We thereof depend on [*] to "pack"
->> >> >> > as many tasks to CPU as possible and allow other to sleep.
->> >> >>
->> >> >> He packs only small tasks.
->> >> >
->> >> > What's about packing not only small tasks? I will investigate the
->> >> > possibility to aggressively pack (even with a cost of performance
->> >> > degradation) as many tasks as possible to a single CPU.
->> >>
->> >> Hi Lukasz,
->> >>
->> >> I've got same comment on my current patch and I'm preparing a new
->> >> version that can pack tasks more agressively based on the same
->> >> buddy mecanism. This will be done at the cost of performance of
->> >> course.
->> >
->> > Can you share your development tree?
->>
->> The dev is not finished yet but i will share it as soon as possible
->
-> Ok
->
->>
->> >
->> >>
->> >>
->> >> >
->> >> > It seems a good idea for a power consumption reduction.
->> >>
->> >> In fact, it's not always true and depends several inputs like the
->> >> number of tasks that run simultaneously
->> >
->> > In my understanding, we can try to couple (affine) maximal number of
->> > task with a CPU. Performance shall decrease, but we will avoid
->> > costs of tasks migration.
->> >
->> > If I remember correctly, I've asked you about some testbench/test
->> > program for scheduler evaluation. I assume that nothing has changed
->> > and there isn't any "common" set of scheduler tests?
->>
->> There are a bunch of bench that are used to evaluate scheduler like
->> hackbench, pgbench but they generally fills all CPU in order to test
->> max performance. Are you looking for such kind of bench ?
->
-> I'd rather see a bit different set of tests - something similar to
-> "cyclic" tests for PREEMPT_RT patch.
->
-> For sched work it would be welcome to spawn a lot of processes with
-> different duration and workload. And on this basis observe if e.g. 2 or
-> 3 processors are idle.
+Hi David, 
 
-sanjay is working on something like that:
-https://git.linaro.org/gitweb?p=people/sanjayrawat/cyclicTest.git;a=shortlog;h=refs/heads/master
+Sorry for bother you!
 
->
->>
->> >
->> >>
->> >> >
->> >> >> And if there are many small tasks we are
->> >> >> packing, then load must be high and so ondemand gov will
->> >> >> increase freq.
->> >> >
->> >> > This is of course true for "packing" all tasks to a single CPU.
->> >> > If we stay at the power consumption envelope, we can even
->> >> > overclock the frequency.
->> >> >
->> >> > But what if other - lets say 3 CPUs - are under heavy workload?
->> >> > Ondemand will switch frequency to maximum, and as Jonghwa pointed
->> >> > out this can cause dangerous temperature increase.
->> >>
->> >> IIUC, your main concern is to stay in a power consumption budget to
->> >> not over heat and have to face the side effect of high temperature
->> >> like a decrease of power efficiency. So your governor modifies the
->> >> max frequency based on the number of running/idle CPU
->> > Yes, this is correct.
->> >
->> >> to have an
->> >> almost stable power consumtpion ?
->> >
->> > From our observation it seems, that for 3 or 4 running CPUs under
->> > heavy load we see much more power consumption reduction.
->>
->> That's logic because you will reduce the voltage
->>
->> >
->> > To put it in another way - ondemand would increase frequency to max
->> > for all 4 CPUs. On the other hand, if user experience drops to the
->> > acceptable level we can reduce power consumption.
->> >
->> > Reducing frequency and CPU voltage (by DVS) causes as a side effect,
->> > that temperature stays at acceptable level.
->> >
->> >>
->> >> Have you also looked at the power clamp driver that have similar
->> >> target ?
->> >
->> > I might be wrong here, but in my opinion the power clamp driver is
->> > a bit different:
->>
->> yes, it periodically forces the cluster in a low power state
->>
->> >
->> > 1. It is dedicated to Intel SoCs, which provide special set of
->> > registers (i.e. MSR_PKG_Cx_RESIDENCY [*]), which forces a processor
->> > to enter certain C state for a given duration. Idle duration is
->> > calculated by per CPU set of high priority kthreads (which also
->> > program [*] registers).
->>
->> IIRC, a trial on ARM platform have been done by lorenzo and daniel.
->> Lorenzo, Daniel, have you more information ?
->
-> More information would be welcome :-)
->
->>
->> >
->> > 2. ARM SoCs don't have such infrastructure, so we depend on SW here.
->> > Scheduler has to remove tasks from a particular CPU and "execute" on
->> > it the idle_task.
->> > Moreover at Exynos4 thermal control loop depends on SW, since we can
->> > only read SoC temperature via TMU (Thermal Management Unit) block.
->>
->> The idle duration is quite small and should not perturb normal
->> behavior
->
-> What do you mean by "small idle duration"? You think about exact time
-> needed to enter idle state (ARM's WFI) or the time in which CPU is idle.
+Will you take this patch for merge to v3.10 kernel?
 
-The time in which CPUs are idle
 
-Vincent
+Thanks a lot!
+Joey Lee
 
->
->>
->> Vincent
->> >
->> >
->> > Correct me again, but it seems to me that on ARM we can use CPU
->> > hotplug (which as Tomas Glexner stated recently is going to be
->> > "refactored" :-) ) or "ask" scheduler to use smallest possible
->> > number of CPUs and enter C state for idling CPUs.
->> >
->> >
->> >
->> >>
->> >>
->> >> Vincent
->> >>
->> >> >
->> >> >>
->> >> >> > Contrary, when all cores are heavily loaded, we decided to
->> >> >> > reduce frequency by around 30%. With this approach user
->> >> >> > experience recution is still acceptable (with much less power
->> >> >> > consumption).
->> >> >>
->> >> >> Don't know.. running many cpus at lower freq for long duration
->> >> >> will probably take more power than running them at high freq
->> >> >> for short duration and making system idle again.
->> >> >>
->> >> >> > We have posted this "RFC" patch mainly for discussion, and I
->> >> >> > think it fits its purpose :-).
->> >> >>
->> >> >> Yes, no issues with your RFC idea.. its perfect..
->> >> >>
->> >> >> @Vincent: Can you please follow this thread a bit and tell us
->> >> >> what your views are?
->> >> >>
->> >> >> --
->> >> >> viresh
->> >> >
->> >> >
->> >> >
->> >> > --
->> >> > Best regards,
->> >> >
->> >> > Lukasz Majewski
->> >> >
->> >> > Samsung R&D Poland (SRPOL) | Linux Platform Group
->> >> >
->> >
->> >
->> > --
->> > Best regards,
->> >
->> > Lukasz Majewski
->> >
->> > Samsung R&D Poland (SRPOL) | Linux Platform Group
->
->
->
-> --
-> Best regards,
->
-> Lukasz Majewski
->
-> Samsung R&D Poland (SRPOL) | Linux Platform Group
+於 五，2013-03-29 於 16:52 +0800，Lee, Chun-Yi 提到：
+> From: Chun-Yi Lee <jlee@suse.com>
+> 
+> Per X.509 spec in 4.2.1.1 section, the structure of Authority Key
+> Identifier Extension is:
+> 
+>    AuthorityKeyIdentifier ::= SEQUENCE {
+>       keyIdentifier             [0] KeyIdentifier           OPTIONAL,
+>       authorityCertIssuer       [1] GeneralNames            OPTIONAL,
+>       authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL  }
+> 
+>    KeyIdentifier ::= OCTET STRING
+> 
+> When a certificate also provides
+> authorityCertIssuer and authorityCertSerialNumber then the length of
+> AuthorityKeyIdentifier SEQUENCE is likely to long form format.
+> e.g.
+>    The example certificate demos/tunala/A-server.pem in openssl source:
+> 
+> X509v3 Authority Key Identifier:
+>     keyid:49:FB:45:72:12:C4:CC:E1:45:A1:D3:08:9E:95:C4:2C:6D:55:3F:17
+>     DirName:/C=NZ/L=Wellington/O=Really Irresponsible Authorisation Authority (RIAA)/OU=Cert-stamping/CN=Jackov al-Trades/emailAddress=none@fake.domain
+>     serial:00
+> 
+> Current parsing rule of OID_authorityKeyIdentifier only take care the
+> short form format, it causes load certificate to modsign_keyring fail:
+> 
+> [   12.061147] X.509: Extension: 47
+> [   12.075121] MODSIGN: Problem loading in-kernel X.509 certificate (-74)
+> 
+> So, this patch add the parsing rule for support long form format against
+> Authority Key Identifier.
+> 
+> v3:
+> Changed the size check in "Short Form length" case, we allow v[3] smaller
+> then (vlen - 4) because authorityCertIssuer and authorityCertSerialNumber
+> are also possible attach in AuthorityKeyIdentifier sequence.
+> 
+> v2:
+>  - Removed comma from author's name.
+>  - Moved 'Short Form length' comment inside the if-body.
+>  - Changed the type of sub to size_t.
+>  - Use ASN1_INDEFINITE_LENGTH rather than writing 0x80 and 127.
+>  - Moved the key_len's value assignment before alter v.
+>  - Fixed the typo of octets.
+>  - Add 2 to v before entering the loop for calculate the length.
+>  - Removed the comment of check vlen.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Josh Boyer <jwboyer@redhat.com>
+> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Acked-by: David Howells <dhowells@redhat.com>
+> Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+> ---
+>  crypto/asymmetric_keys/x509_cert_parser.c |   55 ++++++++++++++++++++++++----
+>  1 files changed, 47 insertions(+), 8 deletions(-)
+> 
+> diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
+> index 7fabc4c..59ab6d2 100644
+> --- a/crypto/asymmetric_keys/x509_cert_parser.c
+> +++ b/crypto/asymmetric_keys/x509_cert_parser.c
+> @@ -373,6 +373,9 @@ int rsa_extract_mpi(void *context, size_t hdrlen,
+>  	return 0;
+>  }
+>  
+> +/* The keyIdentifier in AuthorityKeyIdentifier SEQUENCE is tag(CONT,PRIM,0) */
+> +#define SEQ_TAG_KEYID (ASN1_CONT << 6)
+> +
+>  /*
+>   * Process certificate extensions that are used to qualify the certificate.
+>   */
+> @@ -407,21 +410,57 @@ int x509_process_extension(void *context, size_t hdrlen,
+>  	}
+>  
+>  	if (ctx->last_oid == OID_authorityKeyIdentifier) {
+> +		size_t key_len;
+> +
+>  		/* Get hold of the CA key fingerprint */
+>  		if (vlen < 5)
+>  			return -EBADMSG;
+> -		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)) ||
+> -		    v[1] != vlen - 2 ||
+> -		    v[2] != (ASN1_CONT << 6) ||
+> -		    v[3] != vlen - 4)
+> +
+> +		/* Authority Key Identifier must be a Constructed SEQUENCE */
+> +		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)))
+>  			return -EBADMSG;
+> -		v += 4;
+> -		vlen -= 4;
+>  
+> -		f = kmalloc(vlen * 2 + 1, GFP_KERNEL);
+> +		/* Authority Key Identifier is not indefinite length */
+> +		if (unlikely(vlen == ASN1_INDEFINITE_LENGTH))
+> +			return -EBADMSG;
+> +
+> +		if (vlen < ASN1_INDEFINITE_LENGTH) {
+> +			/* Short Form length */
+> +			if (v[1] != vlen - 2 ||
+> +			    v[2] != SEQ_TAG_KEYID ||
+> +			    v[3] > vlen - 4)
+> +				return -EBADMSG;
+> +
+> +			key_len = v[3];
+> +			v += 4;
+> +		} else {
+> +			/* Long Form length */
+> +			size_t seq_len = 0;
+> +			size_t sub = v[1] - ASN1_INDEFINITE_LENGTH;
+> +
+> +			if (sub > 2)
+> +				return -EBADMSG;
+> +
+> +			/* calculate the length from subsequent octets */
+> +			v += 2;
+> +			for (i = 0; i < sub; i++) {
+> +				seq_len <<= 8;
+> +				seq_len |= v[i];
+> +			}
+> +
+> +			if (seq_len != vlen - 2 - sub ||
+> +			    v[sub] != SEQ_TAG_KEYID ||
+> +			    v[sub + 1] > vlen - 4 - sub)
+> +				return -EBADMSG;
+> +
+> +			key_len = v[sub + 1];
+> +			v += (sub + 2);
+> +		}
+> +
+> +		f = kmalloc(key_len * 2 + 1, GFP_KERNEL);
+>  		if (!f)
+>  			return -ENOMEM;
+> -		for (i = 0; i < vlen; i++)
+> +		for (i = 0; i < key_len; i++)
+>  			sprintf(f + i * 2, "%02x", v[i]);
+>  		pr_debug("authority   %s\n", f);
+>  		ctx->cert->authority = f;
+
+
