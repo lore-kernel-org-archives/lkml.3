@@ -1,205 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987Ab3DJVS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 17:18:27 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:60283 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759399Ab3DJVSZ (ORCPT
+	id S935160Ab3DJVTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 17:19:38 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:36762 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762176Ab3DJVTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 17:18:25 -0400
-Date: Wed, 10 Apr 2013 14:18:17 -0700
-From: Tejun Heo <tj@kernel.org>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org
-Cc: rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
-        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
-        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
-        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
-        jonas@southpole.se, rkuo@codeaurora.org, schwidefsky@de.ibm.com,
-        liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
-        vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
-        ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com
-Subject: [PATCH UPDATED v2 1/7] x86: don't show trace into stacktrace
- machinery
-Message-ID: <20130410211817.GH17641@mtj.dyndns.org>
-References: <1365016497-32033-1-git-send-email-tj@kernel.org>
- <1365016497-32033-2-git-send-email-tj@kernel.org>
+	Wed, 10 Apr 2013 17:19:36 -0400
+Date: Wed, 10 Apr 2013 17:19:33 -0400 (EDT)
+From: Eric Paris <eparis@redhat.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Message-ID: <2119919725.12278128.1365628773876.JavaMail.root@redhat.com>
+In-Reply-To: <51653C7A.6030405@asianux.com>
+References: <51653645.90401@asianux.com> <51653C7A.6030405@asianux.com>
+Subject: Re: [PATCH] kernel: auditfilter: looping issue, memory leak if has
+ 2 or more AUDIT_FILTERKEYs
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365016497-32033-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF20 (Linux)/8.0.3_GA_5664)
+Thread-Topic: kernel: auditfilter: looping issue, memory leak if has 2 or more AUDIT_FILTERKEYs
+Thread-Index: ebZgkmbTD6XhkQheVQ+96n7yrHv23A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From d2a454b1b1b93e8a8ecc3639f6641b100dbddfe5 Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Wed, 10 Apr 2013 14:16:51 -0700
+----- Original Message -----
 
-When dumping stacktrace, frames of the stacktrace code itself aren't
-interesting.  Implement dump_trace_current_frame() helper which can be
-used by (eventual) users of dump_trace() to determine the stack and
-frame pointers of the current frame so that frames beyond that point
-are ignored by dump_trace().
+>   b. has an new issue for AUDIT_DIR:
+>        after AUDIT_DIR succeed, it will set rule->tree.
+>        next, the other case fail, then will call audit_free_rule.
+>        but audit_free_rule will not free rule->tree.
 
-show_stack() and save_stack_trace[_tsk]() are updated to use the
-helper and now ignore frames beyond their own.  This brings
-show_stack(NULL, NULL)'s behavior in line with dump_stack().
+Definitely a couple of leaks here...
 
-Also add dump_trace_warn_current_frame() which is used by dump_trace()
-implementations to whine about callers which dump %current but don't
-specify the frame to dump to catch mistakes.
+I'm seeing leaks on size 8, 64, and 128.
 
-The original patch just updated show_stack().  Applying it to other
-users and addition of warning are suggested by Ingo.
-
-v2: Removed double negation in the warning message as suggested by
-    Borislav.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
----
- arch/x86/include/asm/stacktrace.h | 35 +++++++++++++++++++++++++++++++++++
- arch/x86/kernel/dumpstack.c       | 11 ++++++++++-
- arch/x86/kernel/dumpstack_32.c    |  2 ++
- arch/x86/kernel/dumpstack_64.c    |  2 ++
- arch/x86/kernel/stacktrace.c      | 12 ++++++++++--
- 5 files changed, 59 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
-index 70bbe39..c610ab1 100644
---- a/arch/x86/include/asm/stacktrace.h
-+++ b/arch/x86/include/asm/stacktrace.h
-@@ -73,14 +73,49 @@ stack_frame(struct task_struct *task, struct pt_regs *regs)
- 	/* bp is the last reg pushed by switch_to */
- 	return *(unsigned long *)task->thread.sp;
- }
-+
-+/* sanity check helper for dump_trace(), see dump_trace_current_frame() */
-+static inline void
-+dump_trace_warn_current_frame(struct task_struct *task, struct pt_regs *regs,
-+			      unsigned long bp)
-+{
-+	if ((!task || task == current) && !regs && !bp)
-+		printk(KERN_WARNING "dump_trace: %pf specified neither frame nor regs for %%current\n",
-+		       __builtin_return_address(0));
-+}
- #else
- static inline unsigned long
- stack_frame(struct task_struct *task, struct pt_regs *regs)
- {
- 	return 0;
- }
-+
-+static inline void
-+dump_trace_warn_current_frame(struct task_struct *task, struct pt_regs *regs,
-+			      unsigned long bp)
-+{ }
- #endif
- 
-+/**
-+ * dump_trace_current_frame - stack and frame pointers for the current frame
-+ * @sp: output argument for the stack pointer
-+ * @bp: output argument for the frame pointer
-+ *
-+ * When dumping %current, dump_trace() wants its caller to specify the top
-+ * frame so that it doesn't end up showing unncessary traces into stack
-+ * dumping machinery.  This helper can be used to determine @sp and @bp to
-+ * pass to dump_trace() when dumping %current.  This functions is
-+ * __always_inline so that it records the frame of the caller.
-+ */
-+static __always_inline
-+void dump_trace_current_frame(unsigned long **sp, unsigned long *bp)
-+{
-+	unsigned long stack;
-+
-+	*sp = &stack;
-+	*bp = stack_frame(current, NULL);
-+}
-+
- extern void
- show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
- 		   unsigned long *stack, unsigned long bp, char *log_lvl);
-diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
-index c8797d5..6e5e3ab 100644
---- a/arch/x86/kernel/dumpstack.c
-+++ b/arch/x86/kernel/dumpstack.c
-@@ -176,7 +176,16 @@ void show_trace(struct task_struct *task, struct pt_regs *regs,
- 
- void show_stack(struct task_struct *task, unsigned long *sp)
- {
--	show_stack_log_lvl(task, NULL, sp, 0, "");
-+	unsigned long bp = 0;
-+
-+	/*
-+	 * Stack frames below this one aren't interesting.  Don't show them
-+	 * if we're printing for %current.
-+	 */
-+	if (!sp && (!task || task == current))
-+		dump_trace_current_frame(&sp, &bp);
-+
-+	show_stack_log_lvl(task, NULL, sp, bp, "");
- }
- 
- /*
-diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
-index 1038a41..8cc7c4a 100644
---- a/arch/x86/kernel/dumpstack_32.c
-+++ b/arch/x86/kernel/dumpstack_32.c
-@@ -23,6 +23,8 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
- {
- 	int graph = 0;
- 
-+	dump_trace_warn_current_frame(task, regs, bp);
-+
- 	if (!task)
- 		task = current;
- 
-diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
-index b653675..349a8a9 100644
---- a/arch/x86/kernel/dumpstack_64.c
-+++ b/arch/x86/kernel/dumpstack_64.c
-@@ -123,6 +123,8 @@ void dump_trace(struct task_struct *task, struct pt_regs *regs,
- 	int graph = 0;
- 	unsigned long dummy;
- 
-+	dump_trace_warn_current_frame(task, regs, bp);
-+
- 	if (!task)
- 		task = current;
- 
-diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
-index fdd0c64..0908a50 100644
---- a/arch/x86/kernel/stacktrace.c
-+++ b/arch/x86/kernel/stacktrace.c
-@@ -60,7 +60,10 @@ static const struct stacktrace_ops save_stack_ops_nosched = {
-  */
- void save_stack_trace(struct stack_trace *trace)
- {
--	dump_trace(current, NULL, NULL, 0, &save_stack_ops, trace);
-+	unsigned long *sp, bp;
-+
-+	dump_trace_current_frame(&sp, &bp);
-+	dump_trace(current, NULL, sp, bp, &save_stack_ops, trace);
- 	if (trace->nr_entries < trace->max_entries)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
-@@ -75,7 +78,12 @@ void save_stack_trace_regs(struct pt_regs *regs, struct stack_trace *trace)
- 
- void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- {
--	dump_trace(tsk, NULL, NULL, 0, &save_stack_ops_nosched, trace);
-+	unsigned long *sp = NULL, bp = 0;
-+
-+	if (!tsk || tsk == current)
-+		dump_trace_current_frame(&sp, &bp);
-+
-+	dump_trace(tsk, NULL, sp, bp, &save_stack_ops_nosched, trace);
- 	if (trace->nr_entries < trace->max_entries)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
--- 
-1.8.1.4
-
+Al, what do you think?  Should I be calling audit_put_tree() in the error case if entry->tree != NULL?  The audit trees are some of the most complex code in the kernel I think.
