@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937326Ab3DJXJs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:09:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56204 "EHLO
+	id S937310Ab3DJXKK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:10:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56188 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937292Ab3DJWrd (ORCPT
+	with ESMTP id S937257Ab3DJWra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:33 -0400
+	Wed, 10 Apr 2013 18:47:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 43/64] crypto: gcm - fix assumption that assoc has one segment
-Date: Wed, 10 Apr 2013 15:46:40 -0700
-Message-Id: <20130410224343.327780087@linuxfoundation.org>
+        "Lee, Chun-Yi" <jlee@suse.com>, Youquan Song <youquan.song@intel.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 31/64] ata_piix: Fix DVD not dectected at some Haswell platforms
+Date: Wed, 10 Apr 2013 15:46:28 -0700
+Message-Id: <20130410224340.298096676@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -28,57 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: Youquan Song <youquan.song@intel.com>
 
-commit d3dde52209ab571e4e2ec26c66f85ad1355f7475 upstream.
+commit b55f84e2d527182e7c611d466cd0bb6ddce201de upstream.
 
-rfc4543(gcm(*)) code for GMAC assumes that assoc scatterlist always contains
-only one segment and only makes use of this first segment. However ipsec passes
-assoc with three segments when using 'extended sequence number' thus in this
-case rfc4543(gcm(*)) fails to function correctly. Patch fixes this issue.
+There is a quirk patch 5e5a4f5d5a08c9c504fe956391ac3dae2c66556d
+"ata_piix: make DVD Drive recognisable on systems with Intel Sandybridge
+ chipsets(v2)" fixing the 4 ports IDE controller 32bit PIO mode.
 
-Reported-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
-Tested-by: Chaoxing Lin <Chaoxing.Lin@ultra-3eti.com>
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+We've hit a problem with DVD not recognized on Haswell Desktop platform which
+includes Lynx Point 2-port SATA controller.
+
+This quirk patch disables 32bit PIO on this controller in IDE mode.
+
+v2: Change spelling error in statememnt pointed by Sergei Shtylyov.
+v3: Change comment statememnt and spliting line over 80 characters pointed by
+    Libor Pechacek and also rebase the patch against 3.8-rc7 kernel.
+
+Tested-by: Lee, Chun-Yi <jlee@suse.com>
+Signed-off-by: Youquan Song <youquan.song@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/gcm.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ drivers/ata/ata_piix.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
---- a/crypto/gcm.c
-+++ b/crypto/gcm.c
-@@ -44,6 +44,7 @@ struct crypto_rfc4543_ctx {
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -150,6 +150,7 @@ enum piix_controller_ids {
+ 	tolapai_sata,
+ 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
+ 	ich8_sata_snb,
++	ich8_2port_sata_snb,
+ };
  
- struct crypto_rfc4543_req_ctx {
- 	u8 auth_tag[16];
-+	u8 assocbuf[32];
- 	struct scatterlist cipher[1];
- 	struct scatterlist payload[2];
- 	struct scatterlist assoc[2];
-@@ -1142,9 +1143,19 @@ static struct aead_request *crypto_rfc45
- 	scatterwalk_crypto_chain(payload, dst, vdst == req->iv + 8, 2);
- 	assoclen += 8 + req->cryptlen - (enc ? 0 : authsize);
+ struct piix_map_db {
+@@ -304,7 +305,7 @@ static const struct pci_device_id piix_p
+ 	/* SATA Controller IDE (Lynx Point) */
+ 	{ 0x8086, 0x8c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
+ 	/* SATA Controller IDE (Lynx Point) */
+-	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
++	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
+ 	/* SATA Controller IDE (Lynx Point) */
+ 	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
+ 	/* SATA Controller IDE (Lynx Point-LP) */
+@@ -439,6 +440,7 @@ static const struct piix_map_db *piix_ma
+ 	[ich8m_apple_sata]	= &ich8m_apple_map_db,
+ 	[tolapai_sata]		= &tolapai_map_db,
+ 	[ich8_sata_snb]		= &ich8_map_db,
++	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
+ };
  
--	sg_init_table(assoc, 2);
--	sg_set_page(assoc, sg_page(req->assoc), req->assoc->length,
--		    req->assoc->offset);
-+	if (req->assoc->length == req->assoclen) {
-+		sg_init_table(assoc, 2);
-+		sg_set_page(assoc, sg_page(req->assoc), req->assoc->length,
-+			    req->assoc->offset);
-+	} else {
-+		BUG_ON(req->assoclen > sizeof(rctx->assocbuf));
+ static struct pci_bits piix_enable_bits[] = {
+@@ -1240,6 +1242,16 @@ static struct ata_port_info piix_port_in
+ 		.pio_mask	= ATA_PIO4,
+ 		.mwdma_mask	= ATA_MWDMA2,
+ 		.udma_mask	= ATA_UDMA6,
++		.port_ops	= &piix_sata_ops,
++	},
 +
-+		scatterwalk_map_and_copy(rctx->assocbuf, req->assoc, 0,
-+					 req->assoclen, 0);
-+
-+		sg_init_table(assoc, 2);
-+		sg_set_buf(assoc, rctx->assocbuf, req->assoclen);
-+	}
- 	scatterwalk_crypto_chain(assoc, payload, 0, 2);
- 
- 	aead_request_set_tfm(subreq, ctx->child);
++	[ich8_2port_sata_snb] =
++	{
++		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR
++					| PIIX_FLAG_PIO16,
++		.pio_mask	= ATA_PIO4,
++		.mwdma_mask	= ATA_MWDMA2,
++		.udma_mask	= ATA_UDMA6,
+ 		.port_ops	= &piix_sata_ops,
+ 	},
+ };
 
 
