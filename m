@@ -1,185 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937044Ab3DJQMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:12:19 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:36708 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936574Ab3DJQMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:12:16 -0400
+	id S937008Ab3DJQNS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:13:18 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10918 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755531Ab3DJQNR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 12:13:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,447,1363158000"; 
+   d="scan'208";a="225595524"
+Message-ID: <51659024.4010405@intel.com>
+Date: Wed, 10 Apr 2013 09:15:32 -0700
+From: David Cohen <david.a.cohen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130315 Icedove/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
-References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
-	<1363217302-14383-4-git-send-email-yinghai@kernel.org>
-	<CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
-Date: Wed, 10 Apr 2013 09:12:15 -0700
-X-Google-Sender-Auth: dwo9XG9cv7e99McsKmNjyw9eIGY
-Message-ID: <CAE9FiQV=Wv0SKKyrpauh6u2jkCYyWAthFH0FcXqGw5zKLnnQVQ@mail.gmail.com>
-Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: dhowells@redhat.com, linux-kernel@vger.kernel.org, mark.gross@intel.com
+Subject: Re: [PATCH v2] MODSIGN: do not send garbage to stderr when enabling
+ modules signature
+References: <1365543543-17522-1-git-send-email-david.a.cohen@intel.com> <87k3oa65hx.fsf@rustcorp.com.au>
+In-Reply-To: <87k3oa65hx.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 3:18 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> From: Ram Pai <linuxram@us.ibm.com>
+On 04/10/2013 03:32 AM, Rusty Russell wrote:
+> David Cohen <david.a.cohen@intel.com> writes:
+>> openssl may send garbage to stderr when generating X.509 key pair for
+>> modules signature regardless there was an error or not. It makes more
+>> difficult to create scripts based on kernel error/warning messages.
 >>
->> Currently pci_dev structure holds an array of 17 PCI resources; six base
->> BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
->> A bridge device just needs the 4 bridge resources. A non-bridge device
->> just needs the six base resources and one ROM resource. The sriov
->> resources are needed only if the device has SRIOV capability.
->>
->> The pci_dev structure needs to be re-organized to avoid unnecessary
->> bloating.  However too much code outside the pci-bus driver, assumes the
->> internal details of the pci_dev structure, thus making it hard to
->> re-organize the datastructure.
->>
->> As a first step this patch provides generic methods to access the
->> resource structure of the pci_dev.
->>
->> Finally we can re-organize the resource structure in the pci_dev
->> structure and correspondingly update the methods.
->>
->> -v2: Consolidated iterator interface as per Bjorn's suggestion.
->> -v3: Add the idx back - Yinghai Lu
->> -v7: Change to use bitmap for searching - Yinghai Lu
->> -v8: Fix acpiphp module compiling error that is found by
->>         Steven Newbury <steve@snewbury.org.uk> - Yinghai Lu
->>
->> Signed-off-by: Ram Pai <linuxram@us.ibm.com>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> ---
->>  drivers/pci/probe.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
->>  include/linux/pci.h |   24 ++++++++++++++++++++++++
->>  2 files changed, 72 insertions(+)
->>
->> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->> index 1df75f7..ac751a6 100644
->> --- a/drivers/pci/probe.c
->> +++ b/drivers/pci/probe.c
->> @@ -123,6 +123,54 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
->>         return -1;
->>  }
->>
->> +static void __init_res_idx_mask(unsigned long *mask, int flag)
->> +{
->> +       bitmap_zero(mask, PCI_NUM_RESOURCES);
->> +       if (flag & PCI_STD_RES)
->> +               bitmap_set(mask, PCI_STD_RESOURCES,
->> +                       PCI_STD_RESOURCE_END - PCI_STD_RESOURCES + 1);
->> +       if (flag & PCI_ROM_RES)
->> +               bitmap_set(mask, PCI_ROM_RESOURCE, 1);
->> +#ifdef CONFIG_PCI_IOV
->> +       if (flag & PCI_IOV_RES)
->> +               bitmap_set(mask, PCI_IOV_RESOURCES,
->> +                       PCI_IOV_RESOURCE_END - PCI_IOV_RESOURCES + 1);
->> +#endif
->> +       if (flag & PCI_BRIDGE_RES)
->> +               bitmap_set(mask, PCI_BRIDGE_RESOURCES,
->> +                       PCI_BRIDGE_RESOURCE_END - PCI_BRIDGE_RESOURCES + 1);
->> +}
->> +
->> +static DECLARE_BITMAP(res_idx_mask[1 << PCI_RES_BLOCK_NUM], PCI_NUM_RESOURCES);
->> +static int __init pci_res_idx_mask_init(void)
->> +{
->> +       int i;
->> +
->> +       for (i = 0; i < (1 << PCI_RES_BLOCK_NUM); i++)
->> +               __init_res_idx_mask(res_idx_mask[i], i);
->> +
->> +       return 0;
->> +}
->> +postcore_initcall(pci_res_idx_mask_init);
->> +
->> +static inline unsigned long *get_res_idx_mask(int flag)
->> +{
->> +       return res_idx_mask[flag & ((1 << PCI_RES_BLOCK_NUM) - 1)];
->> +}
->> +
->> +int pci_next_resource_idx(int i, int flag)
->> +{
->> +       i++;
->> +       if (i < PCI_NUM_RESOURCES)
->> +               i = find_next_bit(get_res_idx_mask(flag), PCI_NUM_RESOURCES, i);
->> +
->> +       if (i < PCI_NUM_RESOURCES)
->> +               return i;
->> +
->> +       return -1;
->> +}
->> +EXPORT_SYMBOL(pci_next_resource_idx);
->> +
->>  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
->>  {
->>         u64 size = mask & maxbase;      /* Find the significant bits */
->> diff --git a/include/linux/pci.h b/include/linux/pci.h
->> index aefff8b..127a856 100644
->> --- a/include/linux/pci.h
->> +++ b/include/linux/pci.h
->> @@ -341,6 +341,30 @@ struct pci_dev {
->>  struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
->>  int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
->>
->> +#define PCI_STD_RES            (1<<0)
->> +#define PCI_ROM_RES            (1<<1)
->> +#define PCI_IOV_RES            (1<<2)
->> +#define PCI_BRIDGE_RES         (1<<3)
->> +#define PCI_RES_BLOCK_NUM      4
->> +
->> +#define PCI_ALL_RES            (PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
->> +#define PCI_NOSTD_RES          (PCI_ALL_RES & ~PCI_STD_RES)
->> +#define PCI_NOIOV_RES          (PCI_ALL_RES & ~PCI_IOV_RES)
->> +#define PCI_NOROM_RES          (PCI_ALL_RES & ~PCI_ROM_RES)
->> +#define PCI_NOBRIDGE_RES       (PCI_ALL_RES & ~PCI_BRIDGE_RES)
->> +#define PCI_STD_ROM_RES                (PCI_STD_RES | PCI_ROM_RES)
->> +#define PCI_STD_IOV_RES                (PCI_STD_RES | PCI_IOV_RES)
->> +#define PCI_STD_ROM_IOV_RES    (PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
->> +
->> +int pci_next_resource_idx(int i, int flag);
->> +
->> +#define for_each_pci_resource(dev, res, i, flag)       \
->> +       for (i = pci_next_resource_idx(-1, flag),       \
->> +               res = pci_dev_resource_n(dev, i);       \
->> +            res;                                       \
->> +            i = pci_next_resource_idx(i, flag),        \
->> +               res = pci_dev_resource_n(dev, i))
->> +
->>  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
->>  {
->>  #ifdef CONFIG_PCI_IOV
+>> When compiling kernel with -jN (N > 1), all warning/error messages
+>> printed while openssl is generating key pair may get mixed dots and
+>> other symbols openssl sends to stderr. This patch makes sure openssl
+>> logs go to default stdout.
+> Ah!  Not garbage, but it writes progress dots and status messages to
+> stderr?
 >
-> I think this turned out to be a disaster, with all the bitmaps and
-> helper functions.  Filtering in the bodies of the
-> for_each_pci_resource() users has *got* to be better.  That probably
-> requires a wrapper struct around the struct resource.  Or possibly
-> having a wrapper struct with a "type" or "flags" field would make
-> filtering in for_each_pci_resources() itself cleaner to implement.
+> I trimmed your commit message as shown below.
 
-Do you mean have extra struct that will wrapper resource ?
-and the struct will have type that will tell that resource is PCI bridge
-resource or other std/sriov resource?
+Thanks! The new commit message looks fine.
+But it's not the dots. It prints the whole logs to stderr, but the dots 
+are more likely to get mixed.
 
-then that struct need to have BAR in it.
-
-that looks like addon_res that is added in this patchset.
-
-but for the std/bridge/sriov, idx is used all the way and in all over
-the drivers.
+Br, David
 
 >
-> I think it would also help if we got rid of all the "PCI_NO*_RES"
-> definitions and just had the users explicitly specify what they *do*
-> want.
+> Thanks!
+> Rusty.
+>
+> From: David Cohen <david.a.cohen@intel.com>
+> Subject: MODSIGN: do not send garbage to stderr when enabling modules signature
+>
+> When compiling kernel with -jN (N > 1), all warning/error messages
+> printed while openssl is generating key pair may get mixed dots and
+> other symbols openssl sends to stderr. This patch makes sure openssl
+> logs go to default stdout.
+>
+> Example of the garbage on stderr:
+>
+> crypto/anubis.c:581: warning: ‘inter’ is used uninitialized in this function
+> Generating a 4096 bit RSA private key
+> .........
+> drivers/gpu/drm/i915/i915_gem_gtt.c: In function ‘gen6_ggtt_insert_entries’:
+> drivers/gpu/drm/i915/i915_gem_gtt.c:440: warning: ‘addr’ may be used uninitialized in this function
+> .net/mac80211/tx.c: In function ‘ieee80211_subif_start_xmit’:
+> net/mac80211/tx.c:1780: warning: ‘chanctx_conf’ may be used uninitialized in this function
+> ..drivers/isdn/hardware/mISDN/hfcpci.c: In function ‘hfcpci_softirq’:
+> .....drivers/isdn/hardware/mISDN/hfcpci.c:2298: warning: ignoring return value of ‘driver_for_each_device’, declared with attribute warn_unused_result
+>
+> Signed-off-by: David Cohen <david.a.cohen@intel.com>
+> Reviewed-by: mark gross <mark.gross@intel.com>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> ---
+>   kernel/Makefile |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/Makefile b/kernel/Makefile
+> index bbde5f1..5a51e6c 100644
+> --- a/kernel/Makefile
+> +++ b/kernel/Makefile
+> @@ -175,7 +175,7 @@ signing_key.priv signing_key.x509: x509.genkey
+>   	openssl req -new -nodes -utf8 -$(CONFIG_MODULE_SIG_HASH) -days 36500 \
+>   		-batch -x509 -config x509.genkey \
+>   		-outform DER -out signing_key.x509 \
+> -		-keyout signing_key.priv
+> +		-keyout signing_key.priv 2>&1
+>   	@echo "###"
+>   	@echo "### Key pair generated."
+>   	@echo "###"
+>
 
-yes, remove PCI_NO*_RES should be more clean
-
-Thanks
-
-Yinghai
