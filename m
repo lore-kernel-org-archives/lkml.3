@@ -1,119 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936644Ab3DJUVe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 16:21:34 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:64440 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936370Ab3DJUVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 16:21:31 -0400
-Date: Wed, 10 Apr 2013 22:21:27 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND][PATCH v5 3/3] hugetlbfs: add swap entry check in
- follow_hugetlb_page()
-Message-ID: <20130410202127.GA30063@dhcp22.suse.cz>
-References: <1365610669-16625-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1365610669-16625-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S936677Ab3DJUW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 16:22:26 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:56319 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1764955Ab3DJUWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 16:22:25 -0400
+Date: Wed, 10 Apr 2013 22:22:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org,
+        rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
+        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
+        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
+        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
+        jonas@southpole.se, rkuo@codeaurora.org, schwidefsky@de.ibm.com,
+        liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
+        vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
+        ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com
+Subject: Re: [PATCH UPDATED 1/7] x86: don't show trace into stacktrace
+ machinery
+Message-ID: <20130410202220.GB6854@pd.tnic>
+References: <1365016497-32033-1-git-send-email-tj@kernel.org>
+ <1365016497-32033-2-git-send-email-tj@kernel.org>
+ <20130410201020.GF17641@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1365610669-16625-4-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130410201020.GF17641@mtj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 10-04-13 12:17:49, Naoya Horiguchi wrote:
-> # I suspended Reviewed and Acked given for the previous version, because
-> # it has a non-minor change. If you want to restore it, please let me know.
-> -----
-> With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
-> initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
-> error happens on a hugepage and the affected processes try to access
-> the error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0)
-> in get_page().
-> 
-> The reason for this bug is that coredump-related code doesn't recognise
-> "hugepage hwpoison entry" with which a pmd entry is replaced when a memory
-> error occurs on a hugepage.
-> In other words, physical address information is stored in different bit layout
-> between hugepage hwpoison entry and pmd entry, so follow_hugetlb_page()
-> which is called in get_dump_page() returns a wrong page from a given address.
-> 
-> The expected behavior is like this:
-> 
->   absent   is_swap_pte   FOLL_DUMP   Expected behavior
->   -------------------------------------------------------------------
->    true     false         false       hugetlb_fault
->    false    true          false       hugetlb_fault
->    false    false         false       return page
->    true     false         true        skip page (to avoid allocation)
->    false    true          true        hugetlb_fault
->    false    false         true        return page
-> 
-> With this patch, we can call hugetlb_fault() and take proper actions
-> (we wait for migration entries, fail with VM_FAULT_HWPOISON_LARGE for
-> hwpoisoned entries,) and as the result we can dump all hugepages except
-> for hwpoisoned ones.
-> 
-> ChangeLog v5:
->  - improve comment and description.
-> 
-> ChangeLog v4:
->  - move is_swap_page() to right place.
-> 
-> ChangeLog v3:
->  - add comment about using is_swap_pte()
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: stable@vger.kernel.org
+On Wed, Apr 10, 2013 at 01:10:20PM -0700, Tejun Heo wrote:
+> +/* sanity check helper for dump_trace(), see dump_trace_current_frame() */
+> +static inline void
+> +dump_trace_warn_current_frame(struct task_struct *task, struct pt_regs *regs,
+> +			      unsigned long bp)
+> +{
+> +	if ((!task || task == current) && !regs && !bp)
+> +		printk(KERN_WARNING "dump_trace: %pf didn't specify neither frame nor regs for %%current\n",
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+This is double negation and is generally wrong in English. I think you
+want to say:
 
-Thanks!
-> ---
->  mm/hugetlb.c | 12 +++++++++++-
->  1 file changed, 11 insertions(+), 1 deletion(-)
-> 
-> diff --git v3.9-rc3.orig/mm/hugetlb.c v3.9-rc3/mm/hugetlb.c
-> index 0d1705b..bf26ee8 100644
-> --- v3.9-rc3.orig/mm/hugetlb.c
-> +++ v3.9-rc3/mm/hugetlb.c
-> @@ -2983,7 +2983,17 @@ long follow_hugetlb_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  			break;
->  		}
->  
-> -		if (absent ||
-> +		/*
-> +		 * We need call hugetlb_fault for both hugepages under migration
-> +		 * (in which case hugetlb_fault waits for the migration,) and
-> +		 * hwpoisoned hugepages (in which case we need to prevent the
-> +		 * caller from accessing to them.) In order to do this, we use
-> +		 * here is_swap_pte instead of is_hugetlb_entry_migration and
-> +		 * is_hugetlb_entry_hwpoisoned. This is because it simply covers
-> +		 * both cases, and because we can't follow correct pages
-> +		 * directly from any kind of swap entries.
-> +		 */
-> +		if (absent || is_swap_pte(huge_ptep_get(pte)) ||
->  		    ((flags & FOLL_WRITE) && !pte_write(huge_ptep_get(pte)))) {
->  			int ret;
->  
-> -- 
-> 1.7.11.7
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+"%pf specified neither frame nor regs for ..."
+
+or
+
+"%pf didn't specify either frame or regs for ..."
+
+Or maybe even passive and shorter:
+
+"%pf: No frame or regs specified for %%current."
+
+and so on.
 
 -- 
-Michal Hocko
-SUSE Labs
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
