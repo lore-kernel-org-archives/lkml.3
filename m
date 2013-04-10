@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937532Ab3DJWuO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:50:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56619 "EHLO
+	id S937507Ab3DJWuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:50:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56559 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937511Ab3DJWuL (ORCPT
+	with ESMTP id S937460Ab3DJWuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:50:11 -0400
+	Wed, 10 Apr 2013 18:50:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Marco Cesarano <marco@marvell.com>, Bing Zhao <bzhao@marvell.com>
-Subject: [ 27/29] Revert "mwifiex: cancel cmd timer and free curr_cmd in shutdown process
-Date: Wed, 10 Apr 2013 15:49:45 -0700
-Message-Id: <20130410224806.893961706@linuxfoundation.org>
+        Li Fei <fei.li@intel.com>, Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [ 19/29] hwspinlock: fix __hwspin_lock_request error path
+Date: Wed, 10 Apr 2013 15:49:37 -0700
+Message-Id: <20130410224806.057230969@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -27,36 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-revert commit b9f1f48ce20a1b923429c216669d03b5a900a8cf which is commit
-084c7189acb3f969c855536166042e27f5dd703f upstream.
+From: Li Fei <fei.li@intel.com>
 
-It shouldn't have been applied to the 3.4-stable tree.
+commit c10b90d85a5126d25c89cbaa50dc9fdd1c4d001a upstream.
 
-Reported-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Marco Cesarano <marco@marvell.com>
-Reported-by: Bing Zhao <bzhao@marvell.com>
+Even in failed case of pm_runtime_get_sync, the usage_count
+is incremented. In order to keep the usage_count with correct
+value and runtime power management to behave correctly, call
+pm_runtime_put_noidle in such case.
+
+In __hwspin_lock_request, module_put is also called before
+return in pm_runtime_get_sync failed case.
+
+Signed-off-by Liu Chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Li Fei <fei.li@intel.com>
+[edit commit log]
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/init.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/hwspinlock/hwspinlock_core.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/net/wireless/mwifiex/init.c
-+++ b/drivers/net/wireless/mwifiex/init.c
-@@ -584,14 +584,6 @@ mwifiex_shutdown_drv(struct mwifiex_adap
+--- a/drivers/hwspinlock/hwspinlock_core.c
++++ b/drivers/hwspinlock/hwspinlock_core.c
+@@ -416,6 +416,8 @@ static int __hwspin_lock_request(struct
+ 	ret = pm_runtime_get_sync(dev);
+ 	if (ret < 0) {
+ 		dev_err(dev, "%s: can't power on device\n", __func__);
++		pm_runtime_put_noidle(dev);
++		module_put(dev->driver->owner);
  		return ret;
  	}
- 
--	/* cancel current command */
--	if (adapter->curr_cmd) {
--		dev_warn(adapter->dev, "curr_cmd is still in processing\n");
--		del_timer(&adapter->cmd_timer);
--		mwifiex_insert_cmd_to_free_q(adapter, adapter->curr_cmd);
--		adapter->curr_cmd = NULL;
--	}
--
- 	/* shut down mwifiex */
- 	dev_dbg(adapter->dev, "info: shutdown mwifiex...\n");
  
 
 
