@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937481Ab3DJXA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:00:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56544 "EHLO
+	id S937454Ab3DJWuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:50:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56527 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937457Ab3DJWuC (ORCPT
+	with ESMTP id S937434Ab3DJWt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:50:02 -0400
+	Wed, 10 Apr 2013 18:49:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Lee, Chun-Yi" <jlee@suse.com>, Youquan Song <youquan.song@intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 15/29] ata_piix: Fix DVD not dectected at some Haswell platforms
-Date: Wed, 10 Apr 2013 15:49:33 -0700
-Message-Id: <20130410224805.680267274@linuxfoundation.org>
+        Matthew Whitehead <mwhitehe@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 11/29] EISA/PCI: Fix bus res reference
+Date: Wed, 10 Apr 2013 15:49:29 -0700
+Message-Id: <20130410224805.261089884@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -27,74 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Youquan Song <youquan.song@intel.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit b55f84e2d527182e7c611d466cd0bb6ddce201de upstream.
+commit 2cfda637e29ce9e3df31b59f64516b2e571cc985 upstream.
 
-There is a quirk patch 5e5a4f5d5a08c9c504fe956391ac3dae2c66556d
-"ata_piix: make DVD Drive recognisable on systems with Intel Sandybridge
- chipsets(v2)" fixing the 4 ports IDE controller 32bit PIO mode.
+Matthew found that 3.8.3 is having problems with an old (ancient)
+PCI-to-EISA bridge, the Intel 82375. It worked with the 3.2 kernel.
+He identified the 82375, but doesn't assign the struct resource *res
+pointer inside the struct eisa_root_device, and panics.
 
-We've hit a problem with DVD not recognized on Haswell Desktop platform which
-includes Lynx Point 2-port SATA controller.
+pci_eisa_init() was using bus->resource[] directly instead of
+pci_bus_resource_n().  The bus->resource[] array is a PCI-internal
+implementation detail, and after commit 45ca9e97 (PCI: add helpers for
+building PCI bus resource lists) and commit 0efd5aab (PCI: add struct
+pci_host_bridge_window with CPU/bus address offset), bus->resource[] is not
+used for PCI root buses any more.
 
-This quirk patch disables 32bit PIO on this controller in IDE mode.
+The 82375 is a subtractive-decode PCI device, so handle it the same
+way we handle PCI-PCI bridges in subtractive-decode mode in
+pci_read_bridge_bases().
 
-v2: Change spelling error in statememnt pointed by Sergei Shtylyov.
-v3: Change comment statememnt and spliting line over 80 characters pointed by
-    Libor Pechacek and also rebase the patch against 3.8-rc7 kernel.
-
-Tested-by: Lee, Chun-Yi <jlee@suse.com>
-Signed-off-by: Youquan Song <youquan.song@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+[bhelgaas: changelog]
+Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
+Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ata_piix.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ drivers/eisa/pci_eisa.c |   28 +++++++++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -150,6 +150,7 @@ enum piix_controller_ids {
- 	tolapai_sata,
- 	piix_pata_vmw,			/* PIIX4 for VMware, spurious DMA_ERR */
- 	ich8_sata_snb,
-+	ich8_2port_sata_snb,
- };
+--- a/drivers/eisa/pci_eisa.c
++++ b/drivers/eisa/pci_eisa.c
+@@ -21,7 +21,8 @@ static struct eisa_root_device pci_eisa_
  
- struct piix_map_db {
-@@ -326,7 +327,7 @@ static const struct pci_device_id piix_p
- 	/* SATA Controller IDE (Lynx Point) */
- 	{ 0x8086, 0x8c01, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Lynx Point) */
--	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	{ 0x8086, 0x8c08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
- 	/* SATA Controller IDE (Lynx Point) */
- 	{ 0x8086, 0x8c09, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
- 	/* SATA Controller IDE (DH89xxCC) */
-@@ -511,6 +512,7 @@ static const struct piix_map_db *piix_ma
- 	[ich8m_apple_sata]	= &ich8m_apple_map_db,
- 	[tolapai_sata]		= &tolapai_map_db,
- 	[ich8_sata_snb]		= &ich8_map_db,
-+	[ich8_2port_sata_snb]	= &ich8_2port_map_db,
- };
+ static int __init pci_eisa_init(struct pci_dev *pdev)
+ {
+-	int rc;
++	int rc, i;
++	struct resource *res, *bus_res = NULL;
  
- static struct ata_port_info piix_port_info[] = {
-@@ -652,6 +654,15 @@ static struct ata_port_info piix_port_in
- 		.port_ops	= &piix_sata_ops,
- 	},
+ 	if ((rc = pci_enable_device (pdev))) {
+ 		printk (KERN_ERR "pci_eisa : Could not enable device %s\n",
+@@ -29,9 +30,30 @@ static int __init pci_eisa_init(struct p
+ 		return rc;
+ 	}
  
-+	[ich8_2port_sata_snb] =
-+	{
-+		.flags		= PIIX_SATA_FLAGS | PIIX_FLAG_SIDPR
-+					| PIIX_FLAG_PIO16,
-+		.pio_mask	= ATA_PIO4,
-+		.mwdma_mask	= ATA_MWDMA2,
-+		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &piix_sata_ops,
-+	},
- };
- 
- static struct pci_bits piix_enable_bits[] = {
++	/*
++	 * The Intel 82375 PCI-EISA bridge is a subtractive-decode PCI
++	 * device, so the resources available on EISA are the same as those
++	 * available on the 82375 bus.  This works the same as a PCI-PCI
++	 * bridge in subtractive-decode mode (see pci_read_bridge_bases()).
++	 * We assume other PCI-EISA bridges are similar.
++	 *
++	 * eisa_root_register() can only deal with a single io port resource,
++	*  so we use the first valid io port resource.
++	 */
++	pci_bus_for_each_resource(pdev->bus, res, i)
++		if (res && (res->flags & IORESOURCE_IO)) {
++			bus_res = res;
++			break;
++		}
++
++	if (!bus_res) {
++		dev_err(&pdev->dev, "No resources available\n");
++		return -1;
++	}
++
+ 	pci_eisa_root.dev              = &pdev->dev;
+-	pci_eisa_root.res	       = pdev->bus->resource[0];
+-	pci_eisa_root.bus_base_addr    = pdev->bus->resource[0]->start;
++	pci_eisa_root.res	       = bus_res;
++	pci_eisa_root.bus_base_addr    = bus_res->start;
+ 	pci_eisa_root.slots	       = EISA_MAX_SLOTS;
+ 	pci_eisa_root.dma_mask         = pdev->dma_mask;
+ 	dev_set_drvdata(pci_eisa_root.dev, &pci_eisa_root);
 
 
