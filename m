@@ -1,100 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab3DJDTY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 23:19:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27655 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754236Ab3DJDTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 23:19:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,443,1363158000"; 
-   d="scan'208";a="225345126"
-Subject: mfd, arizona: Fix the deadlock between interrupt handler and
- dpm_suspend
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Apr 2013 20:39:09 +0800
-Message-ID: <1365597549.12565.4.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S933873Ab3DJDUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 23:20:19 -0400
+Received: from mail-ia0-f171.google.com ([209.85.210.171]:45373 "EHLO
+	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760631Ab3DJDUR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Apr 2013 23:20:17 -0400
+Message-ID: <5164DA6A.5060607@gmail.com>
+Date: Wed, 10 Apr 2013 11:20:10 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH 2/3] mm, slub: count freed pages via rcu as this task's
+ reclaimed_slab
+References: <1365470478-645-1-git-send-email-iamjoonsoo.kim@lge.com> <1365470478-645-2-git-send-email-iamjoonsoo.kim@lge.com> <5163E194.3080600@gmail.com> <0000013def363b50-9a16dd09-72ad-494f-9c25-17269fc3aab3-000000@email.amazonses.com>
+In-Reply-To: <0000013def363b50-9a16dd09-72ad-494f-9c25-17269fc3aab3-000000@email.amazonses.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Christoph,
+On 04/09/2013 10:32 PM, Christoph Lameter wrote:
+> On Tue, 9 Apr 2013, Simon Jeons wrote:
+>
+>>> +	int pages = 1 << compound_order(page);
+>> One question irrelevant this patch. Why slab cache can use compound
+>> page(hugetlbfs pages/thp pages)? They are just used by app to optimize tlb
+>> miss, is it?
+> Slab caches can use any order pages because these pages are never on
+> the LRU and are not part of the page cache. Large continuous physical
+> memory means that objects can be arranged in a more efficient way in the
+> page. This is particularly useful for larger objects where we might use a
+> lot of memory because objects do not fit well into a 4k page.
+>
+> It also reduces the slab page management if higher order pages are used.
+> In the case of slub the page size also determines the number of objects
+> that can be allocated/freed without the need for some form of
+> synchronization.
 
-When system try to do the suspend:
-T1:suspend_thread                         T2: interrupt thread handler
-enter_state()                             arizona_irq_thread()
- suspend_devices_and_enter()                regmap_read()
-  __device_suspend()
-                                              regmap_spi_read()
-                                               spi_write_then_read()
-                                                spi_sync()
-                                                 __spi_sync()
-                                                  wait_for_completion()
-                                          T2 <== Blocked here due to spi suspended
- suspend_enter()
-  dpm_suspend_end()
-   dpm_suspend_noirq()
-    suspend_device_irqs()
-     synchronize_irq()
-T1 <== Blocked here due waiting for T2 finished
+It seems that you misunderstand my question. I don't doubt slab/slub can 
+use high order pages. However, what I focus on is why slab/slub can use 
+compound page, PageCompound() just on behalf of hugetlbfs pages or thp 
+pages which should used by apps, isn't it?
 
-Then T1 and T2 is deadlocked there.
-
-Here the arizona irq is not NOSUSPEND irq, so when doing device suspend,
-we can disable the arizona irq, and enable it until devices resuming finished.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- drivers/mfd/arizona-core.c |   11 ++++-------
- 1 files changed, 4 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index b562c7b..b11bd01 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -264,11 +264,11 @@ static int arizona_runtime_suspend(struct device *dev)
- #endif
- 
- #ifdef CONFIG_PM_SLEEP
--static int arizona_resume_noirq(struct device *dev)
-+static int arizona_suspend(struct device *dev)
- {
- 	struct arizona *arizona = dev_get_drvdata(dev);
- 
--	dev_dbg(arizona->dev, "Early resume, disabling IRQ\n");
-+	dev_dbg(arizona->dev, "Suspend, disabling IRQ\n");
- 	disable_irq(arizona->irq);
- 
- 	return 0;
-@@ -278,7 +278,7 @@ static int arizona_resume(struct device *dev)
- {
- 	struct arizona *arizona = dev_get_drvdata(dev);
- 
--	dev_dbg(arizona->dev, "Late resume, reenabling IRQ\n");
-+	dev_dbg(arizona->dev, "Resume, reenabling IRQ\n");
- 	enable_irq(arizona->irq);
- 
- 	return 0;
-@@ -289,10 +289,7 @@ const struct dev_pm_ops arizona_pm_ops = {
- 	SET_RUNTIME_PM_OPS(arizona_runtime_suspend,
- 			   arizona_runtime_resume,
- 			   NULL)
--	SET_SYSTEM_SLEEP_PM_OPS(NULL, arizona_resume)
--#ifdef CONFIG_PM_SLEEP
--	.resume_noirq = arizona_resume_noirq,
--#endif
-+	SET_SYSTEM_SLEEP_PM_OPS(arizona_suspend, arizona_resume)
- };
- EXPORT_SYMBOL_GPL(arizona_pm_ops);
- 
--- 
-1.7.0.4
-
-
+>
 
