@@ -1,60 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935649Ab3DJLfY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 07:35:24 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52568 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425Ab3DJLfX (ORCPT
+	id S964819Ab3DJLfx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 07:35:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52857 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933890Ab3DJLfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 07:35:23 -0400
-Message-ID: <1365593710.30071.52.camel@laptop>
-Subject: Re: [PATCH] process cputimer is moving faster than its
- corresponding clock
-From: Peter Zijlstra <peterz@infradead.org>
-To: Olivier Langlois <olivier@trillion01.com>
-Cc: mingo@redhat.com, tglx@linutronix.de, fweisbec@gmail.com,
-        schwidefsky@de.ibm.com, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 10 Apr 2013 13:35:10 +0200
-In-Reply-To: <1365184746.874.103.camel@Wailaba2>
-References: <1365184746.874.103.camel@Wailaba2>
+	Wed, 10 Apr 2013 07:35:52 -0400
+Message-ID: <51654E7C.5020107@ti.com>
+Date: Wed, 10 Apr 2013 17:05:24 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Philip Avinash <avinashphilip@ti.com>
+CC: <linux@arm.linux.org.uk>, <thierry.reding@avionic-design.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
+        <jacmet@sunsite.dk>
+Subject: Re: [PATCH v4] ARM: davinci: da850: add EHRPWM & ECAP DT node
+References: <1365580939-16839-1-git-send-email-avinashphilip@ti.com>
+In-Reply-To: <1365580939-16839-1-git-send-email-avinashphilip@ti.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-05 at 13:59 -0400, Olivier Langlois wrote:
-> Process timers are moving fasters than their corresponding
->  cpu clock for various reasons:
+Avinash,
+
+On 4/10/2013 1:32 PM, Philip Avinash wrote:
+> Add da850 EHRPWM & ECAP DT node along with pin-mux details for EHRPWM1.
+> Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
+> clock.
 > 
-> 1. There is a race condition when getting a timer sample that makes the sample
->    be smaller than it should leading to setting the timer expiration to soon.
-> 2. When initializing the cputimer, by including tasks deltas in the initial
->    timer value, it makes them be counted twice.
-> 3. When a thread autoreap itself when exiting, the last context switch update
->    will update the cputimer and not the overall process values stored in
->    signal.
+> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+> ---
+> Changes since v3:
+> 	- add pin mux info for EHRPWM1.
 
-Please explain these races. Things like task_sched_runtime() on which
-most of this stuff is build read both sum_exec_runtime and compute the
-delta while holding the rq->lock; this should avoid any and all races
-against update_curr() and the sort.
+I think you misunderstood what I asked. Please add pinmux information
+for all the nodes you are adding (ecap0-2 and ehrpwm0). Without pinmux
+setup, these IPs cannot be used anyway. So why leave just the pinmux to
+be added by someone else?
 
-All this fiddling with conditional deltas seems very ugly, esp. since
-no attempt is made to explain why it would be impossible to tighten the
-synchronization to avoid the races.
+Thanks,
+Sekhar
 
-> I have also removed to erractic cputimer start/stop. I am guessing that it
-> was done to 'resync' once in a while the cputimer with the clock but
-> you could start the cputimer by calling timer_settimer that finally
-> do not end up by arming a new posix timer so you could have the cputimer
-> running with 0 armed timers or have 1 periodic process timer.
-
-No keeping a process wide (over all threads) cputime aggregate running
-is _expensive_, so its important to stop doing this once there's nobody
-who cares about it anymore.
-
-
+> 
+> Changes since v1:
+> 	- Reusing ti,am33xx<ecap/ehrpwm> as compatible field as both IP's are
+> 	  similar with am33xx platform and da850 has no platform specific
+> 	  dependency.
+> 
+>  arch/arm/boot/dts/da850.dtsi     |   42 ++++++++++++++++++++++++++++++++++++++
+>  arch/arm/mach-davinci/da8xx-dt.c |    5 +++++
+>  2 files changed, 47 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+> index 3ade343..3bff30d 100644
+> --- a/arch/arm/boot/dts/da850.dtsi
+> +++ b/arch/arm/boot/dts/da850.dtsi
+> @@ -71,6 +71,18 @@
+>  					0x28 0x00222222  0x00ffffff
+>  				>;
+>  			};
+> +			ehrpwm1a_pins: pinmux_ehrpwm1a_pins {
+> +				pinctrl-single,bits = <
+> +					/* EPWM1A */
+> +					0x14 0x00000002 0x0000000f
+> +				>;
+> +			};
+> +			ehrpwm1b_pins: pinmux_ehrpwm1b_pins {
+> +				pinctrl-single,bits = <
+> +					/* EPWM1B */
+> +					0x14 0x00000020 0x000000f0
+> +				>;
+> +			};
+>  		};
+>  		serial0: serial@1c42000 {
+>  			compatible = "ns16550a";
+> @@ -122,6 +134,36 @@
+>  			interrupts = <16>;
+>  			status = "disabled";
+>  		};
+> +		ehrpwm0: ehrpwm@01f00000 {
+> +			compatible = "ti,da850-ehrpwm", "ti,am33xx-ehrpwm";
+> +			#pwm-cells = <3>;
+> +			reg = <0x300000 0x2000>;
+> +			status = "disabled";
+> +		};
+> +		ehrpwm1: ehrpwm@01f02000 {
+> +			compatible = "ti,da850-ehrpwm", "ti,am33xx-ehrpwm";
+> +			#pwm-cells = <3>;
+> +			reg = <0x302000 0x2000>;
+> +			status = "disabled";
+> +		};
+> +		ecap0: ecap@01f06000 {
+> +			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
+> +			#pwm-cells = <3>;
+> +			reg = <0x306000 0x80>;
+> +			status = "disabled";
+> +		};
+> +		ecap1: ecap@01f07000 {
+> +			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
+> +			#pwm-cells = <3>;
+> +			reg = <0x307000 0x80>;
+> +			status = "disabled";
+> +		};
+> +		ecap2: ecap@01f08000 {
+> +			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
+> +			#pwm-cells = <3>;
+> +			reg = <0x308000 0x80>;
+> +			status = "disabled";
+> +		};
+>  	};
+>  	nand_cs3@62000000 {
+>  		compatible = "ti,davinci-nand";
+> diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
+> index d83de8f..05bb9a2 100644
+> --- a/arch/arm/mach-davinci/da8xx-dt.c
+> +++ b/arch/arm/mach-davinci/da8xx-dt.c
+> @@ -41,6 +41,11 @@ struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
+>  	OF_DEV_AUXDATA("ti,davinci-i2c", 0x01c22000, "i2c_davinci.1", NULL),
+>  	OF_DEV_AUXDATA("ti,davinci-wdt", 0x01c21000, "watchdog", NULL),
+>  	OF_DEV_AUXDATA("ti,da830-mmc", 0x01c40000, "da830-mmc.0", NULL),
+> +	OF_DEV_AUXDATA("ti,da850-ehrpwm", 0x01f00000, "ehrpwm", NULL),
+> +	OF_DEV_AUXDATA("ti,da850-ehrpwm", 0x01f02000, "ehrpwm", NULL),
+> +	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f06000, "ecap", NULL),
+> +	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f07000, "ecap", NULL),
+> +	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f08000, "ecap", NULL),
+>  	{}
+>  };
+>  
+> 
