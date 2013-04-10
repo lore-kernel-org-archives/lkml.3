@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935876Ab3DJAx6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 20:53:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16740 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1764843Ab3DJAx5 (ORCPT
+	id S936032Ab3DJAyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 20:54:55 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59212 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765432Ab3DJAyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 20:53:57 -0400
-X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=iDqrtN4IwfAA:10 a=Zfl1aey8p3cdzKZLxGgA:9 a=QEXdDO2ut3YA:10 a=j-qZ3nskaGKCfgvn:21 a=jNzDk3VDkK37ZKSw:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365555234.25498.91.camel@gandalf.local.home>
-Subject: Re: Readonly GDT
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Eric Northup <digitaleric@google.com>, Kees Cook <keescook@chromium.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Date: Tue, 09 Apr 2013 20:53:54 -0400
-In-Reply-To: <5164B5BD.5050702@zytor.com>
-References: <20130408224328.GA17641@www.outflux.net>
-	 <51634935.9010905@zytor.com> <alpine.LFD.2.02.1304091122490.21884@ionos>
-	 <CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com>
-	 <51645D6F.7070705@zytor.com>
-	 <CAGXu5jKkHKw8efdPOmt-Zi99m+uMKVGKpc_DC72_ztwxnRbRRQ@mail.gmail.com>
-	 <51646054.3090509@zytor.com>
-	 <CAGXu5jJNG4o+_-kk=A2AfSRwyQE0pgaQh7YpSjnD_fB-s7U+wA@mail.gmail.com>
-	 <CAG7+5M3==rndLLak9cZBKKdgQMmJMpSP_jpQd8HOVGp6LhUAgw@mail.gmail.com>
-	 <5164B5BD.5050702@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Apr 2013 20:54:55 -0400
+X-AuditID: 9c930197-b7b50ae00000018c-16-5164b8599bcb
+Date: Wed, 10 Apr 2013 09:54:49 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>, Bob Liu <bob.liu@oracle.com>,
+        Shuah Khan <shuah@gonehiking.org>
+Subject: Re: zsmalloc defrag (Was: [PATCH] mm: remove compressed copy from
+ zram in-memory)
+Message-ID: <20130410005449.GG6836@blaptop>
+References: <1365400862-9041-1-git-send-email-minchan@kernel.org>
+ <f3c8ef05-a880-47db-86dd-156038fc7d0f@default>
+ <20130409012719.GB3467@blaptop>
+ <20130409013606.GC3467@blaptop>
+ <3cc0fdea-7064-4b95-bbee-30c6448f0487@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <3cc0fdea-7064-4b95-bbee-30c6448f0487@default>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 17:43 -0700, H. Peter Anvin wrote:
-> OK, thinking about the GDT here.
+On Tue, Apr 09, 2013 at 01:37:47PM -0700, Dan Magenheimer wrote:
+> > From: Minchan Kim [mailto:minchan@kernel.org]
+> > Subject: Re: zsmalloc defrag (Was: [PATCH] mm: remove compressed copy from zram in-memory)
+> > 
+> > On Tue, Apr 09, 2013 at 10:27:19AM +0900, Minchan Kim wrote:
+> > > Hi Dan,
+> > >
+> > > On Mon, Apr 08, 2013 at 09:32:38AM -0700, Dan Magenheimer wrote:
+> > > > > From: Minchan Kim [mailto:minchan@kernel.org]
+> > > > > Sent: Monday, April 08, 2013 12:01 AM
+> > > > > Subject: [PATCH] mm: remove compressed copy from zram in-memory
+> > > >
+> > > > (patch removed)
+> > > >
+> > > > > Fragment ratio is almost same but memory consumption and compile time
+> > > > > is better. I am working to add defragment function of zsmalloc.
+> > > >
+> > > > Hi Minchan --
+> > > >
+> > > > I would be very interested in your design thoughts on
+> > > > how you plan to add defragmentation for zsmalloc.  In
+> > >
+> > > What I can say now about is only just a word "Compaction".
+> > > As you know, zsmalloc has a transparent handle so we can do whatever
+> > > under user. Of course, there is a tradeoff between performance
+> > > and memory efficiency. I'm biased to latter for embedded usecase.
+> > >
+> > > And I might post it because as you know well, zsmalloc
+> > 
+> > Incomplete sentense,
+> > 
+> > I might not post it until promoting zsmalloc because as you know well,
+> > zsmalloc/zram's all new stuffs are blocked into staging tree.
+> > Even if we could add it into staging, as you know well, staging is where
+> > every mm guys ignore so we end up needing another round to promote it. sigh.
+> > 
+> > I hope it gets better after LSF/MM.
 > 
-> The GDT is quite small -- 256 bytes on i386, 128 bytes on x86-64.  As
-> such, we probably don't want to allocate a full page to it for only
-> that.  This means that in order to create a readonly mapping we have to
-> pack GDTs from different CPUs together in the same pages, *or* we
-> tolerate that other things on the same page gets reflected in the same
-> mapping.
+> If zsmalloc is moving in the direction of supporting only zram,
+> why should it be promoted into mm, or even lib?  Why not promote
+> zram into drivers and put zsmalloc.c in the same directory?
 
-What about grouping via nodes?
+I don't want to make zsmalloc zram specific and will do best effort
+to generalize it to all z* familiy. If it is hard to reach out
+agreement, yes, forking could be a easy solution like other embedded
+product company but I don't want it.
+
 
 > 
-> However, the packing solution has the advantage of reducing address
-> space consumption which matters on 32 bits: even on i386 we can easily
-> burn a megabyte of address space for 4096 processors, but burning 16
-> megabytes starts to hurt.
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Having 4096 32 bit processors, you deserve what you get. ;-)
-
--- Steve
-
-> 
-> It would be important to measure the performance impact on task switch,
-> though.
-
-
+-- 
+Kind regards,
+Minchan Kim
