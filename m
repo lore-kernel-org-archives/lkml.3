@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937374Ab3DJWro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:47:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56228 "EHLO
+	id S937540Ab3DJXGO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:06:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56272 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937332Ab3DJWrh (ORCPT
+	with ESMTP id S937363Ab3DJWrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:37 -0400
+	Wed, 10 Apr 2013 18:47:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Robert Tivy <rtivy@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>
-Subject: [ 40/64] remoteproc: fix FW_CONFIG typo
-Date: Wed, 10 Apr 2013 15:46:37 -0700
-Message-Id: <20130410224342.535842450@linuxfoundation.org>
+        Lauri Kasanen <cand@gmx.com>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 49/64] drm/i915: Fix build failure
+Date: Wed, 10 Apr 2013 15:46:46 -0700
+Message-Id: <20130410224344.793164797@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -26,32 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Tivy <rtivy@ti.com>
+From: Lauri Kasanen <cand@gmx.com>
 
-commit c7426bce5933d16b492a34e42ae77e26fceddff6 upstream.
+commit 27b7c63a7c509d797c151e95a641e1d94d94bbd9 upstream.
 
-Fix obvious typo introduced in commit e121aefa7d9f10eee5cf26ed47129237a05d940b
-("remoteproc: fix missing CONFIG_FW_LOADER configurations").
+ERROR: "__build_bug_on_failed" [drivers/gpu/drm/i915/i915.ko] undefined!
 
-Signed-off-by: Robert Tivy <rtivy@ti.com>
-[cc stable, slight subject change]
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Originally reported at http://www.gossamer-threads.com/lists/linux/kernel/1631803
+FDO bug #62775
+
+This needs to be backported to both 3.7 and 3.8 stable trees. Doesn't apply straight,
+but it's a quick change.
+
+Signed-off-by: Lauri Kasanen <cand@gmx.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=62775
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/remoteproc/Kconfig |    2 +-
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/remoteproc/Kconfig
-+++ b/drivers/remoteproc/Kconfig
-@@ -5,7 +5,7 @@ config REMOTEPROC
- 	tristate
- 	depends on EXPERIMENTAL
- 	depends on HAS_DMA
--	select FW_CONFIG
-+	select FW_LOADER
- 	select VIRTIO
- 
- config OMAP_REMOTEPROC
+--- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
++++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
+@@ -43,7 +43,7 @@ eb_create(int size)
+ {
+ 	struct eb_objects *eb;
+ 	int count = PAGE_SIZE / sizeof(struct hlist_head) / 2;
+-	BUILD_BUG_ON(!is_power_of_2(PAGE_SIZE / sizeof(struct hlist_head)));
++	BUILD_BUG_ON_NOT_POWER_OF_2(PAGE_SIZE / sizeof(struct hlist_head));
+ 	while (count > size)
+ 		count >>= 1;
+ 	eb = kzalloc(count*sizeof(struct hlist_head) +
 
 
