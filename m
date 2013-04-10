@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab3DJFdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 01:33:00 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48984 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab3DJFc7 (ORCPT
+	id S1755914Ab3DJFdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 01:33:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:7521 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005Ab3DJFdR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 01:32:59 -0400
-Message-ID: <1365571931.10616.12.camel@ThinkPad-T5421>
-Subject: Re: [RFC PATCH v2 6/6] powerpc: Use generic code for exception
- handling
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, paulus@samba.org,
-        paulmck@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 10 Apr 2013 13:32:11 +0800
-In-Reply-To: <20130410045659.GB15929@concordia>
-References: <1364551221-23177-1-git-send-email-zhong@linux.vnet.ibm.com>
-	 <1364551221-23177-7-git-send-email-zhong@linux.vnet.ibm.com>
-	 <20130410045659.GB15929@concordia>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041005-6102-0000-0000-0000034A1777
+	Wed, 10 Apr 2013 01:33:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,444,1363158000"; 
+   d="scan'208";a="292744960"
+From: "Jiang, Dave" <dave.jiang@intel.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+CC: Dan Williams <djbw@fb.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/10] Add Intel Atom S1200 seris ioatdma support
+Thread-Topic: [PATCH 00/10] Add Intel Atom S1200 seris ioatdma support
+Thread-Index: AQHONPPDBMqB/k3bwky5zfIkIrEBk5jPFzaAgABFA4D//5OsIQ==
+Date: Wed, 10 Apr 2013 05:33:16 +0000
+Message-ID: <1B828A0C-A47D-4356-B629-07A95A52772D@intel.com>
+References: <20130326223953.15072.26605.stgit@djiang5-linux2.ch.intel.com>
+ <20130409072801.GB31193@intel.com>
+ <CAA9_cmftcvYN_g0Sj12tMa4T8LxbPdk6wDxwkbTrgQPUUfc0FA@mail.gmail.com>,<20130410050059.GI31193@intel.com>
+In-Reply-To: <20130410050059.GI31193@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 14:56 +1000, Michael Ellerman wrote:
-> On Fri, Mar 29, 2013 at 06:00:21PM +0800, Li Zhong wrote:
-> > After the exception handling moved to generic code, and some changes in
-> ...
-> > diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-> > index 360fba8..eeab30f 100644
-> > --- a/arch/powerpc/mm/hash_utils_64.c
-> > +++ b/arch/powerpc/mm/hash_utils_64.c
-> > @@ -33,6 +33,7 @@
-> >  #include <linux/init.h>
-> >  #include <linux/signal.h>
-> >  #include <linux/memblock.h>
-> > +#include <linux/context_tracking.h>
-> >  
-> >  #include <asm/processor.h>
-> >  #include <asm/pgtable.h>
-> > @@ -56,7 +57,6 @@
-> >  #include <asm/fadump.h>
-> >  #include <asm/firmware.h>
-> >  #include <asm/tm.h>
-> > -#include <asm/context_tracking.h>
-> >  
-> >  #ifdef DEBUG
-> >  #define DBG(fmt...) udbg_printf(fmt)
-> > @@ -919,13 +919,17 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
-> >  	const struct cpumask *tmp;
-> >  	int rc, user_region = 0, local = 0;
-> >  	int psize, ssize;
-> > +	enum ctx_state prev_state;
-> > +
-> > +	prev_state = exception_enter();
-> >  
-> >  	DBG_LOW("hash_page(ea=%016lx, access=%lx, trap=%lx\n",
-> >  		ea, access, trap);
-> >  
-> >  	if ((ea & ~REGION_MASK) >= PGTABLE_RANGE) {
-> >  		DBG_LOW(" out of pgtable range !\n");
-> > - 		return 1;
-> > +		rc = 1;
-> > +		goto exit;
-> >  	}
-> >  
-> >  	/* Get region & vsid */
+
+On Apr 9, 2013, at 10:30 PM, "Koul, Vinod" <vinod.koul@intel.com> wrote:
+
+> On Tue, Apr 09, 2013 at 05:53:59PM -0700, Dan Williams wrote:
+>> On Tue, Apr 9, 2013 at 12:28 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+>>> Are you okay with the series. Merge window is very close...
+>>> 
+>>> 
+>> Hi Vinod, thanks for the ping.
+>> 
+>> Chatted with Dave patches 1-3 and 5-8, and 10 are reviewed/acked.  For
+>> patch 4 and 9 we think we have a slightly cleaner way to organize the quirk
+>> handling and an update will be coming.
+> Dave,
 > 
-> This no longer applies on mainline, please send an updated version.
-
-Yes, for current mainline (powerpc tree), only previous five patches
-could be applied. The dependency of this patch is current in tip tree,
-and seems would be in for 3.10.
-
-There are some more details in the cover letter (#0):
-
-"I assume these patches would get in through powerpc tree, so I didn't
-combine the new patch (#6) with the original one (#2). So that if
-powerpc tree picks these, it could pick the first five patches, and
-apply patch #6 later when the dependency enters into powerpc tree (maybe
-on some 3.10-rcs)."
-
-Thanks, Zhong
-
-> cheers
+> I tried these, but they fail to apply on for-linus branch of my tree.
+> Cna you pls rebase these 8 patches and resend.
 > 
+> --
+> ~Vinod
 
-
+Yes I will rebase and send them with the other two changed patches. It depends on the haswell patch. Could it be that?
