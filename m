@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936845Ab3DJOOw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:14:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54855 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936822Ab3DJOOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 10:14:50 -0400
-Date: Wed, 10 Apr 2013 15:14:45 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/10] Reduce system disruption due to kswapd V2
-Message-ID: <20130410141445.GD3710@suse.de>
-References: <1365505625-9460-1-git-send-email-mgorman@suse.de>
- <0000013defd666bf-213d70fc-dfbd-4a50-82ed-e9f4f7391b55-000000@email.amazonses.com>
+	id S936870Ab3DJOP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:15:26 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:47700 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936040Ab3DJOPY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 10:15:24 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] RX-51: Fix probe order of SPI devices
+Date: Wed, 10 Apr 2013 16:15:19 +0200
+User-Agent: KMail/1.13.7 (Linux/3.5.0-27-generic; KDE/4.10.2; x86_64; ; )
+Cc: Sebastian Reichel <sre@debian.org>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+References: <1364724561-18045-1-git-send-email-pali.rohar@gmail.com> <201303311318.41846@pali> <20130402163138.GS10155@atomide.com>
+In-Reply-To: <20130402163138.GS10155@atomide.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <0000013defd666bf-213d70fc-dfbd-4a50-82ed-e9f4f7391b55-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart1422385.Cm4OgzPyZM";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304101615.19400@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 05:27:18PM +0000, Christoph Lameter wrote:
-> One additional measure that may be useful is to make kswapd prefer one
-> specific processor on a socket. Two benefits arise from that:
-> 
-> 1. Better use of cpu caches and therefore higher speed, less
-> serialization.
-> 
+--nextPart1422385.Cm4OgzPyZM
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Considering the volume of pages that kswapd can scan when it's active
-I would expect that it trashes its cache anyway. The L1 cache would be
-flushed after scanning struct pages for just a few MB of memory.
+On Tuesday 02 April 2013 18:31:38 Tony Lindgren wrote:
+> * Pali Roh=C3=A1r <pali.rohar@gmail.com> [130331 04:23]:
+> > On Sunday 31 March 2013 12:52:23 Sebastian Reichel wrote:
+> > > On Sun, Mar 31, 2013 at 12:09:21PM +0200, Pali Roh=C3=A1r wrote:
+> > > > From: Joni Lapilainen <joni.lapilainen@gmail.com>
+> > > >=20
+> > > > Without this patch LCD panel on Nokia RX-51 is still
+> > > > black
+> > > >=20
+> > > > Signed-off-by: Joni Lapilainen
+> > > > <joni.lapilainen@gmail.com> Signed-off-by: Pali Roh=C3=A1r
+> > > > <pali.rohar@gmail.com>
+> > >=20
+> > > Tested-by: Sebastian Reichel <sre@debian.org>
+> > >=20
+> > > Please note, that this patch has actually been proposed by
+> > > Aaro Koskinen <aaro.koskinen@iki.fi> quite some time ago
+> > > [0].
+> > >=20
+> > > [0]
+> > > http://permalink.gmane.org/gmane.linux.ports.arm.omap/8172
+> > > 9
+> > >=20
+> > > -- Sebastian
+> >=20
+> > CCing Aaro.
+>=20
+> Any ideas why this is happening?
+>=20
+> Is the touch screen controller somehow pulling one of the SPI
+> lines before it's reset? I don't think there's any other
+> connection between the LCD and touch controller besides the
+> SPI lines?
+>=20
+> In any case there should be something in the description why
+> this is needed..
+>=20
+> Regards,
+>=20
+> Tony
 
-> 2. Reduction of the disturbances to one processor.
-> 
+Hi Tony, look at this Aaro's email:
+http://permalink.gmane.org/gmane.linux.ports.arm.omap/81729
 
-I've never checked it but I would have expected kswapd to stay on the
-same processor for significant periods of time. Have you experienced
-problems where kswapd bounces around on CPUs within a node causing
-workload disruption?
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
 
--- 
-Mel Gorman
-SUSE Labs
+--nextPart1422385.Cm4OgzPyZM
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlFlc/cACgkQi/DJPQPkQ1KEgACeIBJYaHTBmQT1+XOTc8ni40jV
+/agAn2ash3zy4hRxLCg9eTc2tA025T6A
+=W6fK
+-----END PGP SIGNATURE-----
+
+--nextPart1422385.Cm4OgzPyZM--
