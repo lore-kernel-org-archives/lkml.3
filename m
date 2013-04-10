@@ -1,153 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935712Ab3DJNCC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 09:02:02 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34903 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab3DJNCA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:02:00 -0400
-Message-ID: <516562C5.2050306@arm.com>
-Date: Wed, 10 Apr 2013 14:01:57 +0100
-From: Serban Constantinescu <Serban.Constantinescu@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S936220Ab3DJNFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 09:05:42 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:57423 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752403Ab3DJNFl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 09:05:41 -0400
+From: Patrice CHOTARD <patrice.chotard@st.com>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Seraphin BONNAFFE <seraphin.bonnaffe@stericsson.com>
+Date: Wed, 10 Apr 2013 15:04:47 +0200
+Subject: Re: [PATCH] pinctrl: move subsystem mutex to pinctrl_dev struct
+Thread-Topic: [PATCH] pinctrl: move subsystem mutex to pinctrl_dev struct
+Thread-Index: Ac416/s+0PBB+4rrQc+rNzM2r8pIcw==
+Message-ID: <5165636F.2000602@st.com>
+References: <1363189479-11240-1-git-send-email-linus.walleij@stericsson.com>
+ <5140C3F5.9030406@wwwdotorg.org> <514201F1.6080508@st.com>
+ <CACRpkdZ_Np-NMwO+nVLYnyUWPcidHq-MN8Ls0YMr4WxTLCLKjw@mail.gmail.com>
+ <515381AC.4050206@wwwdotorg.org>
+In-Reply-To: <515381AC.4050206@wwwdotorg.org>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430
+ Thunderbird/12.0.1
+acceptlanguage: fr-FR, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: =?windows-1252?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
-Subject: Re: [PATCH v2 3/7] staging: android: binder: fix binder interface
- for 64bit compat layer
-References: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com> <1365501657-4213-4-git-send-email-serban.constantinescu@arm.com> <CAMP5XgdNi4BV-aWDGhmFgNGceGoT2msdU_rA4U=wqs6xtYRc_A@mail.gmail.com>
-In-Reply-To: <CAMP5XgdNi4BV-aWDGhmFgNGceGoT2msdU_rA4U=wqs6xtYRc_A@mail.gmail.com>
-X-OriginalArrivalTime: 10 Apr 2013 13:01:55.0586 (UTC) FILETIME=[93EF8E20:01CE35EB]
-X-MC-Unique: 113041014015810801
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/13 00:48, Arve Hjønnevåg wrote:
->> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
->> index 5794cf6..a2cdd9e 100644
->> --- a/drivers/staging/android/binder.c
->> +++ b/drivers/staging/android/binder.c
-> ...
->> @@ -1700,7 +1700,7 @@ err_no_context_mgr_node:
->> }
+On 03/28/2013 12:33 AM, Stephen Warren wrote:
+
+> On 03/27/2013 03:45 PM, Linus Walleij wrote:
+>> On Thu, Mar 14, 2013 at 5:59 PM, Patrice CHOTARD <patrice.chotard@st.com> wrote:
+>>> On 03/13/2013 07:22 PM, Stephen Warren wrote:
+>>>
+>>>> On 03/13/2013 09:44 AM, Linus Walleij wrote:
+>>>>> From: Patrice Chotard <patrice.chotard@st.com>
+>>>>>
+>>>>> This mutex avoids deadlock in case of use of multiple pin
+>>>>> controllers. Before this modification, by using a global
+>>>>> mutex, deadlock appeared when, for example, a call to
+>>>>> pinctrl_pins_show() locked the pinctrl_mutex, called the
+>>>>> ops->pin_dbg_show of a particular pin controller. If this
+>>>>> pin controller needs I2C access to retrieve configuration
+>>>>> information and I2C driver is using pinctrl to drive its
+>>>>> pins, a call to pinctrl_select_state() try to lock again
+>>>>> pinctrl_mutex which leads to a deadlock.
+>>>>>
+>>>>> Notice that the mutex grab from the two direction functions
+>>>>> was moved into pinctrl_gpio_direction().
+>>>>>
+>>>>> For two cases, we can't replace pinctrl_mutex by
+>>>>> pctldev->mutex, because at this stage, pctldev is
+>>>>> not accessible :
+>>>>>      - pinctrl_get()/pinctrl_put()
+>>>>>      - pinctrl_register_maps()
+>>>>>
+>>>>> So add respectively pinctrl_list_mutex and
+>>>>> pinctrl_maps_mutex in order to protect
+>>>>> pinctrl_list and pinctrl_maps list instead.
+>>>>
+>>>> I can't see how this would be safe, or even how it would solve the
+>>>> problem (and still be safe).
+>>>>
+>>>> In the scenario described above, pinctrl_pins_show() would need to lock
+>>>> the list mutex since it's interacting with the list of pinctrl devices.
+>>>> Then, the I2C drivers'c pinctrl_select() also needs to acquire that same
+>>>> lock, since it's interacting with another entry in that same list in
+>>>> order to re-program the other pinctrl device to route I2C to the correct
+>>>> location.
+>>>>
+>>>
+>>> Hi Stephen,
+>>>
+>>> Thanks for your review.
+>>>
+>>> I don't understand why, in pinctrl_pins_show(), pinctrl_list_mutex
+>>> should be locked whereas pinctrl_list is not updated or parsed ?
+> 
+> Sorry for the slow response.
+> 
+> If pinctrl_pins_show() calls into a pin controller, then the list of pin
+> controllers must be locked to prevent that pin controller from being
+> destroyed while the "show" code is still using it.
+> 
+
+
+Hi all,
+
+Correct me if i am wrong, but i can't see any issue.
+
+A pin controller can't be destroyed while a pinctrl_pins_show() call. In
+both pinctrl_pins_show() and pinctrl_unregister(),
+mutex_lock(&pctldev->mutex) is perfomed. So during pinctrl_pins_show()
+execution, a pinctrl can't be unregistered/removed.
+
+
+> I suppose an alternative would be module_get() the relevant driver's
+> module to prevent it from being unloaded. I'm not sure if that would
+> remove the need to scan through the list of pin controllers (which would
+> then require taking the lock), or whether something else knows which
+> driver is related to each debugfs file so that no list lookup is
+> required? Perhaps debugfs already does that internally somehow?
+> 
+>>>> So, I can't see how separating out the map lock would make any difference.
+>>>>
+>>>> Also, why is the map lock relevant here at all anyway? The I2C mux's
+>>>> probe() should have executed pinctrl_get(), and isn't the map parsed at
+>>>> that time, and converted to a struct pinctrl, and hence any later call
+>>>> to pinctrl_select() doesn't touch the map?
+>>>
+>>> Sorry, but i don't follow what you mean ....
+>>> In create_pinctrl(), maps is protected by pinctrl_maps_mutex.
+> 
+>>> I don't understand the link between maps and pinctrl_select(),
+>>> pinctrl_select_state_locked() doesn't touch the map.
+> 
+> Yes, pinctrl_select() shouldn't touch the map since it's already been
+> parsed.
+> 
+> But if there's a per-pinctrl-driver lock, then pinctrl_select() needs to
+> lock all those locks for each driver referenced by a struct
+> pinctrl_state entry.
+> 
+> Perhaps it doesn't need to hold more than one of those at a time though;
+> that might help remove any possibility of deadlock.
+
+
+Ok, regarding pinctrl_select(), i will propose a new patch version which
+hold the per-pincontrol-driver lock referenced by each struct
+pinctrl_state entry.
+
+> 
+>>>> Is there a recursive lock type that could be used instead? I'm not sure
+>>>> if that'd still be safe though.
+>>>>
+>>>> Finally, a long while ago when I removed these separate locks and
+>>>> created the single lock, I raised a slew of complex points re: why it
+>>>> was extremely hard to split up the locking. I talked about a number of
+>>>> AB/BA deadlock cases IIRC mostly w.r.t pinctrl device registration. Were
+>>>> those considered when writing this patch? What's the solution?
+>>>
+>>> I suppose you make reference to the comment you put on this commit ?
+>>> 57b676f9c1b7cd84397fe5a86c9bd2788ac4bd32 : pinctrl: fix and simplify
+>>> locking
+> 
+> Yes, that commit and the email thread surrounding it.
+> 
+>>> Added in CC Seraphin Bonnafe as he has reported the deadlock issue using
+>>> several pin ctrollers.
 >>
->> int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
->> - void __user *buffer, int size, signed long *consumed)
->> + void __user *buffer, size_t size, size_t *consumed)
->
-> What is this change for? You changed from a signed type to an unsigned
-> type which seems unrelated to adding 64 bit support.
-
-This change is related to the userspace handling of the struct 
-binder_write_read. The userspace writes write_size and read_size as 
-size_t values(size_t Parcel::dataSize(), size_t Parcel::dataCapacity()).
-
-On return from a BINDER_WRITE_READ ioctl write_consumed and 
-read_consumed are checked against positive values(these values will 
-represent the difference between the start of the buffer cursor and the 
-current buffer start - positive values since buffer cursor = buffer 
-start ++).
-
-However if there is any plan for these values to be handled as signed 
-longs at some point we can change the patch such that we modify just the 
-function prototype to:
-
-> int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
->  -               void __user *buffer, int size, signed long *consumed)
->  +               void __user *buffer, signed long size, signed long *consumed)
-
-I will break this change into its own patch such that it is easier to 
-grasp.
-
->
-> ...
->> diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
->> index dbe81ce..8012921 100644
->> --- a/drivers/staging/android/binder.h
->> +++ b/drivers/staging/android/binder.h
->> @@ -48,13 +48,13 @@ enum {
->> */
->> struct flat_binder_object {
->> /* 8 bytes for large_flat_header. */
->> - unsigned long type;
->> - unsigned long flags;
->> + __u32 type;
->> + __u32 flags;
+>> Any reaction to this?
+> 
+> I was hoping that Patrice would go through the various issues I raised
+> in that commit log and the surrounding email discussion and point out
+> exactly why the proposed locking scheme would not cause the problems I
+> mentioned there.
+> 
+>> I can intuitively agree with the idea that the locking should not
+>> be for the entire subsystem but preferably per-controller.
+> 
+> Yes, that would be great if it doesn't introduce any issues.
+> 
+>> Indeed that commit says:
 >>
->> /* 8 bytes of data. */
->> union {
->> void __user *binder; /* local object */
->> - signed long handle; /* remote object */
->> + __s32 handle; /* remote object */
->
-> Why limit the handle to 32 bits when the pointer that it shares
-> storage with need to be 64 bit on 64 bit systems?
-
-Here I have mirrored the type being passed in handle - a file 
-descriptor(when type == BINDER_TYPE_FD) or a handle - 32bit(when type == 
-BINDER_TYPE_HANDLE). This will avoid some casting when handle is used 
-inside the kernel/userspace(as 32bit value on 64bit systems). However 
-this change does not limit the extension of the API since we can read 
-the value as 64bit - binder(on 64bit systems).
-
-I can remove this change if you consider that is the better solution.
-
->> };
+>>     Solving this requires the introduction of a higher-level lock, at least
+>>     a lock per pin controller, which both gpio range registration and
+>>     pinctrl_get()/put() will acquire.
 >>
->> /* extra data associated with local object */
->> @@ -67,18 +67,18 @@ struct flat_binder_object {
->> */
+>> So this is the "atleast".
+> 
+> Yup.
+> 
+>> Then it says:
 >>
->> struct binder_write_read {
->> - signed long write_size; /* bytes to write */
->> - signed long write_consumed; /* bytes consumed by driver */
->> + size_t write_size; /* bytes to write */
->> + size_t write_consumed; /* bytes consumed by driver */
->> unsigned long write_buffer;
->> - signed long read_size; /* bytes to read */
->> - signed long read_consumed; /* bytes consumed by driver */
->> + size_t read_size; /* bytes to read */
->> + size_t read_consumed; /* bytes consumed by driver */
->
-> What is this change for? You changed from a signed type to an unsigned
-> type which seems unrelated to adding 64 bit support.
-
-See above explanation for binder_thread_write() change, I will break 
-this into its own patch.
-
->> unsigned long read_buffer;
->> };
+>>     Related, a future change will add a
+>>     "complete" op to the pin controller drivers, the idea being that each
+>>     state's programming will be programmed into the pinctrl driver followed
+>>     by the "complete" call,
 >>
->> /* Use with BINDER_VERSION, driver fills in fields. */
->> struct binder_version {
->> /* driver protocol version -- increment with incompatible change */
->> - signed long protocol_version;
->> + __s32 protocol_version;
->
-> How does user-space know if it should use 32 bit or 64 bit pointers.
-> Without this change, the BINDER_VERSION ioctl would only match when
-> the size of long matches.
-
-The userspace can check the values returned by uname(). That will 
-determine if the kernel is 32 or 64bit and depending on this select what 
-binder structures to use. Next a BINDER_VERSION ioctl will fail on 64bit 
-kernels using protocol_version as 64bit signed long(that is old kernel 
-versions with no 64bit support).
-
-Leaving this value as signed long would mean that older versions of the 
-binder(without 64bit support) will pass the check. Furthermore the 
-protocol version will probably never exceed the values that could be 
-represented on 32bit. It will also mean that BINDER_VERSION will have a 
-different userspace/kernel handler for 64/32 systems.
-
-Let me know what are your thoughts related to these changes,
-Thanks for your feedback,
-Serban
+>> Hm that is actually quite useful but we haven't got around to
+>> doing that, and it should be able to use the same per-controller mutex.
+> 
+> Indeed. I guess nobody ended up caring about that optimization yet.
+> Still, it's something that should be easy to add any time it's useful.
+> 
+>> And that of course brings into the question of locking when accessing
+>> the list of such controllers, or the maps, neither of which are part
+>> of any controller. So these needs to be a separate mutexes.
+>>
+>> The old locking would be per-descriptor but this patch preserves
+>> part of the reform in Stephen's patch, it keeps one big lock for
+>> everything happening in a certain pin controller, but brings back
+>> the two locks for lists and maps.
+> 
+> OK.
+> 
+>> The commit message also states:
+>>
+>>     However, each pinctrl mapping table entry may affect a different pin
+>>     controller if necessary. Hence, with a per-pin-controller lock, almost
+>>     any pinctrl API may need to acquire multiple locks, one per controller.
+>>     To avoid deadlock, these would need to be acquired in the same order in
+>>     all cases. This is extremely difficult to implement in the case of
+>>     pinctrl_get(), which doesn't know which pin controllers to lock until it
+>>     has parsed the entire mapping table, since it contains somewhat arbitrary
+>>     data.
+>>
+>> This is the real problem, right?
+> 
+> That's one issue.
+> 
+> Perhaps if we acquire and release the locks for each controller as we
+> process each individual entry in struct pinctrl_state, we'll never hold
+> more than one per-pinctrl-driver lock at once, so there won't be any
+> possibility of ABBA locking problems across multiple pinctrl drivers.
+> 
+> But there's at least one more issue that I vaguely recall now: When
+> registering a pinctrl driver, the pinctrl core can automatically select
+> that device's own default state (a/k/a hogging). pinctrl_register()
+> would need to hold the list lock since it's manipulating the list.
+> However, if we re-use the pinctrl_select() code, then that requires
+> recursive locking; the lock is held once by pinctrl_register, and would
+> need to be taken during map->pinctrl_state conversion in order to look
+> up the pinctrl driver for each map entry. There was some reason it
+> didn't make sense to first register the new pinctrl driver, then drop
+> the list lock, then apply the hogs outside the lock, but I forget what
+> that was:-( Perhaps I was mistaken here. Or perhaps, I was just trying
+> to avoid many lock/unlock operations during register, and I should have
+> just not tried to avoid that.
+> 
+>> This patch will just take the pinctrl_list_mutex in the pinctrl_get()
+>> path. If it then ends up in create_pinctrl() from there
+>> it is iterating the map, and should thus also take the
+>> pinctrl_maps_mutex, which it does.
+>>
+>> I don't quite see how taking these two orthogonal mutexes would
+>> be so complicated to get right, so please help me out here.
+> 
+> The main issue I was trying to avoid was deadlock due to ABBA lock
+> acquisition.
 
