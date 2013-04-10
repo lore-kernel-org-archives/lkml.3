@@ -1,180 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937011Ab3DJKr3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:47:29 -0400
-Received: from smtp.nue.novell.com ([195.135.221.5]:35451 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936446Ab3DJKr2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:47:28 -0400
-Subject: Re: [PATCH v3] X.509: Support parse long form of length octets in
- Authority Key Identifier
-From: joeyli <jlee@suse.com>
-To: dhowells@redhat.com
-Cc: linux-kernel@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, rusty@rustcorp.com.au
-In-Reply-To: <1364547153-1416-1-git-send-email-jlee@suse.com>
-References: <1364547153-1416-1-git-send-email-jlee@suse.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Apr 2013 18:46:33 +0800
-Message-ID: <1365590793.14856.52.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S937217Ab3DJKuf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:50:35 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52682 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752570Ab3DJKue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 06:50:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,445,1363158000"; 
+   d="scan'208";a="225471811"
+Date: Wed, 10 Apr 2013 13:54:26 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, grant.likely@secretlab.ca,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio / ACPI: Handle ACPI events in accordance with the
+ spec
+Message-ID: <20130410105426.GB1283@intel.com>
+References: <3043137.BtEKcMiXSu@vostro.rjw.lan>
+ <51652035.5000802@linux.intel.com>
+ <20130410091747.GO21818@intel.com>
+ <7616728.CEZnGS3Ki9@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7616728.CEZnGS3Ki9@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David, 
+On Wed, Apr 10, 2013 at 12:39:21PM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, April 10, 2013 12:17:47 PM Mika Westerberg wrote:
+> > On Wed, Apr 10, 2013 at 11:17:57AM +0300, Mathias Nyman wrote:
+> > > On 04/10/2013 10:53 AM, Mika Westerberg wrote:
+> > > >On Tue, Apr 09, 2013 at 03:57:25PM +0200, Rafael J. Wysocki wrote:
+> > > >>+void acpi_gpiochip_free_interrupts(struct gpio_chip *chip)
+> > > >>+{
+> > > >>+	acpi_handle handle;
+> > > >>+	acpi_status status;
+> > > >>+	struct list_head *evt_pins;
+> > > >>+	struct acpi_gpio_evt_pin *evt_pin, *ep;
+> > > >>+
+> > > >>+	if (!chip->dev || !chip->to_irq)
+> > > >>+		return;
+> > > >>+
+> > > >>+	handle = ACPI_HANDLE(chip->dev);
+> > > >>+	if (!handle)
+> > > >>+		return;
+> > > >>+
+> > > >>+	status = acpi_get_data(handle, acpi_gpio_evt_dh, (void **)&evt_pins);
+> > > >>+	if (ACPI_FAILURE(status))
+> > > >>+		return;
+> > > >>+
+> > > >>+	list_for_each_entry_safe_reverse(evt_pin, ep, evt_pins, node) {
+> > > >>+		devm_free_irq(chip->dev, evt_pin->irq, evt_pin);
+> > > >
+> > > >How about using normal request/free_irq() functions for both _EVT and
+> > > >non-_EVT events? Since we now need to call acpi_gpiochip_free_interrupts()
+> > > >anyway, I don't see the point using devm_* functions here.
+> > > >
+> > > 
+> > > Then we need to create a list of non-_EVT events, or add them to the
+> > > evt_pins list.
+> > 
+> > Good point. Maybe we can add them to the evt_pins list and handle the same
+> > way as _EVT (except that we need to call _Exx and _Lxx methods instead of
+> > _EVT)?
+> 
+> The difference is that the evt_pins data is only needed for _EVT execution,
+> because _EVT takes the pin argument.  _Lxx/_Exx don't take arguments and
+> there's no need to add extra data structures for them, as devm_ does what's
+> needed.
 
-Sorry for bother you!
+OK, thanks for the explanation.
 
-Will you take this patch for merge to v3.10 kernel?
+> Of course, plain request/free_irq may be used for the _EVT events only
+> at the expense of a little more complexity in acpi_gpiochip_request_interrupts().
 
+I'm not sure whether it is a good thing to mix devm_ and plain request/free
+here. And more complexity is always bad so I guess we can stay with this
+implementation now.
 
-Thanks a lot!
-Joey Lee
+Feel free to add my
 
-於 五，2013-03-29 於 16:52 +0800，Lee, Chun-Yi 提到：
-> From: Chun-Yi Lee <jlee@suse.com>
-> 
-> Per X.509 spec in 4.2.1.1 section, the structure of Authority Key
-> Identifier Extension is:
-> 
->    AuthorityKeyIdentifier ::= SEQUENCE {
->       keyIdentifier             [0] KeyIdentifier           OPTIONAL,
->       authorityCertIssuer       [1] GeneralNames            OPTIONAL,
->       authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL  }
-> 
->    KeyIdentifier ::= OCTET STRING
-> 
-> When a certificate also provides
-> authorityCertIssuer and authorityCertSerialNumber then the length of
-> AuthorityKeyIdentifier SEQUENCE is likely to long form format.
-> e.g.
->    The example certificate demos/tunala/A-server.pem in openssl source:
-> 
-> X509v3 Authority Key Identifier:
->     keyid:49:FB:45:72:12:C4:CC:E1:45:A1:D3:08:9E:95:C4:2C:6D:55:3F:17
->     DirName:/C=NZ/L=Wellington/O=Really Irresponsible Authorisation Authority (RIAA)/OU=Cert-stamping/CN=Jackov al-Trades/emailAddress=none@fake.domain
->     serial:00
-> 
-> Current parsing rule of OID_authorityKeyIdentifier only take care the
-> short form format, it causes load certificate to modsign_keyring fail:
-> 
-> [   12.061147] X.509: Extension: 47
-> [   12.075121] MODSIGN: Problem loading in-kernel X.509 certificate (-74)
-> 
-> So, this patch add the parsing rule for support long form format against
-> Authority Key Identifier.
-> 
-> v3:
-> Changed the size check in "Short Form length" case, we allow v[3] smaller
-> then (vlen - 4) because authorityCertIssuer and authorityCertSerialNumber
-> are also possible attach in AuthorityKeyIdentifier sequence.
-> 
-> v2:
->  - Removed comma from author's name.
->  - Moved 'Short Form length' comment inside the if-body.
->  - Changed the type of sub to size_t.
->  - Use ASN1_INDEFINITE_LENGTH rather than writing 0x80 and 127.
->  - Moved the key_len's value assignment before alter v.
->  - Fixed the typo of octets.
->  - Add 2 to v before entering the loop for calculate the length.
->  - Removed the comment of check vlen.
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Josh Boyer <jwboyer@redhat.com>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Acked-by: David Howells <dhowells@redhat.com>
-> Signed-off-by: Chun-Yi Lee <jlee@suse.com>
-> ---
->  crypto/asymmetric_keys/x509_cert_parser.c |   55 ++++++++++++++++++++++++----
->  1 files changed, 47 insertions(+), 8 deletions(-)
-> 
-> diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-> index 7fabc4c..59ab6d2 100644
-> --- a/crypto/asymmetric_keys/x509_cert_parser.c
-> +++ b/crypto/asymmetric_keys/x509_cert_parser.c
-> @@ -373,6 +373,9 @@ int rsa_extract_mpi(void *context, size_t hdrlen,
->  	return 0;
->  }
->  
-> +/* The keyIdentifier in AuthorityKeyIdentifier SEQUENCE is tag(CONT,PRIM,0) */
-> +#define SEQ_TAG_KEYID (ASN1_CONT << 6)
-> +
->  /*
->   * Process certificate extensions that are used to qualify the certificate.
->   */
-> @@ -407,21 +410,57 @@ int x509_process_extension(void *context, size_t hdrlen,
->  	}
->  
->  	if (ctx->last_oid == OID_authorityKeyIdentifier) {
-> +		size_t key_len;
-> +
->  		/* Get hold of the CA key fingerprint */
->  		if (vlen < 5)
->  			return -EBADMSG;
-> -		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)) ||
-> -		    v[1] != vlen - 2 ||
-> -		    v[2] != (ASN1_CONT << 6) ||
-> -		    v[3] != vlen - 4)
-> +
-> +		/* Authority Key Identifier must be a Constructed SEQUENCE */
-> +		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)))
->  			return -EBADMSG;
-> -		v += 4;
-> -		vlen -= 4;
->  
-> -		f = kmalloc(vlen * 2 + 1, GFP_KERNEL);
-> +		/* Authority Key Identifier is not indefinite length */
-> +		if (unlikely(vlen == ASN1_INDEFINITE_LENGTH))
-> +			return -EBADMSG;
-> +
-> +		if (vlen < ASN1_INDEFINITE_LENGTH) {
-> +			/* Short Form length */
-> +			if (v[1] != vlen - 2 ||
-> +			    v[2] != SEQ_TAG_KEYID ||
-> +			    v[3] > vlen - 4)
-> +				return -EBADMSG;
-> +
-> +			key_len = v[3];
-> +			v += 4;
-> +		} else {
-> +			/* Long Form length */
-> +			size_t seq_len = 0;
-> +			size_t sub = v[1] - ASN1_INDEFINITE_LENGTH;
-> +
-> +			if (sub > 2)
-> +				return -EBADMSG;
-> +
-> +			/* calculate the length from subsequent octets */
-> +			v += 2;
-> +			for (i = 0; i < sub; i++) {
-> +				seq_len <<= 8;
-> +				seq_len |= v[i];
-> +			}
-> +
-> +			if (seq_len != vlen - 2 - sub ||
-> +			    v[sub] != SEQ_TAG_KEYID ||
-> +			    v[sub + 1] > vlen - 4 - sub)
-> +				return -EBADMSG;
-> +
-> +			key_len = v[sub + 1];
-> +			v += (sub + 2);
-> +		}
-> +
-> +		f = kmalloc(key_len * 2 + 1, GFP_KERNEL);
->  		if (!f)
->  			return -ENOMEM;
-> -		for (i = 0; i < vlen; i++)
-> +		for (i = 0; i < key_len; i++)
->  			sprintf(f + i * 2, "%02x", v[i]);
->  		pr_debug("authority   %s\n", f);
->  		ctx->cert->authority = f;
-
-
+Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
