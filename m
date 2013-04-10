@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937523Ab3DJW5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:57:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56595 "EHLO
+	id S937567Ab3DJW5z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:57:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56590 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937434Ab3DJWuJ (ORCPT
+	with ESMTP id S937491Ab3DJWuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:50:09 -0400
+	Wed, 10 Apr 2013 18:50:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Stancek <jstancek@redhat.com>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Vikram Mulukutla <markivx@codeaurora.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 26/29] mm: prevent mmap_cache race in find_vma()
-Date: Wed, 10 Apr 2013 15:49:44 -0700
-Message-Id: <20130410224806.782757072@linuxfoundation.org>
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [ 25/29] panic: fix a possible deadlock in panic()
+Date: Wed, 10 Apr 2013 15:49:43 -0700
+Message-Id: <20130410224806.674801360@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -29,80 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Stancek <jstancek@redhat.com>
+From: Vikram Mulukutla <markivx@codeaurora.org>
 
-commit b6a9b7f6b1f21735a7456d534dc0e68e61359d2c upstream.
+commit 190320c3b6640d4104650f55ff69611e050ea06b upstream.
 
-find_vma() can be called by multiple threads with read lock
-held on mm->mmap_sem and any of them can update mm->mmap_cache.
-Prevent compiler from re-fetching mm->mmap_cache, because other
-readers could update it in the meantime:
+panic_lock is meant to ensure that panic processing takes place only on
+one cpu; if any of the other cpus encounter a panic, they will spin
+waiting to be shut down.
 
-               thread 1                             thread 2
-                                        |
-  find_vma()                            |  find_vma()
-    struct vm_area_struct *vma = NULL;  |
-    vma = mm->mmap_cache;               |
-    if (!(vma && vma->vm_end > addr     |
-        && vma->vm_start <= addr)) {    |
-                                        |    mm->mmap_cache = vma;
-    return vma;                         |
-     ^^ compiler may optimize this      |
-        local variable out and re-read  |
-        mm->mmap_cache                  |
+However, this causes a regression in this scenario:
 
-This issue can be reproduced with gcc-4.8.0-1 on s390x by running
-mallocstress testcase from LTP, which triggers:
+1. Cpu 0 encounters a panic and acquires the panic_lock
+   and proceeds with the panic processing.
+2. There is an interrupt on cpu 0 that also encounters
+   an error condition and invokes panic.
+3. This second invocation fails to acquire the panic_lock
+   and enters the infinite while loop in panic_smp_self_stop.
 
-  kernel BUG at mm/rmap.c:1088!
-    Call Trace:
-     ([<000003d100c57000>] 0x3d100c57000)
-      [<000000000023a1c0>] do_wp_page+0x2fc/0xa88
-      [<000000000023baae>] handle_pte_fault+0x41a/0xac8
-      [<000000000023d832>] handle_mm_fault+0x17a/0x268
-      [<000000000060507a>] do_protection_exception+0x1e2/0x394
-      [<0000000000603a04>] pgm_check_handler+0x138/0x13c
-      [<000003fffcf1f07a>] 0x3fffcf1f07a
-    Last Breaking-Event-Address:
-      [<000000000024755e>] page_add_new_anon_rmap+0xc2/0x168
+Thus all panic processing is stopped, and the cpu is stuck for eternity
+in the while(1) inside panic_smp_self_stop.
 
-Thanks to Jakub Jelinek for his insight on gcc and helping to
-track this down.
+To address this, disable local interrupts with local_irq_disable before
+acquiring the panic_lock.  This will prevent interrupt handlers from
+executing during the panic processing, thus avoiding this particular
+problem.
 
-Signed-off-by: Jan Stancek <jstancek@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Vikram Mulukutla <markivx@codeaurora.org>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context, indentation]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmap.c  |    2 +-
- mm/nommu.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/panic.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1619,7 +1619,7 @@ struct vm_area_struct *find_vma(struct m
- 	if (mm) {
- 		/* Check the cache first. */
- 		/* (Cache hit rate is typically around 35%.) */
--		vma = mm->mmap_cache;
-+		vma = ACCESS_ONCE(mm->mmap_cache);
- 		if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
- 			struct rb_node * rb_node;
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -75,6 +75,14 @@ void panic(const char *fmt, ...)
+ 	int state = 0;
  
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -807,7 +807,7 @@ struct vm_area_struct *find_vma(struct m
- 	struct vm_area_struct *vma;
- 
- 	/* check the cache first */
--	vma = mm->mmap_cache;
-+	vma = ACCESS_ONCE(mm->mmap_cache);
- 	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
- 		return vma;
- 
+ 	/*
++	 * Disable local interrupts. This will prevent panic_smp_self_stop
++	 * from deadlocking the first cpu that invokes the panic, since
++	 * there is nothing to prevent an interrupt handler (that runs
++	 * after the panic_lock is acquired) from invoking panic again.
++	 */
++	local_irq_disable();
++
++	/*
+ 	 * It's possible to come here directly from a panic-assertion and
+ 	 * not have preempt disabled. Some functions called from here want
+ 	 * preempt to be disabled. No point enabling it later though...
 
 
