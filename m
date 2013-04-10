@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936882Ab3DJW2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:28:31 -0400
-Received: from rydia.net ([69.46.88.68]:52834 "EHLO mail.rydia.net"
+	id S936916Ab3DJW3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:29:14 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:55714 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935439Ab3DJW2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:28:30 -0400
-Date: Wed, 10 Apr 2013 15:28:32 -0700 (PDT)
-From: dormando <dormando@rydia.net>
-X-X-Sender: dormando@dtop
-To: Mel Gorman <mgorman@suse.de>
-cc: Christoph Lameter <cl@linux.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/10] Reduce system disruption due to kswapd V2
-In-Reply-To: <20130410141445.GD3710@suse.de>
-Message-ID: <alpine.DEB.2.02.1304101524120.7738@dtop>
-References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <0000013defd666bf-213d70fc-dfbd-4a50-82ed-e9f4f7391b55-000000@email.amazonses.com> <20130410141445.GD3710@suse.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S933050Ab3DJW3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 18:29:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio / ACPI: Handle ACPI events in accordance with the spec
+Date: Thu, 11 Apr 2013 00:36:46 +0200
+Message-ID: <11675322.sNW92yfCOJ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CACRpkdZ+Tj2tdQsY7dM+ZJHDeO=HdnYtQ8fWVAXRbP0zpG8ijA@mail.gmail.com>
+References: <3043137.BtEKcMiXSu@vostro.rjw.lan> <CACRpkdZ+Tj2tdQsY7dM+ZJHDeO=HdnYtQ8fWVAXRbP0zpG8ijA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Apr 09, 2013 at 05:27:18PM +0000, Christoph Lameter wrote:
-> > One additional measure that may be useful is to make kswapd prefer one
-> > specific processor on a socket. Two benefits arise from that:
+On Wednesday, April 10, 2013 11:06:48 PM Linus Walleij wrote:
+> On Tue, Apr 9, 2013 at 3:57 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> 
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > >
-> > 1. Better use of cpu caches and therefore higher speed, less
-> > serialization.
+> > Commit 0d1c28a (gpiolib-acpi: Add ACPI5 event model support to gpio.)
+> > that added support for ACPI events signalled through GPIO interrupts
+> > covered only GPIO pins whose numbers are less than or equal to 255.
+> > However, there may be GPIO pins with numbers greater than 255 and
+> > the ACPI spec (ACPI 5.0, Section 5.6.5.1) requires the _EVT method
+> > to be used for handling events corresponding to those pins.
 > >
->
-> Considering the volume of pages that kswapd can scan when it's active
-> I would expect that it trashes its cache anyway. The L1 cache would be
-> flushed after scanning struct pages for just a few MB of memory.
->
-> > 2. Reduction of the disturbances to one processor.
+> > Moreover, according to the spec, _EVT is the default mechanism
+> > for handling all ACPI events signalled through GPIO interrupts,
+> > so if the _Exx/_Lxx method is not present for the given pin,
+> > _EVT should be used instead.  If present, though, _Exx/_Lxx take
+> > precedence over _EVT which shouldn't be executed in that case
+> > (ACPI 5.0, Section 5.6.5.3).
 > >
->
-> I've never checked it but I would have expected kswapd to stay on the
-> same processor for significant periods of time. Have you experienced
-> problems where kswapd bounces around on CPUs within a node causing
-> workload disruption?
+> > Modify acpi_gpiochip_request_interrupts() to follow the spec as
+> > described above and add acpi_gpiochip_free_interrupts() needed
+> > to free interrupts associated with _EVT.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Patch applied with Mika's ACK, thanks!
+> 
+> It's not like I fully understand it, but I totally trust you guys.
 
-When kswapd shares the same CPU as our main process it causes a measurable
-drop in response time (graphs show tiny spikes at the same time memory is
-freed). Would be nice to be able to ensure it runs on a different core
-than our latency sensitive processes at least. We can pin processes to
-subsets of cores but I don't think there's a way to keep kswapd from
-waking up on any of them?
+Well, thanks! :-)
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
