@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937060Ab3DJQLB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:11:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38943 "EHLO mx1.redhat.com"
+	id S964946Ab3DJQLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:11:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56381 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935205Ab3DJQK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:10:58 -0400
+	id S935205Ab3DJQLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 12:11:04 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
@@ -16,48 +16,18 @@ Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH v5 1/3] hugetlbfs: stop setting VM_DONTDUMP in initializing vma(VM_HUGETLB)
-Date: Wed, 10 Apr 2013 12:09:15 -0400
-Message-Id: <1365610157-15290-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1365610157-15290-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1365610157-15290-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH v5 0/3] fix hugepage coredump
+Date: Wed, 10 Apr 2013 12:09:14 -0400
+Message-Id: <1365610157-15290-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we fail to include any data on hugepages into coredump,
-because VM_DONTDUMP is set on hugetlbfs's vma. This behavior was recently
-introduced by commit 314e51b98 "mm: kill vma flag VM_RESERVED and
-mm->reserved_vm counter". This looks to me a serious regression,
-so let's fix it.
+Hi,
 
-ChangeLog v3:
- - move 'return 0' into a separate patch
+Here is 5th version of hugepage coredump fix.
+I changed the place to put swap entry check in 3/3,
+and explained more in comment.
 
-ChangeLog v2:
- - add 'return 0' in hugepage memory check
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Acked-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: stable@vger.kernel.org
----
- fs/hugetlbfs/inode.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git v3.9-rc3.orig/fs/hugetlbfs/inode.c v3.9-rc3/fs/hugetlbfs/inode.c
-index 84e3d85..523464e 100644
---- v3.9-rc3.orig/fs/hugetlbfs/inode.c
-+++ v3.9-rc3/fs/hugetlbfs/inode.c
-@@ -110,7 +110,7 @@ static int hugetlbfs_file_mmap(struct file *file, struct vm_area_struct *vma)
- 	 * way when do_mmap_pgoff unwinds (may be important on powerpc
- 	 * and ia64).
- 	 */
--	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND | VM_DONTDUMP;
-+	vma->vm_flags |= VM_HUGETLB | VM_DONTEXPAND;
- 	vma->vm_ops = &hugetlb_vm_ops;
- 
- 	if (vma->vm_pgoff & (~huge_page_mask(h) >> PAGE_SHIFT))
--- 
-1.7.11.7
-
+Thanks,
+Naoya Horiguchi
