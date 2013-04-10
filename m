@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936747Ab3DJSYJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 14:24:09 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:58518 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934446Ab3DJSYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 14:24:07 -0400
+	id S937092Ab3DJSYU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 14:24:20 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:42387 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934446Ab3DJSYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 14:24:15 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -15,72 +14,80 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH v3 02/11] mm/page_alloc: prevent concurrent updaters of pcp ->batch and ->high
-Date: Wed, 10 Apr 2013 11:23:30 -0700
-Message-Id: <1365618219-17154-3-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH v3 00/11] mm: fixup changers of per cpu pageset's ->high and ->batch
+Date: Wed, 10 Apr 2013 11:23:28 -0700
+Message-Id: <1365618219-17154-1-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1365618219-17154-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1365618219-17154-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041018-7282-0000-0000-00001605355F
+x-cbid: 13041018-5806-0000-0000-000020ACC17E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because we are going to rely upon a careful transision between old and
-new ->high and ->batch values using memory barriers and will remove
-stop_machine(), we need to prevent multiple updaters from interweaving
-their memory writes.
+"Problems" with the current code:
+ 1. there is a lack of synchronization in setting ->high and ->batch in
+    percpu_pagelist_fraction_sysctl_handler()
+ 2. stop_machine() in zone_pcp_update() is unnecissary.
+ 3. zone_pcp_update() does not consider the case where percpu_pagelist_fraction is non-zero
 
-Add a simple mutex to protect both update loops.
+To fix:
+ 1. add memory barriers, a safe ->batch value, an update side mutex when
+    updating ->high and ->batch, and use ACCESS_ONCE() for ->batch users that
+    expect a stable value.
+ 2. avoid draining pages in zone_pcp_update(), rely upon the memory barriers added to fix #1
+ 3. factor out quite a few functions, and then call the appropriate one.
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- mm/page_alloc.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+Note that it results in a change to the behavior of zone_pcp_update(), which is
+used by memory_hotplug. I'm rather certain that I've diserned (and preserved)
+the essential behavior (changing ->high and ->batch), and only eliminated
+unneeded actions (draining the per cpu pages), but this may not be the case.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5877cf0..d259599 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -64,6 +64,9 @@
- #include <asm/div64.h>
- #include "internal.h"
- 
-+/* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
-+static DEFINE_MUTEX(pcp_batch_high_lock);
-+
- #ifdef CONFIG_USE_PERCPU_NUMA_NODE_ID
- DEFINE_PER_CPU(int, numa_node);
- EXPORT_PER_CPU_SYMBOL(numa_node);
-@@ -5491,6 +5494,8 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
- 	ret = proc_dointvec_minmax(table, write, buffer, length, ppos);
- 	if (!write || (ret < 0))
- 		return ret;
-+
-+	mutex_lock(&pcp_batch_high_lock);
- 	for_each_populated_zone(zone) {
- 		for_each_possible_cpu(cpu) {
- 			unsigned long  high;
-@@ -5499,6 +5504,7 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
- 				per_cpu_ptr(zone->pageset, cpu), high);
- 		}
- 	}
-+	mutex_unlock(&pcp_batch_high_lock);
- 	return 0;
- }
- 
-@@ -6012,7 +6018,9 @@ static int __meminit __zone_pcp_update(void *data)
- 
- void __meminit zone_pcp_update(struct zone *zone)
- {
-+	mutex_lock(&pcp_batch_high_lock);
- 	stop_machine(__zone_pcp_update, zone, NULL);
-+	mutex_unlock(&pcp_batch_high_lock);
- }
- #endif
- 
+Further note that the draining of pages that previously took place in
+zone_pcp_update() occured after repeated draining when attempting to offline a
+page, and after the offline has "succeeded". It appears that the draining was
+added to zone_pcp_update() to avoid refactoring setup_pageset() into 2
+funtions.
+
+--
+
+Since v2: https://lkml.org/lkml/2013/4/9/718
+
+ - note ACCESS_ONCE() in fix #1 above.
+ - consolidate ->batch & ->high update protocol into a single funtion (Gilad).
+ - add missing ACCESS_ONCE() on ->batch
+
+Since v1: https://lkml.org/lkml/2013/4/5/444
+
+ - instead of using on_each_cpu(), use memory barriers (Gilad) and an update side mutex.
+ - add "Problem" #3 above, and fix.
+ - rename function to match naming style of similar function
+ - move unrelated comment
+
+--
+
+Cody P Schafer (11):
+  mm/page_alloc: factor out setting of pcp->high and pcp->batch.
+  mm/page_alloc: prevent concurrent updaters of pcp ->batch and ->high
+  mm/page_alloc: insert memory barriers to allow async update of pcp
+    batch and high
+  mm/page_alloc: protect pcp->batch accesses with ACCESS_ONCE
+  mm/page_alloc: convert zone_pcp_update() to rely on memory barriers
+    instead of stop_machine()
+  mm/page_alloc: when handling percpu_pagelist_fraction, don't unneedly
+    recalulate high
+  mm/page_alloc: factor setup_pageset() into pageset_init() and
+    pageset_set_batch()
+  mm/page_alloc: relocate comment to be directly above code it refers
+    to.
+  mm/page_alloc: factor zone_pageset_init() out of setup_zone_pageset()
+  mm/page_alloc: in zone_pcp_update(), uze zone_pageset_init()
+  mm/page_alloc: rename setup_pagelist_highmark() to match naming of
+    pageset_set_batch()
+
+ mm/page_alloc.c | 151 +++++++++++++++++++++++++++++++++-----------------------
+ 1 file changed, 90 insertions(+), 61 deletions(-)
+
 -- 
 1.8.2.1
 
