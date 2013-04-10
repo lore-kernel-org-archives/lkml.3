@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936763Ab3DJKZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:25:13 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:44265 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936027Ab3DJKZK (ORCPT
+	id S936108Ab3DJK07 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:26:59 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52760
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751985Ab3DJK06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:25:10 -0400
-From: Hanjun Guo <guohanjun@huawei.com>
-To: <kernel.openeuler@huawei.com>
-CC: Toshi Kani <toshi.kani@hp.com>, Jiang Liu <jiang.liu@huawei.com>,
-        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] ACPI: Untangle a return statement for better readability
-Date: Wed, 10 Apr 2013 18:23:00 +0800
-Message-ID: <1365589381-5624-4-git-send-email-guohanjun@huawei.com>
-X-Mailer: git-send-email 1.7.10.msysgit.1
-In-Reply-To: <1365589381-5624-1-git-send-email-guohanjun@huawei.com>
-References: <1365589381-5624-1-git-send-email-guohanjun@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.68.124]
-X-CFilter-Loop: Reflected
+	Wed, 10 Apr 2013 06:26:58 -0400
+Message-ID: <1365589603.30071.37.camel@laptop>
+Subject: Re: [RFC GIT PULL] nohz: Full dynticks rq clock handling
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>
+Date: Wed, 10 Apr 2013 12:26:43 +0200
+In-Reply-To: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
+References: <1365266760-24725-1-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Renninger <trenn@suse.de>
 
-mainline inclusion
-from mainline-3.6
-upstream commit f3946fb6e50b750d34f445188fa6746d14596afa
-category: cleanup
+Another thing I just noticed; our update_curr() assumes its called at
+least once every 4 odd seconds (2^32 ns like).
 
-This patch is cleanup patch, but the next bugfix patch is
-upon it.
+update_curr() is 'required' for things like task runtime stats and
+everything that hangs off of that like cputimers etc.
 
---------------------------------------------------------
-
-No functional change.
-
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Integrated-by: Hanjun Guo <guohanjun@huawei.com>
----
- drivers/acpi/numa.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
-index e56f3be..2a63993 100644
---- a/drivers/acpi/numa.c
-+++ b/drivers/acpi/numa.c
-@@ -304,8 +304,10 @@ int __init acpi_numa_init(void)
- 
- 	acpi_numa_arch_fixup();
- 
--	if (cnt <= 0)
--		return cnt ?: -ENOENT;
-+	if (cnt < 0)
-+		return cnt;
-+	else if (cnt == 0)
-+		return -ENOENT;
- 	return 0;
- }
- 
--- 
-1.6.0.2
-
+Now I'm not entirely sure how the nr_running==1 nohz case deals with
+this, but I can imagine it might take a while. In this case we might
+need to 'fix' update_curr() to not asume the time delta fits in 32
+bits.
 
