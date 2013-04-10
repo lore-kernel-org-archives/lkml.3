@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965177Ab3DJW6f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:58:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56586 "EHLO
+	id S965218Ab3DJW6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:58:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56580 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937483Ab3DJWuH (ORCPT
+	with ESMTP id S937459Ab3DJWuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Apr 2013 18:50:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Guy Briggs <rbriggs@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 24/29] thermal: return an error on failure to register thermal class
-Date: Wed, 10 Apr 2013 15:49:42 -0700
-Message-Id: <20130410224806.557649447@linuxfoundation.org>
+        Jan Beulich <jbeulich@suse.com>, Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 23/29] x86: Fix rebuild with EFI_STUB enabled
+Date: Wed, 10 Apr 2013 15:49:41 -0700
+Message-Id: <20130410224806.455886355@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -28,36 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rbriggs@redhat.com>
+From: Jan Beulich <JBeulich@suse.com>
 
-commit da28d966f6aa942ae836d09729f76a1647932309 upstream.
+commit 918708245e92941df16a634dc201b407d12bcd91 upstream.
 
-The return code from the registration of the thermal class is used to
-unallocate resources, but this failure isn't passed back to the caller of
-thermal_init.  Return this failure back to the caller.
+eboot.o and efi_stub_$(BITS).o didn't get added to "targets", and hence
+their .cmd files don't get included by the build machinery, leading to
+the files always getting rebuilt.
 
-This bug was introduced in changeset 4cb18728 which overwrote the return code
-when the variable was re-used to catch the return code of the registration of
-the genetlink thermal socket family.
+Rather than adding the two files individually, take the opportunity and
+add $(VMLINUX_OBJS) to "targets" instead, thus allowing the assignment
+at the top of the file to be shrunk quite a bit.
 
-Signed-off-by: Richard Guy Briggs <rbriggs@redhat.com>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+At the same time, remove a pointless flags override line - the variable
+assigned to was misspelled anyway, and the options added are
+meaningless for assembly sources.
+
+[ hpa: the patch is not minimal, but I am taking it for -urgent anyway
+  since the excess impact of the patch seems to be small enough. ]
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/515C5D2502000078000CA6AD@nat28.tlf.novell.com
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/thermal/thermal_sys.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/boot/compressed/Makefile |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -1383,6 +1383,7 @@ static int __init thermal_init(void)
- 		idr_destroy(&thermal_cdev_idr);
- 		mutex_destroy(&thermal_idr_lock);
- 		mutex_destroy(&thermal_list_lock);
-+		return result;
- 	}
- 	result = genetlink_init();
- 	return result;
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -4,7 +4,7 @@
+ # create a compressed vmlinux image from the original vmlinux
+ #
+ 
+-targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
++targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo
+ 
+ KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
+ KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
+@@ -29,7 +29,6 @@ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)
+ 	$(obj)/piggy.o
+ 
+ $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
+-$(obj)/efi_stub_$(BITS).o: KBUILD_CLFAGS += -fshort-wchar -mno-red-zone
+ 
+ ifeq ($(CONFIG_EFI_STUB), y)
+ 	VMLINUX_OBJS += $(obj)/eboot.o $(obj)/efi_stub_$(BITS).o
+@@ -43,7 +42,7 @@ OBJCOPYFLAGS_vmlinux.bin :=  -R .comment
+ $(obj)/vmlinux.bin: vmlinux FORCE
+ 	$(call if_changed,objcopy)
+ 
+-targets += vmlinux.bin.all vmlinux.relocs
++targets += $(patsubst $(obj)/%,%,$(VMLINUX_OBJS)) vmlinux.bin.all vmlinux.relocs
+ 
+ CMD_RELOCS = arch/x86/tools/relocs
+ quiet_cmd_relocs = RELOCS  $@
 
 
