@@ -1,38 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936204Ab3DJHOa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 03:14:30 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47693 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751515Ab3DJHO3 (ORCPT
+	id S1765176Ab3DJHRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 03:17:19 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43258 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab3DJHRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 03:14:29 -0400
-Message-ID: <1365578066.30071.14.camel@laptop>
-Subject: Re: [PATCH] sched: Fix 32bit race in sched_clock_remote()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: tglx <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Apr 2013 09:14:26 +0200
-In-Reply-To: <20130409145546.GA14231@zhy>
-References: <1365179800.2609.135.camel@laptop> <20130409145546.GA14231@zhy>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	Wed, 10 Apr 2013 03:17:17 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <516511DF.5020805@jp.fujitsu.com>
+Date: Wed, 10 Apr 2013 16:16:47 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning requirements
+ for kswapd
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <1365505625-9460-3-git-send-email-mgorman@suse.de>
+In-Reply-To: <1365505625-9460-3-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 22:55 +0800, Yong Zhang wrote:
-> > +     this_clock = scd_clock_read(my_scd);
-> > +     remote_clock = scd_clock_read(scd);
->                        ^^^^^^^^^^^^^^
->                        it doesn't match the declaration:
-> scd_read_clock().
+(2013/04/09 20:06), Mel Gorman wrote:
+> Simplistically, the anon and file LRU lists are scanned proportionally
+> depending on the value of vm.swappiness although there are other factors
+> taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+> the number of pages kswapd reclaims" limits the number of pages kswapd
+> reclaims but it breaks this proportional scanning and may evenly shrink
+> anon/file LRUs regardless of vm.swappiness.
+> 
+> This patch preserves the proportional scanning and reclaim. It does mean
+> that kswapd will reclaim more than requested but the number of pages will
+> be related to the high watermark.
+> 
+> [mhocko@suse.cz: Correct proportional reclaim for memcg and simplify]
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> ---
+>   mm/vmscan.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++--------
+>   1 file changed, 46 insertions(+), 8 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 4835a7a..0742c45 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1825,13 +1825,21 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>   	enum lru_list lru;
+>   	unsigned long nr_reclaimed = 0;
+>   	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+> +	unsigned long nr_anon_scantarget, nr_file_scantarget;
+>   	struct blk_plug plug;
+> +	bool scan_adjusted = false;
+>   
+>   	get_scan_count(lruvec, sc, nr);
+>   
+> +	/* Record the original scan target for proportional adjustments later */
+> +	nr_file_scantarget = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE] + 1;
+> +	nr_anon_scantarget = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON] + 1;
+> +
 
-Yeah, I'm a moron and forgot to compile test or somesuch :-)
+I'm sorry I couldn't understand the calc...
 
-Anyway, Thomas wrote a much better patch which made it in; see
-a1cbcaa9ea87b87a96b9fc465951dcf36e459ca2.
+Assume here
+        nr_file_scantarget = 100
+        nr_anon_file_target = 100.
+
+
+>   	blk_start_plug(&plug);
+>   	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+>   					nr[LRU_INACTIVE_FILE]) {
+> +		unsigned long nr_anon, nr_file, percentage;
+> +
+>   		for_each_evictable_lru(lru) {
+>   			if (nr[lru]) {
+>   				nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
+> @@ -1841,17 +1849,47 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>   							    lruvec, sc);
+>   			}
+>   		}
+> +
+> +		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
+> +			continue;
+> +
+>   		/*
+> -		 * On large memory systems, scan >> priority can become
+> -		 * really large. This is fine for the starting priority;
+> -		 * we want to put equal scanning pressure on each zone.
+> -		 * However, if the VM has a harder time of freeing pages,
+> -		 * with multiple processes reclaiming pages, the total
+> -		 * freeing target can get unreasonably large.
+> +		 * For global direct reclaim, reclaim only the number of pages
+> +		 * requested. Less care is taken to scan proportionally as it
+> +		 * is more important to minimise direct reclaim stall latency
+> +		 * than it is to properly age the LRU lists.
+>   		 */
+> -		if (nr_reclaimed >= nr_to_reclaim &&
+> -		    sc->priority < DEF_PRIORITY)
+> +		if (global_reclaim(sc) && !current_is_kswapd())
+>   			break;
+> +
+> +		/*
+> +		 * For kswapd and memcg, reclaim at least the number of pages
+> +		 * requested. Ensure that the anon and file LRUs shrink
+> +		 * proportionally what was requested by get_scan_count(). We
+> +		 * stop reclaiming one LRU and reduce the amount scanning
+> +		 * proportional to the original scan target.
+> +		 */
+> +		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
+> +		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
+> +
+Then, nr_file = 80, nr_anon=70.
+
+
+> +		if (nr_file > nr_anon) {
+> +			lru = LRU_BASE;
+> +			percentage = nr_anon * 100 / nr_anon_scantarget;
+> +		} else {
+> +			lru = LRU_FILE;
+> +			percentage = nr_file * 100 / nr_file_scantarget;
+> +		}
+
+the percentage will be 70.
+
+> +
+> +		/* Stop scanning the smaller of the LRU */
+> +		nr[lru] = 0;
+> +		nr[lru + LRU_ACTIVE] = 0;
+> +
+this will stop anon scan.
+
+> +		/* Reduce scanning of the other LRU proportionally */
+> +		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
+> +		nr[lru] = nr[lru] * percentage / 100;;
+> +		nr[lru + LRU_ACTIVE] = nr[lru + LRU_ACTIVE] * percentage / 100;
+> +
+
+finally, in the next iteration,
+
+              nr[file] = 80 * 0.7 = 56.
+             
+After loop, anon-scan is 30 pages , file-scan is 76(20+56) pages..
+
+I think the calc here should be
+
+   nr[lru] = nr_lru_scantarget * percentage / 100 - nr[lru]
+
+   Here, 80-70=10 more pages to scan..should be proportional.
+
+Am I misunderstanding ?
+
+Thanks,
+-Kame
+
 
