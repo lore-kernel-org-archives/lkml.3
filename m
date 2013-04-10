@@ -1,77 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937125Ab3DJQcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:32:04 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:45470 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936705Ab3DJQcB (ORCPT
+	id S937090Ab3DJQdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:33:44 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:58285 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934374Ab3DJQdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:32:01 -0400
+	Wed, 10 Apr 2013 12:33:43 -0400
+Date: Wed, 10 Apr 2013 09:33:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Add additional distro specific
+ Kconfig options
+Message-ID: <20130410163340.GA21840@kroah.com>
+References: <1365610097-10955-1-git-send-email-kys@microsoft.com>
+ <20130410154957.GA13849@kroah.com>
+ <a3b67bf6e11c462d826c1fc4957c3da9@SN2PR03MB061.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-In-Reply-To: <1365610669-16625-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1365610669-16625-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1365610669-16625-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Wed, 10 Apr 2013 12:31:39 -0400
-X-Google-Sender-Auth: hEtg0ZqrR0jJRWOavlOQroptQkU
-Message-ID: <CAHGf_=o6+RxyutMxai-82eHQDrx5KfiJ0-MCjqAO-nkbp1eiCA@mail.gmail.com>
-Subject: Re: [RESEND][PATCH v5 3/3] hugetlbfs: add swap entry check in follow_hugetlb_page()
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a3b67bf6e11c462d826c1fc4957c3da9@SN2PR03MB061.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 12:17 PM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> # I suspended Reviewed and Acked given for the previous version, because
-> # it has a non-minor change. If you want to restore it, please let me know.
-> -----
-> With applying the previous patch "hugetlbfs: stop setting VM_DONTDUMP in
-> initializing vma(VM_HUGETLB)" to reenable hugepage coredump, if a memory
-> error happens on a hugepage and the affected processes try to access
-> the error hugepage, we hit VM_BUG_ON(atomic_read(&page->_count) <= 0)
-> in get_page().
->
-> The reason for this bug is that coredump-related code doesn't recognise
-> "hugepage hwpoison entry" with which a pmd entry is replaced when a memory
-> error occurs on a hugepage.
-> In other words, physical address information is stored in different bit layout
-> between hugepage hwpoison entry and pmd entry, so follow_hugetlb_page()
-> which is called in get_dump_page() returns a wrong page from a given address.
->
-> The expected behavior is like this:
->
->   absent   is_swap_pte   FOLL_DUMP   Expected behavior
->   -------------------------------------------------------------------
->    true     false         false       hugetlb_fault
->    false    true          false       hugetlb_fault
->    false    false         false       return page
->    true     false         true        skip page (to avoid allocation)
->    false    true          true        hugetlb_fault
->    false    false         true        return page
->
-> With this patch, we can call hugetlb_fault() and take proper actions
-> (we wait for migration entries, fail with VM_FAULT_HWPOISON_LARGE for
-> hwpoisoned entries,) and as the result we can dump all hugepages except
-> for hwpoisoned ones.
->
-> ChangeLog v5:
->  - improve comment and description.
->
-> ChangeLog v4:
->  - move is_swap_page() to right place.
->
-> ChangeLog v3:
->  - add comment about using is_swap_pte()
->
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: stable@vger.kernel.org
+On Wed, Apr 10, 2013 at 04:12:24PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > Sent: Wednesday, April 10, 2013 11:50 AM
+> > To: KY Srinivasan
+> > Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> > apw@canonical.com; jasowang@redhat.com
+> > Subject: Re: [PATCH 1/1] Drivers: hv: vmbus: Add additional distro specific Kconfig
+> > options
+> > 
+> > On Wed, Apr 10, 2013 at 09:08:17AM -0700, K. Y. Srinivasan wrote:
+> > > The guest ID captures information about the guest and has room for
+> > > distributions to add distro specific information. Add Kconfig options
+> > > to support distro specific information to be managed easily.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > > ---
+> > >  drivers/hv/Kconfig        |   14 ++++++++++++++
+> > >  drivers/hv/hv.c           |    4 +++-
+> > >  drivers/hv/hyperv_vmbus.h |    2 +-
+> > >  3 files changed, 18 insertions(+), 2 deletions(-)
+> > >
+> > > diff --git a/drivers/hv/Kconfig b/drivers/hv/Kconfig
+> > > index 0403b51..d2ca9c7 100644
+> > > --- a/drivers/hv/Kconfig
+> > > +++ b/drivers/hv/Kconfig
+> > > @@ -19,4 +19,18 @@ config HYPERV_BALLOON
+> > >  	help
+> > >  	  Select this option to enable Hyper-V Balloon driver.
+> > >
+> > > +config HYPERV_GUEST_D1
+> > > +	hex "Distro specific information"
+> > > +	range 0x00 0xff
+> > > +	default 0
+> > > +	help
+> > > +	  This specifies the Distro vendor
+> > 
+> > And just what is a distro supposed to set the value here to?  For
+> > example, what would Arch Linux pick?  Fedora?  RHEL?  SLES?  openSUSE?
+> > You do know that there are more than 0xff different Linux distro
+> > "vendors"?  Do they all just get to pick a number that they like?
+> 
+> MSFT is planning to manage this space; we will assign distributions
+> unique numbers that they can use here.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+And how will that happen?  A single line in a Kconfig file doesn't cut
+it, sorry.
+
+What's wrong with lanana.org managing it instead?  That's who manages
+all of the rest of the kernel-limited resources.
+
+And what happens when you have more than 256?  We already know that's
+not going to be enough numbers, why start out already with an obsolete
+range?
+
+> > > +config HYPERV_GUEST_D2
+> > > +	hex "Additional Distro specific information"
+> > > +	range 0x0000 0xffff
+> > > +	default 0
+> > > +	help
+> > > +	  Additional Distro specific kernel version information
+> > 
+> > Again, what is a distro supposed to do here?  What's wrong with the
+> > kernel version information that the kernel already has?  Can't you just
+> > use that string?
+> 
+> We already have the kernel version information. Distros can choose to
+> use this as they please. We are recommending that they use this field
+> to track some distro specific build number.
+
+That's in the kernel version already, why put it here again?
+
+Again, you need _way_ more than just a single Kconfig line for new
+configuration options where you expect distros to set a value to a
+unique thing,
+
+And lastly, you do know about /etc/os-release, the cross-distro,
+standardized way to specify distro version and build information,
+right?  Why aren't you just using that instead of creating your own
+"unique" way of defining the exact same thing?
+
+Don't create a new standard just when we all finally picked one to
+follow, it makes it look like you don't think what the community decided
+on is valid, which isn't a wise decision.
+
+greg k-h
