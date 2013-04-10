@@ -1,155 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935092Ab3DJMMP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 08:12:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33075 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751779Ab3DJMMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 08:12:14 -0400
-From: Philip Avinash <avinashphilip@ti.com>
-To: <nsekhar@ti.com>, <linux@arm.linux.org.uk>,
-        <thierry.reding@avionic-design.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
-        <jacmet@sunsite.dk>, Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH v5] ARM: davinci: da850: add EHRPWM & ECAP DT node
-Date: Wed, 10 Apr 2013 17:42:41 +0530
-Message-ID: <1365595961-4060-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S935980Ab3DJMM3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 08:12:29 -0400
+Received: from mail-gg0-f181.google.com ([209.85.161.181]:40785 "EHLO
+	mail-gg0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935572Ab3DJMM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 08:12:26 -0400
+Date: Wed, 10 Apr 2013 08:12:21 -0400
+From: Jeff Layton <jlayton@samba.org>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: linux-kernel@vger.kernel.org, linux-cifs <linux-cifs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux NFS Mailing list <linux-nfs@vger.kernel.org>,
+        wine-devel@winehq.org, samba-technical@lists.samba.org
+Subject: Re: [PATCH v5 4/7] CIFS: Use NT_CREATE_ANDX command for forcemand
+ mounts
+Message-ID: <20130410081221.753e4bb3@corrin.poochiereds.net>
+In-Reply-To: <CAKywueSPh2vXvS1HRmJHZUApo_YxWjcp4_2ZXgb1RHafS=A98w@mail.gmail.com>
+References: <1365511227-17626-1-git-send-email-piastry@etersoft.ru>
+	<1365511227-17626-5-git-send-email-piastry@etersoft.ru>
+	<20130410071144.08ef2983@corrin.poochiereds.net>
+	<CAKywueSPh2vXvS1HRmJHZUApo_YxWjcp4_2ZXgb1RHafS=A98w@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.16; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add da850 EHRPWM & ECAP DT node along with pin-mux details.
-Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
-clock.
+On Wed, 10 Apr 2013 15:45:33 +0400
+Pavel Shilovsky <piastry@etersoft.ru> wrote:
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
----
-Changes since v4:
-	- Add pin mux for PWM devices ECAP & EHRPWM.
+> 2013/4/10 Jeff Layton <jlayton@samba.org>:
+> > On Tue,  9 Apr 2013 16:40:24 +0400
+> > Pavel Shilovsky <piastry@etersoft.ru> wrote:
+> >
+> >> forcemand mount option now lets us use Windows mandatory style of
+> >> byte-range locks even if server supports posix ones - switches on
+> >> Windows locking mechanism. Share flags is another locking mehanism
+> >> provided by Windows semantic that can be used by NT_CREATE_ANDX
+> >> command. This patch combines all Windows locking mechanism in one
+> >> mount option by using NT_CREATE_ANDX to open files if forcemand is on.
+> >>
+> >> Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+> >> ---
+> >>  fs/cifs/dir.c  | 1 +
+> >>  fs/cifs/file.c | 6 ++++--
+> >>  2 files changed, 5 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
+> >> index d4331de..8587021 100644
+> >> --- a/fs/cifs/dir.c
+> >> +++ b/fs/cifs/dir.c
+> >> @@ -217,6 +217,7 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
+> >>       }
+> >>
+> >>       if (tcon->unix_ext && cap_unix(tcon->ses) && !tcon->broken_posix_open &&
+> >> +         ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
+> >>           (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+> >>                       le64_to_cpu(tcon->fsUnixInfo.Capability))) {
+> >>               rc = cifs_posix_open(full_path, &newinode, inode->i_sb, mode,
+> >> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> >> index 9394b2b..19038a4 100644
+> >> --- a/fs/cifs/file.c
+> >> +++ b/fs/cifs/file.c
+> >> @@ -455,8 +455,9 @@ int cifs_open(struct inode *inode, struct file *file)
+> >>       else
+> >>               oplock = 0;
+> >>
+> >> -     if (!tcon->broken_posix_open && tcon->unix_ext &&
+> >> -         cap_unix(tcon->ses) && (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+> >> +     if (!tcon->broken_posix_open && tcon->unix_ext && cap_unix(tcon->ses)
+> >> +         && ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
+> >> +         (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+> >>                               le64_to_cpu(tcon->fsUnixInfo.Capability))) {
+> >>               /* can not refresh inode info since size could be stale */
+> >>               rc = cifs_posix_open(full_path, &inode, inode->i_sb,
+> >> @@ -624,6 +625,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
+> >>               oplock = 0;
+> >>
+> >>       if (tcon->unix_ext && cap_unix(tcon->ses) &&
+> >> +         ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
+> >>           (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+> >>                               le64_to_cpu(tcon->fsUnixInfo.Capability))) {
+> >>               /*
+> >
+> > I'm trying to understand why "forcemand" would matter here. Wouldn't
+> > you just want to switch to using NT_CREATE_ANDX if O_DENY* is set
+> > instead? What happens if I didn't mount with forcemand and then try to
+> > use O_DENY*?
+> 
+> If cifs client mounts Samba share and negotiates posix extensions, it
+> uses trans2 command to open files. In this case O_DENY* flags that are
+> passed to open syscall won't be sent to the server and the file won't
+> be locked. This patch gives us an opportunity to make the client
+> always use NT_CREATE_ANDX command to open file - in this case O_DENY*
+> flags won't be missed.
+> 
+> You are right, we can leave forcemand option without changes and use
+> an appropriate smb command depending on openflags we have. Another
+> possibility is to make the client use NT_CREATE_ANDX command if new
+> 'sharelock' VFS mount options is specified.  If we mount a share with
+> sharelock mount option, we need O_DENY* flags sent to the server, but
+> the only one way to do it is to use NT_CREATE_ANDX command all the
+> time we need to open a file - so, using trans2 open command doesn't
+> make any sense in the case of 'sharelock' mounts.
+> 
 
-Changes since v3:
-	- add pin mux info for EHRPWM1.
+(cc'ing samba-technical)
 
-Changes since v1:
-	- Reusing ti,am33xx<ecap/ehrpwm> as compatible field as both IP's are
-	  similar with am33xx platform and da850 has no platform specific
-	  dependency.
+I don't understand. Why would we need to use NT_CREATE_ANDX in lieu of
+the POSIX trans2 open if the client isn't setting a share reservation
+on that particular open? The server should still enforce share
+reservations that are already set on the file regardless of which
+method is used.
 
- arch/arm/boot/dts/da850.dtsi     |   73 ++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-davinci/da8xx-dt.c |    5 +++
- 2 files changed, 78 insertions(+)
+Perhaps too we should add these flags to the POSIX open call as well.
+It would be nice not to have to fall back to NT_CREATE_ANDX.
 
-diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
-index 3ade343..b2ae730 100644
---- a/arch/arm/boot/dts/da850.dtsi
-+++ b/arch/arm/boot/dts/da850.dtsi
-@@ -71,6 +71,49 @@
- 					0x28 0x00222222  0x00ffffff
- 				>;
- 			};
-+			ehrpwm0a_pins: pinmux_ehrpwm0a_pins {
-+				pinctrl-single,bits = <
-+					/* EPWM0A */
-+					0xc 0x00000002 0x0000000f
-+				>;
-+			};
-+			ehrpwm0b_pins: pinmux_ehrpwm0b_pins {
-+				pinctrl-single,bits = <
-+					/* EPWM0B */
-+					0xc 0x00000020 0x000000f0
-+				>;
-+			};
-+			ehrpwm1a_pins: pinmux_ehrpwm1a_pins {
-+				pinctrl-single,bits = <
-+					/* EPWM1A */
-+					0x14 0x00000002 0x0000000f
-+				>;
-+			};
-+			ehrpwm1b_pins: pinmux_ehrpwm1b_pins {
-+				pinctrl-single,bits = <
-+					/* EPWM1B */
-+					0x14 0x00000020 0x000000f0
-+				>;
-+			};
-+			ecap0_pins: pinmux_ecap0_pins {
-+				pinctrl-single,bits = <
-+					/* ECAP0_APWM0 */
-+					0x8 0x20000000 0xf0000000
-+				>;
-+			};
-+			ecap1_pins: pinmux_ecap1_pins {
-+				pinctrl-single,bits = <
-+					/* ECAP1_APWM1 */
-+					0x4 0x40000000 0xf0000000
-+				>;
-+			};
-+			ecap2_pins: pinmux_ecap2_pins {
-+				pinctrl-single,bits = <
-+					/* ECAP2_APWM2 */
-+					0x4 0x00000004 0x0000000f
-+				>;
-+			};
-+
- 		};
- 		serial0: serial@1c42000 {
- 			compatible = "ns16550a";
-@@ -122,6 +165,36 @@
- 			interrupts = <16>;
- 			status = "disabled";
- 		};
-+		ehrpwm0: ehrpwm@01f00000 {
-+			compatible = "ti,da850-ehrpwm", "ti,am33xx-ehrpwm";
-+			#pwm-cells = <3>;
-+			reg = <0x300000 0x2000>;
-+			status = "disabled";
-+		};
-+		ehrpwm1: ehrpwm@01f02000 {
-+			compatible = "ti,da850-ehrpwm", "ti,am33xx-ehrpwm";
-+			#pwm-cells = <3>;
-+			reg = <0x302000 0x2000>;
-+			status = "disabled";
-+		};
-+		ecap0: ecap@01f06000 {
-+			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
-+			#pwm-cells = <3>;
-+			reg = <0x306000 0x80>;
-+			status = "disabled";
-+		};
-+		ecap1: ecap@01f07000 {
-+			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
-+			#pwm-cells = <3>;
-+			reg = <0x307000 0x80>;
-+			status = "disabled";
-+		};
-+		ecap2: ecap@01f08000 {
-+			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
-+			#pwm-cells = <3>;
-+			reg = <0x308000 0x80>;
-+			status = "disabled";
-+		};
- 	};
- 	nand_cs3@62000000 {
- 		compatible = "ti,davinci-nand";
-diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
-index d83de8f..05bb9a2 100644
---- a/arch/arm/mach-davinci/da8xx-dt.c
-+++ b/arch/arm/mach-davinci/da8xx-dt.c
-@@ -41,6 +41,11 @@ struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("ti,davinci-i2c", 0x01c22000, "i2c_davinci.1", NULL),
- 	OF_DEV_AUXDATA("ti,davinci-wdt", 0x01c21000, "watchdog", NULL),
- 	OF_DEV_AUXDATA("ti,da830-mmc", 0x01c40000, "da830-mmc.0", NULL),
-+	OF_DEV_AUXDATA("ti,da850-ehrpwm", 0x01f00000, "ehrpwm", NULL),
-+	OF_DEV_AUXDATA("ti,da850-ehrpwm", 0x01f02000, "ehrpwm", NULL),
-+	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f06000, "ecap", NULL),
-+	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f07000, "ecap", NULL),
-+	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f08000, "ecap", NULL),
- 	{}
- };
- 
 -- 
-1.7.9.5
-
+Jeff Layton <jlayton@samba.org>
