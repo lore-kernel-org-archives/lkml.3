@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936606Ab3DJW0R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:26:17 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10593 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933304Ab3DJW0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:26:15 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=vGiWZ4XeiFUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=RJ2c6mANKGMA:10 a=VwQbUJbxAAAA:8 a=57SyGIRnAAAA:8 a=pGLkceISAAAA:8 a=RwSQF0DHOOTZsKkpFZEA:9 a=QEXdDO2ut3YA:10 a=TIV7c6GJmisA:10 a=LI9Vle30uBYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365632757.9609.17.camel@gandalf.local.home>
-Subject: [PATCH][GIT PULL] tracing: Fix double free when function profile
- init failed
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>, stable <stable@vger.kernel.org>
-Date: Wed, 10 Apr 2013 18:25:57 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S936882Ab3DJW2b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:28:31 -0400
+Received: from rydia.net ([69.46.88.68]:52834 "EHLO mail.rydia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935439Ab3DJW2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 18:28:30 -0400
+Date: Wed, 10 Apr 2013 15:28:32 -0700 (PDT)
+From: dormando <dormando@rydia.net>
+X-X-Sender: dormando@dtop
+To: Mel Gorman <mgorman@suse.de>
+cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/10] Reduce system disruption due to kswapd V2
+In-Reply-To: <20130410141445.GD3710@suse.de>
+Message-ID: <alpine.DEB.2.02.1304101524120.7738@dtop>
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <0000013defd666bf-213d70fc-dfbd-4a50-82ed-e9f4f7391b55-000000@email.amazonses.com> <20130410141445.GD3710@suse.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> On Tue, Apr 09, 2013 at 05:27:18PM +0000, Christoph Lameter wrote:
+> > One additional measure that may be useful is to make kswapd prefer one
+> > specific processor on a socket. Two benefits arise from that:
+> >
+> > 1. Better use of cpu caches and therefore higher speed, less
+> > serialization.
+> >
+>
+> Considering the volume of pages that kswapd can scan when it's active
+> I would expect that it trashes its cache anyway. The L1 cache would be
+> flushed after scanning struct pages for just a few MB of memory.
+>
+> > 2. Reduction of the disturbances to one processor.
+> >
+>
+> I've never checked it but I would have expected kswapd to stay on the
+> same processor for significant periods of time. Have you experienced
+> problems where kswapd bounces around on CPUs within a node causing
+> workload disruption?
 
-Linus,
-
-Namhyung Kim fixed a long standing bug that can cause a kernel panic.
-If the function profiler fails to allocate memory for everything,
-it will do a double free on the same pointer which can cause a panic.
-
-Please pull the latest trace-fixes-3.9-rc-v2 tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-trace-fixes-3.9-rc-v2
-
-Head SHA1: 19d9c3b1c660a157c6c8b352793497cc67f7321e
-
-
-Namhyung Kim (1):
-      tracing: Fix double free when function profile init failed
-
-----
- kernel/trace/ftrace.c |    1 -
- 1 file changed, 1 deletion(-)
----------------------------
-commit 83e03b3fe4daffdebbb42151d5410d730ae50bd1
-Author: Namhyung Kim <namhyung.kim@lge.com>
-Date:   Mon Apr 1 21:46:23 2013 +0900
-
-    tracing: Fix double free when function profile init failed
-    
-    On the failure path, stat->start and stat->pages will refer same page.
-    So it'll attempt to free the same page again and get kernel panic.
-    
-    Link: http://lkml.kernel.org/r/1364820385-32027-1-git-send-email-namhyung@kernel.org
-    
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Namhyung Kim <namhyung.kim@lge.com>
-    Cc: stable@vger.kernel.org
-    Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 7e89710..926ebfb 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -694,7 +694,6 @@ int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
- 		free_page(tmp);
- 	}
- 
--	free_page((unsigned long)stat->pages);
- 	stat->pages = NULL;
- 	stat->start = NULL;
- 
-
-
+When kswapd shares the same CPU as our main process it causes a measurable
+drop in response time (graphs show tiny spikes at the same time memory is
+freed). Would be nice to be able to ensure it runs on a different core
+than our latency sensitive processes at least. We can pin processes to
+subsets of cores but I don't think there's a way to keep kswapd from
+waking up on any of them?
