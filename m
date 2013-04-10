@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937051Ab3DJQNY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:13:24 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:41581 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937018Ab3DJQNW (ORCPT
+	id S964921Ab3DJQNc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:13:32 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:32998 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937018Ab3DJQNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:13:22 -0400
-From: Ming Lei <ming.lei@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>
-Subject: [PATCH] driver core: devtmpfs: fix compile failure
-Date: Thu, 11 Apr 2013 00:12:56 +0800
-Message-Id: <1365610376-2266-1-git-send-email-ming.lei@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 10 Apr 2013 12:13:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <5164F9E9.3010909@cn.fujitsu.com>
+References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
+	<1365119186-23487-3-git-send-email-yinghai@kernel.org>
+	<5164F9E9.3010909@cn.fujitsu.com>
+Date: Wed, 10 Apr 2013 09:13:29 -0700
+X-Google-Sender-Auth: 3bSNncktn7Pw-HiDFbCfCGLbsvE
+Message-ID: <CAE9FiQVro+a7ZjHhqNUjev7YJ8bsGmN0A8NqYpQBf=qUfJZbPw@mail.gmail.com>
+Subject: Re: [PATCH v3 02/22] x86, microcode: Use common get_ramdisk_image()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Fenghua Yu <fenghua.yu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_UIDGID_STRICT_TYPE_CHECKS is enalbed, the below compile
-failure will be triggered:
+On Tue, Apr 9, 2013 at 10:34 PM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
+> On 04/05/2013 07:46 AM, Yinghai Lu wrote:
+>>         boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
+>> -       ramdisk_image = boot_params_p->hdr.ramdisk_image;
+>> -       ramdisk_size  = boot_params_p->hdr.ramdisk_size;
+>> +       ramdisk_image = get_ramdisk_image(boot_params_p);
+>> +       ramdisk_size  = get_ramdisk_image(boot_params_p);
+>
+>
+> Shoule be get_ramdisk_size(boot_params_p) ?
+>
 
-	drivers/base/devtmpfs.c: In function 'handle_create':
-	drivers/base/devtmpfs.c:214:19: error: incompatible types when assigning to type 'kuid_t' from type 'uid_t'
-	drivers/base/devtmpfs.c:215:19: error: incompatible types when assigning to type 'kgid_t' from type 'gid_t'
-	make[2]: *** [drivers/base/devtmpfs.o] Error 1
+oh, will update that.
 
-This patch fixes the compile failure.
+Thanks
 
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
----
- drivers/base/devtmpfs.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
-index fda5256..e268fc5 100644
---- a/drivers/base/devtmpfs.c
-+++ b/drivers/base/devtmpfs.c
-@@ -211,8 +211,8 @@ static int handle_create(const char *nodename, umode_t mode, uid_t uid,
- 		struct iattr newattrs;
- 
- 		newattrs.ia_mode = mode;
--		newattrs.ia_uid = uid;
--		newattrs.ia_gid = gid;
-+		newattrs.ia_uid = KUIDT_INIT(uid);
-+		newattrs.ia_gid = KGIDT_INIT(gid);
- 		newattrs.ia_valid = ATTR_MODE|ATTR_UID|ATTR_GID;
- 		mutex_lock(&dentry->d_inode->i_mutex);
- 		notify_change(dentry, &newattrs);
--- 
-1.7.9.5
-
+Yinghai
