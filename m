@@ -1,78 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937198Ab3DJRqi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:46:38 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:36568 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935157Ab3DJRqf (ORCPT
+	id S937214Ab3DJRq6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:46:58 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:53407 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937127Ab3DJRqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:46:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1304102035250.15970@M2420>
-References: <alpine.DEB.2.02.1304102035250.15970@M2420>
-Date: Wed, 10 Apr 2013 19:46:33 +0200
-Message-ID: <CAMeQTsap-ZbP9e-nqfu8GDLBLZ9a8H6RYYnxkuV1e1AUkXW-RQ@mail.gmail.com>
-Subject: Re: [PATCH v2] gma500:fix build failure for 3.9-rc5
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Xiong Zhou <jencce.kernel@gmail.com>
-Cc: airlied@redhat.com, alan@linux.intel.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 10 Apr 2013 13:46:22 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: matt.fleming@intel.com
+Cc: linux-efi@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: [PATCH V4 1/3] efi: Determine how much space is used by boot services-only variables
+Date: Wed, 10 Apr 2013 13:46:05 -0400
+Message-Id: <1365615967-27346-1-git-send-email-matthew.garrett@nebula.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com>
+References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:6267:20ff:fec3:2318
+X-SA-Exim-Mail-From: matthew.garrett@nebula.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 2:37 PM, Xiong Zhou <jencce.kernel@gmail.com> wrote:
-> From: Xiong Zhou <jencce.kernel@gmail.com>
->
-> Last version of this patch is not clear enough and X86 duplicated.
->
-> This patch fixes build failure of v3.9-rc5 and rc6.
-> When config ACPI_VIDEO as m, DRM_GMA500 as y, here comes the failure.
-> GMA5/600 needs acpi_video just like nouveau.
-> And some tab type fix by the way.
->
-> Failure message:
-> drivers/built-in.o: In function `psb_driver_load':
-> kernel-3.9-rc5/drivers/gpu/drm/gma500/psb_drv.c:340: \
->         undefined reference to `acpi_video_register'
-> make: *** [vmlinux] Error 1
->
-> Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
-> ---
-> drivers/gpu/drm/gma500/Kconfig |   13 +++++++++----
-> 1 file changed, 9 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/gpu/drm/gma500/Kconfig b/drivers/gpu/drm/gma500/Kconfig
-> index 1188f0f..1f6e2df 100644
-> --- a/drivers/gpu/drm/gma500/Kconfig
-> +++ b/drivers/gpu/drm/gma500/Kconfig
-> @@ -2,10 +2,15 @@ config DRM_GMA500
->         tristate "Intel GMA5/600 KMS Framebuffer"
->         depends on DRM && PCI && X86
->         select FB_CFB_COPYAREA
-> -        select FB_CFB_FILLRECT
-> -        select FB_CFB_IMAGEBLIT
-> -        select DRM_KMS_HELPER
-> -        select DRM_TTM
-> +       select FB_CFB_FILLRECT
-> +       select FB_CFB_IMAGEBLIT
-> +       select DRM_KMS_HELPER
-> +       select DRM_TTM
-> +       # GMA500 depends on ACPI_VIDEO when ACPI is enabled, just like i915
-> +       select ACPI_VIDEO if ACPI
-> +       select BACKLIGHT_CLASS_DEVICE if ACPI
-> +       select VIDEO_OUTPUT_CONTROL if ACPI
-> +       select INPUT if ACPI
->         help
->           Say yes for an experimental 2D KMS framebuffer driver for the
->           Intel GMA500 ('Poulsbo') and other Intel IMG based graphics
+EFI variables can be flagged as being accessible only within boot services.
+This makes it awkward for us to figure out how much space they use at
+runtime. In theory we could figure this out by simply comparing the results
+from QueryVariableInfo() to the space used by all of our variables, but
+that fails if the platform doesn't garbage collect on every boot. Thankfully,
+calling QueryVariableInfo() while still inside boot services gives a more
+reliable answer. This patch passes that information from the EFI boot stub
+up to the efivars code, letting us calculate a reasonably accurate value.
 
-Your patch has been applied to:
-https://github.com/patjak/drm-gma500.git gma500-next
+Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+---
+ arch/x86/boot/compressed/eboot.c      | 47 +++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/efi.h            | 10 ++++++++
+ arch/x86/include/uapi/asm/bootparam.h |  1 +
+ arch/x86/platform/efi/efi.c           | 24 ++++++++++++++++++
+ drivers/firmware/efivars.c            | 29 +++++++++++++++++++++
+ 5 files changed, 111 insertions(+)
 
-I didn't have c97fc5f regarding the experimental dep in my tree so I had to fix
-that. Will sort out the missing patch later.
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index c205035..8615f75 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -251,6 +251,51 @@ static void find_bits(unsigned long mask, u8 *pos, u8 *size)
+ 	*size = len;
+ }
+ 
++static efi_status_t setup_efi_vars(struct boot_params *params)
++{
++	struct setup_data *data;
++	struct efi_var_bootdata *efidata;
++	u64 store_size, remaining_size, var_size;
++	efi_status_t status;
++
++	if (!sys_table->runtime->query_variable_info)
++		return EFI_UNSUPPORTED;
++
++	data = (struct setup_data *)(unsigned long)params->hdr.setup_data;
++
++	while (data && data->next)
++		data = (struct setup_data *)(unsigned long)data->next;
++
++	status = efi_call_phys4(sys_table->runtime->query_variable_info,
++				EFI_VARIABLE_NON_VOLATILE |
++				EFI_VARIABLE_BOOTSERVICE_ACCESS |
++				EFI_VARIABLE_RUNTIME_ACCESS, &store_size,
++				&remaining_size, &var_size);
++
++	if (status != EFI_SUCCESS)
++		return status;
++
++	status = efi_call_phys3(sys_table->boottime->allocate_pool,
++				EFI_LOADER_DATA, sizeof(*efidata), &efidata);
++
++	if (status != EFI_SUCCESS)
++		return status;
++
++	efidata->data.type = SETUP_EFI_VARS;
++	efidata->data.len = sizeof(struct efi_var_bootdata) -
++		sizeof(struct setup_data);
++	efidata->data.next = 0;
++	efidata->store_size = store_size;
++	efidata->remaining_size = remaining_size;
++	efidata->max_var_size = var_size;
++
++	if (data)
++		data->next = (unsigned long)efidata;
++	else
++		params->hdr.setup_data = (unsigned long)efidata;
++
++}
++
+ static efi_status_t setup_efi_pci(struct boot_params *params)
+ {
+ 	efi_pci_io_protocol *pci;
+@@ -1157,6 +1202,8 @@ struct boot_params *efi_main(void *handle, efi_system_table_t *_table,
+ 
+ 	setup_graphics(boot_params);
+ 
++	setup_efi_vars(boot_params);
++
+ 	setup_efi_pci(boot_params);
+ 
+ 	status = efi_call_phys3(sys_table->boottime->allocate_pool,
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index 60c89f3..6c3a154 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -93,6 +93,9 @@ extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
+ 
+ #endif /* CONFIG_X86_32 */
+ 
++extern u64 efi_var_store_size;
++extern u64 efi_var_remaining_size;
++extern u64 efi_var_max_var_size;
+ extern int add_efi_memmap;
+ extern unsigned long x86_efi_facility;
+ extern void efi_set_executable(efi_memory_desc_t *md, bool executable);
+@@ -102,6 +105,13 @@ extern void efi_call_phys_epilog(void);
+ extern void efi_unmap_memmap(void);
+ extern void efi_memory_uc(u64 addr, unsigned long size);
+ 
++struct efi_var_bootdata {
++	struct setup_data data;
++	u64 store_size;
++	u64 remaining_size;
++	u64 max_var_size;
++};
++
+ #ifdef CONFIG_EFI
+ 
+ static inline bool efi_is_native(void)
+diff --git a/arch/x86/include/uapi/asm/bootparam.h b/arch/x86/include/uapi/asm/bootparam.h
+index c15ddaf..0874424 100644
+--- a/arch/x86/include/uapi/asm/bootparam.h
++++ b/arch/x86/include/uapi/asm/bootparam.h
+@@ -6,6 +6,7 @@
+ #define SETUP_E820_EXT			1
+ #define SETUP_DTB			2
+ #define SETUP_PCI			3
++#define SETUP_EFI_VARS			4
+ 
+ /* ram_size flags */
+ #define RAMDISK_IMAGE_START_MASK	0x07FF
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index c89c245..659da48 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -71,6 +71,13 @@ static efi_system_table_t efi_systab __initdata;
+ 
+ unsigned long x86_efi_facility;
+ 
++u64 efi_var_store_size;
++EXPORT_SYMBOL(efi_var_store_size);
++u64 efi_var_remaining_size;
++EXPORT_SYMBOL(efi_var_remaining_size);
++u64 efi_var_max_var_size;
++EXPORT_SYMBOL(efi_var_max_var_size);
++
+ /*
+  * Returns 1 if 'facility' is enabled, 0 otherwise.
+  */
+@@ -682,6 +689,9 @@ void __init efi_init(void)
+ 	char vendor[100] = "unknown";
+ 	int i = 0;
+ 	void *tmp;
++	struct setup_data *data;
++	struct efi_var_bootdata *efi_var_data;
++	u64 pa_data;
+ 
+ #ifdef CONFIG_X86_32
+ 	if (boot_params.efi_info.efi_systab_hi ||
+@@ -699,6 +709,20 @@ void __init efi_init(void)
+ 	if (efi_systab_init(efi_phys.systab))
+ 		return;
+ 
++	pa_data = boot_params.hdr.setup_data;
++	while (pa_data) {
++		data = early_ioremap(pa_data, sizeof(*efi_var_data));
++		if (data->type == SETUP_EFI_VARS) {
++			efi_var_data = (struct efi_var_bootdata *)data;
++
++			efi_var_store_size = efi_var_data->store_size;
++			efi_var_remaining_size = efi_var_data->remaining_size;
++			efi_var_max_var_size = efi_var_data->max_var_size;
++		}
++		pa_data = data->next;
++		early_iounmap(data, sizeof(*efi_var_data));
++	}
++
+ 	set_bit(EFI_SYSTEM_TABLES, &x86_efi_facility);
+ 
+ 	/*
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index bf15d81..684a118 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -85,6 +85,7 @@
+ #include <linux/ramfs.h>
+ #include <linux/pagemap.h>
+ 
++#include <asm/efi.h>
+ #include <asm/uaccess.h>
+ 
+ #define EFIVARS_VERSION "0.08"
+@@ -139,6 +140,8 @@ struct efivar_attribute {
+ 
+ static struct efivars __efivars;
+ static struct efivar_operations ops;
++static u64 boot_var_size;
++static u64 boot_used_size;
+ 
+ #define PSTORE_EFI_ATTRIBUTES \
+ 	(EFI_VARIABLE_NON_VOLATILE | \
+@@ -2002,6 +2005,9 @@ int register_efivars(struct efivars *efivars,
+ 	efi_char16_t *variable_name;
+ 	unsigned long variable_name_size = 1024;
+ 	int error = 0;
++	struct efivar_entry *entry;
++	struct efi_variable *var;
++	u64 active_size = 0;
+ 
+ 	variable_name = kzalloc(variable_name_size, GFP_KERNEL);
+ 	if (!variable_name) {
+@@ -2074,6 +2080,25 @@ int register_efivars(struct efivars *efivars,
+ 		}
+ 	} while (status != EFI_NOT_FOUND);
+ 
++	if (boot_used_size) {
++		list_for_each_entry(entry, &efivars->list, list) {
++			var = &entry->var;
++			status = get_var_data(efivars, var);
++
++			if (status ||
++			    !(var->Attributes & EFI_VARIABLE_NON_VOLATILE))
++				continue;
++
++			active_size += var->DataSize;
++			active_size += utf16_strsize(var->VariableName, 1024);
++		}
++
++		if (active_size < boot_used_size)
++			boot_var_size = boot_used_size - active_size;
++		else
++			printk(KERN_WARNING FW_BUG  "efivars: Inconsistent initial sizes\n");
++	}
++
+ 	error = create_efivars_bin_attributes(efivars);
+ 	if (error)
+ 		unregister_efivars(efivars);
+@@ -2121,6 +2146,10 @@ efivars_init(void)
+ 	ops.get_next_variable = efi.get_next_variable;
+ 	ops.query_variable_store = efi_query_variable_store;
+ 
++#ifdef CONFIG_X86
++	boot_used_size = efi_var_store_size - efi_var_remaining_size;
++#endif
++
+ 	error = register_efivars(&__efivars, &ops, efi_kobj);
+ 	if (error)
+ 		goto err_put;
+-- 
+1.8.1.2
 
-Thanks
-Patrik
