@@ -1,71 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935800Ab3DJN3i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 09:29:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1493 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752466Ab3DJN3g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:29:36 -0400
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Andy Whitcroft <apw@canonical.com>, Mel Gorman <mgorman@suse.de>,
-        Borislav Petkov <bp@alien8.de>
-Subject: [PATCH] mm: pageattr: convert noop to functional fix
-Date: Wed, 10 Apr 2013 15:28:25 +0200
-Message-Id: <1365600505-19314-1-git-send-email-aarcange@redhat.com>
+	id S934877Ab3DJNbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 09:31:03 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:48792 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab3DJNbB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 09:31:01 -0400
+Message-ID: <51656992.60203@gmail.com>
+Date: Wed, 10 Apr 2013 08:30:58 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Colin Cross <ccross@android.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [RFC PATCH 1/3] pstore-ram: use write-combine mappings
+References: <1365563297-12480-1-git-send-email-robherring2@gmail.com> <CAMbhsRSvQPbzJ7Nt=OSSYE_A1e+eaUjO7XY+qRppJ5_gfWmW4A@mail.gmail.com>
+In-Reply-To: <CAMbhsRSvQPbzJ7Nt=OSSYE_A1e+eaUjO7XY+qRppJ5_gfWmW4A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a8aed3e0752b4beb2e37cbed6df69faae88268da introduced some valid
-fix but one location that didn't trigger the bug that lead to finding
-those (small) problems, wasn't updated using the right variable.
+On 04/09/2013 10:53 PM, Colin Cross wrote:
+> On Tue, Apr 9, 2013 at 8:08 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> Atomic operations are undefined behavior on ARM for device or strongly
+>> ordered memory types. So use write-combine variants for mappings. This
+>> corresponds to normal, non-cacheable memory on ARM. For many other
+>> architectures, this change should not change the mapping type.
+> 
+> This is going to make ramconsole less reliable.  A debugging printk
+> followed by a __raw_writel that causes an immediate hard crash is
+> likely to lose the last updates, including the most useful message, in
+> the write buffers.
 
-The wrong variable was also initialized for no good reason, that may
-have been the source of the confusion. Remove the noop initialization
-accordingly.
+It would have to be a write that hangs the bus. In my experience with
+AXI, the bus doesn't actually hang until you hit max outstanding
+transactions.
 
-Commit a8aed3e0752b4beb2e37cbed6df69faae88268da also erroneously
-removed one canon_pgprot pass meant to clear pmd bitflags not
-supported in hardware by older CPUs, that automatically gets corrected
-by this patch too by applying it to the right variable in the new
-location.
+I think exclusive stores will limit the buffering, but that is probably
+not architecturally guaranteed.
 
-Reported-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
- arch/x86/mm/pageattr.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+I could put a wb() in at the end of persistent_ram_write.
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 091934e..7896f71 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -467,7 +467,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * We are safe now. Check whether the new pgprot is the same:
- 	 */
- 	old_pte = *kpte;
--	old_prot = new_prot = req_prot = pte_pgprot(old_pte);
-+	old_prot = req_prot = pte_pgprot(old_pte);
- 
- 	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
- 	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
-@@ -478,12 +478,12 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * a non present pmd. The canon_pgprot will clear _PAGE_GLOBAL
- 	 * for the ancient hardware that doesn't support it.
- 	 */
--	if (pgprot_val(new_prot) & _PAGE_PRESENT)
--		pgprot_val(new_prot) |= _PAGE_PSE | _PAGE_GLOBAL;
-+	if (pgprot_val(req_prot) & _PAGE_PRESENT)
-+		pgprot_val(req_prot) |= _PAGE_PSE | _PAGE_GLOBAL;
- 	else
--		pgprot_val(new_prot) &= ~(_PAGE_PSE | _PAGE_GLOBAL);
-+		pgprot_val(req_prot) &= ~(_PAGE_PSE | _PAGE_GLOBAL);
- 
--	new_prot = canon_pgprot(new_prot);
-+	req_prot = canon_pgprot(req_prot);
- 
- 	/*
- 	 * old_pte points to the large page base address. So we need
+> Also, isn't this patch unnecessary after patch 3 in this set?
+
+It is still needed in the main memory case to be architecturally correct
+to avoid multiple mappings of different memory types and exclusive
+accesses to device memory. At least on an A9, it doesn't really seem to
+matter. I could remove this for the ioremap case.
+
+Rob
+
+>> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+>> Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+>> Cc: Colin Cross <ccross@android.com>
+>> Cc: Kees Cook <keescook@chromium.org>
+>> Cc: Tony Luck <tony.luck@intel.com>
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>  fs/pstore/ram_core.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+>> index 0306303..e126d9f 100644
+>> --- a/fs/pstore/ram_core.c
+>> +++ b/fs/pstore/ram_core.c
+>> @@ -337,7 +337,7 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
+>>         page_start = start - offset_in_page(start);
+>>         page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
+>>
+>> -       prot = pgprot_noncached(PAGE_KERNEL);
+>> +       prot = pgprot_writecombine(PAGE_KERNEL);
+> Is this necessary?  Won't pgprot_noncached already be normal memory?
+> 
+>>         pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
+>>         if (!pages) {
+>> @@ -364,7 +364,7 @@ static void *persistent_ram_iomap(phys_addr_t start, size_t size)
+>>                 return NULL;
+>>         }
+>>
+>> -       return ioremap(start, size);
+>> +       return ioremap_wc(start, size);
+> 
+> ioremap_wc corresponds to MT_DEVICE_WC, which is still device memory,
+> so I don't see how this helps solve the problem in the commit message.
+> 
+>>  }
+>>
+>>  static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
+>> --
+>> 1.7.10.4
+>>
+
