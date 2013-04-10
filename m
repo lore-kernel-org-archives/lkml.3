@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936884Ab3DJOAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:00:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:55949 "EHLO mga03.intel.com"
+	id S936700Ab3DJOAI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:00:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:65142 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936145Ab3DJN6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S936487Ab3DJN6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Apr 2013 09:58:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,447,1363158000"; 
-   d="scan'208";a="284281423"
+   d="scan'208";a="284281434"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [PATCH 5/9] serial: 8250_dw: Enable runtime PM
-Date: Wed, 10 Apr 2013 16:58:28 +0300
-Message-Id: <1365602312-25436-6-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCH 6/9] serial: 8250_dw: Support clk framework also with ACPI
+Date: Wed, 10 Apr 2013 16:58:29 +0300
+Message-Id: <1365602312-25436-7-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365602312-25436-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1365602312-25436-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -22,149 +22,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows ACPI to put the device to D3 when it's not used.
+The Lynxpoint LPSS peripheral clocks are now handled in clk
+framework so the drivers do not need to take care of them
+manually. In dw8250_probe_acpi(), the uartclk is now taken
+from the driver_data only if it was not already set.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
- drivers/tty/serial/8250/8250_dw.c |   61 +++++++++++++++++++++++++++++++------
- 1 file changed, 52 insertions(+), 9 deletions(-)
+ drivers/tty/serial/8250/8250_dw.c |   18 +++++-------------
+ 1 file changed, 5 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index 3dedd24..d6aea85 100644
+index d6aea85..de7a186 100644
 --- a/drivers/tty/serial/8250/8250_dw.c
 +++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -27,6 +27,7 @@
- #include <linux/slab.h>
- #include <linux/acpi.h>
- #include <linux/clk.h>
-+#include <linux/pm_runtime.h>
+@@ -36,9 +36,6 @@
+ #define DW_UART_CPR	0xf4 /* Component Parameter Register */
+ #define DW_UART_UCV	0xf8 /* UART Component Version */
  
- #include "8250.h"
- 
-@@ -115,6 +116,18 @@ static int dw8250_handle_irq(struct uart_port *p)
- 	return 0;
- }
- 
-+static void
-+dw8250_do_pm(struct uart_port *port, unsigned int state, unsigned int old)
-+{
-+	if (!state)
-+		pm_runtime_get_sync(port->dev);
-+
-+	serial8250_do_pm(port, state, old);
-+
-+	if (state)
-+		pm_runtime_put_sync_suspend(port->dev);
-+}
-+
- static int dw8250_probe_of(struct uart_port *p)
+-/* Intel Low Power Subsystem specific */
+-#define LPSS_PRV_CLOCK_PARAMS 0x800
+-
+ /* Component Parameter Register bits */
+ #define DW_UART_CPR_ABP_DATA_WIDTH	(3 << 0)
+ #define DW_UART_CPR_AFCE_MODE		(1 << 4)
+@@ -226,7 +223,6 @@ static int dw8250_probe_acpi(struct uart_port *p)
  {
- 	struct device_node	*np = p->dev->of_node;
-@@ -293,6 +306,7 @@ static int dw8250_probe(struct platform_device *pdev)
- 	uart.port.mapbase = regs->start;
- 	uart.port.irq = irq->start;
- 	uart.port.handle_irq = dw8250_handle_irq;
-+	uart.port.pm = dw8250_do_pm;
- 	uart.port.type = PORT_8250;
- 	uart.port.flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_FIXED_PORT;
- 	uart.port.dev = &pdev->dev;
-@@ -336,6 +350,9 @@ static int dw8250_probe(struct platform_device *pdev)
+ 	const struct acpi_device_id *id;
+ 	acpi_status status;
+-	u32 reg;
  
- 	platform_set_drvdata(pdev, data);
- 
-+	pm_runtime_set_active(&pdev->dev);
-+	pm_runtime_enable(&pdev->dev);
+ 	id = acpi_match_device(p->dev->driver->acpi_match_table, p->dev);
+ 	if (!id)
+@@ -236,7 +232,9 @@ static int dw8250_probe_acpi(struct uart_port *p)
+ 	p->serial_in = dw8250_serial_in32;
+ 	p->serial_out = dw8250_serial_out32;
+ 	p->regshift = 2;
+-	p->uartclk = (unsigned int)id->driver_data;
 +
++	if (!p->uartclk)
++		p->uartclk = (unsigned int)id->driver_data;
+ 
+ 	status = acpi_walk_resources(ACPI_HANDLE(p->dev), METHOD_NAME__CRS,
+ 				     dw8250_acpi_walk_resource, p);
+@@ -246,12 +244,6 @@ static int dw8250_probe_acpi(struct uart_port *p)
+ 		return -ENODEV;
+ 	}
+ 
+-	/* Fix Haswell issue where the clocks do not get enabled */
+-	if (!strcmp(id->id, "INT33C4") || !strcmp(id->id, "INT33C5")) {
+-		reg = readl(p->membase + LPSS_PRV_CLOCK_PARAMS);
+-		writel(reg | 1, p->membase + LPSS_PRV_CLOCK_PARAMS);
+-	}
+-
  	return 0;
  }
+ #else
+@@ -425,8 +417,8 @@ static const struct of_device_id dw8250_of_match[] = {
+ MODULE_DEVICE_TABLE(of, dw8250_of_match);
  
-@@ -343,37 +360,64 @@ static int dw8250_remove(struct platform_device *pdev)
- {
- 	struct dw8250_data *data = platform_get_drvdata(pdev);
- 
-+	pm_runtime_get_sync(&pdev->dev);
-+
- 	serial8250_unregister_port(data->line);
- 
- 	if (!IS_ERR(data->clk))
- 		clk_disable_unprepare(data->clk);
- 
-+	pm_runtime_disable(&pdev->dev);
-+	pm_runtime_put_noidle(&pdev->dev);
-+
- 	return 0;
- }
- 
- #ifdef CONFIG_PM
--static int dw8250_suspend(struct platform_device *pdev, pm_message_t state)
-+static int dw8250_suspend(struct device *dev)
- {
--	struct dw8250_data *data = platform_get_drvdata(pdev);
-+	struct dw8250_data *data = dev_get_drvdata(dev);
- 
- 	serial8250_suspend_port(data->line);
- 
- 	return 0;
- }
- 
--static int dw8250_resume(struct platform_device *pdev)
-+static int dw8250_resume(struct device *dev)
- {
--	struct dw8250_data *data = platform_get_drvdata(pdev);
-+	struct dw8250_data *data = dev_get_drvdata(dev);
- 
- 	serial8250_resume_port(data->line);
- 
- 	return 0;
- }
--#else
--#define dw8250_suspend NULL
--#define dw8250_resume NULL
- #endif /* CONFIG_PM */
- 
-+#ifdef CONFIG_PM_RUNTIME
-+static int dw8250_runtime_suspend(struct device *dev)
-+{
-+	struct dw8250_data *data = dev_get_drvdata(dev);
-+
-+	clk_disable_unprepare(data->clk);
-+
-+	return 0;
-+}
-+
-+static int dw8250_runtime_resume(struct device *dev)
-+{
-+	struct dw8250_data *data = dev_get_drvdata(dev);
-+
-+	clk_prepare_enable(data->clk);
-+
-+	return 0;
-+}
-+#endif
-+
-+static const struct dev_pm_ops dw8250_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(dw8250_suspend, dw8250_resume)
-+	SET_RUNTIME_PM_OPS(dw8250_runtime_suspend, dw8250_runtime_resume, NULL)
-+};
-+
- static const struct of_device_id dw8250_of_match[] = {
- 	{ .compatible = "snps,dw-apb-uart" },
- 	{ /* Sentinel */ }
-@@ -391,13 +435,12 @@ static struct platform_driver dw8250_platform_driver = {
- 	.driver = {
- 		.name		= "dw-apb-uart",
- 		.owner		= THIS_MODULE,
-+		.pm		= &dw8250_pm_ops,
- 		.of_match_table	= dw8250_of_match,
- 		.acpi_match_table = ACPI_PTR(dw8250_acpi_match),
- 	},
- 	.probe			= dw8250_probe,
- 	.remove			= dw8250_remove,
--	.suspend		= dw8250_suspend,
--	.resume			= dw8250_resume,
+ static const struct acpi_device_id dw8250_acpi_match[] = {
+-	{ "INT33C4", 100000000 },
+-	{ "INT33C5", 100000000 },
++	{ "INT33C4", 0 },
++	{ "INT33C5", 0 },
+ 	{ },
  };
- 
- module_platform_driver(dw8250_platform_driver);
+ MODULE_DEVICE_TABLE(acpi, dw8250_acpi_match);
 -- 
 1.7.10.4
 
