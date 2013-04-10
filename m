@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965148Ab3DJRGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:06:55 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:51955 "EHLO mx12.netapp.com"
+	id S964891Ab3DJRHb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:07:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19882 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964912Ab3DJRGy convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:06:54 -0400
-X-IronPort-AV: E=Sophos;i="4.87,449,1363158000"; 
-   d="scan'208";a="39186061"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux NFS mailing list <linux-nfs@vger.kernel.org>,
-        Linux linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] One line typo fix
-Thread-Topic: [GIT PULL] One line typo fix
-Thread-Index: AQHONg3LwKJnuQdM10CdGa19TDiAsg==
-Date: Wed, 10 Apr 2013 17:06:45 +0000
-Message-ID: <1365613610.8465.16.camel@leira.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.114]
+	id S1750738Ab3DJRHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 13:07:30 -0400
+Date: Wed, 10 Apr 2013 13:07:21 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] audit: destroy filename correctly
+Message-ID: <20130410130721.12dd6755@tlielax.poochiereds.net>
+In-Reply-To: <1364799600-10338-1-git-send-email-dmonakhov@openvz.org>
+References: <1364799600-10338-1-git-send-email-dmonakhov@openvz.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-ID: <B1F4464CBBF28B4B81B8049B5A9C7523@tahoe.netapp.com>
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon,  1 Apr 2013 11:00:00 +0400
+Dmitry Monakhov <dmonakhov@openvz.org> wrote:
 
-I suddenly noticed that a one-line issue that I _thought_ I had fixed
-with the nfs41_walk_client_list patch was apparently still there in the
-pull request I sent earlier today. I'm very sorry for not catching that
-in time.
+> filename should be destroyed via final_putname() instead of __putname()
+> Otherwise this result in following BUGON() in case of long names:
+>   kernel BUG at mm/slab.c:3006!
+>   Call Trace:
+>   kmem_cache_free+0x1c1/0x850
+>   audit_putname+0x88/0x90
+>   putname+0x73/0x80
+>   sys_symlinkat+0x120/0x150
+>   sys_symlink+0x16/0x20
+>   system_call_fastpath+0x16/0x1b
+> 
+> Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+> ---
+>  kernel/auditsc.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+> index a371f85..bfe7ca6 100644
+> --- a/kernel/auditsc.c
+> +++ b/kernel/auditsc.c
+> @@ -1010,7 +1010,7 @@ static inline void audit_free_names(struct audit_context *context)
+>  	list_for_each_entry_safe(n, next, &context->names_list, list) {
+>  		list_del(&n->list);
+>  		if (n->name && n->name_put)
+> -			__putname(n->name);
+> +			final_putname(n->name);
+>  		if (n->should_free)
+>  			kfree(n);
+>  	}
+> @@ -2036,7 +2036,7 @@ void audit_putname(struct filename *name)
+>  	BUG_ON(!context);
+>  	if (!context->in_syscall) {
+>  #if AUDIT_DEBUG == 2
+> -		printk(KERN_ERR "%s:%d(:%d): __putname(%p)\n",
+> +		printk(KERN_ERR "%s:%d(:%d): final_putname(%p)\n",
+>  		       __FILE__, __LINE__, context->serial, name);
+>  		if (context->name_count) {
+>  			struct audit_names *n;
+> @@ -2047,7 +2047,7 @@ void audit_putname(struct filename *name)
+>  				       n->name, n->name->name ?: "(null)");
+>  			}
+>  #endif
+> -		__putname(name);
+> +		final_putname(name);
+>  	}
+>  #if AUDIT_DEBUG
+>  	else {
 
-The following changes since commit fa332941c0c7c00e3420078268b7558d0ef792b5:
+Looks correct to me...
 
-  NFSv4: Fix another potential state manager deadlock (2013-04-09 13:19:35 -0400)
-
-are available in the git repository at:
-
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.9-5
-
-for you to fetch changes up to eb04e0ac198cec3bab407ad220438dfa65c19c67:
-
-  NFSv4: Doh! Typo in the fix to nfs41_walk_client_list (2013-04-10 12:57:29 -0400)
-
-----------------------------------------------------------------
-NFS client bugfixes for Linux 3.9
-
-- Fix a brain fart in nfs41_walk_client_list
-
-----------------------------------------------------------------
-Trond Myklebust (1):
-      NFSv4: Doh! Typo in the fix to nfs41_walk_client_list
-
- fs/nfs/nfs4client.c | 1 +
- 1 file changed, 1 insertion(+)
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
