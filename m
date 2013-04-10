@@ -1,143 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964936Ab3DJOkd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:40:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55775 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964879Ab3DJOkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 10:40:31 -0400
-Message-ID: <516579D3.7060809@suse.cz>
-Date: Wed, 10 Apr 2013 16:40:19 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S936758Ab3DJOsj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:48:39 -0400
+Received: from mx17.lb01.inode.at ([62.99.145.19]:60632 "EHLO mx.inode.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S935543Ab3DJOsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 10:48:37 -0400
+From: Michal Bachraty <michal.bachraty@streamunlimited.com>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Dom Cobley <popcornmix@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rabeeh Khoury <rabeeh@solid-run.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Guenter Roeck <linux@roeck-us.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7] clk: add si5351 i2c common clock driver
+Date: Wed, 10 Apr 2013 16:48:25 +0200
+Message-ID: <14854575.YAd2OMKOy9@ganymedes>
+Organization: Stream Unlimited GmbH
+User-Agent: KMail/4.8.4 (Linux/3.2.0-29-generic-pae; KDE/4.8.4; i686; ; )
+In-Reply-To: <51653C3E.2020702@gmail.com>
+References: <1365439617-18816-1-git-send-email-sebastian.hesselbarth@gmail.com> <1365586810-6752-1-git-send-email-sebastian.hesselbarth@gmail.com> <51653C3E.2020702@gmail.com>
 MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [RFC PATCH] Use target compiler for user binaries in samples/
-References: <20130331165327.GA28591@merkur.ravnborg.org>
-In-Reply-To: <20130331165327.GA28591@merkur.ravnborg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Authenticated-Sender: michal.bachraty@streamunlimited.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31.3.2013 18:53, Sam Ravnborg wrote:
-> The user-space binaries build in samples/ uses the installed
-> headers for the kernel.
-> Therefore it is wrong that they use the host compiler
-> to build the samples.
-> 
-> Following is an attempt to create some infrastructure
-> for building user-space binaries that uses the uapi headers.
+Hi Sebastian,
+This driver doesn't work for me. In my case, u-boot initializes si-5351 and 
+power down unused clocks while booting kernel.  there is need for power up 
+clocks as was in previous versions of your driver.  
+See patch, whre the problem is fixed:
 
-Hi Sam,
+@@ -992,6 +992,10 @@ static long si5351_clkout_round_rate(struct clk_hw *hw, 
+unsigned long rate,
+ 		} while (1);
+ 	}
+ 	rate = *parent_rate >> rdiv;
++	
++	/* powerup clkout */
++	si5351_set_bits(hwdata->drvdata, SI5351_CLK0_CTRL + hwdata->num,
++			SI5351_CLK_POWERDOWN, 0);
+ 
+ 	dev_dbg(&hwdata->drvdata->client->dev,
+ 		"%s - %s: rdiv = %u, parent_rate = %lu, rate = %lu\n",
 
-I like the idea, I only have some minor remarks.
+With this lines, driver works well.
 
+Also, 
 
-> This adds two new variables to the top-level Makefile:
-> UAPICC and UAPICFLAGS
-> 
-> The architectures that supports both 32 and 64 bit set the
-> appropriate flags in UAPICFLAGS.
+> > +==Example==
+> > +
+> > +/* 25MHz reference crystal */
+> > +ref25: ref25M {
+> > +	compatible = "fixed-clock";
+> > +	#clock-cells = <0>;
+> > +	clock-frequency = <25000000>;
+> > +};
+> > +
+> > +i2c-master-node {
+> > +
+> > +	/* Si5351a msop10 i2c clock generator */
+> > +	si5351a: clock-generator@60 {
+> > +		compatible = "silabs,si5351a-msop";
+> > +		reg = <0x60>;
+> > +		#address-cells = <1>;
+> > +		#size-cells = <0>;
+> > +		#clock-cells = <1>;
+> > +
+> > +		/* connect xtal input to 25MHz reference */
+> > +		clocks = <&ref25>;
+> > +
+> > +		/* connect xtal input as source of pll0 and pll1 */
+> > +		silabs,pll-source = <0 0>, <1 0>;
+> > +
+> > +		/*
+> > +		 * overwrite clkout0 configuration with:
+> > +		 * - 8mA output drive strength
+> > +		 * - pll0 as clock source of multisynth0
+> > +		 * - multisynth0 as clock source of output divider
+> > +		 * - multisynth0 can change pll0
+> > +		 * - set initial clock frequency of 74.25MHz
+> > +		 */
+> > +		clkout0 {
+> > +			reg = <0>;
+> > +			silabs,drive-strength = <8>;
+> > +			silabs,multisynth-source = <0>;
+> > +			silabs,clock-source = <0>;
+> > +			silabs,pll-master;
+> > +			clock-frequency = <74250000>;
+> > +		};
+> > +
+> > +		/*
+> > +		 * overwrite clkout1 configuration with:
+> > +		 * - 4mA output drive strength
+> > +		 * - pll1 as clock source of multisynth1
+> > +		 * - multisynth1 as clock source of output divider
+> > +		 * - multisynth1 can change pll1
+> > +		 */
+> > +		clkout1 {
+> > +			reg = <1>;
+> > +			silabs,drive-strength = <4>;
+> > +			silabs,multisynth-source = <1>;
+> > +			silabs,clock-source = <0>;
+> > +			pll-master;
+> > +		};
+> > +
+ Is definition of pll-master in clkout1 correct? should not be silabs,pll-
+master ?
 
-You can have a 64bit kernel and a 32bit-only userspace. OTOH, newer PPC
-distros stopped doing this, and the basic libraries have always been
-available in both modes. So using the same bitness for kernel and
-samples is probably OK.
-
-
-> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-> index 5c47726..ee9bcec 100644
-> --- a/arch/x86/Makefile
-> +++ b/arch/x86/Makefile
-> @@ -56,6 +56,7 @@ else
->  
->          KBUILD_AFLAGS += -m64
->          KBUILD_CFLAGS += -m64
-> +        UAPICFLAGS    += -m64
-
-You need to add UAPICFLAGS += $(biarch) in the x86_32 case.
-
-
-> diff --git a/samples/seccomp/Makefile b/samples/seccomp/Makefile
-> index 7203e66..0c782bc 100644
-> --- a/samples/seccomp/Makefile
-> +++ b/samples/seccomp/Makefile
-> @@ -1,42 +1,13 @@
-> -# kbuild trick to avoid linker error. Can be omitted if a module is built.
-> -obj- := dummy.o
->  
-> -hostprogs-$(CONFIG_SECCOMP_FILTER) := bpf-fancy dropper bpf-direct
-> +uapiprogs-$(CONFIG_SECCOMP_FILTER) := bpf-fancy dropper bpf-direct
->  
-> -HOSTCFLAGS_bpf-fancy.o += -I$(objtree)/usr/include
->  HOSTCFLAGS_bpf-fancy.o += -idirafter $(objtree)/include
-> -HOSTCFLAGS_bpf-helper.o += -I$(objtree)/usr/include
->  HOSTCFLAGS_bpf-helper.o += -idirafter $(objtree)/include
->  bpf-fancy-objs := bpf-fancy.o bpf-helper.o
-
-The remaining HOSTCFLAGS_* assignments lose their meaning, so remove
-them all. I actually wonder why there was need for the ./include path,
-the samples are supposed to demonstrate usage of the exported headers,
-after all. And it builds without the include.
-
-
-> -# Try to match the kernel target.
-> -ifndef CONFIG_64BIT
-> -ifndef CROSS_COMPILE
-> -
-> -# s390 has -m31 flag to build 31 bit binaries
-> -ifndef CONFIG_S390
-> -MFLAG = -m32
-> -else
-> -MFLAG = -m31
-> -endif
-
-Nice cleanup as a side effect :).
-
-
-> diff --git a/scripts/Makefile.uapiprogs b/scripts/Makefile.uapiprogs
-> new file mode 100644
-> index 0000000..e903eca
-> --- /dev/null
-> +++ b/scripts/Makefile.uapiprogs
-[...]
-> +__uapiprogs := $(sort $(uapiprogs-y))
-> +
-> +# sub-directories to visit
-> +# uapiprogs-y  := hidraw/ may have been specified. Retrieve directory
-> +subdir-uapi    := $(patsubst %/,%,$(filter %/, $(__uapiprogs)))
-> +
-> +# Drop all subdirs from list
-> +__uapiprogs    := $(filter-out %/, $(__uapiprogs))
-> +
-
-Is it necessary to add subdirectory logic here? scripts/Makefile.host
-does not implement it either. Let's keep the established practice that
-subdirectories must be listed in $(obj-y) or $(obj-m). Then
-scripts/Makefile.build continues to be the "driver" for the whole build
-and includes scripts/Makefile.{host,uapiprogs} as needed. That way, you
-simplify this makefile a bit, you don't need to change
-scripts/Makefile.build beyond the include statement and you don't need
-to touch samples/Makefile.
-
-
-> +# Link an executable based on list of .o files, all plain c
-> +# uapi-cmulti -> executable
-> +quiet_cmd_uapi-cmulti	= UAPILD  $@
-> +      cmd_uapi-cmulti	= $(UAPICC) -o $@ \
-> +			  $(addprefix $(obj)/,$($(@F)-objs))
-> +$(uapi-cmulti): $(obj)/%: $(uapi-cobjs) $(uapi-cshlib) FORCE
-                                             ^^^^^^^^^^^
-Copy&paste artefact from scripts/Makefile.host.
-
-Last but not least, you need to add $(uapiprogs-y) to $(__clean-files)
-in scripts/Makefile.clean.
-
+Best regards,
 Michal
