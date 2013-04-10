@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965188Ab3DJS0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 14:26:47 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:37475 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936652Ab3DJS0p (ORCPT
+	id S965197Ab3DJS1e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 14:27:34 -0400
+Received: from mail-ia0-f178.google.com ([209.85.210.178]:42238 "EHLO
+	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964862Ab3DJS1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 14:26:45 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH RFC 2/2] SELinux: Increase ebitmap_node size for 64-bit configuration
-Date: Wed, 10 Apr 2013 14:26:23 -0400
-Message-Id: <1365618383-29340-2-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1365618383-29340-1-git-send-email-Waiman.Long@hp.com>
-References: <1365618383-29340-1-git-send-email-Waiman.Long@hp.com>
-To: Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@parisplace.org>
+	Wed, 10 Apr 2013 14:27:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <515BDF23.9000508@gaisler.com>
+References: <1363355140-28216-1-git-send-email-andreas@gaisler.com>
+	<1363355140-28216-2-git-send-email-andreas@gaisler.com>
+	<20130319004012.GA1004@lizard.gateway.2wire.net>
+	<CACRpkdY6D3hvBm13Y41NTbnAav03guB7LEB4RHnRanFXjj_UJw@mail.gmail.com>
+	<515BDF23.9000508@gaisler.com>
+Date: Wed, 10 Apr 2013 20:27:32 +0200
+Message-ID: <CACRpkdaPGFH9k3ePHpXfKxyowoXMrbnbAgP5qb32CG2NANs8Pw@mail.gmail.com>
+Subject: Re: [PATCH v5 1/3] gpio: gpio-generic: Add 16 and 32 bit big endian
+ byte order support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andreas Larson <andreas@gaisler.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Anton Vorontsov <anton@enomsg.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        software@gaisler.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the ebitmap_node structure has a fixed size of 32 bytes. On
-a 32-bit system, the overhead is 8 bytes, leaving 24 bytes for being
-used as bitmaps. The overhead ratio is 1/4.
+On Wed, Apr 3, 2013 at 9:49 AM, Andreas Larson <andreas@gaisler.com> wrote:
+> On 2013-03-27 09:58, Linus Walleij wrote:
+>>
+>> On Tue, Mar 19, 2013 at 1:40 AM, Anton Vorontsov <anton@enomsg.org> wrote:
+>>>
+>>> On Fri, Mar 15, 2013 at 02:45:38PM +0100, Andreas Larsson wrote:
+>>>>
+>>>> There is no general support for 64-bit big endian accesses, so that is
+>>>> left unsupported.
+>>>>
+>>>> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+>>>
+>>>
+>>> This looks perfect, thanks a lot!
+>>>
+>>> Acked-by: Anton Vorontsov <anton@enomsg.org>
+>>
+>>
+>> Looks good to me as well, but since this was discussed with Grant
+>> I want his review on this before I merge it.
+>
+>
+> I take it that you are happy with the other two patches as well?
+>
+> Grant, any chance of getting this into the 3.10 merge window?
 
-On a 64-bit system, the overhead is 16 bytes. Therefore, only 16 bytes
-are left for bitmap purpose and the overhead ratio is 1/2. With a
-3.8.2 kernel, a boot-up operation will cause the ebitmap_get_bit()
-function to be called about 9 million times. The average number of
-ebitmap_node traversal is about 3.7.
+Apparently Grant is busy these days, so I took a review of the
+patch and I like it. With Anton's ACK as well I'm certain it's good,
+so patch applied!
 
-This patch increases the size of the ebitmap_node structure to 64
-bytes for 64-bit system to keep the overhead ratio at 1/4. This may
-also improve performance a little bit by making node to node traversal
-less frequent (< 2) as more bits are available in each node.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- security/selinux/ss/ebitmap.h |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/security/selinux/ss/ebitmap.h b/security/selinux/ss/ebitmap.h
-index 922f8af..653a5b9 100644
---- a/security/selinux/ss/ebitmap.h
-+++ b/security/selinux/ss/ebitmap.h
-@@ -16,7 +16,13 @@
- 
- #include <net/netlabel.h>
- 
--#define EBITMAP_UNIT_NUMS	((32 - sizeof(void *) - sizeof(u32))	\
-+#ifdef CONFIG_64BIT
-+#define	EBITMAP_NODE_SIZE	64
-+#else
-+#define	EBITMAP_NODE_SIZE	32
-+#endif
-+
-+#define EBITMAP_UNIT_NUMS	((EBITMAP_NODE_SIZE-sizeof(void *)-sizeof(u32))\
- 					/ sizeof(unsigned long))
- #define EBITMAP_UNIT_SIZE	BITS_PER_LONG
- #define EBITMAP_SIZE		(EBITMAP_UNIT_NUMS * EBITMAP_UNIT_SIZE)
--- 
-1.7.1
-
+Yours,
+Linus Walleij
