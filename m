@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3DJF2L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 01:28:11 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20552 "EHLO mga09.intel.com"
+	id S1752819Ab3DJF34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 01:29:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3604 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752372Ab3DJF2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 01:28:10 -0400
+	id S1751866Ab3DJF3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 01:29:54 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,444,1363158000"; 
-   d="scan'208";a="315793878"
-Message-ID: <5164F84D.6020202@intel.com>
-Date: Wed, 10 Apr 2013 13:27:41 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130221 Thunderbird/17.0.3
+   d="scan'208";a="316995475"
+Date: Wed, 10 Apr 2013 10:30:59 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Dan Williams <djbw@fb.com>
+Cc: Dave Jiang <dave.jiang@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/10] Add Intel Atom S1200 seris ioatdma support
+Message-ID: <20130410050059.GI31193@intel.com>
+References: <20130326223953.15072.26605.stgit@djiang5-linux2.ch.intel.com>
+ <20130409072801.GB31193@intel.com>
+ <CAA9_cmftcvYN_g0Sj12tMa4T8LxbPdk6wDxwkbTrgQPUUfc0FA@mail.gmail.com>
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: wake-affine throttle
-References: <5164DCE7.8080906@linux.vnet.ibm.com> <5164E7A0.80408@intel.com> <5164F47D.6060006@linux.vnet.ibm.com>
-In-Reply-To: <5164F47D.6060006@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA9_cmftcvYN_g0Sj12tMa4T8LxbPdk6wDxwkbTrgQPUUfc0FA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 01:11 PM, Michael Wang wrote:
->> > BTW, could you try the kbulid, hackbench and aim for this?
-> Sure, the patch has already been tested with aim7, also the hackbench,
-> kbench, and ebizzy, no notable changes on my box with the default 1ms
-> interval.
+On Tue, Apr 09, 2013 at 05:53:59PM -0700, Dan Williams wrote:
+> On Tue, Apr 9, 2013 at 12:28 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+> > Are you okay with the series. Merge window is very close...
+> >
+> >
+> Hi Vinod, thanks for the ping.
+> 
+> Chatted with Dave patches 1-3 and 5-8, and 10 are reviewed/acked.  For
+> patch 4 and 9 we think we have a slightly cleaner way to organize the quirk
+> handling and an update will be coming.
+Dave,
 
-That's fine.
+I tried these, but they fail to apply on for-linus branch of my tree.
+Cna you pls rebase these 8 patches and resend.
 
--- 
-Thanks Alex
+--
+~Vinod
