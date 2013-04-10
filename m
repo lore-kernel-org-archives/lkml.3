@@ -1,81 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965205Ab3DJRX2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 13:23:28 -0400
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:41353 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964846Ab3DJRXZ convert rfc822-to-8bit (ORCPT
+	id S965161Ab3DJRYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 13:24:52 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:59974 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934231Ab3DJRYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 13:23:25 -0400
-Date: Wed, 10 Apr 2013 12:23:22 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [RFC] rootmpfs
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Byron Stanoszek <bstanoszek@comtime.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <51644FB5.9050103@infradead.org> (from rdunlap@infradead.org on
-	Tue Apr  9 12:28:21 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1365614602.18069.65@driftwood>
+	Wed, 10 Apr 2013 13:24:51 -0400
+Date: Wed, 10 Apr 2013 19:24:46 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Michal Marek <mmarek@suse.cz>
+Subject: Re: [RFC GIT PULL] nohz: Kconfig layout improvements
+Message-ID: <20130410172446.GF21951@gmail.com>
+References: <1364993190-13784-1-git-send-email-fweisbec@gmail.com>
+ <20130408111919.GB1225@gmail.com>
+ <CAFTL4hxDGfEWPz0+zsHLmdaPDSg4n0iFHpeN=w=5eFGX9sRZ2w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CAFTL4hxDGfEWPz0+zsHLmdaPDSg4n0iFHpeN=w=5eFGX9sRZ2w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 12:28:21 PM, Randy Dunlap wrote:
-> On 04/09/13 07:52, Rob Landley wrote:
-> > On 04/05/2013 02:53:12 PM, Byron Stanoszek wrote:
-> >> Rob,
-> >>
-> >> FWIW I have a patch to do something like this. It even gives you a  
-> rdsize=xxx
-> >> tunable kernel parameter that lets you specify the size of the  
-> tmpfs, which
-> >> acts like the -osize= mount flag (so phrases like 100M or 20%  
-> works). So doing
-> >> things like 'cat /dev/zero > filename' will not run you out of all  
-> available
-> >> memory. (Note: If you don't specify rdsize= on the kernel command  
-> line, it will
-> >> not convert rootfs to tmpfs).
+
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> 2013/4/8 Ingo Molnar <mingo@kernel.org>:
+> > I pulled it into tip:timers/nohz and will push it out if it passes testing because
+> > I like the improvements - but there's still a few things missing I think.
 > >
-> > In init/do_mounts.c the boot infrastructure already has kernel  
-> command line options "rootflags=" and "rootfstype=", so the logical  
-> thing to do is probably to hook those up to rootfs. (That way instead  
-> of special casing a new option we use the existing tmpfs option  
-> parsing.)
+> > Firstly, I performed this "how are users exposed to this new feature" test:
 > >
-> > The default tmpfs size is 50%, which solves the "trivial to exhaust  
-> memory and panic a kernel running under rootfs" problem. Having one  
-> tmpfs also fixes the case that multiple tmpfs mounts (for /home and  
-> /var, for example,) have separate memory limits that don't coordinate  
-> with each other, so if /home can use 30% and /var can use 30%, that's  
-> 60% plus whatever rootfs is already using, so you can easily squeeze  
-> the kernel against the wall without meaning to. (Yes, you can make  
-> one tmpfs mount and --bind mount from there to elsewhere, I've seen  
-> that done. Having rootfs just _be_ tmpfs makes this much easier to  
-> track.)
+> >    git checkout v3.9-rc6
+> >    make defconfig
+> >    git checkout tip/master
+> >    make oldconfig
 > >
-> >> See attached.
+> > the x86 (64-bit) defconfig has NO_HZ enabled. When I did the 'make oldconfig', I
+> > was given:
 > >
-> > You're not actually changing the type of rootfs, you're  
-> overmounting it with a second filesystem instance. (Mine hasn't got a  
-> "change", it just mounts it correctly the first time, and there's  
-> just one rootfs instance.)
+> >   *
+> >   * Timers subsystem
+> >   *
+> >   Timer tick handling
+> >   > 1. Periodic timer ticks (constant rate, no dynticks) (PERIODIC_HZ) (NEW)
+> >     2. Idle dynticks system (tickless idle) (NO_HZ_IDLE) (NEW)
+> >   choice[1-2]:
 > >
-> > What _is_ wrong with my version is that if you select tmpfs as a  
-> module bad things happen; it tries to use code that's not there. I  
-> dunno of an #ifdef that distinguishes between module and builtin, so  
-> I think I have to add another kconfig symbol...
+> > [ Firstly, while at it: that should be 'Timer subsystem' or 'Timers'. ]
 > 
-> See include/linux/kconfig.h:  IS_MODULE() and IS_BUILTIN().
+> Isn't "Timers" too general? I really don't mind changing that though.
 
-Good to know, thanks.
+I'd suggest consulting Thomas.
 
-(It turns out I was looking at a distro kernel directory and vanilla  
-only lets TMPFS be static anyway, but I should still use that in case  
-it changes, and I think I still need to wire up a rootfsflags argument.)
+> > More importantly, the new Kconfig behavior is still not quite right for two
+> > reasons:
+> >
+> > 1)
+> >
+> > the default is not set to NO_HZ_IDLE. The oldconfig .config had
+> > CONFIG_NO_HZ set - this should be grandfathered over into the new config's
+> > default choice. That can probably be done by still keeping CONFIG_NO_HZ as
+> > a migration helper entry.
+> 
+> Ah I did keep it for backward compatibility. We default to
+> CONFIG_NO_HZ_IDLE if CONFIG_NO_HZ is set. This is just not working
+> because CONFIG_NO_HZ isn't visible. It's an arbirtrary Kconfig
+> limitation. I'll just make it visible by adding it a title text and
+> this will work.
 
-Rob
+Okay, cool!
+
+> > 2)
+> >
+> > there's still no extended idle tick option offered - due to it not meeting
+> > the CONFIG_VIRT_CPU_ACCOUNTING_GEN dependency.
+> >
+> > Even if I read the Kconfig rules and figure out the dependency, I have to
+> > perform _two_ steps to get extended ticks:
+> >
+> > I had to manually find CONFIG_VIRT_CPU_ACCOUNTING_GEN in the .config and
+> > delete it, so that I'm given the choice on the next 'make oldconfig'.
+> >
+> > Then NO_HZ_EXTENDED was set to disabled in the .config silently, because
+> > NO_HZ_IDLE was already set. So I had to delete that and re-configure it
+> > again.
+> 
+> Agreed. I mentioned that in the pull request. It's again due to an
+> arbitrary Kconfig limitation. The following:
+> 
+>     config X
+>         select Y
+> 
+> doesn't work if Y is part of a Kconfig "choice".
+> I have a patch that fixes in Kconfig, will submit it to Michal and fix
+> the nohz passive dependency once we get that sorted.
+
+Wow, you are fixing kconfig.
+
+99% of the people work it around in some fashion.
+
+Kudos!
+
+Thanks,
+
+	Ingo
