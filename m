@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937407Ab3DJWrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:47:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56245 "EHLO
+	id S937439Ab3DJWsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:48:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56302 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937339Ab3DJWrj (ORCPT
+	with ESMTP id S937405Ab3DJWrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:39 -0400
+	Wed, 10 Apr 2013 18:47:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Guy Briggs <rbriggs@redhat.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 52/64] thermal: return an error on failure to register thermal class
-Date: Wed, 10 Apr 2013 15:46:49 -0700
-Message-Id: <20130410224345.504941844@linuxfoundation.org>
+        Tim Gardner <tim.gardner@canonical.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org
+Subject: [ 64/64] rt2x00: rt2x00pci_regbusy_read() - only print register access failure once
+Date: Wed, 10 Apr 2013 15:47:01 -0700
+Message-Id: <20130410224348.609013379@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -28,36 +32,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rbriggs@redhat.com>
+From: Tim Gardner <tim.gardner@canonical.com>
 
-commit da28d966f6aa942ae836d09729f76a1647932309 upstream.
+commit 83589b30f1e1dc9898986293c9336b8ce1705dec upstream.
 
-The return code from the registration of the thermal class is used to
-unallocate resources, but this failure isn't passed back to the caller of
-thermal_init.  Return this failure back to the caller.
+BugLink: http://bugs.launchpad.net/bugs/1128840
 
-This bug was introduced in changeset 4cb18728 which overwrote the return code
-when the variable was re-used to catch the return code of the registration of
-the genetlink thermal socket family.
+It appears that when this register read fails it never recovers, so
+I think there is no need to repeat the same error message ad infinitum.
 
-Signed-off-by: Richard Guy Briggs <rbriggs@redhat.com>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Cc: Jonghwan Choi <jhbird.choi@samsung.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Cc: Ivo van Doorn <IvDoorn@gmail.com>
+Cc: Gertjan van Wingerde <gwingerde@gmail.com>
+Cc: Helmut Schaa <helmut.schaa@googlemail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: users@rt2x00.serialmonkey.com
+Cc: netdev@vger.kernel.org
+Cc: stable@vger.kernel.org
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/thermal/thermal_sys.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/rt2x00/rt2x00pci.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/thermal/thermal_sys.c
-+++ b/drivers/thermal/thermal_sys.c
-@@ -1807,6 +1807,7 @@ static int __init thermal_init(void)
- 		idr_destroy(&thermal_cdev_idr);
- 		mutex_destroy(&thermal_idr_lock);
- 		mutex_destroy(&thermal_list_lock);
-+		return result;
+--- a/drivers/net/wireless/rt2x00/rt2x00pci.c
++++ b/drivers/net/wireless/rt2x00/rt2x00pci.c
+@@ -52,8 +52,8 @@ int rt2x00pci_regbusy_read(struct rt2x00
+ 		udelay(REGISTER_BUSY_DELAY);
  	}
- 	result = genetlink_init();
- 	return result;
+ 
+-	ERROR(rt2x00dev, "Indirect register access failed: "
+-	      "offset=0x%.08x, value=0x%.08x\n", offset, *reg);
++	printk_once(KERN_ERR "%s() Indirect register access failed: "
++	      "offset=0x%.08x, value=0x%.08x\n", __func__, offset, *reg);
+ 	*reg = ~0;
+ 
+ 	return 0;
 
 
