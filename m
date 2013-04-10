@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937441Ab3DJW5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:57:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56601 "EHLO
+	id S937523Ab3DJW5m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:57:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56595 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937496Ab3DJWuJ (ORCPT
+	with ESMTP id S937434Ab3DJWuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Apr 2013 18:50:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Wolf <mjw@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [ 17/29] powerpc: pSeries_lpar_hpte_remove fails from Adjunct partition being performed before the ANDCOND test
-Date: Wed, 10 Apr 2013 15:49:35 -0700
-Message-Id: <20130410224805.866952080@linuxfoundation.org>
+        Jan Stancek <jstancek@redhat.com>,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 26/29] mm: prevent mmap_cache race in find_vma()
+Date: Wed, 10 Apr 2013 15:49:44 -0700
+Message-Id: <20130410224806.782757072@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -27,42 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Wolf <mjw@linux.vnet.ibm.com>
+From: Jan Stancek <jstancek@redhat.com>
 
-commit 9fb2640159f9d4f5a2a9d60e490482d4cbecafdb upstream.
+commit b6a9b7f6b1f21735a7456d534dc0e68e61359d2c upstream.
 
-Some versions of pHyp will perform the adjunct partition test before the
-ANDCOND test.  The result of this is that H_RESOURCE can be returned and
-cause the BUG_ON condition to occur. The HPTE is not removed.  So add a
-check for H_RESOURCE, it is ok if this HPTE is not removed as
-pSeries_lpar_hpte_remove is looking for an HPTE to remove and not a
-specific HPTE to remove.  So it is ok to just move on to the next slot
-and try again.
+find_vma() can be called by multiple threads with read lock
+held on mm->mmap_sem and any of them can update mm->mmap_cache.
+Prevent compiler from re-fetching mm->mmap_cache, because other
+readers could update it in the meantime:
 
-Signed-off-by: Michael Wolf <mjw@linux.vnet.ibm.com>
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+               thread 1                             thread 2
+                                        |
+  find_vma()                            |  find_vma()
+    struct vm_area_struct *vma = NULL;  |
+    vma = mm->mmap_cache;               |
+    if (!(vma && vma->vm_end > addr     |
+        && vma->vm_start <= addr)) {    |
+                                        |    mm->mmap_cache = vma;
+    return vma;                         |
+     ^^ compiler may optimize this      |
+        local variable out and re-read  |
+        mm->mmap_cache                  |
+
+This issue can be reproduced with gcc-4.8.0-1 on s390x by running
+mallocstress testcase from LTP, which triggers:
+
+  kernel BUG at mm/rmap.c:1088!
+    Call Trace:
+     ([<000003d100c57000>] 0x3d100c57000)
+      [<000000000023a1c0>] do_wp_page+0x2fc/0xa88
+      [<000000000023baae>] handle_pte_fault+0x41a/0xac8
+      [<000000000023d832>] handle_mm_fault+0x17a/0x268
+      [<000000000060507a>] do_protection_exception+0x1e2/0x394
+      [<0000000000603a04>] pgm_check_handler+0x138/0x13c
+      [<000003fffcf1f07a>] 0x3fffcf1f07a
+    Last Breaking-Event-Address:
+      [<000000000024755e>] page_add_new_anon_rmap+0xc2/0x168
+
+Thanks to Jakub Jelinek for his insight on gcc and helping to
+track this down.
+
+Signed-off-by: Jan Stancek <jstancek@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context, indentation]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/pseries/lpar.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ mm/mmap.c  |    2 +-
+ mm/nommu.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -187,7 +187,13 @@ static long pSeries_lpar_hpte_remove(uns
- 					   (0x1UL << 4), &dummy1, &dummy2);
- 		if (lpar_rc == H_SUCCESS)
- 			return i;
--		BUG_ON(lpar_rc != H_NOT_FOUND);
-+
-+		/*
-+		 * The test for adjunct partition is performed before the
-+		 * ANDCOND test.  H_RESOURCE may be returned, so we need to
-+		 * check for that as well.
-+		 */
-+		BUG_ON(lpar_rc != H_NOT_FOUND && lpar_rc != H_RESOURCE);
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1619,7 +1619,7 @@ struct vm_area_struct *find_vma(struct m
+ 	if (mm) {
+ 		/* Check the cache first. */
+ 		/* (Cache hit rate is typically around 35%.) */
+-		vma = mm->mmap_cache;
++		vma = ACCESS_ONCE(mm->mmap_cache);
+ 		if (!(vma && vma->vm_end > addr && vma->vm_start <= addr)) {
+ 			struct rb_node * rb_node;
  
- 		slot_offset++;
- 		slot_offset &= 0x7;
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -807,7 +807,7 @@ struct vm_area_struct *find_vma(struct m
+ 	struct vm_area_struct *vma;
+ 
+ 	/* check the cache first */
+-	vma = mm->mmap_cache;
++	vma = ACCESS_ONCE(mm->mmap_cache);
+ 	if (vma && vma->vm_start <= addr && vma->vm_end > addr)
+ 		return vma;
+ 
 
 
