@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936703Ab3DJJwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 05:52:18 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:36645 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab3DJJwR (ORCPT
+	id S937108Ab3DJJwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 05:52:40 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:4118 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757706Ab3DJJwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 05:52:17 -0400
-Date: Wed, 10 Apr 2013 11:52:12 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <keescook@chromium.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Alex Shi <alex.shi@intel.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
-        Eric Northup <digitaleric@google.com>
-Subject: Re: [kernel-hardening] Re: [PATCH] x86: make IDT read-only
-Message-ID: <20130410095212.GE24443@gmail.com>
-References: <20130408224328.GA17641@www.outflux.net>
- <51634935.9010905@zytor.com>
- <alpine.LFD.2.02.1304091122490.21884@ionos>
- <CAGXu5jKo=11RrsvctcZjP6dusAj659O_GsaA2J2qFq-6mOeRwQ@mail.gmail.com>
- <5164AC44.7030708@zytor.com>
+	Wed, 10 Apr 2013 05:52:39 -0400
+X-Spam-Score: -100.8
+Message-ID: <51653645.90401@asianux.com>
+Date: Wed, 10 Apr 2013 17:52:05 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5164AC44.7030708@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Al Viro <viro@zeniv.linux.org.uk>, eparis@redhat.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel: auditfilter: looping issue, memory leak if has 2
+ or more AUDIT_FILTERKEYs
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+  in the 'fcount' looping,
+    if 'new->fields[*].type" has 2 or more AUDIT_FILTERKEYs
+    need judge new->filterkey whether has value, or memory leak.
 
-> On 04/09/2013 11:22 AM, Kees Cook wrote:
-> > 
-> > Can we create a RO fixed per-cpu area?
-> > 
-> 
-> "Fixed" and "percpu" are mutually exclusive...
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/auditfilter.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-There's a fixmap area that holds kmap_atomic() percpu mappings:
-
-        FIX_KMAP_BEGIN, /* reserved pte's for temporary kernel mappings */
-        FIX_KMAP_END = FIX_KMAP_BEGIN+(KM_TYPE_NR*NR_CPUS)-1,
-
-In a similar fashion we could use a per CPU high-mapped read-only alias as well 
-(assuming it fits, memory is pretty tight there).
-
-Thanks,
-
-	Ingo
+diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+index f9fc54b..936ac79 100644
+--- a/kernel/auditfilter.c
++++ b/kernel/auditfilter.c
+@@ -859,6 +859,8 @@ struct audit_entry *audit_dupe_rule(struct audit_krule *old)
+ 						       &old->fields[i]);
+ 			break;
+ 		case AUDIT_FILTERKEY:
++			if (new->filterkey)
++				break;
+ 			fk = kstrdup(old->filterkey, GFP_KERNEL);
+ 			if (unlikely(!fk))
+ 				err = -ENOMEM;
+-- 
+1.7.7.6
