@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937538Ab3DJXAA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:00:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56564 "EHLO
+	id S937562Ab3DJXA2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:00:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937464Ab3DJWuF (ORCPT
+	with ESMTP id S937456Ab3DJWuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:50:05 -0400
+	Wed, 10 Apr 2013 18:50:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <srostedt@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [ 20/29] spinlocks and preemption points need to be at least compiler barriers
-Date: Wed, 10 Apr 2013 15:49:38 -0700
-Message-Id: <20130410224806.152999875@linuxfoundation.org>
+        Jay Estabrook <jay.estabrook@gmail.com>,
+        Matt Turner <mattst88@gmail.com>, Michael Cree <mcree@orcon.net.nz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 14/29] alpha: Add irongate_io to PCI bus resources
+Date: Wed, 10 Apr 2013 15:49:32 -0700
+Message-Id: <20130410224805.581958237@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -28,161 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Jay Estabrook <jay.estabrook@gmail.com>
 
-commit 386afc91144b36b42117b0092893f15bc8798a80 upstream.
+commit aa8b4be3ac049c8b1df2a87e4d1d902ccfc1f7a9 upstream.
 
-In UP and non-preempt respectively, the spinlocks and preemption
-disable/enable points are stubbed out entirely, because there is no
-regular code that can ever hit the kind of concurrency they are meant to
-protect against.
+Fixes a NULL pointer dereference at boot on UP1500.
 
-However, while there is no regular code that can cause scheduling, we
-_do_ end up having some exceptional (literally!) code that can do so,
-and that we need to make sure does not ever get moved into the critical
-region by the compiler.
-
-In particular, get_user() and put_user() is generally implemented as
-inline asm statements (even if the inline asm may then make a call
-instruction to call out-of-line), and can obviously cause a page fault
-and IO as a result.  If that inline asm has been scheduled into the
-middle of a preemption-safe (or spinlock-protected) code region, we
-obviously lose.
-
-Now, admittedly this is *very* unlikely to actually ever happen, and
-we've not seen examples of actual bugs related to this.  But partly
-exactly because it's so hard to trigger and the resulting bug is so
-subtle, we should be extra careful to get this right.
-
-So make sure that even when preemption is disabled, and we don't have to
-generate any actual *code* to explicitly tell the system that we are in
-a preemption-disabled region, we need to at least tell the compiler not
-to move things around the critical region.
-
-This patch grew out of the same discussion that caused commits
-79e5f05edcbf ("ARC: Add implicit compiler barrier to raw_local_irq*
-functions") and 3e2e0d2c222b ("tile: comment assumption about
-__insn_mtspr for <asm/irqflags.h>") to come about.
-
-Note for stable: use discretion when/if applying this.  As mentioned,
-this bug may never have actually bitten anybody, and gcc may never have
-done the required code motion for it to possibly ever trigger in
-practice.
-
+Reviewed-and-Tested-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Jay Estabrook <jay.estabrook@gmail.com>
+Signed-off-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <srostedt@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/preempt.h     |   20 +++++++++++++-------
- include/linux/spinlock_up.h |   29 ++++++++++++++++++-----------
- 2 files changed, 31 insertions(+), 18 deletions(-)
+ arch/alpha/kernel/sys_nautilus.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/include/linux/preempt.h
-+++ b/include/linux/preempt.h
-@@ -93,14 +93,20 @@ do { \
+--- a/arch/alpha/kernel/sys_nautilus.c
++++ b/arch/alpha/kernel/sys_nautilus.c
+@@ -188,6 +188,10 @@ nautilus_machine_check(unsigned long vec
+ extern void free_reserved_mem(void *, void *);
+ extern void pcibios_claim_one_bus(struct pci_bus *);
  
- #else /* !CONFIG_PREEMPT_COUNT */
++static struct resource irongate_io = {
++	.name	= "Irongate PCI IO",
++	.flags	= IORESOURCE_IO,
++};
+ static struct resource irongate_mem = {
+ 	.name	= "Irongate PCI MEM",
+ 	.flags	= IORESOURCE_MEM,
+@@ -209,6 +213,7 @@ nautilus_init_pci(void)
  
--#define preempt_disable()		do { } while (0)
--#define sched_preempt_enable_no_resched()	do { } while (0)
--#define preempt_enable_no_resched()	do { } while (0)
--#define preempt_enable()		do { } while (0)
-+/*
-+ * Even if we don't have any preemption, we need preempt disable/enable
-+ * to be barriers, so that we don't have things like get_user/put_user
-+ * that can cause faults and scheduling migrate into our preempt-protected
-+ * region.
-+ */
-+#define preempt_disable()		barrier()
-+#define sched_preempt_enable_no_resched()	barrier()
-+#define preempt_enable_no_resched()	barrier()
-+#define preempt_enable()		barrier()
+ 	irongate = pci_get_bus_and_slot(0, 0);
+ 	bus->self = irongate;
++	bus->resource[0] = &irongate_io;
+ 	bus->resource[1] = &irongate_mem;
  
--#define preempt_disable_notrace()		do { } while (0)
--#define preempt_enable_no_resched_notrace()	do { } while (0)
--#define preempt_enable_notrace()		do { } while (0)
-+#define preempt_disable_notrace()		barrier()
-+#define preempt_enable_no_resched_notrace()	barrier()
-+#define preempt_enable_notrace()		barrier()
- 
- #endif /* CONFIG_PREEMPT_COUNT */
- 
---- a/include/linux/spinlock_up.h
-+++ b/include/linux/spinlock_up.h
-@@ -16,7 +16,10 @@
-  * In the debug case, 1 means unlocked, 0 means locked. (the values
-  * are inverted, to catch initialization bugs)
-  *
-- * No atomicity anywhere, we are on UP.
-+ * No atomicity anywhere, we are on UP. However, we still need
-+ * the compiler barriers, because we do not want the compiler to
-+ * move potentially faulting instructions (notably user accesses)
-+ * into the locked sequence, resulting in non-atomic execution.
-  */
- 
- #ifdef CONFIG_DEBUG_SPINLOCK
-@@ -25,6 +28,7 @@
- static inline void arch_spin_lock(arch_spinlock_t *lock)
- {
- 	lock->slock = 0;
-+	barrier();
- }
- 
- static inline void
-@@ -32,6 +36,7 @@ arch_spin_lock_flags(arch_spinlock_t *lo
- {
- 	local_irq_save(flags);
- 	lock->slock = 0;
-+	barrier();
- }
- 
- static inline int arch_spin_trylock(arch_spinlock_t *lock)
-@@ -39,32 +44,34 @@ static inline int arch_spin_trylock(arch
- 	char oldval = lock->slock;
- 
- 	lock->slock = 0;
-+	barrier();
- 
- 	return oldval > 0;
- }
- 
- static inline void arch_spin_unlock(arch_spinlock_t *lock)
- {
-+	barrier();
- 	lock->slock = 1;
- }
- 
- /*
-  * Read-write spinlocks. No debug version.
-  */
--#define arch_read_lock(lock)		do { (void)(lock); } while (0)
--#define arch_write_lock(lock)		do { (void)(lock); } while (0)
--#define arch_read_trylock(lock)	({ (void)(lock); 1; })
--#define arch_write_trylock(lock)	({ (void)(lock); 1; })
--#define arch_read_unlock(lock)		do { (void)(lock); } while (0)
--#define arch_write_unlock(lock)	do { (void)(lock); } while (0)
-+#define arch_read_lock(lock)		do { barrier(); (void)(lock); } while (0)
-+#define arch_write_lock(lock)		do { barrier(); (void)(lock); } while (0)
-+#define arch_read_trylock(lock)	({ barrier(); (void)(lock); 1; })
-+#define arch_write_trylock(lock)	({ barrier(); (void)(lock); 1; })
-+#define arch_read_unlock(lock)		do { barrier(); (void)(lock); } while (0)
-+#define arch_write_unlock(lock)	do { barrier(); (void)(lock); } while (0)
- 
- #else /* DEBUG_SPINLOCK */
- #define arch_spin_is_locked(lock)	((void)(lock), 0)
- /* for sched.c and kernel_lock.c: */
--# define arch_spin_lock(lock)		do { (void)(lock); } while (0)
--# define arch_spin_lock_flags(lock, flags)	do { (void)(lock); } while (0)
--# define arch_spin_unlock(lock)	do { (void)(lock); } while (0)
--# define arch_spin_trylock(lock)	({ (void)(lock); 1; })
-+# define arch_spin_lock(lock)		do { barrier(); (void)(lock); } while (0)
-+# define arch_spin_lock_flags(lock, flags)	do { barrier(); (void)(lock); } while (0)
-+# define arch_spin_unlock(lock)	do { barrier(); (void)(lock); } while (0)
-+# define arch_spin_trylock(lock)	({ barrier(); (void)(lock); 1; })
- #endif /* DEBUG_SPINLOCK */
- 
- #define arch_spin_is_contended(lock)	(((void)(lock), 0))
+ 	pci_bus_size_bridges(bus);
 
 
