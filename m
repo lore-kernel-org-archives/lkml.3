@@ -1,102 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936841Ab3DJXMm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:12:42 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:49739 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934530Ab3DJXMk (ORCPT
+	id S964928Ab3DJXND (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:13:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56140 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937200Ab3DJWrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 19:12:40 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 10 Apr 2013 16:12:48 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] hrtimer, add expiry time overflow check in
- hrtimer_interrupt
-Message-ID: <20130410231248.GA6159@roeck-us.net>
-References: <1365425235-26191-1-git-send-email-prarit@redhat.com>
- <5163264B.3050707@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5163264B.3050707@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Apr 2013 18:47:23 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: [ 29/64] PCI/ACPI: Always resume devices on ACPI wakeup notifications
+Date: Wed, 10 Apr 2013 15:46:26 -0700
+Message-Id: <20130410224339.797464063@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
+References: <20130410224333.114387235@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 01:19:23PM -0700, John Stultz wrote:
-> On 04/08/2013 05:47 AM, Prarit Bhargava wrote:
-> >2nd submit: I did quite a bit of testing with this patch and I don't see any
-> >ill effects.  I've tested across several large and small x86 systems, and a
-> >ppc system for good measure.
-> >
-> >P.
-> >
-> >----8<---
-> >`
-> >The settimeofday01 test in the LTP testsuite effectively does
-> >
-> >         gettimeofday(current time);
-> >         settimeofday(Jan 1, 1970 + 100 seconds);
-> >         settimeofday(current time);
-> >
-> >This test causes a stack trace to be displayed on the console during the
-> >setting of timeofday to Jan 1, 1970 + 100 seconds:
-> >
-> >[  131.066751] ------------[ cut here ]------------
-> >[  131.096448] WARNING: at kernel/time/clockevents.c:209 clockevents_program_event+0x135/0x140()
-> >[  131.104935] Hardware name: Dinar
-> >[  131.108150] Modules linked in: sg nfsv3 nfs_acl nfsv4 auth_rpcgss nfs dns_resolver fscache lockd sunrpc nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tables kvm_amd kvm sp5100_tco bnx2 i2c_piix4 crc32c_intel k10temp fam15h_power ghash_clmulni_intel amd64_edac_mod pcspkr serio_raw edac_mce_amd edac_core microcode xfs libcrc32c sr_mod sd_mod cdrom ata_generic crc_t10dif pata_acpi radeon i2c_algo_bit drm_kms_helper ttm drm ahci pata_atiixp libahci libata usb_storage i2c_core dm_mirror dm_region_hash dm_log dm_mod
-> >[  131.176784] Pid: 0, comm: swapper/28 Not tainted 3.8.0+ #6
-> >[  131.182248] Call Trace:
-> >[  131.184684]  <IRQ>  [<ffffffff810612af>] warn_slowpath_common+0x7f/0xc0
-> >[  131.191312]  [<ffffffff8106130a>] warn_slowpath_null+0x1a/0x20
-> >[  131.197131]  [<ffffffff810b9fd5>] clockevents_program_event+0x135/0x140
-> >[  131.203721]  [<ffffffff810bb584>] tick_program_event+0x24/0x30
-> >[  131.209534]  [<ffffffff81089ab1>] hrtimer_interrupt+0x131/0x230
-> >[  131.215437]  [<ffffffff814b9600>] ? cpufreq_p4_target+0x130/0x130
-> >[  131.221509]  [<ffffffff81619119>] smp_apic_timer_interrupt+0x69/0x99
-> >[  131.227839]  [<ffffffff8161805d>] apic_timer_interrupt+0x6d/0x80
-> >[  131.233816]  <EOI>  [<ffffffff81099745>] ? sched_clock_cpu+0xc5/0x120
-> >[  131.240267]  [<ffffffff814b9ff0>] ? cpuidle_wrap_enter+0x50/0xa0
-> >[  131.246252]  [<ffffffff814b9fe9>] ? cpuidle_wrap_enter+0x49/0xa0
-> >[  131.252238]  [<ffffffff814ba050>] cpuidle_enter_tk+0x10/0x20
-> >[  131.257877]  [<ffffffff814b9c89>] cpuidle_idle_call+0xa9/0x260
-> >[  131.263692]  [<ffffffff8101c42f>] cpu_idle+0xaf/0x120
-> >[  131.268727]  [<ffffffff815f8971>] start_secondary+0x255/0x257
-> >[  131.274449] ---[ end trace 1151a50552231615 ]---
-> >
-> >When we change the system time to a low value like this, the value of
-> >timekeeper->offs_real will be a negative value.
-> >
-> >It seems that the WARN occurs because an hrtimer has been started in the time
-> >between the releasing of the timekeeper lock and the IPI call (via a call to
-> >on_each_cpu) in clock_was_set() in the do_settimeofday() code.  The end result
-> >is that a REALTIME_CLOCK timer has been added with softexpires = expires =
-> >KTIME_MAX.  The hrtimer_interrupt() fires/is called and the loop at
-> >kernel/hrtimer.c:1289 is executed.  In this loop the code subtracts the
-> >clock base's offset (which was set to timekeeper->offs_real in
-> >do_settimeofday()) from the current hrtimer_cpu_base->expiry value (which
-> >was KTIME_MAX):
-> >
-> >	KTIME_MAX - (a negative value) = overflow
-> >
-> >A simple check for an overflow can resolve this problem.  Using KTIME_MAX
-> >instead of the overflow value will result in the hrtimer function being run,
-> >and the reprogramming of the timer after that.
-> >
-> >Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> >Cc: Thomas Gleixner <tglx@linutronix.de>
-> >Cc: John Stultz <john.stultz@linaro.org>
-> 
-> Prarit: Should this be tagged for -stable?
-> 
-Please. I am hitting this problem with 3.8.6 on powerpc. The patch fixes it for
-me.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-Tested-by: Guenter Roeck <linux@roeck-us.net>
+------------------
 
-Guenter
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+
+commit 24ad0ef9c8b946ed2abe681e4e44f4a1e643d882 upstream.
+
+It turns out that the _Lxx control methods provided by some BIOSes
+clear the PME Status bit of PCI devices they handle, which means that
+pci_acpi_wake_dev() cannot really use that bit to check whether or
+not the device has signalled wakeup.
+
+One symptom of the problem is, for example, that when an affected PCI
+USB controller is runtime-suspended, then plugging in a new USB device
+into one of the controller's ports will not wake up the controller,
+which should happen.
+
+For this reason, make pci_acpi_wake_dev() always attempt to resume
+the device it is called for regardless of the device's PME Status bit
+value (that bit still has to be cleared if set at this point,
+though).
+
+Reported-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Matthew Garrett <mjg59@srcf.ucam.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/pci/pci-acpi.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -53,14 +53,15 @@ static void pci_acpi_wake_dev(acpi_handl
+ 		return;
+ 	}
+ 
+-	if (!pci_dev->pm_cap || !pci_dev->pme_support
+-	     || pci_check_pme_status(pci_dev)) {
+-		if (pci_dev->pme_poll)
+-			pci_dev->pme_poll = false;
++	/* Clear PME Status if set. */
++	if (pci_dev->pme_support)
++		pci_check_pme_status(pci_dev);
+ 
+-		pci_wakeup_event(pci_dev);
+-		pm_runtime_resume(&pci_dev->dev);
+-	}
++	if (pci_dev->pme_poll)
++		pci_dev->pme_poll = false;
++
++	pci_wakeup_event(pci_dev);
++	pm_runtime_resume(&pci_dev->dev);
+ 
+ 	if (pci_dev->subordinate)
+ 		pci_pme_wakeup_bus(pci_dev->subordinate);
+
+
