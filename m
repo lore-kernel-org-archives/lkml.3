@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936436Ab3DJURq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 16:17:46 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:55772 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935153Ab3DJURp (ORCPT
+	id S936560Ab3DJUV3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 16:21:29 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56226 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936370Ab3DJUV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 16:17:45 -0400
-Message-ID: <5165C8E4.7030401@gmail.com>
-Date: Wed, 10 Apr 2013 22:17:40 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Wed, 10 Apr 2013 16:21:27 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/sQ9zI5LPdebqNTkfQkGSn
+Date: Wed, 10 Apr 2013 13:21:21 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: Roger Quadros <rogerq@ti.com>, Mike Turquette <mturquette@linaro.org>,
+        linux-usb@vger.kernel.org,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org,
+        lkml <linux-kernel@vger.kernel.org>, balbi@ti.com,
+        grygorii.strashko@ti.com, linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support
+ for AUXCLKs
+Message-ID: <20130410202121.GM10155@atomide.com>
+References: <20130405155851.GA10155@atomide.com>
+ <5163E589.1040809@ti.com>
+ <20130409164928.GL10155@atomide.com>
+ <20130409174319.GP10155@atomide.com>
+ <20130409204900.GA8815@kahuna>
+ <20130410080630.14359.68178@quantum>
+ <5165453E.6090503@ti.com>
+ <20130410173921.GA31017@kahuna>
+ <20130410184919.GJ10155@atomide.com>
+ <CAGo_u6rqN6YFQ6vX87-Cg28RbiR9UU2JHgLecOU5Nd=B5XPUEA@mail.gmail.com>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: Lennert Buytenhek <buytenh@wantstofly.org>, Andrew Lunn <andrew@lunn.ch>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Florian Fainelli <florian@openwrt.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: mv643xx_eth: use managed devm_kzalloc
-References: <1365615483-26318-1-git-send-email-sebastian.hesselbarth@gmail.com> <5165B264.6000605@cogentembedded.com>
-In-Reply-To: <5165B264.6000605@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGo_u6rqN6YFQ6vX87-Cg28RbiR9UU2JHgLecOU5Nd=B5XPUEA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 08:41 PM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 04/10/2013 09:38 PM, Sebastian Hesselbarth wrote:
->
->> This patch moves shared private data kzalloc to managed devm_kzalloc and
->> cleans now unneccessary kfree and error handling.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> ---
->> Note that there is also an ioremap call, that could be transferred to
->> devm_ioremap_resource. But as long as mv643xx_eth and mvmdio iomem
->> resources overlap, this will throw -EBUSY.
->>
->> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
->> Cc: Andrew Lunn <andrew@lunn.ch>
->> Cc: Jason Cooper <jason@lakedaemon.net>
->> Cc: Florian Fainelli <florian@openwrt.org>
->> Cc: netdev@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->> drivers/net/ethernet/marvell/mv643xx_eth.c | 17 ++++-------------
->> 1 file changed, 4 insertions(+), 13 deletions(-)
->>
->> diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c
->> b/drivers/net/ethernet/marvell/mv643xx_eth.c
->> index bbe6104..955baab 100644
->> --- a/drivers/net/ethernet/marvell/mv643xx_eth.c
->> +++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
->> @@ -2547,25 +2547,22 @@ static int mv643xx_eth_shared_probe(struct
->> platform_device *pdev)
->> struct mv643xx_eth_shared_private *msp;
->> const struct mbus_dram_target_info *dram;
->> struct resource *res;
->> - int ret;
->> if (!mv643xx_eth_version_printed++)
->> pr_notice("MV-643xx 10/100/1000 ethernet driver version %s\n",
->> mv643xx_eth_driver_version);
->> - ret = -EINVAL;
->> res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> if (res == NULL)
->> - goto out;
->> + return -EINVAL;
->> - ret = -ENOMEM;
->> - msp = kzalloc(sizeof(*msp), GFP_KERNEL);
->> + msp = devm_kzalloc(&pdev->dev, sizeof(*msp), GFP_KERNEL);
->> if (msp == NULL)
->> - goto out;
->> + return -ENOMEM;
->> msp->base = ioremap(res->start, resource_size(res));
->> if (msp->base == NULL)
->> - goto out_free;
->> + return -EADDRNOTAVAIL;
->
-> -ENOMEM usually.
+* Nishanth Menon <nm@ti.com> [130410 12:23]:
+> On Wed, Apr 10, 2013 at 1:49 PM, Tony Lindgren <tony@atomide.com> wrote:
+> >
+> > We can avoid the concern of storing the struct clk * and do the
+> > look up lazily on consumer driver probe by setting a dummy struct
+> > clk * here. Then replace of_clk_src_simple_get() with a custom
+> > omap_clk_src_get() that does the lookup and replaces the struct
+> > clk * with the real one.
+> Hmm.. this is interesting. will give it a try. Thanks on the suggestion.
 
-Sergei,
+Setting the struct clk * to NULL initially might work too, but that
+needs to be checked.
 
-I was looking at the example for devm_request_and_ioremap() in
-lib/devres.c. There it is -EADDRNOTAVAIL which is returned on
-failing ioremap.
+Regards,
 
-Actually, I was hoping to also use devm_ioremap_resource() for
-the above, but that is too early as mv643xx_eth and mvmdio have
-overlapping mem resources. Changing this will require some more
-step-by-step patches that get also tested on arch/ppc and others
-using platform mv643xx_eth.
-
-But, I can send an updated patch with -ENOMEM above if required.
-
-Sebastian
+Tony
