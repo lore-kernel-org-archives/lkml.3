@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936776Ab3DJD3a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 23:29:30 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28116 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934893Ab3DJD1V (ORCPT
+	id S936789Ab3DJD3t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 23:29:49 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:26499 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934205Ab3DJD1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 23:27:21 -0400
+	Tue, 9 Apr 2013 23:27:17 -0400
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 To: <rostedt@goodmis.org>, <fweisbec@gmail.com>, <mingo@redhat.com>,
         <linux-kernel@vger.kernel.org>
 CC: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Subject: [PATCH v3 06/12] tracing: expose structure ftrace_event_field
-Date: Wed, 10 Apr 2013 11:26:27 +0800
-Message-ID: <1365564393-10972-7-git-send-email-jovi.zhangwei@huawei.com>
+Subject: [PATCH v3 05/12] tracing: switch syscall tracing to use event_trace_ops backend
+Date: Wed, 10 Apr 2013 11:26:26 +0800
+Message-ID: <1365564393-10972-6-git-send-email-jovi.zhangwei@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
 References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
@@ -27,61 +27,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-Currently event tracing field information is only stored in
-struct ftrace_event_field, this structure is defined in
-internal trace.h.
-Move this ftrace_event_field into include/linux/ftrace_event.h,
-then external modules can make use this structure to parse event
-field(like ktap).
+Other tracepoints already switched to use event_trace_ops as
+backend store mechanism, syscall tracing can use same backend.
+
+This change would also expose syscall tracing to external modules
+with same interface like other tracepoints.
 
 Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 ---
- include/linux/ftrace_event.h |   10 ++++++++++
- kernel/trace/trace.h         |   10 ----------
- 2 files changed, 10 insertions(+), 10 deletions(-)
+ kernel/trace/trace_syscalls.c |   49 ++++++++++++++---------------------------
+ 1 file changed, 16 insertions(+), 33 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index f6a6e48..ee4dc8d 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -176,6 +176,16 @@ enum trace_reg {
- #endif
- };
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 322e164..72675b1 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -302,12 +302,10 @@ static int __init syscall_exit_define_fields(struct ftrace_event_call *call)
+ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
+ {
+ 	struct trace_array *tr = data;
++	struct ftrace_event_file event_file;
++	struct trace_descriptor_t desc;
+ 	struct syscall_trace_enter *entry;
+ 	struct syscall_metadata *sys_data;
+-	struct ring_buffer_event *event;
+-	struct ring_buffer *buffer;
+-	unsigned long irq_flags;
+-	int pc;
+ 	int syscall_nr;
+ 	int size;
  
-+struct ftrace_event_field {
-+	struct list_head	link;
-+	const char		*name;
-+	const char		*type;
-+	int			filter_type;
-+	int			offset;
-+	int			size;
-+	int			is_signed;
-+};
-+
- struct ftrace_event_call;
+@@ -323,34 +321,26 @@ static void ftrace_syscall_enter(void *data, struct pt_regs *regs, long id)
  
- struct ftrace_event_class {
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 8f4966b..89da073 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -800,16 +800,6 @@ enum {
- 	TRACE_EVENT_TYPE_RAW		= 2,
- };
+ 	size = sizeof(*entry) + sizeof(unsigned long) * sys_data->nb_args;
  
--struct ftrace_event_field {
--	struct list_head	link;
--	const char		*name;
--	const char		*type;
--	int			filter_type;
--	int			offset;
--	int			size;
--	int			is_signed;
--};
+-	local_save_flags(irq_flags);
+-	pc = preempt_count();
 -
- struct event_filter {
- 	int			n_preds;	/* Number assigned */
- 	int			a_preds;	/* allocated */
+-	buffer = tr->trace_buffer.buffer;
+-	event = trace_buffer_lock_reserve(buffer,
+-			sys_data->enter_event->event.type, size, irq_flags, pc);
+-	if (!event)
++	event_file.tr = tr;
++	event_file.event_call = sys_data->enter_event;
++	event_file.flags = FTRACE_EVENT_FL_ENABLED;
++	entry = tr->ops->pre_trace(&event_file, size, &desc);
++	if (!entry)
+ 		return;
+ 
+-	entry = ring_buffer_event_data(event);
+ 	entry->nr = syscall_nr;
+ 	syscall_get_arguments(current, regs, 0, sys_data->nb_args, entry->args);
+ 
+-	if (!filter_current_check_discard(buffer, sys_data->enter_event,
+-					  entry, event))
+-		trace_current_buffer_unlock_commit(buffer, event,
+-						   irq_flags, pc);
++	tr->ops->do_trace(&event_file, entry, size, &desc);
+ }
+ 
+ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+ {
+ 	struct trace_array *tr = data;
++	struct ftrace_event_file event_file;
++	struct trace_descriptor_t desc;
+ 	struct syscall_trace_exit *entry;
+ 	struct syscall_metadata *sys_data;
+-	struct ring_buffer_event *event;
+-	struct ring_buffer *buffer;
+-	unsigned long irq_flags;
+-	int pc;
+ 	int syscall_nr;
+ 
+ 	syscall_nr = trace_get_syscall_nr(current, regs);
+@@ -363,24 +353,17 @@ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+ 	if (!sys_data)
+ 		return;
+ 
+-	local_save_flags(irq_flags);
+-	pc = preempt_count();
+-
+-	buffer = tr->trace_buffer.buffer;
+-	event = trace_buffer_lock_reserve(buffer,
+-			sys_data->exit_event->event.type, sizeof(*entry),
+-			irq_flags, pc);
+-	if (!event)
++	event_file.tr = tr;
++	event_file.event_call = sys_data->exit_event;
++	event_file.flags = FTRACE_EVENT_FL_ENABLED;
++	entry = tr->ops->pre_trace(&event_file, sizeof(*entry), &desc);
++	if (!entry)
+ 		return;
+ 
+-	entry = ring_buffer_event_data(event);
+ 	entry->nr = syscall_nr;
+ 	entry->ret = syscall_get_return_value(current, regs);
+ 
+-	if (!filter_current_check_discard(buffer, sys_data->exit_event,
+-					  entry, event))
+-		trace_current_buffer_unlock_commit(buffer, event,
+-						   irq_flags, pc);
++	tr->ops->do_trace(&event_file, entry, sizeof(*entry), &desc);
+ }
+ 
+ static int reg_event_syscall_enter(struct ftrace_event_file *file,
 -- 
 1.7.9.7
 
