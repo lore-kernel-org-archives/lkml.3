@@ -1,56 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935529Ab3DJUl2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 16:41:28 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:59651 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab3DJUl1 (ORCPT
+	id S936112Ab3DJUmX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 16:42:23 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:46394 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab3DJUmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 16:41:27 -0400
-Date: Wed, 10 Apr 2013 13:41:24 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: Simplify for_each_populated_zone()
-In-Reply-To: <20130410202727.20368.29222.stgit@srivatsabhat.in.ibm.com>
-Message-ID: <alpine.DEB.2.02.1304101339260.25932@chino.kir.corp.google.com>
-References: <20130410202727.20368.29222.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 10 Apr 2013 16:42:21 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Lennert Buytenhek <buytenh@wantstofly.org>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] net: mv643xx_eth: use managed devm_kzalloc
+Date: Wed, 10 Apr 2013 22:42:07 +0200
+Message-Id: <1365626527-27233-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1365615483-26318-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1365615483-26318-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Apr 2013, Srivatsa S. Bhat wrote:
+This patch moves shared private data kzalloc to managed devm_kzalloc and
+cleans now unneccessary kfree and error handling.
 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index ede2749..2489042 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -948,9 +948,7 @@ extern struct zone *next_zone(struct zone *zone);
->  	for (zone = (first_online_pgdat())->node_zones; \
->  	     zone;					\
->  	     zone = next_zone(zone))			\
-> -		if (!populated_zone(zone))		\
-> -			; /* do nothing */		\
-> -		else
-> +		if (populated_zone(zone))
->  
->  static inline struct zone *zonelist_zone(struct zoneref *zoneref)
->  {
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Changes from v1:
+- replaced EADDRNOTAVAIL with ENOMEM on failing ioremap (Reported by
+  Sergei Shtylyov)
 
-Nack, it's written the way it is to avoid ambiguous else statements 
-following it.  People do things like
+Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Florian Fainelli <florian@openwrt.org>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/marvell/mv643xx_eth.c |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-	for_each_populated_zone(z)
-		if (...) {
-		} else (...) {
-		}
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index bbe6104..305038f 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -2547,25 +2547,22 @@ static int mv643xx_eth_shared_probe(struct platform_device *pdev)
+ 	struct mv643xx_eth_shared_private *msp;
+ 	const struct mbus_dram_target_info *dram;
+ 	struct resource *res;
+-	int ret;
+ 
+ 	if (!mv643xx_eth_version_printed++)
+ 		pr_notice("MV-643xx 10/100/1000 ethernet driver version %s\n",
+ 			  mv643xx_eth_driver_version);
+ 
+-	ret = -EINVAL;
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res == NULL)
+-		goto out;
++		return -EINVAL;
+ 
+-	ret = -ENOMEM;
+-	msp = kzalloc(sizeof(*msp), GFP_KERNEL);
++	msp = devm_kzalloc(&pdev->dev, sizeof(*msp), GFP_KERNEL);
+ 	if (msp == NULL)
+-		goto out;
++		return -ENOMEM;
+ 
+ 	msp->base = ioremap(res->start, resource_size(res));
+ 	if (msp->base == NULL)
+-		goto out_free;
++		return -ENOMEM;
+ 
+ 	msp->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (!IS_ERR(msp->clk))
+@@ -2585,11 +2582,6 @@ static int mv643xx_eth_shared_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, msp);
+ 
+ 	return 0;
+-
+-out_free:
+-	kfree(msp);
+-out:
+-	return ret;
+ }
+ 
+ static int mv643xx_eth_shared_remove(struct platform_device *pdev)
+@@ -2599,7 +2591,6 @@ static int mv643xx_eth_shared_remove(struct platform_device *pdev)
+ 	iounmap(msp->base);
+ 	if (!IS_ERR(msp->clk))
+ 		clk_disable_unprepare(msp->clk);
+-	kfree(msp);
+ 
+ 	return 0;
+ }
+-- 
+1.7.10.4
 
-and it's now ambiguous (and should warn with -Wparentheses).
