@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934327Ab3DJAOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 20:14:42 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:59113 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762266Ab3DJAOl (ORCPT
+	id S935062Ab3DJAPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 20:15:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29560 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762266Ab3DJAPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 20:14:41 -0400
-Message-ID: <5164AEEB.8050409@gmail.com>
-Date: Wed, 10 Apr 2013 08:14:35 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Andrew Shewmaker <agshew@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
-        ric.masonn@gmail.com
-Subject: Re: [PATCH v8 3/3] mm: reinititalise user and admin reserves if memory
- is added or removed
-References: <20130408190738.GC2321@localhost.localdomain> <20130408133712.bd327017dec19a2c14e22662@linux-foundation.org> <20130408210039.GA3396@localhost.localdomain> <20130409151906.2ee55116ca9e3abd80a90e3e@linux-foundation.org> <CAF-E8XEq9AE0z472QMWPbY-8YgvDsjx3FhEKRsVx7Bc_=AEn_Q@mail.gmail.com> <5164ACBB.2040704@gmail.com> <CAF-E8XEGz4Q7-KWP8-cam1x4vQmpy-s_j3CAW6sUe4T5f_vsoQ@mail.gmail.com>
-In-Reply-To: <CAF-E8XEGz4Q7-KWP8-cam1x4vQmpy-s_j3CAW6sUe4T5f_vsoQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 9 Apr 2013 20:15:30 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=gifVZ8yEhnkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=QTktqBR0uL0A:10 a=57SyGIRnAAAA:8 a=VwQbUJbxAAAA:8 a=sYQNw-pFXK1ZfffFw5QA:9 a=QEXdDO2ut3YA:10 a=TIV7c6GJmisA:10 a=LI9Vle30uBYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365552927.25498.82.camel@gandalf.local.home>
+Subject: Re: [PATCH v2 3/3] ftrace: Get rid of ftrace_profile_bits
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Date: Tue, 09 Apr 2013 20:15:27 -0400
+In-Reply-To: <1365551750-4504-1-git-send-email-namhyung@kernel.org>
+References: <1365548611.25498.79.camel@gandalf.local.home>
+	 <1365551750-4504-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 08:11 AM, Andrew Shewmaker wrote:
-> On Tue, Apr 9, 2013 at 6:05 PM, Simon Jeons <simon.jeons@gmail.com> wrote:
->> Hi Andrew,
->>
->> On 04/10/2013 07:56 AM, Andrew Shewmaker wrote:
->>> On Tue, Apr 9, 2013 at 4:19 PM, Andrew Morton <akpm@linux-foundation.org>
->>> wrote:
->>>> On Mon, 8 Apr 2013 17:00:40 -0400 Andrew Shewmaker <agshew@gmail.com>
->>>> wrote:
->>>>
->>>>> Should I add the memory notifier code to mm/nommu.c too?
->>>>> I'm guessing that if a system doesn't have an mmu that it also
->>>>> won't be hotplugging memory.
->>>> I doubt if we need to worry about memory hotplug on nommu machines,
->>>> so just do the minimum which is required to get nommu to compile
->>>> and link.  That's probably "nothing".
->>> I haven't gotten myself set up to compile a nommu architecture, so I'll
->>> post
->>> my next version, and work on verifying it compiles and links later. But I
->>> I probably won't be able to get to that for a week and a half ... I'm
->>> leaving
->>> on my honeymoon in the next couple days :)
->>
->> How to compile a  nommu architecture? just config in menu config or a
->> physical machine?
-> I was going to set up a qemu arm guest. Please, anyone, let me know if
-> there's an easier way to test nommu builds on x86.
+On Wed, 2013-04-10 at 08:55 +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> It seems that function profiler's hash size is fixed at 1024.  Add and
+> use FTRACE_PROFILE_HASH_BITS instead and update hash size macro.
 
-AFAK, arm7 is nommu.
+Thanks! I'll queue it in my 3.10 branch.
+
+-- Steve
+
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
 
 
