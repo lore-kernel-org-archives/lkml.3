@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937127Ab3DJWrP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 18:47:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56036 "EHLO
+	id S937132Ab3DJXQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:16:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56080 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759912Ab3DJWrG (ORCPT
+	with ESMTP id S937112Ab3DJWrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:06 -0400
+	Wed, 10 Apr 2013 18:47:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 05/64] regmap: cache Fix regcache-rbtree sync
-Date: Wed, 10 Apr 2013 15:46:02 -0700
-Message-Id: <20130410224334.363585088@linuxfoundation.org>
+        Mengdong Lin <mengdong.lin@intel.com>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 13/64] ALSA: hda - bug fix on return value when getting HDMI ELD info
+Date: Wed, 10 Apr 2013 15:46:10 -0700
+Message-Id: <20130410224336.076142578@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -27,39 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Mengdong Lin <mengdong.lin@intel.com>
 
-commit 8abac3ba51b5525354e9b2ec0eed1c9e95c905d9 upstream.
+commit 2ef5692efad330b67a234e2c49edad38538751e7 upstream.
 
-The last register block, which falls into the specified range, is not handled
-correctly. The formula which calculates the number of register which should be
-synced is inverse (and off by one). E.g. if all registers in that block should
-be synced only one is synced, and if only one should be synced all (but one) are
-synced. To calculate the number of registers that need to be synced we need to
-subtract the number of the first register in the block from the max register
-number and add one. This patch updates the code accordingly.
+In function snd_hdmi_get_eld(), the variable 'ret' should be initialized to 0.
+Otherwise it will be returned uninitialized as non-zero after ELD info is got
+successfully. Thus hdmi_present_sense() will always assume ELD info is invalid
+by mistake, and /proc file system cannot show the proper ELD info.
 
-The issue was introduced in commit ac8d91c ("regmap: Supply ranges to the sync
-operations").
-
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Mengdong Lin <mengdong.lin@intel.com>
+Acked-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/regmap/regcache-rbtree.c |    2 +-
+ sound/pci/hda/hda_eld.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/base/regmap/regcache-rbtree.c
-+++ b/drivers/base/regmap/regcache-rbtree.c
-@@ -398,7 +398,7 @@ static int regcache_rbtree_sync(struct r
- 			base = 0;
- 
- 		if (max < rbnode->base_reg + rbnode->blklen)
--			end = rbnode->base_reg + rbnode->blklen - max;
-+			end = max - rbnode->base_reg + 1;
- 		else
- 			end = rbnode->blklen;
+--- a/sound/pci/hda/hda_eld.c
++++ b/sound/pci/hda/hda_eld.c
+@@ -322,7 +322,7 @@ int snd_hdmi_get_eld(struct hdmi_eld *el
+ 		     struct hda_codec *codec, hda_nid_t nid)
+ {
+ 	int i;
+-	int ret;
++	int ret = 0;
+ 	int size;
+ 	unsigned char *buf;
  
 
 
