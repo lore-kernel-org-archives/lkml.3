@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936273Ab3DJL0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 07:26:00 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:46294 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762484Ab3DJLZ6 convert rfc822-to-8bit (ORCPT
+	id S936451Ab3DJL1L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 07:27:11 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59405 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752523Ab3DJL1J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 07:25:58 -0400
-X-Originating-IP: 83.155.44.161
-Message-ID: <1365593153.30420.1.camel@novo>
-Subject: Re: [PATCH] HID: appleir: add support for Apple ir devices
-From: Bastien Nocera <hadess@hadess.net>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Fabien <fabien.andre@gmail.com>, Jarod Wilson <jarod@redhat.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 10 Apr 2013 13:25:53 +0200
-In-Reply-To: <alpine.LNX.2.00.1304092155330.17280@pobox.suse.cz>
-References: <1365438651-32623-1-git-send-email-benjamin.tissoires@redhat.com>
-	 <alpine.LNX.2.00.1304092155330.17280@pobox.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.0 (3.8.0-1.fc19) 
-Mime-Version: 1.0
+	Wed, 10 Apr 2013 07:27:09 -0400
+From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+To: "Poddar, Sourav" <sourav.poddar@ti.com>
+CC: Kevin Hilman <khilman@linaro.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Balbi, Felipe" <balbi@ti.com>, "Nayak, Rajendra" <rnayak@ti.com>
+Subject: RE: [PATCHv3] driver: serial: prevent UART console idle on suspend
+ while using "no_console_suspend"
+Thread-Topic: [PATCHv3] driver: serial: prevent UART console idle on suspend
+ while using "no_console_suspend"
+Thread-Index: AQHOMf/UbV07E720zk6AHOHLsAfKmpjH5XwQgAYBjgCAAGAu44AAW/AAgABcfmD//9/uAIAAcfmw
+Date: Wed, 10 Apr 2013 11:26:56 +0000
+Message-ID: <B5906170F1614E41A8A28DE3B8D121433ED96C45@DBDE01.ent.ti.com>
+References: <1365167733-28083-1-git-send-email-sourav.poddar@ti.com>
+	<87mwtclvua.fsf@linaro.org> <516463D2.2070008@ti.com>
+ <87obdnh6au.fsf@linaro.org> <516501A0.4000004@ti.com>
+ <B5906170F1614E41A8A28DE3B8D121433ED96446@DBDE01.ent.ti.com>
+ <51653450.2010200@ti.com>
+In-Reply-To: <51653450.2010200@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 22:10 +0200, Jiri Kosina wrote:
-> On Mon, 8 Apr 2013, Benjamin Tissoires wrote:
+Hi Sourav,
+
+On Wed, Apr 10, 2013 at 15:13:44, Poddar, Sourav wrote:
+[...]
+> Yes, had a look at that and found your situation similar to UART.
 > 
-> > This driver was originally written by James McKenzie, updated by
-> > Greg Kroah-Hartman, further updated by Bastien Nocera, with suspend
-> > support added.
-> > I ported it to the HID subsystem, in order to simplify it a litle
-> > and allow lirc to use it through hiddev.
-> > 
-> > More recent versions of the IR receiver are also supported through
-> > a patch by Alex Karpenko. The patch also adds support for the 2nd
-> > and 5th generation of the controller, and the menu key on newer
-> > brushed metal remotes.
-> > 
-> > Tested-by: Fabien André <fabien.andre@gmail.com>
-> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> > ---
-> > Hi guys,
-> > 
-> > this is the re-spin of Bastien's patch submitted last november.
-> > I ported it to use the hid subsystem, reducing the size of the driver
-> > to 355 lines instead of 527.
-> 
-> Thanks. Generally, I like the idea of appleir being on the hid bus.
-> 
-> Bastien, could you please provide your Ack (and most importantly also 
-> Tested-by?).
+> But how exactly this gets used, I mean I don't  see any drivers/ in mainline
+> making use of this compatible string  "ti,am3352-ocmcram".  ?
 
-At a glance, the patch looks good to me, but I don't have access to
-hardware to test this (unsurprisingly given that my original patch is at
-least 2 years old).
+OCMC clock is enabled during bootup (not sure whether that's the h/w
+default or ROM does it) since the initial bootloader runs from there.
+By marking the corresponding hwmod with HWMOD_INIT_NO_IDLE we leave the
+clock running. Right now the sram code under arch/arm/plat-omap/ is what
+manages the OCMC. I guess this needs to move somewhere under drivers/
+and start managing the clocks. Even then we'll need a mechanism
+to leave the clocks running as part of the kernel suspend process
+since the assembly code which runs at the fag end of the suspend
+process runs out of OCMC and hence we can't cut its clock.
 
-Cheers
+On AM335x, the OCMC clock is cut to have PER power domain transition
+but that's done in the WKUP-M3 firmware when going down. During the
+wakeup sequence, WKUP-M3 re-enables the OCMC clock so that when the
+kernel resumes the h/w state is same.
 
-
+Regards,
+Vaibhav
