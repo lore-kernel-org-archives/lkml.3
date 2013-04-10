@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752819Ab3DJF34 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 01:29:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3604 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866Ab3DJF3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 01:29:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,444,1363158000"; 
-   d="scan'208";a="316995475"
-Date: Wed, 10 Apr 2013 10:30:59 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Dan Williams <djbw@fb.com>
-Cc: Dave Jiang <dave.jiang@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/10] Add Intel Atom S1200 seris ioatdma support
-Message-ID: <20130410050059.GI31193@intel.com>
-References: <20130326223953.15072.26605.stgit@djiang5-linux2.ch.intel.com>
- <20130409072801.GB31193@intel.com>
- <CAA9_cmftcvYN_g0Sj12tMa4T8LxbPdk6wDxwkbTrgQPUUfc0FA@mail.gmail.com>
+	id S1752845Ab3DJFbp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 01:31:45 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:40998 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751835Ab3DJFbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 01:31:44 -0400
+X-IronPort-AV: E=Sophos;i="4.87,444,1363104000"; 
+   d="scan'208";a="7026143"
+Message-ID: <5164F9E9.3010909@cn.fujitsu.com>
+Date: Wed, 10 Apr 2013 13:34:33 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA9_cmftcvYN_g0Sj12tMa4T8LxbPdk6wDxwkbTrgQPUUfc0FA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, linux-kernel@vger.kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [PATCH v3 02/22] x86, microcode: Use common get_ramdisk_image()
+References: <1365119186-23487-1-git-send-email-yinghai@kernel.org> <1365119186-23487-3-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1365119186-23487-3-git-send-email-yinghai@kernel.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/10 13:30:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/10 13:30:31,
+	Serialize complete at 2013/04/10 13:30:31
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 05:53:59PM -0700, Dan Williams wrote:
-> On Tue, Apr 9, 2013 at 12:28 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> > Are you okay with the series. Merge window is very close...
-> >
-> >
-> Hi Vinod, thanks for the ping.
-> 
-> Chatted with Dave patches 1-3 and 5-8, and 10 are reviewed/acked.  For
-> patch 4 and 9 we think we have a slightly cleaner way to organize the quirk
-> handling and an update will be coming.
-Dave,
+On 04/05/2013 07:46 AM, Yinghai Lu wrote:
+> Use common get_ramdisk_image() to get ramdisk start phys address.
+>
+> We need this to get correct ramdisk adress for 64bit bzImage that
+> initrd can be loaded above 4G by kexec-tools.
+>
+> Signed-off-by: Yinghai Lu<yinghai@kernel.org>
+> Cc: Fenghua Yu<fenghua.yu@intel.com>
+> Acked-by: Tejun Heo<tj@kernel.org>
+> ---
+>   arch/x86/kernel/microcode_intel_early.c | 8 ++++----
+>   1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
+> index d893e8e..ea57bd8 100644
+> --- a/arch/x86/kernel/microcode_intel_early.c
+> +++ b/arch/x86/kernel/microcode_intel_early.c
+> @@ -742,8 +742,8 @@ load_ucode_intel_bsp(void)
+>   	struct boot_params *boot_params_p;
+>
+>   	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
+> -	ramdisk_image = boot_params_p->hdr.ramdisk_image;
+> -	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
+> +	ramdisk_image = get_ramdisk_image(boot_params_p);
+> +	ramdisk_size  = get_ramdisk_image(boot_params_p);
 
-I tried these, but they fail to apply on for-linus branch of my tree.
-Cna you pls rebase these 8 patches and resend.
+Shoule be get_ramdisk_size(boot_params_p) ?
 
---
-~Vinod
+>   	initrd_start_early = ramdisk_image;
+>   	initrd_end_early = initrd_start_early + ramdisk_size;
+>
+> @@ -752,8 +752,8 @@ load_ucode_intel_bsp(void)
+>   		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
+>   		initrd_start_early, initrd_end_early,&uci);
+>   #else
+> -	ramdisk_image = boot_params.hdr.ramdisk_image;
+> -	ramdisk_size  = boot_params.hdr.ramdisk_size;
+> +	ramdisk_image = get_ramdisk_image(&boot_params);
+> +	ramdisk_size  = get_ramdisk_size(&boot_params);
+>   	initrd_start_early = ramdisk_image + PAGE_OFFSET;
+>   	initrd_end_early = initrd_start_early + ramdisk_size;
+>
