@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937329Ab3DJSZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 14:25:22 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:59035 "EHLO e8.ny.us.ibm.com"
+	id S937257Ab3DJSYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 14:24:45 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:58615 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937027Ab3DJSZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 14:25:17 -0400
+	id S937192Ab3DJSYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 14:24:36 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
@@ -14,56 +14,67 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH v3 06/11] mm/page_alloc: when handling percpu_pagelist_fraction, don't unneedly recalulate high
-Date: Wed, 10 Apr 2013 11:23:34 -0700
-Message-Id: <1365618219-17154-7-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH v3 01/11] mm/page_alloc: factor out setting of pcp->high and pcp->batch.
+Date: Wed, 10 Apr 2013 11:23:29 -0700
+Message-Id: <1365618219-17154-2-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1365618219-17154-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1365618219-17154-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041018-9360-0000-0000-000011AF13B1
+x-cbid: 13041018-9360-0000-0000-000011AF12C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simply moves calculation of the new 'high' value outside the
-for_each_possible_cpu() loop, as it does not depend on the cpu.
+Creates pageset_set_batch() for use in setup_pageset().
+pageset_set_batch() imitates the functionality of
+setup_pagelist_highmark(), but uses the boot time
+(percpu_pagelist_fraction == 0) calculations for determining ->high
+based on ->batch.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- mm/page_alloc.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ mm/page_alloc.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5c54a08..3447a4b 100644
+index 8fcced7..5877cf0 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -5509,7 +5509,6 @@ int lowmem_reserve_ratio_sysctl_handler(ctl_table *table, int write,
-  * cpu.  It is the fraction of total pages in each zone that a hot per cpu pagelist
-  * can have before it gets flushed back to buddy allocator.
+@@ -4004,6 +4004,14 @@ static int __meminit zone_batchsize(struct zone *zone)
+ #endif
+ }
+ 
++/* a companion to setup_pagelist_highmark() */
++static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
++{
++	struct per_cpu_pages *pcp = &p->pcp;
++	pcp->high = 6 * batch;
++	pcp->batch = max(1UL, 1 * batch);
++}
++
+ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+ {
+ 	struct per_cpu_pages *pcp;
+@@ -4013,8 +4021,7 @@ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+ 
+ 	pcp = &p->pcp;
+ 	pcp->count = 0;
+-	pcp->high = 6 * batch;
+-	pcp->batch = max(1UL, 1 * batch);
++	pageset_set_batch(p, batch);
+ 	for (migratetype = 0; migratetype < MIGRATE_PCPTYPES; migratetype++)
+ 		INIT_LIST_HEAD(&pcp->lists[migratetype]);
+ }
+@@ -4023,7 +4030,6 @@ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+  * setup_pagelist_highmark() sets the high water mark for hot per_cpu_pagelist
+  * to the value high for the pageset p.
   */
 -
- int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
+ static void setup_pagelist_highmark(struct per_cpu_pageset *p,
+ 				unsigned long high)
  {
-@@ -5523,12 +5522,11 @@ int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
- 
- 	mutex_lock(&pcp_batch_high_lock);
- 	for_each_populated_zone(zone) {
--		for_each_possible_cpu(cpu) {
--			unsigned long  high;
--			high = zone->managed_pages / percpu_pagelist_fraction;
-+		unsigned long  high;
-+		high = zone->managed_pages / percpu_pagelist_fraction;
-+		for_each_possible_cpu(cpu)
- 			setup_pagelist_highmark(
--				per_cpu_ptr(zone->pageset, cpu), high);
--		}
-+					per_cpu_ptr(zone->pageset, cpu), high);
- 	}
- 	mutex_unlock(&pcp_batch_high_lock);
- 	return 0;
 -- 
 1.8.2.1
 
