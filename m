@@ -1,68 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965107Ab3DJS0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 14:26:42 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:42663 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S937188Ab3DJSYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 14:24:36 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Simon Jeons <simon.jeons@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH v3 07/11] mm/page_alloc: factor setup_pageset() into pageset_init() and pageset_set_batch()
-Date: Wed, 10 Apr 2013 11:23:35 -0700
-Message-Id: <1365618219-17154-8-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1365618219-17154-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1365618219-17154-1-git-send-email-cody@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041018-5806-0000-0000-000020ACC206
+	id S965222Ab3DJS0t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 14:26:49 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:1887 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933289Ab3DJS0o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 14:26:44 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: [PATCH RFC 1/2] SELinux: reduce overhead of mls_level_isvalid() function call
+Date: Wed, 10 Apr 2013 14:26:22 -0400
+Message-Id: <1365618383-29340-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+To: Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- mm/page_alloc.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+While running the high_systime workload of the AIM7 benchmark on
+a 2-socket 12-core Westmere x86-64 machine running 3.8.2 kernel,
+it was found that a pretty sizable amount of time was spent in the
+SELinux code. Below was the perf trace of the "perf record -a -s"
+of a test run at 1500 users:
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 3447a4b..352c279a 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4043,7 +4043,7 @@ static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
- 	pageset_update(&p->pcp, 6 * batch, max(1UL, 1 * batch));
- }
- 
--static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
-+static void pageset_init(struct per_cpu_pageset *p)
+  3.96%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
+  1.44%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
+  1.33%            ls  [kernel.kallsyms]     [k] find_next_bit
+
+The ebitmap_get_bit() was the hottest function in the perf-report
+output.  Both the ebitmap_get_bit() and find_next_bit() functions
+were, in fact, called by mls_level_isvalid(). As a result, the
+mls_level_isvalid() call consumed 6.73% of the total CPU time of all
+the 24 virtual CPUs which is quite a lot.
+
+Looking at the mls_level_isvalid() function, it is checking to see
+if all the bits set in one of the ebitmap structure are also set in
+another one as well as the highest set bit is no bigger than the one
+specified by the given policydb data structure. It is doing it in
+a bit-by-bit manner. So if the ebitmap structure has many bits set,
+the iteration loop will be done many times.
+
+The current code can be rewritten to use a similar algorithm as the
+ebitmap_contains() function with an additional check for the highest
+set bit. With that change, the perf trace showed that the used CPU
+time drop down to just 0.09% of the total which is about 100X less
+than before.
+
+  0.04%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
+  0.04%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
+  0.01%            ls  [kernel.kallsyms]     [k] find_next_bit
+
+Actually, the remaining ebitmap_get_bit() and find_next_bit() function
+calls are made by other kernel routines as the new mls_level_isvalid()
+function will not call them anymore.
+
+This patch also improves the high_systime AIM7 benchmark result,
+though the improvement is not as impressive as is suggested by the
+reduction in CPU time. The table below shows the performance change
+on the 2-socket x86-64 system mentioned above.
+
++--------------+---------------+----------------+-----------------+
+|   Workload   | mean % change | mean % change  | mean % change   |
+|              | 10-100 users  | 200-1000 users | 1100-2000 users |
++--------------+---------------+----------------+-----------------+
+| high_systime |     +0.2%     |     +1.1%      |     +2.4%       |
++--------------+---------------+----------------+-----------------+
+
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ security/selinux/ss/mls.c |   38 +++++++++++++++++++++++++++-----------
+ 1 files changed, 27 insertions(+), 11 deletions(-)
+
+diff --git a/security/selinux/ss/mls.c b/security/selinux/ss/mls.c
+index 40de8d3..ce02803 100644
+--- a/security/selinux/ss/mls.c
++++ b/security/selinux/ss/mls.c
+@@ -160,8 +160,7 @@ void mls_sid_to_context(struct context *context,
+ int mls_level_isvalid(struct policydb *p, struct mls_level *l)
  {
- 	struct per_cpu_pages *pcp;
- 	int migratetype;
-@@ -4052,11 +4052,16 @@ static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
+ 	struct level_datum *levdatum;
+-	struct ebitmap_node *node;
+-	int i;
++	struct ebitmap_node *nodel, *noded;
  
- 	pcp = &p->pcp;
- 	pcp->count = 0;
--	pageset_set_batch(p, batch);
- 	for (migratetype = 0; migratetype < MIGRATE_PCPTYPES; migratetype++)
- 		INIT_LIST_HEAD(&pcp->lists[migratetype]);
- }
+ 	if (!l->sens || l->sens > p->p_levels.nprim)
+ 		return 0;
+@@ -170,16 +169,33 @@ int mls_level_isvalid(struct policydb *p, struct mls_level *l)
+ 	if (!levdatum)
+ 		return 0;
  
-+static void setup_pageset(struct per_cpu_pageset *p, unsigned long batch)
-+{
-+	pageset_init(p);
-+	pageset_set_batch(p, batch);
-+}
+-	ebitmap_for_each_positive_bit(&l->cat, node, i) {
+-		if (i > p->p_cats.nprim)
+-			return 0;
+-		if (!ebitmap_get_bit(&levdatum->level->cat, i)) {
+-			/*
+-			 * Category may not be associated with
+-			 * sensitivity.
+-			 */
+-			return 0;
++	/*
++	 * Return 1 iff
++	 * 1. l->cat.node is NULL, or
++	 * 2. all the bits set in l->cat are also set in levdatum->level->cat,
++	 *    and
++	 * 3. the last bit set in l->cat should not be larger than
++	 *    p->p_cats.nprim.
++	 */
++	noded = levdatum->level->cat.node;
++	for (nodel = l->cat.node ; nodel ; nodel = nodel->next) {
++		int i, lastsetbit = -1;
 +
- /*
-  * setup_pagelist_highmark() sets the high water mark for hot per_cpu_pagelist
-  * to the value high for the pageset p.
++		for (i = EBITMAP_UNIT_NUMS - 1 ; i >= 0 ; i--) {
++			if (!nodel->maps[i])
++				continue;
++			if (!noded ||
++			   ((nodel->maps[i]&noded->maps[i]) != nodel->maps[i]))
++				return 0;
++			if (lastsetbit < 0)
++				lastsetbit = nodel->startbit +
++					     i * EBITMAP_UNIT_SIZE +
++					     __fls(nodel->maps[i]);
+ 		}
++		if ((lastsetbit >= 0) && (lastsetbit > p->p_cats.nprim))
++			return 0;
++		if (noded)
++			noded = noded->next;
+ 	}
+ 
+ 	return 1;
 -- 
-1.8.2.1
+1.7.1
 
