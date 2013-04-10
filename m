@@ -1,60 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936907Ab3DJPKI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:10:08 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:63848 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932795Ab3DJPKG (ORCPT
+	id S936926Ab3DJPKj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:10:39 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62664 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932795Ab3DJPKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:10:06 -0400
+	Wed, 10 Apr 2013 11:10:37 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 10 Apr 2013 08:10:41 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
+        kexec@lists.infradead.org, wim@iguana.be,
+        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
+Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130410151041.GA6670@roeck-us.net>
+References: <516259D2.7000805@redhat.com>
+ <20130408124858.GC79013@redhat.com>
+ <20130408151509.GA20919@roeck-us.net>
+ <20130409144431.GL79013@redhat.com>
+ <20130409145228.GA1111@roeck-us.net>
+ <20130409151423.GM79013@redhat.com>
+ <20130409160757.GA27050@roeck-us.net>
+ <20130410134039.GV79013@redhat.com>
+ <20130410135123.GB15456@roeck-us.net>
+ <20130410142055.GW79013@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130410111620.GB29752@gmail.com>
-References: <20130403193743.GB29151@sgi.com>
-	<20130408155701.GB19974@gmail.com>
-	<5162EC1A.4050204@zytor.com>
-	<20130408165916.GA3672@sgi.com>
-	<20130410111620.GB29752@gmail.com>
-Date: Wed, 10 Apr 2013 08:10:05 -0700
-X-Google-Sender-Auth: 2WyVKgjSA3dppHIOBItrD5R48yY
-Message-ID: <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
-Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130410142055.GW79013@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 4:16 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> I think rebooting on the same CPU where we booted up is something worth having in
-> general, as a firmware robustness feature. (assuming the CPU in question is still
-> online)
+On Wed, Apr 10, 2013 at 10:20:55AM -0400, Don Zickus wrote:
+> On Wed, Apr 10, 2013 at 06:51:23AM -0700, Guenter Roeck wrote:
+> > On Wed, Apr 10, 2013 at 09:40:39AM -0400, Don Zickus wrote:
+> > > On Tue, Apr 09, 2013 at 09:07:58AM -0700, Guenter Roeck wrote:
+> > > > > > Just look for the use of mod_timer in the watchdog directory.
+> > > > > 
+> > > > > So looking at the mod_timer logic in various drivers, it seems regardless
+> > > > > if the /dev/watchdog device is opened or not, if it is running, it will
+> > > > > automagically kick the watchdog.
+> > > > > 
+> > > > yes
+> > > > 
+> > > > > This seems that we can avoid pulling in userspace pieces for this.  Just
+> > > > > load the driver and the hardware starts getting kicked.
+> > > > > 
+> > > > Only if it is already running. Also, you don't want to rely on it, because you
+> > > > lose protection against user space issues.
+> > > 
+> > > IOW if something goes wrong with a runaway userspace app, the kernel
+> > > blindly continues to kick the watchdog, which masks the problem, right?
+> > > 
+> > That would be wrong if any of the drivers does that. The kernel should stop
+> > kicking after the software timeout expires.
+> > 
+> > For example, if the HW needs to be kicked every second, and the high level
+> > timeout is set to one minute, the driver should keep kicking the hardware
+> > watchdog for one minute and then stop doing it if /dev/watchdog was opened
+> > and userspace is silent. 
+> 
+> Ah ok.
+> 
+> > 
+> > > > 
+> > > > A second use is if the hw watchdog needs to be pinged more often than user
+> > > > space can provide. Some of the HW watchdogs need a ping in one-second intervals
+> > > > or even faster.
+> > > > 
+> > > > > Is that true?  And if so, do all drivers detect if the hardware is already
+> > > > > running during their init?  Or is it based on the first device open?
+> > > > > 
+> > > > It is usually done in the probe function.
+> > > 
+> > > Ok.  Thanks for the understanding of how the softdog stuff works.
+> > > 
+> > > However, we still have the problem that if the machine panics and we want
+> > > to jump into the kdump kernel, we need to 'kick' the watchdog one more
+> > > time.  This provides us a sane sync point for determining how long we have
+> > > to load the watchdog driver in the second kernel before the hardware
+> > > reboots us.  Otherwise the reboots are pretty random and nothing is
+> > > guaranteed.
+> > > 
+> > > Hence the need for some sort of patch resembling the one I posted.
+> > > 
+> > > Soooooooo, any thoughts about that patch and what changes I should make?
+> > > :-)
+> > > 
+> > The FIXME is a problem, and I think the name and scope would have to be
+> > more generic (watchdog_kick ?). Also, it doesn't solve the problem
+> > of having multiple open watchdogs (my system has three, for example),
+> > and it doesn't check if the watchdog is running.
+> 
+> Ok.  I didn't know the watchdog subsystem well enough, so I just took
+> stabs in the dark about how things should work.  I appreciate the
+> feedback.
+> 
+> I could make the name more generic.  I wasn't sure if the watchdog
+> community would frown on that.  The FIXME is a problem, I am not sure how
 
-Yeah, we've had issues with ACPI in the past, so I do think we should
-always reboot using the BP. Even if it almost certainly works on 99+%
-of all machines on any random CPU.
+I don't know what others think, but I would prefer a more generic name.
+That its current use is for kdump is besides the point; there could be
+other valid uses.
 
-The optimal solution would be to just speed up the
-disable_nonboot_cpus() code so much that it isn't an issue. That would
-be good for suspending too, although I guess suspend isn't a big issue
-if you have a thousand CPU's.
+> to handle the 'fail' scenario (can't get the mutex with trylock).  And I
 
-Has anybody checked whether we could do the cpu_down() on non-boot
-CPU's in parallel? Right now we serialize the thing completely, with
-one single
+I would just return without doing anything. After all, if the mutex is held,
+it is possible if not likely that the code crashed _in_ the watchdog code,
+so it might be better to just let it crash and burn in that case.
 
-    for_each_online_cpu(cpu) {
-        ...
+> have no idea how to even find out if multiple watchdogs are open on the
+> system.  Is there a list I could walk?  And with regard to 'watchdog is
 
-loop that does a synchrinous _cpu_down() for each CPU. No wonder it
-takes forever. We do __stop_machine() over and over and over again:
-the whole thing is basically O(n**2) in CPU's.
+/* the dev_t structure to store the dynamically allocated watchdog devices */
+static dev_t watchdog_devt;
 
-                        Linus
+One way to look up the allocated watchdogs might be to loop through all kobj
+instances for the major device using kobj_lookup. Don't know if there is a
+better way.
+
+> running', I thought 'watchdog_active' would do that.  But again, I could
+> be misreading the code.
+> 
+You are right. Missed that part, sorry.
+
+Guenter
