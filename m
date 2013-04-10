@@ -1,68 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937169Ab3DJSVB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 14:21:01 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:60860 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936964Ab3DJSU1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 14:20:27 -0400
-Message-ID: <1365618018.4235.35.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 06/18] compat: backport ASYNC_DOMAIN_EXCLUSIVE()
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        Dan Williams <dcbw@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Apr 2013 20:20:18 +0200
-In-Reply-To: <CAB=NE6VAfAvjRs0uZ=jpMjfP5Dz-zEHu3N7t8AUAofZAggrEEQ@mail.gmail.com> (sfid-20130410_192654_321949_A237B6D2)
-References: <1365593728-5720-1-git-send-email-mcgrof@do-not-panic.com>
-	 <1365593728-5720-7-git-send-email-mcgrof@do-not-panic.com>
-	 <1365600139.4235.4.camel@jlt4.sipsolutions.net>
-	 <CAB=NE6UpP-X1NCTNRnoSdv_bk3ioZdg5bO1zz0U0dqeWVxZdLw@mail.gmail.com>
-	 <1365614413.4235.29.camel@jlt4.sipsolutions.net>
-	 <CAB=NE6VAfAvjRs0uZ=jpMjfP5Dz-zEHu3N7t8AUAofZAggrEEQ@mail.gmail.com>
-	 (sfid-20130410_192654_321949_A237B6D2)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S936852Ab3DJSTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 14:19:43 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39586 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936666Ab3DJSTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 14:19:39 -0400
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Joe Perches <joe@perches.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Hugh Dickens <hughd@google.com>, Paul Mackerras <paulus@samba.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCHv9 5/8] mm: break up swap_writepage() for frontswap backends
+Date: Wed, 10 Apr 2013 13:18:57 -0500
+Message-Id: <1365617940-21623-6-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1365617940-21623-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1365617940-21623-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041018-9360-0000-0000-000011AF0C58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 10:26 -0700, Luis R. Rodriguez wrote:
+swap_writepage() is currently where frontswap hooks into the swap
+write path to capture pages with the frontswap_store() function.
+However, if a frontswap backend wants to "resume" the writeback of
+a page to the swap device, it can't call swap_writepage() as
+the page will simply reenter the backend.
 
-> > I guess I'd have to review the async API,
-> 
-> Yeap, reviewing the commit noted would help too.
+This patch separates swap_writepage() into a top and bottom half, the
+bottom half named __swap_writepage() to allow a frontswap backend,
+like zswap, to resume writeback beyond the frontswap_store() hook.
 
-Yeah ... :)
+__add_to_swap_cache() is also made non-static so that the page for
+which writeback is to be resumed can be added to the swap cache.
 
-> > What's the use of just this when you don't have things like
-> > async_schedule_domain() and async_synchronize_full_domain(), regulator
-> > stuff wouldn't compile I think?
-> 
-> You mean is not having the full asynch that deals with all registered
-> domains likely to have an issue on the useres of
-> async_synchronize_full_domain() ? Lets better ask Dan.
+Acked-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ include/linux/swap.h |  2 ++
+ mm/page_io.c         | 16 +++++++++++++---
+ mm/swap_state.c      |  2 +-
+ 3 files changed, 16 insertions(+), 4 deletions(-)
 
-I don't know. However it seems that in order to have an ASYNC_DOMAIN()
-or ASYNC_DOMAIN_EXCLUSIVE() you always need to *do* something with it,
-so for that you'd also need the functions async_schedule_domain() and
-async_synchronize_full_domain() or similar, at least, no?
-
-The point here seems to be making boot faster by starting a bunch of
-async probing inside a domain, and then you wait for the entire domain,
-so everything that's in that domain can be done in parallel.
-
-Say for example you have 20 SCSI drives. If you look at them serially
-then you'd waste much time waiting for the drives. The point here
-appears to be that you create a domain (using this macro), then add all
-the drives to the domain and then wait for the domain to finish.
-
-However, it seems entirely pointless to backport just a small part of
-the API?
-
-johannes
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 2818a12..76f6c3b 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -330,6 +330,7 @@ static inline void mem_cgroup_uncharge_swap(swp_entry_t ent)
+ /* linux/mm/page_io.c */
+ extern int swap_readpage(struct page *);
+ extern int swap_writepage(struct page *page, struct writeback_control *wbc);
++extern int __swap_writepage(struct page *page, struct writeback_control *wbc);
+ extern int swap_set_page_dirty(struct page *page);
+ extern void end_swap_bio_read(struct bio *bio, int err);
+ 
+@@ -345,6 +346,7 @@ extern unsigned long total_swapcache_pages(void);
+ extern void show_swap_cache_info(void);
+ extern int add_to_swap(struct page *);
+ extern int add_to_swap_cache(struct page *, swp_entry_t, gfp_t);
++extern int __add_to_swap_cache(struct page *page, swp_entry_t entry);
+ extern void __delete_from_swap_cache(struct page *);
+ extern void delete_from_swap_cache(struct page *);
+ extern void free_page_and_swap_cache(struct page *);
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 78eee32..1cb382d 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -179,15 +179,15 @@ bad_bmap:
+ 	goto out;
+ }
+ 
++int __swap_writepage(struct page *page, struct writeback_control *wbc);
++
+ /*
+  * We may have stale swap cache pages in memory: notice
+  * them here and get rid of the unnecessary final write.
+  */
+ int swap_writepage(struct page *page, struct writeback_control *wbc)
+ {
+-	struct bio *bio;
+-	int ret = 0, rw = WRITE;
+-	struct swap_info_struct *sis = page_swap_info(page);
++	int ret = 0;
+ 
+ 	if (try_to_free_swap(page)) {
+ 		unlock_page(page);
+@@ -199,6 +199,16 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+ 		end_page_writeback(page);
+ 		goto out;
+ 	}
++	ret = __swap_writepage(page, wbc);
++out:
++	return ret;
++}
++
++int __swap_writepage(struct page *page, struct writeback_control *wbc)
++{
++	struct bio *bio;
++	int ret = 0, rw = WRITE;
++	struct swap_info_struct *sis = page_swap_info(page);
+ 
+ 	if (sis->flags & SWP_FILE) {
+ 		struct kiocb kiocb;
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index 7efcf15..fe43fd5 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -78,7 +78,7 @@ void show_swap_cache_info(void)
+  * __add_to_swap_cache resembles add_to_page_cache_locked on swapper_space,
+  * but sets SwapCache flag and private instead of mapping and index.
+  */
+-static int __add_to_swap_cache(struct page *page, swp_entry_t entry)
++int __add_to_swap_cache(struct page *page, swp_entry_t entry)
+ {
+ 	int error;
+ 	struct address_space *address_space;
+-- 
+1.8.2.1
 
