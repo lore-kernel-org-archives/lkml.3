@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab3DJL4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 07:56:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52916 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab3DJL4J (ORCPT
+	id S934078Ab3DJL4R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 07:56:17 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:58314 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab3DJL4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 07:56:09 -0400
-Message-ID: <1365594957.30071.66.camel@laptop>
-Subject: Re: [PATCH RESEND 0/3] perf, amd: Support for Family 16h L2I
- Performance Counters
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Jacob Shin <jacob.shin@amd.com>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86 <x86@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Apr 2013 13:55:57 +0200
-In-Reply-To: <1365594552.30071.63.camel@laptop>
-References: <1365521034-4496-1-git-send-email-jacob.shin@amd.com>
-	 <1365586878.30071.33.camel@laptop>
-	 <CABPqkBRTaMV9FNmX6qRJAHaO8yTyiqF=EzmeC7Gp7=e-7Bo-gA@mail.gmail.com>
-	 <1365594552.30071.63.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Apr 2013 07:56:15 -0400
+Date: Wed, 10 Apr 2013 19:56:06 +0800 (CST)
+From: Xiong Zhou <jencce.kernel@gmail.com>
+X-X-Sender: zx@M2420
+To: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
+cc: Xiong Zhou <jencce.kernel@gmail.com>, airlied@redhat.com,
+        alan@linux.intel.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/gpu/drm/gma500:fix build failure for 3.9-rc5
+In-Reply-To: <CAMeQTsaZmM-AT3abcWhVRQAFOJfYFjeCMC22r5YXU0w0NZ-g9A@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1304101949460.15970@M2420>
+References: <alpine.DEB.2.02.1304091428270.24675@M2420> <CAMeQTsaZmM-AT3abcWhVRQAFOJfYFjeCMC22r5YXU0w0NZ-g9A@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 13:49 +0200, Peter Zijlstra wrote:
 
-> Hmm.. the 15h old interface bits got merged? I thought I kept telling
-> that should be done like the intel uncore stuff since the hardware
-> interface wasn't retarded anymore.
 
-Ah well, that crap seems to have slipped in in Feb when I was still a
-near vegetable and not paying much attention.
+On Tue, 9 Apr 2013, Patrik Jakobsson wrote:
 
-/me curses a bit.
+> On Tue, Apr 9, 2013 at 8:35 AM, Xiong Zhou <jencce.kernel@gmail.com> wrote:
+> > From: Xiong Zhou <jencce.kernel@gmail.com>
+> >
+> > This patch fixes build failure of v3.9-rc5.
+> > When config ACPI_VIDEO as m, DRM_GMA500 as y, here comes the failure.
+> > gma5/600 needs acpi_video just like nouveau.
+> >
+> > Failure message:
+> > drivers/built-in.o: In function `psb_driver_load':
+> > kernel-3.9-rc5/drivers/gpu/drm/gma500/psb_drv.c:340: \
+> >         undefined reference to `acpi_video_register'
+> > make: *** [vmlinux] Error 1
+> >
+> > Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+> > ---
+> > drivers/gpu/drm/gma500/Kconfig |    1 +
+> > 1 file changed, 1 insertion(+)
+> >
+> > diff --git a/drivers/gpu/drm/gma500/Kconfig b/drivers/gpu/drm/gma500/Kconfig
+> > index 1188f0f..d64fc45 100644
+> > --- a/drivers/gpu/drm/gma500/Kconfig
+> > +++ b/drivers/gpu/drm/gma500/Kconfig
+> > @@ -6,6 +6,7 @@ config DRM_GMA500
+> >          select FB_CFB_IMAGEBLIT
+> >          select DRM_KMS_HELPER
+> >          select DRM_TTM
+> > +        select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT
+> >         help
+> >           Say yes for an experimental 2D KMS framebuffer driver for the
+> >           Intel GMA500 ('Poulsbo') and other Intel IMG based graphics
+> > --
+> 
+> Hi
+> 
+> Thanks for catching this, but if I can be picky, I'd prefer if you wrote it
+> like i915 does. E.g.
+> 
+> 	select ACPI_VIDEO if ACPI
+> 	select BACKLIGHT_CLASS_DEVICE if ACPI
+> 	...
+> 
+> And you can skip X86 since we already 'depend' on it.
+> 
+> Thanks
+> Patrik
+> 
 
-I don't suppose we can deprecate it and remove this stuff? 
+Nice advices, Thanks!
 
+
+Xiong
