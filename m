@@ -1,45 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936665Ab3DJU06 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 16:26:58 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:15743 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932803Ab3DJU05 (ORCPT
+	id S936838Ab3DJU1Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 16:27:16 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:43698 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936708Ab3DJU1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 16:26:57 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/dpqrl/xgyl5XRGNUkbiMc
-Date: Wed, 10 Apr 2013 13:26:53 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kishon Vijay Abraham I <kishon@ti.com>, rnayak@ti.com,
-        b-cousson@ti.com, linux@arm.linux.org.uk, Keerthy <j-keerthy@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] ARM: OMAP4: hwmod data: make
- 'ocp2scp_usb_phy_phy_48m" as the main clock (fwd)
-Message-ID: <20130410202653.GN10155@atomide.com>
-References: <alpine.DEB.2.00.1304101941550.25123@utopia.booyaka.com>
+	Wed, 10 Apr 2013 16:27:10 -0400
+Message-ID: <5165CAE0.3070207@cogentembedded.com>
+Date: Thu, 11 Apr 2013 00:26:08 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1304101941550.25123@utopia.booyaka.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Lennert Buytenhek <buytenh@wantstofly.org>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Florian Fainelli <florian@openwrt.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: mv643xx_eth: use managed devm_kzalloc
+References: <1365615483-26318-1-git-send-email-sebastian.hesselbarth@gmail.com> <5165B264.6000605@cogentembedded.com> <5165C8E4.7030401@gmail.com>
+In-Reply-To: <5165C8E4.7030401@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Walmsley <paul@pwsan.com> [130410 12:48]:
-> 
-> Hi Tony,
-> 
-> could you send this one upstream for v3.9-rc fixes?  Should prevent 
-> a MUSB regression in v3.9, mostly due to my own incompetence.
+On 04/11/2013 12:17 AM, Sebastian Hesselbarth wrote:
+>
+>>
+>>> This patch moves shared private data kzalloc to managed devm_kzalloc 
+>>> and
+>>> cleans now unneccessary kfree and error handling.
+>>>
+>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>>> ---
+>>> Note that there is also an ioremap call, that could be transferred to
+>>> devm_ioremap_resource. But as long as mv643xx_eth and mvmdio iomem
+>>> resources overlap, this will throw -EBUSY.
+>>>
+>>> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+>>> Cc: Andrew Lunn <andrew@lunn.ch>
+>>> Cc: Jason Cooper <jason@lakedaemon.net>
+>>> Cc: Florian Fainelli <florian@openwrt.org>
+>>> Cc: netdev@vger.kernel.org
+>>> Cc: linux-kernel@vger.kernel.org
+>>> ---
+>>> drivers/net/ethernet/marvell/mv643xx_eth.c | 17 ++++-------------
+>>> 1 file changed, 4 insertions(+), 13 deletions(-)
+>>>
+>>> diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c
+>>> b/drivers/net/ethernet/marvell/mv643xx_eth.c
+>>> index bbe6104..955baab 100644
+>>> --- a/drivers/net/ethernet/marvell/mv643xx_eth.c
+>>> +++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+>>> @@ -2547,25 +2547,22 @@ static int mv643xx_eth_shared_probe(struct
+>>> platform_device *pdev)
+>>> struct mv643xx_eth_shared_private *msp;
+>>> const struct mbus_dram_target_info *dram;
+>>> struct resource *res;
+>>> - int ret;
+>>> if (!mv643xx_eth_version_printed++)
+>>> pr_notice("MV-643xx 10/100/1000 ethernet driver version %s\n",
+>>> mv643xx_eth_driver_version);
+>>> - ret = -EINVAL;
+>>> res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>> if (res == NULL)
+>>> - goto out;
+>>> + return -EINVAL;
+>>> - ret = -ENOMEM;
+>>> - msp = kzalloc(sizeof(*msp), GFP_KERNEL);
+>>> + msp = devm_kzalloc(&pdev->dev, sizeof(*msp), GFP_KERNEL);
+>>> if (msp == NULL)
+>>> - goto out;
+>>> + return -ENOMEM;
+>>> msp->base = ioremap(res->start, resource_size(res));
+>>> if (msp->base == NULL)
+>>> - goto out_free;
+>>> + return -EADDRNOTAVAIL;
+>>
+>> -ENOMEM usually.
+>
+> Sergei,
+>
+> I was looking at the example for devm_request_and_ioremap() in
+> lib/devres.c. There it is -EADDRNOTAVAIL which is returned on
+> failing ioremap.
 
-Thanks will do, applying into omap-for-v3.9-rc6/fixes.
+    This is a recommended value to return if this function fails, to be 
+precise --
+regardless of the reason.
+    With mere ioremap(), the value has always been -ENOMEM.
 
-Regards,
+WBR, Sergei
 
-Tony
