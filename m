@@ -1,75 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934994Ab3DJHYo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 03:24:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:47920 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab3DJHYm (ORCPT
+	id S965008Ab3DJHZC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 03:25:02 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:46359 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755498Ab3DJHYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 03:24:42 -0400
-Date: Wed, 10 Apr 2013 09:24:18 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Phillip Susi <psusi@ubuntu.com>, CAI Qian <caiqian@redhat.com>,
-        xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Loopback device hung [was Re: xfs deadlock on 3.9-rc5 running
- xfstests case #78]
-Message-ID: <20130410072418.GW12244@kernel.dk>
-References: <14055702.547701.1364891947331.JavaMail.root@redhat.com>
- <20130402090047.GF3670@kernel.dk>
- <985125161.581860.1364895066584.JavaMail.root@redhat.com>
- <20130402094834.GA4667@kernel.dk>
- <20130403114142.GP4667@kernel.dk>
- <515C4D9D.10103@ubuntu.com>
- <515DE2FE.1080201@ubuntu.com>
- <20130409065519.GH17758@dastard>
- <20130409070139.GS12244@kernel.dk>
- <20130409070832.GI17758@dastard>
+	Wed, 10 Apr 2013 03:24:11 -0400
+Subject: [PATCH 5/8] Read rtas partition via pstore
+To: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: jkenisto@linux.vnet.ibm.com, mahesh@linux.vnet.ibm.com, anton@samba.org,
+        ananth@in.ibm.com
+Date: Wed, 10 Apr 2013 12:53:27 +0530
+Message-ID: <20130410072327.20150.42189.stgit@aruna-ThinkPad-T420>
+In-Reply-To: <20130410071835.20150.56489.stgit@aruna-ThinkPad-T420>
+References: <20130410071835.20150.56489.stgit@aruna-ThinkPad-T420>
+User-Agent: StGit/0.16-41-gd1dd
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130409070832.GI17758@dastard>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 13041007-1396-0000-0000-000002C76BC2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09 2013, Dave Chinner wrote:
-> On Tue, Apr 09, 2013 at 09:01:39AM +0200, Jens Axboe wrote:
-> > On Tue, Apr 09 2013, Dave Chinner wrote:
-> > > On Thu, Apr 04, 2013 at 04:30:54PM -0400, Phillip Susi wrote:
-> > > > > I have not tested it yet, but I am pretty sure it won't work.  It
-> > > > > looks like the patch changes the BLKRRPART path to go ahead and remove
-> > > > > existing partitions when GENHD_FL_NO_PARTSCAN is set.  loop doesn't
-> > > > > issue the BLKRRPART ioctl when !LO_FLAGS_PARTSCAN so this won't help.
-> > > > >  I think loop needs to set GENHD_FL_NO_PARTSCAN and then issue the
-> > > > > ioctl regardless of the LO_FLAGS_PARTSCAN flag to get the partitions
-> > > > > to be removed.  I will try to test tonight.
-> > > > 
-> > > > After testing, my initial thoughts appeared to have been correct.  I had
-> > > > to modify the patch as follows.  To test, simply do:
-> > > > 
-> > > > truncate -s 10m img
-> > > > losetup /dev/loop0 img
-> > > > parted /dev/loop0
-> > > > mklabel msdos
-> > > > mkpart primary ext2 1m 2m
-> > > > quit
-> > > > ls /dev/loop0*
-> > > > 
-> > > > Note the /dev/loop0p1 node.  Run losetup -d /dev/loop0 and see if it is
-> > > > still there.
-> > > 
-> > > Jens, can we get one of these fixes merged quickly? xfstests is
-> > > unusable on any kernel more recent than 3.9-rc4 because of these
-> > > problems....
-> > 
-> > Yep, did the revert yesterday and it's going out today.
-> 
-> Great, I didn't see an update in the latest -rc, so I wanted to make
-> sure it hadn't fallen through he cracks....
+This patch exploits pstore infrastructure to read the details
+from NVRAM's rtas partition.
 
-Got pushed out yesterday, it is now upstream.
+Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
+---
+ arch/powerpc/platforms/pseries/nvram.c |   33 +++++++++++++++++++++++++-------
+ fs/pstore/inode.c                      |    3 +++
+ include/linux/pstore.h                 |    2 ++
+ 3 files changed, 31 insertions(+), 7 deletions(-)
 
--- 
-Jens Axboe
+diff --git a/arch/powerpc/platforms/pseries/nvram.c b/arch/powerpc/platforms/pseries/nvram.c
+index 82d32a2..d420b1d 100644
+--- a/arch/powerpc/platforms/pseries/nvram.c
++++ b/arch/powerpc/platforms/pseries/nvram.c
+@@ -144,9 +144,11 @@ static size_t oops_data_sz;
+ #ifdef CONFIG_PSTORE
+ static enum pstore_type_id nvram_type_ids[] = {
+ 	PSTORE_TYPE_DMESG,
++	PSTORE_TYPE_RTAS,
+ 	-1
+ };
+ static int read_type;
++static unsigned long last_rtas_event;
+ #endif
+ /* Compression parameters */
+ #define COMPR_LEVEL 6
+@@ -315,8 +317,13 @@ int nvram_write_error_log(char * buff, int length,
+ {
+ 	int rc = nvram_write_os_partition(&rtas_log_partition, buff, length,
+ 						err_type, error_log_cnt);
+-	if (!rc)
++	if (!rc) {
+ 		last_unread_rtas_event = get_seconds();
++#ifdef CONFIG_PSTORE
++		last_rtas_event = get_seconds();
++#endif
++	}
++
+ 	return rc;
+ }
+ 
+@@ -745,7 +752,7 @@ static int nvram_pstore_write(enum pstore_type_id type,
+ }
+ 
+ /*
+- * Reads the oops/panic report.
++ * Reads the oops/panic report and ibm,rtas-log partition.
+  * Returns the length of the data we read from each partition.
+  * Returns 0 if we've been called before.
+  */
+@@ -765,6 +772,12 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
+ 		part = &oops_log_partition;
+ 		*type = PSTORE_TYPE_DMESG;
+ 		break;
++	case PSTORE_TYPE_RTAS:
++		part = &rtas_log_partition;
++		*type = PSTORE_TYPE_RTAS;
++		time->tv_sec = last_rtas_event;
++		time->tv_nsec = 0;
++		break;
+ 	default:
+ 		return 0;
+ 	}
+@@ -781,11 +794,17 @@ static ssize_t nvram_pstore_read(u64 *id, enum pstore_type_id *type,
+ 
+ 	*count = 0;
+ 	*id = id_no;
+-	oops_hdr = (struct oops_log_info *)buff;
+-	*buf = buff + sizeof(*oops_hdr);
+-	time->tv_sec = oops_hdr->timestamp;
+-	time->tv_nsec = 0;
+-	return oops_hdr->report_length;
++
++	if (nvram_type_ids[read_type] == PSTORE_TYPE_DMESG) {
++		oops_hdr = (struct oops_log_info *)buff;
++		*buf = buff + sizeof(*oops_hdr);
++		time->tv_sec = oops_hdr->timestamp;
++		time->tv_nsec = 0;
++		return oops_hdr->report_length;
++	}
++
++	*buf = buff;
++	return part->size;
+ }
+ #else
+ static int nvram_pstore_open(struct pstore_info *psi)
+diff --git a/fs/pstore/inode.c b/fs/pstore/inode.c
+index e4bcb2c..59b1454 100644
+--- a/fs/pstore/inode.c
++++ b/fs/pstore/inode.c
+@@ -324,6 +324,9 @@ int pstore_mkfile(enum pstore_type_id type, char *psname, u64 id, int count,
+ 	case PSTORE_TYPE_MCE:
+ 		sprintf(name, "mce-%s-%lld", psname, id);
+ 		break;
++	case PSTORE_TYPE_RTAS:
++		sprintf(name, "rtas-%s-%lld", psname, id);
++		break;
+ 	case PSTORE_TYPE_UNKNOWN:
+ 		sprintf(name, "unknown-%s-%lld", psname, id);
+ 		break;
+diff --git a/include/linux/pstore.h b/include/linux/pstore.h
+index 75d0176..4eb94c9 100644
+--- a/include/linux/pstore.h
++++ b/include/linux/pstore.h
+@@ -35,6 +35,8 @@ enum pstore_type_id {
+ 	PSTORE_TYPE_MCE		= 1,
+ 	PSTORE_TYPE_CONSOLE	= 2,
+ 	PSTORE_TYPE_FTRACE	= 3,
++	/* PPC64 partition types */
++	PSTORE_TYPE_RTAS	= 10,
+ 	PSTORE_TYPE_UNKNOWN	= 255
+ };
+ 
 
