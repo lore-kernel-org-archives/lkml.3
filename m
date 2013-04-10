@@ -1,93 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936186Ab3DJNvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 09:51:17 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57137 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752758Ab3DJNvP (ORCPT
+	id S936503Ab3DJNv6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 09:51:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59460 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614Ab3DJNv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 09:51:15 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 10 Apr 2013 06:51:23 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
-        kexec@lists.infradead.org, wim@iguana.be,
-        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
-Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130410135123.GB15456@roeck-us.net>
-References: <1365192994-94850-1-git-send-email-dzickus@redhat.com>
- <516259D2.7000805@redhat.com>
- <20130408124858.GC79013@redhat.com>
- <20130408151509.GA20919@roeck-us.net>
- <20130409144431.GL79013@redhat.com>
- <20130409145228.GA1111@roeck-us.net>
- <20130409151423.GM79013@redhat.com>
- <20130409160757.GA27050@roeck-us.net>
- <20130410134039.GV79013@redhat.com>
+	Wed, 10 Apr 2013 09:51:57 -0400
+Date: Wed, 10 Apr 2013 06:50:55 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-5952886bfeec065041d04dfcc2693b581e8f2424@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1363886217-24703-1-git-send-email-bp@alien8.de>
+References: <1363886217-24703-1-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/mm/cpa: Cleanup split_large_page()
+  and its callee
+Git-Commit-ID: 5952886bfeec065041d04dfcc2693b581e8f2424
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130410134039.GV79013@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 10 Apr 2013 06:51:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 09:40:39AM -0400, Don Zickus wrote:
-> On Tue, Apr 09, 2013 at 09:07:58AM -0700, Guenter Roeck wrote:
-> > > > Just look for the use of mod_timer in the watchdog directory.
-> > > 
-> > > So looking at the mod_timer logic in various drivers, it seems regardless
-> > > if the /dev/watchdog device is opened or not, if it is running, it will
-> > > automagically kick the watchdog.
-> > > 
-> > yes
-> > 
-> > > This seems that we can avoid pulling in userspace pieces for this.  Just
-> > > load the driver and the hardware starts getting kicked.
-> > > 
-> > Only if it is already running. Also, you don't want to rely on it, because you
-> > lose protection against user space issues.
-> 
-> IOW if something goes wrong with a runaway userspace app, the kernel
-> blindly continues to kick the watchdog, which masks the problem, right?
-> 
-That would be wrong if any of the drivers does that. The kernel should stop
-kicking after the software timeout expires.
+Commit-ID:  5952886bfeec065041d04dfcc2693b581e8f2424
+Gitweb:     http://git.kernel.org/tip/5952886bfeec065041d04dfcc2693b581e8f2424
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Thu, 21 Mar 2013 18:16:57 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 10 Apr 2013 14:39:08 +0200
 
-For example, if the HW needs to be kicked every second, and the high level
-timeout is set to one minute, the driver should keep kicking the hardware
-watchdog for one minute and then stop doing it if /dev/watchdog was opened
-and userspace is silent. 
+x86/mm/cpa: Cleanup split_large_page() and its callee
 
-> > 
-> > A second use is if the hw watchdog needs to be pinged more often than user
-> > space can provide. Some of the HW watchdogs need a ping in one-second intervals
-> > or even faster.
-> > 
-> > > Is that true?  And if so, do all drivers detect if the hardware is already
-> > > running during their init?  Or is it based on the first device open?
-> > > 
-> > It is usually done in the probe function.
-> 
-> Ok.  Thanks for the understanding of how the softdog stuff works.
-> 
-> However, we still have the problem that if the machine panics and we want
-> to jump into the kdump kernel, we need to 'kick' the watchdog one more
-> time.  This provides us a sane sync point for determining how long we have
-> to load the watchdog driver in the second kernel before the hardware
-> reboots us.  Otherwise the reboots are pretty random and nothing is
-> guaranteed.
-> 
-> Hence the need for some sort of patch resembling the one I posted.
-> 
-> Soooooooo, any thoughts about that patch and what changes I should make?
-> :-)
-> 
-The FIXME is a problem, and I think the name and scope would have to be
-more generic (watchdog_kick ?). Also, it doesn't solve the problem
-of having multiple open watchdogs (my system has three, for example),
-and it doesn't check if the watchdog is running.
+So basically we're generating the pte_t * from a struct page and
+we're handing it down to the __split_large_page() internal version
+which then goes and gets back struct page * from it because it
+needs it.
 
-Guenter
+Change the caller to hand down struct page * directly and the
+callee can compute the pte_t itself.
+
+Net save is one virt_to_page() call and simpler code. While at
+it, make __split_large_page() static.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1363886217-24703-1-git-send-email-bp@alien8.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/include/asm/pgtable_types.h | 1 -
+ arch/x86/mm/pageattr.c               | 9 ++++-----
+ 2 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 567b5d0..e642300 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -351,7 +351,6 @@ static inline void update_page_count(int level, unsigned long pages) { }
+  * as a pte too.
+  */
+ extern pte_t *lookup_address(unsigned long address, unsigned int *level);
+-extern int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase);
+ extern phys_addr_t slow_virt_to_phys(void *__address);
+ 
+ #endif	/* !__ASSEMBLY__ */
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 091934e..25b1d35 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -542,13 +542,14 @@ out_unlock:
+ 	return do_split;
+ }
+ 
+-int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
++static int
++__split_large_page(pte_t *kpte, unsigned long address, struct page *base)
+ {
++	pte_t *pbase = (pte_t *)page_address(base);
+ 	unsigned long pfn, pfninc = 1;
+ 	unsigned int i, level;
+ 	pte_t *tmp;
+ 	pgprot_t ref_prot;
+-	struct page *base = virt_to_page(pbase);
+ 
+ 	spin_lock(&pgd_lock);
+ 	/*
+@@ -633,7 +634,6 @@ int __split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
+ 
+ static int split_large_page(pte_t *kpte, unsigned long address)
+ {
+-	pte_t *pbase;
+ 	struct page *base;
+ 
+ 	if (!debug_pagealloc)
+@@ -644,8 +644,7 @@ static int split_large_page(pte_t *kpte, unsigned long address)
+ 	if (!base)
+ 		return -ENOMEM;
+ 
+-	pbase = (pte_t *)page_address(base);
+-	if (__split_large_page(kpte, address, pbase))
++	if (__split_large_page(kpte, address, base))
+ 		__free_page(base);
+ 
+ 	return 0;
