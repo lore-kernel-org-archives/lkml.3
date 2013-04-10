@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936145Ab3DJMhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 08:37:47 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:43312 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757756Ab3DJMhq convert rfc822-to-8bit (ORCPT
+	id S936550Ab3DJMie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 08:38:34 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:42675 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936171Ab3DJMic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 08:37:46 -0400
-Message-ID: <51655D16.1020908@arm.com>
-Date: Wed, 10 Apr 2013 13:37:42 +0100
-From: Serban Constantinescu <Serban.Constantinescu@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 10 Apr 2013 08:38:32 -0400
+Date: Wed, 10 Apr 2013 20:37:52 +0800 (CST)
+From: Xiong Zhou <jencce.kernel@gmail.com>
+X-X-Sender: zx@M2420
+To: airlied@redhat.com, alan@linux.intel.com, dri-devel@lists.freedesktop.org,
+        patrik.r.jakobsson@gmail.com
+cc: linux-kernel@vger.kernel.org, jencce.kernel@gmail.com
+Subject: [PATCH v2] gma500:fix build failure for 3.9-rc5
+Message-ID: <alpine.DEB.2.02.1304102035250.15970@M2420>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: =?windows-1252?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
-Subject: Re: [PATCH v2 4/7] staging: android: binder: fix BINDER_SET_MAX_THREADS
- declaration
-References: <1365501657-4213-1-git-send-email-serban.constantinescu@arm.com> <1365501657-4213-5-git-send-email-serban.constantinescu@arm.com> <CAMP5Xgfb2NYN8j16XKx3hrvk1gnRCX+yx2Uk_fxSE=OM74y5fQ@mail.gmail.com>
-In-Reply-To: <CAMP5Xgfb2NYN8j16XKx3hrvk1gnRCX+yx2Uk_fxSE=OM74y5fQ@mail.gmail.com>
-X-OriginalArrivalTime: 10 Apr 2013 12:37:41.0049 (UTC) FILETIME=[30F6D290:01CE35E8]
-X-MC-Unique: 113041013374406901
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/13 00:53, Arve Hjønnevåg wrote:
-> On Tue, Apr 9, 2013 at 3:00 AM, Serban Constantinescu
-> <serban.constantinescu@arm.com> wrote:
->> This change will fix the BINDER_SET_MAX_THREADS ioctl to use __s32
->> instead of size_t for setting the max threads. Thus using the same
->> handler for 32 and 64bit kernels.
->>
->> This value is stored internally in struct binder_proc as an int and
->> is set to 15 on open_binder() in the libbinder API (thus no need for
->> a 64bit size_t on 64bit platforms).
->>
->
-> Why switch to a signed type?
+From: Xiong Zhou <jencce.kernel@gmail.com>
 
-The value passed through BINDER_SET_MAX_THREADS ioctl is stored in a 
-binder_proc structure as an int.It also mimics the use of pid_t(typedef 
-int __kernel_pid_t).
+Last version of this patch is not clear enough and X86 duplicated.
 
-However using __s32 or __u32 here would have the same effect since the 
-ioctl macro will compute both as sizeof(32bit).
+This patch fixes build failure of v3.9-rc5 and rc6.
+When config ACPI_VIDEO as m, DRM_GMA500 as y, here comes the failure.
+GMA5/600 needs acpi_video just like nouveau.
+And some tab type fix by the way.
 
-Let me know if you would like this changed to __u32.
+Failure message:
+drivers/built-in.o: In function `psb_driver_load':
+kernel-3.9-rc5/drivers/gpu/drm/gma500/psb_drv.c:340: \
+	undefined reference to `acpi_video_register'
+make: *** [vmlinux] Error 1
 
-Thanks,
-Serban
+Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+---
+drivers/gpu/drm/gma500/Kconfig |   13 +++++++++----
+1 file changed, 9 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/gpu/drm/gma500/Kconfig b/drivers/gpu/drm/gma500/Kconfig
+index 1188f0f..1f6e2df 100644
+--- a/drivers/gpu/drm/gma500/Kconfig
++++ b/drivers/gpu/drm/gma500/Kconfig
+@@ -2,10 +2,15 @@ config DRM_GMA500
+ 	tristate "Intel GMA5/600 KMS Framebuffer"
+ 	depends on DRM && PCI && X86
+ 	select FB_CFB_COPYAREA
+-        select FB_CFB_FILLRECT
+-        select FB_CFB_IMAGEBLIT
+-        select DRM_KMS_HELPER
+-        select DRM_TTM
++	select FB_CFB_FILLRECT
++	select FB_CFB_IMAGEBLIT
++	select DRM_KMS_HELPER
++	select DRM_TTM
++	# GMA500 depends on ACPI_VIDEO when ACPI is enabled, just like i915
++	select ACPI_VIDEO if ACPI
++	select BACKLIGHT_CLASS_DEVICE if ACPI
++	select VIDEO_OUTPUT_CONTROL if ACPI
++	select INPUT if ACPI
+ 	help
+ 	  Say yes for an experimental 2D KMS framebuffer driver for the
+ 	  Intel GMA500 ('Poulsbo') and other Intel IMG based graphics
