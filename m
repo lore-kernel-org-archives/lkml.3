@@ -1,120 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936860Ab3DJPWe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:22:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57560 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936127Ab3DJPWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:22:32 -0400
-Date: Wed, 10 Apr 2013 17:22:29 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k <linux-m68k@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH/RFC] m68k: Add -ffreestanding to KBUILD_CFLAGS
-Message-ID: <20130410152229.GC17541@sepie.suse.cz>
-References: <1365585879-5321-1-git-send-email-geert@linux-m68k.org>
- <51653C5D.4060408@suse.cz>
- <CAMuHMdXEvLMz5rRjQrhENxJ6UHRnPCtzyNg=hqitspuY88G7sA@mail.gmail.com>
- <20130410122611.GB17541@sepie.suse.cz>
- <CAMuHMdUHiiBEZm7eFYtL3PqCXF6PjscbFKjiJ33BEwQ+YLKOXQ@mail.gmail.com>
+	id S936901Ab3DJPXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:23:12 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:44033 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936114Ab3DJPXK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 11:23:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdUHiiBEZm7eFYtL3PqCXF6PjscbFKjiJ33BEwQ+YLKOXQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130409045113.GA7251@ram.oc3035372033.ibm.com>
+References: <1363217302-14383-1-git-send-email-yinghai@kernel.org>
+ <1363217302-14383-4-git-send-email-yinghai@kernel.org> <CAErSpo4VzBZ=fAzPm1yWEs4+09_D1=rysMf6tGgnqpVEKytSzQ@mail.gmail.com>
+ <20130409045113.GA7251@ram.oc3035372033.ibm.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 10 Apr 2013 09:22:48 -0600
+Message-ID: <CAErSpo7TReTzz289EMuh5gGKjskCLmACNT99o1s-QCzRHLGaXg@mail.gmail.com>
+Subject: Re: [PATCH v3 03/27] PCI: pci resource iterator
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 04:19:14PM +0200, Geert Uytterhoeven wrote:
-> Thanks for the patch, but modpost still fails with
-> 
-> ERROR: "strlen" [net/ipv4/ip_tunnel.ko] undefined!
+On Mon, Apr 8, 2013 at 10:51 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+> On Thu, Apr 04, 2013 at 04:18:01PM -0600, Bjorn Helgaas wrote:
+>> On Wed, Mar 13, 2013 at 5:27 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> > From: Ram Pai <linuxram@us.ibm.com>
+>> >
+>> > Currently pci_dev structure holds an array of 17 PCI resources; six base
+>> > BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
+>> > A bridge device just needs the 4 bridge resources. A non-bridge device
+>> > just needs the six base resources and one ROM resource. The sriov
+>> > resources are needed only if the device has SRIOV capability.
+>> >
+>> > The pci_dev structure needs to be re-organized to avoid unnecessary
+>> > bloating.  However too much code outside the pci-bus driver, assumes the
+>> > internal details of the pci_dev structure, thus making it hard to
+>> > re-organize the datastructure.
+>> >
+>> > As a first step this patch provides generic methods to access the
+>> > resource structure of the pci_dev.
+>> >
+>> > Finally we can re-organize the resource structure in the pci_dev
+>> > structure and correspondingly update the methods.
+>> >
+>> > -v2: Consolidated iterator interface as per Bjorn's suggestion.
+>> > -v3: Add the idx back - Yinghai Lu
+>> > -v7: Change to use bitmap for searching - Yinghai Lu
+>> > -v8: Fix acpiphp module compiling error that is found by
+>> >         Steven Newbury <steve@snewbury.org.uk> - Yinghai Lu
+>> >
+>> > Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+>> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> > ---
+>> >  drivers/pci/probe.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+>> >  include/linux/pci.h |   24 ++++++++++++++++++++++++
+>> >  2 files changed, 72 insertions(+)
+>> >
+>> > diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>> > index 1df75f7..ac751a6 100644
+>> > --- a/drivers/pci/probe.c
+>> > +++ b/drivers/pci/probe.c
+>> > @@ -123,6 +123,54 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
+>> >         return -1;
+>> >  }
+>> >
+>> > +static void __init_res_idx_mask(unsigned long *mask, int flag)
+>> > +{
+>> > +       bitmap_zero(mask, PCI_NUM_RESOURCES);
+>> > +       if (flag & PCI_STD_RES)
+>> > +               bitmap_set(mask, PCI_STD_RESOURCES,
+>> > +                       PCI_STD_RESOURCE_END - PCI_STD_RESOURCES + 1);
+>> > +       if (flag & PCI_ROM_RES)
+>> > +               bitmap_set(mask, PCI_ROM_RESOURCE, 1);
+>> > +#ifdef CONFIG_PCI_IOV
+>> > +       if (flag & PCI_IOV_RES)
+>> > +               bitmap_set(mask, PCI_IOV_RESOURCES,
+>> > +                       PCI_IOV_RESOURCE_END - PCI_IOV_RESOURCES + 1);
+>> > +#endif
+>> > +       if (flag & PCI_BRIDGE_RES)
+>> > +               bitmap_set(mask, PCI_BRIDGE_RESOURCES,
+>> > +                       PCI_BRIDGE_RESOURCE_END - PCI_BRIDGE_RESOURCES + 1);
+>> > +}
+>> > +
+>> > +static DECLARE_BITMAP(res_idx_mask[1 << PCI_RES_BLOCK_NUM], PCI_NUM_RESOURCES);
+>> > +static int __init pci_res_idx_mask_init(void)
+>> > +{
+>> > +       int i;
+>> > +
+>> > +       for (i = 0; i < (1 << PCI_RES_BLOCK_NUM); i++)
+>> > +               __init_res_idx_mask(res_idx_mask[i], i);
+>> > +
+>> > +       return 0;
+>> > +}
+>> > +postcore_initcall(pci_res_idx_mask_init);
+>> > +
+>> > +static inline unsigned long *get_res_idx_mask(int flag)
+>> > +{
+>> > +       return res_idx_mask[flag & ((1 << PCI_RES_BLOCK_NUM) - 1)];
+>> > +}
+>> > +
+>> > +int pci_next_resource_idx(int i, int flag)
+>> > +{
+>> > +       i++;
+>> > +       if (i < PCI_NUM_RESOURCES)
+>> > +               i = find_next_bit(get_res_idx_mask(flag), PCI_NUM_RESOURCES, i);
+>> > +
+>> > +       if (i < PCI_NUM_RESOURCES)
+>> > +               return i;
+>> > +
+>> > +       return -1;
+>> > +}
+>> > +EXPORT_SYMBOL(pci_next_resource_idx);
+>> > +
+>> >  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
+>> >  {
+>> >         u64 size = mask & maxbase;      /* Find the significant bits */
+>> > diff --git a/include/linux/pci.h b/include/linux/pci.h
+>> > index aefff8b..127a856 100644
+>> > --- a/include/linux/pci.h
+>> > +++ b/include/linux/pci.h
+>> > @@ -341,6 +341,30 @@ struct pci_dev {
+>> >  struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
+>> >  int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
+>> >
+>> > +#define PCI_STD_RES            (1<<0)
+>> > +#define PCI_ROM_RES            (1<<1)
+>> > +#define PCI_IOV_RES            (1<<2)
+>> > +#define PCI_BRIDGE_RES         (1<<3)
+>> > +#define PCI_RES_BLOCK_NUM      4
+>> > +
+>> > +#define PCI_ALL_RES            (PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
+>> > +#define PCI_NOSTD_RES          (PCI_ALL_RES & ~PCI_STD_RES)
+>> > +#define PCI_NOIOV_RES          (PCI_ALL_RES & ~PCI_IOV_RES)
+>> > +#define PCI_NOROM_RES          (PCI_ALL_RES & ~PCI_ROM_RES)
+>> > +#define PCI_NOBRIDGE_RES       (PCI_ALL_RES & ~PCI_BRIDGE_RES)
+>> > +#define PCI_STD_ROM_RES                (PCI_STD_RES | PCI_ROM_RES)
+>> > +#define PCI_STD_IOV_RES                (PCI_STD_RES | PCI_IOV_RES)
+>> > +#define PCI_STD_ROM_IOV_RES    (PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
+>> > +
+>> > +int pci_next_resource_idx(int i, int flag);
+>> > +
+>> > +#define for_each_pci_resource(dev, res, i, flag)       \
+>> > +       for (i = pci_next_resource_idx(-1, flag),       \
+>> > +               res = pci_dev_resource_n(dev, i);       \
+>> > +            res;                                       \
+>> > +            i = pci_next_resource_idx(i, flag),        \
+>> > +               res = pci_dev_resource_n(dev, i))
+>> > +
+>> >  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
+>> >  {
+>> >  #ifdef CONFIG_PCI_IOV
+>>
+>> I think this turned out to be a disaster, with all the bitmaps and
+>> helper functions.  Filtering in the bodies of the
+>> for_each_pci_resource() users has *got* to be better.  That probably
+>> requires a wrapper struct around the struct resource.  Or possibly
+>> having a wrapper struct with a "type" or "flags" field would make
+>> filtering in for_each_pci_resources() itself cleaner to implement.
+>
+> I agree. There are two cleanups needed.
+>
+> a) pci drivers should not assume the internal organization of the
+>         resources in the struct pci_dev.
 
-OK OK, I am convinced. Then how about this? If you prefer speed over
-size, the the other option is to add
+Do you mean that drivers should not use "pci_dev->resource[i]"?  If
+so, I agree that it would be great if we had an accessor for BARs, but
+it seems impractical to change all the drivers that use the current
+style.
 
-size_t strlen(const char *s)
-{
-       return __kernel_strlen(s);
-}
-EXPORT_SYMBOL(strlen);
+The number of places that actually look at *non-BAR* pci_dev
+resources, e.g., the places that look at bridge windows and SR-IOV
+BARs, should be pretty small, and it seems reasonable to change them.
 
-to arch/m68k/lib/string.c. On a related note, arch/m68k/lib/string.c is
-built only in the CONFIG_MMU case, whereas asm/string.h is shared.
+> b) The type of a resource has to be determined based on some
+>    information internal to the resource; possibly a flag,
+>    instead of the relative position of the resource in some array.
 
-Michal
+Yes, I agree.
 
-
->From 1b89666d246bcc2bfc4c9e1bdfd1dbd1dafe2e2f Mon Sep 17 00:00:00 2001
-From: Michal Marek <mmarek@suse.cz>
-Date: Wed, 10 Apr 2013 16:45:21 +0200
-Subject: [PATCH] m68k: Remove inline strlen() implementation
-
-GCC can replace a strncat() call with constant second argument into a
-strlen + store, which results in a link error:
-
-ERROR: "strlen" [net/ipv4/ip_tunnel.ko] undefined!
-
-The inline function is a simple for loop in C. Other architectures
-either use an asm optimized variant, or use the generic function from
-lib/string.c.
-
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- arch/m68k/include/asm/string.h |   14 --------------
- arch/m68k/lib/string.c         |    2 +-
- 2 files changed, 1 insertion(+), 15 deletions(-)
-
-diff --git a/arch/m68k/include/asm/string.h b/arch/m68k/include/asm/string.h
-index 3219845..9aea9f1 100644
---- a/arch/m68k/include/asm/string.h
-+++ b/arch/m68k/include/asm/string.h
-@@ -4,15 +4,6 @@
- #include <linux/types.h>
- #include <linux/compiler.h>
- 
--static inline size_t __kernel_strlen(const char *s)
--{
--	const char *sc;
--
--	for (sc = s; *sc++; )
--		;
--	return sc - s - 1;
--}
--
- static inline char *__kernel_strcpy(char *dest, const char *src)
- {
- 	char *xdest = dest;
-@@ -27,11 +18,6 @@ static inline char *__kernel_strcpy(char *dest, const char *src)
- 
- #ifndef __IN_STRING_C
- 
--#define __HAVE_ARCH_STRLEN
--#define strlen(s)	(__builtin_constant_p(s) ?	\
--			 __builtin_strlen(s) :		\
--			 __kernel_strlen(s))
--
- #define __HAVE_ARCH_STRNLEN
- static inline size_t strnlen(const char *s, size_t count)
- {
-diff --git a/arch/m68k/lib/string.c b/arch/m68k/lib/string.c
-index b9a57ab..4d61fa8 100644
---- a/arch/m68k/lib/string.c
-+++ b/arch/m68k/lib/string.c
-@@ -17,6 +17,6 @@ EXPORT_SYMBOL(strcpy);
- 
- char *strcat(char *dest, const char *src)
- {
--	return __kernel_strcpy(dest + __kernel_strlen(dest), src);
-+	return __kernel_strcpy(dest + strlen(dest), src);
- }
- EXPORT_SYMBOL(strcat);
--- 
-1.7.10.4
-
+Bjorn
