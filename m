@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937014Ab3DJQGk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:06:40 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:51850 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934793Ab3DJQGj (ORCPT
+	id S936996Ab3DJQHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:07:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36007 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935423Ab3DJQHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:06:39 -0400
-From: Laurent Barbe <laurent@ksperis.com>
-To: ceph-devel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Laurent Barbe <laurent@ksperis.com>
-Subject: [PATCH] rbd: revalidate_disk upon rbd resize
-Date: Wed, 10 Apr 2013 18:06:29 +0200
-Message-Id: <1365609989-14493-1-git-send-email-laurent@ksperis.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 10 Apr 2013 12:07:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130410155628.GA14723@kroah.com>
+References: <20130406165600.GA29660@kroah.com>
+	<CACVXFVNctGZ5hs-sBuA8MxO8NJtGkQREURiVJbFRVSO9WLO-JA@mail.gmail.com>
+	<20130410155628.GA14723@kroah.com>
+Date: Thu, 11 Apr 2013 00:07:40 +0800
+Message-ID: <CACVXFVPGHTaMxOFZdd+dPxdo5fQYFMQx6k3ygKhvbZSfNrUW3w@mail.gmail.com>
+Subject: Re: [PATCH] driver core: add uid and gid to devtmpfs
+From: Ming Lei <ming.lei@canonical.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If rbd disk is open and rbd resize is done, new size is not visible by
-filesystem.
-Like is done in virtio-blk and dm driver, revalidate_disk() permits to
-update the bd_inode size.
+On Wed, Apr 10, 2013 at 11:56 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Apr 10, 2013 at 05:12:17PM +0800, Ming Lei wrote:
+>> On Sun, Apr 7, 2013 at 12:56 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>> > @@ -201,14 +206,14 @@ static int handle_create(const char *nod
+>> >         if (IS_ERR(dentry))
+>> >                 return PTR_ERR(dentry);
+>> >
+>> > -       err = vfs_mknod(path.dentry->d_inode,
+>> > -                       dentry, mode, dev->devt);
+>> > +       err = vfs_mknod(path.dentry->d_inode, dentry, mode, dev->devt);
+>> >         if (!err) {
+>> >                 struct iattr newattrs;
+>> >
+>> > -               /* fixup possibly umasked mode */
+>> >                 newattrs.ia_mode = mode;
+>> > -               newattrs.ia_valid = ATTR_MODE;
+>> > +               newattrs.ia_uid = uid;
+>> > +               newattrs.ia_gid = gid;
+>>
+>> drivers/base/devtmpfs.c: In function 'handle_create':
+>> drivers/base/devtmpfs.c:214:19: error: incompatible types when
+>> assigning to type 'kuid_t' from type 'uid_t'
+>> drivers/base/devtmpfs.c:215:19: error: incompatible types when
+>> assigning to type 'kgid_t' from type 'gid_t'
+>> make[2]: *** [drivers/base/devtmpfs.o] Error 1
+>
+> I can't duplicate this here, what options am I missing?
 
-Signed-off-by: Laurent Barbe <laurent@ksperis.com>
----
- drivers/block/rbd.c |    1 +
- 1 file changed, 1 insertion(+)
+With CONFIG_UIDGID_STRICT_TYPE_CHECKS
 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index f556f8a..1963025 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -2293,6 +2293,7 @@ static void rbd_update_mapping_size(struct rbd_device *rbd_dev)
- 	dout("setting size to %llu sectors", (unsigned long long) size);
- 	rbd_dev->mapping.size = (u64) size;
- 	set_capacity(rbd_dev->disk, size);
-+	revalidate_disk(rbd_dev->disk);
- }
- 
- /*
--- 
-1.7.10.4
+>
+>> Looks the below patch may fix it.
+>> --
+>> diff --git a/drivers/base/devtmpfs.c b/drivers/base/devtmpfs.c
+>> index fda5256..e268fc5 100644
+>> --- a/drivers/base/devtmpfs.c
+>> +++ b/drivers/base/devtmpfs.c
+>> @@ -211,8 +211,8 @@ static int handle_create(const char *nodename,
+>> umode_t mode, uid_t uid,
+>>               struct iattr newattrs;
+>>
+>>               newattrs.ia_mode = mode;
+>> -             newattrs.ia_uid = uid;
+>> -             newattrs.ia_gid = gid;
+>> +             newattrs.ia_uid = KUIDT_INIT(uid);
+>> +             newattrs.ia_gid = KGIDT_INIT(gid);
+>>               newattrs.ia_valid = ATTR_MODE|ATTR_UID|ATTR_GID;
+>>               mutex_lock(&dentry->d_inode->i_mutex);
+>>               notify_change(dentry, &newattrs);
+>>
+>
+> Care to resend this in a format I can apply it in?  :)
 
+OK.
+
+thanks,
+--
+Ming Lei
