@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935258Ab3DJH4a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 03:56:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37723 "EHLO mx2.suse.de"
+	id S936446Ab3DJH5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 03:57:30 -0400
+Received: from 8bytes.org ([85.214.48.195]:37225 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751818Ab3DJH43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 03:56:29 -0400
-Message-ID: <51651B2B.90206@suse.cz>
-Date: Wed, 10 Apr 2013 09:56:27 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1753010Ab3DJH52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 03:57:28 -0400
+Date: Wed, 10 Apr 2013 09:57:24 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, debian-kernel@lists.debian.org,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        cpufreq@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: [RFC PATCH] kbuild: Build linux-tools package with 'make deb-pkg'
+Message-ID: <20130410075724.GK6858@8bytes.org>
+References: <CA+icZUU=SdiaPBqabf0miOM1Arsc=PjHQbY4GpaDiM4=Fbp73A@mail.gmail.com>
 MIME-Version: 1.0
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kbuild: generate generic headers before recursing into
- scripts
-References: <CA+V-a8vYsBLVH-3Bm35Sv9K9ZMTcMB4_P_V3kBjyuEKDozPi5w@mail.gmail.com> <1363949290.3528.37.camel@linaro1.home> <m2ip48d62f.fsf@igel.home> <CA+V-a8srtwdf1H2JQwbkyMFhXopPEA90RM8Hy+UunM6Mm7-d1w@mail.gmail.com> <m2k3ob1tar.fsf_-_@igel.home>
-In-Reply-To: <m2k3ob1tar.fsf_-_@igel.home>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUU=SdiaPBqabf0miOM1Arsc=PjHQbY4GpaDiM4=Fbp73A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Apr 10 09:57:27 2013
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51651b6723672698447122
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9.4.2013 19:57, Andreas Schwab wrote:
-> The headers are now needed inside scripts/mod since 6543bec
-> ("mod/file2alias: make modalias generation safe for cross compiling").
-> 
-> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
-> ---
-> Prabhakar Lad <prabhakar.csengg@gmail.com> writes:
-> 
->> Whats the status of it ?
-> 
-> I think it has sufficiently been tested by now.
+Hi Sedat,
 
-Thanks a lot, I added it to kbuild.git#rc-fixes.
+On Wed, Apr 10, 2013 at 09:41:55AM +0200, Sedat Dilek wrote:
+> [ CCing some involved maintainers and MLs ]
+> 
+> Hi Joerg,
+> 
+> what is the status of your proposal patch?
+> Is this [1] the last version you posted?
 
-Michal
+Yes, this looks like the latest version. As far as I remember I didn't
+get feedback on it and had not time to work further on the patch.
+
+There are also problems with building a generic linux-tools package. One
+is that the packages need to look differently for Debian and Ubuntu. The
+other problem is that it may break automated x-compile builds.
+
+
+	Joerg
+
 
