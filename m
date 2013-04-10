@@ -1,122 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936145Ab3DJIBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 04:01:53 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:42341 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752655Ab3DJIBw (ORCPT
+	id S936474Ab3DJICK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 04:02:10 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:62546 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab3DJICG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 04:01:52 -0400
-From: Philip Avinash <avinashphilip@ti.com>
-To: <nsekhar@ti.com>, <linux@arm.linux.org.uk>,
-        <thierry.reding@avionic-design.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <prakash.pm@ti.com>,
-        <jacmet@sunsite.dk>, Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH v4] ARM: davinci: da850: add EHRPWM & ECAP DT node
-Date: Wed, 10 Apr 2013 13:32:19 +0530
-Message-ID: <1365580939-16839-1-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 10 Apr 2013 04:02:06 -0400
+X-AuditID: 9c930197-b7b50ae00000018c-f9-51651c7a4624
+Date: Wed, 10 Apr 2013 17:02:02 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
+        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG in do_huge_pmd_wp_page
+Message-ID: <20130410080202.GB21292@blaptop>
+References: <51559150.3040407@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51559150.3040407@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add da850 EHRPWM & ECAP DT node along with pin-mux details for EHRPWM1.
-Also adds OF_DEV_AUXDATA for EHRPWM & ECAP driver to use EHRPWM & ECAP
-clock.
+On Fri, Mar 29, 2013 at 09:04:16AM -0400, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
+> I've stumbled on the following.
+> 
+> It seems that the code in do_huge_pmd_wp_page() was recently modified in
+> "thp: do_huge_pmd_wp_page(): handle huge zero page".
+> 
+> Here's the trace:
+> 
+> [  246.244708] BUG: unable to handle kernel paging request at ffff88009c422000
+> [  246.245743] IP: [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
+> [  246.250569] PGD 7232067 PUD 7235067 PMD bfefe067 PTE 800000009c422060
+> [  246.251529] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [  246.252325] Dumping ftrace buffer:
+> [  246.252791]    (ftrace buffer empty)
+> [  246.252869] Modules linked in:
+> [  246.252869] CPU 3
+> [  246.252869] Pid: 11985, comm: trinity-child12 Tainted: G        W    3.9.0-rc4-next-20130328-sasha-00014-g91a3267 #319
+> [  246.252869] RIP: 0010:[<ffffffff81a0a795>]  [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
+> [  246.252869] RSP: 0018:ffff88000015bc40  EFLAGS: 00010286
+> [  246.252869] RAX: ffff88000015bfd8 RBX: 0000000002710880 RCX: 0000000000000200
+> [  246.252869] RDX: 0000000000000000 RSI: ffff88009c422000 RDI: ffff88009a422000
+> [  246.252869] RBP: ffff88000015bc98 R08: 0000000002718000 R09: 0000000000000001
+> [  246.252869] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880000000000
+> [  246.252869] R13: ffff88000015bfd8 R14: ffff88000015bfd8 R15: fffffffffff80000
+> [  246.252869] FS:  00007f53db93f700(0000) GS:ffff8800bba00000(0000) knlGS:0000000000000000
+> [  246.252869] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [  246.252869] CR2: ffff88009c422000 CR3: 0000000000159000 CR4: 00000000000406e0
+> [  246.252869] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [  246.252869] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [  246.252869] Process trinity-child12 (pid: 11985, threadinfo ffff88000015a000, task ffff88009c60b000)
+> [  246.252869] Stack:
+> [  246.252869]  ffffffff81234aae ffff88000015bc88 ffffffff81273639 0000000000a00000
+> [  246.252869]  0000000002718000 ffff8800ab36d050 ffff880000153800 ffffea0002690000
+> [  246.252869]  0000000000a00000 ffff8800ab36d000 ffffea0002710000 ffff88000015bd48
+> [  246.252869] Call Trace:
+> [  246.252869]  [<ffffffff81234aae>] ? copy_user_huge_page+0x1de/0x240
+> [  246.252869]  [<ffffffff81273639>] ? mem_cgroup_charge_common+0xa9/0xc0
+> [  246.252869]  [<ffffffff8126b4d7>] do_huge_pmd_wp_page+0x9f7/0xc60
+> [  246.252869]  [<ffffffff81a0acd9>] ? __const_udelay+0x29/0x30
+> [  246.252869]  [<ffffffff8123364e>] handle_mm_fault+0x26e/0x650
+> [  246.252869]  [<ffffffff8117dc1a>] ? __lock_is_held+0x5a/0x80
+> [  246.252869]  [<ffffffff83db3814>] ? __do_page_fault+0x514/0x5e0
+> [  246.252869]  [<ffffffff83db3870>] __do_page_fault+0x570/0x5e0
+> [  246.252869]  [<ffffffff811c6500>] ? rcu_eqs_exit_common+0x60/0x260
+> [  246.252869]  [<ffffffff811c740e>] ? rcu_eqs_enter_common+0x33e/0x3b0
+> [  246.252869]  [<ffffffff811c679c>] ? rcu_eqs_exit+0x9c/0xb0
+> [  246.252869]  [<ffffffff83db3912>] do_page_fault+0x32/0x50
+> [  246.252869]  [<ffffffff83db2ef0>] do_async_page_fault+0x30/0xc0
+> [  246.252869]  [<ffffffff83db01e8>] async_page_fault+0x28/0x30
+> [  246.252869] Code: 90 90 90 90 90 90 9c fa 65 48 3b 06 75 14 65 48 3b 56 08 75 0d 65 48 89 1e 65 48 89 4e 08 9d b0 01 c3 9d 30
+> c0 c3 b9 00 02 00 00 <f3> 48 a5 c3 0f 1f 80 00 00 00 00 eb ee 66 66 66 90 66 66 66 90
+> [  246.252869] RIP  [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
+> [  246.252869]  RSP <ffff88000015bc40>
+> [  246.252869] CR2: ffff88009c422000
+> [  246.252869] ---[ end trace 09fbe37b108d5766 ]---
+> 
+> And this is the code:
+> 
+>         if (is_huge_zero_pmd(orig_pmd))
+>                 clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
+>         else
+>                 copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR); <--- this
+> 
+> 
+> Thanks,
+> Sasha
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
----
-Changes since v3:
-	- add pin mux info for EHRPWM1.
+I don't know this issue was already resolved. If so, my reply become a just
+question to Kirill regardless of this BUG.
 
-Changes since v1:
-	- Reusing ti,am33xx<ecap/ehrpwm> as compatible field as both IP's are
-	  similar with am33xx platform and da850 has no platform specific
-	  dependency.
+When I am looking at the code, I was wonder about the logic of GHZP(aka,
+get_huge_zero_page) reference handling. The logic depends on that page
+allocator never alocate PFN 0.
 
- arch/arm/boot/dts/da850.dtsi     |   42 ++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-davinci/da8xx-dt.c |    5 +++++
- 2 files changed, 47 insertions(+)
+Who makes sure it? What happens if allocator allocates PFN 0?
+I don't know all of architecture makes sure it.
+You investigated it for all arches?
 
-diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
-index 3ade343..3bff30d 100644
---- a/arch/arm/boot/dts/da850.dtsi
-+++ b/arch/arm/boot/dts/da850.dtsi
-@@ -71,6 +71,18 @@
- 					0x28 0x00222222  0x00ffffff
- 				>;
- 			};
-+			ehrpwm1a_pins: pinmux_ehrpwm1a_pins {
-+				pinctrl-single,bits = <
-+					/* EPWM1A */
-+					0x14 0x00000002 0x0000000f
-+				>;
-+			};
-+			ehrpwm1b_pins: pinmux_ehrpwm1b_pins {
-+				pinctrl-single,bits = <
-+					/* EPWM1B */
-+					0x14 0x00000020 0x000000f0
-+				>;
-+			};
- 		};
- 		serial0: serial@1c42000 {
- 			compatible = "ns16550a";
-@@ -122,6 +134,36 @@
- 			interrupts = <16>;
- 			status = "disabled";
- 		};
-+		ehrpwm0: ehrpwm@01f00000 {
-+			compatible = "ti,da850-ehrpwm", "ti,am33xx-ehrpwm";
-+			#pwm-cells = <3>;
-+			reg = <0x300000 0x2000>;
-+			status = "disabled";
-+		};
-+		ehrpwm1: ehrpwm@01f02000 {
-+			compatible = "ti,da850-ehrpwm", "ti,am33xx-ehrpwm";
-+			#pwm-cells = <3>;
-+			reg = <0x302000 0x2000>;
-+			status = "disabled";
-+		};
-+		ecap0: ecap@01f06000 {
-+			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
-+			#pwm-cells = <3>;
-+			reg = <0x306000 0x80>;
-+			status = "disabled";
-+		};
-+		ecap1: ecap@01f07000 {
-+			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
-+			#pwm-cells = <3>;
-+			reg = <0x307000 0x80>;
-+			status = "disabled";
-+		};
-+		ecap2: ecap@01f08000 {
-+			compatible = "ti,da850-ecap", "ti,am33xx-ecap";
-+			#pwm-cells = <3>;
-+			reg = <0x308000 0x80>;
-+			status = "disabled";
-+		};
- 	};
- 	nand_cs3@62000000 {
- 		compatible = "ti,davinci-nand";
-diff --git a/arch/arm/mach-davinci/da8xx-dt.c b/arch/arm/mach-davinci/da8xx-dt.c
-index d83de8f..05bb9a2 100644
---- a/arch/arm/mach-davinci/da8xx-dt.c
-+++ b/arch/arm/mach-davinci/da8xx-dt.c
-@@ -41,6 +41,11 @@ struct of_dev_auxdata da850_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("ti,davinci-i2c", 0x01c22000, "i2c_davinci.1", NULL),
- 	OF_DEV_AUXDATA("ti,davinci-wdt", 0x01c21000, "watchdog", NULL),
- 	OF_DEV_AUXDATA("ti,da830-mmc", 0x01c40000, "da830-mmc.0", NULL),
-+	OF_DEV_AUXDATA("ti,da850-ehrpwm", 0x01f00000, "ehrpwm", NULL),
-+	OF_DEV_AUXDATA("ti,da850-ehrpwm", 0x01f02000, "ehrpwm", NULL),
-+	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f06000, "ecap", NULL),
-+	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f07000, "ecap", NULL),
-+	OF_DEV_AUXDATA("ti,da850-ecap", 0x01f08000, "ecap", NULL),
- 	{}
- };
- 
+If not, 
+CPU 1                   CPU 2                                   CPU 3
+
+shrink_huge_zero_page
+huge_zero_refcount = 0;
+                        GHZP
+                        pfn_0_zero_page = alloc_pages 
+                                                         GHZP
+                                                         pfn_some_zero_page = alloc_page
+huge_zero_pfn = 0
+                        huge_zero_pfn = pfn_0
+                        huge_zero_refcount = 2
+                                                        huge_zero_pfn = pfn_some
+                                                        huge_zero_refcount = 2
+
+So, if you want to stick this logic, at least, don't we need BUG_ON to check
+pfn 0 allocation in get_huge_zero_page?
+
 -- 
-1.7.9.5
-
+Kind regards,
+Minchan Kim
