@@ -1,95 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936088Ab3DJIDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 04:03:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:48405 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab3DJIC5 (ORCPT
+	id S936522Ab3DJIGC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 04:06:02 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58668 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751888Ab3DJIF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 04:02:57 -0400
-Date: Wed, 10 Apr 2013 18:02:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mike Turquette <mturquette@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Masanari Iida <standby24x7@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
-        Axel Lin <axel.lin@ingics.com>
-Subject: linux-next: manual merge of the clk tree with the trivial tree
-Message-Id: <20130410180238.f600ccf4ccbce04a5272f75b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__10_Apr_2013_18_02_38_+1000_gsMpwyxa=he1Tjbb"
+	Wed, 10 Apr 2013 04:05:57 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <51651D3A.4000301@jp.fujitsu.com>
+Date: Wed, 10 Apr 2013 17:05:14 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] mm: vmscan: Decide whether to compact the pgdat
+ based on reclaim progress
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <1365505625-9460-5-git-send-email-mgorman@suse.de>
+In-Reply-To: <1365505625-9460-5-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__10_Apr_2013_18_02_38_+1000_gsMpwyxa=he1Tjbb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(2013/04/09 20:06), Mel Gorman wrote:
+> In the past, kswapd makes a decision on whether to compact memory after the
+> pgdat was considered balanced. This more or less worked but it is late to
+> make such a decision and does not fit well now that kswapd makes a decision
+> whether to exit the zone scanning loop depending on reclaim progress.
+> 
+> This patch will compact a pgdat if at least the requested number of pages
+> were reclaimed from unbalanced zones for a given priority. If any zone is
+> currently balanced, kswapd will not call compaction as it is expected the
+> necessary pages are already available.
+> 
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Hi Mike,
+I like this way.
 
-Today's linux-next merge of the clk tree got a conflict in
-drivers/clk/mvebu/clk-core.c between commit 07f42258893d ("treewide: Fix
-typos in printk") from the trivial tree and commit 4cb24e68a5af ("clk:
-mvebu: Fix valid value range checking for cpu_freq_select") from the clk
-tree.
+> ---
+>   mm/vmscan.c | 60 ++++++++++++++++++++++++++++++------------------------------
+>   1 file changed, 30 insertions(+), 30 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 78268ca..a9e68b4 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2640,7 +2640,8 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+>    */
+>   static bool kswapd_shrink_zone(struct zone *zone,
+>   			       struct scan_control *sc,
+> -			       unsigned long lru_pages)
+> +			       unsigned long lru_pages,
+> +			       unsigned long *nr_attempted)
+>   {
+>   	unsigned long nr_slab;
+>   	struct reclaim_state *reclaim_state = current->reclaim_state;
+> @@ -2656,6 +2657,9 @@ static bool kswapd_shrink_zone(struct zone *zone,
+>   	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+>   	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+>   
+> +	/* Account for the number of pages attempted to reclaim */
+> +	*nr_attempted += sc->nr_to_reclaim;
+> +
+>   	if (nr_slab == 0 && !zone_reclaimable(zone))
+>   		zone->all_unreclaimable = 1;
+>   
+> @@ -2703,8 +2707,11 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>   
+>   	do {
+>   		unsigned long lru_pages = 0;
+> +		unsigned long nr_attempted = 0;
+>   		unsigned long nr_reclaimed = sc.nr_reclaimed = 0;
+> +		unsigned long this_reclaimed;
+>   		bool raise_priority = true;
+> +		bool pgdat_needs_compaction = (order > 0);
+>   
+>   		/*
+>   		 * Scan in the highmem->dma direction for the highest
+> @@ -2752,7 +2759,21 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>   		for (i = 0; i <= end_zone; i++) {
+>   			struct zone *zone = pgdat->node_zones + i;
+>   
+> +			if (!populated_zone(zone))
+> +				continue;
+> +
+>   			lru_pages += zone_reclaimable_pages(zone);
+> +
+> +			/*
+> +			 * If any zone is currently balanced then kswapd will
+> +			 * not call compaction as it is expected that the
+> +			 * necessary pages are already available.
+> +			 */
+> +			if (pgdat_needs_compaction &&
+> +					zone_watermark_ok(zone, order,
+> +						low_wmark_pages(zone),
+> +						*classzone_idx, 0))
+> +				pgdat_needs_compaction = false;
+>   		}
+>   
+>   		/*
+> @@ -2821,7 +2842,8 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>   				 * already being scanned that high
+>   				 * watermark would be met at 100% efficiency.
+>   				 */
+> -				if (kswapd_shrink_zone(zone, &sc, lru_pages))
+> +				if (kswapd_shrink_zone(zone, &sc, lru_pages,
+> +						       &nr_attempted))
+>   					raise_priority = false;
+>   			}
+>   
+> @@ -2873,42 +2895,20 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>   		if (try_to_freeze() || kthread_should_stop())
+>   			break;
+>   
+> +		/* Compact if necessary and kswapd is reclaiming efficiently */
+> +		this_reclaimed = sc.nr_reclaimed - nr_reclaimed;
+> +		if (pgdat_needs_compaction && this_reclaimed > nr_attempted)
+> +			compact_pgdat(pgdat, order);
+> +
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+What does "this_reclaimed" mean ?   
+"the total amount of reclaimed memory - reclaimed memory at this iteration" ?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+And this_reclaimed > nr_attempted means kswapd is efficient ?
+What "efficient" means here ?
 
-diff --cc drivers/clk/mvebu/clk-core.c
-index 1b4e333,2628610..0000000
---- a/drivers/clk/mvebu/clk-core.c
-+++ b/drivers/clk/mvebu/clk-core.c
-@@@ -156,8 -156,8 +156,8 @@@ static u32 __init armada_370_get_cpu_fr
- =20
-  	cpu_freq_select =3D ((readl(sar) >> SARL_A370_PCLK_FREQ_OPT) &
-  			   SARL_A370_PCLK_FREQ_OPT_MASK);
-- 	if (cpu_freq_select > ARRAY_SIZE(armada_370_cpu_frequencies)) {
-+ 	if (cpu_freq_select >=3D ARRAY_SIZE(armada_370_cpu_frequencies)) {
- -		pr_err("CPU freq select unsuported %d\n", cpu_freq_select);
- +		pr_err("CPU freq select unsupported %d\n", cpu_freq_select);
-  		cpu_freq =3D 0;
-  	} else
-  		cpu_freq =3D armada_370_cpu_frequencies[cpu_freq_select];
-@@@ -278,8 -278,8 +278,8 @@@ static u32 __init armada_xp_get_cpu_fre
-  	cpu_freq_select |=3D (((readl(sar+4) >> SARH_AXP_PCLK_FREQ_OPT) &
-  			     SARH_AXP_PCLK_FREQ_OPT_MASK)
-  			    << SARH_AXP_PCLK_FREQ_OPT_SHIFT);
-- 	if (cpu_freq_select > ARRAY_SIZE(armada_xp_cpu_frequencies)) {
-+ 	if (cpu_freq_select >=3D ARRAY_SIZE(armada_xp_cpu_frequencies)) {
- -		pr_err("CPU freq select unsuported: %d\n", cpu_freq_select);
- +		pr_err("CPU freq select unsupported: %d\n", cpu_freq_select);
-  		cpu_freq =3D 0;
-  	} else
-  		cpu_freq =3D armada_xp_cpu_frequencies[cpu_freq_select];
+Thanks,
+-Kame
 
---Signature=_Wed__10_Apr_2013_18_02_38_+1000_gsMpwyxa=he1Tjbb
-Content-Type: application/pgp-signature
+>   		/*
+>   		 * Raise priority if scanning rate is too low or there was no
+>   		 * progress in reclaiming pages
+>   		 */
+> -		if (raise_priority || sc.nr_reclaimed - nr_reclaimed == 0)
+> +		if (raise_priority || !this_reclaimed)
+>   			sc.priority--;
+>   	} while (sc.priority >= 0 &&
+>   		 !pgdat_balanced(pgdat, order, *classzone_idx));
+>   
+> -	/*
+> -	 * If kswapd was reclaiming at a higher order, it has the option of
+> -	 * sleeping without all zones being balanced. Before it does, it must
+> -	 * ensure that the watermarks for order-0 on *all* zones are met and
+> -	 * that the congestion flags are cleared. The congestion flag must
+> -	 * be cleared as kswapd is the only mechanism that clears the flag
+> -	 * and it is potentially going to sleep here.
+> -	 */
+> -	if (order) {
+> -		int zones_need_compaction = 1;
+> -
+> -		for (i = 0; i <= end_zone; i++) {
+> -			struct zone *zone = pgdat->node_zones + i;
+> -
+> -			if (!populated_zone(zone))
+> -				continue;
+> -
+> -			/* Check if the memory needs to be defragmented. */
+> -			if (zone_watermark_ok(zone, order,
+> -				    low_wmark_pages(zone), *classzone_idx, 0))
+> -				zones_need_compaction = 0;
+> -		}
+> -
+> -		if (zones_need_compaction)
+> -			compact_pgdat(pgdat, order);
+> -	}
+> -
+>   out:
+>   	/*
+>   	 * Return the order we were reclaiming at so prepare_kswapd_sleep()
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJRZRyeAAoJEECxmPOUX5FEHLUP/16YhIKDUy52+PZ/AxM4Own/
-7NpePCGm8WgXuo7RByNJLbYPAZJT+TCiWadS+PAY8vOj97tOGaoE+7QIPFRmmy74
-OCYSq7l0laT0VjHhZ2spFpIxUQFgTzBMJBqRZkWjw5eyZUDJA0Nz4RJW02Mj+xJy
-UJVynCLqiMXTkPdkumk+hOcciuSri4i4CLASZc6yw7PCFGKiSyNlvdyooCOkXCmj
-pmrZaG1h142fzVShVPlDsHAn+Ar9MH+kkxz/7/6zc86MEkh/U0WI8O7YuAGvdxuJ
-t6ghovg7Rfv2/2CR278YpnvVkVTMoOQiYYltKQ2zi29hewXMOCXggXnunk2COO05
-v75Zili/8sB1yv7OvElnt+nD1IsGsIGh7PIGWBr8FtqzptnXxbAN27AiMOJ/5leK
-OoN31eWHrXMa6DK4cCaCKVZNa434mYqiJXzMrCRu2nsGhGB/bEZmZQkHE48t/02s
-yRx2nb/WvnhNXQhhcegBTJJ97NhztbNA5oZfVa3X67BmjdeLNZ0Hli278PWr2o+l
-yWPT8dQ5NcN7XY0Qd01u4wkrsnUERcUKMXcSxEo6FtT92Qd9OpIpoN+EnLb9Q/tE
-sF0hG1L0O9ZqGRq8UOnmvuBb4zu2lCLER9NpbKnVX3XwlFr3EwbStRGefXddX3eF
-Ggac8iaSlbscWWfSQWzt
-=uZSP
------END PGP SIGNATURE-----
-
---Signature=_Wed__10_Apr_2013_18_02_38_+1000_gsMpwyxa=he1Tjbb--
