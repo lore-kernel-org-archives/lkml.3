@@ -1,85 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936342Ab3DJKTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:19:10 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:14361 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab3DJKTJ (ORCPT
+	id S936078Ab3DJKXq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:23:46 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:43293 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752403Ab3DJKXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:19:09 -0400
-X-Spam-Score: -100.8
-Message-ID: <51653C7A.6030405@asianux.com>
-Date: Wed, 10 Apr 2013 18:18:34 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Wed, 10 Apr 2013 06:23:44 -0400
+From: Hanjun Guo <guohanjun@huawei.com>
+To: <kernel.openeuler@huawei.com>
+CC: Toshi Kani <toshi.kani@hp.com>, Jiang Liu <jiang.liu@huawei.com>,
+        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4] ACPI and PM patches for Euler stable from mainline v3.6
+Date: Wed, 10 Apr 2013 18:22:57 +0800
+Message-ID: <1365589381-5624-1-git-send-email-guohanjun@huawei.com>
+X-Mailer: git-send-email 1.7.10.msysgit.1
 MIME-Version: 1.0
-To: Al Viro <viro@zeniv.linux.org.uk>, eparis@redhat.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: auditfilter: looping issue, memory leak if has
- 2 or more AUDIT_FILTERKEYs
-References: <51653645.90401@asianux.com>
-In-Reply-To: <51653645.90401@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [10.135.68.124]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Zefan,
+
+These four patches are bugfix for ACPI and power management from mainline 
+v3.6, comments are welcomed!
+
+Thanks
+Hanjun Guo
 
 
-in another function: audit_data_to_entry:
+Colin Cross (1):
+  cpuidle: fix error handling in __cpuidle_register_device
 
-  a. has the same issue for case AUDIT_WATCH.
+Stephen Boyd (1):
+  cpufreq: Fix sysfs deadlock with concurrent hotplug/frequency switch
 
-  b. has an new issue for AUDIT_DIR:
-       after AUDIT_DIR succeed, it will set rule->tree.
-       next, the other case fail, then will call audit_free_rule.
-       but audit_free_rule will not free rule->tree.
+Thomas Renninger (2):
+  ACPI: Untangle a return statement for better readability
+  ACPI: Only count valid srat memory structures
 
-
-  I find them only by reading code, not test them.
-  and I also do not know about the related features.
-  so please help check my 2 opinions whether are correct.
-
-
-  welcome any suggestion or completions.
-
-  thanks.
-
-  :-)
+ arch/ia64/kernel/acpi.c   |    5 +++--
+ arch/x86/mm/srat.c        |   16 +++++++++-------
+ drivers/acpi/numa.c       |   12 ++++++++----
+ drivers/cpufreq/cpufreq.c |   35 +++++++++++++++++++++++++++--------
+ drivers/cpuidle/cpuidle.c |   13 +++++++++----
+ include/linux/acpi.h      |    2 +-
+ 6 files changed, 57 insertions(+), 26 deletions(-)
 
 
-gchen.
-
-
-On 2013年04月10日 17:52, Chen Gang wrote:
-> 
->   in the 'fcount' looping,
->     if 'new->fields[*].type" has 2 or more AUDIT_FILTERKEYs
->     need judge new->filterkey whether has value, or memory leak.
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  kernel/auditfilter.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-> index f9fc54b..936ac79 100644
-> --- a/kernel/auditfilter.c
-> +++ b/kernel/auditfilter.c
-> @@ -859,6 +859,8 @@ struct audit_entry *audit_dupe_rule(struct audit_krule *old)
->  						       &old->fields[i]);
->  			break;
->  		case AUDIT_FILTERKEY:
-> +			if (new->filterkey)
-> +				break;
->  			fk = kstrdup(old->filterkey, GFP_KERNEL);
->  			if (unlikely(!fk))
->  				err = -ENOMEM;
-> 
-
-
--- 
-Chen Gang
-
-Asianux Corporation
