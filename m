@@ -1,164 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937078Ab3DJQat (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 12:30:49 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60938 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936994Ab3DJQas (ORCPT
+	id S937095Ab3DJQbZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 12:31:25 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:50200 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937045Ab3DJQbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 12:30:48 -0400
-X-Originating-IP: 108.223.40.66
-Date: Wed, 10 Apr 2013 09:30:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
-        kexec@lists.infradead.org, wim@iguana.be,
-        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
-Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130410163056.GB23891@roeck-us.net>
-References: <20130408151509.GA20919@roeck-us.net>
- <20130409144431.GL79013@redhat.com>
- <20130409145228.GA1111@roeck-us.net>
- <20130409151423.GM79013@redhat.com>
- <20130409160757.GA27050@roeck-us.net>
- <20130410134039.GV79013@redhat.com>
- <20130410135123.GB15456@roeck-us.net>
- <20130410142055.GW79013@redhat.com>
- <20130410151041.GA6670@roeck-us.net>
- <20130410161739.GY79013@redhat.com>
+	Wed, 10 Apr 2013 12:31:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130410161739.GY79013@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1365098483-26821-2-git-send-email-juhosg@openwrt.org>
+References: <1365098483-26821-1-git-send-email-juhosg@openwrt.org> <1365098483-26821-2-git-send-email-juhosg@openwrt.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 10 Apr 2013 10:31:02 -0600
+Message-ID: <CAErSpo4ih-Kgp4LxX1MDodac-eoPo=Mu1d6ex8oNnaEEc_GQnw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] MIPS: implement pcibios_get_phb_of_node
+To: Gabor Juhos <juhosg@openwrt.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 12:17:39PM -0400, Don Zickus wrote:
-> On Wed, Apr 10, 2013 at 08:10:41AM -0700, Guenter Roeck wrote:
-> > On Wed, Apr 10, 2013 at 10:20:55AM -0400, Don Zickus wrote:
-> > > On Wed, Apr 10, 2013 at 06:51:23AM -0700, Guenter Roeck wrote:
-> > > > On Wed, Apr 10, 2013 at 09:40:39AM -0400, Don Zickus wrote:
-> > > > > On Tue, Apr 09, 2013 at 09:07:58AM -0700, Guenter Roeck wrote:
-> > > > > > > > Just look for the use of mod_timer in the watchdog directory.
-> > > > > > > 
-> > > > > > > So looking at the mod_timer logic in various drivers, it seems regardless
-> > > > > > > if the /dev/watchdog device is opened or not, if it is running, it will
-> > > > > > > automagically kick the watchdog.
-> > > > > > > 
-> > > > > > yes
-> > > > > > 
-> > > > > > > This seems that we can avoid pulling in userspace pieces for this.  Just
-> > > > > > > load the driver and the hardware starts getting kicked.
-> > > > > > > 
-> > > > > > Only if it is already running. Also, you don't want to rely on it, because you
-> > > > > > lose protection against user space issues.
-> > > > > 
-> > > > > IOW if something goes wrong with a runaway userspace app, the kernel
-> > > > > blindly continues to kick the watchdog, which masks the problem, right?
-> > > > > 
-> > > > That would be wrong if any of the drivers does that. The kernel should stop
-> > > > kicking after the software timeout expires.
-> > > > 
-> > > > For example, if the HW needs to be kicked every second, and the high level
-> > > > timeout is set to one minute, the driver should keep kicking the hardware
-> > > > watchdog for one minute and then stop doing it if /dev/watchdog was opened
-> > > > and userspace is silent. 
-> > > 
-> > > Ah ok.
-> > > 
-> > > > 
-> > > > > > 
-> > > > > > A second use is if the hw watchdog needs to be pinged more often than user
-> > > > > > space can provide. Some of the HW watchdogs need a ping in one-second intervals
-> > > > > > or even faster.
-> > > > > > 
-> > > > > > > Is that true?  And if so, do all drivers detect if the hardware is already
-> > > > > > > running during their init?  Or is it based on the first device open?
-> > > > > > > 
-> > > > > > It is usually done in the probe function.
-> > > > > 
-> > > > > Ok.  Thanks for the understanding of how the softdog stuff works.
-> > > > > 
-> > > > > However, we still have the problem that if the machine panics and we want
-> > > > > to jump into the kdump kernel, we need to 'kick' the watchdog one more
-> > > > > time.  This provides us a sane sync point for determining how long we have
-> > > > > to load the watchdog driver in the second kernel before the hardware
-> > > > > reboots us.  Otherwise the reboots are pretty random and nothing is
-> > > > > guaranteed.
-> > > > > 
-> > > > > Hence the need for some sort of patch resembling the one I posted.
-> > > > > 
-> > > > > Soooooooo, any thoughts about that patch and what changes I should make?
-> > > > > :-)
-> > > > > 
-> > > > The FIXME is a problem, and I think the name and scope would have to be
-> > > > more generic (watchdog_kick ?). Also, it doesn't solve the problem
-> > > > of having multiple open watchdogs (my system has three, for example),
-> > > > and it doesn't check if the watchdog is running.
-> > > 
-> > > Ok.  I didn't know the watchdog subsystem well enough, so I just took
-> > > stabs in the dark about how things should work.  I appreciate the
-> > > feedback.
-> > > 
-> > > I could make the name more generic.  I wasn't sure if the watchdog
-> > > community would frown on that.  The FIXME is a problem, I am not sure how
-> > 
-> > I don't know what others think, but I would prefer a more generic name.
-> > That its current use is for kdump is besides the point; there could be
-> > other valid uses.
-> 
-> Ok.
-> 
-> > 
-> > > to handle the 'fail' scenario (can't get the mutex with trylock).  And I
-> > 
-> > I would just return without doing anything. After all, if the mutex is held,
-> > it is possible if not likely that the code crashed _in_ the watchdog code,
-> > so it might be better to just let it crash and burn in that case.
-> 
-> Hmm. Interesting point.  So you are implying most watchdog mutex locks surround
-> quickly executed code that are not called often.  And if we do catch the
-> mutex being held it is either because the watchdog code has failed (bad)
-> or just bad timing :-).
-> 
-Hopefully all locks are for short periods of time ;).
+On Thu, Apr 4, 2013 at 12:01 PM, Gabor Juhos <juhosg@openwrt.org> wrote:
+> The of_node field of the device assigned to a
+> PCI bus is used during scanning of the PCI bus.
+> However on MIPS, the of_node field is assigned
+> only after the bus has been scanned.
+>
+> Implement the architecture specific version of
+> 'pcibios_get_phb_of_node'. Which ensures that the
+> PCI driver core will initialize the of_node field
+> before starting the scan.
+>
+> Also remove the local assignment of bus->dev.of_node,
+> it is not needed after the patch.
+>
+> Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
 
-Since the lock is per device, it would either mean that the code has crashed
-there, or that some other entity is busy dealing with the device, presumably
-trying to ping it. Either case, I think the best (safest) way to deal with
-the situation would be to ignore it.
+I removed the __weak annotation from include/linux/pci.h and applied
+this patch to my pci/gabor-get-of-node.  Give it a try and make sure
+it solves your problem.  If so, and Ralph approves, I can push both
+for v3.10.  It should appear at
+http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/gabor-get-of-node
+soon.
 
-> For now I can just do the trylock and return on failure, printing a big
-> fat warning for post-debug purposes.  If it becomes a bigger problem, we
-> can refine the approach later I guess.
-> 
-Ok.
+Or if you prefer, you can take them through the MIPS tree.
 
-> > 
-> > > have no idea how to even find out if multiple watchdogs are open on the
-> > > system.  Is there a list I could walk?  And with regard to 'watchdog is
-> > 
-> > /* the dev_t structure to store the dynamically allocated watchdog devices */
-> > static dev_t watchdog_devt;
-> > 
-> > One way to look up the allocated watchdogs might be to loop through all kobj
-> > instances for the major device using kobj_lookup. Don't know if there is a
-> > better way.
-> 
-> I can poke at that to see if I can get something to work.  Thanks.
-> 
-> > 
-> > > running', I thought 'watchdog_active' would do that.  But again, I could
-> > > be misreading the code.
-> > > 
-> > You are right. Missed that part, sorry.
-> 
-> No problem, just wanted to make sure I was understanding things correctly.
-> 
-> Again thanks for the feedback.  I'll spin a V2.
-> 
-Make sure you add the kexec maintainer to Cc and get an Ack.
+Bjorn
 
-Guenter
+> ---
+>  arch/mips/pci/pci.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
+> index 0872f12..594e60d 100644
+> --- a/arch/mips/pci/pci.c
+> +++ b/arch/mips/pci/pci.c
+> @@ -115,7 +115,6 @@ static void pcibios_scanbus(struct pci_controller *hose)
+>                         pci_bus_assign_resources(bus);
+>                         pci_enable_bridges(bus);
+>                 }
+> -               bus->dev.of_node = hose->of_node;
+>         }
+>  }
+>
+> @@ -169,6 +168,13 @@ void pci_load_of_ranges(struct pci_controller *hose, struct device_node *node)
+>                 }
+>         }
+>  }
+> +
+> +struct device_node *pcibios_get_phb_of_node(struct pci_bus *bus)
+> +{
+> +       struct pci_controller *hose = bus->sysdata;
+> +
+> +       return of_node_get(hose->of_node);
+> +}
+>  #endif
+>
+>  static DEFINE_MUTEX(pci_scan_mutex);
+> --
+> 1.7.10
+>
