@@ -1,135 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936474Ab3DJICK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 04:02:10 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:62546 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752313Ab3DJICG (ORCPT
+	id S936088Ab3DJIDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 04:03:00 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:48405 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab3DJIC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 04:02:06 -0400
-X-AuditID: 9c930197-b7b50ae00000018c-f9-51651c7a4624
-Date: Wed, 10 Apr 2013 17:02:02 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Mel Gorman <mgorman@suse.de>,
-        Dave Jones <davej@redhat.com>, linux-mm <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: mm: BUG in do_huge_pmd_wp_page
-Message-ID: <20130410080202.GB21292@blaptop>
-References: <51559150.3040407@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51559150.3040407@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 10 Apr 2013 04:02:57 -0400
+Date: Wed, 10 Apr 2013 18:02:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mike Turquette <mturquette@ti.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Masanari Iida <standby24x7@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Axel Lin <axel.lin@ingics.com>
+Subject: linux-next: manual merge of the clk tree with the trivial tree
+Message-Id: <20130410180238.f600ccf4ccbce04a5272f75b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__10_Apr_2013_18_02_38_+1000_gsMpwyxa=he1Tjbb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 29, 2013 at 09:04:16AM -0400, Sasha Levin wrote:
-> Hi all,
-> 
-> While fuzzing with trinity inside a KVM tools guest running latest -next kernel,
-> I've stumbled on the following.
-> 
-> It seems that the code in do_huge_pmd_wp_page() was recently modified in
-> "thp: do_huge_pmd_wp_page(): handle huge zero page".
-> 
-> Here's the trace:
-> 
-> [  246.244708] BUG: unable to handle kernel paging request at ffff88009c422000
-> [  246.245743] IP: [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
-> [  246.250569] PGD 7232067 PUD 7235067 PMD bfefe067 PTE 800000009c422060
-> [  246.251529] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [  246.252325] Dumping ftrace buffer:
-> [  246.252791]    (ftrace buffer empty)
-> [  246.252869] Modules linked in:
-> [  246.252869] CPU 3
-> [  246.252869] Pid: 11985, comm: trinity-child12 Tainted: G        W    3.9.0-rc4-next-20130328-sasha-00014-g91a3267 #319
-> [  246.252869] RIP: 0010:[<ffffffff81a0a795>]  [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
-> [  246.252869] RSP: 0018:ffff88000015bc40  EFLAGS: 00010286
-> [  246.252869] RAX: ffff88000015bfd8 RBX: 0000000002710880 RCX: 0000000000000200
-> [  246.252869] RDX: 0000000000000000 RSI: ffff88009c422000 RDI: ffff88009a422000
-> [  246.252869] RBP: ffff88000015bc98 R08: 0000000002718000 R09: 0000000000000001
-> [  246.252869] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880000000000
-> [  246.252869] R13: ffff88000015bfd8 R14: ffff88000015bfd8 R15: fffffffffff80000
-> [  246.252869] FS:  00007f53db93f700(0000) GS:ffff8800bba00000(0000) knlGS:0000000000000000
-> [  246.252869] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [  246.252869] CR2: ffff88009c422000 CR3: 0000000000159000 CR4: 00000000000406e0
-> [  246.252869] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  246.252869] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  246.252869] Process trinity-child12 (pid: 11985, threadinfo ffff88000015a000, task ffff88009c60b000)
-> [  246.252869] Stack:
-> [  246.252869]  ffffffff81234aae ffff88000015bc88 ffffffff81273639 0000000000a00000
-> [  246.252869]  0000000002718000 ffff8800ab36d050 ffff880000153800 ffffea0002690000
-> [  246.252869]  0000000000a00000 ffff8800ab36d000 ffffea0002710000 ffff88000015bd48
-> [  246.252869] Call Trace:
-> [  246.252869]  [<ffffffff81234aae>] ? copy_user_huge_page+0x1de/0x240
-> [  246.252869]  [<ffffffff81273639>] ? mem_cgroup_charge_common+0xa9/0xc0
-> [  246.252869]  [<ffffffff8126b4d7>] do_huge_pmd_wp_page+0x9f7/0xc60
-> [  246.252869]  [<ffffffff81a0acd9>] ? __const_udelay+0x29/0x30
-> [  246.252869]  [<ffffffff8123364e>] handle_mm_fault+0x26e/0x650
-> [  246.252869]  [<ffffffff8117dc1a>] ? __lock_is_held+0x5a/0x80
-> [  246.252869]  [<ffffffff83db3814>] ? __do_page_fault+0x514/0x5e0
-> [  246.252869]  [<ffffffff83db3870>] __do_page_fault+0x570/0x5e0
-> [  246.252869]  [<ffffffff811c6500>] ? rcu_eqs_exit_common+0x60/0x260
-> [  246.252869]  [<ffffffff811c740e>] ? rcu_eqs_enter_common+0x33e/0x3b0
-> [  246.252869]  [<ffffffff811c679c>] ? rcu_eqs_exit+0x9c/0xb0
-> [  246.252869]  [<ffffffff83db3912>] do_page_fault+0x32/0x50
-> [  246.252869]  [<ffffffff83db2ef0>] do_async_page_fault+0x30/0xc0
-> [  246.252869]  [<ffffffff83db01e8>] async_page_fault+0x28/0x30
-> [  246.252869] Code: 90 90 90 90 90 90 9c fa 65 48 3b 06 75 14 65 48 3b 56 08 75 0d 65 48 89 1e 65 48 89 4e 08 9d b0 01 c3 9d 30
-> c0 c3 b9 00 02 00 00 <f3> 48 a5 c3 0f 1f 80 00 00 00 00 eb ee 66 66 66 90 66 66 66 90
-> [  246.252869] RIP  [<ffffffff81a0a795>] copy_page_rep+0x5/0x10
-> [  246.252869]  RSP <ffff88000015bc40>
-> [  246.252869] CR2: ffff88009c422000
-> [  246.252869] ---[ end trace 09fbe37b108d5766 ]---
-> 
-> And this is the code:
-> 
->         if (is_huge_zero_pmd(orig_pmd))
->                 clear_huge_page(new_page, haddr, HPAGE_PMD_NR);
->         else
->                 copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR); <--- this
-> 
-> 
-> Thanks,
-> Sasha
+--Signature=_Wed__10_Apr_2013_18_02_38_+1000_gsMpwyxa=he1Tjbb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't know this issue was already resolved. If so, my reply become a just
-question to Kirill regardless of this BUG.
+Hi Mike,
 
-When I am looking at the code, I was wonder about the logic of GHZP(aka,
-get_huge_zero_page) reference handling. The logic depends on that page
-allocator never alocate PFN 0.
+Today's linux-next merge of the clk tree got a conflict in
+drivers/clk/mvebu/clk-core.c between commit 07f42258893d ("treewide: Fix
+typos in printk") from the trivial tree and commit 4cb24e68a5af ("clk:
+mvebu: Fix valid value range checking for cpu_freq_select") from the clk
+tree.
 
-Who makes sure it? What happens if allocator allocates PFN 0?
-I don't know all of architecture makes sure it.
-You investigated it for all arches?
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-If not, 
-CPU 1                   CPU 2                                   CPU 3
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-shrink_huge_zero_page
-huge_zero_refcount = 0;
-                        GHZP
-                        pfn_0_zero_page = alloc_pages 
-                                                         GHZP
-                                                         pfn_some_zero_page = alloc_page
-huge_zero_pfn = 0
-                        huge_zero_pfn = pfn_0
-                        huge_zero_refcount = 2
-                                                        huge_zero_pfn = pfn_some
-                                                        huge_zero_refcount = 2
+diff --cc drivers/clk/mvebu/clk-core.c
+index 1b4e333,2628610..0000000
+--- a/drivers/clk/mvebu/clk-core.c
++++ b/drivers/clk/mvebu/clk-core.c
+@@@ -156,8 -156,8 +156,8 @@@ static u32 __init armada_370_get_cpu_fr
+ =20
+  	cpu_freq_select =3D ((readl(sar) >> SARL_A370_PCLK_FREQ_OPT) &
+  			   SARL_A370_PCLK_FREQ_OPT_MASK);
+- 	if (cpu_freq_select > ARRAY_SIZE(armada_370_cpu_frequencies)) {
++ 	if (cpu_freq_select >=3D ARRAY_SIZE(armada_370_cpu_frequencies)) {
+ -		pr_err("CPU freq select unsuported %d\n", cpu_freq_select);
+ +		pr_err("CPU freq select unsupported %d\n", cpu_freq_select);
+  		cpu_freq =3D 0;
+  	} else
+  		cpu_freq =3D armada_370_cpu_frequencies[cpu_freq_select];
+@@@ -278,8 -278,8 +278,8 @@@ static u32 __init armada_xp_get_cpu_fre
+  	cpu_freq_select |=3D (((readl(sar+4) >> SARH_AXP_PCLK_FREQ_OPT) &
+  			     SARH_AXP_PCLK_FREQ_OPT_MASK)
+  			    << SARH_AXP_PCLK_FREQ_OPT_SHIFT);
+- 	if (cpu_freq_select > ARRAY_SIZE(armada_xp_cpu_frequencies)) {
++ 	if (cpu_freq_select >=3D ARRAY_SIZE(armada_xp_cpu_frequencies)) {
+ -		pr_err("CPU freq select unsuported: %d\n", cpu_freq_select);
+ +		pr_err("CPU freq select unsupported: %d\n", cpu_freq_select);
+  		cpu_freq =3D 0;
+  	} else
+  		cpu_freq =3D armada_xp_cpu_frequencies[cpu_freq_select];
 
-So, if you want to stick this logic, at least, don't we need BUG_ON to check
-pfn 0 allocation in get_huge_zero_page?
+--Signature=_Wed__10_Apr_2013_18_02_38_+1000_gsMpwyxa=he1Tjbb
+Content-Type: application/pgp-signature
 
--- 
-Kind regards,
-Minchan Kim
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRZRyeAAoJEECxmPOUX5FEHLUP/16YhIKDUy52+PZ/AxM4Own/
+7NpePCGm8WgXuo7RByNJLbYPAZJT+TCiWadS+PAY8vOj97tOGaoE+7QIPFRmmy74
+OCYSq7l0laT0VjHhZ2spFpIxUQFgTzBMJBqRZkWjw5eyZUDJA0Nz4RJW02Mj+xJy
+UJVynCLqiMXTkPdkumk+hOcciuSri4i4CLASZc6yw7PCFGKiSyNlvdyooCOkXCmj
+pmrZaG1h142fzVShVPlDsHAn+Ar9MH+kkxz/7/6zc86MEkh/U0WI8O7YuAGvdxuJ
+t6ghovg7Rfv2/2CR278YpnvVkVTMoOQiYYltKQ2zi29hewXMOCXggXnunk2COO05
+v75Zili/8sB1yv7OvElnt+nD1IsGsIGh7PIGWBr8FtqzptnXxbAN27AiMOJ/5leK
+OoN31eWHrXMa6DK4cCaCKVZNa434mYqiJXzMrCRu2nsGhGB/bEZmZQkHE48t/02s
+yRx2nb/WvnhNXQhhcegBTJJ97NhztbNA5oZfVa3X67BmjdeLNZ0Hli278PWr2o+l
+yWPT8dQ5NcN7XY0Qd01u4wkrsnUERcUKMXcSxEo6FtT92Qd9OpIpoN+EnLb9Q/tE
+sF0hG1L0O9ZqGRq8UOnmvuBb4zu2lCLER9NpbKnVX3XwlFr3EwbStRGefXddX3eF
+Ggac8iaSlbscWWfSQWzt
+=uZSP
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__10_Apr_2013_18_02_38_+1000_gsMpwyxa=he1Tjbb--
