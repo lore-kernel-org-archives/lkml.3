@@ -1,103 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934038Ab3DJF40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 01:56:26 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:60935 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab3DJF4Z (ORCPT
+	id S1752499Ab3DJGBL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 02:01:11 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:38996 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab3DJGBJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 01:56:25 -0400
-Message-ID: <1365573371.10616.16.camel@ThinkPad-T5421>
-Subject: Re: [RFC PATCH v2 6/6] powerpc: Use generic code for exception
- handling
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, paulus@samba.org,
-        paulmck@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
-Date: Wed, 10 Apr 2013 13:56:11 +0800
-In-Reply-To: <1365571931.10616.12.camel@ThinkPad-T5421>
-References: <1364551221-23177-1-git-send-email-zhong@linux.vnet.ibm.com>
-	 <1364551221-23177-7-git-send-email-zhong@linux.vnet.ibm.com>
-	 <20130410045659.GB15929@concordia>
-	 <1365571931.10616.12.camel@ThinkPad-T5421>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041005-1618-0000-0000-000003A81E1B
+	Wed, 10 Apr 2013 02:01:09 -0400
+X-Spam-Score: -100.7
+Message-ID: <5164FFFD.3@asianux.com>
+Date: Wed, 10 Apr 2013 14:00:29 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: module: strncpy issue, using strlcpy instead
+ of strncpy
+References: <51615AB0.9060502@asianux.com> <87r4ila8sb.fsf@rustcorp.com.au> <516298E0.9000905@asianux.com> <8738v19lv0.fsf@rustcorp.com.au> <51637441.2090006@asianux.com> <5163E123.5080205@asianux.com>
+In-Reply-To: <5163E123.5080205@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 13:32 +0800, Li Zhong wrote:
-> On Wed, 2013-04-10 at 14:56 +1000, Michael Ellerman wrote:
-> > On Fri, Mar 29, 2013 at 06:00:21PM +0800, Li Zhong wrote:
-> > > After the exception handling moved to generic code, and some changes in
-> > ...
-> > > diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-> > > index 360fba8..eeab30f 100644
-> > > --- a/arch/powerpc/mm/hash_utils_64.c
-> > > +++ b/arch/powerpc/mm/hash_utils_64.c
-> > > @@ -33,6 +33,7 @@
-> > >  #include <linux/init.h>
-> > >  #include <linux/signal.h>
-> > >  #include <linux/memblock.h>
-> > > +#include <linux/context_tracking.h>
-> > >  
-> > >  #include <asm/processor.h>
-> > >  #include <asm/pgtable.h>
-> > > @@ -56,7 +57,6 @@
-> > >  #include <asm/fadump.h>
-> > >  #include <asm/firmware.h>
-> > >  #include <asm/tm.h>
-> > > -#include <asm/context_tracking.h>
-> > >  
-> > >  #ifdef DEBUG
-> > >  #define DBG(fmt...) udbg_printf(fmt)
-> > > @@ -919,13 +919,17 @@ int hash_page(unsigned long ea, unsigned long access, unsigned long trap)
-> > >  	const struct cpumask *tmp;
-> > >  	int rc, user_region = 0, local = 0;
-> > >  	int psize, ssize;
-> > > +	enum ctx_state prev_state;
-> > > +
-> > > +	prev_state = exception_enter();
-> > >  
-> > >  	DBG_LOW("hash_page(ea=%016lx, access=%lx, trap=%lx\n",
-> > >  		ea, access, trap);
-> > >  
-> > >  	if ((ea & ~REGION_MASK) >= PGTABLE_RANGE) {
-> > >  		DBG_LOW(" out of pgtable range !\n");
-> > > - 		return 1;
-> > > +		rc = 1;
-> > > +		goto exit;
-> > >  	}
-> > >  
-> > >  	/* Get region & vsid */
-> > 
-> > This no longer applies on mainline, please send an updated version.
-> 
-> Yes, for current mainline (powerpc tree), only previous five patches
-> could be applied. The dependency of this patch is current in tip tree,
-> and seems would be in for 3.10.
-> 
-> There are some more details in the cover letter (#0):
-> 
-> "I assume these patches would get in through powerpc tree, so I didn't
-> combine the new patch (#6) with the original one (#2). So that if
-> powerpc tree picks these, it could pick the first five patches, and
-> apply patch #6 later when the dependency enters into powerpc tree (maybe
-> on some 3.10-rcs)."
+On 2013年04月09日 17:36, Chen Gang wrote:
+> On 2013年04月09日 09:52, Chen Gang wrote:
+>>>>>
+>>>>>   it looks like a bug.  for me, I prefer to give length check for it.
+>>>>>
+>>>>>   but I am sorry, now, I can not be sure whether it is really a bug.
+>>> It really is.  We don't export any symbols > 128 characters, but if we
+>>> did then kallsyms_expand_symbol() would overflow the buffer handed to
+>>> it.
+>>>
+>>> Your suggestion about an explicit length for kallsyms_expand_symbol() is
+>>> the correct one.
+>>
+>>
 
-And I will send an updated version of this one when I see the dependency
-commits in mainline. 
-
-Thanks, Zhong
-
-> Thanks, Zhong
-> 
-> > cheers
-> > 
-> 
+  after have a test, what you said above is correct.
 
 
+  it is my fault:
+    the scripts/kallsyms.c use KSYM_NAME_LEN (also defined as 128).
+    but this macro is not for symbol name (it is for token name !!).
+    its symbol max length is 500 (use hard code number, no comments)
+
+  if symbol name length is not less than 128, kernel need check it.
+    I made a driver to call function kallsyms_on_each_symbol.
+    also add a patch to check the length in kernel.
+    it really has effect.
+      System.map still has the full symbol name when len >= 128.
+      kallsyms_on_each_symbol truncates the name to 127, when len >= 128
+
+  I will send the related patch.
+    can I mark you as Signed-of-by too (you find and be sure about it) ?
+
+
+  :-)
+
+
+gchen.
+
+> 
+>   oh, sorry, after read the related source code, I think:
+> 
+>     for kernel/kallsyms.c, it is no issue
+>       (although I still also prefer to give a length checking).
+> 
+>     the reason is:
+>       scripts/kallsyms.c does not check the 128 limitation.
+>       if compiler limits it with 128 automatically, we will have no issue.
+>       else the scripts/kallsyms will cause issue.
+> 
+>     so whether what happens, kernel/kallsyms.c will not cause issue.
+> 
+>     :-)
+> 
+> 
+>   the related patch for scripts/kallsyms.c is below, please check, thanks.
+>     (now, it is just for a reference, after have a test, I will send).
+> 
+> 
+> -----------------------patch begin--------------------------------------
+> 
+> diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
+> index 487ac6f..9ec6d1f 100644
+> --- a/scripts/kallsyms.c
+> +++ b/scripts/kallsyms.c
+> @@ -145,13 +145,15 @@ static int read_symbol(FILE *in, struct sym_entry *s)
+>  	/* include the type field in the symbol name, so that it gets
+>  	 * compressed together */
+>  	s->len = strlen(str) + 1;
+> +	if (s->len > KSYM_NAME_LEN)
+> +		s->len = KSYM_NAME_LEN;
+>  	s->sym = malloc(s->len + 1);
+>  	if (!s->sym) {
+>  		fprintf(stderr, "kallsyms failure: "
+>  			"unable to allocate required amount of memory\n");
+>  		exit(EXIT_FAILURE);
+>  	}
+> -	strcpy((char *)s->sym + 1, str);
+> +	strlcpy((char *)s->sym + 1, str, KSYM_NAME_LEN);
+>  	s->sym[0] = stype;
+>  
+>  	return 0;
+> @@ -290,7 +292,7 @@ static void write_src(void)
+>  	unsigned int i, k, off;
+>  	unsigned int best_idx[256];
+>  	unsigned int *markers;
+> -	char buf[KSYM_NAME_LEN];
+> +	char buf[KSYM_NAME_LEN + 1];
+>  
+>  	printf("#include <asm/types.h>\n");
+>  	printf("#if BITS_PER_LONG == 64\n");
+> 
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
