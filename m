@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937192Ab3DJXOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:14:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56119 "EHLO
+	id S937202Ab3DJXOt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:14:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56105 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937176Ab3DJWrU (ORCPT
+	with ESMTP id S937161Ab3DJWrS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:20 -0400
+	Wed, 10 Apr 2013 18:47:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shan Hai <shan.hai@windriver.com>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 25/64] libata: Set max sector to 65535 for Slimtype DVD A DS8A8SH drive
-Date: Wed, 10 Apr 2013 15:46:22 -0700
-Message-Id: <20130410224338.969971806@linuxfoundation.org>
+        Matthew Whitehead <mwhitehe@redhat.com>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: [ 22/64] EISA/PCI: Fix bus res reference
+Date: Wed, 10 Apr 2013 15:46:19 -0700
+Message-Id: <20130410224338.272629766@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -26,103 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Yinghai Lu <yinghai@kernel.org>
 
-commit a32450e127fc6e5ca6d958ceb3cfea4d30a00846 upstream.
+commit 2cfda637e29ce9e3df31b59f64516b2e571cc985 upstream.
 
-The Slimtype DVD A  DS8A8SH drive locks up when max sector is smaller than
-65535, and the blow backtrace is observed on locking up:
+Matthew found that 3.8.3 is having problems with an old (ancient)
+PCI-to-EISA bridge, the Intel 82375. It worked with the 3.2 kernel.
+He identified the 82375, but doesn't assign the struct resource *res
+pointer inside the struct eisa_root_device, and panics.
 
-INFO: task flush-8:32:1130 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-flush-8:32      D ffffffff8180cf60     0  1130      2 0x00000000
- ffff880273aef618 0000000000000046 0000000000000005 ffff880273aee000
- ffff880273aee000 ffff880273aeffd8 ffff880273aee010 ffff880273aee000
- ffff880273aeffd8 ffff880273aee000 ffff88026e842ea0 ffff880274a10000
-Call Trace:
- [<ffffffff8168fc2d>] schedule+0x5d/0x70
- [<ffffffff8168fccc>] io_schedule+0x8c/0xd0
- [<ffffffff81324461>] get_request+0x731/0x7d0
- [<ffffffff8133dc60>] ? cfq_allow_merge+0x50/0x90
- [<ffffffff81083aa0>] ? wake_up_bit+0x40/0x40
- [<ffffffff81320443>] ? bio_attempt_back_merge+0x33/0x110
- [<ffffffff813248ea>] blk_queue_bio+0x23a/0x3f0
- [<ffffffff81322176>] generic_make_request+0xc6/0x120
- [<ffffffff81322308>] submit_bio+0x138/0x160
- [<ffffffff811d7596>] ? bio_alloc_bioset+0x96/0x120
- [<ffffffff811d1f61>] submit_bh+0x1f1/0x220
- [<ffffffff811d48b8>] __block_write_full_page+0x228/0x340
- [<ffffffff811d3650>] ? attach_nobh_buffers+0xc0/0xc0
- [<ffffffff811d8960>] ? I_BDEV+0x10/0x10
- [<ffffffff811d8960>] ? I_BDEV+0x10/0x10
- [<ffffffff811d4ab6>] block_write_full_page_endio+0xe6/0x100
- [<ffffffff811d4ae5>] block_write_full_page+0x15/0x20
- [<ffffffff811d9268>] blkdev_writepage+0x18/0x20
- [<ffffffff81142527>] __writepage+0x17/0x40
- [<ffffffff811438ba>] write_cache_pages+0x34a/0x4a0
- [<ffffffff81142510>] ? set_page_dirty+0x70/0x70
- [<ffffffff81143a61>] generic_writepages+0x51/0x80
- [<ffffffff81143ab0>] do_writepages+0x20/0x50
- [<ffffffff811c9ed6>] __writeback_single_inode+0xa6/0x2b0
- [<ffffffff811ca861>] writeback_sb_inodes+0x311/0x4d0
- [<ffffffff811caaa6>] __writeback_inodes_wb+0x86/0xd0
- [<ffffffff811cad43>] wb_writeback+0x1a3/0x330
- [<ffffffff816916cf>] ? _raw_spin_lock_irqsave+0x3f/0x50
- [<ffffffff811b8362>] ? get_nr_inodes+0x52/0x70
- [<ffffffff811cb0ac>] wb_do_writeback+0x1dc/0x260
- [<ffffffff8168dd34>] ? schedule_timeout+0x204/0x240
- [<ffffffff811cb232>] bdi_writeback_thread+0x102/0x2b0
- [<ffffffff811cb130>] ? wb_do_writeback+0x260/0x260
- [<ffffffff81083550>] kthread+0xc0/0xd0
- [<ffffffff81083490>] ? kthread_worker_fn+0x1b0/0x1b0
- [<ffffffff8169a3ec>] ret_from_fork+0x7c/0xb0
- [<ffffffff81083490>] ? kthread_worker_fn+0x1b0/0x1b0
+pci_eisa_init() was using bus->resource[] directly instead of
+pci_bus_resource_n().  The bus->resource[] array is a PCI-internal
+implementation detail, and after commit 45ca9e97 (PCI: add helpers for
+building PCI bus resource lists) and commit 0efd5aab (PCI: add struct
+pci_host_bridge_window with CPU/bus address offset), bus->resource[] is not
+used for PCI root buses any more.
 
- The above trace was triggered by
-   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
+The 82375 is a subtractive-decode PCI device, so handle it the same
+way we handle PCI-PCI bridges in subtractive-decode mode in
+pci_read_bridge_bases().
 
- It was previously working by accident, since another bug introduced
- by 4dce8ba94c7 (libata: Use 'bool' return value for ata_id_XXX) caused
- all drives to use maxsect=65535.
-
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+[bhelgaas: changelog]
+Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
+Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    4 ++++
- include/linux/libata.h    |    1 +
- 2 files changed, 5 insertions(+)
+ drivers/eisa/pci_eisa.c |   28 +++++++++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -2437,6 +2437,9 @@ int ata_dev_configure(struct ata_device
- 		dev->max_sectors = min_t(unsigned int, ATA_MAX_SECTORS_128,
- 					 dev->max_sectors);
+--- a/drivers/eisa/pci_eisa.c
++++ b/drivers/eisa/pci_eisa.c
+@@ -21,7 +21,8 @@ static struct eisa_root_device pci_eisa_
  
-+	if (dev->horkage & ATA_HORKAGE_MAX_SEC_LBA48)
-+		dev->max_sectors = ATA_MAX_SECTORS_LBA48;
+ static int __init pci_eisa_init(struct pci_dev *pdev)
+ {
+-	int rc;
++	int rc, i;
++	struct resource *res, *bus_res = NULL;
+ 
+ 	if ((rc = pci_enable_device (pdev))) {
+ 		printk (KERN_ERR "pci_eisa : Could not enable device %s\n",
+@@ -29,9 +30,30 @@ static int __init pci_eisa_init(struct p
+ 		return rc;
+ 	}
+ 
++	/*
++	 * The Intel 82375 PCI-EISA bridge is a subtractive-decode PCI
++	 * device, so the resources available on EISA are the same as those
++	 * available on the 82375 bus.  This works the same as a PCI-PCI
++	 * bridge in subtractive-decode mode (see pci_read_bridge_bases()).
++	 * We assume other PCI-EISA bridges are similar.
++	 *
++	 * eisa_root_register() can only deal with a single io port resource,
++	*  so we use the first valid io port resource.
++	 */
++	pci_bus_for_each_resource(pdev->bus, res, i)
++		if (res && (res->flags & IORESOURCE_IO)) {
++			bus_res = res;
++			break;
++		}
 +
- 	if (ap->ops->dev_config)
- 		ap->ops->dev_config(dev);
- 
-@@ -4098,6 +4101,7 @@ static const struct ata_blacklist_entry
- 	/* Weird ATAPI devices */
- 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
- 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
-+	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
- 
- 	/* Devices we expect to fail diagnostics */
- 
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -398,6 +398,7 @@ enum {
- 	ATA_HORKAGE_NOSETXFER	= (1 << 14),	/* skip SETXFER, SATA only */
- 	ATA_HORKAGE_BROKEN_FPDMA_AA	= (1 << 15),	/* skip AA */
- 	ATA_HORKAGE_DUMP_ID	= (1 << 16),	/* dump IDENTIFY data */
-+	ATA_HORKAGE_MAX_SEC_LBA48 = (1 << 17),	/* Set max sects to 65535 */
- 
- 	 /* DMA mask for user DMA control: User visible values; DO NOT
- 	    renumber */
++	if (!bus_res) {
++		dev_err(&pdev->dev, "No resources available\n");
++		return -1;
++	}
++
+ 	pci_eisa_root.dev              = &pdev->dev;
+-	pci_eisa_root.res	       = pdev->bus->resource[0];
+-	pci_eisa_root.bus_base_addr    = pdev->bus->resource[0]->start;
++	pci_eisa_root.res	       = bus_res;
++	pci_eisa_root.bus_base_addr    = bus_res->start;
+ 	pci_eisa_root.slots	       = EISA_MAX_SLOTS;
+ 	pci_eisa_root.dma_mask         = pdev->dma_mask;
+ 	dev_set_drvdata(pci_eisa_root.dev, &pci_eisa_root);
 
 
