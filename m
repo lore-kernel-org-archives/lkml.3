@@ -1,59 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935737Ab3DJTlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 15:41:15 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:40949 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934226Ab3DJTlM (ORCPT
+	id S935426Ab3DJTll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 15:41:41 -0400
+Received: from utopia.booyaka.com ([74.50.51.50]:46620 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934794Ab3DJTlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 15:41:12 -0400
+	Wed, 10 Apr 2013 15:41:39 -0400
+Date: Wed, 10 Apr 2013 19:41:38 +0000 (UTC)
+From: Paul Walmsley <paul@pwsan.com>
+To: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+cc: Kishon Vijay Abraham I <kishon@ti.com>, rnayak@ti.com, b-cousson@ti.com,
+        tony@atomide.com, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        Keerthy <j-keerthy@ti.com>
+Subject: [PATCH v2] ARM: OMAP4: hwmod data: make 'ocp2scp_usb_phy_phy_48m"
+ as the main clock
+In-Reply-To: <alpine.DEB.2.00.1304092058450.26840@utopia.booyaka.com>
+Message-ID: <alpine.DEB.2.00.1304101935450.25123@utopia.booyaka.com>
+References: <1365496101-7829-1-git-send-email-kishon@ti.com> <alpine.DEB.2.00.1304092058450.26840@utopia.booyaka.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1365622791.4235.38.camel@jlt4.sipsolutions.net>
-References: <1365593728-5720-1-git-send-email-mcgrof@do-not-panic.com>
- <1365593728-5720-7-git-send-email-mcgrof@do-not-panic.com>
- <1365600139.4235.4.camel@jlt4.sipsolutions.net> <CAB=NE6UpP-X1NCTNRnoSdv_bk3ioZdg5bO1zz0U0dqeWVxZdLw@mail.gmail.com>
- <1365614413.4235.29.camel@jlt4.sipsolutions.net> <CAB=NE6VAfAvjRs0uZ=jpMjfP5Dz-zEHu3N7t8AUAofZAggrEEQ@mail.gmail.com>
- <1365618018.4235.35.camel@jlt4.sipsolutions.net> <CAB=NE6VKT11k95Szi4NmigKCgMJ1XJoU3+rACbJpnWwUpCC1EA@mail.gmail.com>
- <1365622074.4235.37.camel@jlt4.sipsolutions.net> <CAB=NE6W8wZbwGiCCq2n2LObNreWhxd-uFU7CrX5yJw2Uik9hAg@mail.gmail.com>
- <1365622791.4235.38.camel@jlt4.sipsolutions.net>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Wed, 10 Apr 2013 12:40:50 -0700
-X-Google-Sender-Auth: 9dJURgdHvPnjLYCrN5gKQjtV0f0
-Message-ID: <CAB=NE6VzjradFaesB7pTFYC8E=fXOWfs7X6nxBpnKAqGCTHNpg@mail.gmail.com>
-Subject: Re: [PATCH 06/18] compat: backport ASYNC_DOMAIN_EXCLUSIVE()
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        Dan Williams <dcbw@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: MULTIPART/MIXED; BOUNDARY="843723315-1840391867-1365622592=:25123"
+Content-ID: <alpine.DEB.2.00.1304101937000.25123@utopia.booyaka.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 12:39 PM, Johannes Berg
-<johannes@sipsolutions.net> wrote:
-> On Wed, 2013-04-10 at 12:32 -0700, Luis R. Rodriguez wrote:
->
->> >> Oh I agree don't get me wrong, however porting kernel/async.c seems
->> >> like a rather separate effort worth considering. As-is though I have
->> >> not seen any negative impact though to keep older subsystems from
->> >> compiling, ie its a no-op for older kernels as I see it.
->> >
->> > I guess that's what I don't understand -- I don't see usages of
->> > ASYNC_DOMAIN_EXCLUSIVE in any header files, and in e.g. regulator/core.c
->> > you'd also need the functions async_schedule_domain() etc. So where does
->> > this help even compiling?
->>
->> You know what, sorry this was left over from when I tried to backport
->> the regulatory to the core of compat, and since I decided to not even
->> go there given that it relies on init sections on the vmlinux we can
->> safely discard this patch (although what I said still hold, just not
->> needed).
->
-> Ok. Yeah after looking at the users I actually do agree this won't
-> really hurt, but it seemed it doesn't help anything at all hence my
-> confusion... :)
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Yea its fine to drop for now.
+--843723315-1840391867-1365622592=:25123
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-ID: <alpine.DEB.2.00.1304101937001.25123@utopia.booyaka.com>
 
-  Luis
+From: Kishon Vijay Abraham I <kishon@ti.com>
+
+Commit 92702df3570e ("ARM: OMAP4: PM: fix PM regression introduced by recen=
+t
+clock cleanup") makes the 'ocp2scp_usb_phy_phy_48m' as optional
+functional clock causing regression in MUSB. But this 48MHz clock is a
+mandatory clock for usb phy attached to ocp2scp and hence made as the main
+clock for ocp2scp.
+
+Cc: Keerthy <j-keerthy@ti.com>
+Cc: Beno=EEt Cousson <b-cousson@ti.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+[paul@pwsan.com: add comment to the hwmod data to try to prevent any
+ future mistakes here]
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+---
+
+Nothing further received from Kishon per the request:
+
+http://marc.info/?l=3Dlinux-omap&m=3D136554118302342&w=3D2
+
+Since the deadline for v3.9-rc fixes is quite close, have added the=20
+comment myself, and have confirmed that this patch does not cause=20
+additional PM regressions on 4460 Panda-ES in the tests here.
+
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c b/arch/arm/mach-oma=
+p2/omap_hwmod_44xx_data.c
+index 9e05765..eaba9dc 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_44xx_data.c
+@@ -2714,16 +2714,22 @@ static struct omap_ocp2scp_dev ocp2scp_dev_attr[] =
+=3D {
+ =09{ }
+ };
+=20
+-static struct omap_hwmod_opt_clk ocp2scp_usb_phy_opt_clks[] =3D {
+-=09{ .role =3D "48mhz", .clk =3D "ocp2scp_usb_phy_phy_48m" },
+-};
+-
+ /* ocp2scp_usb_phy */
+ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwmod =3D {
+ =09.name=09=09=3D "ocp2scp_usb_phy",
+ =09.class=09=09=3D &omap44xx_ocp2scp_hwmod_class,
+ =09.clkdm_name=09=3D "l3_init_clkdm",
+-=09.main_clk=09=3D "func_48m_fclk",
++=09/*
++=09 * ocp2scp_usb_phy_phy_48m is provided by the OMAP4 PRCM IP
++=09 * block as an "optional clock," and normally should never be
++=09 * specified as the main_clk for an OMAP IP block.  However it
++=09 * turns out that this clock is actually the main clock for
++=09 * the ocp2scp_usb_phy IP block:
++=09 * http://lists.infradead.org/pipermail/linux-arm-kernel/2012-September=
+/119943.html
++=09 * So listing ocp2scp_usb_phy_phy_48m as a main_clk here seems
++=09 * to be the best workaround.
++=09 */
++=09.main_clk=09=3D "ocp2scp_usb_phy_phy_48m",
+ =09.prcm =3D {
+ =09=09.omap4 =3D {
+ =09=09=09.clkctrl_offs =3D OMAP4_CM_L3INIT_USBPHYOCP2SCP_CLKCTRL_OFFSET,
+@@ -2732,8 +2738,6 @@ static struct omap_hwmod omap44xx_ocp2scp_usb_phy_hwm=
+od =3D {
+ =09=09},
+ =09},
+ =09.dev_attr=09=3D ocp2scp_dev_attr,
+-=09.opt_clks=09=3D ocp2scp_usb_phy_opt_clks,
+-=09.opt_clks_cnt=09=3D ARRAY_SIZE(ocp2scp_usb_phy_opt_clks),
+ };
+=20
+ /*
+--=20
+1.7.10.4
+--843723315-1840391867-1365622592=:25123--
