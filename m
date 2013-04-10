@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934585Ab3DJAgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 20:36:04 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44875 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762270Ab3DJAgD (ORCPT
+	id S964949Ab3DJAg3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 20:36:29 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:64811 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932165Ab3DJAg1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 20:36:03 -0400
-X-AuditID: 9c930179-b7b2aae000000518-2c-5164b3f1ed0b
-Message-ID: <5164B3F0.2030506@lge.com>
-Date: Wed, 10 Apr 2013 09:36:00 +0900
-From: Namhyung Kim <namhyung.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] tracing: Check cpu file on tracing_release()
-References: <1365553093-10180-1-git-send-email-namhyung@kernel.org>  <1365553093-10180-3-git-send-email-namhyung@kernel.org> <1365553863.25498.84.camel@gandalf.local.home>
-In-Reply-To: <1365553863.25498.84.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 9 Apr 2013 20:36:27 -0400
+From: Derek Basehore <dbasehore@chromium.org>
+To: rtc-linux@googlegroups.com
+Cc: Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        Derek Basehore <dbasehore@chromium.org>
+Subject: [PATCH] Don't disable hpet emulation on suspend
+Date: Tue,  9 Apr 2013 17:36:13 -0700
+Message-Id: <1365554173-24475-1-git-send-email-dbasehore@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+There's a bug where rtc alarms are ignored after the rtc cmos suspends but
+before the system finishes suspend. Since hpet emulation is disabled and it
+still handles the interrupts, a wake event is never registered which is done
+from the rtc layer. This reverts an earlier commit which disables hpet
+emulation. To fix the problem mentioned in that commit, the hpet_rtc_timer_init
+function is called directly on resume.
 
-2013-04-10 오전 9:31, Steven Rostedt 쓴 글:
-> On Wed, 2013-04-10 at 09:18 +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->>
->> It looks like tracing_release() lacks checking iter->cpu_file so that
->> closing a per_cpu trace file would attempt to close all cpu buffers.
->>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>   kernel/trace/trace.c | 8 +++++++-
->>   1 file changed, 7 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
->> index 7270460cfe3c..0beddcb80509 100644
->> --- a/kernel/trace/trace.c
->> +++ b/kernel/trace/trace.c
->> @@ -2883,7 +2883,13 @@ static int tracing_release(struct inode *inode, struct file *file)
->>   	WARN_ON(!tr->ref);
->>   	tr->ref--;
->>
->> -	for_each_tracing_cpu(cpu) {
->> +	if (iter->cpu_file == RING_BUFFER_ALL_CPUS) {
->> +		for_each_tracing_cpu(cpu) {
->> +			if (iter->buffer_iter[cpu])
->
-> Only the cpu that is assigned gets buffer_iter[cpu] set. The other
-> buffer_iter[cpus] will simply be ignored.
+This reverts commit d1b2efa83fbf7b33919238fa29ef6ab935820103.
 
-You meant iter->cpu_file != RING_BUFFER_ALL_CPUS case, right?
+Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+---
+ drivers/rtc/rtc-cmos.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-So why bother trying to check other cpus then?
-
-Thanks,
-Namhyung
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index af97c94..cc5bea9 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -804,9 +804,8 @@ static int cmos_suspend(struct device *dev)
+ 			mask = RTC_IRQMASK;
+ 		tmp &= ~mask;
+ 		CMOS_WRITE(tmp, RTC_CONTROL);
++		hpet_mask_rtc_irq_bit(mask);
+ 
+-		/* shut down hpet emulation - we don't need it for alarm */
+-		hpet_mask_rtc_irq_bit(RTC_PIE|RTC_AIE|RTC_UIE);
+ 		cmos_checkintr(cmos, tmp);
+ 	}
+ 	spin_unlock_irq(&rtc_lock);
+@@ -870,6 +869,7 @@ static int cmos_resume(struct device *dev)
+ 			rtc_update_irq(cmos->rtc, 1, mask);
+ 			tmp &= ~RTC_AIE;
+ 			hpet_mask_rtc_irq_bit(RTC_AIE);
++			hpet_rtc_timer_init();
+ 		} while (mask & RTC_AIE);
+ 		spin_unlock_irq(&rtc_lock);
+ 	}
+-- 
+1.8.1.3
 
