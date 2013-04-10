@@ -1,96 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936740Ab3DJUW5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 16:22:57 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52738 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936176Ab3DJUW4 (ORCPT
+	id S936791Ab3DJUXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 16:23:09 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:51907 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936176Ab3DJUXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 16:22:56 -0400
-Message-ID: <5165CA11.3090709@ti.com>
-Date: Wed, 10 Apr 2013 16:22:41 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Wed, 10 Apr 2013 16:23:04 -0400
+Message-ID: <5165CA22.6080808@gmail.com>
+Date: Wed, 10 Apr 2013 16:22:58 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: Andrew Bresticker <abrestic@chromium.org>,
-        Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] thermal: step_wise: set throttle target within thermal
- instance limits
-References: <1365544787-22940-1-git-send-email-abrestic@chromium.org> <1365577575.2183.70.camel@rzhang1-mobl4>
-In-Reply-To: <1365577575.2183.70.camel@rzhang1-mobl4>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
+        John Stultz <john.stultz@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Neil Brown <neilb@suse.de>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jason Evans <je@fb.com>, sanjay@google.com,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>, kosaki.motohiro@gmail.com
+Subject: Re: [RFC v7 00/11] Support vrange for anonymous page
+References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1363073915-25000-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-04-2013 03:06, Zhang Rui wrote:
-> On Tue, 2013-04-09 at 14:59 -0700, Andrew Bresticker wrote:
->> When selecting a target cooling state in get_target_state(), make sure
->> that the state is at least as high as the minimum when the temperature
->> is rising and at least as low as the maximum when the temperature is
->> falling.  This is necessary because, in the THREAML_TREND_RAISING and
->> THERMAL_TREND_DROPPING cases, the current state may only be incremented
->> or decremented by one even if it is outside the bounds of the thermal
->> instance.  This might occur, for example, if the CPU is heating up
->> and hits a thermal trip point for the first time when it's frequency
->> is much higher than the range specified by the thermal instance
->> corresponding to the trip point.
->>
->> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
->
-> applied.
+(3/12/13 3:38 AM), Minchan Kim wrote:
+> First of all, let's define the term.
+> From now on, I'd like to call it as vrange(a.k.a volatile range)
+> for anonymous page. If you have a better name in mind, please suggest.
+> 
+> This version is still *RFC* because it's just quick prototype so
+> it doesn't support THP/HugeTLB/KSM and even couldn't build on !x86.
+> Before further sorting out issues, I'd like to post current direction
+> and discuss it. Of course, I'd like to extend this discussion in
+> comming LSF/MM.
+> 
+> In this version, I changed lots of thing, expecially removed vma-based
+> approach because it needs write-side lock for mmap_sem, which will drop
+> performance in mutli-threaded big SMP system, KOSAKI pointed out.
+> And vma-based approach is hard to meet requirement of new system call by
+> John Stultz's suggested semantic for consistent purged handling.
+> (http://linux-kernel.2935.n7.nabble.com/RFC-v5-0-8-Support-volatile-for-anonymous-range-tt575773.html#none)
+> 
+> I tested this patchset with modified jemalloc allocator which was
+> leaded by Jason Evans(jemalloc author) who was interest in this feature
+> and was happy to port his allocator to use new system call.
+> Super Thanks Jason!
+> 
+> The benchmark for test is ebizzy. It have been used for testing the
+> allocator performance so it's good for me. Again, thanks for recommending
+> the benchmark, Jason.
+> (http://people.freebsd.org/~kris/scaling/ebizzy.html)
+> 
+> The result is good on my machine (12 CPU, 1.2GHz, DRAM 2G)
+> 
+> 	ebizzy -S 20
+> 
+> jemalloc-vanilla: 52389 records/sec
+> jemalloc-vrange: 203414 records/sec
+> 
+> 	ebizzy -S 20 with background memory pressure
+> 
+> jemalloc-vanilla: 40746 records/sec
+> jemalloc-vrange: 174910 records/sec
+> 
+> And it's much improved on KVM virtual machine.
+> 
+> This patchset is based on v3.9-rc2
+> 
+> - What's the sys_vrange(addr, length, mode, behavior)?
+> 
+>   It's a hint that user deliver to kernel so kernel can *discard*
+>   pages in a range anytime. mode is one of VRANGE_VOLATILE and
+>   VRANGE_NOVOLATILE. VRANGE_NOVOLATILE is memory pin operation so
+>   kernel coudn't discard any pages any more while VRANGE_VOLATILE
+>   is memory unpin opeartion so kernel can discard pages in vrange
+>   anytime. At a moment, behavior is one of VRANGE_FULL and VRANGE
+>   PARTIAL. VRANGE_FULL tell kernel that once kernel decide to
+>   discard page in a vrange, please, discard all of pages in a
+>   vrange selected by victim vrange. VRANGE_PARTIAL tell kernel
+>   that please discard of some pages in a vrange. But now I didn't
+>   implemented VRANGE_PARTIAL handling yet.
+> 
+> - What happens if user access page(ie, virtual address) discarded
+>   by kernel?
+> 
+>   The user can encounter SIGBUS.
+> 
+> - What should user do for avoding SIGBUS?
+>   He should call vrange(addr, length, VRANGE_NOVOLATILE, mode) before
+>   accessing the range which was called
+>   vrange(addr, length, VRANGE_VOLATILE, mode)
+> 
+> - What happens if user access page(ie, virtual address) doesn't
+>   discarded by kernel?
+> 
+>   The user can see vaild data which was there before calling
+> vrange(., VRANGE_VOLATILE) without page fault.
+> 
+> - What's different with madvise(DONTNEED)?
+> 
+>   System call semantic
+> 
+>   DONTNEED makes sure user always can see zero-fill pages after
+>   he calls madvise while vrange can see data or encounter SIGBUS.
 
-Rui,
+For replacing DONTNEED, user want to zero-fill pages like DONTNEED
+instead of SIGBUS. So, new flag option would be nice.
 
-Can you please add my:
+I played a bit this patch. The result looks really promissing.
+(i.e. 20x faster)
 
-Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+My machine have 24cpus, 8GB ram, kvm guest. I guess current DONTNEED
+implementation doesn't fit kvm at all.
 
 
-Thanks,
->
-> thanks,
-> rui
->> ---
->>   drivers/thermal/step_wise.c | 10 ++++++++--
->>   1 file changed, 8 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
->> index 407cde3..ca4f79f 100644
->> --- a/drivers/thermal/step_wise.c
->> +++ b/drivers/thermal/step_wise.c
->> @@ -59,9 +59,12 @@ static unsigned long get_target_state(struct thermal_instance *instance,
->>
->>   	switch (trend) {
->>   	case THERMAL_TREND_RAISING:
->> -		if (throttle)
->> +		if (throttle) {
->>   			cur_state = cur_state < instance->upper ?
->>   				    (cur_state + 1) : instance->upper;
->> +			if (cur_state < instance->lower)
->> +				cur_state = instance->lower;
->> +		}
->>   		break;
->>   	case THERMAL_TREND_RAISE_FULL:
->>   		if (throttle)
->> @@ -71,8 +74,11 @@ static unsigned long get_target_state(struct thermal_instance *instance,
->>   		if (cur_state == instance->lower) {
->>   			if (!throttle)
->>   				cur_state = -1;
->> -		} else
->> +		} else {
->>   			cur_state -= 1;
->> +			if (cur_state > instance->upper)
->> +				cur_state = instance->upper;
->> +		}
->>   		break;
->>   	case THERMAL_TREND_DROP_FULL:
->>   		if (cur_state == instance->lower) {
->
->
->
->
+# of     # of   # of
+thread   iter   iter (patched glibc)
+----------------------------------
+  1      438    10740
+  2      842    20916
+  4      987    32534
+  8      717    15155
+ 12      714    14109
+ 16      708    13457
+ 20      720    13742
+ 24      727    13642
+ 28      715    13328
+ 32      709    13096
+ 36      705    13661
+ 40      708    13634
+ 44      707    13367
+ 48      714    13377
+
+
+---------libc patch (just dirty hack) ----------------------
+
+diff --git a/malloc/arena.c b/malloc/arena.c
+index 12a48ad..da04f67 100644
+--- a/malloc/arena.c
++++ b/malloc/arena.c
+@@ -365,6 +365,8 @@ extern struct dl_open_hook *_dl_open_hook;
+ libc_hidden_proto (_dl_open_hook);
+ #endif
+
++int vrange_enabled = 0;
++
+ static void
+ ptmalloc_init (void)
+ {
+@@ -457,6 +459,18 @@ ptmalloc_init (void)
+     if (check_action != 0)
+       __malloc_check_init();
+   }
++
++  {
++    char *vrange = getenv("MALLOC_VRANGE");
++    if (vrange) {
++      int val = atoi(vrange);
++      if (val) {
++       printf("glibc: vrange enabled\n");
++       vrange_enabled = !!val;
++      }
++    }
++  }
++
+   void (*hook) (void) = force_reg (__malloc_initialize_hook);
+   if (hook != NULL)
+     (*hook)();
+@@ -628,9 +642,14 @@ shrink_heap(heap_info *h, long diff)
+        return -2;
+       h->mprotect_size = new_size;
+     }
+-  else
+-    __madvise ((char *)h + new_size, diff, MADV_DONTNEED);
++  else {
++    if (vrange_enabled) {
++      syscall(314, (char *)h + new_size, diff, 0, 1);
++    } else {
++      __madvise ((char *)h + new_size, diff, MADV_DONTNEED);
++    }
+   /*fprintf(stderr, "shrink %p %08lx\n", h, new_size);*/
++  }
+
+   h->size = new_size;
+   return 0;
+diff --git a/malloc/malloc.c b/malloc/malloc.c
+index 70b9329..3782244 100644
+--- a/malloc/malloc.c
++++ b/malloc/malloc.c
+@@ -4403,6 +4403,7 @@ _int_pvalloc(mstate av, size_t bytes)
+ /*
+   ------------------------------ malloc_trim ------------------------------
+ */
++extern int vrange_enabled;
+
+ static int mtrim(mstate av, size_t pad)
+ {
+@@ -4443,7 +4444,12 @@ static int mtrim(mstate av, size_t pad)
+                       content.  */
+                    memset (paligned_mem, 0x89, size & ~psm1);
+ #endif
+-                   __madvise (paligned_mem, size & ~psm1, MADV_DONTNEED);
++
++                   if (vrange_enabled) {
++                     syscall(314, paligned_mem, size & ~psm1, 0, 1);
++                   } else {
++                     __madvise (paligned_mem, size & ~psm1, MADV_DONTNEED);
++                   }
+
+                    result = 1;
+                  }
+(END)
+
+
+
+
+
 
