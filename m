@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936526Ab3DJXNj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:13:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56134 "EHLO
+	id S936891Ab3DJXON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:14:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56122 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937192Ab3DJWrW (ORCPT
+	with ESMTP id S937179Ab3DJWrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:22 -0400
+	Wed, 10 Apr 2013 18:47:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jay Estabrook <jay.estabrook@gmail.com>,
-        Matt Turner <mattst88@gmail.com>, Michael Cree <mcree@orcon.net.nz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 28/64] alpha: Add irongate_io to PCI bus resources
-Date: Wed, 10 Apr 2013 15:46:25 -0700
-Message-Id: <20130410224339.636056728@linuxfoundation.org>
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 26/64] libata: fix DMA to stack in reading devslp_timing parameters
+Date: Wed, 10 Apr 2013 15:46:23 -0700
+Message-Id: <20130410224339.214970921@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -28,43 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jay Estabrook <jay.estabrook@gmail.com>
+From: David Woodhouse <dwmw2@infradead.org>
 
-commit aa8b4be3ac049c8b1df2a87e4d1d902ccfc1f7a9 upstream.
+commit 8e725c7f8a60feaa88edacd4dee2c754d5ae7706 upstream.
 
-Fixes a NULL pointer dereference at boot on UP1500.
+Commit 803739d25c2343da6d2f95eebdcbc08bf67097d4 ("[libata] replace
+sata_settings with devslp_timing"), which was also Cc: stable, used a
+stack buffer to receive data from ata_read_log_page(), which triggers
+the following warning:
+ ahci 0000:00:1f.2: DMA-API: device driver maps memory fromstack [addr=ffff880140469948]
 
-Reviewed-and-Tested-by: Matt Turner <mattst88@gmail.com>
-Signed-off-by: Jay Estabrook <jay.estabrook@gmail.com>
-Signed-off-by: Matt Turner <mattst88@gmail.com>
-Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fix this by using ap->sector_buf instead of a stack buffer.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/alpha/kernel/sys_nautilus.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/ata/libata-core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/alpha/kernel/sys_nautilus.c
-+++ b/arch/alpha/kernel/sys_nautilus.c
-@@ -188,6 +188,10 @@ nautilus_machine_check(unsigned long vec
- extern void free_reserved_mem(void *, void *);
- extern void pcibios_claim_one_bus(struct pci_bus *);
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -2329,7 +2329,7 @@ int ata_dev_configure(struct ata_device
+ 		 * from SATA Settings page of Identify Device Data Log.
+ 		 */
+ 		if (ata_id_has_devslp(dev->id)) {
+-			u8 sata_setting[ATA_SECT_SIZE];
++			u8 *sata_setting = ap->sector_buf;
+ 			int i, j;
  
-+static struct resource irongate_io = {
-+	.name	= "Irongate PCI IO",
-+	.flags	= IORESOURCE_IO,
-+};
- static struct resource irongate_mem = {
- 	.name	= "Irongate PCI MEM",
- 	.flags	= IORESOURCE_MEM,
-@@ -209,6 +213,7 @@ nautilus_init_pci(void)
- 
- 	irongate = pci_get_bus_and_slot(0, 0);
- 	bus->self = irongate;
-+	bus->resource[0] = &irongate_io;
- 	bus->resource[1] = &irongate_mem;
- 
- 	pci_bus_size_bridges(bus);
+ 			dev->flags |= ATA_DFLAG_DEVSLP;
 
 
