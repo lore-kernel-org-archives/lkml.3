@@ -1,116 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935141Ab3DJGHs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 02:07:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45344 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934966Ab3DJGHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 02:07:44 -0400
-Message-ID: <516501A0.4000004@ti.com>
-Date: Wed, 10 Apr 2013 11:37:28 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S935411Ab3DJGIk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 02:08:40 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:34042 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934966Ab3DJGIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 02:08:39 -0400
+Message-ID: <51650185.9060905@linux.vnet.ibm.com>
+Date: Wed, 10 Apr 2013 14:07:01 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>, <vaibhav.bedia@ti.com>
-CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: Re: [PATCHv3] driver: serial: prevent UART console idle on suspend
- while using "no_console_suspend"
-References: <1365167733-28083-1-git-send-email-sourav.poddar@ti.com>	<87mwtclvua.fsf@linaro.org> <516463D2.2070008@ti.com> <87obdnh6au.fsf@linaro.org>
-In-Reply-To: <87obdnh6au.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: Alex Shi <alex.shi@intel.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Borislav Petkov <bp@alien8.de>, Paul Turner <pjt@google.com>,
+        Namhyung Kim <namhyung@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        gregkh@linuxfoundation.org,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Len Brown <len.brown@intel.com>, rafael.j.wysocki@intel.com,
+        jkosina@suse.cz, clark.williams@gmail.com,
+        "tony.luck@intel.com" <tony.luck@intel.com>, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com
+Subject: Re: [patch v3 6/8] sched: consider runnable load average in move_tasks
+References: <1364873008-3169-1-git-send-email-alex.shi@intel.com> <1364873008-3169-7-git-send-email-alex.shi@intel.com> <CAKfTPtBoV3KoSHuTnZVrvPdCM+5ckFGXfM11oCB1Le_Zmy1hYQ@mail.gmail.com>
+In-Reply-To: <CAKfTPtBoV3KoSHuTnZVrvPdCM+5ckFGXfM11oCB1Le_Zmy1hYQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041005-0260-0000-0000-000002C89F32
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Wednesday 10 April 2013 12:37 AM, Kevin Hilman wrote:
-> Sourav Poddar<sourav.poddar@ti.com>  writes:
->
->> Hi Kevin,
->> On Friday 05 April 2013 11:10 PM, Kevin Hilman wrote:
->>> Sourav Poddar<sourav.poddar@ti.com>   writes:
->>>
->>>> With dt boot, uart wakeup after suspend is non functional while using
->>>> "no_console_suspend" in the bootargs. With "no_console_suspend" used, we
->>>> should prevent the runtime suspend of the uart port which is getting used
->>>> as an console.
->>>>
->>>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
->>>> Cc: Felipe Balbi<balbi@ti.com>
->>>> Cc: Rajendra nayak<rnayak@ti.com>
->>>> Tested on omap5430evm, omap4430sdp.
->>>>
->>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
->>> Rather than make these special checks inside the driver's runtime PM
->>> callbacks, you should just disable runtime PM (pm_runtime_disable())
->>>
->>> Then, this should be broken into 2 patches.
->>>
->>> 1) serial core: add the '->is_console' flag.  (nit on naming: don't call
->>>      it port_is_console, since the struct is already a uart_port)
->>>
->>> 2) In the OMAP UART driver's ->prepare callback, check the is_console flag
->>>      and pm_runtime_disable() accordingly  (then pm_runtime_enable() in
->>>      the drivers's ->complete callback.
->>>
->>> Kevin
->> I was working on your above suggestions, but realised there is not
->> only console
->> uart which has the requirement of keeping the clocks enabled while going on
->> suspend.
+On 04/09/2013 03:08 PM, Vincent Guittot wrote:
+> On 2 April 2013 05:23, Alex Shi <alex.shi@intel.com> wrote:
+>> Except using runnable load average in background, move_tasks is also
+>> the key functions in load balance. We need consider the runnable load
+>> average in it in order to the apple to apple load comparison.
 >>
->> If you see arch/arm/boot/dts/am33xx.dtsi, there is a ocmcram which has
->> "no_idle_on_suspend" property used.
-> Can you please ask the AM33xx folks how (and why) this is being used?
->
-> I don't see/find a driver for this device in mainline, so without a
-> driver this flag will not be used.
->
-Looping in Vaibhav Bedia for ocmcram..
-
-[Vaibhav]:
-   There is a discussion going on about a cleaner way of handling
-   ti, no_idle_on_suspend" part (as this is a sort of hack). We got a way
-   around for UART ($subject) by making serial core/driver handle this 
-for us.
-   But with this, we will delete codes around "no_idle_on_suspend" flag in
-   omap_device file.
-
-   But, we realised that its not only UART which requires the clocks to 
-be active
-   whie going for suspend. There is a dts entry for ocmcram also.
-
-   As Kevin also pointed out, we don't see a driver for this device in 
-mainline, It would be
-   great if you can explain how its getting used?
-
-   You can find the complete discussion on v3 here:
-      https://lkml.org/lkml/2013/4/5/239
-
->>      ocmcram: ocmcram@40300000 {
->>                          compatible = "ti,am3352-ocmcram";
->>                          reg =<0x40300000 0x10000>;
->>                          ti,hwmods = "ocmcram";
->>                          ti,no_idle_on_suspend;
->>          };
->> This property gets checked in omap_device file and correspondingly
->> od->flags is set.
+>> Signed-off-by: Alex Shi <alex.shi@intel.com>
+>> ---
+>>  kernel/sched/fair.c | 11 ++++++++++-
+>>  1 file changed, 10 insertions(+), 1 deletion(-)
 >>
->> Based on your above inputs, the patches which I cooked up is
->> inlined[1]. Though, the below
->> patches works fine for uart case. The patches will effect ocmcram case
->> and I am inling them
->> "just for discussion".
-> Could you also have a look at Russell's suggestion for getting rid of
-> the 'is_console' flag.
->
-[Kevin]: Yes, will do that.
-> Thanks,
->
-> Kevin
-~Sourav
+>> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>> index 1f9026e..bf4e0d4 100644
+>> --- a/kernel/sched/fair.c
+>> +++ b/kernel/sched/fair.c
+>> @@ -3966,6 +3966,15 @@ static unsigned long task_h_load(struct task_struct *p);
+>>
+>>  static const unsigned int sched_nr_migrate_break = 32;
+>>
+>> +static unsigned long task_h_load_avg(struct task_struct *p)
+>> +{
+>> +       u32 period = p->se.avg.runnable_avg_period;
+>> +       if (!period)
+>> +               return 0;
+>> +
+>> +       return task_h_load(p) * p->se.avg.runnable_avg_sum / period;
+> 
+> How do you ensure that runnable_avg_period and runnable_avg_sum are
+> coherent ? an update of the statistic can occur in the middle of your
+> sequence.
+
+Hi, Vincent
+
+Don't we have the 'rq->lock' to protect it?
+
+move_tasks() was invoked with double locked, for all the se on src and
+dst rq, no update should happen, isn't it?
+
+Regards,
+Michael Wang
+
+> 
+> Vincent
+> 
+>> +}
+>> +
+>>  /*
+>>   * move_tasks tries to move up to imbalance weighted load from busiest to
+>>   * this_rq, as part of a balancing operation within domain "sd".
+>> @@ -4001,7 +4010,7 @@ static int move_tasks(struct lb_env *env)
+>>                 if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
+>>                         goto next;
+>>
+>> -               load = task_h_load(p);
+>> +               load = task_h_load_avg(p);
+>>
+>>                 if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
+>>                         goto next;
+>> --
+>> 1.7.12
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
