@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936894Ab3DJOBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 10:01:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20948 "EHLO mga03.intel.com"
+	id S936808Ab3DJOA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 10:00:59 -0400
+Received: from mga03.intel.com ([143.182.124.21]:55949 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936729Ab3DJN6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S936737Ab3DJN6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Apr 2013 09:58:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,447,1363158000"; 
-   d="scan'208";a="284281393"
+   d="scan'208";a="284281406"
 From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [PATCH 2/9] serial: 8250_dma: Fix RX handling
-Date: Wed, 10 Apr 2013 16:58:25 +0300
-Message-Id: <1365602312-25436-3-git-send-email-heikki.krogerus@linux.intel.com>
+Subject: [PATCH 3/9] serial: 8250_dma: Use dmaengine helpers to get the slave channels
+Date: Wed, 10 Apr 2013 16:58:26 +0300
+Message-Id: <1365602312-25436-4-git-send-email-heikki.krogerus@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1365602312-25436-1-git-send-email-heikki.krogerus@linux.intel.com>
 References: <1365602312-25436-1-git-send-email-heikki.krogerus@linux.intel.com>
@@ -22,56 +22,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Overrun, parity and framing errors should be handled in
-8250_core. This also adds check for the dma_status and exits
-if the channel is not idle.
+The helper functions in dmaengine API allow the drivers to
+request slave channels without the filter parameters. They
+will attempt to extract the needed DMA client information
+from DT or ACPI, but if such information is not available
+the filter parameters can still be used.
 
 Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
- drivers/tty/serial/8250/8250_dma.c |   23 ++++++++++++++++-------
- 1 file changed, 16 insertions(+), 7 deletions(-)
+ drivers/tty/serial/8250/8250_dma.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/tty/serial/8250/8250_dma.c b/drivers/tty/serial/8250/8250_dma.c
-index ce2518d..6643061 100644
+index 6643061..fdb6139e 100644
 --- a/drivers/tty/serial/8250/8250_dma.c
 +++ b/drivers/tty/serial/8250/8250_dma.c
-@@ -101,20 +101,29 @@ int serial8250_rx_dma(struct uart_8250_port *p, unsigned int iir)
- 	struct dma_tx_state		state;
- 	int				dma_status;
+@@ -156,14 +156,18 @@ int serial8250_request_dma(struct uart_8250_port *p)
+ 	dma_cap_set(DMA_SLAVE, mask);
  
--	/*
--	 * If RCVR FIFO trigger level was not reached, complete the transfer and
--	 * let 8250.c copy the remaining data.
--	 */
--	if ((iir & 0x3f) == UART_IIR_RX_TIMEOUT) {
--		dma_status = dmaengine_tx_status(dma->rxchan, dma->rx_cookie,
--						&state);
-+	dma_status = dmaengine_tx_status(dma->rxchan, dma->rx_cookie, &state);
-+
-+	switch (iir & 0x3f) {
-+	case UART_IIR_RLSI:
-+		/* 8250_core handles errors and break interrupts */
-+		return -EIO;
-+	case UART_IIR_RX_TIMEOUT:
-+		/*
-+		 * If RCVR FIFO trigger level was not reached, complete the
-+		 * transfer and let 8250_core copy the remaining data.
-+		 */
- 		if (dma_status == DMA_IN_PROGRESS) {
- 			dmaengine_pause(dma->rxchan);
- 			__dma_rx_complete(p);
- 		}
- 		return -ETIMEDOUT;
-+	default:
-+		break;
- 	}
+ 	/* Get a channel for RX */
+-	dma->rxchan = dma_request_channel(mask, dma->fn, dma->rx_param);
++	dma->rxchan = dma_request_slave_channel_compat(mask,
++						       dma->fn, dma->rx_param,
++						       p->port.dev, "rx");
+ 	if (!dma->rxchan)
+ 		return -ENODEV;
  
-+	if (dma_status)
-+		return 0;
-+
- 	desc = dmaengine_prep_slave_single(dma->rxchan, dma->rx_addr,
- 					   dma->rx_size, DMA_DEV_TO_MEM,
- 					   DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+ 	dmaengine_slave_config(dma->rxchan, &dma->rxconf);
+ 
+ 	/* Get a channel for TX */
+-	dma->txchan = dma_request_channel(mask, dma->fn, dma->tx_param);
++	dma->txchan = dma_request_slave_channel_compat(mask,
++						       dma->fn, dma->tx_param,
++						       p->port.dev, "tx");
+ 	if (!dma->txchan) {
+ 		dma_release_channel(dma->rxchan);
+ 		return -ENODEV;
 -- 
 1.7.10.4
 
