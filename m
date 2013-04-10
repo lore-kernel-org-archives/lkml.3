@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937468Ab3DJXDW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:03:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56500 "EHLO
+	id S937501Ab3DJXDp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:03:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56496 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965084Ab3DJWtw (ORCPT
+	with ESMTP id S965051Ab3DJWtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Apr 2013 18:49:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Mark Jackson <mpfj-list@mimc.co.uk>
-Subject: [ 05/29] UBIFS: make space fixup work in the remount case
-Date: Wed, 10 Apr 2013 15:49:23 -0700
-Message-Id: <20130410224804.628404796@linuxfoundation.org>
+        Gerhard Sittig <gerhard.sittig@ifm.com>,
+        Anatolij Gustschin <agust@denx.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 04/29] spi/mpc512x-psc: optionally keep PSC SS asserted across xfer segmensts
+Date: Wed, 10 Apr 2013 15:49:22 -0700
+Message-Id: <20130410224804.528751852@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224804.061806042@linuxfoundation.org>
 References: <20130410224804.061806042@linuxfoundation.org>
@@ -27,66 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Anatolij Gustschin <agust@denx.de>
 
-commit 67e753ca41782913d805ff4a8a2b0f60b26b7915 upstream.
+commit 1ad849aee5f53353ed88d9cd3d68a51b03a7d44f upstream.
 
-The UBIFS space fixup is a useful feature which allows to fixup the "broken"
-flash space at the time of the first mount. The "broken" space is usually the
-result of using a "dumb" industrial flasher which is not able to skip empty
-NAND pages and just writes all 0xFFs to the empty space, which has grave
-side-effects for UBIFS when UBIFS trise to write useful data to those empty
-pages.
+Some SPI slave devices require asserted chip select signal across
+multiple transfer segments of an SPI message. Currently the driver
+always de-asserts the internal SS signal for every single transfer
+segment of the message and ignores the 'cs_change' flag of the
+transfer description. Disable the internal chip select (SS) only
+if this is needed and indicated by the 'cs_change' flag.
 
-The fix-up feature works roughly like this:
-1. mkfs.ubifs sets the fixup flag in UBIFS superblock when creating the image
-   (see -F option)
-2. when the file-system is mounted for the first time, UBIFS notices the fixup
-   flag and re-writes the entire media atomically, which may take really a lot
-   of time.
-3. UBIFS clears the fixup flag in the superblock.
+Without this change, each partial transfer of a surrounding
+multi-part SPI transaction might erroneously change the SS
+signal, which might prevent slaves from answering the request
+that was sent in a previous transfer segment because the
+transaction could be considered aborted (SS was de-asserted
+before reading the response).
 
-This works fine when the file system is mounted R/W for the very first time.
-But it did not really work in the case when we first mount the file-system R/O,
-and then re-mount R/W. The reason was that we started the fixup procedure too
-late, which we cannot really do because we have to fixup the space before it
-starts being used.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reported-by: Mark Jackson <mpfj-list@mimc.co.uk>
+Reported-by: Gerhard Sittig <gerhard.sittig@ifm.com>
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/super.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/spi/spi-mpc512x-psc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ubifs/super.c
-+++ b/fs/ubifs/super.c
-@@ -1582,6 +1582,12 @@ static int ubifs_remount_rw(struct ubifs
- 	c->remounting_rw = 1;
- 	c->ro_mount = 0;
+--- a/drivers/spi/spi-mpc512x-psc.c
++++ b/drivers/spi/spi-mpc512x-psc.c
+@@ -164,7 +164,7 @@ static int mpc512x_psc_spi_transfer_rxtx
  
-+	if (c->space_fixup) {
-+		err = ubifs_fixup_free_space(c);
-+		if (err)
-+			return err;
-+	}
-+
- 	err = check_free_space(c);
- 	if (err)
- 		goto out;
-@@ -1698,12 +1704,6 @@ static int ubifs_remount_rw(struct ubifs
- 		err = dbg_check_space_info(c);
- 	}
- 
--	if (c->space_fixup) {
--		err = ubifs_fixup_free_space(c);
--		if (err)
--			goto out;
--	}
--
- 	mutex_unlock(&c->umount_mutex);
- 	return err;
- 
+ 		for (i = count; i > 0; i--) {
+ 			data = tx_buf ? *tx_buf++ : 0;
+-			if (len == EOFBYTE)
++			if (len == EOFBYTE && t->cs_change)
+ 				setbits32(&fifo->txcmd, MPC512x_PSC_FIFO_EOF);
+ 			out_8(&fifo->txdata_8, data);
+ 			len--;
 
 
