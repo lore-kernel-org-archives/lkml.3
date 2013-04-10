@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937202Ab3DJXOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:14:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56105 "EHLO
+	id S937147Ab3DJWrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 18:47:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56042 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937161Ab3DJWrS (ORCPT
+	with ESMTP id S937029Ab3DJWrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:18 -0400
+	Wed, 10 Apr 2013 18:47:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Whitehead <mwhitehe@redhat.com>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Subject: [ 22/64] EISA/PCI: Fix bus res reference
-Date: Wed, 10 Apr 2013 15:46:19 -0700
-Message-Id: <20130410224338.272629766@linuxfoundation.org>
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 07/64] HID: magicmouse: fix race between input_register() and probe()
+Date: Wed, 10 Apr 2013 15:46:04 -0700
+Message-Id: <20130410224334.839399776@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -27,81 +27,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-commit 2cfda637e29ce9e3df31b59f64516b2e571cc985 upstream.
+commit f1a9a149abc86903e81dd1b2e720f3f89874384b upstream.
 
-Matthew found that 3.8.3 is having problems with an old (ancient)
-PCI-to-EISA bridge, the Intel 82375. It worked with the 3.2 kernel.
-He identified the 82375, but doesn't assign the struct resource *res
-pointer inside the struct eisa_root_device, and panics.
+Since kernel 3.7, it appears that the input registration occured before
+the end of magicmouse_setup_input(). This is shown by receiving a lot of
+"EV_SYN SYN_REPORT 1" instead of normal "EV_SYN SYN_REPORT 0".
+This value means that the output buffer is full, and the user space
+is loosing events.
 
-pci_eisa_init() was using bus->resource[] directly instead of
-pci_bus_resource_n().  The bus->resource[] array is a PCI-internal
-implementation detail, and after commit 45ca9e97 (PCI: add helpers for
-building PCI bus resource lists) and commit 0efd5aab (PCI: add struct
-pci_host_bridge_window with CPU/bus address offset), bus->resource[] is not
-used for PCI root buses any more.
+Using .input_configured guarantees that the race is not occuring, and that
+the call of "input_set_events_per_packet(input, 60)" is taken into account
+by input_register().
 
-The 82375 is a subtractive-decode PCI device, so handle it the same
-way we handle PCI-PCI bridges in subtractive-decode mode in
-pci_read_bridge_bases().
+Fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=908604
 
-[bhelgaas: changelog]
-Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
-Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reported-and-Tested-By: Clarke Wixon <cwixon@usa.net>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/eisa/pci_eisa.c |   28 +++++++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
+ drivers/hid/hid-magicmouse.c |   29 ++++++++++++++++++++---------
+ 1 file changed, 20 insertions(+), 9 deletions(-)
 
---- a/drivers/eisa/pci_eisa.c
-+++ b/drivers/eisa/pci_eisa.c
-@@ -21,7 +21,8 @@ static struct eisa_root_device pci_eisa_
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -462,6 +462,21 @@ static int magicmouse_input_mapping(stru
+ 	return 0;
+ }
  
- static int __init pci_eisa_init(struct pci_dev *pdev)
++static void magicmouse_input_configured(struct hid_device *hdev,
++		struct hid_input *hi)
++
++{
++	struct magicmouse_sc *msc = hid_get_drvdata(hdev);
++
++	int ret = magicmouse_setup_input(msc->input, hdev);
++	if (ret) {
++		hid_err(hdev, "magicmouse setup input failed (%d)\n", ret);
++		/* clean msc->input to notify probe() of the failure */
++		msc->input = NULL;
++	}
++}
++
++
+ static int magicmouse_probe(struct hid_device *hdev,
+ 	const struct hid_device_id *id)
  {
--	int rc;
-+	int rc, i;
-+	struct resource *res, *bus_res = NULL;
- 
- 	if ((rc = pci_enable_device (pdev))) {
- 		printk (KERN_ERR "pci_eisa : Could not enable device %s\n",
-@@ -29,9 +30,30 @@ static int __init pci_eisa_init(struct p
- 		return rc;
+@@ -493,15 +508,10 @@ static int magicmouse_probe(struct hid_d
+ 		goto err_free;
  	}
  
-+	/*
-+	 * The Intel 82375 PCI-EISA bridge is a subtractive-decode PCI
-+	 * device, so the resources available on EISA are the same as those
-+	 * available on the 82375 bus.  This works the same as a PCI-PCI
-+	 * bridge in subtractive-decode mode (see pci_read_bridge_bases()).
-+	 * We assume other PCI-EISA bridges are similar.
-+	 *
-+	 * eisa_root_register() can only deal with a single io port resource,
-+	*  so we use the first valid io port resource.
-+	 */
-+	pci_bus_for_each_resource(pdev->bus, res, i)
-+		if (res && (res->flags & IORESOURCE_IO)) {
-+			bus_res = res;
-+			break;
-+		}
-+
-+	if (!bus_res) {
-+		dev_err(&pdev->dev, "No resources available\n");
-+		return -1;
-+	}
-+
- 	pci_eisa_root.dev              = &pdev->dev;
--	pci_eisa_root.res	       = pdev->bus->resource[0];
--	pci_eisa_root.bus_base_addr    = pdev->bus->resource[0]->start;
-+	pci_eisa_root.res	       = bus_res;
-+	pci_eisa_root.bus_base_addr    = bus_res->start;
- 	pci_eisa_root.slots	       = EISA_MAX_SLOTS;
- 	pci_eisa_root.dma_mask         = pdev->dma_mask;
- 	dev_set_drvdata(pci_eisa_root.dev, &pci_eisa_root);
+-	/* We do this after hid-input is done parsing reports so that
+-	 * hid-input uses the most natural button and axis IDs.
+-	 */
+-	if (msc->input) {
+-		ret = magicmouse_setup_input(msc->input, hdev);
+-		if (ret) {
+-			hid_err(hdev, "magicmouse setup input failed (%d)\n", ret);
+-			goto err_stop_hw;
+-		}
++	if (!msc->input) {
++		hid_err(hdev, "magicmouse input not registered\n");
++		ret = -ENOMEM;
++		goto err_stop_hw;
+ 	}
+ 
+ 	if (id->product == USB_DEVICE_ID_APPLE_MAGICMOUSE)
+@@ -568,6 +578,7 @@ static struct hid_driver magicmouse_driv
+ 	.remove = magicmouse_remove,
+ 	.raw_event = magicmouse_raw_event,
+ 	.input_mapping = magicmouse_input_mapping,
++	.input_configured = magicmouse_input_configured,
+ };
+ 
+ static int __init magicmouse_init(void)
 
 
