@@ -1,149 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab3DJGWg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 02:22:36 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:47785 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab3DJGWf (ORCPT
+	id S1752546Ab3DJG0S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 02:26:18 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:47021 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab3DJG0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 02:22:35 -0400
+	Wed, 10 Apr 2013 02:26:17 -0400
+Message-ID: <516505D7.5090604@gmail.com>
+Date: Wed, 10 Apr 2013 14:25:27 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <CAOtvUMdXJSzV5V3WQpDrU1DqzFk4G4RtBLdrgJyGR-AZhY6RNw@mail.gmail.com>
-References: <1365550099-6795-1-git-send-email-cody@linux.vnet.ibm.com>
-	<1365550099-6795-4-git-send-email-cody@linux.vnet.ibm.com>
-	<CAOtvUMdXJSzV5V3WQpDrU1DqzFk4G4RtBLdrgJyGR-AZhY6RNw@mail.gmail.com>
-Date: Wed, 10 Apr 2013 09:22:34 +0300
-Message-ID: <CAOtvUMe8zZwZaUYDiGeLskkdPzPZGXYh6Wm0MKt0St0OSqDExg@mail.gmail.com>
-Subject: Re: [PATCH v2 03/10] mm/page_alloc: insert memory barriers to allow
- async update of pcp batch and high
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Simon Jeons <simon.jeons@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Chen Gang <gang.chen@asianux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: trace: ftrace: strncpy, using strlcpy instead
+ of strncpy
+References: <516243B7.9020405@asianux.com> <1365519626.25498.58.camel@gandalf.local.home>
+In-Reply-To: <1365519626.25498.58.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 9:19 AM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
-> On Wed, Apr 10, 2013 at 2:28 AM, Cody P Schafer <cody@linux.vnet.ibm.com> wrote:
->> In pageset_set_batch() and setup_pagelist_highmark(), ensure that batch
->> is always set to a safe value (1) prior to updating high, and ensure
->> that high is fully updated before setting the real value of batch.
->>
->> Suggested by Gilad Ben-Yossef <gilad@benyossef.com> in this thread:
->>
->>         https://lkml.org/lkml/2013/4/9/23
->>
->> Also reproduces his proposed comment.
->>
->> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
->> ---
->>  mm/page_alloc.c | 19 +++++++++++++++++++
->>  1 file changed, 19 insertions(+)
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index d259599..a07bd4c 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -4007,11 +4007,26 @@ static int __meminit zone_batchsize(struct zone *zone)
->>  #endif
->>  }
->>
->> +static void pageset_update_prep(struct per_cpu_pages *pcp)
->> +{
->> +       /*
->> +        * We're about to mess with PCP in an non atomic fashion.  Put an
->> +        * intermediate safe value of batch and make sure it is visible before
->> +        * any other change
->> +        */
->> +       pcp->batch = 1;
->> +       smp_wmb();
->> +}
->> +
->>  /* a companion to setup_pagelist_highmark() */
->>  static void pageset_set_batch(struct per_cpu_pageset *p, unsigned long batch)
->>  {
->>         struct per_cpu_pages *pcp = &p->pcp;
->> +       pageset_update_prep(pcp);
->> +
->>         pcp->high = 6 * batch;
->> +       smp_wmb();
->> +
->>         pcp->batch = max(1UL, 1 * batch);
->>  }
->>
->> @@ -4039,7 +4054,11 @@ static void setup_pagelist_highmark(struct per_cpu_pageset *p,
->>         struct per_cpu_pages *pcp;
->>
->>         pcp = &p->pcp;
->> +       pageset_update_prep(pcp);
->> +
->>         pcp->high = high;
->> +       smp_wmb();
->> +
->>         pcp->batch = max(1UL, high/4);
->>         if ((high/4) > (PAGE_SHIFT * 8))
->>                 pcp->batch = PAGE_SHIFT * 8;
->> --
->> 1.8.2
->>
->
-> That is very good.
-> However, now we've created a "protocol" for updating ->high and ->batch:
->
-> 1. Call pageset_update_prep(pcp)
-> 2. Update ->high
-> 3. smp_wmb()
-> 4. Update ->batch
->
-> But that protocol is not documented anywhere and someone  that reads
-> the code two
-> years from now will not be aware of it or why it is done like that.
->
-> How about if we create:
->
-> /*
-> * pcp->high and pcp->batch values are related and dependent on one another:
-> * ->batch must never be higher then ->high.
-> * The following function updates them in a safe manner without a
-> costly atomic transaction.
-> */
-> static void pageset_update(struct per_cpu_pages *pcp, unsigned int
-> high, unsigned int batch)
-> {
->        /* start with a fail safe value for batch */
->        pcp->batch = 1;
->        smp_wmb();
->
->        /* Update high, then batch, in order */
->        pcp->high = high;
->        smp_wmb();
->        pcp->batch = batch;
-> }
->
-> And use that at the update sites? then the protocol becomes explicit.
+On 2013年04月09日 23:00, Steven Rostedt wrote:
+> I'll queue this up for my 3.10 queue. I'm going to merge this patch with
+> the previous patch you sent that updates trace.c
+> 
+> Thanks,
+> 
+> -- Steve
 
-Oh, and other then that it looks good to me, so assuming you do that -
-
-Reviewed-By: Gilad Ben-Yossef <gilad@benyossef.com>
-
-Many thanks,
-Gilad
+  thanks too.
 
 
 -- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+Chen Gang
 
-"If you take a class in large-scale robotics, can you end up in a
-situation where the homework eats your dog?"
- -- Jean-Baptiste Queru
+Flying Transformer
