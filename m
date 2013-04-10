@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937232Ab3DJXPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:15:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56847 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937029Ab3DJXPJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S937188Ab3DJXPJ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 10 Apr 2013 19:15:09 -0400
-Date: Wed, 10 Apr 2013 16:15:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Robin Holt <holt@sgi.com>
-Cc: linux-kernel@vger.kernel.org, Alex Thorlton <athorlton@sgi.com>
-Subject: Re: [PATCH] Sys V shared memory limited to 8TiB.
-Message-Id: <20130410161507.b12128ee3df446eb9b86d8cf@linux-foundation.org>
-In-Reply-To: <20130410023924.GX3658@sgi.com>
-References: <20130410023924.GX3658@sgi.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56101 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937029Ab3DJWrR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 18:47:17 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Marco Munderloh <munderl@tnt.uni-hannover.de>,
+        Ilija Hadzic <ihadzic@research.bell-labs.com>,
+        Michal Hocko <mhocko@suse.cz>, Dave Airlie <airlied@redhat.com>
+Subject: [ 18/64] drm: correctly restore mappings if drm_open fails
+Date: Wed, 10 Apr 2013 15:46:15 -0700
+Message-Id: <20130410224337.257177171@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
+References: <20130410224333.114387235@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Apr 2013 21:39:24 -0500 Robin Holt <holt@sgi.com> wrote:
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-> Trying to run an application which was trying to put data into half
-> of memory using shmget(), we found that having a shmall value below
-> 8EiB-8TiB would prevent us from using anything more than 8TiB.  By setting
-> kernel.shmall greater that 8EiB-8TiB would make the job work.
-> 
-> In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
+------------------
 
-You have way too much memory.
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
 
-> ipc/shm.c:
->  458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
->  459 {
-> ...
->  465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-> ...
->  474         if (ns->shm_tot + numpages > ns->shm_ctlall)
->  475                 return -ENOSPC;
->
-> ...
->
-> --- a/include/linux/ipc_namespace.h
-> +++ b/include/linux/ipc_namespace.h
-> @@ -43,8 +43,8 @@ struct ipc_namespace {
->  
->  	size_t		shm_ctlmax;
->  	size_t		shm_ctlall;
-> +	unsigned long	shm_tot;
->  	int		shm_ctlmni;
-> -	int		shm_tot;
->  	/*
->  	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
->  	 * of shmctl()
+commit a8ec3a662921220fc058ed6f7f3674697876d218 upstream.
 
-I reviewed everything for fallout from this and don't see any obvious
-issues.
+If first drm_open fails, the error-handling path will
+incorrectly restore inode's mapping to NULL. This can
+cause the crash later on. Fix by separately storing
+away mapping pointers that drm_open can touch and
+restore each from its own respective variable if the
+call fails.
 
-I do wonder about the appropriateness of the unsigned long type.  Most
-(but by no means all) code in this area uses size_t, and the
-above-quoted ns->shm_ctlall is size_t.
+Fixes: https://bugzilla.novell.com/show_bug.cgi?id=807850
+(thanks to Michal Hocko for investigating investigating and
+finding the root cause of the bug)
 
-And the above-quoted num_pages is `int'.  Both the size and signedness
-of `int' make no sense - what happens if the incoming ipc_params.u.size
-is >2G?
+Reference:
+http://lists.freedesktop.org/archives/dri-devel/2013-March/036564.html
 
-So I'll add this, and ask whether ipc_namespace.shm_tot should be size_t?
+v2: Use one variable to store file and inode mapping
+    since they are the same at the function entry.
+    Fix spelling mistakes in commit message.
 
---- a/ipc/shm.c~ipc-sysv-shared-memory-limited-to-8tib-fix
-+++ a/ipc/shm.c
-@@ -462,7 +462,7 @@ static int newseg(struct ipc_namespace *
- 	size_t size = params->u.size;
- 	int error;
- 	struct shmid_kernel *shp;
--	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-+	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	struct file * file;
- 	char name[13];
- 	int id;
-_
+v3: Add reference to the original bug report.
+
+Reported-by: Marco Munderloh <munderl@tnt.uni-hannover.de>
+Tested-by: Marco Munderloh <munderl@tnt.uni-hannover.de>
+Signed-off-by: Ilija Hadzic <ihadzic@research.bell-labs.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/gpu/drm/drm_fops.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/gpu/drm/drm_fops.c
++++ b/drivers/gpu/drm/drm_fops.c
+@@ -123,6 +123,7 @@ int drm_open(struct inode *inode, struct
+ 	int retcode = 0;
+ 	int need_setup = 0;
+ 	struct address_space *old_mapping;
++	struct address_space *old_imapping;
+ 
+ 	minor = idr_find(&drm_minors_idr, minor_id);
+ 	if (!minor)
+@@ -137,6 +138,7 @@ int drm_open(struct inode *inode, struct
+ 	if (!dev->open_count++)
+ 		need_setup = 1;
+ 	mutex_lock(&dev->struct_mutex);
++	old_imapping = inode->i_mapping;
+ 	old_mapping = dev->dev_mapping;
+ 	if (old_mapping == NULL)
+ 		dev->dev_mapping = &inode->i_data;
+@@ -159,8 +161,8 @@ int drm_open(struct inode *inode, struct
+ 
+ err_undo:
+ 	mutex_lock(&dev->struct_mutex);
+-	filp->f_mapping = old_mapping;
+-	inode->i_mapping = old_mapping;
++	filp->f_mapping = old_imapping;
++	inode->i_mapping = old_imapping;
+ 	iput(container_of(dev->dev_mapping, struct inode, i_data));
+ 	dev->dev_mapping = old_mapping;
+ 	mutex_unlock(&dev->struct_mutex);
+
 
