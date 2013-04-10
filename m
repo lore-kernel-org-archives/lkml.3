@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752192Ab3DJEkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 00:40:16 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:54644 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162Ab3DJEkO (ORCPT
+	id S1752303Ab3DJEsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 00:48:00 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:32818 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab3DJEr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 00:40:14 -0400
+	Wed, 10 Apr 2013 00:47:59 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5164EEE6.8000707@jp.fujitsu.com>
+Date: Wed, 10 Apr 2013 13:47:34 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <m2k3ob1tar.fsf_-_@igel.home>
-References: <CA+V-a8vYsBLVH-3Bm35Sv9K9ZMTcMB4_P_V3kBjyuEKDozPi5w@mail.gmail.com>
- <1363949290.3528.37.camel@linaro1.home> <m2ip48d62f.fsf@igel.home>
- <CA+V-a8srtwdf1H2JQwbkyMFhXopPEA90RM8Hy+UunM6Mm7-d1w@mail.gmail.com> <m2k3ob1tar.fsf_-_@igel.home>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Wed, 10 Apr 2013 10:09:51 +0530
-Message-ID: <CA+V-a8th2UnnHf5wNyKg-w30yiJAsPv_BR6bspHe_Tbf4ri_Zw@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: generate generic headers before recursing into scripts
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+To: joro@8bytes.org, dwmw2@infradead.org
+CC: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        kexec@lists.infradead.org, tindoh@gmail.com
+Subject: Re: [PATCH] intel-iommu: Synchronize gcmd value with global command
+ register
+References: <1363829556-2128-1-git-send-email-indou.takao@jp.fujitsu.com> <20130326144629.GB2727@8bytes.org> <51527D74.9080209@jp.fujitsu.com> <20130327103122.GK30540@8bytes.org> <51591EEE.60401@jp.fujitsu.com> <20130402140546.GA15687@8bytes.org> <515BD638.8070307@jp.fujitsu.com> <1364977479.28127.15.camel@i7.infradead.org> <20130405110616.GB6858@8bytes.org>
+In-Reply-To: <20130405110616.GB6858@8bytes.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 9, 2013 at 11:27 PM, Andreas Schwab <schwab@linux-m68k.org> wrote:
-> The headers are now needed inside scripts/mod since 6543bec
-> ("mod/file2alias: make modalias generation safe for cross compiling").
->
-> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+(2013/04/05 20:06), Joerg Roedel wrote:
+> On Wed, Apr 03, 2013 at 09:24:39AM +0100, David Woodhouse wrote:
+>> On Wed, 2013-04-03 at 16:11 +0900, Takao Indoh wrote:
+>>> Yeah, you are right. I forgot such a case.
+>>
+>> If you disable translation and there's some device still doing DMA, it's
+>> going to scribble over random areas of memory. You really want to have
+>> translation enabled and all the page tables *cleared*, during kexec. I
+>> think it's fair to insist that the secondary kernel should use the IOMMU
+>> if the first one did.
+> 
+> Do we really need to insist on that? The IOMMU initialization on x86
+> happens after the kernel scanned and enumerated the PCI bus. While doing
+> this the kernel (at least it should) disables all devices it finds. So
+> when the IOMMU init code runs we should be safe from any in-flight DMA
+> and can either disable translation or re-initialize it for the kdump
+> kernel. Until then translation needs to stay enabled of course, so that
+> the old page-tables are still used and in-flight DMA doesn't corrupt
+> any data.
 
-Reported-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Tested-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+So we should do in this order, right?
+(1) PCI initialization. Stop all ongoing DMA here.
+(2) Disable translation if already enable.
+(3) Make pgtable and enable translation.
 
-Regards,
---Prabhakar
+Thanks,
+Takao Indoh
 
-> ---
-> Prabhakar Lad <prabhakar.csengg@gmail.com> writes:
->
->> Whats the status of it ?
->
-> I think it has sufficiently been tested by now.
->
-> Andreas.
-> ---
->  Makefile | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/Makefile b/Makefile
-> index 6db672b..11157bd 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -513,7 +513,8 @@ ifeq ($(KBUILD_EXTMOD),)
->  # Carefully list dependencies so we do not try to build scripts twice
->  # in parallel
->  PHONY += scripts
-> -scripts: scripts_basic include/config/auto.conf include/config/tristate.conf
-> +scripts: scripts_basic include/config/auto.conf include/config/tristate.conf \
-> +        asm-generic
->         $(Q)$(MAKE) $(build)=$(@)
->
->  # Objects we will link into vmlinux / subdirs we need to visit
-> --
-> 1.8.2.1
->
->
-> --
-> Andreas Schwab, schwab@linux-m68k.org
-> GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-> "And now for something completely different."
