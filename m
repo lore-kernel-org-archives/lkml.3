@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964953Ab3DJPxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:53:04 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:4609 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964830Ab3DJPxD (ORCPT
+	id S936990Ab3DJPzj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:55:39 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:56407 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935973Ab3DJPzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:53:03 -0400
-Message-ID: <51658ADB.4050204@hp.com>
-Date: Wed, 10 Apr 2013 11:52:59 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+	Wed, 10 Apr 2013 11:55:38 -0400
+Message-ID: <51658B77.4050400@gmail.com>
+Date: Wed, 10 Apr 2013 10:55:35 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH RFC 1/3] mutex: Make more scalable by doing less atomic
- operations
-References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com> <1365087258-7169-2-git-send-email-Waiman.Long@hp.com> <20130408124223.GA10093@gmail.com> <CA+55aFztAtpiGK9e_Ed=Kk4jAWNTahv9OEb0+fgp52Api1s7Mw@mail.gmail.com> <5163042F.9000404@hp.com> <20130410103144.GC28505@gmail.com>
-In-Reply-To: <20130410103144.GC28505@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Colin Cross <ccross@android.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [RFC PATCH 3/3] pstore/ram: avoid atomic accesses for ioremapped
+ regions
+References: <1365563297-12480-1-git-send-email-robherring2@gmail.com> <1365563297-12480-3-git-send-email-robherring2@gmail.com> <CAMbhsRSNPz1d9bGGEjqyTwVg_1pv8PB15WybEL5ZRVgmnTDWLQ@mail.gmail.com>
+In-Reply-To: <CAMbhsRSNPz1d9bGGEjqyTwVg_1pv8PB15WybEL5ZRVgmnTDWLQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 06:31 AM, Ingo Molnar wrote:
-> * Waiman Long<Waiman.Long@hp.com>  wrote:
->
->>> That said, the MUTEX_SHOULD_XCHG_COUNT macro should die. Why shouldn't all
->>> architectures just consider negative counts to be locked? It doesn't matter
->>> that some might only ever see -1.
->> I think so too. However, I don't have the machines to test out other
->> architectures. The MUTEX_SHOULD_XCHG_COUNT is just a safety measure to make sure
->> that my code won't screw up the kernel in other architectures. Once it is
->> confirmed that a negative count other than -1 is fine for all the other
->> architectures, the macro can certainly go.
-> I'd suggest to just remove it in an additional patch, Cc:-ing
-> linux-arch@vger.kernel.org. The change is very likely to be fine, if not then it's
-> easy to revert it.
->
-> Thanks,
->
-> 	Ingo
-Yes, I can do that. So can I put your name down as reviewer or ack'er 
-for the 1st patch?
+On 04/09/2013 11:10 PM, Colin Cross wrote:
+> On Tue, Apr 9, 2013 at 8:08 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> From: Rob Herring <rob.herring@calxeda.com>
+>>
+>> For persistent RAM outside of main memory, the memory may have limitations
+>> on supported accesses. For internal RAM on highbank platform exclusive
+>> accesses are not supported and will hang the system. So atomic_cmpxchg
+>> cannot be used. This commit uses spinlock protection for buffer size and
+>> start updates on ioremapped regions instead.
+> 
+> I used atomics in persistent_ram to support persistent ftrace, which
+> now exists as PSTORE_FTRACE.  At some point during development I had
+> trouble with recursive tracing causing an infinite loop, so you may
+> want to test that calling out to spinlock functions with PSTORE_FTRACE
+> turned on and enabled doesn't cause a problem.
 
-BTW, I am planning to change the code to mimic the 
-__mutex_slowpath_needs_to_unlock()  macro so that I only need to update 
-the asm/mutex.h only instead of modifying the kernel/mutex.h as well. 
-Hope that will make the change more acceptable to others in case we have 
-to keep it.
+I've tested that now and it appears to work fine. Was there some
+specific setup of ftrace that caused problems?
 
-Regards,
-Longman
+Rob
+
