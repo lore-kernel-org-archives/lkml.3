@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964949Ab3DJAg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Apr 2013 20:36:29 -0400
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:64811 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932165Ab3DJAg1 (ORCPT
+	id S935968Ab3DJAg2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Apr 2013 20:36:28 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:60987 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1763199Ab3DJAg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Apr 2013 20:36:27 -0400
-From: Derek Basehore <dbasehore@chromium.org>
-To: rtc-linux@googlegroups.com
-Cc: Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        Derek Basehore <dbasehore@chromium.org>
-Subject: [PATCH] Don't disable hpet emulation on suspend
-Date: Tue,  9 Apr 2013 17:36:13 -0700
-Message-Id: <1365554173-24475-1-git-send-email-dbasehore@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
+	Tue, 9 Apr 2013 20:36:26 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 9 Apr 2013 17:36:32 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
+Subject: Re: mfd: Core driver for Winbond chips
+Message-ID: <20130410003632.GA25712@roeck-us.net>
+References: <1362957300-18223-1-git-send-email-linux@roeck-us.net>
+ <20130322205258.GE7867@spo001.leaseweb.com>
+ <20130323002810.GA26245@roeck-us.net>
+ <20130323174914.GA21563@roeck-us.net>
+ <20130409093700.GM24058@zurbaran>
+ <20130409113639.GA8731@roeck-us.net>
+ <20130409114544.GD7867@spo001.leaseweb.com>
+ <20130409161838.GB27050@roeck-us.net>
+ <20130409173115.GF7867@spo001.leaseweb.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130409173115.GF7867@spo001.leaseweb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's a bug where rtc alarms are ignored after the rtc cmos suspends but
-before the system finishes suspend. Since hpet emulation is disabled and it
-still handles the interrupts, a wake event is never registered which is done
-from the rtc layer. This reverts an earlier commit which disables hpet
-emulation. To fix the problem mentioned in that commit, the hpet_rtc_timer_init
-function is called directly on resume.
+On Tue, Apr 09, 2013 at 07:31:15PM +0200, Wim Van Sebroeck wrote:
+> Hi Guenter,
+> 
+> > > > I was waiting for feedback from Wim, who submitted a similar driver, about his
+> > > > thoughts. Key question is how to reserve access to the shared resource - either
+> > > > through an exported function in the mfd driver requesting a mutex, or through
+> > > > request_muxed_region(). I am going back and forth myself on which one is better.
+> > > > 
+> > > > Maybe it does not really matter, but using a function has the slight advantage
+> > > > that it auto-loads and locks the mfd module while one of its client modules
+> > > > is loaded. If we use request_muxed_region, that is not the case and the client
+> > > > module must use another means to request and lock the mfd module.
+> > > > 
+> > > > Maybe you have an opinion ?
+> > > 
+> > > This is indeed the main issue that has to be solved. Both options will work.
+> > > I like the auto-load and lock, but I need to look at the request_muxed_region
+> > > code again first before I can see what the possible drawbacks are :-).
+> > > 
+> > One drawback of using request_muxed_region is that it needs a return value
+> > from superio_enter. Also, it needs some code in the client driver init function
+> > to ensure that the mfd driver gets loaded, and possibly a call to __module_get()
+> > in the client driver probe function to keep the mfd driver loaded.
+> > 
+> > winbond_superio_enter() would not need a return value and could use
+> > devm_request_region. We could also consider allocating the hwmon memory space in
+> > the mfd driver and pass it as resource to the client drivers, which would remove
+> > a few more lines of code from those.
+> > 
+> > Overall I am slightly in favor of using an exported function.
+> 
+> I looked at commit 8b6d043b7ee2d1b819dc833d677ea2aead71a0c0 (which implements
+> request_muxed_region). You indeed need some extra code for loading the lowl-level
+> mfd driver. So I am also in favour of the exported function.
+> 
+So which way should we go ? Take your driver as a starting point or mine ?
 
-This reverts commit d1b2efa83fbf7b33919238fa29ef6ab935820103.
+One thing I'll want to add is support for both superio regions, as I have a use
+case for it.
 
-Signed-off-by: Derek Basehore <dbasehore@chromium.org>
----
- drivers/rtc/rtc-cmos.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index af97c94..cc5bea9 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -804,9 +804,8 @@ static int cmos_suspend(struct device *dev)
- 			mask = RTC_IRQMASK;
- 		tmp &= ~mask;
- 		CMOS_WRITE(tmp, RTC_CONTROL);
-+		hpet_mask_rtc_irq_bit(mask);
- 
--		/* shut down hpet emulation - we don't need it for alarm */
--		hpet_mask_rtc_irq_bit(RTC_PIE|RTC_AIE|RTC_UIE);
- 		cmos_checkintr(cmos, tmp);
- 	}
- 	spin_unlock_irq(&rtc_lock);
-@@ -870,6 +869,7 @@ static int cmos_resume(struct device *dev)
- 			rtc_update_irq(cmos->rtc, 1, mask);
- 			tmp &= ~RTC_AIE;
- 			hpet_mask_rtc_irq_bit(RTC_AIE);
-+			hpet_rtc_timer_init();
- 		} while (mask & RTC_AIE);
- 		spin_unlock_irq(&rtc_lock);
- 	}
--- 
-1.8.1.3
-
+Thanks,
+Guenter
