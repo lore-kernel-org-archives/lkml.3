@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937044Ab3DJXPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:15:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56092 "EHLO
+	id S937226Ab3DJXQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 19:16:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56084 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937131Ab3DJWrQ (ORCPT
+	with ESMTP id S937122Ab3DJWrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 18:47:16 -0400
+	Wed, 10 Apr 2013 18:47:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: [ 16/64] drm/nouveau: fix handling empty channel list in ioctls
-Date: Wed, 10 Apr 2013 15:46:13 -0700
-Message-Id: <20130410224336.802903559@linuxfoundation.org>
+        Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 14/64] ALSA: hda - Enabling Realtek ALC 671 codec
+Date: Wed, 10 Apr 2013 15:46:11 -0700
+Message-Id: <20130410224336.331001433@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130410224333.114387235@linuxfoundation.org>
 References: <20130410224333.114387235@linuxfoundation.org>
@@ -27,74 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+From: Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>
 
-commit b43decd2c513ae44a5462a1a4c2622f0fa77c9e0 upstream.
+commit 1d87caa69c04008e09f5ff47b5e6acb6116febc7 upstream.
 
-If there are no channels, chan would never end up being NULL,
-and so the null pointer check would fail.
+* Added the device ID to the modalias list and assinged ALC662 patches
+for it
+* Added 4 port support for the device ID 0671 in alc662_parse_auto_config
 
-Solve this by initializing chan to NULL, and iterating over temp instead.
-
-Fixes oops when running intel-gpu-tools/tests/kms_flip, which attempts to
-do some intel ioctl's on a nouveau device.
-
-Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_abi16.c |   18 ++++++++++--------
- 1 file changed, 10 insertions(+), 8 deletions(-)
+ sound/pci/hda/patch_realtek.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_abi16.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_abi16.c
-@@ -386,7 +386,7 @@ nouveau_abi16_ioctl_notifierobj_alloc(AB
- 	struct nouveau_drm *drm = nouveau_drm(dev);
- 	struct nouveau_device *device = nv_device(drm->device);
- 	struct nouveau_abi16 *abi16 = nouveau_abi16_get(file_priv, dev);
--	struct nouveau_abi16_chan *chan, *temp;
-+	struct nouveau_abi16_chan *chan = NULL, *temp;
- 	struct nouveau_abi16_ntfy *ntfy;
- 	struct nouveau_object *object;
- 	struct nv_dma_class args = {};
-@@ -399,10 +399,11 @@ nouveau_abi16_ioctl_notifierobj_alloc(AB
- 	if (unlikely(nv_device(abi16->device)->card_type >= NV_C0))
- 		return nouveau_abi16_put(abi16, -EINVAL);
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6720,7 +6720,8 @@ static int alc662_parse_auto_config(stru
+ 	const hda_nid_t *ssids;
  
--	list_for_each_entry_safe(chan, temp, &abi16->channels, head) {
--		if (chan->chan->handle == (NVDRM_CHAN | info->channel))
-+	list_for_each_entry(temp, &abi16->channels, head) {
-+		if (temp->chan->handle == (NVDRM_CHAN | info->channel)) {
-+			chan = temp;
- 			break;
--		chan = NULL;
-+		}
- 	}
- 
- 	if (!chan)
-@@ -454,17 +455,18 @@ nouveau_abi16_ioctl_gpuobj_free(ABI16_IO
- {
- 	struct drm_nouveau_gpuobj_free *fini = data;
- 	struct nouveau_abi16 *abi16 = nouveau_abi16_get(file_priv, dev);
--	struct nouveau_abi16_chan *chan, *temp;
-+	struct nouveau_abi16_chan *chan = NULL, *temp;
- 	struct nouveau_abi16_ntfy *ntfy;
- 	int ret;
- 
- 	if (unlikely(!abi16))
- 		return -ENOMEM;
- 
--	list_for_each_entry_safe(chan, temp, &abi16->channels, head) {
--		if (chan->chan->handle == (NVDRM_CHAN | fini->channel))
-+	list_for_each_entry(temp, &abi16->channels, head) {
-+		if (temp->chan->handle == (NVDRM_CHAN | fini->channel)) {
-+			chan = temp;
- 			break;
--		chan = NULL;
-+		}
- 	}
- 
- 	if (!chan)
+ 	if (codec->vendor_id == 0x10ec0272 || codec->vendor_id == 0x10ec0663 ||
+-	    codec->vendor_id == 0x10ec0665 || codec->vendor_id == 0x10ec0670)
++	    codec->vendor_id == 0x10ec0665 || codec->vendor_id == 0x10ec0670 ||
++	    codec->vendor_id == 0x10ec0671)
+ 		ssids = alc663_ssids;
+ 	else
+ 		ssids = alc662_ssids;
+@@ -7173,6 +7174,7 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x10ec0665, .name = "ALC665", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0668, .name = "ALC668", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0670, .name = "ALC670", .patch = patch_alc662 },
++	{ .id = 0x10ec0671, .name = "ALC671", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0680, .name = "ALC680", .patch = patch_alc680 },
+ 	{ .id = 0x10ec0880, .name = "ALC880", .patch = patch_alc880 },
+ 	{ .id = 0x10ec0882, .name = "ALC882", .patch = patch_alc882 },
 
 
