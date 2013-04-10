@@ -1,42 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935671Ab3DJTmE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 15:42:04 -0400
-Received: from www.sr71.net ([198.145.64.142]:38546 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935722Ab3DJTmA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 15:42:00 -0400
-Message-ID: <5165C087.4060404@sr71.net>
-Date: Wed, 10 Apr 2013 12:41:59 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S935222Ab3DJTnN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 15:43:13 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:56116 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752757Ab3DJTnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 15:43:11 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Borislav Petkov <bp@alien8.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
- wrong cpu
-References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos> <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net> <alpine.LFD.2.02.1304092036431.21884@ionos> <alpine.LFD.2.02.1304092126150.21884@ionos> <51647C30.3050109@sr71.net> <alpine.LFD.2.02.1304101024010.21884@ionos> <alpine.LFD.2.02.1304101250320.21884@ionos>
-In-Reply-To: <alpine.LFD.2.02.1304101250320.21884@ionos>
+In-Reply-To: <1365069722-15408-1-git-send-email-larsi@wh2.tu-dresden.de>
+References: <1365069722-15408-1-git-send-email-larsi@wh2.tu-dresden.de>
+Date: Wed, 10 Apr 2013 21:43:10 +0200
+Message-ID: <CACRpkdY0XjHokUfXWQmgNAwrZOuuyfYcyE-9ihYtxKONEUmjuA@mail.gmail.com>
+Subject: Re: [PATCH v4] gpio: mcp23s08: convert driver to DT
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lars Poeschel <larsi@wh2.tu-dresden.de>
+Cc: Lars Poeschel <poeschel@lemonage.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        spi mailing list <spi-devel-general@lists.sourceforge.net>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think I got a full trace this time:
+On Thu, Apr 4, 2013 at 12:02 PM, Lars Poeschel <larsi@wh2.tu-dresden.de> wrote:
 
-	http://sr71.net/~dave/linux/bigbox-trace.1365621899.txt.gz
+> From: Lars Poeschel <poeschel@lemonage.de>
+>
+> This converts the mcp23s08 driver to be able to be used with device
+> tree.
+> There is a "spi-present-mask" device tree property, that allows to
+> use multiple of this spi chips on the same chipselect.
+>
+> Signed-off-by: Lars Poeschel <poeschel@lemonage.de>
+> ---
+> v4:
+> - removed the ability to specify the pullup from device tree
+> - updated binding doc
 
-The last timestamp is pretty close to the timestamp on the console:
+Patch applied!
 
-[ 2071.033434] smpboot_thread_fn():
-[ 2071.033455] smpboot_thread_fn() cpu: 22 159
-[ 2071.033470] td->cpu: 22
-[ 2071.033475] smp_processor_id(): 21
-[ 2071.033486] comm: migration/%u
-
-
+Thanks,
+Linus Walleij
