@@ -1,186 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936911Ab3DJPrE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 11:47:04 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:33569 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760638Ab3DJPrB (ORCPT
+	id S936980Ab3DJPrZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 11:47:25 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:14435 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932747Ab3DJPrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 11:47:01 -0400
+	Wed, 10 Apr 2013 11:47:23 -0400
+Message-ID: <51658986.2080009@hp.com>
+Date: Wed, 10 Apr 2013 11:47:18 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
 MIME-Version: 1.0
-In-Reply-To: <1365098483-26821-1-git-send-email-juhosg@openwrt.org>
-References: <1365098483-26821-1-git-send-email-juhosg@openwrt.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 10 Apr 2013 09:46:40 -0600
-Message-ID: <CAErSpo5OrFCaax++wA+iUoHEDG=fwAJXRe=B6EEQS=EEQ5iKWw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] pci/of: remove weak annotation of pcibios_get_phb_of_node
-To: Gabor Juhos <juhosg@openwrt.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ingo Molnar <mingo@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH RFC 1/3] mutex: Make more scalable by doing less atomic
+ operations
+References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com> <1365087258-7169-2-git-send-email-Waiman.Long@hp.com> <20130408124223.GA10093@gmail.com> <51630168.40403@hp.com> <20130410102829.GA28505@gmail.com>
+In-Reply-To: <20130410102829.GA28505@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 4, 2013 at 12:01 PM, Gabor Juhos <juhosg@openwrt.org> wrote:
-> Due to the __weak annotation in the forward declaration
-> of the 'pcibios_get_phb_of_node' function GCC will emit
-> a weak symbol for this functions even if the actual
-> implementation does not use the weak attribute.
+On 04/10/2013 06:28 AM, Ingo Molnar wrote:
+> * Waiman Long<Waiman.Long@hp.com>  wrote:
 >
-> If an architecture tries to override the function
-> by providing its own implementation there will be
-> multiple weak symbols with the same name in the
-> object files. When the kernel is linked from the
-> object files the linking order determines which
-> implementation will be used in the final image.
+>>> Furthermore, since you are seeing this effect so profoundly, have you
+>>> considered using another approach, such as queueing all the poll-waiters in
+>>> some fashion?
+>>>
+>>> That would optimize your workload additionally: removing the 'stampede' of
+>>> trylock attempts when an unlock happens - only a single wait-poller would get
+>>> the lock.
+>> The mutex code in the slowpath has already put the waiters into a sleep queue
+>> and wait up only one at a time.
+> Yes - but I'm talking about spin/poll-waiters.
 >
-> On x86 and on powerpc the architecture specific
-> version gets used:
->
->   $ readelf -s  arch/x86/kernel/built-in.o drivers/pci/built-in.o \
->     vmlinux.o | grep pcibios_get_phb_of_node
->     3338: 00029b80    86 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
->     1701: 00012710    77 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
->    52072: 0002a170    86 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
->   $
->
->   $ powerpc-openwrt-linux-uclibc-readelf -s arch/powerpc/kernel/built-in.o \
->     drivers/pci/built-in.o vmlinux.o | grep pcibios_get_phb_of_node
->     1001: 0000cbb8    12 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
->     1484: 0001471c    88 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
->    28652: 0000d6f8    12 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
->   $
->
-> However on MIPS, the linker puts the default
-> implementation into the final image:
->
->   $ mipsel-openwrt-linux-readelf -s arch/mips/pci/built-in.o \
->     drivers/pci/built-in.o vmlinux.o | grep pcibios_get_phb_of_node
->       86: 0000046c    12 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
->     1430: 00012e2c   104 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
->    31898: 0017e4ec   104 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
->   $
->
-> Rename the default implementation and remove the
-> __weak annotation of that. This ensures that there
-> will be no multiple weak symbols with the same name
-> in the object files. In order to keep the expected
-> behaviour, call the architecture specific function
-> if the weak symbol is resolved.
->
-> Also move the renamed function to the top instead
-> of adding a new forward declaration for that.
->
-> Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-> ---
-> Notes:
->
-> Unfortunately I'm not a binutils/gcc expert, so
-> I don't know if this is the expected behaviour
-> of those or not.
->
-> Removing the __weak annotation from the forward
-> declaration of 'pcibios_get_phb_of_node' in
-> 'include/linux/pci.h' also fixes the problem.
->
-> The microblaze architecture also provides its own
-> implementation. The behaviour of that is not tested
-> but I assume that the linker chooses the arch specific
-> implementation on that as well similarly to the
-> x86/powerpc.
->
-> The MIPS version is implemented in the followup
-> patch.
->
-> Removing the __weak annotation from the forward
-> declaration of 'pcibios_get_phb_of_node' in
-> 'include/linux/pci.h' also fixes the problem.
+Thank for the clarification.
 
-I think removing the __weak annotation from the declaration in
-include/linux/pci.h is the correct solution.
+>> [...] However, there are 2 additional source of mutex lockers besides those in
+>> the sleep queue:
+>>
+>> 1. New tasks trying to acquire the mutex and currently in the fast path.
+>> 2. Mutex spinners (CONFIG_MUTEX_SPIN_ON_OWNER on) who are spinning
+>> on the owner field and ready to acquire the mutex once the owner
+>> field change.
+>>
+>> The 2nd and 3rd patches are my attempts to limit the second types of mutex
+>> lockers.
+> Even the 1st patch seems to do that, it limits the impact of spin-loopers, right?
 
-__weak is an attribute of a function definition, not an attribute of
-the interface, so I don't think it makes any sense to have it in
-pci.h.
+Yes, that is true.
 
-Bjorn
+> I'm fine with patch #1 [your numbers are proof enough that it helps while the low
+> client count effect seems to be in the noise] - the questions that seem open to me
+> are:
+>
+>   - Could the approach in patch #1 be further improved by an additional patch that
+>     adds queueing to the _spinners_ in some fashion - like ticket spin locks try to
+>     do in essence? Not queue the blocked waiters (they are already queued), but the
+>     active spinners. This would have additional benefits, especially with a high
+>     CPU count and a high NUMA factor, by removing the stampede effect as owners get
+>     switched.
+Yes, I think we can implement some kind of ticketing system for the 
+spinners. Similar to patch #2, we have to add a new field to the mutex 
+structure for the head/tail ticketing numbers and hence will add a 
+little more contention to the same mutex cacheline when the ticket 
+numbers are updated. I can think of an easy way to do that without 
+increasing the size of the mutex. I will try it out to see what 
+performance impact it will have.
 
-> -Gabor
-> ---
->  drivers/pci/of.c |   41 +++++++++++++++++++++++------------------
->  1 file changed, 23 insertions(+), 18 deletions(-)
+>   - Why does patch #2 have an effect? (it shouldn't at first glance) It has a
+>     non-trivial cost, it increases the size of 'struct mutex' by 8 bytes, which
+>     structure is embedded in numerous kernel data structures. When doing
+>     comparisons I'd suggest comparing it not to just vanilla, but to a patch that
+>     only extends the struct mutex data structure (and changes no code) - this
+>     allows the isolation of cache layout change effects.
 >
-> diff --git a/drivers/pci/of.c b/drivers/pci/of.c
-> index f092993..5794840 100644
-> --- a/drivers/pci/of.c
-> +++ b/drivers/pci/of.c
-> @@ -15,10 +15,32 @@
->  #include <linux/of_pci.h>
->  #include "pci.h"
->
-> +static struct device_node *__pcibios_get_phb_of_node(struct pci_bus *bus)
-> +{
-> +       /* This should only be called for PHBs */
-> +       if (WARN_ON(bus->self || bus->parent))
-> +               return NULL;
-> +
-> +       if (pcibios_get_phb_of_node)
-> +               return pcibios_get_phb_of_node(bus);
-> +
-> +       /* Look for a node pointer in either the intermediary device we
-> +        * create above the root bus or it's own parent. Normally only
-> +        * the later is populated.
-> +        */
-> +       if (bus->bridge->of_node)
-> +               return of_node_get(bus->bridge->of_node);
-> +       if (bus->bridge->parent && bus->bridge->parent->of_node)
-> +               return of_node_get(bus->bridge->parent->of_node);
-> +
-> +       return NULL;
-> +}
-> +
->  void pci_set_of_node(struct pci_dev *dev)
->  {
->         if (!dev->bus->dev.of_node)
->                 return;
-> +
->         dev->dev.of_node = of_pci_find_child_device(dev->bus->dev.of_node,
->                                                     dev->devfn);
->  }
-> @@ -32,7 +54,7 @@ void pci_release_of_node(struct pci_dev *dev)
->  void pci_set_bus_of_node(struct pci_bus *bus)
->  {
->         if (bus->self == NULL)
-> -               bus->dev.of_node = pcibios_get_phb_of_node(bus);
-> +               bus->dev.of_node = __pcibios_get_phb_of_node(bus);
->         else
->                 bus->dev.of_node = of_node_get(bus->self->dev.of_node);
->  }
-> @@ -42,20 +64,3 @@ void pci_release_bus_of_node(struct pci_bus *bus)
->         of_node_put(bus->dev.of_node);
->         bus->dev.of_node = NULL;
->  }
-> -
-> -struct device_node * __weak pcibios_get_phb_of_node(struct pci_bus *bus)
-> -{
-> -       /* This should only be called for PHBs */
-> -       if (WARN_ON(bus->self || bus->parent))
-> -               return NULL;
-> -
-> -       /* Look for a node pointer in either the intermediary device we
-> -        * create above the root bus or it's own parent. Normally only
-> -        * the later is populated.
-> -        */
-> -       if (bus->bridge->of_node)
-> -               return of_node_get(bus->bridge->of_node);
-> -       if (bus->bridge->parent && bus->bridge->parent->of_node)
-> -               return of_node_get(bus->bridge->parent->of_node);
-> -       return NULL;
-> -}
-> --
-> 1.7.10
->
+>   - Patch #3 is rather ugly - and my hope would be that if spinners are queued in
+>     some fashion it becomes unnecessary.
+I think these two patches can have some performance impact because it 
+allows the CPUs to be used for some other tasks that are waiting for CPU 
+instead of allowing the CPUs idle waiting for the mutex to be acquired. 
+It isn't a big problem if only 1 or 2 threads are spinning, but it could 
+be if most the CPUs in the system are wasting time spinning for the 
+mutex. That begs the question that even if we implement a ticket queuing 
+system, will it make sense to limit the number of spinners to just a 
+few, say 3?
+
+Regards,
+Longman
