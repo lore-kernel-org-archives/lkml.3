@@ -1,145 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab3DJKOB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 06:14:01 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63571 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752113Ab3DJKOA (ORCPT
+	id S1758494Ab3DJKOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 06:14:18 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:55434 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752688Ab3DJKON convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 06:14:00 -0400
-Date: Wed, 10 Apr 2013 11:13:36 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Wed, 10 Apr 2013 06:14:13 -0400
+Date: Wed, 10 Apr 2013 11:14:01 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH 1/4] Documentation: Add memory mapped ARM architected
- timer binding
-Message-ID: <20130410101336.GB8799@e106331-lin.cambridge.arm.com>
-References: <1365474623-29181-1-git-send-email-sboyd@codeaurora.org>
- <1365474623-29181-2-git-send-email-sboyd@codeaurora.org>
- <20130409090843.GS23725@e106331-lin.cambridge.arm.com>
- <516444FE.2080200@codeaurora.org>
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [RFC PATCH 0/2] cpufreq: Introduce LAB cpufreq governor.
+Message-ID: <20130410101400.GA4981@e102568-lin.cambridge.arm.com>
+References: <1364804657-16590-1-git-send-email-jonghwa3.lee@samsung.com>
+ <CAOh2x=nPJa0GReiN=OHLG=m4Gq51F=4VppdaQL20xi-aUa8x2Q@mail.gmail.com>
+ <20130409123719.7399d5ad@amdc308.digital.local>
+ <CAKohpomL-mdx6DdFiGwJzDSeWr6Gw-_F4T-D-Jz9TNH5MSgjbw@mail.gmail.com>
+ <20130409184440.4cd87c1b@amdc308.digital.local>
+ <CAKfTPtD6MK9ogq7mOijSxLSsH0n65Xra48XfRSB3DFs35GT=2g@mail.gmail.com>
+ <20130410104452.661902af@amdc308.digital.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20130410104452.661902af@amdc308.digital.local>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 10 Apr 2013 10:14:05.0258 (UTC) FILETIME=[218D72A0:01CE35D4]
+X-MC-Unique: 113041011140904701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <516444FE.2080200@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 05:42:38PM +0100, Stephen Boyd wrote:
-> On 04/09/13 02:08, Mark Rutland wrote:
-> > On Tue, Apr 09, 2013 at 03:30:20AM +0100, Stephen Boyd wrote:
-> >>  
-> >> -** Timer node properties:
-> >> +** CP15 Timer node properties:
-> >>  
-> >>  - compatible : Should at least contain one of
-> >>  	"arm,armv7-timer"
-> >> @@ -26,3 +30,55 @@ Example:
-> >>  			     <1 10 0xf08>;
-> >>  		clock-frequency = <100000000>;
-> >>  	};
-> >> +
-> >> +** Memory mapped timer node properties
-> >> +
-> >> +- compatible : Should at least contain "arm,armv7-timer-mem".
-> >> +
-> >> +- #address-cells : Must be 1.
-> > What about LPAE systems?
-> >
-> > How about something like the following:
-> >
-> > #address-cells : If the ranges property is empty, the same value as the
-> >                  parent node's #address-cells property. Otherwise, a
-> > 		 value such that the ranges property specifies a
-> > 		 mapping to the parent node's address space.            
+On Wed, Apr 10, 2013 at 09:44:52AM +0100, Lukasz Majewski wrote:
+
+[...]
+
+> > Have you also looked at the power clamp driver that have similar
+> > target ?
 > 
-> Yes that is much better. I wasn't trying to preclude LPAE or 64 bit systems.
-
-Great.
-
+> I might be wrong here, but in my opinion the power clamp driver is a bit
+> different:
 > 
-> >> +
-> >> +- #size-cells : Must be 1.
-> >> +
-> >> +- ranges : Indicates parent and child bus address space are the same.
-> >> +
-> > Similarly, what if someone wants to write a more complex mapping for some
-> > reason?
-> >
-> > We should be able to handle it if we use the standard accessors.
+> 1. It is dedicated to Intel SoCs, which provide special set of
+> registers (i.e. MSR_PKG_Cx_RESIDENCY [*]), which forces a processor to
+> enter certain C state for a given duration. Idle duration is calculated
+> by per CPU set of high priority kthreads (which also program [*]
+> registers). 
 > 
-> Maybe I should just leave this part out? They are standard DT properties
-> so I could assume DT writers know what to do.
 
-I'd be happy with that. It may be worth describing them as "as necessary" or
-something to that effect.
+Those registers are used for compensation (ie user asked a given idle
+ratio but HW stats show a mismatch) and they are not "programmed"
+they are just read. That code is Intel specific but it can be easily ported
+to ARM, I did that and most of the code is common with zero dependency
+on the architecture.
 
-> 
-> >> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
-> >> +
-> >> +- reg : The control frame base address.
-> >> +
-> >> +Frame:
-> >> +
-> >> +- frame-id: Encoded as follows:
-> >> +		bits[3:0]  frame number: 0 to 7.
-> >> +		bits[10:8] frame usage:
-> >> +			0 - user/kernel
-> >> +			1 - hyp
-> >> +			2 - secure
-> >> +
-> > Could we not just have a disabled status property for those frames claimed by a
-> > higher level (either secure firmware or hypervisor)? Or have I missed something
-> > here?
-> 
-> Using disabled status would work. I was also thinking maybe we should
-> use a compatible string in each frame's node. Then we could match
-> against compatible children like "frame-user", "frame-kernel",
-> "frame-hyp", "frame-secure", "frame-user-kernel", etc. It allows us
-> flexibility if we should need to add something else in the future.
+> 2. ARM SoCs don't have such infrastructure, so we depend on SW here.
 
-I can see why we need to specify secure/non-secure, but I'm not sure why we
-need to specify hyp/user/kernel usage. Could we not leave this up to the kernel
-to figure out?
+Well, it is true that most of the SoCs I am working on do not have
+a programming interface to monitor C-state residency, granted, this is
+a problem. If those stats can be retrieved somehow (I did that on our TC2
+platform) then power clamp can be used on ARM with minor modifications.
 
-A basic overveiew for those that don't know about the memory mapped timers:
+Lorenzo
 
-* There's one control frame CNTCTLBase. Some registers in this frame are only
-  available for secure accesses, including CNTNSAR which sets whether the
-  counter frames are accessible from the non-secure side.
-
-* There are up to 8 timer frames, which have their own CNTVOFF and
-  physical/virtual timers. Each frame CNTBaseN is duplicated at CNTPL0BaseN
-  with CNTVOFF and CNTPL0ACR (which controls PL0 accesses) inaccessible.
-
-I can see that we might have frames/registers we can't access (if we were
-booted on the non-secure side), but I can't see anything limiting whether we
-use a frame for kernel/hyp/user beyond that. Have I missed something?
-
-Could we not have something like the following for each frame:
-
-frame0 {
-	frame-id = <0>;
-	status = "disabled"; /* booted NS, secure firmware has not enabled access */
-	reg = <0x... 0x1000>, /* CNTBase0 */
-	      <0x... 0x1000>; /* CNTPL0Base0 */
-};
-
-> 
-> Also to get the frame number, I was thinking maybe we should expand the
-> reg property to have two address cells. Then we could have reg = <0
-> 0xf0001000 0x1000>.
-
-We could do that, but then you definitely need a more complex ranges property,
-and additional parsing code to handle grabbing it out of the reg property. I
-can't see what it buys us.
-
-Mark.
