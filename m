@@ -1,41 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936051Ab3DKJl7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 05:41:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44770 "EHLO mx1.redhat.com"
+	id S936120Ab3DKJmJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 05:42:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64515 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935568Ab3DKJl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 05:41:58 -0400
+	id S935568Ab3DKJmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 05:42:05 -0400
 From: Jason Wang <jasowang@redhat.com>
 To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [net-next PATCH 0/2] vlan TSO support for virtio-net
-Date: Thu, 11 Apr 2013 17:32:20 +0800
-Message-Id: <1365672742-42258-1-git-send-email-jasowang@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [net-next PATCH 1/2] virtio-net: initialize vlan_features
+Date: Thu, 11 Apr 2013 17:32:21 +0800
+Message-Id: <1365672742-42258-2-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1365672742-42258-1-git-send-email-jasowang@redhat.com>
+References: <1365672742-42258-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series simply enable the vlan TSO support for virtio-net by just initialize
-vlan_features for virtio-net and tun which allows vlan TSO packets to be
-processed in both TX and RX path for virtio-net.
+There's nothing that prevent passing the device features of virtio_net to its
+vlan device. So this patch simply passes those to vlan device to benefit from
+advanced features.
 
-Netperf shows great improvements on stream tests:
+Netperf shows better sending performance for vlan device since TSO can work on
+vlan now.
 
-Before:
-Guest sending:   4162.35 10^6bits/sec
-Guest receiving: 2786.67 10^6bit/sec
+before:
+netperf -H 192.168.5.2
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.5.2 ()
+port 0 AF_INET : demo
+Recv   Send    Send
+Socket Socket  Message  Elapsed
+Size   Size    Size     Time     Throughput
+bytes  bytes   bytes    secs.    10^6bits/sec
 
-After:
-Guest sending:   9365.42 10^6bits/sec
-Guest receiving: 8085.49 10^6bit/sec
+ 87380  16384  16384    10.00    4162.35
 
-Jason Wang (2):
-  virtio-net: initialize vlan_features
-  tuntap: initialize vlan_features
+after:
+netperf -H 192.168.5.2
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.5.2 ()
+port 0 AF_INET : demo
+Recv   Send    Send
+Socket Socket  Message  Elapsed
+Size   Size    Size     Time     Throughput
+bytes  bytes   bytes    secs.    10^6bits/sec
 
- drivers/net/tun.c        |    1 +
+ 87380  16384  16384    10.00    9365.42
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
  drivers/net/virtio_net.c |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index f7d67e8..8fdfde6 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1511,6 +1511,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 		/* (!csum && gso) case will be fixed by register_netdev() */
+ 	}
+ 
++	dev->vlan_features = dev->features;
++
+ 	/* Configuration may specify what MAC to use.  Otherwise random. */
+ 	if (virtio_config_val_len(vdev, VIRTIO_NET_F_MAC,
+ 				  offsetof(struct virtio_net_config, mac),
+-- 
+1.7.1
 
