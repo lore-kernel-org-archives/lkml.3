@@ -1,49 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750922Ab3DKEBA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 00:01:00 -0400
-Received: from ozlabs.org ([203.10.76.45]:49559 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710Ab3DKEA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 00:00:59 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: David Cohen <david.a.cohen@intel.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, mark.gross@intel.com
-Subject: Re: [PATCH v2] MODSIGN: do not send garbage to stderr when enabling modules signature
-In-Reply-To: <51659024.4010405@intel.com>
-References: <1365543543-17522-1-git-send-email-david.a.cohen@intel.com> <87k3oa65hx.fsf@rustcorp.com.au> <51659024.4010405@intel.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 11 Apr 2013 13:29:09 +0930
-Message-ID: <87hajd4t0y.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752223Ab3DKEDZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 00:03:25 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43047 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab3DKEDX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 00:03:23 -0400
+Date: Thu, 11 Apr 2013 14:03:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>
+Subject: linux-next: manual merge of the tip tree with the net-next tree
+Message-Id: <20130411140306.e5c3366fea7ac2f7aadd77ff@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__11_Apr_2013_14_03_06_+1000_aLriROILgGdq=io+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Cohen <david.a.cohen@intel.com> writes:
-> On 04/10/2013 03:32 AM, Rusty Russell wrote:
->> David Cohen <david.a.cohen@intel.com> writes:
->>> openssl may send garbage to stderr when generating X.509 key pair for
->>> modules signature regardless there was an error or not. It makes more
->>> difficult to create scripts based on kernel error/warning messages.
->>>
->>> When compiling kernel with -jN (N > 1), all warning/error messages
->>> printed while openssl is generating key pair may get mixed dots and
->>> other symbols openssl sends to stderr. This patch makes sure openssl
->>> logs go to default stdout.
->> Ah!  Not garbage, but it writes progress dots and status messages to
->> stderr?
->>
->> I trimmed your commit message as shown below.
->
-> Thanks! The new commit message looks fine.
-> But it's not the dots. It prints the whole logs to stderr, but the dots 
-> are more likely to get mixed.
->
-> Br, David
+--Signature=_Thu__11_Apr_2013_14_03_06_+1000_aLriROILgGdq=io+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Seems like Linus didn't bite, so I've put it in my modules-next tree.
+Hi all,
 
-Thanks,
-Rusty.
+Today's linux-next merge of the tip tree got a conflict in tools/Makefile
+between commit e306e2c13b8c ("filter: add minimal BPF JIT image
+disassembler") from the net-next tree and commit 85c66be101e1 ("perf
+tools: Introduce tools/lib/lk library") from the tip tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc tools/Makefile
+index c73c635,6aaeb6c..0000000
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@@ -35,7 -34,13 +35,13 @@@ help
+  cpupower: FORCE
+  	$(call descend,power/$@)
+ =20
+- cgroup firewire lguest perf usb virtio vm net: FORCE
+ -cgroup firewire guest usb virtio vm: FORCE
+++cgroup firewire guest usb virtio vm net: FORCE
++ 	$(call descend,$@)
++=20
++ liblk: FORCE
++ 	$(call descend,lib/lk)
++=20
++ perf: liblk FORCE
+  	$(call descend,$@)
+ =20
+  selftests: FORCE
+@@@ -63,7 -68,13 +69,13 @@@ install: cgroup_install cpupower_instal
+  cpupower_clean:
+  	$(call descend,power/cpupower,clean)
+ =20
+- cgroup_clean firewire_clean lguest_clean perf_clean usb_clean virtio_clea=
+n vm_clean net_clean:
+ -cgroup_clean firewire_clean lguest_clean usb_clean virtio_clean vm_clean:
+++cgroup_clean firewire_clean lguest_clean usb_clean virtio_clean vm_clean =
+net_clean:
++ 	$(call descend,$(@:_clean=3D),clean)
++=20
++ liblk_clean:
++ 	$(call descend,lib/lk,clean)
++=20
++ perf_clean: liblk_clean
+  	$(call descend,$(@:_clean=3D),clean)
+ =20
+  selftests_clean:
+
+--Signature=_Thu__11_Apr_2013_14_03_06_+1000_aLriROILgGdq=io+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRZjX6AAoJEECxmPOUX5FEdXMP/3S6l+AezrpDV8tbcvaDgQE4
+JXPftURvrnM3SThx2iQ3PVCCIBv001lGMHSAKOeKjXQ2Ma/u7K2iylMbY2MC448W
+eb2wh0RjGDBoe6PeMvXnktJqFLtsUO2gKVNamAs0HQw9WLV0/IhKnMbRzys7pN9l
+CLPqPAftTfjweLX5/MEXQxCzFPFHyDtO3fUOi0mtRbytcBX82/3G0BsBWRknK8pe
++g13g8KiUQAngAWUkbNelEw5ElfqHe3A5EHVphkLV4L2nIvvuCDk1z7ngRV9D1Jl
+iY32fNUOziK8t2dEgdAuBsRz5McCJLEErurgbbYbpQ+WekD5Y7vkspaagvAcw01D
+0ZKhnrKwpYQcIUJEiN4vPVlibNJ56Bjdyqaemr9NLtjzp80Sxzyhgpe3OlNduSpP
+6fUftPitOEZLL52MWChfs76cTL2T8xM4dCmjKneZ4GZaJj3P/YlZ7AsHlo653ibV
+mIxI0JUKtqIDgUAydcn+5dMIdBv/+m5TeOcgcFMw0nd+WeFNl4or3LU6u3Dp/uuW
+FU+OdtkSNRRBIz1eJ6ySHjYmgRd1z0FbqsL/5YuNWHgUj3FajzBzgcNNWZbjiD2B
+kLPJh8hXj594U8ivinIQiN5K20A/FKSqZlpFfgcR2k7m9GRe/FgeFslI+J3SrEwM
+RJlJWIdmGj0XxTe9oQso
+=D4ct
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__11_Apr_2013_14_03_06_+1000_aLriROILgGdq=io+--
