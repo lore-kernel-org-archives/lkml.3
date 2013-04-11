@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762678Ab3DKNAy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 09:00:54 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:40031 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998Ab3DKNAx (ORCPT
+	id S934940Ab3DKNCs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 09:02:48 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:53673 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab3DKNCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 09:00:53 -0400
-Message-ID: <5166B3FE.4000002@gmail.com>
-Date: Thu, 11 Apr 2013 21:00:46 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 11 Apr 2013 09:02:46 -0400
+Message-ID: <5166B450.1000404@ahsoftware.de>
+Date: Thu, 11 Apr 2013 15:02:08 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-CC: Simon Jeons <simon.jeons@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
- memory error on dirty cache selectable
-References: <51662D5B.3050001@hitachi.com> <516633BB.40307@gmail.com> <5166B1DF.8070504@hitachi.com>
-In-Reply-To: <5166B1DF.8070504@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Roger Quadros <rogerq@ti.com>
+CC: balbi@ti.com, Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] USB: ehci-omap: Select USB_PHY
+References: <5166856C.3080906@ti.com> <20130411100435.GB14394@arwen.pp.htv.fi> <516695A4.2050804@ti.com> <20130411105557.GE14394@arwen.pp.htv.fi> <5166AFD2.4070108@ti.com>
+In-Reply-To: <5166AFD2.4070108@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mitsuhiro,
-On 04/11/2013 08:51 PM, Mitsuhiro Tanino wrote:
-> (2013/04/11 12:53), Simon Jeons wrote:
->> One question against mce instead of the patchset. ;-)
+Am 11.04.2013 14:42, schrieb Roger Quadros:
+> On 04/11/2013 01:55 PM, Felipe Balbi wrote:
+
+>> I would avoid 'select' completely and just update omap2plus_defconfig
+>> adding those two as modules.
 >>
->> When check memory is bad? Before memory access? Is there a process scan it period?
-> Hi Simon-san,
->
-> Yes, there is a process to scan memory periodically.
->
-> At Intel Nehalem-EX and CPUs after Nehalem-EX generation, MCA recovery
-> is supported. MCA recovery provides error detection and isolation
-> features to work together with OS.
-> One of the MCA Recovery features is Memory Scrubbing. It periodically
-> checks memory in the background of OS.
+> 
+> OK, makes sense. I will update the patch to remove "select NOP_USB_XCEIV".
 
-Memory Scrubbing is a kernel thread? Where is the codes of memory scrubbing?
+Sorry, but this just will end up with many users having broken configs
+because of disabled stuff they don't know why they have to enable them.
+And thus with a never ending stream of questions and thus with a needed
+FAQ entry.
 
->
-> If Memory Scrubbing find an uncorrectable error on a memory before
-> OS accesses the memory bit, MCA recovery notifies SRAO error into OS
+Regards,
 
-It maybe can't find memory error timely since it is sleeping when memory 
-error occur, can this case happened?
-
-> and OS handles the SRAO error using hwpoison function.
->
-> Regards,
-> Mitsuhiro Tanino
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Alexander
 
