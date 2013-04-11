@@ -1,100 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935907Ab3DKVKx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:10:53 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16652 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935655Ab3DKUtI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:49:08 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=7GU11ANpa6QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=x5FYpSr56C8A:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202606.153522653@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:27:04 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 121/171 ] USB: oti6858: fix use-after-free in TIOCMIWAIT
-References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0121-USB-oti6858-fix-use-after-free-in-TIOCMIWAIT.patch
+	id S936019Ab3DKVLA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:11:00 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:42904 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934192Ab3DKVK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 17:10:58 -0400
+Date: Thu, 11 Apr 2013 16:10:57 -0500
+From: Robin Holt <holt@sgi.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
+        Alex Thorlton <athorlton@sgi.com>
+Subject: Re: [PATCH] Sys V shared memory limited to 8TiB.
+Message-ID: <20130411211057.GK3658@sgi.com>
+References: <20130410023924.GX3658@sgi.com>
+ <20130410161507.b12128ee3df446eb9b86d8cf@linux-foundation.org>
+ <20130411024223.GM3658@sgi.com>
+ <20130411140708.4cf9632602e8586a5ff691eb@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411140708.4cf9632602e8586a5ff691eb@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.2 stable review patch.
-If anyone has any objections, please let me know.
+On Thu, Apr 11, 2013 at 02:07:08PM -0700, Andrew Morton wrote:
+> On Wed, 10 Apr 2013 21:42:23 -0500 Robin Holt <holt@sgi.com> wrote:
+> 
+> > On Wed, Apr 10, 2013 at 04:15:07PM -0700, Andrew Morton wrote:
+> > > On Tue, 9 Apr 2013 21:39:24 -0500 Robin Holt <holt@sgi.com> wrote:
+> > > 
+> > > > Trying to run an application which was trying to put data into half
+> > > > of memory using shmget(), we found that having a shmall value below
+> > > > 8EiB-8TiB would prevent us from using anything more than 8TiB.  By setting
+> > > > kernel.shmall greater that 8EiB-8TiB would make the job work.
+> > > > 
+> > > > In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
+> > > 
+> > > You have way too much memory.
+> > > 
+> > > > ipc/shm.c:
+> > > >  458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+> > > >  459 {
+> > > > ...
+> > > >  465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
+> > > > ...
+> > > >  474         if (ns->shm_tot + numpages > ns->shm_ctlall)
+> > > >  475                 return -ENOSPC;
+> > > >
+> > > > ...
+> > > >
+> > > > --- a/include/linux/ipc_namespace.h
+> > > > +++ b/include/linux/ipc_namespace.h
+> > > > @@ -43,8 +43,8 @@ struct ipc_namespace {
+> > > >  
+> > > >  	size_t		shm_ctlmax;
+> > > >  	size_t		shm_ctlall;
+> > > > +	unsigned long	shm_tot;
+> > > >  	int		shm_ctlmni;
+> > > > -	int		shm_tot;
+> > > >  	/*
+> > > >  	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
+> > > >  	 * of shmctl()
+> > > 
+> > > I reviewed everything for fallout from this and don't see any obvious
+> > > issues.
+> > > 
+> > > I do wonder about the appropriateness of the unsigned long type.  Most
+> > > (but by no means all) code in this area uses size_t, and the
+> > > above-quoted ns->shm_ctlall is size_t.
+> > 
+> > The only reason I went with unsigned long instead of size_t was most
+> > places in the kernel track stuff I recalled that was tracking stuff
+> > in pages used unsigned longs.  Also, I found shm_tot field in shm_info
+> > structure was an unsigned long so this felt like a natural fit.  I would
+> > happily changed to size_t.  Whatever you feel is right.
+> 
+> I have no really strong feelings, but let's at least put some thought
+> into it.  I do prefer ulong and find size_t to be a PITA.  I guess it
+> doesn't matter much.
+> 
+> > > --- a/ipc/shm.c~ipc-sysv-shared-memory-limited-to-8tib-fix
+> > > +++ a/ipc/shm.c
+> > > @@ -462,7 +462,7 @@ static int newseg(struct ipc_namespace *
+> > >  	size_t size = params->u.size;
+> > >  	int error;
+> > >  	struct shmid_kernel *shp;
+> > > -	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
+> > > +	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> > 
+> > I was holding off from that change only because I was asking for this
+> > to go to stable and this doubles the size of the patch. ;)
+> 
+> It's a bug, isn't it?  Is there anything else which prevents creation
+> of segments which are >=8TB?
 
-------------------
+Definitely a bug.  Have not tried to create a segment >= 8TiB.  I can
+give that a try tomorrow morning when I have a machine again to test with.
 
-From: Johan Hovold <jhovold@gmail.com>
-
-[ Upstream commit 8edfdab37157d2683e51b8be5d3d5697f66a9f7b ]
-
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
-
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
-
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/usb/serial/oti6858.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/usb/serial/oti6858.c b/drivers/usb/serial/oti6858.c
-index 3aa582e..88e31f8 100644
---- a/drivers/usb/serial/oti6858.c
-+++ b/drivers/usb/serial/oti6858.c
-@@ -191,7 +191,6 @@ struct oti6858_private {
- 	u8 setup_done;
- 	struct delayed_work delayed_setup_work;
- 
--	wait_queue_head_t intr_wait;
- 	struct usb_serial_port *port;   /* USB port with which associated */
- };
- 
-@@ -342,7 +341,6 @@ static int oti6858_port_probe(struct usb_serial_port *port)
- 		return -ENOMEM;
- 
- 	spin_lock_init(&priv->lock);
--	init_waitqueue_head(&priv->intr_wait);
- 	priv->port = port;
- 	INIT_DELAYED_WORK(&priv->delayed_setup_work, setup_line);
- 	INIT_DELAYED_WORK(&priv->delayed_write_work, send_data);
-@@ -669,11 +667,15 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
- 	while (1) {
--		wait_event_interruptible(priv->intr_wait,
-+		wait_event_interruptible(port->delta_msr_wait,
-+					port->serial->disconnected ||
- 					priv->status.pin_state != prev);
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
- 
-+		if (port->serial->disconnected)
-+			return -EIO;
-+
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->status.pin_state & PIN_MASK;
- 		spin_unlock_irqrestore(&priv->lock, flags);
-@@ -771,7 +773,7 @@ static void oti6858_read_int_callback(struct urb *urb)
- 
- 		if (!priv->transient) {
- 			if (xs->pin_state != priv->status.pin_state)
--				wake_up_interruptible(&priv->intr_wait);
-+				wake_up_interruptible(&port->delta_msr_wait);
- 			memcpy(&priv->status, xs, OTI6858_CTRL_PKT_SIZE);
- 		}
- 
--- 
-1.7.10.4
-
-
+Thanks,
+Robin
