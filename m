@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936103Ab3DKOkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 10:40:18 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:57703 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787Ab3DKOkQ (ORCPT
+	id S936153Ab3DKOk5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 10:40:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29224 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932712Ab3DKOk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 10:40:16 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Alessandro Zummo <a.zummo@towertech.it>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, stable <stable@vger.kernel.org>
-Subject: [PATCH] rtc: rtc-at91rm9200: fix missing iounmap
-Date: Thu, 11 Apr 2013 16:38:36 +0200
-Message-Id: <1365691116-8882-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.1.5
+	Thu, 11 Apr 2013 10:40:56 -0400
+X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=hhH8zwMFE54A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=bUzm9BIBfnIA:10 a=57SyGIRnAAAA:8 a=sqimn8mf1ZHBRFsDjecA:9 a=QEXdDO2ut3YA:10 a=TIV7c6GJmisA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365691255.9609.34.camel@gandalf.local.home>
+Subject: Re: [PATCH 5/6] tools lib traceevent: Add page_size field to pevent
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 11 Apr 2013 10:40:55 -0400
+In-Reply-To: <1365691175.9609.33.camel@gandalf.local.home>
+References: <1365681898-19897-1-git-send-email-namhyung@kernel.org>
+	 <1365681898-19897-5-git-send-email-namhyung@kernel.org>
+	 <1365691175.9609.33.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing iounmap to probe error path and remove.
+On Thu, 2013-04-11 at 10:39 -0400, Steven Rostedt wrote:
+> On Thu, 2013-04-11 at 21:04 +0900, Namhyung Kim wrote:
+> > From: Namhyung Kim <namhyung.kim@lge.com>
+> > 
+> > It's for saving the page size of traced system.
+> 
+> Can you add a bit more detail in the change log about why this patch is
+> necessary.
 
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- drivers/rtc/rtc-at91rm9200.c | 14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+For now, you can add my
 
-diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
-index 434ebc3..eebd8ac 100644
---- a/drivers/rtc/rtc-at91rm9200.c
-+++ b/drivers/rtc/rtc-at91rm9200.c
-@@ -297,7 +297,7 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
- 				"at91_rtc", pdev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "IRQ %d already in use.\n", irq);
--		return ret;
-+		goto err_unmap;
- 	}
- 
- 	/* cpu init code should really have flagged this device as
-@@ -309,13 +309,20 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
- 	rtc = rtc_device_register(pdev->name, &pdev->dev,
- 				&at91_rtc_ops, THIS_MODULE);
- 	if (IS_ERR(rtc)) {
--		free_irq(irq, pdev);
--		return PTR_ERR(rtc);
-+		ret = PTR_ERR(rtc);
-+		goto err_free_irq;
- 	}
- 	platform_set_drvdata(pdev, rtc);
- 
- 	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
- 	return 0;
-+
-+err_free_irq:
-+	free_irq(irq, pdev);
-+err_unmap:
-+	iounmap(at91_rtc_regs);
-+
-+	return ret;
- }
- 
- /*
-@@ -332,6 +339,7 @@ static int __exit at91_rtc_remove(struct platform_device *pdev)
- 	free_irq(irq, pdev);
- 
- 	rtc_device_unregister(rtc);
-+	iounmap(at91_rtc_regs);
- 	platform_set_drvdata(pdev, NULL);
- 
- 	return 0;
--- 
-1.8.1.5
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+for all but this patch.
+
+I just want to know more about this patch before I ack it.
+
+Thanks,
+
+-- Steve
+
 
