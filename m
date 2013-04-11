@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab3DKGB4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 02:01:56 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:51699 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab3DKGBz (ORCPT
+	id S1753661Ab3DKGVe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 02:21:34 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37027 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab3DKGVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 02:01:55 -0400
-Message-ID: <516651C8.307@linux.vnet.ibm.com>
-Date: Thu, 11 Apr 2013 14:01:44 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: wake-affine throttle
-References: <5164DCE7.8080906@linux.vnet.ibm.com> <1365583873.30071.31.camel@laptop> <51652F43.7000300@linux.vnet.ibm.com>
-In-Reply-To: <51652F43.7000300@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041105-5816-0000-0000-00000782078F
+	Thu, 11 Apr 2013 02:21:32 -0400
+Date: Thu, 11 Apr 2013 16:21:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the arm-soc tree with the arm-current
+ tree
+Message-Id: <20130411162121.02448747195d0d5fa6ce0124@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__11_Apr_2013_16_21_21_+1000_he6lm2e_ZR3aEtnH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 05:22 PM, Michael Wang wrote:
-> Hi, Peter
-> 
-> Thanks for your reply :)
-> 
-> On 04/10/2013 04:51 PM, Peter Zijlstra wrote:
->> On Wed, 2013-04-10 at 11:30 +0800, Michael Wang wrote:
->>> | 15 GB   |      32 | 35918 |   | 37632 | +4.77% | 47923 | +33.42% |
->>> 52241 | +45.45%
->>
->> So I don't get this... is wake_affine() once every milisecond _that_
->> expensive?
->>
->> Seeing we get a 45%!! improvement out of once every 100ms that would
->> mean we're like spending 1/3rd of our time in wake_affine()? that's
->> preposterous. So what's happening?
-> 
-> Not all the regression was caused by overhead, adopt curr_cpu not
-> prev_cpu for select_idle_sibling() is a more important reason for the
-> regression of pgbench.
-> 
-> In other word, for pgbench, we waste time in wake_affine() and make the
-> wrong decision at most of the time, the previously patch show
-> wake_affine() do pull unrelated tasks together, that's good if current
-> cpu still cached hot data for wakee, but that's not the case of the
-> workload like pgbench.
+--Signature=_Thu__11_Apr_2013_16_21_21_+1000_he6lm2e_ZR3aEtnH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please let me know if I failed to express my thought clearly.
+Hi all,
 
-I know it's hard to figure out why throttle could bring so many benefit,
-since the wake-affine stuff is a black box with too many unmeasurable
-factors, but that's actually the reason why we finally figure out this
-throttle idea, not the approach like wakeup-buddy, although both of them
-help to stop the regression.
+Today's linux-next merge of the arm-soc tree got conflicts in
+arch/arm/configs/h7201_defconfig and arch/arm/configs/h7202_defconfig
+between commit e42c3074c8f7 ("ARM: remove NWFPE and VFP emulation code
+from the kernel") from the arm-current tree and commit 293eb135a924
+("ARM: kill Hynix h720x platform") from the arm-soc tree.
 
-It's fortunate that there is a benchmark could help to find out the
-regression, and now we have a simple and efficient approach ready for
-action ;-)
+The latter deleted the files, so I did that and can carry the fix as
+necessary (no action is required).
 
-Regards,
-Michael Wang
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> 
-> The workload just don't satisfied the decision changed by wake-affine,
-> the more wake-affine active, the more it suffered, that's why 100ms show
-> better results than 1ms, but when reached some rate, the benefit and
-> lost of wake-affine will be balanced.
-> 
-> Regards,
-> Michael Wang
-> 
->>
->>
->>
-> 
+--Signature=_Thu__11_Apr_2013_16_21_21_+1000_he6lm2e_ZR3aEtnH
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRZlZhAAoJEECxmPOUX5FE3q0P/0jGr+SOS9auaLrslE1CGdKU
+/Pn/Wunpd7Iqxc02s3jdHiasOgusxxG0Idx2uN/EAhjFYJdpweJWjQrym7+9V+rh
+/UtG94rquMYdyeWvUFrB6cvfua3MJuKIGTmRdCCSnpKB3YDOi0Ht/5BHE8gbTx6E
+bn6iX6qF1CReTrEvVu/I+jvMD6xyZqs0uz82S4RvbcsA6Pw/ia4JZce4O3a8Kh+B
+Z818xkLfeoHGUj7KN4Ju9MG14q5pAGu0KDWXIBA6etWYv+vWO665kaoq1/M4Okq9
+XMR0r6g4fI41H7diacayNHGG5nfv1X2e0pIP2ClIy2mFUlLUDALKDChGEuVI6eo3
+JO/L2qSSPRiS6p6f2Edmv8YnoBCDEowmlWOQzcCWPAFLrsY4l2gaobc/DfwPALSm
+AsepYl20ghg3LV4fcQAopGlAhIcBsQiUH2NLwMgdna3XbaFVjEnXnYbVGzVqj1fV
+10vtAeR3RmgZ85LQPhL+0U9IWNy7MbHz3aOofBna1jQBBYpb8gh9cResv6FC1Y4x
+RQzXkoVyMuVLrXau6wH8meEYA2nDaEyme7CGUsv5eJBasPtUeFKY7A4G6ESdCXjI
+IrP+xnsSv/fUAkFzHgG7yZOlR702rpHs0CJ/4Ni3ODkr7m4Qk+44bBXRoCCqkEIj
+bZlgsd0yLSxaU9lFf4Zs
+=lbZe
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__11_Apr_2013_16_21_21_+1000_he6lm2e_ZR3aEtnH--
