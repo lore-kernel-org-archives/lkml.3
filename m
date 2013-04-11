@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab3DKHbh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:31:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34304 "EHLO mx2.suse.de"
+	id S1754939Ab3DKHcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:32:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54351 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753796Ab3DKHbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:31:36 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: "Yu, Fenghua" <fenghua.yu@intel.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Early microcode signing in secure boot environment -  Was: x86, microcode: Use common get_ramdisk_image()
-Date: Thu, 11 Apr 2013 09:31:34 +0200
-Message-ID: <1478755.iNa1PauEka@skinner.arch.suse.de>
-Organization: SUSE Products GmbH
-User-Agent: KMail/4.10 (Linux/3.7.10-1.1-desktop; KDE/4.10.0; x86_64; ; )
-In-Reply-To: <3E5A0FA7E9CA944F9D5414FEC6C712205594BABA@ORSMSX105.amr.corp.intel.com>
-References: <1365119186-23487-1-git-send-email-yinghai@kernel.org> <17075291.dMPGPSzlWd@skinner.arch.suse.de> <3E5A0FA7E9CA944F9D5414FEC6C712205594BABA@ORSMSX105.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753049Ab3DKHcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 03:32:11 -0400
+Date: Thu, 11 Apr 2013 03:32:04 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Message-ID: <1365665524-nj0fhwkj-mutt-n-horiguchi@ah.jp.nec.com>
+Subject: Re: [RFC Patch 2/2] mm: Add parameters to limit a rate of outputting
+ memory error messages
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 10, 2013 05:47:25 PM Yu, Fenghua wrote:
-> > -----Original Message-----
-> > From: Thomas Renninger [mailto:trenn@suse.de]
-> > Sent: Wednesday, April 10, 2013 12:41 AM
-> > Hello,
-> > 
-> > On Wednesday, April 10, 2013 01:34:33 PM Tang Chen wrote:
-> > > On 04/05/2013 07:46 AM, Yinghai Lu wrote:
-> > > > Use common get_ramdisk_image() to get ramdisk start phys address.
-> > > > 
-> > > > We need this to get correct ramdisk adress for 64bit bzImage that
-> > > > initrd can be loaded above 4G by kexec-tools.disk_size;
-> > 
-> > don't know whether this question came up when this feature got
-> > submitted (if yes a pointer would be appreciated).
-> > 
-> > Is there a concept how signed microcode can get verified when applied
-> > early,
-> > like it is done via firmware loader?
-> > 
-> > If not, early microcode loading is not really usable in secure boot
-> > environment, right?
+On Thu, Apr 11, 2013 at 12:59:38AM -0400, Naoya Horiguchi wrote:
+> Hi Tanino-san,
 > 
-> The microcode is cryptographically authenticated by the CPU itself, so there
-> is no security issue related to early microcode loading.
+> On Thu, Apr 11, 2013 at 12:27:15PM +0900, Mitsuhiro Tanino wrote:
+> > This patch introduces new sysctl interfaces in order to limit
+> > a rate of outputting memory error messages.
+> > 
+> > - vm.memory_failure_print_ratelimit:
+> >   Specify the minimum length of time between messages.
+> >   By default the rate limiting is disabled.
+> > 
+> > - vm.memory_failure_print_ratelimit_burst:
+> >   Specify the number of messages we can send before rate limiting.
+> > 
+> > Signed-off-by: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+...
+> > @@ -78,6 +79,16 @@ EXPORT_SYMBOL_GPL(hwpoison_filter_dev_minor);
+> >  EXPORT_SYMBOL_GPL(hwpoison_filter_flags_mask);
+> >  EXPORT_SYMBOL_GPL(hwpoison_filter_flags_value);
+> >  
+> > +/*
+> > + * This enforces a rate limit for outputting error message.
+> > + * The default interval is set to "0" HZ. This means that
+> > + * outputting error message is not limited by default.
+> > + * The default burst is set to "10". This parameter can control
+> > + * to output number of messages per interval.
+> > + * If interval is set to "0", the burst is ineffective.
+> > + */
+> > +DEFINE_RATELIMIT_STATE(sysctl_memory_failure_print_ratelimit, 0 * HZ, 10);
+> > +
+> >  static int hwpoison_filter_dev(struct page *p)
+> >  {
+> >  	struct address_space *mapping;
+> > @@ -622,13 +633,16 @@ static int me_pagecache_dirty(struct page *p, unsigned long pfn)
+> >  	SetPageError(p);
+> >  	if (mapping) {
+> >  		/* Print more information about the file. */
+> > -		if (mapping->host != NULL && S_ISREG(mapping->host->i_mode))
+> > -			pr_info("MCE %#lx: File was corrupted: Dev:%s Inode:%lu Offset:%lu\n",
+> > -				page_to_pfn(p), mapping->host->i_sb->s_id,
+> > -				mapping->host->i_ino, page_index(p));
+> > -		else
+> > -			pr_info("MCE %#lx: A dirty page cache was corrupted.\n",
+> > -				page_to_pfn(p));
+> > +		if (__ratelimit(&sysctl_memory_failure_print_ratelimit)) {
+> > +			if (mapping->host != NULL &&
+> > +			    S_ISREG(mapping->host->i_mode))
+> > +				pr_info("MCE %#lx: File was corrupted: Dev:%s Inode:%lu Offset:%lu\n",
+> > +				   page_to_pfn(p), mapping->host->i_sb->s_id,
+> > +				   mapping->host->i_ino, page_index(p));
+> > +			else
+> > +				pr_info("MCE %#lx: A dirty page cache was corrupted.\n",
+> > +					page_to_pfn(p));
+> > +		}
+> >  
+> >  		/*
+> >  		 * IO error will be reported by write(), fsync(), etc.
 
-So Intel HW is allowed to authenticate its firmware itself, bypassing the UEFI
-certificates...
-Does this apply for other vendors as well?
-Does this apply to secure boot specification?
+I don't think it's enough to do ratelimit only for me_pagecache_dirty().
+When tons of memory errors flood, all of printk()s in memory error handler
+can print out tons of messages.
 
-Is this "cryptographically authenticated by the CPU itself" thing documented
-somewhere so that security people can double check that it is really
-secure?
-
-Just some questions to discuss and think about...
-
-      Thomas
+Thanks,
+Naoya
