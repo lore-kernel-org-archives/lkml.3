@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161620Ab3DKPU6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:20:58 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:48485 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161509Ab3DKPU4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:20:56 -0400
-Message-ID: <1365693650.4218.4.camel@phoenix>
-Subject: [RESEND][PATCH 3/3] regulator: twl: Remove TWL6030_FIXED_RESOURCE
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Tero Kristo <t-kristo@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Thu, 11 Apr 2013 23:20:50 +0800
-In-Reply-To: <1365693520.4218.1.camel@phoenix>
-References: <1365693520.4218.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+	id S1161572Ab3DKPXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:23:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22667 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935788Ab3DKPXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 11:23:16 -0400
+Date: Thu, 11 Apr 2013 11:23:08 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Message-ID: <1365693788-djsd2ymu-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130411134915.GH16732@two.firstfloor.org>
+References: <51662D5B.3050001@hitachi.com>
+ <20130411134915.GH16732@two.firstfloor.org>
+Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
+ memory error on dirty cache selectable
 Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <20130411134915.GH16732@two.firstfloor.org>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TWL6030_FIXED_RESOURCE is not used now, remove it.
+On Thu, Apr 11, 2013 at 03:49:16PM +0200, Andi Kleen wrote:
+> > As a result, if the dirty cache includes user data, the data is lost,
+> > and data corruption occurs if an application uses old data.
+> 
+> The application cannot use old data, the kernel code kills it if it
+> would do that. And if it's IO data there is an EIO triggered.
+> 
+> iirc the only concern in the past was that the application may miss
+> the asynchronous EIO because it's cleared on any fd access. 
+> 
+> This is a general problem not specific to memory error handling, 
+> as these asynchronous IO errors can happen due to other reason
+> (bad disk etc.) 
+> 
+> If you're really concerned about this case I think the solution
+> is to make the EIO more sticky so that there is a higher chance
+> than it gets returned.  This will make your data much more safe,
+> as it will cover all kinds of IO errors, not just the obscure memory
+> errors.
 
-TWL6030_FIXED_RESOURCE is not used since commit e76ab829cc
-"regulator: twl: Remove references to the twl4030 regulator"
+I'm interested in this topic, and in previous discussion, what I was said
+is that we can't expect user applications to change their behaviors when
+they get EIO, so globally changing EIO's stickiness is not a great approach.
+I'm working on a new pagecache tag based mechanism to solve this.
+But it needs time and more discussions.
+So I guess Tanino-san suggests giving up on dirty pagecache errors
+as a quick solution.
 
-twl6030_fixed_resource is removed by commit 029dd3cef
-"regulator: twl: Remove another unused variable warning".
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/twl-regulator.c |   13 -------------
- 1 file changed, 13 deletions(-)
-
-diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
-index 2b3dc5b..611e73e 100644
---- a/drivers/regulator/twl-regulator.c
-+++ b/drivers/regulator/twl-regulator.c
-@@ -936,19 +936,6 @@ static const struct twlreg_info TWLFIXED_INFO_##label = { \
- 		}, \
- 	}
- 
--#define TWL6030_FIXED_RESOURCE(label, offset, turnon_delay) \
--static struct twlreg_info TWLRES_INFO_##label = { \
--	.base = offset, \
--	.desc = { \
--		.name = #label, \
--		.id = TWL6030_REG_##label, \
--		.ops = &twl6030_fixed_resource, \
--		.type = REGULATOR_VOLTAGE, \
--		.owner = THIS_MODULE, \
--		.enable_time = turnon_delay, \
--		}, \
--	}
--
- #define TWL6025_ADJUSTABLE_SMPS(label, offset) \
- static const struct twlreg_info TWLSMPS_INFO_##label = { \
- 	.base = offset, \
--- 
-1.7.10.4
-
-
-
+Thanks,
+Naoya
