@@ -1,107 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935880Ab3DKVQK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:16:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43027 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935533Ab3DKVQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:16:07 -0400
-Message-ID: <51672806.5040501@ti.com>
-Date: Thu, 11 Apr 2013 17:15:50 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-CC: <linux-pm@vger.kernel.org>, Thomas Abraham <thomas.abraham@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <amit.kachhap@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, <grant.likely@secretlab.ca>,
-        <eduardo.valentin@ti.com>
-Subject: Re: [9/9] ARM: dts: Add device tree node for exynos5440 TMU controller
-References: <1364297642-2746-10-git-send-email-amit.daniel@samsung.com>
-In-Reply-To: <1364297642-2746-10-git-send-email-amit.daniel@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S935585Ab3DKVQD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:16:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17239 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935536Ab3DKUs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 16:48:59 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=3nNosCYXjywA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=X718eONmlq4A:10 a=pGLkceISAAAA:8 a=drOt6m5kAAAA:8 a=Z4Rwk6OoAAAA:8 a=x7Tj1IhUH-1ZWmVC9aEA:9 a=MSl-tDqOz04A:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130411202608.464941142@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 11 Apr 2013 16:27:18 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 135/171 ] loop: prevent bdev freeing while device in use
+References: <20130411202503.783159048@goodmis.org>
+Content-Disposition: inline; filename=0135-loop-prevent-bdev-freeing-while-device-in-use.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amit,
+3.6.11.2 stable review patch.
+If anyone has any objections, please let me know.
 
-Copying Grant for DT.
+------------------
 
-On 26-03-2013 07:34, Amit Daniel Kachhap wrote:
-> This patch adds device node for TMU controller. There are 3
-> instances of the controllers so 3 nodes are created.
->
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->
-> ---
-> arch/arm/boot/dts/exynos5440.dtsi |   43 +++++++++++++++++++++++++++++++++++++
->   1 files changed, 43 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/boot/dts/exynos5440.dtsi b/arch/arm/boot/dts/exynos5440.dtsi
-> index 5f3562a..b74ce9f 100644
-> --- a/arch/arm/boot/dts/exynos5440.dtsi
-> +++ b/arch/arm/boot/dts/exynos5440.dtsi
-> @@ -16,6 +16,12 @@
->
->   	interrupt-parent = <&gic>;
->
-> +	aliases {
-> +		tmuctrl0 = &tmuctrl_0;
-> +		tmuctrl1 = &tmuctrl_1;
-> +		tmuctrl2 = &tmuctrl_2;
-> +	};
-> +
->   	gic:interrupt-controller@2E0000 {
->   		compatible = "arm,cortex-a15-gic";
->   		#interrupt-cells = <3>;
-> @@ -156,4 +162,41 @@
->   		reg = <0x130000 0x1000>;
->   		interrupts = <0 17 0>, <0 16 0>;
->   	};
-> +
-> +	tmu_ctrl_info: tmu-ctrl-info {
-> +		gain = <5>;
-> +		reference-voltage = <16>;
-> +		noise-cancel-mode = <4>;
-> +		cal-type = <2>;
-> +		cal-mode = <0>;
-> +		efuse-value = <0x5b2c>;
-> +		threshold-falling = <5>;
-> +	};
-> +
-> +	tmuctrl_0: tmuctrl@160118 {
-> +		compatible = "samsung,exynos5440-tmu";
-> +		reg = <0x160118 0x300>;
-> +		interrupts = <0 58 0>;
-> +		clocks = <&clock 8>;
-> +		clock-names = "tmu_apbif";
-> +		tmu-ctrl-data = <&tmu_ctrl_info>;
-> +	};
-> +
-> +	tmuctrl_1: tmuctrl@16011C {
-> +		compatible = "samsung,exynos5440-tmu";
-> +		reg = <0x16011C 0x300>;
-> +		interrupts = <0 58 0>;
-> +		clocks = <&clock 8>;
-> +		clock-names = "tmu_apbif";
-> +		tmu-ctrl-data = <&tmu_ctrl_info>;
-> +	};
-> +
-> +	tmuctrl_2: tmuctrl@160120 {
-> +		compatible = "samsung,exynos5440-tmu";
-> +		reg = <0x160120 0x300>;
-> +		interrupts = <0 58 0>;
-> +		clocks = <&clock 8>;
-> +		clock-names = "tmu_apbif";
-> +		tmu-ctrl-data = <&tmu_ctrl_info>;
-> +	};
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
 
-Grant, how the above thermal data must be handled in DT? Is it fine to 
-create private phandles like that?
+[ Upstream commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd ]
 
->   };
->
-Please consider the comments on patch 8.
+struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
+block_device allocated first time we access /dev/loopXX and deallocated on
+bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
+we want that block_device stay alive until we destroy the loop device
+with "losetup -d".
+
+But because we do not hold /dev/loopXX inode its counter goes 0, and
+inode/bdev can be destroyed at any moment. Usually it happens at memory
+pressure or when user drops inode cache (like in the test below). When later in
+loop_clr_fd() we want to use bdev we have use-after-free error with following
+stack:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
+  bd_set_size+0x10/0xa0
+  loop_clr_fd+0x1f8/0x420 [loop]
+  lo_ioctl+0x200/0x7e0 [loop]
+  lo_compat_ioctl+0x47/0xe0 [loop]
+  compat_blkdev_ioctl+0x341/0x1290
+  do_filp_open+0x42/0xa0
+  compat_sys_ioctl+0xc1/0xf20
+  do_sys_open+0x16e/0x1d0
+  sysenter_dispatch+0x7/0x1a
+
+To prevent use-after-free we need to grab the device in loop_set_fd()
+and put it later in loop_clr_fd().
+
+The issue is reprodusible on current Linus head and v3.3. Here is the test:
+
+  dd if=/dev/zero of=loop.file bs=1M count=1
+  while [ true ]; do
+    losetup /dev/loop0 loop.file
+    echo 2 > /proc/sys/vm/drop_caches
+    losetup -d /dev/loop0
+  done
+
+[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
+  time we call loop_set_fd() we check that loop_device->lo_state is
+  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
+  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
+  device we'll get ENXIO.
+
+  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
+  loop_device->lo_ctl_mutex. ]
+
+Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/block/loop.c |    9 ++++++++-
+ fs/block_dev.c       |    1 +
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 3bba655..1d6b89d 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -908,6 +908,11 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
+ 		lo->lo_flags |= LO_FLAGS_PARTSCAN;
+ 	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
+ 		ioctl_by_bdev(bdev, BLKRRPART, 0);
++
++	/* Grab the block_device to prevent its destruction after we
++	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
++	 */
++	bdgrab(bdev);
+ 	return 0;
+ 
+ out_clr:
+@@ -1004,8 +1009,10 @@ static int loop_clr_fd(struct loop_device *lo)
+ 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
+ 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
+ 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
+-	if (bdev)
++	if (bdev) {
++		bdput(bdev);
+ 		invalidate_bdev(bdev);
++	}
+ 	set_capacity(lo->lo_disk, 0);
+ 	loop_sysfs_exit(lo);
+ 	if (bdev) {
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 38e721b..daaca3d 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -604,6 +604,7 @@ struct block_device *bdgrab(struct block_device *bdev)
+ 	ihold(bdev->bd_inode);
+ 	return bdev;
+ }
++EXPORT_SYMBOL(bdgrab);
+ 
+ long nr_blockdev_pages(void)
+ {
+-- 
+1.7.10.4
+
+
