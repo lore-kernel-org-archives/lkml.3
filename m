@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933585Ab3DKXDC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 19:03:02 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48353 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761178Ab3DKXDA (ORCPT
+	id S934470Ab3DKXQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 19:16:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32844 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933229Ab3DKXQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 19:03:00 -0400
-Date: Thu, 11 Apr 2013 16:02:48 -0700
-From: "tip-bot for konrad@kernel.org" <tipbot@zytor.com>
-Message-ID: <tip-4d681be3c33dd74efffbe2a8f70634f7128602ec@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, konrad@kernel.org, hpa@zytor.com,
-        mingo@kernel.org, konrad.wilk@oracle.com, tglx@linutronix.de,
-        rjw@sisk.pl, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, konrad@kernel.org,
-        linux-kernel@vger.kernel.org, konrad.wilk@oracle.com,
-        tglx@linutronix.de, rjw@sisk.pl, hpa@linux.intel.com
-In-Reply-To: <1365194544-14648-5-git-send-email-konrad.wilk@oracle.com>
-References: <1365194544-14648-5-git-send-email-konrad.wilk@oracle.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/paravirt] x86, wakeup, sleep:
-  Use pvops functions for changing GDT entries
-Git-Commit-ID: 4d681be3c33dd74efffbe2a8f70634f7128602ec
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 11 Apr 2013 16:02:53 -0700 (PDT)
+	Thu, 11 Apr 2013 19:16:22 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=IHwBNUiHl2QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=CjaTJXmGyS0A:10 a=zRKbQ67AAAAA:8 a=f813_1m-eiNqfMHDDVEA:9 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=vKy7n8QGiYgZRhPZ:21 a=JZg6JGPxgYCnxEs3:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130411231620.794246947@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 11 Apr 2013 19:11:55 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 6/9 ] sfc: Avoid generating over-length MC_CMD_FLUSH_RX_QUEUES request
+References: <20130411231149.302144972@goodmis.org>
+Content-Disposition: inline; filename=0006-sfc-Avoid-generating-over-length-MC_CMD_FLUSH_RX_QUE.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4d681be3c33dd74efffbe2a8f70634f7128602ec
-Gitweb:     http://git.kernel.org/tip/4d681be3c33dd74efffbe2a8f70634f7128602ec
-Author:     konrad@kernel.org <konrad@kernel.org>
-AuthorDate: Fri, 5 Apr 2013 16:42:24 -0400
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 11 Apr 2013 15:41:15 -0700
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-x86, wakeup, sleep: Use pvops functions for changing GDT entries
+[ Upstream commit 450783747f42dfa3883920acfad4acdd93ce69af ]
 
-We check the TSS descriptor before we try to dereference it.
-Also we document what the value '9' actually means using the
-AMD64 Architecture Programmer's Manual Volume 2, pg 90:
-"Hex value 9: Available 64-bit TSS" and pg 91:
-"The available 32-bit TSS (09h), which is redefined as the
-available 64-bit TSS."
+MCDI supports requests up to 252 bytes long, which is only enough to
+pass 63 RX queue IDs to MC_CMD_FLUSH_RX_QUEUES.  However a VF may have
+up to 64 RX queues, and if we try to flush them all we will generate
+an over-length request and BUG() in efx_mcdi_copyin().  Currently
+all VF drivers limit themselves to 32 RX queues, so reducing the
+limit to 63 does no harm.
 
-Without this, on Xen, where the GDT is available as R/O (to
-protect the hypervisor from the guest modifying it), we end up
-with a pagetable fault.
+Also add a BUILD_BUG_ON in efx_mcdi_flush_rxqs() so we remember to
+deal with the same problem there if EFX_MAX_CHANNELS is increased.
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/1365194544-14648-5-git-send-email-konrad.wilk@oracle.com
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- arch/x86/power/cpu.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/sfc/mcdi.c        |    3 +++
+ drivers/net/ethernet/sfc/siena_sriov.c |    7 +++++++
+ 2 files changed, 10 insertions(+)
 
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index 82c39c5..168da84 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -132,7 +132,10 @@ static void fix_processor_context(void)
- {
- 	int cpu = smp_processor_id();
- 	struct tss_struct *t = &per_cpu(init_tss, cpu);
--
-+#ifdef CONFIG_X86_64
-+	struct desc_struct *desc = get_cpu_gdt_table(cpu);
-+	tss_desc tss;
-+#endif
- 	set_tss_desc(cpu, t);	/*
- 				 * This just modifies memory; should not be
- 				 * necessary. But... This is necessary, because
-@@ -141,7 +144,9 @@ static void fix_processor_context(void)
- 				 */
+diff --git a/drivers/net/ethernet/sfc/mcdi.c b/drivers/net/ethernet/sfc/mcdi.c
+index 516a437..319a73e 100644
+--- a/drivers/net/ethernet/sfc/mcdi.c
++++ b/drivers/net/ethernet/sfc/mcdi.c
+@@ -1173,6 +1173,9 @@ int efx_mcdi_flush_rxqs(struct efx_nic *efx)
+ 	__le32 *qid;
+ 	int rc, count;
  
- #ifdef CONFIG_X86_64
--	get_cpu_gdt_table(cpu)[GDT_ENTRY_TSS].type = 9;
-+	memcpy(&tss, &desc[GDT_ENTRY_TSS], sizeof(tss_desc));
-+	tss.type = 0x9; /* The available 64-bit TSS (see AMD vol 2, pg 91 */
-+	write_gdt_entry(desc, GDT_ENTRY_TSS, &tss, DESC_TSS);
++	BUILD_BUG_ON(EFX_MAX_CHANNELS >
++		     MC_CMD_FLUSH_RX_QUEUES_IN_QID_OFST_MAXNUM);
++
+ 	qid = kmalloc(EFX_MAX_CHANNELS * sizeof(*qid), GFP_KERNEL);
+ 	if (qid == NULL)
+ 		return -ENOMEM;
+diff --git a/drivers/net/ethernet/sfc/siena_sriov.c b/drivers/net/ethernet/sfc/siena_sriov.c
+index 78f5408..4ad8082 100644
+--- a/drivers/net/ethernet/sfc/siena_sriov.c
++++ b/drivers/net/ethernet/sfc/siena_sriov.c
+@@ -21,6 +21,9 @@
+ /* Number of longs required to track all the VIs in a VF */
+ #define VI_MASK_LENGTH BITS_TO_LONGS(1 << EFX_VI_SCALE_MAX)
  
- 	syscall_init();				/* This sets MSR_*STAR and related */
- #endif
++/* Maximum number of RX queues supported */
++#define VF_MAX_RX_QUEUES 63
++
+ /**
+  * enum efx_vf_tx_filter_mode - TX MAC filtering behaviour
+  * @VF_TX_FILTER_OFF: Disabled
+@@ -578,6 +581,7 @@ static int efx_vfdi_init_rxq(struct efx_vf *vf)
+ 	efx_oword_t reg;
+ 
+ 	if (bad_vf_index(efx, vf_evq) || bad_vf_index(efx, vf_rxq) ||
++	    vf_rxq >= VF_MAX_RX_QUEUES ||
+ 	    bad_buf_count(buf_count, EFX_MAX_DMAQ_SIZE)) {
+ 		if (net_ratelimit())
+ 			netif_err(efx, hw, efx->net_dev,
+@@ -683,6 +687,9 @@ static int efx_vfdi_fini_all_queues(struct efx_vf *vf)
+ 	__le32 *rxqs;
+ 	int rc;
+ 
++	BUILD_BUG_ON(VF_MAX_RX_QUEUES >
++		     MC_CMD_FLUSH_RX_QUEUES_IN_QID_OFST_MAXNUM);
++
+ 	rxqs = kmalloc(count * sizeof(*rxqs), GFP_KERNEL);
+ 	if (rxqs == NULL)
+ 		return VFDI_RC_ENOMEM;
+-- 
+1.7.10.4
+
+
