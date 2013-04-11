@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937163Ab3DKDCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 23:02:07 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:42859 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761961Ab3DKDCE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 23:02:04 -0400
-Date: Thu, 11 Apr 2013 12:02:02 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-sh@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: Re: [PATCH/RFC 4/6] ARM: shmobile: sh73a0: add support for the DMA0
- controller in DT
-Message-ID: <20130411030202.GH21037@verge.net.au>
-References: <1365632389-2249-1-git-send-email-g.liakhovetski@gmx.de>
- <1365632389-2249-5-git-send-email-g.liakhovetski@gmx.de>
- <20130411030127.GG21037@verge.net.au>
+	id S937297Ab3DKDCV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 23:02:21 -0400
+Received: from ozlabs.org ([203.10.76.45]:46806 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936130Ab3DKDCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 23:02:17 -0400
+Message-ID: <516627B7.1030206@ozlabs.org>
+Date: Thu, 11 Apr 2013 13:02:15 +1000
+From: Jeremy Kerr <jk@ozlabs.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411030127.GG21037@verge.net.au>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: David Miller <davem@davemloft.net>, vyasevic@redhat.com,
+        patchwork@lists.ozlabs.org, jhbird.choi@samsung.com,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 3.8-stable] net: count hw_addr syncs so that unsync works
+ properly.
+References: <000001ce364b$f1b178b0$d5146a10$%choi@samsung.com> <20130410.205401.1135160208998128324.davem@davemloft.net> <20130411125954.74150e5689d3f65365947755@canb.auug.org.au>
+In-Reply-To: <20130411125954.74150e5689d3f65365947755@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 12:01:27PM +0900, Simon Horman wrote:
-> On Thu, Apr 11, 2013 at 12:19:47AM +0200, Guennadi Liakhovetski wrote:
-> > Add a Device Tree node for the DMA0 controller on sh73a0 and
-> > auxdata to supply platform data to the driver. To enable the
-> > DMA0 controller it also has to be taken out of reset.
-> > 
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> 
-> 
-> Hi Guennadi, this seems reasonable to me.
-> 
-> I guess the best thing is for you to repost it once the pre-requisites
-> are in place.
+Hi all,
 
-Also, Magnus, could you review this?
+>>> This patch looks like it should be in the 3.8-stable tree, should we apply
+>>> it?
+>>
+>> I queue up networking patches as needed and that queue is
+>> visible at:
+>>
+>> http://patchwork.ozlabs.org/user/bundle/2566/?state=*
+> 
+> Actually, this bundle is not visible via that link.  It appears to be a
+> public bundle and visible via
+> http://patchwork.ozlabs.org/bundle/davem/stable/?state=* .  I have
+> insider knowledge :-)
+
+Perhaps for public bundles, I should make the private link automatically
+redirect to the public one?
+
+Cheers,
+
+
+Jeremy
+
