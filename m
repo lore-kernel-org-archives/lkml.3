@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab3DKSgD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:36:03 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:33602 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752362Ab3DKSgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:36:01 -0400
-Date: Thu, 11 Apr 2013 14:35:12 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-Message-ID: <20130411183512.GA12298@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-	Jiri Slaby <jslaby@suse.cz>
-References: <20130402142717.GH32241@suse.de>
- <20130402150651.GB31577@thunk.org>
- <20130410105608.GC1910@suse.de>
- <20130410131245.GC4862@thunk.org>
- <20130411170402.GB11656@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411170402.GB11656@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1759883Ab3DKSgh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:36:37 -0400
+Received: from mail-ie0-f202.google.com ([209.85.223.202]:54678 "EHLO
+	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752387Ab3DKSgf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 14:36:35 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: linux-fbdev@vger.kernel.org
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-kernel@vger.kernel.org, Doug Anderson <dianders@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH] backlight: platform_lcd: introduce probe callback
+Date: Thu, 11 Apr 2013 11:36:31 -0700
+Message-Id: <1365705391-23181-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 06:04:02PM +0100, Mel Gorman wrote:
-> > If we're stalling on lock_buffer(), that implies that buffer was being
-> > written, and for some reason it was taking a very long time to
-> > complete.
-> > 
-> 
-> Yes.
-> 
-> > It might be worthwhile to put a timestamp in struct dm_crypt_io, and
-> > record the time when a particular I/O encryption/decryption is getting
-> > queued to the kcryptd workqueues, and when they finally squirt out.
-> > 
-> 
-> That somewhat assumes that dm_crypt was at fault which is not unreasonable
-> but I was skeptical as the workload on dm_crypt was opening a maildir
-> and mostly reads.
+Platform LCD devices may need to do some device-specific
+initialization before they can be used (regulator or GPIO setup,
+for example), but currently the driver does not support any way of
+doing this.  This patch adds a probe() callback to plat_lcd_data
+which platform LCD devices can set to indicate that device-specific
+initialization is needed.
 
-Hmm... well, I've reviewed all of the places in the ext4 and jbd2
-layer where we call lock_buffer(), and with one exception[1] we're not
-holding the the bh locked any longer than necessary.  There are a few
-places where we grab a spinlock or two before we can do what we need
-to do and then release the lock'ed buffer head, but the only time we
-hold the bh locked for long periods of time is when we submit metadata
-blocks for I/O.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ drivers/video/backlight/platform_lcd.c | 8 ++++++++
+ include/video/platform_lcd.h           | 1 +
+ 2 files changed, 9 insertions(+)
 
-[1] There is one exception in ext4_xattr_release_block() where I
-believe we should move the call to unlock_buffer(bh) before the call
-to ext4_free_blocks(), since we've already elevanted the bh count and
-ext4_free_blocks() does not need to have the bh locked.  It's not
-related to any of the stalls you've repored, though, as near as I can
-tell (none of the stack traces include the ext4 xattr code, and this
-would only affect external extended attribute blocks).
+diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
+index 54d94de..2fb24a1 100644
+--- a/drivers/video/backlight/platform_lcd.c
++++ b/drivers/video/backlight/platform_lcd.c
+@@ -86,6 +86,14 @@ static int platform_lcd_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
++	if (pdata->probe) {
++		err = pdata->probe(pdata);
++		if (err) {
++			dev_err(dev, "platform probe failed: %d\n", err);
++			return err;
++		}
++	}
++
+ 	plcd = devm_kzalloc(&pdev->dev, sizeof(struct platform_lcd),
+ 			    GFP_KERNEL);
+ 	if (!plcd) {
+diff --git a/include/video/platform_lcd.h b/include/video/platform_lcd.h
+index ad3bdfe..23864b2 100644
+--- a/include/video/platform_lcd.h
++++ b/include/video/platform_lcd.h
+@@ -15,6 +15,7 @@ struct plat_lcd_data;
+ struct fb_info;
+ 
+ struct plat_lcd_data {
++	int	(*probe)(struct plat_lcd_data *);
+ 	void	(*set_power)(struct plat_lcd_data *, unsigned int power);
+ 	int	(*match_fb)(struct plat_lcd_data *, struct fb_info *);
+ };
+-- 
+1.8.1.3
 
-
-Could you code which checks the hold time of lock_buffer(), measuing
-from when the lock is successfully grabbed, to see if you can see if I
-missed some code path in ext4 or jbd2 where the bh is locked and then
-there is some call to some function which needs to block for some
-random reason?  What I'd suggest is putting a timestamp in buffer_head
-structure, which is set by lock_buffer once it is successfully grabbed
-the lock, and then in unlock_buffer(), if it is held for more than a
-second or some such, to dump out the stack trace.
-
-Because at this point, either I'm missing something or I'm beginning
-to suspect that your hard drive (or maybe something the block layer?)
-is simply taking a long time to service an I/O request.  Putting in
-this check should be able to very quickly determine what code path
-and/or which subsystem we should be focused upon.
-
-Thanks,
-
-					- Ted
