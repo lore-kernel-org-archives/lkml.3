@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161515Ab3DKIhL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 04:37:11 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:61982 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161481Ab3DKIhD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 04:37:03 -0400
-Date: Thu, 11 Apr 2013 01:37:02 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Viresh Kumar'" <viresh.kumar@linaro.org>,
-        "'Alexander Shiyan'" <shc_work@mail.ru>,
-        "'Rafael J. Wysocki'" <rjw@sisk.pl>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the pm tree
-Message-ID: <20130411083702.GE31465@quad.lixom.net>
-References: <20130410171743.2ffa67388b330991228a6775@canb.auug.org.au>
- <30ad01ce35c6$8b13cb10$a13b6130$%kim@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <30ad01ce35c6$8b13cb10$a13b6130$%kim@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1161552Ab3DKIoj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 04:44:39 -0400
+Received: from mout.gmx.net ([212.227.15.18]:49897 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752427Ab3DKIoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 04:44:37 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX184MS5pRPE4hVAbrsOBUd94uOJabMMk6V+fUjEkJl
+	ViEJaDWj231NSh
+Message-ID: <1365669862.19620.129.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: wake-affine throttle
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Thu, 11 Apr 2013 10:44:22 +0200
+In-Reply-To: <516673BF.4080404@linux.vnet.ibm.com>
+References: <5164DCE7.8080906@linux.vnet.ibm.com>
+	 <1365583873.30071.31.camel@laptop> <51652F43.7000300@linux.vnet.ibm.com>
+	 <516651C8.307@linux.vnet.ibm.com>
+	 <1365665447.19620.102.camel@marge.simpson.net>
+	 <516673BF.4080404@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 05:36:49PM +0900, Kukjin Kim wrote:
-> Stephen Rothwell wrote:
-> > 
-> > Hi all,
-> > 
-> Hi,
-> 
-> > Today's linux-next merge of the arm-soc tree got a conflict in
-> > arch/arm/mach-s3c24xx/Kconfig between commit 785f40040874 ("cpufreq:
-> > s3c24xx: move cpufreq driver to drivers/cpufreq") from the pm tree and
-> 
-> As I know, Rafael will drop it in his tree.
-> http://lists-archives.com/linux-kernel/27815851-cpufreq-s3c24xx-move-cpufreq
-> -driver-to-drivers-cpufreq.html
-> 
-> > commits fb278af74b28 ("ARM: S3C24XX: Removed unneeded dependency on
-> > CPU_S3C2410") and a4e4d22c6f53 ("ARM: S3C24XX: Removed unneeded
-> > dependency on CPU_S3C2412") from the arm-soc tree.
-> > 
-> > I fixed it up by removing the sections from arch/arm/mach-s3c24xx/Kconfig
-> > and can carry thefix as necessary (no action is required).
-> > 
-> Thanks.
-> 
-> > P.S. those arm-soc tree commits have a bad Author email address ...
-> 
-> Oops :-( it's my fault due to e-mail client problem...
-> 
-> Arnd, it happened in next/dt-exynos, next/mct-exynos and
-> next/cleanup-samsung branches in my tree.
-> 
-> And I sorted out in my local just now. Could you please re-pull them into
-> arm-soc? Then, I will push forced. Sorry about that.
+On Thu, 2013-04-11 at 16:26 +0800, Michael Wang wrote:
 
-Given that it's "just" formatting errors, I would prefer not repulling and
-rebuilding just because of it. For someone reading the information it's pretty
-obvious what the valid email address would be. Please try to be mindful of it
-in the future though (and we'll try to double-check these things too).
+> The 1:N is a good reason to explain why the chance that wakee's hot data
+> cached on curr_cpu is lower, and since it's just 'lower' not 'extinct',
+> after the throttle interval large enough, it will be balanced, this
+> could be proved, since during my test, when the interval become too big,
+> the improvement start to drop.
 
+Magnitude of improvement drops just because there's less damage done
+methinks.  You'll eventually run out of measurable damage :)
 
--Olof
+Yes, it's not really extinct, you _can_ reap a gain, it's just not at
+all likely to work out.  A more symetric load will fare better, but any
+1:N thing just has to spread far and wide to have any chance to perform.
+> Hmm...that's an interesting point, the workload contain different
+> 'priority' works, and depend on each other, if mother starving, all the
+> kids could do nothing but wait for her, may be that's the reason why the
+> benefit is so significant, since in such case, mother's little quicker
+> respond will make all the kids happy :)
+
+Exactly.  The entire load is server latency bound.  Keep the server on
+cpu, the load performs as best it can given unavoidable data miss cost.
+
+-Mike
+
