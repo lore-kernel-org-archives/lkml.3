@@ -1,133 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936318Ab3DKOrv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 10:47:51 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:36920 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934526Ab3DKOru (ORCPT
+	id S936338Ab3DKOsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 10:48:16 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:46571 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab3DKOsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 10:47:50 -0400
+	Thu, 11 Apr 2013 10:48:14 -0400
+Message-ID: <5166CC87.5060301@linux.vnet.ibm.com>
+Date: Thu, 11 Apr 2013 20:15:27 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <20130411131333.GD1910@1wt.eu>
-References: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20130411131333.GD1910@1wt.eu>
-Date: Thu, 11 Apr 2013 16:47:49 +0200
-Message-ID: <CABJ1b_TQDabT1J7ffo5cb1Th=71bcSduifMJaDpfVRiiHvtWDw@mail.gmail.com>
-Subject: Re: [PATCH] net: mv643xx_eth: Add GRO support
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Soeren Moch <smoch@web.de>, Paul Mackerras <paulus@samba.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Dale Farnsworth <dale@farnsworth.org>, netdev@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, Florian Fainelli <florian@openwrt.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>
+To: Russ Anderson <rja@sgi.com>
+CC: Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Robin Holt <holt@sgi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot
+ to boot cpu.)
+References: <20130403193743.GB29151@sgi.com> <20130408155701.GB19974@gmail.com> <5162EC1A.4050204@zytor.com> <20130408165916.GA3672@sgi.com> <20130410111620.GB29752@gmail.com> <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com> <20130411053106.GA9042@drongo> <5166B05E.8010904@linux.vnet.ibm.com> <20130411142301.GB27990@sgi.com>
+In-Reply-To: <20130411142301.GB27990@sgi.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041114-3864-0000-0000-000007AC4848
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 3:13 PM, Willy Tarreau <w@1wt.eu> wrote:
-> On Thu, Apr 11, 2013 at 02:40:23PM +0200, Sebastian Hesselbarth wrote:
->> This patch adds GRO support to mv643xx_eth by making it invoke
->> napi_gro_receive instead of netif_receive_skb.
+On 04/11/2013 07:53 PM, Russ Anderson wrote:
+> On Thu, Apr 11, 2013 at 06:15:18PM +0530, Srivatsa S. Bhat wrote:
+>> On 04/11/2013 11:01 AM, Paul Mackerras wrote:
+>>> On Wed, Apr 10, 2013 at 08:10:05AM -0700, Linus Torvalds wrote:
+>>>> The optimal solution would be to just speed up the
+>>>> disable_nonboot_cpus() code so much that it isn't an issue. That would
+>>>> be good for suspending too, although I guess suspend isn't a big issue
+>>>> if you have a thousand CPU's.
+>>>>
+>>>> Has anybody checked whether we could do the cpu_down() on non-boot
+>>>> CPU's in parallel? Right now we serialize the thing completely, with
+>>>
+>>> I thought Srivatsa S. Bhat had a patchset that did exactly that.
+>>> Srivatsa?
+>>>
 >>
->> Signed-off-by: Soeren Moch <smoch@web.de>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> ---
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
->> Cc: Andrew Lunn <andrew@lunn.ch>
->> Cc: Jason Cooper <jason@lakedaemon.net>
->> Cc: Florian Fainelli <florian@openwrt.org>
->> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Dale Farnsworth <dale@farnsworth.org>
->> Cc: netdev@vger.kernel.org
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linuxppc-dev@lists.ozlabs.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>  drivers/net/ethernet/marvell/mv643xx_eth.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> Thanks for the CC, Paul! Adding some more people to CC.
 >>
->> diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
->> index 305038f..c850d04 100644
->> --- a/drivers/net/ethernet/marvell/mv643xx_eth.c
->> +++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
->> @@ -604,7 +604,7 @@ static int rxq_process(struct rx_queue *rxq, int budget)
->>                       lro_receive_skb(&rxq->lro_mgr, skb, (void *)cmd_sts);
->>                       lro_flush_needed = 1;
->>               } else
->> -                     netif_receive_skb(skb);
->> +                     napi_gro_receive(&mp->napi, skb);
+>> Actually, my patchset was about removing stop_machine() from the CPU
+>> offline path.
+>> http://lwn.net/Articles/538819/
+> 
+> I certainly agree with the intent.
+> 
+
+Thank you!
+
+>> And here is the performance improvement I had measured in the version
+>> prior to that:
+>> http://article.gmane.org/gmane.linux.kernel/1435249
 >>
->>               continue;
->
-> I remember having experimented with this on 3.6 a few months ago with this
-> driver and finally switching back to something like this instead which
-> showed better performance on my tests :
->
->                if (skb->ip_summed == CHECKSUM_UNNECESSARY)
->                        napi_gro_receive(napi, skb);
->                else
->                        netif_receive_skb(skb);
->
-> Unfortunately I don't have more details as my commit message was rather
-> short due to this resulting from experimentation. Did you verify that
-> you did not lose any performance in various workloads ? I was playing
-> with bridges at this time, it's possible that I got better performance
-> on bridging with netif_receive_skb() than with napi_gro_receive().
+>> I'm planning to revive this patchset after the 3.10 merge window closes,
+>> because it depends on doing a tree-wide sweep, and I think its a little
+>> late to do it in time for the upcoming 3.10 merge window itself.
+>>
+>> Anyway, that's about removing stop_machine from CPU hotplug.
+>>
+>> Coming to bulk CPU hotplug, yes, I had ideas similar to what Russ suggested.
+>> But I believe we can do more than that.
+>>
+>> As Russ pointed out, the notifiers are not thread-safe, so calling them
+>> in parallel with different CPUs as arguments isn't going to work.
+>>
+>> So, first, we can convert all the CPU hotplug notifiers to take a cpumask
+>> instead of a single CPU. So assuming that there are 'n' notifiers in total,
+>> the number of function calls would become n, instead of n*1024.
+>> But that itself most likely won't give us much benefit over the for-loop
+>> that Russ has done in his patch, because it'll simply do longer processing
+>> in each of those 'n' notifiers, by iterating over the cpumask inside each
+>> notifier.
+> 
+> As an alternative, how about each cpu have their own notifier list?
+> Then one task per cpu can spin through that cpu's notifier list, 
+> allowing them to run in parallel.
+> 
+> I don't know if that would be a faster solution than adding cpumask
+> to notifiers, but it my guess is it may.
+> 
 
-Hi Willy,
+That might not work out well because those notifiers will have to lock
+against each other. That is, notifier callback A cannot run as A(cpuX)
+and A(cpuY) in parallel. They will have to serialize themselves, which
+will make the whole effort useless. But, as I mentioned earlier, A(cpuX)
+and B(cpuX) can run in parallel without additional serialization, if A
+and B are completely different callbacks (ie., belonging to different
+subsystems).
 
-I did some simple tests on Dove/Cubox with 'netperf -cCD' and
-gso/gro/lro options on
-mv643xx_eth. The tests may not be sufficient, as I am not that into
-net performance
-testing.
+>> Now comes the interesting thing:
+>>
+>> Consider a notifier chain that looks like this:
+>> Priority 0: A->B->C->D
+>>
+>> We can't invoke say notifier callback A simultaneously on 2 CPUs with 2
+>> different hotcpus as argument. *However*, since A, B, C, D all (more or less)
+>> belong to different subsystems, we can call A, B, C and D in parallel on
+>> different CPUs. They won't even serialize amongst themselves because they
+>> take locks (if any) of different subsystems. And since they are of same
+>> priority, the ordering (A after B or B after A) doesn't matter as well.
+>>
+>> So with this, if we combine the idea I wrote above about giving a cpumask
+>> to each of these notifiers to work with, we end up in this:
+>>
+>> CPU 0          CPU 1          CPU2           ....
+>> A(cpumask)     B(cpumask)     C(cpumask)     ....
+>>
+>> So, for example, the CPU_DOWN_PREPARE notification can be processed in parallel
+>> on multiple CPUs at a time, for a given cpumask! That should definitely
+>> give us a good speed-up.
+>>
+>> One more thing we have to note is that, there are 4 notifiers for taking a
+>> CPU offline:
+>>
+>> CPU_DOWN_PREPARE
+>> CPU_DYING
+>> CPU_DEAD
+>> CPU_POST_DEAD
+>>
+>> The first can be run in parallel as mentioned above. The second is run in
+>> parallel in the stop_machine() phase as shown in Russ' patch. But the third
+>> and fourth set of notifications all end up running only on CPU0, which will
+>> again slow down things.
+> 
+> In my testing the third and fourth set were a small part of the overall
+> time.  Less than 10%, with cpu notifiers 90+% of the time.
 
-I tried todays net-next on top of 3.9-rc6 without any gro patch, with
-the initial
-patch (Soeren) and your proposed patch (Willy). The results show that
-both patches
-allow a significant increase in throughput compared to
-netif_receive_skb (!gro, !lro)
-alone. Having gro with lro disabled gives some 2% more throughput
-compared to lro only.
+*All* of them are cpu notifiers! All of them invoke __cpu_notify() internally.
+So how did you differentiate between them and find out that the third and
+fourth sets take less time?
 
-Sebastian
+>  So you may
+> not need the added complexity, or at least fix the cpu notifier part
+> first.
+> 
 
-Recv   Send    Send                          Utilization       Service Demand
-Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
-Size   Size    Size     Time     Throughput  local    remote   local   remote
-bytes  bytes   bytes    secs.    10^6bits/s  % S      % S      us/KB   us/KB
+To make the 3rd and 4th run fast, the only thing we need to do is take CPUs
+offline in smaller steps, like 512, 256 etc.. It doesn't add any extra
+complexity over and above what is necessary to make the cpu notifiers run
+in parallel in the first place.
 
- 87380  16384  16384    10.02       615.65   19.15    99.90    5.097
-13.293 (3.9-rc6: gso)
- 87380  16384  16384    10.02       615.82   19.05    99.90    5.067
-13.289 (3.9-rc6: gso, gro)
- 87380  16384  16384    10.03       747.44   23.17    99.80    5.079
-10.938 (3.9-rc6: gso, lro)
- 87380  16384  16384    10.02       745.28   22.57    99.80    4.963
-10.970 (3.9.rc6: gso, gro, lro)
+Regards,
+Srivatsa S. Bhat
 
- 87380  16384  16384    10.02       600.34   19.10    99.90    5.211
-13.632 (3.9-rc6+soeren: gso)
- 87380  16384  16384    10.02       764.23   23.42    99.80    5.021
-10.698 (3.9-rc6+soeren: gso, gro)
- 87380  16384  16384    10.02       749.81   23.13    99.80    5.055
-10.904 (3.9-rc6+soeren: gso, lro)
- 87380  16384  16384    10.02       745.84   22.34    99.80    4.907
-10.962 (3.9.rc6+soeren: gso, gro, lro)
-
- 87380  16384  16384    10.02       605.79   18.79    100.00   5.082
-13.523 (3.9-rc6+willy: gso)
- 87380  16384  16384    10.02       765.64   24.68    99.80    5.281
-10.678 (3.9-rc6+willy: gso, gro)
- 87380  16384  16384    10.02       750.30   26.02    99.80    5.682
-10.897 (3.9-rc6+willy: gso, lro)
- 87380  16384  16384    10.03       749.40   21.86    99.80    4.778
-10.910 (3.9.rc6+willy: gso, gro, lro)
