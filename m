@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab3DKP57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:57:59 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:65317 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302Ab3DKP56 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:57:58 -0400
-Date: Thu, 11 Apr 2013 08:57:56 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: Re: [PATCH] driver core: add uid and gid to devtmpfs
-Message-ID: <20130411155756.GA24668@kroah.com>
-References: <20130406165600.GA29660@kroah.com>
- <87y5cpvhaz.fsf@xmission.com>
- <20130411155606.GA14042@kroah.com>
-MIME-Version: 1.0
+	id S1753137Ab3DKQDX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:03:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:32840 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab3DKQDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 12:03:21 -0400
+Date: Thu, 11 Apr 2013 18:02:58 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Soeren Moch <smoch@web.de>, Paul Mackerras <paulus@samba.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Dale Farnsworth <dale@farnsworth.org>, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] net: mv643xx_eth: Add GRO support
+Message-ID: <20130411160258.GI1910@1wt.eu>
+References: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130411131333.GD1910@1wt.eu> <CABJ1b_TQDabT1J7ffo5cb1Th=71bcSduifMJaDpfVRiiHvtWDw@mail.gmail.com> <20130411150326.GA19978@1wt.eu> <CABJ1b_TRxm97DKJLP_h0VwMJvcYmSpjoJvtg1KvBNGah=VzqMQ@mail.gmail.com> <20130411153256.GH1910@1wt.eu> <1365695675.3887.165.camel@edumazet-glaptop>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130411155606.GA14042@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1365695675.3887.165.camel@edumazet-glaptop>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 08:56:06AM -0700, Greg KH wrote:
-> > > +		newattrs.ia_uid = uid;
-> > > +		newattrs.ia_gid = gid;
-> > This doesn't even compile because the types are wrong.
+On Thu, Apr 11, 2013 at 08:54:35AM -0700, Eric Dumazet wrote:
+> On Thu, 2013-04-11 at 17:32 +0200, Willy Tarreau wrote:
+> > On Thu, Apr 11, 2013 at 05:27:03PM +0200, Sebastian Hesselbarth wrote:
+> > > I don't have a strong opinion on whether Soeren's or your proposal should
+> > > be submitted. But I insist on having one of them in, as GRO significantly
+> > > improves the common use case, is enabled by default, and not as
+> > > constrained as LRO.
+> > 
+> > I agree, use yours first, but we should keep an eye on this. Since you have
+> > everything to run a test, please try to see if you can get netperf to run
+> > over IPv6, I'm sure the NIC doesn't handle it.
 > 
-> Yes, this has been fixed.  But note, it only fails the build if
-> namespaces are enabled, and given that no one seems to have reported
-> this build error in either the 0-day tester, or linux-next, or the
-> distro developers that tested this patch on their systems, it seems that
-> no one enables namespaces on their systems :(
+> Willy, testing the checksum in the NIC driver itself prevents the stack
+> doing GRO even if the NIC could not checksum the packet, as in GRE
+> tunneling for example.
+> 
+> So Sebastien patch is better IMHO : Just call the napi gro handler and
+> let core stack handles the details ;)
 
-USER_NS that is, not namespaces in general, sorry about that.
+OK, that makes sense indeed, I didn't think about this case. All
+I remember was that the old call achieved a higher packet rate
+than napi_gro_receive, but it was on an older kernel and I can't
+be more specifics after several months :-/
 
-greg k-h
+Cheers,
+Willy
+
