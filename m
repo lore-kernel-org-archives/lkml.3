@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab3DKFye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 01:54:34 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:55839 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043Ab3DKFyc (ORCPT
+	id S1753408Ab3DKF6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 01:58:46 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:60031 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab3DKF6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 01:54:32 -0400
-Message-ID: <51665010.1030203@gmail.com>
-Date: Thu, 11 Apr 2013 13:54:24 +0800
+	Thu, 11 Apr 2013 01:58:45 -0400
+Message-ID: <5166510E.2050709@gmail.com>
+Date: Thu, 11 Apr 2013 13:58:38 +0800
 From: Will Huck <will.huckk@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
@@ -41,11 +41,13 @@ On 03/22/2013 11:52 AM, Rik van Riel wrote:
 >> age_acitve_anon(zone, &sc);
 >
 > The anon lrus use a two-handed clock algorithm. New anonymous pages
-
-Why the algorithm has relationship with two-handed clock?
-
 > start off on the active anon list. Older anonymous pages get moved
 > to the inactive anon list.
+
+The downside of page cache use-once replacement algorithm is 
+inter-reference distance, corret? Does it have any other downside? 
+What's the downside of two-handed clock algorithm against anonymous pages?
+
 >
 > If they get referenced before they reach the end of the inactive anon
 > list, they get moved back to the active list.
