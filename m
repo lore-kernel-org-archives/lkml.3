@@ -1,104 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936019Ab3DKVLA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:11:00 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:42904 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934192Ab3DKVK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:10:58 -0400
-Date: Thu, 11 Apr 2013 16:10:57 -0500
-From: Robin Holt <holt@sgi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
-        Alex Thorlton <athorlton@sgi.com>
-Subject: Re: [PATCH] Sys V shared memory limited to 8TiB.
-Message-ID: <20130411211057.GK3658@sgi.com>
-References: <20130410023924.GX3658@sgi.com>
- <20130410161507.b12128ee3df446eb9b86d8cf@linux-foundation.org>
- <20130411024223.GM3658@sgi.com>
- <20130411140708.4cf9632602e8586a5ff691eb@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411140708.4cf9632602e8586a5ff691eb@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1422780Ab3DKVKw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:10:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2760 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935649Ab3DKUtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 16:49:08 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=3nuACCRSuPwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=QyT9fnqFq5gA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=ieGINseiFvU_EMyHzVgA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130411202605.986554425@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 11 Apr 2013 16:27:03 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 120/171 ] USB: io_ti: fix use-after-free in TIOCMIWAIT
+References: <20130411202503.783159048@goodmis.org>
+Content-Disposition: inline; filename=0120-USB-io_ti-fix-use-after-free-in-TIOCMIWAIT.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 02:07:08PM -0700, Andrew Morton wrote:
-> On Wed, 10 Apr 2013 21:42:23 -0500 Robin Holt <holt@sgi.com> wrote:
-> 
-> > On Wed, Apr 10, 2013 at 04:15:07PM -0700, Andrew Morton wrote:
-> > > On Tue, 9 Apr 2013 21:39:24 -0500 Robin Holt <holt@sgi.com> wrote:
-> > > 
-> > > > Trying to run an application which was trying to put data into half
-> > > > of memory using shmget(), we found that having a shmall value below
-> > > > 8EiB-8TiB would prevent us from using anything more than 8TiB.  By setting
-> > > > kernel.shmall greater that 8EiB-8TiB would make the job work.
-> > > > 
-> > > > In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
-> > > 
-> > > You have way too much memory.
-> > > 
-> > > > ipc/shm.c:
-> > > >  458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
-> > > >  459 {
-> > > > ...
-> > > >  465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-> > > > ...
-> > > >  474         if (ns->shm_tot + numpages > ns->shm_ctlall)
-> > > >  475                 return -ENOSPC;
-> > > >
-> > > > ...
-> > > >
-> > > > --- a/include/linux/ipc_namespace.h
-> > > > +++ b/include/linux/ipc_namespace.h
-> > > > @@ -43,8 +43,8 @@ struct ipc_namespace {
-> > > >  
-> > > >  	size_t		shm_ctlmax;
-> > > >  	size_t		shm_ctlall;
-> > > > +	unsigned long	shm_tot;
-> > > >  	int		shm_ctlmni;
-> > > > -	int		shm_tot;
-> > > >  	/*
-> > > >  	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
-> > > >  	 * of shmctl()
-> > > 
-> > > I reviewed everything for fallout from this and don't see any obvious
-> > > issues.
-> > > 
-> > > I do wonder about the appropriateness of the unsigned long type.  Most
-> > > (but by no means all) code in this area uses size_t, and the
-> > > above-quoted ns->shm_ctlall is size_t.
-> > 
-> > The only reason I went with unsigned long instead of size_t was most
-> > places in the kernel track stuff I recalled that was tracking stuff
-> > in pages used unsigned longs.  Also, I found shm_tot field in shm_info
-> > structure was an unsigned long so this felt like a natural fit.  I would
-> > happily changed to size_t.  Whatever you feel is right.
-> 
-> I have no really strong feelings, but let's at least put some thought
-> into it.  I do prefer ulong and find size_t to be a PITA.  I guess it
-> doesn't matter much.
-> 
-> > > --- a/ipc/shm.c~ipc-sysv-shared-memory-limited-to-8tib-fix
-> > > +++ a/ipc/shm.c
-> > > @@ -462,7 +462,7 @@ static int newseg(struct ipc_namespace *
-> > >  	size_t size = params->u.size;
-> > >  	int error;
-> > >  	struct shmid_kernel *shp;
-> > > -	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
-> > > +	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> > 
-> > I was holding off from that change only because I was asking for this
-> > to go to stable and this doubles the size of the patch. ;)
-> 
-> It's a bug, isn't it?  Is there anything else which prevents creation
-> of segments which are >=8TB?
+3.6.11.2 stable review patch.
+If anyone has any objections, please let me know.
 
-Definitely a bug.  Have not tried to create a segment >= 8TiB.  I can
-give that a try tomorrow morning when I have a machine again to test with.
+------------------
 
-Thanks,
-Robin
+From: Johan Hovold <jhovold@gmail.com>
+
+[ Upstream commit 7b2459690584f239650a365f3411ba2ec1c6d1e0 ]
+
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
+
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
+
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/usb/serial/io_ti.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
+index a943c06..d2b6008 100644
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -91,9 +91,6 @@ struct edgeport_port {
+ 	int close_pending;
+ 	int lsr_event;
+ 	struct async_icount	icount;
+-	wait_queue_head_t	delta_msr_wait;	/* for handling sleeping while
+-						   waiting for msr change to
+-						   happen */
+ 	struct edgeport_serial	*edge_serial;
+ 	struct usb_serial_port	*port;
+ 	__u8 bUartMode;		/* Port type, 0: RS232, etc. */
+@@ -1539,7 +1536,7 @@ static void handle_new_msr(struct edgeport_port *edge_port, __u8 msr)
+ 			icount->dcd++;
+ 		if (msr & EDGEPORT_MSR_DELTA_RI)
+ 			icount->rng++;
+-		wake_up_interruptible(&edge_port->delta_msr_wait);
++		wake_up_interruptible(&edge_port->port->delta_msr_wait);
+ 	}
+ 
+ 	/* Save the new modem status */
+@@ -1857,7 +1854,6 @@ static int edge_open(struct tty_struct *tty, struct usb_serial_port *port)
+ 	dev = port->serial->dev;
+ 
+ 	memset(&(edge_port->icount), 0x00, sizeof(edge_port->icount));
+-	init_waitqueue_head(&edge_port->delta_msr_wait);
+ 
+ 	/* turn off loopback */
+ 	status = ti_do_config(edge_port, UMPC_SET_CLR_LOOPBACK, 0);
+@@ -2549,10 +2545,14 @@ static int edge_ioctl(struct tty_struct *tty,
+ 		dbg("%s - (%d) TIOCMIWAIT", __func__, port->number);
+ 		cprev = edge_port->icount;
+ 		while (1) {
+-			interruptible_sleep_on(&edge_port->delta_msr_wait);
++			interruptible_sleep_on(&port->delta_msr_wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
++
++			if (port->serial->disconnected)
++				return -EIO;
++
+ 			cnow = edge_port->icount;
+ 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+ 			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
+-- 
+1.7.10.4
+
+
