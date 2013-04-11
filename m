@@ -1,58 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab3DKT7P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 15:59:15 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:51189 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754719Ab3DKT7M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754832Ab3DKT7M (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 11 Apr 2013 15:59:12 -0400
-From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-To: linux-serial@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Stephen Warren <swarren@wwwdotorg.org>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: [PATCH] drivers: tty: serial: use devm_ioremap_resource()
-Date: Thu, 11 Apr 2013 22:58:57 +0300
-Message-Id: <1365710337-12251-1-git-send-email-silviupopescu1990@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+Received: from cantor2.suse.de ([195.135.220.15]:37417 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753745Ab3DKT6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 15:58:21 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 08/10] mm: vmscan: Have kswapd shrink slab only once per priority
+Date: Thu, 11 Apr 2013 20:57:56 +0100
+Message-Id: <1365710278-6807-9-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365710278-6807-1-git-send-email-mgorman@suse.de>
+References: <1365710278-6807-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert  use of devm_request_and_ioremap() to the newly introduced
-devm_ioremap_resource() which provides more consistent error handling.
+If kswaps fails to make progress but continues to shrink slab then it'll
+either discard all of slab or consume CPU uselessly scanning shrinkers.
+This patch causes kswapd to only call the shrinkers once per priority.
 
-devm_ioremap_resource() provides its own error messages so all explicit
-error messages can be removed from the failure code paths.
-
-This was found with coccinelle.
-
-Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
- drivers/tty/serial/serial-tegra.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ mm/vmscan.c | 28 +++++++++++++++++++++-------
+ 1 file changed, 21 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/tty/serial/serial-tegra.c b/drivers/tty/serial/serial-tegra.c
-index 372de8a..2080fd7 100644
---- a/drivers/tty/serial/serial-tegra.c
-+++ b/drivers/tty/serial/serial-tegra.c
-@@ -1301,11 +1301,9 @@ static int tegra_uart_probe(struct platform_device *pdev)
- 	}
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a20f2a9..0fa588d 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2696,9 +2696,10 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+ static bool kswapd_shrink_zone(struct zone *zone,
+ 			       struct scan_control *sc,
+ 			       unsigned long lru_pages,
++			       bool shrinking_slab,
+ 			       unsigned long *nr_attempted)
+ {
+-	unsigned long nr_slab;
++	unsigned long nr_slab = 0;
+ 	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	struct shrink_control shrink = {
+ 		.gfp_mask = sc->gfp_mask,
+@@ -2708,9 +2709,15 @@ static bool kswapd_shrink_zone(struct zone *zone,
+ 	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
+ 	shrink_zone(zone, sc);
  
- 	u->mapbase = resource->start;
--	u->membase = devm_request_and_ioremap(&pdev->dev, resource);
--	if (!u->membase) {
--		dev_err(&pdev->dev, "memregion/iomap address req failed\n");
--		return -EADDRNOTAVAIL;
--	}
-+	u->membase = devm_ioremap_resource(&pdev->dev, resource);
-+	if (IS_ERR(u->membase))
-+		return PTR_ERR(u->membase);
+-	reclaim_state->reclaimed_slab = 0;
+-	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
+-	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
++	/*
++	 * Slabs are shrunk for each zone once per priority or if the zone
++	 * being balanced is otherwise unreclaimable
++	 */
++	if (shrinking_slab || !zone_reclaimable(zone)) {
++		reclaim_state->reclaimed_slab = 0;
++		nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
++		sc->nr_reclaimed += reclaim_state->reclaimed_slab;
++	}
  
- 	tup->uart_clk = devm_clk_get(&pdev->dev, NULL);
- 	if (IS_ERR(tup->uart_clk)) {
+ 	/* Account for the number of pages attempted to reclaim */
+ 	*nr_attempted += sc->nr_to_reclaim;
+@@ -2751,6 +2758,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
++	bool shrinking_slab = true;
+ 	struct scan_control sc = {
+ 		.gfp_mask = GFP_KERNEL,
+ 		.priority = DEF_PRIORITY,
+@@ -2903,8 +2911,9 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				 * already being scanned that high
+ 				 * watermark would be met at 100% efficiency.
+ 				 */
+-				if (kswapd_shrink_zone(zone, &sc, lru_pages,
+-						       &nr_attempted))
++				if (kswapd_shrink_zone(zone, &sc,
++						lru_pages, shrinking_slab,
++						&nr_attempted))
+ 					raise_priority = false;
+ 			}
+ 
+@@ -2943,6 +2952,9 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 				pfmemalloc_watermark_ok(pgdat))
+ 			wake_up(&pgdat->pfmemalloc_wait);
+ 
++		/* Only shrink slab once per priority */
++		shrinking_slab = false;
++
+ 		/*
+ 		 * Fragmentation may mean that the system cannot be rebalanced
+ 		 * for high-order allocations in all zones. If twice the
+@@ -2969,8 +2981,10 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 		 * Raise priority if scanning rate is too low or there was no
+ 		 * progress in reclaiming pages
+ 		 */
+-		if (raise_priority || !sc.nr_reclaimed)
++		if (raise_priority || !sc.nr_reclaimed) {
+ 			sc.priority--;
++			shrinking_slab = true;
++		}
+ 	} while (sc.priority >= 1 &&
+ 		 !pgdat_balanced(pgdat, order, *classzone_idx));
+ 
 -- 
-1.7.9.5
+1.8.1.4
 
