@@ -1,61 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936151Ab3DKPD7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:03:59 -0400
-Received: from 1wt.eu ([62.212.114.60]:32812 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933306Ab3DKPD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:03:58 -0400
-Date: Thu, 11 Apr 2013 17:03:26 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Soeren Moch <smoch@web.de>, Paul Mackerras <paulus@samba.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Dale Farnsworth <dale@farnsworth.org>, netdev@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] net: mv643xx_eth: Add GRO support
-Message-ID: <20130411150326.GA19978@1wt.eu>
-References: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130411131333.GD1910@1wt.eu> <CABJ1b_TQDabT1J7ffo5cb1Th=71bcSduifMJaDpfVRiiHvtWDw@mail.gmail.com>
-Mime-Version: 1.0
+	id S935858Ab3DKPGo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:06:44 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:54905 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab3DKPGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 11:06:43 -0400
+Date: Thu, 11 Apr 2013 17:06:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        hpa@zytor.com, rostedt@goodmis.org, akpm@linux-foundation.org,
+        tglx@linutronix.de, Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 4/4] cputime: remove scaling
+Message-ID: <20130411150637.GB15699@somewhere>
+References: <1364489605-5443-1-git-send-email-sgruszka@redhat.com>
+ <1364489605-5443-5-git-send-email-sgruszka@redhat.com>
+ <20130410120228.GC8083@gmail.com>
+ <20130411083634.GB1380@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CABJ1b_TQDabT1J7ffo5cb1Th=71bcSduifMJaDpfVRiiHvtWDw@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <20130411083634.GB1380@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On Thu, Apr 11, 2013 at 10:36:35AM +0200, Stanislaw Gruszka wrote:
+> > I really prefer robust kernel side accounting/instrumentation.
+> 
+> We have CONFIG_IRQ_TIME_ACCOUNTING and CONFIG_VIRT_CPU_ACCOUNTING_GEN.
+> Perhaps we can change to use one of those options by default. I wonder
+> if the additional performance cost related with them is really something
+> that we should care about. Are there any measurement that show those
+> will make performance worse ?
 
-On Thu, Apr 11, 2013 at 04:47:49PM +0200, Sebastian Hesselbarth wrote:
-> I did some simple tests on Dove/Cubox with 'netperf -cCD' and
-> gso/gro/lro options on
-> mv643xx_eth. The tests may not be sufficient, as I am not that into
-> net performance testing.
-
-In fact the difference only happens when the NIC has not verified the
-checksum itself IIRC, which should be for non-IPv4 traffic. I agree
-that it's not easy to test a bridge with a cubox which has a single
-port :-) Maybe you'll see a difference in IPv6 traffic or with VLAN
-traffic, as I seem to remember this chip does not do cksum offloading
-on VLANs, but I could be wrong.
-
-> I tried todays net-next on top of 3.9-rc6 without any gro patch, with
-> the initial
-> patch (Soeren) and your proposed patch (Willy). The results show that
-> both patches
-> allow a significant increase in throughput compared to
-> netif_receive_skb (!gro, !lro)
-> alone. Having gro with lro disabled gives some 2% more throughput
-> compared to lro only.
-
-Indeed this is consistent with my memories, since Eric improved the
-GRO path, it became faster than LRO on this chip.
-
-Regards,
-Willy
-
+CONFIG_IRQ_TIME_ACCOUNTING also make use of scaling. And CONFIG_VIRT_CPU_ACCOUNTING_GEN
+involves too much overhead on IO-bound workloads. It's mostly good for
+undisturbed userspace bound workloads (few IRQs, few exceptions, few syscalls).
