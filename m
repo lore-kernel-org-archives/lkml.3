@@ -1,52 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753831Ab3DKVlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:41:23 -0400
-Received: from mout.gmx.net ([212.227.15.18]:52599 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752909Ab3DKVlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:41:22 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19B3MgyKvFB8D+2lgxaEH/nyAzOHxttz+x7klmrls
-	p7WseHgQ8XhVWQ
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: tpmdd-devel@lists.sourceforge.net,
-        Matthias Leblanc <matthias.leblanc@gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics st33 driver SPI
-Date: Thu, 11 Apr 2013 23:44:04 +0200
-User-Agent: KMail/1.13.7 (Linux/3.8.4; KDE/4.9.5; x86_64; ; )
-Cc: Mathias LEBLANC <Mathias.LEBLANC@st.com>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        "Jean-Luc BLANC" <jean-luc.blanc@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mathias leblanc <mathias.lebanc@st.com>
-References: <1365518562-3678-1-git-send-email-mathias.leblanc@st.com> <201304102232.06682.PeterHuewe@gmx.de> <35286B1AE75A7C47BFF0870081A31B4B45A568E70B@SAFEX1MAIL4.st.com>
-In-Reply-To: <35286B1AE75A7C47BFF0870081A31B4B45A568E70B@SAFEX1MAIL4.st.com>
+	id S1754054Ab3DKVnr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:43:47 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:34111 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133Ab3DKVnq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 17:43:46 -0400
+Date: Thu, 11 Apr 2013 16:41:43 -0500
+From: Kent Yoder <shpedoikal@gmail.com>
+To: peterasplund@gentoo.se
+Cc: Peter.Huewe@infineon.com, mail@srajiv.net, aaron.lu@intel.com,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [tpmdd-devel] tpm_tis driver failed to suspend, error -62
+Message-ID: <20130411214141.GA12814@gmail.com>
+References: <20130319023440.GA12425@aaronlu.sh.intel.com>
+ <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
+ <ed364e68730267510d49b2bdc38679a0@gentoo.se>
+ <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
+ <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
+ <51540408.3000702@intel.com>
+ <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
+ <733a6b303b7e9a3c4fb396acad9d9c5c@gentoo.se>
+ <CAM0nabGXCfNipOHhzhoFT-yAN-RDOZG9EObQCY-QdRM5LfMCfQ@mail.gmail.com>
+ <d9741eb17fbc5731469a79b8bca3ed07@gentoo.se>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304112344.04576.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <d9741eb17fbc5731469a79b8bca3ed07@gentoo.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Matthias,
-Am Donnerstag, 11. April 2013, 10:58:59 schrieb Mathias LEBLANC:
-> Hi Peter,
+On Sat, Apr 06, 2013 at 06:00:59PM +0200, peterasplund@gentoo.se wrote:
+> 2013-04-02 16:03 skrev Kent Yoder:
+> >Hi Peter,
+> >
+> >On Mon, Apr 1, 2013 at 4:17 PM,  <peterasplund@gentoo.se> wrote:
+> >>2013-03-28 14:12 skrev Peter.Huewe@infineon.com:
+> >>>What also might be worth a look - in your bugzilla it states:
+> >>>[ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102
+> >>>PNP0c31
+> >>>(active)
+> >>>[ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
+> >>>[ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
+> >>>[ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred attempting to
+> >>>read a pcr
+> >>>value
+> >>>[ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
+> >>>
+> >>>
+> >>>Can you perhaps try to enable your TPM in the BIOS? It's quite
+> >>>often
+> >>>hidden under "embedded security device" or "system security".
+> >>>Quite often you have to have a bios password set to access these
+> >>>settings.
+> >>>If your system does not have bios support for TPMs, please
+> >>>tell me so
+> >>>and I'll try to help you out.
+> >>>
+> >>
+> >>I've enabled it in BIOS now, and the output seems to be a bit
+> >>different. Not too uplifting though...
+> >>
+> >>root@zepto:/home/peter# dmesg | grep tpm
+> >>[   14.631662] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
+> >>[   14.748276] tpm_tis 00:08: Adjusting TPM timeout parameters.
+> >>[   34.908128] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+> >>[  125.992108] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+> >>[  212.908502] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
+> >>root@zepto:/home/peter# tpm_version
+> >>Tspi_Context_Connect failed: 0x00003011 - layer=tsp, code=0011 (17),
+> >>Communication failure
+> >>root@zepto:/home/peter# tcsd -f
+> >>TCSD TDDL ioctl: (25) Inappropriate ioctl for device
+> >>TCSD TDDL Falling back to Read/Write device support.
+> >>TCSD TDDL ERROR: write to device /dev/tpm0 failed: Timer expired
+> >>TCSD TCS ERROR: TCS GetCapability failed with result = 0x1087
+> >
+> >  Can you cat /sys/class/misc/tpm0/device/timeouts? Ivan Pryvalov
+> >reported that his TPM showed values that were too small to keep from
+> >causing timeouts waiting on TPM commands, but too big to trigger the
+> >driver's code to scale them.  (He saw 12000 for the 3 timeout
+> >values.)
+> >
+> Hi Kent
 > 
-> Yes, you have right, these error are generated by #ifndef
-> __STM_ST33_TPM_SPI_H__ Just remove it and the #endif next the structure.
-Yes, I know that - for the submission to be included this has to be changed by 
-you.
+> The values I'm seeing are:
+> 
+> root@zepto:~# cat /sys/class/misc/tpm0/device/timeouts
+> 752000 2000000 752000 752000 [adjusted]
+> 
+> So I guess these are within a normal range?
 
+  Yes, these look normal. So it seems you can send commands to the TPM
+up until you try to suspend?  Can you try to cat other files like
+/sys/class/misc/tpm0/device/pcrs? This is the simplest way to send some
+command to the TPM...
 
-> Did you have these warning when you have run checkpatch script?
-You mean the sparse warnings I sent you?
-I removed the superflous ifdef to compile it and then let sparse run against 
-it.
-The driver passes normal checkpatch check, unless you call it with -strict
+Kent
 
-
-Peter
+> Thanks,
+> Peter
+> 
+> > If you're seeing similar values, can you try the attached patch?
+> >
+> >Thanks,
+> >Kent
+> >
+> >>/Peter A
+> >>
+> >>
+> >>------------------------------------------------------------------------------
+> >>Own the Future-Intel&reg; Level Up Game Demo Contest 2013
+> >>Rise to greatness in Intel's independent game demo contest.
+> >>Compete for recognition, cash, and the chance to get your game
+> >>on Steam. $5K grand prize plus 10 genre and skill prizes.
+> >>Submit your demo by 6/6/13. http://p.sf.net/sfu/intel_levelupd2d
+> >>_______________________________________________
+> >>tpmdd-devel mailing list
+> >>tpmdd-devel@lists.sourceforge.net
+> >>https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
