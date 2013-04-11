@@ -1,64 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934577Ab3DKQhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:37:21 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:48896 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147Ab3DKQhS (ORCPT
+	id S934728Ab3DKQhy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:37:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44732 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933036Ab3DKQhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:37:18 -0400
-X-AuditID: cbfee61a-b7fa86d0000045ae-46-5166e6bc59bc
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: broonie@opensource.wolfsonmicro.com
-Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        devicetree-discuss@lists.ozlabs.org,
+	Thu, 11 Apr 2013 12:37:12 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH] regulator: wm8994: Use GPIO parsed from DT when registering
- regulators
-Date: Thu, 11 Apr 2013 18:36:57 +0200
-Message-id: <1365698217-17771-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <20130411162315.GF9243@opensource.wolfsonmicro.com>
-References: <20130411162315.GF9243@opensource.wolfsonmicro.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpiluLIzCtJLcpLzFFi42I5/e+xoO6eZ2mBBl+3KFj8m32KzeLA7Ies
-	Fmeb3rBbXN41h83i8Jt2VgdWj/MzFjJ6vJz4m82jb8sqRo/Pm+QCWKK4bFJSczLLUov07RK4
-	Mt7OnMFc0M9R8eG4WgPje7YuRk4OCQETiclzXrJC2GISF+6tB4pzcQgJTGeUuNJ1mQXC6WCS
-	uPl1LjNIFZuAoUTv0T7GLkYODhEBdYmtx3VAapgFJjJK7Dr7lBGkRlggUuLh4R/sIDUsAqoS
-	N8/zgoR5BdwkvrZ8BGuVEFCQmDPJBiTMKeAgsaJ3CROILSRgLzFz1kzGCYy8CxgZVjGKphYk
-	FxQnpeca6hUn5haX5qXrJefnbmIEh8wzqR2MKxssDjEKcDAq8fCeaEgNFGJNLCuuzD3EKMHB
-	rCTCG7M3LVCINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMHp1QD
-	48X6fXnJz7knRZ/o+lVw7sFS1bizbzZ5x7RdPfrgRuWKF7t+33+sEhWwQGqKjuKKdSeunRC3
-	Tu5Ueqe5bMEtsZSLK6Xaf1y4dUtg8nVlt6Rv7Vsn1r7z4vty8OhMU9kDz3MKmtOn7j5lycO9
-	YA9foPnbNQHNzF+W1CkdcTt2feMhC7WeExJdN94rsRRnJBpqMRcVJwIAd1T43xUCAAA=
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] mfd: wm8994: Add some OF properties
+Date: Thu, 11 Apr 2013 17:37:03 +0100
+Message-Id: <1365698223-4684-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1365698223-4684-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1365698223-4684-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ensure the regulators are registered with a GPIO parsed from the device
-tree when available.
+Add properties for some of the more important bits of platform data and
+fill out the binding document.
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Not all of the current platform data is suitable for the sort of fixed
+configuration that is done using DT, some of it should have runtime
+mechanisms added instead and some is unlikely to ever be used in practical
+systems.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- drivers/regulator/wm8994-regulator.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/sound/wm8994.txt |   58 ++++++++++++++-
+ drivers/mfd/wm8994-core.c                          |   75 +++++++++++++++++++-
+ 2 files changed, 130 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/regulator/wm8994-regulator.c b/drivers/regulator/wm8994-regulator.c
-index 086be66..dab41ae 100644
---- a/drivers/regulator/wm8994-regulator.c
-+++ b/drivers/regulator/wm8994-regulator.c
-@@ -149,9 +149,11 @@ static int wm8994_ldo_probe(struct platform_device *pdev)
- 	config.init_data = &ldo->init_data;
- 	if (pdata)
- 		config.ena_gpio = pdata->ldo[id].enable;
-+	else if (wm8994->dev->of_node)
-+		config.ena_gpio = wm8994->pdata.ldo[id].enable;
+diff --git a/Documentation/devicetree/bindings/sound/wm8994.txt b/Documentation/devicetree/bindings/sound/wm8994.txt
+index 7a7eb1e..bb731ab 100644
+--- a/Documentation/devicetree/bindings/sound/wm8994.txt
++++ b/Documentation/devicetree/bindings/sound/wm8994.txt
+@@ -5,14 +5,70 @@ on the board).
  
- 	/* Use default constraints if none set up */
--	if (!pdata || !pdata->ldo[id].init_data) {
-+	if (!pdata || !pdata->ldo[id].init_data || wm8994->dev->of_node) {
- 		dev_dbg(wm8994->dev, "Using default init data, supply %s %s\n",
- 			ldo->supply.dev_name, ldo->supply.supply);
+ Required properties:
  
+-  - compatible : "wlf,wm1811", "wlf,wm8994", "wlf,wm8958"
++  - compatible : One of "wlf,wm1811", "wlf,wm8994" or "wlf,wm8958"
+ 
+   - reg : the I2C address of the device for I2C, the chip select
+           number for SPI.
+ 
++  - gpio-controller : Indicates this device is a GPIO controller.
++  - #gpio-cells : Must be 2. The first cell is the pin number and the
++    second cell is used to specify optional parameters (currently unused).
++
++  - AVDD2-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
++    SPKVDD1-supply, SPKVDD2-supply : power supplies for the device, as covered
++    in Documentation/devicetree/bindings/regulator/regulator.txt
++
++Optional properties:
++
++  - interrupts : The interrupt line the IRQ signal for the device is
++    connected to.  This is optional, if it is not connected then none
++    of the interrupt related properties should be specified.
++  - interrupt-controller : These devices contain interrupt controllers
++    and may provide interrupt services to other devices if they have an
++    interrupt line connected.
++  - interrupt-parent : The parent interrupt controller.
++  - #interrupt-cells: the number of cells to describe an IRQ, this should be 2.
++    The first cell is the IRQ number.
++    The second cell is the flags, encoded as the trigger masks from
++    Documentation/devicetree/bindings/interrupts.txt
++
++  - wlf,gpio-cfg : A list of GPIO configuration register values. If absent,
++    no configuration of these registers is performed. If any value is
++    over 0xffff then the register will be left as default. If present 11
++    values must be supplied.
++
++  - wlf,micbias-cfg : Two MICBIAS register values for WM1811 or
++    WM8958.  If absent the register defaults will be used.
++
++  - wlf,ldo1ena : GPIO specifier for control of LDO1ENA input to device.
++  - wlf,ldo2ena : GPIO specifier for control of LDO2ENA input to device.
++
++  - wlf,lineout1-se : If present LINEOUT1 is in single ended mode.
++  - wlf,lineout2-se : If present LINEOUT2 is in single ended mode.
++
++  - wlf,lineout1-feedback : If present LINEOUT1 has common mode feedback
++    connected.
++  - wlf,lineout2-feedback : If present LINEOUT2 has common mode feedback
++    connected.
++
++  - wlf,ldoena-always-driven : If present LDOENA is always driven
++
+ Example:
+ 
+ codec: wm8994@1a {
+ 	compatible = "wlf,wm8994";
+ 	reg = <0x1a>;
++
++	gpio-controller;
++	#gpio-cells = <2>;
++
++        lineout1-se;
++
++	AVDD2-supply = <&regulator>;
++	CPVDD-supply = <&regulator>;
++	DBVDD1-supply = <&regulator>;
++	DBVDD2-supply = <&regulator>;
++	DBVDD3-supply = <&regulator>;
++	SPKVDD1-supply = <&regulator>;
++	SPKVDD2-supply = <&regulator>;
+ };
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 3f8d591..75b8b92 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -19,6 +19,9 @@
+ #include <linux/err.h>
+ #include <linux/delay.h>
+ #include <linux/mfd/core.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/of_gpio.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/regmap.h>
+ #include <linux/regulator/consumer.h>
+@@ -396,6 +399,62 @@ static const struct reg_default wm1811_reva_patch[] = {
+ 	{ 0x102, 0x0 },
+ };
+ 
++#ifdef CONFIG_OF
++static int wm8994_set_pdata_from_of(struct wm8994 *wm8994)
++{
++	struct device_node *np = wm8994->dev->of_node;
++	struct wm8994_pdata *pdata = &wm8994->pdata;
++	int i;
++
++	if (!np)
++		return 0;
++
++	if (of_property_read_u32_array(np, "wlf,gpio-cfg", pdata->gpio_defaults,
++				       ARRAY_SIZE(pdata->gpio_defaults)) >= 0) {
++		for (i = 0; i < ARRAY_SIZE(pdata->gpio_defaults); i++) {
++			if (wm8994->pdata.gpio_defaults[i] == 0)
++				pdata->gpio_defaults[i]
++					= WM8994_CONFIGURE_GPIO;
++			else
++				pdata->gpio_defaults[i] = 0;
++		}
++	}
++
++	of_property_read_u32_array(np, "wlf,micbias-cfg", pdata->micbias,
++				   ARRAY_SIZE(pdata->micbias));
++
++	pdata->lineout1_diff = true;
++	pdata->lineout2_diff = true;
++	if (of_find_property(np, "wlf,lineout1-se", NULL))
++		pdata->lineout1_diff = false;
++	if (of_find_property(np, "wlf,lineout2-se", NULL))
++		pdata->lineout2_diff = false;
++
++	if (of_find_property(np, "wlf,lineout1-feedback", NULL))
++		pdata->lineout1fb = true;
++	if (of_find_property(np, "wlf,lineout2-feedback", NULL))
++		pdata->lineout2fb = true;
++
++	if (of_find_property(np, "wlf,ldoena-always-driven", NULL))
++		pdata->lineout2fb = true;
++
++	pdata->ldo[0].enable = of_get_named_gpio(np, "wlf,ldo1ena", 0);
++	if (pdata->ldo[0].enable < 0)
++		pdata->ldo[0].enable = 0;
++
++	pdata->ldo[1].enable = of_get_named_gpio(np, "wlf,ldo2ena", 0);
++	if (pdata->ldo[1].enable < 0)
++		pdata->ldo[1].enable = 0;
++
++	return 0;
++}
++#else
++static int wm8994_set_pdata_from_of(struct wm8994 *wm8994)
++{
++	return 0;
++}
++#endif
++
+ /*
+  * Instantiate the generic non-control parts of the device.
+  */
+@@ -414,6 +473,10 @@ static int wm8994_device_init(struct wm8994 *wm8994, int irq)
+ 	}
+ 	pdata = &wm8994->pdata;
+ 
++	ret = wm8994_set_pdata_from_of(wm8994);
++	if (ret != 0)
++		return ret;
++
+ 	dev_set_drvdata(wm8994->dev, wm8994);
+ 
+ 	/* Add the on-chip regulators first for bootstrapping */
+@@ -683,6 +746,7 @@ MODULE_DEVICE_TABLE(of, wm8994_of_match);
+ static int wm8994_i2c_probe(struct i2c_client *i2c,
+ 				      const struct i2c_device_id *id)
+ {
++	const struct of_device_id *of_id;
+ 	struct wm8994 *wm8994;
+ 	int ret;
+ 
+@@ -693,7 +757,14 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
+ 	i2c_set_clientdata(i2c, wm8994);
+ 	wm8994->dev = &i2c->dev;
+ 	wm8994->irq = i2c->irq;
+-	wm8994->type = id->driver_data;
++
++	if (i2c->dev.of_node) {
++		of_id = of_match_device(wm8994_of_match, &i2c->dev);
++		if (of_id)
++			wm8994->type = (int)of_id->data;
++	} else {
++		wm8994->type = id->driver_data;
++	}
+ 
+ 	wm8994->regmap = devm_regmap_init_i2c(i2c, &wm8994_base_regmap_config);
+ 	if (IS_ERR(wm8994->regmap)) {
+@@ -733,7 +804,7 @@ static struct i2c_driver wm8994_i2c_driver = {
+ 		.name = "wm8994",
+ 		.owner = THIS_MODULE,
+ 		.pm = &wm8994_pm_ops,
+-		.of_match_table = wm8994_of_match,
++		.of_match_table = of_match_ptr(wm8994_of_match),
+ 	},
+ 	.probe = wm8994_i2c_probe,
+ 	.remove = wm8994_i2c_remove,
 -- 
-1.7.9.5
+1.7.10.4
 
