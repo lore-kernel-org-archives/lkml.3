@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934223Ab3DKQjY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:39:24 -0400
-Received: from mail-oa0-f74.google.com ([209.85.219.74]:61339 "EHLO
-	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875Ab3DKQjW (ORCPT
+	id S933918Ab3DKQmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:42:16 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58268 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760111Ab3DKQmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:39:22 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>, Bing Zhao <bzhao@marvell.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: dw_mmc: exynos: Turn SDIO interrupts on
-Date: Thu, 11 Apr 2013 09:38:58 -0700
-Message-Id: <1365698338-27503-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
+	Thu, 11 Apr 2013 12:42:15 -0400
+Date: Thu, 11 Apr 2013 17:42:12 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Tero Kristo <t-kristo@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH 3/3] regulator: twl: Remove TWL6030_FIXED_RESOURCE
+Message-ID: <20130411164212.GH9243@opensource.wolfsonmicro.com>
+References: <1365693520.4218.1.camel@phoenix>
+ <1365693650.4218.4.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="EWehNWXqjd1oOl26"
+Content-Disposition: inline
+In-Reply-To: <1365693650.4218.4.camel@phoenix>
+X-Cookie: Your love life will be... interesting.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mmc part in exynos supports SDIO interrupts and they work fine, so
-turn the capability on.  With this I see download speeds increase
-about 10x.  This is a port of a change present in the Chrome OS tree
-that can be found at <https://gerrit.chromium.org/gerrit/#/c/26729/>.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/mmc/host/dw_mmc-exynos.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+--EWehNWXqjd1oOl26
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
-index c7f0976..3a227be 100644
---- a/drivers/mmc/host/dw_mmc-exynos.c
-+++ b/drivers/mmc/host/dw_mmc-exynos.c
-@@ -192,10 +192,10 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
- /* Common capabilities of Exynos4/Exynos5 SoC */
- static unsigned long exynos_dwmmc_caps[4] = {
- 	MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
--		MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23,
--	MMC_CAP_CMD23,
--	MMC_CAP_CMD23,
--	MMC_CAP_CMD23,
-+		MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23 | MMC_CAP_SDIO_IRQ,
-+	MMC_CAP_CMD23 | MMC_CAP_SDIO_IRQ,
-+	MMC_CAP_CMD23 | MMC_CAP_SDIO_IRQ,
-+	MMC_CAP_CMD23 | MMC_CAP_SDIO_IRQ,
- };
- 
- static const struct dw_mci_drv_data exynos_drv_data = {
--- 
-1.8.1.3
+On Thu, Apr 11, 2013 at 11:20:50PM +0800, Axel Lin wrote:
+> TWL6030_FIXED_RESOURCE is not used now, remove it.
+>=20
+> TWL6030_FIXED_RESOURCE is not used since commit e76ab829cc
+> "regulator: twl: Remove references to the twl4030 regulator"
+>=20
+> twl6030_fixed_resource is removed by commit 029dd3cef
+> "regulator: twl: Remove another unused variable warning".
 
+OK, they had actually been applied but the push failed as there was a
+similarly named tag there as well.  Pushed now thanks.
+
+--EWehNWXqjd1oOl26
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRZufdAAoJELSic+t+oim9+ukP/iE/1u6paQHEbSroShGReEdx
+0wXakmz1OU6gQ00ZOfTLgMVqUmZbh3kgiFcQ1zK82IjmelzaDFQMCVYPIi9QIq6P
+6YHYJeAnFgo0ROd+sz5Xh+CNV/WQxXQMMygUX0a2pf9Rv1xWewB+wjO3fbxI9E7X
++mkdujw3f2KnlKK90qvaDWNdwrCtFuVWVtNsPyZ+Hv/BvcO+92ZwPU+iDbUrOfWi
+omuukfyb0fXsZfiFZTH0XoWY5H+gDslpCILBVtsq6I9UVIO/wICeCRgd52nKH03z
+i6m4ldweBKfPzmCdT+e61L8St1ndgkKnFW6urVwjByR1kPsVT5VC+zpfTqPPDfWJ
+f446VqSSd+yeqXiYIsJLJ3JaKu6vZcwhlsaF0AIKai1de4jhiMrFpPHT6INg0QGG
+c14iK8jvKfLvvFQXCJBWQUMlrbTLk6TkLPlK0ES1gb5hTKD566OmVj39LvWgfIG5
+rAjYGxFyjxwfEFAeNe0z4NJD9mvP78xJiRYLGlW6h7KIIclktrquWJaqSGWzzZ2l
+YjeVqxfUI79JaEFHe21ChTatcqlgzMDfIKatlV2rRwPsJaTuwFLY50un/IZWL9RD
+kNt/7hheYvp9ib+H8MCRBMuZvyWY6CFj4/Rshmn0fQO/ta+jVDMzPLFJK+TQXRTB
+MltVpZ4BkyKh7K5UWGBp
+=B5mA
+-----END PGP SIGNATURE-----
+
+--EWehNWXqjd1oOl26--
