@@ -1,87 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937440Ab3DKAP1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 20:15:27 -0400
-Received: from mail-ob0-f201.google.com ([209.85.214.201]:34327 "EHLO
-	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937173Ab3DKAPX (ORCPT
+	id S937583Ab3DKAPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 20:15:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60371 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936176Ab3DKAGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 20:15:23 -0400
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] vfs: dcache: cond_resched in shrink_dentry_list
-References: <1364232151-23242-1-git-send-email-gthelen@google.com>
-	<20130325235614.GI6369@dastard>
-	<xr93fvzjgfke.fsf@gthelen.mtv.corp.google.com>
-	<20130326024032.GJ6369@dastard>
-	<xr934nfyg4ld.fsf@gthelen.mtv.corp.google.com>
-	<xr9361zvdxvj.fsf@gthelen.mtv.corp.google.com>
-	<20130410164455.a3cbcbdf86bc72455c22f420@linux-foundation.org>
-Date: Wed, 10 Apr 2013 17:15:21 -0700
-In-Reply-To: <20130410164455.a3cbcbdf86bc72455c22f420@linux-foundation.org>
-	(Andrew Morton's message of "Wed, 10 Apr 2013 16:44:55 -0700")
-Message-ID: <xr93mwt59b3a.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 10 Apr 2013 20:06:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>
+Subject: [PATCH 10/30] usb: exynos: do not include plat/usb-phy.h
+Date: Thu, 11 Apr 2013 02:04:52 +0200
+Message-Id: <1365638712-1028578-11-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:GIO/GKPpWX/WbsJpvoBIPVPZ+XSbUFTMKbDQdKY+fR1
+ jIBis9y4tIxHt6TuwJzXMbzt2DtvmZzzed24gwkyWcWeJGD+uV
+ YL7QQ2jSafLFhMA990zi7xZjEnJ1nPIAmwY6iEgICo7wGtsHcI
+ vELalqSCgt+LTxTuYEHksPXyaaUlfdYe0PNDujqtZEUF9JJ6wh
+ otTEP83xPRqI6r7ZfWlBRZrcl/auG+jhssid5nZ7xbMhna+Jkh
+ vkYpp1+y3PN75iItEMPkuioVyrku8zrIMWXibes91fdFKTPUkl
+ rT035nUKiB3pzwno7U9byWMLcK6JzNe/JElG1JqIAmy0lV8/gn
+ WMhRQ4+WYmhAqIOACEsqKFhCriGo4mnrXV/17t7hdekKC+v+ld
+ IToQi1phcwYWg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10 2013, Andrew Morton wrote:
+The definitions have moved to include/linux/usb/samsung-usb-phy.h,
+and plat/usb-phy.h is unavailable from drivers in a multiplatform
+configuration.
 
-> On Tue, 09 Apr 2013 17:37:20 -0700 Greg Thelen <gthelen@google.com> wrote:
->
->> > Call cond_resched() in shrink_dcache_parent() to maintain
->> > interactivity.
->> >
->> > Before this patch:
->> >
->> > void shrink_dcache_parent(struct dentry * parent)
->> > {
->> > 	while ((found = select_parent(parent, &dispose)) != 0)
->> > 		shrink_dentry_list(&dispose);
->> > }
->> >
->> > select_parent() populates the dispose list with dentries which
->> > shrink_dentry_list() then deletes.  select_parent() carefully uses
->> > need_resched() to avoid doing too much work at once.  But neither
->> > shrink_dcache_parent() nor its called functions call cond_resched().
->> > So once need_resched() is set select_parent() will return single
->> > dentry dispose list which is then deleted by shrink_dentry_list().
->> > This is inefficient when there are a lot of dentry to process.  This
->> > can cause softlockup and hurts interactivity on non preemptable
->> > kernels.
->> >
->> > This change adds cond_resched() in shrink_dcache_parent().  The
->> > benefit of this is that need_resched() is quickly cleared so that
->> > future calls to select_parent() are able to efficiently return a big
->> > batch of dentry.
->> >
->> > These additional cond_resched() do not seem to impact performance, at
->> > least for the workload below.
->> >
->> > Here is a program which can cause soft lockup on a if other system
->> > activity sets need_resched().
->
-> I was unable to guess what word was missing from "on a if other" ;)
+Also fix up the plat/usb-phy.h header file to use the definitions
+from the new header instead of providing a separate copy.
 
-Less is more ;)  Reword to:
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-usb@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+---
+ arch/arm/mach-exynos/setup-usb-phy.c         | 8 ++++----
+ arch/arm/mach-s3c64xx/setup-usb-phy.c        | 4 ++--
+ arch/arm/mach-s5pv210/setup-usb-phy.c        | 4 ++--
+ arch/arm/plat-samsung/include/plat/usb-phy.h | 5 +----
+ drivers/usb/host/ehci-s5p.c                  | 1 -
+ drivers/usb/host/ohci-exynos.c               | 1 -
+ 6 files changed, 9 insertions(+), 14 deletions(-)
 
-  Here is a program which can cause soft lockup if other system activity
-  sets need_resched().
+diff --git a/arch/arm/mach-exynos/setup-usb-phy.c b/arch/arm/mach-exynos/setup-usb-phy.c
+index b81cc56..6af4066 100644
+--- a/arch/arm/mach-exynos/setup-usb-phy.c
++++ b/arch/arm/mach-exynos/setup-usb-phy.c
+@@ -204,9 +204,9 @@ static int exynos4210_usb_phy1_exit(struct platform_device *pdev)
+ 
+ int s5p_usb_phy_init(struct platform_device *pdev, int type)
+ {
+-	if (type == S5P_USB_PHY_DEVICE)
++	if (type == USB_PHY_TYPE_DEVICE)
+ 		return exynos4210_usb_phy0_init(pdev);
+-	else if (type == S5P_USB_PHY_HOST)
++	else if (type == USB_PHY_TYPE_HOST)
+ 		return exynos4210_usb_phy1_init(pdev);
+ 
+ 	return -EINVAL;
+@@ -214,9 +214,9 @@ int s5p_usb_phy_init(struct platform_device *pdev, int type)
+ 
+ int s5p_usb_phy_exit(struct platform_device *pdev, int type)
+ {
+-	if (type == S5P_USB_PHY_DEVICE)
++	if (type == USB_PHY_TYPE_DEVICE)
+ 		return exynos4210_usb_phy0_exit(pdev);
+-	else if (type == S5P_USB_PHY_HOST)
++	else if (type == USB_PHY_TYPE_HOST)
+ 		return exynos4210_usb_phy1_exit(pdev);
+ 
+ 	return -EINVAL;
+diff --git a/arch/arm/mach-s3c64xx/setup-usb-phy.c b/arch/arm/mach-s3c64xx/setup-usb-phy.c
+index c8174d9..ca960bd 100644
+--- a/arch/arm/mach-s3c64xx/setup-usb-phy.c
++++ b/arch/arm/mach-s3c64xx/setup-usb-phy.c
+@@ -76,7 +76,7 @@ static int s3c_usb_otgphy_exit(struct platform_device *pdev)
+ 
+ int s5p_usb_phy_init(struct platform_device *pdev, int type)
+ {
+-	if (type == S5P_USB_PHY_DEVICE)
++	if (type == USB_PHY_TYPE_DEVICE)
+ 		return s3c_usb_otgphy_init(pdev);
+ 
+ 	return -EINVAL;
+@@ -84,7 +84,7 @@ int s5p_usb_phy_init(struct platform_device *pdev, int type)
+ 
+ int s5p_usb_phy_exit(struct platform_device *pdev, int type)
+ {
+-	if (type == S5P_USB_PHY_DEVICE)
++	if (type == USB_PHY_TYPE_DEVICE)
+ 		return s3c_usb_otgphy_exit(pdev);
+ 
+ 	return -EINVAL;
+diff --git a/arch/arm/mach-s5pv210/setup-usb-phy.c b/arch/arm/mach-s5pv210/setup-usb-phy.c
+index 356a090..b2ee533 100644
+--- a/arch/arm/mach-s5pv210/setup-usb-phy.c
++++ b/arch/arm/mach-s5pv210/setup-usb-phy.c
+@@ -80,7 +80,7 @@ static int s5pv210_usb_otgphy_exit(struct platform_device *pdev)
+ 
+ int s5p_usb_phy_init(struct platform_device *pdev, int type)
+ {
+-	if (type == S5P_USB_PHY_DEVICE)
++	if (type == USB_PHY_TYPE_DEVICE)
+ 		return s5pv210_usb_otgphy_init(pdev);
+ 
+ 	return -EINVAL;
+@@ -88,7 +88,7 @@ int s5p_usb_phy_init(struct platform_device *pdev, int type)
+ 
+ int s5p_usb_phy_exit(struct platform_device *pdev, int type)
+ {
+-	if (type == S5P_USB_PHY_DEVICE)
++	if (type == USB_PHY_TYPE_DEVICE)
+ 		return s5pv210_usb_otgphy_exit(pdev);
+ 
+ 	return -EINVAL;
+diff --git a/arch/arm/plat-samsung/include/plat/usb-phy.h b/arch/arm/plat-samsung/include/plat/usb-phy.h
+index 959bcdb..ab34dfa 100644
+--- a/arch/arm/plat-samsung/include/plat/usb-phy.h
++++ b/arch/arm/plat-samsung/include/plat/usb-phy.h
+@@ -11,10 +11,7 @@
+ #ifndef __PLAT_SAMSUNG_USB_PHY_H
+ #define __PLAT_SAMSUNG_USB_PHY_H __FILE__
+ 
+-enum s5p_usb_phy_type {
+-	S5P_USB_PHY_DEVICE,
+-	S5P_USB_PHY_HOST,
+-};
++#include <linux/usb/samsung_usb_phy.h>
+ 
+ extern int s5p_usb_phy_init(struct platform_device *pdev, int type);
+ extern int s5p_usb_phy_exit(struct platform_device *pdev, int type);
+diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
+index 20ebf6a..7dc9c15 100644
+--- a/drivers/usb/host/ehci-s5p.c
++++ b/drivers/usb/host/ehci-s5p.c
+@@ -19,7 +19,6 @@
+ #include <linux/platform_data/usb-ehci-s5p.h>
+ #include <linux/usb/phy.h>
+ #include <linux/usb/samsung_usb_phy.h>
+-#include <plat/usb-phy.h>
+ 
+ #define EHCI_INSNREG00(base)			(base + 0x90)
+ #define EHCI_INSNREG00_ENA_INCR16		(0x1 << 25)
+diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
+index 0bd6f47..0792bfd 100644
+--- a/drivers/usb/host/ohci-exynos.c
++++ b/drivers/usb/host/ohci-exynos.c
+@@ -18,7 +18,6 @@
+ #include <linux/usb/phy.h>
+ #include <linux/usb/samsung_usb_phy.h>
+ 
+-#include <plat/usb-phy.h>
+ 
+ struct exynos_ohci_hcd {
+ 	struct device *dev;
+-- 
+1.8.1.2
 
->> Should this change go through Al's or Andrew's branch?
->
-> I'll fight him for it.
-
-Thanks.
-
-> Softlockups are fairly serious, so I'll put a cc:stable in there.  Or
-> were the changes which triggered this problem added after 3.9?
-
-This also applies to stable.  I see the problem at least back to v3.3.
-I did not test earlier kernels, but could if you want.
