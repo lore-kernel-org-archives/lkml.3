@@ -1,78 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab3DKLeQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 07:34:16 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42221 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752087Ab3DKLeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 07:34:15 -0400
-Date: Thu, 11 Apr 2013 06:34:13 -0500
-From: Robin Holt <holt@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, Russ Anderson <rja@sgi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
-Message-ID: <20130411113412.GP3658@sgi.com>
-References: <20130408165916.GA3672@sgi.com>
- <20130410111620.GB29752@gmail.com>
- <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
- <20130410152911.GA3011@sgi.com>
- <20130410165934.GB21951@gmail.com>
- <20130410171420.GF3658@sgi.com>
- <20130410172236.GE21951@gmail.com>
- <20130410175519.GG3658@sgi.com>
- <20130410190003.GH3658@sgi.com>
- <20130411085751.GD11824@gmail.com>
+	id S1765845Ab3DKLqy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 07:46:54 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:55527 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940Ab3DKLqw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 07:46:52 -0400
+Message-ID: <5166A1D0.1080102@linux.vnet.ibm.com>
+Date: Thu, 11 Apr 2013 17:13:12 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411085751.GD11824@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Dave Hansen <dave@sr71.net>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
+ wrong cpu
+References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos> <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net> <alpine.LFD.2.02.1304092036431.21884@ionos> <alpine.LFD.2.02.1304092126150.21884@ionos> <51647C30.3050109@sr71.net> <alpine.LFD.2.02.1304101024010.21884@ionos> <alpine.LFD.2.02.1304101250320.21884@ionos> <5165C087.4060404@sr71.net> <alpine.LFD.2.02.1304111020520.21884@ionos> <51669510.2040200@linux.vnet.ibm.com>
+In-Reply-To: <51669510.2040200@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 13041111-1618-0000-0000-000003AA6E0A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ok, so it looks profilable.
+On 04/11/2013 04:18 PM, Srivatsa S. Bhat wrote:
+> On 04/11/2013 03:49 PM, Thomas Gleixner wrote:
+>> Dave,
+>>
+>> On Wed, 10 Apr 2013, Dave Hansen wrote:
+>>
+>>> I think I got a full trace this time:
+>>>
+>>> 	http://sr71.net/~dave/linux/bigbox-trace.1365621899.txt.gz
+>>>
+>>> The last timestamp is pretty close to the timestamp on the console:
+>>>
+>>> [ 2071.033434] smpboot_thread_fn():
+>>> [ 2071.033455] smpboot_thread_fn() cpu: 22 159
+>>> [ 2071.033470] td->cpu: 22
+>>> [ 2071.033475] smp_processor_id(): 21
+>>> [ 2071.033486] comm: migration/%u
+>>
+>> Yes, that's helpful. Though it makes my mind boggle:
+>>
+>>     migration/22-4335  [021] d.h.  2071.020530: sched_wakeup: comm=migration/21 pid=4323 prio=0 success=1 target_cpu=021^M
+>>     migration/22-4335  [021] d...  2071.020541: sched_switch: prev_comm=migration/22 prev_pid=4335 prev_prio=0 prev_state=0x200 ==> next_comm=migration/21 next_pid=4323 next_prio=0^M
+>>     migration/21-4323  [021] d...  2071.026110: sched_switch: prev_comm=migration/21 prev_pid=4323 prev_prio=0 prev_state=S ==> next_comm=migration/22 next_pid=4335 next_prio=0^M
+>>     migration/22-4335  [021] ....  2071.033422: smpboot_thread_fn <-kthread^M
+>>
+>> So the migration thread schedules out with state TASK_PARKED and gets
+>> scheduled back in right away without a wakeup. Srivatsa was about
+>> right, that this might be related to the sched_set_stop_task() call,
+>> but the changelog led completely down the wrong road.
+>>
+>> So the issue is:
+>>
+>> CPU14				CPU21
+>> create_thread(for CPU22)
+>>  park_thread()	
+>>    wait_for_completion()	park_me()
+>> 				 complete()
+>>    sched_set_stop_task()
+>> 				 schedule(TASK_PARKED)
+>>
+>> The sched_set_stop_task() call is issued while the task is on the
+>> runqueue of CPU21 and that confuses the hell out of the stop_task
+>> class on that cpu. So as we have to synchronize the state for the
+>> bind call (the issue observed by Borislav) we need to do the same
+>> before issuing sched_set_stop_task(). Delta patch below.
+>>
 > 
-> The result above is not surprising: most CPUs sit in idle and don't do anything, 
-> while the loop goes on, right?
+> In that case, why not just apply this 2 line patch on mainline?
+> The patch I sent yesterday was more elaborate because I wrongly assumed
+> that kthread_bind() can cause a wakeup. But now, I feel the patch shown
+> below should work just fine too. Yeah, it binds the task during creation
+> as well as during unpark, but that should be ok (see below).
 > 
-> The interesting thing to profile would be the parallel bring-down, with the 
-> simplest global lock solution you mentioned. In that case most CPUs should be 
-> doing 'something' all the time - maybe spinning on the lock, maybe something else, 
-> right?
+> Somehow, I believe we can handle this issue without introducing that
+> whole TASK_PARKED thing..
+> 
+> 
+> diff --git a/kernel/kthread.c b/kernel/kthread.c
+> index 691dc2e..74af4a8 100644
+> --- a/kernel/kthread.c
+> +++ b/kernel/kthread.c
+> @@ -308,6 +308,9 @@ struct task_struct *kthread_create_on_cpu(int (*threadfn)(void *data),
+>  	to_kthread(p)->cpu = cpu;
+>  	/* Park the thread to get it out of TASK_UNINTERRUPTIBLE state */
+>  	kthread_park(p);
+> +
+> +	wait_task_inactive(p, TASK_INTERRUPTIBLE);
+> +	__kthread_bind(p, cpu);
+>  	return p;
+>  }
+>  
 
-Again, mostly looks idle.
+Oh wait a minute, its simpler than even that I believe! We don't need that
+extra kthread_bind() also.
 
-Events: 5M cycles
-    31.69%          swapper  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
-    14.22%          swapper  [kernel.kallsyms]        [k] load_balance
-    12.95%          swapper  [kernel.kallsyms]        [k] ktime_get
-     4.64%          swapper  [kernel.kallsyms]        [k] idle_cpu
-     3.46%          swapper  [kernel.kallsyms]        [k] uv_read_rtc
-     2.26%          swapper  [kernel.kallsyms]        [k] ktime_get_update_offsets
-     2.25%          swapper  [kernel.kallsyms]        [k] rcu_check_callbacks
-     1.72%          swapper  [kernel.kallsyms]        [k] _raw_spin_lock_irqsave
-     1.57%          swapper  [kernel.kallsyms]        [k] native_write_msr_safe
-     1.53%          swapper  [kernel.kallsyms]        [k] native_safe_halt
-     1.52%          swapper  [kernel.kallsyms]        [k] apic_timer_interrupt
-     1.52%          swapper  [kernel.kallsyms]        [k] update_blocked_averages
-     1.51%          swapper  [kernel.kallsyms]        [k] __lock_text_start
-     1.48%          swapper  [kernel.kallsyms]        [k] rcu_process_gp_end
-     1.40%          swapper  [kernel.kallsyms]        [k] rcu_process_callbacks
-     1.19%           reboot  [kernel.kallsyms]        [k] kmem_cache_alloc_node
-     0.63%          swapper  [kernel.kallsyms]        [k] check_for_new_grace_period
-     0.58%          swapper  [kernel.kallsyms]        [k] rebalance_domains
-     0.55%          swapper  [kernel.kallsyms]        [k] cpumask_next_and
-     0.54%          swapper  [kernel.kallsyms]        [k] __tick_nohz_idle_enter
-     0.53%          swapper  [kernel.kallsyms]        [k] perf_adjust_freq_unthr_context
-     0.49%          swapper  [kernel.kallsyms]        [k] _raw_spin_lock
+So, here is what is happening, from what I understand:
+sched_set_stop_task() will make the newly created migration thread as the
+stop task, during ht->create(). But looking into __sched_setscheduler(),
+we observe that if p->on_rq is true (where p is the migration thread),
+the task is enqueued on the rq by calling ->enqueue_task() of stop_task
+sched class, which simply increments the rq->nr_running.
 
-Robin
+So, on the next call to schedule(), the pick_next_task() in core.c sees
+that rq->nr_running is not equal to rq->cfs.h_nr_running and hence invokes
+the stop_task sched class' ->pick_next_task(). And that will return the
+stop task, which is nothing but this migration thread that we just created.
+That's why the migration thread starts running prematurely, even before
+it is bound, and even before its corresponding CPU is brought online.
+
+So, if we just wait till p->on_rq is reset to 0 by __schedule(), before
+calling ht->create(), the task doesn't get queued to the runqueue with
+stop task priority. So that's it - we simply wait till it gets off the
+rq and everything should be fine. And during the subsequent online, during
+the unpark phase, the task gets bound to the appropriate cpu and only
+then woken up, as desired.
+
+So Dave, could you kindly test the below patch on mainline?
+
+
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 691dc2e..9558355 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -308,6 +308,15 @@ struct task_struct *kthread_create_on_cpu(int (*threadfn)(void *data),
+ 	to_kthread(p)->cpu = cpu;
+ 	/* Park the thread to get it out of TASK_UNINTERRUPTIBLE state */
+ 	kthread_park(p);
++
++	/*
++	 * Wait for p->on_rq to be reset to 0, to ensure that the per-cpu
++	 * migration thread (which belongs to the stop_task sched class)
++	 * doesn't run until the cpu is actually onlined and the thread is
++	 * unparked.
++	 */
++	if (!wait_task_inactive(p, TASK_INTERRUPTIBLE))
++		WARN_ON(1);
+ 	return p;
+ }
+ 
+Regards,
+Srivatsa S. Bhat
 
