@@ -1,63 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936205Ab3DKDcO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 23:32:14 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:40052 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759682Ab3DKDcN (ORCPT
+	id S936292Ab3DKDij (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 23:38:39 -0400
+Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:60968 "EHLO
+	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758624Ab3DKDii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 23:32:13 -0400
-Message-ID: <51662E9E.9050400@huawei.com>
-Date: Thu, 11 Apr 2013 11:31:42 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 10 Apr 2013 23:38:38 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <haojian.zhuang@gmail.com>, <grant.likely@secretlab.ca>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: Chao Xie <chao.xie@marvell.com>, Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH 1/4] ARM: mmp: add wakeup function for ICU
+Date: Thu, 11 Apr 2013 11:37:40 +0800
+Message-ID: <1365651463-11502-2-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1365651463-11502-1-git-send-email-zhangwm@marvell.com>
+References: <1365651463-11502-1-git-send-email-zhangwm@marvell.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: <fweisbec@gmail.com>, <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 00/12] event tracing expose change and bugfix/cleanup
-References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com> <1365606496.9609.13.camel@gandalf.local.home>
-In-Reply-To: <1365606496.9609.13.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/10 23:08, Steven Rostedt wrote:
-> On Wed, 2013-04-10 at 11:26 +0800, zhangwei(Jovi) wrote:
->> From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
->>
->> Hi steven,
->>
->> I have reworked this patchset again with minor change.
->> [v2 -> v3:
->> -   change trace_descripte_t defintion in patch 3
->> -   new patch "export ftrace_events"
->> -   remove patch "export syscall metadata"
->>     (syscall tracing are use same event_trace_ops backend as normal event tracepoint,
->>      so there's no need to export anything of syscall)
->> -   remove private data field in ftrace_event_file struct (also not needed)
->> ]
-> 
-> Thanks,
-> 
-> Note, I'm trying to catch up on my -rt responsibilities, and most likely
-> wont get to this this week, and next week I'll be at collaboration
-> summit. It may not be till after I get back from that, that I'll have a
-> chance to look at these.
-> 
-> Depending on when Linus opens the next merge window, even if everything
-> goes fine, this patch set may not make it into 3.10, and will have to
-> wait till 3.11.
-> 
-> Just giving you a heads up.
-It's fine for me, let's check this patch set later.
-Thanks.
-> 
-> 
-> 
-> 
+From: Chao Xie <chao.xie@marvell.com>
 
+PXA988 will use GIC as its interrupt controller, and ICU is used as wakeup
+logic. When AP subsystem is powered off, GIC will lose its context, the
+PMU will need ICU to wakeup the AP subsystem.
+When ICU works as wakeup logic, there is no need to know intc-nr-irqs,
+change the corresponding code.
+
+Signed-off-by: Chao Xie <chao.xie@marvell.com>
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+---
+ .../devicetree/bindings/arm/mrvl/intc.txt          |    9 ++++
+ arch/arm/mach-mmp/irq.c                            |   51 ++++++++++++++++----
+ 2 files changed, 50 insertions(+), 10 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/arm/mrvl/intc.txt b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+index 8b53273..58c0e74 100644
+--- a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
++++ b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+@@ -15,6 +15,8 @@ Required properties:
+ - interrupt-controller : Identifies the node as an interrupt controller.
+ - #interrupt-cells : Specifies the number of cells needed to encode an
+   interrupt source.
++- mrvl,intc-wakeup : Specifies the address and value for global mask in the
++  interrupt controller.
+ - mrvl,intc-nr-irqs : Specifies the number of interrupts in the interrupt
+   controller.
+ - mrvl,clr-mfp-irq : Specifies the interrupt that needs to clear MFP edge
+@@ -39,6 +41,13 @@ Example:
+ 		mrvl,intc-nr-irqs = <2>;
+ 	};
+ 
++	intc: interrupt-controller@d4282000 {
++		compatible = "mrvl,mmp-intc";
++		reg = <0xd4282000 0x1000>;
++		mrvl,intc-wakeup = <0x114 0x3
++		                    0x144 0x3>;
++	};
++
+ * Marvell Orion Interrupt controller
+ 
+ Required properties
+diff --git a/arch/arm/mach-mmp/irq.c b/arch/arm/mach-mmp/irq.c
+index 3c71246..b8df948 100644
+--- a/arch/arm/mach-mmp/irq.c
++++ b/arch/arm/mach-mmp/irq.c
+@@ -16,6 +16,7 @@
+ #include <linux/init.h>
+ #include <linux/irq.h>
+ #include <linux/irqdomain.h>
++#include <linux/irqchip/arm-gic.h>
+ #include <linux/io.h>
+ #include <linux/ioport.h>
+ #include <linux/of_address.h>
+@@ -57,6 +58,7 @@ struct mmp_intc_conf {
+ void __iomem *mmp_icu_base;
+ static struct icu_chip_data icu_data[MAX_ICU_NR];
+ static int max_icu_nr;
++static bool mmp_icu_wakeup;
+ 
+ extern void mmp2_clear_pmic_int(void);
+ 
+@@ -91,8 +93,11 @@ static void icu_mask_irq(struct irq_data *d)
+ 	int hwirq;
+ 	u32 r;
+ 
+-	hwirq = d->irq - data->virq_base;
+-	if (data == &icu_data[0]) {
++	if (mmp_icu_wakeup)
++		hwirq = d->hwirq;
++	else
++		hwirq = d->irq - data->virq_base;
++	if (data == &icu_data[0] || mmp_icu_wakeup) {
+ 		r = readl_relaxed(mmp_icu_base + (hwirq << 2));
+ 		r &= ~data->conf_mask;
+ 		r |= data->conf_disable;
+@@ -110,8 +115,11 @@ static void icu_unmask_irq(struct irq_data *d)
+ 	int hwirq;
+ 	u32 r;
+ 
+-	hwirq = d->irq - data->virq_base;
+-	if (data == &icu_data[0]) {
++	if (mmp_icu_wakeup)
++		hwirq = d->hwirq;
++	else
++		hwirq = d->irq - data->virq_base;
++	if (data == &icu_data[0] || mmp_icu_wakeup) {
+ 		r = readl_relaxed(mmp_icu_base + (hwirq << 2));
+ 		r &= ~data->conf_mask;
+ 		r |= data->conf_enable;
+@@ -415,6 +423,8 @@ void __init mmp_dt_irq_init(void)
+ 	const struct of_device_id *of_id;
+ 	struct mmp_intc_conf *conf;
+ 	int nr_irqs, irq_base, ret, irq;
++	const __be32 *wakeup_reg;
++	int size, i;
+ 
+ 	node = of_find_matching_node(NULL, intc_ids);
+ 	if (!node) {
+@@ -424,18 +434,39 @@ void __init mmp_dt_irq_init(void)
+ 	of_id = of_match_node(intc_ids, node);
+ 	conf = of_id->data;
+ 
+-	ret = of_property_read_u32(node, "mrvl,intc-nr-irqs", &nr_irqs);
+-	if (ret) {
+-		pr_err("Not found mrvl,intc-nr-irqs property\n");
+-		return;
+-	}
+-
+ 	mmp_icu_base = of_iomap(node, 0);
+ 	if (!mmp_icu_base) {
+ 		pr_err("Failed to get interrupt controller register\n");
+ 		return;
+ 	}
+ 
++	/* ICU is only used as wake up logic. */
++	wakeup_reg = of_get_property(node, "mrvl,intc-wakeup", &size);
++	if (wakeup_reg) {
++		mmp_icu_wakeup = 1;
++		size /= sizeof(*wakeup_reg);
++		i = 0;
++		/* disable the global irq/fiq in icu for all cores. */
++		while (i < size) {
++			unsigned offset, val;
++
++			offset = be32_to_cpup(wakeup_reg + i++);
++			val = be32_to_cpup(wakeup_reg + i++);
++			writel_relaxed(val, mmp_icu_base + offset);
++		}
++
++		gic_arch_extn.irq_mask = icu_mask_irq;
++		gic_arch_extn.irq_unmask = icu_unmask_irq;
++
++		return;
++	}
++
++	ret = of_property_read_u32(node, "mrvl,intc-nr-irqs", &nr_irqs);
++	if (ret) {
++		pr_err("Not found mrvl,intc-nr-irqs property\n");
++		return;
++	}
++
+ 	irq_base = irq_alloc_descs(-1, 0, nr_irqs - NR_IRQS_LEGACY, 0);
+ 	if (irq_base < 0) {
+ 		pr_err("Failed to allocate IRQ numbers\n");
+-- 
+1.7.4.1
 
