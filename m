@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934464Ab3DKUc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:32:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31361 "EHLO
+	id S934358Ab3DKUcY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:32:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20087 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758624Ab3DKU0P (ORCPT
+	with ESMTP id S1754048Ab3DKU0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:26:15 -0400
-X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=AUdBAo876HwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=QguDOkfF5moA:10 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=74J67IGakc5LYT1cVsQA:9 a=oUQuMaGMe1cA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=bRAdfqHWGMgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Js9sr0MTzmkA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=z11f-joXAAAA:8 a=QzHpnufsAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=jEp0ucaQiEUA:10 a=CJVq-v20pXUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202553.365379721@goodmis.org>
+Message-Id: <20130411202553.855737100@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:25:47 -0400
+Date: Thu, 11 Apr 2013 16:25:50 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Torsten Duwe <duwe@lst.de>
-Subject: [ 044/171 ] KMS: fix EDID detailed timing frame rate
+Cc: Andy Grover <agrover@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [ 047/171 ] target/iscsi: Fix mutual CHAP auth on big-endian arches
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0044-KMS-fix-EDID-detailed-timing-frame-rate.patch
+Content-Disposition: inline; filename=0047-target-iscsi-Fix-mutual-CHAP-auth-on-big-endian-arch.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,39 +29,45 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Torsten Duwe <torsten@lst.de>
+From: Andy Grover <agrover@redhat.com>
 
-[ Upstream commit c19b3b0f6eed552952845e4ad908dba2113d67b4 ]
+[ Upstream commit 7ac9ad11b2a5cf77a92b58ee6b672ad2fa155eb1 ]
 
-When KMS has parsed an EDID "detailed timing", it leaves the frame rate
-zeroed.  Consecutive (debug-) output of that mode thus yields 0 for
-vsync.  This simple fix also speeds up future invocations of
-drm_mode_vrefresh().
+See https://bugzilla.redhat.com/show_bug.cgi?id=916290
 
-While it is debatable whether this qualifies as a -stable fix I'd apply
-it for consistency's sake; drm_helper_probe_single_connector_modes()
-does the same thing already for all probed modes.
+Used a temp var since we take its address in sg_init_one.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Torsten Duwe <duwe@lst.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/gpu/drm/drm_edid.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/iscsi/iscsi_target_auth.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-index fafd5a1..24763fa 100644
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -960,6 +960,7 @@ set_size:
+diff --git a/drivers/target/iscsi/iscsi_target_auth.c b/drivers/target/iscsi/iscsi_target_auth.c
+index db0cf7c..a0fc7b9 100644
+--- a/drivers/target/iscsi/iscsi_target_auth.c
++++ b/drivers/target/iscsi/iscsi_target_auth.c
+@@ -166,6 +166,7 @@ static int chap_server_compute_md5(
+ {
+ 	char *endptr;
+ 	unsigned long id;
++	unsigned char id_as_uchar;
+ 	unsigned char digest[MD5_SIGNATURE_SIZE];
+ 	unsigned char type, response[MD5_SIGNATURE_SIZE * 2 + 2];
+ 	unsigned char identifier[10], *challenge = NULL;
+@@ -355,7 +356,9 @@ static int chap_server_compute_md5(
+ 		goto out;
  	}
  
- 	mode->type = DRM_MODE_TYPE_DRIVER;
-+	mode->vrefresh = drm_mode_vrefresh(mode);
- 	drm_mode_set_name(mode);
- 
- 	return mode;
+-	sg_init_one(&sg, &id, 1);
++	/* To handle both endiannesses */
++	id_as_uchar = id;
++	sg_init_one(&sg, &id_as_uchar, 1);
+ 	ret = crypto_hash_update(&desc, &sg, 1);
+ 	if (ret < 0) {
+ 		pr_err("crypto_hash_update() failed for id\n");
 -- 
 1.7.10.4
 
