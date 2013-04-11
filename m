@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759172Ab3DKHqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:46:10 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:15780 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab3DKHqH (ORCPT
+	id S1755200Ab3DKHqI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:46:08 -0400
+Received: from webbox1416.server-home.net ([77.236.96.61]:41697 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753802Ab3DKHqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:46:07 -0400
-X-IronPort-AV: E=Sophos;i="4.87,454,1363132800"; 
-   d="scan'208";a="3446813"
-Message-ID: <1365666364.27868.114.camel@zakaz.uk.xensource.com>
-Subject: Re: [net-next PATCH] xen-netback: switch to use
- skb_partial_csum_set()
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Jason Wang <jasowang@redhat.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Date: Thu, 11 Apr 2013 08:46:04 +0100
-In-Reply-To: <1365662129-38031-1-git-send-email-jasowang@redhat.com>
-References: <1365662129-38031-1-git-send-email-jasowang@redhat.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Thu, 11 Apr 2013 03:46:06 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Christian Ruppert <christian.ruppert@abilis.com>,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Noam Camus <noamc@ezchip.com>,
+        pierrick hascoet <pierrick.hascoet@abilis.com>
+Subject: Re: [PATCH] Add option to disable kernel compression
+Date: Thu, 11 Apr 2013 09:46:02 +0200
+Message-ID: <2065777.DKEM6dSyjc@ws-stein>
+User-Agent: KMail/4.10.1 (Linux/3.7.10-gentoo; KDE/4.10.1; x86_64; ; )
+In-Reply-To: <51666860.5060407@synopsys.com>
+References: <1365508161-32154-1-git-send-email-christian.ruppert@abilis.com> <51666860.5060407@synopsys.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 07:35 +0100, Jason Wang wrote:
-> Switch to use skb_partial_csum_set() to simplify the codes.
+Hello,
 
-This is incremental on top of your previous patch, right?
-
+On Thursday 11 April 2013 13:08:08, Vineet Gupta wrote:
+> On 04/09/2013 05:19 PM, Christian Ruppert wrote:
+> > Until now, kernel compression can only be disabled by deselecting
+> > HAVE_<compression> in the architecture Kconfig. However, some
+> > users/platforms within the same architecture might want to use
+> > compression while others might want to disable it.
+> > This patch is a solution to the dilemma.
+> >
+> > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> > ---
+> >  init/Kconfig |    8 +++++++-
+> >  1 files changed, 7 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index 5341d72..0924c51 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -101,7 +101,6 @@ config HAVE_KERNEL_LZO
+> >  choice
+> >  	prompt "Kernel compression mode"
+> >  	default KERNEL_GZIP
+> > -	depends on HAVE_KERNEL_GZIP || HAVE_KERNEL_BZIP2 || HAVE_KERNEL_LZMA || HAVE_KERNEL_XZ || HAVE_KERNEL_LZO
+> >  	help
+> >  	  The linux kernel is a kind of self-extracting executable.
+> >  	  Several compression algorithms are available, which differ
+> > @@ -120,6 +119,13 @@ choice
+> >  
+> >  	  If in doubt, select 'gzip'
+> >  
+> > +config KERNEL_UNCOMPRESSED
+> > +	bool "No compression"
 > 
-> Cc: Ian Campbell <ian.campbell@citrix.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> Note:
-> - Compile test only.
-> ---
->  drivers/net/xen-netback/netback.c |   22 ++++++++--------------
->  1 files changed, 8 insertions(+), 14 deletions(-)
+> > +	help
+> > +	  No compression at all. The kernel is huge but the compression and
+> > +	  decompression times are zero.
+> > +	  This is usually not what you want.
+> > +
+> >  config KERNEL_GZIP
+> >  	bool "Gzip"
+> >  	depends on HAVE_KERNEL_GZIP
 > 
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index 83905a9..70631f0 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -1156,7 +1156,6 @@ static int netbk_set_skb_gso(struct xenvif *vif,
->  static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
->  {
->  	struct iphdr *iph;
-> -	unsigned char *th;
->  	int err = -EPROTO;
->  	int recalculate_partial_csum = 0;
->  
-> @@ -1180,28 +1179,26 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
->  		goto out;
->  
->  	iph = (void *)skb->data;
-> -	th = skb->data + 4 * iph->ihl;
-> -	if (th >= skb_tail_pointer(skb))
-> -		goto out;
-> -
-> -	skb_set_transport_header(skb, 4 * iph->ihl);
+> FWIW, this is an issue for ARC port where one of our platforms runs on a very slow
+> FPGA, hence doesn't want to spend time uncompressing the image - while others do
+> want the gzip.
+> 
+> Reviewed-by: Vineet Gupta <vgupta@synopsys.com>
 
-Is removing this line really correct?
+Even some other platforms, e.g. ARM you want no compression, if you can effort the additional space, if you want to boot extremely fast.
 
-> -	skb->csum_start = th - skb->head;
->  	switch (iph->protocol) {
->  	case IPPROTO_TCP:
-> -		skb->csum_offset = offsetof(struct tcphdr, check);
-> +		if (!skb_partial_csum_set(skb, 4 * iph->ihl,
-> +					  offsetof(struct tcphdr, check)))
-> +			goto out;
->  
->  		if (recalculate_partial_csum) {
-> -			struct tcphdr *tcph = (struct tcphdr *)th;
-> +			struct tcphdr *tcph = tcp_hdr(skb);
->  			tcph->check = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
->  							 skb->len - iph->ihl*4,
->  							 IPPROTO_TCP, 0);
->  		}
->  		break;
->  	case IPPROTO_UDP:
-> -		skb->csum_offset = offsetof(struct udphdr, check);
-> +		if (!skb_partial_csum_set(skb, 4 * iph->ihl,
-> +					  offsetof(struct udphdr, check)))
-> +			goto out;
->  
->  		if (recalculate_partial_csum) {
-> -			struct udphdr *udph = (struct udphdr *)th;
-> +			struct udphdr *udph = udp_hdr(skb);
->  			udph->check = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
->  							 skb->len - iph->ihl*4,
->  							 IPPROTO_UDP, 0);
-> @@ -1215,9 +1212,6 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
->  		goto out;
->  	}
->  
-> -	if ((th + skb->csum_offset + 2) > skb_tail_pointer(skb))
-> -		goto out;
-> -
->  	err = 0;
->  
->  out:
-
+Best regards,
+Alexander
 
