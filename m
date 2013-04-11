@@ -1,56 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937242Ab3DKADr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 20:03:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44055 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935048Ab3DKADp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 20:03:45 -0400
-Date: Wed, 10 Apr 2013 20:03:42 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, axboe@kernel.dk
-Subject: Re: NULL pointer due to malformed bcache bio
-Message-ID: <20130411000342.GA19451@redhat.com>
-References: <20130410205439.GA18092@redhat.com>
- <20130410224914.GD30871@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130410224914.GD30871@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S937709Ab3DKAHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 20:07:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:50728 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S937451Ab3DKAHK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 20:07:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 26/30] irqchip: exynos: allocate combiner_data dynamically
+Date: Thu, 11 Apr 2013 02:05:08 +0200
+Message-Id: <1365638712-1028578-27-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V02:K0:TeuCgir7DtoYAh8MAFbNDidwvu9/ldR9v5TVsxR4V9q
+ U8/vSGM5nlXREO/E84/vQD9D70rUBBlERGs9KDs7vz/P7CMahK
+ nzn5BQ07WyDwkan0XVbHVlqjwVPu2QWyR2z0AX7/eUBbzMnzBU
+ hCT74xf85lpO0FUUmIv7Wppw37Zs/2Ek0Lb/3IK604heYbv2m+
+ gqo7vbvk+2g8kiz5VMRnZkiBIuAGoEK5xQRKBtn7in3+haegyq
+ Le+sZOUsYqXtlcR6JgtuAbDnvnRDWR1B5Zk9Ber79br/adiOSW
+ EPslpM5Y4ma4pAgXlkoWpb18gD/Rax74arR8I1MKpLqsdUng+5
+ 0GbxTisZvixH14Ad3GJGKL4szIu4776wSZjwBTgEpgBHPTCkKn
+ B8CoMRFE+MwbQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10 2013 at  6:49pm -0400,
-Kent Overstreet <koverstreet@google.com> wrote:
+The number of combiners on a given SoC is a platform specific
+constant, and we cannot encode this number on a multiplatform
+kernel since the header file defining it is not available.
 
-> On Wed, Apr 10, 2013 at 04:54:40PM -0400, Mike Snitzer wrote:
-> > Hey,
-> > 
-> > So DM core clearly needs to be more defensive about the possibility for
-> > a NULL return from bio_alloc_bioset() given I'm hitting a NULL pointer
-> > in DM's alloc_tio() because nr_iovecs=512.  bio_alloc_bioset()'s call to
-> > bvec_alloc() only supports nr_iovecs up to BIO_MAX_PAGES (256).
-> > 
-> > Seems bcache should be using bio_get_nr_vecs() or something else?
-> > 
-> > But by using a bcache bucket size of 2MB, with the bcache staged in
-> > Jens' for-next, I've caused bcache to issue bios with nr_iovecs=512:
-> 
-> Argh. Why is dm using bi_max_vecs instead of bi_vcnt? I could hack
-> around this in bcache but I think dm is doing the wrong thing here.
+Allocating the structure dynamically ends up cleaner anyway
+since we keep all the data local.
 
-But even bio_alloc_bioset() sets: bio->bi_max_vecs = nr_iovecs;
-And bio_clone_bioset() calls bio_alloc_bioset() with bio->bi_max_vecs.
-Similarly, __bio_clone() is using bi_max_vecs when cloning the bi_io_vec.
-So I'm missing why DM is doing the wrong thing.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/irqchip/exynos-combiner.c | 36 +++++++++++++++++++++++-------------
+ 1 file changed, 23 insertions(+), 13 deletions(-)
 
-> Unless I've missed something in my testing (and bcache's BIO_MAX_PAGES
-> check isn't quite right, actually) bcache _is_ splitting its bios
-> whenever bio_segments(bio) > BIO_MAX_PAGES, it's only bi_max_vecs that's
-> potentially > BIO_MAX_PAGES.
+diff --git a/drivers/irqchip/exynos-combiner.c b/drivers/irqchip/exynos-combiner.c
+index e7aef59..ffb10aa 100644
+--- a/drivers/irqchip/exynos-combiner.c
++++ b/drivers/irqchip/exynos-combiner.c
+@@ -12,6 +12,7 @@
+ #include <linux/export.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
++#include <linux/slab.h>
+ #include <linux/irqdomain.h>
+ #include <linux/irqchip/chained_irq.h>
+ #include <linux/of_address.h>
+@@ -38,7 +39,6 @@ struct combiner_chip_data {
+ };
+ 
+ static struct irq_domain *combiner_irq_domain;
+-static struct combiner_chip_data combiner_data[MAX_COMBINER_NR];
+ 
+ static inline void __iomem *combiner_base(struct irq_data *data)
+ {
+@@ -115,26 +115,26 @@ static struct irq_chip combiner_chip = {
+ #endif
+ };
+ 
+-static void __init combiner_cascade_irq(unsigned int combiner_nr,
++static void __init combiner_cascade_irq(struct combiner_chip_data *combiner_data,
+ 					unsigned int irq)
+ {
+-	if (irq_set_handler_data(irq, &combiner_data[combiner_nr]) != 0)
++	if (irq_set_handler_data(irq, combiner_data) != 0)
+ 		BUG();
+ 	irq_set_chained_handler(irq, combiner_handle_cascade_irq);
+ }
+ 
+-static void __init combiner_init_one(unsigned int combiner_nr,
++static void __init combiner_init_one(struct combiner_chip_data *combiner_data,
++				     unsigned int combiner_nr,
+ 				     void __iomem *base, unsigned int irq)
+ {
+-	combiner_data[combiner_nr].base = base;
+-	combiner_data[combiner_nr].irq_offset = irq_find_mapping(
++	combiner_data->base = base;
++	combiner_data->irq_offset = irq_find_mapping(
+ 		combiner_irq_domain, combiner_nr * IRQ_IN_COMBINER);
+-	combiner_data[combiner_nr].irq_mask = 0xff << ((combiner_nr % 4) << 3);
+-	combiner_data[combiner_nr].parent_irq = irq;
++	combiner_data->irq_mask = 0xff << ((combiner_nr % 4) << 3);
++	combiner_data->parent_irq = irq;
+ 
+ 	/* Disable all interrupts */
+-	__raw_writel(combiner_data[combiner_nr].irq_mask,
+-		     base + COMBINER_ENABLE_CLEAR);
++	__raw_writel(combiner_data->irq_mask, base + COMBINER_ENABLE_CLEAR);
+ }
+ 
+ #ifdef CONFIG_OF
+@@ -169,6 +169,8 @@ static int combiner_irq_domain_xlate(struct irq_domain *d,
+ static int combiner_irq_domain_map(struct irq_domain *d, unsigned int irq,
+ 				   irq_hw_number_t hw)
+ {
++	struct combiner_chip_data *combiner_data = d->host_data;
++
+ 	irq_set_chip_and_handler(irq, &combiner_chip, handle_level_irq);
+ 	irq_set_chip_data(irq, &combiner_data[hw >> 3]);
+ 	set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
+@@ -203,6 +205,7 @@ void __init combiner_init(void __iomem *combiner_base,
+ {
+ 	int i, irq, irq_base;
+ 	unsigned int nr_irq;
++	struct combiner_chip_data *combiner_data;
+ 
+ 	nr_irq = max_nr * IRQ_IN_COMBINER;
+ 
+@@ -212,8 +215,14 @@ void __init combiner_init(void __iomem *combiner_base,
+ 		pr_warning("%s: irq desc alloc failed. Continuing with %d as linux irq base\n", __func__, irq_base);
+ 	}
+ 
++	combiner_data = kcalloc(max_nr, sizeof (*combiner_data), GFP_KERNEL);
++	if (!combiner_data) {
++		pr_warning("%s: could not allocate combiner data\n", __func__);
++		return;
++	}
++
+ 	combiner_irq_domain = irq_domain_add_legacy(np, nr_irq, irq_base, 0,
+-				&combiner_irq_domain_ops, &combiner_data);
++				&combiner_irq_domain_ops, combiner_data);
+ 	if (WARN_ON(!combiner_irq_domain)) {
+ 		pr_warning("%s: irq domain init failed\n", __func__);
+ 		return;
+@@ -228,8 +237,9 @@ void __init combiner_init(void __iomem *combiner_base,
+ 		if (np)
+ 			irq = irq_of_parse_and_map(np, i);
+ #endif
+-		combiner_init_one(i, combiner_base + (i >> 2) * 0x10, irq);
+-		combiner_cascade_irq(i, irq);
++		combiner_init_one(&combiner_data[i], i,
++				  combiner_base + (i >> 2) * 0x10, irq);
++		combiner_cascade_irq(&combiner_data[i], irq);
+ 	}
+ }
+ 
+-- 
+1.8.1.2
 
-OK, but why drive bi_max_vecs larger than BIO_MAX_PAGES?
