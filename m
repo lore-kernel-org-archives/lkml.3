@@ -1,76 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab3DKTw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 15:52:59 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:36908 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271Ab3DKTw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 15:52:58 -0400
-Message-ID: <51671494.6000803@gmail.com>
-Date: Thu, 11 Apr 2013 21:52:52 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Florian Fainelli <florian@openwrt.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Dale Farnsworth <dale@farnsworth.org>,
-        Ben Hutchings <bhutchings@solarflare.com>, Soeren Moch <smoch@web.de>,
-        Willy Tarreau <w@1wt.eu>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: mv643xx_eth: remove deprecated inet_lro support
-References: <1365707488-28819-1-git-send-email-sebastian.hesselbarth@gmail.com> <1365709617.3887.185.camel@edumazet-glaptop>
-In-Reply-To: <1365709617.3887.185.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753683Ab3DKT6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 15:58:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37350 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752710Ab3DKT6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 15:58:06 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims at each priority
+Date: Thu, 11 Apr 2013 20:57:49 +0100
+Message-Id: <1365710278-6807-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365710278-6807-1-git-send-email-mgorman@suse.de>
+References: <1365710278-6807-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 09:46 PM, Eric Dumazet wrote:
-> On Thu, 2013-04-11 at 21:11 +0200, Sebastian Hesselbarth wrote:
->> With recent support for GRO, there is no need to keep both LRO and
->> GRO. This patch therefore removes the deprecated inet_lro support
->> from mv643xx_eth. This is work is based on an experimental patch
->> provided by Eric Dumazet and Willy Tarreau.
->>
->> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
->> Based-on-patch-by: Eric Dumazet<eric.dumazet@gmail.com>
->> Based-on-patch-by: Willy Tarreau<w@1wt.eu>
->> ---
->> Note: This patch is based upon recent cleanup patches and GRO support
->> patch for mv643xx_eth.
->>
->> Cc: "David S. Miller"<davem@davemloft.net>
->> Cc: Lennert Buytenhek<buytenh@wantstofly.org>
->> Cc: Andrew Lunn<andrew@lunn.ch>
->> Cc: Jason Cooper<jason@lakedaemon.net>
->> Cc: Florian Fainelli<florian@openwrt.org>
->> Cc: Benjamin Herrenschmidt<benh@kernel.crashing.org>
->> Cc: Paul Mackerras<paulus@samba.org>
->> Cc: Dale Farnsworth<dale@farnsworth.org>
->> Cc: Ben Hutchings<bhutchings@solarflare.com>
->> Cc: Soeren Moch<smoch@web.de>
->> Cc: Eric Dumazet<eric.dumazet@gmail.com>
->> Cc: Willy Tarreau<w@1wt.eu>
->> Cc: netdev@vger.kernel.org
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linuxppc-dev@lists.ozlabs.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>   drivers/net/ethernet/marvell/mv643xx_eth.c |   97 +---------------------------
->>   1 file changed, 3 insertions(+), 94 deletions(-)
->
-> Seems fine to me, but you also could remove "select INET_LRO"
-> from drivers/net/ethernet/marvell/Kconfig
+The number of pages kswapd can reclaim is bound by the number of pages it
+scans which is related to the size of the zone and the scanning priority. In
+many cases the priority remains low because it's reset every SWAP_CLUSTER_MAX
+reclaimed pages but in the event kswapd scans a large number of pages it
+cannot reclaim, it will raise the priority and potentially discard a large
+percentage of the zone as sc->nr_to_reclaim is ULONG_MAX. The user-visible
+effect is a reclaim "spike" where a large percentage of memory is suddenly
+freed. It would be bad enough if this was just unused memory but because
+of how anon/file pages are balanced it is possible that applications get
+pushed to swap unnecessarily.
 
-Ok, I will wait for tomorrow to see if there are more objections and
-respin a v2.
+This patch limits the number of pages kswapd will reclaim to the high
+watermark. Reclaim will still overshoot due to it not being a hard limit as
+shrink_lruvec() will ignore the sc.nr_to_reclaim at DEF_PRIORITY but it
+prevents kswapd reclaiming the world at higher priorities. The number of
+pages it reclaims is not adjusted for high-order allocations as kswapd will
+reclaim excessively if it is to balance zones for high-order allocations.
 
-Sebastian
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/vmscan.c | 53 +++++++++++++++++++++++++++++------------------------
+ 1 file changed, 29 insertions(+), 24 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 88c5fed..4835a7a 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2593,6 +2593,32 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
+ }
+ 
+ /*
++ * kswapd shrinks the zone by the number of pages required to reach
++ * the high watermark.
++ */
++static void kswapd_shrink_zone(struct zone *zone,
++			       struct scan_control *sc,
++			       unsigned long lru_pages)
++{
++	unsigned long nr_slab;
++	struct reclaim_state *reclaim_state = current->reclaim_state;
++	struct shrink_control shrink = {
++		.gfp_mask = sc->gfp_mask,
++	};
++
++	/* Reclaim above the high watermark. */
++	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
++	shrink_zone(zone, sc);
++
++	reclaim_state->reclaimed_slab = 0;
++	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
++	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
++
++	if (nr_slab == 0 && !zone_reclaimable(zone))
++		zone->all_unreclaimable = 1;
++}
++
++/*
+  * For kswapd, balance_pgdat() will work across all this node's zones until
+  * they are all at high_wmark_pages(zone).
+  *
+@@ -2619,27 +2645,16 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 	bool pgdat_is_balanced = false;
+ 	int i;
+ 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+-	unsigned long total_scanned;
+-	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
+ 	struct scan_control sc = {
+ 		.gfp_mask = GFP_KERNEL,
+ 		.may_unmap = 1,
+ 		.may_swap = 1,
+-		/*
+-		 * kswapd doesn't want to be bailed out while reclaim. because
+-		 * we want to put equal scanning pressure on each zone.
+-		 */
+-		.nr_to_reclaim = ULONG_MAX,
+ 		.order = order,
+ 		.target_mem_cgroup = NULL,
+ 	};
+-	struct shrink_control shrink = {
+-		.gfp_mask = sc.gfp_mask,
+-	};
+ loop_again:
+-	total_scanned = 0;
+ 	sc.priority = DEF_PRIORITY;
+ 	sc.nr_reclaimed = 0;
+ 	sc.may_writepage = !laptop_mode;
+@@ -2710,7 +2725,7 @@ loop_again:
+ 		 */
+ 		for (i = 0; i <= end_zone; i++) {
+ 			struct zone *zone = pgdat->node_zones + i;
+-			int nr_slab, testorder;
++			int testorder;
+ 			unsigned long balance_gap;
+ 
+ 			if (!populated_zone(zone))
+@@ -2730,7 +2745,6 @@ loop_again:
+ 							order, sc.gfp_mask,
+ 							&nr_soft_scanned);
+ 			sc.nr_reclaimed += nr_soft_reclaimed;
+-			total_scanned += nr_soft_scanned;
+ 
+ 			/*
+ 			 * We put equal pressure on every zone, unless
+@@ -2759,17 +2773,8 @@ loop_again:
+ 
+ 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
+ 			    !zone_balanced(zone, testorder,
+-					   balance_gap, end_zone)) {
+-				shrink_zone(zone, &sc);
+-
+-				reclaim_state->reclaimed_slab = 0;
+-				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
+-				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+-				total_scanned += sc.nr_scanned;
+-
+-				if (nr_slab == 0 && !zone_reclaimable(zone))
+-					zone->all_unreclaimable = 1;
+-			}
++					   balance_gap, end_zone))
++				kswapd_shrink_zone(zone, &sc, lru_pages);
+ 
+ 			/*
+ 			 * If we're getting trouble reclaiming, start doing
+-- 
+1.8.1.4
+
