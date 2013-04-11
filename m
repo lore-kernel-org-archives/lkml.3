@@ -1,64 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935270Ab3DKMCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 08:02:25 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:43187 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935205Ab3DKMCX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 08:02:23 -0400
-Message-ID: <5166A5AF.4050904@linux.vnet.ibm.com>
-Date: Thu, 11 Apr 2013 17:29:43 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S934850Ab3DKMEB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 08:04:01 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:56218 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1765173Ab3DKMEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 08:04:00 -0400
+Date: Thu, 11 Apr 2013 07:03:58 -0500
+From: Robin Holt <holt@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Robin Holt <holt@sgi.com>, Russ Anderson <rja@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
+Message-ID: <20130411120358.GQ3658@sgi.com>
+References: <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
+ <20130410152911.GA3011@sgi.com>
+ <20130410165934.GB21951@gmail.com>
+ <20130410171420.GF3658@sgi.com>
+ <20130410172236.GE21951@gmail.com>
+ <20130410175519.GG3658@sgi.com>
+ <20130410190003.GH3658@sgi.com>
+ <20130411085751.GD11824@gmail.com>
+ <20130411113412.GP3658@sgi.com>
+ <20130411120027.GA18709@gmail.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>, Borislav Petkov <bp@alien8.de>
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, dhillf@gmail.com,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
- wrong cpu
-References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos> <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net> <alpine.LFD.2.02.1304092036431.21884@ionos> <alpine.LFD.2.02.1304092126150.21884@ionos> <51647C30.3050109@sr71.net> <alpine.LFD.2.02.1304101024010.21884@ionos> <alpine.LFD.2.02.1304101250320.21884@ionos> <5165C087.4060404@sr71.net> <alpine.LFD.2.02.1304111020520.21884@ionos> <51669510.2040200@linux.vnet.ibm.com> <5166A1D0.1080102@linux.vnet.ibm.com>
-In-Reply-To: <5166A1D0.1080102@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041111-2000-0000-0000-00000BB21159
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411120027.GA18709@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 05:13 PM, Srivatsa S. Bhat wrote:
-[...] 
-> So Dave, could you kindly test the below patch on mainline?
+On Thu, Apr 11, 2013 at 02:00:27PM +0200, Ingo Molnar wrote:
 > 
-
-BTW, you don't need to try out any of the previous patches that I sent,
-just this one is good enough. Thanks!
-
-Regards,
-Srivatsa S. Bhat
-
+> * Robin Holt <holt@sgi.com> wrote:
 > 
-> diff --git a/kernel/kthread.c b/kernel/kthread.c
-> index 691dc2e..9558355 100644
-> --- a/kernel/kthread.c
-> +++ b/kernel/kthread.c
-> @@ -308,6 +308,15 @@ struct task_struct *kthread_create_on_cpu(int (*threadfn)(void *data),
->  	to_kthread(p)->cpu = cpu;
->  	/* Park the thread to get it out of TASK_UNINTERRUPTIBLE state */
->  	kthread_park(p);
-> +
-> +	/*
-> +	 * Wait for p->on_rq to be reset to 0, to ensure that the per-cpu
-> +	 * migration thread (which belongs to the stop_task sched class)
-> +	 * doesn't run until the cpu is actually onlined and the thread is
-> +	 * unparked.
-> +	 */
-> +	if (!wait_task_inactive(p, TASK_INTERRUPTIBLE))
-> +		WARN_ON(1);
->  	return p;
->  }
->  
+> > > Ok, so it looks profilable.
+> > > 
+> > > The result above is not surprising: most CPUs sit in idle and don't do anything, 
+> > > while the loop goes on, right?
+> > > 
+> > > The interesting thing to profile would be the parallel bring-down, with the 
+> > > simplest global lock solution you mentioned. In that case most CPUs should be 
+> > > doing 'something' all the time - maybe spinning on the lock, maybe something else, 
+> > > right?
+> > 
+> > Again, mostly looks idle.
+> 
+> Forgot to suggest:
+> 
+>   perf record -a /sbin/reboot
 
+I used perf record -a /sbin/reboot -f -d -n
+
+Robin
+> 
+> ... to capture remote CPU activity too.
+> 
+> > Events: 5M cycles
+> >     31.69%          swapper  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
+> >     14.22%          swapper  [kernel.kallsyms]        [k] load_balance
+> >     12.95%          swapper  [kernel.kallsyms]        [k] ktime_get
+> >      4.64%          swapper  [kernel.kallsyms]        [k] idle_cpu
+> >      3.46%          swapper  [kernel.kallsyms]        [k] uv_read_rtc
+> >      2.26%          swapper  [kernel.kallsyms]        [k] ktime_get_update_offsets
+> >      2.25%          swapper  [kernel.kallsyms]        [k] rcu_check_callbacks
+> >      1.72%          swapper  [kernel.kallsyms]        [k] _raw_spin_lock_irqsave
+> >      1.57%          swapper  [kernel.kallsyms]        [k] native_write_msr_safe
+> >      1.53%          swapper  [kernel.kallsyms]        [k] native_safe_halt
+> >      1.52%          swapper  [kernel.kallsyms]        [k] apic_timer_interrupt
+> >      1.52%          swapper  [kernel.kallsyms]        [k] update_blocked_averages
+> >      1.51%          swapper  [kernel.kallsyms]        [k] __lock_text_start
+> >      1.48%          swapper  [kernel.kallsyms]        [k] rcu_process_gp_end
+> >      1.40%          swapper  [kernel.kallsyms]        [k] rcu_process_callbacks
+> >      1.19%           reboot  [kernel.kallsyms]        [k] kmem_cache_alloc_node
+> >      0.63%          swapper  [kernel.kallsyms]        [k] check_for_new_grace_period
+> >      0.58%          swapper  [kernel.kallsyms]        [k] rebalance_domains
+> >      0.55%          swapper  [kernel.kallsyms]        [k] cpumask_next_and
+> >      0.54%          swapper  [kernel.kallsyms]        [k] __tick_nohz_idle_enter
+> >      0.53%          swapper  [kernel.kallsyms]        [k] perf_adjust_freq_unthr_context
+> >      0.49%          swapper  [kernel.kallsyms]        [k] _raw_spin_lock
+> 
+> If even perf record -a shows a mostly idle system, then the overhead must be in 
+> sleep/wakeup latencies - for that the next step would be to figure out where all 
+> the waiting happens, for example via call-graph context-switch profiling:
+> 
+>    perf stat --null perf record -a -g -e sched:sched_switch /sbin/reboot
+> 
+> (the perf stat --null will tell us the runtime of the whole operation.)
+> 
+> Thanks,
+> 
+> 	Ingo
