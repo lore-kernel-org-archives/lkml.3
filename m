@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936181Ab3DKUzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:55:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9226 "EHLO
+	id S934949Ab3DKUzT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:55:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28463 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935858Ab3DKUt1 (ORCPT
+	with ESMTP id S935861Ab3DKUt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:49:27 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=-vJgqBVB9VwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3T-csw2ANnMA:10 a=DfNHnWVPAAAA:8 a=VwQbUJbxAAAA:8 a=gvl4HP8tAAAA:8 a=SaoL0fvI8H8q8Zk47FIA:9 a=lBRciGGoxdUA:10 a=OTgC_HKJBnUA:10 a=jeBq3FmKZ4MA:10 a=EVOyJSg-uaN7qu1v:21 a=9o_MTznpoqbhDZwS:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:49:28 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=hxibCRFKYacA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Y7kaqLkP-NYA:10 a=9AzMRrQhAAAA:8 a=VwQbUJbxAAAA:8 a=aQw1Q--kFJQRljkUzPUA:9 a=SxxB86fLhQ4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202558.685952430@goodmis.org>
+Message-Id: <20130411202558.510420139@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:19 -0400
+Date: Thu, 11 Apr 2013 16:26:18 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        Ming Lei <ming.lei@canonical.com>
-Subject: [ 076/171 ] Bluetooth: Add support for Dell[QCA 0cf3:0036]
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Subject: [ 075/171 ] tile: expect new initramfs name from hypervisor file system
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0076-Bluetooth-Add-support-for-Dell-QCA-0cf3-0036.patch
+Content-Disposition: inline; filename=0075-tile-expect-new-initramfs-name-from-hypervisor-file-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,82 +29,80 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ming Lei <ming.lei@canonical.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
 
-[ Upstream commit d66629c1325399cf080ba8b2fb086c10e5439cdd ]
+[ Upstream commit ff7f3efb9abf986f4ecd8793a9593f7ca4d6431a ]
 
-Add support for the AR9462 chip
+The current Tilera boot infrastructure now provides the initramfs
+to Linux as a Tilera-hypervisor file named "initramfs", rather than
+"initramfs.cpio.gz", as before.  (This makes it reasonable to use
+other compression techniques than gzip on the file without having to
+worry about the name causing confusion.)  Adapt to use the new name,
+but also fall back to checking for the old name.
 
-T:  Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  3 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0cf3 ProdID=0036 Rev= 0.02
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-A:  FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+Cc'ing to stable so that older kernels will remain compatible with
+newer Tilera boot infrastructure.
 
-Cc: <stable@vger.kernel.org>
-Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: Ming Lei <ming.lei@canonical.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+Cc: stable@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+ arch/tile/kernel/setup.c |   25 ++++++++++++-------------
+ 1 file changed, 12 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index fc2de55..3859b23 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -72,6 +72,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x03F0, 0x311D) },
+diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+index 6a649a4..86b1ae4 100644
+--- a/arch/tile/kernel/setup.c
++++ b/arch/tile/kernel/setup.c
+@@ -999,15 +999,8 @@ void __cpuinit setup_cpu(int boot)
  
- 	/* Atheros AR3012 with sflash firmware*/
-+	{ USB_DEVICE(0x0CF3, 0x0036) },
- 	{ USB_DEVICE(0x0CF3, 0x3004) },
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
- 	{ USB_DEVICE(0x13d3, 0x3375) },
-@@ -99,6 +100,7 @@ MODULE_DEVICE_TABLE(usb, ath3k_table);
- static struct usb_device_id ath3k_blist_tbl[] = {
+ #ifdef CONFIG_BLK_DEV_INITRD
  
- 	/* Atheros AR3012 with sflash firmware*/
-+	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 654e248..57474b1 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -128,6 +128,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+-/*
+- * Note that the kernel can potentially support other compression
+- * techniques than gz, though we don't do so by default.  If we ever
+- * decide to do so we can either look for other filename extensions,
+- * or just allow a file with this name to be compressed with an
+- * arbitrary compressor (somewhat counterintuitively).
+- */
+ static int __initdata set_initramfs_file;
+-static char __initdata initramfs_file[128] = "initramfs.cpio.gz";
++static char __initdata initramfs_file[128] = "initramfs";
  
- 	/* Atheros 3012 with sflash firmware */
-+	{ USB_DEVICE(0x0cf3, 0x0036), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ static int __init setup_initramfs_file(char *str)
+ {
+@@ -1021,9 +1014,9 @@ static int __init setup_initramfs_file(char *str)
+ early_param("initramfs_file", setup_initramfs_file);
+ 
+ /*
+- * We look for an "initramfs.cpio.gz" file in the hvfs.
+- * If there is one, we allocate some memory for it and it will be
+- * unpacked to the initramfs.
++ * We look for a file called "initramfs" in the hvfs.  If there is one, we
++ * allocate some memory for it and it will be unpacked to the initramfs.
++ * If it's compressed, the initd code will uncompress it first.
+  */
+ static void __init load_hv_initrd(void)
+ {
+@@ -1033,10 +1026,16 @@ static void __init load_hv_initrd(void)
+ 
+ 	fd = hv_fs_findfile((HV_VirtAddr) initramfs_file);
+ 	if (fd == HV_ENOENT) {
+-		if (set_initramfs_file)
++		if (set_initramfs_file) {
+ 			pr_warning("No such hvfs initramfs file '%s'\n",
+ 				   initramfs_file);
+-		return;
++			return;
++		} else {
++			/* Try old backwards-compatible name. */
++			fd = hv_fs_findfile((HV_VirtAddr)"initramfs.cpio.gz");
++			if (fd == HV_ENOENT)
++				return;
++		}
+ 	}
+ 	BUG_ON(fd < 0);
+ 	stat = hv_fs_fstat(fd);
 -- 
 1.7.10.4
 
