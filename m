@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936246Ab3DKBAT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 21:00:19 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:48986 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762769Ab3DKBAR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 21:00:17 -0400
+	id S936571Ab3DKBDq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 21:03:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:58976 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935511Ab3DKBDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 21:03:45 -0400
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,451,1363158000"; 
-   d="scan'208";a="37561281"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] ARM: msm: Fix uncompess.h tx underrun check
-Date: Wed, 10 Apr 2013 18:00:11 -0700
-Message-Id: <1365642011-4664-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+   d="scan'208";a="320606668"
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>, arnd@arndb.de
+Cc: linux-kernel@vger.kernel.org, Tomas Winkler <tomas.winkler@intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [char-misc-next 0/3 v7] Support NFC device on MEI CL bus 
+Date: Thu, 11 Apr 2013 03:03:28 +0200
+Message-Id: <1365642211-21421-1-git-send-email-sameo@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bit 3 of the SR register is set if there is a tx underrun. If
-this bit isn't set, we should loop on the tx ready bit until we
-can transmit again. Otherwise we should skip the loop and
-transmit immediately. The code is doing the opposite though,
-checking for an underrun and then looping on the tx ready bit
-causing us to never loop on the tx read bit when the tx buffer
-may not be ready.
+v6 -> v7:
+   * Removed include/uapi/linux/mei/nfc.h.
+     All MEI NFC definitions are now folded into drivers/misc/mei/nfc.c
 
-This doesn't seem to affect my 8960 device too often, but in some
-cases I see a lost character or two from the decompressor prints.
-This also matches what we do in the assembly in debug-macro.S.
+Samuel Ortiz (3):
+  mei: nfc: Initial nfc implementation
+  mei: nfc: Add NFC device to the MEI bus
+  mei: nfc: Implement MEI bus ops
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+ drivers/misc/mei/Makefile  |    1 +
+ drivers/misc/mei/client.c  |    3 +
+ drivers/misc/mei/init.c    |    2 +
+ drivers/misc/mei/mei_dev.h |   10 +
+ drivers/misc/mei/nfc.c     |  554 ++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 570 insertions(+)
+ create mode 100644 drivers/misc/mei/nfc.c
 
-Nobody has noticed this so far so I'm ok waiting for 3.10 on this one. Also
-it doesn't improve stability (debug feature) so I don't see a reason to send
-it to stable.
-
- arch/arm/mach-msm/include/mach/uncompress.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-msm/include/mach/uncompress.h b/arch/arm/mach-msm/include/mach/uncompress.h
-index fa97a10..9432487 100644
---- a/arch/arm/mach-msm/include/mach/uncompress.h
-+++ b/arch/arm/mach-msm/include/mach/uncompress.h
-@@ -37,7 +37,7 @@ static void putc(int c)
- 	 * Wait for TX_READY to be set; but skip it if we have a
- 	 * TX underrun.
- 	 */
--	if (UART_DM_SR & 0x08)
-+	if (!(UART_DM_SR & 0x08))
- 		while (!(UART_DM_ISR & 0x80))
- 			cpu_relax();
- 
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.10.4
 
