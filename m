@@ -1,30 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763315Ab3DKU0n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:26:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4200 "EHLO
+	id S1765251Ab3DKU1D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:27:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18255 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759380Ab3DKU0k (ORCPT
+	with ESMTP id S1760833Ab3DKU0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:26:40 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=YF3mRmZm-UsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=V8TitVSzo-UA:10 a=VnNF1IyMAAAA:8 a=Z4Rwk6OoAAAA:8 a=pGLkceISAAAA:8 a=omOdbC7AAAAA:8 a=VwQbUJbxAAAA:8 a=ENpiZwNaThevNlzpct4A:9 a=jbrJJM5MRmoA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:26:24 -0400
+X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=HWtWBGnRnkMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=s7rnLD5xGRQA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202553.519774671@goodmis.org>
+Message-Id: <20130411202555.211182555@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:25:48 -0400
+Date: Thu, 11 Apr 2013 16:25:58 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 045/171 ] mm/hugetlb: fix total hugetlbfs pages count when using memory
- overcommit accouting
+Cc: Zheng Liu <gnehzuil.liu@gmail.com>, Jan Kara <jack@suse.cz>,
+        "Theodore Tso" <tytso@mit.edu>
+Subject: [ 055/171 ] jbd2: fix use after free in jbd2_journal_dirty_metadata()
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0045-mm-hugetlb-fix-total-hugetlbfs-pages-count-when-usin.patch
+Content-Disposition: inline; filename=0055-jbd2-fix-use-after-free-in-jbd2_journal_dirty_metada.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,68 +30,79 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+From: Jan Kara <jack@suse.cz>
 
-[ Upstream commit d00285884c0892bb1310df96bce6056e9ce9b9d9 ]
+[ Upstream commit ad56edad089b56300fd13bb9eeb7d0424d978239 ]
 
-hugetlb_total_pages is used for overcommit calculations but the current
-implementation considers only the default hugetlb page size (which is
-either the first defined hugepage size or the one specified by
-default_hugepagesz kernel boot parameter).
+jbd2_journal_dirty_metadata() didn't get a reference to journal_head it
+was working with. This is OK in most of the cases since the journal head
+should be attached to a transaction but in rare occasions when we are
+journalling data, __ext4_journalled_writepage() can race with
+jbd2_journal_invalidatepage() stripping buffers from a page and thus
+journal head can be freed under hands of jbd2_journal_dirty_metadata().
 
-If the system is configured for more than one hugepage size, which is
-possible since commit a137e1cc6d6e ("hugetlbfs: per mount huge page
-sizes") then the overcommit estimation done by __vm_enough_memory()
-(resp.  shown by meminfo_proc_show) is not precise - there is an
-impression of more available/allowed memory.  This can lead to an
-unexpected ENOMEM/EFAULT resp.  SIGSEGV when memory is accounted.
+Fix the problem by getting own journal head reference in
+jbd2_journal_dirty_metadata() (and also in jbd2_journal_set_triggers()
+which can possibly have the same issue).
 
-Testcase:
-  boot: hugepagesz=1G hugepages=1
-  the default overcommit ratio is 50
-  before patch:
-
-    egrep 'CommitLimit' /proc/meminfo
-    CommitLimit:     55434168 kB
-
-  after patch:
-
-    egrep 'CommitLimit' /proc/meminfo
-    CommitLimit:     54909880 kB
-
-[akpm@linux-foundation.org: coding-style tweak]
-Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Hillf Danton <dhillf@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: <stable@vger.kernel.org>		[3.0+]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Zheng Liu <gnehzuil.liu@gmail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: stable@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- mm/hugetlb.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/jbd2/transaction.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 3adceaf..651d1ab 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -2131,8 +2131,12 @@ int hugetlb_report_node_meminfo(int nid, char *buf)
- /* Return the number pages of memory we physically have, in PAGE_SIZE units. */
- unsigned long hugetlb_total_pages(void)
+diff --git a/fs/jbd2/transaction.c b/fs/jbd2/transaction.c
+index fb1ab953..9427cf1 100644
+--- a/fs/jbd2/transaction.c
++++ b/fs/jbd2/transaction.c
+@@ -1046,9 +1046,12 @@ out:
+ void jbd2_journal_set_triggers(struct buffer_head *bh,
+ 			       struct jbd2_buffer_trigger_type *type)
  {
--	struct hstate *h = &default_hstate;
--	return h->nr_huge_pages * pages_per_huge_page(h);
-+	struct hstate *h;
-+	unsigned long nr_total_pages = 0;
-+
-+	for_each_hstate(h)
-+		nr_total_pages += h->nr_huge_pages * pages_per_huge_page(h);
-+	return nr_total_pages;
+-	struct journal_head *jh = bh2jh(bh);
++	struct journal_head *jh = jbd2_journal_grab_journal_head(bh);
+ 
++	if (WARN_ON(!jh))
++		return;
+ 	jh->b_triggers = type;
++	jbd2_journal_put_journal_head(jh);
  }
  
- static int hugetlb_acct_memory(struct hstate *h, long delta)
+ void jbd2_buffer_frozen_trigger(struct journal_head *jh, void *mapped_data,
+@@ -1100,17 +1103,18 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
+ {
+ 	transaction_t *transaction = handle->h_transaction;
+ 	journal_t *journal = transaction->t_journal;
+-	struct journal_head *jh = bh2jh(bh);
++	struct journal_head *jh;
+ 	int ret = 0;
+ 
+-	jbd_debug(5, "journal_head %p\n", jh);
+-	JBUFFER_TRACE(jh, "entry");
+ 	if (is_handle_aborted(handle))
+ 		goto out;
+-	if (!buffer_jbd(bh)) {
++	jh = jbd2_journal_grab_journal_head(bh);
++	if (!jh) {
+ 		ret = -EUCLEAN;
+ 		goto out;
+ 	}
++	jbd_debug(5, "journal_head %p\n", jh);
++	JBUFFER_TRACE(jh, "entry");
+ 
+ 	jbd_lock_bh_state(bh);
+ 
+@@ -1201,6 +1205,7 @@ int jbd2_journal_dirty_metadata(handle_t *handle, struct buffer_head *bh)
+ 	spin_unlock(&journal->j_list_lock);
+ out_unlock_bh:
+ 	jbd_unlock_bh_state(bh);
++	jbd2_journal_put_journal_head(jh);
+ out:
+ 	JBUFFER_TRACE(jh, "exit");
+ 	WARN_ON(ret);	/* All errors are bugs, so dump the stack */
 -- 
 1.7.10.4
 
