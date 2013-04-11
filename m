@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935747Ab3DKUtQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:49:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28463 "EHLO
+	id S936459Ab3DKVGC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:06:02 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17239 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935638Ab3DKUtG (ORCPT
+	with ESMTP id S935718Ab3DKUtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:49:06 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=vwz9bhg13IwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=HZYsnL5tEDQA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:49:15 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=l53_uAN06xQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=yztx1sZkUaUA:10 a=JDjsHSkAAAAA:8 a=UhR5MsZ8AAAA:8 a=VwQbUJbxAAAA:8 a=5LTywwN-4_UmgzhA2_YA:9 a=Hf6muOzgCGQA:10 a=sk_3bZWriPsA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202606.798787261@goodmis.org>
+Message-Id: <20130411202603.132733164@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:27:08 -0400
+Date: Thu, 11 Apr 2013 16:26:47 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 125/171 ] USB: spcp8x5: fix use-after-free in TIOCMIWAIT
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Benny Halevy <bhalevy@tonian.com>
+Subject: [ 104/171 ] NFSv4.1: Always clear the NFS_INO_LAYOUTCOMMIT in layoutreturn
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0125-USB-spcp8x5-fix-use-after-free-in-TIOCMIWAIT.patch
+Content-Disposition: inline; filename=0104-NFSv4.1-Always-clear-the-NFS_INO_LAYOUTCOMMIT-in-lay.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,70 +30,113 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-[ Upstream commit dbcea7615d8d7d58f6ff49d2c5568113f70effe9 ]
+[ Upstream commit 24956804349ca0eadcdde032d65e8c00b4214096 ]
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+Note that clearing NFS_INO_LAYOUTCOMMIT is tricky, since it requires
+you to also clear the NFS_LSEG_LAYOUTCOMMIT bits from the layout
+segments.
+The only two sites that need to do this are the ones that call
+pnfs_return_layout() without first doing a layout commit.
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
-
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Acked-by: Benny Halevy <bhalevy@tonian.com>
+Cc: stable@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/serial/spcp8x5.c |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ fs/nfs/pnfs.c |   35 +++++++++++++++++++++++++++--------
+ 1 file changed, 27 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/serial/spcp8x5.c b/drivers/usb/serial/spcp8x5.c
-index 2451c08..0822a10 100644
---- a/drivers/usb/serial/spcp8x5.c
-+++ b/drivers/usb/serial/spcp8x5.c
-@@ -154,7 +154,6 @@ enum spcp8x5_type {
- struct spcp8x5_private {
- 	spinlock_t 	lock;
- 	enum spcp8x5_type	type;
--	wait_queue_head_t	delta_msr_wait;
- 	u8 			line_control;
- 	u8 			line_status;
- };
-@@ -184,7 +183,6 @@ static int spcp8x5_port_probe(struct usb_serial_port *port)
- 		return -ENOMEM;
+diff --git a/fs/nfs/pnfs.c b/fs/nfs/pnfs.c
+index c5fe1a5..49dffeb5 100644
+--- a/fs/nfs/pnfs.c
++++ b/fs/nfs/pnfs.c
+@@ -364,6 +364,16 @@ should_free_lseg(struct pnfs_layout_range *lseg_range,
+ 	       lo_seg_intersecting(lseg_range, recall_range);
+ }
  
- 	spin_lock_init(&priv->lock);
--	init_waitqueue_head(&priv->delta_msr_wait);
- 	priv->type = type;
- 
- 	usb_set_serial_port_data(port , priv);
-@@ -481,7 +479,7 @@ static void spcp8x5_process_read_urb(struct urb *urb)
- 	priv->line_status &= ~UART_STATE_TRANSIENT_MASK;
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	/* wake up the wait for termios */
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
- 
- 	if (!urb->actual_length)
- 		return;
-@@ -531,12 +529,15 @@ static int spcp8x5_wait_modem_info(struct usb_serial_port *port,
- 
- 	while (1) {
- 		/* wake up in bulk read */
--		interruptible_sleep_on(&priv->delta_msr_wait);
-+		interruptible_sleep_on(&port->delta_msr_wait);
- 
- 		/* see if a signal did it */
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
- 
-+		if (port->serial->disconnected)
-+			return -EIO;
++static bool pnfs_lseg_dec_and_remove_zero(struct pnfs_layout_segment *lseg,
++		struct list_head *tmp_list)
++{
++	if (!atomic_dec_and_test(&lseg->pls_refcount))
++		return false;
++	put_lseg_common(lseg);
++	list_add(&lseg->pls_list, tmp_list);
++	return true;
++}
 +
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->line_status;
- 		spin_unlock_irqrestore(&priv->lock, flags);
+ /* Returns 1 if lseg is removed from list, 0 otherwise */
+ static int mark_lseg_invalid(struct pnfs_layout_segment *lseg,
+ 			     struct list_head *tmp_list)
+@@ -377,11 +387,8 @@ static int mark_lseg_invalid(struct pnfs_layout_segment *lseg,
+ 		 */
+ 		dprintk("%s: lseg %p ref %d\n", __func__, lseg,
+ 			atomic_read(&lseg->pls_refcount));
+-		if (atomic_dec_and_test(&lseg->pls_refcount)) {
+-			put_lseg_common(lseg);
+-			list_add(&lseg->pls_list, tmp_list);
++		if (pnfs_lseg_dec_and_remove_zero(lseg, tmp_list))
+ 			rv = 1;
+-		}
+ 	}
+ 	return rv;
+ }
+@@ -614,6 +621,21 @@ send_layoutget(struct pnfs_layout_hdr *lo,
+ 	return lseg;
+ }
+ 
++static void pnfs_clear_layoutcommit(struct inode *inode,
++		struct list_head *head)
++{
++	struct nfs_inode *nfsi = NFS_I(inode);
++	struct pnfs_layout_segment *lseg, *tmp;
++
++	if (!test_and_clear_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags))
++		return;
++	list_for_each_entry_safe(lseg, tmp, &nfsi->layout->plh_segs, pls_list) {
++		if (!test_and_clear_bit(NFS_LSEG_LAYOUTCOMMIT, &lseg->pls_flags))
++			continue;
++		pnfs_lseg_dec_and_remove_zero(lseg, head);
++	}
++}
++
+ /*
+  * Initiates a LAYOUTRETURN(FILE), and removes the pnfs_layout_hdr
+  * when the layout segment list is empty.
+@@ -645,6 +667,7 @@ _pnfs_return_layout(struct inode *ino)
+ 	/* Reference matched in nfs4_layoutreturn_release */
+ 	get_layout_hdr(lo);
+ 	empty = list_empty(&lo->plh_segs);
++	pnfs_clear_layoutcommit(ino, &tmp_list);
+ 	mark_matching_lsegs_invalid(lo, &tmp_list, NULL);
+ 	/* Don't send a LAYOUTRETURN if list was initially empty */
+ 	if (empty) {
+@@ -658,8 +681,6 @@ _pnfs_return_layout(struct inode *ino)
+ 	spin_unlock(&ino->i_lock);
+ 	pnfs_free_lseg_list(&tmp_list);
+ 
+-	WARN_ON(test_bit(NFS_INO_LAYOUTCOMMIT, &nfsi->flags));
+-
+ 	lrp = kzalloc(sizeof(*lrp), GFP_KERNEL);
+ 	if (unlikely(lrp == NULL)) {
+ 		status = -ENOMEM;
+@@ -1283,7 +1304,6 @@ static void pnfs_ld_handle_write_error(struct nfs_write_data *data)
+ 	dprintk("pnfs write error = %d\n", hdr->pnfs_error);
+ 	if (NFS_SERVER(hdr->inode)->pnfs_curr_ld->flags &
+ 	    PNFS_LAYOUTRET_ON_ERROR) {
+-		clear_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(hdr->inode)->flags);
+ 		pnfs_return_layout(hdr->inode);
+ 	}
+ 	if (!test_and_set_bit(NFS_IOHDR_REDO, &hdr->flags))
+@@ -1435,7 +1455,6 @@ static void pnfs_ld_handle_read_error(struct nfs_read_data *data)
+ 	dprintk("pnfs read error = %d\n", hdr->pnfs_error);
+ 	if (NFS_SERVER(hdr->inode)->pnfs_curr_ld->flags &
+ 	    PNFS_LAYOUTRET_ON_ERROR) {
+-		clear_bit(NFS_INO_LAYOUTCOMMIT, &NFS_I(hdr->inode)->flags);
+ 		pnfs_return_layout(hdr->inode);
+ 	}
+ 	if (!test_and_set_bit(NFS_IOHDR_REDO, &hdr->flags))
 -- 
 1.7.10.4
 
