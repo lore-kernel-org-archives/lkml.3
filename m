@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab3DKST5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:19:57 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57004 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab3DKSTz (ORCPT
+	id S1755498Ab3DKSWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:22:12 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:43735 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab3DKSWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:19:55 -0400
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Intel Graphics Development <intel-gfx@lists.freedesktop.org>
-Cc: DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Tomas Melin <tomas.melin@iki.fi>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>, stable@vger.kernel.org
-Subject: [PATCH] drm/i915: don't check inconsistent modeset state when force-restoring
-Date: Thu, 11 Apr 2013 20:22:50 +0200
-Message-Id: <1365704571-17122-1-git-send-email-daniel.vetter@ffwll.ch>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365537090-11518-1-git-send-email-daniel.vetter@ffwll.ch>
-References: <1365537090-11518-1-git-send-email-daniel.vetter@ffwll.ch>
+	Thu, 11 Apr 2013 14:22:10 -0400
+Date: Thu, 11 Apr 2013 20:22:03 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling overflow
+Message-ID: <20130411182201.GE17129@somewhere.redhat.com>
+References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
+ <20130326140147.GB2029@redhat.com>
+ <1365687946.8824.3.camel@laptop>
+ <CA+55aFway4C89fTewKvED4RvFLaNdM-BVtkJ2YChsvracLKiyA@mail.gmail.com>
+ <1365703670.10217.10.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365703670.10217.10.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be only consistent once we've restored all the crtcs. Since a
-bunch of other callers also want to just restore a single crtc, add a
-boolean to disable checking only where it doesn't make sense.
+On Thu, Apr 11, 2013 at 08:07:50PM +0200, Peter Zijlstra wrote:
+> On Thu, 2013-04-11 at 08:38 -0700, Linus Torvalds wrote:
+> > On Thu, Apr 11, 2013 at 6:45 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > On Tue, 2013-03-26 at 15:01 +0100, Stanislaw Gruszka wrote:
+> > >> Thoughts?
+> > >
+> > > Would something like the below work?
+> > 
+> > Ugh, this is hard to think about, it's also fairly inefficient.
+> > 
+> > >  static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
+> > >  {
+> > > -       u64 rem, res, scaled;
+> > > +       int stime_fls = fls64(stime);
+> > > +       int total_fls = fls64(total);
+> > > +       int rtime_fls = fls64(rtime);
+> > 
+> > Doing "fls64()" unconditionally is quite expensive on some
+> > architectures, 
+> 
+> Oh, I (wrongly it appears) assumed that fls was something cheap :/
+> 
+> > and if I am not mistaken, the *common* case (by far) is
+> > that all these values fit in 32 bits, no?
+> 
+> It depends on if we use cputime_jiffies.h or cputime_nsec.h and I'm
+> completely lost as to which we default to atm. But we sure can reduce
+> to 32 bits in most cases without too much problems.
 
-Note that intel_modeset_setup_hw_state already has a call to
-intel_modeset_check_state at the end, so we don't reduce the amount of
-checking.
-
-v2: Try harder not to create a big patch (Chris).
-
-v3: Even smaller (still Chris). Also fix a trailing space.
-
-References: https://lkml.org/lkml/2013/3/16/60
-Cc: Tomas Melin <tomas.melin@iki.fi>
-Cc: Richard Cochran <richardcochran@gmail.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: stable@vger.kernel.org
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- drivers/gpu/drm/i915/intel_display.c |   30 ++++++++++++++++++++++++------
- 1 file changed, 24 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 8809813..457a0a0 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7916,9 +7916,9 @@ intel_modeset_check_state(struct drm_device *dev)
- 	}
- }
- 
--int intel_set_mode(struct drm_crtc *crtc,
--		   struct drm_display_mode *mode,
--		   int x, int y, struct drm_framebuffer *fb)
-+static int __intel_set_mode(struct drm_crtc *crtc,
-+			    struct drm_display_mode *mode,
-+			    int x, int y, struct drm_framebuffer *fb)
- {
- 	struct drm_device *dev = crtc->dev;
- 	drm_i915_private_t *dev_priv = dev->dev_private;
-@@ -8012,8 +8012,6 @@ done:
- 	if (ret && crtc->enabled) {
- 		crtc->hwmode = *saved_hwmode;
- 		crtc->mode = *saved_mode;
--	} else {
--		intel_modeset_check_state(dev);
- 	}
- 
- out:
-@@ -8022,6 +8020,20 @@ out:
- 	return ret;
- }
- 
-+int intel_set_mode(struct drm_crtc *crtc,
-+		     struct drm_display_mode *mode,
-+		     int x, int y, struct drm_framebuffer *fb)
-+{
-+	int ret;
-+
-+	ret = __intel_set_mode(crtc, mode, x, y, fb);
-+
-+	if (ret == 0)
-+		intel_modeset_check_state(crtc->dev);
-+
-+	return ret;
-+}
-+
- void intel_crtc_restore_mode(struct drm_crtc *crtc)
- {
- 	intel_set_mode(crtc, &crtc->mode, crtc->x, crtc->y, crtc->fb);
-@@ -9333,10 +9345,16 @@ setup_pipes:
- 	}
- 
- 	if (force_restore) {
-+		/*
-+		 * We need to use raw interfaces for restoring state to avoid
-+		 * checking (bogus) intermediate states.
-+		 */
- 		for_each_pipe(pipe) {
- 			struct drm_crtc *crtc =
- 				dev_priv->pipe_to_crtc_mapping[pipe];
--			intel_crtc_restore_mode(crtc);
-+
-+			__intel_set_mode(crtc, &crtc->mode, crtc->x, crtc->y,
-+					 crtc->fb);
- 		}
- 		list_for_each_entry(plane, &dev->mode_config.plane_list, head)
- 			intel_plane_restore(plane);
--- 
-1.7.10.4
-
+We default to the jiffies. The nsecs case is used only for full dynticks
+accounting and ia64 precise accounting.
