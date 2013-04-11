@@ -1,85 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752705Ab3DKEI3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 00:08:29 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59066 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab3DKEI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 00:08:28 -0400
-Date: Thu, 11 Apr 2013 14:08:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: linux-next: manual merge of the tip tree with the pm tree
-Message-Id: <20130411140823.8a41393bb865c73d398ceb24@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__11_Apr_2013_14_08_23_+1000_a5.hHuh/jFyco5HY"
+	id S1752774Ab3DKEIh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 00:08:37 -0400
+Received: from ozlabs.org ([203.10.76.45]:44351 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752475Ab3DKEIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 00:08:35 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Chen Gang <gang.chen@asianux.com>, Stephen Boyd <sboyd@codeaurora.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: kallsyms: memory override issue, need check destination buffer length
+In-Reply-To: <51662AC7.1090004@asianux.com>
+References: <51662AC7.1090004@asianux.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 11 Apr 2013 13:38:15 +0930
+Message-ID: <87eheh4sls.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__11_Apr_2013_14_08_23_+1000_a5.hHuh/jFyco5HY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Chen Gang <gang.chen@asianux.com> writes:
+>   We don't export any symbols > 128 characters, but if we did then
+>   kallsyms_expand_symbol() would overflow the buffer handed to it.
+>   So we need check destination buffer length when copying.
+>
+>   the related test:
+>     if we define an EXPORT function which name more than 128.
+>     will panic when call kallsyms_lookup_name by init_kprobes on booting.
+>     after check the length (provide this patch), it is ok.
+>
+>   Implementaion:
+>     add additional destination buffer length parameter (maxlen)
+>     if uncompressed string is too long (>= maxlen), it will be truncated.
+>     not check the parameters whether valid, since it is a static function.
+>
+>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-Hi all,
+??!!!  I never signed this off!  I've never seen it before!
 
-Today's linux-next merge of the tip tree got a conflict in
-include/linux/clockchips.h between commit 4dbad816febb ("timer: move enum
-definition out of ifdef section") from the pm tree and commit
-19919226c3f2 ("clockevents: Add missing tick_check_broadcast_expired()
-for CLOCKEVENTS=3Dn") from the tip tree.
+Minor comments below:
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+> -static unsigned int kallsyms_expand_symbol(unsigned int off, char *result)
+> +static unsigned int kallsyms_expand_symbol(unsigned int off,
+> +					   char *result, int maxlen)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+'size_t maxlen' would be more explicit.
 
-diff --cc include/linux/clockchips.h
-index f9fd937,464e229..0000000
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@@ -181,7 -192,8 +192,8 @@@ static inline void clockevents_notify(u
-  static inline void clockevents_suspend(void) {}
-  static inline void clockevents_resume(void) {}
- =20
- -#define clockevents_notify(reason, arg) do { } while (0)
- +static inline void clockevents_notify(unsigned long reason, void *arg) {}
-+ static inline int tick_check_broadcast_expired(void) { return 0; }
- =20
-  #endif
- =20
+>  {
+>  	int len, skipped_first = 0;
+>  	const u8 *tptr, *data;
+> +	char *begin = result;
+>   	/* Get the compressed symbol length from the first symbol byte. */
+>  	data = &kallsyms_names[off];
+> @@ -113,14 +116,16 @@ static unsigned int kallsyms_expand_symbol(unsigned int off, char *result)
+>   		while (*tptr) {
+>  			if (skipped_first) {
+> -				*result = *tptr;
+> -				result++;
+> +				*result++ = *tptr;
+> +				if (result - begin == maxlen - 1)
+> +					goto tail;
 
---Signature=_Thu__11_Apr_2013_14_08_23_+1000_a5.hHuh/jFyco5HY
-Content-Type: application/pgp-signature
+You could just decrement maxlen instead, and handle maxlen == 0 at the
+same time:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+                if (maxlen <= 1)
+                        goto tail;
+                *result = *tptr;
+                result++;
+                maxlen--;
 
-iQIcBAEBCAAGBQJRZjc3AAoJEECxmPOUX5FE8L8QAIUHEfZ/NJ1gCbDKGOsJuCsx
-hryG7ZG2AOyYlhCc2QUKwc2vfw4UEpl7AOeyqTwTiE5/lqy7Qww0KoP7ifututUI
-qsGjI7GGIjIR1ZXWWSAZQ7R8zHQYaHw8wTpRnyKUhusynWdCh/WVefptIh6ulC3L
-oDSqUnmYAf84VQetguWKYlvYTAgIsbDhMhvatlt0cWqcUW9KK6TLEmYrbe6s0FOB
-+m0ROVfqocBMfMgek2QrEAdg3xlnohfiM4drbP6CkUTA3Zejb/kDIo0rov6k1/o+
-J16jUni/gAM3sSpWW3JYsvWUmhfiol+/0QYsu4Y20VrlqZiJHhI5hDDQXhnbgBcj
-vC6TyE6LMHejG5wAoOqzglZrEHLTOjbaTSiXp9zn+ETneEOuzfKwJOlCHj2XbVnu
-axEg22dNePBGWwvgnfO+vCjQIDHFPRBH17o4G2VcyMiXAuOILOtjqxKXqN/Jufjh
-2qtA67arhDA+BCobYL8qZyn3o9dPdZaWmgBRGtkt6Zn4wZQGApzkuPJp/yHLbhvy
-J81rDEVKdavZYvJ70xIOdSukKnFMQofN7cGoT9n70n0QuEJjzNpmPh3G9DJaT26f
-JrygF4hT5dJLxscndqlPCuIGpeOgZ7Wly2bI7dUkDd8593l7PBuVXEsgMeBDO/34
-gxSdqpFtECLtb1df45wC
-=NM2t
------END PGP SIGNATURE-----
+> @@ -176,7 +181,7 @@ unsigned long kallsyms_lookup_name(const char *name)
+>  	unsigned int off;
+>   	for (i = 0, off = 0; i < kallsyms_num_syms; i++) {
+> -		off = kallsyms_expand_symbol(off, namebuf);
+> +		off = kallsyms_expand_symbol(off, namebuf, sizeof(namebuf));
+>   		if (strcmp(namebuf, name) == 0)
+>  			return kallsyms_addresses[i];
 
---Signature=_Thu__11_Apr_2013_14_08_23_+1000_a5.hHuh/jFyco5HY--
+I prefer to use ARRAY_SIZE(namebuf) instead of sizeof(namebuf).  That
+way we break compile if the declaration is changed from an array to a
+pointer one day.
+
+Same for the others.
+
+Thanks,
+Rusty.
