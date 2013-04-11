@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935365Ab3DKUsq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:48:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20734 "EHLO
+	id S935435Ab3DKUsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:48:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2760 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935264Ab3DKUsn (ORCPT
+	with ESMTP id S933476Ab3DKUso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:48:43 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=q8MOP1LxnboA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=MT8x-vCKrSAA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:48:44 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=TYYsNB2kVJIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=GPTN4gAJ1wEA:10 a=20KFwNOVAAAA:8 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=jEp0ucaQiEUA:10 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202558.012605174@goodmis.org>
+Message-Id: <20130411202614.271498181@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:15 -0400
+Date: Thu, 11 Apr 2013 16:27:54 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 072/171 ] USB: io_ti: fix get_icount for two port adapters
+Cc: Veaceslav Falico <vfalico@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 171/171 ] bonding: get netdev_rx_handler_unregister out of locks
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0072-USB-io_ti-fix-get_icount-for-two-port-adapters.patch
+Content-Disposition: inline; filename=0171-bonding-get-netdev_rx_handler_unregister-out-of-lock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,36 +30,40 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-[ Upstream commit 5492bf3d5655b4954164f69c02955a7fca267611 ]
+[ Upstream commit fcd99434fb5c137274d2e15dd2a6a7455f0f29ff ]
 
-Add missing get_icount field to two-port driver.
+Now that netdev_rx_handler_unregister contains synchronize_net(), we need
+to call it outside of bond->lock, cause it might sleep. Also, remove the
+already unneded synchronize_net().
 
-The two-port driver was not updated when switching to the new icount
-interface in commit 0bca1b913aff ("tty: Convert the USB drivers to the
-new icount interface").
-
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/serial/io_ti.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/bonding/bond_main.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/io_ti.c b/drivers/usb/serial/io_ti.c
-index ccf297d..a943c06 100644
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -2766,6 +2766,7 @@ static struct usb_serial_driver edgeport_2port_device = {
- 	.set_termios		= edge_set_termios,
- 	.tiocmget		= edge_tiocmget,
- 	.tiocmset		= edge_tiocmset,
-+	.get_icount		= edge_get_icount,
- 	.write			= edge_write,
- 	.write_room		= edge_write_room,
- 	.chars_in_buffer	= edge_chars_in_buffer,
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index a9a07ce..83ae683 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1961,12 +1961,11 @@ int bond_release(struct net_device *bond_dev, struct net_device *slave_dev)
+ 		return -EINVAL;
+ 	}
+ 
++	write_unlock_bh(&bond->lock);
+ 	/* unregister rx_handler early so bond_handle_frame wouldn't be called
+ 	 * for this slave anymore.
+ 	 */
+ 	netdev_rx_handler_unregister(slave_dev);
+-	write_unlock_bh(&bond->lock);
+-	synchronize_net();
+ 	write_lock_bh(&bond->lock);
+ 
+ 	if (!bond->params.fail_over_mac) {
 -- 
 1.7.10.4
 
