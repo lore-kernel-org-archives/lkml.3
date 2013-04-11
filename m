@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161627Ab3DKSH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:07:58 -0400
-Received: from www.sr71.net ([198.145.64.142]:48940 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161570Ab3DKSH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:07:56 -0400
-Message-ID: <5166FBFB.2030703@sr71.net>
-Date: Thu, 11 Apr 2013 11:07:55 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Borislav Petkov <bp@alien8.de>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
- wrong cpu
-References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos> <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net> <alpine.LFD.2.02.1304092036431.21884@ionos> <alpine.LFD.2.02.1304092126150.21884@ionos> <51647C30.3050109@sr71.net> <alpine.LFD.2.02.1304101024010.21884@ionos> <alpine.LFD.2.02.1304101250320.21884@ionos> <5165C087.4060404@sr71.net> <alpine.LFD.2.02.1304111020520.21884@ionos>
-In-Reply-To: <alpine.LFD.2.02.1304111020520.21884@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1161644Ab3DKSIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:08:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36426 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161570Ab3DKSIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 14:08:04 -0400
+Message-ID: <1365703670.10217.10.camel@laptop>
+Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling
+ overflow
+From: Peter Zijlstra <peterz@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org
+Date: Thu, 11 Apr 2013 20:07:50 +0200
+In-Reply-To: <CA+55aFway4C89fTewKvED4RvFLaNdM-BVtkJ2YChsvracLKiyA@mail.gmail.com>
+References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
+	 <20130326140147.GB2029@redhat.com> <1365687946.8824.3.camel@laptop>
+	 <CA+55aFway4C89fTewKvED4RvFLaNdM-BVtkJ2YChsvracLKiyA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 03:19 AM, Thomas Gleixner wrote:
-> --- linux-2.6.orig/kernel/smpboot.c
-> +++ linux-2.6/kernel/smpboot.c
-> @@ -185,8 +185,18 @@ __smpboot_create_thread(struct smp_hotpl
->  	}
->  	get_task_struct(tsk);
->  	*per_cpu_ptr(ht->store, cpu) = tsk;
-> -	if (ht->create)
-> -		ht->create(cpu);
-> +	if (ht->create) {
-> +		/*
-> +		 * Make sure that the task has actually scheduled out
-> +		 * into park position, before calling the create
-> +		 * callback. At least the migration thread callback
-> +		 * requires that the task is off the runqueue.
-> +		 */
-> +		if (!wait_task_inactive(tsk, TASK_PARKED))
-> +			WARN_ON(1);
-> +		else
-> +			ht->create(cpu);
-> +	}
->  	return 0;
->  }
+On Thu, 2013-04-11 at 08:38 -0700, Linus Torvalds wrote:
+> On Thu, Apr 11, 2013 at 6:45 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, 2013-03-26 at 15:01 +0100, Stanislaw Gruszka wrote:
+> >> Thoughts?
+> >
+> > Would something like the below work?
+> 
+> Ugh, this is hard to think about, it's also fairly inefficient.
+> 
+> >  static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
+> >  {
+> > -       u64 rem, res, scaled;
+> > +       int stime_fls = fls64(stime);
+> > +       int total_fls = fls64(total);
+> > +       int rtime_fls = fls64(rtime);
+> 
+> Doing "fls64()" unconditionally is quite expensive on some
+> architectures, 
 
-This one appears to be doing the trick.  I'll run the cpus in an
-online/offline loop for a bit and make sure it's stable.  It's passed
-several round so far, which is way more than it's done up to this point,
-though.
+Oh, I (wrongly it appears) assumed that fls was something cheap :/
+
+> and if I am not mistaken, the *common* case (by far) is
+> that all these values fit in 32 bits, no?
+
+It depends on if we use cputime_jiffies.h or cputime_nsec.h and I'm
+completely lost as to which we default to atm. But we sure can reduce
+to 32 bits in most cases without too much problems.
+
+But that would mean fls() and shifting again for nsec based cputime.
+
+I'll have a better read and think about the rest of your email but
+that'll have to be tomorrow :/
+
