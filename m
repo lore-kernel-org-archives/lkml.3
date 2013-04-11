@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759883Ab3DKWhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 18:37:40 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:40078 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591Ab3DKWhi (ORCPT
+	id S1753153Ab3DKWi5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 18:38:57 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:20786 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202Ab3DKWi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 18:37:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+G9fYuq3eJp6pfSPXjdPqY7DAW6LF1Q5uDA02GOS65_voo6Bw@mail.gmail.com>
-References: <CA+G9fYuq3eJp6pfSPXjdPqY7DAW6LF1Q5uDA02GOS65_voo6Bw@mail.gmail.com>
-Date: Fri, 12 Apr 2013 00:37:38 +0200
-Message-ID: <CACRpkdaKajsFc=WGg1OAvBajs5ziCeXbk=-cnMV6EmB3L8rxPg@mail.gmail.com>
-Subject: Re: [Linaro-QA-Service] [linux-next] Snowball build broken
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Naresh Kamboju <naresh.kamboju@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 11 Apr 2013 18:38:56 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, rientjes@google.com,
+        linuxram@us.ibm.com, guz.fnst@cn.fujitsu.com, tmac@hp.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        tangchen@cn.fujitsu.com, jiang.liu@huawei.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] resource: Update config option of release_mem_region_adjustable()
+Date: Thu, 11 Apr 2013 16:26:25 -0600
+Message-Id: <1365719185-4799-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 8:28 PM, Naresh Kamboju
-<naresh.kamboju@linaro.org> wrote:
+Changed the config option of release_mem_region_adjustable() from
+CONFIG_MEMORY_HOTPLUG to CONFIG_MEMORY_HOTREMOVE since this function
+is only used for memory hot-delete.
 
-> One of those ARM targets is Snowball. Snowball build broken log can be found
-> here
->
-> Build Error:
->
-> 04:48:08   CC      drivers/mfd/ab8500-debugfs.o
-> 04:48:09
-> /mnt/ci_build/workspace/linux-next/hwpack/snowball/label/precise_hwpack_cloud/drivers/mfd/ab8500-debugfs.c:95:23:
-> fatal error: mach/irqs.h: No such file or directory
-> 04:48:09 compilation terminated.
-> 04:48:09 make[3]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
-> 04:48:09 make[2]: *** [drivers/mfd] Error 2
-> 04:48:09 make[1]: *** [drivers] Error 2
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
 
-Hey it works. Didn't see this before I fixed it tho :-)
-http://marc.info/?l=linux-kernel&m=136567139910888&w=2
+This patch applies on top of the two patches below:
+Re: [PATCH v3 2/3] resource: Add release_mem_region_adjustable()
+https://lkml.org/lkml/2013/4/11/381
+[patch] mm, hotplug: avoid compiling memory hotremove functions when disabled
+https://lkml.org/lkml/2013/4/10/37
 
-Yours,
-Linus Walleij
+---
+ include/linux/ioport.h |    2 +-
+ kernel/resource.c      |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/ioport.h b/include/linux/ioport.h
+index 961d4dc..89b7c24 100644
+--- a/include/linux/ioport.h
++++ b/include/linux/ioport.h
+@@ -192,7 +192,7 @@ extern struct resource * __request_region(struct resource *,
+ extern int __check_region(struct resource *, resource_size_t, resource_size_t);
+ extern void __release_region(struct resource *, resource_size_t,
+ 				resource_size_t);
+-#ifdef CONFIG_MEMORY_HOTPLUG
++#ifdef CONFIG_MEMORY_HOTREMOVE
+ extern int release_mem_region_adjustable(struct resource *, resource_size_t,
+ 				resource_size_t);
+ #endif
+diff --git a/kernel/resource.c b/kernel/resource.c
+index 16bfd39..4aef886 100644
+--- a/kernel/resource.c
++++ b/kernel/resource.c
+@@ -1021,7 +1021,7 @@ void __release_region(struct resource *parent, resource_size_t start,
+ }
+ EXPORT_SYMBOL(__release_region);
+ 
+-#ifdef CONFIG_MEMORY_HOTPLUG
++#ifdef CONFIG_MEMORY_HOTREMOVE
+ /**
+  * release_mem_region_adjustable - release a previously reserved memory region
+  * @parent: parent resource descriptor
+@@ -1122,7 +1122,7 @@ int release_mem_region_adjustable(struct resource *parent,
+ 	kfree(new_res);
+ 	return ret;
+ }
+-#endif	/* CONFIG_MEMORY_HOTPLUG */
++#endif	/* CONFIG_MEMORY_HOTREMOVE */
+ 
+ /*
+  * Managed region resource
