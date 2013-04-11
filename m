@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965211Ab3DKCDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 22:03:08 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:24402 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933295Ab3DKCDF (ORCPT
+	id S965227Ab3DKCFW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 22:05:22 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:18883 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933295Ab3DKCFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 22:03:05 -0400
-X-AuditID: cbfee68e-b7f946d000001e37-47-516619d71dba
+	Wed, 10 Apr 2013 22:05:20 -0400
+X-AuditID: cbfee690-b7f656d0000007e3-15-51661a5ff69c
 From: Jonghwan Choi <jhbird.choi@samsung.com>
 To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org, "'Wei Yongjun'" <yongjun_wei@trendmicro.com.cn>,
-        "'Steven Whitehouse'" <swhiteho@redhat.com>
+Cc: stable@vger.kernel.org, "'Steven Whitehouse'" <swhiteho@redhat.com>
 References: 
 In-reply-to: 
-Subject: [PATCH 3.8-stable] GFS2: return error if malloc failed in
- gfs2_rs_alloc()
-Date: Thu, 11 Apr 2013 11:03:02 +0900
-Message-id: <000501ce3658$b3022fd0$19068f70$%choi@samsung.com>
+Subject: [PATCH 3.8-stable] GFS2: Fix unlock of fcntl locks during withdrawn
+ state
+Date: Thu, 11 Apr 2013 11:05:18 +0900
+Message-id: <000601ce3659$042adbf0$0c8093d0$%choi@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAEJzDJAAtXBJYACaKDZQAAM/m2A=
+Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAEJzDJAAtXBJYACaKDZQAAM/m2AAACAc8A==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIIsWRmVeSWpSXmKPExsVy+t8zY93rkmmBBp2LWC2WNHNbXN41h81i
-	wcZHjBa/WpvZLXau62R3YPV4v+8qm0ffllWMHkvvHWX0+LxJLoAlissmJTUnsyy1SN8ugSvj
-	3+pT7AXf2SsOTVvO0sB4jq2LkZNDQsBE4vCFxawQtpjEhXvrgeJcHEICyxglXs39zg5TtOT1
-	T2aIxCJGicP3brFAOH8ZJZ5uOwRWxSagK3Fs/RawUSIC3hKnpvxiBrGZBcokzs25DRTnAGrg
-	lljdHAQS5hTgkVj3pxOsRFggRGLn9P9gNouAqsTWO//BRvIK2Els37GLDcIWlPgx+R4LxEgt
-	ifU7jzNB2PISm9e8ZQYZLyGgLvHory7EBX4S65dMgioRkdj34h0jyMkSAufYJf4tWw21S0Di
-	2+RDLBC9shKbDjBD/CspcXDFDZYJjBKzkGyehWTzLCSbZyFZsYCRZRWjaGpBckFxUnqRkV5x
-	Ym5xaV66XnJ+7iZGSHT27WC8ecD6EGMy0PqJzFKiyfnA6M4riTc0NjOyMDUxNTYytzQjTVhJ
-	nFetxTpQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6PN51+tezdM8Tc79K1g61+VRtVPh66F
-	nF6St1bRz+biE8YjNe3T3v3dsf3pKZsdcjPyj547km8iL+Z6JUtwyZTpM5z41jQt2Lex40zs
-	7dJPy7z7ijm3x682ZIswz83fMCusQ+l2jWjlTp4ueTHj6Q1Hqg9O+sN8S5rl5N6WS5oLz5RH
-	/p/sliWvxFKckWioxVxUnAgAEcXpwOQCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jAd3rkmmBBluuMFosaea2uLxrDpvF
-	go2PGC1+tTazW+xc18nuwOrxft9VNo++LasYPZbeO8ro8XmTXABLVAOjTUZqYkpqkUJqXnJ+
-	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QXiWFssScUqBQQGJxsZK+HaYJ
-	oSFuuhYwjRG6viFBcD1GBmggYR1jxr/Vp9gLvrNXHJq2nKWB8RxbFyMnh4SAicSS1z+ZIWwx
-	iQv31gPFuTiEBBYxShy+d4sFwvnLKPF02yF2kCo2AV2JY+u3sILYIgLeEqem/ALrZhYokzg3
-	5zZQnAOogVtidXMQSJhTgEdi3Z9OsBJhgRCJndP/g9ksAqoSW+/8BxvJK2AnsX3HLjYIW1Di
-	x+R7LBAjtSTW7zzOBGHLS2xe85YZZLyEgLrEo7+6EBf4SaxfMgmqRERi34t3jBMYhWYhmTQL
-	yaRZSCbNQtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZw7D+T2sG4ssHiEKMAB6MS
-	D++JhtRAIdbEsuLK3EOMEhzMSiK8XDuBQrwpiZVVqUX58UWlOanFhxiTgR6dyCwlmpwPTEt5
-	JfGGxiZmRpZGZhZGJubmpAkrifMeaLUOFBJITyxJzU5NLUgtgtnCxMEp1cC4dGmPb5xI4rqV
-	XuteXa/80nXUXvR+raDT2u9XIzsrlTPvnbpiFClqx8066+SctwvPvAub1zxd59Z2Xb5j3wU6
-	Tyx40Du3YcH6za1vm7KZ2jpz1E4rTb41+fX8FVbOv2/tMcr4tfNDROOOw89nT1wTsDco75l2
-	xdvbewySLYQXal622GkUcPWXoxJLcUaioRZzUXEiAJhf1HNBAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOIsWRmVeSWpSXmKPExsVy+t8zY914qbRAgwWn+SyWNHNbXN41h81i
+	wcZHjBa/WpvZHVg83u+7yubRt2UVo8fnTXIBzFFcNimpOZllqUX6dglcGRsu/2MtaOeqWNm/
+	l6WBcQFHFyMnh4SAiUTTjmnsELaYxIV769m6GLk4hASWMUpcWP+OHabo7OYtTBCJRYwSnZf6
+	oKr+MkrsatjIClLFJqArcWz9FjBbRMBb4tSUX8wgNrOAq8SSX3uA4hxADdwSq5uDQMKcAjwS
+	6/50gpUIC4RIvNj/iwXEZhFQlZjQ/YgRxOYVsJO4+GozO4QtKPFj8j0WiJFaEut3HmeCsOUl
+	Nq95ywwyXkJAXeLRX12ICyIk/l2ewgZRIiKx78U7RpCTJQQOsUtM/fuPGWKXgMS3yYdYIHpl
+	JTYdYIb4V1Li4IobLBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CITveLE3OLSvHS9
+	5PzcTYyQSJywg/HeAetDjMlA6ycyS4km5wMjOa8k3tDYzMjC1MTU2Mjc0ow0YSVxXvUW60Ah
+	gfTEktTs1NSC1KL4otKc1OJDjEwcnFINjLHNpUsvdDrzxi3ZEbDjzZyJx3gl7vL2cbC8rVef
+	vGT5N+YvzQdsNWWPdt75+35GvPzJ/5PStm3M7pPZEB4Xu+3IK6XGRVXpp8Ra1+T/7VZOMBFJ
+	0pI53CTQ75diVH/txZSOp9/yXxwynKBxcNek866npCNjV8efvFw4j09twdQZ8gnZj3beLVBi
+	Kc5INNRiLipOBAAZuKET2gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t9jAd14qbRAg09N3BZLmrktLu+aw2ax
+	YOMjRotfrc3sDiwe7/ddZfPo27KK0ePzJrkA5qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4
+	UzMDQ11DSwtzJYW8xNxUWyUXnwBdt8wcoG1KCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1D
+	guB6jAzQQMI6xowNl/+xFrRzVazs38vSwLiAo4uRk0NCwETi7OYtTBC2mMSFe+vZuhi5OIQE
+	FjFKdF7qg3L+MkrsatjIClLFJqArcWz9FjBbRMBb4tSUX8wgNrOAq8SSX3uA4hxADdwSq5uD
+	QMKcAjwS6/50gpUIC4RIvNj/iwXEZhFQlZjQ/YgRxOYVsJO4+GozO4QtKPFj8j0WiJFaEut3
+	HmeCsOUlNq95ywwyXkJAXeLRX12ICyIk/l2ewgZRIiKx78U7xgmMQrOQTJqFZNIsJJNmIWlZ
+	wMiyilE0tSC5oDgpPddQrzgxt7g0L10vOT93EyM4zp9J7WBc2WBxiFGAg1GJh/dEQ2qgEGti
+	WXFl7iFGCQ5mJRFerp1AId6UxMqq1KL8+KLSnNTiQ4zJQI9OZJYSTc4HpqC8knhDYxMzI0sj
+	MwsjE3Nz0oSVxHkPtFoHCgmkJ5akZqemFqQWwWxh4uCUamBMsT2++JHLrStdNRu38TPUC+oE
+	7qsXkFssZWg+X+GF5qyCtSJPVfbJsBWuOhE+I7Ly1exSPmfPYnd9/vOZNhs/veiYwCcWdO1f
+	yK7wJiveCad35j/vdPmz52DdAt9J33/ovVizeZfnn0Usyh5ui1bd2WV1qZ+/JPhC7vZJnY1P
+	Mr5d3hz9N2+iEktxRqKhFnNRcSIAH40r4TcDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,34 +60,39 @@ it?
 
 ------------------
 
-From: "Wei Yongjun <yongjun_wei@trendmicro.com.cn>"
+From: "Steven Whitehouse <swhiteho@redhat.com>"
 
-commit 441362d06be349430d06e37286adce4b90e6ce96 upstream
+commit c2952d202f710d326ac36a8ea6bd216b20615ec8 upstream
 
-The error code in gfs2_rs_alloc() is set to ENOMEM when error
-but never be used, instead, gfs2_rs_alloc() always return 0.
-Fix to return 'error'.
+When withdraw occurs, we need to continue to allow unlocks of fcntl
+locks to occur, however these will only be local, since the node has
+withdrawn from the cluster. This prevents triggering a VFS level
+bug trap due to locks remaining when a file is closed.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 ---
- fs/gfs2/rgrp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/gfs2/file.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index b7eff07..9afba3d6 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -576,7 +576,7 @@ int gfs2_rs_alloc(struct gfs2_inode *ip)
- 	RB_CLEAR_NODE(&ip->i_res->rs_node);
- out:
- 	up_write(&ip->i_rw_mutex);
--	return 0;
-+	return error;
- }
- 
- static void dump_rs(struct seq_file *seq, const struct gfs2_blkreserv *rs)
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index 991ab2d..7af426b 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -924,8 +924,11 @@ static int gfs2_lock(struct file *file, int cmd, struct
+file_lock *fl)
+ 		cmd = F_SETLK;
+ 		fl->fl_type = F_UNLCK;
+ 	}
+-	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags)))
++	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags))) {
++		if (fl->fl_type == F_UNLCK)
++			posix_lock_file_wait(file, fl);
+ 		return -EIO;
++	}
+ 	if (IS_GETLK(cmd))
+ 		return dlm_posix_get(ls->ls_dlm, ip->i_no_addr, file, fl);
+ 	else if (fl->fl_type == F_UNLCK)
 -- 
 1.7.9.5
 
