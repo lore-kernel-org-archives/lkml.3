@@ -1,115 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab3DKUx0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:53:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17239 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935873Ab3DKUtb (ORCPT
+	id S934800Ab3DKUyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:54:54 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54673 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934590Ab3DKUyv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:49:31 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=_qIFQ5jD3aUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=mTwAkanW7F0A:10 a=QyXUC8HyAAAA:8 a=klgB0MMPG5ptXD9YpV0A:9 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=gVYdi1RkTh040z5e:21 a=TyMX6_5--YLiefQ6:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202557.512819785@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:12 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 069/171 ] ACPI: Rework acpi_get_child() to be more efficient
-References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0069-ACPI-Rework-acpi_get_child-to-be-more-efficient.patch
+	Thu, 11 Apr 2013 16:54:51 -0400
+Message-ID: <51672304.2060600@ti.com>
+Date: Thu, 11 Apr 2013 16:54:28 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+CC: <linux-pm@vger.kernel.org>, Thomas Abraham <thomas.abraham@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <amit.kachhap@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, <eduardo.valentin@ti.com>
+Subject: Re: [6/9] thermal: exynos: small cleanups to prepare for adding exynos5440
+ driver
+References: <1364297642-2746-7-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1364297642-2746-7-git-send-email-amit.daniel@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.2 stable review patch.
-If anyone has any objections, please let me know.
+Amit,
 
-------------------
+On 26-03-2013 07:33, Amit Daniel Kachhap wrote:
+> Add calib mode, trigger types and trigger_enable array. This is needed
+> for adding exynos5440 TMU driver.
+>
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+I dont think the above are small cleanups. I d rather split this patch 
+into three, one per change and describe them properly.
 
-[ Upstream commit 33f767d767e9a684e9cd60704d4c049a2014c8d5 ]
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>
+> ---
+> drivers/thermal/samsung/exynos4210_thermal.c |   30 ++++++++++++------------
+>   include/linux/platform_data/exynos_thermal.h |   32 +++++++++++++-------------
+>   2 files changed, 31 insertions(+), 31 deletions(-)
+>
+> diff --git a/drivers/thermal/samsung/exynos4210_thermal.c b/drivers/thermal/samsung/exynos4210_thermal.c
+> index 09ea8c8..58d16ac 100644
+> --- a/drivers/thermal/samsung/exynos4210_thermal.c
+> +++ b/drivers/thermal/samsung/exynos4210_thermal.c
+> @@ -276,10 +276,10 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
+>
+>   	if (on) {
+>   		con |= EXYNOS_TMU_CORE_ON;
+> -		interrupt_en = pdata->trigger_level3_en << 12 |
+> -			pdata->trigger_level2_en << 8 |
+> -			pdata->trigger_level1_en << 4 |
+> -			pdata->trigger_level0_en;
+> +		interrupt_en = pdata->trigger_enable[3] << 12 |
+> +			pdata->trigger_enable[2] << 8 |
+> +			pdata->trigger_enable[1] << 4 |
+> +			pdata->trigger_enable[0];
+>   		if (pdata->threshold_falling)
+>   			interrupt_en |= interrupt_en << 16;
+>   	} else {
+> @@ -394,10 +394,10 @@ static struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
+>   	.trigger_levels[0] = 5,
+>   	.trigger_levels[1] = 20,
+>   	.trigger_levels[2] = 30,
+> -	.trigger_level0_en = 1,
+> -	.trigger_level1_en = 1,
+> -	.trigger_level2_en = 1,
+> -	.trigger_level3_en = 0,
+> +	.trigger_enable[0] = 1,
+> +	.trigger_enable[1] = 1,
+> +	.trigger_enable[2] = 1,
+> +	.trigger_enable[3] = 0,
+>   	.gain = 15,
+>   	.reference_voltage = 7,
+>   	.cal_type = TYPE_ONE_POINT_TRIMMING,
+> @@ -423,10 +423,10 @@ static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
+>   	.trigger_levels[0] = 85,
+>   	.trigger_levels[1] = 103,
+>   	.trigger_levels[2] = 110,
+> -	.trigger_level0_en = 1,
+> -	.trigger_level1_en = 1,
+> -	.trigger_level2_en = 1,
+> -	.trigger_level3_en = 0,
+> +	.trigger_enable[0] = 1,
+> +	.trigger_enable[1] = 1,
+> +	.trigger_enable[2] = 1,
+> +	.trigger_enable[3] = 0,
+>   	.gain = 8,
+>   	.reference_voltage = 16,
+>   	.noise_cancel_mode = 4,
+> @@ -566,9 +566,9 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>
+>   	/* Register the sensor with thermal management interface */
+>   	(&exynos_sensor_conf)->driver_data = data;
+> -	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_level0_en +
+> -			pdata->trigger_level1_en + pdata->trigger_level2_en +
+> -			pdata->trigger_level3_en;
+> +	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_enable[0] +
+> +			pdata->trigger_enable[1] + pdata->trigger_enable[2] +
+> +			pdata->trigger_enable[3];
+>
+>   	for (i = 0; i < exynos_sensor_conf.trip_data.trip_count; i++)
+>   		exynos_sensor_conf.trip_data.trip_val[i] =
+> diff --git a/include/linux/platform_data/exynos_thermal.h b/include/linux/platform_data/exynos_thermal.h
+> index 893b758..1090f48 100644
+> --- a/include/linux/platform_data/exynos_thermal.h
+> +++ b/include/linux/platform_data/exynos_thermal.h
+> @@ -31,6 +31,17 @@ enum calibration_type {
+>   	TYPE_NONE,
+>   };
+>
+> +enum calibration_mode {
+> +	SW_MODE,
+> +	HW_MODE,
+> +};
+> +
+> +enum trigger_type {
+> +	ACTIVE,
+> +	CRITICAL,
+> +	HW_TRIP,
+> +};
+> +
+>   enum soc_type {
+>   	SOC_ARCH_EXYNOS4210 = 1,
+>   	SOC_ARCH_EXYNOS,
+> @@ -71,18 +82,9 @@ struct freq_clip_table {
+>    *	3: temperature for trigger_level3 interrupt
+>    *	   condition for trigger_level3 interrupt:
+>    *		current temperature > threshold + trigger_levels[3]
+> - * @trigger_level0_en:
+> + * @trigger_enable[]: array to denote which trigger levels are enabled.
+>    *	1 = enable trigger_level0 interrupt,
+>    *	0 = disable trigger_level0 interrupt
+> - * @trigger_level1_en:
+> - *	1 = enable trigger_level1 interrupt,
+> - *	0 = disable trigger_level1 interrupt
+> - * @trigger_level2_en:
+> - *	1 = enable trigger_level2 interrupt,
+> - *	0 = disable trigger_level2 interrupt
+> - * @trigger_level3_en:
+> - *	1 = enable trigger_level3 interrupt,
+> - *	0 = disable trigger_level3 interrupt
+>    * @gain: gain of amplifier in the positive-TC generator block
+>    *	0 <= gain <= 15
+>    * @reference_voltage: reference voltage of amplifier
+> @@ -93,6 +95,7 @@ struct freq_clip_table {
+>    * @type: determines the type of SOC
+>    * @efuse_value: platform defined fuse value
+>    * @cal_type: calibration type for temperature
+> + * @cal_mode: calibration mode for temperature
 
-Observe that acpi_get_child() doesn't need to use the helper
-struct acpi_find_child structure and change it to work without it.
-Also, using acpi_get_object_info() to get the output of _ADR for the
-given device is overkill, because that function does much more than
-just evaluating _ADR (let alone the additional memory allocation
-done by it).
-
-Moreover, acpi_get_child() doesn't need to loop any more once it has
-found a matching handle, so make it stop in that case.  To prevent
-the results from changing, make it use do_acpi_find_child() as
-a post-order callback.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/acpi/glue.c |   35 +++++++++++++----------------------
- 1 file changed, 13 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/acpi/glue.c b/drivers/acpi/glue.c
-index 243ee85..6eff12f 100644
---- a/drivers/acpi/glue.c
-+++ b/drivers/acpi/glue.c
-@@ -88,40 +88,31 @@ static int acpi_find_bridge_device(struct device *dev, acpi_handle * handle)
- 	return ret;
- }
- 
--/* Get device's handler per its address under its parent */
--struct acpi_find_child {
--	acpi_handle handle;
--	u64 address;
--};
--
--static acpi_status
--do_acpi_find_child(acpi_handle handle, u32 lvl, void *context, void **rv)
-+static acpi_status do_acpi_find_child(acpi_handle handle, u32 lvl_not_used,
-+				      void *addr_p, void **ret_p)
- {
-+	unsigned long long addr;
- 	acpi_status status;
--	struct acpi_device_info *info;
--	struct acpi_find_child *find = context;
--
--	status = acpi_get_object_info(handle, &info);
--	if (ACPI_SUCCESS(status)) {
--		if ((info->address == find->address)
--			&& (info->valid & ACPI_VALID_ADR))
--			find->handle = handle;
--		kfree(info);
-+
-+	status = acpi_evaluate_integer(handle, METHOD_NAME__ADR, NULL, &addr);
-+	if (ACPI_SUCCESS(status) && addr == *((u64 *)addr_p)) {
-+		*ret_p = handle;
-+		return AE_CTRL_TERMINATE;
- 	}
- 	return AE_OK;
- }
- 
- acpi_handle acpi_get_child(acpi_handle parent, u64 address)
- {
--	struct acpi_find_child find = { NULL, address };
-+	void *ret = NULL;
- 
- 	if (!parent)
- 		return NULL;
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, parent,
--			    1, do_acpi_find_child, NULL, &find, NULL);
--	return find.handle;
--}
- 
-+	acpi_walk_namespace(ACPI_TYPE_DEVICE, parent, 1, NULL,
-+			    do_acpi_find_child, &address, &ret);
-+	return (acpi_handle)ret;
-+}
- EXPORT_SYMBOL(acpi_get_child);
- 
- /* Link ACPI devices with physical devices */
--- 
-1.7.10.4
-
+How about trigger_type?
+>    * @freq_clip_table: Table representing frequency reduction percentage.
+>    * @freq_tab_count: Count of the above table as frequency reduction may
+>    *	applicable to only some of the trigger levels.
+> @@ -103,18 +106,15 @@ struct exynos_tmu_platform_data {
+>   	u8 threshold;
+>   	u8 threshold_falling;
+>   	u8 trigger_levels[MAX_TRIP];
+> -	bool trigger_level0_en;
+> -	bool trigger_level1_en;
+> -	bool trigger_level2_en;
+> -	bool trigger_level3_en;
+> -	bool trigger_level4_en;
+> -
+> +	enum trigger_type trigger_type[MAX_TRIP];
+> +	bool trigger_enable[MAX_TRIP];
+>   	u8 gain;
+>   	u8 reference_voltage;
+>   	u8 noise_cancel_mode;
+>   	u32 efuse_value;
+>
+>   	enum calibration_type cal_type;
+> +	enum calibration_mode cal_mode;
+>   	enum soc_type type;
+>   	struct freq_clip_table freq_tab[MAX_TRIP];
+>   	unsigned int freq_tab_count;
+>
 
