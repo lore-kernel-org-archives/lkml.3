@@ -1,229 +1,335 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab3DKRI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 13:08:57 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55471 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855Ab3DKRI4 convert rfc822-to-8bit (ORCPT
+	id S1753647Ab3DKRJo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 13:09:44 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:40990 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751855Ab3DKRJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 13:08:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 18/30] ASoC: samsung: move plat/ headers to local directory
-Date: Thu, 11 Apr 2013 19:08:42 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>
-References: <1365638712-1028578-1-git-send-email-arnd@arndb.de> <1365638712-1028578-19-git-send-email-arnd@arndb.de> <20130411164751.GK9243@opensource.wolfsonmicro.com>
-In-Reply-To: <20130411164751.GK9243@opensource.wolfsonmicro.com>
+	Thu, 11 Apr 2013 13:09:43 -0400
+Date: Thu, 11 Apr 2013 10:09:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Kevin Hilman <khilman@linaro.org>, Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH documentation 1/2] nohz1: Add documentation.
+Message-ID: <20130411170918.GE29861@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130411160524.GA30384@linux.vnet.ibm.com>
+ <1365696359-30958-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <5166E96D.9050004@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201304111908.42532.arnd@arndb.de>
-X-Provags-ID: V02:K0:sIdt9k3QSG28nuolLB55mo8tu6vOqH5ZmZD33RxKruB
- DYMBvjNrHxdhkDm2OZo1fsefEf7UDsta7my8rhgjIPslmlX29S
- 3YHOtwPLP7/EjJme/r8JE3ZrlUQWQzg6Sk3DZ7R4lE7JNAmi4V
- YfrwKK6WgXkpyS47SB0mDO1ShhtJEBidzV0HwCOpn/G17gOC9v
- S5SP5sLZJygfMIdDW7I8+TSOAUmihwAEAW6hshyWEnQSO5xoEb
- 2R0DLhbH3dzQFcz9rFcCsJPraPYY3q+2Ss/0SWTQOfYCN9lRAv
- nEPjnR//OJ1PaSHRt7j4b7OwYdJzd96N6+UwaXT+G3H84oINhZ
- rP/KlpzdMP90v7iDGzko=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5166E96D.9050004@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041117-5518-0000-0000-00000D7185B4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 April 2013, Mark Brown wrote:
-> On Thu, Apr 11, 2013 at 02:05:00AM +0200, Arnd Bergmann wrote:
-> > The plat/iis.h and plat/ac97.h files in the samsung platform are
-> > only needed by the ASoC drivers, so they can be moved into the
-> > same directory, as one more step towards a multiplatform build.
+On Thu, Apr 11, 2013 at 09:48:45AM -0700, Randy Dunlap wrote:
+> On 04/11/2013 09:05 AM, Paul E. McKenney wrote:
+> >From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> >
+> >Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> >Cc: Steven Rostedt <rostedt@goodmis.org>
+> >Cc: Borislav Petkov <bp@alien8.de>
+> >Cc: Arjan van de Ven <arjan@linux.intel.com>
+> >Cc: Kevin Hilman <khilman@linaro.org>
+> >Cc: Christoph Lameter <cl@linux.com>
+> >---
+> >  Documentation/timers/NO_HZ.txt | 245 +++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 245 insertions(+)
+> >  create mode 100644 Documentation/timers/NO_HZ.txt
+> >
+> >diff --git a/Documentation/timers/NO_HZ.txt b/Documentation/timers/NO_HZ.txt
+> >new file mode 100644
+> >index 0000000..6b33f6b
+> >--- /dev/null
+> >+++ b/Documentation/timers/NO_HZ.txt
+> >@@ -0,0 +1,245 @@
+> >+		NO_HZ: Reducing Scheduling-Clock Ticks
+> >+
+> >+
+> >+This document describes Kconfig options and boot parameters that can
+> >+reduce the number of scheduling-clock interrupts, thereby improving energy
+> >+efficiency and reducing OS jitter.  Reducing OS jitter is important for
+> >+some types of computationally intensive high-performance computing (HPC)
+> >+applications and for real-time applications.
+> >+
+> >+There are two major aspects of scheduling-clock interrupt reduction:
+> >+
+> >+1.	Idle CPUs.
+> >+
+> >+2.	CPUs having only one runnable task.
+> >+
+> >+These two cases are described in the following sections.
+> >+
+> >+
+> >+IDLE CPUs
+> >+
+> >+If a CPU is idle, there is little point in sending it a scheduling-clock
+> >+interrupt.  After all, the primary purpose of a scheduling-clock interrupt
+> >+is to force a busy CPU to shift its attention among multiple duties,
+> >+but an idle CPU by definition has no duties to shift its attention among.
+> >+
+> >+The CONFIG_NO_HZ=y Kconfig option causes the kernel to avoid sending
+> >+scheduling-clock interrupts to idle CPUs, which is critically important
+> >+both to battery-powered devices and to highly virtualized mainframes.
+> >+A battery-powered device running a CONFIG_NO_HZ=n kernel would drain
+> >+its battery very quickly, easily 2-3x as fast as would the same device
+> >+running a CONFIG_NO_HZ=y kernel.  A mainframe running 1,500 OS instances
+> >+might find that half of its CPU time was consumed by scheduling-clock
+> >+interrupts.  In these situations, there is strong motivation to avoid
+> >+sending scheduling-clock interrupts to idle CPUs.  That said, dyntick-idle
+> >+mode is not free:
+> >+
+> >+1.	It increases the number of instructions executed on the path
+> >+	to and from the idle loop.
+> >+
+> >+2.	Many architectures will place dyntick-idle CPUs into deep sleep
+> >+	states, which further degrades from-idle transition latencies.
+> >+
+> >+Therefore, systems with aggressive real-time response constraints
+> >+often run CONFIG_NO_HZ=n kernels in order to avoid degrading from-idle
+> >+transition latencies.
+> >+
+> >+An idle CPU that is not receiving scheduling-clock interrupts is said to
+> >+be "dyntick-idle", "in dyntick-idle mode", "in nohz mode", or "running
+> >+tickless".  The remainder of this document will use "dyntick-idle mode".
+> >+
+> >+There is also a boot parameter "nohz=" that can be used to disable
+> >+dyntick-idle mode in CONFIG_NO_HZ=y kernels by specifying "nohz=off".
+> >+By default, CONFIG_NO_HZ=y kernels boot with "nohz=on", enabling
+> >+dyntick-idle mode.
+> >+
+> >+
+> >+CPUs WITH ONLY ONE RUNNABLE TASK
+> >+
+> >+If a CPU has only one runnable task, there is again little point in
+> >+sending it a scheduling-clock interrupt because there is nowhere else
+> >+for a CPU with but one runnable task to shift its attention to.
+> >+
+> >+The CONFIG_NO_HZ_EXTENDED=y Kconfig option causes the kernel to avoid
+> >+sending scheduling-clock interrupts to CPUs with a single runnable task,
+> >+and such CPUs are said to be "adaptive-ticks CPUs".  This is important
+> >+for applications with aggressive real-time response constraints because
+> >+it allows them to improve their worst-case response times by the maximum
+> >+duration of a scheduling-clock interrupt.  It is also important for
+> >+computationally intensive iterative workloads with short iterations:  If
+> >+any CPU is delayed during a given iteration, all the other CPUs will be
+> >+forced to wait idle while the delayed CPU finished.  Thus, the delay is
 > 
-> This doesn't apply to my topic/samsung branch, can you please regenerate
-> it against that or let me know what to apply it against?
+> I would say:                                 finishes.
+
+Good eyes, fixed!
+
+> >+multiplied by one less than the number of CPUs.  In these situations,
+> >+there is again strong motivation to avoid sending scheduling-clock
+> >+interrupts.
+> >+
+> >+The "nohz_extended=" boot parameter specifies which CPUs are to be
+> >+adaptive-ticks CPUs.  For example, "nohz_extended=1,6-8" says that CPUs
+> >+1, 6, 7, and 8 are to be adaptive-ticks CPUs.  By default, no CPUs will
+> >+be adaptive-ticks CPUs.  Note that you are prohibited from marking all
+> >+of the CPUs as adaptive-tick CPUs:  At least one non-adaptive-tick CPU
+> >+must remain online to handle timekeeping tasks in order to ensure that
+> >+gettimeofday() returns sane values on adaptive-tick CPUs.
+> >+
+> >+Transitioning to kernel mode does not automatically force that CPU out
+> >+of adaptive-ticks mode.  The CPU will exit adaptive-ticks mode only if
+> >+needed, for example, if that CPU enqueues an RCU callback.
+> >+
+> >+Just as with dyntick-idle mode, the benefits of adaptive-tick mode do
+> >+not come for free:
+> >+
+> >+1.	CONFIG_NO_HZ_EXTENDED depends on CONFIG_NO_HZ, so you cannot run
+> >+	adaptive ticks without also running dyntick idle.  This dependency
+> >+	of CONFIG_NO_HZ_EXTENDED on CONFIG_NO_HZ extends down into the
+> >+	implementation.  Therefore, all of the costs of CONFIG_NO_HZ
+> >+	are also incurred by CONFIG_NO_HZ_EXTENDED.
+> >+
+> >+2.	The user/kernel transitions are slightly more expensive due
+> >+	to the need to inform kernel subsystems (such as RCU) about
+> >+	the change in mode.
+> >+
+> >+3.	POSIX CPU timers on adaptive-tick CPUs may fire late (or even
+> >+	not at all) because they currently rely on scheduling-tick
+> >+	interrupts.  This will likely be fixed in one of two ways: (1)
+> >+	Prevent CPUs with POSIX CPU timers from entering adaptive-tick
+> >+	mode, or (2) Use hrtimers or other adaptive-ticks-immune mechanism
+> >+	to cause the POSIX CPU timer to fire properly.
+> >+
+> >+4.	If there are more perf events pending than the hardware can
+> >+	accommodate, they are normally round-robined so as to collect
+> >+	all of them over time.  Adaptive-tick mode may prevent this
+> >+	round-robining from happening.  This will likely be fixed by
+> >+	preventing CPUs with large numbers of perf events pending from
+> >+	entering adaptive-tick mode.
+> >+
+> >+5.	Scheduler statistics for adaptive-idle CPUs may be computed
+> >+	slightly differently than those for non-adaptive-idle CPUs.
+> >+	This may in turn perturb load-balancing of real-time tasks.
+> >+
+> >+6.	The LB_BIAS scheduler feature is disabled by adaptive ticks.
+> >+
+> >+Although improvements are expected over time, adaptive ticks is quite
+> >+useful for many types of real-time and compute-intensive applications.
+> >+However, the drawbacks listed above mean that adaptive ticks should not
+> >+(yet) be enabled by default.
+> >+
+> >+
+> >+RCU IMPLICATIONS
+> >+
+> >+There are situations in which idle CPUs cannot be permitted to
+> >+enter either dyntick-idle mode or adaptive-tick mode, the most
+> >+familiar being the case where that CPU has RCU callbacks pending.
+> >+
+> >+The CONFIG_RCU_FAST_NO_HZ=y Kconfig option may be used to cause such
+> >+CPUs to enter dyntick-idle mode or adaptive-tick mode anyway, though a
+> >+timer will awaken these CPUs every four jiffies in order to ensure that
+> >+the RCU callbacks are processed in a timely fashion.
+> >+
+> >+Another approach is to offload RCU callback processing to "rcuo" kthreads
+> >+using the CONFIG_RCU_NOCB_CPU=y.  The specific CPUs to offload may be
+> >+selected via several methods:
+> >+
+> >+1.	One of three mutually exclusive Kconfig options specify a
+> >+	build-time default for the CPUs to offload:
+> >+
+> >+	a.	The RCU_NOCB_CPU_NONE=y Kconfig option results in
+> >+		no CPUs being offloaded.
+> >+
+> >+	b.	The RCU_NOCB_CPU_ZERO=y Kconfig option causes CPU 0 to
+> >+		be offloaded.
+> >+
+> >+	c.	The RCU_NOCB_CPU_ALL=y Kconfig option causes all CPUs
+> >+		to be offloaded.  Note that the callbacks will be
+> >+		offloaded to "rcuo" kthreads, and that those kthreads
+> >+		will in fact run on some CPU.  However, this approach
+> >+		gives fine-grained control on exactly which CPUs the
+> >+		callbacks run on, the priority that they run at (including
+> >+		the default of SCHED_OTHER), and it further allows
+> >+		this control to be varied dynamically at runtime.
+> >+
+> >+2.	The "rcu_nocbs=" kernel boot parameter, which takes a comma-separated
+> >+	list of CPUs and CPU ranges, for example, "1,3-5" selects CPUs 1,
+> >+	3, 4, and 5.  The specified CPUs will be offloaded in addition
+> >+	to any CPUs specified as offloaded by RCU_NOCB_CPU_ZERO or
+> >+	RCU_NOCB_CPU_ALL.
+> >+
+> >+The offloaded CPUs never have RCU callbacks queued, and therefore RCU
+> >+never prevents offloaded CPUs from entering either dyntick-idle mode or
+> >+adaptive-tick mode.  That said, note that it is up to userspace to
+> >+pin the "rcuo" kthreads to specific CPUs if desired.  Otherwise, the
+> >+scheduler will decide where to run them, which might or might not be
+> >+where you want them to run.
+> >+
+> >+
+> >+KNOWN ISSUES
+> >+
+> >+o	Dyntick-idle slows transitions to and from idle slightly.
+> >+	In practice, this has not been a problem except for the most
+> >+	aggressive real-time workloads, which have the option of disabling
+> >+	dyntick-idle mode, an option that most of them take.  However,
+> >+	some workloads will no doubt want to use adaptive ticks to
+> >+	eliminate scheduling-clock-tick latencies.  Here are some
+> >+	options for these workloads:
+> >+
+> >+	a.	Use PMQOS from userspace to inform the kernel of your
+> >+		latency requirements (preferred).
+> >+
+> >+	b.	On x86 systems, use the "idle=mwait" boot parameter.
+> >+
+> >+	c.	On x86 systems, use the "intel_idle.max_cstate=" to limit
+> >+	`	the maximum depth C-state depth.
+> >+
+> >+	d.	On x86 systems, use the "idle=poll" boot parameter.
+> >+		However, please note that use of this parameter can cause
+> >+		your CPU to overheat, which may cause thermal throttling
+> >+		to degrade your latencies -- and that this degradation can
+> >+		be even worse than that of dyntick-idle.  Furthermore,
+> >+		this parameter effectively disables Turbo Mode on Intel
+> >+		CPUs, which can significantly reduce maximum performance.
+> >+
+> >+o	Adaptive-ticks slows user/kernel transitions slightly.
+> >+	This is not expected to be a problem for computational-intensive
+> >+	workloads, which have few such transitions.  Careful benchmarking
+> >+	will be required to determine whether or not other workloads
+> >+	are significantly affected by this effect.
+> >+
+> >+o	Adaptive-ticks does not do anything unless there is only one
+> >+	runnable task for a given CPU, even though there are a number
+> >+	of other situations where the scheduling-clock tick is not
+> >+	needed.  To give but one example, consider a CPU that has one
+> >+	runnable high-priority SCHED_FIFO task and an arbitrary number
+> >+	of low-priority SCHED_OTHER tasks.  In this case, the CPU is
+> >+	required to run the SCHED_FIFO task until either it blocks or
+> >+	some other higher-priority task awakens on (or is assigned to)
+> >+	this CPU, so there is no point in sending a scheduling-clock
+> >+	interrupt to this CPU.	However, the current implementation
+> >+	prohibits CPU with a single runnable SCHED_FIFO task and multiple
+> 
+> 	prohibits a CPU or prohibits CPUs
+
+Good eyes, I took option A to agree with the "it" two lines below.
+
+> >+	runnable SCHED_OTHER tasks from entering adaptive-ticks mode,
+> >+	even though it would be correct to allow it to do so.
+> >+
+> >+	Better handling of these sorts of situations is future work.
+> >+
+> >+o	A reboot is required to reconfigure both adaptive idle and RCU
+> >+	callback offloading.  Runtime reconfiguration could be provided
+> >+	if needed, however, due to the complexity of reconfiguring RCU
+> >+	at runtime, there would need to be an earthshakingly good reason.
+> >+	Especially given the option of simply offloading RCU callbacks
+> >+	from all CPUs.
+> >+
+> >+o	Additional configuration is required to deal with other sources
+> >+	of OS jitter, including interrupts and system-utility tasks
+> >+	and processes.  This configuration normally involves binding
+> >+	interrupts and tasks to particular CPUs.
+> >+
+> >+o	Some sources of OS jitter can currently be eliminated only by
+> >+	constraining the workload.  For example, the only way to eliminate
+> >+	OS jitter due to global TLB shootdowns is to avoid the unmapping
+> >+	operations (such as kernel module unload operations) that result
+> >+	in these shootdowns.  For another example, page faults and TLB
+> >+	misses can be reduced (and in some cases eliminated) by using
+> >+	huge pages and by constraining the amount of memory used by the
+> >+	application.
+> >+
+> >+o	Unless all CPUs are idle, at least one CPU must keep the
+> >+	scheduling-clock interrupt going in order to support accurate
+> >+	timekeeping.
+> 
+> Nicely written.
+
+Glad you like it!  I have added your Reviewed-by.
+
+							Thanx, Paul
+
+> Reviewed-by: Randy Dunlap <rdunlap@infradead.org>
+> 
+> 
+> -- 
+> ~Randy
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
-This one should work. Unfortunately I now found during testing that the
-s3c24xx sound support has a few build errors at the moment, but this
-patch should not add any new ones:
-
-/git/arm-soc/sound/soc/samsung/idma.c: In function 'idma_close':
-/git/arm-soc/sound/soc/samsung/idma.c:327:11: error: 'IRQ_I2S0' undeclared (first use in this function)
-  free_irq(IRQ_I2S0, prtd);
-           ^
-make[5]: *** [sound/soc/samsung/idma.o] Error 1
-make[5]: *** Waiting for unfinished jobs....
-
-make[5]: *** [sound/soc/samsung/i2s.o] Error 1
-/git/arm-soc/sound/soc/samsung/neo1973_wm8753.c:25:24: fatal error: mach/gta02.h: No such file or directory
- #include <mach/gta02.h>
-                        ^
-
-
-	Arnd
-
-8<----
->From 91cb290e665b10d094729a42f9e676e2de154996 Mon Sep 17 00:00:00 2001
-From: Arnd Bergmann <arnd@arndb.de>
-Date: Sat, 16 Mar 2013 09:10:15 +0100
-Subject: [PATCH] ASoC: samsung: move plat/ headers to local directory
-
-The plat/regs-iis.h and plat/regs-ac97.h files in the samsung platform
-are only needed by the ASoC drivers, so they can be moved into the same
-directory, as one more step towards a multiplatform build.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: alsa-devel@alsa-project.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-
-diff --git a/arch/arm/mach-s3c24xx/dma-s3c2410.c b/arch/arm/mach-s3c24xx/dma-s3c2410.c
-index 25d085a..a4a13c9 100644
---- a/arch/arm/mach-s3c24xx/dma-s3c2410.c
-+++ b/arch/arm/mach-s3c24xx/dma-s3c2410.c
-@@ -25,11 +25,9 @@
- 
- #include <plat/regs-serial.h>
- #include <mach/regs-gpio.h>
--#include <plat/regs-ac97.h>
- #include <plat/regs-dma.h>
- #include <mach/regs-lcd.h>
- #include <mach/regs-sdi.h>
--#include <plat/regs-iis.h>
- #include <plat/regs-spi.h>
- 
- static struct s3c24xx_dma_map __initdata s3c2410_dma_mappings[] = {
-diff --git a/arch/arm/mach-s3c24xx/dma-s3c2412.c b/arch/arm/mach-s3c24xx/dma-s3c2412.c
-index d2408ba..6eaa7a4 100644
---- a/arch/arm/mach-s3c24xx/dma-s3c2412.c
-+++ b/arch/arm/mach-s3c24xx/dma-s3c2412.c
-@@ -25,11 +25,9 @@
- 
- #include <plat/regs-serial.h>
- #include <mach/regs-gpio.h>
--#include <plat/regs-ac97.h>
- #include <plat/regs-dma.h>
- #include <mach/regs-lcd.h>
- #include <mach/regs-sdi.h>
--#include <plat/regs-iis.h>
- #include <plat/regs-spi.h>
- 
- #define MAP(x) { (x)| DMA_CH_VALID, (x)| DMA_CH_VALID, (x)| DMA_CH_VALID, (x)| DMA_CH_VALID }
-diff --git a/arch/arm/mach-s3c24xx/dma-s3c2440.c b/arch/arm/mach-s3c24xx/dma-s3c2440.c
-index 0b86e74..477d450 100644
---- a/arch/arm/mach-s3c24xx/dma-s3c2440.c
-+++ b/arch/arm/mach-s3c24xx/dma-s3c2440.c
-@@ -25,11 +25,9 @@
- 
- #include <plat/regs-serial.h>
- #include <mach/regs-gpio.h>
--#include <plat/regs-ac97.h>
- #include <plat/regs-dma.h>
- #include <mach/regs-lcd.h>
- #include <mach/regs-sdi.h>
--#include <plat/regs-iis.h>
- #include <plat/regs-spi.h>
- 
- static struct s3c24xx_dma_map __initdata s3c2440_dma_mappings[] = {
-diff --git a/arch/arm/mach-s3c24xx/dma-s3c2443.c b/arch/arm/mach-s3c24xx/dma-s3c2443.c
-index 0553625..80a8d56 100644
---- a/arch/arm/mach-s3c24xx/dma-s3c2443.c
-+++ b/arch/arm/mach-s3c24xx/dma-s3c2443.c
-@@ -25,11 +25,9 @@
- 
- #include <plat/regs-serial.h>
- #include <mach/regs-gpio.h>
--#include <plat/regs-ac97.h>
- #include <plat/regs-dma.h>
- #include <mach/regs-lcd.h>
- #include <mach/regs-sdi.h>
--#include <plat/regs-iis.h>
- #include <plat/regs-spi.h>
- 
- #define MAP(x) { \
-diff --git a/sound/soc/samsung/ac97.c b/sound/soc/samsung/ac97.c
-index 0df3c56..c76abdf 100644
---- a/sound/soc/samsung/ac97.c
-+++ b/sound/soc/samsung/ac97.c
-@@ -20,7 +20,7 @@
- #include <sound/soc.h>
- 
- #include <mach/dma.h>
--#include <plat/regs-ac97.h>
-+#include "regs-ac97.h"
- #include <linux/platform_data/asoc-s3c.h>
- 
- #include "dma.h"
-diff --git a/sound/soc/samsung/h1940_uda1380.c b/sound/soc/samsung/h1940_uda1380.c
-index 15a3817..fa91376 100644
---- a/sound/soc/samsung/h1940_uda1380.c
-+++ b/sound/soc/samsung/h1940_uda1380.c
-@@ -20,7 +20,7 @@
- #include <sound/soc.h>
- #include <sound/jack.h>
- 
--#include <plat/regs-iis.h>
-+#include "regs-iis.h"
- #include <asm/mach-types.h>
- 
- #include "s3c24xx-i2s.h"
-diff --git a/sound/soc/samsung/neo1973_wm8753.c b/sound/soc/samsung/neo1973_wm8753.c
-index a301d8c..ccc601d 100644
---- a/sound/soc/samsung/neo1973_wm8753.c
-+++ b/sound/soc/samsung/neo1973_wm8753.c
-@@ -21,7 +21,7 @@
- #include <sound/soc.h>
- 
- #include <asm/mach-types.h>
--#include <plat/regs-iis.h>
-+#include "regs-iis.h"
- #include <mach/gta02.h>
- 
- #include "../codecs/wm8753.h"
-diff --git a/arch/arm/plat-samsung/include/plat/regs-ac97.h b/sound/soc/samsung/regs-ac97.h
-similarity index 100%
-rename from arch/arm/plat-samsung/include/plat/regs-ac97.h
-rename to sound/soc/samsung/regs-ac97.h
-diff --git a/arch/arm/plat-samsung/include/plat/regs-iis.h b/sound/soc/samsung/regs-iis.h
-similarity index 100%
-rename from arch/arm/plat-samsung/include/plat/regs-iis.h
-rename to sound/soc/samsung/regs-iis.h
-diff --git a/sound/soc/samsung/rx1950_uda1380.c b/sound/soc/samsung/rx1950_uda1380.c
-index a5826ea..704460a 100644
---- a/sound/soc/samsung/rx1950_uda1380.c
-+++ b/sound/soc/samsung/rx1950_uda1380.c
-@@ -24,7 +24,7 @@
- #include <sound/soc.h>
- #include <sound/jack.h>
- 
--#include <plat/regs-iis.h>
-+#include "regs-iis.h"
- #include <asm/mach-types.h>
- 
- #include "s3c24xx-i2s.h"
-diff --git a/sound/soc/samsung/s3c24xx-i2s.c b/sound/soc/samsung/s3c24xx-i2s.c
-index 13f6dd1..a7b17c1 100644
---- a/sound/soc/samsung/s3c24xx-i2s.c
-+++ b/sound/soc/samsung/s3c24xx-i2s.c
-@@ -24,7 +24,7 @@
- #include <sound/pcm_params.h>
- 
- #include <mach/dma.h>
--#include <plat/regs-iis.h>
-+#include "regs-iis.h"
- 
- #include "dma.h"
- #include "s3c24xx-i2s.h"
-diff --git a/sound/soc/samsung/s3c24xx_uda134x.c b/sound/soc/samsung/s3c24xx_uda134x.c
-index 333e1b7..1b7b52b 100644
---- a/sound/soc/samsung/s3c24xx_uda134x.c
-+++ b/sound/soc/samsung/s3c24xx_uda134x.c
-@@ -18,7 +18,7 @@
- #include <sound/soc.h>
- #include <sound/s3c24xx_uda134x.h>
- 
--#include <plat/regs-iis.h>
-+#include "regs-iis.h"
- 
- #include "s3c24xx-i2s.h"
- 
