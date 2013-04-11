@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab3DKHQn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:16:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:21590 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753401Ab3DKHQm convert rfc822-to-8bit (ORCPT
+	id S1754047Ab3DKHUg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:20:36 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:46442 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab3DKHUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:16:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,454,1363158000"; 
-   d="scan'208";a="293332827"
-From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tboot-devel@lists.sourceforge.net" 
-	<tboot-devel@lists.sourceforge.net>,
-        Xiaoyan Zhang <xiaoyan.zhang@intel.com>,
-        "Wei, Gang" <gang.wei@intel.com>
-Subject: RE: [PATCH v2] x86: add a new SMP bring up way for tboot case
-Thread-Topic: [PATCH v2] x86: add a new SMP bring up way for tboot case
-Thread-Index: AQHNp1ZNt+1D184rVk2ifbPrsQdETJiu0mBQ//+HiACAI1rtwA==
-Date: Thu, 11 Apr 2013 07:16:38 +0000
-Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE507CDA@SHSMSX102.ccr.corp.intel.com>
-References: <1349950267-28328-1-git-send-email-qiaowei.ren@intel.com>
- <9E0BE1322F2F2246BD820DA9FC397ADE4E0171@SHSMSX102.ccr.corp.intel.com>
- <514926C0.3020502@zytor.com>
-In-Reply-To: <514926C0.3020502@zytor.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Apr 2013 03:20:35 -0400
+Message-ID: <5166643E.6050704@gmail.com>
+Date: Thu, 11 Apr 2013 03:20:30 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arun Sharma <asharma@fb.com>, John Stultz <john.stultz@linaro.org>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jason Evans <je@fb.com>, sanjay@google.com,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC v7 00/11] Support vrange for anonymous page
+References: <1363073915-25000-1-git-send-email-minchan@kernel.org> <5165CA22.6080808@gmail.com> <20130411065546.GA10303@blaptop>
+In-Reply-To: <20130411065546.GA10303@blaptop>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: H. Peter Anvin [mailto:hpa@zytor.com]
-> Sent: Wednesday, March 20, 2013 11:02 AM
-> To: Ren, Qiaowei
-> Cc: Thomas Gleixner; Ingo Molnar; x86@kernel.org; Maliszewski, Richard L;
-> linux-kernel@vger.kernel.org; tboot-devel@lists.sourceforge.net; Xiaoyan
-> Zhang; Wei, Gang
-> Subject: Re: [PATCH v2] x86: add a new SMP bring up way for tboot case
+>>>   DONTNEED makes sure user always can see zero-fill pages after
+>>>   he calls madvise while vrange can see data or encounter SIGBUS.
+>>
+>> For replacing DONTNEED, user want to zero-fill pages like DONTNEED
+>> instead of SIGBUS. So, new flag option would be nice.
 > 
-> On 03/19/2013 07:14 PM, Ren, Qiaowei wrote:
-> > Any comments on this patch?
-> >
-> > Thanks,
-> > Qiaowei
+> If userspace people want it, I can do it. 
+> But not sure they want it at the moment becaue vrange is rather
+> different concept of madvise(DONTNEED) POV usage.
 > 
-> The biggest question is probably if we can use an existing hook of some sort.
+> As you know well, in case of DONTNEED, user calls madvise _once_ and
+> VM releases memory as soon as he called system call.
+> But vrange is same with delayed free when the system memory pressure
+> happens so user can't know OS frees the pages anytime.
+> It means user should call pair of system call both VRANGE_VOLATILE
+> and VRANGE_NOVOLATILE for right usage of volatile range
+> (for simple, I don't want to tell SIGBUS fault recovery method).
+> If he took a mistake(ie, NOT to call VRANGE_NOVOLATILE) on the range
+> which is used by current process, pages used by some process could be
+> disappeared suddenly.
 > 
-> Overriding the apic method is probably not the right way to go, though.
->  tglx, do you have any opinions here?
-> 
+> In summary, I don't think vrange is a replacement of madvise(DONTNEED)
+> but could be useful with madvise(DONTNEED) friend. For example, we can
+> make return 1 in vrange(VRANGE_VOLATILE) if memory pressure was already
 
-If we can't use an existing hook, could you please give me any suggestion about other opinions here?
+Do you mean vrange(VRANGE_UNVOLATILE)?
+btw, assign new error number to asm-generic/errno.h is better than strange '1'.
 
-> Furthermore, this really is not nice:
->
-> > +int tboot_wake_up(int apicid, unsigned long sipi_vec) {
-> > +	if (!tboot_enabled())
-> > +		return 0;
-> > +
-> > +	if ((tboot->version < 6) ||
-> > +	    !(tboot->flags & TB_FLAG_AP_WAKE_SUPPORT))
-> > +		return 0;
-> > +
-> > +	tboot->ap_wake_addr = sipi_vec;
-> > +	tboot->ap_wake_trigger = apicid;
-> > +
-> > +	return 1;
-> > +}
+
+> severe so user can catch up memory pressure by return value and calls
+> madvise(DONTNEED) if memory pressure was already severe. Of course, we
+> can handle it vrange system call itself(ex, change vrange system call to
+> madvise(DONTNEED) but don't want it because I want to keep vrange hinting
+> sytem call very light at all times so user can expect latency.
+
+For allocator usage, vrange(UNVOLATILE) is annoying and don't need at all.
+When data has already been purged, just return new zero filled page. so,
+maybe adding new flag is worthwhile. Because malloc is definitely fast path
+and adding new syscall invokation is unwelcome.
+
+
+>> # of     # of   # of
+>> thread   iter   iter (patched glibc)
 > 
-> Not only don't you set boot_error for the code above it, but there is absolutely
-> no indication how that does its job (are those active operations?  If so they
-> should use writel()), nor does it include any kind of synchronization.
-> 
+> What's the workload?
 
-Ok. I should add some comments to explain how that does its job. 
-But I guess boot_error don't have to be set inside this function.
+Ahh, sorry. I forgot to write. I use ebizzy, your favolite workload.
 
-Thanks,
-Qiaowei
+
 
