@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936367Ab3DKPTV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:19:21 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:63642 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936188Ab3DKPTT (ORCPT
+	id S936363Ab3DKPTp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:19:45 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:51988 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936073Ab3DKPTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:19:19 -0400
-Date: Thu, 11 Apr 2013 17:19:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, Chen Gang <gang.chen@asianux.com>
-Subject: Re: [PATCH 0/3] posix_timers: A few expiry caching fixes
-Message-ID: <20130411151913.GE15699@somewhere>
-References: <1364649331-30940-1-git-send-email-fweisbec@gmail.com>
- <20130408165559.f065987fba45a20199a1f74d@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130408165559.f065987fba45a20199a1f74d@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 11 Apr 2013 11:19:44 -0400
+Message-ID: <1365693578.4218.2.camel@phoenix>
+Subject: [RESEND][PATCH 2/3] regulator: twl: Convert fixed voltage to use
+ regulator_list_voltage_linear
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Tero Kristo <t-kristo@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Thu, 11 Apr 2013 23:19:38 +0800
+In-Reply-To: <1365693520.4218.1.camel@phoenix>
+References: <1365693520.4218.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 04:55:59PM -0700, Andrew Morton wrote:
-> On Sat, 30 Mar 2013 14:15:28 +0100 Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > This series is on top of latest -mmotm.
-> > 
-> > [1/3] fixes some omitting sample capture after a build warning suddenly became visible
-> > [2/3] fixes a wrong timer_gettime() result on a timer whose target has been reaped.
-> > [3/3] needs some more thinking probably
-> 
-> Nobody seems to have applied these to anything yet.
-> 
-> The changelogs don't have an explicit description of the user-visible
-> impact of the bugs which were fixed.  Providing such a description
-> makes it more likely that others will make the correct patch-scheduling
-> decisions ;)
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/twl-regulator.c |   12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
-Ok, I'll iterate through these and try to get a better description of that side.
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index d62604c0..2b3dc5b 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -612,15 +612,8 @@ static struct regulator_ops twl6030ldo_ops = {
+ /*
+  * Fixed voltage LDOs don't have a VSEL field to update.
+  */
+-static int twlfixed_list_voltage(struct regulator_dev *rdev, unsigned index)
+-{
+-	struct twlreg_info	*info = rdev_get_drvdata(rdev);
+-
+-	return info->min_mV * 1000;
+-}
+-
+ static struct regulator_ops twl4030fixed_ops = {
+-	.list_voltage	= twlfixed_list_voltage,
++	.list_voltage	= regulator_list_voltage_linear,
+ 
+ 	.enable		= twl4030reg_enable,
+ 	.disable	= twl4030reg_disable,
+@@ -632,7 +625,7 @@ static struct regulator_ops twl4030fixed_ops = {
+ };
+ 
+ static struct regulator_ops twl6030fixed_ops = {
+-	.list_voltage	= twlfixed_list_voltage,
++	.list_voltage	= regulator_list_voltage_linear,
+ 
+ 	.enable		= twl6030reg_enable,
+ 	.disable	= twl6030reg_disable,
+@@ -935,6 +928,7 @@ static const struct twlreg_info TWLFIXED_INFO_##label = { \
+ 		.name = #label, \
+ 		.id = family##_REG_##label, \
+ 		.n_voltages = 1, \
++		.min_uV = mVolts * 1000, \
+ 		.ops = &operations, \
+ 		.type = REGULATOR_VOLTAGE, \
+ 		.owner = THIS_MODULE, \
+-- 
+1.7.10.4
 
-Thanks.
+
+
