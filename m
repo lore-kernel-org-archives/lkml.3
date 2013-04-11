@@ -1,124 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936593Ab3DKPik (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:38:40 -0400
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:51161 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932840Ab3DKPii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:38:38 -0400
+	id S964942Ab3DKPjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:39:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41867 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964848Ab3DKPjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 11:39:46 -0400
+Date: Thu, 11 Apr 2013 17:39:16 +0200
+From: Veaceslav Falico <vfalico@redhat.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com
+Subject: Re: [PATCH] module: add kset_obj_exists() and use it
+Message-ID: <20130411153916.GH21320@redhat.com>
+References: <1365506529-8396-1-git-send-email-vfalico@redhat.com>
+ <87y5cq6ei9.fsf@rustcorp.com.au>
+ <20130411095537.GC21320@redhat.com>
+ <20130411132831.GC2909@kroah.com>
+ <20130411135340.GF21320@redhat.com>
+ <20130411152003.GC20943@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <1365687946.8824.3.camel@laptop>
-References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
-	<20130326140147.GB2029@redhat.com>
-	<1365687946.8824.3.camel@laptop>
-Date: Thu, 11 Apr 2013 08:38:37 -0700
-X-Google-Sender-Auth: sM9P0dk_WjGnspm5BHTkNYJObsw
-Message-ID: <CA+55aFway4C89fTewKvED4RvFLaNdM-BVtkJ2YChsvracLKiyA@mail.gmail.com>
-Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling overflow
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20130411152003.GC20943@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 6:45 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2013-03-26 at 15:01 +0100, Stanislaw Gruszka wrote:
->> Thoughts?
+On Thu, Apr 11, 2013 at 08:20:03AM -0700, Greg KH wrote:
+>On Thu, Apr 11, 2013 at 03:53:40PM +0200, Veaceslav Falico wrote:
+>> On Thu, Apr 11, 2013 at 06:28:31AM -0700, Greg KH wrote:
+>> >On Thu, Apr 11, 2013 at 11:55:37AM +0200, Veaceslav Falico wrote:
+...
+>>
+>> In both examples we don't look at that kobject, and only uselessly
+>> _get()/_put() it. And it looks a bit ugly. After the patch, in both cases,
+>> it takes only one call to kset_obj_exists() to find out if the object
+>> exists at that time.
 >
-> Would something like the below work?
+>But as your function does the same thing, logically it's the same code
+>path :)
+>
+>Anyway, yes, I understand your point here, and in some new code I'm
+>writing right now, we had to do much the same check as well.  But as
+>there are only 2 in-kernel users of this "pattern", I don't think it's
+>justified to add a new api call for it, especially if it were to be
+>misused as you were attempting to use it, which would only mask the real
+>problem you were trying to solve.
 
-Ugh, this is hard to think about, it's also fairly inefficient.
+Good point, it really might mask the real problem, as it would actually do
+for the initial race.
 
->  static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
->  {
-> -       u64 rem, res, scaled;
-> +       int stime_fls = fls64(stime);
-> +       int total_fls = fls64(total);
-> +       int rtime_fls = fls64(rtime);
+>
+>So, thanks for the idea, but for now, I'll pass.
 
-Doing "fls64()" unconditionally is quite expensive on some
-architectures, and if I am not mistaken, the *common* case (by far) is
-that all these values fit in 32 bits, no?
+Fair enough. Thank you for explaining :)
 
-So let's re-think the whole thing entirely. First, let's throw away
-the uncommon case, and we'll come back to it later:
-
-    if (unlikely((stime | total | rtime) >> 32)
-         return uncommon_case(stime, total, rtime);
-
-and now we know we have the simple case where everything is in 32
-bits, and we can just do the trivial
-
-    /* Make sure gcc understands that this is a 32x32->64 multiply,
-followed by a 64/32->64 divide */
-    return div_u64((u64) (u32) stime * (u64) (u32) rtime, (u32)total);
-
-which is the *cheapest* possible case of scale_stime(), with the
-simplified multiply and divide. Agreed? This is cheap even on 32-bit.
-Well, relatively.
-
-Do we agree that this is (a) the common case that we need to worry
-about from performance and (b) simple, understandable and efficient?
-
-Now, let's look at the uncommon case, and I lied, I'm not going to
-actually do it as a "uncommon_case()" function, I'm going to do this
-as a "let us simplify the uncommon case until it *looks* like the
-common case". IOW, in this uncommon thing, the aim is simply to just
-reduce stime/rtime/total to the point where they are 32 bits. Ok? And
-let's keep it simple again.
-
-So *now*, once we are in the uncommon case, let's start counting bits.
-Like this:
-
-    /* We know one of the values has a bit set in the high 32 bits */
-    for (;;) {
-        /* Make sure "stime" is the bigger of stime/rtime */
-        if (rtime > stime) {
-            u64 tmp = stime; stime = rtime; rtime = tmp;
-        }
-
-        /* Do we need to balance stime/rtime bits? */
-        if (stime >> 32) {
-            if (rtime >> 31)
-                goto drop_precision;
-
-            /* We can grow rtime and shrink stime and try to make them
-both fit */
-            rtime <<= 1;
-            stime >>= 1;
-            continue;
-        }
-
-        /* stime/rtime fits in 32 bits, how about total? */
-        if (!(total >> 32))
-            break;
-
-drop_precision:
-        /* We drop from stime, it has more bits than rtime */
-        stime >>= 1;
-        total >>= 1;
-    }
-
-The above is totally untested, but each step is pretty damn simple and
-fairly cheap. Sure, it's a loop, but it's bounded to 32 (cheap)
-iterations, and the normal case is that it's not done at all, or done
-only a few times.
-
-And the advantage is that the end result is always that simple
-32x32/32 case that we started out with as the common case.
-
-I dunno. Maybe I'm overlooking something, and the above is horrible,
-but the above seems reasonably efficient if not optimal, and
-*understandable*.
-
-                    Linus
+>
+>thanks,
+>
+>greg k-h
