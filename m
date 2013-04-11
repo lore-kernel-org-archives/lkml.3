@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173Ab3DKHPN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:15:13 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:52841 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753765Ab3DKHPK (ORCPT
+	id S1755278Ab3DKHQn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:16:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:21590 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753401Ab3DKHQm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:15:10 -0400
+	Thu, 11 Apr 2013 03:16:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,454,1363158000"; 
+   d="scan'208";a="293332827"
+From: "Ren, Qiaowei" <qiaowei.ren@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Maliszewski, Richard L" <richard.l.maliszewski@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tboot-devel@lists.sourceforge.net" 
+	<tboot-devel@lists.sourceforge.net>,
+        Xiaoyan Zhang <xiaoyan.zhang@intel.com>,
+        "Wei, Gang" <gang.wei@intel.com>
+Subject: RE: [PATCH v2] x86: add a new SMP bring up way for tboot case
+Thread-Topic: [PATCH v2] x86: add a new SMP bring up way for tboot case
+Thread-Index: AQHNp1ZNt+1D184rVk2ifbPrsQdETJiu0mBQ//+HiACAI1rtwA==
+Date: Thu, 11 Apr 2013 07:16:38 +0000
+Message-ID: <9E0BE1322F2F2246BD820DA9FC397ADE507CDA@SHSMSX102.ccr.corp.intel.com>
+References: <1349950267-28328-1-git-send-email-qiaowei.ren@intel.com>
+ <9E0BE1322F2F2246BD820DA9FC397ADE4E0171@SHSMSX102.ccr.corp.intel.com>
+ <514926C0.3020502@zytor.com>
+In-Reply-To: <514926C0.3020502@zytor.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAH9NwWdUqH8gF8Vz7K_2UW1X==LWbYEd5dhSTPqqYwEnDuRVuQ@mail.gmail.com>
-References: <1360663374-30951-1-git-send-email-s.hauer@pengutronix.de>
- <1360663374-30951-2-git-send-email-s.hauer@pengutronix.de>
- <CAH9NwWdOCo642KqUXk1y5hbwdtW5RYgQnQfZFUEe4FOJzSiByQ@mail.gmail.com>
- <20130326085454.GK1906@pengutronix.de> <20130326092435.GB8553@the-dreams.de>
- <20130326093139.GL1906@pengutronix.de> <CAH9NwWdUqH8gF8Vz7K_2UW1X==LWbYEd5dhSTPqqYwEnDuRVuQ@mail.gmail.com>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Thu, 11 Apr 2013 09:14:48 +0200
-Message-ID: <CAH9NwWd-UAYG0y2R379hPvntnfPhNEwvXm-f2uO3o1AZZ+OSMw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] x86: Add basic support for the Congatec CGEB BIOS interface
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Wolfram Sang <wsa@the-dreams.de>, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, linux-i2c@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/3/26 Christian Gmeiner <christian.gmeiner@gmail.com>:
-> 2013/3/26 Sascha Hauer <s.hauer@pengutronix.de>:
->> Hi Wolfram,
->>
->> On Tue, Mar 26, 2013 at 10:24:35AM +0100, Wolfram Sang wrote:
->>> Hi Sascha,
->>>
->>> > Any other comments to this series? Is the base cgeb support ok to
->>> > include?
->>>
->>> I had a few comments to the I2C driver.
->>
->> Yes, thanks, I have seen this and will address them. Atm I'm more
->> interested in the base support though, since without it there won't be a
->> need for the i2c driver ;)
->>
->
-> vis@OT:~$ dmesg | grep CGEB
-> [    2.466519] CGEB: Board name: QBRA
->
->
-> root@OT:/home/vis# i2cdetect -l
-> i2c-0   i2c             cgeb-i2c                                I2C adapter
-> i2c-1   i2c             Radeon i2c bit bus 0x90                 I2C adapter
-> i2c-2   i2c             Radeon i2c bit bus 0x91                 I2C adapter
-> i2c-3   i2c             Radeon i2c bit bus 0x92                 I2C adapter
-> i2c-4   i2c             Radeon i2c bit bus 0x93                 I2C adapter
-> i2c-5   i2c             Radeon i2c bit bus 0x94                 I2C adapter
-> i2c-6   i2c             Radeon i2c bit bus 0x95                 I2C adapter
-> i2c-7   i2c             Radeon i2c bit bus 0x96                 I2C adapter
-> i2c-8   i2c             Radeon i2c bit bus 0x97                 I2C adapter
-> i2c-9   i2c             Radeon aux bus DP-auxch                 I2C adapter
-> root@OT:/home/vis# i2cdetect 0
-> WARNING! This program can confuse your I2C bus, cause data loss and worse!
-> I will probe file /dev/i2c-0.
-> I will probe address range 0x03-0x77.
-> Continue? [Y/n]
->      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
-> 00:          -- -- -- -- -- -- -- -- -- -- -- -- --
-> 10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-> 20: -- 21 -- -- -- -- -- -- -- -- -- -- -- -- -- --
-> 30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-> 40: -- -- -- -- -- -- -- -- 48 -- -- -- -- -- -- --
-> 50: 50 51 -- -- -- -- -- -- -- -- -- -- -- -- -- --
-> 60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-> 70: -- -- -- -- -- -- -- --
->
-> I hope to see this patches soon in mainline - I have some Congatec
-> devices where I
-> am using an early version of this patch set.
->
-> Btw I have a cgeb-backlight driver lying here :)
->
->
-> Tested-by: Christian Gmeiner <christian.gmeiner@gmail.com>
-> Acked-by: Christian Gmeiner <christian.gmeiner@gmail.com>
->
+> -----Original Message-----
+> From: H. Peter Anvin [mailto:hpa@zytor.com]
+> Sent: Wednesday, March 20, 2013 11:02 AM
+> To: Ren, Qiaowei
+> Cc: Thomas Gleixner; Ingo Molnar; x86@kernel.org; Maliszewski, Richard L;
+> linux-kernel@vger.kernel.org; tboot-devel@lists.sourceforge.net; Xiaoyan
+> Zhang; Wei, Gang
+> Subject: Re: [PATCH v2] x86: add a new SMP bring up way for tboot case
+> 
+> On 03/19/2013 07:14 PM, Ren, Qiaowei wrote:
+> > Any comments on this patch?
+> >
+> > Thanks,
+> > Qiaowei
+> 
+> The biggest question is probably if we can use an existing hook of some sort.
+> 
+> Overriding the apic method is probably not the right way to go, though.
+>  tglx, do you have any opinions here?
+> 
 
+If we can't use an existing hook, could you please give me any suggestion about other opinions here?
 
-Hi Wolfram,
+> Furthermore, this really is not nice:
+>
+> > +int tboot_wake_up(int apicid, unsigned long sipi_vec) {
+> > +	if (!tboot_enabled())
+> > +		return 0;
+> > +
+> > +	if ((tboot->version < 6) ||
+> > +	    !(tboot->flags & TB_FLAG_AP_WAKE_SUPPORT))
+> > +		return 0;
+> > +
+> > +	tboot->ap_wake_addr = sipi_vec;
+> > +	tboot->ap_wake_trigger = apicid;
+> > +
+> > +	return 1;
+> > +}
+> 
+> Not only don't you set boot_error for the code above it, but there is absolutely
+> no indication how that does its job (are those active operations?  If so they
+> should use writel()), nor does it include any kind of synchronization.
+> 
 
-any update on your patch series to support CGEB? I have some time to work
-on these patches but I don't want to duplicate the work. I really want
-this watches
-to hit mainline soon.
+Ok. I should add some comments to explain how that does its job. 
+But I guess boot_error don't have to be set inside this function.
 
---
-Christian Gmeiner, MSc
+Thanks,
+Qiaowei
+
