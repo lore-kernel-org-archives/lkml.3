@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab3DKHCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:02:12 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:46840 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab3DKHCK (ORCPT
+	id S1754723Ab3DKHCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:02:54 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:42267 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703Ab3DKHCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:02:10 -0400
-X-AuditID: 9c930179-b7b2aae000000518-78-51665fee21e2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH v2 2/2] tracing: Reset ftrace_graph_filter_enabled if count is zero
-Date: Thu, 11 Apr 2013 16:01:38 +0900
-Message-Id: <1365663698-2413-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1365663302-2170-2-git-send-email-namhyung@kernel.org>
-References: <1365663302-2170-2-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 11 Apr 2013 03:02:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130411065957.GB31465@quad.lixom.net>
+References: <cover.1364229828.git.viresh.kumar@linaro.org>
+	<4180fd5b43906421fc155126e8b7bea5fb3ff375.1364229828.git.viresh.kumar@linaro.org>
+	<CAKohpo=LOJ3DfaGzCm6a6ev2+dNUgEpJd+04pGMhdSpkyZNR9A@mail.gmail.com>
+	<CAKohpomRMkKouiy+iJUiheTcPGCDVLbxppL5f4oc-WMu2E5T8g@mail.gmail.com>
+	<1364985034.16520.12.camel@pasglop>
+	<CAKohpo=EPbGocbNaZcNtGuZy4Tst5jH4rPviQ6L=YuZceDnKMw@mail.gmail.com>
+	<20130411065957.GB31465@quad.lixom.net>
+Date: Thu, 11 Apr 2013 12:32:50 +0530
+Message-ID: <CAKohpomHFgMBAHax=jC_LNd8Gay9aWja+64An7QxnNpaPuuSQQ@mail.gmail.com>
+Subject: Re: [PATCH 9/9] powerpc: cpufreq: move cpufreq driver to drivers/cpufreq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        arvind.chauhan@arm.com, Arnd Bergmann <arnd.bergmann@linaro.org>,
+        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-kernel@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 11 April 2013 12:29, Olof Johansson <olof@lixom.net> wrote:
+> That's not very nice this late in the staging cycle. Give the powerpc
+> guys a little more time than a single day to come back with test results,
+> please.
 
-The ftrace_graph_count can be decreased with a "!" pattern, so that
-the enabled flag should be updated too.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/ftrace.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index be2bcb7ab2f7..daf8df20b764 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3779,7 +3779,8 @@ out:
- 	if (fail)
- 		return -EINVAL;
- 
--	ftrace_graph_filter_enabled = 1;
-+	ftrace_graph_filter_enabled = !!(*idx);
-+
- 	return 0;
- }
- 
--- 
-1.7.11.7
-
+Yes we are waiting indefinitely for an Ack from powerpc guys.. If we can
+get a Ack soon, we will get it in 3.10 otherwise next cycle.
