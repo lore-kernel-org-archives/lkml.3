@@ -1,53 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab3DKUAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:00:17 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:37113 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab3DKUAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:00:11 -0400
-Date: Thu, 11 Apr 2013 13:00:05 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Christian Schmidt <schmidt@digadd.de>,
-        "Alasdair G. Kergon" <agk@redhat.com>
-Subject: Re: [PATCH v2] make dm and dm-crypt forward cgroup context (was:
- dm-crypt parallelization patches)
-Message-ID: <20130411200005.GB11956@mtj.dyndns.org>
-References: <Pine.LNX.4.64.1304091450410.26327@file.rdu.redhat.com>
- <20130409195259.GL6186@mtj.dyndns.org>
- <Pine.LNX.4.64.1304091624110.19672@file.rdu.redhat.com>
- <20130409210735.GR6320@redhat.com>
- <Pine.LNX.4.64.1304091710150.24735@file.rdu.redhat.com>
- <20130410192427.GA14911@redhat.com>
- <Pine.LNX.4.64.1304101938280.24258@file.rdu.redhat.com>
- <20130410235009.GI17641@mtj.dyndns.org>
- <Pine.LNX.4.64.1304111544050.32536@file.rdu.redhat.com>
- <20130411195203.GA11956@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411195203.GA11956@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753529Ab3DKT6I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 15:58:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37343 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752461Ab3DKT6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 15:58:05 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Michal Hocko <mhocko@suse.cz>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 0/10] Reduce system disruption due to kswapd V3
+Date: Thu, 11 Apr 2013 20:57:48 +0100
+Message-Id: <1365710278-6807-1-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 12:52:03PM -0700, Tejun Heo wrote:
-> If this becomes an actual bottleneck, the right thing to do is making
-> css ref per-cpu.  Please stop messing around with refcounting.
+Big change is again related to proportional reclaim.
 
-If you think this kind of hackery is acceptable, you really need to
-re-evaluate your priorities in making engineering decisions.  In
-tightly coupled code, maybe, but you're trying to introduce utterly
-broken error-prone thing as a generic block layer API.  I mean, are
-you for real?
+Changelog since V2
+o Preserve ratio properly for proportional scanning		(kamezawa)
+
+Changelog since V1
+o Rename ZONE_DIRTY to ZONE_TAIL_LRU_DIRTY			(andi)
+o Reformat comment in shrink_page_list				(andi)
+o Clarify some comments						(dhillf)
+o Rework how the proportional scanning is preserved
+o Add PageReclaim check before kswapd starts writeback
+o Reset sc.nr_reclaimed on every full zone scan
+
+Kswapd and page reclaim behaviour has been screwy in one way or the other
+for a long time. Very broadly speaking it worked in the far past because
+machines were limited in memory so it did not have that many pages to scan
+and it stalled congestion_wait() frequently to prevent it going completely
+nuts. In recent times it has behaved very unsatisfactorily with some of
+the problems compounded by the removal of stall logic and the introduction
+of transparent hugepage support with high-order reclaims.
+
+There are many variations of bugs that are rooted in this area. One example
+is reports of a large copy operations or backup causing the machine to
+grind to a halt or applications pushed to swap. Sometimes in low memory
+situations a large percentage of memory suddenly gets reclaimed. In other
+cases an application starts and kswapd hits 100% CPU usage for prolonged
+periods of time and so on. There is now talk of introducing features like
+an extra free kbytes tunable to work around aspects of the problem instead
+of trying to deal with it. It's compounded by the problem that it can be
+very workload and machine specific.
+
+This series aims at addressing some of the worst of these problems without
+attempting to fundmentally alter how page reclaim works.
+
+Patches 1-2 limits the number of pages kswapd reclaims while still obeying
+	the anon/file proportion of the LRUs it should be scanning.
+
+Patches 3-4 control how and when kswapd raises its scanning priority and
+	deletes the scanning restart logic which is tricky to follow.
+
+Patch 5 notes that it is too easy for kswapd to reach priority 0 when
+	scanning and then reclaim the world. Down with that sort of thing.
+
+Patch 6 notes that kswapd starts writeback based on scanning priority which
+	is not necessarily related to dirty pages. It will have kswapd
+	writeback pages if a number of unqueued dirty pages have been
+	recently encountered at the tail of the LRU.
+
+Patch 7 notes that sometimes kswapd should stall waiting on IO to complete
+	to reduce LRU churn and the likelihood that it'll reclaim young
+	clean pages or push applications to swap. It will cause kswapd
+	to block on IO if it detects that pages being reclaimed under
+	writeback are recycling through the LRU before the IO completes.
+
+Patch 8 shrinks slab just once per priority scanned or if a zone is otherwise
+	unreclaimable to avoid hammering slab when kswapd has to skip a
+	large number of pages.
+
+Patches 9-10 are cosmetic but balance_pgdat() might be easier to follow.
+
+This was tested using memcached+memcachetest while some background IO
+was in progress as implemented by the parallel IO tests implement in MM
+Tests. memcachetest benchmarks how many operations/second memcached can
+service and it is run multiple times. It starts with no background IO and
+then re-runs the test with larger amounts of IO in the background to roughly
+simulate a large copy in progress.  The expectation is that the IO should
+have little or no impact on memcachetest which is running entirely in memory.
+
+                                         3.9.0-rc6                   3.9.0-rc6
+                                           vanilla            lessdisrupt-v3r6
+Ops memcachetest-0M             10868.00 (  0.00%)          10932.00 (  0.59%)
+Ops memcachetest-749M           10976.00 (  0.00%)          10986.00 (  0.09%)
+Ops memcachetest-2498M           3406.00 (  0.00%)          10871.00 (219.17%)
+Ops memcachetest-4246M           2402.00 (  0.00%)          10936.00 (355.29%)
+Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)
+Ops io-duration-749M               15.00 (  0.00%)              9.00 ( 40.00%)
+Ops io-duration-2498M             107.00 (  0.00%)             27.00 ( 74.77%)
+Ops io-duration-4246M             193.00 (  0.00%)             47.00 ( 75.65%)
+Ops swaptotal-0M                    0.00 (  0.00%)              0.00 (  0.00%)
+Ops swaptotal-749M             155965.00 (  0.00%)             25.00 ( 99.98%)
+Ops swaptotal-2498M            335917.00 (  0.00%)            287.00 ( 99.91%)
+Ops swaptotal-4246M            463021.00 (  0.00%)              0.00 (  0.00%)
+Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)
+Ops swapin-749M                     0.00 (  0.00%)              0.00 (  0.00%)
+Ops swapin-2498M               139128.00 (  0.00%)              0.00 (  0.00%)
+Ops swapin-4246M               156276.00 (  0.00%)              0.00 (  0.00%)
+Ops minorfaults-0M            1677257.00 (  0.00%)        1642376.00 (  2.08%)
+Ops minorfaults-749M          1819566.00 (  0.00%)        1572243.00 ( 13.59%)
+Ops minorfaults-2498M         1842140.00 (  0.00%)        1652508.00 ( 10.29%)
+Ops minorfaults-4246M         1796116.00 (  0.00%)        1651464.00 (  8.05%)
+Ops majorfaults-0M                  6.00 (  0.00%)              6.00 (  0.00%)
+Ops majorfaults-749M               55.00 (  0.00%)             49.00 ( 10.91%)
+Ops majorfaults-2498M           20936.00 (  0.00%)            110.00 ( 99.47%)
+Ops majorfaults-4246M           22487.00 (  0.00%)            185.00 ( 99.18%)
+
+Note how the vanilla kernels performance collapses when there is enough IO
+taking place in the background. This drop in performance is part of users
+complain of when they start backups. Note how the swapin and major fault
+figures indicate that processes were being pushed to swap prematurely. With
+the series applied, there is no noticable performance drop and while there
+is still some swap activity, it's tiny.
+
+                             3.9.0-rc6   3.9.0-rc6
+                               vanillalessdisrupt-v3r6
+Page Ins                       1281068       89224
+Page Outs                     15697620    11478616
+Swap Ins                        295654           0
+Swap Outs                       659499         312
+Direct pages scanned                 0       78668
+Kswapd pages scanned           7166977     4416457
+Kswapd pages reclaimed         1185518     1051751
+Direct pages reclaimed               0       72993
+Kswapd efficiency                  16%         23%
+Kswapd velocity               5558.640    3420.614
+Direct efficiency                 100%         92%
+Direct velocity                  0.000      60.930
+Percentage direct scans             0%          1%
+Page writes by reclaim         2044715     2922251
+Page writes file               1385216     2921939
+Page writes anon                659499         312
+Page reclaim immediate            4040         218
+Page rescued immediate               0           0
+Slabs scanned                    35456       26624
+Direct inode steals                  0           0
+Kswapd inode steals              19898        1420
+Kswapd skipped wait                  0           0
+THP fault alloc                     11          51
+THP collapse alloc                 574         609
+THP splits                           9           6
+THP fault fallback                   0           0
+THP collapse fail                    0           0
+Compaction stalls                    0           0
+Compaction success                   0           0
+Compaction failures                  0           0
+Page migrate success                 0           0
+Page migrate failure                 0           0
+Compaction pages isolated            0           0
+Compaction migrate scanned           0           0
+Compaction free scanned              0           0
+Compaction cost                      0           0
+NUMA PTE updates                     0           0
+NUMA hint faults                     0           0
+NUMA hint local faults               0           0
+NUMA pages migrated                  0           0
+AutoNUMA cost                        0           0
+
+Note that kswapd efficiency is slightly improved. Unfortunately, also note
+that there is a small amount of direct reclaim due to kswapd no longer reclaiming
+the world. Using ftrace it would appear that the direct reclaim stalls are mostly
+harmless with the vast bulk of the stalls incurred by dd
+
+      2 gzip-3111
+      5 memcachetest-12607
+     26 tclsh-3109
+     67 tee-3110
+     89 flush-8:0-286
+   2055 dd-12795
+
+There is a risk that kswapd not reclaiming the world may mean that it
+stays awake balancing zones, does not stall on the appropriate events
+and continually scans pages it cannot reclaim consuming CPU. This will
+be visible as continued high CPU usage but in my own tests I only saw a
+single spike lasting less than a second and I did not observe any problems
+related to reclaim while running the series on my desktop.
+
+ include/linux/mmzone.h |  17 ++
+ mm/vmscan.c            | 461 ++++++++++++++++++++++++++++++-------------------
+ 2 files changed, 305 insertions(+), 173 deletions(-)
 
 -- 
-tejun
+1.8.1.4
+
