@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab3DKKwK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 06:52:10 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:56523 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab3DKKwI (ORCPT
+	id S1754878Ab3DKK4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 06:56:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56642 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab3DKK4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 06:52:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH 11/30] [media] exynos: remove unnecessary header inclusions
-Date: Thu, 11 Apr 2013 12:52:03 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-media@vger.kernel.org
-References: <1365638712-1028578-1-git-send-email-arnd@arndb.de> <20130410211354.397d5689@redhat.com> <51667D3D.20103@samsung.com>
-In-Reply-To: <51667D3D.20103@samsung.com>
+	Thu, 11 Apr 2013 06:56:06 -0400
+Date: Thu, 11 Apr 2013 13:55:58 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] USB: ehci-omap: Select USB_PHY
+Message-ID: <20130411105557.GE14394@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <5166856C.3080906@ti.com>
+ <20130411100435.GB14394@arwen.pp.htv.fi>
+ <516695A4.2050804@ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304111252.04023.arnd@arndb.de>
-X-Provags-ID: V02:K0:QO9EvomBRRCnUlVQiR0uG4RKBmNwd+kAaOb8TZV6uB2
- mEsKAM6BVQOa+121nG3eE/t/8mnT6XVsIsjAFgclIF/AQrKp1H
- R7dx9MQNIXga77wsqMNpBwwSI/23T4XbvlgpiAy6L/Vq5lgSrd
- VxoCGtMGl5mFU1XoSDCmyPE9N1ibuknse7b13exQHpsEg26aHD
- Rki466AIOT6/G6xNNT2Kn5YpiW+IDkhKMXX/f/yPUutdcpBnX3
- 4G8r4CfbQisTpL8eQsYnVkp6IVxzpvXZ8Vo3tegXCQ5Vn6gb+2
- OuG5QAKqUxt3cITwiA/tMNo3oQ7wd0XKL7qqYdRy/9u6JwwqdH
- +o/imTEPXJlw7O1d/hDM=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="MIdTMoZhcV1D07fI"
+Content-Disposition: inline
+In-Reply-To: <516695A4.2050804@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 April 2013, Sylwester Nawrocki wrote:
-> On 04/11/2013 02:13 AM, Mauro Carvalho Chehab wrote:
-> > Em Thu, 11 Apr 2013 02:04:53 +0200
-> > Arnd Bergmann <arnd@arndb.de> escreveu:
-> > 
-> >> In multiplatform configurations, we cannot include headers
-> >> provided by only the exynos platform. Fortunately a number
-> >> of drivers that include those headers do not actually need
-> >> them, so we can just remove the inclusions.
+--MIdTMoZhcV1D07fI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Thu, Apr 11, 2013 at 01:51:16PM +0300, Roger Quadros wrote:
+> On 04/11/2013 01:04 PM, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Thu, Apr 11, 2013 at 12:42:04PM +0300, Roger Quadros wrote:
+> >> Hi Greg,
 > >>
-> >> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> >> Cc: linux-media@vger.kernel.org
-> >> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> > 
-> > Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> This patch is already queued in the media tree for 3.10, and it can
-> be found in -next now.
-> 
+> >> The following patch gets rid of Kbuild warnings when USB_EHCI_HCD_OMAP
+> >> is enabled.
+> >>
+> >> Patch is based on your usb-next branch and is needed for 3.10.
+> >>
+> >> From: Roger Quadros <rogerq@ti.com>
+> >> Date: Thu, 11 Apr 2013 12:08:19 +0300
+> >> Subject: [PATCH] USB: ehci-omap: Select USB_PHY
+> >>
+> >> As we need NOP_USB_XCEIV which depends on USB_PHY
+> >> we need to select USB_PHY as well.
+> >>
+> >> Gets rid of the below warnings when USB_EHCI_HCD_OMAP
+> >> is enabled.
+> >>
+> >> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet dir=
+ect dependencies (USB_SUPPORT && USB_PHY)
+> >> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet dir=
+ect dependencies (USB_SUPPORT && USB_PHY)
+> >>
+> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> >=20
+> > Ideally, however, we wouldn't select any PHY in particular as different
+> > boards might need a different PHY driver, even on OMAP ;-)
+> >=20
+> Right, but we need to select USB_PHY here as the driver uses
+> the USB_PHY APIs.
+>=20
+> The NOP_USB_XCEIV selection could be done by the board config.
 
-Ok, thanks! I'll drop it from my series then.
+I would avoid 'select' completely and just update omap2plus_defconfig
+adding those two as modules.
 
-	Arnd
+cheers
+
+--=20
+balbi
+
+--MIdTMoZhcV1D07fI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRZpa9AAoJEIaOsuA1yqREjowP/27PkqAeStaDh7m+HMQ8Y0ln
+1hqzHgluteu7b6SPbg7JgA/UmlL8wVZX8zoU3OV9fYhiGEIuImOysKMdB8Vk0n1l
+F8K0SV2QxaLoePPH05oGBtGnR5savcakKKAj5NFgJdzFJM4rCySveEJB7t6b6L0u
+8VFx3dof4faBmA7rgOX/nPKbVdd+64HxGRGvUgINe5GnyBP+TbqphE8FyQBlCJQN
++N7C48mRDwKCBYbryEVFB0tILonPbmgGmYrdzAzE8ogz0guuhdQDMQhuyKcIBElU
+jAiAVxe4LkvD+Yh4iJXDJxxAP98ZaP2uatecJ405/XtQnuDdZuTof6ZrINa4ZGep
+vJLdy54V4oFJ6HD1npHFFn/0kGzNXcxZxa3yFaB1mxkEUpShafkL/CA//LOtsdw7
+8/C+cX7rwYTXPkBIKzKFt1el+le9gPq+s4xXCXzOak8kKr30/s8B5NOLwH+61F1x
+krBv08cVWAciMz/DquWmleTYeECTwn1HPeZ+TlLH+rZa5p/NsA+6k6mSl+WHK1HV
+qJLMKTygnKLn2GlNso6TcYr+8x3XSyfrYdMGpVTr4JeSlCM2xH81WXCAV9tfYucD
+QVUfqN07fpbfaIlmKs0Jc9vpoDtdqdCGMnUPYZbIf7hC3ikkeDjfl6iHNJ3tYJuq
+v0g9jJ4UngqysPBCVLcT
+=yiF6
+-----END PGP SIGNATURE-----
+
+--MIdTMoZhcV1D07fI--
