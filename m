@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934348Ab3DKSq4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:46:56 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:61782 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab3DKSqz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:46:55 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S934768Ab3DKSrk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:47:40 -0400
+Received: from www.sr71.net ([198.145.64.142]:49316 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933304Ab3DKSri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 14:47:38 -0400
+Message-ID: <51670549.70205@sr71.net>
+Date: Thu, 11 Apr 2013 11:47:37 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Nishanth Menon <nm@ti.com>, Roger Quadros <rogerq@ti.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20130410173921.GA31017@kahuna>
-Cc: Tony Lindgren <tony@atomide.com>, <linux-usb@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <balbi@ti.com>,
-        <grygorii.strashko@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-References: <515D2D30.3000306@ti.com> <515EA9E3.1010409@ti.com>
- <20130405155851.GA10155@atomide.com> <5163E589.1040809@ti.com>
- <20130409164928.GL10155@atomide.com> <20130409174319.GP10155@atomide.com>
- <20130409204900.GA8815@kahuna> <20130410080630.14359.68178@quantum>
- <5165453E.6090503@ti.com> <20130410173921.GA31017@kahuna>
-Message-ID: <20130411184648.7915.17500@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [RFC][PATCH 1/2] ARM: OMAP4: clock: Add device tree support for AUXCLKs
-Date: Thu, 11 Apr 2013 11:46:48 -0700
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: Re: sched/cputime: sig->prev_stime underflow
+References: <515DBB00.20208@sr71.net> <CAFTL4hxnNyWbn47PxPZDibzgOcqtw8v+t3EEzn+AM_pzFM=YeQ@mail.gmail.com> <5162E8DC.4080204@sr71.net> <20130411074529.GA1629@redhat.com>
+In-Reply-To: <20130411074529.GA1629@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Nishanth Menon (2013-04-10 10:39:21)
-> diff --git a/drivers/clk/omap/clk.c b/drivers/clk/omap/clk.c
-> new file mode 100644
-> index 0000000..63a4cce
-> --- /dev/null
-> +++ b/drivers/clk/omap/clk.c
-> @@ -0,0 +1,94 @@
-> +/*
-> + * Texas Instruments OMAP Clock driver
-> + *
-> + * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-> + *     Nishanth Menon
-> + *     Tony Lindgren <tony@atomide.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-> + * kind, whether express or implied; without even the implied warranty
-> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/clkdev.h>
-> +#include <linux/clk-private.h>
+On 04/11/2013 12:45 AM, Stanislaw Gruszka wrote:
+> On Mon, Apr 08, 2013 at 08:57:16AM -0700, Dave Hansen wrote:
+>> On 04/04/2013 04:41 PM, Frederic Weisbecker wrote:
+>>> Does this patch fix the issue for you?
+>>> https://lkml.org/lkml/2013/4/4/112
+>>
+>> Nope, that doesn't seem to make a difference.  I'm still seeing the
+>> underflow.  I'm pretty sure it's already gone to hell by the time it
+>> gets in to the loop that's patched there.
+> 
+> Perhaps this is glich introduced by commit 
+> 62188451f0d63add7ad0cd2a1ae269d600c1663d "cputime: Avoid multiplication
+> overflow on utime scaling" . Could you try to revert it and see if that
+> helps. If it does not, can you check if problem happen on 3.8 ?
 
-Please use clk-provider.h.  Otherwise this looks like an OK transitional
-solution.  Hopefully this will be replaced with a more legitimate clock
-driver for 3.11.
+I'll run a bit longer, but reverting
+62188451f0d63add7ad0cd2a1ae269d600c1663d _does_ seem to make it happier.
 
-Regards,
-Mike
