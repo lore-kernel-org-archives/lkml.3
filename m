@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935534Ab3DKVRi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:17:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39043 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934464Ab3DKVRg (ORCPT
+	id S935642Ab3DKVRI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:17:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20734 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935524Ab3DKUs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:17:36 -0400
-Date: Thu, 11 Apr 2013 14:17:35 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] clear_refs: Sanitize accepted commands declaration
-Message-Id: <20130411141735.107e583ca55e619f2e215851@linux-foundation.org>
-In-Reply-To: <51669E73.2000301@parallels.com>
-References: <51669E5F.4000801@parallels.com>
-	<51669E73.2000301@parallels.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Apr 2013 16:48:58 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=juXJV0cZH64A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=_4ZhCcN7OKIA:10 a=pGLkceISAAAA:8 a=myVwGOACAAAA:8 a=VwQbUJbxAAAA:8 a=0e1NNH2jAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=p5cQTkJONggA:10 a=MSl-tDqOz04A:10 a=hAwTiGD2l9QA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130411202608.772600190@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 11 Apr 2013 16:27:20 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Eric Hutter <hutter.eric@gmail.com>, Andrew Lunn <andrew@lunn.ch>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [ 137/171 ] ARM: kirkwood: Fix chip-delay for GoFlex Net
+References: <20130411202503.783159048@goodmis.org>
+Content-Disposition: inline; filename=0137-ARM-kirkwood-Fix-chip-delay-for-GoFlex-Net.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Apr 2013 15:28:51 +0400 Pavel Emelyanov <xemul@parallels.com> wrote:
+3.6.11.2 stable review patch.
+If anyone has any objections, please let me know.
 
-> A new clear-refs type will be added in the next patch, so prepare
-> code for that.
-> 
-> @@ -730,7 +733,7 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
->  	char buffer[PROC_NUMBUF];
->  	struct mm_struct *mm;
->  	struct vm_area_struct *vma;
-> -	int type;
-> +	enum clear_refs_types type;
->  	int rv;
->  
->  	memset(buffer, 0, sizeof(buffer));
-> @@ -738,10 +741,10 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
->  		count = sizeof(buffer) - 1;
->  	if (copy_from_user(buffer, buf, count))
->  		return -EFAULT;
-> -	rv = kstrtoint(strstrip(buffer), 10, &type);
-> +	rv = kstrtoint(strstrip(buffer), 10, (int *)&type);
+------------------
 
-This is naughty.  The compiler is allowed to put the enum into storage
-which is smaller (or, I guess, larger) than sizeof(int).  I've seen one
-compiler which puts such an enum into a 16-bit word.
+From: Eric Hutter <hutter.eric@gmail.com>
 
---- a/fs/proc/task_mmu.c~clear_refs-sanitize-accepted-commands-declaration-fix
-+++ a/fs/proc/task_mmu.c
-@@ -734,6 +734,7 @@ static ssize_t clear_refs_write(struct f
- 	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
- 	enum clear_refs_types type;
-+	int itype;
- 	int rv;
+[ Upstream commit 2992714d431976c4b154875bd18ba61bf4df3b93 ]
+
+This fixes "Too few good blocks within range" issues on GoFlex Net by setting
+chip-delay to 40.
+
+The basic problem was discussed at http://forum.doozan.com/read.php?2,7451
+
+Signed-off-by: Eric Hutter <hutter.eric@gmail.com>
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+Cc: <stable@vger.kernel.org> # v3.6.x
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/arm/boot/dts/kirkwood-goflexnet.dts |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/kirkwood-goflexnet.dts b/arch/arm/boot/dts/kirkwood-goflexnet.dts
+index 7c8238f..a66a8eb 100644
+--- a/arch/arm/boot/dts/kirkwood-goflexnet.dts
++++ b/arch/arm/boot/dts/kirkwood-goflexnet.dts
+@@ -22,6 +22,7 @@
+ 		};
  
- 	memset(buffer, 0, sizeof(buffer));
-@@ -741,9 +742,10 @@ static ssize_t clear_refs_write(struct f
- 		count = sizeof(buffer) - 1;
- 	if (copy_from_user(buffer, buf, count))
- 		return -EFAULT;
--	rv = kstrtoint(strstrip(buffer), 10, (int *)&type);
-+	rv = kstrtoint(strstrip(buffer), 10, &itype);
- 	if (rv < 0)
- 		return rv;
-+	type = (enum clear_refs_types)itype;
- 	if (type < CLEAR_REFS_ALL || type >= CLEAR_REFS_LAST)
- 		return -EINVAL;
- 	task = get_proc_task(file_inode(file));
-_
+ 		nand@3000000 {
++			chip-delay = <40>;
+ 			status = "okay";
+ 
+ 			partition@0 {
+-- 
+1.7.10.4
+
 
