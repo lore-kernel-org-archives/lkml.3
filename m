@@ -1,81 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934548Ab3DKJJQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 05:09:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38376 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1765448Ab3DKJJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 05:09:14 -0400
-Date: Thu, 11 Apr 2013 10:09:09 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
- requirements for kswapd
-Message-ID: <20130411090909.GF3710@suse.de>
-References: <1365505625-9460-1-git-send-email-mgorman@suse.de>
- <1365505625-9460-3-git-send-email-mgorman@suse.de>
- <516511DF.5020805@jp.fujitsu.com>
- <20130410140824.GC3710@suse.de>
- <5166005B.3060607@jp.fujitsu.com>
+	id S934661Ab3DKJJt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 05:09:49 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:59563 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753667Ab3DKJJr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 05:09:47 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH] MFD: ab8500: pass AB8500 IRQ to debugfs code by resource
+Date: Thu, 11 Apr 2013 10:42:59 +0200
+Message-ID: <1365669779-14953-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <5166005B.3060607@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 09:14:19AM +0900, Kamezawa Hiroyuki wrote:
-> >
-> >nr[lru] at the end there is pages remaining to be scanned not pages
-> >scanned already.
-> 
-> yes.
-> 
-> >Did you mean something like this?
-> >
-> >nr[lru] = scantarget[lru] * percentage / 100 - (scantarget[lru] - nr[lru])
-> >
-> 
-> For clarification, this "percentage" means the ratio of remaining scan target of
-> another LRU. So, *scanned* percentage is "100 - percentage", right ?
-> 
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Yes, correct.
+The AB8500 debug code which was merged in parallell with the
+multiplatform work incidentally introduced a new instance using
+the <mach/irqs.h> header which is now deleted, causing this
+build regression:
 
-> If I understand the changelog correctly, you'd like to keep
-> 
->    scantarget[anon] : scantarget[file]
->    == really_scanned_num[anon] : really_scanned_num[file]
-> 
+drivers/mfd/ab8500-debugfs.c:95:23:
+fatal error: mach/irqs.h: No such file or directory
+compilation terminated.
+make[4]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
 
-Yes.
+The code most certainly never worked with device tree either
+since that does not rely on this kind of hard-coded interrupt
+numbers.
 
-> even if we stop scanning in the middle of scantarget. And you introduced "percentage"
-> to make sure that both scantarget should be done in the same ratio.
-> 
+Fix the problem at the root by passing it as a named resource
+from the ab8500-core driver.
 
-Yes.
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Sam this would have to go into the v3.10-targetted stuff...
+Either immediately before you send it upstream or as a fixup.
+---
+ drivers/mfd/ab8500-core.c    | 11 +++++++++++
+ drivers/mfd/ab8500-debugfs.c | 14 ++++++++++----
+ 2 files changed, 21 insertions(+), 4 deletions(-)
 
-> So...another lru should scan  scantarget[x] * (100 - percentage)/100 in total.
-> 
-> nr[lru] = scantarget[lru] * (100 - percentage)/100 - (scantarget[lru] - nr[lru])
->           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^
->              proportionally adjusted scan target        already scanned num
-> 
->        =  nr[lru] - scantarget[lru] * percentage/100.
-> 
-
-Yes, you are completely correct. This preserves the original ratio of
-anon:file scanning properly.
-
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index 8e8a016..dd72914 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -868,6 +868,11 @@ static struct resource ab8500_chargalg_resources[] = {};
+ #ifdef CONFIG_DEBUG_FS
+ static struct resource ab8500_debug_resources[] = {
+ 	{
++		.name	= "IRQ_AB8500",
++		/* Number will be filled in */
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
+ 		.name	= "IRQ_FIRST",
+ 		.start	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
+ 		.end	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
+@@ -1712,6 +1717,12 @@ static int ab8500_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
++#if CONFIG_DEBUG_FS
++	/* Pass to debugfs */
++	ab8500_debug_resources[0].start = ab8500->irq;
++	ab8500_debug_resources[0].end = ab8500->irq;
++#endif
++
+ 	if (is_ab9540(ab8500))
+ 		ret = mfd_add_devices(ab8500->dev, 0, ab9540_devs,
+ 				ARRAY_SIZE(ab9540_devs), NULL,
+diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
+index b88bbbc..bd39146 100644
+--- a/drivers/mfd/ab8500-debugfs.c
++++ b/drivers/mfd/ab8500-debugfs.c
+@@ -91,12 +91,10 @@
+ #include <linux/ctype.h>
+ #endif
+ 
+-/* TODO: this file should not reference IRQ_DB8500_AB8500! */
+-#include <mach/irqs.h>
+-
+ static u32 debug_bank;
+ static u32 debug_address;
+ 
++static int irq_ab8500;
+ static int irq_first;
+ static int irq_last;
+ static u32 *irq_count;
+@@ -1589,7 +1587,7 @@ void ab8500_debug_register_interrupt(int line)
+ {
+ 	if (line < num_interrupt_lines) {
+ 		num_interrupts[line]++;
+-		if (suspend_test_wake_cause_interrupt_is_mine(IRQ_DB8500_AB8500))
++		if (suspend_test_wake_cause_interrupt_is_mine(irq_ab8500))
+ 			num_wake_interrupts[line]++;
+ 	}
+ }
+@@ -2959,6 +2957,14 @@ static int ab8500_debug_probe(struct platform_device *plf)
+ 	if (!event_name)
+ 		goto out_freedev_attr;
+ 
++	irq_ab8500 = platform_get_irq_byname(plf, "IRQ_AB8500");
++	if (irq_ab8500 < 0) {
++		dev_err(&plf->dev, "AB8500 irq not found, err %d\n",
++			irq_first);
++		ret = irq_ab8500;
++		goto out_freeevent_name;
++	}
++
+ 	irq_first = platform_get_irq_byname(plf, "IRQ_FIRST");
+ 	if (irq_first < 0) {
+ 		dev_err(&plf->dev, "First irq not found, err %d\n",
 -- 
-Mel Gorman
-SUSE Labs
+1.7.11.3
+
