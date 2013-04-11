@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762683Ab3DKHuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:50:18 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:60827 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867Ab3DKHuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:50:17 -0400
-Message-ID: <51666B33.4070702@free-electrons.com>
-Date: Thu, 11 Apr 2013 09:50:11 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
+	id S1764959Ab3DKH7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:59:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2194 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753490Ab3DKH67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 03:58:59 -0400
+Message-ID: <51666D28.7090500@redhat.com>
+Date: Thu, 11 Apr 2013 15:58:32 +0800
+From: Jason Wang <jasowang@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Grant Likely <grant.likely@secretlab.ca>, jimwall@q.com,
-        brian@crystalfontz.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: pca953x: fix irq_domain_add_simple usage
-References: <1365010814-3263-1-git-send-email-alexandre.belloni@free-electrons.com> <CACRpkdY=gJMCQ-qskDwXFg9cQH02+fZ00zU+=2cRdHE71cT9hw@mail.gmail.com>
-In-Reply-To: <CACRpkdY=gJMCQ-qskDwXFg9cQH02+fZ00zU+=2cRdHE71cT9hw@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Subject: Re: [net-next PATCH] xen-netback: switch to use skb_partial_csum_set()
+References: <1365662129-38031-1-git-send-email-jasowang@redhat.com> <1365666364.27868.114.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1365666364.27868.114.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 04/11/2013 03:46 PM, Ian Campbell wrote:
+> On Thu, 2013-04-11 at 07:35 +0100, Jason Wang wrote:
+>> Switch to use skb_partial_csum_set() to simplify the codes.
+> This is incremental on top of your previous patch, right?
 
-Le 10/04/2013 22:54, Linus Walleij a écrit :
-> On Wed, Apr 3, 2013 at 7:40 PM, Alexandre Belloni
-> <alexandre.belloni@free-electrons.com> wrote:
-> 
->> We actually have to pass chip as the host_data parameter of
->> irq_domain_add_simple() as later on, it is used to initialize chip_data
->> in pca953x_gpio_irq_map(). Failing to do so is leading to a NULL pointer
->> dereference after calling irq_data_get_irq_chip_data() in
->> pca953x_irq_mask(), pca953x_irq_unmask(), pca953x_irq_bus_lock(),
->> pca953x_irq_bus_sync_unlock() and pca953x_irq_set_type().
->>
->> Fixes regression introduced by commit
->> 0e8f2fdacf1d44651aa7e57063c76142d1f4988b (gpio: pca953x: use simple
->> irqdomain)
->>
->> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+It's an independent patch, since the previous patch has been applied.
+>> Cc: Ian Campbell <ian.campbell@citrix.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
 >> ---
+>> Note:
+>> - Compile test only.
+>> ---
+>>  drivers/net/xen-netback/netback.c |   22 ++++++++--------------
+>>  1 files changed, 8 insertions(+), 14 deletions(-)
 >>
->> This would probably be good to introduce that patch in the next 3.9 rc as the
->> regression leads to a lot of breakage (and cursing).
-> 
-> OK patch applied let's see if I get it to Torvalds in time.
-> 
-> Can I have some ACK from Maxime?
+>> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+>> index 83905a9..70631f0 100644
+>> --- a/drivers/net/xen-netback/netback.c
+>> +++ b/drivers/net/xen-netback/netback.c
+>> @@ -1156,7 +1156,6 @@ static int netbk_set_skb_gso(struct xenvif *vif,
+>>  static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
+>>  {
+>>  	struct iphdr *iph;
+>> -	unsigned char *th;
+>>  	int err = -EPROTO;
+>>  	int recalculate_partial_csum = 0;
+>>  
+>> @@ -1180,28 +1179,26 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
+>>  		goto out;
+>>  
+>>  	iph = (void *)skb->data;
+>> -	th = skb->data + 4 * iph->ihl;
+>> -	if (th >= skb_tail_pointer(skb))
+>> -		goto out;
+>> -
+>> -	skb_set_transport_header(skb, 4 * iph->ihl);
+> Is removing this line really correct?
 
-Sure,
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+After commit e5d5deca (net: core: let skb_partial_csum_set() set
+transport header), this work was done by skb_partial_csum_set().
+>
+>> -	skb->csum_start = th - skb->head;
+>>  	switch (iph->protocol) {
+>>  	case IPPROTO_TCP:
+>> -		skb->csum_offset = offsetof(struct tcphdr, check);
+>> +		if (!skb_partial_csum_set(skb, 4 * iph->ihl,
+>> +					  offsetof(struct tcphdr, check)))
+>> +			goto out;
+>>  
+>>  		if (recalculate_partial_csum) {
+>> -			struct tcphdr *tcph = (struct tcphdr *)th;
+>> +			struct tcphdr *tcph = tcp_hdr(skb);
+>>  			tcph->check = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
+>>  							 skb->len - iph->ihl*4,
+>>  							 IPPROTO_TCP, 0);
+>>  		}
+>>  		break;
+>>  	case IPPROTO_UDP:
+>> -		skb->csum_offset = offsetof(struct udphdr, check);
+>> +		if (!skb_partial_csum_set(skb, 4 * iph->ihl,
+>> +					  offsetof(struct udphdr, check)))
+>> +			goto out;
+>>  
+>>  		if (recalculate_partial_csum) {
+>> -			struct udphdr *udph = (struct udphdr *)th;
+>> +			struct udphdr *udph = udp_hdr(skb);
+>>  			udph->check = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
+>>  							 skb->len - iph->ihl*4,
+>>  							 IPPROTO_UDP, 0);
+>> @@ -1215,9 +1212,6 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
+>>  		goto out;
+>>  	}
+>>  
+>> -	if ((th + skb->csum_offset + 2) > skb_tail_pointer(skb))
+>> -		goto out;
+>> -
+>>  	err = 0;
+>>  
+>>  out:
+>
 
-Maxime
-
--- 
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
