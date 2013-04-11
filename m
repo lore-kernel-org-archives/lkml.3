@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161610Ab3DKNbS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 09:31:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46644 "EHLO mx1.redhat.com"
+	id S1161569Ab3DKNbM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 09:31:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45570 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932980Ab3DKNbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 09:31:15 -0400
+	id S932980Ab3DKNbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 09:31:08 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 25/26] arm: Don't use create_proc_read_entry() [RFC]
+Subject: [PATCH 26/26] proc: Delete create_proc_read_entry() [RFC]
 To: linux-kernel@vger.kernel.org
 From: David Howells <dhowells@redhat.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Tony Lindgren <tony@atomide.com>, viro@ZenIV.linux.org.uk,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Date: Thu, 11 Apr 2013 14:30:58 +0100
-Message-ID: <20130411133058.32763.5466.stgit@warthog.procyon.org.uk>
+Cc: viro@ZenIV.linux.org.uk
+Date: Thu, 11 Apr 2013 14:31:06 +0100
+Message-ID: <20130411133106.32763.5147.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
 References: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
@@ -29,212 +26,319 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't use create_proc_read_entry() as that is deprecated, but rather use
-proc_create_data() and seq_file instead.
+Delete create_proc_read_entry() as it no longer has any users.
+
+Also delete read_proc_t, write_proc_t, the read_proc member of the
+proc_dir_entry struct and the support functions that use them.  This saves a
+pointer for every PDE allocated.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Russell King <linux@arm.linux.org.uk>
-cc: Kevin Hilman <khilman@deeprootsystems.com>
-cc: Tony Lindgren <tony@atomide.com>
-cc: linux-arm-kernel@lists.infradead.org
-cc: linux-omap@vger.kernel.org
 ---
 
- arch/arm/kernel/swp_emulate.c |   42 +++++++++++++-----------------
- arch/arm/mach-omap1/pm.c      |   58 +++++++++++++++++------------------------
- 2 files changed, 43 insertions(+), 57 deletions(-)
+ fs/proc/generic.c       |  168 -----------------------------------------------
+ fs/proc/inode.c         |   35 ----------
+ fs/proc/internal.h      |    2 -
+ include/linux/proc_fs.h |   16 ----
+ 4 files changed, 1 insertion(+), 220 deletions(-)
 
-diff --git a/arch/arm/kernel/swp_emulate.c b/arch/arm/kernel/swp_emulate.c
-index 0bba47a..087fc32 100644
---- a/arch/arm/kernel/swp_emulate.c
-+++ b/arch/arm/kernel/swp_emulate.c
-@@ -21,6 +21,7 @@
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
- #include <linux/sched.h>
- #include <linux/syscalls.h>
- #include <linux/perf_event.h>
-@@ -79,27 +80,27 @@ static unsigned long abtcounter;
- static pid_t         previous_pid;
- 
- #ifdef CONFIG_PROC_FS
--static int proc_read_status(char *page, char **start, off_t off, int count,
--			    int *eof, void *data)
-+static int proc_status_show(struct seq_file *m, void *v)
- {
--	char *p = page;
--	int len;
--
--	p += sprintf(p, "Emulated SWP:\t\t%lu\n", swpcounter);
--	p += sprintf(p, "Emulated SWPB:\t\t%lu\n", swpbcounter);
--	p += sprintf(p, "Aborted SWP{B}:\t\t%lu\n", abtcounter);
-+	seq_printf(m, "Emulated SWP:\t\t%lu\n", swpcounter);
-+	seq_printf(m, "Emulated SWPB:\t\t%lu\n", swpbcounter);
-+	seq_printf(m, "Aborted SWP{B}:\t\t%lu\n", abtcounter);
- 	if (previous_pid != 0)
--		p += sprintf(p, "Last process:\t\t%d\n", previous_pid);
--
--	len = (p - page) - off;
--	if (len < 0)
--		len = 0;
--
--	*eof = (len <= count) ? 1 : 0;
--	*start = page + off;
-+		seq_printf(m, "Last process:\t\t%d\n", previous_pid);
-+	return 0;
-+}
- 
--	return len;
-+static int proc_status_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, proc_status_show, PDE_DATA(inode));
- }
-+
-+static const struct file_operations proc_status_fops = {
-+	.open		= proc_status_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+};
- #endif
- 
- /*
-@@ -266,12 +267,7 @@ static struct undef_hook swp_hook = {
- static int __init swp_emulation_init(void)
- {
- #ifdef CONFIG_PROC_FS
--	struct proc_dir_entry *res;
--
--	res = create_proc_read_entry("cpu/swp_emulation", S_IRUGO, NULL,
--					proc_read_status, NULL);
--
--	if (!res)
-+	if (!proc_create("cpu/swp_emulation", S_IRUGO, NULL, &proc_status_fops))
- 		return -ENOMEM;
- #endif /* CONFIG_PROC_FS */
- 
-diff --git a/arch/arm/mach-omap1/pm.c b/arch/arm/mach-omap1/pm.c
-index 7a7690a..2645e37 100644
---- a/arch/arm/mach-omap1/pm.c
-+++ b/arch/arm/mach-omap1/pm.c
-@@ -38,6 +38,7 @@
- #include <linux/suspend.h>
- #include <linux/sched.h>
- #include <linux/proc_fs.h>
-+#include <linux/seq_file.h>
- #include <linux/interrupt.h>
- #include <linux/sysfs.h>
- #include <linux/module.h>
-@@ -423,22 +424,11 @@ void omap1_pm_suspend(void)
+diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+index bec5832..1c07cad 100644
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -36,141 +36,6 @@ static int proc_match(unsigned int len, const char *name, struct proc_dir_entry
+ 	return !memcmp(name, de->name, len);
  }
  
- #if defined(DEBUG) && defined(CONFIG_PROC_FS)
--static int g_read_completed;
+-/* buffer size is one page but our output routines use some slack for overruns */
+-#define PROC_BLOCK_SIZE	(PAGE_SIZE - 1024)
 -
- /*
-  * Read system PM registers for debugging
-  */
--static int omap_pm_read_proc(
--	char *page_buffer,
--	char **my_first_byte,
--	off_t virtual_start,
--	int length,
--	int *eof,
--	void *data)
-+static int omap_pm_proc_show(struct seq_file *m, void *v)
- {
--	int my_buffer_offset = 0;
--	char * const my_base = page_buffer;
+-ssize_t
+-__proc_file_read(struct file *file, char __user *buf, size_t nbytes,
+-	       loff_t *ppos)
+-{
+-	struct inode * inode = file_inode(file);
+-	char 	*page;
+-	ssize_t	retval=0;
+-	int	eof=0;
+-	ssize_t	n, count;
+-	char	*start;
+-	struct proc_dir_entry * dp;
+-	unsigned long long pos;
 -
- 	ARM_SAVE(ARM_CKCTL);
- 	ARM_SAVE(ARM_IDLECT1);
- 	ARM_SAVE(ARM_IDLECT2);
-@@ -479,10 +469,7 @@ static int omap_pm_read_proc(
- 		MPUI1610_SAVE(EMIFS_CONFIG);
- 	}
- 
--	if (virtual_start == 0) {
--		g_read_completed = 0;
+-	/*
+-	 * Gaah, please just use "seq_file" instead. The legacy /proc
+-	 * interfaces cut loff_t down to off_t for reads, and ignore
+-	 * the offset entirely for writes..
+-	 */
+-	pos = *ppos;
+-	if (pos > MAX_NON_LFS)
+-		return 0;
+-	if (nbytes > MAX_NON_LFS - pos)
+-		nbytes = MAX_NON_LFS - pos;
 -
--		my_buffer_offset += sprintf(my_base + my_buffer_offset,
-+	seq_printf(m,
- 		   "ARM_CKCTL_REG:            0x%-8x     \n"
- 		   "ARM_IDLECT1_REG:          0x%-8x     \n"
- 		   "ARM_IDLECT2_REG:          0x%-8x     \n"
-@@ -512,8 +499,8 @@ static int omap_pm_read_proc(
- 		   ULPD_SHOW(ULPD_STATUS_REQ),
- 		   ULPD_SHOW(ULPD_POWER_CTRL));
- 
--		if (cpu_is_omap7xx()) {
--			my_buffer_offset += sprintf(my_base + my_buffer_offset,
-+	if (cpu_is_omap7xx()) {
-+		seq_printf(m,
- 			   "MPUI7XX_CTRL_REG	     0x%-8x \n"
- 			   "MPUI7XX_DSP_STATUS_REG:      0x%-8x \n"
- 			   "MPUI7XX_DSP_BOOT_CONFIG_REG: 0x%-8x \n"
-@@ -526,8 +513,8 @@ static int omap_pm_read_proc(
- 			   MPUI7XX_SHOW(MPUI_DSP_API_CONFIG),
- 			   MPUI7XX_SHOW(EMIFF_SDRAM_CONFIG),
- 			   MPUI7XX_SHOW(EMIFS_CONFIG));
--		} else if (cpu_is_omap15xx()) {
--			my_buffer_offset += sprintf(my_base + my_buffer_offset,
-+	} else if (cpu_is_omap15xx()) {
-+		seq_printf(m,
- 			   "MPUI1510_CTRL_REG             0x%-8x \n"
- 			   "MPUI1510_DSP_STATUS_REG:      0x%-8x \n"
- 			   "MPUI1510_DSP_BOOT_CONFIG_REG: 0x%-8x \n"
-@@ -540,8 +527,8 @@ static int omap_pm_read_proc(
- 			   MPUI1510_SHOW(MPUI_DSP_API_CONFIG),
- 			   MPUI1510_SHOW(EMIFF_SDRAM_CONFIG),
- 			   MPUI1510_SHOW(EMIFS_CONFIG));
--		} else if (cpu_is_omap16xx()) {
--			my_buffer_offset += sprintf(my_base + my_buffer_offset,
-+	} else if (cpu_is_omap16xx()) {
-+		seq_printf(m,
- 			   "MPUI1610_CTRL_REG             0x%-8x \n"
- 			   "MPUI1610_DSP_STATUS_REG:      0x%-8x \n"
- 			   "MPUI1610_DSP_BOOT_CONFIG_REG: 0x%-8x \n"
-@@ -554,25 +541,28 @@ static int omap_pm_read_proc(
- 			   MPUI1610_SHOW(MPUI_DSP_API_CONFIG),
- 			   MPUI1610_SHOW(EMIFF_SDRAM_CONFIG),
- 			   MPUI1610_SHOW(EMIFS_CONFIG));
+-	dp = PDE(inode);
+-	if (!(page = (char*) __get_free_page(GFP_TEMPORARY)))
+-		return -ENOMEM;
+-
+-	while ((nbytes > 0) && !eof) {
+-		count = min_t(size_t, PROC_BLOCK_SIZE, nbytes);
+-
+-		start = NULL;
+-		if (!dp->read_proc)
+-			break;
+-
+-		/* How to be a proc read function
+-		 * ------------------------------
+-		 * Prototype:
+-		 *    int f(char *buffer, char **start, off_t offset,
+-		 *          int count, int *peof, void *dat)
+-		 *
+-		 * Assume that the buffer is "count" bytes in size.
+-		 *
+-		 * If you know you have supplied all the data you have, set
+-		 * *peof.
+-		 *
+-		 * You have three ways to return data:
+-		 *
+-		 * 0) Leave *start = NULL.  (This is the default.)  Put the
+-		 *    data of the requested offset at that offset within the
+-		 *    buffer.  Return the number (n) of bytes there are from
+-		 *    the beginning of the buffer up to the last byte of data.
+-		 *    If the number of supplied bytes (= n - offset) is greater
+-		 *    than zero and you didn't signal eof and the reader is
+-		 *    prepared to take more data you will be called again with
+-		 *    the requested offset advanced by the number of bytes
+-		 *    absorbed.  This interface is useful for files no larger
+-		 *    than the buffer.
+-		 *
+-		 * 1) Set *start = an unsigned long value less than the buffer
+-		 *    address but greater than zero.  Put the data of the
+-		 *    requested offset at the beginning of the buffer.  Return
+-		 *    the number of bytes of data placed there.  If this number
+-		 *    is greater than zero and you didn't signal eof and the
+-		 *    reader is prepared to take more data you will be called
+-		 *    again with the requested offset advanced by *start.  This
+-		 *    interface is useful when you have a large file consisting
+-		 *    of a series of blocks which you want to count and return
+-		 *    as wholes.
+-		 *    (Hack by Paul.Russell@rustcorp.com.au)
+-		 *
+-		 * 2) Set *start = an address within the buffer.  Put the data
+-		 *    of the requested offset at *start.  Return the number of
+-		 *    bytes of data placed there.  If this number is greater
+-		 *    than zero and you didn't signal eof and the reader is
+-		 *    prepared to take more data you will be called again with
+-		 *    the requested offset advanced by the number of bytes
+-		 *    absorbed.
+-		 */
+-		n = dp->read_proc(page, &start, *ppos, count, &eof, dp->data);
+-
+-		if (n == 0)   /* end of file */
+-			break;
+-		if (n < 0) {  /* error */
+-			if (retval == 0)
+-				retval = n;
+-			break;
 -		}
 -
--		g_read_completed++;
--	} else if (g_read_completed >= 1) {
--		 *eof = 1;
--		 return 0;
- 	}
--	g_read_completed++;
- 
--	*my_first_byte = page_buffer;
--	return  my_buffer_offset;
-+	return 0;
-+}
-+
-+static int omap_pm_proc_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, omap_pm_proc_show, PDE_DATA(inode));
- }
- 
-+static const struct file_operations omap_pm_proc_fops = {
-+	.open		= omap_pm_proc_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release,
-+};
-+
- static void omap_pm_init_proc(void)
+-		if (start == NULL) {
+-			if (n > PAGE_SIZE)	/* Apparent buffer overflow */
+-				n = PAGE_SIZE;
+-			n -= *ppos;
+-			if (n <= 0)
+-				break;
+-			if (n > count)
+-				n = count;
+-			start = page + *ppos;
+-		} else if (start < page) {
+-			if (n > PAGE_SIZE)	/* Apparent buffer overflow */
+-				n = PAGE_SIZE;
+-			if (n > count) {
+-				/*
+-				 * Don't reduce n because doing so might
+-				 * cut off part of a data block.
+-				 */
+-				pr_warn("proc_file_read: count exceeded\n");
+-			}
+-		} else /* start >= page */ {
+-			unsigned long startoff = (unsigned long)(start - page);
+-			if (n > (PAGE_SIZE - startoff))	/* buffer overflow? */
+-				n = PAGE_SIZE - startoff;
+-			if (n > count)
+-				n = count;
+-		}
+-		
+- 		n -= copy_to_user(buf, start < page ? page : start, n);
+-		if (n == 0) {
+-			if (retval == 0)
+-				retval = -EFAULT;
+-			break;
+-		}
+-
+-		*ppos += start < page ? (unsigned long)start : n;
+-		nbytes -= n;
+-		buf += n;
+-		retval += n;
+-	}
+-	free_page((unsigned long) page);
+-	return retval;
+-}
+-
+ static int proc_notify_change(struct dentry *dentry, struct iattr *iattr)
  {
- 	/* XXX Appears to leak memory */
--	create_proc_read_entry("driver/omap_pm",
--			       S_IWUSR | S_IRUGO, NULL,
--			       omap_pm_read_proc, NULL);
-+	create_proc("driver/omap_pm", S_IWUSR | S_IRUGO, NULL,
-+		    &omap_pm_proc_fops);
+ 	struct inode *inode = dentry->d_inode;
+@@ -476,8 +341,7 @@ static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp
+ 	} else if (S_ISLNK(dp->mode)) {
+ 		dp->proc_iops = &proc_link_inode_operations;
+ 	} else if (S_ISREG(dp->mode)) {
+-		if (dp->proc_fops == NULL)
+-			dp->proc_fops = &proc_file_operations;
++		BUG_ON(dp->proc_fops == NULL);
+ 		dp->proc_iops = &proc_file_inode_operations;
+ 	} else {
+ 		WARN_ON(1);
+@@ -604,36 +468,6 @@ struct proc_dir_entry *proc_mkdir(const char *name,
+ }
+ EXPORT_SYMBOL(proc_mkdir);
+ 
+-struct proc_dir_entry *create_proc_read_entry(
+-	const char *name, umode_t mode, struct proc_dir_entry *parent, 
+-	read_proc_t *read_proc, void *data)
+-{
+-	struct proc_dir_entry *ent;
+-
+-	if ((mode & S_IFMT) == 0)
+-		mode |= S_IFREG;
+-
+-	if (!S_ISREG(mode)) {
+-		WARN_ON(1);	/* use proc_mkdir(), damnit */
+-		return NULL;
+-	}
+-
+-	if ((mode & S_IALLUGO) == 0)
+-		mode |= S_IRUGO;
+-
+-	ent = __proc_create(&parent, name, mode, 1);
+-	if (ent) {
+-		ent->read_proc = read_proc;
+-		ent->data = data;
+-		if (proc_register(parent, ent) < 0) {
+-			kfree(ent);
+-			ent = NULL;
+-		}
+-	}
+-	return ent;
+-}
+-EXPORT_SYMBOL(create_proc_read_entry);
+-
+ struct proc_dir_entry *proc_create_data(const char *name, umode_t mode,
+ 					struct proc_dir_entry *parent,
+ 					const struct file_operations *proc_fops,
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 3b14a45..d50224c 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -183,41 +183,6 @@ void proc_entry_rundown(struct proc_dir_entry *de)
+ 	spin_unlock(&de->pde_unload_lock);
  }
  
- #endif /* DEBUG && CONFIG_PROC_FS */
+-/* ->read_proc() users - legacy crap */
+-static ssize_t
+-proc_file_read(struct file *file, char __user *buf, size_t nbytes,
+-	       loff_t *ppos)
+-{
+-	struct proc_dir_entry *pde = PDE(file_inode(file));
+-	ssize_t rv = -EIO;
+-	if (use_pde(pde)) {
+-		rv = __proc_file_read(file, buf, nbytes, ppos);
+-		unuse_pde(pde);
+-	}
+-	return rv;
+-}
+-
+-static loff_t
+-proc_file_lseek(struct file *file, loff_t offset, int orig)
+-{
+-	loff_t retval = -EINVAL;
+-	switch (orig) {
+-	case 1:
+-		offset += file->f_pos;
+-	/* fallthrough */
+-	case 0:
+-		if (offset < 0 || offset > MAX_NON_LFS)
+-			break;
+-		file->f_pos = retval = offset;
+-	}
+-	return retval;
+-}
+-
+-const struct file_operations proc_file_operations = {
+-	.llseek		= proc_file_lseek,
+-	.read		= proc_file_read,
+-};
+-
+ static loff_t proc_reg_llseek(struct file *file, loff_t offset, int whence)
+ {
+ 	struct proc_dir_entry *pde = PDE(file_inode(file));
+diff --git a/fs/proc/internal.h b/fs/proc/internal.h
+index 46a7e2a..4b13417 100644
+--- a/fs/proc/internal.h
++++ b/fs/proc/internal.h
+@@ -157,8 +157,6 @@ struct pde_opener {
+ 	struct completion *c;
+ };
+ 
+-ssize_t __proc_file_read(struct file *, char __user *, size_t, loff_t *);
+-extern const struct file_operations proc_file_operations;
+ void proc_entry_rundown(struct proc_dir_entry *);
+ 
+ extern spinlock_t proc_subdir_lock;
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 8175b49..f5105f4 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -47,11 +47,6 @@ enum {
+  * non-directory entries).
+  */
+ 
+-typedef	int (read_proc_t)(char *page, char **start, off_t off,
+-			  int count, int *eof, void *data);
+-typedef	int (write_proc_t)(struct file *file, const char __user *buffer,
+-			   unsigned long count, void *data);
+-
+ struct proc_dir_entry {
+ 	unsigned int low_ino;
+ 	umode_t mode;
+@@ -63,7 +58,6 @@ struct proc_dir_entry {
+ 	const struct file_operations *proc_fops;
+ 	struct proc_dir_entry *next, *parent, *subdir;
+ 	void *data;
+-	read_proc_t *read_proc;
+ 	atomic_t count;		/* use count */
+ 	atomic_t in_use;	/* number of callers into module in progress; */
+ 			/* negative -> it's going away RSN */
+@@ -154,11 +148,6 @@ static inline struct proc_dir_entry *proc_create(const char *name, umode_t mode,
+ {
+ 	return proc_create_data(name, mode, parent, proc_fops, NULL);
+ }
+-
+-extern __deprecated
+-struct proc_dir_entry *create_proc_read_entry(const char *name,
+-	umode_t mode, struct proc_dir_entry *base, 
+-	read_proc_t *read_proc, void *data);
+  
+ extern struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
+ 	struct proc_dir_entry *parent);
+@@ -192,11 +181,6 @@ static inline struct proc_dir_entry *proc_mkdir(const char *name,
+ static inline struct proc_dir_entry *proc_mkdir_mode(const char *name,
+ 	umode_t mode, struct proc_dir_entry *parent) { return NULL; }
+ 
+-static inline __deprecated
+-struct proc_dir_entry *create_proc_read_entry(const char *name,
+-	umode_t mode, struct proc_dir_entry *base, 
+-	read_proc_t *read_proc, void * data) { return NULL; }
+-
+ struct tty_driver;
+ static inline void proc_tty_register_driver(struct tty_driver *driver) {};
+ static inline void proc_tty_unregister_driver(struct tty_driver *driver) {};
 
