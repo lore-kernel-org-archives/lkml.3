@@ -1,28 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964833Ab3DKQoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:44:25 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58276 "EHLO
+	id S935138Ab3DKQpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:45:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58291 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932200Ab3DKQoX (ORCPT
+	by vger.kernel.org with ESMTP id S1762512Ab3DKQpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:44:23 -0400
-Date: Thu, 11 Apr 2013 17:44:21 +0100
+	Thu, 11 Apr 2013 12:45:09 -0400
+Date: Thu, 11 Apr 2013 17:45:02 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] regulator: ab8500-ext: Make the return type of
- ab8500_ext_regulator_exit() void
-Message-ID: <20130411164420.GI9243@opensource.wolfsonmicro.com>
-References: <1365653058.17060.0.camel@phoenix>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] regmap update for v3.9
+Message-ID: <20130411164502.GJ9243@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZGtad4bun3m+J/4B"
+	protocol="application/pgp-signature"; boundary="633Qqqc8nwy7lrt9"
 Content-Disposition: inline
-In-Reply-To: <1365653058.17060.0.camel@phoenix>
 X-Cookie: Your love life will be... interesting.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,36 +24,60 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ZGtad4bun3m+J/4B
+--633Qqqc8nwy7lrt9
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Apr 11, 2013 at 12:04:18PM +0800, Axel Lin wrote:
+The following changes since commit 31880c37c11e28cb81c70757e38392b42e695dc6:
 
-> ab8500_ext_regulator_exit() never fails.
+  Linux 3.9-rc6 (2013-04-07 20:49:54 -0700)
 
-Applied both, thanks.
+are available in the git repository at:
 
---ZGtad4bun3m+J/4B
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-v3.9-rc6
+
+for you to fetch changes up to 51a246aa5c0a14b3d34a5c6d3c9e271c784b127f:
+
+  regmap: Back out work buffer fix (2013-04-09 18:03:25 +0100)
+
+----------------------------------------------------------------
+regmap: Back out work buffer fix
+
+This reverts commit bc8ce4 (regmap: don't corrupt work buffer in
+_regmap_raw_write()) since it turns out that it can cause issues when
+taken in isolation from the other changes in -next that lead to its
+discovery.  On the basis that nobody noticed the problems for quite some
+time without that subsequent work let's drop it from v3.9.
+
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+----------------------------------------------------------------
+Mark Brown (1):
+      regmap: Back out work buffer fix
+
+ drivers/base/regmap/regmap.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--633Qqqc8nwy7lrt9
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRZuhZAAoJELSic+t+oim9JuoP/iI6/A0suyp3lRGcsp/NJD6t
-a2VbGT/zAzGmAVZX22f4oa3qUoyg+WDv+hq01ww11fpFKezVY6BTc8z+QGTDe4DJ
-iACLwISSjFQ+fhFx/OzyakpQyyFjry6zrzjc7iye07+HV9hHoE4pZG+zh2h0iFi7
-gyzD/dFzrxn7D7Q4KyeteZUUinV5TECJYtATpiEX24/o+aOEIqF9Q0LidVhC/D0M
-7F6uuNC7q5+XpiOBf1AX7z0MAw+0YZGgK0mKUPUT+V4ty910jQPx8s3pCw8XpA+9
-gtwUDRkojkfQbywsiOA+LKz7knwI6IIpMzZScetV0hEAUXwue1FI2rarK17C8SzF
-EobX//Bt6aNXYHx0m6+l1N9PxwI0Joy9vPUo4UM3Tqq7jfjgSw08pgLCfW0rVmm4
-IcPjmy2EPZvcJrbWWPDSIlsjlkM7jvveyIoqKTZMaY+4WqwfyZdzKTJcCyYnwOl7
-vdgji8i42xNk7yHqnJlFtuGIAgp0Z+UD7BDfFMzzTdvzs6rmgVGSV9zHSkbWC0Rk
-AY+AZrzpLmrHtXeBYliK2bHUz7qQMgHMuBMVZ09o54XzUQrMvT44Vaor2dFXQid7
-T68IH3TkrQ0R30fE0nlLGQGG5dWk/wAST+vig6Uyt4yzMLPpLNipIX95V+B17kfk
-aTi9vNoHNN/TCK43hRAm
-=ZcTs
+iQIcBAEBAgAGBQJRZuiFAAoJELSic+t+oim9F8kP/2mvDYlm5Yh/G/DPr5MoTJL5
+U5YnYWuhvYJzXuIZsKe1qlDqX9tMKrOVZo70LAhXQZb/Pxu6wJrnPnSHr4BgFlC8
+hHQdW/S99eS0/wY/lzGPlVGrhLRsIHo4n8pVpVm3HXEtWN76Iq1i/Roq/uO1GDBT
+pHMNmRqRx8kHI43govBHPdPufMNIDNI0avSeLHL1T/fmf+vMoK649UMeC9hifybu
+OxtLcMDZ2nKh7jiLofp5o2i4dw6ljYdWiRpVJy8BWHpsIV7sQYesVrTOwnexuruB
+GwFxUzAB68PuO+1Gk6FF+nfdsE934j6pCk6V5YPEOvG56/RpOZ7DFok8g9mFyaBg
+upTfYV8UGrj9llJg6xiKbfnEys3wDat0ZO6IpLpL2wLKYRiULwQIib5YO4bx7uqd
+9z84V8FEMKJXXMKnFm4sp05OyT4Hp9xfkeC4uFx4q2t/r7wH+H9yF/aTltFkaiM9
+gfh+zX1uy8usoaF0PQ0arr5haq3Wj4mrByVnBj0jOPr5zYjbSM4NelaTX+egsemP
+gLuBrYqjPgintwQOmx213h6+yd8PcWMTFcQmJibxGPa6D7iBxvfoxqNzkTp7r2QW
+owelYrKe4PX+S1g5ll4HDav8je6xt3ymBP2ZQMlanXlmUjO8sfTOvyZ6jrvPpm+Y
+rioHbVZR0g9nm/ID8HPp
+=hFjG
 -----END PGP SIGNATURE-----
 
---ZGtad4bun3m+J/4B--
+--633Qqqc8nwy7lrt9--
