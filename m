@@ -1,120 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937807Ab3DKAM4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 20:12:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:63687 "EHLO
+	id S937795Ab3DKAMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 20:12:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62439 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937220Ab3DKAGy (ORCPT
+	with ESMTP id S937364Ab3DKAGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Apr 2013 20:06:54 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
         linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 24/30] clocksource: exynos_mct: remove platform header dependency
-Date: Thu, 11 Apr 2013 02:05:06 +0200
-Message-Id: <1365638712-1028578-25-git-send-email-arnd@arndb.de>
+        linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: [PATCH 08/30] i2c: s3c2410: make header file local
+Date: Thu, 11 Apr 2013 02:04:50 +0200
+Message-Id: <1365638712-1028578-9-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
 References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:yITsnTetzWNAwMuBhmad716D+6eWHQ9kRd7NwkPGBEP
- T9BGm8OfycWmUa+NziDnbr8IY5Cfr7gKKUe3Uu82owu8GQ+KWJ
- yo4QZiOGsM0iBHZFYAwjHrnxVzpm+0OgWaPypxAgRUIApSnADe
- Qbc3ExcBbRLx32s6BbJ795Iopq9giCzSgZ1kB4m0H1AAqzMDe2
- XumST09s9mMws6CBOBIcONCnbH9FF/BFI4IcT/AvRJ1oWb7DlV
- PU14dIipy33Ja+5C81x4wOOl80/fmaa40PlRT7g9EviyKSYt/W
- 6VBIin5SNQwlRkaoerwbZoIWR0uHvLiUqCxqdshBAZ/yKjt351
- /muD2YgXjUUIYuIdUJYDQ2Cdp060LmlPcuuLuY6RTnZkqh4E9U
- xR2plmsB9f5gQ==
+X-Provags-ID: V02:K0:ydMwq0qQt8QSrUBAN9Pozrt64kfk2+Ude1psQqUGWxe
+ CEcAzudCW+5k8K70JWOFj1cECbcYw4B3pKAFngJ1fGjAom70aS
+ 4Zvjatwf6eY+VynARFzVOrnnbZQSRxxiuriFWUvtf1gkLr743f
+ 9rnpJYTAggUzBgitck1OdcDe25E8QrW1O5mAO7Nq5gKyow4u2d
+ 65SRfPHIZnN2rI4Ej/vOaArdMxxM0UwUhByzlvA67ZACO+KxMt
+ 8lScSLGlitXZNAUb3VAgvdQNJEdf8jIKUZEYRiPV4tXndPkHn9
+ ceqxX/ttfKSSlNezm1SB1swgfxlriS2KTDN7zJXydeCHXFTK7N
+ gC5o5EFbiWhESCAeN63+4/gkb+z/pVFePXoTQqbs/KwxWj6Qp+
+ j9uMFL2Y/R+Ww==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the non-DT case, the mct_init() function requires access
-to a couple of platform specific constants, but cannot include
-the header files in case we are building for multiplatform.
-
-This changes the interface to the platform so we pass all
-the necessary data as arguments to mct_init.
+No other file in the kernel besides i2c-s3c2410.c uses the current
+plat/regs-iic.h, so we can simply move the header file to live in the
+same directory as the driver, as a preparation to multiplatform builds.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: John Stultz <john.stultz@linaro.org>
+Cc: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>
+Cc: Ben Dooks <ben-linux@fluff.org>
 ---
- arch/arm/mach-exynos/common.c    |  2 +-
- arch/arm/mach-exynos/common.h    |  2 +-
- drivers/clocksource/exynos_mct.c | 21 ++++++---------------
- 3 files changed, 8 insertions(+), 17 deletions(-)
+ arch/arm/mach-s3c24xx/mach-rx1950.c                                    | 1 -
+ arch/arm/plat-samsung/devs.c                                           | 1 -
+ drivers/i2c/busses/i2c-s3c2410.c                                       | 3 ++-
+ .../include/plat/regs-iic.h => drivers/i2c/busses/i2c-s3c2410.h        | 0
+ 4 files changed, 2 insertions(+), 3 deletions(-)
+ rename arch/arm/plat-samsung/include/plat/regs-iic.h => drivers/i2c/busses/i2c-s3c2410.h (100%)
 
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index 87b2e06..8e85d6c 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -448,7 +448,7 @@ void __init exynos_init_time(void)
- 		exynos4_clk_init(NULL, !soc_is_exynos4210(), S5P_VA_CMU, readl(S5P_VA_CHIPID + 8) & 1);
- 		exynos4_clk_register_fixed_ext(xxti_f, xusbxti_f);
- #endif
--		mct_init();
-+		mct_init(S5P_VA_SYSTIMER, EXYNOS4_IRQ_MCT_G0, EXYNOS4_IRQ_MCT_L0, EXYNOS4_IRQ_MCT_L1);
- 	}
- }
+diff --git a/arch/arm/mach-s3c24xx/mach-rx1950.c b/arch/arm/mach-s3c24xx/mach-rx1950.c
+index e4d67a3..44ca018 100644
+--- a/arch/arm/mach-s3c24xx/mach-rx1950.c
++++ b/arch/arm/mach-s3c24xx/mach-rx1950.c
+@@ -56,7 +56,6 @@
+ #include <plat/cpu.h>
+ #include <plat/devs.h>
+ #include <plat/pm.h>
+-#include <plat/regs-iic.h>
+ #include <plat/regs-serial.h>
+ #include <plat/samsung-time.h>
  
-diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-index 9832e03..f426a5b 100644
---- a/arch/arm/mach-exynos/common.h
-+++ b/arch/arm/mach-exynos/common.h
-@@ -14,7 +14,7 @@
+diff --git a/arch/arm/plat-samsung/devs.c b/arch/arm/plat-samsung/devs.c
+index 4cf660e..78be9c0 100644
+--- a/arch/arm/plat-samsung/devs.c
++++ b/arch/arm/plat-samsung/devs.c
+@@ -62,7 +62,6 @@
+ #include <linux/platform_data/usb-s3c2410_udc.h>
+ #include <linux/platform_data/usb-ohci-s3c2410.h>
+ #include <plat/usb-phy.h>
+-#include <plat/regs-iic.h>
+ #include <plat/regs-serial.h>
+ #include <plat/regs-spi.h>
+ #include <linux/platform_data/spi-s3c64xx.h>
+diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+index f6b880b..d042ad0 100644
+--- a/drivers/i2c/busses/i2c-s3c2410.c
++++ b/drivers/i2c/busses/i2c-s3c2410.c
+@@ -42,9 +42,10 @@
  
- #include <linux/of.h>
+ #include <asm/irq.h>
  
--extern void mct_init(void);
-+void mct_init(void __iomem *base, int irq_g0, int irq_l0, int irq_l1);
- void exynos_init_time(void);
- extern unsigned long xxti_f, xusbxti_f;
+-#include <plat/regs-iic.h>
+ #include <linux/platform_data/i2c-s3c2410.h>
  
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index 020ba55..88ff404 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -26,11 +26,6 @@
- 
- #include <asm/arch_timer.h>
- #include <asm/localtimer.h>
--
--#include <plat/cpu.h>
--
--#include <mach/map.h>
--#include <mach/irqs.h>
- #include <asm/mach/time.h>
- 
- #define EXYNOS4_MCTREG(x)		(x)
-@@ -511,18 +506,14 @@ static void __init exynos4_timer_resources(struct device_node *np, void __iomem
- #endif /* CONFIG_LOCAL_TIMERS */
- }
- 
--void __init mct_init(void)
-+void __init mct_init(void __iomem *base, int irq_g0, int irq_l0, int irq_l1)
- {
--	if (soc_is_exynos4210()) {
--		mct_irqs[MCT_G0_IRQ] = EXYNOS4_IRQ_MCT_G0;
--		mct_irqs[MCT_L0_IRQ] = EXYNOS4_IRQ_MCT_L0;
--		mct_irqs[MCT_L1_IRQ] = EXYNOS4_IRQ_MCT_L1;
--		mct_int_type = MCT_INT_SPI;
--	} else {
--		panic("unable to determine mct controller type\n");
--	}
-+	mct_irqs[MCT_G0_IRQ] = irq_g0;
-+	mct_irqs[MCT_L0_IRQ] = irq_l0;
-+	mct_irqs[MCT_L1_IRQ] = irq_l1;
-+	mct_int_type = MCT_INT_SPI;
- 
--	exynos4_timer_resources(NULL, S5P_VA_SYSTIMER);
-+	exynos4_timer_resources(NULL, base);
- 	exynos4_clocksource_init();
- 	exynos4_clockevent_init();
- }
++#include "i2c-s3c2410.h"
++
+ /* Treat S3C2410 as baseline hardware, anything else is supported via quirks */
+ #define QUIRK_S3C2440		(1 << 0)
+ #define QUIRK_HDMIPHY		(1 << 1)
+diff --git a/arch/arm/plat-samsung/include/plat/regs-iic.h b/drivers/i2c/busses/i2c-s3c2410.h
+similarity index 100%
+rename from arch/arm/plat-samsung/include/plat/regs-iic.h
+rename to drivers/i2c/busses/i2c-s3c2410.h
 -- 
 1.8.1.2
 
