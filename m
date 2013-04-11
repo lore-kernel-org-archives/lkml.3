@@ -1,62 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161572Ab3DKPXR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:23:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22667 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935788Ab3DKPXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:23:16 -0400
-Date: Thu, 11 Apr 2013 11:23:08 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Message-ID: <1365693788-djsd2ymu-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <20130411134915.GH16732@two.firstfloor.org>
-References: <51662D5B.3050001@hitachi.com>
- <20130411134915.GH16732@two.firstfloor.org>
-Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
- memory error on dirty cache selectable
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <20130411134915.GH16732@two.firstfloor.org>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S936494Ab3DKP1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:27:12 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:47900 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S936406Ab3DKP1I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 11:27:08 -0400
+From: Andrew Murray <Andrew.Murray@arm.com>
+To: rob.herring@calxeda.com
+Cc: jgunthorpe@obsidianresearch.com, linux@arm.linux.org.uk,
+        siva.kallam@samsung.com, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, jg1.han@samsung.com,
+        Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        bhelgaas@google.com, suren.reddy@samsung.com,
+        linux-arm-kernel@lists.infradead.org, monstr@monstr.eu,
+        benh@kernel.crashing.org, paulus@samba.org, grant.likely@secretlab.ca,
+        thomas.petazzoni@free-electrons.com, thierry.reding@avionic-design.de,
+        thomas.abraham@linaro.org, arnd@arndb.de, linus.walleij@linaro.org,
+        Andrew Murray <Andrew.Murray@arm.com>
+Subject: [PATCH v6 3/3] of/pci: mips: convert to common of_pci_range_parser
+Date: Thu, 11 Apr 2013 16:26:09 +0100
+Message-Id: <1365693969-23907-4-git-send-email-Andrew.Murray@arm.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1365693969-23907-1-git-send-email-Andrew.Murray@arm.com>
+References: <1365693969-23907-1-git-send-email-Andrew.Murray@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 03:49:16PM +0200, Andi Kleen wrote:
-> > As a result, if the dirty cache includes user data, the data is lost,
-> > and data corruption occurs if an application uses old data.
-> 
-> The application cannot use old data, the kernel code kills it if it
-> would do that. And if it's IO data there is an EIO triggered.
-> 
-> iirc the only concern in the past was that the application may miss
-> the asynchronous EIO because it's cleared on any fd access. 
-> 
-> This is a general problem not specific to memory error handling, 
-> as these asynchronous IO errors can happen due to other reason
-> (bad disk etc.) 
-> 
-> If you're really concerned about this case I think the solution
-> is to make the EIO more sticky so that there is a higher chance
-> than it gets returned.  This will make your data much more safe,
-> as it will cover all kinds of IO errors, not just the obscure memory
-> errors.
+This patch converts the pci_load_of_ranges function to use the new common
+of_pci_range_parser.
 
-I'm interested in this topic, and in previous discussion, what I was said
-is that we can't expect user applications to change their behaviors when
-they get EIO, so globally changing EIO's stickiness is not a great approach.
-I'm working on a new pagecache tag based mechanism to solve this.
-But it needs time and more discussions.
-So I guess Tanino-san suggests giving up on dirty pagecache errors
-as a quick solution.
+Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Reviewed-by: Rob Herring <rob.herring@calxeda.com>
+---
+ arch/mips/pci/pci.c |   50 ++++++++++++++++----------------------------------
+ 1 files changed, 16 insertions(+), 34 deletions(-)
 
-Thanks,
-Naoya
+diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
+index 0872f12..bee49a4 100644
+--- a/arch/mips/pci/pci.c
++++ b/arch/mips/pci/pci.c
+@@ -122,51 +122,33 @@ static void pcibios_scanbus(struct pci_controller *hose)
+ #ifdef CONFIG_OF
+ void pci_load_of_ranges(struct pci_controller *hose, struct device_node *node)
+ {
+-	const __be32 *ranges;
+-	int rlen;
+-	int pna = of_n_addr_cells(node);
+-	int np = pna + 5;
++	struct of_pci_range_range range;
++	struct of_pci_range_parser parser;
++	u32 res_type;
+ 
+ 	pr_info("PCI host bridge %s ranges:\n", node->full_name);
+-	ranges = of_get_property(node, "ranges", &rlen);
+-	if (ranges == NULL)
+-		return;
+ 	hose->of_node = node;
+ 
+-	while ((rlen -= np * 4) >= 0) {
+-		u32 pci_space;
++	if (of_pci_range_parser(&parser, node))
++		return;
++
++	for_each_of_pci_range(&parser, &range) {
+ 		struct resource *res = NULL;
+-		u64 addr, size;
+-
+-		pci_space = be32_to_cpup(&ranges[0]);
+-		addr = of_translate_address(node, ranges + 3);
+-		size = of_read_number(ranges + pna + 3, 2);
+-		ranges += np;
+-		switch ((pci_space >> 24) & 0x3) {
+-		case 1:		/* PCI IO space */
++
++		res_type = range.flags & IORESOURCE_TYPE_BITS;
++		if (res_type == IORESOURCE_IO) {
+ 			pr_info("  IO 0x%016llx..0x%016llx\n",
+-					addr, addr + size - 1);
++				range.addr, range.addr + range.size - 1);
+ 			hose->io_map_base =
+-				(unsigned long)ioremap(addr, size);
++				(unsigned long)ioremap(range.addr, range.size);
+ 			res = hose->io_resource;
+-			res->flags = IORESOURCE_IO;
+-			break;
+-		case 2:		/* PCI Memory space */
+-		case 3:		/* PCI 64 bits Memory space */
++		} else if (res_type == IORESOURCE_MEM) {
+ 			pr_info(" MEM 0x%016llx..0x%016llx\n",
+-					addr, addr + size - 1);
++				range.addr, range.addr + range.size - 1);
+ 			res = hose->mem_resource;
+-			res->flags = IORESOURCE_MEM;
+-			break;
+-		}
+-		if (res != NULL) {
+-			res->start = addr;
+-			res->name = node->full_name;
+-			res->end = res->start + size - 1;
+-			res->parent = NULL;
+-			res->sibling = NULL;
+-			res->child = NULL;
+ 		}
++		if (res != NULL)
++			of_pci_range_to_resource(&range, node, res);
+ 	}
+ }
+ #endif
+-- 
+1.7.0.4
+
