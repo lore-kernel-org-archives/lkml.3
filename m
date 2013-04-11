@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab3DKUYy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:24:54 -0400
-Received: from mail-qc0-f201.google.com ([209.85.216.201]:52645 "EHLO
-	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753798Ab3DKUYx (ORCPT
+	id S1753702Ab3DKUZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:25:45 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:49027 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081Ab3DKUZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:24:53 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: linux-fbdev@vger.kernel.org
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-kernel@vger.kernel.org, Doug Anderson <dianders@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH v2] backlight: platform_lcd: introduce probe callback
-Date: Thu, 11 Apr 2013 13:24:50 -0700
-Message-Id: <1365711890-15168-1-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <1365705391-23181-1-git-send-email-abrestic@chromium.org>
-References: <1365705391-23181-1-git-send-email-abrestic@chromium.org>
+	Thu, 11 Apr 2013 16:25:42 -0400
+Date: Thu, 11 Apr 2013 13:25:40 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-usb@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 10/30] usb: exynos: do not include plat/usb-phy.h
+Message-ID: <20130411202540.GA32047@kroah.com>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+ <1365638712-1028578-11-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365638712-1028578-11-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platform LCD devices may need to do some device-specific
-initialization before they can be used (regulator or GPIO setup,
-for example), but currently the driver does not support any way of
-doing this.  This patch adds a probe() callback to plat_lcd_data
-which platform LCD devices can set to indicate that device-specific
-initialization is needed.
+On Thu, Apr 11, 2013 at 02:04:52AM +0200, Arnd Bergmann wrote:
+> The definitions have moved to include/linux/usb/samsung-usb-phy.h,
+> and plat/usb-phy.h is unavailable from drivers in a multiplatform
+> configuration.
+> 
+> Also fix up the plat/usb-phy.h header file to use the definitions
+> from the new header instead of providing a separate copy.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-usb@vger.kernel.org
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> ---
+>  arch/arm/mach-exynos/setup-usb-phy.c         | 8 ++++----
+>  arch/arm/mach-s3c64xx/setup-usb-phy.c        | 4 ++--
+>  arch/arm/mach-s5pv210/setup-usb-phy.c        | 4 ++--
+>  arch/arm/plat-samsung/include/plat/usb-phy.h | 5 +----
+>  drivers/usb/host/ehci-s5p.c                  | 1 -
+>  drivers/usb/host/ohci-exynos.c               | 1 -
+>  6 files changed, 9 insertions(+), 14 deletions(-)
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- drivers/video/backlight/platform_lcd.c | 6 ++++++
- include/video/platform_lcd.h           | 1 +
- 2 files changed, 7 insertions(+)
+This patch doesn't apply to my usb-next tree due to the other changes in
+these files.
 
-diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
-index 17a6b83..f46180e 100644
---- a/drivers/video/backlight/platform_lcd.c
-+++ b/drivers/video/backlight/platform_lcd.c
-@@ -86,6 +86,12 @@ static int platform_lcd_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
-+	if (pdata->probe) {
-+		err = pdata->probe(pdata);
-+		if (err)
-+			return err;
-+	}
-+
- 	plcd = devm_kzalloc(&pdev->dev, sizeof(struct platform_lcd),
- 			    GFP_KERNEL);
- 	if (!plcd) {
-diff --git a/include/video/platform_lcd.h b/include/video/platform_lcd.h
-index ad3bdfe..23864b2 100644
---- a/include/video/platform_lcd.h
-+++ b/include/video/platform_lcd.h
-@@ -15,6 +15,7 @@ struct plat_lcd_data;
- struct fb_info;
- 
- struct plat_lcd_data {
-+	int	(*probe)(struct plat_lcd_data *);
- 	void	(*set_power)(struct plat_lcd_data *, unsigned int power);
- 	int	(*match_fb)(struct plat_lcd_data *, struct fb_info *);
- };
--- 
-1.8.1.3
+Care to refresh it and resend it?  I'll be glad to apply it then.
 
+thanks,
+
+greg k-h
