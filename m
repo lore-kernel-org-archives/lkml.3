@@ -1,98 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933627Ab3DKVJD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:09:03 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:42757 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753808Ab3DKVI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:08:58 -0400
-Date: Thu, 11 Apr 2013 16:08:55 -0500
-From: Robin Holt <holt@sgi.com>
-To: Russ Anderson <rja@sgi.com>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Robin Holt <holt@sgi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot
- to boot cpu.)
-Message-ID: <20130411210855.GJ3658@sgi.com>
-References: <20130408155701.GB19974@gmail.com>
- <5162EC1A.4050204@zytor.com>
- <20130408165916.GA3672@sgi.com>
- <20130410111620.GB29752@gmail.com>
- <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
- <20130411053106.GA9042@drongo>
- <5166B05E.8010904@linux.vnet.ibm.com>
- <20130411142301.GB27990@sgi.com>
- <5166CC87.5060301@linux.vnet.ibm.com>
- <20130411200820.GA10167@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411200820.GA10167@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S936508Ab3DKVI1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:08:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28463 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935682Ab3DKUtL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 16:49:11 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=4o32hI98Tu0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=UUfvP-JnFb4A:10 a=PtDNVHqPAAAA:8 a=VwQbUJbxAAAA:8 a=DfNHnWVPAAAA:8 a=SOq6UgPBAAAA:8 a=5lgaCMr79_1aLC8ADEQA:9 a=wYE_KDyynt4A:10 a=lBRciGGoxdUA:10 a=5y_flRe8UpcA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130411202604.189219756@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 11 Apr 2013 16:26:52 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [ 109/171 ] userns: Dont allow creation if the user is chrooted
+References: <20130411202503.783159048@goodmis.org>
+Content-Disposition: inline; filename=0109-userns-Don-t-allow-creation-if-the-user-is-chrooted.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 03:08:20PM -0500, Russ Anderson wrote:
-> On Thu, Apr 11, 2013 at 08:15:27PM +0530, Srivatsa S. Bhat wrote:
-> > On 04/11/2013 07:53 PM, Russ Anderson wrote:
-> > > On Thu, Apr 11, 2013 at 06:15:18PM +0530, Srivatsa S. Bhat wrote:
-> > >>
-> > >> One more thing we have to note is that, there are 4 notifiers for taking a
-> > >> CPU offline:
-> > >>
-> > >> CPU_DOWN_PREPARE
-> > >> CPU_DYING
-> > >> CPU_DEAD
-> > >> CPU_POST_DEAD
-> > >>
-> > >> The first can be run in parallel as mentioned above. The second is run in
-> > >> parallel in the stop_machine() phase as shown in Russ' patch. But the third
-> > >> and fourth set of notifications all end up running only on CPU0, which will
-> > >> again slow down things.
-> > > 
-> > > In my testing the third and fourth set were a small part of the overall
-> > > time.  Less than 10%, with cpu notifiers 90+% of the time.
-> > 
-> > *All* of them are cpu notifiers! All of them invoke __cpu_notify() internally.
-> > So how did you differentiate between them and find out that the third and
-> > fourth sets take less time?
-> 
-> I reran a test on a 1024 cpu system, using my test patch to only call
-> __stop_machine() once.  Added printks to show the kernel timestamp
-> at various points.
-> 
-> When calling disable_nonboot_cpus() and enable_nonboot_cpus() just after
-> booting the system:
->  The loop calling __cpu_notify(CPU_DOWN_PREPARE) took 376.6 seconds.
->  The loop calling cpu_notify_nofail(CPU_DEAD) took 8.1 seconds.
-> 
-> My guess is that notifiers do more work in the CPU_DOWN_PREPARE case.
-> 
-> I also added a loop calling a new notifier (CPU_TEST) which none of
-> notifiers would recognize, to measure the time it took to spin through
-> the call chain without the notifiers doing any work.  It took
-> 0.0067 seconds.
-> 
-> On the actual reboot, as the system was shutting down:
->  The loop calling __cpu_notify(CPU_DOWN_PREPARE) took 333.8 seconds.
->  The loop calling cpu_notify_nofail(CPU_DEAD) took 2.7 seconds.
+3.6.11.2 stable review patch.
+If anyone has any objections, please let me know.
 
-How about if you take the notifier_call_chain function copy it
-to kernel/sys.c, and time each notifier_call() callout individually.
+------------------
 
-Robin
+From: "Eric W. Biederman" <ebiederm@xmission.com>
+
+[ Upstream commit 3151527ee007b73a0ebd296010f1c0454a919c7d ]
+
+Guarantee that the policy of which files may be access that is
+established by setting the root directory will not be violated
+by user namespaces by verifying that the root directory points
+to the root of the mount namespace at the time of user namespace
+creation.
+
+Changing the root is a privileged operation, and as a matter of policy
+it serves to limit unprivileged processes to files below the current
+root directory.
+
+For reasons of simplicity and comprehensibility the privilege to
+change the root directory is gated solely on the CAP_SYS_CHROOT
+capability in the user namespace.  Therefore when creating a user
+namespace we must ensure that the policy of which files may be access
+can not be violated by changing the root directory.
+
+Anyone who runs a processes in a chroot and would like to use user
+namespace can setup the same view of filesystems with a mount
+namespace instead.  With this result that this is not a practical
+limitation for using user namespaces.
+
+Cc: stable@vger.kernel.org
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+Reported-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ fs/namespace.c            |   25 +++++++++++++++++++++++++
+ include/linux/fs_struct.h |    2 ++
+ kernel/user_namespace.c   |    9 +++++++++
+ 3 files changed, 36 insertions(+)
+
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 7bdf790..c48b0d3 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -2681,3 +2681,28 @@ bool our_mnt(struct vfsmount *mnt)
+ {
+ 	return check_mnt(real_mount(mnt));
+ }
++
++bool current_chrooted(void)
++{
++	/* Does the current process have a non-standard root */
++	struct path ns_root;
++	struct path fs_root;
++	bool chrooted;
++
++	/* Find the namespace root */
++	ns_root.mnt = &current->nsproxy->mnt_ns->root->mnt;
++	ns_root.dentry = ns_root.mnt->mnt_root;
++	path_get(&ns_root);
++	while (d_mountpoint(ns_root.dentry) && follow_down_one(&ns_root))
++		;
++
++	get_fs_root(current->fs, &fs_root);
++
++	chrooted = !path_equal(&fs_root, &ns_root);
++
++	path_put(&fs_root);
++	path_put(&ns_root);
++
++	return chrooted;
++}
++
+diff --git a/include/linux/fs_struct.h b/include/linux/fs_struct.h
+index 003dc0f..961cdaa 100644
+--- a/include/linux/fs_struct.h
++++ b/include/linux/fs_struct.h
+@@ -51,4 +51,6 @@ static inline void get_fs_root_and_pwd(struct fs_struct *fs, struct path *root,
+ 	spin_unlock(&fs->lock);
+ }
+ 
++extern bool current_chrooted(void);
++
+ #endif /* _LINUX_FS_STRUCT_H */
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 8660231..a74dc5b 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -39,6 +39,15 @@ int create_user_ns(struct cred *new)
+ 	kuid_t owner = new->euid;
+ 	kgid_t group = new->egid;
+ 
++	/*
++	 * Verify that we can not violate the policy of which files
++	 * may be accessed that is specified by the root directory,
++	 * by verifing that the root directory is at the root of the
++	 * mount namespace which allows all files to be accessed.
++	 */
++	if (current_chrooted())
++		return -EPERM;
++
+ 	/* The creator needs a mapping in the parent user namespace
+ 	 * or else we won't be able to reasonably tell userspace who
+ 	 * created a user_namespace.
+-- 
+1.7.10.4
+
+
