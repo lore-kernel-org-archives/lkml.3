@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937209Ab3DJX6E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 19:58:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57563 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934950Ab3DJX6C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 19:58:02 -0400
-Date: Wed, 10 Apr 2013 16:58:01 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Derek Basehore <dbasehore@chromium.org>
-Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        linux-kernel@vger.kernel.org, Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: Re: [PATCH] Don't disable hpet emulation on suspend
-Message-Id: <20130410165801.ec54e0fdb27e11724f5646bc@linux-foundation.org>
-In-Reply-To: <1365554173-24475-1-git-send-email-dbasehore@chromium.org>
-References: <1365554173-24475-1-git-send-email-dbasehore@chromium.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S937242Ab3DKADr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 20:03:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44055 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935048Ab3DKADp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 20:03:45 -0400
+Date: Wed, 10 Apr 2013 20:03:42 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk
+Subject: Re: NULL pointer due to malformed bcache bio
+Message-ID: <20130411000342.GA19451@redhat.com>
+References: <20130410205439.GA18092@redhat.com>
+ <20130410224914.GD30871@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130410224914.GD30871@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  9 Apr 2013 17:36:13 -0700 Derek Basehore <dbasehore@chromium.org> wrote:
+On Wed, Apr 10 2013 at  6:49pm -0400,
+Kent Overstreet <koverstreet@google.com> wrote:
 
-> There's a bug where rtc alarms are ignored after the rtc cmos suspends but
-> before the system finishes suspend. Since hpet emulation is disabled and it
-> still handles the interrupts, a wake event is never registered which is done
-> from the rtc layer. This reverts an earlier commit which disables hpet
-> emulation. To fix the problem mentioned in that commit, the hpet_rtc_timer_init
-> function is called directly on resume.
+> On Wed, Apr 10, 2013 at 04:54:40PM -0400, Mike Snitzer wrote:
+> > Hey,
+> > 
+> > So DM core clearly needs to be more defensive about the possibility for
+> > a NULL return from bio_alloc_bioset() given I'm hitting a NULL pointer
+> > in DM's alloc_tio() because nr_iovecs=512.  bio_alloc_bioset()'s call to
+> > bvec_alloc() only supports nr_iovecs up to BIO_MAX_PAGES (256).
+> > 
+> > Seems bcache should be using bio_get_nr_vecs() or something else?
+> > 
+> > But by using a bcache bucket size of 2MB, with the bcache staged in
+> > Jens' for-next, I've caused bcache to issue bios with nr_iovecs=512:
 > 
-> This reverts commit d1b2efa83fbf7b33919238fa29ef6ab935820103.
-> 
-> ...
->
-> --- a/drivers/rtc/rtc-cmos.c
-> +++ b/drivers/rtc/rtc-cmos.c
-> @@ -804,9 +804,8 @@ static int cmos_suspend(struct device *dev)
->  			mask = RTC_IRQMASK;
->  		tmp &= ~mask;
->  		CMOS_WRITE(tmp, RTC_CONTROL);
-> +		hpet_mask_rtc_irq_bit(mask);
->  
-> -		/* shut down hpet emulation - we don't need it for alarm */
-> -		hpet_mask_rtc_irq_bit(RTC_PIE|RTC_AIE|RTC_UIE);
->  		cmos_checkintr(cmos, tmp);
->  	}
->  	spin_unlock_irq(&rtc_lock);
-> @@ -870,6 +869,7 @@ static int cmos_resume(struct device *dev)
->  			rtc_update_irq(cmos->rtc, 1, mask);
->  			tmp &= ~RTC_AIE;
->  			hpet_mask_rtc_irq_bit(RTC_AIE);
-> +			hpet_rtc_timer_init();
->  		} while (mask & RTC_AIE);
->  		spin_unlock_irq(&rtc_lock);
->  	}
+> Argh. Why is dm using bi_max_vecs instead of bi_vcnt? I could hack
+> around this in bcache but I think dm is doing the wrong thing here.
 
-huh, so it's been broken for three years.
+But even bio_alloc_bioset() sets: bio->bi_max_vecs = nr_iovecs;
+And bio_clone_bioset() calls bio_alloc_bioset() with bio->bi_max_vecs.
+Similarly, __bio_clone() is using bi_max_vecs when cloning the bi_io_vec.
+So I'm missing why DM is doing the wrong thing.
 
-This calls hpet_rtc_timer_init() under spin_lock_irq() which is OK with
-the current implementation.  And things should be OK when
-CONFIG_HPET_EMULATE_RTC=n.
+> Unless I've missed something in my testing (and bcache's BIO_MAX_PAGES
+> check isn't quite right, actually) bcache _is_ splitting its bios
+> whenever bio_segments(bio) > BIO_MAX_PAGES, it's only bi_max_vecs that's
+> potentially > BIO_MAX_PAGES.
 
-Maxim, can you please review/test/etc?
+OK, but why drive bi_max_vecs larger than BIO_MAX_PAGES?
