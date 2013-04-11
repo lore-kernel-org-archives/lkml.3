@@ -1,201 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161600Ab3DKI50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 04:57:26 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:25225 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933462Ab3DKI5Y (ORCPT
+	id S1752831Ab3DKI6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 04:58:01 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:34226 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab3DKI54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 04:57:24 -0400
-Message-ID: <51667AE9.6030209@huawei.com>
-Date: Thu, 11 Apr 2013 16:57:13 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 11 Apr 2013 04:57:56 -0400
+Date: Thu, 11 Apr 2013 10:57:52 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: Russ Anderson <rja@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
+Message-ID: <20130411085751.GD11824@gmail.com>
+References: <5162EC1A.4050204@zytor.com>
+ <20130408165916.GA3672@sgi.com>
+ <20130410111620.GB29752@gmail.com>
+ <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
+ <20130410152911.GA3011@sgi.com>
+ <20130410165934.GB21951@gmail.com>
+ <20130410171420.GF3658@sgi.com>
+ <20130410172236.GE21951@gmail.com>
+ <20130410175519.GG3658@sgi.com>
+ <20130410190003.GH3658@sgi.com>
 MIME-Version: 1.0
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-CC: <linux-kernel@vger.kernel.org>, <tj@kernel.org>
-Subject: Re: [RFC PATCH v2 cpuset] Don't pass offlined cpus to partition_sched_domains()
-References: <1364886990.5859.12.camel@ThinkPad-T5421.cn.ibm.com>  <515BF737.7070105@huawei.com>  <1365414692.2753.83.camel@ThinkPad-T5421.cn.ibm.com> <1365501570.3597.64.camel@ThinkPad-T5421.cn.ibm.com>
-In-Reply-To: <1365501570.3597.64.camel@ThinkPad-T5421.cn.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130410190003.GH3658@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/9 17:59, Li Zhong wrote:
-> Hi Zefan, 
-> 
-> I did some test today, enabling cpuset and online/offline the cpus. It
-> caused NULL address dereferencing in get_group(). After adding some
-> debugging code, it seems that it is caused by using some offlined cpus
-> as the parameter to partition_sched_domains(). More details below:
-> 
-> ===================
-> following is printed in build_sched_domain(): 
-> @@ -6476,6 +6486,14 @@ struct sched_domain *build_sched_domain(struct
-> sched_domain_topology_level *tl,
->                 return child;
-> 
->         cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
-> +       if (cpumask_empty(sched_domain_span(sd)))
-> +               printk("lz empty domain %p, mask %pS\n", sd, tl->mask);
-> +       char cpulist[128];
-> +       cpumask_scnprintf(cpulist, sizeof(cpulist), cpu_map);
-> +       printk("lz cpu_map %s\n", cpulist);
-> +       cpumask_scnprintf(cpulist, sizeof(cpulist), tl->mask(cpu));
-> +       printk("lz tl->mask(%d) %pS %s\n",cpu, tl->mask, cpulist);
-> +
->         if (child) {
->                 sd->level = child->level + 1;
->                 sched_domain_level_max = max(sched_domain_level_max,
-> sd->level);
-> 
-> [  232.714502] lz empty domain c0000001f73c0000, mask cpu_smt_mask
-> +0x0/0x10
-> [  232.714515] lz cpu_map 1-2,7,13-15
-> [  232.714521] lz tl->mask(1) cpu_smt_mask+0x0/0x10
-> [  232.714529] lz cpu_map 1-2,7,13-15
-> [  232.714536] lz tl->mask(1) cpu_cpu_mask+0x0/0x10 2,7,13-15
-> [  232.714544] lz cpu_map 1-2,7,13-15
-> [  232.714551] lz tl->mask(1) sd_numa_mask+0x0/0x10 2,7,13-15
-> [  232.714558] lz cpu_map 1-2,7,13-15
-> [  232.714565] lz tl->mask(2) cpu_smt_mask+0x0/0x10 2
-> ===================
-> 
-> It seems that one cpu (#1 of the above) could be taken offline in
-> cpuset_hotplug_workfn(), after top_cpuset's allowed cpus changed and the
-> propagated work function finished. But generate_sched_domains(), which
-> uses the cpuset information, still considers this cpu (#1) valid, and
-> passes it down in the cpumask to partition_sched_domains(). Then we have
-> an empty sd as the above. 
-> 
 
-Thanks for the test and analysis!
+* Robin Holt <holt@sgi.com> wrote:
 
-So the bug was caused when the cpuset async cpuset handling hasn't been
-finished, and at this time user triggered another hotplug operation, right?
-
-Then I think we should wait cpuset to finish its work before starting
-a new hotplug operation.
-
-This should fix the bug you observed, and it should also fix another bug,
-that the 2nd schedule_work(&cpuset_hotplug_work) returns true, and so
-the root cpuset.cpus won't be updated.
-
-Could you test this patch?
-
---
-diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-index ccd1de8..ece226c 100644
---- a/include/linux/cpuset.h
-+++ b/include/linux/cpuset.h
-@@ -118,6 +118,8 @@ static inline void set_mems_allowed(nodemask_t nodemask)
- 	task_unlock(current);
- }
- 
-+extern void cpuset_flush_hotplug_work(void);
-+
- #else /* !CONFIG_CPUSETS */
- 
- static inline int cpuset_init(void) { return 0; }
-@@ -232,6 +234,10 @@ static inline bool put_mems_allowed(unsigned int seq)
- 	return true;
- }
- 
-+static inline void cpuset_flush_hotplug_work(void)
-+{
-+}
-+
- #endif /* !CONFIG_CPUSETS */
- 
- #endif /* _LINUX_CPUSET_H */
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index b5e4ab2..283a993 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -19,6 +19,7 @@
- #include <linux/mutex.h>
- #include <linux/gfp.h>
- #include <linux/suspend.h>
-+#include <linux/cpuset.h>
- 
- #include "smpboot.h"
- 
-@@ -278,6 +279,13 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 	if (!cpu_online(cpu))
- 		return -EINVAL;
- 
-+	/*
-+	 * cpuset handles cpu/memory hotplug asynchronously, so it's possible
-+	 * that cpuset hasn't finished it's hotplug work for the previous
-+	 * hotplug operation.
-+	 */
-+	cpuset_flush_hotplug_work();
-+
- 	cpu_hotplug_begin();
- 
- 	err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index c55763b..9bb5018 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2141,6 +2141,14 @@ static void schedule_cpuset_propagate_hotplug(struct cpuset *cs)
- }
- 
- /**
-+ * cpuset_flush_hotplug_work() - wait cpuset hotplug work to finish
-+ */
-+void cpuset_flush_hotplug_work(void)
-+{
-+	flush_work(&cpuset_hotplug_work);
-+}
-+
-+/**
-  * cpuset_hotplug_workfn - handle CPU/memory hotunplug for a cpuset
-  *
-  * This function is called after either CPU or memory configuration has
-@@ -2226,6 +2234,8 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
- 
- void cpuset_update_active_cpus(bool cpu_online)
- {
-+	bool queued;
-+
- 	/*
- 	 * We're inside cpu hotplug critical region which usually nests
- 	 * inside cgroup synchronization.  Bounce actual hotplug processing
-@@ -2237,7 +2247,8 @@ void cpuset_update_active_cpus(bool cpu_online)
- 	 * cpuset_hotplug_workfn() will rebuild it as necessary.
- 	 */
- 	partition_sched_domains(1, NULL, NULL);
--	schedule_work(&cpuset_hotplug_work);
-+	queued = schedule_work(&cpuset_hotplug_work);
-+	WARN_ON(queued);
- }
- 
- #ifdef CONFIG_MEMORY_HOTPLUG
-
-
-> With the empty domain, in get_group(),
->         if (child)
->                 cpu = cpumask_first(sched_domain_span(child));
+> I had the machine booted as 512 cpus.
+> I tweaked the kernel like this:
 > 
-> this might cause the cpu to be returned a value >= nr_cpu_ids, then
-> cause bad dereference with the wrong cpu value in the later code. 
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index 39c9c4a..b42bd4f 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -368,8 +368,10 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
+>   */
+>  void kernel_restart(char *cmd)
+>  {
+> -       kernel_restart_prepare(cmd);
+> +       // kernel_restart_prepare(cmd);
+>         disable_nonboot_cpus();
+> +       enable_nonboot_cpus();
+> +       return;
+>         if (!cmd)
+>                 printk(KERN_EMERG "Restarting system.\n");
+>         else
 > 
-> This following code tries to fix the issue by anding the cpu_active_mask
-> at the end of generate_sched_domains() for each partition. This might
-> result the partiton (set of domains) not the best one, but we know
-> another rebuild (caused by the cpu offline in the middle of
-> cpuset_hotplug_workfn()) is on the way. 
+> perf record -a /sbin/reboot -d -f -n
 > 
-> Also it seems that generate_sched_domains() needs be called together
-> with partition_sched_domains(), under the hotplug lock. Or similarly,
-> one cpu might be taken offline while doing generate_sched_domains(), and
-> cause the above issue. 
-> 
-> Or maybe we could put the whole cpuset_hotplug_workfn() into the hotplug
-> lock? 
+> The top of 'perf report' has:
+> Events: 14M cycles
+>     22.58%          swapper  [kernel.kallsyms]           [k] update_cfs_rq_blocked_load
+>     10.52%          swapper  [kernel.kallsyms]           [k] load_balance
+>      4.96%          swapper  [kernel.kallsyms]           [k] ktime_get
+>      4.12%          swapper  [kernel.kallsyms]           [k] update_blocked_averages
+>      3.55%          swapper  [kernel.kallsyms]           [k] idle_cpu
+>      1.97%          swapper  [kernel.kallsyms]           [k] uv_read_rtc
+>      0.98%          swapper  [kernel.kallsyms]           [k] rcu_process_gp_end
+>      0.84%          swapper  [kernel.kallsyms]           [k] apic_timer_interrupt
+>      0.84%          swapper  [kernel.kallsyms]           [k] __lock_text_start
+>      0.84%          swapper  [kernel.kallsyms]           [k] _raw_spin_lock_irqsave
+>      0.73%          swapper  [kernel.kallsyms]           [k] native_safe_halt
+>      0.56%          swapper  [kernel.kallsyms]           [k] rcu_check_callbacks
+>      0.56%          swapper  [kernel.kallsyms]           [k] native_write_msr_safe
+>      0.44%          swapper  [kernel.kallsyms]           [k] cpumask_next_and
+>      0.42%           reboot  [kernel.kallsyms]           [k] kmem_cache_alloc_node
 
+Ok, so it looks profilable.
+
+The result above is not surprising: most CPUs sit in idle and don't do anything, 
+while the loop goes on, right?
+
+The interesting thing to profile would be the parallel bring-down, with the 
+simplest global lock solution you mentioned. In that case most CPUs should be 
+doing 'something' all the time - maybe spinning on the lock, maybe something else, 
+right?
+
+Thanks,
+
+	Ingo
