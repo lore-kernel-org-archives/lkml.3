@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934344Ab3DKQhO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:37:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44731 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932544Ab3DKQhM (ORCPT
+	id S934577Ab3DKQhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:37:21 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:48896 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932147Ab3DKQhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:37:12 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>,
+	Thu, 11 Apr 2013 12:37:18 -0400
+X-AuditID: cbfee61a-b7fa86d0000045ae-46-5166e6bc59bc
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+To: broonie@opensource.wolfsonmicro.com
+Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        devicetree-discuss@lists.ozlabs.org,
         Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/2] mfd: wm8994: Add device ID data to WM8994 OF device IDs
-Date: Thu, 11 Apr 2013 17:37:02 +0100
-Message-Id: <1365698223-4684-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+Subject: [PATCH] regulator: wm8994: Use GPIO parsed from DT when registering
+ regulators
+Date: Thu, 11 Apr 2013 18:36:57 +0200
+Message-id: <1365698217-17771-1-git-send-email-s.nawrocki@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <20130411162315.GF9243@opensource.wolfsonmicro.com>
+References: <20130411162315.GF9243@opensource.wolfsonmicro.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpiluLIzCtJLcpLzFFi42I5/e+xoO6eZ2mBBl+3KFj8m32KzeLA7Ies
+	Fmeb3rBbXN41h83i8Jt2VgdWj/MzFjJ6vJz4m82jb8sqRo/Pm+QCWKK4bFJSczLLUov07RK4
+	Mt7OnMFc0M9R8eG4WgPje7YuRk4OCQETiclzXrJC2GISF+6tB4pzcQgJTGeUuNJ1mQXC6WCS
+	uPl1LjNIFZuAoUTv0T7GLkYODhEBdYmtx3VAapgFJjJK7Dr7lBGkRlggUuLh4R/sIDUsAqoS
+	N8/zgoR5BdwkvrZ8BGuVEFCQmDPJBiTMKeAgsaJ3CROILSRgLzFz1kzGCYy8CxgZVjGKphYk
+	FxQnpeca6hUn5haX5qXrJefnbmIEh8wzqR2MKxssDjEKcDAq8fCeaEgNFGJNLCuuzD3EKMHB
+	rCTCG7M3LVCINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMHp1QD
+	48X6fXnJz7knRZ/o+lVw7sFS1bizbzZ5x7RdPfrgRuWKF7t+33+sEhWwQGqKjuKKdSeunRC3
+	Tu5Ueqe5bMEtsZSLK6Xaf1y4dUtg8nVlt6Rv7Vsn1r7z4vty8OhMU9kDz3MKmtOn7j5lycO9
+	YA9foPnbNQHNzF+W1CkdcTt2feMhC7WeExJdN94rsRRnJBpqMRcVJwIAd1T43xUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can actually read this back from the device but we use this when
-registered using standard I2C board data registration so make sure
-it's there for OF too.
+Ensure the regulators are registered with a GPIO parsed from the device
+tree when available.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 ---
- drivers/mfd/wm8994-core.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/regulator/wm8994-regulator.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index cdea84e..3f8d591 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -673,9 +673,9 @@ static void wm8994_device_exit(struct wm8994 *wm8994)
- }
+diff --git a/drivers/regulator/wm8994-regulator.c b/drivers/regulator/wm8994-regulator.c
+index 086be66..dab41ae 100644
+--- a/drivers/regulator/wm8994-regulator.c
++++ b/drivers/regulator/wm8994-regulator.c
+@@ -149,9 +149,11 @@ static int wm8994_ldo_probe(struct platform_device *pdev)
+ 	config.init_data = &ldo->init_data;
+ 	if (pdata)
+ 		config.ena_gpio = pdata->ldo[id].enable;
++	else if (wm8994->dev->of_node)
++		config.ena_gpio = wm8994->pdata.ldo[id].enable;
  
- static const struct of_device_id wm8994_of_match[] = {
--	{ .compatible = "wlf,wm1811", },
--	{ .compatible = "wlf,wm8994", },
--	{ .compatible = "wlf,wm8958", },
-+	{ .compatible = "wlf,wm1811", .data = (void *)WM1811 },
-+	{ .compatible = "wlf,wm8994", .data = (void *)WM8994 },
-+	{ .compatible = "wlf,wm8958", .data = (void *)WM8958 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(of, wm8994_of_match);
+ 	/* Use default constraints if none set up */
+-	if (!pdata || !pdata->ldo[id].init_data) {
++	if (!pdata || !pdata->ldo[id].init_data || wm8994->dev->of_node) {
+ 		dev_dbg(wm8994->dev, "Using default init data, supply %s %s\n",
+ 			ldo->supply.dev_name, ldo->supply.supply);
+ 
 -- 
-1.7.10.4
+1.7.9.5
 
