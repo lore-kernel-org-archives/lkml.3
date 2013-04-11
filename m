@@ -1,208 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934577Ab3DKIED (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 04:04:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52493 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934485Ab3DKID5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 04:03:57 -0400
-Date: Thu, 11 Apr 2013 10:04:33 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, rostedt@goodmis.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling overflow
-Message-ID: <20130411080432.GA1380@redhat.com>
-References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
- <20130326140147.GB2029@redhat.com>
- <CAFTL4hyJxwh056=bTsSFcpZ7QLRsvsGbni=ueUHE6c1n8dmQ7Q@mail.gmail.com>
- <20130410125111.GA12923@gmail.com>
- <CAFTL4hxsTMZhNqC9jkrc5L3zEr-KFhxvwHqk+q=0zRn6wraWSg@mail.gmail.com>
- <20130410173219.GG21951@gmail.com>
+	id S934717Ab3DKIEt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 04:04:49 -0400
+Received: from smtp.domeneshop.no ([194.63.252.54]:34701 "EHLO
+	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753961Ab3DKIEq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 04:04:46 -0400
+Message-ID: <51666E94.90607@paradoxuncreated.com>
+Date: Thu, 11 Apr 2013 10:04:36 +0200
+From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="azLHFNyN32YCQGCU"
-Content-Disposition: inline
-In-Reply-To: <20130410173219.GG21951@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Millennium Basic
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello. I have bothered this list, with many of my insights, and now I am 
+going to bother you with more.
 
---azLHFNyN32YCQGCU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This may be read in blog-format here: 
+http://paradoxuncreated.com/Blog/wordpress/?p=13232
 
-On Wed, Apr 10, 2013 at 07:32:19PM +0200, Ingo Molnar wrote:
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > 2013/4/10 Ingo Molnar <mingo@kernel.org>:
-> > >
-> > > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > >
-> > >> Of course 128 bits ops are very expensive, so to help you evaluating the
-> > >> situation, this is going to happen on every call to task_cputime_adjusted() and
-> > >> thread_group_adjusted(), namely:
-> > >
-> > > It's really only expensive for divisions. Addition and multiplication should be
-> > > straightforward and relatively low overhead, especially on 64-bit platforms.
-> > 
-> > Ok, well we still have one division in the scaling path. I'm mostly
-> > worried about the thread group exit that makes use of it through
-> > threadgroup_cputime_adjusted(). Not sure if we can avoid that.
-> 
-> I see, scale_stime()'s use of div64_u64_rem(), right?
-> 
-> I swapped out the details already, is there a link or commit ID that explains 
-> where we hit 64-bit multiplication overflow? It's due to accounting in nanosecs,
+I`ve been thinking about this. When I was 8 years old, I did programming 
+believe it or not. Basic-programming, yes, but programming. And in 
+hindsight I have been so grateful for that. Somethings I remember about 
+basic on the commodore 64 still, is that it lacked freedom from 
+linenumbering, and carrying variables into other routines. I remember 
+thinking, if it only had that, you could do mostly anything with it.
 
-No, values are converted to jiffies and then are multiplied. CONFIG_HZ=1000
-make issue happen earlier compared to CONFIG_HZ=100.
+This was Microsoft Basic v2. And one programmed it directly to hardware, 
+with peeks and pokes. Later I also learned assembly-programming. 
+Regardless of Microsofts product-ventures later, Basic V2, remains a 
+brilliant point in history.
 
-> spread out across thousands of tasks potentially, right?
+I think that, lies at the foundations of my programming. A very 
+interactive and interpreted experience, with the computer, without 
+obscure APIs, or any uneccesary learning. Something I carried with me, 
+into assembly-programming, and something I still use, when developing my 
+DSP plugins, making most variables tunable, and these are worldclass. 
+(feel free to listen to the comparison to one of the worlds most 
+reknowned mastering-houses - 
+http://paradoxuncreated.com/Blog/wordpress/?p=13140)
+And I spent much time tuning the variables, and not in any way, would 
+these come easily as constants, or untunables in any kind of situation. 
+I think programmers rarely do this these days. "A fir of FFT lenght 64 
+will do", for instance, from a purely theoretic viewpoint. I know very 
+well, that that will not get the optimal results.
 
-Thousands of tasks (in one process) running on thousands of CPUs machine
-will make problem reproducible in hours or maybe minutes.
- 
-> But even with nsecs, a 64-bit variable ought to be able to hold hundreds of years 
-> worth of runtime. How do we overflow?
+I also ofcourse did the low-jitter config, that made doom 3, which John 
+Carmack states on Quakecon 2012, that "Doom 3 still tax some 
+configurations" - run absolutely smooth on 5 year old hardware. From 
+tuning from a high-level perspective, knowing what I do about computers.
 
-We do rtime * stime. If process utilize 100% CPU we have stime = rtime .
-That will overflow if rtime >= sqrt(0xffffffffffffffff) jiffies. That is
-rtime >= 49 days assuming CONFIG_HZ=1000. With 50 threads running on
-CPUS > 50 machine, this will give 1 day. In real application stime is
-never equal to rtime, but can be near half of it, so still problem is
-easy achievable.
+Most people I see today, who have good programming habits, usually know 
+a little bit about assembly-programming, a "vintage" situation, and that 
+of programming directly to the hardware, and some knowledge of 
+assembly-instructions.
 
-Using quotient and remainder make problem less reproducible, but it
-still happen depending on rtime / total ratio.
+I fear that is disappearing a bit, in highlevel langauge, the need for 
+compilation and APIs that may not be accesible to children or beginners.
 
-I wrote user space program that make same calculations as kernel and python
-script that generate stime/rtime/total values (attached). It shows problem
-can still be reproducible. For example:
+A lot of the enthusiasm that drives hacker-circles, and often those 
+around linux, is such experience. Not neccesarily from a book, but doing 
+programming, intuitively, and really just out from understanding a 
+syntax. And a lot of enthusiasm exists around interpreted script 
+languages, and is often what drives certain technologies forward.
 
-FAIL!
-rtime: 25386774344 <- 293 days (one thread, HZ=1000)
-total: 27958813690
-stime: 8387644107
-kernel: 8275815093 <- kernel value
-python: 7616032303 <- correct value
+And since I am now doing some of the best DSP in the world, and also 
+getting the results that I am, I was thinking about this. And also many 
+programmers I meet now, do not have the connection to this, and to my 
+annoyance, often hardwire things, I would have finetuned, and use more 
+complex high-level constructs than neccesary, which makes their results 
+poorer. Slower, less graceful.
 
-FAIL!
-rtime: 16877346691 <- 195 days (one thread, HZ=1000)
-total: 12215365298
-stime: 4886146119
-kernel: 5240812402 <- kernel value
-python: 6750938676 <- correct value
+What I thought was, one needs to try and protect that "vintage" 
+experience somewhat.
 
-Stanislaw
+Lets say if one writes a basic language, that can also carry variables 
+into new routines, that gets kernel-access to the hardware.
 
+So that basically you can do Poke53281,0, and change the color of the 
+screen, etc. Or for more correctness use a language like Set53281,0. And 
+instead of peek53281,var, Get53281, var. Etc. Print "hello", could 
+ofcourse also be Display "Hello", for instance. And try to get a very 
+easily read "basic" language, with basic functionality for most things.
 
---azLHFNyN32YCQGCU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="scale_stime.c"
+Something I also later liked on the Amiga 500, was wellnamed commands, 
+and intuitive syntaxes.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
+You´d have this whole interactive experience, available for enthusiasts, 
+hackers and engineers, back again. To not speak of rapid prototyping.
 
-typedef unsigned long long u64;
+I think that would be really good.
 
-u64 div64_u64_rem(u64 a, u64 b, u64 *rem)
-{
-	u64 res = a / b;
-	*rem = a % b;
+The basic could ofcourse also have a compile button.
 
-	return res;
+And I really do think if one reduces the amount of complexity as much as 
+possible, and retain "basic" functionality, that one really can do most 
+of the stuff neccesary with, I think many more will be programmers, and 
+make the software of the future.
 
-}
+Also probably, a kind of "minimal" subset of a GUI API would be good, or 
+simply just functions in the basic-language. But enough for anyone to 
+make the software they want ofcourse. Buttons, scrolling, scrollbars, 
+gracefully editable information in the GUI, etc.
 
-u64 div64_u64(u64 a, u64 b)
-{
-	return a / b;
-}
+One thing I really hate, is C++ programmers, (maybe not so true for C 
+programmers) that obscure things, and talk about wild highlevel theory, 
+and fail to see the point of how simple code performs better, is better, 
+and often is closer to how a real model works.
 
-u64 scale_stime(u64 stime, u64 rtime, u64 total)
-{
-        u64 rem, res, scaled;
+For instance in DSP programming circles, I sometimes meet people, who 
+say "they are going to measure the impulse response of the analog synth 
+X filter, to get the right frequency response, because analogs are so 
+weird and strange". And then they talk about wild filter theorems, and 
+end up with a complex filter, with high level structures taking all of 
+this into account, than can only be called every 60hz because it is so 
+CPU expensive. And this is even sold as a product.
 
-        if (rtime >= total) {
-                res = div64_u64_rem(rtime, total, &rem);
-                scaled = stime * res;
-                scaled += div64_u64(stime * rem, total);
-        } else {
-                res = div64_u64_rem(total, rtime, &rem);
-                scaled = div64_u64(stime, res);
-                scaled -= div64_u64(scaled * rem, total);
-	}
-	
-	return scaled;
-}
+And then you look at the original analog. And see four cascaded analog 
+sections. That is the simplest thing there is. That is four onepoles in 
+parallel, and can be done with four lines of code. And then you look at 
+the other guys code, and see several .cs and .cpps with a lot of obscurity.
 
-int main(int argc, char *argv[])
-{
-	u64 rtime, total, stime, scaled;
+I don´t know what is happening. In scholastic pursuits maybe 
+understanding the whole theory is good. But as a hacker, one simply 
+ignores all that, and goes for the optimal solution. Four lines of code, 
+that is it, in that example.
 
-	if (argc != 4)
-		return -1;
+And that sounds good. I am sure most have heard about "the 303". It has 
+been discussed so much online, and these arguments are used in that 
+discussion. But ignoring all the theory, and just going for a four-line 
+filter (+ clipped rez) I got immediately very good results. I later also 
+added a few things to that, such as bias, and a simple one-pole "low 
+emph" setting, that emphasises low-frequencies. This makes the filter 
+sounds very smooth, in the saturating rez.
 
-	rtime = strtoll(argv[1], NULL, 10);
-	total = strtoll(argv[2], NULL, 10);
-	stime = strtoll(argv[3], NULL, 10);
+The soundexample, speaks for itself. 
+http://paradoxuncreated.com/Blog/wordpress/?p=1371
 
-	assert (total >= stime);
-	
-	scaled = scale_stime(stime, rtime, total);
-	printf("%llu\n", scaled);
+How many tried to do this, and failed, and contributed to the discussion 
+that "analog" was better than "digital", and so many odd things stated. 
+What is stopping people? Are they lost in high-level constructs and wild 
+theory?
 
-	return 0;
-}
+Instead obviously, only with my programming experience from my c64, I 
+got better results.
 
---azLHFNyN32YCQGCU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="scale_stime_test.py"
+Something to think about.
 
-#!/usr/bin/python
+Peace Be With You.
 
-import subprocess
-import random
-import math
-
-def kernel_scale (rtime, total, stime):
-	p = subprocess.Popen("./scale_stime " + str(rtime) + " " + str(total) + " " + str(stime) , shell=True, stdout=subprocess.PIPE)
-	return int(p.stdout.read())
-
-def python_scale (rtime, total, stime):
-	return (stime * rtime) / total
-
-
-max_rtime = 364*24*60*60*1000  # 1 year (on one thread) 
-
-fail=False
-
-for i in range(0, 100):
-	rtime = random.randrange(max_rtime)
-	total = int(random.uniform(0.7, 1.3) * rtime)
-
-	for n in range(1, 11):
-		stime = (n * total / 10)
-		r1 = kernel_scale(rtime, total, stime)
-		r2 = python_scale(rtime, total, stime)
-		if abs(r1 - r2) > 1:
-			print "FAIL!"
-			print "rtime: " + str(rtime)
-			print "total: " + str(total)
-			print "stime: " + str(stime)
-			print "kernel: " + str(r1)
-			print "python: " + str(r2)
-
-			fail=True
-			break
-	if fail:
-		break;
-		
-
---azLHFNyN32YCQGCU--
