@@ -1,163 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935919Ab3DKJau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 05:30:50 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:42006 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934955Ab3DKJ3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 05:29:46 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Florian Fainelli <florian@openwrt.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH 1/2] net: mv643xx_eth: add shared clk and cleanup existing clk handling
-Date: Thu, 11 Apr 2013 11:29:33 +0200
-Message-Id: <1365672574-31123-2-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365672574-31123-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1365672574-31123-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1752395Ab3DKJxd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 05:53:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39880 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043Ab3DKJxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 05:53:32 -0400
+Date: Thu, 11 Apr 2013 10:53:25 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/10] mm: vmscan: Have kswapd shrink slab only once per
+ priority
+Message-ID: <20130411095325.GI3710@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-9-git-send-email-mgorman@suse.de>
+ <20130409065325.GA4411@lge.com>
+ <20130409111358.GB2002@suse.de>
+ <20130410010734.GR17758@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130410010734.GR17758@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an optional shared block clock to avoid lockups on
-clock gated controllers. Besides the new clock, clock handling for
-existing clocks is cleaned up and moved to devm_clk_get. Device
-tree binding documentation is updated for the new clocks property.
+On Wed, Apr 10, 2013 at 11:07:34AM +1000, Dave Chinner wrote:
+> On Tue, Apr 09, 2013 at 12:13:59PM +0100, Mel Gorman wrote:
+> > On Tue, Apr 09, 2013 at 03:53:25PM +0900, Joonsoo Kim wrote:
+> > 
+> > > I think that outside of zone loop is better place to run shrink_slab(),
+> > > because shrink_slab() is not directly related to a specific zone.
+> > > 
+> > 
+> > This is true and has been the case for a long time. The slab shrinkers
+> > are not zone aware and it is complicated by the fact that slab usage can
+> > indirectly pin memory on other zones.
+> ......
+> > > And this is a question not related to this patch.
+> > > Why nr_slab is used here to decide zone->all_unreclaimable?
+> > 
+> > Slab is not directly associated with a slab but as reclaiming slab can
+> > free memory from unpredictable zones we do not consider a zone to be
+> > fully unreclaimable until we cannot shrink slab any more.
+> 
+> This is something the numa aware shrinkers will greatly help with -
+> instead of being a global shrink it becomes a
+> node-the-zone-belongs-to shrink, and so....
+> 
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
----
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Florian Fainelli <florian@openwrt.org>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org
----
- Documentation/devicetree/bindings/marvell.txt |    3 +++
- drivers/net/ethernet/marvell/mv643xx_eth.c    |   27 ++++++++++---------------
- 2 files changed, 14 insertions(+), 16 deletions(-)
+Yes, 100% agreed.
 
-diff --git a/Documentation/devicetree/bindings/marvell.txt b/Documentation/devicetree/bindings/marvell.txt
-index f1533d9..f7a0da6 100644
---- a/Documentation/devicetree/bindings/marvell.txt
-+++ b/Documentation/devicetree/bindings/marvell.txt
-@@ -115,6 +115,9 @@ prefixed with the string "marvell,", for Marvell Technology Group Ltd.
-      - compatible : "marvell,mv64360-eth-block"
-      - reg : Offset and length of the register set for this block
- 
-+   Optional properties:
-+     - clocks : Phandle to the clock control device and gate bit
-+
-    Example Discovery Ethernet block node:
-      ethernet-block@2000 {
- 	     #address-cells = <1>;
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index aedbd82..bbe6104 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -268,7 +268,7 @@ struct mv643xx_eth_shared_private {
- 	int extended_rx_coal_limit;
- 	int tx_bw_control;
- 	int tx_csum_limit;
--
-+	struct clk *clk;
- };
- 
- #define TX_BW_CONTROL_ABSENT		0
-@@ -410,9 +410,7 @@ struct mv643xx_eth_private {
- 	/*
- 	 * Hardware-specific parameters.
- 	 */
--#if defined(CONFIG_HAVE_CLK)
- 	struct clk *clk;
--#endif
- 	unsigned int t_clk;
- };
- 
-@@ -2569,6 +2567,10 @@ static int mv643xx_eth_shared_probe(struct platform_device *pdev)
- 	if (msp->base == NULL)
- 		goto out_free;
- 
-+	msp->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (!IS_ERR(msp->clk))
-+		clk_prepare_enable(msp->clk);
-+
- 	/*
- 	 * (Re-)program MBUS remapping windows if we are asked to.
- 	 */
-@@ -2595,6 +2597,8 @@ static int mv643xx_eth_shared_remove(struct platform_device *pdev)
- 	struct mv643xx_eth_shared_private *msp = platform_get_drvdata(pdev);
- 
- 	iounmap(msp->base);
-+	if (!IS_ERR(msp->clk))
-+		clk_disable_unprepare(msp->clk);
- 	kfree(msp);
- 
- 	return 0;
-@@ -2801,13 +2805,12 @@ static int mv643xx_eth_probe(struct platform_device *pdev)
- 	 * it to override the default.
- 	 */
- 	mp->t_clk = 133000000;
--#if defined(CONFIG_HAVE_CLK)
--	mp->clk = clk_get(&pdev->dev, (pdev->id ? "1" : "0"));
-+	mp->clk = devm_clk_get(&pdev->dev, NULL);
- 	if (!IS_ERR(mp->clk)) {
- 		clk_prepare_enable(mp->clk);
- 		mp->t_clk = clk_get_rate(mp->clk);
- 	}
--#endif
-+
- 	set_params(mp, pd);
- 	netif_set_real_num_tx_queues(dev, mp->txq_count);
- 	netif_set_real_num_rx_queues(dev, mp->rxq_count);
-@@ -2889,12 +2892,8 @@ static int mv643xx_eth_probe(struct platform_device *pdev)
- 	return 0;
- 
- out:
--#if defined(CONFIG_HAVE_CLK)
--	if (!IS_ERR(mp->clk)) {
-+	if (!IS_ERR(mp->clk))
- 		clk_disable_unprepare(mp->clk);
--		clk_put(mp->clk);
--	}
--#endif
- 	free_netdev(dev);
- 
- 	return err;
-@@ -2909,12 +2908,8 @@ static int mv643xx_eth_remove(struct platform_device *pdev)
- 		phy_detach(mp->phy);
- 	cancel_work_sync(&mp->tx_timeout_task);
- 
--#if defined(CONFIG_HAVE_CLK)
--	if (!IS_ERR(mp->clk)) {
-+	if (!IS_ERR(mp->clk))
- 		clk_disable_unprepare(mp->clk);
--		clk_put(mp->clk);
--	}
--#endif
- 
- 	free_netdev(mp->dev);
- 
 -- 
-1.7.10.4
-
+Mel Gorman
+SUSE Labs
