@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936076Ab3DKQ5V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:57:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35612 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935114Ab3DKQ5U (ORCPT
+	id S964924Ab3DKQ7O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:59:14 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:41542 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935495Ab3DKQ7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:57:20 -0400
-Date: Thu, 11 Apr 2013 17:57:18 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] regulator: wm8994: Use GPIO parsed from DT when
- registering regulators
-Message-ID: <20130411165718.GP9243@opensource.wolfsonmicro.com>
-References: <20130411162315.GF9243@opensource.wolfsonmicro.com>
- <1365698217-17771-1-git-send-email-s.nawrocki@samsung.com>
+	Thu, 11 Apr 2013 12:59:12 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jt7EHN8kmSCh+bhe"
-Content-Disposition: inline
-In-Reply-To: <1365698217-17771-1-git-send-email-s.nawrocki@samsung.com>
-X-Cookie: Your love life will be... interesting.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130411153256.GH1910@1wt.eu>
+References: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20130411131333.GD1910@1wt.eu>
+	<CABJ1b_TQDabT1J7ffo5cb1Th=71bcSduifMJaDpfVRiiHvtWDw@mail.gmail.com>
+	<20130411150326.GA19978@1wt.eu>
+	<CABJ1b_TRxm97DKJLP_h0VwMJvcYmSpjoJvtg1KvBNGah=VzqMQ@mail.gmail.com>
+	<20130411153256.GH1910@1wt.eu>
+Date: Thu, 11 Apr 2013 18:59:11 +0200
+Message-ID: <CABJ1b_QaEJbuBsqx+J1Pkc7o66S_Rboa7Trnko1mXSK6-UZhfg@mail.gmail.com>
+Subject: Re: [PATCH] net: mv643xx_eth: Add GRO support
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Soeren Moch <smoch@web.de>, Paul Mackerras <paulus@samba.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Dale Farnsworth <dale@farnsworth.org>, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 11, 2013 at 5:32 PM, Willy Tarreau <w@1wt.eu> wrote:
+> On Thu, Apr 11, 2013 at 05:27:03PM +0200, Sebastian Hesselbarth wrote:
+>> I don't have a strong opinion on whether Soeren's or your proposal should
+>> be submitted. But I insist on having one of them in, as GRO significantly
+>> improves the common use case, is enabled by default, and not as
+>> constrained as LRO.
+>
+> I agree, use yours first, but we should keep an eye on this. Since you have
+> everything to run a test, please try to see if you can get netperf to run
+> over IPv6, I'm sure the NIC doesn't handle it.
 
---jt7EHN8kmSCh+bhe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Willy,
 
-On Thu, Apr 11, 2013 at 06:36:57PM +0200, Sylwester Nawrocki wrote:
-> Ensure the regulators are registered with a GPIO parsed from the device
-> tree when available.
+out of curiosity I replayed all tests using netperf/netserver with -6 which
+enables ipv6. The overall results remain quite the same here:
+enabling support for GRO gives a huge improvement in achievable
+throughput, and the difference between Soeren's and your patch is
+neglectible.
 
-Applied, thanks.  Should be done more elegantly but I can't think of
-something obvious right now.  Thanks for testing.
-
---jt7EHN8kmSCh+bhe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRZutmAAoJELSic+t+oim9wWIP/1wEGAbocyuqm7ezZ/PCuHYs
-tnVqg8Pv9HdLTdfoB2h/7i8CFEc8D3nPQYHygV5IrEznvKa99jv+hwQS724MNEQX
-nsjMrJEDTNUCrsi1vN8qDZrsmQ5bAwXJkg88+1cLe9jwC9h7W9E2mu9B/zwu79/P
-NntXRqATwjA8Fe6ASTvmZgDbRyg/LsmpX7zRTG5mJKF+AjAoC6HLBtRFauHbkipI
-+6WivUDej2DsBwiL3k9XPtofyKuK6EFRoBiRWhrCSdT7KUFR9Wl7H22V3hfofbce
-ASRDTH+zR/R2uEToPOY6rg590Je/XigFbFZA3AH3ip4F3xtIQCMybAucE5Yw1kfu
-b7QqWhzicoJhy9ij15E92F44FMJ8Df+seEPYxPKZsyZ81x4Oxde59pUl1pwYJJZc
-CEI6gYTqC5+110F4a9MYlHMkf/O4fjvAexc8n7+7Sm5FnxNvST62rQED4FdmPDR/
-6Xmi3C1mCkaTfjhygTSXMPsghI9rXZhBXc0O/NqZrA0XXGS+HCbC9yQqTTANe6at
-K7HsdmRrcMNVpXnQQYueAwwrs1L/1dc1bUMEO8I1Z2TiJCjdEGva3hoK46XmYUff
-Ke/Gh/z9nNMEIzVudM+gNiKRAXhkvYYYo6VDm+d4mLGSnX053cxc19NhXnw0Ws/c
-tz4l9d3ymTGEFVnl6Hzg
-=+oIw
------END PGP SIGNATURE-----
-
---jt7EHN8kmSCh+bhe--
+Sebastian
