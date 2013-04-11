@@ -1,158 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161630Ab3DKMa0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 08:30:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56006 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935028Ab3DKMaZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 08:30:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Daniel Tang <dt.tangr@gmail.com>
-Subject: Re: [RFC PATCHv2 arm: initial TI-Nspire support]
-Date: Thu, 11 Apr 2013 14:30:05 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux@arm.linux.org.uk, Linus Walleij <linus.walleij@linaro.org>,
-        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <8E071E2D-4FF3-487E-A53B-B6A7C427E421@gmail.com>
-In-Reply-To: <8E071E2D-4FF3-487E-A53B-B6A7C427E421@gmail.com>
+	id S935028Ab3DKMhq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 08:37:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42205 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752087Ab3DKMho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 08:37:44 -0400
+Date: Thu, 11 Apr 2013 14:37:39 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Hansen <dave@sr71.net>
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 5/5] keep /dev/kmem from triggering BUG_ON() with
+ DEBUG_VIRTUAL
+Message-ID: <20130411123739.GC27062@pd.tnic>
+References: <20130410233249.7FFCB63B@viggo.jf.intel.com>
+ <20130410233256.D9FE46E1@viggo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304111430.05528.arnd@arndb.de>
-X-Provags-ID: V02:K0:x54CfKpAiQrqVLuRitfTQXOoraObqhFpaVE+clr/C/y
- OtIhKLYWHP+Q2YkcY1TfgfpbSPaimDJdu0DzO4cPNfRlIREmth
- AZZQbvYa0ZomBOFWctxu1+F0AZE2Dq2tYzNXTZM0Parpv9THDB
- A5BpdVA1Y+j97zeR5LYKlSVHLnIcgWfnf/33LwNMLvNyWbKp6p
- FDN5jDcGv5ZbIYUme0WjZgi8gUXPFT1u/AKb0+reING67Si7cE
- +L4356yMIHq+XUaTTFmqSCs5rYVcclUPz5IhqO1yw5zdXYGynS
- z1fkjXws2VDgWH4Mj4uTiIU5dRzxulm0S9YCgFm8Mav/vGBP9X
- xYrdX367pWlvWZWIrPhw=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130410233256.D9FE46E1@viggo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 April 2013, Daniel Tang wrote:
-> This is another updated patch for Linux on TI-Nspire support. 
+Some more compiler warnings. Btw, I'm building 32-bit only for now - no
+64-bit testing yet.
+
+On Wed, Apr 10, 2013 at 04:32:56PM -0700, Dave Hansen wrote:
 > 
-> Apologies for previously posting updated patches as replies to the first thread. I'll send updated patches in new threads from now to avoid confusion.
+> /dev/kmem can essentially be used to make the kernel call __pa()
+> on any address.  But, with DEBUG_VIRTUAL, we are now ensuring
+> that when __pa() is only called on addresses for which its
+> results are correct.  For everything else, we BUG_ON().
 > 
-> Changes between http://archive.arm.linux.org.uk/lurker/message/20130408.113343.585af217.en.html and v2:
-> * Added new drivers to support the irqchip and timers on older models.
-> * Added new device trees to support the other models.
+> What this means is that a hapless /dev/kmem user can
+> unintentionally make the kernel BUG_ON().
 > 
-> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
-
-Nice!
-
->  arch/arm/Kconfig                            |   2 +
->  arch/arm/Kconfig.debug                      |  16 ++
->  arch/arm/Makefile                           |   1 +
->  arch/arm/boot/dts/Makefile                  |   3 +
->  arch/arm/boot/dts/nspire-classic.dtsi       |  68 ++++++
->  arch/arm/boot/dts/nspire-clp.dts            |  45 ++++
->  arch/arm/boot/dts/nspire-cx.dts             | 115 ++++++++++
->  arch/arm/boot/dts/nspire-tp.dts             |  44 ++++
->  arch/arm/boot/dts/nspire.dtsi               | 159 ++++++++++++++
->  arch/arm/include/debug/nspire.S             |  28 +++
->  arch/arm/mach-nspire/Kconfig                |  15 ++
->  arch/arm/mach-nspire/Makefile               |   2 +
->  arch/arm/mach-nspire/Makefile.boot          |   0
->  arch/arm/mach-nspire/clcd.c                 | 118 +++++++++++
->  arch/arm/mach-nspire/clcd.h                 |  14 ++
->  arch/arm/mach-nspire/mmio.h                 |  15 ++
->  arch/arm/mach-nspire/nspire.c               | 142 +++++++++++++
->  drivers/clocksource/Makefile                |   1 +
->  drivers/clocksource/nspire-classic-timer.c  | 216 +++++++++++++++++++
->  drivers/input/keyboard/Kconfig              |  10 +
->  drivers/input/keyboard/Makefile             |   1 +
->  drivers/input/keyboard/nspire-keypad.c      | 316 ++++++++++++++++++++++++++++
->  drivers/irqchip/Makefile                    |   1 +
->  drivers/irqchip/irq-nspire-classic.c        | 177 ++++++++++++++++
->  include/clocksource/nspire_classic_timer.h  |  16 ++
->  include/linux/platform_data/nspire-keypad.h |  28 +++
->  26 files changed, 1553 insertions(+)
-
-Please split this up into a series of patches, one for each subsystem.
-I would also keep the dts files in a separate patch from the platform
-code.
-
-
-> +bool timer_init;
-> +
-> +void __init nspire_classic_timer_init(void)
+> This adds a function, is_kernel_linear_vaddr() to the /dev/kmem
+> code to ensure that __pa() will not BUG_ON().  It will, instead,
+> return an error up to the user.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> ---
+> 
+>  linux.git-davehans/arch/x86/mm/pageattr.c  |   19 +++++++++++++++++++
+>  linux.git-davehans/drivers/char/mem.c      |    8 ++++++++
+>  linux.git-davehans/include/linux/mmdebug.h |    2 ++
+>  3 files changed, 29 insertions(+)
+> 
+> diff -puN arch/x86/mm/pageattr.c~make-devmem-work-on-highmem3b arch/x86/mm/pageattr.c
+> --- linux.git/arch/x86/mm/pageattr.c~make-devmem-work-on-highmem3b	2013-04-10 16:23:45.780087708 -0700
+> +++ linux.git-davehans/arch/x86/mm/pageattr.c	2013-04-10 16:23:45.786087714 -0700
+> @@ -406,6 +406,25 @@ phys_addr_t slow_virt_to_phys(void *virt
+>  }
+>  EXPORT_SYMBOL_GPL(slow_virt_to_phys);
+>  
+> +#ifdef CONFIG_DEBUG_VIRTUAL
+> +int is_kernel_linear_vaddr(void *kernel_vaddr)
 > +{
-> +	struct device_node *node;
+> +	int err;
+> +	unsigned long pte_walk_paddr;
+> +	unsigned long linear_paddr = __pa_nodebug(kernel_vaddr);
 > +
-> +	if (timer_init)
-> +		return;
+> +	err = kernel_lookup_vaddr(kernel_vaddr, &pte_walk_paddr);
+
+arch/x86/mm/pageattr.c: In function ‘is_kernel_linear_vaddr’:
+arch/x86/mm/pageattr.c:416:2: warning: passing argument 2 of ‘kernel_lookup_vaddr’ from incompatible pointer type [enabled by default]
+arch/x86/mm/pageattr.c:366:5: note: expected ‘phys_addr_t *’ but argument is of type ‘long unsigned int *’
+
+
+> +	/* if there is no pte, it can not be in the normal linear map */
+> +	if (err)
+> +		return 0;
+> +	/* is there is a pte which does not match the linear layout? */
+> +	if (pte_walk_paddr != linear_paddr)
+> +		return 0;
 > +
-> +	for_each_compatible_node(node, NULL, DT_COMPAT) {
-> +		nspire_timer_add(node);
-> +	}
-> +
-> +	timer_init = 1;
+> +	return 1;
 > +}
+> +#endif /* CONFIG_DEBUG_VIRTUAL */
 > +
-> +CLOCKSOURCE_OF_DECLARE(nspire_classic_timer,
-> +		DT_COMPAT, nspire_classic_timer_init)
+>  /*
+>   * Set the new pmd in all the pgds we know about:
+>   */
+> diff -puN drivers/char/mem.c~make-devmem-work-on-highmem3b drivers/char/mem.c
+> --- linux.git/drivers/char/mem.c~make-devmem-work-on-highmem3b	2013-04-10 16:23:45.781087709 -0700
+> +++ linux.git-davehans/drivers/char/mem.c	2013-04-10 16:23:45.787087715 -0700
+> @@ -357,6 +357,14 @@ static int mmap_kmem(struct file *file,
+>  	if (!pfn_valid(pfn))
+>  		return -EIO;
+>  
+> +	/*
+> +	 * the __pa() calculation below only makes sense if the kernel's
+> +	 * pagetables are set up in the way that __pa() expects.  Otherwise,
+> +	 * we are effectively mapping random memory in to place.
+> +	 */
+> +	if (!is_kernel_linear_vaddr(kernel_vaddr))
 
-Why do you need the logic to prevent it from being initilized
-twice?  Can't you just remove the direct call to nspire_classic_timer_init
-from platform code and rely on of_clk_init() to call it?
+Ditto:
 
-Note that the interface has changed in linux-next, you now
-get called separately for each matching device, with the device_node
-as the argument, so you no longer have to search the device tree,
-and can essentially do
+drivers/char/mem.c:365:2: warning: passing argument 1 of ‘is_kernel_linear_vaddr’ makes pointer from integer without a cast [enabled by default]
 
-CLOCKSOURCE_OF_DECLARE(nspire_classic_timer, DT_COMPAT, nspire_timer_add);
 
-Feel free to rebase your patch on top of the clksrc/cleanup branch
-in arm-soc to get the new behavior.
+> +		return -EIO;
+> +
+>  	/* Turn a kernel-virtual address into a physical page frame */
+>  	pfn = __pa(kernel_vaddr) >> PAGE_SHIFT;
+>  
+> diff -puN include/linux/mmdebug.h~make-devmem-work-on-highmem3b include/linux/mmdebug.h
+> --- linux.git/include/linux/mmdebug.h~make-devmem-work-on-highmem3b	2013-04-10 16:23:45.783087711 -0700
+> +++ linux.git-davehans/include/linux/mmdebug.h	2013-04-10 16:23:45.787087715 -0700
+> @@ -9,8 +9,10 @@
+>  
+>  #ifdef CONFIG_DEBUG_VIRTUAL
+>  #define VIRTUAL_BUG_ON(cond) BUG_ON(cond)
+> +extern int is_kernel_linear_vaddr(void *kernel_vaddr);
+>  #else
+>  #define VIRTUAL_BUG_ON(cond) do { } while (0)
+> +static inline int is_kernel_linear_vaddr(void *kernel_vaddr) { return 1; }a
 
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id nspire_keypad_dt_match[] = {
-> +	{ .compatible = "nspire-keypad" },
-> +	{ },
-> +};
-> +MODULE_DEVICE_TABLE(of, nspire_keypad_dt_match);
-> +#endif
+In file included from include/linux/gfp.h:8:0,
+                 from include/linux/mm.h:8,
+                 from drivers/char/mem.c:11:
+include/linux/mmdebug.h:12:12: note: expected ‘void *’ but argument is of type ‘long unsigned int’
+In file included from include/linux/gfp.h:4:0,
+                 from include/linux/mm.h:8,
+                 from drivers/char/mem.c:11:
+include/linux/mmzone.h:1187:6: warning: ‘pfn’ may be used uninitialized in this function [-Wuninitialized]
+drivers/char/mem.c:340:16: note: ‘pfn’ was declared here
 
-You should not need the #ifdef.
+HTH.
 
-> +static struct platform_driver nspire_keypad_driver = {
-> +	.driver = {
-> +		.name = "nspire-keypad",
-> +		.owner  = THIS_MODULE,
-> +		.of_match_table = of_match_ptr(nspire_keypad_dt_match),
-> +	},
-> +	.remove = nspire_keypad_remove,
-> +	.probe = nspire_keypad_probe
-> +};
+-- 
+Regards/Gruss,
+    Boris.
 
-Please put a comma at the end of the last line in definitions like this.
-
-> diff --git a/include/clocksource/nspire_classic_timer.h b/include/clocksource/nspire_classic_timer.h
-> new file mode 100644
-> index 0000000..39236f1
-> --- /dev/null
-> +++ b/include/clocksource/nspire_classic_timer.h
-
-You should not need this file if you do the above.
-
-> diff --git a/include/linux/platform_data/nspire-keypad.h b/include/linux/platform_data/nspire-keypad.h
-> new file mode 100644
-> index 0000000..03deb64
-> --- /dev/null
-> +++ b/include/linux/platform_data/nspire-keypad.h
-
-And this file now also isn't needed any more, you can just merge the
-fields of struct nspire_keypad_data into struct nspire_keypad.
-
-	Arnd
+Sent from a fat crate under my desk. Formatting is fine.
+--
