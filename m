@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936120Ab3DKJmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 05:42:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935568Ab3DKJmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 05:42:05 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: [net-next PATCH 1/2] virtio-net: initialize vlan_features
-Date: Thu, 11 Apr 2013 17:32:21 +0800
-Message-Id: <1365672742-42258-2-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1365672742-42258-1-git-send-email-jasowang@redhat.com>
-References: <1365672742-42258-1-git-send-email-jasowang@redhat.com>
+	id S935751Ab3DKJ3v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 05:29:51 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:64175 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935532Ab3DKJ3s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 05:29:48 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH v2 2/2] net: mv643xx_eth: use managed devm_kzalloc
+Date: Thu, 11 Apr 2013 11:29:34 +0200
+Message-Id: <1365672574-31123-3-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1365672574-31123-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1365672574-31123-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's nothing that prevent passing the device features of virtio_net to its
-vlan device. So this patch simply passes those to vlan device to benefit from
-advanced features.
+This patch moves shared private data kzalloc to managed devm_kzalloc and
+cleans now unneccessary kfree and error handling.
 
-Netperf shows better sending performance for vlan device since TSO can work on
-vlan now.
-
-before:
-netperf -H 192.168.5.2
-MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.5.2 ()
-port 0 AF_INET : demo
-Recv   Send    Send
-Socket Socket  Message  Elapsed
-Size   Size    Size     Time     Throughput
-bytes  bytes   bytes    secs.    10^6bits/sec
-
- 87380  16384  16384    10.00    4162.35
-
-after:
-netperf -H 192.168.5.2
-MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.5.2 ()
-port 0 AF_INET : demo
-Recv   Send    Send
-Socket Socket  Message  Elapsed
-Size   Size    Size     Time     Throughput
-bytes  bytes   bytes    secs.    10^6bits/sec
-
- 87380  16384  16384    10.00    9365.42
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
- drivers/net/virtio_net.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Changes from v1:
+- replaced EADDRNOTAVAIL with ENOMEM on failing ioremap (Reported by
+  Sergei Shtylyov)
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index f7d67e8..8fdfde6 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1511,6 +1511,8 @@ static int virtnet_probe(struct virtio_device *vdev)
- 		/* (!csum && gso) case will be fixed by register_netdev() */
- 	}
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
+Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Florian Fainelli <florian@openwrt.org>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: devicetree-discuss@lists.ozlabs.org
+Cc: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+---
+ drivers/net/ethernet/marvell/mv643xx_eth.c |   17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index bbe6104..305038f 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -2547,25 +2547,22 @@ static int mv643xx_eth_shared_probe(struct platform_device *pdev)
+ 	struct mv643xx_eth_shared_private *msp;
+ 	const struct mbus_dram_target_info *dram;
+ 	struct resource *res;
+-	int ret;
  
-+	dev->vlan_features = dev->features;
-+
- 	/* Configuration may specify what MAC to use.  Otherwise random. */
- 	if (virtio_config_val_len(vdev, VIRTIO_NET_F_MAC,
- 				  offsetof(struct virtio_net_config, mac),
+ 	if (!mv643xx_eth_version_printed++)
+ 		pr_notice("MV-643xx 10/100/1000 ethernet driver version %s\n",
+ 			  mv643xx_eth_driver_version);
+ 
+-	ret = -EINVAL;
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (res == NULL)
+-		goto out;
++		return -EINVAL;
+ 
+-	ret = -ENOMEM;
+-	msp = kzalloc(sizeof(*msp), GFP_KERNEL);
++	msp = devm_kzalloc(&pdev->dev, sizeof(*msp), GFP_KERNEL);
+ 	if (msp == NULL)
+-		goto out;
++		return -ENOMEM;
+ 
+ 	msp->base = ioremap(res->start, resource_size(res));
+ 	if (msp->base == NULL)
+-		goto out_free;
++		return -ENOMEM;
+ 
+ 	msp->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (!IS_ERR(msp->clk))
+@@ -2585,11 +2582,6 @@ static int mv643xx_eth_shared_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, msp);
+ 
+ 	return 0;
+-
+-out_free:
+-	kfree(msp);
+-out:
+-	return ret;
+ }
+ 
+ static int mv643xx_eth_shared_remove(struct platform_device *pdev)
+@@ -2599,7 +2591,6 @@ static int mv643xx_eth_shared_remove(struct platform_device *pdev)
+ 	iounmap(msp->base);
+ 	if (!IS_ERR(msp->clk))
+ 		clk_disable_unprepare(msp->clk);
+-	kfree(msp);
+ 
+ 	return 0;
+ }
 -- 
-1.7.1
+1.7.10.4
 
