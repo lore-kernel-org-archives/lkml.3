@@ -1,151 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936461Ab3DKVGu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:06:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20734 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935710Ab3DKUtO (ORCPT
+	id S936482Ab3DKVHN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:07:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39024 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934800Ab3DKVHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:49:14 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9iYy0BBEhSEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=vrmkKAql9u0A:10 a=drOt6m5kAAAA:8 a=XxtmG6sFAAAA:8 a=VwQbUJbxAAAA:8 a=0u0nhMPvhaUjrep2UKUA:9 a=NuBSTLBdITsA:10 a=jeBq3FmKZ4MA:10 a=7v2BBwS4cPHt6BXJ:21 a=8yrlGwXHrq0a3pJ_:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202603.702393237@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:49 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 106/171 ] Nest rename_lock inside vfsmount_lock
-References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0106-Nest-rename_lock-inside-vfsmount_lock.patch
+	Thu, 11 Apr 2013 17:07:09 -0400
+Date: Thu, 11 Apr 2013 14:07:08 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Robin Holt <holt@sgi.com>
+Cc: linux-kernel@vger.kernel.org, Alex Thorlton <athorlton@sgi.com>
+Subject: Re: [PATCH] Sys V shared memory limited to 8TiB.
+Message-Id: <20130411140708.4cf9632602e8586a5ff691eb@linux-foundation.org>
+In-Reply-To: <20130411024223.GM3658@sgi.com>
+References: <20130410023924.GX3658@sgi.com>
+	<20130410161507.b12128ee3df446eb9b86d8cf@linux-foundation.org>
+	<20130411024223.GM3658@sgi.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.2 stable review patch.
-If anyone has any objections, please let me know.
+On Wed, 10 Apr 2013 21:42:23 -0500 Robin Holt <holt@sgi.com> wrote:
 
-------------------
+> On Wed, Apr 10, 2013 at 04:15:07PM -0700, Andrew Morton wrote:
+> > On Tue, 9 Apr 2013 21:39:24 -0500 Robin Holt <holt@sgi.com> wrote:
+> > 
+> > > Trying to run an application which was trying to put data into half
+> > > of memory using shmget(), we found that having a shmall value below
+> > > 8EiB-8TiB would prevent us from using anything more than 8TiB.  By setting
+> > > kernel.shmall greater that 8EiB-8TiB would make the job work.
+> > > 
+> > > In the newseg() function, ns->shm_tot which, at 8TiB is INT_MAX.
+> > 
+> > You have way too much memory.
+> > 
+> > > ipc/shm.c:
+> > >  458 static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+> > >  459 {
+> > > ...
+> > >  465         int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
+> > > ...
+> > >  474         if (ns->shm_tot + numpages > ns->shm_ctlall)
+> > >  475                 return -ENOSPC;
+> > >
+> > > ...
+> > >
+> > > --- a/include/linux/ipc_namespace.h
+> > > +++ b/include/linux/ipc_namespace.h
+> > > @@ -43,8 +43,8 @@ struct ipc_namespace {
+> > >  
+> > >  	size_t		shm_ctlmax;
+> > >  	size_t		shm_ctlall;
+> > > +	unsigned long	shm_tot;
+> > >  	int		shm_ctlmni;
+> > > -	int		shm_tot;
+> > >  	/*
+> > >  	 * Defines whether IPC_RMID is forced for _all_ shm segments regardless
+> > >  	 * of shmctl()
+> > 
+> > I reviewed everything for fallout from this and don't see any obvious
+> > issues.
+> > 
+> > I do wonder about the appropriateness of the unsigned long type.  Most
+> > (but by no means all) code in this area uses size_t, and the
+> > above-quoted ns->shm_ctlall is size_t.
+> 
+> The only reason I went with unsigned long instead of size_t was most
+> places in the kernel track stuff I recalled that was tracking stuff
+> in pages used unsigned longs.  Also, I found shm_tot field in shm_info
+> structure was an unsigned long so this felt like a natural fit.  I would
+> happily changed to size_t.  Whatever you feel is right.
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+I have no really strong feelings, but let's at least put some thought
+into it.  I do prefer ulong and find size_t to be a PITA.  I guess it
+doesn't matter much.
 
-[ Upstream commit 7ea600b5314529f9d1b9d6d3c41cb26fce6a7a4a ]
+> > --- a/ipc/shm.c~ipc-sysv-shared-memory-limited-to-8tib-fix
+> > +++ a/ipc/shm.c
+> > @@ -462,7 +462,7 @@ static int newseg(struct ipc_namespace *
+> >  	size_t size = params->u.size;
+> >  	int error;
+> >  	struct shmid_kernel *shp;
+> > -	int numpages = (size + PAGE_SIZE -1) >> PAGE_SHIFT;
+> > +	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+> 
+> I was holding off from that change only because I was asking for this
+> to go to stable and this doubles the size of the patch. ;)
 
-... lest we get livelocks between path_is_under() and d_path() and friends.
-
-The thing is, wrt fairness lglocks are more similar to rwsems than to rwlocks;
-it is possible to have thread B spin on attempt to take lock shared while thread
-A is already holding it shared, if B is on lower-numbered CPU than A and there's
-a thread C spinning on attempt to take the same lock exclusive.
-
-As the result, we need consistent ordering between vfsmount_lock (lglock) and
-rename_lock (seq_lock), even though everything that takes both is going to take
-vfsmount_lock only shared.
-
-Spotted-by: Brad Spengler <spender@grsecurity.net>
-Cc: stable@vger.kernel.org
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- fs/dcache.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
-
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 693f95b..2488c47 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2583,7 +2583,6 @@ static int prepend_path(const struct path *path,
- 	bool slash = false;
- 	int error = 0;
- 
--	br_read_lock(&vfsmount_lock);
- 	while (dentry != root->dentry || vfsmnt != root->mnt) {
- 		struct dentry * parent;
- 
-@@ -2613,8 +2612,6 @@ static int prepend_path(const struct path *path,
- 	if (!error && !slash)
- 		error = prepend(buffer, buflen, "/", 1);
- 
--out:
--	br_read_unlock(&vfsmount_lock);
- 	return error;
- 
- global_root:
-@@ -2631,7 +2628,7 @@ global_root:
- 		error = prepend(buffer, buflen, "/", 1);
- 	if (!error)
- 		error = is_mounted(vfsmnt) ? 1 : 2;
--	goto out;
-+	return error;
- }
- 
- /**
-@@ -2658,9 +2655,11 @@ char *__d_path(const struct path *path,
- 	int error;
- 
- 	prepend(&res, &buflen, "\0", 1);
-+	br_read_lock(&vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	error = prepend_path(path, root, &res, &buflen);
- 	write_sequnlock(&rename_lock);
-+	br_read_unlock(&vfsmount_lock);
- 
- 	if (error < 0)
- 		return ERR_PTR(error);
-@@ -2677,9 +2676,11 @@ char *d_absolute_path(const struct path *path,
- 	int error;
- 
- 	prepend(&res, &buflen, "\0", 1);
-+	br_read_lock(&vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	error = prepend_path(path, &root, &res, &buflen);
- 	write_sequnlock(&rename_lock);
-+	br_read_unlock(&vfsmount_lock);
- 
- 	if (error > 1)
- 		error = -EINVAL;
-@@ -2743,11 +2744,13 @@ char *d_path(const struct path *path, char *buf, int buflen)
- 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
- 
- 	get_fs_root(current->fs, &root);
-+	br_read_lock(&vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	error = path_with_deleted(path, &root, &res, &buflen);
-+	write_sequnlock(&rename_lock);
-+	br_read_unlock(&vfsmount_lock);
- 	if (error < 0)
- 		res = ERR_PTR(error);
--	write_sequnlock(&rename_lock);
- 	path_put(&root);
- 	return res;
- }
-@@ -2902,6 +2905,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
- 	get_fs_root_and_pwd(current->fs, &root, &pwd);
- 
- 	error = -ENOENT;
-+	br_read_lock(&vfsmount_lock);
- 	write_seqlock(&rename_lock);
- 	if (!d_unlinked(pwd.dentry)) {
- 		unsigned long len;
-@@ -2911,6 +2915,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
- 		prepend(&cwd, &buflen, "\0", 1);
- 		error = prepend_path(&pwd, &root, &cwd, &buflen);
- 		write_sequnlock(&rename_lock);
-+		br_read_unlock(&vfsmount_lock);
- 
- 		if (error < 0)
- 			goto out;
-@@ -2931,6 +2936,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
- 		}
- 	} else {
- 		write_sequnlock(&rename_lock);
-+		br_read_unlock(&vfsmount_lock);
- 	}
- 
- out:
--- 
-1.7.10.4
-
+It's a bug, isn't it?  Is there anything else which prevents creation
+of segments which are >=8TB?
 
