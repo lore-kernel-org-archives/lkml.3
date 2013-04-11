@@ -1,113 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934634Ab3DKXQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 19:16:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19842 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934290Ab3DKXQY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934334Ab3DKXQY (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 11 Apr 2013 19:16:24 -0400
-X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Tr3lDfD-ADgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=jMOoZqmUakEA:10 a=zRKbQ67AAAAA:8 a=EQp6gqqYAAAA:8 a=fKMrNvyTRMrYJqXD_3QA:9 a=NvCvpz8KglQA:10 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=xMqwRu9mWDAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4099 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932987Ab3DKXQW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 19:16:22 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=bL5lP_IMZyYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=kHY-xKwvBVYA:10 a=zRKbQ67AAAAA:8 a=BdSzHFd4GoWGX_EKpAYA:9 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=R9zbO9izuK7ShsZ1:21 a=l53X2zpWUUbykdel:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411231621.274616680@goodmis.org>
+Message-Id: <20130411231620.290887968@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 19:11:58 -0400
+Date: Thu, 11 Apr 2013 19:11:52 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 9/9 ] sfc: Fix timekeeping in efx_mcdi_poll()
+Subject: [ 3/9 ] sfc: Convert firmware subtypes to native byte order in
+ efx_mcdi_get_board_cfg()
 References: <20130411231149.302144972@goodmis.org>
-Content-Disposition: inline; filename=0009-sfc-Fix-timekeeping-in-efx_mcdi_poll.patch
+Content-Disposition: inline; filename=0003-sfc-Convert-firmware-subtypes-to-native-byte-order-i.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit ebf98e797b4e26ad52ace1511a0b503ee60a6cd4 ]
+[ Upstream commit bfeed902946a31692e7a24ed355b6d13ac37d014 ]
 
-efx_mcdi_poll() uses get_seconds() to read the current time and to
-implement a polling timeout.  The use of this function was chosen
-partly because it could easily be replaced in a co-sim environment
-with a macro that read the simulated time.
-
-Unfortunately the real get_seconds() returns the system time (real
-time) which is subject to adjustment by e.g. ntpd.  If the system time
-is adjusted forward during a polled MCDI operation, the effective
-timeout can be shorter than the intended 10 seconds, resulting in a
-spurious failure.  It is also possible for a backward adjustment to
-delay detection of a areal failure.
-
-Use jiffies instead, and change MCDI_RPC_TIMEOUT to be denominated in
-jiffies.  Also correct rounding of the timeout: check time > finish
-(or rather time_after(time, finish)) and not time >= finish.
+On big-endian systems the MTD partition names currently have mangled
+subtype numbers and are not recognised by the firmware update tool
+(sfupdate).
 
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/ethernet/sfc/mcdi.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/sfc/mcdi.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/net/ethernet/sfc/mcdi.c b/drivers/net/ethernet/sfc/mcdi.c
-index 319a73e..8407d41 100644
+index fc5e7bb..516a437 100644
 --- a/drivers/net/ethernet/sfc/mcdi.c
 +++ b/drivers/net/ethernet/sfc/mcdi.c
-@@ -22,7 +22,7 @@
-  **************************************************************************
-  */
- 
--#define MCDI_RPC_TIMEOUT       10 /*seconds */
-+#define MCDI_RPC_TIMEOUT       (10 * HZ)
- 
- #define MCDI_PDU(efx)							\
- 	(efx_port_num(efx) ? MC_SMEM_P1_PDU_OFST : MC_SMEM_P0_PDU_OFST)
-@@ -120,7 +120,7 @@ static void efx_mcdi_copyout(struct efx_nic *efx, u8 *outbuf, size_t outlen)
- static int efx_mcdi_poll(struct efx_nic *efx)
+@@ -641,9 +641,8 @@ int efx_mcdi_get_board_cfg(struct efx_nic *efx, u8 *mac_address,
+ 			   u16 *fw_subtype_list, u32 *capabilities)
  {
- 	struct efx_mcdi_iface *mcdi = efx_mcdi(efx);
--	unsigned int time, finish;
-+	unsigned long time, finish;
- 	unsigned int respseq, respcmd, error;
- 	unsigned int pdu = FR_CZ_MC_TREG_SMEM + MCDI_PDU(efx);
- 	unsigned int rc, spins;
-@@ -136,7 +136,7 @@ static int efx_mcdi_poll(struct efx_nic *efx)
- 	 * and poll once a jiffy (approximately)
- 	 */
- 	spins = TICK_USEC;
--	finish = get_seconds() + MCDI_RPC_TIMEOUT;
-+	finish = jiffies + MCDI_RPC_TIMEOUT;
+ 	uint8_t outbuf[MC_CMD_GET_BOARD_CFG_OUT_LENMIN];
+-	size_t outlen;
++	size_t outlen, offset, i;
+ 	int port_num = efx_port_num(efx);
+-	int offset;
+ 	int rc;
  
- 	while (1) {
- 		if (spins != 0) {
-@@ -146,7 +146,7 @@ static int efx_mcdi_poll(struct efx_nic *efx)
- 			schedule_timeout_uninterruptible(1);
- 		}
- 
--		time = get_seconds();
-+		time = jiffies;
- 
- 		rmb();
- 		efx_readd(efx, &reg, pdu);
-@@ -158,7 +158,7 @@ static int efx_mcdi_poll(struct efx_nic *efx)
- 		    EFX_DWORD_FIELD(reg, MCDI_HEADER_RESPONSE))
- 			break;
- 
--		if (time >= finish)
-+		if (time_after(time, finish))
- 			return -ETIMEDOUT;
- 	}
- 
-@@ -250,7 +250,7 @@ static int efx_mcdi_await_completion(struct efx_nic *efx)
- 	if (wait_event_timeout(
- 		    mcdi->wq,
- 		    atomic_read(&mcdi->state) == MCDI_STATE_COMPLETED,
--		    msecs_to_jiffies(MCDI_RPC_TIMEOUT * 1000)) == 0)
-+		    MCDI_RPC_TIMEOUT) == 0)
- 		return -ETIMEDOUT;
- 
- 	/* Check if efx_mcdi_set_mode() switched us back to polled completions.
+ 	BUILD_BUG_ON(MC_CMD_GET_BOARD_CFG_IN_LEN != 0);
+@@ -663,11 +662,16 @@ int efx_mcdi_get_board_cfg(struct efx_nic *efx, u8 *mac_address,
+ 		: MC_CMD_GET_BOARD_CFG_OUT_MAC_ADDR_BASE_PORT0_OFST;
+ 	if (mac_address)
+ 		memcpy(mac_address, outbuf + offset, ETH_ALEN);
+-	if (fw_subtype_list)
+-		memcpy(fw_subtype_list,
+-		       outbuf + MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_OFST,
+-		       MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_MINNUM *
+-		       sizeof(fw_subtype_list[0]));
++	if (fw_subtype_list) {
++		offset = MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_OFST;
++		for (i = 0;
++		     i < MC_CMD_GET_BOARD_CFG_OUT_FW_SUBTYPE_LIST_MINNUM;
++		     i++) {
++			fw_subtype_list[i] =
++				le16_to_cpup((__le16 *)(outbuf + offset));
++			offset += 2;
++		}
++	}
+ 	if (capabilities) {
+ 		if (port_num)
+ 			*capabilities = MCDI_DWORD(outbuf,
 -- 
 1.7.10.4
 
