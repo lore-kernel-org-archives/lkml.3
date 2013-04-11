@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161661Ab3DKSI2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:08:28 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55981 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964847Ab3DKSIZ (ORCPT
+	id S1030191Ab3DKSI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:08:56 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57127 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933627Ab3DKSIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:08:25 -0400
+	Thu, 11 Apr 2013 14:08:55 -0400
 X-Mail-Handler: Dyn Standard SMTP by Dyn
 X-Originating-IP: 72.84.113.162
 X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+aMMArjO3rwTwaJqqfJYrG1TdQ81QjEfQ=
-Date: Thu, 11 Apr 2013 14:08:10 -0400
+X-MHO-User: U2FsdGVkX1+mC24Q2U0Wtsfp/88y2lcHtVdGt+BKBH4=
+Date: Thu, 11 Apr 2013 14:08:44 -0400
 From: Jason Cooper <jason@lakedaemon.net>
 To: Gregory CLEMENT <gregory.clement@free-electrons.com>
 Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
@@ -34,34 +34,30 @@ Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
         Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
         Maen Suleiman <maen@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Shadi Ammouri <shadi@marvell.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v3 3/9] ARM: mvebu: Align the internal registers
- virtual base to support LPAE
-Message-ID: <20130411180810.GN28693@titan.lakedaemon.net>
+Subject: Re: [PATCH v3 4/9] ARM: mvebu: Enable pj4b on LPAE compilations
+Message-ID: <20130411180844.GO28693@titan.lakedaemon.net>
 References: <1365461538-30702-1-git-send-email-gregory.clement@free-electrons.com>
- <1365461538-30702-4-git-send-email-gregory.clement@free-electrons.com>
+ <1365461538-30702-5-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365461538-30702-4-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1365461538-30702-5-git-send-email-gregory.clement@free-electrons.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 12:52:11AM +0200, Gregory CLEMENT wrote:
+On Tue, Apr 09, 2013 at 12:52:12AM +0200, Gregory CLEMENT wrote:
 > From: Lior Amsalem <alior@marvell.com>
 > 
-> In order to be able to support the LPAE, the internal registers
-> virtual base must be aligned to 2MB. In LPAE section size is 2MB, in
-> earlyprintk we map the internal registers and it must be section
-> aligned.
+> pj4b cpus are LPAE capable so enable them on LPAE compilations
 > 
 > Signed-off-by: Lior Amsalem <alior@marvell.com>
+> Tested-by: Franklin <flin@marvell.com>
 > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 > ---
->  arch/arm/include/debug/mvebu.S      |    2 +-
->  arch/arm/mach-mvebu/armada-370-xp.h |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
+>  arch/arm/mm/proc-v7.S |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 
 Applied to mvebu/soc
 
