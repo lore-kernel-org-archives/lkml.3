@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab3DKQ3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:29:00 -0400
-Received: from www.sr71.net ([198.145.64.142]:47882 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752796Ab3DKQ27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:28:59 -0400
-Message-ID: <5166E4CB.2060700@sr71.net>
-Date: Thu, 11 Apr 2013 09:28:59 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1759380Ab3DKQ3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:29:23 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:55982 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab3DKQ3V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 12:29:21 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: hpa@linux.intel.com, linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 4/5] break up slow_virt_to_phys()
-References: <20130410233249.7FFCB63B@viggo.jf.intel.com> <20130410233254.EF273179@viggo.jf.intel.com> <20130411122944.GA27062@pd.tnic>
-In-Reply-To: <20130411122944.GA27062@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130410225026.833809117@linuxfoundation.org>
+References: <20130410225026.833809117@linuxfoundation.org>
+Date: Thu, 11 Apr 2013 10:29:19 -0600
+Message-ID: <CAKocOOM3As9g8O0xTRuOf0Uq9RvuEGUTCXwB1XtSD8FhNUj2ww@mail.gmail.com>
+Subject: Re: [ 00/19] 3.0.73-stable review
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 05:29 AM, Borislav Petkov wrote:
-> On Wed, Apr 10, 2013 at 04:32:54PM -0700, Dave Hansen wrote:
->> +phys_addr_t slow_virt_to_phys(void *virt_addr)
->> +{
->> +	phys_addr_t result;
->> +	int ret;
->> +
->> +	ret = kernel_lookup_vaddr(virt_addr, &result);
->> +	BUG_ON(ret);
-> 
-> Isn't that BUG_ON still too harsh though? How about WARN_ON instead?
-> It would still create a lot of noise so that it gets fixed without
-> bringing down the system.
+On Wed, Apr 10, 2013 at 4:50 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> This is the start of the stable review cycle for the 3.0.73 release.
+> There are 19 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Fri Apr 12 22:50:02 UTC 2013.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.73-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
+Patches applied cleanly to 3.0.72, 3.4.39, and 3.8.6
 
-It's harsh for the cases where __pa()'s result never gets used directly,
-like for checking against 'high_memory'.  If it gets used (like in
-/dev/mem's case) the kernel really is doing something it does not intend
-to do.  It's essentially reading or writing garbage.
+Reviewing patches - will let you know anything odd.
 
-On the other hand, I guess if we've been letting it do that bad thing
-for years, we might as well continue.  We're not causing any _more_ damage.
+Compiled and booted on the following systems:
 
-I'm leaning toward making it a WARN_ON() at the moment. :)
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+Hewlett-Packard HP Compaq dc7700
+
+dmesgs for all releases look good. No regressions compared to the previous
+dmesgs for each of these releases.
+
+Cross-compile tests results:
+
+alpha: defconfig passed on all
+arm: defconfig passed on all
+arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.8.y
+c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, and 3.8.y.
+mips: defconfig passed on all
+mipsel: defconfig passed on all
+powerpc: wii_defconfig passed on all
+sh: defconfig passed on all
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
+
+-- Shuah
