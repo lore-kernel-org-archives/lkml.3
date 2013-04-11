@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759188Ab3DKU0O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:26:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16931 "EHLO
+	id S934753Ab3DKUeC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:34:02 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16423 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244Ab3DKU0B (ORCPT
+	with ESMTP id S1752629Ab3DKU0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:26:01 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=mvWkgVaIdBkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=MXWJKvQgrucA:10 a=zRKbQ67AAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:26:13 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=nG1pd-0fYoEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Q3dr9x84rdIA:10 a=Z4Rwk6OoAAAA:8 a=20KFwNOVAAAA:8 a=drOt6m5kAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=RvlEQHu-AAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=E6k37eg1NvgA:10 a=jbrJJM5MRmoA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=18wLc48eJEMHdTOA:21 a=qrd-UK6g-l35_Ta7:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202550.143721907@goodmis.org>
+Message-Id: <20130411202551.428270117@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:25:27 -0400
+Date: Thu, 11 Apr 2013 16:25:35 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 024/171 ] sfc: lock TX queues when calling netif_device_detach()
+Subject: [ 032/171 ] vfs,proc: guarantee unique inodes in /proc
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0024-sfc-lock-TX-queues-when-calling-netif_device_detach.patch
+Content-Disposition: inline; filename=0032-vfs-proc-guarantee-unique-inodes-in-proc.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,78 +28,68 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Pieczko <dpieczko@solarflare.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit c2f3b8e3a44b6fe9e36704e30157ebe1a88c08b1 ]
+[ Upstream commit 51f0885e5415b4cc6535e9cdcc5145bfbc134353 ]
 
-The assertion of netif_device_present() at the top of
-efx_hard_start_xmit() may fail if we don't do this.
+Dave Jones found another /proc issue with his Trinity tool: thanks to
+the namespace model, we can have multiple /proc dentries that point to
+the same inode, aliasing directories in /proc/<pid>/net/ for example.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+This ends up being a total disaster, because it acts like hardlinked
+directories, and causes locking problems.  We rely on the topological
+sort of the inodes pointed to by dentries, and if we have aliased
+directories, that odering becomes unreliable.
+
+In short: don't do this.  Multiple dentries with the same (directory)
+inode is just a bad idea, and the namespace code should never have
+exposed things this way.  But we're kind of stuck with it.
+
+This solves things by just always allocating a new inode during /proc
+dentry lookup, instead of using "iget_locked()" to look up existing
+inodes by superblock and number.  That actually simplies the code a bit,
+at the cost of potentially doing more inode [de]allocations.
+
+That said, the inode lookup wasn't free either (and did a lot of locking
+of inodes), so it is probably not that noticeable.  We could easily keep
+the old lookup model for non-directory entries, but rather than try to
+be excessively clever this just implements the minimal and simplest
+workaround for the problem.
+
+Reported-and-tested-by: Dave Jones <davej@redhat.com>
+Analyzed-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: stable@vger.kernel.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/ethernet/sfc/efx.c      |    4 ++--
- drivers/net/ethernet/sfc/efx.h      |   13 +++++++++++++
- drivers/net/ethernet/sfc/selftest.c |    2 +-
- 3 files changed, 16 insertions(+), 3 deletions(-)
+ fs/proc/inode.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
-index 65a8d49..073fd60 100644
---- a/drivers/net/ethernet/sfc/efx.c
-+++ b/drivers/net/ethernet/sfc/efx.c
-@@ -2224,7 +2224,7 @@ int efx_reset(struct efx_nic *efx, enum reset_type method)
- 	netif_info(efx, drv, efx->net_dev, "resetting (%s)\n",
- 		   RESET_TYPE(method));
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 710e28f..e5b57da 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -443,9 +443,10 @@ static const struct file_operations proc_reg_file_ops_no_compat = {
  
--	netif_device_detach(efx->net_dev);
-+	efx_device_detach_sync(efx);
- 	efx_reset_down(efx, method);
+ struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entry *de)
+ {
+-	struct inode *inode = iget_locked(sb, de->low_ino);
++	struct inode *inode = new_inode_pseudo(sb);
  
- 	rc = efx->type->reset(efx, method);
-@@ -2719,7 +2719,7 @@ static int efx_pm_freeze(struct device *dev)
- 
- 	efx->state = STATE_FINI;
- 
--	netif_device_detach(efx->net_dev);
-+	efx_device_detach_sync(efx);
- 
- 	efx_stop_all(efx);
- 	efx_stop_interrupts(efx, false);
-diff --git a/drivers/net/ethernet/sfc/efx.h b/drivers/net/ethernet/sfc/efx.h
-index 70755c9..320cf7b 100644
---- a/drivers/net/ethernet/sfc/efx.h
-+++ b/drivers/net/ethernet/sfc/efx.h
-@@ -162,4 +162,17 @@ extern void efx_link_status_changed(struct efx_nic *efx);
- extern void efx_link_set_advertising(struct efx_nic *efx, u32);
- extern void efx_link_set_wanted_fc(struct efx_nic *efx, u8);
- 
-+static inline void efx_device_detach_sync(struct efx_nic *efx)
-+{
-+	struct net_device *dev = efx->net_dev;
-+
-+	/* Lock/freeze all TX queues so that we can be sure the
-+	 * TX scheduler is stopped when we're done and before
-+	 * netif_device_present() becomes false.
-+	 */
-+	netif_tx_lock(dev);
-+	netif_device_detach(dev);
-+	netif_tx_unlock(dev);
-+}
-+
- #endif /* EFX_EFX_H */
-diff --git a/drivers/net/ethernet/sfc/selftest.c b/drivers/net/ethernet/sfc/selftest.c
-index 96068d1..57dec37 100644
---- a/drivers/net/ethernet/sfc/selftest.c
-+++ b/drivers/net/ethernet/sfc/selftest.c
-@@ -721,7 +721,7 @@ int efx_selftest(struct efx_nic *efx, struct efx_self_tests *tests,
- 	/* Detach the device so the kernel doesn't transmit during the
- 	 * loopback test and the watchdog timeout doesn't fire.
- 	 */
--	netif_device_detach(efx->net_dev);
-+	efx_device_detach_sync(efx);
- 
- 	if (efx->type->test_chip) {
- 		rc_reset = efx->type->test_chip(efx, tests);
+-	if (inode && (inode->i_state & I_NEW)) {
++	if (inode) {
++		inode->i_ino = de->low_ino;
+ 		inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
+ 		PROC_I(inode)->fd = 0;
+ 		PROC_I(inode)->pde = de;
+@@ -474,7 +475,6 @@ struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entry *de)
+ 				inode->i_fop = de->proc_fops;
+ 			}
+ 		}
+-		unlock_new_inode(inode);
+ 	} else
+ 	       pde_put(de);
+ 	return inode;
 -- 
 1.7.10.4
 
