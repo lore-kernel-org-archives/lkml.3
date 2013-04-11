@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936542Ab3DKVIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:08:32 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10530 "EHLO
+	id S936525Ab3DKVIa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:08:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9226 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935677Ab3DKUtL (ORCPT
+	with ESMTP id S935679Ab3DKUtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:49:11 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=0fkYAOX6RlYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=4Tb8Cmw1AOEA:10 a=PtDNVHqPAAAA:8 a=VwQbUJbxAAAA:8 a=DfNHnWVPAAAA:8 a=5B7ymKCk4aPVd3eQcpIA:9 a=wYE_KDyynt4A:10 a=lBRciGGoxdUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=3BRh_vqWWtsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=faD4RiZyQDsA:10 a=PtDNVHqPAAAA:8 a=VwQbUJbxAAAA:8 a=DfNHnWVPAAAA:8 a=YWODpuaXHh98yajew5wA:9 a=wYE_KDyynt4A:10 a=lBRciGGoxdUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202604.512616100@goodmis.org>
+Message-Id: <20130411202604.352966800@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:54 -0400
+Date: Thu, 11 Apr 2013 16:26:53 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Serge Hallyn <serge.hallyn@canonical.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [ 111/171 ] ipc: Restrict mounting the mqueue filesystem
+Subject: [ 110/171 ] vfs: Add a mount flag to lock read only bind mounts
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0111-ipc-Restrict-mounting-the-mqueue-filesystem.patch
+Content-Disposition: inline; filename=0110-vfs-Add-a-mount-flag-to-lock-read-only-bind-mounts.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,52 +32,52 @@ If anyone has any objections, please let me know.
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-[ Upstream commit a636b702ed1805e988ad3d8ff8b52c060f8b341c ]
+[ Upstream commit 90563b198e4c6674c63672fae1923da467215f45 ]
 
-Only allow mounting the mqueue filesystem if the caller has CAP_SYS_ADMIN
-rights over the ipc namespace.   The principle here is if you create
-or have capabilities over it you can mount it, otherwise you get to live
-with what other people have mounted.
+When a read-only bind mount is copied from mount namespace in a higher
+privileged user namespace to a mount namespace in a lesser privileged
+user namespace, it should not be possible to remove the the read-only
+restriction.
 
-This information is not particularly sensitive and mqueue essentially
-only reports which posix messages queues exist.  Still when creating a
-restricted environment for an application to live any extra
-information may be of use to someone with sufficient creativity.  The
-historical if imperfect way this information has been restricted has
-been not to allow mounts and restricting this to ipc namespace
-creators maintains the spirit of the historical restriction.
+Add a MNT_LOCK_READONLY mount flag to indicate that a mount must
+remain read-only.
 
-Cc: stable@vger.kernel.org
+CC: stable@vger.kernel.org
 Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- ipc/mqueue.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ fs/namespace.c        |    3 +++
+ include/linux/mount.h |    2 ++
+ 2 files changed, 5 insertions(+)
 
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index 9e4cf7f..f1df4bc 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -331,8 +331,16 @@ static struct dentry *mqueue_mount(struct file_system_type *fs_type,
- 			 int flags, const char *dev_name,
- 			 void *data)
- {
--	if (!(flags & MS_KERNMOUNT))
--		data = current->nsproxy->ipc_ns;
-+	if (!(flags & MS_KERNMOUNT)) {
-+		struct ipc_namespace *ns = current->nsproxy->ipc_ns;
-+		/* Don't allow mounting unless the caller has CAP_SYS_ADMIN
-+		 * over the ipc namespace.
-+		 */
-+		if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN))
-+			return ERR_PTR(-EPERM);
-+
-+		data = ns;
-+	}
- 	return mount_ns(fs_type, flags, data, mqueue_fill_super);
- }
+diff --git a/fs/namespace.c b/fs/namespace.c
+index c48b0d3..48c7edb 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1702,6 +1702,9 @@ static int change_mount_flags(struct vfsmount *mnt, int ms_flags)
+ 	if (readonly_request == __mnt_is_readonly(mnt))
+ 		return 0;
  
++	if (mnt->mnt_flags & MNT_LOCK_READONLY)
++		return -EPERM;
++
+ 	if (readonly_request)
+ 		error = mnt_make_readonly(real_mount(mnt));
+ 	else
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index d7029f4..73005f9 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -47,6 +47,8 @@ struct mnt_namespace;
+ 
+ #define MNT_INTERNAL	0x4000
+ 
++#define MNT_LOCK_READONLY	0x400000
++
+ struct vfsmount {
+ 	struct dentry *mnt_root;	/* root of the mounted tree */
+ 	struct super_block *mnt_sb;	/* pointer to superblock */
 -- 
 1.7.10.4
 
