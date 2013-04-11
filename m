@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413Ab3DKEBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 00:01:01 -0400
-Received: from ozlabs.org ([203.10.76.45]:43680 "EHLO ozlabs.org"
+	id S1750922Ab3DKEBA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 00:01:00 -0400
+Received: from ozlabs.org ([203.10.76.45]:49559 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750731Ab3DKEA7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1750710Ab3DKEA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 00:00:59 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: kallsyms: parameters checking, for EXPORT_SYMBOL_GPL functions
-In-Reply-To: <51654557.3000308@asianux.com>
-References: <5163AE9A.8060505@asianux.com> <871uai7tzu.fsf@rustcorp.com.au> <51654557.3000308@asianux.com>
+To: David Cohen <david.a.cohen@intel.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, mark.gross@intel.com
+Subject: Re: [PATCH v2] MODSIGN: do not send garbage to stderr when enabling modules signature
+In-Reply-To: <51659024.4010405@intel.com>
+References: <1365543543-17522-1-git-send-email-david.a.cohen@intel.com> <87k3oa65hx.fsf@rustcorp.com.au> <51659024.4010405@intel.com>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 11 Apr 2013 12:22:37 +0930
-Message-ID: <87ppy14w3u.fsf@rustcorp.com.au>
+Date: Thu, 11 Apr 2013 13:29:09 +0930
+Message-ID: <87hajd4t0y.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chen Gang <gang.chen@asianux.com> writes:
-> On 2013年04月10日 14:57, Rusty Russell wrote:
->> Chen Gang <gang.chen@asianux.com> writes:
->>> >   for EXPORT_SYMBOL_GPL functions, necessary to check their parameters.
->>> >
->>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> Why?
->> 
->> If someone misuses these functions, they crash and thus indicate that
->> the caller shouldn't do that.
->> 
+David Cohen <david.a.cohen@intel.com> writes:
+> On 04/10/2013 03:32 AM, Rusty Russell wrote:
+>> David Cohen <david.a.cohen@intel.com> writes:
+>>> openssl may send garbage to stderr when generating X.509 key pair for
+>>> modules signature regardless there was an error or not. It makes more
+>>> difficult to create scripts based on kernel error/warning messages.
+>>>
+>>> When compiling kernel with -jN (N > 1), all warning/error messages
+>>> printed while openssl is generating key pair may get mixed dots and
+>>> other symbols openssl sends to stderr. This patch makes sure openssl
+>>> logs go to default stdout.
+>> Ah!  Not garbage, but it writes progress dots and status messages to
+>> stderr?
+>>
+>> I trimmed your commit message as shown below.
 >
->   for me, I think:
+> Thanks! The new commit message looks fine.
+> But it's not the dots. It prints the whole logs to stderr, but the dots 
+> are more likely to get mixed.
 >
->     if it is used by self (such as static functions):
->       I prefer to crash immediatly.
->       it will help us to find issue, quickly.
->
->     if it can be used by others (such as EXPORT_SYMBOL_GPL):
->       I prefer to return fail and tell caller that parameter is invalid.
->       it is more polite to callers, and still indicate it may be an issue.
->
->   :-)
+> Br, David
 
-I disagree.  Calling with invalid parameters is a bug.  You've just
-covered up some cases of invalid use and made it less likely to be
-found.  Because the caller won't notice they screwed up.
+Seems like Linus didn't bite, so I've put it in my modules-next tree.
 
-We could sprinkle WARN_ON() everywhere, but I prefer the crash.  Even
-harder to ignore.
-
-There's no limit to how many of these checks we could put in, and we can
-*never* take them out.  I don't want to code that way.
-
->> Or is someone already doing this?
->> 
->
->   really has:
->
->     kernel: __wake_up_sync_key in kernel/sched/core.c.
->     lib: *printf.
->     mm:  kfree.
-
-No, I mean "is someone calling these functions with NULL".
-
-Cheers,
+Thanks,
 Rusty.
