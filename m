@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161002Ab3DKMOb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 08:14:31 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:56161 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab3DKMOa (ORCPT
+	id S934340Ab3DKMSf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 08:18:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40964 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754066Ab3DKMSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 08:14:30 -0400
-Date: Thu, 11 Apr 2013 14:14:26 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Russ Anderson <rja@sgi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
-Message-ID: <20130411121425.GA19216@gmail.com>
-References: <20130410165934.GB21951@gmail.com>
- <20130410171420.GF3658@sgi.com>
- <20130410172236.GE21951@gmail.com>
- <20130410175519.GG3658@sgi.com>
- <20130410190003.GH3658@sgi.com>
- <20130411085751.GD11824@gmail.com>
- <20130411113412.GP3658@sgi.com>
- <20130411120027.GA18709@gmail.com>
- <20130411120358.GQ3658@sgi.com>
- <20130411120829.GR3658@sgi.com>
+	Thu, 11 Apr 2013 08:18:33 -0400
+Date: Thu, 11 Apr 2013 05:18:10 -0700
+From: tip-bot for Martin Bundgaard <tipbot@zytor.com>
+Message-ID: <tip-7e9a2f0a080ba2f247559e95eb0df7072bede18a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        martin@mindflux.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        martin@mindflux.org, tglx@linutronix.de
+In-Reply-To: <1363286075-62615-1-git-send-email-martin@mindflux.org>
+References: <1363286075-62615-1-git-send-email-martin@mindflux.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86/mm/numa: Simplify some bit mangling
+Git-Commit-ID: 7e9a2f0a080ba2f247559e95eb0df7072bede18a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130411120829.GR3658@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 11 Apr 2013 05:18:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  7e9a2f0a080ba2f247559e95eb0df7072bede18a
+Gitweb:     http://git.kernel.org/tip/7e9a2f0a080ba2f247559e95eb0df7072bede18a
+Author:     Martin Bundgaard <martin@mindflux.org>
+AuthorDate: Thu, 14 Mar 2013 19:34:35 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 10 Apr 2013 19:06:26 +0200
 
-* Robin Holt <holt@sgi.com> wrote:
+x86/mm/numa: Simplify some bit mangling
 
-> On Thu, Apr 11, 2013 at 07:03:58AM -0500, Robin Holt wrote:
-> > On Thu, Apr 11, 2013 at 02:00:27PM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Robin Holt <holt@sgi.com> wrote:
-> > > 
-> > > > > Ok, so it looks profilable.
-> > > > > 
-> > > > > The result above is not surprising: most CPUs sit in idle and don't do anything, 
-> > > > > while the loop goes on, right?
-> > > > > 
-> > > > > The interesting thing to profile would be the parallel bring-down, with the 
-> > > > > simplest global lock solution you mentioned. In that case most CPUs should be 
-> > > > > doing 'something' all the time - maybe spinning on the lock, maybe something else, 
-> > > > > right?
-> > > > 
-> > > > Again, mostly looks idle.
-> > > 
-> > > Forgot to suggest:
-> > > 
-> > >   perf record -a /sbin/reboot
-> > 
-> > I used perf record -a /sbin/reboot -f -d -n
-> 
-> OK.  Looking at Russ' patch, I understand now why it is looking idle.
-> We are still serially doing the DOWN_PREPARE, etc.  All those other cpus
-> are still sitting idle.
-> 
-> Can we call the __cpu_down functions from an smp_call_function()?
+Minor. Reordered a few lines to lose a superfluous OR operation.
 
-I think the kthread_park() will generally schedule.
+Signed-off-by: Martin Bundgaard <martin@mindflux.org>
+Link: http://lkml.kernel.org/r/1363286075-62615-1-git-send-email-martin@mindflux.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/mm/amdtopology.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-But ... whether it's an IPI or a wakeup should matter little: wakeups are IPI 
-based (sometimes faster, mwait based).
-
-So the main overhead is the serial loop - if that's done in parallel, and then all 
-CPUs are waited for in a second loop, then much of the work can go on in parallel.
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/mm/amdtopology.c b/arch/x86/mm/amdtopology.c
+index 5247d01..2ca15b5 100644
+--- a/arch/x86/mm/amdtopology.c
++++ b/arch/x86/mm/amdtopology.c
+@@ -130,9 +130,8 @@ int __init amd_numa_init(void)
+ 		}
+ 
+ 		limit >>= 16;
+-		limit <<= 24;
+-		limit |= (1<<24)-1;
+ 		limit++;
++		limit <<= 24;
+ 
+ 		if (limit > end)
+ 			limit = end;
