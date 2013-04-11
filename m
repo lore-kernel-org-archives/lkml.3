@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355Ab3DKX6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 19:58:08 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:54284 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab3DKX6H (ORCPT
+	id S1752409Ab3DLAFF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 20:05:05 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58046 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab3DLAFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 19:58:07 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: [PATCH 2/5] sched: Update rq clock before setting fair group shares
-Date: Fri, 12 Apr 2013 01:50:59 +0200
-Message-Id: <1365724262-20142-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1365724262-20142-1-git-send-email-fweisbec@gmail.com>
-References: <1365724262-20142-1-git-send-email-fweisbec@gmail.com>
+	Thu, 11 Apr 2013 20:05:03 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18a2udmQGffrnlbB2XklUI+jpPnMCkInwA=
+Date: Thu, 11 Apr 2013 19:29:30 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
+        Ike Pan <ike.pan@canonical.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Jon Masters <jcm@redhat.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+        Maen Suleiman <maen@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v3 4/9] ARM: mvebu: Enable pj4b on LPAE compilations
+Message-ID: <20130411232930.GQ28693@titan.lakedaemon.net>
+References: <1365461538-30702-1-git-send-email-gregory.clement@free-electrons.com>
+ <1365461538-30702-5-git-send-email-gregory.clement@free-electrons.com>
+ <20130411180844.GO28693@titan.lakedaemon.net>
+ <51671FFE.1010909@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51671FFE.1010909@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because we may update the execution time (sched_group_set_shares()->
-	update_cfs_shares()->reweight_entity()->update_curr()) before
-reweighting the entity while setting the group shares and this requires
-an uptodate version of the runqueue clock.
+On Thu, Apr 11, 2013 at 10:41:34PM +0200, Gregory CLEMENT wrote:
+> Hi Jason,
+> 
+> On 04/11/2013 08:08 PM, Jason Cooper wrote:
+> > On Tue, Apr 09, 2013 at 12:52:12AM +0200, Gregory CLEMENT wrote:
+> >> From: Lior Amsalem <alior@marvell.com>
+> >>
+> >> pj4b cpus are LPAE capable so enable them on LPAE compilations
+> >>
+> >> Signed-off-by: Lior Amsalem <alior@marvell.com>
+> >> Tested-by: Franklin <flin@marvell.com>
+> >> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> >> ---
+> >>  arch/arm/mm/proc-v7.S |    3 ++-
+> >>  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > Applied to mvebu/soc
+> > 
+...
+> 
+> However, this one should go through Russell's git tree.  Or at least
+> you need his acked-by. I have already submit this patch on Russell
+> patch system. Unfortunately Russell told that he will be away for
+> around one week.
+> 
+> This patch is needed to have LPAE support, but all the other patches
+> don't depend on it. That means that if you applied all the other
+> patches it won't break anything even if at the end this patch is not
+> merged. But I really hope that Russell will be able to apply this
+> patch to his git tree.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Paul Turner <pjt@google.com>
-Cc: Mike Galbraith <efault@gmx.de>
----
- kernel/sched/fair.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ok, thanks for catching this before I sent the PR.  I'll drop it.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 155783b..c23dde4 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6057,6 +6057,9 @@ int sched_group_set_shares(struct task_group *tg, unsigned long shares)
- 		se = tg->se[i];
- 		/* Propagate contribution to hierarchy */
- 		raw_spin_lock_irqsave(&rq->lock, flags);
-+
-+		/* Possible calls to update_curr() need rq clock */
-+		update_rq_clock(rq);
- 		for_each_sched_entity(se)
- 			update_cfs_shares(group_cfs_rq(se));
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
--- 
-1.7.5.4
+thx,
 
+Jason.
