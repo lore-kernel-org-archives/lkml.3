@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934395Ab3DKJH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 05:07:29 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:64918 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933229Ab3DKJHW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 05:07:22 -0400
-Date: Thu, 11 Apr 2013 11:07:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH RFC 1/3] mutex: Make more scalable by doing less atomic
- operations
-Message-ID: <20130411090717.GA14491@gmail.com>
-References: <1365087258-7169-1-git-send-email-Waiman.Long@hp.com>
- <1365087258-7169-2-git-send-email-Waiman.Long@hp.com>
- <20130408124223.GA10093@gmail.com>
- <CA+55aFztAtpiGK9e_Ed=Kk4jAWNTahv9OEb0+fgp52Api1s7Mw@mail.gmail.com>
- <5163042F.9000404@hp.com>
- <20130410103144.GC28505@gmail.com>
- <51658ADB.4050204@hp.com>
- <20130410171654.GD21951@gmail.com>
- <5165D8F4.7010701@hp.com>
+	id S934548Ab3DKJJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 05:09:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38376 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1765448Ab3DKJJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 05:09:14 -0400
+Date: Thu, 11 Apr 2013 10:09:09 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
+ requirements for kswapd
+Message-ID: <20130411090909.GF3710@suse.de>
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de>
+ <1365505625-9460-3-git-send-email-mgorman@suse.de>
+ <516511DF.5020805@jp.fujitsu.com>
+ <20130410140824.GC3710@suse.de>
+ <5166005B.3060607@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <5165D8F4.7010701@hp.com>
+In-Reply-To: <5166005B.3060607@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 11, 2013 at 09:14:19AM +0900, Kamezawa Hiroyuki wrote:
+> >
+> >nr[lru] at the end there is pages remaining to be scanned not pages
+> >scanned already.
+> 
+> yes.
+> 
+> >Did you mean something like this?
+> >
+> >nr[lru] = scantarget[lru] * percentage / 100 - (scantarget[lru] - nr[lru])
+> >
+> 
+> For clarification, this "percentage" means the ratio of remaining scan target of
+> another LRU. So, *scanned* percentage is "100 - percentage", right ?
+> 
 
-* Waiman Long <Waiman.Long@hp.com> wrote:
+Yes, correct.
 
-> BTW, I have also been thinking about extracting the spinlock out from the mutex 
-> structure for some busy mutex by adding a pointer to an external auxiliary 
-> structure (separately allocated at init time). The idea is to use the external 
-> spinlock if available. Otherwise, the internal one will be used. That should 
-> reduce cacheline contention for some of the busiest mutex. The spinner queuing 
-> tickets can be in the external structure too. However, it requires a one line 
-> change in each of the mutex initialization code. I haven't actually made the 
-> code change and try it yet, but that is something that I am thinking of doing 
-> when I have time.
+> If I understand the changelog correctly, you'd like to keep
+> 
+>    scantarget[anon] : scantarget[file]
+>    == really_scanned_num[anon] : really_scanned_num[file]
+> 
 
-I'm not sure per mutex allocations are a really good idea - we like our locking 
-primitives to be simple, embeddable into data structures and allocatable together 
-with the data structure with no other separate memory footprint.
+Yes.
 
-Thanks,
+> even if we stop scanning in the middle of scantarget. And you introduced "percentage"
+> to make sure that both scantarget should be done in the same ratio.
+> 
 
-	Ingo
+Yes.
+
+> So...another lru should scan  scantarget[x] * (100 - percentage)/100 in total.
+> 
+> nr[lru] = scantarget[lru] * (100 - percentage)/100 - (scantarget[lru] - nr[lru])
+>           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^
+>              proportionally adjusted scan target        already scanned num
+> 
+>        =  nr[lru] - scantarget[lru] * percentage/100.
+> 
+
+Yes, you are completely correct. This preserves the original ratio of
+anon:file scanning properly.
+
+-- 
+Mel Gorman
+SUSE Labs
