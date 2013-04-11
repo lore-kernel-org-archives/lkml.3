@@ -1,108 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab3DKK4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 06:56:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56642 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab3DKK4G (ORCPT
+	id S1752690Ab3DKLRw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 07:17:52 -0400
+Received: from relay.parallels.com ([195.214.232.42]:53144 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab3DKLRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 06:56:06 -0400
-Date: Thu, 11 Apr 2013 13:55:58 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] USB: ehci-omap: Select USB_PHY
-Message-ID: <20130411105557.GE14394@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <5166856C.3080906@ti.com>
- <20130411100435.GB14394@arwen.pp.htv.fi>
- <516695A4.2050804@ti.com>
+	Thu, 11 Apr 2013 07:17:50 -0400
+Message-ID: <51669BEA.4060808@parallels.com>
+Date: Thu, 11 Apr 2013 15:18:02 +0400
+From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MIdTMoZhcV1D07fI"
-Content-Disposition: inline
-In-Reply-To: <516695A4.2050804@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "miklos@szeredi.hu" <miklos@szeredi.hu>
+CC: <dev@parallels.com>, <xemul@parallels.com>,
+        <fuse-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
+        <jbottomley@parallels.com>, <viro@zeniv.linux.org.uk>,
+        <linux-fsdevel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [fuse-devel] [PATCH v4 00/14] fuse: An attempt to implement a
+ write-back cache policy
+References: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
+In-Reply-To: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---MIdTMoZhcV1D07fI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Miklos,
 
-Hi,
+Any feedback would be highly appreciated.
 
-On Thu, Apr 11, 2013 at 01:51:16PM +0300, Roger Quadros wrote:
-> On 04/11/2013 01:04 PM, Felipe Balbi wrote:
-> > Hi,
-> >=20
-> > On Thu, Apr 11, 2013 at 12:42:04PM +0300, Roger Quadros wrote:
-> >> Hi Greg,
-> >>
-> >> The following patch gets rid of Kbuild warnings when USB_EHCI_HCD_OMAP
-> >> is enabled.
-> >>
-> >> Patch is based on your usb-next branch and is needed for 3.10.
-> >>
-> >> From: Roger Quadros <rogerq@ti.com>
-> >> Date: Thu, 11 Apr 2013 12:08:19 +0300
-> >> Subject: [PATCH] USB: ehci-omap: Select USB_PHY
-> >>
-> >> As we need NOP_USB_XCEIV which depends on USB_PHY
-> >> we need to select USB_PHY as well.
-> >>
-> >> Gets rid of the below warnings when USB_EHCI_HCD_OMAP
-> >> is enabled.
-> >>
-> >> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet dir=
-ect dependencies (USB_SUPPORT && USB_PHY)
-> >> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet dir=
-ect dependencies (USB_SUPPORT && USB_PHY)
-> >>
-> >> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> >=20
-> > Ideally, however, we wouldn't select any PHY in particular as different
-> > boards might need a different PHY driver, even on OMAP ;-)
-> >=20
-> Right, but we need to select USB_PHY here as the driver uses
-> the USB_PHY APIs.
->=20
-> The NOP_USB_XCEIV selection could be done by the board config.
+Thanks,
+Maxim
 
-I would avoid 'select' completely and just update omap2plus_defconfig
-adding those two as modules.
+04/01/2013 02:40 PM, Maxim V. Patlasov пишет:
+> Hi,
+>
+> This is the fourth iteration of Pavel Emelyanov's patch-set implementing
+> write-back policy for FUSE page cache. Initial patch-set description was
+> the following:
+>
+> One of the problems with the existing FUSE implementation is that it uses the
+> write-through cache policy which results in performance problems on certain
+> workloads. E.g. when copying a big file into a FUSE file the cp pushes every
+> 128k to the userspace synchronously. This becomes a problem when the userspace
+> back-end uses networking for storing the data.
+>
+> A good solution of this is switching the FUSE page cache into a write-back policy.
+> With this file data are pushed to the userspace with big chunks (depending on the
+> dirty memory limits, but this is much more than 128k) which lets the FUSE daemons
+> handle the size updates in a more efficient manner.
+>
+> The writeback feature is per-connection and is explicitly configurable at the
+> init stage (is it worth making it CAP_SOMETHING protected?) When the writeback is
+> turned ON:
+>
+> * still copy writeback pages to temporary buffer when sending a writeback request
+>    and finish the page writeback immediately
+>
+> * make kernel maintain the inode's i_size to avoid frequent i_size synchronization
+>    with the user space
+>
+> * take NR_WRITEBACK_TEMP into account when makeing balance_dirty_pages decision.
+>    This protects us from having too many dirty pages on FUSE
+>
+> The provided patchset survives the fsx test. Performance measurements are not yet
+> all finished, but the mentioned copying of a huge file becomes noticeably faster
+> even on machines with few RAM and doesn't make the system stuck (the dirty pages
+> balancer does its work OK). Applies on top of v3.5-rc4.
+>
+> We are currently exploring this with our own distributed storage implementation
+> which is heavily oriented on storing big blobs of data with extremely rare meta-data
+> updates (virtual machines' and containers' disk images). With the existing cache
+> policy a typical usage scenario -- copying a big VM disk into a cloud -- takes way
+> too much time to proceed, much longer than if it was simply scp-ed over the same
+> network. The write-back policy (as I mentioned) noticeably improves this scenario.
+> Kirill (in Cc) can share more details about the performance and the storage concepts
+> details if required.
+>
+> Changed in v2:
+>   - numerous bugfixes:
+>     - fuse_write_begin and fuse_writepages_fill and fuse_writepage_locked must wait
+>       on page writeback because page writeback can extend beyond the lifetime of
+>       the page-cache page
+>     - fuse_send_writepages can end_page_writeback on original page only after adding
+>       request to fi->writepages list; otherwise another writeback may happen inside
+>       the gap between end_page_writeback and adding to the list
+>     - fuse_direct_io must wait on page writeback; otherwise data corruption is possible
+>       due to reordering requests
+>     - fuse_flush must flush dirty memory and wait for all writeback on given inode
+>       before sending FUSE_FLUSH to userspace; otherwise FUSE_FLUSH is not reliable
+>     - fuse_file_fallocate must hold i_mutex around FUSE_FALLOCATE and i_size update;
+>       otherwise a race with a writer extending i_size is possible
+>     - fix handling errors in fuse_writepages and fuse_send_writepages
+>   - handle i_mtime intelligently if writeback cache is on (see patch #7 (update i_mtime
+>     on buffered writes) for details.
+>   - put enabling writeback cache under fusermount control; (see mount option
+>     'allow_wbcache' introduced by patch #13 (turn writeback cache on))
+>   - rebased on v3.7-rc5
+>
+> Changed in v3:
+>   - rebased on for-next branch of the fuse tree (fb05f41f5f96f7423c53da4d87913fb44fd0565d)
+>
+> Changed in v4:
+>   - rebased on for-next branch of the fuse tree (634734b63ac39e137a1c623ba74f3e062b6577db)
+>   - fixed fuse_fillattr() for non-writeback_chace case
+>   - added comments explaining why we cannot trust size from server
+>   - rewrote patch handling i_mtime; it's titled Trust-kernel-i_mtime-only now
+>   - simplified patch titled Flush-files-on-wb-close
+>   - eliminated code duplications from fuse_readpage() ans fuse_prepare_write()
+>   - added comment about "disk full" errors to fuse_write_begin()
+>
+> Thanks,
+> Maxim
+>
+> ---
+>
+> Maxim V. Patlasov (14):
+>        fuse: Linking file to inode helper
+>        fuse: Getting file for writeback helper
+>        fuse: Prepare to handle short reads
+>        fuse: Prepare to handle multiple pages in writeback
+>        fuse: Connection bit for enabling writeback
+>        fuse: Trust kernel i_size only - v3
+>        fuse: Trust kernel i_mtime only
+>        fuse: Flush files on wb close
+>        fuse: Implement writepages and write_begin/write_end callbacks - v3
+>        fuse: fuse_writepage_locked() should wait on writeback
+>        fuse: fuse_flush() should wait on writeback
+>        fuse: Fix O_DIRECT operations vs cached writeback misorder - v2
+>        fuse: Turn writeback cache on
+>        mm: Account for WRITEBACK_TEMP in balance_dirty_pages
+>
+>
+>   fs/fuse/cuse.c            |    5
+>   fs/fuse/dir.c             |  127 +++++++++-
+>   fs/fuse/file.c            |  575 ++++++++++++++++++++++++++++++++++++++++-----
+>   fs/fuse/fuse_i.h          |   26 ++
+>   fs/fuse/inode.c           |   37 +++
+>   include/uapi/linux/fuse.h |    2
+>   mm/page-writeback.c       |    3
+>   7 files changed, 689 insertions(+), 86 deletions(-)
+>
 
-cheers
-
---=20
-balbi
-
---MIdTMoZhcV1D07fI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRZpa9AAoJEIaOsuA1yqREjowP/27PkqAeStaDh7m+HMQ8Y0ln
-1hqzHgluteu7b6SPbg7JgA/UmlL8wVZX8zoU3OV9fYhiGEIuImOysKMdB8Vk0n1l
-F8K0SV2QxaLoePPH05oGBtGnR5savcakKKAj5NFgJdzFJM4rCySveEJB7t6b6L0u
-8VFx3dof4faBmA7rgOX/nPKbVdd+64HxGRGvUgINe5GnyBP+TbqphE8FyQBlCJQN
-+N7C48mRDwKCBYbryEVFB0tILonPbmgGmYrdzAzE8ogz0guuhdQDMQhuyKcIBElU
-jAiAVxe4LkvD+Yh4iJXDJxxAP98ZaP2uatecJ405/XtQnuDdZuTof6ZrINa4ZGep
-vJLdy54V4oFJ6HD1npHFFn/0kGzNXcxZxa3yFaB1mxkEUpShafkL/CA//LOtsdw7
-8/C+cX7rwYTXPkBIKzKFt1el+le9gPq+s4xXCXzOak8kKr30/s8B5NOLwH+61F1x
-krBv08cVWAciMz/DquWmleTYeECTwn1HPeZ+TlLH+rZa5p/NsA+6k6mSl+WHK1HV
-qJLMKTygnKLn2GlNso6TcYr+8x3XSyfrYdMGpVTr4JeSlCM2xH81WXCAV9tfYucD
-QVUfqN07fpbfaIlmKs0Jc9vpoDtdqdCGMnUPYZbIf7hC3ikkeDjfl6iHNJ3tYJuq
-v0g9jJ4UngqysPBCVLcT
-=yiF6
------END PGP SIGNATURE-----
-
---MIdTMoZhcV1D07fI--
