@@ -1,56 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965020Ab3DKPBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:01:15 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:52382 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756084Ab3DKPBO (ORCPT
+	id S1422632Ab3DKPDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:03:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38713 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935771Ab3DKPC6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:01:14 -0400
-Message-ID: <5166D037.6040405@gmail.com>
-Date: Thu, 11 Apr 2013 11:01:11 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Thu, 11 Apr 2013 11:02:58 -0400
+Date: Thu, 11 Apr 2013 18:02:46 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: Alexander Holler <holler@ahsoftware.de>, <balbi@ti.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] USB: ehci-omap: Select USB_PHY
+Message-ID: <20130411150246.GR14394@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <5166856C.3080906@ti.com>
+ <20130411100435.GB14394@arwen.pp.htv.fi>
+ <516695A4.2050804@ti.com>
+ <20130411105557.GE14394@arwen.pp.htv.fi>
+ <5166AFD2.4070108@ti.com>
+ <5166B450.1000404@ahsoftware.de>
+ <5166CC30.4060507@ti.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-        Arun Sharma <asharma@fb.com>, John Stultz <john.stultz@linaro.org>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Rik van Riel <riel@redhat.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jason Evans <je@fb.com>, sanjay@google.com,
-        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC v7 00/11] Support vrange for anonymous page
-References: <1363073915-25000-1-git-send-email-minchan@kernel.org> <5165CA22.6080808@gmail.com> <20130411065546.GA10303@blaptop> <5166643E.6050704@gmail.com> <20130411080243.GA12626@blaptop> <5166712C.7040802@gmail.com> <20130411083146.GB12626@blaptop>
-In-Reply-To: <20130411083146.GB12626@blaptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JT7Km6uNxtC1LbQY"
+Content-Disposition: inline
+In-Reply-To: <5166CC30.4060507@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>> and adding new syscall invokation is unwelcome.
->>>
->>> Sure. But one more system call could be cheaper than page-granuarity
->>> operation on purged range.
->>
->> I don't think vrange(VOLATILE) cost is the related of this discusstion.
->> Whether sending SIGBUS or just nuke pte, purge should be done on vmscan,
->> not vrange() syscall.
-> 
-> Again, please see the MADV_FREE. http://lwn.net/Articles/230799/
-> It does changes pte and page flags on all pages of the range through
-> zap_pte_range. So it would make vrange(VOLASTILE) expensive and
-> the bigger cost is, the bigger range is.
+--JT7Km6uNxtC1LbQY
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This haven't been crossed my mind. now try_to_discard_one() insert vrange
-for making SIGBUS. then, we can insert pte_none() as the same cost too. Am
-I missing something?
+Hi,
 
-I couldn't imazine why pte should be zapping on vrange(VOLATILE).
+On Thu, Apr 11, 2013 at 05:44:00PM +0300, Roger Quadros wrote:
+> Felipe,
+>=20
+> On 04/11/2013 04:02 PM, Alexander Holler wrote:
+> > Am 11.04.2013 14:42, schrieb Roger Quadros:
+> >> On 04/11/2013 01:55 PM, Felipe Balbi wrote:
+> >=20
+> >>> I would avoid 'select' completely and just update omap2plus_defconfig
+> >>> adding those two as modules.
+>=20
+> Setting USB_PHY as a module gives rise to these problems
+>=20
+> arch/arm/mach-omap2/built-in.o: In function `usbhs_init_phys':
+> /work/linux-2.6/arch/arm/mach-omap2/usb-host.c:652: undefined reference t=
+o `usb_bind_phy'
+> arch/arm/mach-omap2/built-in.o: In function `omap_2430sdp_init':
+> /work/linux-2.6/arch/arm/mach-omap2/board-2430sdp.c:236: undefined refere=
+nce to `usb_bind_phy'
+> arch/arm/mach-omap2/built-in.o: In function `omap3_beagle_init':
+> /work/linux-2.6/arch/arm/mach-omap2/board-omap3beagle.c:554: undefined re=
+ference to `usb_bind_phy'
+> arch/arm/mach-omap2/built-in.o: In function `devkit8000_init':
+> /work/linux-2.6/arch/arm/mach-omap2/board-devkit8000.c:596: undefined ref=
+erence to `usb_bind_phy'
+> arch/arm/mach-omap2/built-in.o: In function `omap_ldp_init':
+> /work/linux-2.6/arch/arm/mach-omap2/board-ldp.c:379: undefined reference =
+to `usb_bind_phy'
+>=20
+> So USB_PHY shouldn't be tristate IMO or at least the platform registratio=
+n stuff
+> as the usb_bind_phy() part is used by platform code.
+
+alright, let's send a patch to fix the check in the header. We should be
+using IS_ENABLED() anyway.
+
+--=20
+balbi
+
+--JT7Km6uNxtC1LbQY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRZtCWAAoJEIaOsuA1yqREsKUP/ifFH9/Tr5YeqtnPKcYtbX6b
+vtvsHdMctRROzdwWOHXLw8tz28XJ1s4ay4v75MdeMo1GRAHFQG8Pwc2Nmw09/QBr
+WYHKfo3xp7gbXVkpXsS8TcbhZ1vCPxxJe0p1u8Lttpdc9wRmM+rFr1NMx9o77g1z
+7/NmzTbmt9oS8Y6P8UXBbtLCfZYDFb2Sh4aYId5GM5sTxRtve2UD2hSXfD7vf6yC
+o93Pv0Vf/tPS+/n5rCO8WUo7ammWYOjG4KOgnEvkmBZRgbr+PAxkJF2Vtd3KpOpB
+kzi13zW4xkyYSWNDTqJerZC1Re+rk5QEJFURaeYvdG2EjShRMS604ziip0C3rphP
+8PGnBxMxKXpgo45RD6cq3Qw99bGZZ3BMq00djqAc4M+2UApfrwLALZ9UZE5SfS3G
+NLgGDlwb49VZQ/atJTLAHTAyyX3EiEeN9eD7aDXZNTGowv2LvzkcCG0ViYfVuc9Q
+mHnlA7vOgk0F+CX35BtVlj++1l4TFqofQ/kDEQ2igpTPTBclU8zE9qBNny9eokkU
+bCe+WIUyS9m4f3Sj9dtzPsroL4QJ2UxFXgavhzvtR9eVTXknEaydQbOR3yuluLnW
+jVd67kR+Ln8Yqz9Iz3uaUvo2QUIwkpM0vZLo4jlFfBX0CNXBFlqfTNEdhi4EnlZo
+yIaBUy07RtzHvz7bJmLy
+=jeD8
+-----END PGP SIGNATURE-----
+
+--JT7Km6uNxtC1LbQY--
