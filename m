@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab3DKXvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 19:51:32 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:43003 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752634Ab3DKXva (ORCPT
+	id S1752355Ab3DKXvi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 19:51:38 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:45499 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752634Ab3DKXvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 19:51:30 -0400
+	Thu, 11 Apr 2013 19:51:35 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -16,9 +16,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
         Mike Galbraith <efault@gmx.de>
-Subject: [PATCH 4/5] sched: Update rq clock earlier in unthrottle_cfs_rq
-Date: Fri, 12 Apr 2013 01:51:01 +0200
-Message-Id: <1365724262-20142-5-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 5/5] sched: Use an accessor to read rq clock
+Date: Fri, 12 Apr 2013 01:51:02 +0200
+Message-Id: <1365724262-20142-6-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1365724262-20142-1-git-send-email-fweisbec@gmail.com>
 References: <1365724262-20142-1-git-send-email-fweisbec@gmail.com>
@@ -26,9 +26,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this function we are making use of rq->clock right before the
-update of the rq clock, let's just call update_rq_clock() just
-before that to avoid using a stale rq clock value.
+Read the runqueue clock through an accessor. This
+prepares for adding a debugging infrastructure to
+detect missing or redundant calls to update_rq_clock()
+between a scheduler's entry and exit point.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -39,29 +40,373 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Paul Turner <pjt@google.com>
 Cc: Mike Galbraith <efault@gmx.de>
 ---
- kernel/sched/fair.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ kernel/sched/core.c      |    6 +++---
+ kernel/sched/fair.c      |   44 ++++++++++++++++++++++----------------------
+ kernel/sched/rt.c        |    8 ++++----
+ kernel/sched/sched.h     |   10 ++++++++++
+ kernel/sched/stats.h     |    8 ++++----
+ kernel/sched/stop_task.c |    8 ++++----
+ 6 files changed, 47 insertions(+), 37 deletions(-)
 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5f3e05d..f836065 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -636,7 +636,7 @@ void sched_avg_update(struct rq *rq)
+ {
+ 	s64 period = sched_avg_period();
+ 
+-	while ((s64)(rq->clock - rq->age_stamp) > period) {
++	while ((s64)(rq_clock(rq) - rq->age_stamp) > period) {
+ 		/*
+ 		 * Inline assembly required to prevent the compiler
+ 		 * optimising this loop into a divmod call.
+@@ -1297,7 +1297,7 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+ 		p->sched_class->task_woken(rq, p);
+ 
+ 	if (rq->idle_stamp) {
+-		u64 delta = rq->clock - rq->idle_stamp;
++		u64 delta = rq_clock(rq) - rq->idle_stamp;
+ 		u64 max = 2*sysctl_sched_migration_cost;
+ 
+ 		if (delta > max)
+@@ -2638,7 +2638,7 @@ static u64 do_task_delta_exec(struct task_struct *p, struct rq *rq)
+ 
+ 	if (task_current(rq, p)) {
+ 		update_rq_clock(rq);
+-		ns = rq->clock_task - p->se.exec_start;
++		ns = rq_clock_task(rq) - p->se.exec_start;
+ 		if ((s64)ns < 0)
+ 			ns = 0;
+ 	}
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c23dde4..fc7d01a 100644
+index fc7d01a..603b7b1 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2280,12 +2280,14 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
- 	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
+@@ -686,7 +686,7 @@ __update_curr(struct cfs_rq *cfs_rq, struct sched_entity *curr,
+ static void update_curr(struct cfs_rq *cfs_rq)
+ {
+ 	struct sched_entity *curr = cfs_rq->curr;
+-	u64 now = rq_of(cfs_rq)->clock_task;
++	u64 now = rq_clock_task(rq_of(cfs_rq));
+ 	unsigned long delta_exec;
  
- 	cfs_rq->throttled = 0;
-+
-+	update_rq_clock(rq);
-+
+ 	if (unlikely(!curr))
+@@ -718,7 +718,7 @@ static void update_curr(struct cfs_rq *cfs_rq)
+ static inline void
+ update_stats_wait_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ {
+-	schedstat_set(se->statistics.wait_start, rq_of(cfs_rq)->clock);
++	schedstat_set(se->statistics.wait_start, rq_clock(rq_of(cfs_rq)));
+ }
+ 
+ /*
+@@ -738,14 +738,14 @@ static void
+ update_stats_wait_end(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ {
+ 	schedstat_set(se->statistics.wait_max, max(se->statistics.wait_max,
+-			rq_of(cfs_rq)->clock - se->statistics.wait_start));
++			rq_clock(rq_of(cfs_rq)) - se->statistics.wait_start));
+ 	schedstat_set(se->statistics.wait_count, se->statistics.wait_count + 1);
+ 	schedstat_set(se->statistics.wait_sum, se->statistics.wait_sum +
+-			rq_of(cfs_rq)->clock - se->statistics.wait_start);
++			rq_clock(rq_of(cfs_rq)) - se->statistics.wait_start);
+ #ifdef CONFIG_SCHEDSTATS
+ 	if (entity_is_task(se)) {
+ 		trace_sched_stat_wait(task_of(se),
+-			rq_of(cfs_rq)->clock - se->statistics.wait_start);
++			rq_clock(rq_of(cfs_rq)) - se->statistics.wait_start);
+ 	}
+ #endif
+ 	schedstat_set(se->statistics.wait_start, 0);
+@@ -771,7 +771,7 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	/*
+ 	 * We are starting a new run period:
+ 	 */
+-	se->exec_start = rq_of(cfs_rq)->clock_task;
++	se->exec_start = rq_clock_task(rq_of(cfs_rq));
+ }
+ 
+ /**************************************************
+@@ -1497,7 +1497,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+ 
+ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+ {
+-	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
++	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+ }
+ 
+@@ -1512,7 +1512,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 	 * accumulated while sleeping.
+ 	 */
+ 	if (unlikely(se->avg.decay_count <= 0)) {
+-		se->avg.last_runnable_update = rq_of(cfs_rq)->clock_task;
++		se->avg.last_runnable_update = rq_clock_task(rq_of(cfs_rq));
+ 		if (se->avg.decay_count) {
+ 			/*
+ 			 * In a wake-up migration we have to approximate the
+@@ -1586,7 +1586,7 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 		tsk = task_of(se);
+ 
+ 	if (se->statistics.sleep_start) {
+-		u64 delta = rq_of(cfs_rq)->clock - se->statistics.sleep_start;
++		u64 delta = rq_clock(rq_of(cfs_rq)) - se->statistics.sleep_start;
+ 
+ 		if ((s64)delta < 0)
+ 			delta = 0;
+@@ -1603,7 +1603,7 @@ static void enqueue_sleeper(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 		}
+ 	}
+ 	if (se->statistics.block_start) {
+-		u64 delta = rq_of(cfs_rq)->clock - se->statistics.block_start;
++		u64 delta = rq_clock(rq_of(cfs_rq)) - se->statistics.block_start;
+ 
+ 		if ((s64)delta < 0)
+ 			delta = 0;
+@@ -1784,9 +1784,9 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 			struct task_struct *tsk = task_of(se);
+ 
+ 			if (tsk->state & TASK_INTERRUPTIBLE)
+-				se->statistics.sleep_start = rq_of(cfs_rq)->clock;
++				se->statistics.sleep_start = rq_clock(rq_of(cfs_rq));
+ 			if (tsk->state & TASK_UNINTERRUPTIBLE)
+-				se->statistics.block_start = rq_of(cfs_rq)->clock;
++				se->statistics.block_start = rq_clock(rq_of(cfs_rq));
+ 		}
+ #endif
+ 	}
+@@ -2061,7 +2061,7 @@ static inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq)
+ 	if (unlikely(cfs_rq->throttle_count))
+ 		return cfs_rq->throttled_clock_task;
+ 
+-	return rq_of(cfs_rq)->clock_task - cfs_rq->throttled_clock_task_time;
++	return rq_clock_task(rq_of(cfs_rq)) - cfs_rq->throttled_clock_task_time;
+ }
+ 
+ /* returns 0 on failure to allocate runtime */
+@@ -2120,7 +2120,7 @@ static void expire_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+ 	struct rq *rq = rq_of(cfs_rq);
+ 
+ 	/* if the deadline is ahead of our clock, nothing to do */
+-	if (likely((s64)(rq->clock - cfs_rq->runtime_expires) < 0))
++	if (likely((s64)(rq_clock(rq_of(cfs_rq)) - cfs_rq->runtime_expires) < 0))
+ 		return;
+ 
+ 	if (cfs_rq->runtime_remaining < 0)
+@@ -2209,7 +2209,7 @@ static int tg_unthrottle_up(struct task_group *tg, void *data)
+ #ifdef CONFIG_SMP
+ 	if (!cfs_rq->throttle_count) {
+ 		/* adjust cfs_rq_clock_task() */
+-		cfs_rq->throttled_clock_task_time += rq->clock_task -
++		cfs_rq->throttled_clock_task_time += rq_clock_task(rq) -
+ 					     cfs_rq->throttled_clock_task;
+ 	}
+ #endif
+@@ -2224,7 +2224,7 @@ static int tg_throttle_down(struct task_group *tg, void *data)
+ 
+ 	/* group is entering throttled state, stop time */
+ 	if (!cfs_rq->throttle_count)
+-		cfs_rq->throttled_clock_task = rq->clock_task;
++		cfs_rq->throttled_clock_task = rq_clock_task(rq);
+ 	cfs_rq->throttle_count++;
+ 
+ 	return 0;
+@@ -2263,7 +2263,7 @@ static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
+ 		rq->nr_running -= task_delta;
+ 
+ 	cfs_rq->throttled = 1;
+-	cfs_rq->throttled_clock = rq->clock;
++	cfs_rq->throttled_clock = rq_clock(rq);
  	raw_spin_lock(&cfs_b->lock);
- 	cfs_b->throttled_time += rq->clock - cfs_rq->throttled_clock;
+ 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
+ 	raw_spin_unlock(&cfs_b->lock);
+@@ -2284,7 +2284,7 @@ void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
+ 	update_rq_clock(rq);
+ 
+ 	raw_spin_lock(&cfs_b->lock);
+-	cfs_b->throttled_time += rq->clock - cfs_rq->throttled_clock;
++	cfs_b->throttled_time += rq_clock(rq) - cfs_rq->throttled_clock;
  	list_del_rcu(&cfs_rq->throttled_list);
  	raw_spin_unlock(&cfs_b->lock);
  
--	update_rq_clock(rq);
- 	/* update hierarchical throttle state */
- 	walk_tg_tree_from(cfs_rq->tg, tg_nop, tg_unthrottle_up, (void *)rq);
+@@ -2687,7 +2687,7 @@ static void __maybe_unused unthrottle_offline_cfs_rqs(struct rq *rq)
+ #else /* CONFIG_CFS_BANDWIDTH */
+ static inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq)
+ {
+-	return rq_of(cfs_rq)->clock_task;
++	return rq_clock_task(rq_of(cfs_rq));
+ }
  
+ static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+@@ -3920,7 +3920,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	 * 2) too many balance attempts have failed.
+ 	 */
+ 
+-	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
++	tsk_cache_hot = task_hot(p, rq_clock_task(env->src_rq), env->sd);
+ 	if (!tsk_cache_hot ||
+ 		env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
+ 
+@@ -4282,7 +4282,7 @@ static unsigned long scale_rt_power(int cpu)
+ 	age_stamp = ACCESS_ONCE(rq->age_stamp);
+ 	avg = ACCESS_ONCE(rq->rt_avg);
+ 
+-	total = sched_avg_period() + (rq->clock - age_stamp);
++	total = sched_avg_period() + (rq_clock(rq) - age_stamp);
+ 
+ 	if (unlikely(total < avg)) {
+ 		/* Ensures that power won't end up being negative */
+@@ -5214,7 +5214,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 	int pulled_task = 0;
+ 	unsigned long next_balance = jiffies + HZ;
+ 
+-	this_rq->idle_stamp = this_rq->clock;
++	this_rq->idle_stamp = rq_clock(this_rq);
+ 
+ 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
+ 		return;
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 127a2c4..3dfffc4 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -926,7 +926,7 @@ static void update_curr_rt(struct rq *rq)
+ 	if (curr->sched_class != &rt_sched_class)
+ 		return;
+ 
+-	delta_exec = rq->clock_task - curr->se.exec_start;
++	delta_exec = rq_clock_task(rq) - curr->se.exec_start;
+ 	if (unlikely((s64)delta_exec <= 0))
+ 		return;
+ 
+@@ -936,7 +936,7 @@ static void update_curr_rt(struct rq *rq)
+ 	curr->se.sum_exec_runtime += delta_exec;
+ 	account_group_exec_runtime(curr, delta_exec);
+ 
+-	curr->se.exec_start = rq->clock_task;
++	curr->se.exec_start = rq_clock_task(rq);
+ 	cpuacct_charge(curr, delta_exec);
+ 
+ 	sched_rt_avg_update(rq, delta_exec);
+@@ -1385,7 +1385,7 @@ static struct task_struct *_pick_next_task_rt(struct rq *rq)
+ 	} while (rt_rq);
+ 
+ 	p = rt_task_of(rt_se);
+-	p->se.exec_start = rq->clock_task;
++	p->se.exec_start = rq_clock_task(rq);
+ 
+ 	return p;
+ }
+@@ -2037,7 +2037,7 @@ static void set_curr_task_rt(struct rq *rq)
+ {
+ 	struct task_struct *p = rq->curr;
+ 
+-	p->se.exec_start = rq->clock_task;
++	p->se.exec_start = rq_clock_task(rq);
+ 
+ 	/* The running task is never eligible for pushing */
+ 	dequeue_pushable_task(rq, p);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 8116cf8..425fa38 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -536,6 +536,16 @@ DECLARE_PER_CPU(struct rq, runqueues);
+ #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
+ #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+ 
++static inline u64 rq_clock(struct rq *rq)
++{
++	return rq->clock;
++}
++
++static inline u64 rq_clock_task(struct rq *rq)
++{
++	return rq->clock_task;
++}
++
+ #ifdef CONFIG_SMP
+ 
+ #define rcu_dereference_check_sched_domain(p) \
+diff --git a/kernel/sched/stats.h b/kernel/sched/stats.h
+index 2ef90a5..17d7065 100644
+--- a/kernel/sched/stats.h
++++ b/kernel/sched/stats.h
+@@ -61,7 +61,7 @@ static inline void sched_info_reset_dequeued(struct task_struct *t)
+  */
+ static inline void sched_info_dequeued(struct task_struct *t)
+ {
+-	unsigned long long now = task_rq(t)->clock, delta = 0;
++	unsigned long long now = rq_clock(task_rq(t)), delta = 0;
+ 
+ 	if (unlikely(sched_info_on()))
+ 		if (t->sched_info.last_queued)
+@@ -79,7 +79,7 @@ static inline void sched_info_dequeued(struct task_struct *t)
+  */
+ static void sched_info_arrive(struct task_struct *t)
+ {
+-	unsigned long long now = task_rq(t)->clock, delta = 0;
++	unsigned long long now = rq_clock(task_rq(t)), delta = 0;
+ 
+ 	if (t->sched_info.last_queued)
+ 		delta = now - t->sched_info.last_queued;
+@@ -100,7 +100,7 @@ static inline void sched_info_queued(struct task_struct *t)
+ {
+ 	if (unlikely(sched_info_on()))
+ 		if (!t->sched_info.last_queued)
+-			t->sched_info.last_queued = task_rq(t)->clock;
++			t->sched_info.last_queued = rq_clock(task_rq(t));
+ }
+ 
+ /*
+@@ -112,7 +112,7 @@ static inline void sched_info_queued(struct task_struct *t)
+  */
+ static inline void sched_info_depart(struct task_struct *t)
+ {
+-	unsigned long long delta = task_rq(t)->clock -
++	unsigned long long delta = rq_clock(task_rq(t)) -
+ 					t->sched_info.last_arrival;
+ 
+ 	rq_sched_info_depart(task_rq(t), delta);
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index da5eb5b..e08fbee 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -28,7 +28,7 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
+ 	struct task_struct *stop = rq->stop;
+ 
+ 	if (stop && stop->on_rq) {
+-		stop->se.exec_start = rq->clock_task;
++		stop->se.exec_start = rq_clock_task(rq);
+ 		return stop;
+ 	}
+ 
+@@ -57,7 +57,7 @@ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ 	struct task_struct *curr = rq->curr;
+ 	u64 delta_exec;
+ 
+-	delta_exec = rq->clock_task - curr->se.exec_start;
++	delta_exec = rq_clock_task(rq) - curr->se.exec_start;
+ 	if (unlikely((s64)delta_exec < 0))
+ 		delta_exec = 0;
+ 
+@@ -67,7 +67,7 @@ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ 	curr->se.sum_exec_runtime += delta_exec;
+ 	account_group_exec_runtime(curr, delta_exec);
+ 
+-	curr->se.exec_start = rq->clock_task;
++	curr->se.exec_start = rq_clock_task(rq);
+ 	cpuacct_charge(curr, delta_exec);
+ }
+ 
+@@ -79,7 +79,7 @@ static void set_curr_task_stop(struct rq *rq)
+ {
+ 	struct task_struct *stop = rq->stop;
+ 
+-	stop->se.exec_start = rq->clock_task;
++	stop->se.exec_start = rq_clock_task(rq);
+ }
+ 
+ static void switched_to_stop(struct rq *rq, struct task_struct *p)
 -- 
 1.7.5.4
 
