@@ -1,133 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935585Ab3DKVQD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:16:03 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17239 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935536Ab3DKUs7 (ORCPT
+	id S935551Ab3DKVQm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:16:42 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:51109 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934821Ab3DKVQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:48:59 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=3nNosCYXjywA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=X718eONmlq4A:10 a=pGLkceISAAAA:8 a=drOt6m5kAAAA:8 a=Z4Rwk6OoAAAA:8 a=x7Tj1IhUH-1ZWmVC9aEA:9 a=MSl-tDqOz04A:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202608.464941142@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:27:18 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Anatol Pomozov <anatol.pomozov@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [ 135/171 ] loop: prevent bdev freeing while device in use
+	Thu, 11 Apr 2013 17:16:01 -0400
+Message-ID: <1365714957.7355.39.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [ 026/171 ] sfc: Only use TX push if a single descriptor is to
+ be written
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Date: Thu, 11 Apr 2013 22:15:57 +0100
+In-Reply-To: <20130411202550.471143447@goodmis.org>
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0135-loop-prevent-bdev-freeing-while-device-in-use.patch
+	 <20130411202550.471143447@goodmis.org>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19790.000
+X-TM-AS-Result: No--20.506500-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.2 stable review patch.
-If anyone has any objections, please let me know.
+Aside from #21-26 in this series, and the deadlock fix required on top
+of #24, there are several more fixes for sfc that I think are suitable
+for 3.6.11.y.
 
-------------------
+These commits were cherry-picked for 3.4.38 and can also be
+cherry-picked cleanly on top of 3.6.11.1 plus the 7 patches you already
+have:
 
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
+d5e8cc6c946e sfc: Really disable flow control while flushing
+bfeed902946a sfc: Convert firmware subtypes to native byte order in efx_mcdi_get_board_cfg()
+9724a8504c87 sfc: Add parentheses around use of bitfield macro arguments
+0a6e5008a9df sfc: Fix MCDI structure field lookup
+450783747f42 sfc: Avoid generating over-length MC_CMD_FLUSH_RX_QUEUES request
+525d9e824018 sfc: Work-around flush timeout when flushes have completed
+ef492f11efed sfc: Correctly initialise reset_method in siena_test_chip()
+ebf98e797b4e sfc: Fix timekeeping in efx_mcdi_poll()
 
-[ Upstream commit c1681bf8a7b1b98edee8b862a42c19c4e53205fd ]
+Please let me know whether you're prepared to include these in the
+current update.  I can then run some automated tests with your selected
+set of patches applied.
 
-struct block_device lifecycle is defined by its inode (see fs/block_dev.c) -
-block_device allocated first time we access /dev/loopXX and deallocated on
-bdev_destroy_inode. When we create the device "losetup /dev/loopXX afile"
-we want that block_device stay alive until we destroy the loop device
-with "losetup -d".
+Ben.
 
-But because we do not hold /dev/loopXX inode its counter goes 0, and
-inode/bdev can be destroyed at any moment. Usually it happens at memory
-pressure or when user drops inode cache (like in the test below). When later in
-loop_clr_fd() we want to use bdev we have use-after-free error with following
-stack:
-
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000280
-  bd_set_size+0x10/0xa0
-  loop_clr_fd+0x1f8/0x420 [loop]
-  lo_ioctl+0x200/0x7e0 [loop]
-  lo_compat_ioctl+0x47/0xe0 [loop]
-  compat_blkdev_ioctl+0x341/0x1290
-  do_filp_open+0x42/0xa0
-  compat_sys_ioctl+0xc1/0xf20
-  do_sys_open+0x16e/0x1d0
-  sysenter_dispatch+0x7/0x1a
-
-To prevent use-after-free we need to grab the device in loop_set_fd()
-and put it later in loop_clr_fd().
-
-The issue is reprodusible on current Linus head and v3.3. Here is the test:
-
-  dd if=/dev/zero of=loop.file bs=1M count=1
-  while [ true ]; do
-    losetup /dev/loop0 loop.file
-    echo 2 > /proc/sys/vm/drop_caches
-    losetup -d /dev/loop0
-  done
-
-[ Doing bdgrab/bput in loop_set_fd/loop_clr_fd is safe, because every
-  time we call loop_set_fd() we check that loop_device->lo_state is
-  Lo_unbound and set it to Lo_bound If somebody will try to set_fd again
-  it will get EBUSY.  And if we try to loop_clr_fd() on unbound loop
-  device we'll get ENXIO.
-
-  loop_set_fd/loop_clr_fd (and any other loop ioctl) is called under
-  loop_device->lo_ctl_mutex. ]
-
-Signed-off-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/block/loop.c |    9 ++++++++-
- fs/block_dev.c       |    1 +
- 2 files changed, 9 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 3bba655..1d6b89d 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -908,6 +908,11 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
- 		lo->lo_flags |= LO_FLAGS_PARTSCAN;
- 	if (lo->lo_flags & LO_FLAGS_PARTSCAN)
- 		ioctl_by_bdev(bdev, BLKRRPART, 0);
-+
-+	/* Grab the block_device to prevent its destruction after we
-+	 * put /dev/loopXX inode. Later in loop_clr_fd() we bdput(bdev).
-+	 */
-+	bdgrab(bdev);
- 	return 0;
- 
- out_clr:
-@@ -1004,8 +1009,10 @@ static int loop_clr_fd(struct loop_device *lo)
- 	memset(lo->lo_encrypt_key, 0, LO_KEY_SIZE);
- 	memset(lo->lo_crypt_name, 0, LO_NAME_SIZE);
- 	memset(lo->lo_file_name, 0, LO_NAME_SIZE);
--	if (bdev)
-+	if (bdev) {
-+		bdput(bdev);
- 		invalidate_bdev(bdev);
-+	}
- 	set_capacity(lo->lo_disk, 0);
- 	loop_sysfs_exit(lo);
- 	if (bdev) {
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 38e721b..daaca3d 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -604,6 +604,7 @@ struct block_device *bdgrab(struct block_device *bdev)
- 	ihold(bdev->bd_inode);
- 	return bdev;
- }
-+EXPORT_SYMBOL(bdgrab);
- 
- long nr_blockdev_pages(void)
- {
 -- 
-1.7.10.4
-
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
