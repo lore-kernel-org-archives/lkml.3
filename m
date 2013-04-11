@@ -1,275 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937777Ab3DKAMA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 20:12:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:55982 "EHLO
+	id S937766Ab3DKAL7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 20:11:59 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:49558 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937370Ab3DKAGz (ORCPT
+	with ESMTP id S937385Ab3DKAGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Apr 2013 20:06:55 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>
-Subject: [PATCH 09/30] mmc: sdhci-s3c: remove platform dependencies
-Date: Thu, 11 Apr 2013 02:04:51 +0200
-Message-Id: <1365638712-1028578-10-git-send-email-arnd@arndb.de>
+        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 02/30] ARM: exynos: prepare for sparse IRQ
+Date: Thu, 11 Apr 2013 02:04:44 +0200
+Message-Id: <1365638712-1028578-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
 References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:J7w7k3Wz3wlT1/mzm5VJTPANa6x3F/AhvRxasiEwtyf
- fGixyNN5LvQX9iP6oIMdHDhkhcPb5tiWJPcfMJ3IdviAk/LPy8
- z4sj/6NcJbgE4Lu4ppKt9EHhGy9+oa5KPRKuKNYY9ZkMl1QfTk
- XBGkhG6aa1d0lYqRaaSyPaTZSnil7ZymjZq5xYDbpGEXYdn9A0
- vl5nmaTqMHdv0kDrNAWWjyvlYt4EwuQSSanv7YGjeC3ajmIau7
- t/RZo/CyWuBsXqGb9y/kqHwPlYKbAhHKpFmgyrYe2U6DaApmn6
- C/S0IWrYXKLsNLIWSKfiIqPsKJxTfCP1f92Y7COKE0f08OAE9f
- C7GFC0zarkhtvCQs78bLB6eaAHAc7sBrdrisWJWrpg1+St8ILl
- /2Yp9oTEXmA8Q==
+X-Provags-ID: V02:K0:y05spy58EtlzhT0eS62Lg77uyowHrW/kpDFvSixX8iv
+ dqqxiFZ78I6Wis7Wc/uVWwqpgjKVnR5pW4o9OLzsLYOqhVdFkT
+ vTetyXDw4PD/hHiZG+fdpp+VyTb4zVvUsCRXQJPF1z4eIxgYzI
+ J7uORgs9/ut0mM25WUUUPqI0lFq029YvA6WqRc+Omiv38JJl1V
+ M2WRtGqxtivgSkuk8vUrEqZh19IzwCfQfcL9tU3mPyt7yr/SMg
+ DTX3t4NFtim5GVpvNVfAQ9CbU/dr8ijVsM3Hd4yYnstoACwJpH
+ 1QCOXMbKwB2nbZO8HklwT0UjxNsWnskpWqNu7mqEkUOIiE2VQy
+ juiaXZnx9YEafxGHSq/nlK4H18d7pRIlkMk2Ol4RYm6T48hm5T
+ qLOB/nDdydUgg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-plat/regs-sdhci.h is not used anywhere but in the sdhci-s3c
-driver, so it can become a local file there and all other
-inclusions removed.
-
-plat/sdhci.h is used only to define the platform devices,
-and with the exception of the platform_data structure not
-needed by the driver, so we can split out the platform_data
-definition instead and leave the rest to platform code.
+When we enable CONFIG_SPARSE_IRQ, we have to set the value of NR_IRQS in
+the machine_desc for legacy IRQ domains, and any file referring to the
+number of interrupts or a specific number must include the mach/irqs.h
+header file explicitly.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-mmc@vger.kernel.org
-Cc: Chris Ball <cjb@laptop.org>
 ---
- arch/arm/mach-exynos/setup-sdhci-gpio.c            |  2 +-
- arch/arm/mach-s5pc100/setup-sdhci-gpio.c           |  1 -
- arch/arm/mach-s5pv210/setup-sdhci-gpio.c           |  1 -
- arch/arm/plat-samsung/include/plat/sdhci.h         | 56 +---------------------
- drivers/mmc/host/Kconfig                           |  2 +-
- .../mmc/host/sdhci-s3c-regs.h                      |  0
- drivers/mmc/host/sdhci-s3c.c                       |  5 +-
- include/linux/platform_data/mmc-sdhci-s3c.h        | 56 ++++++++++++++++++++++
- 8 files changed, 61 insertions(+), 62 deletions(-)
- rename arch/arm/plat-samsung/include/plat/regs-sdhci.h => drivers/mmc/host/sdhci-s3c-regs.h (100%)
- create mode 100644 include/linux/platform_data/mmc-sdhci-s3c.h
+ arch/arm/mach-exynos/dev-uart.c          | 1 +
+ arch/arm/mach-exynos/include/mach/irqs.h | 5 ++++-
+ arch/arm/mach-exynos/mach-armlex4210.c   | 2 ++
+ arch/arm/mach-exynos/mach-exynos4-dt.c   | 3 +++
+ arch/arm/mach-exynos/mach-exynos5-dt.c   | 2 ++
+ arch/arm/mach-exynos/mach-nuri.c         | 2 ++
+ arch/arm/mach-exynos/mach-origen.c       | 2 ++
+ arch/arm/mach-exynos/mach-smdk4x12.c     | 2 ++
+ arch/arm/mach-exynos/mach-smdkv310.c     | 3 +++
+ arch/arm/plat-samsung/irq-vic-timer.c    | 1 +
+ arch/arm/plat-samsung/pm.c               | 1 +
+ arch/arm/plat-samsung/s5p-irq.c          | 1 +
+ 12 files changed, 24 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-exynos/setup-sdhci-gpio.c b/arch/arm/mach-exynos/setup-sdhci-gpio.c
-index e8d08bf..d5b98c8 100644
---- a/arch/arm/mach-exynos/setup-sdhci-gpio.c
-+++ b/arch/arm/mach-exynos/setup-sdhci-gpio.c
-@@ -19,8 +19,8 @@
- #include <linux/mmc/host.h>
- #include <linux/mmc/card.h>
+diff --git a/arch/arm/mach-exynos/dev-uart.c b/arch/arm/mach-exynos/dev-uart.c
+index 7c42f4b..c48aff0 100644
+--- a/arch/arm/mach-exynos/dev-uart.c
++++ b/arch/arm/mach-exynos/dev-uart.c
+@@ -20,6 +20,7 @@
+ #include <asm/mach/irq.h>
+ #include <mach/hardware.h>
+ #include <mach/map.h>
++#include <mach/irqs.h>
  
-+#include <mach/gpio.h>
- #include <plat/gpio-cfg.h>
--#include <plat/regs-sdhci.h>
- #include <plat/sdhci.h>
- 
- void exynos4_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
-diff --git a/arch/arm/mach-s5pc100/setup-sdhci-gpio.c b/arch/arm/mach-s5pc100/setup-sdhci-gpio.c
-index 03c02d0..6010c03 100644
---- a/arch/arm/mach-s5pc100/setup-sdhci-gpio.c
-+++ b/arch/arm/mach-s5pc100/setup-sdhci-gpio.c
-@@ -19,7 +19,6 @@
- #include <linux/mmc/card.h>
- 
- #include <plat/gpio-cfg.h>
--#include <plat/regs-sdhci.h>
- #include <plat/sdhci.h>
- 
- void s5pc100_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
-diff --git a/arch/arm/mach-s5pv210/setup-sdhci-gpio.c b/arch/arm/mach-s5pv210/setup-sdhci-gpio.c
-index 3e3ac05..0512ada 100644
---- a/arch/arm/mach-s5pv210/setup-sdhci-gpio.c
-+++ b/arch/arm/mach-s5pv210/setup-sdhci-gpio.c
-@@ -20,7 +20,6 @@
- #include <linux/mmc/card.h>
- 
- #include <plat/gpio-cfg.h>
--#include <plat/regs-sdhci.h>
- #include <plat/sdhci.h>
- 
- void s5pv210_setup_sdhci0_cfg_gpio(struct platform_device *dev, int width)
-diff --git a/arch/arm/plat-samsung/include/plat/sdhci.h b/arch/arm/plat-samsung/include/plat/sdhci.h
-index 5560586..ce1d0f7 100644
---- a/arch/arm/plat-samsung/include/plat/sdhci.h
-+++ b/arch/arm/plat-samsung/include/plat/sdhci.h
-@@ -18,62 +18,9 @@
- #ifndef __PLAT_S3C_SDHCI_H
- #define __PLAT_S3C_SDHCI_H __FILE__
- 
-+#include <linux/platform_data/mmc-sdhci-s3c.h>
  #include <plat/devs.h>
  
--struct platform_device;
--struct mmc_host;
--struct mmc_card;
--struct mmc_ios;
--
--enum cd_types {
--	S3C_SDHCI_CD_INTERNAL,	/* use mmc internal CD line */
--	S3C_SDHCI_CD_EXTERNAL,	/* use external callback */
--	S3C_SDHCI_CD_GPIO,	/* use external gpio pin for CD line */
--	S3C_SDHCI_CD_NONE,	/* no CD line, use polling to detect card */
--	S3C_SDHCI_CD_PERMANENT,	/* no CD line, card permanently wired to host */
--};
--
--/**
-- * struct s3c_sdhci_platdata() - Platform device data for Samsung SDHCI
-- * @max_width: The maximum number of data bits supported.
-- * @host_caps: Standard MMC host capabilities bit field.
-- * @host_caps2: The second standard MMC host capabilities bit field.
-- * @cd_type: Type of Card Detection method (see cd_types enum above)
-- * @ext_cd_init: Initialize external card detect subsystem. Called on
-- *		 sdhci-s3c driver probe when cd_type == S3C_SDHCI_CD_EXTERNAL.
-- *		 notify_func argument is a callback to the sdhci-s3c driver
-- *		 that triggers the card detection event. Callback arguments:
-- *		 dev is pointer to platform device of the host controller,
-- *		 state is new state of the card (0 - removed, 1 - inserted).
-- * @ext_cd_cleanup: Cleanup external card detect subsystem. Called on
-- *		 sdhci-s3c driver remove when cd_type == S3C_SDHCI_CD_EXTERNAL.
-- *		 notify_func argument is the same callback as for ext_cd_init.
-- * @ext_cd_gpio: gpio pin used for external CD line, valid only if
-- *		 cd_type == S3C_SDHCI_CD_GPIO
-- * @ext_cd_gpio_invert: invert values for external CD gpio line
-- * @cfg_gpio: Configure the GPIO for a specific card bit-width
-- *
-- * Initialisation data specific to either the machine or the platform
-- * for the device driver to use or call-back when configuring gpio or
-- * card speed information.
--*/
--struct s3c_sdhci_platdata {
--	unsigned int	max_width;
--	unsigned int	host_caps;
--	unsigned int	host_caps2;
--	unsigned int	pm_caps;
--	enum cd_types	cd_type;
--
--	int		ext_cd_gpio;
--	bool		ext_cd_gpio_invert;
--	int	(*ext_cd_init)(void (*notify_func)(struct platform_device *,
--						   int state));
--	int	(*ext_cd_cleanup)(void (*notify_func)(struct platform_device *,
--						      int state));
--
--	void	(*cfg_gpio)(struct platform_device *dev, int width);
--};
--
- /* s3c_sdhci_set_platdata() - common helper for setting SDHCI platform data
-  * @pd: The default platform data for this device.
-  * @set: Pointer to the platform data to fill in.
-@@ -378,5 +325,4 @@ static inline void s3c_sdhci_setname(int id, char *name)
- 		break;
- 	}
+diff --git a/arch/arm/mach-exynos/include/mach/irqs.h b/arch/arm/mach-exynos/include/mach/irqs.h
+index 35fe6d5..c72f59d 100644
+--- a/arch/arm/mach-exynos/include/mach/irqs.h
++++ b/arch/arm/mach-exynos/include/mach/irqs.h
+@@ -467,7 +467,10 @@
+ #define IRQ_TIMER_BASE			(IRQ_GPIO_END + 64)
+ 
+ /* Set the default NR_IRQS */
++#define EXYNOS_NR_IRQS			(IRQ_TIMER_BASE + IRQ_TIMER_COUNT)
+ 
+-#define NR_IRQS				(IRQ_TIMER_BASE + IRQ_TIMER_COUNT)
++#ifndef CONFIG_SPARSE_IRQ
++#define NR_IRQS				EXYNOS_NR_IRQS
++#endif
+ 
+ #endif /* __ASM_ARCH_IRQS_H */
+diff --git a/arch/arm/mach-exynos/mach-armlex4210.c b/arch/arm/mach-exynos/mach-armlex4210.c
+index 2c23b65..a503e02 100644
+--- a/arch/arm/mach-exynos/mach-armlex4210.c
++++ b/arch/arm/mach-exynos/mach-armlex4210.c
+@@ -25,6 +25,7 @@
+ #include <plat/regs-srom.h>
+ #include <plat/sdhci.h>
+ 
++#include <mach/irqs.h>
+ #include <mach/map.h>
+ 
+ #include "common.h"
+@@ -196,6 +197,7 @@ static void __init armlex4210_machine_init(void)
+ MACHINE_START(ARMLEX4210, "ARMLEX4210")
+ 	/* Maintainer: Alim Akhtar <alim.akhtar@samsung.com> */
+ 	.atag_offset	= 0x100,
++	.nr_irqs	= EXYNOS_NR_IRQS,
+ 	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= armlex4210_map_io,
+diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
+index b9ed834..5f23682 100644
+--- a/arch/arm/mach-exynos/mach-exynos4-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
+@@ -20,6 +20,8 @@
+ 
+ #include <asm/mach/arch.h>
+ #include <plat/mfc.h>
++#include <mach/irqs.h>
++
+ 
+ #include "common.h"
+ 
+@@ -54,6 +56,7 @@ static void __init exynos4_reserve(void)
  }
--
- #endif /* __PLAT_S3C_SDHCI_H */
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index d88219e..d054744 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -180,7 +180,7 @@ config MMC_SDHCI_TEGRA
+ DT_MACHINE_START(EXYNOS4210_DT, "Samsung Exynos4 (Flattened Device Tree)")
+ 	/* Maintainer: Thomas Abraham <thomas.abraham@linaro.org> */
++	.nr_irqs	= EXYNOS_NR_IRQS,
+ 	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= exynos4_dt_map_io,
+diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
+index 753b94f..8b7456a 100644
+--- a/arch/arm/mach-exynos/mach-exynos5-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
+@@ -16,6 +16,7 @@
+ #include <linux/clocksource.h>
  
- config MMC_SDHCI_S3C
- 	tristate "SDHCI support on Samsung S3C SoC"
--	depends on MMC_SDHCI && PLAT_SAMSUNG
-+	depends on MMC_SDHCI && PLAT_SAMSUNG_SINGLE
- 	help
- 	  This selects the Secure Digital Host Controller Interface (SDHCI)
- 	  often referrered to as the HSMMC block in some of the Samsung S3C
-diff --git a/arch/arm/plat-samsung/include/plat/regs-sdhci.h b/drivers/mmc/host/sdhci-s3c-regs.h
-similarity index 100%
-rename from arch/arm/plat-samsung/include/plat/regs-sdhci.h
-rename to drivers/mmc/host/sdhci-s3c-regs.h
-diff --git a/drivers/mmc/host/sdhci-s3c.c b/drivers/mmc/host/sdhci-s3c.c
-index 7363efe..e4f52b5 100644
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -15,6 +15,7 @@
- #include <linux/delay.h>
- #include <linux/dma-mapping.h>
- #include <linux/platform_device.h>
-+#include <linux/platform_data/mmc-sdhci-s3c.h>
- #include <linux/slab.h>
- #include <linux/clk.h>
+ #include <asm/mach/arch.h>
++#include <mach/irqs.h>
+ #include <mach/regs-pmu.h>
+ 
+ #include <plat/cpu.h>
+@@ -76,6 +77,7 @@ static void __init exynos5_reserve(void)
+ 
+ DT_MACHINE_START(EXYNOS5_DT, "SAMSUNG EXYNOS5 (Flattened Device Tree)")
+ 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
++	.nr_irqs	= EXYNOS_NR_IRQS,
+ 	.init_irq	= exynos5_init_irq,
+ 	.smp		= smp_ops(exynos_smp_ops),
+ 	.map_io		= exynos5_dt_map_io,
+diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
+index 0c10852..fbae331 100644
+--- a/arch/arm/mach-exynos/mach-nuri.c
++++ b/arch/arm/mach-exynos/mach-nuri.c
+@@ -53,6 +53,7 @@
+ #include <plat/fimc-core.h>
+ #include <plat/camport.h>
+ 
++#include <mach/irqs.h>
+ #include <mach/map.h>
+ 
+ #include "common.h"
+@@ -1376,6 +1377,7 @@ static void __init nuri_machine_init(void)
+ MACHINE_START(NURI, "NURI")
+ 	/* Maintainer: Kyungmin Park <kyungmin.park@samsung.com> */
+ 	.atag_offset	= 0x100,
++	.nr_irqs	= EXYNOS_NR_IRQS,
+ 	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= nuri_map_io,
+diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
+index f662345..a3ee06a 100644
+--- a/arch/arm/mach-exynos/mach-origen.c
++++ b/arch/arm/mach-exynos/mach-origen.c
+@@ -46,6 +46,7 @@
+ #include <plat/hdmi.h>
+ 
+ #include <mach/map.h>
++#include <mach/irqs.h>
+ 
+ #include <drm/exynos_drm.h>
+ #include "common.h"
+@@ -811,6 +812,7 @@ static void __init origen_machine_init(void)
+ MACHINE_START(ORIGEN, "ORIGEN")
+ 	/* Maintainer: JeongHyeon Kim <jhkim@insignal.co.kr> */
+ 	.atag_offset	= 0x100,
++	.nr_irqs	= EXYNOS_NR_IRQS,
+ 	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= origen_map_io,
+diff --git a/arch/arm/mach-exynos/mach-smdk4x12.c b/arch/arm/mach-exynos/mach-smdk4x12.c
+index 184faa3..3ebd5e4 100644
+--- a/arch/arm/mach-exynos/mach-smdk4x12.c
++++ b/arch/arm/mach-exynos/mach-smdk4x12.c
+@@ -39,6 +39,7 @@
+ #include <plat/regs-serial.h>
+ #include <plat/sdhci.h>
+ 
++#include <mach/irqs.h>
+ #include <mach/map.h>
+ 
+ #include <drm/exynos_drm.h>
+@@ -384,6 +385,7 @@ MACHINE_START(SMDK4412, "SMDK4412")
+ 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+ 	/* Maintainer: Changhwan Youn <chaos.youn@samsung.com> */
+ 	.atag_offset	= 0x100,
++	.nr_irqs	= EXYNOS_NR_IRQS,
+ 	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= smdk4x12_map_io,
+diff --git a/arch/arm/mach-exynos/mach-smdkv310.c b/arch/arm/mach-exynos/mach-smdkv310.c
+index ee815a7..5527a28 100644
+--- a/arch/arm/mach-exynos/mach-smdkv310.c
++++ b/arch/arm/mach-exynos/mach-smdkv310.c
+@@ -43,6 +43,7 @@
+ #include <plat/clock.h>
+ #include <plat/hdmi.h>
+ 
++#include <mach/irqs.h>
+ #include <mach/map.h>
+ 
+ #include <drm/exynos_drm.h>
+@@ -420,6 +421,7 @@ MACHINE_START(SMDKV310, "SMDKV310")
+ 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+ 	/* Maintainer: Changhwan Youn <chaos.youn@samsung.com> */
+ 	.atag_offset	= 0x100,
++	.nr_irqs	= EXYNOS_NR_IRQS,
+ 	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= smdkv310_map_io,
+@@ -432,6 +434,7 @@ MACHINE_END
+ MACHINE_START(SMDKC210, "SMDKC210")
+ 	/* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+ 	.atag_offset	= 0x100,
++	.nr_irqs	= EXYNOS_NR_IRQS,
+ 	.smp		= smp_ops(exynos_smp_ops),
+ 	.init_irq	= exynos4_init_irq,
+ 	.map_io		= smdkv310_map_io,
+diff --git a/arch/arm/plat-samsung/irq-vic-timer.c b/arch/arm/plat-samsung/irq-vic-timer.c
+index 5d205e7..0fceb42 100644
+--- a/arch/arm/plat-samsung/irq-vic-timer.c
++++ b/arch/arm/plat-samsung/irq-vic-timer.c
+@@ -20,6 +20,7 @@
  #include <linux/io.h>
-@@ -28,9 +29,7 @@
  
- #include <linux/mmc/host.h>
+ #include <mach/map.h>
++#include <mach/irqs.h>
+ #include <plat/cpu.h>
+ #include <plat/irq-vic-timer.h>
+ #include <plat/regs-timer.h>
+diff --git a/arch/arm/plat-samsung/pm.c b/arch/arm/plat-samsung/pm.c
+index 002b147..53210ec 100644
+--- a/arch/arm/plat-samsung/pm.c
++++ b/arch/arm/plat-samsung/pm.c
+@@ -27,6 +27,7 @@
+ #include <plat/regs-serial.h>
+ #include <mach/regs-clock.h>
+ #include <mach/regs-irq.h>
++#include <mach/irqs.h>
+ #include <asm/irq.h>
  
--#include <plat/sdhci.h>
--#include <plat/regs-sdhci.h>
--
-+#include "sdhci-s3c-regs.h"
- #include "sdhci.h"
+ #include <plat/pm.h>
+diff --git a/arch/arm/plat-samsung/s5p-irq.c b/arch/arm/plat-samsung/s5p-irq.c
+index 103e371..ff1a760 100644
+--- a/arch/arm/plat-samsung/s5p-irq.c
++++ b/arch/arm/plat-samsung/s5p-irq.c
+@@ -15,6 +15,7 @@
+ #include <linux/io.h>
+ #include <linux/irqchip/arm-vic.h>
  
- #define MAX_BUS_CLK	(4)
-diff --git a/include/linux/platform_data/mmc-sdhci-s3c.h b/include/linux/platform_data/mmc-sdhci-s3c.h
-new file mode 100644
-index 0000000..249f023
---- /dev/null
-+++ b/include/linux/platform_data/mmc-sdhci-s3c.h
-@@ -0,0 +1,56 @@
-+#ifndef __PLATFORM_DATA_SDHCI_S3C_H
-+#define __PLATFORM_DATA_SDHCI_S3C_H
-+
-+struct platform_device;
-+
-+enum cd_types {
-+	S3C_SDHCI_CD_INTERNAL,	/* use mmc internal CD line */
-+	S3C_SDHCI_CD_EXTERNAL,	/* use external callback */
-+	S3C_SDHCI_CD_GPIO,	/* use external gpio pin for CD line */
-+	S3C_SDHCI_CD_NONE,	/* no CD line, use polling to detect card */
-+	S3C_SDHCI_CD_PERMANENT,	/* no CD line, card permanently wired to host */
-+};
-+
-+/**
-+ * struct s3c_sdhci_platdata() - Platform device data for Samsung SDHCI
-+ * @max_width: The maximum number of data bits supported.
-+ * @host_caps: Standard MMC host capabilities bit field.
-+ * @host_caps2: The second standard MMC host capabilities bit field.
-+ * @cd_type: Type of Card Detection method (see cd_types enum above)
-+ * @ext_cd_init: Initialize external card detect subsystem. Called on
-+ *		 sdhci-s3c driver probe when cd_type == S3C_SDHCI_CD_EXTERNAL.
-+ *		 notify_func argument is a callback to the sdhci-s3c driver
-+ *		 that triggers the card detection event. Callback arguments:
-+ *		 dev is pointer to platform device of the host controller,
-+ *		 state is new state of the card (0 - removed, 1 - inserted).
-+ * @ext_cd_cleanup: Cleanup external card detect subsystem. Called on
-+ *		 sdhci-s3c driver remove when cd_type == S3C_SDHCI_CD_EXTERNAL.
-+ *		 notify_func argument is the same callback as for ext_cd_init.
-+ * @ext_cd_gpio: gpio pin used for external CD line, valid only if
-+ *		 cd_type == S3C_SDHCI_CD_GPIO
-+ * @ext_cd_gpio_invert: invert values for external CD gpio line
-+ * @cfg_gpio: Configure the GPIO for a specific card bit-width
-+ *
-+ * Initialisation data specific to either the machine or the platform
-+ * for the device driver to use or call-back when configuring gpio or
-+ * card speed information.
-+*/
-+struct s3c_sdhci_platdata {
-+	unsigned int	max_width;
-+	unsigned int	host_caps;
-+	unsigned int	host_caps2;
-+	unsigned int	pm_caps;
-+	enum cd_types	cd_type;
-+
-+	int		ext_cd_gpio;
-+	bool		ext_cd_gpio_invert;
-+	int	(*ext_cd_init)(void (*notify_func)(struct platform_device *,
-+						   int state));
-+	int	(*ext_cd_cleanup)(void (*notify_func)(struct platform_device *,
-+						      int state));
-+
-+	void	(*cfg_gpio)(struct platform_device *dev, int width);
-+};
-+
-+
-+#endif /* __PLATFORM_DATA_SDHCI_S3C_H */
++#include <mach/irqs.h>
+ #include <mach/map.h>
+ #include <plat/regs-timer.h>
+ #include <plat/cpu.h>
 -- 
 1.8.1.2
 
