@@ -1,132 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934223Ab3DKOVG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 10:21:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44694 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752302Ab3DKOVE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 10:21:04 -0400
-Date: Thu, 11 Apr 2013 15:21:00 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 2/2] mfd: wm8994: Add some OF properties
-Message-ID: <20130411142100.GA24971@opensource.wolfsonmicro.com>
-References: <1365604763-13122-1-git-send-email-broonie@opensource.wolfsonmicro.com> <1365604763-13122-2-git-send-email-broonie@opensource.wolfsonmicro.com> <5166BCCC.5020307@samsung.com>
+	id S935413Ab3DKOXI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 10:23:08 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:44282 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757765Ab3DKOXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 10:23:06 -0400
+Date: Thu, 11 Apr 2013 09:23:01 -0500
+From: Russ Anderson <rja@sgi.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Robin Holt <holt@sgi.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot
+ to boot cpu.)
+Message-ID: <20130411142301.GB27990@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20130403193743.GB29151@sgi.com>
+ <20130408155701.GB19974@gmail.com>
+ <5162EC1A.4050204@zytor.com>
+ <20130408165916.GA3672@sgi.com>
+ <20130410111620.GB29752@gmail.com>
+ <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
+ <20130411053106.GA9042@drongo>
+ <5166B05E.8010904@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5166BCCC.5020307@samsung.com>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <5166B05E.8010904@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 03:38:20PM +0200, Sylwester Nawrocki wrote:
-> On 04/10/2013 04:39 PM, Mark Brown wrote:
+On Thu, Apr 11, 2013 at 06:15:18PM +0530, Srivatsa S. Bhat wrote:
+> On 04/11/2013 11:01 AM, Paul Mackerras wrote:
+> > On Wed, Apr 10, 2013 at 08:10:05AM -0700, Linus Torvalds wrote:
+> >> The optimal solution would be to just speed up the
+> >> disable_nonboot_cpus() code so much that it isn't an issue. That would
+> >> be good for suspending too, although I guess suspend isn't a big issue
+> >> if you have a thousand CPU's.
+> >>
+> >> Has anybody checked whether we could do the cpu_down() on non-boot
+> >> CPU's in parallel? Right now we serialize the thing completely, with
+> > 
+> > I thought Srivatsa S. Bhat had a patchset that did exactly that.
+> > Srivatsa?
+> > 
+> 
+> Thanks for the CC, Paul! Adding some more people to CC.
+> 
+> Actually, my patchset was about removing stop_machine() from the CPU
+> offline path.
+> http://lwn.net/Articles/538819/
 
-> > Untested at present.
+I certainly agree with the intent.
 
-> I've tested it with wm1811 codec and found a few issues/things that are 
-> a bit confusing to me.
+> And here is the performance improvement I had measured in the version
+> prior to that:
+> http://article.gmane.org/gmane.linux.kernel/1435249
+> 
+> I'm planning to revive this patchset after the 3.10 merge window closes,
+> because it depends on doing a tree-wide sweep, and I think its a little
+> late to do it in time for the upcoming 3.10 merge window itself.
+> 
+> Anyway, that's about removing stop_machine from CPU hotplug.
+> 
+> Coming to bulk CPU hotplug, yes, I had ideas similar to what Russ suggested.
+> But I believe we can do more than that.
+> 
+> As Russ pointed out, the notifiers are not thread-safe, so calling them
+> in parallel with different CPUs as arguments isn't going to work.
+> 
+> So, first, we can convert all the CPU hotplug notifiers to take a cpumask
+> instead of a single CPU. So assuming that there are 'n' notifiers in total,
+> the number of function calls would become n, instead of n*1024.
+> But that itself most likely won't give us much benefit over the for-loop
+> that Russ has done in his patch, because it'll simply do longer processing
+> in each of those 'n' notifiers, by iterating over the cpumask inside each
+> notifier.
 
-Wasn't kidding about the lack of testing!
+As an alternative, how about each cpu have their own notifier list?
+Then one task per cpu can spin through that cpu's notifier list, 
+allowing them to run in parallel.
 
-> > +  - AVDD2-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
-> > +    SPKVDD1-supply, SPKVDD2-supply : power supplies for the device, as covered
+I don't know if that would be a faster solution than adding cpumask
+to notifiers, but it my guess is it may.
 
-> These capitalized regulator supply names look like standard ones. Sorry, 
-> I'm quite new to all this ASoC stuff. I was wondering, what about LDO1, LDO2
-> regulators that are present in the wm1811 chip for instance ? Are those
-> regulators supposed to be associated with some of the supply names above ?
+> Now comes the interesting thing:
+> 
+> Consider a notifier chain that looks like this:
+> Priority 0: A->B->C->D
+> 
+> We can't invoke say notifier callback A simultaneously on 2 CPUs with 2
+> different hotcpus as argument. *However*, since A, B, C, D all (more or less)
+> belong to different subsystems, we can call A, B, C and D in parallel on
+> different CPUs. They won't even serialize amongst themselves because they
+> take locks (if any) of different subsystems. And since they are of same
+> priority, the ordering (A after B or B after A) doesn't matter as well.
+> 
+> So with this, if we combine the idea I wrote above about giving a cpumask
+> to each of these notifiers to work with, we end up in this:
+> 
+> CPU 0          CPU 1          CPU2           ....
+> A(cpumask)     B(cpumask)     C(cpumask)     ....
+> 
+> So, for example, the CPU_DOWN_PREPARE notification can be processed in parallel
+> on multiple CPUs at a time, for a given cpumask! That should definitely
+> give us a good speed-up.
+> 
+> One more thing we have to note is that, there are 4 notifiers for taking a
+> CPU offline:
+> 
+> CPU_DOWN_PREPARE
+> CPU_DYING
+> CPU_DEAD
+> CPU_POST_DEAD
+> 
+> The first can be run in parallel as mentioned above. The second is run in
+> parallel in the stop_machine() phase as shown in Russ' patch. But the third
+> and fourth set of notifications all end up running only on CPU0, which will
+> again slow down things.
 
-> AFAICS LDO1, LDO2 need to be enabled before we can actually perform any I2C 
-> communication.
+In my testing the third and fourth set were a small part of the overall
+time.  Less than 10%, with cpu notifiers 90+% of the time.  So you may
+not need the added complexity, or at least fix the cpu notifier part
+first.
 
-Since all designs I've ever seen for this chip use the internal
-regulators in a consistent fashion I've added support for setting up the
-standard hookup by default so users don't need to specify this by hand
-since that wound up being repetitive and boring.  This is in -next or
+> So I suggest taking down the 1024 CPUs in multiple phases, like a binary search.
+> First, take 512 CPUs down, then 256 CPUs, then 128 CPUs etc. So at every bulk
+> CPU hotplug, we have enough online CPUs to handle the notifier load, and that
+> helps speed things up. Moreover, a handful of calls to stop_machine() is OK
+> because, stop_machine() takes progressively lesser and lesser time because
+> lesser CPUs are online on each iteration (and hence it reduces the
+> synchronization overhead of the stop-machine phase).
+> 
+> The only downside to this whole idea of running the notifiers of a given
+> priority in parallel, is error handling - if a notifier fails, it would be
+> troublesome to rollback I guess. But if we forget that for a moment, we can
+> give this idea a try!
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git topic/wm8994
+Yes.
 
-and should show up in v3.10.  The above list includes the supplies for
-LDO1 and LDO2.  If someone wants to support other configurations the
-binding can always be extended with optional properties.
+> Regards,
+> Srivatsa S. Bhat
 
-> Besides that, I needed to specify following regulator supplies in order to
-> to get the wm8994 codec successfully initialized:
-
->   DCVDD-supply
->   AVDD1-supply
-
-> That might be something specific to the sound machine driver though, I'm not
-> certain. 
-
-No, it's not - it's the above regulator driver changes, those are the
-supplies normally supplied by the internal regulators.
-
-> > +  - micbias-cfg : Three MICBIAS register values for WM1811 or
-
-> Aren't there just 2 MICBIAS registers ? At least I've found the wm8994 driver
-> handles only 2 values.
-
-That'll be a cut'n'paste.
-
-> > +  - ldo1ena : GPIO specifier for control of LDO1ENA input to device.
-> > +  - ldo2ena : GPIO specifier for control of LDO2ENA input to device.
-
-> Hmm, don't we need to specify the constraints for the regulators as well ?
-> AFAICS for wm8994 you choose not to specify functions of this MFD as child
-> DT nodes.
-
-For the DT bindings it seemed simplest to assume the default setup so
-the regulator driver ought to just do the right thing.  If someone has
-done something different then you're right and we need to add code for
-this.
-
-> > +  - ldoena-always-driven : If present LDOENA is always driven
-
-> I suppose the custom properties should be prefixed with "wlf,".
-
-Meh, yeah.  Will fix.
-
-> > +	if (of_property_read_u32_array(np, "gpio-cfg", pdata->gpio_defaults,
-> > +				       ARRAY_SIZE(pdata->gpio_defaults)) >= 0) {
-> > +		for (i = 0; i < ARRAY_SIZE(pdata->gpio_defaults); i++) {
-> > +			if (wm8994->pdata.gpio_defaults[i] == 0) {
-> > +				pdata->gpio_defaults[i]
-> > +					= WM8994_CONFIGURE_GPIO;
-
-> Hmm, that's not obvious from the binding, that 0 is replaced with 0x10000
-> by the implementation.
-
-This is an implementation detail due to conversion to platform data.
-Since the idiom for platform data is that zero does nothing for platform
-data we made the user set an out of range bit (the registers are 16 bit)
-to set zero, otherwise we left the value untouched.  The result is that
-we rewrite to 0x10000 in the platform data which is then rewritten to
-zero.
-
-> > +			} else if (pdata->gpio_defaults[i] == 0xffffffff) {
-> > +				pdata->gpio_defaults[i] = 0;
-> > +			} else if (pdata->gpio_defaults[i] > 0xffff) {
-
-> And this is not specified as an error condition at the binding. I expected
-> in such case the default value of a register would be used.
-
-Yes, bitrot due to cut'n'paste from two different sources.  Will fix.
-
-> I guess you preferred it that way, rather than
-
-> 	pdata->lineout1_diff = !of_property_read_bool(np, "lineout1-se");
-> 	pdata->lineout2_diff = !of_property_read_bool(np, "lineout2-se");
-
-> ?
-
-Yes, I tend to prefer to write things out a bit more explicitly.
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
