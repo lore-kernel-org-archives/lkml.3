@@ -1,70 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933918Ab3DKQmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:42:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58268 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760111Ab3DKQmP (ORCPT
+	id S934641Ab3DKQm1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:42:27 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:6753 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756562Ab3DKQm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:42:15 -0400
-Date: Thu, 11 Apr 2013 17:42:12 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Tero Kristo <t-kristo@ti.com>, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND][PATCH 3/3] regulator: twl: Remove TWL6030_FIXED_RESOURCE
-Message-ID: <20130411164212.GH9243@opensource.wolfsonmicro.com>
-References: <1365693520.4218.1.camel@phoenix>
- <1365693650.4218.4.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EWehNWXqjd1oOl26"
-Content-Disposition: inline
-In-Reply-To: <1365693650.4218.4.camel@phoenix>
-X-Cookie: Your love life will be... interesting.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 11 Apr 2013 12:42:26 -0400
+Message-ID: <1365697802.32127.117.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v3 2/3] resource: Add release_mem_region_adjustable()
+From: Toshi Kani <toshi.kani@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
+        guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com
+Date: Thu, 11 Apr 2013 10:30:02 -0600
+In-Reply-To: <20130410152404.e0836af597ba3545b9846672@linux-foundation.org>
+References: <1365614221-685-1-git-send-email-toshi.kani@hp.com>
+	 <1365614221-685-3-git-send-email-toshi.kani@hp.com>
+	 <20130410144412.395bf9f2fb8192920175e30a@linux-foundation.org>
+	 <1365630585.32127.110.camel@misato.fc.hp.com>
+	 <alpine.DEB.2.02.1304101505250.1526@chino.kir.corp.google.com>
+	 <20130410152404.e0836af597ba3545b9846672@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2013-04-10 at 15:24 -0700, Andrew Morton wrote:
+> On Wed, 10 Apr 2013 15:08:29 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+> 
+> > On Wed, 10 Apr 2013, Toshi Kani wrote:
+> > 
+> > > > I'll switch it to GFP_ATOMIC.  Which is horridly lame but the
+> > > > allocation is small and alternatives are unobvious.
+> > > 
+> > > Great!  Again, thanks for the update!
+> > 
+> > release_mem_region_adjustable() allocates at most one struct resource, so 
+> > why not do kmalloc(sizeof(struct resource), GFP_KERNEL) before taking 
+> > resource_lock and then testing whether it's NULL or not when splitting?  
+> > It unnecessarily allocates memory when there's no split, but 
+> > __remove_pages() shouldn't be a hotpath.
+> 
+> yup.
+> 
+> --- a/kernel/resource.c~resource-add-release_mem_region_adjustable-fix-fix
+> +++ a/kernel/resource.c
+> @@ -1046,7 +1046,8 @@ int release_mem_region_adjustable(struct
+>  			resource_size_t start, resource_size_t size)
+>  {
+>  	struct resource **p;
+> -	struct resource *res, *new;
+> +	struct resource *res;
+> +	struct resource *new_res;
+>  	resource_size_t end;
+>  	int ret = -EINVAL;
+>  
+> @@ -1054,6 +1055,9 @@ int release_mem_region_adjustable(struct
+>  	if ((start < parent->start) || (end > parent->end))
+>  		return ret;
+>  
+> +	/* The kzalloc() result gets checked later */
+> +	new_res = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> +
+>  	p = &parent->child;
+>  	write_lock(&resource_lock);
+>  
+> @@ -1091,32 +1095,33 @@ int release_mem_region_adjustable(struct
+>  						start - res->start);
+>  		} else {
+>  			/* split into two entries */
+> -			new = kzalloc(sizeof(struct resource), GFP_ATOMIC);
+> -			if (!new) {
+> +			if (!new_res) {
+>  				ret = -ENOMEM;
+>  				break;
+>  			}
+> -			new->name = res->name;
+> -			new->start = end + 1;
+> -			new->end = res->end;
+> -			new->flags = res->flags;
+> -			new->parent = res->parent;
+> -			new->sibling = res->sibling;
+> -			new->child = NULL;
+> +			new_res->name = res->name;
+> +			new_res->start = end + 1;
+> +			new_res->end = res->end;
+> +			new_res->flags = res->flags;
+> +			new_res->parent = res->parent;
+> +			new_res->sibling = res->sibling;
+> +			new_res->child = NULL;
+>  
+>  			ret = __adjust_resource(res, res->start,
+>  						start - res->start);
+>  			if (ret) {
+> -				kfree(new);
+> +				kfree(new_res);
+>  				break;
+>  			}
 
---EWehNWXqjd1oOl26
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The kfree() in the if-statement above is not necessary since kfree() is
+called before the return at the end.  That is, the if-statement needs to
+be:
+	if (ret)
+		break;
 
-On Thu, Apr 11, 2013 at 11:20:50PM +0800, Axel Lin wrote:
-> TWL6030_FIXED_RESOURCE is not used now, remove it.
->=20
-> TWL6030_FIXED_RESOURCE is not used since commit e76ab829cc
-> "regulator: twl: Remove references to the twl4030 regulator"
->=20
-> twl6030_fixed_resource is removed by commit 029dd3cef
-> "regulator: twl: Remove another unused variable warning".
+With this change, I confirmed that all my test cases passed (with all
+the config debug options this time :).  With the change:
 
-OK, they had actually been applied but the push failed as there was a
-similarly named tag there as well.  Pushed now thanks.
+Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Toshi Kani <toshi.kani@hp.com>
 
---EWehNWXqjd1oOl26
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks!
+-Toshi
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRZufdAAoJELSic+t+oim9+ukP/iE/1u6paQHEbSroShGReEdx
-0wXakmz1OU6gQ00ZOfTLgMVqUmZbh3kgiFcQ1zK82IjmelzaDFQMCVYPIi9QIq6P
-6YHYJeAnFgo0ROd+sz5Xh+CNV/WQxXQMMygUX0a2pf9Rv1xWewB+wjO3fbxI9E7X
-+mkdujw3f2KnlKK90qvaDWNdwrCtFuVWVtNsPyZ+Hv/BvcO+92ZwPU+iDbUrOfWi
-omuukfyb0fXsZfiFZTH0XoWY5H+gDslpCILBVtsq6I9UVIO/wICeCRgd52nKH03z
-i6m4ldweBKfPzmCdT+e61L8St1ndgkKnFW6urVwjByR1kPsVT5VC+zpfTqPPDfWJ
-f446VqSSd+yeqXiYIsJLJ3JaKu6vZcwhlsaF0AIKai1de4jhiMrFpPHT6INg0QGG
-c14iK8jvKfLvvFQXCJBWQUMlrbTLk6TkLPlK0ES1gb5hTKD566OmVj39LvWgfIG5
-rAjYGxFyjxwfEFAeNe0z4NJD9mvP78xJiRYLGlW6h7KIIclktrquWJaqSGWzzZ2l
-YjeVqxfUI79JaEFHe21ChTatcqlgzMDfIKatlV2rRwPsJaTuwFLY50un/IZWL9RD
-kNt/7hheYvp9ib+H8MCRBMuZvyWY6CFj4/Rshmn0fQO/ta+jVDMzPLFJK+TQXRTB
-MltVpZ4BkyKh7K5UWGBp
-=B5mA
------END PGP SIGNATURE-----
+> -			res->sibling = new;
+> +			res->sibling = new_res;
+> +			new_res = NULL;
+>  		}
+>  
+>  		break;
+>  	}
+>  
+>  	write_unlock(&resource_lock);
+> +	kfree(new_res);
+>  	return ret;
+>  }
+>  #endif	/* CONFIG_MEMORY_HOTPLUG */
+> _
+> 
 
---EWehNWXqjd1oOl26--
+
