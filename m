@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759177Ab3DKWnz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 18:43:55 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:3921 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab3DKWny (ORCPT
+	id S1762341Ab3DKWou (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 18:44:50 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:51276 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752968Ab3DKWot (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 18:43:54 -0400
-Message-ID: <1365719494.32127.119.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] resource: Update config option of
- release_mem_region_adjustable()
-From: Toshi Kani <toshi.kani@hp.com>
-To: David Rientjes <rientjes@google.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxram@us.ibm.com,
-        guz.fnst@cn.fujitsu.com, tmac@hp.com, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, jiang.liu@huawei.com
-Date: Thu, 11 Apr 2013 16:31:34 -0600
-In-Reply-To: <alpine.DEB.2.02.1304111540200.31420@chino.kir.corp.google.com>
-References: <1365719185-4799-1-git-send-email-toshi.kani@hp.com>
-	 <alpine.DEB.2.02.1304111540200.31420@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Apr 2013 18:44:49 -0400
+Date: Thu, 11 Apr 2013 18:44:45 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Davide Libenzi <davidel@xmailserver.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] Linux kernel Wait-Free Concurrent Queue
+	Implementation
+Message-ID: <20130411224445.GA1125@Krystal>
+References: <20130311213602.GB9829@Krystal> <20130411212308.GA21778@dcvr.yhbt.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411212308.GA21778@dcvr.yhbt.net>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 15:40 -0700, David Rientjes wrote:
-> On Thu, 11 Apr 2013, Toshi Kani wrote:
+* Eric Wong (normalperson@yhbt.net) wrote:
+> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+> > It is provided as a starting point only. Test cases should be ported
+> > from Userspace RCU to kernel space and thoroughly ran on a wide range of
+> > architectures before considering this port production-ready.
 > 
-> > Changed the config option of release_mem_region_adjustable() from
-> > CONFIG_MEMORY_HOTPLUG to CONFIG_MEMORY_HOTREMOVE since this function
-> > is only used for memory hot-delete.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> Suggested-by: David Rientjes <rientjes@google.com>
-> Acked-by: David Rientjes <rientjes@google.com>
+> Hi Mathieu, any progress on this front?
 
-Thanks David!
--Toshi
+Nope, I've been busy on other things.
 
+> I'm not sure how to approach
+> test cases in the kernel, perhaps taking hints from locking_selftest()
+> would be a start.
+
+I guess creating a wfcq_selftest() derived from userspace RCU
+test_urcu_wfcq.c might be a good start.
+
+> Fwiw, I've been running wfcqueue+epoll for a few weeks now on my
+> personal machines without problems :)
+
+Great!
+
+Thanks,
+
+Mathieu
+
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
