@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934085Ab3DKNYT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 09:24:19 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:45123 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752116Ab3DKNYS (ORCPT
+	id S933641Ab3DKN0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 09:26:33 -0400
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47070 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753822Ab3DKN0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 09:24:18 -0400
-Message-ID: <5166B97B.6080806@console-pimps.org>
-Date: Thu, 11 Apr 2013 14:24:11 +0100
-From: Matt Fleming <matt@console-pimps.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Thu, 11 Apr 2013 09:26:32 -0400
+X-Sasl-enc: yo9UGPJt3l6hAAfKFb74HW+ToCvZG1PmHNHbQS/BejRa 1365686781
+Date: Thu, 11 Apr 2013 06:26:20 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the driver-core tree with the tip
+ tree
+Message-ID: <20130411132620.GB2909@kroah.com>
+References: <20130411153023.7a987d1ef6f5cfc699eab672@canb.auug.org.au>
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 2/3] Revert "x86, efivars: firmware bug workarounds
- should be in platform code"
-References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com> <1365615967-27346-1-git-send-email-matthew.garrett@nebula.com> <1365615967-27346-2-git-send-email-matthew.garrett@nebula.com>
-In-Reply-To: <1365615967-27346-2-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411153023.7a987d1ef6f5cfc699eab672@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/13 18:46, Matthew Garrett wrote:
-> This reverts commit a6e4d5a03e9e3587e88aba687d8f225f4f04c792. Doing this
-> workaround properly requires us to work within the variable code.
+On Thu, Apr 11, 2013 at 03:30:23PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->  arch/x86/platform/efi/efi.c | 25 -------------------------
->  drivers/firmware/efivars.c  | 18 +++++++++++++++---
->  include/linux/efi.h         |  9 +--------
->  3 files changed, 16 insertions(+), 36 deletions(-)
+> Today's linux-next merge of the driver-core tree got a conflict in
+> kernel/rtmutex-tester.c between commit 8184004ed7a0
+> ("locking/rtmutex/tester: Set correct permissions on sysfs files") from
+> the tip tree and commit 928c0c1571b0 ("rtmutex-tester: fix mode of sysfs
+> files") from the driver-core tree.
+> 
+> Both patches do the same thing - I used the tip version and can carry the
+> fix as necessary (no action is required).
 
-Does it really? Why can't you just hook into the get_next_variable() and
-set_variable() functions in arch/x86/platform/efi/efi.c?
+Thanks for the heads up.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+greg k-h
