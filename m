@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934898Ab3DKXRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 19:17:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13502 "EHLO
+	id S934841Ab3DKXRu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 19:17:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4099 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933854Ab3DKXQW (ORCPT
+	with ESMTP id S933891Ab3DKXQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 19:16:22 -0400
-X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=eIhxMilvRf8A:10 a=4xt6Fo0EWj0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=hMEebOuZuFAA:10 a=xsSHeAReS3act2xTqcwA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=LWIIR5Ca6dEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Wa4Ca_ta9k0A:10 a=zRKbQ67AAAAA:8 a=fqJWJNsUBNL_Q-EgwOAA:9 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=gifenA44UdVckHGn:21 a=hysIHlfqb8Y6M7Hy:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411231149.302144972@goodmis.org>
+Message-Id: <20130411231620.618570346@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 19:11:49 -0400
+Date: Thu, 11 Apr 2013 19:11:54 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [ 0/9 ] 3.6.11.2-stable review (update)
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 5/9 ] sfc: Fix MCDI structure field lookup
+References: <20130411231149.302144972@goodmis.org>
+Content-Disposition: inline; filename=0005-sfc-Fix-MCDI-structure-field-lookup.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As recommend by Eric W. Biederman, I removed:
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-  ipc: Restrict mounting the mqueue filesystem
-    [a636b702ed1805e988ad3d8ff8b52c060f8b341c]
-  vfs: Add a mount flag to lock read only bind mounts
-    [90563b198e4c6674c63672fae1923da467215f45]
+[ Upstream commit 0a6e5008a9df678b48f8d4e57601aa4270df6c14 ]
 
-As recommend by Bing Zhao, I removed:
+The least significant bit number (LBN) of a field within an MCDI
+structure is counted from the start of the structure, not the
+containing dword.  In MCDI_ARRAY_FIELD() we need to mask it rather
+than using the usual EFX_DWORD_FIELD() macro.
 
-  mwifiex: fix race when queuing commands
-    [00d7ea11ff0783e24fe70778f3141270b561aaa1]
-  mwifiex: skip pending commands after function shutdown
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/net/ethernet/sfc/mcdi.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-As recommended by Ben Hutchings, I added:
+diff --git a/drivers/net/ethernet/sfc/mcdi.h b/drivers/net/ethernet/sfc/mcdi.h
+index 0bdf3e3..96f43d2 100644
+--- a/drivers/net/ethernet/sfc/mcdi.h
++++ b/drivers/net/ethernet/sfc/mcdi.h
+@@ -107,11 +107,13 @@ extern void efx_mcdi_sensor_event(struct efx_nic *efx, efx_qword_t *ev);
+ #define MCDI_EVENT_FIELD(_ev, _field)			\
+ 	EFX_QWORD_FIELD(_ev, MCDI_EVENT_ ## _field)
+ #define MCDI_ARRAY_FIELD(_buf, _field1, _type, _index, _field2)		\
+-	EFX_DWORD_FIELD(						\
++	EFX_EXTRACT_DWORD(						\
+ 		*((efx_dword_t *)					\
+ 		  (MCDI_ARRAY_PTR(_buf, _field1, _type, _index) +	\
+ 		   (MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _OFST & ~3))), \
+-		MC_CMD_ ## _type ## _TYPEDEF_ ## _field2)
++		MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _LBN & 0x1f, \
++		(MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _LBN & 0x1f) + \
++		MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _WIDTH - 1)
+ 
+ extern void efx_mcdi_print_fwver(struct efx_nic *efx, char *buf, size_t len);
+ extern int efx_mcdi_drv_attach(struct efx_nic *efx, bool driver_operating,
+-- 
+1.7.10.4
 
-Ben Hutchings (8):
-      sfc: Disable soft interrupt handling during efx_device_detach_sync()
-      sfc: Really disable flow control while flushing
-      sfc: Convert firmware subtypes to native byte order in efx_mcdi_get_board_cfg()
-      sfc: Add parentheses around use of bitfield macro arguments
-      sfc: Fix MCDI structure field lookup
-      sfc: Avoid generating over-length MC_CMD_FLUSH_RX_QUEUES request
-      sfc: Correctly initialise reset_method in siena_test_chip()
-      sfc: Fix timekeeping in efx_mcdi_poll()
 
-Daniel Pieczko (1):
-      sfc: Work-around flush timeout when flushes have completed
-
-----
- drivers/net/ethernet/sfc/bitfield.h    |   22 ++++++------
- drivers/net/ethernet/sfc/efx.h         |    4 +--
- drivers/net/ethernet/sfc/falcon.c      |    2 ++
- drivers/net/ethernet/sfc/mcdi.c        |   33 +++++++++++-------
- drivers/net/ethernet/sfc/mcdi.h        |    6 ++--
- drivers/net/ethernet/sfc/net_driver.h  |    3 ++
- drivers/net/ethernet/sfc/nic.c         |   59 ++++++++++++++++++++++++++++----
- drivers/net/ethernet/sfc/nic.h         |    2 ++
- drivers/net/ethernet/sfc/siena.c       |   17 +++++++--
- drivers/net/ethernet/sfc/siena_sriov.c |   13 ++++---
- 10 files changed, 121 insertions(+), 40 deletions(-)
