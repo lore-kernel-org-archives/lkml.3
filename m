@@ -1,73 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab3DKPzH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:55:07 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48448 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab3DKPzF (ORCPT
+	id S1754921Ab3DKP4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:56:12 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:64666 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302Ab3DKP4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:55:05 -0400
-Message-ID: <1365695698.3887.166.camel@edumazet-glaptop>
-Subject: Re: [PATCH] net: mv643xx_eth: Add GRO support
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Soeren Moch <smoch@web.de>, "David S. Miller" <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Florian Fainelli <florian@openwrt.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Dale Farnsworth <dale@farnsworth.org>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 11 Apr 2013 08:54:58 -0700
-In-Reply-To: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 11 Apr 2013 11:56:09 -0400
+Date: Thu, 11 Apr 2013 08:56:06 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay@vrfy.org>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: Re: [PATCH] driver core: add uid and gid to devtmpfs
+Message-ID: <20130411155606.GA14042@kroah.com>
+References: <20130406165600.GA29660@kroah.com>
+ <87y5cpvhaz.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87y5cpvhaz.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 14:40 +0200, Sebastian Hesselbarth wrote:
-> This patch adds GRO support to mv643xx_eth by making it invoke
-> napi_gro_receive instead of netif_receive_skb.
+On Wed, Apr 10, 2013 at 09:10:12PM -0700, Eric W. Biederman wrote:
+> Greg KH <gregkh@linuxfoundation.org> writes:
 > 
-> Signed-off-by: Soeren Moch <smoch@web.de>
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Florian Fainelli <florian@openwrt.org>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Dale Farnsworth <dale@farnsworth.org>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/ethernet/marvell/mv643xx_eth.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> > From: Kay Sievers <kay@vrfy.org>
+> >
+> > Some drivers want to tell userspace what uid and gid should be used for
+> > their device nodes, so allow that information to percolate through the
+> > driver core to userspace in order to make this happen.  This means that
+> > some systems (i.e.  Android and friends) will not need to even run a
+> > udev-like daemon for their device node manager and can just rely in
+> > devtmpfs fully, reducing their footprint even more.
 > 
-> diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-> index 305038f..c850d04 100644
-> --- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-> +++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-> @@ -604,7 +604,7 @@ static int rxq_process(struct rx_queue *rxq, int budget)
->  			lro_receive_skb(&rxq->lro_mgr, skb, (void *)cmd_sts);
->  			lro_flush_needed = 1;
->  		} else
-> -			netif_receive_skb(skb);
-> +			napi_gro_receive(&mp->napi, skb);
->  
->  		continue;
->  
+> This patch is really badly broken in it's uid and gid handling.
+> Nearly every line of this patch is wrong.
+> 
+> uids and gids in the kernel need to be stored in kuid_t's and kgid_t's.
 
-Acked-by: Eric Dumazet <edumazet@google.com>
+Stored, yes, but defined that way as well?
 
+> > -static char *block_devnode(struct device *dev, umode_t *mode)
+> > +static char *block_devnode(struct device *dev, umode_t *mode,
+> > +			   uid_t *uid, gid_t *gid)
+> This needs be kuid_t and kgid_t.
+> 
+> >  {
+> >  	struct gendisk *disk = dev_to_disk(dev);
+> >  
+> > --- a/drivers/base/core.c
+> > +++ b/drivers/base/core.c
+> > @@ -283,15 +283,21 @@ static int dev_uevent(struct kset *kset,
+> >  		const char *tmp;
+> >  		const char *name;
+> >  		umode_t mode = 0;
+> > +		uid_t uid = 0;
+> > +		gid_t gid = 0;
+> This needs to be:
+> 		kuid_t uid = GLOBAL_ROOT_UID;
+> 		kgid_t gid = GLOBAL_ROOT_GID;
 
+Ok, I'll fix this up and send a follow-on patch, thanks for the review.
+
+> 
+> >  		add_uevent_var(env, "MAJOR=%u", MAJOR(dev->devt));
+> >  		add_uevent_var(env, "MINOR=%u", MINOR(dev->devt));
+> > -		name = device_get_devnode(dev, &mode, &tmp);
+> > +		name = device_get_devnode(dev, &mode, &uid, &gid, &tmp);
+> >  		if (name) {
+> >  			add_uevent_var(env, "DEVNAME=%s", name);
+> > -			kfree(tmp);
+> >  			if (mode)
+> >  				add_uevent_var(env, "DEVMODE=%#o", mode & 0777);
+> > +			if (uid)
+> > +				add_uevent_var(env, "DEVUID=%u", uid);
+> > +			if (gid)
+> > +				add_uevent_var(env, "DEVGID=%u", gid);
+> 
+> Which user namespace are your users in?
+> At the very least this should be:
+> +			if (!uid_eq(uid, GLOBAL_ROOT_UID)
+> +				add_uevent_var(env, "DEVUID=%u", from_kuid(&init_user_ns, uid));
+> +			if (!gid_eq(gid, GLOBAL_ROOT_GID))
+> +				add_uevent_var(env, "DEVGID=%u", from_kgid(&init_user_ns, gid));
+> 
+> I suppose you can assume your users are in the initial user namespace,
+> as mknod won't work in any other user namespace.
+
+Yes.
+
+> Still it approaches being twisted to have files like
+> /sys/class/net/eth0/uevent that anyone can read that will only return
+> values in the initial user namespace.
+
+As the nodes are only valid in the initial namespace, why would this
+matter?
+
+> > +		newattrs.ia_uid = uid;
+> > +		newattrs.ia_gid = gid;
+> This doesn't even compile because the types are wrong.
+
+Yes, this has been fixed.  But note, it only fails the build if
+namespaces are enabled, and given that no one seems to have reported
+this build error in either the 0-day tester, or linux-next, or the
+distro developers that tested this patch on their systems, it seems that
+no one enables namespaces on their systems :(
+
+Again, thanks for the review, I'll go enable namespaces in my test
+kernel and fix up the fallout.
+
+greg k-h
