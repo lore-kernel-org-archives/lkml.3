@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964958Ab3DKUjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:39:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32712 "EHLO
+	id S1755172Ab3DKUZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:25:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11757 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075Ab3DKUZ6 (ORCPT
+	with ESMTP id S1754097Ab3DKUZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:25:58 -0400
-X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=bz40Vm7MsywA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=B7BRtXPexmEA:10 a=zRKbQ67AAAAA:8 a=tHFtjHgqHLTQzH4T5tIA:9 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:25:53 -0400
+X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=sPoVYiO2IPAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=xA6unY6I8JQA:10 a=jmWCE8W1go-RpaolMxwA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202549.666423410@goodmis.org>
+Message-Id: <20130411202546.580498368@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:25:24 -0400
+Date: Thu, 11 Apr 2013 16:25:05 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 021/171 ] sfc: Properly sync RX DMA buffer when it is not the last in the page
+Subject: [ 002/171 ] ppp: Revert backport of "ppp: set qdisc_tx_busylock to avoid LOCKDEP
+ splat"
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0021-sfc-Properly-sync-RX-DMA-buffer-when-it-is-not-the-l.patch
+Content-Disposition: inline; filename=0002-ppp-Revert-backport-of-ppp-set-qdisc_tx_busylock-to-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,72 +29,38 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-[ Upstream commit 3a68f19d7afb80f548d016effbc6ed52643a8085 ]
+commit 387e6a2cc250f2a6a182a5db1cbf7e40500bc5eb
+"ppp: set qdisc_tx_busylock to avoid LOCKDEP splat" which was a backport
+of upstream commit 0b652fb68c02c1acd0307d3acac4ae7123536031, should not
+have been ported to 3.6.11.1 as it broke the build.
 
-We may currently allocate two RX DMA buffers to a page, and only unmap
-the page when the second is completed.  We do not sync the first RX
-buffer to be completed; this can result in packet loss or corruption
-if the last RX buffer completed in a NAPI poll is the first in a page
-and is not DMA-coherent.  (In the middle of a NAPI poll, we will
-handle the following RX completion and unmap the page *before* looking
-at the content of the first buffer.)
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/ethernet/sfc/rx.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ drivers/net/ppp/ppp_generic.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/rx.c b/drivers/net/ethernet/sfc/rx.c
-index 719319b..16ef366 100644
---- a/drivers/net/ethernet/sfc/rx.c
-+++ b/drivers/net/ethernet/sfc/rx.c
-@@ -240,7 +240,8 @@ static int efx_init_rx_buffers_page(struct efx_rx_queue *rx_queue)
+diff --git a/drivers/net/ppp/ppp_generic.c b/drivers/net/ppp/ppp_generic.c
+index 2603b99..5c05572 100644
+--- a/drivers/net/ppp/ppp_generic.c
++++ b/drivers/net/ppp/ppp_generic.c
+@@ -1021,15 +1021,7 @@ ppp_net_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 	return err;
  }
  
- static void efx_unmap_rx_buffer(struct efx_nic *efx,
--				struct efx_rx_buffer *rx_buf)
-+				struct efx_rx_buffer *rx_buf,
-+				unsigned int used_len)
- {
- 	if ((rx_buf->flags & EFX_RX_BUF_PAGE) && rx_buf->u.page) {
- 		struct efx_rx_page_state *state;
-@@ -251,6 +252,10 @@ static void efx_unmap_rx_buffer(struct efx_nic *efx,
- 				       state->dma_addr,
- 				       efx_rx_buf_size(efx),
- 				       DMA_FROM_DEVICE);
-+		} else if (used_len) {
-+			dma_sync_single_for_cpu(&efx->pci_dev->dev,
-+						rx_buf->dma_addr, used_len,
-+						DMA_FROM_DEVICE);
- 		}
- 	} else if (!(rx_buf->flags & EFX_RX_BUF_PAGE) && rx_buf->u.skb) {
- 		dma_unmap_single(&efx->pci_dev->dev, rx_buf->dma_addr,
-@@ -273,7 +278,7 @@ static void efx_free_rx_buffer(struct efx_nic *efx,
- static void efx_fini_rx_buffer(struct efx_rx_queue *rx_queue,
- 			       struct efx_rx_buffer *rx_buf)
- {
--	efx_unmap_rx_buffer(rx_queue->efx, rx_buf);
-+	efx_unmap_rx_buffer(rx_queue->efx, rx_buf, 0);
- 	efx_free_rx_buffer(rx_queue->efx, rx_buf);
- }
- 
-@@ -539,10 +544,10 @@ void efx_rx_packet(struct efx_rx_queue *rx_queue, unsigned int index,
- 		goto out;
- 	}
- 
--	/* Release card resources - assumes all RX buffers consumed in-order
--	 * per RX queue
-+	/* Release and/or sync DMA mapping - assumes all RX buffers
-+	 * consumed in-order per RX queue
- 	 */
--	efx_unmap_rx_buffer(efx, rx_buf);
-+	efx_unmap_rx_buffer(efx, rx_buf, len);
- 
- 	/* Prefetch nice and early so data will (hopefully) be in cache by
- 	 * the time we look at it.
+-static struct lock_class_key ppp_tx_busylock;
+-static int ppp_dev_init(struct net_device *dev)
+-{
+-	dev->qdisc_tx_busylock = &ppp_tx_busylock;
+-	return 0;
+-}
+-
+ static const struct net_device_ops ppp_netdev_ops = {
+-	.ndo_init	 = ppp_dev_init,
+ 	.ndo_start_xmit = ppp_start_xmit,
+ 	.ndo_do_ioctl   = ppp_net_ioctl,
+ };
 -- 
 1.7.10.4
 
