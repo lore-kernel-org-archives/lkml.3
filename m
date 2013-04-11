@@ -1,133 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934350Ab3DKICt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 04:02:49 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55504 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933864Ab3DKICq (ORCPT
+	id S934468Ab3DKIDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 04:03:46 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:31339 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298Ab3DKIDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 04:02:46 -0400
-X-AuditID: 9c93016f-b7b3fae0000004d3-10-51666e23661f
-Date: Thu, 11 Apr 2013 17:02:43 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
-        John Stultz <john.stultz@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Neil Brown <neilb@suse.de>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jason Evans <je@fb.com>, sanjay@google.com,
-        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC v7 00/11] Support vrange for anonymous page
-Message-ID: <20130411080243.GA12626@blaptop>
-References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
- <5165CA22.6080808@gmail.com>
- <20130411065546.GA10303@blaptop>
- <5166643E.6050704@gmail.com>
+	Thu, 11 Apr 2013 04:03:43 -0400
+X-IronPort-AV: E=Sophos;i="4.87,454,1363132800"; 
+   d="scan'208";a="3447527"
+Message-ID: <1365667420.27868.125.camel@zakaz.uk.xensource.com>
+Subject: Re: [net-next PATCH] xen-netback: switch to use
+ skb_partial_csum_set()
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jason Wang <jasowang@redhat.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Date: Thu, 11 Apr 2013 09:03:40 +0100
+In-Reply-To: <51666D28.7090500@redhat.com>
+References: <1365662129-38031-1-git-send-email-jasowang@redhat.com>
+	 <1365666364.27868.114.camel@zakaz.uk.xensource.com>
+	 <51666D28.7090500@redhat.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5166643E.6050704@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 03:20:30AM -0400, KOSAKI Motohiro wrote:
-> >>>   DONTNEED makes sure user always can see zero-fill pages after
-> >>>   he calls madvise while vrange can see data or encounter SIGBUS.
+On Thu, 2013-04-11 at 08:58 +0100, Jason Wang wrote:
+> On 04/11/2013 03:46 PM, Ian Campbell wrote:
+> > On Thu, 2013-04-11 at 07:35 +0100, Jason Wang wrote:
+> >> Switch to use skb_partial_csum_set() to simplify the codes.
+> > This is incremental on top of your previous patch, right?
+> 
+> It's an independent patch, since the previous patch has been applied.
+> >> Cc: Ian Campbell <ian.campbell@citrix.com>
+> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> >> ---
+> >> Note:
+> >> - Compile test only.
+> >> ---
+> >>  drivers/net/xen-netback/netback.c |   22 ++++++++--------------
+> >>  1 files changed, 8 insertions(+), 14 deletions(-)
 > >>
-> >> For replacing DONTNEED, user want to zero-fill pages like DONTNEED
-> >> instead of SIGBUS. So, new flag option would be nice.
-> > 
-> > If userspace people want it, I can do it. 
-> > But not sure they want it at the moment becaue vrange is rather
-> > different concept of madvise(DONTNEED) POV usage.
-> > 
-> > As you know well, in case of DONTNEED, user calls madvise _once_ and
-> > VM releases memory as soon as he called system call.
-> > But vrange is same with delayed free when the system memory pressure
-> > happens so user can't know OS frees the pages anytime.
-> > It means user should call pair of system call both VRANGE_VOLATILE
-> > and VRANGE_NOVOLATILE for right usage of volatile range
-> > (for simple, I don't want to tell SIGBUS fault recovery method).
-> > If he took a mistake(ie, NOT to call VRANGE_NOVOLATILE) on the range
-> > which is used by current process, pages used by some process could be
-> > disappeared suddenly.
-> > 
-> > In summary, I don't think vrange is a replacement of madvise(DONTNEED)
-> > but could be useful with madvise(DONTNEED) friend. For example, we can
-> > make return 1 in vrange(VRANGE_VOLATILE) if memory pressure was already
+> >> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> >> index 83905a9..70631f0 100644
+> >> --- a/drivers/net/xen-netback/netback.c
+> >> +++ b/drivers/net/xen-netback/netback.c
+> >> @@ -1156,7 +1156,6 @@ static int netbk_set_skb_gso(struct xenvif *vif,
+> >>  static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
+> >>  {
+> >>  	struct iphdr *iph;
+> >> -	unsigned char *th;
+> >>  	int err = -EPROTO;
+> >>  	int recalculate_partial_csum = 0;
+> >>  
+> >> @@ -1180,28 +1179,26 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
+> >>  		goto out;
+> >>  
+> >>  	iph = (void *)skb->data;
+> >> -	th = skb->data + 4 * iph->ihl;
+> >> -	if (th >= skb_tail_pointer(skb))
+> >> -		goto out;
+> >> -
+> >> -	skb_set_transport_header(skb, 4 * iph->ihl);
+> > Is removing this line really correct?
 > 
-> Do you mean vrange(VRANGE_UNVOLATILE)?
+> After commit e5d5deca (net: core: let skb_partial_csum_set() set
+> transport header), this work was done by skb_partial_csum_set().
 
-I meant VRANGE_VOLATILE. It seems my explanation was poor. Here it goes, again.
-Now vrange's semantic return just 0 if the system call is successful, otherwise,
-return error. But we can change it as folows
+Ah, my working tree must be out of date, thanks.
 
-1. return 0 if the system call is successful and memory pressure isn't severe
-2. return 1 if the system call is successful and memory pressure is severe
-3. return -ERRXXX if the system call is failed by some reason
-
-So the process can know system-wide memory pressure without peeking the vmstat
-and then call madvise(DONTNEED) right after vrange call. The benefit is system
-can zap all pages instantly.
-
-> btw, assign new error number to asm-generic/errno.h is better than strange '1'.
-
-I can and admit "1" is rather weired.
-But it's not error, either.
-
+> >
+> >> -	skb->csum_start = th - skb->head;
+> >>  	switch (iph->protocol) {
+> >>  	case IPPROTO_TCP:
+> >> -		skb->csum_offset = offsetof(struct tcphdr, check);
+> >> +		if (!skb_partial_csum_set(skb, 4 * iph->ihl,
+> >> +					  offsetof(struct tcphdr, check)))
+> >> +			goto out;
+> >>  
+> >>  		if (recalculate_partial_csum) {
+> >> -			struct tcphdr *tcph = (struct tcphdr *)th;
+> >> +			struct tcphdr *tcph = tcp_hdr(skb);
+> >>  			tcph->check = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
+> >>  							 skb->len - iph->ihl*4,
+> >>  							 IPPROTO_TCP, 0);
+> >>  		}
+> >>  		break;
+> >>  	case IPPROTO_UDP:
+> >> -		skb->csum_offset = offsetof(struct udphdr, check);
+> >> +		if (!skb_partial_csum_set(skb, 4 * iph->ihl,
+> >> +					  offsetof(struct udphdr, check)))
+> >> +			goto out;
+> >>  
+> >>  		if (recalculate_partial_csum) {
+> >> -			struct udphdr *udph = (struct udphdr *)th;
+> >> +			struct udphdr *udph = udp_hdr(skb);
+> >>  			udph->check = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
+> >>  							 skb->len - iph->ihl*4,
+> >>  							 IPPROTO_UDP, 0);
+> >> @@ -1215,9 +1212,6 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
+> >>  		goto out;
+> >>  	}
+> >>  
+> >> -	if ((th + skb->csum_offset + 2) > skb_tail_pointer(skb))
+> >> -		goto out;
+> >> -
+> >>  	err = 0;
+> >>  
+> >>  out:
+> >
 > 
-> 
-> > severe so user can catch up memory pressure by return value and calls
-> > madvise(DONTNEED) if memory pressure was already severe. Of course, we
-> > can handle it vrange system call itself(ex, change vrange system call to
-> > madvise(DONTNEED) but don't want it because I want to keep vrange hinting
-> > sytem call very light at all times so user can expect latency.
-> 
-> For allocator usage, vrange(UNVOLATILE) is annoying and don't need at all.
-> When data has already been purged, just return new zero filled page. so,
-> maybe adding new flag is worthwhile. Because malloc is definitely fast path
-
-I really want it and it's exactly same with madvise(MADV_FREE).
-But for implementation, we need page granularity someting in address range
-in system call context like zap_pte_range(ex, clear page table bits and
-mark something to page flags for reclaimer to detect it).
-It means vrange system call is still bigger although we are able to remove
-lazy page fault.
-
-Do you have any idea to remove it? If so, I'm very open to implement it.
 
 
-> and adding new syscall invokation is unwelcome.
-
-Sure. But one more system call could be cheaper than page-granuarity
-operation on purged range.
-
-> 
-> 
-> >> # of     # of   # of
-> >> thread   iter   iter (patched glibc)
-> > 
-> > What's the workload?
-> 
-> Ahh, sorry. I forgot to write. I use ebizzy, your favolite workload.
-> 
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
