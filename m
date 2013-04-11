@@ -1,106 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab3DKS4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:56:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30745 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751183Ab3DKS4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:56:38 -0400
-Date: Thu, 11 Apr 2013 14:56:32 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: print out hardware name & modules list when we encounter bad page
- tables.
-Message-ID: <20130411185632.GA7569@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+	id S1753304Ab3DKS73 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:59:29 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:65103 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958Ab3DKS72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 14:59:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130317215142.GC26102@cantiga.alporthouse.com>
+References: <1363265997-29023-1-git-send-email-chris@chris-wilson.co.uk>
+	<20130315045004.GA14747@bwidawsk.net>
+	<20130315082403.GA29916@cantiga.alporthouse.com>
+	<20130315163606.GA17773@bwidawsk.net>
+	<20130315220619.GA17405@cantiga.alporthouse.com>
+	<20130315234942.GB715@bwidawsk.net>
+	<20130316101920.GB17405@cantiga.alporthouse.com>
+	<CAKMK7uFiMLcE_TYj5=sKZsVAcCnWSmg49qPrxjswH2s3J5byOg@mail.gmail.com>
+	<20130317214049.GB26102@cantiga.alporthouse.com>
+	<CAPM=9txw7pPT195p1nJrr5=TvTBGsd6G+a7N5C+fxQgP0Eof3w@mail.gmail.com>
+	<20130317215142.GC26102@cantiga.alporthouse.com>
+Date: Thu, 11 Apr 2013 21:59:27 +0300
+Message-ID: <CA+ydwto7n4KuTriNVcKWzxppZ1au4vqcsj3eX6P8DB6i9M9iAw@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Sanity check incoming ioctl data
+ for a NULL pointer
+From: Tommi Rantala <tt.rantala@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Ben Widawsky <ben@bwidawsk.net>, Tommi Rantala <tt.rantala@gmail.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Given we have been seeing a lot of reports of page table corruption
-for a while now, perhaps if we print out the hardware name, and list
-of modules loaded, we might see some patterns emerging.
+2013/3/17 Chris Wilson <chris@chris-wilson.co.uk>:
+> On Mon, Mar 18, 2013 at 07:42:58AM +1000, Dave Airlie wrote:
+>> On Mon, Mar 18, 2013 at 7:40 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> > On Sun, Mar 17, 2013 at 08:50:03PM +0100, Daniel Vetter wrote:
+>> >> On Sat, Mar 16, 2013 at 11:19 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> >> > If *userspace* doesn't request either IOC_IN | IOC_OUT in their ioctl
+>> >> > command (which are seperate from the ioctl number), then kdata is set to
+>> >> > NULL.
+>> >>
+>> >> Doesn't that mean that we need these checks everywhere? Or at least a
+>> >> fixup in drm core proper?
+>> >
+>> > That's my conclusion. We either add a flag to ask drm_ioctl to prevent
+>> > passing NULL pointers (as the existing behaviour may be useful
+>> > somewhere, and I have not checked all callees) or saturate our callbacks
+>> > with NULL checks.
+>>
+>> Do we have the kernel's expected IOC_IN/IOC_OUT flags at that point as well?
+>>
+>> we could check them and block NULL in that case.
+>
+> Yes. For the core ioctls, we use drm_ioctls[nr].cmd rather than the
+> value passed in by userspace for the IOC_IN|IN_OUT bits. So:
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+Thanks, trinity can indeed set the in/out bits randomly, in a way that
+does not match the driver ioctl definition.
 
-diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/include/asm-generic/bug.h linux-dj/include/asm-generic/bug.h
---- linux/include/asm-generic/bug.h	2013-01-04 18:57:12.604282214 -0500
-+++ linux-dj/include/asm-generic/bug.h	2013-02-28 20:04:37.649304147 -0500
-@@ -55,6 +55,8 @@ struct bug_entry {
- #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while(0)
- #endif
- 
-+void print_hardware_dmi_name(void);
-+
- /*
-  * WARN(), WARN_ON(), WARN_ON_ONCE, and so on can be used to report
-  * significant issues that need prompt attention if they should ever
-diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/kernel/panic.c linux-dj/kernel/panic.c
---- linux/kernel/panic.c	2013-02-26 14:41:18.544116674 -0500
-+++ linux-dj/kernel/panic.c	2013-02-28 20:04:37.666304115 -0500
-@@ -397,16 +397,22 @@ struct slowpath_args {
- 	va_list args;
- };
- 
--static void warn_slowpath_common(const char *file, int line, void *caller,
--				 unsigned taint, struct slowpath_args *args)
-+void print_hardware_dmi_name(void)
- {
- 	const char *board;
- 
--	printk(KERN_WARNING "------------[ cut here ]------------\n");
--	printk(KERN_WARNING "WARNING: at %s:%d %pS()\n", file, line, caller);
- 	board = dmi_get_system_info(DMI_PRODUCT_NAME);
- 	if (board)
- 		printk(KERN_WARNING "Hardware name: %s\n", board);
-+}
-+
-+static void warn_slowpath_common(const char *file, int line, void *caller,
-+				 unsigned taint, struct slowpath_args *args)
-+{
-+	printk(KERN_WARNING "------------[ cut here ]------------\n");
-+	printk(KERN_WARNING "WARNING: at %s:%d %pS()\n", file, line, caller);
-+
-+	print_hardware_dmi_name();
- 
- 	if (args)
- 		vprintk(args->fmt, args->args);
-diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/mm/memory.c linux-dj/mm/memory.c
---- linux/mm/memory.c	2013-02-26 14:41:18.591116577 -0500
-+++ linux-dj/mm/memory.c	2013-02-28 20:04:37.678304092 -0500
-@@ -57,6 +57,7 @@
- #include <linux/swapops.h>
- #include <linux/elf.h>
- #include <linux/gfp.h>
-+#include <linux/module.h>
- #include <linux/migrate.h>
- #include <linux/string.h>
- 
-@@ -705,6 +706,9 @@ static void print_bad_pte(struct vm_area
- 		"BUG: Bad page map in process %s  pte:%08llx pmd:%08llx\n",
- 		current->comm,
- 		(long long)pte_val(pte), (long long)pmd_val(*pmd));
-+	print_hardware_dmi_name();
-+	print_modules();
-+
- 	if (page)
- 		dump_page(page);
- 	printk(KERN_ALERT
---- linux-dj/mm/page_alloc.c~	2013-04-11 11:47:12.536675503 -0400
-+++ linux-dj/mm/page_alloc.c	2013-04-11 11:47:16.416667806 -0400
-@@ -321,6 +321,7 @@ static void bad_page(struct page *page)
- 		current->comm, page_to_pfn(page));
- 	dump_page(page);
- 
-+	print_hardware_dmi_name();
- 	print_modules();
- 	dump_stack();
- out:
+Your patch almost fixes this. For the driver ioctls we will want to
+grab the cmd from cmd_drv. So the patch should be:
 
+diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+index 25f91cd..5210f33 100644
+--- a/drivers/gpu/drm/drm_drv.c
++++ b/drivers/gpu/drm/drm_drv.c
+@@ -408,6 +408,7 @@ long drm_ioctl(struct file *filp,
+                usize = asize = _IOC_SIZE(cmd);
+                if (drv_size > asize)
+                        asize = drv_size;
++               cmd = ioctl->cmd_drv;
+        }
+        else if ((nr >= DRM_COMMAND_END) || (nr < DRM_COMMAND_BASE)) {
+                ioctl = &drm_ioctls[nr];
+
+Can you please submit this officially?
+
+> diff --git a/drivers/gpu/drm/drm_drv.c b/drivers/gpu/drm/drm_drv.c
+> index 25f91cd..79b8bd1 100644
+> --- a/drivers/gpu/drm/drm_drv.c
+> +++ b/drivers/gpu/drm/drm_drv.c
+> @@ -408,6 +408,7 @@ long drm_ioctl(struct file *filp,
+>                 usize = asize = _IOC_SIZE(cmd);
+>                 if (drv_size > asize)
+>                         asize = drv_size;
+> +               cmd = ioctl->cmd;
+>         }
+>         else if ((nr >= DRM_COMMAND_END) || (nr < DRM_COMMAND_BASE)) {
+>                 ioctl = &drm_ioctls[nr];
+>
+>
+> --
+> Chris Wilson, Intel Open Source Technology Centre
