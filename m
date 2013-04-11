@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161330Ab3DKNao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 09:30:44 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:21909 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935388Ab3DKNal (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 09:30:41 -0400
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT005.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: PS-4(zzbb2dI98dI936eI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bh8275dhz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Matt Fleming <matt@console-pimps.org>
-CC: "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V4 2/3] Revert "x86, efivars: firmware bug workarounds
- should be in platform code"
-Thread-Topic: [PATCH V4 2/3] Revert "x86, efivars: firmware bug workarounds
- should be in platform code"
-Thread-Index: AQHONhNZQkKbbp210UGsmxOewwMrjZjRA42AgAAByoA=
-Date: Thu, 11 Apr 2013 13:30:35 +0000
-Message-ID: <1365687035.13667.5.camel@x230.lan>
-References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com>
-	 <1365615967-27346-1-git-send-email-matthew.garrett@nebula.com>
-	 <1365615967-27346-2-git-send-email-matthew.garrett@nebula.com>
-	 <5166B97B.6080806@console-pimps.org>
-In-Reply-To: <5166B97B.6080806@console-pimps.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <E472668B9646F54DB4F377FDD4FE77D0@namprd05.prod.outlook.com>
+	id S1161506Ab3DKNay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 09:30:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37090 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752188Ab3DKNaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 09:30:52 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH 23/26] h8300: Don't use create_proc_read_entry() [RFC]
+To: linux-kernel@vger.kernel.org
+From: David Howells <dhowells@redhat.com>
+Cc: viro@ZenIV.linux.org.uk, Yoshinori Sato <ysato@users.sourceforge.jp>
+Date: Thu, 11 Apr 2013 14:30:40 +0100
+Message-ID: <20130411133040.32763.99015.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
+References: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3BDUtXQ003478
 
-On Thu, 2013-04-11 at 14:24 +0100, Matt Fleming wrote:
-> On 10/04/13 18:46, Matthew Garrett wrote:
-> > This reverts commit a6e4d5a03e9e3587e88aba687d8f225f4f04c792. Doing this
-> > workaround properly requires us to work within the variable code.
-> > 
-> > Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> > ---
-> >  arch/x86/platform/efi/efi.c | 25 -------------------------
-> >  drivers/firmware/efivars.c  | 18 +++++++++++++++---
-> >  include/linux/efi.h         |  9 +--------
-> >  3 files changed, 16 insertions(+), 36 deletions(-)
-> 
-> Does it really? Why can't you just hook into the get_next_variable() and
-> set_variable() functions in arch/x86/platform/efi/efi.c?
+Don't use create_proc_read_entry() as that is deprecated, but rather use
+proc_create_data() and seq_file instead.
 
-struct efi_variable isn't exported from efivars.c, and chunks of the
-workaround need to be called at efivars init anyway.
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Yoshinori Sato <ysato@users.sourceforge.jp>
+---
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ arch/h8300/kernel/gpio.c |   34 ++++++++++++++++++++--------------
+ 1 file changed, 20 insertions(+), 14 deletions(-)
+
+diff --git a/arch/h8300/kernel/gpio.c b/arch/h8300/kernel/gpio.c
+index f8a4f5b..b02c752 100644
+--- a/arch/h8300/kernel/gpio.c
++++ b/arch/h8300/kernel/gpio.c
+@@ -11,6 +11,7 @@
+ 
+ #include <linux/stddef.h>
+ #include <linux/proc_fs.h>
++#include <linux/seq_file.h>
+ #include <linux/kernel.h>
+ #include <linux/string.h>
+ #include <linux/fs.h>
+@@ -138,29 +139,34 @@ static char *port_status(int portno)
+ 	return result;
+ }
+ 
+-static int gpio_proc_read(char *buf, char **start, off_t offset, 
+-                          int len, int *unused_i, void *unused_v)
++static int gpio_proc_show(struct seq_file *m, void *v)
+ {
+-	int c,outlen;
+ 	static const char port_name[]="123456789ABCDEFGH";
+-	outlen = 0;
++	int c;
++
+ 	for (c = 0; c < MAX_PORT; c++) {
+ 		if (ddrs[c] == NULL)
+-			continue ;
+-		len = sprintf(buf,"P%c: %s\n",port_name[c],port_status(c));
+-		buf += len;
+-		outlen += len;
++			continue;
++		seq_printf(m, "P%c: %s\n", port_name[c], port_status(c));
+ 	}
+-	return outlen;
++	return 0;
+ }
+ 
+-static __init int register_proc(void)
++static int gpio_proc_open(struct inode *inode, struct file *file)
+ {
+-	struct proc_dir_entry *proc_gpio;
++	return single_open(file, gpio_proc_show, PDE_DATA(inode));
++}
+ 
+-	proc_gpio = create_proc_read_entry("gpio", S_IRUGO, NULL,
+-					gpio_proc_read, NULL);
+-	return proc_gpio != NULL;
++static const struct file_operations gpio_proc_fops = {
++	.open		= gpio_proc_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= seq_release,
++};
++
++static __init int register_proc(void)
++{
++	return proc_create("gpio", S_IRUGO, NULL, &gpio_proc_fops) != NULL;
+ }
+ 
+ __initcall(register_proc);
+
