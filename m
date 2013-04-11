@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161605Ab3DKSHz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:07:55 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:54601 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1161570Ab3DKSHx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:07:53 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Jrl8ihjmYWKvv8nMr7TnWHiXftKZxhTQ=
-Date: Thu, 11 Apr 2013 14:07:36 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
-        Ike Pan <ike.pan@canonical.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        David Marlin <dmarlin@redhat.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>,
-        Dan Frazier <dann.frazier@canonical.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Leif Lindholm <leif.lindholm@arm.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Jon Masters <jcm@redhat.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Chris Van Hoof <vanhoof@canonical.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Maen Suleiman <maen@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Shadi Ammouri <shadi@marvell.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v3 2/9] ARM: mvebu: Limit the DMA zone when LPAE is
- selected
-Message-ID: <20130411180736.GM28693@titan.lakedaemon.net>
-References: <1365461538-30702-1-git-send-email-gregory.clement@free-electrons.com>
- <1365461538-30702-3-git-send-email-gregory.clement@free-electrons.com>
+	id S1161627Ab3DKSH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:07:58 -0400
+Received: from www.sr71.net ([198.145.64.142]:48940 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161570Ab3DKSH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 14:07:56 -0400
+Message-ID: <5166FBFB.2030703@sr71.net>
+Date: Thu, 11 Apr 2013 11:07:55 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365461538-30702-3-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Borislav Petkov <bp@alien8.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
+ wrong cpu
+References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos> <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net> <alpine.LFD.2.02.1304092036431.21884@ionos> <alpine.LFD.2.02.1304092126150.21884@ionos> <51647C30.3050109@sr71.net> <alpine.LFD.2.02.1304101024010.21884@ionos> <alpine.LFD.2.02.1304101250320.21884@ionos> <5165C087.4060404@sr71.net> <alpine.LFD.2.02.1304111020520.21884@ionos>
+In-Reply-To: <alpine.LFD.2.02.1304111020520.21884@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 12:52:10AM +0200, Gregory CLEMENT wrote:
-> When LPAE is activated on Armada XP, all registers and IOs are still
-> 32bit, the 40bit extension is on the CPU to DRAM path (windows) only.
-> That means that all the DMA transfer are restricted to the low 32 bits
-> address space. This is limitation is achieved by selecting ZONE_DMA.
-> 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
->  arch/arm/mach-mvebu/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
+On 04/11/2013 03:19 AM, Thomas Gleixner wrote:
+> --- linux-2.6.orig/kernel/smpboot.c
+> +++ linux-2.6/kernel/smpboot.c
+> @@ -185,8 +185,18 @@ __smpboot_create_thread(struct smp_hotpl
+>  	}
+>  	get_task_struct(tsk);
+>  	*per_cpu_ptr(ht->store, cpu) = tsk;
+> -	if (ht->create)
+> -		ht->create(cpu);
+> +	if (ht->create) {
+> +		/*
+> +		 * Make sure that the task has actually scheduled out
+> +		 * into park position, before calling the create
+> +		 * callback. At least the migration thread callback
+> +		 * requires that the task is off the runqueue.
+> +		 */
+> +		if (!wait_task_inactive(tsk, TASK_PARKED))
+> +			WARN_ON(1);
+> +		else
+> +			ht->create(cpu);
+> +	}
+>  	return 0;
+>  }
 
-Applied to mvebu/soc
-
-thx,
-
-Jason.
+This one appears to be doing the trick.  I'll run the cpus in an
+online/offline loop for a bit and make sure it's stable.  It's passed
+several round so far, which is way more than it's done up to this point,
+though.
