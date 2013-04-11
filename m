@@ -1,124 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765434Ab3DKNGT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 09:06:19 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:50639 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752087Ab3DKNGR (ORCPT
+	id S934325Ab3DKNGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 09:06:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56617 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753900Ab3DKNGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 09:06:17 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: <mingo@redhat.com>, <peterz@infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Neil Zhang <zhangwm@marvell.com>
-Subject: [PATCH] sched: remove redundant update_runtime notifier
-Date: Thu, 11 Apr 2013 21:04:59 +0800
-Message-ID: <1365685499-26515-1-git-send-email-zhangwm@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
+	Thu, 11 Apr 2013 09:06:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Daniel Tang <dt.tangr@gmail.com>
+Subject: Re: [RFC PATCHv2 arm: initial TI-Nspire support]
+Date: Thu, 11 Apr 2013 15:06:33 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux@arm.linux.org.uk, Linus Walleij <linus.walleij@linaro.org>,
+        "fabian@ritter-vogt.de Vogt" <fabian@ritter-vogt.de>,
+        Lionel Debroux <lionel_debroux@yahoo.fr>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <8E071E2D-4FF3-487E-A53B-B6A7C427E421@gmail.com> <201304111430.05528.arnd@arndb.de> <C576ECFF-EF90-4995-AD28-1CEEE660DBAB@gmail.com>
+In-Reply-To: <C576ECFF-EF90-4995-AD28-1CEEE660DBAB@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304111506.34229.arnd@arndb.de>
+X-Provags-ID: V02:K0:yxC40B7d3kS/7DLpo+QUONIW+m5ANWxYziAad4plI81
+ U+eng77qfwQFrx3piakCgyhxpN0p+NvBY4BB8vJbt3owgcyYAa
+ 5Ef5918MDUV2Gk9om6m+Y2qysrWNeciyBDK0Du9LFluI7EGofv
+ hl65ufYnoSrkoUTw/XLj2ujGXMTuaxLIY4RL1P1dvIazRdzKQP
+ 1153Pr8Xgqb5lOrC8sOQCZ/Xi1OBWDBptfzPDyMKHMLuzwmZfg
+ saYwAMD/U82KPUpD/I02mM0b5690y1Fco5BFe9JdyMEDQwFpTb
+ sYo60M/ed1IpDT3uZQo0h36IgvD8pbnz9NDQjFR0CXUsbBPGMK
+ rd39m4rCUiZqQVdpy5VU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-migration_call() will do all the things that update_runtime() does.
-So let's remove it.
+On Thursday 11 April 2013, Daniel Tang wrote:
+> >> +
+> >> +CLOCKSOURCE_OF_DECLARE(nspire_classic_timer,
+> >> +            DT_COMPAT, nspire_classic_timer_init)
+> > 
+> > Why do you need the logic to prevent it from being initilized
+> > twice?  Can't you just remove the direct call to nspire_classic_timer_init
+> > from platform code and rely on of_clk_init() to call it?
+> > 
+> 
+> Ah, I wasn't aware that of_clk_init() would call the init functions. I thought it was up to clocksource_of_init() to do that.
+> 
+> Originally, I was adding a call to clocksource_of_init() to the platform code but
+> that resulted in the timers being added twice. If of_clk_init() already calls the
+> init functions, that would explain it. 
 
-Furthermore, there is potential risk that the current code will catch
-BUG_ON at line 689 of rt.c when do cpu hotplug while there are realtime
-threads running because of enabling runtime twice while the rt_runtime
-may already changed.
+Sorry, I was confusing the calls, I meant clocksource_of_init() not of_clk_init().
 
-Signed-off-by: Neil Zhang <zhangwm@marvell.com>
----
- kernel/sched/core.c  |    3 ---
- kernel/sched/rt.c    |   40 ----------------------------------------
- kernel/sched/sched.h |    1 -
- 3 files changed, 0 insertions(+), 44 deletions(-)
+I think the reason why they were added twice is that you have two nodes
+matching "nspire-classic-timer", so you get called for each one, but the
+existing code (pre linux-next) does not actually pass the node and you
+end up looping through both for each of the two calls.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7f12624..3719c3c 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -6831,9 +6831,6 @@ void __init sched_init_smp(void)
- 	hotcpu_notifier(cpuset_cpu_active, CPU_PRI_CPUSET_ACTIVE);
- 	hotcpu_notifier(cpuset_cpu_inactive, CPU_PRI_CPUSET_INACTIVE);
- 
--	/* RT runtime code needs to handle some hotplug events */
--	hotcpu_notifier(update_runtime, 0);
--
- 	init_hrtick();
- 
- 	/* Move init over to a non-isolated CPU */
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 127a2c4..111539a 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -699,15 +699,6 @@ balanced:
- 	}
- }
- 
--static void disable_runtime(struct rq *rq)
--{
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&rq->lock, flags);
--	__disable_runtime(rq);
--	raw_spin_unlock_irqrestore(&rq->lock, flags);
--}
--
- static void __enable_runtime(struct rq *rq)
- {
- 	rt_rq_iter_t iter;
-@@ -732,37 +723,6 @@ static void __enable_runtime(struct rq *rq)
- 	}
- }
- 
--static void enable_runtime(struct rq *rq)
--{
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&rq->lock, flags);
--	__enable_runtime(rq);
--	raw_spin_unlock_irqrestore(&rq->lock, flags);
--}
--
--int update_runtime(struct notifier_block *nfb, unsigned long action, void *hcpu)
--{
--	int cpu = (int)(long)hcpu;
--
--	switch (action) {
--	case CPU_DOWN_PREPARE:
--	case CPU_DOWN_PREPARE_FROZEN:
--		disable_runtime(cpu_rq(cpu));
--		return NOTIFY_OK;
--
--	case CPU_DOWN_FAILED:
--	case CPU_DOWN_FAILED_FROZEN:
--	case CPU_ONLINE:
--	case CPU_ONLINE_FROZEN:
--		enable_runtime(cpu_rq(cpu));
--		return NOTIFY_OK;
--
--	default:
--		return NOTIFY_DONE;
--	}
--}
--
- static int balance_runtime(struct rt_rq *rt_rq)
- {
- 	int more = 0;
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index cc03cfd..e73a8bd 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -892,7 +892,6 @@ extern void sysrq_sched_debug_show(void);
- extern void sched_init_granularity(void);
- extern void update_max_interval(void);
- extern void update_group_power(struct sched_domain *sd, int cpu);
--extern int update_runtime(struct notifier_block *nfb, unsigned long action, void *hcpu);
- extern void init_sched_rt_class(void);
- extern void init_sched_fair_class(void);
- 
--- 
-1.7.4.1
-
+	Arnd
