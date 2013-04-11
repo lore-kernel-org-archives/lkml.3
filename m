@@ -1,115 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935946Ab3DKRbZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 13:31:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35332 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935328Ab3DKRbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 13:31:23 -0400
-Message-ID: <1365701469.10217.6.camel@laptop>
-Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling
- overflow
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        fweisbec@gmail.com, rostedt@goodmis.org, akpm@linux-foundation.org,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 11 Apr 2013 19:31:09 +0200
-In-Reply-To: <20130411145052.GA31644@redhat.com>
-References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
-	 <20130326140147.GB2029@redhat.com> <1365687946.8824.3.camel@laptop>
-	 <20130411145052.GA31644@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S935995Ab3DKRby (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 13:31:54 -0400
+Received: from arrakis.dune.hu ([78.24.191.176]:39464 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935364Ab3DKRbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 13:31:52 -0400
+Message-ID: <5166F39C.1050907@openwrt.org>
+Date: Thu, 11 Apr 2013 19:32:12 +0200
+From: Gabor Juhos <juhosg@openwrt.org>
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
+Subject: Re: [PATCH 2/2] MIPS: implement pcibios_get_phb_of_node
+References: <1365098483-26821-1-git-send-email-juhosg@openwrt.org> <1365098483-26821-2-git-send-email-juhosg@openwrt.org> <CAErSpo4ih-Kgp4LxX1MDodac-eoPo=Mu1d6ex8oNnaEEc_GQnw@mail.gmail.com>
+In-Reply-To: <CAErSpo4ih-Kgp4LxX1MDodac-eoPo=Mu1d6ex8oNnaEEc_GQnw@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 16:50 +0200, Stanislaw Gruszka wrote:
-
-> > +	/*
-> > +	 * Since the stime:utime ratio is already an approximation through
-> > +	 * the sampling, reducing its resolution isn't too big a deal.
-> > +	 * And since total = stime+utime; the total_fls will be the biggest
-> > +	 * of the two;
-> > +	 */
-> > +	if (total_fls > 32) {
-> > +		shift = total_fls - 32; /* a = 2^shift */
-> > +		stime >>= shift;
-> > +		total >>= shift;
-> > +		stime_fls -= shift;
-> > +		total_fls -= shift;
-> > +	}
-> > +
-> > +	/*
-> > +	 * Since we limited stime to 32bits the multiplication reduced to 96bit.
-> > +	 *   stime * rtime = stime * (rl + rh * 2^32) = 
-> > +	 *                   stime * rl + stime * rh * 2^32
-> > +	 */
-> > +	lo = stime * rtime_lo;
-> > +	hi = stime * rtime_hi;
-> > +	t = hi << 32;
-> > +	lo += t;
-> > +	if (lo < t) /* overflow */
-> > +		hi += 0x100000000L;
-> > +	hi >>= 32;
+2013.04.10. 18:31 keltezéssel, Bjorn Helgaas írta:
+> On Thu, Apr 4, 2013 at 12:01 PM, Gabor Juhos <juhosg@openwrt.org> wrote:
+>> The of_node field of the device assigned to a
+>> PCI bus is used during scanning of the PCI bus.
+>> However on MIPS, the of_node field is assigned
+>> only after the bus has been scanned.
+>>
+>> Implement the architecture specific version of
+>> 'pcibios_get_phb_of_node'. Which ensures that the
+>> PCI driver core will initialize the of_node field
+>> before starting the scan.
+>>
+>> Also remove the local assignment of bus->dev.of_node,
+>> it is not needed after the patch.
+>>
+>> Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
 > 
-> I do not understand why we shift hi value here, is that correct?
+> I removed the __weak annotation from include/linux/pci.h and applied
+> this patch to my pci/gabor-get-of-node.
 
-Yes.. remember that we have:
+Thank you!
 
-  stime * rl + stime * rh * 2^32
+> Give it a try and make sure
+> it solves your problem.  If so, and Ralph approves, I can push both
+> for v3.10.  It should appear at
+> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/gabor-get-of-node
+> soon.
 
-How we get this 96bit value but our two 64bit values overlap:
+I have tried your patch on top of 3.9-rc6. The resulting kernel uses the
+architecture specific implementation, and it runs fine.
 
- | w3 | w2 | w1 | w0 |
- +----+----+----+----+
-           |    lo   |
-       |   hi   |
+  $ mipsel-openwrt-linux-readelf -s arch/mips/pci/built-in.o \
+    drivers/pci/built-in.o vmlinux.o | grep pcibios_get_phb_of_node
+      93: 0000046c    12 FUNC    GLOBAL DEFAULT    2 pcibios_get_phb_of_node
+    1433: 00012a2c   104 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
+   31863: 001d4dbc    12 FUNC    GLOBAL DEFAULT    2 pcibios_get_phb_of_node
+  $
 
-So what I do is I add the low word of hi to lo and shift the high word
-of hi to get:
+For completeness, I have compiled it for X64 and for powerpc as well. I did not
+try to run these kernels, but the output of readelf seems to be ok:
 
- |     hi  |    lo   |
+  $ readelf -s arch/x86/kernel/built-in.o drivers/pci/built-in.o vmlinux.o | \
+    grep pcibios_get_phb_of_node
+    2761: 000273a0    86 FUNC    GLOBAL DEFAULT    1 pcibios_get_phb_of_node
+    1705: 00018770    77 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+   60364: 000278a0    86 FUNC    GLOBAL DEFAULT    1 pcibios_get_phb_of_node
+  $
 
-Two non-overlapping 64bit values where the high word of hi is always 0.
+  $ powerpc-openwrt-linux-readelf -s arch/powerpc/kernel/built-in.o \
+    drivers/pci/built-in.o  vmlinux.o | grep pcibios_get_phb_of_node
+    1002: 0000ca28    12 FUNC    GLOBAL DEFAULT    1 pcibios_get_phb_of_node
+    1485: 0001453c    88 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
+   28959: 0000d598    12 FUNC    GLOBAL DEFAULT    1 pcibios_get_phb_of_node
+  $
 
-> > +	/*
-> > +	 * Pick the 64 most significant bits for division into @lo.
-> > +	 * 
-> > +	 * NOTE: res_fls is an approximation (upper-bound) do we want to
-> > +	 *       properly calculate?
-> > +	 */
-> > +	shift = 0;
-> > +	res_fls = stime_fls + rtime_fls;
-> > +	if (res_fls > 64) {
-> > +		shift = res_fls - 64; /* b = 2^shift */
-> > +		lo >>= shift;
-> > +		hi <<= 64 - shift;
-> > +		lo |= hi;
-> >  	}
-> > -	return (__force cputime_t) scaled;
-> > +	/*
-> > +	 * So here we do:
-> > +	 *
-> > +	 *    ((stime / a) * rtime / b)
-> > +	 *    --------------------------- / b
-> > +	 *           (total / a)
-> > +	 */
-> > +	return div_u64(lo, total) >> shift;
-> 
-> I think it should be:
-> 
->  ((stime / a) * rtime / b)
-> --------------------------- * b
->         (total / a)
-> 
-> return div_u64(lo, total) << shift;
+> Or if you prefer, you can take them through the MIPS tree.
 
-I think you're very right about that.. got my head twisted by staring
-at this stuff too long.
+Either is fine.
 
+-Gabor
