@@ -1,91 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab3DKKEq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 06:04:46 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40341 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752436Ab3DKKEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 06:04:44 -0400
-Date: Thu, 11 Apr 2013 13:04:35 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, "Balbi, Felipe" <balbi@ti.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] USB: ehci-omap: Select USB_PHY
-Message-ID: <20130411100435.GB14394@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <5166856C.3080906@ti.com>
+	id S1762512Ab3DKKJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 06:09:06 -0400
+Received: from [133.145.228.50] ([133.145.228.50]:38936 "EHLO
+	mailxx.hitachi.co.jp" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab3DKKJE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 06:09:04 -0400
+X-AuditID: 85900ec0-d4ccab900000151e-bf-51668b131072
+Message-ID: <51668B14.9090800@hitachi.com>
+Date: Thu, 11 Apr 2013 19:06:12 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fba/0zbH8Xs+Fj9o"
-Content-Disposition: inline
-In-Reply-To: <5166856C.3080906@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
+Subject: Re: Re: [PATCH 2/2] trace-cmd: Support trace_clock extraction
+References: <20130405015439.19807.43932.stgit@yunodevel>  <20130405015444.19807.91495.stgit@yunodevel> <1365523237.25498.70.camel@gandalf.local.home>
+In-Reply-To: <1365523237.25498.70.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Fba/0zbH8Xs+Fj9o
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Steven,
 
-Hi,
+Thank you for reviewing my patch set.
 
-On Thu, Apr 11, 2013 at 12:42:04PM +0300, Roger Quadros wrote:
-> Hi Greg,
->=20
-> The following patch gets rid of Kbuild warnings when USB_EHCI_HCD_OMAP
-> is enabled.
->=20
-> Patch is based on your usb-next branch and is needed for 3.10.
->=20
-> From: Roger Quadros <rogerq@ti.com>
-> Date: Thu, 11 Apr 2013 12:08:19 +0300
-> Subject: [PATCH] USB: ehci-omap: Select USB_PHY
->=20
-> As we need NOP_USB_XCEIV which depends on USB_PHY
-> we need to select USB_PHY as well.
->=20
-> Gets rid of the below warnings when USB_EHCI_HCD_OMAP
-> is enabled.
->=20
-> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet direct=
- dependencies (USB_SUPPORT && USB_PHY)
-> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet direct=
- dependencies (USB_SUPPORT && USB_PHY)
->=20
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+(2013/04/10 1:00), Steven Rostedt wrote:
+> On Fri, 2013-04-05 at 10:54 +0900, Yoshihiro YUNOMAE wrote:
+>> In this patch, trace-cmd reads trace_clock on debugfs in the report/extract
+>> modes and outputs the data to trace.dat file. Then, in the report mode,
+>> trace-cmd reads trace_clock data from the file and switches outputting format
+>> of timestamp for each trace_clock.
+>>
+>> Note that by applying this patch, the binary format of trace.data is changed
+>> as follows:
+>>
+>> <Current binary format>
+>> ...
+>> [size of saved_cmdlines]
+>> [saved_cmdlines contents]
+>> [total cpu number]
+>> ...
+>>
+>> <Changed binary format>
+>> ...
+>> [size of saved_cmdlines]
+>> [saved_cmdlines contents]
+>> [size of trace_clock]  <== add
+>> [trace_clock contents] <== add
+>> [total cpu number]
+>> ...
+>
+> Hi Yoshihiro,
+>
+> I don't mind the feature addition, but I don't like the implementation.
+> This will break backward compatibility with the trace.dat file, which
+> I've been working hard not to have happen.
 
-Ideally, however, we wouldn't select any PHY in particular as different
-boards might need a different PHY driver, even on OMAP ;-)
+Yeah, I agree with you.
+It is important that trace-cmd keeps backward compatibility.
 
---=20
-balbi
+> That doesn't mean that you can't implement this feature. This is what
+> the options section is for. You can add an option that includes the
+> trace_clock contents, or just simply say what type of clock is being
+> used. Then a new trace-cmd can show the output like you want it to, and
+> the old version will still work but show the old way, as trace-cmd is
+> made to simply ignore options it does not know about.
 
---Fba/0zbH8Xs+Fj9o
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Sounds good.
+Maintenance of the implementation will be easier than that of my
+implementation.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+> I think it's time for me to push my latest updates to trace-cmd. As this
+> will probably end up being the 3.0 version. I have examples there that
+> use the options feature for more extensions that you can look at.
 
-iQIcBAEBAgAGBQJRZoqzAAoJEIaOsuA1yqREIWcQAKXAy33ZCaFz0dTN9EcexjyL
-mA54cLaE24Nu+jhSVTSzRdTQV2awgNfCdYAqika7cO+VGg8V+Ju2TK0Xz4r5nHML
-bNSO8Dmn4Wo4soNJpPLK/uJsyDkw2SIZjtJjoV78Ol+kqhPF+Si7fv0rA44/x5mS
-nerhw0rR/yY6Cwb5qekD9IQanDD0EfvfZSyGBxeHTGPS8ZN0KkXsRA4CDpg4EDpi
-uDZJP9lXkCEQekTVU/t7qH3L+dDpGPBJWV9EwWNZjG/Usjt3w6coRJcoFT8syeF6
-ZIGd++5kY56M8ATdDDsdZqolfZ7eFEakqlnZ6/bs6R4IFgeHXvrBUXl6lTeqPznF
-yBn1n2qCo3eTEhyhWU9Rm2sg1Bl8StfrTKc1LT5sd3aIyfoTQjCW/4evVfw97ACE
-MBW9IHT4WLD5zjTw48SDkqKKn0pmWWf8n+MaKpMMOlbwXnzwpCJAgz6FnJtOOh/r
-t9GNpONqRtSFCpnSQ8MTMlelpRaNf+okrH1PylM2ERqRVjE9iKrF4fU4a9P5rp0g
-8M72+4zs+k1UnVP8FjI7xGF/aaHdnHpBA0TwaB4tBcQXjFqXEiBTMEo+avlwt3vG
-DHN7R/w+Bw03AZJ+Z8uHmmJB1SoNN9VXZCC22OEID2NCXl2JEp/XFr3VT/c6Yu6N
-HEmtzE+wlcx8XW+ldBkj
-=9uu7
------END PGP SIGNATURE-----
+Thank you for pushing your latest patches!
+I'll use your patches as a reference and submit the revised patches
+using the options feature.
 
---Fba/0zbH8Xs+Fj9o--
+Thanks,
+Yoshihiro YUNOMAE
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
