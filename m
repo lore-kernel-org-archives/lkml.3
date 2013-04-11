@@ -1,219 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab3DKL3h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 07:29:37 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:20312 "EHLO relay.sw.ru"
+	id S1754699Ab3DKLeQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 07:34:16 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:42221 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752808Ab3DKL3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 07:29:33 -0400
-Message-ID: <51669E95.8060101@parallels.com>
-Date: Thu, 11 Apr 2013 15:29:25 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1752087Ab3DKLeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 07:34:15 -0400
+Date: Thu, 11 Apr 2013 06:34:13 -0500
+From: Robin Holt <holt@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Robin Holt <holt@sgi.com>, Russ Anderson <rja@sgi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
+Message-ID: <20130411113412.GP3658@sgi.com>
+References: <20130408165916.GA3672@sgi.com>
+ <20130410111620.GB29752@gmail.com>
+ <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
+ <20130410152911.GA3011@sgi.com>
+ <20130410165934.GB21951@gmail.com>
+ <20130410171420.GF3658@sgi.com>
+ <20130410172236.GE21951@gmail.com>
+ <20130410175519.GG3658@sgi.com>
+ <20130410190003.GH3658@sgi.com>
+ <20130411085751.GD11824@gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/5] pagemap: Introduce pagemap_entry_t without pmshift bits
-References: <51669E5F.4000801@parallels.com>
-In-Reply-To: <51669E5F.4000801@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411085751.GD11824@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These bits are always constant (== PAGE_SHIFT) and just occupy space in
-the entry. Moreover, in next patch we will need to report one more bit in
-the pagemap, but all bits are already busy on it.
+> Ok, so it looks profilable.
+> 
+> The result above is not surprising: most CPUs sit in idle and don't do anything, 
+> while the loop goes on, right?
+> 
+> The interesting thing to profile would be the parallel bring-down, with the 
+> simplest global lock solution you mentioned. In that case most CPUs should be 
+> doing 'something' all the time - maybe spinning on the lock, maybe something else, 
+> right?
 
-That said, describe the pagemap entry that has 6 more free zero bits.
+Again, mostly looks idle.
 
-Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
----
- fs/proc/task_mmu.c |   50 ++++++++++++++++++++++++++++++--------------------
- 1 files changed, 30 insertions(+), 20 deletions(-)
+Events: 5M cycles
+    31.69%          swapper  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
+    14.22%          swapper  [kernel.kallsyms]        [k] load_balance
+    12.95%          swapper  [kernel.kallsyms]        [k] ktime_get
+     4.64%          swapper  [kernel.kallsyms]        [k] idle_cpu
+     3.46%          swapper  [kernel.kallsyms]        [k] uv_read_rtc
+     2.26%          swapper  [kernel.kallsyms]        [k] ktime_get_update_offsets
+     2.25%          swapper  [kernel.kallsyms]        [k] rcu_check_callbacks
+     1.72%          swapper  [kernel.kallsyms]        [k] _raw_spin_lock_irqsave
+     1.57%          swapper  [kernel.kallsyms]        [k] native_write_msr_safe
+     1.53%          swapper  [kernel.kallsyms]        [k] native_safe_halt
+     1.52%          swapper  [kernel.kallsyms]        [k] apic_timer_interrupt
+     1.52%          swapper  [kernel.kallsyms]        [k] update_blocked_averages
+     1.51%          swapper  [kernel.kallsyms]        [k] __lock_text_start
+     1.48%          swapper  [kernel.kallsyms]        [k] rcu_process_gp_end
+     1.40%          swapper  [kernel.kallsyms]        [k] rcu_process_callbacks
+     1.19%           reboot  [kernel.kallsyms]        [k] kmem_cache_alloc_node
+     0.63%          swapper  [kernel.kallsyms]        [k] check_for_new_grace_period
+     0.58%          swapper  [kernel.kallsyms]        [k] rebalance_domains
+     0.55%          swapper  [kernel.kallsyms]        [k] cpumask_next_and
+     0.54%          swapper  [kernel.kallsyms]        [k] __tick_nohz_idle_enter
+     0.53%          swapper  [kernel.kallsyms]        [k] perf_adjust_freq_unthr_context
+     0.49%          swapper  [kernel.kallsyms]        [k] _raw_spin_lock
 
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index c59a148..7f9b66c 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -805,6 +805,7 @@ typedef struct {
- struct pagemapread {
- 	int pos, len;
- 	pagemap_entry_t *buffer;
-+	bool v2;
- };
- 
- #define PAGEMAP_WALK_SIZE	(PMD_SIZE)
-@@ -818,14 +819,16 @@ struct pagemapread {
- #define PM_PSHIFT_BITS      6
- #define PM_PSHIFT_OFFSET    (PM_STATUS_OFFSET - PM_PSHIFT_BITS)
- #define PM_PSHIFT_MASK      (((1LL << PM_PSHIFT_BITS) - 1) << PM_PSHIFT_OFFSET)
--#define PM_PSHIFT(x)        (((u64) (x) << PM_PSHIFT_OFFSET) & PM_PSHIFT_MASK)
-+#define __PM_PSHIFT(x)      (((u64) (x) << PM_PSHIFT_OFFSET) & PM_PSHIFT_MASK)
- #define PM_PFRAME_MASK      ((1LL << PM_PSHIFT_OFFSET) - 1)
- #define PM_PFRAME(x)        ((x) & PM_PFRAME_MASK)
-+/* in pagemap2 pshift bits are occupied with more status bits */
-+#define PM_STATUS2(v2, x)   (__PM_PSHIFT(v2 ? x : PAGE_SHIFT))
- 
- #define PM_PRESENT          PM_STATUS(4LL)
- #define PM_SWAP             PM_STATUS(2LL)
- #define PM_FILE             PM_STATUS(1LL)
--#define PM_NOT_PRESENT      PM_PSHIFT(PAGE_SHIFT)
-+#define PM_NOT_PRESENT(v2)  PM_STATUS2(v2, 0)
- #define PM_END_OF_BUFFER    1
- 
- static inline pagemap_entry_t make_pme(u64 val)
-@@ -848,7 +851,7 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
- 	struct pagemapread *pm = walk->private;
- 	unsigned long addr;
- 	int err = 0;
--	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
-+	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
- 
- 	for (addr = start; addr < end; addr += PAGE_SIZE) {
- 		err = add_to_pagemap(addr, &pme, pm);
-@@ -858,7 +861,7 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
- 	return err;
- }
- 
--static void pte_to_pagemap_entry(pagemap_entry_t *pme,
-+static void pte_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *pm,
- 		struct vm_area_struct *vma, unsigned long addr, pte_t pte)
- {
- 	u64 frame, flags;
-@@ -877,18 +880,18 @@ static void pte_to_pagemap_entry(pagemap_entry_t *pme,
- 		if (is_migration_entry(entry))
- 			page = migration_entry_to_page(entry);
- 	} else {
--		*pme = make_pme(PM_NOT_PRESENT);
-+		*pme = make_pme(PM_NOT_PRESENT(pm->v2));
- 		return;
- 	}
- 
- 	if (page && !PageAnon(page))
- 		flags |= PM_FILE;
- 
--	*pme = make_pme(PM_PFRAME(frame) | PM_PSHIFT(PAGE_SHIFT) | flags);
-+	*pme = make_pme(PM_PFRAME(frame) | PM_STATUS2(pm->v2, 0) | flags);
- }
- 
- #ifdef CONFIG_TRANSPARENT_HUGEPAGE
--static void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme,
-+static void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *pm,
- 					pmd_t pmd, int offset)
- {
- 	/*
-@@ -898,12 +901,12 @@ static void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme,
- 	 */
- 	if (pmd_present(pmd))
- 		*pme = make_pme(PM_PFRAME(pmd_pfn(pmd) + offset)
--				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
-+				| PM_STATUS2(pm->v2, 0) | PM_PRESENT);
- 	else
--		*pme = make_pme(PM_NOT_PRESENT);
-+		*pme = make_pme(PM_NOT_PRESENT(pm->v2));
- }
- #else
--static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme,
-+static inline void thp_pmd_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *pm,
- 						pmd_t pmd, int offset)
- {
- }
-@@ -916,7 +919,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	struct pagemapread *pm = walk->private;
- 	pte_t *pte;
- 	int err = 0;
--	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT);
-+	pagemap_entry_t pme = make_pme(PM_NOT_PRESENT(pm->v2));
- 
- 	/* find the first VMA at or above 'addr' */
- 	vma = find_vma(walk->mm, addr);
-@@ -926,7 +929,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 
- 			offset = (addr & ~PAGEMAP_WALK_MASK) >>
- 					PAGE_SHIFT;
--			thp_pmd_to_pagemap_entry(&pme, *pmd, offset);
-+			thp_pmd_to_pagemap_entry(&pme, pm, *pmd, offset);
- 			err = add_to_pagemap(addr, &pme, pm);
- 			if (err)
- 				break;
-@@ -943,7 +946,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 		 * and need a new, higher one */
- 		if (vma && (addr >= vma->vm_end)) {
- 			vma = find_vma(walk->mm, addr);
--			pme = make_pme(PM_NOT_PRESENT);
-+			pme = make_pme(PM_NOT_PRESENT(pm->v2));
- 		}
- 
- 		/* check that 'vma' actually covers this address,
-@@ -951,7 +954,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 		if (vma && (vma->vm_start <= addr) &&
- 		    !is_vm_hugetlb_page(vma)) {
- 			pte = pte_offset_map(pmd, addr);
--			pte_to_pagemap_entry(&pme, vma, addr, *pte);
-+			pte_to_pagemap_entry(&pme, pm, vma, addr, *pte);
- 			/* unmap before userspace copy */
- 			pte_unmap(pte);
- 		}
-@@ -966,14 +969,14 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- }
- 
- #ifdef CONFIG_HUGETLB_PAGE
--static void huge_pte_to_pagemap_entry(pagemap_entry_t *pme,
-+static void huge_pte_to_pagemap_entry(pagemap_entry_t *pme, struct pagemapread *pm,
- 					pte_t pte, int offset)
- {
- 	if (pte_present(pte))
- 		*pme = make_pme(PM_PFRAME(pte_pfn(pte) + offset)
--				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
-+				| PM_STATUS2(pm->v2, 0) | PM_PRESENT);
- 	else
--		*pme = make_pme(PM_NOT_PRESENT);
-+		*pme = make_pme(PM_NOT_PRESENT(pm->v2));
- }
- 
- /* This function walks within one hugetlb entry in the single call */
-@@ -987,7 +990,7 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
- 
- 	for (; addr != end; addr += PAGE_SIZE) {
- 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
--		huge_pte_to_pagemap_entry(&pme, *pte, offset);
-+		huge_pte_to_pagemap_entry(&pme, pm, *pte, offset);
- 		err = add_to_pagemap(addr, &pme, pm);
- 		if (err)
- 			return err;
-@@ -1023,8 +1026,8 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
-  * determine which areas of memory are actually mapped and llseek to
-  * skip over unmapped regions.
-  */
--static ssize_t pagemap_read(struct file *file, char __user *buf,
--			    size_t count, loff_t *ppos)
-+static ssize_t do_pagemap_read(struct file *file, char __user *buf,
-+			    size_t count, loff_t *ppos, bool v2)
- {
- 	struct task_struct *task = get_proc_task(file_inode(file));
- 	struct mm_struct *mm;
-@@ -1049,6 +1052,7 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
- 	if (!count)
- 		goto out_task;
- 
-+	pm.v2 = v2;
- 	pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
- 	pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
- 	ret = -ENOMEM;
-@@ -1121,6 +1125,12 @@ out:
- 	return ret;
- }
- 
-+static ssize_t pagemap_read(struct file *file, char __user *buf,
-+			    size_t count, loff_t *ppos)
-+{
-+	return do_pagemap_read(file, buf, count, ppos, false);
-+}
-+
- const struct file_operations proc_pagemap_operations = {
- 	.llseek		= mem_lseek, /* borrow this */
- 	.read		= pagemap_read,
--- 
-1.7.6.5
+Robin
+
