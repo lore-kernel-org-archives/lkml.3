@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631Ab3DKHos (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:44:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47933 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754163Ab3DKHor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:44:47 -0400
-Date: Thu, 11 Apr 2013 09:45:29 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: sched/cputime: sig->prev_stime underflow
-Message-ID: <20130411074529.GA1629@redhat.com>
-References: <515DBB00.20208@sr71.net>
- <CAFTL4hxnNyWbn47PxPZDibzgOcqtw8v+t3EEzn+AM_pzFM=YeQ@mail.gmail.com>
- <5162E8DC.4080204@sr71.net>
+	id S1755118Ab3DKHpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:45:09 -0400
+Received: from mx16.lb01.inode.at ([62.99.145.18]:44127 "EHLO mx.inode.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754654Ab3DKHpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 03:45:03 -0400
+From: Michal Bachraty <michal.bachraty@streamunlimited.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Daniel Mack <zonque@gmail.com>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Dom Cobley <popcornmix@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rabeeh Khoury <rabeeh@solid-run.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Guenter Roeck <linux@roeck-us.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v7] clk: add si5351 i2c common clock driver
+Date: Thu, 11 Apr 2013 09:44:47 +0200
+Message-ID: <11205025.2MA5VbIUoF@ganymedes>
+Organization: Stream Unlimited GmbH
+User-Agent: KMail/4.8.4 (Linux/3.2.0-29-generic-pae; KDE/4.8.4; i686; ; )
+In-Reply-To: <5165A0FD.5030308@gmail.com>
+References: <1365439617-18816-1-git-send-email-sebastian.hesselbarth@gmail.com> <14854575.YAd2OMKOy9@ganymedes> <5165A0FD.5030308@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5162E8DC.4080204@sr71.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Authenticated-Sender: michal.bachraty@streamunlimited.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 08:57:16AM -0700, Dave Hansen wrote:
-> On 04/04/2013 04:41 PM, Frederic Weisbecker wrote:
-> > Does this patch fix the issue for you?
-> > https://lkml.org/lkml/2013/4/4/112
-> 
-> Nope, that doesn't seem to make a difference.  I'm still seeing the
-> underflow.  I'm pretty sure it's already gone to hell by the time it
-> gets in to the loop that's patched there.
+Hi Sebastian,
 
-Perhaps this is glich introduced by commit 
-62188451f0d63add7ad0cd2a1ae269d600c1663d "cputime: Avoid multiplication
-overflow on utime scaling" . Could you try to revert it and see if that
-helps. If it does not, can you check if problem happen on 3.8 ?
+On Wednesday, April 10, 2013 19:27:25 Sebastian Hesselbarth wrote:
+> Hmm, is there any driver using the clock output? Does it
+> clk_prepare_enable() the clock? I tend not to mess with anything the
+> bootloader or eeprom config left disabled. It works for me, but here the
+> driver will prepare/enable the clock prior use.
 
-Stanislaw
+For my case, disabled clock outputs in bootloader are correct. I'm working on 
+module board with lot of purposes. For one I need to tune frequncy, for other 
+not. In some cases I can use  clk_prepare_enable. For now, I need to tune clk, 
+so I can't use clk_prepare_enable. Si5351 chip has no problem with enabling 
+clock output multiple times, when calling clk_set_rate. So if this feature 
+will not be in driver, I need to stay with patch upon driver.
+
+Many thaks for writting driver,
+
+Michal
+
