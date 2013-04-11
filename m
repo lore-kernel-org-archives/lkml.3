@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935176Ab3DKRTq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 13:19:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45277 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934775Ab3DKRTo (ORCPT
+	id S934833Ab3DKRUj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 13:20:39 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:25411 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176Ab3DKRUi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 13:19:44 -0400
-Date: Thu, 11 Apr 2013 18:19:38 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: [PATCH 18/30] ASoC: samsung: move plat/ headers to local
- directory
-Message-ID: <20130411171938.GS9243@opensource.wolfsonmicro.com>
-References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
- <1365638712-1028578-19-git-send-email-arnd@arndb.de>
- <20130411164751.GK9243@opensource.wolfsonmicro.com>
- <201304111908.42532.arnd@arndb.de>
+	Thu, 11 Apr 2013 13:20:38 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mCdhXfk5CmamXiy1"
-Content-Disposition: inline
-In-Reply-To: <201304111908.42532.arnd@arndb.de>
-X-Cookie: Your love life will be... interesting.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-ID: <399a2a41-fa4d-41d9-80aa-5b4c51fee68e@default>
+Date: Thu, 11 Apr 2013 10:17:56 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <bob.liu@oracle.com>
+Subject: RE: [PATCH 00/10] staging: zcache/ramster: fix and ramster/debugfs
+ improvement
+References: <<1365553560-32258-1-git-send-email-liwanp@linux.vnet.ibm.com>>
+In-Reply-To: <<1365553560-32258-1-git-send-email-liwanp@linux.vnet.ibm.com>>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6668.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> From: Wanpeng Li [mailto:liwanp@linux.vnet.ibm.com]
+> Sent: Tuesday, April 09, 2013 6:26 PM
+> To: Greg Kroah-Hartman
+> Cc: Dan Magenheimer; Seth Jennings; Konrad Rzeszutek Wilk; Minchan Kim; linux-mm@kvack.org; linux-
+> kernel@vger.kernel.org; Andrew Morton; Bob Liu; Wanpeng Li
+> Subject: [PATCH 00/10] staging: zcache/ramster: fix and ramster/debugfs improvement
+> 
+> Fix bugs in zcache and rips out the debug counters out of ramster.c and
+> sticks them in a debug.c file. Introduce accessory functions for counters
+> increase/decrease, they are available when config RAMSTER_DEBUG, otherwise
+> they are empty non-debug functions. Using an array to initialize/use debugfs
+> attributes to make them neater. Dan Magenheimer confirm these works
+> are needed. http://marc.info/?l=linux-mm&m=136535713106882&w=2
+> 
+> Patch 1~2 fix bugs in zcache
+> 
+> Patch 3~8 rips out the debug counters out of ramster.c and sticks them
+> 		  in a debug.c file
+> 
+> Patch 9 fix coding style issue introduced in zcache2 cleanups
+>         (s/int/bool + debugfs movement) patchset
+> 
+> Patch 10 add how-to for ramster
 
---mCdhXfk5CmamXiy1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Thu, Apr 11, 2013 at 07:08:42PM +0200, Arnd Bergmann wrote:
-> On Thursday 11 April 2013, Mark Brown wrote:
-
-> > This doesn't apply to my topic/samsung branch, can you please regenerate
-> > it against that or let me know what to apply it against?
-
-> This one should work. Unfortunately I now found during testing that the
-> s3c24xx sound support has a few build errors at the moment, but this
-> patch should not add any new ones:
-
-Applied (after hand editing the commit message), thanks.
-
-> make[5]: *** [sound/soc/samsung/i2s.o] Error 1
-> /git/arm-soc/sound/soc/samsung/neo1973_wm8753.c:25:24: fatal error: mach/gta02.h: No such file or directory
->  #include <mach/gta02.h>
-
-Hrm, someone killed GTA02 support?  That's sad...  if that's really the
-case we could kill the machine driver but not tonight as I'm running
-late...
-
---mCdhXfk5CmamXiy1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRZvCKAAoJELSic+t+oim9X90QAIzA2iY67PTVoYsbI1wpdzqS
-X3BABnsRX8jCeW4ddU6M798CiUzVfLqAmk1shpE4U4IJJ5bLlG2qCNECfdsCloDm
-dH5iVP6+b/6i3srwLrYByeGkS9YHlHVjQYwmDS1mR7m9lRKN8+5iNfBhEG1yagNO
-NIxPOuh0QxtmDbum7ZUN6ZzgSwQtLuk0AKicCFFEOISg3rx/2S3bu+q5HPU52kDb
-LgKQt4Q6PW/MviuIbtJ9qtNEs85GOVcV1fcrjkq6MBr56fGB7c8wIqh24/YAeR30
-5sVrviyutZOH8eP2+MFjiam/6Yi/otL7clho3yn6mvJvHzDd5qfNriT9QPSr5f38
-t+TQkeQKclfIQZjhk1U7Xdb5L9DM4COrbayZYhig1kKnsj9Cl/Bg0fEjXwvNMV9r
-w0XTeWQjXYbYEB79ei5RK6c6sFJZxI9v48+1rIj4/Dzqr37/rPYFMjem5sYPBKCH
-6zaFcGLR91LQlnk7i7XS/mdx17SFv0dTGZzDYEU9WYWe76WESoZqKtIPy7H3ew1t
-TwHqjx5iPFWeWKz2k4jSQjzFEOcqiPqB6uuXRAr2oqYNAZsQH+r/BuwECobWGk+I
-LD0l+KpWaHz57MLxsZPREeyNIlMjBMrc8OWhtbsnbeYA+Umlwu3HHVGe1mcJyNdO
-q/ELFztXkACZ5GaTXQv+
-=Hc1C
------END PGP SIGNATURE-----
-
---mCdhXfk5CmamXiy1--
+Note my preference to not apply patch 2of10 (which GregKH may choose
+to override), but for all, please add my:
+Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
