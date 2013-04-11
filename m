@@ -1,411 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935212Ab3DKUmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:42:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51086 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935124Ab3DKUm2 (ORCPT
+	id S1160993Ab3DKUmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:42:49 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:36056 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932513Ab3DKUmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:42:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH v2] spi: s3c64xx: move to generic dmaengine API
-Date: Thu, 11 Apr 2013 22:42:03 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Padma Venkat <padma.kvr@gmail.com>
-References: <1365638712-1028578-1-git-send-email-arnd@arndb.de> <1365638712-1028578-30-git-send-email-arnd@arndb.de> <20130411165536.GO9243@opensource.wolfsonmicro.com>
-In-Reply-To: <20130411165536.GO9243@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Thu, 11 Apr 2013 16:42:47 -0400
+Message-ID: <1365712962.7355.27.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [ 024/171 ] sfc: lock TX queues when calling
+ netif_device_detach()
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Date: Thu, 11 Apr 2013 21:42:42 +0100
+In-Reply-To: <20130411202550.143721907@goodmis.org>
+References: <20130411202503.783159048@goodmis.org>
+	 <20130411202550.143721907@goodmis.org>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304112242.03252.arnd@arndb.de>
-X-Provags-ID: V02:K0:8P/D1Iz6uMbuFV29huLL1n/Xzr5bUawji9p+44a1r3N
- d1/S0kKrJ67tXa+rq+2VVb7W4O77VXOcllqxoaaCKkzq5UZQ3b
- w2wAmHTLN461kACU7WXS8qgOcQ2aNIZCLlRM3FrAX3UBUSPuSX
- esK4PJNtOgSZ52n5UKup6IXHr/UCJWZw5B8hN7lApq+kywjPIt
- cvg5Xvxaxpo4tczRsp1vWyDW4S5TDeWbthiCYrU11eOkV0dQ8m
- 4xF+BDS1x8DoOZQ4e6m3gEdgWWaESlOAR8dkQQrC6NoIzNr1nd
- CPe7X6R+Ki3L/PCu9XjfruE/lgXLnFGRtxUTYP8MYs2Vk3QNfk
- vvUTq7PZ9iFo338sWIMA=
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19790.000
+X-TM-AS-Result: No--22.840000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The spi-s3c64xx uses a Samsung proprietary interface for
-talking to the DMA engine, which does not work with
-multiplatform kernels.
+On Thu, 2013-04-11 at 16:25 -0400, Steven Rostedt wrote:
 
-This version of the patch leaves the old code in place,
-behind an #ifdef. This can be removed in the future,
-after the s3c64xx platform start supporting the regular
-dmaengine interface. An earlier version of this patch was
-tested successfully on exynos5250 by Padma Venkat.
+> 3.6.11.2 stable review patch.
+> If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Daniel Pieczko <dpieczko@solarflare.com>
+> 
+> [ Upstream commit c2f3b8e3a44b6fe9e36704e30157ebe1a88c08b1 ]
+> 
+> The assertion of netif_device_present() at the top of
+> efx_hard_start_xmit() may fail if we don't do this.
 
-The conversion was rather mechanical, since the samsung
-interface is just a shallow wrapper around the dmaengine
-interface.
+You should also cherry-pick commit 35205b211c8d 'sfc: Disable soft
+interrupt handling during efx_device_detach_sync()' on top of this.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: spi-devel-general@lists.sourceforge.net
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Padma Venkat <padma.kvr@gmail.com>
-----
+Ben.
 
-v2: rebased to git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git spi-next
+> Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  drivers/net/ethernet/sfc/efx.c      |    4 ++--
+>  drivers/net/ethernet/sfc/efx.h      |   13 +++++++++++++
+>  drivers/net/ethernet/sfc/selftest.c |    2 +-
+>  3 files changed, 16 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/sfc/efx.c b/drivers/net/ethernet/sfc/efx.c
+> index 65a8d49..073fd60 100644
+> --- a/drivers/net/ethernet/sfc/efx.c
+> +++ b/drivers/net/ethernet/sfc/efx.c
+> @@ -2224,7 +2224,7 @@ int efx_reset(struct efx_nic *efx, enum reset_type method)
+>  	netif_info(efx, drv, efx->net_dev, "resetting (%s)\n",
+>  		   RESET_TYPE(method));
+>  
+> -	netif_device_detach(efx->net_dev);
+> +	efx_device_detach_sync(efx);
+>  	efx_reset_down(efx, method);
+>  
+>  	rc = efx->type->reset(efx, method);
+> @@ -2719,7 +2719,7 @@ static int efx_pm_freeze(struct device *dev)
+>  
+>  	efx->state = STATE_FINI;
+>  
+> -	netif_device_detach(efx->net_dev);
+> +	efx_device_detach_sync(efx);
+>  
+>  	efx_stop_all(efx);
+>  	efx_stop_interrupts(efx, false);
+> diff --git a/drivers/net/ethernet/sfc/efx.h b/drivers/net/ethernet/sfc/efx.h
+> index 70755c9..320cf7b 100644
+> --- a/drivers/net/ethernet/sfc/efx.h
+> +++ b/drivers/net/ethernet/sfc/efx.h
+> @@ -162,4 +162,17 @@ extern void efx_link_status_changed(struct efx_nic *efx);
+>  extern void efx_link_set_advertising(struct efx_nic *efx, u32);
+>  extern void efx_link_set_wanted_fc(struct efx_nic *efx, u8);
+>  
+> +static inline void efx_device_detach_sync(struct efx_nic *efx)
+> +{
+> +	struct net_device *dev = efx->net_dev;
+> +
+> +	/* Lock/freeze all TX queues so that we can be sure the
+> +	 * TX scheduler is stopped when we're done and before
+> +	 * netif_device_present() becomes false.
+> +	 */
+> +	netif_tx_lock(dev);
+> +	netif_device_detach(dev);
+> +	netif_tx_unlock(dev);
+> +}
+> +
+>  #endif /* EFX_EFX_H */
+> diff --git a/drivers/net/ethernet/sfc/selftest.c b/drivers/net/ethernet/sfc/selftest.c
+> index 96068d1..57dec37 100644
+> --- a/drivers/net/ethernet/sfc/selftest.c
+> +++ b/drivers/net/ethernet/sfc/selftest.c
+> @@ -721,7 +721,7 @@ int efx_selftest(struct efx_nic *efx, struct efx_self_tests *tests,
+>  	/* Detach the device so the kernel doesn't transmit during the
+>  	 * loopback test and the watchdog timeout doesn't fire.
+>  	 */
+> -	netif_device_detach(efx->net_dev);
+> +	efx_device_detach_sync(efx);
+>  
+>  	if (efx->type->test_chip) {
+>  		rc_reset = efx->type->test_chip(efx, tests);
 
-diff --git a/arch/arm/plat-samsung/devs.c b/arch/arm/plat-samsung/devs.c
-index 51afedd..03db14d 100644
---- a/arch/arm/plat-samsung/devs.c
-+++ b/arch/arm/plat-samsung/devs.c
-@@ -10,6 +10,7 @@
-  * published by the Free Software Foundation.
- */
- 
-+#include <linux/amba/pl330.h>
- #include <linux/kernel.h>
- #include <linux/types.h>
- #include <linux/interrupt.h>
-@@ -1552,6 +1553,9 @@ void __init s3c64xx_spi0_set_platdata(int (*cfg_gpio)(void), int src_clk_nr,
- 	pd.num_cs = num_cs;
- 	pd.src_clk_nr = src_clk_nr;
- 	pd.cfg_gpio = (cfg_gpio) ? cfg_gpio : s3c64xx_spi0_cfg_gpio;
-+#ifdef CONFIG_PL330_DMA
-+	pd.filter = pl330_filter;
-+#endif
- 
- 	s3c_set_platdata(&pd, sizeof(pd), &s3c64xx_device_spi0);
- }
-@@ -1590,6 +1594,9 @@ void __init s3c64xx_spi1_set_platdata(int (*cfg_gpio)(void), int src_clk_nr,
- 	pd.num_cs = num_cs;
- 	pd.src_clk_nr = src_clk_nr;
- 	pd.cfg_gpio = (cfg_gpio) ? cfg_gpio : s3c64xx_spi1_cfg_gpio;
-+#ifdef CONFIG_PL330_DMA
-+	pd.filter = pl330_filter;
-+#endif
- 
- 	s3c_set_platdata(&pd, sizeof(pd), &s3c64xx_device_spi1);
- }
-@@ -1628,6 +1635,9 @@ void __init s3c64xx_spi2_set_platdata(int (*cfg_gpio)(void), int src_clk_nr,
- 	pd.num_cs = num_cs;
- 	pd.src_clk_nr = src_clk_nr;
- 	pd.cfg_gpio = (cfg_gpio) ? cfg_gpio : s3c64xx_spi2_cfg_gpio;
-+#ifdef CONFIG_PL330_DMA
-+	pd.filter = pl330_filter;
-+#endif
- 
- 	s3c_set_platdata(&pd, sizeof(pd), &s3c64xx_device_spi2);
- }
-diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index 682b1e7..4989aeb 100644
---- a/drivers/spi/spi-s3c64xx.c
-+++ b/drivers/spi/spi-s3c64xx.c
-@@ -24,6 +24,7 @@
- #include <linux/delay.h>
- #include <linux/clk.h>
- #include <linux/dma-mapping.h>
-+#include <linux/dmaengine.h>
- #include <linux/platform_device.h>
- #include <linux/pm_runtime.h>
- #include <linux/spi/spi.h>
-@@ -31,9 +32,12 @@
- #include <linux/of.h>
- #include <linux/of_gpio.h>
- 
--#include <mach/dma.h>
- #include <linux/platform_data/spi-s3c64xx.h>
- 
-+#ifdef CONFIG_SAMSUNG_DMADEV
-+#include <mach/dma.h>
-+#endif
-+
- #define MAX_SPI_PORTS		3
- 
- /* Registers and bit-fields */
-@@ -131,9 +135,9 @@
- #define TXBUSY    (1<<3)
- 
- struct s3c64xx_spi_dma_data {
--	unsigned		ch;
-+	struct dma_chan *ch;
- 	enum dma_transfer_direction direction;
--	enum dma_ch	dmach;
-+	unsigned int dmach;
- };
- 
- /**
-@@ -195,16 +199,14 @@ struct s3c64xx_spi_driver_data {
- 	unsigned                        cur_speed;
- 	struct s3c64xx_spi_dma_data	rx_dma;
- 	struct s3c64xx_spi_dma_data	tx_dma;
-+#ifdef CONFIG_SAMSUNG_DMADEV
- 	struct samsung_dma_ops		*ops;
-+#endif
- 	struct s3c64xx_spi_port_config	*port_conf;
- 	unsigned int			port_id;
- 	unsigned long			gpios[4];
- };
- 
--static struct s3c2410_dma_client s3c64xx_spi_dma_client = {
--	.name = "samsung-spi-dma",
--};
--
- static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
- {
- 	void __iomem *regs = sdd->regs;
-@@ -281,6 +283,13 @@ static void s3c64xx_spi_dmacb(void *data)
- 	spin_unlock_irqrestore(&sdd->lock, flags);
- }
- 
-+#ifdef CONFIG_SAMSUNG_DMADEV
-+/* FIXME: remove this section once arch/arm/mach-s3c64xx uses dmaengine */
-+
-+static struct s3c2410_dma_client s3c64xx_spi_dma_client = {
-+	.name = "samsung-spi-dma",
-+};
-+
- static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
- 					unsigned len, dma_addr_t buf)
- {
-@@ -294,14 +303,14 @@ static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
- 		config.direction = sdd->rx_dma.direction;
- 		config.fifo = sdd->sfr_start + S3C64XX_SPI_RX_DATA;
- 		config.width = sdd->cur_bpw / 8;
--		sdd->ops->config(sdd->rx_dma.ch, &config);
-+		sdd->ops->config((enum dma_ch)sdd->rx_dma.ch, &config);
- 	} else {
- 		sdd = container_of((void *)dma,
- 			struct s3c64xx_spi_driver_data, tx_dma);
- 		config.direction =  sdd->tx_dma.direction;
- 		config.fifo = sdd->sfr_start + S3C64XX_SPI_TX_DATA;
- 		config.width = sdd->cur_bpw / 8;
--		sdd->ops->config(sdd->tx_dma.ch, &config);
-+		sdd->ops->config((enum dma_ch)sdd->tx_dma.ch, &config);
- 	}
- 
- 	info.cap = DMA_SLAVE;
-@@ -311,8 +320,8 @@ static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
- 	info.direction = dma->direction;
- 	info.buf = buf;
- 
--	sdd->ops->prepare(dma->ch, &info);
--	sdd->ops->trigger(dma->ch);
-+	sdd->ops->prepare((enum dma_ch)dma->ch, &info);
-+	sdd->ops->trigger((enum dma_ch)dma->ch);
- }
- 
- static int acquire_dma(struct s3c64xx_spi_driver_data *sdd)
-@@ -325,12 +334,126 @@ static int acquire_dma(struct s3c64xx_spi_driver_data *sdd)
- 	req.cap = DMA_SLAVE;
- 	req.client = &s3c64xx_spi_dma_client;
- 
--	sdd->rx_dma.ch = sdd->ops->request(sdd->rx_dma.dmach, &req, dev, "rx");
--	sdd->tx_dma.ch = sdd->ops->request(sdd->tx_dma.dmach, &req, dev, "tx");
-+	sdd->rx_dma.ch = (void *)sdd->ops->request(sdd->rx_dma.dmach, &req, dev, "rx");
-+	sdd->tx_dma.ch = (void *)sdd->ops->request(sdd->tx_dma.dmach, &req, dev, "tx");
- 
- 	return 1;
- }
- 
-+static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
-+{
-+	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
-+
-+	/* Acquire DMA channels */
-+	while (!acquire_dma(sdd))
-+		usleep_range(10000, 11000);
-+
-+	pm_runtime_get_sync(&sdd->pdev->dev);
-+
-+	return 0;
-+}
-+
-+static int s3c64xx_spi_unprepare_transfer(struct spi_master *spi)
-+{
-+	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
-+
-+	/* Free DMA channels */
-+	sdd->ops->release((enum dma_ch)sdd->rx_dma.ch, &s3c64xx_spi_dma_client);
-+	sdd->ops->release((enum dma_ch)sdd->tx_dma.ch, &s3c64xx_spi_dma_client);
-+
-+	pm_runtime_put(&sdd->pdev->dev);
-+
-+	return 0;
-+}
-+
-+static void s3c64xx_spi_dma_stop(struct s3c64xx_spi_driver_data *sdd,
-+				 struct s3c64xx_spi_dma_data *dma)
-+{
-+	sdd->ops->stop((enum dma_ch)dma->ch);
-+}
-+#else
-+
-+static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
-+					unsigned len, dma_addr_t buf)
-+{
-+	struct s3c64xx_spi_driver_data *sdd;
-+	struct dma_slave_config config;
-+	struct scatterlist sg;
-+	struct dma_async_tx_descriptor *desc;
-+
-+	if (dma->direction == DMA_DEV_TO_MEM) {
-+		sdd = container_of((void *)dma,
-+			struct s3c64xx_spi_driver_data, rx_dma);
-+		config.direction = dma->direction;
-+		config.src_addr = sdd->sfr_start + S3C64XX_SPI_RX_DATA;
-+		config.src_addr_width = sdd->cur_bpw / 8;
-+		config.src_maxburst = 1;
-+		dmaengine_slave_config(dma->ch, &config);
-+	} else {
-+		sdd = container_of((void *)dma,
-+			struct s3c64xx_spi_driver_data, tx_dma);
-+		config.direction = dma->direction;
-+		config.dst_addr = sdd->sfr_start + S3C64XX_SPI_TX_DATA;
-+		config.dst_addr_width = sdd->cur_bpw / 8;
-+		config.dst_maxburst = 1;
-+		dmaengine_slave_config(dma->ch, &config);
-+	}
-+
-+	sg_init_table(&sg, 1);
-+	sg_dma_len(&sg) = len;
-+	sg_set_page(&sg, pfn_to_page(PFN_DOWN(buf)),
-+		    len, offset_in_page(buf));
-+	sg_dma_address(&sg) = buf;
-+
-+	desc = dmaengine_prep_slave_sg(dma->ch,
-+		&sg, 1, dma->direction, DMA_PREP_INTERRUPT);
-+
-+	desc->callback = s3c64xx_spi_dmacb;
-+	desc->callback_param = dma;
-+
-+	dmaengine_submit(desc);
-+	dma_async_issue_pending(dma->ch);
-+}
-+
-+static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
-+{
-+	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
-+	dma_filter_fn filter = sdd->cntrlr_info->filter;
-+	struct device *dev = &sdd->pdev->dev;
-+	dma_cap_mask_t mask;
-+
-+	dma_cap_zero(mask);
-+	dma_cap_set(DMA_SLAVE, mask);
-+
-+	/* Acquire DMA channels */
-+	sdd->rx_dma.ch = dma_request_slave_channel_compat(mask, filter,
-+				(void*)sdd->rx_dma.dmach, dev, "rx");
-+	sdd->tx_dma.ch = dma_request_slave_channel_compat(mask, filter,
-+				(void*)sdd->tx_dma.dmach, dev, "tx");
-+	pm_runtime_get_sync(&sdd->pdev->dev);
-+
-+	return 0;
-+}
-+
-+static int s3c64xx_spi_unprepare_transfer(struct spi_master *spi)
-+{
-+	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
-+
-+	/* Free DMA channels */
-+	dma_release_channel(sdd->rx_dma.ch);
-+	dma_release_channel(sdd->tx_dma.ch);
-+
-+	pm_runtime_put(&sdd->pdev->dev);
-+	return 0;
-+}
-+
-+static void s3c64xx_spi_dma_stop(struct s3c64xx_spi_driver_data *sdd,
-+				 struct s3c64xx_spi_dma_data *dma)
-+{
-+	dmaengine_terminate_all(dma->ch);
-+}
-+#endif
-+
- static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
- 				struct spi_device *spi,
- 				struct spi_transfer *xfer, int dma_mode)
-@@ -713,9 +836,9 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
- 		}
- 
- 		/* Polling method for xfers not bigger than FIFO capacity */
--		if (xfer->len <= ((FIFO_LVL_MASK(sdd) >> 1) + 1))
--			use_dma = 0;
--		else
-+		use_dma = 0;
-+		if (sdd->rx_dma.ch && sdd->tx_dma.ch &&
-+		    (xfer->len > ((FIFO_LVL_MASK(sdd) >> 1) + 1)))
- 			use_dma = 1;
- 
- 		spin_lock_irqsave(&sdd->lock, flags);
-@@ -750,10 +873,10 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
- 			if (use_dma) {
- 				if (xfer->tx_buf != NULL
- 						&& (sdd->state & TXBUSY))
--					sdd->ops->stop(sdd->tx_dma.ch);
-+					s3c64xx_spi_dma_stop(sdd, &sdd->tx_dma);
- 				if (xfer->rx_buf != NULL
- 						&& (sdd->state & RXBUSY))
--					sdd->ops->stop(sdd->rx_dma.ch);
-+					s3c64xx_spi_dma_stop(sdd, &sdd->rx_dma);
- 			}
- 
- 			goto out;
-@@ -790,32 +913,6 @@ out:
- 	return 0;
- }
- 
--static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
--{
--	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
--
--	/* Acquire DMA channels */
--	while (!acquire_dma(sdd))
--		usleep_range(10000, 11000);
--
--	pm_runtime_get_sync(&sdd->pdev->dev);
--
--	return 0;
--}
--
--static int s3c64xx_spi_unprepare_transfer(struct spi_master *spi)
--{
--	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
--
--	/* Free DMA channels */
--	sdd->ops->release(sdd->rx_dma.ch, &s3c64xx_spi_dma_client);
--	sdd->ops->release(sdd->tx_dma.ch, &s3c64xx_spi_dma_client);
--
--	pm_runtime_put(&sdd->pdev->dev);
--
--	return 0;
--}
--
- static struct s3c64xx_spi_csinfo *s3c64xx_get_slave_ctrldata(
- 				struct spi_device *spi)
- {
-diff --git a/include/linux/platform_data/spi-s3c64xx.h b/include/linux/platform_data/spi-s3c64xx.h
-index ceba18d..8447f63 100644
---- a/include/linux/platform_data/spi-s3c64xx.h
-+++ b/include/linux/platform_data/spi-s3c64xx.h
-@@ -11,6 +11,8 @@
- #ifndef __S3C64XX_PLAT_SPI_H
- #define __S3C64XX_PLAT_SPI_H
- 
-+#include <linux/dmaengine.h>
-+
- struct platform_device;
- 
- /**
-@@ -38,6 +40,7 @@ struct s3c64xx_spi_info {
- 	int src_clk_nr;
- 	int num_cs;
- 	int (*cfg_gpio)(void);
-+	dma_filter_fn filter;
- };
- 
- /**
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
