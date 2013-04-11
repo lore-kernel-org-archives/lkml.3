@@ -1,49 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab3DKQOh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:14:37 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:40066 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752662Ab3DKQOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:14:36 -0400
-Date: Thu, 11 Apr 2013 09:05:24 -0700
+	id S1753983Ab3DKQPu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:15:50 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:60682 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab3DKQPt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 12:15:49 -0400
+Date: Thu, 11 Apr 2013 09:10:31 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: fweisbec@gmail.com, rostedt@goodmis.org, bp@alien8.de,
-        arjan@linux.intel.com, khilman@linaro.org, cl@linux.com,
-        pradeep@us.ibm.com
-Subject: [PATCH documentation 0/2] OS-jitter documentation
-Message-ID: <20130411160524.GA30384@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 4/4] nohz: New option to force all CPUs in full dynticks
+ range
+Message-ID: <20130411161031.GA29861@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
+References: <1364398359-21990-1-git-send-email-fweisbec@gmail.com>
+ <1364398359-21990-5-git-send-email-fweisbec@gmail.com>
+ <20130328074507.GC24433@gmail.com>
+ <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com>
+ <20130330091037.GA31743@gmail.com>
+ <0000013dea26b171-8095c339-dc81-4459-a3ad-a8d69c803448-000000@email.amazonses.com>
+ <20130411151956.GF15699@somewhere>
+ <20130411153721.GA3742@linux.vnet.ibm.com>
+ <20130411155349.GA16797@somewhere.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130411155349.GA16797@somewhere.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041116-5806-0000-0000-000020B070AE
+x-cbid: 13041116-5518-0000-0000-00000D70B2D4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Thu, Apr 11, 2013 at 05:53:53PM +0200, Frederic Weisbecker wrote:
+> On Thu, Apr 11, 2013 at 08:37:21AM -0700, Paul E. McKenney wrote:
+> > On Thu, Apr 11, 2013 at 05:19:59PM +0200, Frederic Weisbecker wrote:
+> > > On Mon, Apr 08, 2013 at 02:57:18PM +0000, Christoph Lameter wrote:
+> > > > I think we could simplify things quite a bit if we either
+> > > > 
+> > > > 1. Add any cpus specified with nohz_full/extended=xxx to
+> > > > rcu_nocb. No check is then necessary anymore.
+> > > 
+> > > Yeah in the long term we probably want that indeed.
+> > 
+> > Or just build with RCU_NOCB_CPU_ALL=y to unconditionally offload all
+> > the CPUs when using nohz_extended.
+> 
+> If there is no performance issue with that I'm all for it.
 
-This is v2 of the OS-jitter-reduction documentation.  Changes from
-v1 (https://lkml.org/lkml/2013/3/18/462):
-
-o	Updated the nohz1 patch based on feedback from Frederic Weisbecker,
-	Steven Rostedt, Borislav Petkov, Arjan van de Ven, Kevin Hilman,
-	and Christoph Lameter.
-
-o	Added a second file describing how to reduce OS jitter from
-	per-CPU kthreads.  This is quite rough, but is hopefully a
-	good starting point.
+We won't know until a bunch of people try it.  ;-)
 
 							Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/Documentation/kernel-per-CPU-kthreads.txt |  159 ++++++++++++++++++
- b/Documentation/timers/NO_HZ.txt            |  245 ++++++++++++++++++++++++++++
- 2 files changed, 404 insertions(+)
 
