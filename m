@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936475Ab3DKVGv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:06:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23956 "EHLO
+	id S936461Ab3DKVGu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:06:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20734 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935698Ab3DKUtO (ORCPT
+	with ESMTP id S935710Ab3DKUtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:49:14 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=E784MlmosOIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=aCifndSud74A:10 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=U2SIHj-WA3ss6q3cvBoA:9 a=5KVauyKsRKMA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9iYy0BBEhSEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=vrmkKAql9u0A:10 a=drOt6m5kAAAA:8 a=XxtmG6sFAAAA:8 a=VwQbUJbxAAAA:8 a=0u0nhMPvhaUjrep2UKUA:9 a=NuBSTLBdITsA:10 a=jeBq3FmKZ4MA:10 a=7v2BBwS4cPHt6BXJ:21 a=8yrlGwXHrq0a3pJ_:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202603.852837968@goodmis.org>
+Message-Id: <20130411202603.702393237@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:50 -0400
+Date: Thu, 11 Apr 2013 16:26:49 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Soeren Moch <smoch@web.de>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 107/171 ] USB: EHCI: fix bug in iTD/siTD DMA pool allocation
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Subject: [ 106/171 ] Nest rename_lock inside vfsmount_lock
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0107-USB-EHCI-fix-bug-in-iTD-siTD-DMA-pool-allocation.patch
+Content-Disposition: inline; filename=0106-Nest-rename_lock-inside-vfsmount_lock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,90 +29,122 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Soeren Moch <smoch@web.de>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-[ Upstream commit 85ecd0322b9a1a9f451d9150e9460ab42fd17219 ]
+[ Upstream commit 7ea600b5314529f9d1b9d6d3c41cb26fce6a7a4a ]
 
-[Description written by Alan Stern]
+... lest we get livelocks between path_is_under() and d_path() and friends.
 
-Soeren tracked down a very difficult bug in ehci-hcd's DMA pool
-management of iTD and siTD structures.  Some background: ehci-hcd
-gives each isochronous endpoint its own set of active and free itd's
-(or sitd's for full-speed devices).  When a new itd is needed, it is
-taken from the head of the free list, if possible.  However, itd's
-must not be used twice in a single frame because the hardware
-continues to access the data structure for the entire duration of a
-frame.  Therefore if the itd at the head of the free list has its
-"frame" member equal to the current value of ehci->now_frame, it
-cannot be reused and instead a new itd is allocated from the DMA pool.
-The entries on the free list are not released back to the pool until
-the endpoint is no longer in use.
+The thing is, wrt fairness lglocks are more similar to rwsems than to rwlocks;
+it is possible to have thread B spin on attempt to take lock shared while thread
+A is already holding it shared, if B is on lower-numbered CPU than A and there's
+a thread C spinning on attempt to take the same lock exclusive.
 
-The bug arises from the fact that sometimes an itd can be moved back
-onto the free list before itd->frame has been set properly.  In
-Soeren's case, this happened because ehci-hcd can allocate one more
-itd than it actually needs for an URB; the extra itd may or may not be
-required depending on how the transfer aligns with a frame boundary.
-For example, an URB with 8 isochronous packets will cause two itd's to
-be allocated.  If the URB is scheduled to start in microframe 3 of
-frame N then it will require both itds: one for microframes 3 - 7 of
-frame N and one for microframes 0 - 2 of frame N+1.  But if the URB
-had been scheduled to start in microframe 0 then it would require only
-the first itd, which could cover microframes 0 - 7 of frame N.  The
-second itd would be returned to the end of the free list.
+As the result, we need consistent ordering between vfsmount_lock (lglock) and
+rename_lock (seq_lock), even though everything that takes both is going to take
+vfsmount_lock only shared.
 
-The itd allocation routine initializes the entire structure to 0, so
-the extra itd ends up on the free list with itd->frame set to 0
-instead of a meaningful value.  After a while the itd reaches the head
-of the list, and occasionally this happens when ehci->now_frame is
-equal to 0.  Then, even though it would be okay to reuse this itd, the
-driver thinks it must get another itd from the DMA pool.
-
-For as long as the isochronous endpoint remains in use, this flaw in
-the mechanism causes more and more itd's to be taken slowly from the
-DMA pool.  Since none are released back, the pool eventually becomes
-exhausted.
-
-This reuslts in memory allocation failures, which typically show up
-during a long-running audio stream.  Video might suffer the same
-effect.
-
-The fix is very simple.  To prevent allocations from the pool when
-they aren't needed, make sure that itd's sent back to the free list
-prematurely have itd->frame set to an invalid value which can never be
-equal to ehci->now_frame.
-
-This should be applied to -stable kernels going back to 3.6.
-
-Signed-off-by: Soeren Moch <smoch@web.de>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Spotted-by: Brad Spengler <spender@grsecurity.net>
+Cc: stable@vger.kernel.org
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/host/ehci-sched.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/dcache.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
-index 528a540..56a1907 100644
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1237,6 +1237,7 @@ itd_urb_transaction (
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 693f95b..2488c47 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2583,7 +2583,6 @@ static int prepend_path(const struct path *path,
+ 	bool slash = false;
+ 	int error = 0;
  
- 		memset (itd, 0, sizeof *itd);
- 		itd->itd_dma = itd_dma;
-+		itd->frame = 9999;		/* an invalid value */
- 		list_add (&itd->itd_list, &sched->td_list);
+-	br_read_lock(&vfsmount_lock);
+ 	while (dentry != root->dentry || vfsmnt != root->mnt) {
+ 		struct dentry * parent;
+ 
+@@ -2613,8 +2612,6 @@ static int prepend_path(const struct path *path,
+ 	if (!error && !slash)
+ 		error = prepend(buffer, buflen, "/", 1);
+ 
+-out:
+-	br_read_unlock(&vfsmount_lock);
+ 	return error;
+ 
+ global_root:
+@@ -2631,7 +2628,7 @@ global_root:
+ 		error = prepend(buffer, buflen, "/", 1);
+ 	if (!error)
+ 		error = is_mounted(vfsmnt) ? 1 : 2;
+-	goto out;
++	return error;
+ }
+ 
+ /**
+@@ -2658,9 +2655,11 @@ char *__d_path(const struct path *path,
+ 	int error;
+ 
+ 	prepend(&res, &buflen, "\0", 1);
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = prepend_path(path, root, &res, &buflen);
+ 	write_sequnlock(&rename_lock);
++	br_read_unlock(&vfsmount_lock);
+ 
+ 	if (error < 0)
+ 		return ERR_PTR(error);
+@@ -2677,9 +2676,11 @@ char *d_absolute_path(const struct path *path,
+ 	int error;
+ 
+ 	prepend(&res, &buflen, "\0", 1);
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = prepend_path(path, &root, &res, &buflen);
+ 	write_sequnlock(&rename_lock);
++	br_read_unlock(&vfsmount_lock);
+ 
+ 	if (error > 1)
+ 		error = -EINVAL;
+@@ -2743,11 +2744,13 @@ char *d_path(const struct path *path, char *buf, int buflen)
+ 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
+ 
+ 	get_fs_root(current->fs, &root);
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	error = path_with_deleted(path, &root, &res, &buflen);
++	write_sequnlock(&rename_lock);
++	br_read_unlock(&vfsmount_lock);
+ 	if (error < 0)
+ 		res = ERR_PTR(error);
+-	write_sequnlock(&rename_lock);
+ 	path_put(&root);
+ 	return res;
+ }
+@@ -2902,6 +2905,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 	get_fs_root_and_pwd(current->fs, &root, &pwd);
+ 
+ 	error = -ENOENT;
++	br_read_lock(&vfsmount_lock);
+ 	write_seqlock(&rename_lock);
+ 	if (!d_unlinked(pwd.dentry)) {
+ 		unsigned long len;
+@@ -2911,6 +2915,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 		prepend(&cwd, &buflen, "\0", 1);
+ 		error = prepend_path(&pwd, &root, &cwd, &buflen);
+ 		write_sequnlock(&rename_lock);
++		br_read_unlock(&vfsmount_lock);
+ 
+ 		if (error < 0)
+ 			goto out;
+@@ -2931,6 +2936,7 @@ SYSCALL_DEFINE2(getcwd, char __user *, buf, unsigned long, size)
+ 		}
+ 	} else {
+ 		write_sequnlock(&rename_lock);
++		br_read_unlock(&vfsmount_lock);
  	}
- 	spin_unlock_irqrestore (&ehci->lock, flags);
-@@ -1931,6 +1932,7 @@ sitd_urb_transaction (
  
- 		memset (sitd, 0, sizeof *sitd);
- 		sitd->sitd_dma = sitd_dma;
-+		sitd->frame = 9999;		/* an invalid value */
- 		list_add (&sitd->sitd_list, &iso_sched->td_list);
- 	}
- 
+ out:
 -- 
 1.7.10.4
 
