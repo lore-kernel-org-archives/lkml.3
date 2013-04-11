@@ -1,244 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937346Ab3DKAQm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 20:16:42 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45404 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934997Ab3DKAQk (ORCPT
+	id S964932Ab3DKARq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 20:17:46 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:34731 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934997Ab3DKARo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 20:16:40 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <5166005B.3060607@jp.fujitsu.com>
-Date: Thu, 11 Apr 2013 09:14:19 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Wed, 10 Apr 2013 20:17:44 -0400
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning requirements
- for kswapd
-References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <1365505625-9460-3-git-send-email-mgorman@suse.de> <516511DF.5020805@jp.fujitsu.com> <20130410140824.GC3710@suse.de>
-In-Reply-To: <20130410140824.GC3710@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1365638712-1028578-3-git-send-email-arnd@arndb.de>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+	<1365638712-1028578-3-git-send-email-arnd@arndb.de>
+Date: Thu, 11 Apr 2013 09:17:43 +0900
+X-Google-Sender-Auth: IV9nITStqEdXxpXTTmD24hh8fhw
+Message-ID: <CAH9JG2VC9EPnhij=VOrVOmhMHdJ_AfruT62weHALOE5e=ViFUw@mail.gmail.com>
+Subject: Re: [PATCH 02/30] ARM: exynos: prepare for sparse IRQ
+From: Kyungmin Park <kmpark@infradead.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/10 23:08), Mel Gorman wrote:
-> On Wed, Apr 10, 2013 at 04:16:47PM +0900, Kamezawa Hiroyuki wrote:
->> (2013/04/09 20:06), Mel Gorman wrote:
->>> Simplistically, the anon and file LRU lists are scanned proportionally
->>> depending on the value of vm.swappiness although there are other factors
->>> taken into account by get_scan_count().  The patch "mm: vmscan: Limit
->>> the number of pages kswapd reclaims" limits the number of pages kswapd
->>> reclaims but it breaks this proportional scanning and may evenly shrink
->>> anon/file LRUs regardless of vm.swappiness.
->>>
->>> This patch preserves the proportional scanning and reclaim. It does mean
->>> that kswapd will reclaim more than requested but the number of pages will
->>> be related to the high watermark.
->>>
->>> [mhocko@suse.cz: Correct proportional reclaim for memcg and simplify]
->>> Signed-off-by: Mel Gorman <mgorman@suse.de>
->>> Acked-by: Rik van Riel <riel@redhat.com>
->>> ---
->>>    mm/vmscan.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++--------
->>>    1 file changed, 46 insertions(+), 8 deletions(-)
->>>
->>> diff --git a/mm/vmscan.c b/mm/vmscan.c
->>> index 4835a7a..0742c45 100644
->>> --- a/mm/vmscan.c
->>> +++ b/mm/vmscan.c
->>> @@ -1825,13 +1825,21 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->>>    	enum lru_list lru;
->>>    	unsigned long nr_reclaimed = 0;
->>>    	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
->>> +	unsigned long nr_anon_scantarget, nr_file_scantarget;
->>>    	struct blk_plug plug;
->>> +	bool scan_adjusted = false;
->>>
->>>    	get_scan_count(lruvec, sc, nr);
->>>
->>> +	/* Record the original scan target for proportional adjustments later */
->>> +	nr_file_scantarget = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE] + 1;
->>> +	nr_anon_scantarget = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON] + 1;
->>> +
->>
->> I'm sorry I couldn't understand the calc...
->>
->> Assume here
->>          nr_file_scantarget = 100
->>          nr_anon_file_target = 100.
->>
->
-> I think you might have meant nr_anon_scantarget here instead of
-> nr_anon_file_target.
->
->>
->>>    	blk_start_plug(&plug);
->>>    	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
->>>    					nr[LRU_INACTIVE_FILE]) {
->>> +		unsigned long nr_anon, nr_file, percentage;
->>> +
->>>    		for_each_evictable_lru(lru) {
->>>    			if (nr[lru]) {
->>>    				nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
->>> @@ -1841,17 +1849,47 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->>>    							    lruvec, sc);
->>>    			}
->>>    		}
->>> +
->>> +		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
->>> +			continue;
->>> +
->>>    		/*
->>> -		 * On large memory systems, scan >> priority can become
->>> -		 * really large. This is fine for the starting priority;
->>> -		 * we want to put equal scanning pressure on each zone.
->>> -		 * However, if the VM has a harder time of freeing pages,
->>> -		 * with multiple processes reclaiming pages, the total
->>> -		 * freeing target can get unreasonably large.
->>> +		 * For global direct reclaim, reclaim only the number of pages
->>> +		 * requested. Less care is taken to scan proportionally as it
->>> +		 * is more important to minimise direct reclaim stall latency
->>> +		 * than it is to properly age the LRU lists.
->>>    		 */
->>> -		if (nr_reclaimed >= nr_to_reclaim &&
->>> -		    sc->priority < DEF_PRIORITY)
->>> +		if (global_reclaim(sc) && !current_is_kswapd())
->>>    			break;
->>> +
->>> +		/*
->>> +		 * For kswapd and memcg, reclaim at least the number of pages
->>> +		 * requested. Ensure that the anon and file LRUs shrink
->>> +		 * proportionally what was requested by get_scan_count(). We
->>> +		 * stop reclaiming one LRU and reduce the amount scanning
->>> +		 * proportional to the original scan target.
->>> +		 */
->>> +		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
->>> +		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
->>> +
->>
->> Then, nr_file = 80, nr_anon=70.
->>
->
-> As we scan evenly in SCAN_CLUSTER_MAX groups of pages, this wouldn't happen
-> but for the purposes of discussions, lets assume it did.
->
->>
->>> +		if (nr_file > nr_anon) {
->>> +			lru = LRU_BASE;
->>> +			percentage = nr_anon * 100 / nr_anon_scantarget;
->>> +		} else {
->>> +			lru = LRU_FILE;
->>> +			percentage = nr_file * 100 / nr_file_scantarget;
->>> +		}
->>
->> the percentage will be 70.
->>
->
-> Yes.
->
->>> +
->>> +		/* Stop scanning the smaller of the LRU */
->>> +		nr[lru] = 0;
->>> +		nr[lru + LRU_ACTIVE] = 0;
->>> +
->>
->> this will stop anon scan.
->>
->
-> Yes.
->
->>> +		/* Reduce scanning of the other LRU proportionally */
->>> +		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
->>> +		nr[lru] = nr[lru] * percentage / 100;;
->>> +		nr[lru + LRU_ACTIVE] = nr[lru + LRU_ACTIVE] * percentage / 100;
->>> +
->>
->> finally, in the next iteration,
->>
->>                nr[file] = 80 * 0.7 = 56.
->>
->> After loop, anon-scan is 30 pages , file-scan is 76(20+56) pages..
->>
->
-> Well spotted, this would indeed reclaim too many pages from the other
-> LRU. I wanted to avoid recording the original scan targets as it's an
-> extra 40 bytes on the stack but it's unavoidable.
->
->> I think the calc here should be
->>
->>     nr[lru] = nr_lru_scantarget * percentage / 100 - nr[lru]
->>
->>     Here, 80-70=10 more pages to scan..should be proportional.
->>
->
-> nr[lru] at the end there is pages remaining to be scanned not pages
-> scanned already.
+On Thu, Apr 11, 2013 at 9:04 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> When we enable CONFIG_SPARSE_IRQ, we have to set the value of NR_IRQS in
+> the machine_desc for legacy IRQ domains, and any file referring to the
+> number of interrupts or a specific number must include the mach/irqs.h
+> header file explicitly.
 
-yes.
-
-> Did you mean something like this?
+It's really wanted feature.
 >
-> nr[lru] = scantarget[lru] * percentage / 100 - (scantarget[lru] - nr[lru])
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  arch/arm/mach-exynos/dev-uart.c          | 1 +
+>  arch/arm/mach-exynos/include/mach/irqs.h | 5 ++++-
+>  arch/arm/mach-exynos/mach-armlex4210.c   | 2 ++
+>  arch/arm/mach-exynos/mach-exynos4-dt.c   | 3 +++
+>  arch/arm/mach-exynos/mach-exynos5-dt.c   | 2 ++
+>  arch/arm/mach-exynos/mach-nuri.c         | 2 ++
+>  arch/arm/mach-exynos/mach-origen.c       | 2 ++
+>  arch/arm/mach-exynos/mach-smdk4x12.c     | 2 ++
+>  arch/arm/mach-exynos/mach-smdkv310.c     | 3 +++
+>  arch/arm/plat-samsung/irq-vic-timer.c    | 1 +
+>  arch/arm/plat-samsung/pm.c               | 1 +
+>  arch/arm/plat-samsung/s5p-irq.c          | 1 +
+>  12 files changed, 24 insertions(+), 1 deletion(-)
 >
-
-For clarification, this "percentage" means the ratio of remaining scan target of
-another LRU. So, *scanned* percentage is "100 - percentage", right ?
-
-If I understand the changelog correctly, you'd like to keep
-
-    scantarget[anon] : scantarget[file]
-    == really_scanned_num[anon] : really_scanned_num[file]
-
-even if we stop scanning in the middle of scantarget. And you introduced "percentage"
-to make sure that both scantarget should be done in the same ratio.
-
-So...another lru should scan  scantarget[x] * (100 - percentage)/100 in total.
-
-nr[lru] = scantarget[lru] * (100 - percentage)/100 - (scantarget[lru] - nr[lru])
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^
-              proportionally adjusted scan target        already scanned num
-
-        =  nr[lru] - scantarget[lru] * percentage/100.
-
-This means to avoid scanning the amount of pages in the ratio which another lru
-didn't scan.
-
-> With care taken to ensure we do not underflow?
-
-yes.
-
-Regards,
--Kame
-
-
-> Something like
+> diff --git a/arch/arm/mach-exynos/dev-uart.c b/arch/arm/mach-exynos/dev-uart.c
+> index 7c42f4b..c48aff0 100644
+> --- a/arch/arm/mach-exynos/dev-uart.c
+> +++ b/arch/arm/mach-exynos/dev-uart.c
+> @@ -20,6 +20,7 @@
+>  #include <asm/mach/irq.h>
+>  #include <mach/hardware.h>
+>  #include <mach/map.h>
+> +#include <mach/irqs.h>
 >
->          unsigned long nr[NR_LRU_LISTS];
->          unsigned long targets[NR_LRU_LISTS];
+>  #include <plat/devs.h>
 >
-> ...
+> diff --git a/arch/arm/mach-exynos/include/mach/irqs.h b/arch/arm/mach-exynos/include/mach/irqs.h
+> index 35fe6d5..c72f59d 100644
+> --- a/arch/arm/mach-exynos/include/mach/irqs.h
+> +++ b/arch/arm/mach-exynos/include/mach/irqs.h
+> @@ -467,7 +467,10 @@
+>  #define IRQ_TIMER_BASE                 (IRQ_GPIO_END + 64)
 >
-> 	memcpy(targets, nr, sizeof(nr));
+>  /* Set the default NR_IRQS */
+> +#define EXYNOS_NR_IRQS                 (IRQ_TIMER_BASE + IRQ_TIMER_COUNT)
 >
-> ...
+> -#define NR_IRQS                                (IRQ_TIMER_BASE + IRQ_TIMER_COUNT)
+> +#ifndef CONFIG_SPARSE_IRQ
+> +#define NR_IRQS                                EXYNOS_NR_IRQS
+> +#endif
 >
->          nr[lru] = targets[lru] * percentage / 100;
->          nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
+>  #endif /* __ASM_ARCH_IRQS_H */
+> diff --git a/arch/arm/mach-exynos/mach-armlex4210.c b/arch/arm/mach-exynos/mach-armlex4210.c
+> index 2c23b65..a503e02 100644
+> --- a/arch/arm/mach-exynos/mach-armlex4210.c
+> +++ b/arch/arm/mach-exynos/mach-armlex4210.c
+> @@ -25,6 +25,7 @@
+>  #include <plat/regs-srom.h>
+>  #include <plat/sdhci.h>
 >
->          lru += LRU_ACTIVE;
->          nr[lru] = targets[lru] * percentage / 100;
->          nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
+> +#include <mach/irqs.h>
+>  #include <mach/map.h>
 >
-> ?
+>  #include "common.h"
+> @@ -196,6 +197,7 @@ static void __init armlex4210_machine_init(void)
+>  MACHINE_START(ARMLEX4210, "ARMLEX4210")
+>         /* Maintainer: Alim Akhtar <alim.akhtar@samsung.com> */
+>         .atag_offset    = 0x100,
+> +       .nr_irqs        = EXYNOS_NR_IRQS,
+>         .smp            = smp_ops(exynos_smp_ops),
+>         .init_irq       = exynos4_init_irq,
+>         .map_io         = armlex4210_map_io,
+> diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
+> index b9ed834..5f23682 100644
+> --- a/arch/arm/mach-exynos/mach-exynos4-dt.c
+> +++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
+> @@ -20,6 +20,8 @@
 >
-
-
+>  #include <asm/mach/arch.h>
+>  #include <plat/mfc.h>
+> +#include <mach/irqs.h>
+> +
+>
+>  #include "common.h"
+>
+> @@ -54,6 +56,7 @@ static void __init exynos4_reserve(void)
+>  }
+>  DT_MACHINE_START(EXYNOS4210_DT, "Samsung Exynos4 (Flattened Device Tree)")
+>         /* Maintainer: Thomas Abraham <thomas.abraham@linaro.org> */
+> +       .nr_irqs        = EXYNOS_NR_IRQS,
+>         .smp            = smp_ops(exynos_smp_ops),
+>         .init_irq       = exynos4_init_irq,
+>         .map_io         = exynos4_dt_map_io,
+> diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
+> index 753b94f..8b7456a 100644
+> --- a/arch/arm/mach-exynos/mach-exynos5-dt.c
+> +++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
+> @@ -16,6 +16,7 @@
+>  #include <linux/clocksource.h>
+>
+>  #include <asm/mach/arch.h>
+> +#include <mach/irqs.h>
+>  #include <mach/regs-pmu.h>
+>
+>  #include <plat/cpu.h>
+> @@ -76,6 +77,7 @@ static void __init exynos5_reserve(void)
+>
+>  DT_MACHINE_START(EXYNOS5_DT, "SAMSUNG EXYNOS5 (Flattened Device Tree)")
+>         /* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+> +       .nr_irqs        = EXYNOS_NR_IRQS,
+>         .init_irq       = exynos5_init_irq,
+>         .smp            = smp_ops(exynos_smp_ops),
+>         .map_io         = exynos5_dt_map_io,
+> diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
+> index 0c10852..fbae331 100644
+> --- a/arch/arm/mach-exynos/mach-nuri.c
+> +++ b/arch/arm/mach-exynos/mach-nuri.c
+> @@ -53,6 +53,7 @@
+>  #include <plat/fimc-core.h>
+>  #include <plat/camport.h>
+>
+> +#include <mach/irqs.h>
+>  #include <mach/map.h>
+>
+>  #include "common.h"
+> @@ -1376,6 +1377,7 @@ static void __init nuri_machine_init(void)
+>  MACHINE_START(NURI, "NURI")
+>         /* Maintainer: Kyungmin Park <kyungmin.park@samsung.com> */
+>         .atag_offset    = 0x100,
+> +       .nr_irqs        = EXYNOS_NR_IRQS,
+>         .smp            = smp_ops(exynos_smp_ops),
+>         .init_irq       = exynos4_init_irq,
+>         .map_io         = nuri_map_io,
+> diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
+> index f662345..a3ee06a 100644
+> --- a/arch/arm/mach-exynos/mach-origen.c
+> +++ b/arch/arm/mach-exynos/mach-origen.c
+> @@ -46,6 +46,7 @@
+>  #include <plat/hdmi.h>
+>
+>  #include <mach/map.h>
+> +#include <mach/irqs.h>
+>
+>  #include <drm/exynos_drm.h>
+>  #include "common.h"
+> @@ -811,6 +812,7 @@ static void __init origen_machine_init(void)
+>  MACHINE_START(ORIGEN, "ORIGEN")
+>         /* Maintainer: JeongHyeon Kim <jhkim@insignal.co.kr> */
+>         .atag_offset    = 0x100,
+> +       .nr_irqs        = EXYNOS_NR_IRQS,
+>         .smp            = smp_ops(exynos_smp_ops),
+>         .init_irq       = exynos4_init_irq,
+>         .map_io         = origen_map_io,
+> diff --git a/arch/arm/mach-exynos/mach-smdk4x12.c b/arch/arm/mach-exynos/mach-smdk4x12.c
+> index 184faa3..3ebd5e4 100644
+> --- a/arch/arm/mach-exynos/mach-smdk4x12.c
+> +++ b/arch/arm/mach-exynos/mach-smdk4x12.c
+> @@ -39,6 +39,7 @@
+>  #include <plat/regs-serial.h>
+>  #include <plat/sdhci.h>
+>
+> +#include <mach/irqs.h>
+>  #include <mach/map.h>
+>
+>  #include <drm/exynos_drm.h>
+> @@ -384,6 +385,7 @@ MACHINE_START(SMDK4412, "SMDK4412")
+>         /* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+>         /* Maintainer: Changhwan Youn <chaos.youn@samsung.com> */
+>         .atag_offset    = 0x100,
+> +       .nr_irqs        = EXYNOS_NR_IRQS,
+>         .smp            = smp_ops(exynos_smp_ops),
+>         .init_irq       = exynos4_init_irq,
+>         .map_io         = smdk4x12_map_io,
+> diff --git a/arch/arm/mach-exynos/mach-smdkv310.c b/arch/arm/mach-exynos/mach-smdkv310.c
+> index ee815a7..5527a28 100644
+> --- a/arch/arm/mach-exynos/mach-smdkv310.c
+> +++ b/arch/arm/mach-exynos/mach-smdkv310.c
+> @@ -43,6 +43,7 @@
+>  #include <plat/clock.h>
+>  #include <plat/hdmi.h>
+>
+> +#include <mach/irqs.h>
+>  #include <mach/map.h>
+>
+>  #include <drm/exynos_drm.h>
+> @@ -420,6 +421,7 @@ MACHINE_START(SMDKV310, "SMDKV310")
+>         /* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+>         /* Maintainer: Changhwan Youn <chaos.youn@samsung.com> */
+>         .atag_offset    = 0x100,
+> +       .nr_irqs        = EXYNOS_NR_IRQS,
+>         .smp            = smp_ops(exynos_smp_ops),
+>         .init_irq       = exynos4_init_irq,
+>         .map_io         = smdkv310_map_io,
+> @@ -432,6 +434,7 @@ MACHINE_END
+>  MACHINE_START(SMDKC210, "SMDKC210")
+>         /* Maintainer: Kukjin Kim <kgene.kim@samsung.com> */
+>         .atag_offset    = 0x100,
+> +       .nr_irqs        = EXYNOS_NR_IRQS,
+>         .smp            = smp_ops(exynos_smp_ops),
+>         .init_irq       = exynos4_init_irq,
+>         .map_io         = smdkv310_map_io,
+> diff --git a/arch/arm/plat-samsung/irq-vic-timer.c b/arch/arm/plat-samsung/irq-vic-timer.c
+> index 5d205e7..0fceb42 100644
+> --- a/arch/arm/plat-samsung/irq-vic-timer.c
+> +++ b/arch/arm/plat-samsung/irq-vic-timer.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/io.h>
+>
+>  #include <mach/map.h>
+> +#include <mach/irqs.h>
+>  #include <plat/cpu.h>
+>  #include <plat/irq-vic-timer.h>
+>  #include <plat/regs-timer.h>
+> diff --git a/arch/arm/plat-samsung/pm.c b/arch/arm/plat-samsung/pm.c
+> index 002b147..53210ec 100644
+> --- a/arch/arm/plat-samsung/pm.c
+> +++ b/arch/arm/plat-samsung/pm.c
+> @@ -27,6 +27,7 @@
+>  #include <plat/regs-serial.h>
+>  #include <mach/regs-clock.h>
+>  #include <mach/regs-irq.h>
+> +#include <mach/irqs.h>
+>  #include <asm/irq.h>
+>
+>  #include <plat/pm.h>
+> diff --git a/arch/arm/plat-samsung/s5p-irq.c b/arch/arm/plat-samsung/s5p-irq.c
+> index 103e371..ff1a760 100644
+> --- a/arch/arm/plat-samsung/s5p-irq.c
+> +++ b/arch/arm/plat-samsung/s5p-irq.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/io.h>
+>  #include <linux/irqchip/arm-vic.h>
+>
+> +#include <mach/irqs.h>
+>  #include <mach/map.h>
+>  #include <plat/regs-timer.h>
+>  #include <plat/cpu.h>
+> --
+> 1.8.1.2
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
