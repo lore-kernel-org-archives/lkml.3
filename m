@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762512Ab3DKKJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 06:09:06 -0400
-Received: from [133.145.228.50] ([133.145.228.50]:38936 "EHLO
-	mailxx.hitachi.co.jp" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab3DKKJE (ORCPT
+	id S1762634Ab3DKKTH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 06:19:07 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:41902 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab3DKKTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 06:09:04 -0400
-X-AuditID: 85900ec0-d4ccab900000151e-bf-51668b131072
-Message-ID: <51668B14.9090800@hitachi.com>
-Date: Thu, 11 Apr 2013 19:06:12 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	Thu, 11 Apr 2013 06:19:06 -0400
+Message-ID: <51668E16.9000904@hitachi.com>
+Date: Thu, 11 Apr 2013 19:19:02 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: Re: [PATCH 2/2] trace-cmd: Support trace_clock extraction
-References: <20130405015439.19807.43932.stgit@yunodevel>  <20130405015444.19807.91495.stgit@yunodevel> <1365523237.25498.70.camel@gandalf.local.home>
-In-Reply-To: <1365523237.25498.70.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 1/1] uprobes/tracing: Don't pass addr=ip to perf_trace_buf_submit()
+References: <20130329181520.GA20670@redhat.com> <20130329181545.GA20697@redhat.com> <20130404142522.GC8986@linux.vnet.ibm.com> <515E4938.6090809@hitachi.com> <20130405150110.GA31300@redhat.com> <51628DF8.6030102@hitachi.com> <20130410145818.GA30670@redhat.com> <20130410145844.GB30670@redhat.com>
+In-Reply-To: <20130410145844.GB30670@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+(2013/04/10 23:58), Oleg Nesterov wrote:
+> uprobe_perf_print() passes addr=ip to perf_trace_buf_submit() for
+> no reason. This sets perf_sample_data->addr for PERF_SAMPLE_ADDR,
+> we already have perf_sample_data->ip initialized if PERF_SAMPLE_IP.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Thank you for reviewing my patch set.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-(2013/04/10 1:00), Steven Rostedt wrote:
-> On Fri, 2013-04-05 at 10:54 +0900, Yoshihiro YUNOMAE wrote:
->> In this patch, trace-cmd reads trace_clock on debugfs in the report/extract
->> modes and outputs the data to trace.dat file. Then, in the report mode,
->> trace-cmd reads trace_clock data from the file and switches outputting format
->> of timestamp for each trace_clock.
->>
->> Note that by applying this patch, the binary format of trace.data is changed
->> as follows:
->>
->> <Current binary format>
->> ...
->> [size of saved_cmdlines]
->> [saved_cmdlines contents]
->> [total cpu number]
->> ...
->>
->> <Changed binary format>
->> ...
->> [size of saved_cmdlines]
->> [saved_cmdlines contents]
->> [size of trace_clock]  <== add
->> [trace_clock contents] <== add
->> [total cpu number]
->> ...
->
-> Hi Yoshihiro,
->
-> I don't mind the feature addition, but I don't like the implementation.
-> This will break backward compatibility with the trace.dat file, which
-> I've been working hard not to have happen.
+Thank you!
 
-Yeah, I agree with you.
-It is important that trace-cmd keeps backward compatibility.
+> ---
+>  kernel/trace/trace_uprobe.c |    8 +++-----
+>  1 files changed, 3 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 2d08bea..37ccb72 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -811,7 +811,6 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+>  	struct ftrace_event_call *call = &tu->call;
+>  	struct uprobe_trace_entry_head *entry;
+>  	struct hlist_head *head;
+> -	unsigned long ip;
+>  	void *data;
+>  	int size, rctx, i;
+>  
+> @@ -825,13 +824,12 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+>  	if (!entry)
+>  		goto out;
+>  
+> -	ip = instruction_pointer(regs);
+>  	if (is_ret_probe(tu)) {
+>  		entry->vaddr[0] = func;
+> -		entry->vaddr[1] = ip;
+> +		entry->vaddr[1] = instruction_pointer(regs);
+>  		data = DATAOF_TRACE_ENTRY(entry, true);
+>  	} else {
+> -		entry->vaddr[0] = ip;
+> +		entry->vaddr[0] = instruction_pointer(regs);
+>  		data = DATAOF_TRACE_ENTRY(entry, false);
+>  	}
+>  
+> @@ -839,7 +837,7 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+>  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
+>  
+>  	head = this_cpu_ptr(call->perf_events);
+> -	perf_trace_buf_submit(entry, size, rctx, ip, 1, regs, head, NULL);
+> +	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
+>   out:
+>  	preempt_enable();
+>  }
+> 
 
-> That doesn't mean that you can't implement this feature. This is what
-> the options section is for. You can add an option that includes the
-> trace_clock contents, or just simply say what type of clock is being
-> used. Then a new trace-cmd can show the output like you want it to, and
-> the old version will still work but show the old way, as trace-cmd is
-> made to simply ignore options it does not know about.
-
-Sounds good.
-Maintenance of the implementation will be easier than that of my
-implementation.
-
-> I think it's time for me to push my latest updates to trace-cmd. As this
-> will probably end up being the 3.0 version. I have examples there that
-> use the options feature for more extensions that you can look at.
-
-Thank you for pushing your latest patches!
-I'll use your patches as a reference and submit the revised patches
-using the options feature.
-
-Thanks,
-Yoshihiro YUNOMAE
 
 -- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
 Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
