@@ -1,192 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161591Ab3DKIrk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 04:47:40 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:46111 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161568Ab3DKIrg (ORCPT
+	id S1161600Ab3DKI50 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 04:57:26 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:25225 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933462Ab3DKI5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 04:47:36 -0400
-X-AuditID: cbfee61a-b7fa86d0000045ae-c7-516678a69fe2
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-To: linux-security-module@vger.kernel.org
-Cc: m.szyprowski@samsung.com, kyungmin.park@samsung.com, r.krypa@samsung.com,
-        linux-kernel@vger.kernel.org,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>
-Subject: [RFC] security: smack: add hash table for smack for quick label
- searching
-Date: Thu, 11 Apr 2013 10:46:12 +0200
-Message-id: <1365669972-21461-2-git-send-email-t.stanislaws@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1365669972-21461-1-git-send-email-t.stanislaws@samsung.com>
-References: <1365669972-21461-1-git-send-email-t.stanislaws@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHJMWRmVeSWpSXmKPExsVy+t9jAd1lFWmBBptn6lqcbXrDbnF51xw2
-	iw89j9gs1h65y27xdtIKZot57S9ZHdg8+rasYvT4vEkugCmKyyYlNSezLLVI3y6BK2PSLMmC
-	yRoVK7uesTcwzlLsYuTkkBAwkVgy8xsrhC0mceHeerYuRi4OIYFFjBINl/YzQThdTBI7Jm9k
-	B6liA+o4tuQzI4gtIqApcWw6SAcnB7PAHEaJg5tluxg5OIQFQiTmn+AFCbMIqErcvzmVCcTm
-	FfCQmNxxkgVimbzE0/t9YK2cAp4Sz499B4sLAdX8+7+acQIj7wJGhlWMoqkFyQXFSem5hnrF
-	ibnFpXnpesn5uZsYwaHyTGoH48oGi0OMAhyMSjy8JxpSA4VYE8uKK3MPMUpwMCuJ8HLtBArx
-	piRWVqUW5ccXleakFh9ilOZgURLnPdBqHSgkkJ5YkpqdmlqQWgSTZeLglGpgnG5zh1uhfMEs
-	0cwI4+iZOflGXYfOiS7L4UnLlw655fn41bPrtcb3nu80E5+9lrf+7ySb768e6s/bYmEV5ias
-	0mH6IHXmhV+6DLlz5N4fn2e/je2t29pJz5Zf+tK0RuyQN8PTkFuPz57vedETefF5ostSoSq+
-	83JfZQ/Uh8YIWKw8N/2D3D73ZUosxRmJhlrMRcWJAM1aFeERAgAA
+	Thu, 11 Apr 2013 04:57:24 -0400
+Message-ID: <51667AE9.6030209@huawei.com>
+Date: Thu, 11 Apr 2013 16:57:13 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <tj@kernel.org>
+Subject: Re: [RFC PATCH v2 cpuset] Don't pass offlined cpus to partition_sched_domains()
+References: <1364886990.5859.12.camel@ThinkPad-T5421.cn.ibm.com>  <515BF737.7070105@huawei.com>  <1365414692.2753.83.camel@ThinkPad-T5421.cn.ibm.com> <1365501570.3597.64.camel@ThinkPad-T5421.cn.ibm.com>
+In-Reply-To: <1365501570.3597.64.camel@ThinkPad-T5421.cn.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a hash table to quicken searching of a smack label by its name.
+On 2013/4/9 17:59, Li Zhong wrote:
+> Hi Zefan, 
+> 
+> I did some test today, enabling cpuset and online/offline the cpus. It
+> caused NULL address dereferencing in get_group(). After adding some
+> debugging code, it seems that it is caused by using some offlined cpus
+> as the parameter to partition_sched_domains(). More details below:
+> 
+> ===================
+> following is printed in build_sched_domain(): 
+> @@ -6476,6 +6486,14 @@ struct sched_domain *build_sched_domain(struct
+> sched_domain_topology_level *tl,
+>                 return child;
+> 
+>         cpumask_and(sched_domain_span(sd), cpu_map, tl->mask(cpu));
+> +       if (cpumask_empty(sched_domain_span(sd)))
+> +               printk("lz empty domain %p, mask %pS\n", sd, tl->mask);
+> +       char cpulist[128];
+> +       cpumask_scnprintf(cpulist, sizeof(cpulist), cpu_map);
+> +       printk("lz cpu_map %s\n", cpulist);
+> +       cpumask_scnprintf(cpulist, sizeof(cpulist), tl->mask(cpu));
+> +       printk("lz tl->mask(%d) %pS %s\n",cpu, tl->mask, cpulist);
+> +
+>         if (child) {
+>                 sd->level = child->level + 1;
+>                 sched_domain_level_max = max(sched_domain_level_max,
+> sd->level);
+> 
+> [  232.714502] lz empty domain c0000001f73c0000, mask cpu_smt_mask
+> +0x0/0x10
+> [  232.714515] lz cpu_map 1-2,7,13-15
+> [  232.714521] lz tl->mask(1) cpu_smt_mask+0x0/0x10
+> [  232.714529] lz cpu_map 1-2,7,13-15
+> [  232.714536] lz tl->mask(1) cpu_cpu_mask+0x0/0x10 2,7,13-15
+> [  232.714544] lz cpu_map 1-2,7,13-15
+> [  232.714551] lz tl->mask(1) sd_numa_mask+0x0/0x10 2,7,13-15
+> [  232.714558] lz cpu_map 1-2,7,13-15
+> [  232.714565] lz tl->mask(2) cpu_smt_mask+0x0/0x10 2
+> ===================
+> 
+> It seems that one cpu (#1 of the above) could be taken offline in
+> cpuset_hotplug_workfn(), after top_cpuset's allowed cpus changed and the
+> propagated work function finished. But generate_sched_domains(), which
+> uses the cpuset information, still considers this cpu (#1) valid, and
+> passes it down in the cpumask to partition_sched_domains(). Then we have
+> an empty sd as the above. 
+> 
 
-For a typical idle for TIZEN the CPU wastes circa 5-10% of its cycles for
-processing the smk_find_entry function. This patch adds a hash map that should
-speed up searches by a factor of up to 500 at the cost of additional 4kiB
-memory for the hash table.
+Thanks for the test and analysis!
 
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
----
- security/smack/smack.h        |    5 +++++
- security/smack/smack_access.c |   33 +++++++++++++++++++++++++++++++--
- security/smack/smack_lsm.c    |   21 +++++++++++++++------
- 3 files changed, 51 insertions(+), 8 deletions(-)
+So the bug was caused when the cpuset async cpuset handling hasn't been
+finished, and at this time user triggered another hotplug operation, right?
 
-diff --git a/security/smack/smack.h b/security/smack/smack.h
-index 99b3612..8df667e 100644
---- a/security/smack/smack.h
-+++ b/security/smack/smack.h
-@@ -118,6 +118,7 @@ struct smk_netlbladdr {
-  */
- struct smack_known {
- 	struct list_head		list;
-+	struct list_head		htab_list;
- 	char				*smk_known;
- 	u32				smk_secid;
- 	struct netlbl_lsm_secattr	smk_netlabel;	/* on wire labels */
-@@ -215,6 +216,7 @@ char *smk_parse_smack(const char *string, int len);
- int smk_netlbl_mls(int, char *, struct netlbl_lsm_secattr *, int);
- char *smk_import(const char *, int);
- struct smack_known *smk_import_entry(const char *, int);
-+void __smk_insert_entry(struct smack_known *skp);
- struct smack_known *smk_find_entry(const char *);
- u32 smack_to_secid(const char *);
+Then I think we should wait cpuset to finish its work before starting
+a new hotplug operation.
+
+This should fix the bug you observed, and it should also fix another bug,
+that the 2nd schedule_work(&cpuset_hotplug_work) returns true, and so
+the root cpuset.cpus won't be updated.
+
+Could you test this patch?
+
+--
+diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
+index ccd1de8..ece226c 100644
+--- a/include/linux/cpuset.h
++++ b/include/linux/cpuset.h
+@@ -118,6 +118,8 @@ static inline void set_mems_allowed(nodemask_t nodemask)
+ 	task_unlock(current);
+ }
  
-@@ -238,6 +240,9 @@ extern struct mutex	smack_known_lock;
- extern struct list_head smack_known_list;
- extern struct list_head smk_netlbladdr_list;
- 
-+#define SMACK_KNOWN_SIZE 512
-+extern struct list_head smack_known_htab[SMACK_KNOWN_SIZE];
++extern void cpuset_flush_hotplug_work(void);
 +
- extern struct security_operations smack_ops;
+ #else /* !CONFIG_CPUSETS */
  
- /*
-diff --git a/security/smack/smack_access.c b/security/smack/smack_access.c
-index db14689..0490c0d 100644
---- a/security/smack/smack_access.c
-+++ b/security/smack/smack_access.c
-@@ -48,6 +48,8 @@ struct smack_known smack_known_web = {
+ static inline int cpuset_init(void) { return 0; }
+@@ -232,6 +234,10 @@ static inline bool put_mems_allowed(unsigned int seq)
+ 	return true;
+ }
  
- LIST_HEAD(smack_known_list);
- 
-+struct list_head smack_known_htab[SMACK_KNOWN_SIZE];
-+
- /*
-  * The initial value needs to be bigger than any of the
-  * known values above.
-@@ -322,6 +324,30 @@ void smack_log(char *subject_label, char *object_label, int request,
- 
- DEFINE_MUTEX(smack_known_lock);
- 
-+/* simple Dan Bernstein string hashing function */
-+static u32 strhash(const char *s)
++static inline void cpuset_flush_hotplug_work(void)
 +{
-+	u32 hash = 5381;
-+	for (; *s; ++s)
-+		hash = hash * 33 + *s;
-+	return hash;
 +}
 +
-+/**
-+ * smk_insert_entry - insert a smack label into a hash map,
-+ *
-+ * this function must be called under smack_known_lock
-+ */
-+void __smk_insert_entry(struct smack_known *skp)
-+{
-+	u32 hash = strhash(skp->smk_known);
-+	struct list_head *head = &smack_known_htab[
-+		hash & (SMACK_KNOWN_SIZE - 1)];
-+
-+	list_add_rcu(&skp->htab_list, head);
-+	list_add_rcu(&skp->list, &smack_known_list);
-+}
-+
- /**
-  * smk_find_entry - find a label on the list, return the list entry
-  * @string: a text string that might be a Smack label
-@@ -331,9 +357,12 @@ DEFINE_MUTEX(smack_known_lock);
-  */
- struct smack_known *smk_find_entry(const char *string)
- {
-+	u32 hash = strhash(string);
-+	struct list_head *head = &smack_known_htab[
-+		hash & (SMACK_KNOWN_SIZE - 1)];
- 	struct smack_known *skp;
+ #endif /* !CONFIG_CPUSETS */
  
--	list_for_each_entry_rcu(skp, &smack_known_list, list) {
-+	list_for_each_entry_rcu(skp, head, htab_list) {
- 		if (strcmp(skp->smk_known, string) == 0)
- 			return skp;
- 	}
-@@ -470,7 +499,7 @@ struct smack_known *smk_import_entry(const char *string, int len)
- 		 * Make sure that the entry is actually
- 		 * filled before putting it on the list.
- 		 */
--		list_add_rcu(&skp->list, &smack_known_list);
-+		__smk_insert_entry(skp);
- 		goto unlockout;
- 	}
- 	/*
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index fa64740..38f5884 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -3535,6 +3535,8 @@ struct security_operations smack_ops = {
+ #endif /* _LINUX_CPUSET_H */
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index b5e4ab2..283a993 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -19,6 +19,7 @@
+ #include <linux/mutex.h>
+ #include <linux/gfp.h>
+ #include <linux/suspend.h>
++#include <linux/cpuset.h>
  
- static __init void init_smack_known_list(void)
- {
-+	int i;
-+
- 	/*
- 	 * Initialize rule list locks
- 	 */
-@@ -3553,15 +3555,22 @@ static __init void init_smack_known_list(void)
- 	INIT_LIST_HEAD(&smack_known_floor.smk_rules);
- 	INIT_LIST_HEAD(&smack_known_invalid.smk_rules);
- 	INIT_LIST_HEAD(&smack_known_web.smk_rules);
-+
+ #include "smpboot.h"
+ 
+@@ -278,6 +279,13 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	if (!cpu_online(cpu))
+ 		return -EINVAL;
+ 
 +	/*
-+	 * Initialize a hash map for a quick search of SMACK labels
++	 * cpuset handles cpu/memory hotplug asynchronously, so it's possible
++	 * that cpuset hasn't finished it's hotplug work for the previous
++	 * hotplug operation.
 +	 */
-+	for (i = 0; i < SMACK_KNOWN_SIZE; ++i)
-+		INIT_LIST_HEAD(&smack_known_htab[i]);
++	cpuset_flush_hotplug_work();
 +
- 	/*
- 	 * Create the known labels list
- 	 */
--	list_add(&smack_known_huh.list, &smack_known_list);
--	list_add(&smack_known_hat.list, &smack_known_list);
--	list_add(&smack_known_star.list, &smack_known_list);
--	list_add(&smack_known_floor.list, &smack_known_list);
--	list_add(&smack_known_invalid.list, &smack_known_list);
--	list_add(&smack_known_web.list, &smack_known_list);
-+	__smk_insert_entry(&smack_known_huh);
-+	__smk_insert_entry(&smack_known_hat);
-+	__smk_insert_entry(&smack_known_star);
-+	__smk_insert_entry(&smack_known_floor);
-+	__smk_insert_entry(&smack_known_invalid);
-+	__smk_insert_entry(&smack_known_web);
+ 	cpu_hotplug_begin();
+ 
+ 	err = __cpu_notify(CPU_DOWN_PREPARE | mod, hcpu, -1, &nr_calls);
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index c55763b..9bb5018 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2141,6 +2141,14 @@ static void schedule_cpuset_propagate_hotplug(struct cpuset *cs)
  }
  
  /**
--- 
-1.7.9.5
++ * cpuset_flush_hotplug_work() - wait cpuset hotplug work to finish
++ */
++void cpuset_flush_hotplug_work(void)
++{
++	flush_work(&cpuset_hotplug_work);
++}
++
++/**
+  * cpuset_hotplug_workfn - handle CPU/memory hotunplug for a cpuset
+  *
+  * This function is called after either CPU or memory configuration has
+@@ -2226,6 +2234,8 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
+ 
+ void cpuset_update_active_cpus(bool cpu_online)
+ {
++	bool queued;
++
+ 	/*
+ 	 * We're inside cpu hotplug critical region which usually nests
+ 	 * inside cgroup synchronization.  Bounce actual hotplug processing
+@@ -2237,7 +2247,8 @@ void cpuset_update_active_cpus(bool cpu_online)
+ 	 * cpuset_hotplug_workfn() will rebuild it as necessary.
+ 	 */
+ 	partition_sched_domains(1, NULL, NULL);
+-	schedule_work(&cpuset_hotplug_work);
++	queued = schedule_work(&cpuset_hotplug_work);
++	WARN_ON(queued);
+ }
+ 
+ #ifdef CONFIG_MEMORY_HOTPLUG
+
+
+> With the empty domain, in get_group(),
+>         if (child)
+>                 cpu = cpumask_first(sched_domain_span(child));
+> 
+> this might cause the cpu to be returned a value >= nr_cpu_ids, then
+> cause bad dereference with the wrong cpu value in the later code. 
+> 
+> This following code tries to fix the issue by anding the cpu_active_mask
+> at the end of generate_sched_domains() for each partition. This might
+> result the partiton (set of domains) not the best one, but we know
+> another rebuild (caused by the cpu offline in the middle of
+> cpuset_hotplug_workfn()) is on the way. 
+> 
+> Also it seems that generate_sched_domains() needs be called together
+> with partition_sched_domains(), under the hotplug lock. Or similarly,
+> one cpu might be taken offline while doing generate_sched_domains(), and
+> cause the above issue. 
+> 
+> Or maybe we could put the whole cpuset_hotplug_workfn() into the hotplug
+> lock? 
 
