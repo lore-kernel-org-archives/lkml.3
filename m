@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936414Ab3DKVE4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:04:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4488 "EHLO
+	id S1422661Ab3DKVFB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:05:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10296 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935744Ab3DKUtQ (ORCPT
+	with ESMTP id S935731Ab3DKUtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:49:16 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Mh6yUqMh4ncA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=37jXLDkx5CAA:10 a=M5GUcnROAAAA:8 a=VwQbUJbxAAAA:8 a=Op-mwl0xAAAA:8 a=vmLDa1wCAAAA:8 a=LefUIxA5NsMO4DLSpB8A:9 a=9RRF0ttvEvMA:10 a=d4CUUju0HPYA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=kXhdACzluyoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Jw3m3LiMyfoA:10 a=omOdbC7AAAAA:8 a=VwQbUJbxAAAA:8 a=JDjsHSkAAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=Hf6muOzgCGQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202602.327870069@goodmis.org>
+Message-Id: <20130411202602.651696131@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:42 -0400
+Date: Thu, 11 Apr 2013 16:26:44 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Daniel Drake <dsd@laptop.org>, Marco Cesarano <marco@marvell.com>,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 099/171 ] mwifiex: fix race when queuing commands
+Cc: fanchaoting <fanchaoting@cn.fujitsu.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 101/171 ] pnfs-block: removing DM device maybe cause oops when call dev_remove
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0099-mwifiex-fix-race-when-queuing-commands.patch
+Content-Disposition: inline; filename=0101-pnfs-block-removing-DM-device-maybe-cause-oops-when-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,148 +30,46 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: fanchaoting <fanchaoting@cn.fujitsu.com>
 
-[ Upstream commit 00d7ea11ff0783e24fe70778f3141270b561aaa1 ]
+[ Upstream commit 4376c94618c26225e69e17b7c91169c45a90b292 ]
 
-Running the following script repeatedly on XO-4 with SD8787
-produces command timeout and system lockup.
+when pnfs block using device mapper,if umounting later,it maybe
+cause oops. we apply "1 + sizeof(bl_umount_request)" memory for
+msg->data, the memory maybe overflow when we do "memcpy(&dataptr
+[sizeof(bl_msg)], &bl_umount_request, sizeof(bl_umount_request))",
+because the size of bl_msg is more than 1 byte.
 
-insmod mwifiex_sdio.ko
-sleep 1
-ifconfig eth0 up
-iwlist eth0 scan &
-sleep 0.5
-rmmod mwifiex_sdio
-
-mwifiex_send_cmd_async() is called for sync as well as async
-commands. (mwifiex_send_cmd_sync() internally calls it for
-sync command.)
-
-"adapter->cmd_queued" gets filled inside mwifiex_send_cmd_async()
-routine for both types of commands. But it is used only for sync
-commands in mwifiex_wait_queue_complete(). This could lead to a
-race when two threads try to queue a sync command with another
-sync/async command simultaneously.
-
-Get rid of global variable and pass command node as a parameter
-to mwifiex_wait_queue_complete() to fix the problem.
-
-Cc: <stable@vger.kernel.org> # 3.8
-Reported-by: Daniel Drake <dsd@laptop.org>
-Tested-by: Daniel Drake <dsd@laptop.org>
-Tested-by: Marco Cesarano <marco@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: fanchaoting<fanchaoting@cn.fujitsu.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/mwifiex/cmdevt.c    |    5 ++---
- drivers/net/wireless/mwifiex/main.h      |    4 ++--
- drivers/net/wireless/mwifiex/scan.c      |    8 ++++----
- drivers/net/wireless/mwifiex/sta_ioctl.c |   10 ++--------
- 4 files changed, 10 insertions(+), 17 deletions(-)
+ fs/nfs/blocklayout/blocklayoutdm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/cmdevt.c b/drivers/net/wireless/mwifiex/cmdevt.c
-index 95382f1..da50426 100644
---- a/drivers/net/wireless/mwifiex/cmdevt.c
-+++ b/drivers/net/wireless/mwifiex/cmdevt.c
-@@ -485,8 +485,6 @@ int mwifiex_send_cmd_sync(struct mwifiex_private *priv, uint16_t cmd_no,
+diff --git a/fs/nfs/blocklayout/blocklayoutdm.c b/fs/nfs/blocklayout/blocklayoutdm.c
+index 737d839..6fc7b5c 100644
+--- a/fs/nfs/blocklayout/blocklayoutdm.c
++++ b/fs/nfs/blocklayout/blocklayoutdm.c
+@@ -55,7 +55,8 @@ static void dev_remove(struct net *net, dev_t dev)
  
- 	ret = mwifiex_send_cmd_async(priv, cmd_no, cmd_action, cmd_oid,
- 				     data_buf);
--	if (!ret)
--		ret = mwifiex_wait_queue_complete(adapter);
+ 	bl_pipe_msg.bl_wq = &nn->bl_wq;
+ 	memset(msg, 0, sizeof(*msg));
+-	msg->data = kzalloc(1 + sizeof(bl_umount_request), GFP_NOFS);
++	msg->len = sizeof(bl_msg) + bl_msg.totallen;
++	msg->data = kzalloc(msg->len, GFP_NOFS);
+ 	if (!msg->data)
+ 		goto out;
  
- 	return ret;
- }
-@@ -589,9 +587,10 @@ int mwifiex_send_cmd_async(struct mwifiex_private *priv, uint16_t cmd_no,
- 	if (cmd_no == HostCmd_CMD_802_11_SCAN) {
- 		mwifiex_queue_scan_cmd(priv, cmd_node);
- 	} else {
--		adapter->cmd_queued = cmd_node;
- 		mwifiex_insert_cmd_to_pending_q(adapter, cmd_node, true);
- 		queue_work(adapter->workqueue, &adapter->main_work);
-+		if (cmd_node->wait_q_enabled)
-+			ret = mwifiex_wait_queue_complete(adapter, cmd_node);
- 	}
+@@ -66,7 +67,6 @@ static void dev_remove(struct net *net, dev_t dev)
+ 	memcpy(msg->data, &bl_msg, sizeof(bl_msg));
+ 	dataptr = (uint8_t *) msg->data;
+ 	memcpy(&dataptr[sizeof(bl_msg)], &bl_umount_request, sizeof(bl_umount_request));
+-	msg->len = sizeof(bl_msg) + bl_msg.totallen;
  
- 	return ret;
-diff --git a/drivers/net/wireless/mwifiex/main.h b/drivers/net/wireless/mwifiex/main.h
-index e7c2a82..eab0daa 100644
---- a/drivers/net/wireless/mwifiex/main.h
-+++ b/drivers/net/wireless/mwifiex/main.h
-@@ -684,7 +684,6 @@ struct mwifiex_adapter {
- 	u16 cmd_wait_q_required;
- 	struct mwifiex_wait_queue cmd_wait_q;
- 	u8 scan_wait_q_woken;
--	struct cmd_ctrl_node *cmd_queued;
- 	spinlock_t queue_lock;		/* lock for tx queues */
- 	struct completion fw_load;
- 	u8 country_code[IEEE80211_COUNTRY_STRING_LEN];
-@@ -936,7 +935,8 @@ int mwifiex_request_set_multicast_list(struct mwifiex_private *priv,
- 			struct mwifiex_multicast_list *mcast_list);
- int mwifiex_copy_mcast_addr(struct mwifiex_multicast_list *mlist,
- 			    struct net_device *dev);
--int mwifiex_wait_queue_complete(struct mwifiex_adapter *adapter);
-+int mwifiex_wait_queue_complete(struct mwifiex_adapter *adapter,
-+				struct cmd_ctrl_node *cmd_queued);
- int mwifiex_bss_start(struct mwifiex_private *priv, struct cfg80211_bss *bss,
- 		      struct cfg80211_ssid *req_ssid);
- int mwifiex_cancel_hs(struct mwifiex_private *priv, int cmd_type);
-diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
-index 04dc7ca..0d3f98d 100644
---- a/drivers/net/wireless/mwifiex/scan.c
-+++ b/drivers/net/wireless/mwifiex/scan.c
-@@ -1357,10 +1357,13 @@ int mwifiex_scan_networks(struct mwifiex_private *priv,
- 			list_del(&cmd_node->list);
- 			spin_unlock_irqrestore(&adapter->scan_pending_q_lock,
- 					       flags);
--			adapter->cmd_queued = cmd_node;
- 			mwifiex_insert_cmd_to_pending_q(adapter, cmd_node,
- 							true);
- 			queue_work(adapter->workqueue, &adapter->main_work);
-+
-+			/* Perform internal scan synchronously */
-+			if (!priv->scan_request)
-+				mwifiex_wait_queue_complete(adapter, cmd_node);
- 		} else {
- 			spin_unlock_irqrestore(&adapter->scan_pending_q_lock,
- 					       flags);
-@@ -1902,9 +1905,6 @@ int mwifiex_request_scan(struct mwifiex_private *priv,
- 		/* Normal scan */
- 		ret = mwifiex_scan_networks(priv, NULL);
- 
--	if (!ret)
--		ret = mwifiex_wait_queue_complete(priv->adapter);
--
- 	if (ret == -1) {
- 		priv->scan_pending_on_block = false;
- 		up(&priv->async_sem);
-diff --git a/drivers/net/wireless/mwifiex/sta_ioctl.c b/drivers/net/wireless/mwifiex/sta_ioctl.c
-index fb21360..b9d9952 100644
---- a/drivers/net/wireless/mwifiex/sta_ioctl.c
-+++ b/drivers/net/wireless/mwifiex/sta_ioctl.c
-@@ -51,17 +51,11 @@ int mwifiex_copy_mcast_addr(struct mwifiex_multicast_list *mlist,
-  * This function waits on a cmd wait queue. It also cancels the pending
-  * request after waking up, in case of errors.
-  */
--int mwifiex_wait_queue_complete(struct mwifiex_adapter *adapter)
-+int mwifiex_wait_queue_complete(struct mwifiex_adapter *adapter,
-+				struct cmd_ctrl_node *cmd_queued)
- {
- 	bool cancel_flag = false;
- 	int status;
--	struct cmd_ctrl_node *cmd_queued;
--
--	if (!adapter->cmd_queued)
--		return 0;
--
--	cmd_queued = adapter->cmd_queued;
--	adapter->cmd_queued = NULL;
- 
- 	dev_dbg(adapter->dev, "cmd pending\n");
- 	atomic_inc(&adapter->cmd_pending);
+ 	add_wait_queue(&nn->bl_wq, &wq);
+ 	if (rpc_queue_upcall(nn->bl_device_pipe, msg) < 0) {
 -- 
 1.7.10.4
 
