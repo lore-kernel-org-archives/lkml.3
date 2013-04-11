@@ -1,68 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936381Ab3DKPnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:43:08 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34712 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934954Ab3DKPnH (ORCPT
+	id S936498Ab3DKPsN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:48:13 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:18758 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765117Ab3DKPsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:43:07 -0400
-Date: Thu, 11 Apr 2013 11:42:02 -0400
-Subject: Re: [tip:x86/urgent] x86, mm: Patch out arch_flush_lazy_mmu_mode()
- when running on bare metal
-Message-ID: <lkvk8wgl00gj6ba39c8n7j68.1365694922569@email.android.com>
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, jwboyer@redhat.com, tglx@linutronix.de,
-        bp@suse.de
+	Thu, 11 Apr 2013 11:48:12 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+dUAXj0WwoSmp+26SDWlD6
+Date: Thu, 11 Apr 2013 08:48:07 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@deeprootsystems.com>, viro@ZenIV.linux.org.uk,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 25/26] arm: Don't use create_proc_read_entry() [RFC]
+Message-ID: <20130411154806.GU10155@atomide.com>
+References: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
+ <20130411133058.32763.5466.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411133058.32763.5466.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3BFh9eD004592
 
-I am sorry for top posting. Haven't figured out how to reply inline in the Android email client.
+* David Howells <dhowells@redhat.com> [130411 06:35]:
+> Don't use create_proc_read_entry() as that is deprecated, but rather use
+> proc_create_data() and seq_file instead.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> cc: Russell King <linux@arm.linux.org.uk>
+> cc: Kevin Hilman <khilman@deeprootsystems.com>
 
-Boris, could you repost it please? If I recall correctly the only question on that patch was whether to put stable@vger.kernel.org on it and it was decided (by Greg) that was OK.
+Looks like the mach-omap1/pm.c part we can make into
+a debugfs entry as it only contains PM debug data. But
+that we can do after this patch.
 
-It is not an urgent patch though as it is only exposed with debug kernels.
+Acked-by: Tony Lindgren <tony@atomide.com>
 
-Boris Ostrovsky <boris.ostrovsky@oracle.com> wrote:
-
->On 04/10/2013 08:30 PM, tip-bot for Boris Ostrovsky wrote:
->> Commit-ID:  511ba86e1d386f671084b5d0e6f110bb30b8eeb2
->> Gitweb:     http://git.kernel.org/tip/511ba86e1d386f671084b5d0e6f110bb30b8eeb2
->> Author:     Boris Ostrovsky <boris.ostrovsky@oracle.com>
->> AuthorDate: Sat, 23 Mar 2013 09:36:36 -0400
->> Committer:  H. Peter Anvin <hpa@linux.intel.com>
->> CommitDate: Wed, 10 Apr 2013 11:25:10 -0700
->>
->> x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare metal
->>
->> Invoking arch_flush_lazy_mmu_mode() results in calls to
->> preempt_enable()/disable() which may have performance impact.
->>
->> Since lazy MMU is not used on bare metal we can patch away
->> arch_flush_lazy_mmu_mode() so that it is never called in such
->> environment.
->>
->> [ hpa: the previous patch "Fix vmalloc_fault oops during lazy MMU
->>    updates" may cause a minor performance regression on
->>    bare metal.  This patch resolves that performance regression.  It is
->>    somewhat unclear to me if this is a good -stable candidate. ]
->
->I think this
->
->    https://lkml.org/lkml/2013/2/26/420
->
->was also part of lazy mmu set of patches but is missing in the latest 
->batch of
->commits.
->
->-boris
->
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> cc: linux-arm-kernel@lists.infradead.org
+> cc: linux-omap@vger.kernel.org
+> ---
+> 
+>  arch/arm/kernel/swp_emulate.c |   42 +++++++++++++-----------------
+>  arch/arm/mach-omap1/pm.c      |   58 +++++++++++++++++------------------------
+>  2 files changed, 43 insertions(+), 57 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/swp_emulate.c b/arch/arm/kernel/swp_emulate.c
+> index 0bba47a..087fc32 100644
+> --- a/arch/arm/kernel/swp_emulate.c
+> +++ b/arch/arm/kernel/swp_emulate.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/init.h>
+>  #include <linux/kernel.h>
+>  #include <linux/proc_fs.h>
+> +#include <linux/seq_file.h>
+>  #include <linux/sched.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/perf_event.h>
+> @@ -79,27 +80,27 @@ static unsigned long abtcounter;
+>  static pid_t         previous_pid;
+>  
+>  #ifdef CONFIG_PROC_FS
+> -static int proc_read_status(char *page, char **start, off_t off, int count,
+> -			    int *eof, void *data)
+> +static int proc_status_show(struct seq_file *m, void *v)
+>  {
+> -	char *p = page;
+> -	int len;
+> -
+> -	p += sprintf(p, "Emulated SWP:\t\t%lu\n", swpcounter);
+> -	p += sprintf(p, "Emulated SWPB:\t\t%lu\n", swpbcounter);
+> -	p += sprintf(p, "Aborted SWP{B}:\t\t%lu\n", abtcounter);
+> +	seq_printf(m, "Emulated SWP:\t\t%lu\n", swpcounter);
+> +	seq_printf(m, "Emulated SWPB:\t\t%lu\n", swpbcounter);
+> +	seq_printf(m, "Aborted SWP{B}:\t\t%lu\n", abtcounter);
+>  	if (previous_pid != 0)
+> -		p += sprintf(p, "Last process:\t\t%d\n", previous_pid);
+> -
+> -	len = (p - page) - off;
+> -	if (len < 0)
+> -		len = 0;
+> -
+> -	*eof = (len <= count) ? 1 : 0;
+> -	*start = page + off;
+> +		seq_printf(m, "Last process:\t\t%d\n", previous_pid);
+> +	return 0;
+> +}
+>  
+> -	return len;
+> +static int proc_status_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, proc_status_show, PDE_DATA(inode));
+>  }
+> +
+> +static const struct file_operations proc_status_fops = {
+> +	.open		= proc_status_open,
+> +	.read		= seq_read,
+> +	.llseek		= seq_lseek,
+> +	.release	= seq_release,
+> +};
+>  #endif
+>  
+>  /*
+> @@ -266,12 +267,7 @@ static struct undef_hook swp_hook = {
+>  static int __init swp_emulation_init(void)
+>  {
+>  #ifdef CONFIG_PROC_FS
+> -	struct proc_dir_entry *res;
+> -
+> -	res = create_proc_read_entry("cpu/swp_emulation", S_IRUGO, NULL,
+> -					proc_read_status, NULL);
+> -
+> -	if (!res)
+> +	if (!proc_create("cpu/swp_emulation", S_IRUGO, NULL, &proc_status_fops))
+>  		return -ENOMEM;
+>  #endif /* CONFIG_PROC_FS */
+>  
+> diff --git a/arch/arm/mach-omap1/pm.c b/arch/arm/mach-omap1/pm.c
+> index 7a7690a..2645e37 100644
+> --- a/arch/arm/mach-omap1/pm.c
+> +++ b/arch/arm/mach-omap1/pm.c
+> @@ -38,6 +38,7 @@
+>  #include <linux/suspend.h>
+>  #include <linux/sched.h>
+>  #include <linux/proc_fs.h>
+> +#include <linux/seq_file.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/sysfs.h>
+>  #include <linux/module.h>
+> @@ -423,22 +424,11 @@ void omap1_pm_suspend(void)
+>  }
+>  
+>  #if defined(DEBUG) && defined(CONFIG_PROC_FS)
+> -static int g_read_completed;
+> -
+>  /*
+>   * Read system PM registers for debugging
+>   */
+> -static int omap_pm_read_proc(
+> -	char *page_buffer,
+> -	char **my_first_byte,
+> -	off_t virtual_start,
+> -	int length,
+> -	int *eof,
+> -	void *data)
+> +static int omap_pm_proc_show(struct seq_file *m, void *v)
+>  {
+> -	int my_buffer_offset = 0;
+> -	char * const my_base = page_buffer;
+> -
+>  	ARM_SAVE(ARM_CKCTL);
+>  	ARM_SAVE(ARM_IDLECT1);
+>  	ARM_SAVE(ARM_IDLECT2);
+> @@ -479,10 +469,7 @@ static int omap_pm_read_proc(
+>  		MPUI1610_SAVE(EMIFS_CONFIG);
+>  	}
+>  
+> -	if (virtual_start == 0) {
+> -		g_read_completed = 0;
+> -
+> -		my_buffer_offset += sprintf(my_base + my_buffer_offset,
+> +	seq_printf(m,
+>  		   "ARM_CKCTL_REG:            0x%-8x     \n"
+>  		   "ARM_IDLECT1_REG:          0x%-8x     \n"
+>  		   "ARM_IDLECT2_REG:          0x%-8x     \n"
+> @@ -512,8 +499,8 @@ static int omap_pm_read_proc(
+>  		   ULPD_SHOW(ULPD_STATUS_REQ),
+>  		   ULPD_SHOW(ULPD_POWER_CTRL));
+>  
+> -		if (cpu_is_omap7xx()) {
+> -			my_buffer_offset += sprintf(my_base + my_buffer_offset,
+> +	if (cpu_is_omap7xx()) {
+> +		seq_printf(m,
+>  			   "MPUI7XX_CTRL_REG	     0x%-8x \n"
+>  			   "MPUI7XX_DSP_STATUS_REG:      0x%-8x \n"
+>  			   "MPUI7XX_DSP_BOOT_CONFIG_REG: 0x%-8x \n"
+> @@ -526,8 +513,8 @@ static int omap_pm_read_proc(
+>  			   MPUI7XX_SHOW(MPUI_DSP_API_CONFIG),
+>  			   MPUI7XX_SHOW(EMIFF_SDRAM_CONFIG),
+>  			   MPUI7XX_SHOW(EMIFS_CONFIG));
+> -		} else if (cpu_is_omap15xx()) {
+> -			my_buffer_offset += sprintf(my_base + my_buffer_offset,
+> +	} else if (cpu_is_omap15xx()) {
+> +		seq_printf(m,
+>  			   "MPUI1510_CTRL_REG             0x%-8x \n"
+>  			   "MPUI1510_DSP_STATUS_REG:      0x%-8x \n"
+>  			   "MPUI1510_DSP_BOOT_CONFIG_REG: 0x%-8x \n"
+> @@ -540,8 +527,8 @@ static int omap_pm_read_proc(
+>  			   MPUI1510_SHOW(MPUI_DSP_API_CONFIG),
+>  			   MPUI1510_SHOW(EMIFF_SDRAM_CONFIG),
+>  			   MPUI1510_SHOW(EMIFS_CONFIG));
+> -		} else if (cpu_is_omap16xx()) {
+> -			my_buffer_offset += sprintf(my_base + my_buffer_offset,
+> +	} else if (cpu_is_omap16xx()) {
+> +		seq_printf(m,
+>  			   "MPUI1610_CTRL_REG             0x%-8x \n"
+>  			   "MPUI1610_DSP_STATUS_REG:      0x%-8x \n"
+>  			   "MPUI1610_DSP_BOOT_CONFIG_REG: 0x%-8x \n"
+> @@ -554,25 +541,28 @@ static int omap_pm_read_proc(
+>  			   MPUI1610_SHOW(MPUI_DSP_API_CONFIG),
+>  			   MPUI1610_SHOW(EMIFF_SDRAM_CONFIG),
+>  			   MPUI1610_SHOW(EMIFS_CONFIG));
+> -		}
+> -
+> -		g_read_completed++;
+> -	} else if (g_read_completed >= 1) {
+> -		 *eof = 1;
+> -		 return 0;
+>  	}
+> -	g_read_completed++;
+>  
+> -	*my_first_byte = page_buffer;
+> -	return  my_buffer_offset;
+> +	return 0;
+> +}
+> +
+> +static int omap_pm_proc_open(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, omap_pm_proc_show, PDE_DATA(inode));
+>  }
+>  
+> +static const struct file_operations omap_pm_proc_fops = {
+> +	.open		= omap_pm_proc_open,
+> +	.read		= seq_read,
+> +	.llseek		= seq_lseek,
+> +	.release	= seq_release,
+> +};
+> +
+>  static void omap_pm_init_proc(void)
+>  {
+>  	/* XXX Appears to leak memory */
+> -	create_proc_read_entry("driver/omap_pm",
+> -			       S_IWUSR | S_IRUGO, NULL,
+> -			       omap_pm_read_proc, NULL);
+> +	create_proc("driver/omap_pm", S_IWUSR | S_IRUGO, NULL,
+> +		    &omap_pm_proc_fops);
+>  }
+>  
+>  #endif /* DEBUG && CONFIG_PROC_FS */
+> 
