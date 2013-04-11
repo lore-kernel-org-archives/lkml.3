@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935029Ab3DKVJq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:09:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8349 "EHLO
+	id S935907Ab3DKVKx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:10:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16652 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935668Ab3DKUtK (ORCPT
+	with ESMTP id S935655Ab3DKUtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:49:10 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ZU_K8Ve1shkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=HGQtIK4WZwkA:10 a=vpVRfoo1AAAA:8 a=mDV3o1hIAAAA:8 a=VwQbUJbxAAAA:8 a=WASrwJb7SSpHF6dzqCwA:9 a=0yVQzcu7H6MA:10 a=ii61gXl28gQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:49:08 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=7GU11ANpa6QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=x5FYpSr56C8A:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202604.837990515@goodmis.org>
+Message-Id: <20130411202606.153522653@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:56 -0400
+Date: Thu, 11 Apr 2013 16:27:04 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Chris Mason <chris.mason@fusionio.com>, Alexandre Oliva <oliva@gnu.org>
-Subject: [ 113/171 ] Btrfs: fix race between mmap writes and compression
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 121/171 ] USB: oti6858: fix use-after-free in TIOCMIWAIT
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0113-Btrfs-fix-race-between-mmap-writes-and-compression.patch
+Content-Disposition: inline; filename=0121-USB-oti6858-fix-use-after-free-in-TIOCMIWAIT.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,131 +30,70 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chris Mason <chris.mason@fusionio.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-[ Upstream commit 4adaa611020fa6ac65b0ac8db78276af4ec04e63 ]
+[ Upstream commit 8edfdab37157d2683e51b8be5d3d5697f66a9f7b ]
 
-Btrfs uses page_mkwrite to ensure stable pages during
-crc calculations and mmap workloads.  We call clear_page_dirty_for_io
-before we do any crcs, and this forces any application with the file
-mapped to wait for the crc to finish before it is allowed to change
-the file.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-With compression on, the clear_page_dirty_for_io step is happening after
-we've compressed the pages.  This means the applications might be
-changing the pages while we are compressing them, and some of those
-modifications might not hit the disk.
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
-This commit adds the clear_page_dirty_for_io before compression starts
-and makes sure to redirty the page if we have to fallback to
-uncompressed IO as well.
-
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
-Reported-by: Alexandre Oliva <oliva@gnu.org>
-cc: stable@vger.kernel.org
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/btrfs/extent_io.c |   33 +++++++++++++++++++++++++++++++++
- fs/btrfs/extent_io.h |    2 ++
- fs/btrfs/inode.c     |   14 ++++++++++++++
- 3 files changed, 49 insertions(+)
+ drivers/usb/serial/oti6858.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-index 4c87847..d1e1b7c 100644
---- a/fs/btrfs/extent_io.c
-+++ b/fs/btrfs/extent_io.c
-@@ -1230,6 +1230,39 @@ int unlock_extent(struct extent_io_tree *tree, u64 start, u64 end)
- 				GFP_NOFS);
- }
+diff --git a/drivers/usb/serial/oti6858.c b/drivers/usb/serial/oti6858.c
+index 3aa582e..88e31f8 100644
+--- a/drivers/usb/serial/oti6858.c
++++ b/drivers/usb/serial/oti6858.c
+@@ -191,7 +191,6 @@ struct oti6858_private {
+ 	u8 setup_done;
+ 	struct delayed_work delayed_setup_work;
  
-+int extent_range_clear_dirty_for_io(struct inode *inode, u64 start, u64 end)
-+{
-+	unsigned long index = start >> PAGE_CACHE_SHIFT;
-+	unsigned long end_index = end >> PAGE_CACHE_SHIFT;
-+	struct page *page;
-+
-+	while (index <= end_index) {
-+		page = find_get_page(inode->i_mapping, index);
-+		BUG_ON(!page); /* Pages should be in the extent_io_tree */
-+		clear_page_dirty_for_io(page);
-+		page_cache_release(page);
-+		index++;
-+	}
-+	return 0;
-+}
-+
-+int extent_range_redirty_for_io(struct inode *inode, u64 start, u64 end)
-+{
-+	unsigned long index = start >> PAGE_CACHE_SHIFT;
-+	unsigned long end_index = end >> PAGE_CACHE_SHIFT;
-+	struct page *page;
-+
-+	while (index <= end_index) {
-+		page = find_get_page(inode->i_mapping, index);
-+		BUG_ON(!page); /* Pages should be in the extent_io_tree */
-+		account_page_redirty(page);
-+		__set_page_dirty_nobuffers(page);
-+		page_cache_release(page);
-+		index++;
-+	}
-+	return 0;
-+}
-+
- /*
-  * helper function to set both pages and extents in the tree writeback
-  */
-diff --git a/fs/btrfs/extent_io.h b/fs/btrfs/extent_io.h
-index 25900af..c5003db 100644
---- a/fs/btrfs/extent_io.h
-+++ b/fs/btrfs/extent_io.h
-@@ -314,6 +314,8 @@ int map_private_extent_buffer(struct extent_buffer *eb, unsigned long offset,
- 		      unsigned long *map_len);
- int extent_range_uptodate(struct extent_io_tree *tree,
- 			  u64 start, u64 end);
-+int extent_range_clear_dirty_for_io(struct inode *inode, u64 start, u64 end);
-+int extent_range_redirty_for_io(struct inode *inode, u64 start, u64 end);
- int extent_clear_unlock_delalloc(struct inode *inode,
- 				struct extent_io_tree *tree,
- 				u64 start, u64 end, struct page *locked_page,
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index ec154f9..cb6f206 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -350,6 +350,7 @@ static noinline int compress_file_range(struct inode *inode,
- 	int i;
- 	int will_compress;
- 	int compress_type = root->fs_info->compress_type;
-+	int redirty = 0;
+-	wait_queue_head_t intr_wait;
+ 	struct usb_serial_port *port;   /* USB port with which associated */
+ };
  
- 	/* if this is a small write inside eof, kick off a defrag */
- 	if ((end - start + 1) < 16 * 1024 &&
-@@ -412,6 +413,17 @@ again:
- 		if (BTRFS_I(inode)->force_compress)
- 			compress_type = BTRFS_I(inode)->force_compress;
+@@ -342,7 +341,6 @@ static int oti6858_port_probe(struct usb_serial_port *port)
+ 		return -ENOMEM;
  
-+		/*
-+		 * we need to call clear_page_dirty_for_io on each
-+		 * page in the range.  Otherwise applications with the file
-+		 * mmap'd can wander in and change the page contents while
-+		 * we are compressing them.
-+		 *
-+		 * If the compression fails for any reason, we set the pages
-+		 * dirty again later on.
-+		 */
-+		extent_range_clear_dirty_for_io(inode, start, end);
-+		redirty = 1;
- 		ret = btrfs_compress_pages(compress_type,
- 					   inode->i_mapping, start,
- 					   total_compressed, pages,
-@@ -553,6 +565,8 @@ cleanup_and_bail_uncompressed:
- 			__set_page_dirty_nobuffers(locked_page);
- 			/* unlocked later on in the async handlers */
+ 	spin_lock_init(&priv->lock);
+-	init_waitqueue_head(&priv->intr_wait);
+ 	priv->port = port;
+ 	INIT_DELAYED_WORK(&priv->delayed_setup_work, setup_line);
+ 	INIT_DELAYED_WORK(&priv->delayed_write_work, send_data);
+@@ -669,11 +667,15 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ 
+ 	while (1) {
+-		wait_event_interruptible(priv->intr_wait,
++		wait_event_interruptible(port->delta_msr_wait,
++					port->serial->disconnected ||
+ 					priv->status.pin_state != prev);
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
++
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		status = priv->status.pin_state & PIN_MASK;
+ 		spin_unlock_irqrestore(&priv->lock, flags);
+@@ -771,7 +773,7 @@ static void oti6858_read_int_callback(struct urb *urb)
+ 
+ 		if (!priv->transient) {
+ 			if (xs->pin_state != priv->status.pin_state)
+-				wake_up_interruptible(&priv->intr_wait);
++				wake_up_interruptible(&port->delta_msr_wait);
+ 			memcpy(&priv->status, xs, OTI6858_CTRL_PKT_SIZE);
  		}
-+		if (redirty)
-+			extent_range_redirty_for_io(inode, start, end);
- 		add_async_extent(async_cow, start, end - start + 1,
- 				 0, NULL, 0, BTRFS_COMPRESS_NONE);
- 		*num_added += 1;
+ 
 -- 
 1.7.10.4
 
