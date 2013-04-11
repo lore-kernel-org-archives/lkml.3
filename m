@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1764959Ab3DKH7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:59:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2194 "EHLO mx1.redhat.com"
+	id S1765003Ab3DKIBu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 04:01:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36913 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753490Ab3DKH67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:58:59 -0400
-Message-ID: <51666D28.7090500@redhat.com>
-Date: Thu, 11 Apr 2013 15:58:32 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [net-next PATCH] xen-netback: switch to use skb_partial_csum_set()
-References: <1365662129-38031-1-git-send-email-jasowang@redhat.com> <1365666364.27868.114.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1365666364.27868.114.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1753284Ab3DKIBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 04:01:49 -0400
+Subject: Re: [PATCH 3.8-stable] GFS2: Fix unlock of fcntl locks during
+ withdrawn state
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Jonghwan Choi <jhbird.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+In-Reply-To: <000601ce3659$042adbf0$0c8093d0$%choi@samsung.com>
+References: <000601ce3659$042adbf0$0c8093d0$%choi@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 11 Apr 2013 08:59:34 +0100
+Message-ID: <1365667174.2701.12.camel@menhir>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 03:46 PM, Ian Campbell wrote:
-> On Thu, 2013-04-11 at 07:35 +0100, Jason Wang wrote:
->> Switch to use skb_partial_csum_set() to simplify the codes.
-> This is incremental on top of your previous patch, right?
+Hi,
 
-It's an independent patch, since the previous patch has been applied.
->> Cc: Ian Campbell <ian.campbell@citrix.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->> Note:
->> - Compile test only.
->> ---
->>  drivers/net/xen-netback/netback.c |   22 ++++++++--------------
->>  1 files changed, 8 insertions(+), 14 deletions(-)
->>
->> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
->> index 83905a9..70631f0 100644
->> --- a/drivers/net/xen-netback/netback.c
->> +++ b/drivers/net/xen-netback/netback.c
->> @@ -1156,7 +1156,6 @@ static int netbk_set_skb_gso(struct xenvif *vif,
->>  static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
->>  {
->>  	struct iphdr *iph;
->> -	unsigned char *th;
->>  	int err = -EPROTO;
->>  	int recalculate_partial_csum = 0;
->>  
->> @@ -1180,28 +1179,26 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
->>  		goto out;
->>  
->>  	iph = (void *)skb->data;
->> -	th = skb->data + 4 * iph->ihl;
->> -	if (th >= skb_tail_pointer(skb))
->> -		goto out;
->> -
->> -	skb_set_transport_header(skb, 4 * iph->ihl);
-> Is removing this line really correct?
+On Thu, 2013-04-11 at 11:05 +0900, Jonghwan Choi wrote:
+> This patch looks like it should be in the 3.8-stable tree, should we apply
+> it?
+> 
+Yes, that seems reasonable to me,
 
-After commit e5d5deca (net: core: let skb_partial_csum_set() set
-transport header), this work was done by skb_partial_csum_set().
->
->> -	skb->csum_start = th - skb->head;
->>  	switch (iph->protocol) {
->>  	case IPPROTO_TCP:
->> -		skb->csum_offset = offsetof(struct tcphdr, check);
->> +		if (!skb_partial_csum_set(skb, 4 * iph->ihl,
->> +					  offsetof(struct tcphdr, check)))
->> +			goto out;
->>  
->>  		if (recalculate_partial_csum) {
->> -			struct tcphdr *tcph = (struct tcphdr *)th;
->> +			struct tcphdr *tcph = tcp_hdr(skb);
->>  			tcph->check = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
->>  							 skb->len - iph->ihl*4,
->>  							 IPPROTO_TCP, 0);
->>  		}
->>  		break;
->>  	case IPPROTO_UDP:
->> -		skb->csum_offset = offsetof(struct udphdr, check);
->> +		if (!skb_partial_csum_set(skb, 4 * iph->ihl,
->> +					  offsetof(struct udphdr, check)))
->> +			goto out;
->>  
->>  		if (recalculate_partial_csum) {
->> -			struct udphdr *udph = (struct udphdr *)th;
->> +			struct udphdr *udph = udp_hdr(skb);
->>  			udph->check = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
->>  							 skb->len - iph->ihl*4,
->>  							 IPPROTO_UDP, 0);
->> @@ -1215,9 +1212,6 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
->>  		goto out;
->>  	}
->>  
->> -	if ((th + skb->csum_offset + 2) > skb_tail_pointer(skb))
->> -		goto out;
->> -
->>  	err = 0;
->>  
->>  out:
->
+Steve.
+
+> ------------------
+> 
+> From: "Steven Whitehouse <swhiteho@redhat.com>"
+> 
+> commit c2952d202f710d326ac36a8ea6bd216b20615ec8 upstream
+> 
+> When withdraw occurs, we need to continue to allow unlocks of fcntl
+> locks to occur, however these will only be local, since the node has
+> withdrawn from the cluster. This prevents triggering a VFS level
+> bug trap due to locks remaining when a file is closed.
+> 
+> Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> ---
+>  fs/gfs2/file.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+> index 991ab2d..7af426b 100644
+> --- a/fs/gfs2/file.c
+> +++ b/fs/gfs2/file.c
+> @@ -924,8 +924,11 @@ static int gfs2_lock(struct file *file, int cmd, struct
+> file_lock *fl)
+>  		cmd = F_SETLK;
+>  		fl->fl_type = F_UNLCK;
+>  	}
+> -	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags)))
+> +	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags))) {
+> +		if (fl->fl_type == F_UNLCK)
+> +			posix_lock_file_wait(file, fl);
+>  		return -EIO;
+> +	}
+>  	if (IS_GETLK(cmd))
+>  		return dlm_posix_get(ls->ls_dlm, ip->i_no_addr, file, fl);
+>  	else if (fl->fl_type == F_UNLCK)
+
 
