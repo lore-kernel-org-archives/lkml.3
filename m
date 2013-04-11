@@ -1,39 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab3DKT1N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 15:27:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46485 "EHLO mail.zytor.com"
+	id S1752838Ab3DKTeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 15:34:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38465 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750792Ab3DKT1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 15:27:12 -0400
-Message-ID: <51670E51.6020106@zytor.com>
-Date: Thu, 11 Apr 2013 12:26:09 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1751926Ab3DKTeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 15:34:07 -0400
+Message-ID: <5167101A.2030105@ti.com>
+Date: Thu, 11 Apr 2013 15:33:46 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Borislav Petkov <bp@alien8.de>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH] x86, FPU: Fix FPU initialization
-References: <1365436666-9837-1-git-send-email-bp@alien8.de> <20130410110840.GA29752@gmail.com> <20130410122411.GE13394@pd.tnic> <20130410122527.GB8686@gmail.com> <20130410133251.GC6857@pd.tnic> <516586CF.90909@zytor.com> <20130410161122.GI6857@pd.tnic> <20130410212950.GA6899@pd.tnic> <20130411120952.GA18879@gmail.com>
-In-Reply-To: <20130411120952.GA18879@gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+CC: <linux-pm@vger.kernel.org>, Thomas Abraham <thomas.abraham@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <amit.kachhap@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, <eduardo.valentin@ti.com>
+Subject: Re: [1/9] thermal: exynos: Adapt to temperature emulation core thermal
+ framework
+References: <1364297642-2746-2-git-send-email-amit.daniel@samsung.com>
+In-Reply-To: <1364297642-2746-2-git-send-email-amit.daniel@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 05:09 AM, Ingo Molnar wrote:
-> 
-> Even with this applied, the attached config is still unhappy and crashes/locks up 
-> during user-space init, see the crashlog attached below.
-> 
-> The config has MATH_EMULATION=y, so I suspect it's the same problem category. 
-> 
+Hello Amit,
 
-What host is this?
+Couple of comments inline.
 
-	-hpa
+On 26-03-2013 07:33, Amit Daniel Kachhap wrote:
+> This removes the driver specific sysfs support of the temperature
+> emulation and uses the newly added core thermal framework for thermal
+> emulation. An exynos platform specific handler is added to support this.
+>
+> In this patch, the exynos senor(tmu) related code and exynos framework
+> related (thermal zone, cooling devices) code are intentionally kept separate.
+> So an emulated function pointer is passed from sensor to framework. This is
+> beneficial in adding more sensor support using the same framework code
+> which is an ongoing work. The goal is to finally split them totally. Even
+> the existing read_temperature also follows the same execution method.
+>
+> Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>
+> ---
+> Documentation/thermal/exynos_thermal_emulation |    8 +-
+>   drivers/thermal/Kconfig                        |    9 --
+>   drivers/thermal/exynos_thermal.c               |  158 ++++++++++--------------
+>   3 files changed, 67 insertions(+), 108 deletions(-)
+>
+> diff --git a/Documentation/thermal/exynos_thermal_emulation b/Documentation/thermal/exynos_thermal_emulation
+> index b73bbfb..36a3e79 100644
+> --- a/Documentation/thermal/exynos_thermal_emulation
+> +++ b/Documentation/thermal/exynos_thermal_emulation
+> @@ -13,11 +13,11 @@ Thermal emulation mode supports software debug for TMU's operation. User can set
+>   manually with software code and TMU will read current temperature from user value not from
+>   sensor's value.
+>
+> -Enabling CONFIG_EXYNOS_THERMAL_EMUL option will make this support in available.
+> -When it's enabled, sysfs node will be created under
+> -/sys/bus/platform/devices/'exynos device name'/ with name of 'emulation'.
+> +Enabling CONFIG_THERMAL_EMULATION option will make this support available.
+> +When it's enabled, sysfs node will be created as
+> +/sys/devices/virtual/thermal/thermal_zone'zone id'/emul_temp.
+>
+> -The sysfs node, 'emulation', will contain value 0 for the initial state. When you input any
+> +The sysfs node, 'emul_node', will contain value 0 for the initial state. When you input any
+>   temperature you want to update to sysfs node, it automatically enable emulation mode and
+>   current temperature will be changed into it.
+>   (Exynos also supports user changable delay time which would be used to delay of
 
+not part of this patch but:
+s/changable/changeable
+
+> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
+> index a764f16..da4c19e 100644
+> --- a/drivers/thermal/Kconfig
+> +++ b/drivers/thermal/Kconfig
+> @@ -117,15 +117,6 @@ config EXYNOS_THERMAL
+>   	  If you say yes here you get support for TMU (Thermal Management
+>   	  Unit) on SAMSUNG EXYNOS series of SoC.
+>
+> -config EXYNOS_THERMAL_EMUL
+> -	bool "EXYNOS TMU emulation mode support"
+> -	depends on EXYNOS_THERMAL
+> -	help
+> -	  Exynos 4412 and 4414 and 5 series has emulation mode on TMU.
+> -	  Enable this option will be make sysfs node in exynos thermal platform
+> -	  device directory to support emulation mode. With emulation mode sysfs
+> -	  node, you can manually input temperature to TMU for simulation purpose.
+> -
+>   config DOVE_THERMAL
+>   	tristate "Temperature sensor on Marvell Dove SoCs"
+>   	depends on ARCH_DOVE
+> diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+> index 46568c0..1cd7837 100644
+> --- a/drivers/thermal/exynos_thermal.c
+> +++ b/drivers/thermal/exynos_thermal.c
+> @@ -100,13 +100,13 @@
+>   #define IDLE_INTERVAL 10000
+>   #define MCELSIUS	1000
+>
+> -#ifdef CONFIG_EXYNOS_THERMAL_EMUL
+> +#ifdef CONFIG_THERMAL_EMULATION
+>   #define EXYNOS_EMUL_TIME	0x57F0
+>   #define EXYNOS_EMUL_TIME_SHIFT	16
+>   #define EXYNOS_EMUL_DATA_SHIFT	8
+>   #define EXYNOS_EMUL_DATA_MASK	0xFF
+>   #define EXYNOS_EMUL_ENABLE	0x1
+> -#endif /* CONFIG_EXYNOS_THERMAL_EMUL */
+> +#endif /* CONFIG_THERMAL_EMULATION */
+>
+
+As the above is only used in one single function, I suggest moving it to 
+same ifdef where the function belongs below. It reduces your ifdefery 
+and also makes your code cleaner.
+
+
+>   /* CPU Zone information */
+>   #define PANIC_ZONE      4
+> @@ -145,6 +145,7 @@ struct	thermal_cooling_conf {
+>   struct thermal_sensor_conf {
+>   	char name[SENSOR_NAME_LEN];
+>   	int (*read_temperature)(void *data);
+> +	int (*write_emul_temp)(void *drv_data, unsigned long temp);
+
+I dont get why you  need a private callback to do this, assuming you 
+have only one sensor_conf for exynos.
+
+>   	struct thermal_trip_point_conf trip_data;
+>   	struct thermal_cooling_conf cooling_data;
+>   	void *private_data;
+> @@ -369,6 +370,23 @@ static int exynos_get_temp(struct thermal_zone_device *thermal,
+>   	return 0;
+>   }
+>
+> +/* Get temperature callback functions for thermal zone */
+> +static int exynos_set_emul_temp(struct thermal_zone_device *thermal,
+> +						unsigned long temp)
+> +{
+> +	void *data;
+> +	int ret = -EINVAL;
+
+In case you still want to keep your private callback, Id say -ENOTSUPP 
+is better for the case you dont have the callback.
+
+> +
+> +	if (!th_zone->sensor_conf) {
+> +		pr_info("Temperature sensor not initialised\n");
+> +		return -EINVAL;
+> +	}
+> +	data = th_zone->sensor_conf->private_data;
+> +	if (th_zone->sensor_conf->write_emul_temp)
+> +		ret = th_zone->sensor_conf->write_emul_temp(data, temp);
+
+nip: a blank line.
+
+> +	return ret;
+> +}
+> +
+>   /* Get the temperature trend */
+>   static int exynos_get_trend(struct thermal_zone_device *thermal,
+>   			int trip, enum thermal_trend *trend)
+> @@ -392,6 +410,7 @@ static struct thermal_zone_device_ops const exynos_dev_ops = {
+>   	.bind = exynos_bind,
+>   	.unbind = exynos_unbind,
+>   	.get_temp = exynos_get_temp,
+> +	.set_emul_temp = exynos_set_emul_temp,
+>   	.get_trend = exynos_get_trend,
+>   	.get_mode = exynos_get_mode,
+>   	.set_mode = exynos_set_mode,
+> @@ -714,6 +733,47 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
+>   	return temp;
+>   }
+>
+> +#ifdef CONFIG_THERMAL_EMULATION
+>
+
+I think your code looks cleaner if you move the defines at the beginning 
+of your patch to this point.
+
++static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
+> +{
+> +	struct exynos_tmu_data *data = drv_data;
+> +	unsigned int reg;
+> +	int ret = -EINVAL;
+> +
+> +	if (data->soc == SOC_ARCH_EXYNOS4210)
+> +		goto out;
+> +
+
+Can you resolve this by not defining this callback for the 
+SOC_ARCH_EXYNOS4210 thermal zone ops?
+
+
+> +	if (temp && temp < MCELSIUS)
+> +		goto out;
+> +
+> +	mutex_lock(&data->lock);
+> +	clk_enable(data->clk);
+> +
+> +	reg = readl(data->base + EXYNOS_EMUL_CON);
+> +
+> +	if (temp) {
+> +		temp /= MCELSIUS;
+> +
+> +		reg = (EXYNOS_EMUL_TIME << EXYNOS_EMUL_TIME_SHIFT) |
+> +			(temp_to_code(data, temp)
+> +			 << EXYNOS_EMUL_DATA_SHIFT) | EXYNOS_EMUL_ENABLE;
+> +	} else {
+> +		reg &= ~EXYNOS_EMUL_ENABLE;
+> +	}
+> +
+> +	writel(reg, data->base + EXYNOS_EMUL_CON);
+> +
+> +	clk_disable(data->clk);
+> +	mutex_unlock(&data->lock);
+
+nip: blank line.
+
+> +	return 0;
+> +out:
+> +	return ret;
+> +}
+> +#else
+> +static int exynos_tmu_set_emulation(void *drv_data,	unsigned long temp)
+unnecessary space                                     |
+
+> +	{ return -EINVAL; }
+
+I believe if you do a static inline function return 0, the compiler 
+should translate it into a nope.
+
+> +#endif/*CONFIG_THERMAL_EMULATION*/
+> +
+>   static void exynos_tmu_work(struct work_struct *work)
+>   {
+>   	struct exynos_tmu_data *data = container_of(work,
+> @@ -747,6 +807,7 @@ static irqreturn_t exynos_tmu_irq(int irq, void *id)
+>   static struct thermal_sensor_conf exynos_sensor_conf = {
+>   	.name			= "exynos-therm",
+>   	.read_temperature	= (int (*)(void *))exynos_tmu_read,
+> +	.write_emul_temp	= exynos_tmu_set_emulation,
+>   };
+>
+>   #if defined(CONFIG_CPU_EXYNOS4210)
+> @@ -853,93 +914,6 @@ static inline struct  exynos_tmu_platform_data *exynos_get_driver_data(
+>   			platform_get_device_id(pdev)->driver_data;
+>   }
+>
+> -#ifdef CONFIG_EXYNOS_THERMAL_EMUL
+> -static ssize_t exynos_tmu_emulation_show(struct device *dev,
+> -					 struct device_attribute *attr,
+> -					 char *buf)
+> -{
+> -	struct platform_device *pdev = container_of(dev,
+> -					struct platform_device, dev);
+> -	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+> -	unsigned int reg;
+> -	u8 temp_code;
+> -	int temp = 0;
+> -
+> -	if (data->soc == SOC_ARCH_EXYNOS4210)
+> -		goto out;
+> -
+> -	mutex_lock(&data->lock);
+> -	clk_enable(data->clk);
+> -	reg = readl(data->base + EXYNOS_EMUL_CON);
+> -	clk_disable(data->clk);
+> -	mutex_unlock(&data->lock);
+> -
+> -	if (reg & EXYNOS_EMUL_ENABLE) {
+> -		reg >>= EXYNOS_EMUL_DATA_SHIFT;
+> -		temp_code = reg & EXYNOS_EMUL_DATA_MASK;
+> -		temp = code_to_temp(data, temp_code);
+> -	}
+> -out:
+> -	return sprintf(buf, "%d\n", temp * MCELSIUS);
+> -}
+> -
+> -static ssize_t exynos_tmu_emulation_store(struct device *dev,
+> -					struct device_attribute *attr,
+> -					const char *buf, size_t count)
+> -{
+> -	struct platform_device *pdev = container_of(dev,
+> -					struct platform_device, dev);
+> -	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+> -	unsigned int reg;
+> -	int temp;
+> -
+> -	if (data->soc == SOC_ARCH_EXYNOS4210)
+> -		goto out;
+> -
+> -	if (!sscanf(buf, "%d\n", &temp) || temp < 0)
+> -		return -EINVAL;
+> -
+> -	mutex_lock(&data->lock);
+> -	clk_enable(data->clk);
+> -
+> -	reg = readl(data->base + EXYNOS_EMUL_CON);
+> -
+> -	if (temp) {
+> -		/* Both CELSIUS and MCELSIUS type are available for input */
+> -		if (temp > MCELSIUS)
+> -			temp /= MCELSIUS;
+> -
+> -		reg = (EXYNOS_EMUL_TIME << EXYNOS_EMUL_TIME_SHIFT) |
+> -			(temp_to_code(data, (temp / MCELSIUS))
+> -			 << EXYNOS_EMUL_DATA_SHIFT) | EXYNOS_EMUL_ENABLE;
+> -	} else {
+> -		reg &= ~EXYNOS_EMUL_ENABLE;
+> -	}
+> -
+> -	writel(reg, data->base + EXYNOS_EMUL_CON);
+> -
+> -	clk_disable(data->clk);
+> -	mutex_unlock(&data->lock);
+> -
+> -out:
+> -	return count;
+> -}
+> -
+> -static DEVICE_ATTR(emulation, 0644, exynos_tmu_emulation_show,
+> -					exynos_tmu_emulation_store);
+> -static int create_emulation_sysfs(struct device *dev)
+> -{
+> -	return device_create_file(dev, &dev_attr_emulation);
+> -}
+> -static void remove_emulation_sysfs(struct device *dev)
+> -{
+> -	device_remove_file(dev, &dev_attr_emulation);
+> -}
+> -#else
+> -static inline int create_emulation_sysfs(struct device *dev) { return 0; }
+> -static inline void remove_emulation_sysfs(struct device *dev) {}
+> -#endif
+> -
+>   static int exynos_tmu_probe(struct platform_device *pdev)
+>   {
+>   	struct exynos_tmu_data *data;
+> @@ -1039,10 +1013,6 @@ static int exynos_tmu_probe(struct platform_device *pdev)
+>   		goto err_clk;
+>   	}
+>
+> -	ret = create_emulation_sysfs(&pdev->dev);
+> -	if (ret)
+> -		dev_err(&pdev->dev, "Failed to create emulation mode sysfs node\n");
+> -
+>   	return 0;
+>   err_clk:
+>   	platform_set_drvdata(pdev, NULL);
+> @@ -1054,8 +1024,6 @@ static int exynos_tmu_remove(struct platform_device *pdev)
+>   {
+>   	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+>
+> -	remove_emulation_sysfs(&pdev->dev);
+> -
+>   	exynos_tmu_control(pdev, false);
+>
+>   	exynos_unregister_thermal();
+>
 
