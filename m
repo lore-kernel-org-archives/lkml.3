@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab3DKPyE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:54:04 -0400
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:36755 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab3DKPyD (ORCPT
+	id S1753675Ab3DKPym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:54:42 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:57404 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694Ab3DKPyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:54:03 -0400
-Date: Thu, 11 Apr 2013 17:53:53 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Christoph Lameter <cl@linux.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 4/4] nohz: New option to force all CPUs in full dynticks
- range
-Message-ID: <20130411155349.GA16797@somewhere.redhat.com>
-References: <1364398359-21990-1-git-send-email-fweisbec@gmail.com>
- <1364398359-21990-5-git-send-email-fweisbec@gmail.com>
- <20130328074507.GC24433@gmail.com>
- <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com>
- <20130330091037.GA31743@gmail.com>
- <0000013dea26b171-8095c339-dc81-4459-a3ad-a8d69c803448-000000@email.amazonses.com>
- <20130411151956.GF15699@somewhere>
- <20130411153721.GA3742@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411153721.GA3742@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 11 Apr 2013 11:54:40 -0400
+Message-ID: <1365695675.3887.165.camel@edumazet-glaptop>
+Subject: Re: [PATCH] net: mv643xx_eth: Add GRO support
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Soeren Moch <smoch@web.de>, Paul Mackerras <paulus@samba.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Dale Farnsworth <dale@farnsworth.org>, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Date: Thu, 11 Apr 2013 08:54:35 -0700
+In-Reply-To: <20130411153256.GH1910@1wt.eu>
+References: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	 <20130411131333.GD1910@1wt.eu>
+	 <CABJ1b_TQDabT1J7ffo5cb1Th=71bcSduifMJaDpfVRiiHvtWDw@mail.gmail.com>
+	 <20130411150326.GA19978@1wt.eu>
+	 <CABJ1b_TRxm97DKJLP_h0VwMJvcYmSpjoJvtg1KvBNGah=VzqMQ@mail.gmail.com>
+	 <20130411153256.GH1910@1wt.eu>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 08:37:21AM -0700, Paul E. McKenney wrote:
-> On Thu, Apr 11, 2013 at 05:19:59PM +0200, Frederic Weisbecker wrote:
-> > On Mon, Apr 08, 2013 at 02:57:18PM +0000, Christoph Lameter wrote:
-> > > I think we could simplify things quite a bit if we either
-> > > 
-> > > 1. Add any cpus specified with nohz_full/extended=xxx to
-> > > rcu_nocb. No check is then necessary anymore.
-> > 
-> > Yeah in the long term we probably want that indeed.
+On Thu, 2013-04-11 at 17:32 +0200, Willy Tarreau wrote:
+> On Thu, Apr 11, 2013 at 05:27:03PM +0200, Sebastian Hesselbarth wrote:
+> > I don't have a strong opinion on whether Soeren's or your proposal should
+> > be submitted. But I insist on having one of them in, as GRO significantly
+> > improves the common use case, is enabled by default, and not as
+> > constrained as LRO.
 > 
-> Or just build with RCU_NOCB_CPU_ALL=y to unconditionally offload all
-> the CPUs when using nohz_extended.
+> I agree, use yours first, but we should keep an eye on this. Since you have
+> everything to run a test, please try to see if you can get netperf to run
+> over IPv6, I'm sure the NIC doesn't handle it.
 
-If there is no performance issue with that I'm all for it.
+Willy, testing the checksum in the NIC driver itself prevents the stack
+doing GRO even if the NIC could not checksum the packet, as in GRE
+tunneling for example.
+
+So Sebastien patch is better IMHO : Just call the napi gro handler and
+let core stack handles the details ;)
+
+
+
+
+
