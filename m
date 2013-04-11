@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936145Ab3DKUvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:51:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26790 "EHLO
+	id S936124Ab3DKUvb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:51:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8349 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935925Ab3DKUtg (ORCPT
+	with ESMTP id S935931Ab3DKUtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:49:36 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=hbz-8L9Mu38A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=EmLvEcgK89wA:10 a=7CQSdrXTAAAA:8 a=JfrnYn6hAAAA:8 a=KKAkSRfTAAAA:8 a=VwQbUJbxAAAA:8 a=azCPoUKV1MNu8TPkOAQA:9 a=ESTKKtUg-DoA:10 a=WwgC8nHKvroA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=9HPLkOQRioIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=HqAs73h0mhkA:10 a=z3ULzVM9AAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=wr95npuc9as5hDnRifAA:9 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202556.227197057@goodmis.org>
+Message-Id: <20130411202555.538387128@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:04 -0400
+Date: Thu, 11 Apr 2013 16:26:00 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 061/171 ] clockevents: Dont allow dummy broadcast timers
+Cc: Dmitry Artamonow <mad_soft@inbox.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 057/171 ] usb-storage: add unusual_devs entry for Samsung YP-Z3 mp3 player
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0061-clockevents-Don-t-allow-dummy-broadcast-timers.patch
+Content-Disposition: inline; filename=0057-usb-storage-add-unusual_devs-entry-for-Samsung-YP-Z3.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,44 +30,41 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mark Rutland <mark.rutland@arm.com>
+From: Dmitry Artamonow <mad_soft@inbox.ru>
 
-[ Upstream commit a7dc19b8652c862d5b7c4d2339bd3c428bd29c4a ]
+[ Upstream commit 29f86e66428ee083aec106cca1748dc63d98ce23 ]
 
-Currently tick_check_broadcast_device doesn't reject clock_event_devices
-with CLOCK_EVT_FEAT_DUMMY, and may select them in preference to real
-hardware if they have a higher rating value. In this situation, the
-dummy timer is responsible for broadcasting to itself, and the core
-clockevents code may attempt to call non-existent callbacks for
-programming the dummy, eventually leading to a panic.
+Device stucks on filesystem writes, unless following quirk is passed:
+  echo 04e8:5136:m > /sys/module/usb_storage/parameters/quirks
 
-This patch makes tick_check_broadcast_device always reject dummy timers,
-preventing this problem.
+Add corresponding entry to unusual_devs.h
 
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/time/tick-broadcast.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/storage/unusual_devs.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index f113755..a13987a 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -66,7 +66,8 @@ static void tick_broadcast_start_periodic(struct clock_event_device *bc)
-  */
- int tick_check_broadcast_device(struct clock_event_device *dev)
- {
--	if ((tick_broadcast_device.evtdev &&
-+	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
-+	    (tick_broadcast_device.evtdev &&
- 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
- 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
- 		return 0;
+diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
+index 8f98c9a..3561322 100644
+--- a/drivers/usb/storage/unusual_devs.h
++++ b/drivers/usb/storage/unusual_devs.h
+@@ -488,6 +488,13 @@ UNUSUAL_DEV(  0x04e8, 0x5122, 0x0000, 0x9999,
+ 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
+ 		US_FL_MAX_SECTORS_64 | US_FL_BULK_IGNORE_TAG),
+ 
++/* Added by Dmitry Artamonow <mad_soft@inbox.ru> */
++UNUSUAL_DEV(  0x04e8, 0x5136, 0x0000, 0x9999,
++		"Samsung",
++		"YP-Z3",
++		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
++		US_FL_MAX_SECTORS_64),
++
+ /* Entry and supporting patch by Theodore Kilgore <kilgota@auburn.edu>.
+  * Device uses standards-violating 32-byte Bulk Command Block Wrappers and
+  * reports itself as "Proprietary SCSI Bulk." Cf. device entry 0x084d:0x0011.
 -- 
 1.7.10.4
 
