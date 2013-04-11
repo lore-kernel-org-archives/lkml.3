@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1763205Ab3DKVAJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:00:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11684 "EHLO
+	id S935793Ab3DKUtU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:49:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9226 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935800Ab3DKUtW (ORCPT
+	with ESMTP id S935637Ab3DKUtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:49:22 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ZDYxgX4iq60A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=v8_7Gzy7jK4A:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=ci0R9jrIFp8a7j49ubkA:9 a=MSl-tDqOz04A:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:49:06 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=88NqfY19Rg4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=xNemP2DeRoMA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202600.596526625@goodmis.org>
+Message-Id: <20130411202606.962861965@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:31 -0400
+Date: Thu, 11 Apr 2013 16:27:09 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 088/171 ] b43: N-PHY: increase initial value of "mind" in RSSI calibration
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 126/171 ] USB: ssu100: fix use-after-free in TIOCMIWAIT
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0088-b43-N-PHY-increase-initial-value-of-mind-in-RSSI-cal.patch
+Content-Disposition: inline; filename=0126-USB-ssu100-fix-use-after-free-in-TIOCMIWAIT.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,49 +30,75 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-[ Upstream commit e67dd874e60529dbd2e8232babb1e23479ba2ffa ]
+[ Upstream commit 43a66b4c417ad15f6d2f632ce67ad195bdf999e8 ]
 
-We're using "mind" variable to find the VCM that got the best polling
-results. For each VCM we calculte "currd" which is compared to the
-"mind". For PHY rev3+ "currd" gets values around 14k-40k. Looking for a
-value smaller than 40 makes no sense, so increase the initial value.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-This fixes a regression introduced in 3.4 by commit:
-e0c9a0219a8f542e3946fe972a68aacf8c3f906c
-(my BCM4322 performance dropped from 18,4Mb/s to 9,26Mb/s)
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/b43/phy_n.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ssu100.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/b43/phy_n.c b/drivers/net/wireless/b43/phy_n.c
-index b92bb9c..e167a88 100644
---- a/drivers/net/wireless/b43/phy_n.c
-+++ b/drivers/net/wireless/b43/phy_n.c
-@@ -1371,7 +1371,7 @@ static void b43_nphy_rev3_rssi_cal(struct b43_wldev *dev)
- 		}
- 		for (i = 0; i < 4; i += 2) {
- 			s32 curr;
--			s32 mind = 40;
-+			s32 mind = 0x100000;
- 			s32 minpoll = 249;
- 			u8 minvcm = 0;
- 			if (2 * core != i)
-@@ -1555,7 +1555,7 @@ static void b43_nphy_rev2_rssi_cal(struct b43_wldev *dev, u8 type)
- 	}
+diff --git a/drivers/usb/serial/ssu100.c b/drivers/usb/serial/ssu100.c
+index fe3a8a0..fd260de 100644
+--- a/drivers/usb/serial/ssu100.c
++++ b/drivers/usb/serial/ssu100.c
+@@ -65,7 +65,6 @@ struct ssu100_port_private {
+ 	spinlock_t status_lock;
+ 	u8 shadowLSR;
+ 	u8 shadowMSR;
+-	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
+ 	struct async_icount icount;
+ };
  
- 	for (i = 0; i < 4; i++) {
--		s32 mind = 40;
-+		s32 mind = 0x100000;
- 		u8 minvcm = 0;
- 		s32 minpoll = 249;
- 		s32 curr;
+@@ -359,8 +358,9 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+ 	spin_unlock_irqrestore(&priv->status_lock, flags);
+ 
+ 	while (1) {
+-		wait_event_interruptible(priv->delta_msr_wait,
+-					 ((priv->icount.rng != prev.rng) ||
++		wait_event_interruptible(port->delta_msr_wait,
++					 (port->serial->disconnected ||
++					  (priv->icount.rng != prev.rng) ||
+ 					  (priv->icount.dsr != prev.dsr) ||
+ 					  (priv->icount.dcd != prev.dcd) ||
+ 					  (priv->icount.cts != prev.cts)));
+@@ -368,6 +368,9 @@ static int wait_modem_info(struct usb_serial_port *port, unsigned int arg)
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
++
+ 		spin_lock_irqsave(&priv->status_lock, flags);
+ 		cur = priv->icount;
+ 		spin_unlock_irqrestore(&priv->status_lock, flags);
+@@ -449,7 +452,6 @@ static int ssu100_port_probe(struct usb_serial_port *port)
+ 		return -ENOMEM;
+ 
+ 	spin_lock_init(&priv->status_lock);
+-	init_waitqueue_head(&priv->delta_msr_wait);
+ 
+ 	usb_set_serial_port_data(port, priv);
+ 
+@@ -544,7 +546,7 @@ static void ssu100_update_msr(struct usb_serial_port *port, u8 msr)
+ 			priv->icount.dcd++;
+ 		if (msr & UART_MSR_TERI)
+ 			priv->icount.rng++;
+-		wake_up_interruptible(&priv->delta_msr_wait);
++		wake_up_interruptible(&port->delta_msr_wait);
+ 	}
+ }
+ 
 -- 
 1.7.10.4
 
