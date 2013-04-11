@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab3DKKBU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 06:01:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40194 "EHLO mx2.suse.de"
+	id S1754854Ab3DKKEq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 06:04:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40341 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753885Ab3DKKBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 06:01:19 -0400
-Date: Thu, 11 Apr 2013 11:01:15 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/10] mm: vmscan: Have kswapd shrink slab only once per
- priority
-Message-ID: <20130411100115.GJ3710@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-9-git-send-email-mgorman@suse.de>
- <20130409065325.GA4411@lge.com>
- <20130409111358.GB2002@suse.de>
- <20130410052142.GB5872@lge.com>
+	id S1752436Ab3DKKEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 06:04:44 -0400
+Date: Thu, 11 Apr 2013 13:04:35 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, "Balbi, Felipe" <balbi@ti.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] USB: ehci-omap: Select USB_PHY
+Message-ID: <20130411100435.GB14394@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <5166856C.3080906@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Fba/0zbH8Xs+Fj9o"
 Content-Disposition: inline
-In-Reply-To: <20130410052142.GB5872@lge.com>
+In-Reply-To: <5166856C.3080906@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 02:21:42PM +0900, Joonsoo Kim wrote:
-> > > > @@ -2673,9 +2674,15 @@ static bool kswapd_shrink_zone(struct zone *zone,
-> > > >  	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
-> > > >  	shrink_zone(zone, sc);
-> > > >  
-> > > > -	reclaim_state->reclaimed_slab = 0;
-> > > > -	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
-> > > > -	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
-> > > > +	/*
-> > > > +	 * Slabs are shrunk for each zone once per priority or if the zone
-> > > > +	 * being balanced is otherwise unreclaimable
-> > > > +	 */
-> > > > +	if (shrinking_slab || !zone_reclaimable(zone)) {
-> > > > +		reclaim_state->reclaimed_slab = 0;
-> > > > +		nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
-> > > > +		sc->nr_reclaimed += reclaim_state->reclaimed_slab;
-> > > > +	}
-> > > >  
-> > > >  	if (nr_slab == 0 && !zone_reclaimable(zone))
-> > > >  		zone->all_unreclaimable = 1;
-> > > 
-> > > Why shrink_slab() is called here?
-> > 
-> > Preserves existing behaviour.
-> 
-> Yes, but, with this patch, existing behaviour is changed, that is, we call
-> shrink_slab() once per priority. For now, there is no reason this function
-> is called here. How about separating it and executing it outside of
-> zone loop?
-> 
+--Fba/0zbH8Xs+Fj9o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We are calling it fewer times but it's still receiving the same information
-from sc->nr_scanned it received before. With the change you are suggesting
-it would be necessary to accumulating sc->nr_scanned for each zone shrunk
-and then pass the sum to shrink_slab() once per priority. While this is not
-necessarily wrong, there is little or no motivation to alter the shrinkers
-in this manner in this series.
+Hi,
 
--- 
-Mel Gorman
-SUSE Labs
+On Thu, Apr 11, 2013 at 12:42:04PM +0300, Roger Quadros wrote:
+> Hi Greg,
+>=20
+> The following patch gets rid of Kbuild warnings when USB_EHCI_HCD_OMAP
+> is enabled.
+>=20
+> Patch is based on your usb-next branch and is needed for 3.10.
+>=20
+> From: Roger Quadros <rogerq@ti.com>
+> Date: Thu, 11 Apr 2013 12:08:19 +0300
+> Subject: [PATCH] USB: ehci-omap: Select USB_PHY
+>=20
+> As we need NOP_USB_XCEIV which depends on USB_PHY
+> we need to select USB_PHY as well.
+>=20
+> Gets rid of the below warnings when USB_EHCI_HCD_OMAP
+> is enabled.
+>=20
+> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet direct=
+ dependencies (USB_SUPPORT && USB_PHY)
+> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet direct=
+ dependencies (USB_SUPPORT && USB_PHY)
+>=20
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+
+Ideally, however, we wouldn't select any PHY in particular as different
+boards might need a different PHY driver, even on OMAP ;-)
+
+--=20
+balbi
+
+--Fba/0zbH8Xs+Fj9o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRZoqzAAoJEIaOsuA1yqREIWcQAKXAy33ZCaFz0dTN9EcexjyL
+mA54cLaE24Nu+jhSVTSzRdTQV2awgNfCdYAqika7cO+VGg8V+Ju2TK0Xz4r5nHML
+bNSO8Dmn4Wo4soNJpPLK/uJsyDkw2SIZjtJjoV78Ol+kqhPF+Si7fv0rA44/x5mS
+nerhw0rR/yY6Cwb5qekD9IQanDD0EfvfZSyGBxeHTGPS8ZN0KkXsRA4CDpg4EDpi
+uDZJP9lXkCEQekTVU/t7qH3L+dDpGPBJWV9EwWNZjG/Usjt3w6coRJcoFT8syeF6
+ZIGd++5kY56M8ATdDDsdZqolfZ7eFEakqlnZ6/bs6R4IFgeHXvrBUXl6lTeqPznF
+yBn1n2qCo3eTEhyhWU9Rm2sg1Bl8StfrTKc1LT5sd3aIyfoTQjCW/4evVfw97ACE
+MBW9IHT4WLD5zjTw48SDkqKKn0pmWWf8n+MaKpMMOlbwXnzwpCJAgz6FnJtOOh/r
+t9GNpONqRtSFCpnSQ8MTMlelpRaNf+okrH1PylM2ERqRVjE9iKrF4fU4a9P5rp0g
+8M72+4zs+k1UnVP8FjI7xGF/aaHdnHpBA0TwaB4tBcQXjFqXEiBTMEo+avlwt3vG
+DHN7R/w+Bw03AZJ+Z8uHmmJB1SoNN9VXZCC22OEID2NCXl2JEp/XFr3VT/c6Yu6N
+HEmtzE+wlcx8XW+ldBkj
+=9uu7
+-----END PGP SIGNATURE-----
+
+--Fba/0zbH8Xs+Fj9o--
