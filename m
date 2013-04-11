@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934757Ab3DKKdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 06:33:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:59914 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750712Ab3DKKdr convert rfc822-to-8bit (ORCPT
+	id S1753152Ab3DKKi7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 06:38:59 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:38318 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab3DKKi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 06:33:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,454,1363158000"; 
-   d="scan'208";a="317651332"
-Message-ID: <1365676406.21742.14.camel@smile>
-Subject: Re: [PATCH v2 0/5] dmaengine: add ACPI DMA helpers and use them in
- dw_dmac
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>,
-        Vinod Koul <vinod.koul@intel.com>, linux-acpi@vger.kernel.org
-Date: Thu, 11 Apr 2013 13:33:26 +0300
-In-Reply-To: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	Thu, 11 Apr 2013 06:38:58 -0400
+Message-ID: <516692BF.6070904@hitachi.com>
+Date: Thu, 11 Apr 2013 19:38:55 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 0/1] uprobes/tracing: Don't pass addr=ip to perf_trace_buf_submit()
+References: <20130329181520.GA20670@redhat.com> <20130329181545.GA20697@redhat.com> <20130404142522.GC8986@linux.vnet.ibm.com> <515E4938.6090809@hitachi.com> <20130405150110.GA31300@redhat.com> <51628DF8.6030102@hitachi.com> <20130410145818.GA30670@redhat.com>
+In-Reply-To: <20130410145818.GA30670@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-09 at 14:05 +0300, Andy Shevchenko wrote: 
-> There is a patch series which introduces ACPI DMA helpers in similar way like
-> we have for DeviceTree.
+(2013/04/10 23:58), Oleg Nesterov wrote:
+> On 04/08, Masami Hiramatsu wrote:
+>>
+>> (2013/04/06 0:01), Oleg Nesterov wrote:
+>>>
+>>> Masami, perhaps you can also answer the question I asked in 0/4
+>>> marc.info/?l=linux-kernel&m=136458107403835 ?
+>>>
+>>> 	Off-topic question... Why uprobe_perf_func() passes "addr = ip" to
+>>> 	perf_trace_buf_submit() ? This just sets perf_sample_data->addr for
+>>> 	PERF_SAMPLE_ADDR, do we really need this? and we already have
+>>> 	perf_sample_data->ip initialized by perf.
+>>>
+>>> kprobe_perf_func() and kretprobe_perf_func() do the same.
+>>>
+>>
+>> Good catch! I guess that I might misunderstood that it was used
+>> for sampling execution address. It should be replaced with (u64)0,
+>> as perf_trace_##call() does.
 > 
-> In addition it applies this to the first user, namely dw_dmac driver.
+> Thanks!
 > 
-> Since v1:
->  - address one Vinod's comment
->  - replace 5/6 & 6/6 by 5/5 from Rafael
->  - tested on Intel Lynxpoint system
+> How about this trivial cleanup then? If I have your ack I'll add this
+> patch to other pending changes.
 
-Vinod, any comments on the series? Could you consider merging these for
-3.10?
+That is good for me :)
 
-> 
-> Andy Shevchenko (4):
->   dma: acpi-dma: introduce ACPI DMA helpers
->   dmaengine: call acpi_dma_request_slave_channel as well
->   dma: acpi-dma: parse CSRT to extract additional resources
->   dw_dmac: add ACPI support
-> 
-> Rafael J. Wysocki (1):
->   ACPI / LPSS: add support of shared clock
-> 
->  Documentation/acpi/enumeration.txt     |  77 ++++++
->  drivers/acpi/Makefile                  |   1 -
->  drivers/acpi/acpi_lpss.c               |  26 +-
->  drivers/acpi/csrt.c                    | 159 ------------
->  drivers/acpi/internal.h                |   1 -
->  drivers/acpi/scan.c                    |   1 -
->  drivers/clk/x86/clk-lpt.c              |  15 +-
->  drivers/dma/Kconfig                    |   4 +
->  drivers/dma/Makefile                   |   1 +
->  drivers/dma/acpi-dma.c                 | 445 +++++++++++++++++++++++++++++++++
->  drivers/dma/dmaengine.c                |   6 +
->  drivers/dma/dw_dmac.c                  |  68 +++--
->  drivers/dma/dw_dmac_regs.h             |   1 -
->  include/linux/acpi_dma.h               | 120 +++++++++
->  include/linux/platform_data/clk-lpss.h |   5 +
->  15 files changed, 741 insertions(+), 189 deletions(-)
->  delete mode 100644 drivers/acpi/csrt.c
->  create mode 100644 drivers/dma/acpi-dma.c
->  create mode 100644 include/linux/acpi_dma.h
-> 
+> And... Cough, another question ;) To simplify, lets discuss kprobe_perf_func()
+> only. Suppose that a task hits the kprobe but this task/cpu doesn't have
+> a counter. Can't we avoid perf_trace_buf_prepare/submit in this case?
+> IOW, what do you think about the change below?
+
+Hmm, I'm not so sure how frequently this happens. And, is this right way to
+handle that case? If so, we can do same thing also on trace_events.
+(perf_trace_##call in include/trace/ftrace.h)
+
+Thank you,
+
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
