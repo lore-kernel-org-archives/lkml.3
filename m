@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762175Ab3DKJZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 05:25:07 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39630 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab3DKJZE (ORCPT
+	id S935177Ab3DKJZt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 05:25:49 -0400
+Received: from smtp-out-204.synserver.de ([212.40.185.204]:1096 "EHLO
+	smtp-out-204.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1765270Ab3DKJZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 05:25:04 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Florian Fainelli <florian@openwrt.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] net: mvmdio: add clocks property to binding documentation
-Date: Thu, 11 Apr 2013 11:24:48 +0200
-Message-Id: <1365672288-30932-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365615391-26244-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1365615391-26244-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 11 Apr 2013 05:25:46 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 10881
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
+        Daniel Mack <daniel@caiaq.de>
+Subject: [PATCH 3/4] misc: isl29003: Use dev_pm_ops
+Date: Thu, 11 Apr 2013 11:24:41 +0200
+Message-Id: <1365672282-10449-3-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1365672282-10449-1-git-send-email-lars@metafoo.de>
+References: <1365672282-10449-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 3d604da1e9547c09c9dcc0ee443c306c9ae1a480
-  ("net: mvmdio: get and enable optional clock")
+Use dev_pm_ops instead of the deprecated legacy suspend/resume callbacks.
 
-was missing an update of the corresponding device tree binding
-documentation. This patch adds the clocks property to mvmdio
-binding documentation.
-
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Daniel Mack <daniel@caiaq.de>
 ---
-Changes from v1:
-- name commit and hash in commit message
+ drivers/misc/isl29003.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Rob Landley <rob@landley.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Florian Fainelli <florian@openwrt.org>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: netdev@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- Documentation/devicetree/bindings/net/marvell-orion-mdio.txt |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/Documentation/devicetree/bindings/net/marvell-orion-mdio.txt b/Documentation/devicetree/bindings/net/marvell-orion-mdio.txt
-index 052b5f2..9417e54 100644
---- a/Documentation/devicetree/bindings/net/marvell-orion-mdio.txt
-+++ b/Documentation/devicetree/bindings/net/marvell-orion-mdio.txt
-@@ -11,6 +11,7 @@ Required properties:
+diff --git a/drivers/misc/isl29003.c b/drivers/misc/isl29003.c
+index 29b306c..c5145b3 100644
+--- a/drivers/misc/isl29003.c
++++ b/drivers/misc/isl29003.c
+@@ -409,18 +409,20 @@ static int isl29003_remove(struct i2c_client *client)
+ 	return 0;
+ }
  
- Optional properties:
- - interrupts: interrupt line number for the SMI error/done interrupt
-+- clocks: Phandle to the clock control device and gate bit
+-#ifdef CONFIG_PM
+-static int isl29003_suspend(struct i2c_client *client, pm_message_t mesg)
++#ifdef CONFIG_PM_SLEEP
++static int isl29003_suspend(struct device *dev)
+ {
++	struct i2c_client *client = to_i2c_client(dev);
+ 	struct isl29003_data *data = i2c_get_clientdata(client);
  
- The child nodes of the MDIO driver are the individual PHY devices
- connected to this MDIO bus. They must have a "reg" property given the
+ 	data->power_state_before_suspend = isl29003_get_power_state(client);
+ 	return isl29003_set_power_state(client, 0);
+ }
+ 
+-static int isl29003_resume(struct i2c_client *client)
++static int isl29003_resume(struct device *dev)
+ {
+ 	int i;
++	struct i2c_client *client = to_i2c_client(dev);
+ 	struct isl29003_data *data = i2c_get_clientdata(client);
+ 
+ 	/* restore registers from cache */
+@@ -432,10 +434,12 @@ static int isl29003_resume(struct i2c_client *client)
+ 		data->power_state_before_suspend);
+ }
+ 
++static SIMPLE_DEV_PM_OPS(isl29003_pm_ops, isl29003_suspend, isl29003_resume);
++#define ISL29003_PM_OPS (&isl29003_pm_ops)
++
+ #else
+-#define isl29003_suspend	NULL
+-#define isl29003_resume		NULL
+-#endif /* CONFIG_PM */
++#define ISL29003_PM_OPS NULL
++#endif /* CONFIG_PM_SLEEP */
+ 
+ static const struct i2c_device_id isl29003_id[] = {
+ 	{ "isl29003", 0 },
+@@ -447,9 +451,8 @@ static struct i2c_driver isl29003_driver = {
+ 	.driver = {
+ 		.name	= ISL29003_DRV_NAME,
+ 		.owner	= THIS_MODULE,
++		.pm	= ISL29003_PM_OPS,
+ 	},
+-	.suspend = isl29003_suspend,
+-	.resume	= isl29003_resume,
+ 	.probe	= isl29003_probe,
+ 	.remove	= isl29003_remove,
+ 	.id_table = isl29003_id,
 -- 
-1.7.10.4
+1.8.0
 
