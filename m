@@ -1,114 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936422Ab3DKPUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:20:10 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:33910 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936391Ab3DKPUG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:20:06 -0400
-Date: Thu, 11 Apr 2013 08:20:03 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Veaceslav Falico <vfalico@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH] module: add kset_obj_exists() and use it
-Message-ID: <20130411152003.GC20943@kroah.com>
-References: <1365506529-8396-1-git-send-email-vfalico@redhat.com>
- <87y5cq6ei9.fsf@rustcorp.com.au>
- <20130411095537.GC21320@redhat.com>
- <20130411132831.GC2909@kroah.com>
- <20130411135340.GF21320@redhat.com>
+	id S1161541Ab3DKPUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:20:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42639 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935788Ab3DKPUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 11:20:25 -0400
+Message-ID: <5166D498.2090808@zytor.com>
+Date: Thu, 11 Apr 2013 08:19:52 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411135340.GF21320@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+CC: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, rostedt@goodmis.org,
+        akpm@linux-foundation.org, tglx@linutronix.de,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 4/4] cputime: remove scaling
+References: <1364489605-5443-1-git-send-email-sgruszka@redhat.com> <1364489605-5443-5-git-send-email-sgruszka@redhat.com> <20130410120228.GC8083@gmail.com> <11f12774-5353-4380-82d0-e22707e11729@email.android.com> <20130411083734.GC1380@redhat.com>
+In-Reply-To: <20130411083734.GC1380@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 03:53:40PM +0200, Veaceslav Falico wrote:
-> On Thu, Apr 11, 2013 at 06:28:31AM -0700, Greg KH wrote:
-> >On Thu, Apr 11, 2013 at 11:55:37AM +0200, Veaceslav Falico wrote:
-> >>However, I think my patch still adds something good, cause now we have 2
-> >>cases where we basically do:
-> >>
-> >>k = kset_find_obj();
-> >>if (!k)
-> >>	return;
-> >>kobject_put(k);
-> >>
-> >>which adds useless overhead (by using kobject_get()/kobject_put(), and
-> >>kobject_release() - which is called from kobject_put()) - where we should
-> >>only verify if there exists a kobject with the specified name.
-> >>
-> >>Should I resend it with a properly fixed commit message, or it's really not
-> >>needed?
-> >
-> >I don't think it's really needed, there is no speed/overhead issue here
-> >and you need to do the kobject_get/put stuff anyway if you are trying to
-> >look at a kobject.
+On 04/11/2013 01:37 AM, Stanislaw Gruszka wrote:
+> On Wed, Apr 10, 2013 at 07:29:21AM -0700, H. Peter Anvin wrote:
+>> I have a patch that does scaling by multiply for 64-bit architectures.  I probably should clean it up and send it in.  I need to see if it fixes this problem.
+> Interesting. Could you attach draft patch, so I could look at it ?
 > 
-> This is the point, actually, that we don't need to look at a kobject. We
-> only need to know if it existed that time or not, here are those two
-> examples of code:
-> 
-> static int mod_sysfs_init(struct module *mod)
-> {
->         int err;
->         struct kobject *kobj;
-> 
-> 	...
-> 
->         kobj = kset_find_obj(module_kset, mod->name);
->         if (kobj) {
->                 printk(KERN_ERR "%s: module is already loaded\n", mod->name);
->                 kobject_put(kobj);
->                 err = -EINVAL;
->                 goto out;
->         }
-> 
-> 	...
-> 
-> So we just verify if there's a kobject with mod->name, and if it exists -
-> _put() it back and return, otherwise do nothing (with it).
-> 
-> Same here:
-> 
-> static char *make_slot_name(const char *name)
-> {
-> 	...
-> 
->         for (;;) {
->                 struct kobject *dup_slot;
->                 dup_slot = kset_find_obj(pci_slots_kset, new_name);
->                 if (!dup_slot)
->                         break;
->                 kobject_put(dup_slot);
-> 
-> 	...
-> 
-> We look if there exists a kobject named new_name in pci_slots_kset, if yes
-> - free it and try another name, if not - then we're good to go.
-> 
-> In both examples we don't look at that kobject, and only uselessly
-> _get()/_put() it. And it looks a bit ugly. After the patch, in both cases,
-> it takes only one call to kset_obj_exists() to find out if the object
-> exists at that time.
 
-But as your function does the same thing, logically it's the same code
-path :)
+It's just the trivial extension of the code already in kernel/time.c to
+the 64-bit case.
 
-Anyway, yes, I understand your point here, and in some new code I'm
-writing right now, we had to do much the same check as well.  But as
-there are only 2 in-kernel users of this "pattern", I don't think it's
-justified to add a new api call for it, especially if it were to be
-misused as you were attempting to use it, which would only mask the real
-problem you were trying to solve.
+However, it looks like in your case the scaling factor stime/total is
+dynamic.  This means that doing scaling by multiplication isn't practical.
 
-So, thanks for the idea, but for now, I'll pass.
+I guess I don't understand what function the scaling is supposed to
+serve there.
 
-thanks,
+	-hpa
 
-greg k-h
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
