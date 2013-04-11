@@ -1,124 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054Ab3DKVnr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:43:47 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:34111 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753133Ab3DKVnq (ORCPT
+	id S1754709Ab3DKVoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:44:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47773 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab3DKVoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:43:46 -0400
-Date: Thu, 11 Apr 2013 16:41:43 -0500
-From: Kent Yoder <shpedoikal@gmail.com>
-To: peterasplund@gentoo.se
-Cc: Peter.Huewe@infineon.com, mail@srajiv.net, aaron.lu@intel.com,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [tpmdd-devel] tpm_tis driver failed to suspend, error -62
-Message-ID: <20130411214141.GA12814@gmail.com>
-References: <20130319023440.GA12425@aaronlu.sh.intel.com>
- <CAA25o9RJJ5Rkti9_fTJz2ieaHvrtSp5mE_2LTW_t16_cf_TNcg@mail.gmail.com>
- <ed364e68730267510d49b2bdc38679a0@gentoo.se>
- <CAEQAOwpmnLXBCJQTf_xU-oSKvAtmpQjHWwMYDm_QOsP+1Kd_aQ@mail.gmail.com>
- <CAEQAOwqWL=WekQqg5WY8TGxzB3x9nB9MVj_UTAVK0ro7TqB2WQ@mail.gmail.com>
- <51540408.3000702@intel.com>
- <74A44E99E3274B4CB570415926B37D4414B14E@MUCSE501.eu.infineon.com>
- <733a6b303b7e9a3c4fb396acad9d9c5c@gentoo.se>
- <CAM0nabGXCfNipOHhzhoFT-yAN-RDOZG9EObQCY-QdRM5LfMCfQ@mail.gmail.com>
- <d9741eb17fbc5731469a79b8bca3ed07@gentoo.se>
+	Thu, 11 Apr 2013 17:44:08 -0400
+Date: Thu, 11 Apr 2013 14:43:53 -0700
+From: tip-bot for Kees Cook <tipbot@zytor.com>
+Message-ID: <tip-4eefbe792baedb474e256d35370849992fcf1c79@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        keescook@chromium.org, digitaleric@google.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, digitaleric@google.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20130410192422.GA17344@www.outflux.net>
+References: <20130410192422.GA17344@www.outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/kaslr] x86: Use a read-only IDT alias on all CPUs
+Git-Commit-ID: 4eefbe792baedb474e256d35370849992fcf1c79
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <d9741eb17fbc5731469a79b8bca3ed07@gentoo.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 11 Apr 2013 14:43:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 06, 2013 at 06:00:59PM +0200, peterasplund@gentoo.se wrote:
-> 2013-04-02 16:03 skrev Kent Yoder:
-> >Hi Peter,
-> >
-> >On Mon, Apr 1, 2013 at 4:17 PM,  <peterasplund@gentoo.se> wrote:
-> >>2013-03-28 14:12 skrev Peter.Huewe@infineon.com:
-> >>>What also might be worth a look - in your bugzilla it states:
-> >>>[ 0.225891] pnp 00:0a: Plug and Play ACPI device, IDs IFX0102
-> >>>PNP0c31
-> >>>(active)
-> >>>[ 9.150673] tpm_tis 00:0a: 1.2 TPM (device-id 0xB, rev-id 16)
-> >>>[ 9.292148] tpm_tis 00:0a: Adjusting TPM timeout parameters.
-> >>>[ 10.084067] tpm_tis 00:0a: A TPM error (7) occurred attempting to
-> >>>read a pcr
-> >>>value
-> >>>[ 10.084077] tpm_tis 00:0a: TPM is disabled/deactivated (0x7)
-> >>>
-> >>>
-> >>>Can you perhaps try to enable your TPM in the BIOS? It's quite
-> >>>often
-> >>>hidden under "embedded security device" or "system security".
-> >>>Quite often you have to have a bios password set to access these
-> >>>settings.
-> >>>If your system does not have bios support for TPMs, please
-> >>>tell me so
-> >>>and I'll try to help you out.
-> >>>
-> >>
-> >>I've enabled it in BIOS now, and the output seems to be a bit
-> >>different. Not too uplifting though...
-> >>
-> >>root@zepto:/home/peter# dmesg | grep tpm
-> >>[   14.631662] tpm_tis 00:08: 1.2 TPM (device-id 0xB, rev-id 16)
-> >>[   14.748276] tpm_tis 00:08: Adjusting TPM timeout parameters.
-> >>[   34.908128] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-> >>[  125.992108] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-> >>[  212.908502] tpm_tis 00:08: tpm_transmit: tpm_send: error -62
-> >>root@zepto:/home/peter# tpm_version
-> >>Tspi_Context_Connect failed: 0x00003011 - layer=tsp, code=0011 (17),
-> >>Communication failure
-> >>root@zepto:/home/peter# tcsd -f
-> >>TCSD TDDL ioctl: (25) Inappropriate ioctl for device
-> >>TCSD TDDL Falling back to Read/Write device support.
-> >>TCSD TDDL ERROR: write to device /dev/tpm0 failed: Timer expired
-> >>TCSD TCS ERROR: TCS GetCapability failed with result = 0x1087
-> >
-> >  Can you cat /sys/class/misc/tpm0/device/timeouts? Ivan Pryvalov
-> >reported that his TPM showed values that were too small to keep from
-> >causing timeouts waiting on TPM commands, but too big to trigger the
-> >driver's code to scale them.  (He saw 12000 for the 3 timeout
-> >values.)
-> >
-> Hi Kent
-> 
-> The values I'm seeing are:
-> 
-> root@zepto:~# cat /sys/class/misc/tpm0/device/timeouts
-> 752000 2000000 752000 752000 [adjusted]
-> 
-> So I guess these are within a normal range?
+Commit-ID:  4eefbe792baedb474e256d35370849992fcf1c79
+Gitweb:     http://git.kernel.org/tip/4eefbe792baedb474e256d35370849992fcf1c79
+Author:     Kees Cook <keescook@chromium.org>
+AuthorDate: Wed, 10 Apr 2013 12:24:22 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 11 Apr 2013 13:53:19 -0700
 
-  Yes, these look normal. So it seems you can send commands to the TPM
-up until you try to suspend?  Can you try to cat other files like
-/sys/class/misc/tpm0/device/pcrs? This is the simplest way to send some
-command to the TPM...
+x86: Use a read-only IDT alias on all CPUs
 
-Kent
+Make a copy of the IDT (as seen via the "sidt" instruction) read-only.
+This primarily removes the IDT from being a target for arbitrary memory
+write attacks, and has the added benefit of also not leaking the kernel
+base offset, if it has been relocated.
 
-> Thanks,
-> Peter
-> 
-> > If you're seeing similar values, can you try the attached patch?
-> >
-> >Thanks,
-> >Kent
-> >
-> >>/Peter A
-> >>
-> >>
-> >>------------------------------------------------------------------------------
-> >>Own the Future-Intel&reg; Level Up Game Demo Contest 2013
-> >>Rise to greatness in Intel's independent game demo contest.
-> >>Compete for recognition, cash, and the chance to get your game
-> >>on Steam. $5K grand prize plus 10 genre and skill prizes.
-> >>Submit your demo by 6/6/13. http://p.sf.net/sfu/intel_levelupd2d
-> >>_______________________________________________
-> >>tpmdd-devel mailing list
-> >>tpmdd-devel@lists.sourceforge.net
-> >>https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
+We already did this on vendor == Intel and family == 5 because of the
+F0 0F bug -- regardless of if a particular CPU had the F0 0F bug or
+not.  Since the workaround was so cheap, there simply was no reason to
+be very specific.  This patch extends the readonly alias to all CPUs,
+but does not activate the #PF to #UD conversion code needed to deliver
+the proper exception in the F0 0F case except on Intel family 5
+processors.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: http://lkml.kernel.org/r/20130410192422.GA17344@www.outflux.net
+Cc: Eric Northup <digitaleric@google.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/fixmap.h |  4 +---
+ arch/x86/kernel/cpu/intel.c   | 18 +-----------------
+ arch/x86/kernel/traps.c       |  9 +++++++++
+ arch/x86/xen/mmu.c            |  4 +---
+ 4 files changed, 12 insertions(+), 23 deletions(-)
+
+diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
+index a09c285..51b9e32 100644
+--- a/arch/x86/include/asm/fixmap.h
++++ b/arch/x86/include/asm/fixmap.h
+@@ -104,9 +104,7 @@ enum fixed_addresses {
+ 	FIX_LI_PCIA,	/* Lithium PCI Bridge A */
+ 	FIX_LI_PCIB,	/* Lithium PCI Bridge B */
+ #endif
+-#ifdef CONFIG_X86_F00F_BUG
+-	FIX_F00F_IDT,	/* Virtual mapping for IDT */
+-#endif
++	FIX_RO_IDT,	/* Virtual mapping for read-only IDT */
+ #ifdef CONFIG_X86_CYCLONE_TIMER
+ 	FIX_CYCLONE_TIMER, /*cyclone timer register*/
+ #endif
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 1905ce9..7170024 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -164,20 +164,6 @@ int __cpuinit ppro_with_ram_bug(void)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_X86_F00F_BUG
+-static void __cpuinit trap_init_f00f_bug(void)
+-{
+-	__set_fixmap(FIX_F00F_IDT, __pa_symbol(idt_table), PAGE_KERNEL_RO);
+-
+-	/*
+-	 * Update the IDT descriptor and reload the IDT so that
+-	 * it uses the read-only mapped virtual address.
+-	 */
+-	idt_descr.address = fix_to_virt(FIX_F00F_IDT);
+-	load_idt(&idt_descr);
+-}
+-#endif
+-
+ static void __cpuinit intel_smp_check(struct cpuinfo_x86 *c)
+ {
+ 	/* calling is from identify_secondary_cpu() ? */
+@@ -206,8 +192,7 @@ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+ 	/*
+ 	 * All current models of Pentium and Pentium with MMX technology CPUs
+ 	 * have the F0 0F bug, which lets nonprivileged users lock up the
+-	 * system.
+-	 * Note that the workaround only should be initialized once...
++	 * system. Announce that the fault handler will be checking for it.
+ 	 */
+ 	c->f00f_bug = 0;
+ 	if (!paravirt_enabled() && c->x86 == 5) {
+@@ -215,7 +200,6 @@ static void __cpuinit intel_workarounds(struct cpuinfo_x86 *c)
+ 
+ 		c->f00f_bug = 1;
+ 		if (!f00f_workaround_enabled) {
+-			trap_init_f00f_bug();
+ 			printk(KERN_NOTICE "Intel Pentium with F0 0F bug - workaround enabled.\n");
+ 			f00f_workaround_enabled = 1;
+ 		}
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 68bda7a..10e2446 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -56,6 +56,7 @@
+ #include <asm/fpu-internal.h>
+ #include <asm/mce.h>
+ #include <asm/context_tracking.h>
++#include <asm/fixmap.h>
+ 
+ #include <asm/mach_traps.h>
+ 
+@@ -753,6 +754,14 @@ void __init trap_init(void)
+ #endif
+ 
+ 	/*
++	 * Set the IDT descriptor to a fixed read-only location, so that the
++	 * "sidt" instruction will not leak the location of the kernel, and
++	 * to defend the IDT against arbitrary memory write vulnerabilities.
++	 * It will be reloaded in cpu_init() */
++	__set_fixmap(FIX_RO_IDT, __pa_symbol(idt_table), PAGE_KERNEL_RO);
++	idt_descr.address = fix_to_virt(FIX_RO_IDT);
++
++	/*
+ 	 * Should be a barrier for any external CPU state:
+ 	 */
+ 	cpu_init();
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 6afbb2c..8bc4dec 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2039,9 +2039,7 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
+ 
+ 	switch (idx) {
+ 	case FIX_BTMAP_END ... FIX_BTMAP_BEGIN:
+-#ifdef CONFIG_X86_F00F_BUG
+-	case FIX_F00F_IDT:
+-#endif
++	case FIX_RO_IDT:
+ #ifdef CONFIG_X86_32
+ 	case FIX_WP_TEST:
+ 	case FIX_VDSO:
