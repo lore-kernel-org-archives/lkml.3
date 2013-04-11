@@ -1,78 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161582Ab3DKM3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 08:29:24 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:33526 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934821Ab3DKM3X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 08:29:23 -0400
-Date: Thu, 11 Apr 2013 14:29:18 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: tip-bot for Andrea Arcangeli <tipbot@zytor.com>
-Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, apw@canonical.com, bp@alien8.de,
-        stefan.bader@canonical.com, aarcange@redhat.com, mgorman@suse.de,
-        tglx@linutronix.de
-Subject: Re: [tip:x86/urgent] x86/mm/cpa: Convert noop to functional fix
-Message-ID: <20130411122918.GA19491@gmail.com>
-References: <1365600505-19314-1-git-send-email-aarcange@redhat.com>
- <tip-f76cfa3c2496c462b5bc01bd0c9340c2715b73ca@git.kernel.org>
+	id S1161615Ab3DKM3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 08:29:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45469 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934150Ab3DKM3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 08:29:49 -0400
+Date: Thu, 11 Apr 2013 14:29:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Hansen <dave@sr71.net>
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 4/5] break up slow_virt_to_phys()
+Message-ID: <20130411122944.GA27062@pd.tnic>
+References: <20130410233249.7FFCB63B@viggo.jf.intel.com>
+ <20130410233254.EF273179@viggo.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <tip-f76cfa3c2496c462b5bc01bd0c9340c2715b73ca@git.kernel.org>
+In-Reply-To: <20130410233254.EF273179@viggo.jf.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 10, 2013 at 04:32:54PM -0700, Dave Hansen wrote:
+> +phys_addr_t slow_virt_to_phys(void *virt_addr)
+> +{
+> +	phys_addr_t result;
+> +	int ret;
+> +
+> +	ret = kernel_lookup_vaddr(virt_addr, &result);
+> +	BUG_ON(ret);
 
+Isn't that BUG_ON still too harsh though? How about WARN_ON instead?
+It would still create a lot of noise so that it gets fixed without
+bringing down the system.
 
-* tip-bot for Andrea Arcangeli <tipbot@zytor.com> wrote:
+-- 
+Regards/Gruss,
+    Boris.
 
-> Commit-ID:  f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
-> Gitweb:     http://git.kernel.org/tip/f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
-> Author:     Andrea Arcangeli <aarcange@redhat.com>
-> AuthorDate: Wed, 10 Apr 2013 15:28:25 +0200
-> Committer:  Ingo Molnar <mingo@kernel.org>
-> CommitDate: Thu, 11 Apr 2013 10:34:42 +0200
-> 
-> x86/mm/cpa: Convert noop to functional fix
-
-I think it's this commit that causes the following cpa-selftest failure:
-
-CPA self-test:
-ffff880038000000 level 2 but not PSE 8000000038000062
-ffff880038200000 level 2 but not PSE 8000000038200062
-ffff880038400000 level 2 but not PSE 8000000038400062
-ffff880038600000 level 2 but not PSE 8000000038600062
-ffff880038800000 level 2 but not PSE 8000000038800062
-ffff880038a00000 level 2 but not PSE 8000000038a00062
-ffff880038c00000 level 2 but not PSE 8000000038c00062
-ffff880038e00000 level 2 but not PSE 8000000038e00062
-
-...
-
- 4k 134128 large 250 gb 0 x 1[ffff88000009a000-ffff88000009a000] miss 0
-------------[ cut here ]------------
-WARNING: at arch/x86/mm/pageattr-test.c:226 pageattr_test+0x3e1/0x410()
-NOT PASSED. Please report.
-Pid: 32, comm: pageattr-test Not tainted 3.9.0-rc6+ #222036
-Call Trace:
- [<ffffffff8104fdd3>] warn_slowpath_common+0x62/0x7b
- [<ffffffff8104fe5a>] warn_slowpath_fmt+0x46/0x48
- [<ffffffff8102b3d9>] ? lookup_address+0xad/0x127
- [<ffffffff8102c766>] pageattr_test+0x3e1/0x410
- [<ffffffff8102c795>] ? pageattr_test+0x410/0x410
- [<ffffffff8102c7af>] do_pageattr_test+0x1a/0x3d
- [<ffffffff81070a8d>] kthread+0xa2/0xaa
- [<ffffffff810709eb>] ? __kthread_parkme+0x65/0x65
- [<ffffffff81aad73c>] ret_from_fork+0x7c/0xb0
- [<ffffffff810709eb>] ? __kthread_parkme+0x65/0x65
----[ end trace 582fec3a45bb42b7 ]---
-device: 'vcs2': device_add
-
-Thanks,
-
-	Ingo
+Sent from a fat crate under my desk. Formatting is fine.
+--
