@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935532Ab3DKVSK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:18:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9226 "EHLO
+	id S935285Ab3DKVSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:18:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26790 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935510Ab3DKUs5 (ORCPT
+	with ESMTP id S935480Ab3DKUs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:48:57 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=silpL3BumXEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=gmFzNEmpJjkA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=kt-8OUm0sC5qQgQqp2YA:9 a=jEp0ucaQiEUA:10 a=_RhRFcbxBZMA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:48:56 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=tZliiFN8BDYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=bl-D0AqXSQoA:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=NATkb4zoVZhRDCigstQA:9 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202609.286802595@goodmis.org>
+Message-Id: <20130411202609.757063105@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:27:23 -0400
+Date: Thu, 11 Apr 2013 16:27:26 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: =?UTF-8?q?Toralf=20F=C3=B6rster?= <toralf.foerster@gmx.de>,
-        <stable@kernel.org>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 140/171 ] nfsd4: reject "negative" acl lengths
+Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 143/171 ] iwlwifi: dvm: dont send HCMD in restart flow
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0140-nfsd4-reject-negative-acl-lengths.patch
+Content-Disposition: inline; filename=0143-iwlwifi-dvm-don-t-send-HCMD-in-restart-flow.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,37 +30,67 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-[ Upstream commit 64a817cfbded8674f345d1117b117f942a351a69 ]
+[ Upstream commit 2d5d50ee596361566f7f84300117cba7d7672bc5 ]
 
-Since we only enforce an upper bound, not a lower bound, a "negative"
-length can get through here.
+There is a race between the restart flow and the workers.
+The workers are cancelled after the fw is already killed
+and might send HCMD when there is fw to handle them.
+Simply check that there is a fw to which the HCMD can be
+sent before actually sending it.
 
-The symptom seen was a warning when we attempt to a kmalloc with an
-excessive size.
-
-Reported-by: Toralf Förster <toralf.foerster@gmx.de>
-Cc: stable@kernel.org
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/nfsd/nfs4xdr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/iwlwifi/dvm/lib.c   |    9 +++++++++
+ drivers/net/wireless/iwlwifi/dvm/ucode.c |    4 ++--
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index 6322df3..551b061 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -263,7 +263,7 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
- 		iattr->ia_valid |= ATTR_SIZE;
+diff --git a/drivers/net/wireless/iwlwifi/dvm/lib.c b/drivers/net/wireless/iwlwifi/dvm/lib.c
+index bef88c1..f18ecd3 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/lib.c
++++ b/drivers/net/wireless/iwlwifi/dvm/lib.c
+@@ -1263,6 +1263,15 @@ int iwl_dvm_send_cmd(struct iwl_priv *priv, struct iwl_host_cmd *cmd)
  	}
- 	if (bmval[0] & FATTR4_WORD0_ACL) {
--		int nace;
-+		u32 nace;
- 		struct nfs4_ace *ace;
  
- 		READ_BUF(4); len += 4;
+ 	/*
++	 * This can happen upon FW ASSERT: we clear the STATUS_FW_ERROR flag
++	 * in iwl_down but cancel the workers only later.
++	 */
++	if (!priv->ucode_loaded) {
++		IWL_ERR(priv, "Fw not loaded - dropping CMD: %x\n", cmd->id);
++		return -EIO;
++	}
++
++	/*
+ 	 * Synchronous commands from this op-mode must hold
+ 	 * the mutex, this ensures we don't try to send two
+ 	 * (or more) synchronous commands at a time.
+diff --git a/drivers/net/wireless/iwlwifi/dvm/ucode.c b/drivers/net/wireless/iwlwifi/dvm/ucode.c
+index 6d8d6dd..6215b16 100644
+--- a/drivers/net/wireless/iwlwifi/dvm/ucode.c
++++ b/drivers/net/wireless/iwlwifi/dvm/ucode.c
+@@ -450,6 +450,8 @@ int iwl_load_ucode_wait_alive(struct iwl_priv *priv,
+ 		return -EIO;
+ 	}
+ 
++	priv->ucode_loaded = true;
++
+ 	/*
+ 	 * This step takes a long time (60-80ms!!) and
+ 	 * WoWLAN image should be loaded quickly, so
+@@ -474,8 +476,6 @@ int iwl_load_ucode_wait_alive(struct iwl_priv *priv,
+ 		return ret;
+ 	}
+ 
+-	priv->ucode_loaded = true;
+-
+ 	return 0;
+ }
+ 
 -- 
 1.7.10.4
 
