@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932817Ab3DKXAj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 19:00:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48317 "EHLO
+	id S933229Ab3DKXBu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 19:01:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48333 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1763962Ab3DKXAh (ORCPT
+	with ESMTP id S1765445Ab3DKXBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 19:00:37 -0400
-Date: Thu, 11 Apr 2013 16:00:23 -0700
+	Thu, 11 Apr 2013 19:01:48 -0400
+Date: Thu, 11 Apr 2013 16:01:36 -0700
 From: tip-bot for Konrad Rzeszutek Wilk <tipbot@zytor.com>
-Message-ID: <tip-84e70971e67d97bc2db18a4e76d42846272a54bd@git.kernel.org>
+Message-ID: <tip-357d122670937c35b33d99c46356ef2b63182a1f@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        konrad.wilk@oracle.com, tglx@linutronix.de, hpa@linux.intel.com,
-        rjw@sisk.pl
+        konrad.wilk@oracle.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        konrad.wilk@oracle.com, tglx@linutronix.de, rjw@sisk.pl,
-        hpa@linux.intel.com
-In-Reply-To: <1365194544-14648-3-git-send-email-konrad.wilk@oracle.com>
-References: <1365194544-14648-3-git-send-email-konrad.wilk@oracle.com>
+        konrad.wilk@oracle.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1365194544-14648-4-git-send-email-konrad.wilk@oracle.com>
+References: <1365194544-14648-4-git-send-email-konrad.wilk@oracle.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/paravirt] x86-32, gdt: Store/
- load GDT for ACPI S3 or hibernation/resume path is not needed
-Git-Commit-ID: 84e70971e67d97bc2db18a4e76d42846272a54bd
+Subject: [tip:x86/paravirt] x86, xen, gdt:
+  Remove the pvops variant of store_gdt.
+Git-Commit-ID: 357d122670937c35b33d99c46356ef2b63182a1f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,148 +28,133 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 11 Apr 2013 16:00:29 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 11 Apr 2013 16:01:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  84e70971e67d97bc2db18a4e76d42846272a54bd
-Gitweb:     http://git.kernel.org/tip/84e70971e67d97bc2db18a4e76d42846272a54bd
+Commit-ID:  357d122670937c35b33d99c46356ef2b63182a1f
+Gitweb:     http://git.kernel.org/tip/357d122670937c35b33d99c46356ef2b63182a1f
 Author:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-AuthorDate: Fri, 5 Apr 2013 16:42:22 -0400
+AuthorDate: Fri, 5 Apr 2013 16:42:23 -0400
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 11 Apr 2013 15:40:17 -0700
+CommitDate: Thu, 11 Apr 2013 15:40:38 -0700
 
-x86-32, gdt: Store/load GDT for ACPI S3 or hibernation/resume path is not needed
+x86, xen, gdt: Remove the pvops variant of store_gdt.
 
-During the ACPI S3 suspend, we store the GDT in the wakup_header (see
-wakeup_asm.s) field called 'pmode_gdt'.
+The two use-cases where we needed to store the GDT were during ACPI S3 suspend
+and resume. As the patches:
+ x86/gdt/i386: store/load GDT for ACPI S3 or hibernation/resume path is not needed
+ x86/gdt/64-bit: store/load GDT for ACPI S3 or hibernate/resume path is not needed.
 
-Which is then used during the resume path and has the same exact
-value as what the store/load_gdt do with the saved_context
-(which is saved/restored via save/restore_processor_state()).
+have demonstrated - there are other mechanism by which the GDT is
+saved and reloaded during early resume path.
 
-The flow during resume from ACPI S3 is simpler than the 64-bit
-counterpart. We only use the early bootstrap once (wakeup_gdt) and
-do various checks in real mode.
-
-After the checks are completed, we load the saved GDT ('pmode_gdt') and
-continue on with the resume (by heading to startup_32 in trampoline_32.S) -
-which quickly jumps to what was saved in 'pmode_entry'
-aka 'wakeup_pmode_return'.
-
-The 'wakeup_pmode_return' restores the GDT (saved_gdt) again (which was
-saved in do_suspend_lowlevel initially). After that it ends up calling
-the 'ret_point' which calls 'restore_processor_state()'.
-
-We have two opportunities to remove code where we restore the same GDT
-twice.
-
-Here is the call chain:
- wakeup_start
-       |- lgdtl wakeup_gdt [the work-around broken BIOSes]
-       |
-       | - lgdtl pmode_gdt [the real one]
-       |
-       \-- startup_32 (in trampoline_32.S)
-              \-- wakeup_pmode_return (in wakeup_32.S)
-                       |- lgdtl saved_gdt [the real one]
-                       \-- ret_point
-                             |..
-                             |- call restore_processor_state
-
-The hibernate path is much simpler. During the saving of the hibernation
-image we call save_processor_state() and save the contents of that
-along with the rest of the kernel in the hibernation image destination.
-We save the EIP of 'restore_registers' (restore_jump_address) and
-cr3 (restore_cr3).
-
-During hibernate resume, the 'restore_registers' (via the
-'restore_jump_address) in hibernate_asm_32.S is invoked which
-restores the contents of most registers. Naturally the resume path benefits
-from already being in 32-bit mode, so it does not have to reload the GDT.
-
-It only reloads the cr3 (from restore_cr3) and continues on. Note
-that the restoration of the restore image page-tables is done prior to
-this.
-
-After the 'restore_registers' it returns and we end up called
-restore_processor_state() - where we reload the GDT. The reload of
-the GDT is not needed as bootup kernel has already loaded the GDT
-which is at the same physical location as the the restored kernel.
-
-Note that the hibernation path assumes the GDT is correct during its
-'restore_registers'. The assumption in the code is that the restored
-image is the same as saved - meaning we are not trying to restore
-an different kernel in the virtual address space of a new kernel.
+Hence we do not need to worry about the pvops call-chain for saving the
+GDT and can and can eliminate it. The other areas where the store_gdt is
+used are never going to be hit when running under the pvops platforms.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Link: http://lkml.kernel.org/r/1365194544-14648-3-git-send-email-konrad.wilk@oracle.com
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Link: http://lkml.kernel.org/r/1365194544-14648-4-git-send-email-konrad.wilk@oracle.com
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/suspend_32.h | 1 -
- arch/x86/kernel/acpi/wakeup_32.S  | 3 ---
- arch/x86/power/cpu.c              | 2 --
- 3 files changed, 6 deletions(-)
+ arch/x86/include/asm/paravirt.h       | 4 ----
+ arch/x86/include/asm/paravirt_types.h | 2 +-
+ arch/x86/kernel/acpi/sleep.c          | 2 +-
+ arch/x86/kernel/doublefault_32.c      | 2 +-
+ arch/x86/kernel/paravirt.c            | 1 -
+ arch/x86/kvm/vmx.c                    | 2 +-
+ arch/x86/xen/enlighten.c              | 1 -
+ 7 files changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/include/asm/suspend_32.h b/arch/x86/include/asm/suspend_32.h
-index 487055c..f6064b7 100644
---- a/arch/x86/include/asm/suspend_32.h
-+++ b/arch/x86/include/asm/suspend_32.h
-@@ -15,7 +15,6 @@ struct saved_context {
- 	unsigned long cr0, cr2, cr3, cr4;
- 	u64 misc_enable;
- 	bool misc_enable_saved;
--	struct desc_ptr gdt;
- 	struct desc_ptr idt;
- 	u16 ldt;
- 	u16 tss;
-diff --git a/arch/x86/kernel/acpi/wakeup_32.S b/arch/x86/kernel/acpi/wakeup_32.S
-index 13ab720..91adb1b 100644
---- a/arch/x86/kernel/acpi/wakeup_32.S
-+++ b/arch/x86/kernel/acpi/wakeup_32.S
-@@ -18,7 +18,6 @@ wakeup_pmode_return:
- 	movw	%ax, %gs
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index 5edd174..7365128 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -262,10 +262,6 @@ static inline void set_ldt(const void *addr, unsigned entries)
+ {
+ 	PVOP_VCALL2(pv_cpu_ops.set_ldt, addr, entries);
+ }
+-static inline void store_gdt(struct desc_ptr *dtr)
+-{
+-	PVOP_VCALL1(pv_cpu_ops.store_gdt, dtr);
+-}
+ static inline void store_idt(struct desc_ptr *dtr)
+ {
+ 	PVOP_VCALL1(pv_cpu_ops.store_idt, dtr);
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 142236e..b6c69a6 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -122,7 +122,7 @@ struct pv_cpu_ops {
+ 	void (*load_tr_desc)(void);
+ 	void (*load_gdt)(const struct desc_ptr *);
+ 	void (*load_idt)(const struct desc_ptr *);
+-	void (*store_gdt)(struct desc_ptr *);
++	/* store_gdt has been removed. */
+ 	void (*store_idt)(struct desc_ptr *);
+ 	void (*set_ldt)(const void *desc, unsigned entries);
+ 	unsigned long (*store_tr)(void);
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 0532f5d..b44577b 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -46,7 +46,7 @@ int acpi_suspend_lowlevel(void)
+ 	header->pmode_behavior = 0;
  
- 	# reload the gdt, as we need the full 32 bit address
--	lgdt	saved_gdt
- 	lidt	saved_idt
- 	lldt	saved_ldt
- 	ljmp	$(__KERNEL_CS), $1f
-@@ -44,7 +43,6 @@ bogus_magic:
+ #ifndef CONFIG_64BIT
+-	store_gdt((struct desc_ptr *)&header->pmode_gdt);
++	native_store_gdt((struct desc_ptr *)&header->pmode_gdt);
  
+ 	if (!rdmsr_safe(MSR_EFER,
+ 			&header->pmode_efer_low,
+diff --git a/arch/x86/kernel/doublefault_32.c b/arch/x86/kernel/doublefault_32.c
+index 37250fe..155a13f 100644
+--- a/arch/x86/kernel/doublefault_32.c
++++ b/arch/x86/kernel/doublefault_32.c
+@@ -20,7 +20,7 @@ static void doublefault_fn(void)
+ 	struct desc_ptr gdt_desc = {0, 0};
+ 	unsigned long gdt, tss;
  
- save_registers:
--	sgdt	saved_gdt
- 	sidt	saved_idt
- 	sldt	saved_ldt
- 	str	saved_tss
-@@ -93,7 +91,6 @@ ENTRY(saved_magic)	.long	0
- ENTRY(saved_eip)	.long	0
+-	store_gdt(&gdt_desc);
++	native_store_gdt(&gdt_desc);
+ 	gdt = gdt_desc.address;
  
- # saved registers
--saved_gdt:	.long	0,0
- saved_idt:	.long	0,0
- saved_ldt:	.long	0
- saved_tss:	.long	0
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index 6bd9423..82c39c5 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -61,7 +61,6 @@ static void __save_processor_state(struct saved_context *ctxt)
- 	 * descriptor tables
- 	 */
- #ifdef CONFIG_X86_32
--	store_gdt(&ctxt->gdt);
- 	store_idt(&ctxt->idt);
- #else
- /* CONFIG_X86_64 */
-@@ -181,7 +180,6 @@ static void __restore_processor_state(struct saved_context *ctxt)
- 	 * ltr is done i fix_processor_context().
- 	 */
- #ifdef CONFIG_X86_32
--	load_gdt(&ctxt->gdt);
- 	load_idt(&ctxt->idt);
- #else
- /* CONFIG_X86_64 */
+ 	printk(KERN_EMERG "PANIC: double fault, gdt at %08lx [%d bytes]\n", gdt, gdt_desc.size);
+diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+index 17fff18..4ae3d23 100644
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -360,7 +360,6 @@ struct pv_cpu_ops pv_cpu_ops = {
+ 	.set_ldt = native_set_ldt,
+ 	.load_gdt = native_load_gdt,
+ 	.load_idt = native_load_idt,
+-	.store_gdt = native_store_gdt,
+ 	.store_idt = native_store_idt,
+ 	.store_tr = native_store_tr,
+ 	.load_tls = native_load_tls,
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 6667042..867b810 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -2459,7 +2459,7 @@ static int hardware_enable(void *garbage)
+ 		ept_sync_global();
+ 	}
+ 
+-	store_gdt(&__get_cpu_var(host_gdt));
++	native_store_gdt(&__get_cpu_var(host_gdt));
+ 
+ 	return 0;
+ }
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index c8e1c7b..ddab539 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1220,7 +1220,6 @@ static const struct pv_cpu_ops xen_cpu_ops __initconst = {
+ 	.alloc_ldt = xen_alloc_ldt,
+ 	.free_ldt = xen_free_ldt,
+ 
+-	.store_gdt = native_store_gdt,
+ 	.store_idt = native_store_idt,
+ 	.store_tr = xen_store_tr,
+ 
