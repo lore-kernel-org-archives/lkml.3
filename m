@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937009Ab3DKCxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 22:53:31 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:39297 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936550Ab3DKCx3 (ORCPT
+	id S937134Ab3DKC6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 22:58:54 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:41898 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1764241Ab3DKC6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 22:53:29 -0400
-Message-ID: <516625A7.9020403@inktank.com>
-Date: Wed, 10 Apr 2013 21:53:27 -0500
-From: Alex Elder <elder@inktank.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 10 Apr 2013 22:58:53 -0400
+Message-ID: <516626E4.4000507@gmail.com>
+Date: Thu, 11 Apr 2013 10:58:44 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Laurent Barbe <laurent@ksperis.com>
-CC: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rbd: revalidate_disk upon rbd resize
-References: <1365609989-14493-1-git-send-email-laurent@ksperis.com> <5165BDE1.7010908@inktank.com>
-In-Reply-To: <5165BDE1.7010908@inktank.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Frantisek Hrbata <fhrbata@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, oleg@redhat.com, kamaleshb@in.ibm.com
+Subject: Re: [PATCH] x86: add phys addr validity check for /dev/mem mmap
+References: <1364905733-23937-1-git-send-email-fhrbata@redhat.com> <515B2802.1050405@zytor.com> <515CD359.40004@gmail.com> <515CD3BF.5010104@zytor.com> <5166229D.2090904@gmail.com> <51662492.1030100@zytor.com>
+In-Reply-To: <51662492.1030100@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 02:30 PM, Alex Elder wrote:
-> On 04/10/2013 11:06 AM, Laurent Barbe wrote:
->> If rbd disk is open and rbd resize is done, new size is not visible by
->> filesystem.
->> Like is done in virtio-blk and dm driver, revalidate_disk() permits to
->> update the bd_inode size.
-> 
-> Looks good to me.  I'll take this in via the ceph-client tree.
-> Thanks a lot.
-
-Unfortunately this leads to a lock inversion.  I'm going to
-think about how to go about resolving it, so I won't be
-committing it just yet.
-
-					-Alex
-
-> 
-> Reviewed-by: Alex Elder <elder@inktank.com>
-> 
->> Signed-off-by: Laurent Barbe <laurent@ksperis.com>
->> ---
->>  drivers/block/rbd.c |    1 +
->>  1 file changed, 1 insertion(+)
+Hi H.Peter,
+On 04/11/2013 10:48 AM, H. Peter Anvin wrote:
+> On 04/10/2013 07:40 PM, Simon Jeons wrote:
+>> Hi H.Peter,
+>> On 04/04/2013 09:13 AM, H. Peter Anvin wrote:
+>>> On 04/03/2013 06:11 PM, Simon Jeons wrote:
+>>>> Why we consider boot_cpu_data.x86_phys_bits instead of e820 map here?
+>>>>
+>>> Because x86_phys_bits is what controls how much address space the
+>>> processor has.  e820 tells us how much *RAM* the machine has, or
+>>> specifically, how much RAM the machine had on boot.
+>> I have 8GB memory in my machine, but when I accumulated every e820
+>> ranges which dump in dmesg, there are 25MB memory less then 8GB(1024*8)
+>> memory, why 25MB miss?
 >>
->> diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
->> index f556f8a..1963025 100644
->> --- a/drivers/block/rbd.c
->> +++ b/drivers/block/rbd.c
->> @@ -2293,6 +2293,7 @@ static void rbd_update_mapping_size(struct rbd_device *rbd_dev)
->>  	dout("setting size to %llu sectors", (unsigned long long) size);
->>  	rbd_dev->mapping.size = (u64) size;
->>  	set_capacity(rbd_dev->disk, size);
->> +	revalidate_disk(rbd_dev->disk);
->>  }
->>  
->>  /*
->>
-> 
+> For whatever reason your BIOS is stealing some memory, possibly for video.
+
+Thanks for your quick response. ;-)
+My machine is new which have i7 cpu. How much memory video need? 8MB? 
+Why I miss 25MB?
+
+>
+> 	-hpa
+>
+>
 
