@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934232Ab3DKSpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:45:10 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:56563 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab3DKSpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:45:06 -0400
-MIME-Version: 1.0
-Date: Fri, 12 Apr 2013 00:15:05 +0530
-Message-ID: <CA+G9fYu0q31fca5yBdX1f=yhAS2B5R16S+=sK=UE=rVRG9yqrg@mail.gmail.com>
-Subject: [Linaro-QA-Service] [linux-next] Snowball build broken
-From: Naresh Kamboju <naresh.kamboju@linaro.org>
-To: linux-kernel@vger.kernel.org,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934626Ab3DKSq6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:46:58 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39099 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759696Ab3DKSq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 14:46:56 -0400
+Message-ID: <1365706015.1929.32.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Only warn for empty lines before closing
+ braces by themselves
+From: Joe Perches <joe@perches.com>
+To: Matthijs Kooijman <matthijs@stdin.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Thu, 11 Apr 2013 11:46:55 -0700
+In-Reply-To: <20130410084927.GR13691@login.drsnuggles.stderr.nl>
+References: <20130410084927.GR13691@login.drsnuggles.stderr.nl>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+On Wed, 2013-04-10 at 10:49 +0200, Matthijs Kooijman wrote:
+> This check was intended to catch extra newlines at the end of a function
+> definition, but it would trigger on any closing brace, including those
+> of inline functions and macro definitions, triggering false positives.
+> Now, only closing braces on a line by themselves trigger this check.
+[]
+> Signed-off-by: Matthijs Kooijman <matthijs@stdin.nl>
 
-Greetings from Linaro QA services.
-We have setup the process of validating Linux on ARM Kernel builds.
-One of those ARM targets is Snowball. Snowball build broken log can be
-found here
+Acked-by: Joe Perches <joe@perches.com>
 
-Build Error:
---------------
-04:48:08   CC      drivers/mfd/ab8500-debugfs.o
-04:48:09 /mnt/ci_build/workspace/linux-next/hwpack/snowball/label/precise_hwpack_cloud/drivers/mfd/ab8500-debugfs.c:95:23:
-fatal error: mach/irqs.h: No such file or directory
-04:48:09 compilation terminated.
-04:48:09 make[3]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
-04:48:09 make[2]: *** [drivers/mfd] Error 2
-04:48:09 make[1]: *** [drivers] Error 2
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 532c41b..f962c30 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -3236,7 +3236,7 @@ sub process {
+>  		}
+>  
+>  # check for unnecessary blank lines around braces
+> -		if (($line =~ /^..*}\s*$/ && $prevline =~ /^.\s*$/)) {
+> +		if (($line =~ /^.\s*}\s*$/ && $prevline =~ /^.\s*$/)) {
+>  			CHK("BRACES",
+>  			    "Blank lines aren't necessary before a close brace '}'\n" . $hereprev);
+>  		}
 
-Code snippet:
-------------------
-File: drivers/mfd/ab8500-debugfs.c
 
- 89 #ifdef CONFIG_DEBUG_FS
-  90 #include <linux/string.h>
-  91 #include <linux/ctype.h>
-  92 #endif
-  93
-  94 /* TODO: this file should not reference IRQ_DB8500_AB8500! */
-  95 #include <mach/irqs.h>
-  96
-  97 static u32 debug_bank;
-  98 static u32 debug_address;
-  99
-
-Kernel Commit id:
-----------------------
-484eecb3dc4d7173015feeb41e2995bbcb724523
-
-Please let me know if you need more info.
-
-Best regards
-Naresh Kamboju
