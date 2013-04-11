@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab3DKNMX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 09:12:23 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:58277 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751238Ab3DKNMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 09:12:21 -0400
-Date: Thu, 11 Apr 2013 14:11:34 +0100
-From: Andrew Murray <andrew.murray@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "siva.kallam@samsung.com" <siva.kallam@samsung.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "jgunthorpe@obsidianresearch.com" <jgunthorpe@obsidianresearch.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suren.reddy@samsung.com" <suren.reddy@samsung.com>
-Subject: Re: [PATCH v5 2/3] of/pci: Provide support for parsing PCI DT
- ranges property
-Message-ID: <20130411131134.GC28981@arm.com>
-References: <1365578969-30966-1-git-send-email-Andrew.Murray@arm.com>
- <1365578969-30966-3-git-send-email-Andrew.Murray@arm.com>
- <5165AEBA.7000803@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1756972Ab3DKNO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 09:14:29 -0400
+Received: from 1wt.eu ([62.212.114.60]:32786 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751796Ab3DKNO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 09:14:27 -0400
+Date: Thu, 11 Apr 2013 15:13:33 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Soeren Moch <smoch@web.de>, Paul Mackerras <paulus@samba.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Dale Farnsworth <dale@farnsworth.org>, netdev@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, Florian Fainelli <florian@openwrt.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>
+Subject: Re: [PATCH] net: mv643xx_eth: Add GRO support
+Message-ID: <20130411131333.GD1910@1wt.eu>
+References: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5165AEBA.7000803@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 07:26:02PM +0100, Rob Herring wrote:
-> On 04/10/2013 02:29 AM, Andrew Murray wrote:
-> > This patch factors out common implementation patterns to reduce overall kernel
-> > code and provide a means for host bridge drivers to directly obtain struct
-> > resources from the DT's ranges property without relying on architecture specific
-> > DT handling. This will make it easier to write archiecture independent host bridge
-> > drivers and mitigate against further duplication of DT parsing code.
-> >
-> > This patch can be used in the following way:
-> >
-> >       struct of_pci_range_parser parser;
-> >       struct of_pci_range range;
-> >
-> >       if (of_pci_range_parser(&parser, np))
-> >               ; //no ranges property
-> >
-> >       for_each_of_pci_range(&parser, &range) {
-> >
-> >               /*
-> >                       directly access properties of the address range, e.g.:
-> >                       range.pci_space, range.pci_addr, range.cpu_addr,
-> >                       range.size, range.flags
-> >
-> >                       alternatively obtain a struct resource, e.g.:
-> >                       struct resource res;
-> >                       of_pci_range_to_resource(&range, np, &res);
-> >               */
-> >       }
-> >
-> > Additionally the implementation takes care of adjacent ranges and merges them
-> > into a single range (as was the case with powerpc and microblaze).
-> >
-> > Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> > ---
-> 
-> A few minor things below, otherwise:
-> 
-> Reviewed-by: Rob Herring <rob.herring@calxeda.com>
-> 
+Hi,
 
-Thanks for the feedback, I've included this in my next spin.
+On Thu, Apr 11, 2013 at 02:40:23PM +0200, Sebastian Hesselbarth wrote:
+> This patch adds GRO support to mv643xx_eth by making it invoke
+> napi_gro_receive instead of netif_receive_skb.
+> 
+> Signed-off-by: Soeren Moch <smoch@web.de>
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Florian Fainelli <florian@openwrt.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Dale Farnsworth <dale@farnsworth.org>
+> Cc: netdev@vger.kernel.org
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/net/ethernet/marvell/mv643xx_eth.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+> index 305038f..c850d04 100644
+> --- a/drivers/net/ethernet/marvell/mv643xx_eth.c
+> +++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+> @@ -604,7 +604,7 @@ static int rxq_process(struct rx_queue *rxq, int budget)
+>  			lro_receive_skb(&rxq->lro_mgr, skb, (void *)cmd_sts);
+>  			lro_flush_needed = 1;
+>  		} else
+> -			netif_receive_skb(skb);
+> +			napi_gro_receive(&mp->napi, skb);
+>  
+>  		continue;
 
-Andrew Murray
+I remember having experimented with this on 3.6 a few months ago with this
+driver and finally switching back to something like this instead which
+showed better performance on my tests :
+
+               if (skb->ip_summed == CHECKSUM_UNNECESSARY)
+                       napi_gro_receive(napi, skb);
+               else
+                       netif_receive_skb(skb);
+
+Unfortunately I don't have more details as my commit message was rather
+short due to this resulting from experimentation. Did you verify that
+you did not lose any performance in various workloads ? I was playing
+with bridges at this time, it's possible that I got better performance
+on bridging with netif_receive_skb() than with napi_gro_receive().
+
+Regards,
+Willy
+
