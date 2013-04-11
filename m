@@ -1,84 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934499Ab3DKLwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 07:52:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60893 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759774Ab3DKLwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 07:52:10 -0400
-Message-ID: <5166A3DB.6060700@ti.com>
-Date: Thu, 11 Apr 2013 14:51:55 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S934682Ab3DKLwt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 07:52:49 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62804 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934544Ab3DKLws (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 07:52:48 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alessandro Rubini <rubini@gnudd.com>
+Subject: drivers/base/core.c: about device_find_child() function
+Date: Thu, 11 Apr 2013 13:52:36 +0200
+Message-ID: <3798489.yISokZugC2@harkonnen>
+User-Agent: KMail/4.10.1 (Linux/3.8.5-201.fc18.x86_64; KDE/4.10.1; x86_64; ; )
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH 12/30] video/exynos: remove unnecessary header inclusions
-References: <1365638712-1028578-1-git-send-email-arnd@arndb.de> <1365638712-1028578-13-git-send-email-arnd@arndb.de>
-In-Reply-To: <1365638712-1028578-13-git-send-email-arnd@arndb.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enigAB4BA7E4E18BE84D4AFF1829"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enigAB4BA7E4E18BE84D4AFF1829
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi,
+I'm using the function device_find_child() [drivers/base/core.c] to retrieve 
+a specific child of a device. I see that this function invokes 
+get_device(child) when a child matches. I think that this function must 
+return the reference to the child device without getting it.
 
-On 2013-04-11 03:04, Arnd Bergmann wrote:
-> In multiplatform configurations, we cannot include headers
-> provided by only the exynos platform. Fortunately a number
-> of drivers that include those headers do not actually need
-> them, so we can just remove the inclusions.
->=20
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-fbdev@vger.kernel.org
-> Cc: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/video/exynos/exynos_mipi_dsi.c          | 2 --
->  drivers/video/exynos/exynos_mipi_dsi_common.c   | 2 --
->  drivers/video/exynos/exynos_mipi_dsi_lowlevel.c | 2 --
->  3 files changed, 6 deletions(-)
+The function's comment does not explicitly talk about an increment of the 
+refcount of the device. So, "man 9 device_find_child" and various derivative 
+webpages do not talk about this. The developer is not correctly informed 
+about this function, unless (s)he looks at the source code.
 
-I've applied this and the next patch ([PATCH 13/30] video/s3c: move
-platform_data out of arch/arm) to fbdev.
-
-I also fixed the extra space mentioned by Jingoo.
-
- Tomi
+I see that users of this function, usually, immediately do put_device() after 
+the call to device_find_child(), so it is not expected that a 
+device_find_child() does a get_device() on the found child.
 
 
+   Immediately does put_device():
+     drivers/firewire/core-device.c
+     drivers/rpmsg/virtio_rpmsg_bus.c
+     drivers/s390/kvm/kvm_virtio.c
 
---------------enigAB4BA7E4E18BE84D4AFF1829
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+   They effectively need a get_device():
+     drivers/net/bluetooth/hci_sysfs.c
+     drivers/net/dsa/dsa.c
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
+   Maybe bugged because they do not do put_device():
+     drivers/media/platform/s5p-mfc/s5p_mfc.c
+     drivers/tty/serial/serial_core.c
+   Probably I'm wrong on this and I do not find the associated put_device()
 
-iQIcBAEBAgAGBQJRZqPbAAoJEPo9qoy8lh71PlAQAJ1DaLc2zDE6qQNWqKoOPjrm
-GU1dYSGqqXsiR9YaZy9zzTzS0kB+VhUchrBvrixvHVIdZyaxGR5VzqS2eeg5Iqh9
-fHDcHpzN/gngg3DmDVcP1rmqltP6Wayhv3Der/1YfQXe2NukpY/Y+BOy+H5cNc2U
-WCIom6Lu18g0BfWLCnYr594izyE3hrk1DsbOZdUq5DKQuL8UfrMC45GlzLx2T3GT
-rhNG5WwcORxOq4odSlxI7GWrHv3FclqpLNqzc7nDGRZWTHHRmiPf+GrGHrPWYTRZ
-5YhiNwGB6EdjKvMmyXiIOwqDGASYIU9Q5zNt9lucT2ppYkHfe4up+Bquuf7awR/6
-U1lT5Gy6VwowAiWediyGsVMp/1YeOtpbp6Dnwz1RcLZ/lms/VaSDowWfpM6JjMgc
-YdBT4yUfs9GH+iytaAWgZiBLqqWagTroPSHoRhUurt0N2lB+MsDLwYRtnib/pXvi
-agrRCIC4ZNUCGdtRLKamB1zYenigEqg9OjbDXnKi0kCMu3TF8b4L9qrGiTDVM3H5
-iNr7aGTOIzjODwj6xCiYFd037rzAdqb/pm1B0Nvvf+EJ1yaW/wtsyZ7nYzGEC1A6
-VhcbxBkS9SbqqnZ1XWyT+mr4tSLhjH7N6jqrfLglhTSJyBuXkJyuXVjxf+OqUqjb
-4xeyZlsS03PTiuPZumF0
-=QPWV
------END PGP SIGNATURE-----
 
---------------enigAB4BA7E4E18BE84D4AFF1829--
+I should propose the following solution:
+
+* Deprecate the device_find_child() function
+
+* Create the following functions
+
+   struct device *device_search_child(struct device *parent, void *data,
+            int (*match)(struct device *dev, void *data))
+   {
+        struct klist_iter i;
+        struct device *child;
+
+        if (!parent)
+                return NULL;
+
+        klist_iter_init(&parent->p->klist_children, &i);
+        while ((child = next_device(&i)))
+                if (match(child, data))
+                        break;
+        klist_iter_exit(&i);
+        return child;
+  }
+
+  struct device *get_device_child(struct device *parent, void *data,
+            int (*match)(struct device *dev, void *data))
+  {
+        struct device *child;
+
+        child = device_search_child(parent, data, match);
+        if (child)
+              get_device(child);
+        return child;
+  }
+
+
+In this way, when a driver needs to find and get a child, it uses 
+get_device_child() and , when it finishes its duty, it uses put_device(). In 
+this situation, the developer use a pair of function with a symmetric names: 
+get_device_child() and put_device().
+
+If the driver do not need to get_device() on a child device, it simply does a 
+device_search_child() to retrieve a pointer.
+
+-- 
+Federico Vaga
