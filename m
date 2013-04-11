@@ -1,35 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762416Ab3DKWe2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 18:34:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4533 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760767Ab3DKWeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 18:34:24 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20130411190728.GC32045@kroah.com>
-References: <20130411190728.GC32045@kroah.com> <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
-To: Greg KH <gregkh@linuxfoundation.org>, viro@ZenIV.linux.org.uk
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/26] Eliminate create_proc_read_entry() [RFC]
-Date: Thu, 11 Apr 2013 23:34:21 +0100
-Message-ID: <19749.1365719661@warthog.procyon.org.uk>
+	id S1759698Ab3DKWfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 18:35:09 -0400
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:55501 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755146Ab3DKWfG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 18:35:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130411072912.GE1283@intel.com>
+References: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
+	<15166969.9Sfs2U7qQb@vostro.rjw.lan>
+	<20130411072912.GE1283@intel.com>
+Date: Fri, 12 Apr 2013 00:35:05 +0200
+Message-ID: <CACRpkdYiNOLVAgZVhZG3OaJw5ZZ4OM8RPafCxPPfMWo2gVM=dg@mail.gmail.com>
+Subject: Re: [PATCH] gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@linuxfoundation.org> wrote:
+On Thu, Apr 11, 2013 at 9:29 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
 
-> The ones I've been cc:ed on, with the exception of the hostap patch, I
-> will be glad to take though my trees now, unless you want to take them
-> yourself?
+> Grant and Linus W,
+>
+> Do you have any comments on this patch? Could it still be merged for 3.10?
 
-If Al is happy with it, he might want to take it through his tree since it's
-sat on top of his experimental branch - especially since the last patch is
-dependent on all the intermediate steps.
+No and yes.
 
-David
+Applied and pushed for linux-next now.
+
+Sorry for taking so long, I was confused by the discussion.
+
+I had to use some fuzzing to apply the patch, please check the
+result in linux-next.
+
+Linus
