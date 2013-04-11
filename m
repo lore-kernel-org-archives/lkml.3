@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934865Ab3DKNgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 09:36:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59554 "EHLO mx1.redhat.com"
+	id S935340Ab3DKNhK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 09:37:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42749 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752764Ab3DKNgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 09:36:53 -0400
-Date: Thu, 11 Apr 2013 15:35:36 +0200
+	id S1752764Ab3DKNhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 09:37:08 -0400
 From: Andrea Arcangeli <aarcange@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: tip-bot for Andrea Arcangeli <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, apw@canonical.com, bp@alien8.de,
-        stefan.bader@canonical.com, mgorman@suse.de, tglx@linutronix.de
-Subject: Re: [tip:x86/urgent] x86/mm/cpa: Convert noop to functional fix
-Message-ID: <20130411133536.GV14121@redhat.com>
-References: <1365600505-19314-1-git-send-email-aarcange@redhat.com>
- <tip-f76cfa3c2496c462b5bc01bd0c9340c2715b73ca@git.kernel.org>
- <20130411122918.GA19491@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411122918.GA19491@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Andy Whitcroft <apw@canonical.com>, Mel Gorman <mgorman@suse.de>,
+        Borislav Petkov <bp@alien8.de>
+Subject: [PATCH] cpa: pageattr-test: fix false positive in CPA self test
+Date: Thu, 11 Apr 2013 15:36:09 +0200
+Message-Id: <1365687369-30802-1-git-send-email-aarcange@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+If the pmd is not present, _PAGE_PSE will not be set anymore. Fix the
+false positive.
 
-On Thu, Apr 11, 2013 at 02:29:18PM +0200, Ingo Molnar wrote:
-> 
-> 
-> * tip-bot for Andrea Arcangeli <tipbot@zytor.com> wrote:
-> 
-> > Commit-ID:  f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
-> > Gitweb:     http://git.kernel.org/tip/f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
-> > Author:     Andrea Arcangeli <aarcange@redhat.com>
-> > AuthorDate: Wed, 10 Apr 2013 15:28:25 +0200
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Thu, 11 Apr 2013 10:34:42 +0200
-> > 
-> > x86/mm/cpa: Convert noop to functional fix
-> 
-> I think it's this commit that causes the following cpa-selftest failure:
-> 
-> CPA self-test:
-> ffff880038000000 level 2 but not PSE 8000000038000062
-> ffff880038200000 level 2 but not PSE 8000000038200062
-> ffff880038400000 level 2 but not PSE 8000000038400062
-> ffff880038600000 level 2 but not PSE 8000000038600062
-> ffff880038800000 level 2 but not PSE 8000000038800062
-> ffff880038a00000 level 2 but not PSE 8000000038a00062
-> ffff880038c00000 level 2 but not PSE 8000000038c00062
-> ffff880038e00000 level 2 but not PSE 8000000038e00062
-> 
-> ...
-> 
->  4k 134128 large 250 gb 0 x 1[ffff88000009a000-ffff88000009a000] miss 0
-> ------------[ cut here ]------------
-> WARNING: at arch/x86/mm/pageattr-test.c:226 pageattr_test+0x3e1/0x410()
-> NOT PASSED. Please report.
-> Pid: 32, comm: pageattr-test Not tainted 3.9.0-rc6+ #222036
-> Call Trace:
->  [<ffffffff8104fdd3>] warn_slowpath_common+0x62/0x7b
->  [<ffffffff8104fe5a>] warn_slowpath_fmt+0x46/0x48
->  [<ffffffff8102b3d9>] ? lookup_address+0xad/0x127
->  [<ffffffff8102c766>] pageattr_test+0x3e1/0x410
->  [<ffffffff8102c795>] ? pageattr_test+0x410/0x410
->  [<ffffffff8102c7af>] do_pageattr_test+0x1a/0x3d
->  [<ffffffff81070a8d>] kthread+0xa2/0xaa
->  [<ffffffff810709eb>] ? __kthread_parkme+0x65/0x65
->  [<ffffffff81aad73c>] ret_from_fork+0x7c/0xb0
->  [<ffffffff810709eb>] ? __kthread_parkme+0x65/0x65
-> ---[ end trace 582fec3a45bb42b7 ]---
-> device: 'vcs2': device_add
+Reported-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+---
+ arch/x86/mm/pageattr-test.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This looks a warning resulting from a false positive in the CPA self
-test, not a bug in f76cfa3c2496c462b5bc01bd0c9340c2715b73ca. I'll send
-a patch to correct it. I can't reproduce it here so it would be great
-if you could test the fix on your system above to verify.
-
-Thanks,
-Andrea
+diff --git a/arch/x86/mm/pageattr-test.c b/arch/x86/mm/pageattr-test.c
+index b008656..0e38951 100644
+--- a/arch/x86/mm/pageattr-test.c
++++ b/arch/x86/mm/pageattr-test.c
+@@ -68,7 +68,7 @@ static int print_split(struct split_state *s)
+ 			s->gpg++;
+ 			i += GPS/PAGE_SIZE;
+ 		} else if (level == PG_LEVEL_2M) {
+-			if (!(pte_val(*pte) & _PAGE_PSE)) {
++			if ((pte_val(*pte) & _PAGE_PRESENT) && !(pte_val(*pte) & _PAGE_PSE)) {
+ 				printk(KERN_ERR
+ 					"%lx level %d but not PSE %Lx\n",
+ 					addr, level, (u64)pte_val(*pte));
