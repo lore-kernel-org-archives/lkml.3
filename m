@@ -1,34 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753821Ab3DKG1V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 02:27:21 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:28488 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab3DKG1U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 02:27:20 -0400
-Date: Thu, 11 Apr 2013 09:27:00 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sumit Semwal <sumit.semwal@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-mm-sig@lists.linaro.org, kbuild@01.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: Re: [kbuild] [patch 1/2 -next] dma-buf: double unlock in debugfs code
-Message-ID: <20130411062700.GF6692@mwanda>
-References: <20130411062339.GA7603@elgon.mountain>
+	id S1753846Ab3DKGhb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 02:37:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52928 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752742Ab3DKGha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 02:37:30 -0400
+Message-ID: <51665A0E.7080607@redhat.com>
+Date: Thu, 11 Apr 2013 14:37:02 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411062339.GA7603@elgon.mountain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mst@redhat.com" <mst@redhat.com>, Eric Dumazet <edumazet@google.com>
+Subject: Re: [net-next 4/5] netback: set transport header before passing it
+ to kernel
+References: <1364278799-37285-1-git-send-email-jasowang@redhat.com>  <1364278799-37285-5-git-send-email-jasowang@redhat.com> <1365600803.27868.60.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1365600803.27868.60.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oops...  I mailed that prematurely.  There isn't a [patch 2/2].
+On 04/10/2013 09:33 PM, Ian Campbell wrote:
+> On Tue, 2013-03-26 at 06:19 +0000, Jason Wang wrote:
+>> Currently, for the packets receives from netback, before doing header check,
+>> kernel just reset the transport header in netif_receive_skb() which pretends non
+>> l4 header. This is suboptimal for precise packet length estimation (introduced
+>> in 1def9238: net_sched: more precise pkt_len computation) which needs correct l4
+>> header for gso packets.
+>>
+>> The patch just reuse the header probed by netback for partial checksum packets
+>> and tries to use skb_flow_dissect() for other cases, if both fail, just pretend
+>> no l4 header.
+>>
+>> Cc: Eric Dumazet <edumazet@google.com>
+>> Cc: Ian Campbell <ian.campbell@citrix.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  drivers/net/xen-netback/netback.c |   12 ++++++++++++
+>>  1 files changed, 12 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+>> index aa28550..fc8faa7 100644
+>> --- a/drivers/net/xen-netback/netback.c
+>> +++ b/drivers/net/xen-netback/netback.c
+>> @@ -39,6 +39,7 @@
+>>  #include <linux/udp.h>
+>>  
+>>  #include <net/tcp.h>
+>> +#include <net/flow_keys.h>
+>>  
+>>  #include <xen/xen.h>
+>>  #include <xen/events.h>
+>> @@ -1184,6 +1185,7 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
+>>  	if (th >= skb_tail_pointer(skb))
+>>  		goto out;
+>>  
+>> +	skb_set_transport_header(skb, 4 * iph->ihl);
+>>  	skb->csum_start = th - skb->head;
+> Should the use of th here (and perhaps above) be replaced with
+> skb_transport_header() too?
 
-regards,
-dan carpenter
+Yes, and furthermore looks like we can use skb_partial_csum_set() here,
+will send a patch.
+
+Thanks
+>>  	switch (iph->protocol) {
+>>  	case IPPROTO_TCP:
+>> @@ -1495,6 +1497,7 @@ static void xen_netbk_tx_submit(struct xen_netbk *netbk)
+>>  
+>>  		skb->dev      = vif->dev;
+>>  		skb->protocol = eth_type_trans(skb, skb->dev);
+>> +		skb_reset_network_header(skb);
+>>  
+>>  		if (checksum_setup(vif, skb)) {
+>>  			netdev_dbg(vif->dev,
+>> @@ -1503,6 +1506,15 @@ static void xen_netbk_tx_submit(struct xen_netbk *netbk)
+>>  			continue;
+>>  		}
+>>  
+>> +		if (!skb_transport_header_was_set(skb)) {
+>> +			struct flow_keys keys;
+>> +
+>> +			if (skb_flow_dissect(skb, &keys))
+>> +				skb_set_transport_header(skb, keys.thoff);
+>> +			else
+>> +				skb_reset_transport_header(skb);
+>> +		}
+>> +
+>>  		vif->dev->stats.rx_bytes += skb->len;
+>>  		vif->dev->stats.rx_packets++;
+>>  
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
