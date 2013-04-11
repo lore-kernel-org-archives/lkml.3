@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936388Ab3DKVDs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:03:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5406 "EHLO
+	id S936365Ab3DKVDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:03:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8349 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935752Ab3DKUtR (ORCPT
+	with ESMTP id S935638Ab3DKUtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:49:17 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=b2a7M-lswegA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=qESsptcO_bQA:10 a=pGLkceISAAAA:8 a=sOvEHXT4AAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=R0NAWNexx6EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=r3330XQT_fUA:10 a=pGLkceISAAAA:8 a=jAfPOIUMAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=MSl-tDqOz04A:10 a=gE_ZUhsuebIA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202602.011525626@goodmis.org>
+Message-Id: <20130411202601.838165823@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:40 -0400
+Date: Thu, 11 Apr 2013 16:26:39 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Konstantin Holoborodko <klh.kernel@gmail.com>,
+Cc: Pawel Wieczorkiewicz <wpawel@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 097/171 ] usb: ftdi_sio: Add support for Mitsubishi FX-USB-AW/-BD
+Subject: [ 096/171 ] tty: atmel_serial_probe(): index of atmel_ports[] fix
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0097-usb-ftdi_sio-Add-support-for-Mitsubishi-FX-USB-AW-BD.patch
+Content-Disposition: inline; filename=0096-tty-atmel_serial_probe-index-of-atmel_ports-fix.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,55 +31,63 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Konstantin Holoborodko <klh.kernel@gmail.com>
+From: Pawel Wieczorkiewicz <wpawel@gmail.com>
 
-[ Upstream commit 482b0b5d82bd916cc0c55a2abf65bdc69023b843 ]
+[ Upstream commit 503bded92da283b2f31d87e054c4c6d30c3c2340 ]
 
-It enhances the driver for FTDI-based USB serial adapters
-to recognize Mitsubishi Electric Corp. USB/RS422 Converters
-as FT232BM chips and support them.
-https://search.meau.com/?q=FX-USB-AW
+Index of atmel_ports[ATMEL_MAX_UART] should be smaller
+than ATMEL_MAX_UART.
 
-Signed-off-by: Konstantin Holoborodko <klh.kernel@gmail.com>
-Tested-by: Konstantin Holoborodko <klh.kernel@gmail.com>
+Signed-off-by: Pawel Wieczorkiewicz <wpawel@gmail.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: stable <stable@vger.kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    7 +++++++
- 2 files changed, 8 insertions(+)
+ drivers/tty/serial/atmel_serial.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 360bdeb..edf6bb4 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -647,6 +647,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_RM_CANVIEW_PID) },
- 	{ USB_DEVICE(ACTON_VID, ACTON_SPECTRAPRO_PID) },
- 	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
-+	{ USB_DEVICE(MITSUBISHI_VID, MITSUBISHI_FXUSB_PID) },
- 	{ USB_DEVICE(BANDB_VID, BANDB_USOTL4_PID) },
- 	{ USB_DEVICE(BANDB_VID, BANDB_USTL4_PID) },
- 	{ USB_DEVICE(BANDB_VID, BANDB_USO9ML2_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 049b6e7..4801983 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -577,6 +577,13 @@
- #define CONTEC_COM1USBH_PID	0x8311	/* COM-1(USB)H */
+diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
+index 3d7e1ee..ed7cd37 100644
+--- a/drivers/tty/serial/atmel_serial.c
++++ b/drivers/tty/serial/atmel_serial.c
+@@ -159,7 +159,7 @@ struct atmel_uart_port {
+ };
  
- /*
-+ * Mitsubishi Electric Corp. (http://www.meau.com)
-+ * Submitted by Konstantin Holoborodko
-+ */
-+#define MITSUBISHI_VID		0x06D3
-+#define MITSUBISHI_FXUSB_PID	0x0284 /* USB/RS422 converters: FX-USB-AW/-BD */
-+
-+/*
-  * Definitions for B&B Electronics products.
-  */
- #define BANDB_VID		0x0856	/* B&B Electronics Vendor ID */
+ static struct atmel_uart_port atmel_ports[ATMEL_MAX_UART];
+-static unsigned long atmel_ports_in_use;
++static DECLARE_BITMAP(atmel_ports_in_use, ATMEL_MAX_UART);
+ 
+ #ifdef SUPPORT_SYSRQ
+ static struct console atmel_console;
+@@ -1785,15 +1785,14 @@ static int __devinit atmel_serial_probe(struct platform_device *pdev)
+ 	if (ret < 0)
+ 		/* port id not found in platform data nor device-tree aliases:
+ 		 * auto-enumerate it */
+-		ret = find_first_zero_bit(&atmel_ports_in_use,
+-				sizeof(atmel_ports_in_use));
++		ret = find_first_zero_bit(atmel_ports_in_use, ATMEL_MAX_UART);
+ 
+-	if (ret > ATMEL_MAX_UART) {
++	if (ret >= ATMEL_MAX_UART) {
+ 		ret = -ENODEV;
+ 		goto err;
+ 	}
+ 
+-	if (test_and_set_bit(ret, &atmel_ports_in_use)) {
++	if (test_and_set_bit(ret, atmel_ports_in_use)) {
+ 		/* port already in use */
+ 		ret = -EBUSY;
+ 		goto err;
+@@ -1867,7 +1866,7 @@ static int __devexit atmel_serial_remove(struct platform_device *pdev)
+ 
+ 	/* "port" is allocated statically, so we shouldn't free it */
+ 
+-	clear_bit(port->line, &atmel_ports_in_use);
++	clear_bit(port->line, atmel_ports_in_use);
+ 
+ 	clk_put(atmel_port->clk);
+ 
 -- 
 1.7.10.4
 
