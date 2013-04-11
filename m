@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161644Ab3DKSIH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:08:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36426 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161570Ab3DKSIE (ORCPT
+	id S1161661Ab3DKSI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:08:28 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55981 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964847Ab3DKSIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:08:04 -0400
-Message-ID: <1365703670.10217.10.camel@laptop>
-Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling
- overflow
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org
-Date: Thu, 11 Apr 2013 20:07:50 +0200
-In-Reply-To: <CA+55aFway4C89fTewKvED4RvFLaNdM-BVtkJ2YChsvracLKiyA@mail.gmail.com>
-References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
-	 <20130326140147.GB2029@redhat.com> <1365687946.8824.3.camel@laptop>
-	 <CA+55aFway4C89fTewKvED4RvFLaNdM-BVtkJ2YChsvracLKiyA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Apr 2013 14:08:25 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+aMMArjO3rwTwaJqqfJYrG1TdQ81QjEfQ=
+Date: Thu, 11 Apr 2013 14:08:10 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
+        Ike Pan <ike.pan@canonical.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Jon Masters <jcm@redhat.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+        Maen Suleiman <maen@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v3 3/9] ARM: mvebu: Align the internal registers
+ virtual base to support LPAE
+Message-ID: <20130411180810.GN28693@titan.lakedaemon.net>
+References: <1365461538-30702-1-git-send-email-gregory.clement@free-electrons.com>
+ <1365461538-30702-4-git-send-email-gregory.clement@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365461538-30702-4-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 08:38 -0700, Linus Torvalds wrote:
-> On Thu, Apr 11, 2013 at 6:45 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, 2013-03-26 at 15:01 +0100, Stanislaw Gruszka wrote:
-> >> Thoughts?
-> >
-> > Would something like the below work?
+On Tue, Apr 09, 2013 at 12:52:11AM +0200, Gregory CLEMENT wrote:
+> From: Lior Amsalem <alior@marvell.com>
 > 
-> Ugh, this is hard to think about, it's also fairly inefficient.
+> In order to be able to support the LPAE, the internal registers
+> virtual base must be aligned to 2MB. In LPAE section size is 2MB, in
+> earlyprintk we map the internal registers and it must be section
+> aligned.
 > 
-> >  static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
-> >  {
-> > -       u64 rem, res, scaled;
-> > +       int stime_fls = fls64(stime);
-> > +       int total_fls = fls64(total);
-> > +       int rtime_fls = fls64(rtime);
-> 
-> Doing "fls64()" unconditionally is quite expensive on some
-> architectures, 
+> Signed-off-by: Lior Amsalem <alior@marvell.com>
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> ---
+>  arch/arm/include/debug/mvebu.S      |    2 +-
+>  arch/arm/mach-mvebu/armada-370-xp.h |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 
-Oh, I (wrongly it appears) assumed that fls was something cheap :/
+Applied to mvebu/soc
 
-> and if I am not mistaken, the *common* case (by far) is
-> that all these values fit in 32 bits, no?
+thx,
 
-It depends on if we use cputime_jiffies.h or cputime_nsec.h and I'm
-completely lost as to which we default to atm. But we sure can reduce
-to 32 bits in most cases without too much problems.
-
-But that would mean fls() and shifting again for nsec based cputime.
-
-I'll have a better read and think about the rest of your email but
-that'll have to be tomorrow :/
-
+Jason.
