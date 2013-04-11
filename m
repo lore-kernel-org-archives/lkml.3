@@ -1,152 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1765845Ab3DKLqy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 07:46:54 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:55527 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753940Ab3DKLqw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 07:46:52 -0400
-Message-ID: <5166A1D0.1080102@linux.vnet.ibm.com>
-Date: Thu, 11 Apr 2013 17:13:12 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S933540Ab3DKLuT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 07:50:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60390 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932712Ab3DKLuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 07:50:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,454,1363158000"; 
+   d="scan'208";a="316553201"
+From: Andi Kleen <andi@firstfloor.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Kees Cook <keescook@chromium.org>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Alex Shi <alex.shi@intel.com>, Jeremy Fitzhardinge <jeremy@goop.org>,
+        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        kernel-hardening@lists.openwall.com,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH v3] x86: use a read-only IDT alias on all CPUs
+References: <20130410192422.GA17344@www.outflux.net>
+	<20130411083634.GA11824@gmail.com>
+Date: Thu, 11 Apr 2013 04:50:14 -0700
+In-Reply-To: <20130411083634.GA11824@gmail.com> (Ingo Molnar's message of
+	"Thu, 11 Apr 2013 10:36:34 +0200")
+Message-ID: <m261ztxp55.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Dave Hansen <dave@sr71.net>, Borislav Petkov <bp@alien8.de>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
- wrong cpu
-References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos> <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net> <alpine.LFD.2.02.1304092036431.21884@ionos> <alpine.LFD.2.02.1304092126150.21884@ionos> <51647C30.3050109@sr71.net> <alpine.LFD.2.02.1304101024010.21884@ionos> <alpine.LFD.2.02.1304101250320.21884@ionos> <5165C087.4060404@sr71.net> <alpine.LFD.2.02.1304111020520.21884@ionos> <51669510.2040200@linux.vnet.ibm.com>
-In-Reply-To: <51669510.2040200@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 13041111-1618-0000-0000-000003AA6E0A
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 04:18 PM, Srivatsa S. Bhat wrote:
-> On 04/11/2013 03:49 PM, Thomas Gleixner wrote:
->> Dave,
->>
->> On Wed, 10 Apr 2013, Dave Hansen wrote:
->>
->>> I think I got a full trace this time:
->>>
->>> 	http://sr71.net/~dave/linux/bigbox-trace.1365621899.txt.gz
->>>
->>> The last timestamp is pretty close to the timestamp on the console:
->>>
->>> [ 2071.033434] smpboot_thread_fn():
->>> [ 2071.033455] smpboot_thread_fn() cpu: 22 159
->>> [ 2071.033470] td->cpu: 22
->>> [ 2071.033475] smp_processor_id(): 21
->>> [ 2071.033486] comm: migration/%u
->>
->> Yes, that's helpful. Though it makes my mind boggle:
->>
->>     migration/22-4335  [021] d.h.  2071.020530: sched_wakeup: comm=migration/21 pid=4323 prio=0 success=1 target_cpu=021^M
->>     migration/22-4335  [021] d...  2071.020541: sched_switch: prev_comm=migration/22 prev_pid=4335 prev_prio=0 prev_state=0x200 ==> next_comm=migration/21 next_pid=4323 next_prio=0^M
->>     migration/21-4323  [021] d...  2071.026110: sched_switch: prev_comm=migration/21 prev_pid=4323 prev_prio=0 prev_state=S ==> next_comm=migration/22 next_pid=4335 next_prio=0^M
->>     migration/22-4335  [021] ....  2071.033422: smpboot_thread_fn <-kthread^M
->>
->> So the migration thread schedules out with state TASK_PARKED and gets
->> scheduled back in right away without a wakeup. Srivatsa was about
->> right, that this might be related to the sched_set_stop_task() call,
->> but the changelog led completely down the wrong road.
->>
->> So the issue is:
->>
->> CPU14				CPU21
->> create_thread(for CPU22)
->>  park_thread()	
->>    wait_for_completion()	park_me()
->> 				 complete()
->>    sched_set_stop_task()
->> 				 schedule(TASK_PARKED)
->>
->> The sched_set_stop_task() call is issued while the task is on the
->> runqueue of CPU21 and that confuses the hell out of the stop_task
->> class on that cpu. So as we have to synchronize the state for the
->> bind call (the issue observed by Borislav) we need to do the same
->> before issuing sched_set_stop_task(). Delta patch below.
->>
-> 
-> In that case, why not just apply this 2 line patch on mainline?
-> The patch I sent yesterday was more elaborate because I wrongly assumed
-> that kthread_bind() can cause a wakeup. But now, I feel the patch shown
-> below should work just fine too. Yeah, it binds the task during creation
-> as well as during unpark, but that should be ok (see below).
-> 
-> Somehow, I believe we can handle this issue without introducing that
-> whole TASK_PARKED thing..
-> 
-> 
-> diff --git a/kernel/kthread.c b/kernel/kthread.c
-> index 691dc2e..74af4a8 100644
-> --- a/kernel/kthread.c
-> +++ b/kernel/kthread.c
-> @@ -308,6 +308,9 @@ struct task_struct *kthread_create_on_cpu(int (*threadfn)(void *data),
->  	to_kthread(p)->cpu = cpu;
->  	/* Park the thread to get it out of TASK_UNINTERRUPTIBLE state */
->  	kthread_park(p);
-> +
-> +	wait_task_inactive(p, TASK_INTERRUPTIBLE);
-> +	__kthread_bind(p, cpu);
->  	return p;
->  }
->  
+Ingo Molnar <mingo@kernel.org> writes:
+>
+> This looks very nice to me now. Peter, any objections?
 
-Oh wait a minute, its simpler than even that I believe! We don't need that
-extra kthread_bind() also.
+it seems pointless without randomized main kernel text location, because
+the IDT will be still at a known per kernel fixed writable location in
+the direct mapping.
 
-So, here is what is happening, from what I understand:
-sched_set_stop_task() will make the newly created migration thread as the
-stop task, during ht->create(). But looking into __sched_setscheduler(),
-we observe that if p->on_rq is true (where p is the migration thread),
-the task is enqueued on the rq by calling ->enqueue_task() of stop_task
-sched class, which simply increments the rq->nr_running.
+As long as such randomization is not there it just wastes a TLB entry.
 
-So, on the next call to schedule(), the pick_next_task() in core.c sees
-that rq->nr_running is not equal to rq->cfs.h_nr_running and hence invokes
-the stop_task sched class' ->pick_next_task(). And that will return the
-stop task, which is nothing but this migration thread that we just created.
-That's why the migration thread starts running prematurely, even before
-it is bound, and even before its corresponding CPU is brought online.
+-Andi
 
-So, if we just wait till p->on_rq is reset to 0 by __schedule(), before
-calling ht->create(), the task doesn't get queued to the runqueue with
-stop task priority. So that's it - we simply wait till it gets off the
-rq and everything should be fine. And during the subsequent online, during
-the unpark phase, the task gets bound to the appropriate cpu and only
-then woken up, as desired.
-
-So Dave, could you kindly test the below patch on mainline?
-
-
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 691dc2e..9558355 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -308,6 +308,15 @@ struct task_struct *kthread_create_on_cpu(int (*threadfn)(void *data),
- 	to_kthread(p)->cpu = cpu;
- 	/* Park the thread to get it out of TASK_UNINTERRUPTIBLE state */
- 	kthread_park(p);
-+
-+	/*
-+	 * Wait for p->on_rq to be reset to 0, to ensure that the per-cpu
-+	 * migration thread (which belongs to the stop_task sched class)
-+	 * doesn't run until the cpu is actually onlined and the thread is
-+	 * unparked.
-+	 */
-+	if (!wait_task_inactive(p, TASK_INTERRUPTIBLE))
-+		WARN_ON(1);
- 	return p;
- }
- 
-Regards,
-Srivatsa S. Bhat
-
+-- 
+ak@linux.intel.com -- Speaking for myself only
