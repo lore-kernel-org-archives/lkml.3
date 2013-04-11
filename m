@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab3DKHCy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:02:54 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:42267 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab3DKHCw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:02:52 -0400
+	id S1754473Ab3DKHIp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:08:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33285 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751514Ab3DKHIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 03:08:44 -0400
+Date: Thu, 11 Apr 2013 09:08:40 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH v5 2/3] fix hugetlb memory check in
+ vma_dump_size()
+Message-ID: <20130411070832.GA1488@dhcp22.suse.cz>
+References: <1365610669-16625-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1365610669-16625-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.DEB.2.02.1304101448390.1526@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20130411065957.GB31465@quad.lixom.net>
-References: <cover.1364229828.git.viresh.kumar@linaro.org>
-	<4180fd5b43906421fc155126e8b7bea5fb3ff375.1364229828.git.viresh.kumar@linaro.org>
-	<CAKohpo=LOJ3DfaGzCm6a6ev2+dNUgEpJd+04pGMhdSpkyZNR9A@mail.gmail.com>
-	<CAKohpomRMkKouiy+iJUiheTcPGCDVLbxppL5f4oc-WMu2E5T8g@mail.gmail.com>
-	<1364985034.16520.12.camel@pasglop>
-	<CAKohpo=EPbGocbNaZcNtGuZy4Tst5jH4rPviQ6L=YuZceDnKMw@mail.gmail.com>
-	<20130411065957.GB31465@quad.lixom.net>
-Date: Thu, 11 Apr 2013 12:32:50 +0530
-Message-ID: <CAKohpomHFgMBAHax=jC_LNd8Gay9aWja+64An7QxnNpaPuuSQQ@mail.gmail.com>
-Subject: Re: [PATCH 9/9] powerpc: cpufreq: move cpufreq driver to drivers/cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        arvind.chauhan@arm.com, Arnd Bergmann <arnd.bergmann@linaro.org>,
-        robin.randhawa@arm.com, Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1304101448390.1526@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11 April 2013 12:29, Olof Johansson <olof@lixom.net> wrote:
-> That's not very nice this late in the staging cycle. Give the powerpc
-> guys a little more time than a single day to come back with test results,
-> please.
+On Wed 10-04-13 14:49:07, David Rientjes wrote:
+> On Wed, 10 Apr 2013, Naoya Horiguchi wrote:
+> 
+> > Documentation/filesystems/proc.txt says about coredump_filter bitmask,
+> > 
+> >   Note bit 0-4 doesn't effect any hugetlb memory. hugetlb memory are only
+> >   effected by bit 5-6.
+> > 
+> > However current code can go into the subsequent flag checks of bit 0-4
+> > for vma(VM_HUGETLB). So this patch inserts 'return' and makes it work
+> > as written in the document.
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > Reviewed-by: Rik van Riel <riel@redhat.com>
+> > Acked-by: Michal Hocko <mhocko@suse.cz>
+> > Reviewed-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> > Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: stable@vger.kernel.org
+> 
+> Acked-by: David Rientjes <rientjes@google.com>
+> 
+> Stable for 2.6.34+.
 
-Yes we are waiting indefinitely for an Ack from powerpc guys.. If we can
-get a Ack soon, we will get it in 3.10 otherwise next cycle.
+I think it is only 3.7+ as well because VM_RESERVED stopped use before
+(314e51b9).
+
+-- 
+Michal Hocko
+SUSE Labs
