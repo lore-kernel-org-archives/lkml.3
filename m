@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab3DKTwY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 15:52:24 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:52259 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab3DKTwW (ORCPT
+	id S1753788Ab3DKTw7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 15:52:59 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:36908 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753271Ab3DKTw6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 15:52:22 -0400
+	Thu, 11 Apr 2013 15:52:58 -0400
+Message-ID: <51671494.6000803@gmail.com>
+Date: Thu, 11 Apr 2013 21:52:52 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <1362579278-6534-1-git-send-email-abbotti@mev.co.uk>
-References: <1362579278-6534-1-git-send-email-abbotti@mev.co.uk>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 11 Apr 2013 13:52:01 -0600
-Message-ID: <CAErSpo7JLdjpbAG6Qs+wEimNzqeaM3i4evzEHY1xjpQNNfgRHQ@mail.gmail.com>
-Subject: Re: [PATCH] pci_ids.h: add PCI_VENDOR_ID_AMCC
-To: Ian Abbott <abbotti@mev.co.uk>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Dale Farnsworth <dale@farnsworth.org>,
+        Ben Hutchings <bhutchings@solarflare.com>, Soeren Moch <smoch@web.de>,
+        Willy Tarreau <w@1wt.eu>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: mv643xx_eth: remove deprecated inet_lro support
+References: <1365707488-28819-1-git-send-email-sebastian.hesselbarth@gmail.com> <1365709617.3887.185.camel@edumazet-glaptop>
+In-Reply-To: <1365709617.3887.185.camel@edumazet-glaptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 6, 2013 at 7:14 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
-> Vendor ID 0x10e8 is assigned to Applied Micro Circuits Corporation
-> (recently AppliedMicro, but AMCC on NASDAQ).  The ID currently appears
-> as PCI_VENDOR_ID_ADDIDATA_OLD in pci_ids.h, which is wrong.  Some older
-> PCI boards made by ADDI-DATA used PCI interface chips made by AMCC and
-> used device IDs assigned by AMCC.
+On 04/11/2013 09:46 PM, Eric Dumazet wrote:
+> On Thu, 2013-04-11 at 21:11 +0200, Sebastian Hesselbarth wrote:
+>> With recent support for GRO, there is no need to keep both LRO and
+>> GRO. This patch therefore removes the deprecated inet_lro support
+>> from mv643xx_eth. This is work is based on an experimental patch
+>> provided by Eric Dumazet and Willy Tarreau.
+>>
+>> Signed-off-by: Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>
+>> Based-on-patch-by: Eric Dumazet<eric.dumazet@gmail.com>
+>> Based-on-patch-by: Willy Tarreau<w@1wt.eu>
+>> ---
+>> Note: This patch is based upon recent cleanup patches and GRO support
+>> patch for mv643xx_eth.
+>>
+>> Cc: "David S. Miller"<davem@davemloft.net>
+>> Cc: Lennert Buytenhek<buytenh@wantstofly.org>
+>> Cc: Andrew Lunn<andrew@lunn.ch>
+>> Cc: Jason Cooper<jason@lakedaemon.net>
+>> Cc: Florian Fainelli<florian@openwrt.org>
+>> Cc: Benjamin Herrenschmidt<benh@kernel.crashing.org>
+>> Cc: Paul Mackerras<paulus@samba.org>
+>> Cc: Dale Farnsworth<dale@farnsworth.org>
+>> Cc: Ben Hutchings<bhutchings@solarflare.com>
+>> Cc: Soeren Moch<smoch@web.de>
+>> Cc: Eric Dumazet<eric.dumazet@gmail.com>
+>> Cc: Willy Tarreau<w@1wt.eu>
+>> Cc: netdev@vger.kernel.org
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linuxppc-dev@lists.ozlabs.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   drivers/net/ethernet/marvell/mv643xx_eth.c |   97 +---------------------------
+>>   1 file changed, 3 insertions(+), 94 deletions(-)
 >
-> Add PCI_VENDOR_ID_AMCC and mark PCI_VENDOR_ID_ADDIDATA_OLD as a
-> duplicate.
->
-> Note that PCI_VENDOR_ID_AMCC is defined identically in
-> "drivers/staging/comedi/comedidev.h" for use by the adl_pci9118 comedi
-> driver.  Various other comedi drivers currently use
-> PCI_VENDOR_ID_ADDIDATA_OLD, but these can be changed to use
-> PCI_VENDOR_ID_AMCC easily enough.  The only other user of
-> PCI_VENDOR_ID_ADDIDATA_OLD is "drivers/tty/serial/8250_pci.c" which
-> could also be changed to use AMCC easily enough.  Once all that is done,
-> PCI_VENDOR_ID_ADDIDATA_OLD can be removed.
->
-> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-> ---
->  include/linux/pci_ids.h | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
+> Seems fine to me, but you also could remove "select INET_LRO"
+> from drivers/net/ethernet/marvell/Kconfig
 
-This should be posted along with the patches that actually use
-PCI_VENDOR_ID_AMCC.  I'll drop this for now and watch for those.
+Ok, I will wait for tomorrow to see if there are more objections and
+respin a v2.
 
-Bjorn
-
-> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> index f11c1c2..902e41a 100644
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -1309,6 +1309,8 @@
->  #define PCI_DEVICE_ID_IMS_TT128                0x9128
->  #define PCI_DEVICE_ID_IMS_TT3D         0x9135
->
-> +#define PCI_VENDOR_ID_AMCC             0x10e8
-> +
->  #define PCI_VENDOR_ID_INTERG           0x10ea
->  #define PCI_DEVICE_ID_INTERG_1682      0x1682
->  #define PCI_DEVICE_ID_INTERG_2000      0x2000
-> @@ -2249,7 +2251,7 @@
->  /*
->   * ADDI-DATA GmbH communication cards <info@addi-data.com>
->   */
-> -#define PCI_VENDOR_ID_ADDIDATA_OLD             0x10E8
-> +#define PCI_VENDOR_ID_ADDIDATA_OLD             0x10E8  /* actually AMCC */
->  #define PCI_VENDOR_ID_ADDIDATA                 0x15B8
->  #define PCI_DEVICE_ID_ADDIDATA_APCI7500        0x7000
->  #define PCI_DEVICE_ID_ADDIDATA_APCI7420        0x7001
-> --
-> 1.8.1.2
->
+Sebastian
