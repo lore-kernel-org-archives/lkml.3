@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964864Ab3DKVMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:12:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23956 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935639Ab3DKUtH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:49:07 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=0QZk6XQm2acA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=-c8zUr6jbUUA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202606.637559458@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:27:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 124/171 ] USB: mos7840: fix use-after-free in TIOCMIWAIT
-References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0124-USB-mos7840-fix-use-after-free-in-TIOCMIWAIT.patch
+	id S964928Ab3DKVN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:13:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14004 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964832Ab3DKVNW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 17:13:22 -0400
+Date: Thu, 11 Apr 2013 17:13:16 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 2/2] initramfs with digital signature protection
+Message-ID: <20130411211316.GA26587@redhat.com>
+References: <1365450229.3847.56.camel@falcor1.watson.ibm.com>
+ <20130408200904.GI28292@redhat.com>
+ <CA+5PVA43U_kDSV7p0zhQwmK9pwbVb8qAUePU8svQvoPbDA9iCQ@mail.gmail.com>
+ <20130409143852.GH6320@redhat.com>
+ <1365563230.3074.107.camel@falcor1.watson.ibm.com>
+ <20130410194209.GF6602@redhat.com>
+ <1365627922.2452.32.camel@falcor1.watson.ibm.com>
+ <CACE9dm-GZpjco8u6jNxLQpYA8LYSeoVjsyyRXVwxXHzjO-LvGw@mail.gmail.com>
+ <20130411145550.GD21260@redhat.com>
+ <CACE9dm-+CY+aLcsrR8CF2TsL26S1wZbYKYS4ropW3ie6tmMZ+Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACE9dm-+CY+aLcsrR8CF2TsL26S1wZbYKYS4ropW3ie6tmMZ+Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.2 stable review patch.
-If anyone has any objections, please let me know.
+On Thu, Apr 11, 2013 at 09:42:54PM +0300, Dmitry Kasatkin wrote:
 
-------------------
+[..]
+> > What other initialization user space need to do where we can't trust
+> > root (even in secureboot mode).
+> >
+> > IOW, if keys can be embedded in kernel (or read from UEFI db and MOK db),
+> > what other operation requires initramfs to be signed. It could very well
+> > be unsigned initramfs like today.
+> >
+> 
+> It looks like you do not hear me.
+> I said that any user space initialization can be done from signed user space.
+> For example IMA policy can be initialized.
+> 
 
-From: Johan Hovold <jhovold@gmail.com>
+I am hearing you. Yes I heard you saying  "but perform other initialization,
+which requires user-space". I am just trying to figure out more details.
+You are assuming that a single line statement gives all the context and it
+often might not be the case.
 
-[ Upstream commit a14430db686b8e459e1cf070a6ecf391515c9ab9 ]
+What makes it important that IMA policy is loaded from an signed initramfs
+and not from unsigned one.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+Also how would you make use of it without secureboot. Only secureboot will
+allow to keep keys in firmware so that one can have a key in there and be
+able to sign initramfs. 
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
+In regular system, distributions do not ship pre-loaded keys so one can 
+not sign initramfs. So only thing possible is that distributions enforce
+some policy in signed initramfs and if distributions have to enforce a
+policy they can do that in kernel itself and no need for signed initramfs.
 
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/usb/serial/mos7840.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
-index fbef4f7..8654df0 100644
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -223,7 +223,6 @@ struct moschip_port {
- 	char open;
- 	char open_ports;
- 	wait_queue_head_t wait_chase;	/* for handling sleeping while waiting for chase to finish */
--	wait_queue_head_t delta_msr_wait;	/* for handling sleeping while waiting for msr change to happen */
- 	int delta_msr_cond;
- 	struct async_icount icount;
- 	struct usb_serial_port *port;	/* loop back to the owner of this object */
-@@ -443,7 +442,7 @@ static void mos7840_handle_new_msr(struct moschip_port *port, __u8 new_msr)
- 		}
- 
- 		mos7840_port->delta_msr_cond = 1;
--		wake_up_interruptible(&mos7840_port->delta_msr_wait);
-+		wake_up_interruptible(&port->port->delta_msr_wait);
- 	}
- }
- 
-@@ -1165,7 +1164,6 @@ static int mos7840_open(struct tty_struct *tty, struct usb_serial_port *port)
- 
- 	/* initialize our wait queues */
- 	init_waitqueue_head(&mos7840_port->wait_chase);
--	init_waitqueue_head(&mos7840_port->delta_msr_wait);
- 
- 	/* initialize our icount structure */
- 	memset(&(mos7840_port->icount), 0x00, sizeof(mos7840_port->icount));
-@@ -2306,13 +2304,18 @@ static int mos7840_ioctl(struct tty_struct *tty,
- 		while (1) {
- 			/* interruptible_sleep_on(&mos7840_port->delta_msr_wait); */
- 			mos7840_port->delta_msr_cond = 0;
--			wait_event_interruptible(mos7840_port->delta_msr_wait,
--						 (mos7840_port->
-+			wait_event_interruptible(port->delta_msr_wait,
-+						 (port->serial->disconnected ||
-+						  mos7840_port->
- 						  delta_msr_cond == 1));
- 
- 			/* see if a signal did it */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
-+
-+			if (port->serial->disconnected)
-+				return -EIO;
-+
- 			cnow = mos7840_port->icount;
- 			smp_rmb();
- 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
--- 
-1.7.10.4
-
-
+Thanks
+Vivek
