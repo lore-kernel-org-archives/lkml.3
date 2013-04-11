@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759883Ab3DKSgh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:36:37 -0400
-Received: from mail-ie0-f202.google.com ([209.85.223.202]:54678 "EHLO
-	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752387Ab3DKSgf (ORCPT
+	id S1763222Ab3DKShp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:37:45 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:57541 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab3DKShn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:36:35 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: linux-fbdev@vger.kernel.org
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-kernel@vger.kernel.org, Doug Anderson <dianders@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH] backlight: platform_lcd: introduce probe callback
-Date: Thu, 11 Apr 2013 11:36:31 -0700
-Message-Id: <1365705391-23181-1-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
+	Thu, 11 Apr 2013 14:37:43 -0400
+Date: Thu, 11 Apr 2013 20:37:27 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Airlie <airlied@gmail.com>,
+        Tomas Melin <tomas.melin@iki.fi>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: don't check inconsistent modeset
+ state when force-restoring
+Message-ID: <20130411183727.GA2649@netboy>
+References: <20130409172820.GC27612@phenom.ffwll.local>
+ <1365537090-11518-1-git-send-email-daniel.vetter@ffwll.ch>
+ <20130410115901.GA4502@netboy>
+ <20130410120724.GJ27612@phenom.ffwll.local>
+ <20130410172717.GA2480@netboy>
+ <CAKMK7uGTqSdq_V=Pu-BGNhhTqOn=fz5-LvUXBXpGQJqzL1QOUQ@mail.gmail.com>
+ <20130411175220.GC2482@netboy>
+ <CAKMK7uFVpnbxT-P+eEoFjKPJ1bEom7Q_PhNcr1ZnzApkc8mqug@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uFVpnbxT-P+eEoFjKPJ1bEom7Q_PhNcr1ZnzApkc8mqug@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platform LCD devices may need to do some device-specific
-initialization before they can be used (regulator or GPIO setup,
-for example), but currently the driver does not support any way of
-doing this.  This patch adds a probe() callback to plat_lcd_data
-which platform LCD devices can set to indicate that device-specific
-initialization is needed.
+On Thu, Apr 11, 2013 at 08:14:10PM +0200, Daniel Vetter wrote:
+> 
+> I've just tracked down and fixed an bug which can lead to a hard-hang
+> in the crtc restore code (which is used both in the lid handler when
+> opening and on resume). If you could please test this patch (on top of
+> drm-intel-nightly):
+> 
+> https://patchwork.kernel.org/patch/2428971/
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- drivers/video/backlight/platform_lcd.c | 8 ++++++++
- include/video/platform_lcd.h           | 1 +
- 2 files changed, 9 insertions(+)
+Okay, will do.
 
-diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
-index 54d94de..2fb24a1 100644
---- a/drivers/video/backlight/platform_lcd.c
-+++ b/drivers/video/backlight/platform_lcd.c
-@@ -86,6 +86,14 @@ static int platform_lcd_probe(struct platform_device *pdev)
- 		return -EINVAL;
- 	}
- 
-+	if (pdata->probe) {
-+		err = pdata->probe(pdata);
-+		if (err) {
-+			dev_err(dev, "platform probe failed: %d\n", err);
-+			return err;
-+		}
-+	}
-+
- 	plcd = devm_kzalloc(&pdev->dev, sizeof(struct platform_lcd),
- 			    GFP_KERNEL);
- 	if (!plcd) {
-diff --git a/include/video/platform_lcd.h b/include/video/platform_lcd.h
-index ad3bdfe..23864b2 100644
---- a/include/video/platform_lcd.h
-+++ b/include/video/platform_lcd.h
-@@ -15,6 +15,7 @@ struct plat_lcd_data;
- struct fb_info;
- 
- struct plat_lcd_data {
-+	int	(*probe)(struct plat_lcd_data *);
- 	void	(*set_power)(struct plat_lcd_data *, unsigned int power);
- 	int	(*match_fb)(struct plat_lcd_data *, struct fb_info *);
- };
--- 
-1.8.1.3
+> >> I'll quickly port the patch (in it's latest v3 version) to 3.9-rc
+> >> kernels for you to test.
 
+FWIW, this does work, no freeze, no warning, but instead:
+
+Apr 11 20:30:49 netboy laptop-mode: Laptop mode 
+Apr 11 20:30:49 netboy laptop-mode: enabled, 
+Apr 11 20:30:49 netboy laptop-mode: not active [unchanged]
+Apr 11 20:30:53 netboy kernel: [   75.450783] [drm:i9xx_crtc_mode_set] *ERROR* Couldn't find PLL settings for mode!
+Apr 11 20:30:53 netboy laptop-mode: Laptop mode 
+Apr 11 20:30:53 netboy laptop-mode: enabled, 
+Apr 11 20:30:53 netboy laptop-mode: not active [unchanged]
+
+Thanks,
+Richard
