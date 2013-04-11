@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab3DKQK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:10:56 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:47794 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150Ab3DKQKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:10:54 -0400
-Message-ID: <1365696644.3887.172.camel@edumazet-glaptop>
-Subject: Re: [PATCH] net: mv643xx_eth: Add GRO support
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
-        Soeren Moch <smoch@web.de>, Paul Mackerras <paulus@samba.org>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Dale Farnsworth <dale@farnsworth.org>, netdev@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org
-Date: Thu, 11 Apr 2013 09:10:44 -0700
-In-Reply-To: <20130411160258.GI1910@1wt.eu>
-References: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	 <20130411131333.GD1910@1wt.eu>
-	 <CABJ1b_TQDabT1J7ffo5cb1Th=71bcSduifMJaDpfVRiiHvtWDw@mail.gmail.com>
-	 <20130411150326.GA19978@1wt.eu>
-	 <CABJ1b_TRxm97DKJLP_h0VwMJvcYmSpjoJvtg1KvBNGah=VzqMQ@mail.gmail.com>
-	 <20130411153256.GH1910@1wt.eu> <1365695675.3887.165.camel@edumazet-glaptop>
-	 <20130411160258.GI1910@1wt.eu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753682Ab3DKQOh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:14:37 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:40066 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752662Ab3DKQOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 12:14:36 -0400
+Date: Thu, 11 Apr 2013 09:05:24 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: fweisbec@gmail.com, rostedt@goodmis.org, bp@alien8.de,
+        arjan@linux.intel.com, khilman@linaro.org, cl@linux.com,
+        pradeep@us.ibm.com
+Subject: [PATCH documentation 0/2] OS-jitter documentation
+Message-ID: <20130411160524.GA30384@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041116-5806-0000-0000-000020B070AE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 18:02 +0200, Willy Tarreau wrote:
+Hello!
 
-> OK, that makes sense indeed, I didn't think about this case. All
-> I remember was that the old call achieved a higher packet rate
-> than napi_gro_receive, but it was on an older kernel and I can't
-> be more specifics after several months :-/
+This is v2 of the OS-jitter-reduction documentation.  Changes from
+v1 (https://lkml.org/lkml/2013/3/18/462):
 
-Its probably true that the GRO handler consumes more cpu for packets
-that cant be aggregated in the end.
+o	Updated the nohz1 patch based on feedback from Frederic Weisbecker,
+	Steven Rostedt, Borislav Petkov, Arjan van de Ven, Kevin Hilman,
+	and Christoph Lameter.
 
-Thats a trade off, and maybe we could add in the core stack a device
-feature to instruct gro handler to do a short cut for packets with no
-checksum. Or better a sysctl so that a static_branch can be used.
+o	Added a second file describing how to reduce OS jitter from
+	per-CPU kthreads.  This is quite rough, but is hopefully a
+	good starting point.
 
+							Thanx, Paul
 
+------------------------------------------------------------------------
+
+ b/Documentation/kernel-per-CPU-kthreads.txt |  159 ++++++++++++++++++
+ b/Documentation/timers/NO_HZ.txt            |  245 ++++++++++++++++++++++++++++
+ 2 files changed, 404 insertions(+)
 
