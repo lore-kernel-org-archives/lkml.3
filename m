@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab3DKVsI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:48:08 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:64331 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753345Ab3DKVsG (ORCPT
+	id S1756201Ab3DKVvj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:51:39 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:33401 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755061Ab3DKVvh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:48:06 -0400
-X-IronPort-AV: E=Sophos;i="4.87,458,1363158000"; 
-   d="scan'208";a="37861097"
-Message-ID: <51672F93.7080109@codeaurora.org>
-Date: Thu, 11 Apr 2013 14:48:03 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 11 Apr 2013 17:51:37 -0400
+Date: Thu, 11 Apr 2013 14:51:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Mackerras <paulus@samba.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, Alexander Graf <agraf@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, kvm@vger.kernel.org,
+        kvm-ppc@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 1/9] powerpc,kvm: fix imbalance srcu_read_[un]lock()
+Message-ID: <20130411215129.GU29861@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1363366257-4886-1-git-send-email-laijs@cn.fujitsu.com>
+ <1363366257-4886-2-git-send-email-laijs@cn.fujitsu.com>
+ <20130317212648.GA4259@iris.ozlabs.ibm.com>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH 1/4] Documentation: Add memory mapped ARM architected
- timer binding
-References: <1365474623-29181-1-git-send-email-sboyd@codeaurora.org> <1365474623-29181-2-git-send-email-sboyd@codeaurora.org> <20130409090843.GS23725@e106331-lin.cambridge.arm.com> <516444FE.2080200@codeaurora.org> <20130410101336.GB8799@e106331-lin.cambridge.arm.com> <51662584.6070906@codeaurora.org> <20130411112407.GD8259@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130411112407.GD8259@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130317212648.GA4259@iris.ozlabs.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041121-7408-0000-0000-00000ED32915
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/13 04:24, Mark Rutland wrote:
-> Could we say the reg for the second view is optional?
->
+On Mon, Mar 18, 2013 at 08:26:48AM +1100, Paul Mackerras wrote:
+> On Sat, Mar 16, 2013 at 12:50:49AM +0800, Lai Jiangshan wrote:
+> > At the point of up_out label in kvmppc_hv_setup_htab_rma(),
+> > srcu read lock is still held.
+> > 
+> > We have to release it before return.
+> > 
+> > Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> > Cc: Gleb Natapov <gleb@redhat.com>
+> > Cc: Alexander Graf <agraf@suse.de>
+> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: kvm@vger.kernel.org
+> > Cc: kvm-ppc@vger.kernel.org
+> > ---
+> >  arch/powerpc/kvm/book3s_hv.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/arch/powerpc/kvm/book3s_hv.c b/arch/powerpc/kvm/book3s_hv.c
+> > index 80dcc53..c26740e 100644
+> > --- a/arch/powerpc/kvm/book3s_hv.c
+> > +++ b/arch/powerpc/kvm/book3s_hv.c
+> > @@ -1799,7 +1799,7 @@ static int kvmppc_hv_setup_htab_rma(struct kvm_vcpu *vcpu)
+> >  
+> >   up_out:
+> >  	up_read(&current->mm->mmap_sem);
+> > -	goto out;
+> > +	goto out_srcu;
+> 
+> Acked-by: Paul Mackerras <paulus@samba.org>
 
-Yes, that's already covered in the binding.
+Thank you both, queued for 3.11 (assuming no one has beat me to it).
 
-> Might we have a hardware / firmware configuration where the kernel can only access
-> the secondary view?
->
-
-I don't see how this is possible. The CNTACRn register controls secure
-vs. non-secure access for particular registers in a frame regardless of
-which view is used. The CNTPL0ACRn is not a security restricted register
-and it can only restrict access to certain registers in the second view.
-No combination of settings in these registers can restrict access to
-only the second view in a frame with two views.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+							Thanx, Paul
 
