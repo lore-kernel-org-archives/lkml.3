@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936232Ab3DKV0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:26:18 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:56515 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759696Ab3DKV0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:26:15 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        linaro-kernel@lists.linaro.org, patches@linaro.org
-Subject: Re: [PATCH] cpufreq: Call __cpufreq_governor() with correct policy->cpus mask
-Date: Thu, 11 Apr 2013 23:34:03 +0200
-Message-ID: <1706828.TqVJcHNWlq@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <e3001264b4d7328b41130857adbb51e93d224c26.1365667475.git.viresh.kumar@linaro.org>
-References: <e3001264b4d7328b41130857adbb51e93d224c26.1365667475.git.viresh.kumar@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1422698Ab3DKV0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:26:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5406 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935309Ab3DKUsp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 16:48:45 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=QKemBh85TsEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=evslkJG6AhUA:10 a=pGLkceISAAAA:8 a=1XWaLZrsAAAA:8 a=J1Y8HTJGAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=MSl-tDqOz04A:10 a=UTB_XpHje0EA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130411202613.768257644@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 11 Apr 2013 16:27:51 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Vijay Subramanian <subramanian.vijay@gmail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 168/171 ] net: fq_codel: Fix off-by-one error
+References: <20130411202503.783159048@goodmis.org>
+Content-Disposition: inline; filename=0168-net-fq_codel-Fix-off-by-one-error.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 11, 2013 01:34:53 PM Viresh Kumar wrote:
-> __cpufreq_governor() must be called with correct policy->cpus mask. In
-> __cpufreq_remove_dev() we initially clear policy->cpus with cpumask_clear_cpu()
-> and then call __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT). In case
-> governor is doing some per-cpu stuff in EXIT callback, this can create uncertain
-> behavior.
-> 
-> Generic governors in drivers/cpufreq/ doesn't do any per-cpu stuff in EXIT
-> callback and so we don't face any issues currently. But its better to keep the
-> code clean, so we don't face any issues in future.
-> 
-> Now, we call cpumask_clear_cpu() only when multiple cpus are managed by policy.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+3.6.11.2 stable review patch.
+If anyone has any objections, please let me know.
 
-Applied.
+------------------
 
-Thanks,
-Rafael
+From: Vijay Subramanian <subramanian.vijay@gmail.com>
 
+[ Upstream commit cd68ddd4c29ab523440299f24ff2417fe7a0dca6 ]
 
-> ---
->  drivers/cpufreq/cpufreq.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index fd97a62..3564947 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1105,7 +1105,9 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
->  
->  	WARN_ON(lock_policy_rwsem_write(cpu));
->  	cpus = cpumask_weight(data->cpus);
-> -	cpumask_clear_cpu(cpu, data->cpus);
-> +
-> +	if (cpus > 1)
-> +		cpumask_clear_cpu(cpu, data->cpus);
->  	unlock_policy_rwsem_write(cpu);
->  
->  	if (cpu != data->cpu) {
-> 
+Currently, we hold a max of sch->limit -1 number of packets instead of
+sch->limit packets. Fix this off-by-one error.
+
+Signed-off-by: Vijay Subramanian <subramanian.vijay@gmail.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ net/sched/sch_fq_codel.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/sched/sch_fq_codel.c b/net/sched/sch_fq_codel.c
+index 4e606fc..5578628 100644
+--- a/net/sched/sch_fq_codel.c
++++ b/net/sched/sch_fq_codel.c
+@@ -195,7 +195,7 @@ static int fq_codel_enqueue(struct sk_buff *skb, struct Qdisc *sch)
+ 		flow->deficit = q->quantum;
+ 		flow->dropped = 0;
+ 	}
+-	if (++sch->q.qlen < sch->limit)
++	if (++sch->q.qlen <= sch->limit)
+ 		return NET_XMIT_SUCCESS;
+ 
+ 	q->drop_overlimit++;
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.10.4
+
+
