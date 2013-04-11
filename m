@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934641Ab3DKK3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 06:29:46 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:53661 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761383Ab3DKK3p (ORCPT
+	id S934757Ab3DKKdt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 06:33:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:59914 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750712Ab3DKKdr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 06:29:45 -0400
-Message-ID: <51669091.5070406@gmail.com>
-Date: Thu, 11 Apr 2013 18:29:37 +0800
-From: Ric Mason <ric.masonn@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/10] mm: vmscan: Have kswapd shrink slab only once per
- priority
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-9-git-send-email-mgorman@suse.de> <20130409065325.GA4411@lge.com> <20130409111358.GB2002@suse.de> <20130410052142.GB5872@lge.com> <20130411100115.GJ3710@suse.de>
-In-Reply-To: <20130411100115.GJ3710@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Apr 2013 06:33:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,454,1363158000"; 
+   d="scan'208";a="317651332"
+Message-ID: <1365676406.21742.14.camel@smile>
+Subject: Re: [PATCH v2 0/5] dmaengine: add ACPI DMA helpers and use them in
+ dw_dmac
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
+        spear-devel <spear-devel@list.st.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-acpi@vger.kernel.org
+Date: Thu, 11 Apr 2013 13:33:26 +0300
+In-Reply-To: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
-On 04/11/2013 06:01 PM, Mel Gorman wrote:
-> On Wed, Apr 10, 2013 at 02:21:42PM +0900, Joonsoo Kim wrote:
->>>>> @@ -2673,9 +2674,15 @@ static bool kswapd_shrink_zone(struct zone *zone,
->>>>>   	sc->nr_to_reclaim = max(SWAP_CLUSTER_MAX, high_wmark_pages(zone));
->>>>>   	shrink_zone(zone, sc);
->>>>>   
->>>>> -	reclaim_state->reclaimed_slab = 0;
->>>>> -	nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
->>>>> -	sc->nr_reclaimed += reclaim_state->reclaimed_slab;
->>>>> +	/*
->>>>> +	 * Slabs are shrunk for each zone once per priority or if the zone
->>>>> +	 * being balanced is otherwise unreclaimable
->>>>> +	 */
->>>>> +	if (shrinking_slab || !zone_reclaimable(zone)) {
->>>>> +		reclaim_state->reclaimed_slab = 0;
->>>>> +		nr_slab = shrink_slab(&shrink, sc->nr_scanned, lru_pages);
->>>>> +		sc->nr_reclaimed += reclaim_state->reclaimed_slab;
->>>>> +	}
->>>>>   
->>>>>   	if (nr_slab == 0 && !zone_reclaimable(zone))
->>>>>   		zone->all_unreclaimable = 1;
->>>> Why shrink_slab() is called here?
->>> Preserves existing behaviour.
->> Yes, but, with this patch, existing behaviour is changed, that is, we call
->> shrink_slab() once per priority. For now, there is no reason this function
->> is called here. How about separating it and executing it outside of
->> zone loop?
->>
-> We are calling it fewer times but it's still receiving the same information
-> from sc->nr_scanned it received before. With the change you are suggesting
-> it would be necessary to accumulating sc->nr_scanned for each zone shrunk
-> and then pass the sum to shrink_slab() once per priority. While this is not
-> necessarily wrong, there is little or no motivation to alter the shrinkers
-> in this manner in this series.
+On Tue, 2013-04-09 at 14:05 +0300, Andy Shevchenko wrote: 
+> There is a patch series which introduces ACPI DMA helpers in similar way like
+> we have for DeviceTree.
+> 
+> In addition it applies this to the first user, namely dw_dmac driver.
+> 
+> Since v1:
+>  - address one Vinod's comment
+>  - replace 5/6 & 6/6 by 5/5 from Rafael
+>  - tested on Intel Lynxpoint system
 
-Why the result is not the same?
+Vinod, any comments on the series? Could you consider merging these for
+3.10?
 
+> 
+> Andy Shevchenko (4):
+>   dma: acpi-dma: introduce ACPI DMA helpers
+>   dmaengine: call acpi_dma_request_slave_channel as well
+>   dma: acpi-dma: parse CSRT to extract additional resources
+>   dw_dmac: add ACPI support
+> 
+> Rafael J. Wysocki (1):
+>   ACPI / LPSS: add support of shared clock
+> 
+>  Documentation/acpi/enumeration.txt     |  77 ++++++
+>  drivers/acpi/Makefile                  |   1 -
+>  drivers/acpi/acpi_lpss.c               |  26 +-
+>  drivers/acpi/csrt.c                    | 159 ------------
+>  drivers/acpi/internal.h                |   1 -
+>  drivers/acpi/scan.c                    |   1 -
+>  drivers/clk/x86/clk-lpt.c              |  15 +-
+>  drivers/dma/Kconfig                    |   4 +
+>  drivers/dma/Makefile                   |   1 +
+>  drivers/dma/acpi-dma.c                 | 445 +++++++++++++++++++++++++++++++++
+>  drivers/dma/dmaengine.c                |   6 +
+>  drivers/dma/dw_dmac.c                  |  68 +++--
+>  drivers/dma/dw_dmac_regs.h             |   1 -
+>  include/linux/acpi_dma.h               | 120 +++++++++
+>  include/linux/platform_data/clk-lpss.h |   5 +
+>  15 files changed, 741 insertions(+), 189 deletions(-)
+>  delete mode 100644 drivers/acpi/csrt.c
+>  create mode 100644 drivers/dma/acpi-dma.c
+>  create mode 100644 include/linux/acpi_dma.h
+> 
 
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
