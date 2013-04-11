@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935379Ab3DKNey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 09:34:54 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:45589 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752764Ab3DKNew (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 09:34:52 -0400
-Message-ID: <5166BBFB.5030200@console-pimps.org>
-Date: Thu, 11 Apr 2013 14:34:51 +0100
-From: Matt Fleming <matt@console-pimps.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S934865Ab3DKNgz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 09:36:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59554 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752764Ab3DKNgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 09:36:53 -0400
+Date: Thu, 11 Apr 2013 15:35:36 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: tip-bot for Andrea Arcangeli <tipbot@zytor.com>,
+        linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, apw@canonical.com, bp@alien8.de,
+        stefan.bader@canonical.com, mgorman@suse.de, tglx@linutronix.de
+Subject: Re: [tip:x86/urgent] x86/mm/cpa: Convert noop to functional fix
+Message-ID: <20130411133536.GV14121@redhat.com>
+References: <1365600505-19314-1-git-send-email-aarcange@redhat.com>
+ <tip-f76cfa3c2496c462b5bc01bd0c9340c2715b73ca@git.kernel.org>
+ <20130411122918.GA19491@gmail.com>
 MIME-Version: 1.0
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-CC: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>, Tom Gundersen <teg@jklm.no>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Tony Luck <tony.luck@intel.com>, Mike Waychison <mikew@google.com>
-Subject: Re: [PATCH 3/6] efivars: efivar_entry API
-References: <1365077935-6859-1-git-send-email-matt@console-pimps.org> <1365077935-6859-4-git-send-email-matt@console-pimps.org> <A5ED84D3BB3A384992CBB9C77DEDA4D41AF8CFEE@USINDEM103.corp.hds.com>
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF8CFEE@USINDEM103.corp.hds.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411122918.GA19491@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/13 16:25, Seiji Aguchi wrote:
->> +	if (efi_guidcmp(entry->var.VendorGuid, vendor))
->> +		return 0;
->> +
->> +	for (i = 0; i < DUMP_NAME_LEN; i++)
->> +		name[i] = entry->var.VariableName[i];
->> +
->> +	if (sscanf(name, "dump-type%u-%u-%d-%lu",
->> +		   cb_data->type, &part, &cnt, &time) == 4) {
->> +		*cb_data->id = part;
->> +		*cb_data->count = cnt;
->> +		cb_data->timespec->tv_sec = time;
->> +		cb_data->timespec->tv_nsec = 0;
->> +	} else if (sscanf(name, "dump-type%u-%u-%lu",
->> +			  cb_data->type, &part, &time) == 3) {
->> +		/*
->> +		 * Check if an old format,
->> +		 * which doesn't support holding
->> +		 * multiple logs, remains.
->> +		 */
->> +		*cb_data->id = part;
->> +		*cb_data->count = 0;
->> +		cb_data->timespec->tv_sec = time;
->> +		cb_data->timespec->tv_nsec = 0;
->> +	} else
->> +		return 0;
->> +
->> +	efivar_entry_size(entry, &size);
+Hi,
+
+On Thu, Apr 11, 2013 at 02:29:18PM +0200, Ingo Molnar wrote:
 > 
-> Deadlocking will happen in this efivar_entry_size() because __efivars->lock is already hold 
-> in efivar_entry_iter_begin().
-
-Good catch, thanks.
-
->> @@ -1419,81 +1229,90 @@ static int efi_pstore_write(enum pstore_type_id type,
->>  	for (i = 0; i < DUMP_NAME_LEN; i++)
->>  		efi_name[i] = name[i];
->>
->> -	efivars->ops->set_variable(efi_name, &vendor, PSTORE_EFI_ATTRIBUTES,
->> -				   size, psi->buf);
->> +	ret = efivar_entry_set_safe(efi_name, vendor, PSTORE_EFI_ATTRIBUTES,
->> +				    !pstore_cannot_block_path(reason),
->> +				    size, psi->buf);
->>
->> -	spin_unlock_irqrestore(&efivars->lock, flags);
->> -
->> -	if (reason == KMSG_DUMP_OOPS && efivar_wq_enabled)
->> +	if (size && !ret && reason == KMSG_DUMP_OOPS && efivar_wq_enabled)
 > 
-> Why do you add (size && !ret) checking?
-> If the purpose of this patch is just adding new API, we don't need to modify the logic.
+> * tip-bot for Andrea Arcangeli <tipbot@zytor.com> wrote:
+> 
+> > Commit-ID:  f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
+> > Gitweb:     http://git.kernel.org/tip/f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
+> > Author:     Andrea Arcangeli <aarcange@redhat.com>
+> > AuthorDate: Wed, 10 Apr 2013 15:28:25 +0200
+> > Committer:  Ingo Molnar <mingo@kernel.org>
+> > CommitDate: Thu, 11 Apr 2013 10:34:42 +0200
+> > 
+> > x86/mm/cpa: Convert noop to functional fix
+> 
+> I think it's this commit that causes the following cpa-selftest failure:
+> 
+> CPA self-test:
+> ffff880038000000 level 2 but not PSE 8000000038000062
+> ffff880038200000 level 2 but not PSE 8000000038200062
+> ffff880038400000 level 2 but not PSE 8000000038400062
+> ffff880038600000 level 2 but not PSE 8000000038600062
+> ffff880038800000 level 2 but not PSE 8000000038800062
+> ffff880038a00000 level 2 but not PSE 8000000038a00062
+> ffff880038c00000 level 2 but not PSE 8000000038c00062
+> ffff880038e00000 level 2 but not PSE 8000000038e00062
+> 
+> ...
+> 
+>  4k 134128 large 250 gb 0 x 1[ffff88000009a000-ffff88000009a000] miss 0
+> ------------[ cut here ]------------
+> WARNING: at arch/x86/mm/pageattr-test.c:226 pageattr_test+0x3e1/0x410()
+> NOT PASSED. Please report.
+> Pid: 32, comm: pageattr-test Not tainted 3.9.0-rc6+ #222036
+> Call Trace:
+>  [<ffffffff8104fdd3>] warn_slowpath_common+0x62/0x7b
+>  [<ffffffff8104fe5a>] warn_slowpath_fmt+0x46/0x48
+>  [<ffffffff8102b3d9>] ? lookup_address+0xad/0x127
+>  [<ffffffff8102c766>] pageattr_test+0x3e1/0x410
+>  [<ffffffff8102c795>] ? pageattr_test+0x410/0x410
+>  [<ffffffff8102c7af>] do_pageattr_test+0x1a/0x3d
+>  [<ffffffff81070a8d>] kthread+0xa2/0xaa
+>  [<ffffffff810709eb>] ? __kthread_parkme+0x65/0x65
+>  [<ffffffff81aad73c>] ret_from_fork+0x7c/0xb0
+>  [<ffffffff810709eb>] ? __kthread_parkme+0x65/0x65
+> ---[ end trace 582fec3a45bb42b7 ]---
+> device: 'vcs2': device_add
 
-That looks like a bug that slipped in. I'll fix it. Thanks!
+This looks a warning resulting from a false positive in the CPA self
+test, not a bug in f76cfa3c2496c462b5bc01bd0c9340c2715b73ca. I'll send
+a patch to correct it. I can't reproduce it here so it would be great
+if you could test the fix on your system above to verify.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+Thanks,
+Andrea
