@@ -1,51 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab3DKHKz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:10:55 -0400
-Received: from mga14.intel.com ([143.182.124.37]:22064 "EHLO mga14.intel.com"
+	id S1754921Ab3DKHL5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:11:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5293 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753798Ab3DKHKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:10:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,453,1363158000"; 
-   d="scan'208";a="284662397"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>,
-        linux-usb@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-Subject: Re: [PATCH] drivers: usb: chipidea: convert to devm_ioremap_resource()
-In-Reply-To: <1365627935-17561-1-git-send-email-silviupopescu1990@gmail.com>
-References: <1365627935-17561-1-git-send-email-silviupopescu1990@gmail.com>
-User-Agent: Notmuch/0.12+187~ga2502b0 (http://notmuchmail.org) Emacs/23.4.1 (x86_64-pc-linux-gnu)
-Date: Thu, 11 Apr 2013 10:12:56 +0300
-Message-ID: <87r4ih5ymf.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752924Ab3DKHLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 03:11:55 -0400
+Date: Thu, 11 Apr 2013 03:11:46 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Message-ID: <1365664306-rvrpdnsl-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <51662D5B.3050001@hitachi.com>
+References: <51662D5B.3050001@hitachi.com>
+Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
+ memory error on dirty cache selectable
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Silviu-Mihai Popescu <silviupopescu1990@gmail.com> writes:
+Hi Tanino-san,
 
-> Convert  use of devm_request_and_ioremap() to the newly introduced
-> devm_ioremap_resource() which provides more consistent error handling.
+On Thu, Apr 11, 2013 at 12:26:19PM +0900, Mitsuhiro Tanino wrote:
+...
+> Solution
+> ---------
+> The patch proposes a new sysctl interface, vm.memory_failure_dirty_panic,
+> in order to prevent data corruption comes from data lost problem.
+> Also this patch displays information of affected file such as device name,
+> inode number, file offset and file type if the file is mapped on a memory
+> and the page is dirty cache.
+> 
+> When SRAO machine check occurs on a dirty page cache, corresponding
+> data cannot be recovered any more. Therefore, the patch proposes a kernel
+> option to keep a system running or force system panic in order
+> to avoid further trouble such as data corruption problem of application.
+> 
+> System administrator can select an error action using this option
+> according to characteristics of target system.
 
-You mean, you've run coccinelle? Remember to mention it, then.
+Can we do this in userspace?
+mcelog can trigger scripts when a MCE which matches the user-configurable
+conditions happens, so I think that we can trigger a kernel panic by
+chekcing kernel messages from the triggered script.
+For that purpose, I recently fixed the dirty/clean messaging in commit
+ff604cf6d4 "mm: hwpoison: fix action_result() to print out dirty/clean".
 
-> devm_ioremap_resource() provides its own error messages so all explicit
-> error messages can be removed from the failure code paths.
->
-> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+> 
+> Use Case
+> ---------
+> This option is intended to be adopted in KVM guest because it is
+> supposed that Linux on KVM guest operates customers business and
+> it is big impact to lost or corrupt customers data by memory failure.
+> 
+> On the other hand, this option does not recommend to apply KVM host
+> as following reasons.
+> 
+> - Making KVM host panic has a big impact because all virtual guests are
+>   affected by their host panic. Affected virtual guests are forced to stop
+>   and have to be restarted on the other hypervisor.
 
-That's cool, but your chipidea patches have to be based off of
-ci-for-greg branch of the chipidea tree [1] or at least usb-next branch
-of Greg's usb.git [2].
+In this reasoning, you seem to assume that important data (business data)
+are only handled on guest OS. That's true in most cases, but not always.
+I think that the more general approach for this use case is that
+we trigger kernel panic if memory errors happened on dirty pagecaches
+used by 'important' processes (for example by adding process flags
+controlled by prctl(),) and set it on qemu processes.
 
-[1] git://github.com/virtuoso/linux-ci.git
-[2] git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git
+> - If disk cached model of qemu is set to "none", I/O type of virtual
+>   guests becomes O_DIRECT and KVM host does not cache guest's disk I/O.
+>   Therefore, if SRAO machine check is reported on a dirty page cache
+>   in KVM host, its virtual machines are not affected by the machine check.
+>   So the host is expected to keep operating instead of kernel panic.
 
-Regards,
---
-Alex
+What to do if there're multiple guests, and some have "none" cache and
+others have other types?
+I think that we need more flexible settings for this use case.
+
+> 
+> Past discussion
+> --------------------
+> This problem was previously discussed in the kernel community, 
+> (refer: mail threads pertaining to
+> http://marc.info/?l=linux-kernel&m=135187403804934&w=4). 
+> 
+> > > - I worry that if a hardware error occurs, it might affect a large
+> > >   amount of memory all at the same time.  For example, if a 4G memory
+> > >   block goes bad, this message will be printed a million times?
+> 
+> As Andrew mentioned in the above threads, if 4GB memory blocks goes bad,
+> error messages will be printed a million times and this behavior loses
+> a system reliability.
+
+Maybe "4G memory block goes bad" is not a MCE SRAO but a MCE with higher
+severity, so we have no choice but to make kernel panic.
+
+Thanks,
+Naoya Horiguchi
