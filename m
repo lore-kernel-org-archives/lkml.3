@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964955Ab3DKUhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:37:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20087 "EHLO
+	id S964945Ab3DKUhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:37:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27951 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab3DKU0C (ORCPT
+	with ESMTP id S1753821Ab3DKU0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:26:02 -0400
-X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=X_2ZCyv58eUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Ep4Ro2KlEfoA:10 a=vaJtXVxTAAAA:8 a=J1Y8HTJGAAAA:8 a=A4TM9AWWC-chlQxfQX8A:9 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=41iBt02fzpWDyGKR:21 a=_9Y1E7h_UdYzI9Qf:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=oBCU9obzIHwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=_fYHw4IRGwwA:10 a=zRKbQ67AAAAA:8 a=0u0nhMPvhaUjrep2UKUA:9 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=HIlZi078OZJAk_Go:21 a=ZlPOnRfq8dW4G3bK:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202546.908777788@goodmis.org>
+Message-Id: <20130411202549.829773582@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:25:07 -0400
+Date: Thu, 11 Apr 2013 16:25:25 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Kirill Tkhai <tkhai@yandex.ru>, David Miller <davem@davemloft.net>
-Subject: [ 004/171 ] sunsu: Fix panic in case of nonexistent port at "console=ttySY"
- cmdline option
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Subject: [ 022/171 ] sfc: Fix efx_rx_buf_offset() in the presence of swiotlb
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0004-sunsu-Fix-panic-in-case-of-nonexistent-port-at-conso.patch
+Content-Disposition: inline; filename=0022-sfc-Fix-efx_rx_buf_offset-in-the-presence-of-swiotlb.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,121 +29,94 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tkhai Kirill <tkhai@yandex.ru>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit cb29529ea0030e60ef1bbbf8399a43d397a51526 ]
+[ Upstream commit b590ace09d51cd39744e0f7662c5e4a0d1b5d952 ]
 
-If a machine has X (X < 4) sunsu ports and cmdline
-option "console=ttySY" is passed, where X < Y <= 4,
-than the following panic happens:
+We assume that the mapping between DMA and virtual addresses is done
+on whole pages, so we can find the page offset of an RX buffer using
+the lower bits of the DMA address.  However, swiotlb maps in units of
+2K, breaking this assumption.
 
-Unable to handle kernel NULL pointer dereference
-TPC: <sunsu_console_setup+0x78/0xe0>
-RPC: <sunsu_console_setup+0x74/0xe0>
-I7: <register_console+0x378/0x3e0>
-Call Trace:
- [0000000000453a38] register_console+0x378/0x3e0
- [0000000000576fa0] uart_add_one_port+0x2e0/0x340
- [000000000057af40] su_probe+0x160/0x2e0
- [00000000005b8a4c] platform_drv_probe+0xc/0x20
- [00000000005b6c2c] driver_probe_device+0x12c/0x220
- [00000000005b6da8] __driver_attach+0x88/0xa0
- [00000000005b4df4] bus_for_each_dev+0x54/0xa0
- [00000000005b5a54] bus_add_driver+0x154/0x260
- [00000000005b7190] driver_register+0x50/0x180
- [00000000006d250c] sunsu_init+0x18c/0x1e0
- [00000000006c2668] do_one_initcall+0xe8/0x160
- [00000000006c282c] kernel_init_freeable+0x12c/0x1e0
- [0000000000603764] kernel_init+0x4/0x100
- [0000000000405f64] ret_from_syscall+0x1c/0x2c
- [0000000000000000]           (null)
+Add an explicit page_offset field to struct efx_rx_buffer.
 
-1)Fix the panic;
-2)Increment registered port number every successful
-probe.
-
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: David Miller <davem@davemloft.net>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/tty/serial/sunsu.c |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
+ drivers/net/ethernet/sfc/net_driver.h |    4 +++-
+ drivers/net/ethernet/sfc/rx.c         |   10 +++++-----
+ 2 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/tty/serial/sunsu.c b/drivers/tty/serial/sunsu.c
-index 675303b..76fa1fa 100644
---- a/drivers/tty/serial/sunsu.c
-+++ b/drivers/tty/serial/sunsu.c
-@@ -968,6 +968,7 @@ static struct uart_ops sunsu_pops = {
- #define UART_NR	4
- 
- static struct uart_sunsu_port sunsu_ports[UART_NR];
-+static int nr_inst; /* Number of already registered ports */
- 
- #ifdef CONFIG_SERIO
- 
-@@ -1337,13 +1338,8 @@ static int __init sunsu_console_setup(struct console *co, char *options)
- 	printk("Console: ttyS%d (SU)\n",
- 	       (sunsu_reg.minor - 64) + co->index);
- 
--	/*
--	 * Check whether an invalid uart number has been specified, and
--	 * if so, search for the first available port that does have
--	 * console support.
--	 */
--	if (co->index >= UART_NR)
--		co->index = 0;
-+	if (co->index > nr_inst)
-+		return -ENODEV;
- 	port = &sunsu_ports[co->index].port;
- 
- 	/*
-@@ -1408,7 +1404,6 @@ static enum su_type __devinit su_get_type(struct device_node *dp)
- 
- static int __devinit su_probe(struct platform_device *op)
+diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
+index cd9c0a9..4c454bdc 100644
+--- a/drivers/net/ethernet/sfc/net_driver.h
++++ b/drivers/net/ethernet/sfc/net_driver.h
+@@ -205,6 +205,7 @@ struct efx_tx_queue {
+  *	Will be %NULL if the buffer slot is currently free.
+  * @page: The associated page buffer. Valif iff @flags & %EFX_RX_BUF_PAGE.
+  *	Will be %NULL if the buffer slot is currently free.
++ * @page_offset: Offset within page. Valid iff @flags & %EFX_RX_BUF_PAGE.
+  * @len: Buffer length, in bytes.
+  * @flags: Flags for buffer and packet state.
+  */
+@@ -214,7 +215,8 @@ struct efx_rx_buffer {
+ 		struct sk_buff *skb;
+ 		struct page *page;
+ 	} u;
+-	unsigned int len;
++	u16 page_offset;
++	u16 len;
+ 	u16 flags;
+ };
+ #define EFX_RX_BUF_PAGE		0x0001
+diff --git a/drivers/net/ethernet/sfc/rx.c b/drivers/net/ethernet/sfc/rx.c
+index 16ef366..b59b6fe 100644
+--- a/drivers/net/ethernet/sfc/rx.c
++++ b/drivers/net/ethernet/sfc/rx.c
+@@ -90,11 +90,7 @@ static unsigned int rx_refill_threshold;
+ static inline unsigned int efx_rx_buf_offset(struct efx_nic *efx,
+ 					     struct efx_rx_buffer *buf)
  {
--	static int inst;
- 	struct device_node *dp = op->dev.of_node;
- 	struct uart_sunsu_port *up;
- 	struct resource *rp;
-@@ -1418,16 +1413,16 @@ static int __devinit su_probe(struct platform_device *op)
+-	/* Offset is always within one page, so we don't need to consider
+-	 * the page order.
+-	 */
+-	return ((unsigned int) buf->dma_addr & (PAGE_SIZE - 1)) +
+-		efx->type->rx_buffer_hash_size;
++	return buf->page_offset + efx->type->rx_buffer_hash_size;
+ }
+ static inline unsigned int efx_rx_buf_size(struct efx_nic *efx)
+ {
+@@ -187,6 +183,7 @@ static int efx_init_rx_buffers_page(struct efx_rx_queue *rx_queue)
+ 	struct efx_nic *efx = rx_queue->efx;
+ 	struct efx_rx_buffer *rx_buf;
+ 	struct page *page;
++	unsigned int page_offset;
+ 	void *page_addr;
+ 	struct efx_rx_page_state *state;
+ 	dma_addr_t dma_addr;
+@@ -214,12 +211,14 @@ static int efx_init_rx_buffers_page(struct efx_rx_queue *rx_queue)
  
- 	type = su_get_type(dp);
- 	if (type == SU_PORT_PORT) {
--		if (inst >= UART_NR)
-+		if (nr_inst >= UART_NR)
- 			return -EINVAL;
--		up = &sunsu_ports[inst];
-+		up = &sunsu_ports[nr_inst];
- 	} else {
- 		up = kzalloc(sizeof(*up), GFP_KERNEL);
- 		if (!up)
- 			return -ENOMEM;
- 	}
+ 		page_addr += sizeof(struct efx_rx_page_state);
+ 		dma_addr += sizeof(struct efx_rx_page_state);
++		page_offset = sizeof(struct efx_rx_page_state);
  
--	up->port.line = inst;
-+	up->port.line = nr_inst;
- 
- 	spin_lock_init(&up->port.lock);
- 
-@@ -1461,6 +1456,8 @@ static int __devinit su_probe(struct platform_device *op)
- 		}
- 		dev_set_drvdata(&op->dev, up);
- 
-+		nr_inst++;
-+
- 		return 0;
- 	}
- 
-@@ -1488,7 +1485,7 @@ static int __devinit su_probe(struct platform_device *op)
- 
- 	dev_set_drvdata(&op->dev, up);
- 
--	inst++;
-+	nr_inst++;
- 
- 	return 0;
- 
+ 	split:
+ 		index = rx_queue->added_count & rx_queue->ptr_mask;
+ 		rx_buf = efx_rx_buffer(rx_queue, index);
+ 		rx_buf->dma_addr = dma_addr + EFX_PAGE_IP_ALIGN;
+ 		rx_buf->u.page = page;
++		rx_buf->page_offset = page_offset;
+ 		rx_buf->len = efx->rx_buffer_len - EFX_PAGE_IP_ALIGN;
+ 		rx_buf->flags = EFX_RX_BUF_PAGE;
+ 		++rx_queue->added_count;
+@@ -230,6 +229,7 @@ static int efx_init_rx_buffers_page(struct efx_rx_queue *rx_queue)
+ 			/* Use the second half of the page */
+ 			get_page(page);
+ 			dma_addr += (PAGE_SIZE >> 1);
++			page_offset += (PAGE_SIZE >> 1);
+ 			page_addr += (PAGE_SIZE >> 1);
+ 			++count;
+ 			goto split;
 -- 
 1.7.10.4
 
