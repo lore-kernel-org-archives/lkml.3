@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab3DKHcM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:32:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54351 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753049Ab3DKHcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:32:11 -0400
-Date: Thu, 11 Apr 2013 03:32:04 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Message-ID: <1365665524-nj0fhwkj-mutt-n-horiguchi@ah.jp.nec.com>
-Subject: Re: [RFC Patch 2/2] mm: Add parameters to limit a rate of outputting
- memory error messages
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
+	id S1754816Ab3DKHeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:34:04 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:59915 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784Ab3DKHeB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 03:34:01 -0400
+Message-ID: <51666763.5050102@gmail.com>
+Date: Thu, 11 Apr 2013 09:33:55 +0200
+From: Pawel Zawora <pzawora@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [ 03/19] reiserfs: Fix warning and inode leak when deleting inode
+ with xattrs
+References: <20130410225026.833809117@linuxfoundation.org> <20130410225027.171506481@linuxfoundation.org>
+In-Reply-To: <20130410225027.171506481@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 12:59:38AM -0400, Naoya Horiguchi wrote:
-> Hi Tanino-san,
-> 
-> On Thu, Apr 11, 2013 at 12:27:15PM +0900, Mitsuhiro Tanino wrote:
-> > This patch introduces new sysctl interfaces in order to limit
-> > a rate of outputting memory error messages.
-> > 
-> > - vm.memory_failure_print_ratelimit:
-> >   Specify the minimum length of time between messages.
-> >   By default the rate limiting is disabled.
-> > 
-> > - vm.memory_failure_print_ratelimit_burst:
-> >   Specify the number of messages we can send before rate limiting.
-> > 
-> > Signed-off-by: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-...
-> > @@ -78,6 +79,16 @@ EXPORT_SYMBOL_GPL(hwpoison_filter_dev_minor);
-> >  EXPORT_SYMBOL_GPL(hwpoison_filter_flags_mask);
-> >  EXPORT_SYMBOL_GPL(hwpoison_filter_flags_value);
-> >  
-> > +/*
-> > + * This enforces a rate limit for outputting error message.
-> > + * The default interval is set to "0" HZ. This means that
-> > + * outputting error message is not limited by default.
-> > + * The default burst is set to "10". This parameter can control
-> > + * to output number of messages per interval.
-> > + * If interval is set to "0", the burst is ineffective.
-> > + */
-> > +DEFINE_RATELIMIT_STATE(sysctl_memory_failure_print_ratelimit, 0 * HZ, 10);
-> > +
-> >  static int hwpoison_filter_dev(struct page *p)
-> >  {
-> >  	struct address_space *mapping;
-> > @@ -622,13 +633,16 @@ static int me_pagecache_dirty(struct page *p, unsigned long pfn)
-> >  	SetPageError(p);
-> >  	if (mapping) {
-> >  		/* Print more information about the file. */
-> > -		if (mapping->host != NULL && S_ISREG(mapping->host->i_mode))
-> > -			pr_info("MCE %#lx: File was corrupted: Dev:%s Inode:%lu Offset:%lu\n",
-> > -				page_to_pfn(p), mapping->host->i_sb->s_id,
-> > -				mapping->host->i_ino, page_index(p));
-> > -		else
-> > -			pr_info("MCE %#lx: A dirty page cache was corrupted.\n",
-> > -				page_to_pfn(p));
-> > +		if (__ratelimit(&sysctl_memory_failure_print_ratelimit)) {
-> > +			if (mapping->host != NULL &&
-> > +			    S_ISREG(mapping->host->i_mode))
-> > +				pr_info("MCE %#lx: File was corrupted: Dev:%s Inode:%lu Offset:%lu\n",
-> > +				   page_to_pfn(p), mapping->host->i_sb->s_id,
-> > +				   mapping->host->i_ino, page_index(p));
-> > +			else
-> > +				pr_info("MCE %#lx: A dirty page cache was corrupted.\n",
-> > +					page_to_pfn(p));
-> > +		}
-> >  
-> >  		/*
-> >  		 * IO error will be reported by write(), fsync(), etc.
+After 4 days  with patch  filesystem is clean  (15 mln files 
+deleted/unlinked, 17 mln files created or hardlinked ), no errors in dmesg.
+Test of  files ACL - passed  (tested ~100 000 files/dirs)
 
-I don't think it's enough to do ratelimit only for me_pagecache_dirty().
-When tons of memory errors flood, all of printk()s in memory error handler
-can print out tons of messages.
 
-Thanks,
-Naoya
+On 2013-04-11 00:50, Greg Kroah-Hartman wrote:
+> 3.0-stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: Jan Kara <jack@suse.cz>
+>
+> commit 35e5cbc0af240778e61113286c019837e06aeec6 upstream.
+>
+> After commit 21d8a15a (lookup_one_len: don't accept . and ..) reiserfs
+> started failing to delete xattrs from inode. This was due to a buggy
+> test for '.' and '..' in fill_with_dentries() which resulted in passing
+> '.' and '..' entries to lookup_one_len() in some cases. That returned
+> error and so we failed to iterate over all xattrs of and inode.
+>
+> Fix the test in fill_with_dentries() along the lines of the one in
+> lookup_one_len().
+>
+> Reported-by: Pawel Zawora <pzawora@gmail.com>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> ---
+>   fs/reiserfs/xattr.c |    4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> --- a/fs/reiserfs/xattr.c
+> +++ b/fs/reiserfs/xattr.c
+> @@ -187,8 +187,8 @@ fill_with_dentries(void *buf, const char
+>   	if (dbuf->count == ARRAY_SIZE(dbuf->dentries))
+>   		return -ENOSPC;
+>   
+> -	if (name[0] == '.' && (name[1] == '\0' ||
+> -			       (name[1] == '.' && name[2] == '\0')))
+> +	if (name[0] == '.' && (namelen < 2 ||
+> +			       (namelen == 2 && name[1] == '.')))
+>   		return 0;
+>   
+>   	dentry = lookup_one_len(name, dbuf->xadir, namelen);
+>
+>
+>
+
