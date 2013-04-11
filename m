@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935517Ab3DKUs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:48:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17239 "EHLO
+	id S935965Ab3DKVSM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:18:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11236 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935444Ab3DKUsv (ORCPT
+	with ESMTP id S935495Ab3DKUs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:48:51 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=KNcFjWkcljcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=tMEhWZT_ujcA:10 a=20KFwNOVAAAA:8 a=J1Y8HTJGAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=jEp0ucaQiEUA:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:48:57 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=7yrsGbfGnIoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=RegD0mUTlvgA:10 a=VwQbUJbxAAAA:8 a=mnu9mTnb_5AE6RkuOYUA:9 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202611.665659641@goodmis.org>
+Message-Id: <20130411202609.444854139@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:27:38 -0400
+Date: Thu, 11 Apr 2013 16:27:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Veaceslav Falico <vfalico@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 155/171 ] bonding: remove already created master sysfs link on failure
+Cc: Takashi Iwai <tiwai@suse.de>, Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 141/171 ] drm/i915: Use the fixed pixel clock for eDP in intel_dp_set_m_n()
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0155-bonding-remove-already-created-master-sysfs-link-on-.patch
+Content-Disposition: inline; filename=0141-drm-i915-Use-the-fixed-pixel-clock-for-eDP-in-intel_.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,36 +29,71 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Veaceslav Falico <vfalico@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit 9fe16b78ee17579cb4f333534cf7043e94c67024 ]
+[ Upstream commit 9d1a455b0ca1c2c956b4d9ab212864a8695270f1 ]
 
-If slave sysfs symlink failes to be created - we end up without removing
-the master sysfs symlink. Remove it in case of failure.
+The eDP output on HP Z1 is still broken when X is started even after
+fixing the infinite link-train loop.  The regression was introduced in
+3.6 kernel for cleaning up the mode clock handling code in intel_dp.c
+by the commit [71244653: drm/i915: adjusted_mode->clock in the dp
+mode_fix].
 
-Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+In the past, the clock of the reference mode was modified in
+intel_dp_mode_fixup() in the case of eDP fixed clock, and this clock was
+used for calculating in intel_dp_set_m_n().  This override was removed,
+thus the wrong mode clock is used for the calculation, resulting in a
+psychedelic smoking output in the end.
+
+This patch corrects the clock to be used in the place.
+
+v1->v2: Use intel_edp_target_clock() for checking eDP fixed clock
+instead of open code as in ironlake_set_m_n().
+
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/bonding/bond_sysfs.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/gpu/drm/i915/intel_dp.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/bonding/bond_sysfs.c b/drivers/net/bonding/bond_sysfs.c
-index 21609f9..ecd47a3 100644
---- a/drivers/net/bonding/bond_sysfs.c
-+++ b/drivers/net/bonding/bond_sysfs.c
-@@ -183,6 +183,11 @@ int bond_create_slave_symlinks(struct net_device *master,
- 	sprintf(linkname, "slave_%s", slave->name);
- 	ret = sysfs_create_link(&(master->dev.kobj), &(slave->dev.kobj),
- 				linkname);
-+
-+	/* free the master link created earlier in case of error */
-+	if (ret)
-+		sysfs_remove_link(&(slave->dev.kobj), "master");
-+
- 	return ret;
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 82e5e0d..2e2bf3d 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -800,6 +800,7 @@ intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_display_mode *mode,
+ 	int lane_count = 4;
+ 	struct intel_dp_m_n m_n;
+ 	int pipe = intel_crtc->pipe;
++	int target_clock;
  
- }
+ 	/*
+ 	 * Find the lane count in the intel_encoder private
+@@ -815,13 +816,22 @@ intel_dp_set_m_n(struct drm_crtc *crtc, struct drm_display_mode *mode,
+ 		}
+ 	}
+ 
++	target_clock = mode->clock;
++	for_each_encoder_on_crtc(dev, crtc, encoder) {
++		if (encoder->type == INTEL_OUTPUT_EDP) {
++			target_clock = intel_edp_target_clock(encoder,
++							      mode);
++			break;
++		}
++	}
++
+ 	/*
+ 	 * Compute the GMCH and Link ratios. The '3' here is
+ 	 * the number of bytes_per_pixel post-LUT, which we always
+ 	 * set up for 8-bits of R/G/B, or 3 bytes total.
+ 	 */
+ 	intel_dp_compute_m_n(intel_crtc->bpp, lane_count,
+-			     mode->clock, adjusted_mode->clock, &m_n);
++			     target_clock, adjusted_mode->clock, &m_n);
+ 
+ 	if (HAS_PCH_SPLIT(dev)) {
+ 		I915_WRITE(TRANSDATA_M1(pipe),
 -- 
 1.7.10.4
 
