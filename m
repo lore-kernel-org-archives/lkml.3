@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309Ab3DKRL4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 13:11:56 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43138 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752364Ab3DKRLz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 13:11:55 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/2] mfd: wm8994: Add device ID data to WM8994 OF device IDs
-Date: Thu, 11 Apr 2013 18:11:50 +0100
-Message-Id: <1365700312-7452-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754603Ab3DKRMx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 13:12:53 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52399 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754163Ab3DKRMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 13:12:52 -0400
+Date: Thu, 11 Apr 2013 19:12:46 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Hansen <dave@sr71.net>
+Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 4/5] break up slow_virt_to_phys()
+Message-ID: <20130411171246.GF27062@pd.tnic>
+References: <20130410233249.7FFCB63B@viggo.jf.intel.com>
+ <20130410233254.EF273179@viggo.jf.intel.com>
+ <20130411122944.GA27062@pd.tnic>
+ <5166E4CB.2060700@sr71.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5166E4CB.2060700@sr71.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can actually read this back from the device but we use this when
-registered using standard I2C board data registration so make sure
-it's there for OF too.
+On Thu, Apr 11, 2013 at 09:28:59AM -0700, Dave Hansen wrote:
+> It's harsh for the cases where __pa()'s result never gets used
+> directly, like for checking against 'high_memory'. If it gets used
+> (like in /dev/mem's case) the kernel really is doing something it does
+> not intend to do. It's essentially reading or writing garbage.
+>
+> On the other hand, I guess if we've been letting it do that bad thing
+> for years, we might as well continue. We're not causing any _more_
+> damage.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
----
- drivers/mfd/wm8994-core.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Well, if it wasn't an already used interface I'd say we forbid accesses
+which are void of sense and issue a WARN_ON but who knows who'll come
+screaming if we did that.
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index cdea84e..3f8d591 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -673,9 +673,9 @@ static void wm8994_device_exit(struct wm8994 *wm8994)
- }
- 
- static const struct of_device_id wm8994_of_match[] = {
--	{ .compatible = "wlf,wm1811", },
--	{ .compatible = "wlf,wm8994", },
--	{ .compatible = "wlf,wm8958", },
-+	{ .compatible = "wlf,wm1811", .data = (void *)WM1811 },
-+	{ .compatible = "wlf,wm8994", .data = (void *)WM8994 },
-+	{ .compatible = "wlf,wm8958", .data = (void *)WM8958 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(of, wm8994_of_match);
+> I'm leaning toward making it a WARN_ON() at the moment. :)
+
+Right, well, yeah, people would still be able to shoot themselves in the
+foot over /dev/mem but now they'll at least be warned about it. Kernel's
+job's done. :)
+
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
