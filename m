@@ -1,97 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935163Ab3DKMAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 08:00:35 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:57203 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933510Ab3DKMAc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 08:00:32 -0400
-Date: Thu, 11 Apr 2013 14:00:27 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Russ Anderson <rja@sgi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH] Do not force shutdown/reboot to boot cpu.
-Message-ID: <20130411120027.GA18709@gmail.com>
-References: <20130410111620.GB29752@gmail.com>
- <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
- <20130410152911.GA3011@sgi.com>
- <20130410165934.GB21951@gmail.com>
- <20130410171420.GF3658@sgi.com>
- <20130410172236.GE21951@gmail.com>
- <20130410175519.GG3658@sgi.com>
- <20130410190003.GH3658@sgi.com>
- <20130411085751.GD11824@gmail.com>
- <20130411113412.GP3658@sgi.com>
+	id S935193Ab3DKMCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 08:02:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5418 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1763999Ab3DKMCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 08:02:07 -0400
+Date: Thu, 11 Apr 2013 13:59:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: Re: [PATCH 0/1] uprobes/tracing: Don't pass addr=ip to
+	perf_trace_buf_submit()
+Message-ID: <20130411115921.GA27492@redhat.com>
+References: <20130329181520.GA20670@redhat.com> <20130329181545.GA20697@redhat.com> <20130404142522.GC8986@linux.vnet.ibm.com> <515E4938.6090809@hitachi.com> <20130405150110.GA31300@redhat.com> <51628DF8.6030102@hitachi.com> <20130410145818.GA30670@redhat.com> <516692BF.6070904@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130411113412.GP3658@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <516692BF.6070904@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/11, Masami Hiramatsu wrote:
+>
+> (2013/04/10 23:58), Oleg Nesterov wrote:
+>
+> > And... Cough, another question ;) To simplify, lets discuss kprobe_perf_func()
+> > only. Suppose that a task hits the kprobe but this task/cpu doesn't have
+> > a counter. Can't we avoid perf_trace_buf_prepare/submit in this case?
+> > IOW, what do you think about the change below?
+>
+> Hmm, I'm not so sure how frequently this happens.
 
-* Robin Holt <holt@sgi.com> wrote:
+Suppose that you do, say, "perf record -e probe:some_func workload". Only
+"workload" will have the active counter, any other task which hits the
+probed some_func() will do perf_trace_buf_prepare/perf_trace_buf_submit
+just to realize that nobody wants perf_swevent_event().
 
-> > Ok, so it looks profilable.
-> > 
-> > The result above is not surprising: most CPUs sit in idle and don't do anything, 
-> > while the loop goes on, right?
-> > 
-> > The interesting thing to profile would be the parallel bring-down, with the 
-> > simplest global lock solution you mentioned. In that case most CPUs should be 
-> > doing 'something' all the time - maybe spinning on the lock, maybe something else, 
-> > right?
-> 
-> Again, mostly looks idle.
+Simple test-case:
 
-Forgot to suggest:
+	#include <unistd.h>
 
-  perf record -a /sbin/reboot
+	int main(void)
+	{
+		int n;
 
-... to capture remote CPU activity too.
+		for (n = 0; n < 1000 * 1000; ++n)
+			getppid();
 
-> Events: 5M cycles
->     31.69%          swapper  [kernel.kallsyms]        [k] update_cfs_rq_blocked_load
->     14.22%          swapper  [kernel.kallsyms]        [k] load_balance
->     12.95%          swapper  [kernel.kallsyms]        [k] ktime_get
->      4.64%          swapper  [kernel.kallsyms]        [k] idle_cpu
->      3.46%          swapper  [kernel.kallsyms]        [k] uv_read_rtc
->      2.26%          swapper  [kernel.kallsyms]        [k] ktime_get_update_offsets
->      2.25%          swapper  [kernel.kallsyms]        [k] rcu_check_callbacks
->      1.72%          swapper  [kernel.kallsyms]        [k] _raw_spin_lock_irqsave
->      1.57%          swapper  [kernel.kallsyms]        [k] native_write_msr_safe
->      1.53%          swapper  [kernel.kallsyms]        [k] native_safe_halt
->      1.52%          swapper  [kernel.kallsyms]        [k] apic_timer_interrupt
->      1.52%          swapper  [kernel.kallsyms]        [k] update_blocked_averages
->      1.51%          swapper  [kernel.kallsyms]        [k] __lock_text_start
->      1.48%          swapper  [kernel.kallsyms]        [k] rcu_process_gp_end
->      1.40%          swapper  [kernel.kallsyms]        [k] rcu_process_callbacks
->      1.19%           reboot  [kernel.kallsyms]        [k] kmem_cache_alloc_node
->      0.63%          swapper  [kernel.kallsyms]        [k] check_for_new_grace_period
->      0.58%          swapper  [kernel.kallsyms]        [k] rebalance_domains
->      0.55%          swapper  [kernel.kallsyms]        [k] cpumask_next_and
->      0.54%          swapper  [kernel.kallsyms]        [k] __tick_nohz_idle_enter
->      0.53%          swapper  [kernel.kallsyms]        [k] perf_adjust_freq_unthr_context
->      0.49%          swapper  [kernel.kallsyms]        [k] _raw_spin_lock
+		return 0;
+	}
 
-If even perf record -a shows a mostly idle system, then the overhead must be in 
-sleep/wakeup latencies - for that the next step would be to figure out where all 
-the waiting happens, for example via call-graph context-switch profiling:
+Without kprobe:
 
-   perf stat --null perf record -a -g -e sched:sched_switch /sbin/reboot
+	# time ./ppid
 
-(the perf stat --null will tell us the runtime of the whole operation.)
+	real    0m0.663s
+	user    0m0.163s
+	sys     0m0.500s
+
+Activate the probe:
+
+	# perf probe sys_getppid
+
+	# perf record -e probe:sys_getppid sleep 1000 &
+	[1] 546
+
+Test it again 3 times:
+
+	# time ./ppid
+
+Before the patch:
+
+	real    0m9.727s
+	user    0m0.177s
+	sys     0m9.547s
+
+	real    0m9.752s
+	user    0m0.180s
+	sys     0m9.573s
+
+	real    0m9.761s
+	user    0m0.187s
+	sys     0m9.573s
+
+After the patch:
+
+	real    0m9.605s
+	user	0m0.163s
+	sys	0m9.437s
+
+	real	0m9.592s
+	user	0m0.167s
+	sys	0m9.423s
+
+	real	0m9.613s
+	user	0m0.183s
+	sys	0m9.427s
+
+So the difference looks measurable but small, and I did the testing
+under qemu so I do not really know if we can trust the numbers.
+
+> And, is this right way to
+> handle that case?
+
+If only I was sure ;) I am asking.
+
+And, to clarify, it is not that I think this change can really
+improve the perfomance. Just I am trying to understand what I have
+missed.
+
+> If so, we can do same thing also on trace_events.
+> (perf_trace_##call in include/trace/ftrace.h)
+
+Yes, yes, this is not kprobe-specific. It seems that more users of
+perf_trace_buf_submit() could be changed the same way.
 
 Thanks,
 
-	Ingo
+Oleg.
+
