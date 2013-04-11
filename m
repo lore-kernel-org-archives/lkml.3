@@ -1,68 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933672Ab3DKICU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 04:02:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11154 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754505Ab3DKICQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 04:02:16 -0400
-Subject: Re: [PATCH 3.8-stable] GFS2: return error if malloc failed in
- gfs2_rs_alloc()
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "'Wei Yongjun'" <yongjun_wei@trendmicro.com.cn>
-In-Reply-To: <000501ce3658$b3022fd0$19068f70$%choi@samsung.com>
-References: <000501ce3658$b3022fd0$19068f70$%choi@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Thu, 11 Apr 2013 08:59:57 +0100
-Message-ID: <1365667197.2701.13.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934350Ab3DKICt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 04:02:49 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55504 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933864Ab3DKICq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 04:02:46 -0400
+X-AuditID: 9c93016f-b7b3fae0000004d3-10-51666e23661f
+Date: Thu, 11 Apr 2013 17:02:43 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>, Arun Sharma <asharma@fb.com>,
+        John Stultz <john.stultz@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Neil Brown <neilb@suse.de>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jason Evans <je@fb.com>, sanjay@google.com,
+        Paul Turner <pjt@google.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC v7 00/11] Support vrange for anonymous page
+Message-ID: <20130411080243.GA12626@blaptop>
+References: <1363073915-25000-1-git-send-email-minchan@kernel.org>
+ <5165CA22.6080808@gmail.com>
+ <20130411065546.GA10303@blaptop>
+ <5166643E.6050704@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5166643E.6050704@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Apr 11, 2013 at 03:20:30AM -0400, KOSAKI Motohiro wrote:
+> >>>   DONTNEED makes sure user always can see zero-fill pages after
+> >>>   he calls madvise while vrange can see data or encounter SIGBUS.
+> >>
+> >> For replacing DONTNEED, user want to zero-fill pages like DONTNEED
+> >> instead of SIGBUS. So, new flag option would be nice.
+> > 
+> > If userspace people want it, I can do it. 
+> > But not sure they want it at the moment becaue vrange is rather
+> > different concept of madvise(DONTNEED) POV usage.
+> > 
+> > As you know well, in case of DONTNEED, user calls madvise _once_ and
+> > VM releases memory as soon as he called system call.
+> > But vrange is same with delayed free when the system memory pressure
+> > happens so user can't know OS frees the pages anytime.
+> > It means user should call pair of system call both VRANGE_VOLATILE
+> > and VRANGE_NOVOLATILE for right usage of volatile range
+> > (for simple, I don't want to tell SIGBUS fault recovery method).
+> > If he took a mistake(ie, NOT to call VRANGE_NOVOLATILE) on the range
+> > which is used by current process, pages used by some process could be
+> > disappeared suddenly.
+> > 
+> > In summary, I don't think vrange is a replacement of madvise(DONTNEED)
+> > but could be useful with madvise(DONTNEED) friend. For example, we can
+> > make return 1 in vrange(VRANGE_VOLATILE) if memory pressure was already
+> 
+> Do you mean vrange(VRANGE_UNVOLATILE)?
 
-On Thu, 2013-04-11 at 11:03 +0900, Jonghwan Choi wrote:
-> This patch looks like it should be in the 3.8-stable tree, should we apply
-> it?
-> 
-Yes, again looks like a good plan,
+I meant VRANGE_VOLATILE. It seems my explanation was poor. Here it goes, again.
+Now vrange's semantic return just 0 if the system call is successful, otherwise,
+return error. But we can change it as folows
 
-Steve.
+1. return 0 if the system call is successful and memory pressure isn't severe
+2. return 1 if the system call is successful and memory pressure is severe
+3. return -ERRXXX if the system call is failed by some reason
 
-> ------------------
+So the process can know system-wide memory pressure without peeking the vmstat
+and then call madvise(DONTNEED) right after vrange call. The benefit is system
+can zap all pages instantly.
+
+> btw, assign new error number to asm-generic/errno.h is better than strange '1'.
+
+I can and admit "1" is rather weired.
+But it's not error, either.
+
 > 
-> From: "Wei Yongjun <yongjun_wei@trendmicro.com.cn>"
 > 
-> commit 441362d06be349430d06e37286adce4b90e6ce96 upstream
+> > severe so user can catch up memory pressure by return value and calls
+> > madvise(DONTNEED) if memory pressure was already severe. Of course, we
+> > can handle it vrange system call itself(ex, change vrange system call to
+> > madvise(DONTNEED) but don't want it because I want to keep vrange hinting
+> > sytem call very light at all times so user can expect latency.
 > 
-> The error code in gfs2_rs_alloc() is set to ENOMEM when error
-> but never be used, instead, gfs2_rs_alloc() always return 0.
-> Fix to return 'error'.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> ---
->  fs/gfs2/rgrp.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-> index b7eff07..9afba3d6 100644
-> --- a/fs/gfs2/rgrp.c
-> +++ b/fs/gfs2/rgrp.c
-> @@ -576,7 +576,7 @@ int gfs2_rs_alloc(struct gfs2_inode *ip)
->  	RB_CLEAR_NODE(&ip->i_res->rs_node);
->  out:
->  	up_write(&ip->i_rw_mutex);
-> -	return 0;
-> +	return error;
->  }
->  
->  static void dump_rs(struct seq_file *seq, const struct gfs2_blkreserv *rs)
+> For allocator usage, vrange(UNVOLATILE) is annoying and don't need at all.
+> When data has already been purged, just return new zero filled page. so,
+> maybe adding new flag is worthwhile. Because malloc is definitely fast path
+
+I really want it and it's exactly same with madvise(MADV_FREE).
+But for implementation, we need page granularity someting in address range
+in system call context like zap_pte_range(ex, clear page table bits and
+mark something to page flags for reclaimer to detect it).
+It means vrange system call is still bigger although we are able to remove
+lazy page fault.
+
+Do you have any idea to remove it? If so, I'm very open to implement it.
 
 
+> and adding new syscall invokation is unwelcome.
+
+Sure. But one more system call could be cheaper than page-granuarity
+operation on purged range.
+
+> 
+> 
+> >> # of     # of   # of
+> >> thread   iter   iter (patched glibc)
+> > 
+> > What's the workload?
+> 
+> Ahh, sorry. I forgot to write. I use ebizzy, your favolite workload.
+> 
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
