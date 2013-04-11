@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936261Ab3DKOpG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 10:45:06 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51124 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932712Ab3DKOpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 10:45:04 -0400
-Message-ID: <1365691503.1929.15.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Make camelcase test --strict and less noisy
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andy Whitcroft <apw@canonical.com>,
+	id S936233Ab3DKOrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 10:47:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20514 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934526Ab3DKOrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 10:47:14 -0400
+Date: Thu, 11 Apr 2013 10:47:06 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Thu, 11 Apr 2013 07:45:03 -0700
-In-Reply-To: <20130410151911.GG6857@pd.tnic>
-References: <1365544254.2946.53.camel@dabdike> <20130410132628.GV7511@dm>
-	 <1365604558.27174.36.camel@joe-AO722> <20130410145213.GA6854@pd.tnic>
-	 <1365606461.1942.3.camel@dabdike> <20130410151911.GG6857@pd.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+        linux-mm <linux-mm@kvack.org>
+Message-ID: <1365691626-w2h428s2-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130411140012.GI16732@two.firstfloor.org>
+References: <1365665524-nj0fhwkj-mutt-n-horiguchi@ah.jp.nec.com>
+ <20130411140012.GI16732@two.firstfloor.org>
+Subject: Re: [RFC Patch 2/2] mm: Add parameters to limit a rate of outputting
+ memory error messages
 Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <20130411140012.GI16732@two.firstfloor.org>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CamelCase tests are a bit noisy against certain
-types of code acceptable to some kernel developers.
+On Thu, Apr 11, 2013 at 04:00:12PM +0200, Andi Kleen wrote:
+> > I don't think it's enough to do ratelimit only for me_pagecache_dirty().
+> > When tons of memory errors flood, all of printk()s in memory error handler
+> > can print out tons of messages.
+> 
+> Note that when you really have a flood of uncorrected errors you'll
+> likely die soon anyways as something unrecoverable is very likely to
+> happen. Error memory recovery cannot fix large scale memory corruptions,
+> just the rare events that slip through all the other memory error correction
+> schemes.
+> 
+> So I wouldn't worry too much about that.
 
-Make the test applicable only with --strict.
+I agree.
+My previous comment is valid only when we assume the flooding can happen
+(and I personally don't believe that can happen except for in testing.)
 
-Do not bleat a message on nominally acceptable
-CamelCase uses that are separated by an _ like
-drm_core_has_MTRR.
+And for paranoid users, we can suggest that they set up mcelog script
+triggering to turn off vm.memory_failure_recovery when memory errors flood.
+Such users don't expect that memory error handling works fine in flooding,
+so just suppressing kernel messages is pointless.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 3fb6d86..97226fb 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2937,12 +2937,12 @@ sub process {
- 		while ($line =~ m{($Constant|$Lval)}g) {
- 			my $var = $1;
- 			if ($var !~ /$Constant/ &&
--			    $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
-+			    $var =~ /[A-Z][a-z]|[a-z][A-Z]/ &&
- 			    $var !~ /"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
- 			    !defined $camelcase{$var}) {
- 				$camelcase{$var} = 1;
--				WARN("CAMELCASE",
--				     "Avoid CamelCase: <$var>\n" . $herecurr);
-+				CHK("CAMELCASE",
-+				    "Avoid CamelCase: <$var>\n" . $herecurr);
- 			}
- 		}
- 
-
-
+Thanks,
+Naoya
