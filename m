@@ -1,141 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935028Ab3DKMhq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 08:37:46 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42205 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752087Ab3DKMho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 08:37:44 -0400
-Date: Thu, 11 Apr 2013 14:37:39 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Dave Hansen <dave@sr71.net>
-Cc: hpa@linux.intel.com, linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 5/5] keep /dev/kmem from triggering BUG_ON() with
- DEBUG_VIRTUAL
-Message-ID: <20130411123739.GC27062@pd.tnic>
-References: <20130410233249.7FFCB63B@viggo.jf.intel.com>
- <20130410233256.D9FE46E1@viggo.jf.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130410233256.D9FE46E1@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934556Ab3DKMkd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 08:40:33 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:61645 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281Ab3DKMkc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 08:40:32 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Soeren Moch <smoch@web.de>, "David S. Miller" <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Dale Farnsworth <dale@farnsworth.org>, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] net: mv643xx_eth: Add GRO support
+Date: Thu, 11 Apr 2013 14:40:23 +0200
+Message-Id: <1365684023-9967-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some more compiler warnings. Btw, I'm building 32-bit only for now - no
-64-bit testing yet.
+This patch adds GRO support to mv643xx_eth by making it invoke
+napi_gro_receive instead of netif_receive_skb.
 
-On Wed, Apr 10, 2013 at 04:32:56PM -0700, Dave Hansen wrote:
-> 
-> /dev/kmem can essentially be used to make the kernel call __pa()
-> on any address.  But, with DEBUG_VIRTUAL, we are now ensuring
-> that when __pa() is only called on addresses for which its
-> results are correct.  For everything else, we BUG_ON().
-> 
-> What this means is that a hapless /dev/kmem user can
-> unintentionally make the kernel BUG_ON().
-> 
-> This adds a function, is_kernel_linear_vaddr() to the /dev/kmem
-> code to ensure that __pa() will not BUG_ON().  It will, instead,
-> return an error up to the user.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> ---
-> 
->  linux.git-davehans/arch/x86/mm/pageattr.c  |   19 +++++++++++++++++++
->  linux.git-davehans/drivers/char/mem.c      |    8 ++++++++
->  linux.git-davehans/include/linux/mmdebug.h |    2 ++
->  3 files changed, 29 insertions(+)
-> 
-> diff -puN arch/x86/mm/pageattr.c~make-devmem-work-on-highmem3b arch/x86/mm/pageattr.c
-> --- linux.git/arch/x86/mm/pageattr.c~make-devmem-work-on-highmem3b	2013-04-10 16:23:45.780087708 -0700
-> +++ linux.git-davehans/arch/x86/mm/pageattr.c	2013-04-10 16:23:45.786087714 -0700
-> @@ -406,6 +406,25 @@ phys_addr_t slow_virt_to_phys(void *virt
->  }
->  EXPORT_SYMBOL_GPL(slow_virt_to_phys);
->  
-> +#ifdef CONFIG_DEBUG_VIRTUAL
-> +int is_kernel_linear_vaddr(void *kernel_vaddr)
-> +{
-> +	int err;
-> +	unsigned long pte_walk_paddr;
-> +	unsigned long linear_paddr = __pa_nodebug(kernel_vaddr);
-> +
-> +	err = kernel_lookup_vaddr(kernel_vaddr, &pte_walk_paddr);
+Signed-off-by: Soeren Moch <smoch@web.de>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Florian Fainelli <florian@openwrt.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Dale Farnsworth <dale@farnsworth.org>
+Cc: netdev@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/marvell/mv643xx_eth.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-arch/x86/mm/pageattr.c: In function ‘is_kernel_linear_vaddr’:
-arch/x86/mm/pageattr.c:416:2: warning: passing argument 2 of ‘kernel_lookup_vaddr’ from incompatible pointer type [enabled by default]
-arch/x86/mm/pageattr.c:366:5: note: expected ‘phys_addr_t *’ but argument is of type ‘long unsigned int *’
-
-
-> +	/* if there is no pte, it can not be in the normal linear map */
-> +	if (err)
-> +		return 0;
-> +	/* is there is a pte which does not match the linear layout? */
-> +	if (pte_walk_paddr != linear_paddr)
-> +		return 0;
-> +
-> +	return 1;
-> +}
-> +#endif /* CONFIG_DEBUG_VIRTUAL */
-> +
->  /*
->   * Set the new pmd in all the pgds we know about:
->   */
-> diff -puN drivers/char/mem.c~make-devmem-work-on-highmem3b drivers/char/mem.c
-> --- linux.git/drivers/char/mem.c~make-devmem-work-on-highmem3b	2013-04-10 16:23:45.781087709 -0700
-> +++ linux.git-davehans/drivers/char/mem.c	2013-04-10 16:23:45.787087715 -0700
-> @@ -357,6 +357,14 @@ static int mmap_kmem(struct file *file,
->  	if (!pfn_valid(pfn))
->  		return -EIO;
->  
-> +	/*
-> +	 * the __pa() calculation below only makes sense if the kernel's
-> +	 * pagetables are set up in the way that __pa() expects.  Otherwise,
-> +	 * we are effectively mapping random memory in to place.
-> +	 */
-> +	if (!is_kernel_linear_vaddr(kernel_vaddr))
-
-Ditto:
-
-drivers/char/mem.c:365:2: warning: passing argument 1 of ‘is_kernel_linear_vaddr’ makes pointer from integer without a cast [enabled by default]
-
-
-> +		return -EIO;
-> +
->  	/* Turn a kernel-virtual address into a physical page frame */
->  	pfn = __pa(kernel_vaddr) >> PAGE_SHIFT;
->  
-> diff -puN include/linux/mmdebug.h~make-devmem-work-on-highmem3b include/linux/mmdebug.h
-> --- linux.git/include/linux/mmdebug.h~make-devmem-work-on-highmem3b	2013-04-10 16:23:45.783087711 -0700
-> +++ linux.git-davehans/include/linux/mmdebug.h	2013-04-10 16:23:45.787087715 -0700
-> @@ -9,8 +9,10 @@
->  
->  #ifdef CONFIG_DEBUG_VIRTUAL
->  #define VIRTUAL_BUG_ON(cond) BUG_ON(cond)
-> +extern int is_kernel_linear_vaddr(void *kernel_vaddr);
->  #else
->  #define VIRTUAL_BUG_ON(cond) do { } while (0)
-> +static inline int is_kernel_linear_vaddr(void *kernel_vaddr) { return 1; }a
-
-In file included from include/linux/gfp.h:8:0,
-                 from include/linux/mm.h:8,
-                 from drivers/char/mem.c:11:
-include/linux/mmdebug.h:12:12: note: expected ‘void *’ but argument is of type ‘long unsigned int’
-In file included from include/linux/gfp.h:4:0,
-                 from include/linux/mm.h:8,
-                 from drivers/char/mem.c:11:
-include/linux/mmzone.h:1187:6: warning: ‘pfn’ may be used uninitialized in this function [-Wuninitialized]
-drivers/char/mem.c:340:16: note: ‘pfn’ was declared here
-
-HTH.
-
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index 305038f..c850d04 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -604,7 +604,7 @@ static int rxq_process(struct rx_queue *rxq, int budget)
+ 			lro_receive_skb(&rxq->lro_mgr, skb, (void *)cmd_sts);
+ 			lro_flush_needed = 1;
+ 		} else
+-			netif_receive_skb(skb);
++			napi_gro_receive(&mp->napi, skb);
+ 
+ 		continue;
+ 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
