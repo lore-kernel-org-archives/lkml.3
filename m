@@ -1,80 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964881Ab3DKUz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:55:56 -0400
-Received: from bitsync.net ([80.83.126.10]:59982 "EHLO bitsync.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934912Ab3DKUzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:55:17 -0400
-Message-ID: <51672331.6070605@bitsync.net>
-Date: Thu, 11 Apr 2013 22:55:13 +0200
-From: Zlatko Calusic <zcalusic@bitsync.net>
+	id S964958Ab3DKU4K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:56:10 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:35287 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932221Ab3DKU4E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 16:56:04 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Serge Hallyn <serge.hallyn@canonical.com>
+References: <20130411202503.783159048@goodmis.org>
+	<20130411202604.512616100@goodmis.org>
+Date: Thu, 11 Apr 2013 13:55:56 -0700
+In-Reply-To: <20130411202604.512616100@goodmis.org> (Steven Rostedt's message
+	of "Thu, 11 Apr 2013 16:26:54 -0400")
+Message-ID: <8738uwvlb7.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        dormando <dormando@rydia.net>, Satoru Moriya <satoru.moriya@hds.com>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/10] Reduce system disruption due to kswapd V2
-References: <1365505625-9460-1-git-send-email-mgorman@suse.de>
-In-Reply-To: <1365505625-9460-1-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18tPBhVyZiSyZM52RZ8oOuFByr4gRFohzM=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Steven Rostedt <rostedt@goodmis.org>
+X-Spam-Relay-Country: 
+Subject: Re: [ 111/171 ] ipc: Restrict mounting the mqueue filesystem
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.04.2013 13:06, Mel Gorman wrote:
-> Posting V2 of this series got delayed due to trying to pin down an unrelated
-> regression in 3.9-rc where interactive performance is shot to hell. That
-> problem still has not been identified as it's resisting attempts to be
-> reproducible by a script for the purposes of bisection.
+Steven Rostedt <rostedt@goodmis.org> writes:
+
+> 3.6.11.2 stable review patch.
+> If anyone has any objections, please let me know.
+
+Mounting only with privilege in the user namespace only dates
+back to 3.8 so this is not needed in 3.6.
+
+Not that it should do any harm.
+
+Eric
+
+> ------------------
 >
-> For those that looked at V1, the most important difference in this version
-> is how patch 2 preserves the proportional scanning of anon/file LRUs.
+> From: "Eric W. Biederman" <ebiederm@xmission.com>
 >
-> The series is against 3.9-rc6.
+> [ Upstream commit a636b702ed1805e988ad3d8ff8b52c060f8b341c ]
 >
-> Changelog since V1
-> o Rename ZONE_DIRTY to ZONE_TAIL_LRU_DIRTY			(andi)
-> o Reformat comment in shrink_page_list				(andi)
-> o Clarify some comments						(dhillf)
-> o Rework how the proportional scanning is preserved
-> o Add PageReclaim check before kswapd starts writeback
-> o Reset sc.nr_reclaimed on every full zone scan
+> Only allow mounting the mqueue filesystem if the caller has CAP_SYS_ADMIN
+> rights over the ipc namespace.   The principle here is if you create
+> or have capabilities over it you can mount it, otherwise you get to live
+> with what other people have mounted.
 >
-
-I believe this is what you had in your tree as kswapd-v2r9 branch? If 
-I'm right, then I had this series under test for about 2 weeks on two 
-different machines (one server, one desktop). Here's what I've found:
-
-- while the series looks overwhelming, with a lot of intricate changes 
-(at least from my POV), it proved completely stable and robust. I had 
-ZERO issues with it. I'd encourage everybody to test it, even on the 
-production!
-
-- I've just sent to you and to the linux-mm list a longish report of the 
-issue I tracked last few months that is unfortunately NOT solved with 
-this patch series (although at first it looked like it would be). 
-Occasionaly I still see large parts of memory freed for no good reason, 
-except I explained in the report how it happens. What I still don't know 
-is what's the real cause of the heavy imbalance in the pagecache 
-utilization between DMA32/NORMAL zones. Seen only on 4GB RAM machines, 
-but I suppose that is a quite popular configuration these days.
-
-- The only slightly negative thing I observed is that with the patch 
-applied kswapd burns 10x - 20x more CPU. So instead of about 15 seconds, 
-it has now spent more than 4 minutes on one particular machine with a 
-quite steady load (after about 12 days of uptime). Admittedly, that's 
-still nothing too alarming, but...
-
-- I like VERY much how you cleaned up the code so it is more readable 
-now. I'd like to see it in the Linus tree as soon as possible. Very good 
-job there!
-
-Regards,
--- 
-Zlatko
-
+> This information is not particularly sensitive and mqueue essentially
+> only reports which posix messages queues exist.  Still when creating a
+> restricted environment for an application to live any extra
+> information may be of use to someone with sufficient creativity.  The
+> historical if imperfect way this information has been restricted has
+> been not to allow mounts and restricting this to ipc namespace
+> creators maintains the spirit of the historical restriction.
+>
+> Cc: stable@vger.kernel.org
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  ipc/mqueue.c |   12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+>
+> diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+> index 9e4cf7f..f1df4bc 100644
+> --- a/ipc/mqueue.c
+> +++ b/ipc/mqueue.c
+> @@ -331,8 +331,16 @@ static struct dentry *mqueue_mount(struct file_system_type *fs_type,
+>  			 int flags, const char *dev_name,
+>  			 void *data)
+>  {
+> -	if (!(flags & MS_KERNMOUNT))
+> -		data = current->nsproxy->ipc_ns;
+> +	if (!(flags & MS_KERNMOUNT)) {
+> +		struct ipc_namespace *ns = current->nsproxy->ipc_ns;
+> +		/* Don't allow mounting unless the caller has CAP_SYS_ADMIN
+> +		 * over the ipc namespace.
+> +		 */
+> +		if (!ns_capable(ns->user_ns, CAP_SYS_ADMIN))
+> +			return ERR_PTR(-EPERM);
+> +
+> +		data = ns;
+> +	}
+>  	return mount_ns(fs_type, flags, data, mqueue_fill_super);
+>  }
