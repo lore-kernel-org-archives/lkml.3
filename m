@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422730Ab3DKU6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:58:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4488 "EHLO
+	id S1422716Ab3DKU6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:58:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26790 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab3DKUt0 (ORCPT
+	with ESMTP id S935448Ab3DKUt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:49:26 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=pytiCdr0SAoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=rH7wUZFSSFUA:10 a=jdP34snFAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=9mtjllxcxZAA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=bfIiM119Wfjz2aJ3:21 a=L5Hi_1EweutmN2L3:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=bbJp-Ql1SJ4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=O7p4vapL1NUA:10 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=0u0nhMPvhaUjrep2UKUA:9 a=XNN-oNMjSfgA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202559.630653550@goodmis.org>
+Message-Id: <20130411202559.476460156@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:25 -0400
+Date: Thu, 11 Apr 2013 16:26:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 082/171 ] ath9k: limit tx path hang check to normal data queues
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 081/171 ] can: sja1000: fix define conflict on SH
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0082-ath9k-limit-tx-path-hang-check-to-normal-data-queues.patch
+Content-Disposition: inline; filename=0081-can-sja1000-fix-define-conflict-on-SH.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,62 +30,98 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-[ Upstream commit 01d4ab96d2e7fceaad204e5a8710ce34e229b8c5 ]
+[ Upstream commit f901b6bc404b67d96eca739857c097e022727b71 ]
 
-The beacon and multicast-buffer queues are managed by the beacon
-tasklet, and the generic tx path hang check does not help in any way
-here. Running it on those queues anyway can introduce some race
-conditions leading to unnecessary chip resets.
+Thias patch fixes a define conflict between the SH architecture and the sja1000
+driver:
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+    drivers/net/can/sja1000/sja1000.h:59:0: warning:
+        "REG_SR" redefined [enabled by default]
+    arch/sh/include/asm/ptrace_32.h:25:0: note:
+         this is the location of the previous definition
+
+A SJA1000_ prefix is added to the offending sja1000 define only, to make a
+minimal patch suited for stable. A later patch will add a SJA1000_ prefix to
+all defines in sja1000.h.
+
+Cc: linux-stable <stable@vger.kernel.org>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/ath/ath9k/link.c |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/net/can/sja1000/plx_pci.c |    4 ++--
+ drivers/net/can/sja1000/sja1000.c |    6 +++---
+ drivers/net/can/sja1000/sja1000.h |    2 +-
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/link.c b/drivers/net/wireless/ath/ath9k/link.c
-index 7b88b9c..62b58ba 100644
---- a/drivers/net/wireless/ath/ath9k/link.c
-+++ b/drivers/net/wireless/ath/ath9k/link.c
-@@ -31,21 +31,21 @@ void ath_tx_complete_poll_work(struct work_struct *work)
- 	sc->tx_complete_poll_work_seen++;
- #endif
+diff --git a/drivers/net/can/sja1000/plx_pci.c b/drivers/net/can/sja1000/plx_pci.c
+index 8bc9598..8099275 100644
+--- a/drivers/net/can/sja1000/plx_pci.c
++++ b/drivers/net/can/sja1000/plx_pci.c
+@@ -329,7 +329,7 @@ static inline int plx_pci_check_sja1000(const struct sja1000_priv *priv)
+ 	 */
+ 	if ((priv->read_reg(priv, REG_CR) & REG_CR_BASICCAN_INITIAL_MASK) ==
+ 	    REG_CR_BASICCAN_INITIAL &&
+-	    (priv->read_reg(priv, REG_SR) == REG_SR_BASICCAN_INITIAL) &&
++	    (priv->read_reg(priv, SJA1000_REG_SR) == REG_SR_BASICCAN_INITIAL) &&
+ 	    (priv->read_reg(priv, REG_IR) == REG_IR_BASICCAN_INITIAL))
+ 		flag = 1;
  
--	for (i = 0; i < ATH9K_NUM_TX_QUEUES; i++)
--		if (ATH_TXQ_SETUP(sc, i)) {
--			txq = &sc->tx.txq[i];
--			ath_txq_lock(sc, txq);
--			if (txq->axq_depth) {
--				if (txq->axq_tx_inprogress) {
--					needreset = true;
--					ath_txq_unlock(sc, txq);
--					break;
--				} else {
--					txq->axq_tx_inprogress = true;
--				}
-+	for (i = 0; i < IEEE80211_NUM_ACS; i++) {
-+		txq = sc->tx.txq_map[i];
-+
-+		ath_txq_lock(sc, txq);
-+		if (txq->axq_depth) {
-+			if (txq->axq_tx_inprogress) {
-+				needreset = true;
-+				ath_txq_unlock(sc, txq);
-+				break;
-+			} else {
-+				txq->axq_tx_inprogress = true;
- 			}
--			ath_txq_unlock_complete(sc, txq);
- 		}
-+		ath_txq_unlock_complete(sc, txq);
-+	}
+@@ -341,7 +341,7 @@ static inline int plx_pci_check_sja1000(const struct sja1000_priv *priv)
+ 	 * See states on p. 23 of the Datasheet.
+ 	 */
+ 	if (priv->read_reg(priv, REG_MOD) == REG_MOD_PELICAN_INITIAL &&
+-	    priv->read_reg(priv, REG_SR) == REG_SR_PELICAN_INITIAL &&
++	    priv->read_reg(priv, SJA1000_REG_SR) == REG_SR_PELICAN_INITIAL &&
+ 	    priv->read_reg(priv, REG_IR) == REG_IR_PELICAN_INITIAL)
+ 		return flag;
  
- 	if (needreset) {
- 		ath_dbg(ath9k_hw_common(sc->sc_ah), RESET,
+diff --git a/drivers/net/can/sja1000/sja1000.c b/drivers/net/can/sja1000/sja1000.c
+index 4c4f33d..f0e1789 100644
+--- a/drivers/net/can/sja1000/sja1000.c
++++ b/drivers/net/can/sja1000/sja1000.c
+@@ -91,7 +91,7 @@ static void sja1000_write_cmdreg(struct sja1000_priv *priv, u8 val)
+ 	 */
+ 	spin_lock_irqsave(&priv->cmdreg_lock, flags);
+ 	priv->write_reg(priv, REG_CMR, val);
+-	priv->read_reg(priv, REG_SR);
++	priv->read_reg(priv, SJA1000_REG_SR);
+ 	spin_unlock_irqrestore(&priv->cmdreg_lock, flags);
+ }
+ 
+@@ -496,7 +496,7 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
+ 
+ 	while ((isrc = priv->read_reg(priv, REG_IR)) && (n < SJA1000_MAX_IRQ)) {
+ 		n++;
+-		status = priv->read_reg(priv, REG_SR);
++		status = priv->read_reg(priv, SJA1000_REG_SR);
+ 		/* check for absent controller due to hw unplug */
+ 		if (status == 0xFF && sja1000_is_absent(priv))
+ 			return IRQ_NONE;
+@@ -515,7 +515,7 @@ irqreturn_t sja1000_interrupt(int irq, void *dev_id)
+ 			/* receive interrupt */
+ 			while (status & SR_RBS) {
+ 				sja1000_rx(dev);
+-				status = priv->read_reg(priv, REG_SR);
++				status = priv->read_reg(priv, SJA1000_REG_SR);
+ 				/* check for absent controller */
+ 				if (status == 0xFF && sja1000_is_absent(priv))
+ 					return IRQ_NONE;
+diff --git a/drivers/net/can/sja1000/sja1000.h b/drivers/net/can/sja1000/sja1000.h
+index 23fff06..2a79543 100644
+--- a/drivers/net/can/sja1000/sja1000.h
++++ b/drivers/net/can/sja1000/sja1000.h
+@@ -56,7 +56,7 @@
+ /* SJA1000 registers - manual section 6.4 (Pelican Mode) */
+ #define REG_MOD		0x00
+ #define REG_CMR		0x01
+-#define REG_SR		0x02
++#define SJA1000_REG_SR		0x02
+ #define REG_IR		0x03
+ #define REG_IER		0x04
+ #define REG_ALC		0x0B
 -- 
 1.7.10.4
 
