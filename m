@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab3DKL2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 07:28:46 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:41589 "EHLO relay.sw.ru"
+	id S1754029Ab3DKL3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 07:29:00 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:27126 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587Ab3DKL2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 07:28:45 -0400
-Message-ID: <51669E5F.4000801@parallels.com>
-Date: Thu, 11 Apr 2013 15:28:31 +0400
+	id S1752582Ab3DKL26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 07:28:58 -0400
+Message-ID: <51669E73.2000301@parallels.com>
+Date: Thu, 11 Apr 2013 15:28:51 +0400
 From: Pavel Emelyanov <xemul@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
 To: Andrew Morton <akpm@linux-foundation.org>, Linux MM <linux-mm@kvack.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/5] mm: Ability to monitor task memory changes (v3)
+Subject: [PATCH 1/5] clear_refs: Sanitize accepted commands declaration
+References: <51669E5F.4000801@parallels.com>
+In-Reply-To: <51669E5F.4000801@parallels.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-This is the implementation of the soft-dirty bit concept that should help
-keep track of changes in user memory, which in turn is very-very required by
-the checkpoint-restore project (http://criu.org). Let me briefly remind what
-the issue is.
-
-<< EOF
-To create a dump of an application(s) we save all the information about it
-to files, and the biggest part of such dump is the contents of tasks' memory.
-However, there are usage scenarios where it's not required to get _all_ the
-task memory while creating a dump. For example, when doing periodical dumps,
-it's only required to take full memory dump only at the first step and then
-take incremental changes of memory. Another example is live migration. We 
-copy all the memory to the destination node without stopping all tasks, then
-stop them, check for what pages has changed, dump it and the rest of the state,
-then copy it to the destination node. This decreases freeze time significantly.
-
-That said, some help from kernel to watch how processes modify the contents
-of their memory is required.
-EOF
-
-The proposal is to track changes with the help of new soft-dirty bit this way:
-
-1. First do "echo 4 > /proc/$pid/clear_refs".
-   At that point kernel clears the soft dirty _and_ the writable bits from all 
-   ptes of process $pid. From now on every write to any page will result in #pf 
-   and the subsequent call to pte_mkdirty/pmd_mkdirty, which in turn will set
-   the soft dirty flag.
-
-2. Then read the /proc/$pid/pagemap2 and check the soft-dirty bit reported there
-   (the 55'th one). If set, the respective pte was written to since last call
-   to clear refs.
-
-The soft-dirty bit is the _PAGE_BIT_HIDDEN one. Although it's used by kmemcheck,
-the latter one marks kernel pages with it, while the former bit is put on user 
-pages so they do not conflict to each other.
-
-The set is against the v3.9-rc5.
-It includes preparations to /proc/pid's clear_refs file, adds the pagemap2 one
-and the soft-dirty concept itself with Andrew's comments on the previous patch 
-(hopefully) fixed.
-
-
-History of the set:
-
-* Previous version of this patch, commented out by Andrew:
-  http://lwn.net/Articles/546184/
-
-* Pre-previous ftrace-based approach:
-  http://permalink.gmane.org/gmane.linux.kernel.mm/91428
-
-  This one was not nice, because ftrace could drop events so we might
-  miss significant information about page updates.
-
-  Another issue with it -- it was impossible to use one to watch arbitrary
-  task -- task had to mark memory areas with madvise itself to make events
-  occur.
-
-  Also, program, that monitored the update events could interfere with 
-  anyone else trying to mess with ftrace.
+A new clear-refs type will be added in the next patch, so prepare
+code for that.
 
 Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+---
+ fs/proc/task_mmu.c |   17 ++++++++++-------
+ 1 files changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 3e636d8..67c2586 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -688,6 +688,13 @@ const struct file_operations proc_tid_smaps_operations = {
+ 	.release	= seq_release_private,
+ };
+ 
++enum clear_refs_types {
++	CLEAR_REFS_ALL = 1,
++	CLEAR_REFS_ANON,
++	CLEAR_REFS_MAPPED,
++	CLEAR_REFS_LAST,
++};
++
+ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+ 				unsigned long end, struct mm_walk *walk)
+ {
+@@ -719,10 +726,6 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
+ 	return 0;
+ }
+ 
+-#define CLEAR_REFS_ALL 1
+-#define CLEAR_REFS_ANON 2
+-#define CLEAR_REFS_MAPPED 3
+-
+ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 				size_t count, loff_t *ppos)
+ {
+@@ -730,7 +733,7 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 	char buffer[PROC_NUMBUF];
+ 	struct mm_struct *mm;
+ 	struct vm_area_struct *vma;
+-	int type;
++	enum clear_refs_types type;
+ 	int rv;
+ 
+ 	memset(buffer, 0, sizeof(buffer));
+@@ -738,10 +741,10 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
+ 		count = sizeof(buffer) - 1;
+ 	if (copy_from_user(buffer, buf, count))
+ 		return -EFAULT;
+-	rv = kstrtoint(strstrip(buffer), 10, &type);
++	rv = kstrtoint(strstrip(buffer), 10, (int *)&type);
+ 	if (rv < 0)
+ 		return rv;
+-	if (type < CLEAR_REFS_ALL || type > CLEAR_REFS_MAPPED)
++	if (type < CLEAR_REFS_ALL || type >= CLEAR_REFS_LAST)
+ 		return -EINVAL;
+ 	task = get_proc_task(file_inode(file));
+ 	if (!task)
+-- 
+1.7.6.5
