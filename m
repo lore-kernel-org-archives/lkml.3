@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935355Ab3DKV21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:28:27 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:52358 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935234Ab3DKV2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:28:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <5167229E.305@zytor.com>
-References: <1365106055-22939-1-git-send-email-keescook@chromium.org>
-	<5167229E.305@zytor.com>
-Date: Thu, 11 Apr 2013 14:28:24 -0700
-X-Google-Sender-Auth: AuU4HSWW0iFY7kiqTKUsAo2-rrU
-Message-ID: <CAGXu5j+jFKcs=SREzc0q5fbCW0U9ugEP1x0LdfnENkms92jdfg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] kernel ASLR
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
+	id S1422755Ab3DKVaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:30:18 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:56523 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752922Ab3DKVaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 17:30:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: [GIT PULL] Power management fixes for v3.9-rc7
+Date: Thu, 11 Apr 2013 23:38:03 +0200
+Message-ID: <1717944.2nHtn633sQ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 1:52 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> I am going to set up a tip:x86/kaslr branch, but this patchset really
-> needs some work before committing it, in particular Ingo is right that
-> it needs to be more finegrained.
+Hi Linus,
 
-Absolutely. I'm working on this currently. Thanks!
+Please pull from the git repository at
 
--Kees
+  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm-3.9-rc7
 
---
-Kees Cook
-Chrome OS Security
+to receive power management fixes for v3.9-rc7 with top-most commit
+6f389a8f1dd22a24f3d9afc2812b30d639e94625
+
+  PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
+
+on top of commit 31880c37c11e28cb81c70757e38392b42e695dc6
+
+  Linux 3.9-rc6
+
+Included are:
+
+- System reboot/halt fix that prevents some systems from crashing
+  during reboot due to a violation of ordering between
+  syscore_shutdown() and disable_nonboot_cpus().  From Huacai Chen.
+
+- intel_pstate driver fix for a delay time calculation mistake
+  that causes systems using the driver to crash occasionally in a
+  hard to reproduce way.  From Dirk Brandewie.
+
+Thanks!
+
+---------------
+
+Dirk Brandewie (1):
+      cpufreq / intel_pstate: Set timer timeout correctly
+
+Huacai Chen (1):
+      PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
+
+---------------
+
+ drivers/cpufreq/intel_pstate.c |    1 -
+ kernel/sys.c                   |    3 ++-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
