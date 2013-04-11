@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936167Ab3DKD34 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 23:29:56 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:33429 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S935759Ab3DKD3z (ORCPT
+	id S936205Ab3DKDcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 23:32:14 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:40052 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759682Ab3DKDcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 23:29:55 -0400
-Message-ID: <1365650992.707.83.camel@Wailaba2>
-Subject: Re: [PATCH] process cputimer is moving faster than its
- corresponding clock
-From: Olivier Langlois <olivier@trillion01.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, tglx@linutronix.de, fweisbec@gmail.com,
-        schwidefsky@de.ibm.com, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 10 Apr 2013 23:29:52 -0400
-In-Reply-To: <1365593710.30071.52.camel@laptop>
-References: <1365184746.874.103.camel@Wailaba2>
-	 <1365593710.30071.52.camel@laptop>
-Organization: Trillion01 Inc
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4 
-Mime-Version: 1.0
+	Wed, 10 Apr 2013 23:32:13 -0400
+Message-ID: <51662E9E.9050400@huawei.com>
+Date: Thu, 11 Apr 2013 11:31:42 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: <fweisbec@gmail.com>, <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 00/12] event tracing expose change and bugfix/cleanup
+References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com> <1365606496.9609.13.camel@gandalf.local.home>
+In-Reply-To: <1365606496.9609.13.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 13:35 +0200, Peter Zijlstra wrote:
-> On Fri, 2013-04-05 at 13:59 -0400, Olivier Langlois wrote:
-> > Process timers are moving fasters than their corresponding
-> >  cpu clock for various reasons:
-> > 
-> > 1. There is a race condition when getting a timer sample that makes the sample
-> >    be smaller than it should leading to setting the timer expiration to soon.
-> > 2. When initializing the cputimer, by including tasks deltas in the initial
-> >    timer value, it makes them be counted twice.
-> > 3. When a thread autoreap itself when exiting, the last context switch update
-> >    will update the cputimer and not the overall process values stored in
-> >    signal.
+On 2013/4/10 23:08, Steven Rostedt wrote:
+> On Wed, 2013-04-10 at 11:26 +0800, zhangwei(Jovi) wrote:
+>> From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+>>
+>> Hi steven,
+>>
+>> I have reworked this patchset again with minor change.
+>> [v2 -> v3:
+>> -   change trace_descripte_t defintion in patch 3
+>> -   new patch "export ftrace_events"
+>> -   remove patch "export syscall metadata"
+>>     (syscall tracing are use same event_trace_ops backend as normal event tracepoint,
+>>      so there's no need to export anything of syscall)
+>> -   remove private data field in ftrace_event_file struct (also not needed)
+>> ]
 > 
-> Please explain these races. Things like task_sched_runtime() on which
-> most of this stuff is build read both sum_exec_runtime and compute the
-> delta while holding the rq->lock; this should avoid any and all races
-> against update_curr() and the sort.
+> Thanks,
 > 
-In my previous reply, I have explained in length the race condition but
-I didn't realize that you were also mentioning my refactoring of
-task_sched_runtime() so I comment a little bit more about this proposal:
-
-currently:
-
-- cputimer is initialized with the result of thread_group_cputime()
-which is (accounted time + tasks deltas)
-- cputimer sample value is then cputimer + 1 more task_delta_exec() 
-- After all active tasks pass through update_curr(), cputimer is
-(accounted time + 2*(tasks deltas))
-
-By being able to get separately get accounted time and delta, you can:
-
-- Initialize cputimer to accounted time
-- thread group cputimer sample will be cputimer + delta (which is
-essentially equivalent to what would thread_group_cputime() return)
-- After all the deltas are in by having called
-account_group_exec_runtime(), cputimer will be set to (accounted time +
-tasks delta) and have the exact same value of the corresponding process
-clock.
-
-In other words, currently the way the cputimer is initialized contribute
-to make it advance faster than its corressponding process clock.
-
-This part of the patch has nothing to do with race condition, as far as
-I can tell, thread_group_cputime() and task_delta_exec() are rock solid.
-It is just that you need delta and accounted time separately and
-preferably atomically to be able to initialize posix cpu timer
-correctly.
-
-Greetings,
-Olivier
-
+> Note, I'm trying to catch up on my -rt responsibilities, and most likely
+> wont get to this this week, and next week I'll be at collaboration
+> summit. It may not be till after I get back from that, that I'll have a
+> chance to look at these.
+> 
+> Depending on when Linus opens the next merge window, even if everything
+> goes fine, this patch set may not make it into 3.10, and will have to
+> wait till 3.11.
+> 
+> Just giving you a heads up.
+It's fine for me, let's check this patch set later.
+Thanks.
+> 
+> 
+> 
+> 
 
 
