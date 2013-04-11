@@ -1,26 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397Ab3DKU2n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:28:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16423 "EHLO
+	id S1765085Ab3DKU2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:28:41 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16931 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755390Ab3DKU0T (ORCPT
+	with ESMTP id S1755182Ab3DKU0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:26:19 -0400
-X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=_2PlUJ0Vr4cA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=uisAH6iWxKgA:10 a=cm27Pg_UAAAA:8 a=VwQbUJbxAAAA:8 a=taGs_qngAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=zv9_9hqRWm8A:10 a=n7Cch7CHiCMA:10 a=jeBq3FmKZ4MA:10 a=NpHWqo7U_sM8BGfC:21 a=zIF5abib79ysJ3Z6:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=xKA1wkDHLesA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=v1gATnWItg4A:10 a=tmtSDGaQAAAA:8 a=20KFwNOVAAAA:8 a=omOdbC7AAAAA:8 a=PtDNVHqPAAAA:8 a=drOt6m5kAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=JTmAh97Rboax8_7udQAA:9 a=jkObVMfX7fAA:10 a=jEp0ucaQiEUA:10 a=wYE_KDyynt4A:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202553.038998196@goodmis.org>
+Message-Id: <20130411202553.690236908@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:25:45 -0400
+Date: Thu, 11 Apr 2013 16:25:49 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Kees Cook <keescook@chromium.org>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 042/171 ] drm/i915: bounds check execbuffer relocation count
+Cc: Vladimir Davydov <vdavydov@parallels.com>,
+        Doug Ledford <dledford@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [ 046/171 ] mqueue: sys_mq_open: do not call mnt_drop_write() if read-only
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0042-drm-i915-bounds-check-execbuffer-relocation-count.patch
+Content-Disposition: inline; filename=0046-mqueue-sys_mq_open-do-not-call-mnt_drop_write-if-rea.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,56 +34,53 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Vladimir Davydov <vdavydov@parallels.com>
 
-[ Upstream commit 3118a4f652c7b12c752f3222af0447008f9b2368 ]
+[ Upstream commit 38d78e587d4960d0db94add518d27ee74bad2301 ]
 
-It is possible to wrap the counter used to allocate the buffer for
-relocation copies. This could lead to heap writing overflows.
+mnt_drop_write() must be called only if mnt_want_write() succeeded,
+otherwise the mnt_writers counter will diverge.
 
-CVE-2013-0913
+mnt_writers counters are used to check if remounting FS as read-only is
+OK, so after an extra mnt_drop_write() call, it would be impossible to
+remount mqueue FS as read-only.  Besides, on umount a warning would be
+printed like this one:
 
-v3: collapse test, improve comment
-v2: move check into validate_exec_list
+  =====================================
+  [ BUG: bad unlock balance detected! ]
+  3.9.0-rc3 #5 Not tainted
+  -------------------------------------
+  a.out/12486 is trying to release lock (sb_writers) at:
+  mnt_drop_write+0x1f/0x30
+  but there are no more locks to release!
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: Pinkie Pie
-Cc: stable@vger.kernel.org
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Doug Ledford <dledford@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ ipc/mqueue.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_execbuffer.c b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-index cdf46b5..c26a8f8 100644
---- a/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-+++ b/drivers/gpu/drm/i915/i915_gem_execbuffer.c
-@@ -910,15 +910,20 @@ validate_exec_list(struct drm_i915_gem_exec_object2 *exec,
- 		   int count)
- {
- 	int i;
-+	int relocs_total = 0;
-+	int relocs_max = INT_MAX / sizeof(struct drm_i915_gem_relocation_entry);
- 
- 	for (i = 0; i < count; i++) {
- 		char __user *ptr = (char __user *)(uintptr_t)exec[i].relocs_ptr;
- 		int length; /* limited by fault_in_pages_readable() */
- 
--		/* First check for malicious input causing overflow */
--		if (exec[i].relocation_count >
--		    INT_MAX / sizeof(struct drm_i915_gem_relocation_entry))
-+		/* First check for malicious input causing overflow in
-+		 * the worst case where we need to allocate the entire
-+		 * relocation tree as a single array.
-+		 */
-+		if (exec[i].relocation_count > relocs_max - relocs_total)
- 			return -EINVAL;
-+		relocs_total += exec[i].relocation_count;
- 
- 		length = exec[i].relocation_count *
- 			sizeof(struct drm_i915_gem_relocation_entry);
+diff --git a/ipc/mqueue.c b/ipc/mqueue.c
+index 9a08acc..9e4cf7f 100644
+--- a/ipc/mqueue.c
++++ b/ipc/mqueue.c
+@@ -841,7 +841,8 @@ out_putfd:
+ 		fd = error;
+ 	}
+ 	mutex_unlock(&root->d_inode->i_mutex);
+-	mnt_drop_write(mnt);
++	if (!ro)
++		mnt_drop_write(mnt);
+ out_putname:
+ 	putname(name);
+ 	return fd;
 -- 
 1.7.10.4
 
