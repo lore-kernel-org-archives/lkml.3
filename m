@@ -1,115 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760888Ab3DKI0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 04:26:55 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:52759 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755203Ab3DKI0w (ORCPT
+	id S1762631Ab3DKI3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 04:29:01 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1894 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753083Ab3DKI27 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 04:26:52 -0400
-Message-ID: <516673BF.4080404@linux.vnet.ibm.com>
-Date: Thu, 11 Apr 2013 16:26:39 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 11 Apr 2013 04:28:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,454,1363158000"; 
+   d="scan'208";a="225887097"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Thomas Renninger <trenn@suse.de>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: Early microcode signing in secure boot environment -  Was: x86,
+ microcode: Use common get_ramdisk_image()
+Thread-Topic: Early microcode signing in secure boot environment -  Was:
+ x86, microcode: Use common get_ramdisk_image()
+Thread-Index: AQHONb60g0rx3Qsj60u0yQfcUn2kTpjPqqxQgAFsXgD//5dAIA==
+Date: Thu, 11 Apr 2013 08:28:37 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712205594C20D@ORSMSX105.amr.corp.intel.com>
+References: <1365119186-23487-1-git-send-email-yinghai@kernel.org>
+ <17075291.dMPGPSzlWd@skinner.arch.suse.de>
+ <3E5A0FA7E9CA944F9D5414FEC6C712205594BABA@ORSMSX105.amr.corp.intel.com>
+ <1478755.iNa1PauEka@skinner.arch.suse.de>
+In-Reply-To: <1478755.iNa1PauEka@skinner.arch.suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Alex Shi <alex.shi@intel.com>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: wake-affine throttle
-References: <5164DCE7.8080906@linux.vnet.ibm.com> <1365583873.30071.31.camel@laptop> <51652F43.7000300@linux.vnet.ibm.com> <516651C8.307@linux.vnet.ibm.com> <1365665447.19620.102.camel@marge.simpson.net>
-In-Reply-To: <1365665447.19620.102.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041108-3864-0000-0000-000007AB13A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mike
-
-On 04/11/2013 03:30 PM, Mike Galbraith wrote:
-[snip]
->>
->> Please let me know if I failed to express my thought clearly.
->>
->> I know it's hard to figure out why throttle could bring so many benefit,
->> since the wake-affine stuff is a black box with too many unmeasurable
->> factors, but that's actually the reason why we finally figure out this
->> throttle idea, not the approach like wakeup-buddy, although both of them
->> help to stop the regression.
+> From: Thomas Renninger [mailto:trenn@suse.de]
+> Sent: Thursday, April 11, 2013 12:32 AM
+> On Wednesday, April 10, 2013 05:47:25 PM Yu, Fenghua wrote:
+> > > -----Original Message-----
+> > > From: Thomas Renninger [mailto:trenn@suse.de]
+> > > Sent: Wednesday, April 10, 2013 12:41 AM
+> > > Hello,
+> > >
+> > > On Wednesday, April 10, 2013 01:34:33 PM Tang Chen wrote:
+> > > > On 04/05/2013 07:46 AM, Yinghai Lu wrote:
+> > > > > Use common get_ramdisk_image() to get ramdisk start phys
+> address.
+> > > > >
+> > > > > We need this to get correct ramdisk adress for 64bit bzImage
+> that
+> > > > > initrd can be loaded above 4G by kexec-tools.disk_size;
+> > >
+> > > don't know whether this question came up when this feature got
+> > > submitted (if yes a pointer would be appreciated).
+> > >
+> > > Is there a concept how signed microcode can get verified when
+> applied
+> > > early,
+> > > like it is done via firmware loader?
+> > >
+> > > If not, early microcode loading is not really usable in secure boot
+> > > environment, right?
+> >
+> > The microcode is cryptographically authenticated by the CPU itself,
+> so there
+> > is no security issue related to early microcode loading.
 > 
-> For that load, as soon as clients+server exceeds socket size, pull is
-> doomed to always be a guaranteed loser.  There simply is no way to win,
-> some tasks must drag their data cross node no matter what you do,
-> because there is one and only one source of data, so you can not
-> possibly do anything but harm by pulling or in any other way disturbing
-> task placement, because you will force tasks to re-heat their footprint
-> every time you migrate someone with zero benefit to offset cost.  That
-> is why the closer you get to completely killing all migration, the
-> better your throughput gets with this load.. you're killing the cost of
-> migration in a situation there simply is no gain to be had.
-> 
-> That's why that wakeup-buddy thingy is a ~good idea.  It will allow 1:1
-> buddies that can and do benefit from motion to pair up and jabber in a
-> shared cache (though that motion needs slowing down too), _and_ detect
-> the case where wakeup migration is utterly pointless.  Just killing
-> wakeup migration OTOH should (I'd say very emphatic will) hurt pgbench
-> just as much, because spreading a smallish set which could share a cache
-> across several nodes hurts things like pgbench via misses just as much
-> as any other load.. it's just that once this load (or ilk) doesn't fit
-> in a node, you're absolutely screwed as far as misses go, you will eat
-> that because there simply is no other option.
+> So Intel HW is allowed to authenticate its firmware itself, bypassing
+> the UEFI
+> certificates...
+> Does this apply for other vendors as well?
+This should apply for other vendors as well as this is defined in X86 SDM.
 
-Wow, it's really hard to write down the logical behind, but you made it ;-)
-
-The 1:N is a good reason to explain why the chance that wakee's hot data
-cached on curr_cpu is lower, and since it's just 'lower' not 'extinct',
-after the throttle interval large enough, it will be balanced, this
-could be proved, since during my test, when the interval become too big,
-the improvement start to drop.
-
-> 
-> Any migration is pointless for this thing once it exceeds socket size,
-> and fairness plays a dominant role, is absolutely not throughputs best
-> friend when any component of a load requires more CPU than the other
-> components, which very definitely is the case with pgbench.  Fairness
-> hurts this thing a lot.  That's why pgbench took a whopping huge hit
-> when I fixed up select_idle_sibling() to not completely rape fast/light
-> communicating tasks, it forced pgbench to face the consequences of a
-> fair scheduler, by cutting off the escape routes that searching for
-> _any_ even ever so briefly idle spot to place tasks such that wakeup
-> preemption just didn't happen, and when we failed to pull, we instead
-> did the very same thing on wakees original socket, thus providing
-> pgbench the fairness escape mechanism that it needs.
-> 
-> When you wake to idle cores, you do not have a nanosecond resolution
-> ultra fair scheduler, with the fairness price to be paid.. tasks run as
-> long as they want to run, or at least full ticks, which of course makes
-> the hard working load components a lot more productive.  Hogs can be
-> hogs.  For pgbench run in 1:N mode, the hardest working load component
-> is the mother of all work, the (singular) server.  Any time 'mom' is not
-> continuously working her little digital a$$ off to keep all those kids
-> fed, you have a performance problem on your hands, the entire load
-> stalls, lives and dies with one and only 'mom'.
-
-Hmm...that's an interesting point, the workload contain different
-'priority' works, and depend on each other, if mother starving, all the
-kids could do nothing but wait for her, may be that's the reason why the
-benefit is so significant, since in such case, mother's little quicker
-respond will make all the kids happy :)
-
-Regards,
-Michael Wang
+> Does this apply to secure boot specification?
+Secure boot can add another level of security because the early loaded
+microcode is part of initrd and initrd is measured by secure boot.
 
 > 
-> -Mike
-> 
+> Is this "cryptographically authenticated by the CPU itself" thing
+> documented
+> somewhere so that security people can double check that it is really
+> secure?
 
+X86 SDM defines that the second part of microcode update is the encrypted data.
