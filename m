@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3DKLUz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 07:20:55 -0400
-Received: from relay.parallels.com ([195.214.232.42]:53960 "EHLO
+	id S1752886Ab3DKLVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 07:21:51 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54368 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436Ab3DKLUx (ORCPT
+	with ESMTP id S1750812Ab3DKLVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 07:20:53 -0400
-Message-ID: <51669CA6.7000007@parallels.com>
-Date: Thu, 11 Apr 2013 15:21:10 +0400
+	Thu, 11 Apr 2013 07:21:50 -0400
+Message-ID: <51669CDF.9090705@parallels.com>
+Date: Thu, 11 Apr 2013 15:22:07 +0400
 From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
@@ -16,9 +16,9 @@ To: "miklos@szeredi.hu" <miklos@szeredi.hu>
 CC: <dev@parallels.com>, <xemul@parallels.com>,
         <fuse-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
         <devel@openvz.org>
-Subject: Re: [fuse-devel] [PATCH 0/5] fuse: close file synchronously
-References: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
-In-Reply-To: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
+Subject: Re: [fuse-devel] [PATCH v2 0/6] fuse: process direct IO asynchronously
+References: <20121214151424.27155.45971.stgit@maximpc.sw.ru>
+In-Reply-To: <20121214151424.27155.45971.stgit@maximpc.sw.ru>
 Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 8bit
 X-Originating-IP: [10.30.17.2]
@@ -33,52 +33,67 @@ Any feedback would be highly appreciated.
 Thanks,
 Maxim
 
-12/20/2012 04:30 PM, Maxim Patlasov пишет:
+12/14/2012 07:20 PM, Maxim V. Patlasov пишет:
 > Hi,
 >
-> There is a long-standing demand for syncronous behaviour of fuse_release:
+> Existing fuse implementation always processes direct IO synchronously: it
+> submits next request to userspace fuse only when previous is completed. This
+> is suboptimal because: 1) libaio DIO works in blocking way; 2) userspace fuse
+> can't achieve parallelism  processing several requests simultaneously (e.g.
+> in case of distributed network storage); 3) userspace fuse can't merge
+> requests before passing it to actual storage.
 >
-> http://sourceforge.net/mailarchive/message.php?msg_id=19343889
-> http://sourceforge.net/mailarchive/message.php?msg_id=29814693
+> The idea of the patch-set is to submit fuse requests in non-blocking way
+> (where it's possible) and either return -EIOCBQUEUED or wait for their
+> completion synchronously. The patch-set to be applied on top of for-next of
+> Miklos' git repo.
 >
-> A few months ago Avati and me explained why such a feature would be useful:
+> To estimate performance improvement I used slightly modified fusexmp over
+> tmpfs (clearing O_DIRECT bit from fi->flags in xmp_open). For synchronous
+> operations I used 'dd' like this:
 >
-> http://sourceforge.net/mailarchive/message.php?msg_id=29889055
-> http://sourceforge.net/mailarchive/message.php?msg_id=29867423
+> dd of=/dev/null if=/fuse/mnt/file bs=2M count=256 iflag=direct
+> dd if=/dev/zero of=/fuse/mnt/file bs=2M count=256 oflag=direct conv=notrunc
 >
-> In short, the problem is that fuse_release (that's called on last user
-> close(2)) sends FUSE_RELEASE to userspace and returns without waiting for
-> ACK from userspace. Consequently, there is a gap when user regards the
-> file released while userspace fuse is still working on it. An attempt to
-> access the file from another node leads to complicated synchronization
-> problems because the first node still "holds" the file.
+> For AIO I used 'aio-stress' like this:
 >
-> The patch-set resolves the problem by making fuse_release synchronous:
-> wait for ACK from userspace for FUSE_RELEASE if the feature is ON.
+> aio-stress -s 512 -a 4 -b 1 -c 1 -O -o 1 /fuse/mnt/file
+> aio-stress -s 512 -a 4 -b 1 -c 1 -O -o 0 /fuse/mnt/file
 >
-> To keep single-threaded userspace implementations happy the patch-set
-> ensures that by the time fuse_release_common calls fuse_file_put, no
-> more in-flight I/O exists. Asynchronous fuse callbacks (like
-> fuse_readpages_end) cannot trigger FUSE_RELEASE anymore. Hence, we'll
-> never block in contexts other than close().
+> The throughput on some commodity (rather feeble) server was (in MB/sec):
+>
+>               original / patched
+>
+> dd reads:    ~322     / ~382
+> dd writes:   ~277     / ~288
+>
+> aio reads:   ~380     / ~459
+> aio writes:  ~319     / ~353
+>
+> Changed in v2 - cleanups suggested by Brian:
+>   - Updated fuse_io_priv with an async field and file pointer to preserve
+>     the current style of interface (i.e., use this instead of iocb).
+>   - Trigger the type of request submission based on the async field.
+>   - Pulled up the fuse_write_update_size() call out of __fuse_direct_write()
+>     to make the separate paths more consistent.
 >
 > Thanks,
 > Maxim
 >
 > ---
 >
-> Maxim Patlasov (5):
->        fuse: add close_wait flag to fuse_conn
->        fuse: cosmetic rework of fuse_send_readpages
->        fuse: wait for end of IO on release
->        fuse: enable close_wait feature
->        fuse: fix synchronous case of fuse_file_put()
+> Maxim V. Patlasov (6):
+>        fuse: move fuse_release_user_pages() up
+>        fuse: add support of async IO
+>        fuse: make fuse_direct_io() aware about AIO
+>        fuse: enable asynchronous processing direct IO
+>        fuse: truncate file if async dio failed
+>        fuse: optimize short direct reads
 >
 >
->   fs/fuse/file.c            |   82 ++++++++++++++++++++++++++++++++++++++-------
->   fs/fuse/fuse_i.h          |    3 ++
->   fs/fuse/inode.c           |    5 ++-
->   include/uapi/linux/fuse.h |    7 +++-
->   4 files changed, 82 insertions(+), 15 deletions(-)
+>   fs/fuse/cuse.c   |    6 +
+>   fs/fuse/file.c   |  290 +++++++++++++++++++++++++++++++++++++++++++++++-------
+>   fs/fuse/fuse_i.h |   19 +++-
+>   3 files changed, 276 insertions(+), 39 deletions(-)
 >
 
