@@ -1,55 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab3DKTHb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 15:07:31 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:57449 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab3DKTHa (ORCPT
+	id S1752819Ab3DKTLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 15:11:47 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:41973 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab3DKTLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 15:07:30 -0400
-Date: Thu, 11 Apr 2013 12:07:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk
-Subject: Re: [PATCH 00/26] Eliminate create_proc_read_entry() [RFC]
-Message-ID: <20130411190728.GC32045@kroah.com>
-References: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 11 Apr 2013 15:11:45 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Dale Farnsworth <dale@farnsworth.org>,
+        Ben Hutchings <bhutchings@solarflare.com>, Soeren Moch <smoch@web.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Willy Tarreau <w@1wt.eu>,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net: mv643xx_eth: remove deprecated inet_lro support
+Date: Thu, 11 Apr 2013 21:11:28 +0200
+Message-Id: <1365707488-28819-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 02:27:40PM +0100, David Howells wrote:
-> 
-> Here is a series of patches to eliminate create_proc_read_entry(), replacing it
-> with proc_create() and proc_create_data() and the use of seq_file facilities.
-> 
-> This requires file_operations structs and open methods to be provided in most
-> cases, though single_open() and single_open_size() suffice for the actual
-> translation into the seq_file environment.  I did try and reduce the number of
-> file_operations structs and open methods added by placing the show function
-> pointer into seq_file::private in some places.
-> 
-> Certain places (hostap most notably) required conversion of some files into
-> full seq_file iterators to handle the possibility that large lists might
-> overrun a single buffer full of data.
-> 
-> This reduces the size of the proc_dir_entry by the removal of the read_proc
-> pointer, plus the support mechanisms for these have been removed from the
-> procfs code.
-> 
-> These patches have been compile tested as best I can (apart from SH for which I
-> don't have a working compiler).  No runtime testing has been done outside of
-> the core procfs code as I don't have the requisite hardware.
+With recent support for GRO, there is no need to keep both LRO and
+GRO. This patch therefore removes the deprecated inet_lro support
+from mv643xx_eth. This is work is based on an experimental patch
+provided by Eric Dumazet and Willy Tarreau.
 
-The ones I've been cc:ed on, with the exception of the hostap patch, I
-will be glad to take though my trees now, unless you want to take them
-yourself?
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Based-on-patch-by: Eric Dumazet <eric.dumazet@gmail.com>
+Based-on-patch-by: Willy Tarreau <w@1wt.eu>
+---
+Note: This patch is based upon recent cleanup patches and GRO support
+patch for mv643xx_eth.
 
-thanks,
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Florian Fainelli <florian@openwrt.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Dale Farnsworth <dale@farnsworth.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Soeren Moch <smoch@web.de>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: netdev@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/marvell/mv643xx_eth.c |   97 +---------------------------
+ 1 file changed, 3 insertions(+), 94 deletions(-)
 
-greg k-h
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index c850d04..d0afeea 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -56,8 +56,8 @@
+ #include <linux/phy.h>
+ #include <linux/mv643xx_eth.h>
+ #include <linux/io.h>
++#include <linux/interrupt.h>
+ #include <linux/types.h>
+-#include <linux/inet_lro.h>
+ #include <linux/slab.h>
+ #include <linux/clk.h>
+ 
+@@ -316,12 +316,6 @@ struct mib_counters {
+ 	u32 rx_overrun;
+ };
+ 
+-struct lro_counters {
+-	u32 lro_aggregated;
+-	u32 lro_flushed;
+-	u32 lro_no_desc;
+-};
+-
+ struct rx_queue {
+ 	int index;
+ 
+@@ -335,9 +329,6 @@ struct rx_queue {
+ 	dma_addr_t rx_desc_dma;
+ 	int rx_desc_area_size;
+ 	struct sk_buff **rx_skb;
+-
+-	struct net_lro_mgr lro_mgr;
+-	struct net_lro_desc lro_arr[8];
+ };
+ 
+ struct tx_queue {
+@@ -373,8 +364,6 @@ struct mv643xx_eth_private {
+ 	spinlock_t mib_counters_lock;
+ 	struct mib_counters mib_counters;
+ 
+-	struct lro_counters lro_counters;
+-
+ 	struct work_struct tx_timeout_task;
+ 
+ 	struct napi_struct napi;
+@@ -503,42 +492,12 @@ static void txq_maybe_wake(struct tx_queue *txq)
+ 	}
+ }
+ 
+-
+-/* rx napi ******************************************************************/
+-static int
+-mv643xx_get_skb_header(struct sk_buff *skb, void **iphdr, void **tcph,
+-		       u64 *hdr_flags, void *priv)
+-{
+-	unsigned long cmd_sts = (unsigned long)priv;
+-
+-	/*
+-	 * Make sure that this packet is Ethernet II, is not VLAN
+-	 * tagged, is IPv4, has a valid IP header, and is TCP.
+-	 */
+-	if ((cmd_sts & (RX_IP_HDR_OK | RX_PKT_IS_IPV4 |
+-		       RX_PKT_IS_ETHERNETV2 | RX_PKT_LAYER4_TYPE_MASK |
+-		       RX_PKT_IS_VLAN_TAGGED)) !=
+-	    (RX_IP_HDR_OK | RX_PKT_IS_IPV4 |
+-	     RX_PKT_IS_ETHERNETV2 | RX_PKT_LAYER4_TYPE_TCP_IPV4))
+-		return -1;
+-
+-	skb_reset_network_header(skb);
+-	skb_set_transport_header(skb, ip_hdrlen(skb));
+-	*iphdr = ip_hdr(skb);
+-	*tcph = tcp_hdr(skb);
+-	*hdr_flags = LRO_IPV4 | LRO_TCP;
+-
+-	return 0;
+-}
+-
+ static int rxq_process(struct rx_queue *rxq, int budget)
+ {
+ 	struct mv643xx_eth_private *mp = rxq_to_mp(rxq);
+ 	struct net_device_stats *stats = &mp->dev->stats;
+-	int lro_flush_needed;
+ 	int rx;
+ 
+-	lro_flush_needed = 0;
+ 	rx = 0;
+ 	while (rx < budget && rxq->rx_desc_count) {
+ 		struct rx_desc *rx_desc;
+@@ -599,12 +558,7 @@ static int rxq_process(struct rx_queue *rxq, int budget)
+ 			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 		skb->protocol = eth_type_trans(skb, mp->dev);
+ 
+-		if (skb->dev->features & NETIF_F_LRO &&
+-		    skb->ip_summed == CHECKSUM_UNNECESSARY) {
+-			lro_receive_skb(&rxq->lro_mgr, skb, (void *)cmd_sts);
+-			lro_flush_needed = 1;
+-		} else
+-			napi_gro_receive(&mp->napi, skb);
++		napi_gro_receive(&mp->napi, skb);
+ 
+ 		continue;
+ 
+@@ -624,9 +578,6 @@ err:
+ 		dev_kfree_skb(skb);
+ 	}
+ 
+-	if (lro_flush_needed)
+-		lro_flush_all(&rxq->lro_mgr);
+-
+ 	if (rx < budget)
+ 		mp->work_rx &= ~(1 << rxq->index);
+ 
+@@ -1118,26 +1069,6 @@ static struct net_device_stats *mv643xx_eth_get_stats(struct net_device *dev)
+ 	return stats;
+ }
+ 
+-static void mv643xx_eth_grab_lro_stats(struct mv643xx_eth_private *mp)
+-{
+-	u32 lro_aggregated = 0;
+-	u32 lro_flushed = 0;
+-	u32 lro_no_desc = 0;
+-	int i;
+-
+-	for (i = 0; i < mp->rxq_count; i++) {
+-		struct rx_queue *rxq = mp->rxq + i;
+-
+-		lro_aggregated += rxq->lro_mgr.stats.aggregated;
+-		lro_flushed += rxq->lro_mgr.stats.flushed;
+-		lro_no_desc += rxq->lro_mgr.stats.no_desc;
+-	}
+-
+-	mp->lro_counters.lro_aggregated = lro_aggregated;
+-	mp->lro_counters.lro_flushed = lro_flushed;
+-	mp->lro_counters.lro_no_desc = lro_no_desc;
+-}
+-
+ static inline u32 mib_read(struct mv643xx_eth_private *mp, int offset)
+ {
+ 	return rdl(mp, MIB_COUNTERS(mp->port_num) + offset);
+@@ -1301,10 +1232,6 @@ struct mv643xx_eth_stats {
+ 	{ #m, FIELD_SIZEOF(struct mib_counters, m),		\
+ 	  -1, offsetof(struct mv643xx_eth_private, mib_counters.m) }
+ 
+-#define LROSTAT(m)						\
+-	{ #m, FIELD_SIZEOF(struct lro_counters, m),		\
+-	  -1, offsetof(struct mv643xx_eth_private, lro_counters.m) }
+-
+ static const struct mv643xx_eth_stats mv643xx_eth_stats[] = {
+ 	SSTAT(rx_packets),
+ 	SSTAT(tx_packets),
+@@ -1346,9 +1273,6 @@ static const struct mv643xx_eth_stats mv643xx_eth_stats[] = {
+ 	MIBSTAT(late_collision),
+ 	MIBSTAT(rx_discard),
+ 	MIBSTAT(rx_overrun),
+-	LROSTAT(lro_aggregated),
+-	LROSTAT(lro_flushed),
+-	LROSTAT(lro_no_desc),
+ };
+ 
+ static int
+@@ -1578,7 +1502,6 @@ static void mv643xx_eth_get_ethtool_stats(struct net_device *dev,
+ 
+ 	mv643xx_eth_get_stats(dev);
+ 	mib_counters_update(mp);
+-	mv643xx_eth_grab_lro_stats(mp);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(mv643xx_eth_stats); i++) {
+ 		const struct mv643xx_eth_stats *stat;
+@@ -1851,19 +1774,6 @@ static int rxq_init(struct mv643xx_eth_private *mp, int index)
+ 					nexti * sizeof(struct rx_desc);
+ 	}
+ 
+-	rxq->lro_mgr.dev = mp->dev;
+-	memset(&rxq->lro_mgr.stats, 0, sizeof(rxq->lro_mgr.stats));
+-	rxq->lro_mgr.features = LRO_F_NAPI;
+-	rxq->lro_mgr.ip_summed = CHECKSUM_UNNECESSARY;
+-	rxq->lro_mgr.ip_summed_aggr = CHECKSUM_UNNECESSARY;
+-	rxq->lro_mgr.max_desc = ARRAY_SIZE(rxq->lro_arr);
+-	rxq->lro_mgr.max_aggr = 32;
+-	rxq->lro_mgr.frag_align_pad = 0;
+-	rxq->lro_mgr.lro_arr = rxq->lro_arr;
+-	rxq->lro_mgr.get_skb_header = mv643xx_get_skb_header;
+-
+-	memset(&rxq->lro_arr, 0, sizeof(rxq->lro_arr));
+-
+ 	return 0;
+ 
+ 
+@@ -2851,8 +2761,7 @@ static int mv643xx_eth_probe(struct platform_device *pdev)
+ 	dev->watchdog_timeo = 2 * HZ;
+ 	dev->base_addr = 0;
+ 
+-	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM |
+-		NETIF_F_RXCSUM | NETIF_F_LRO;
++	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
+ 	dev->features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
+ 	dev->vlan_features = NETIF_F_SG | NETIF_F_IP_CSUM;
+ 
+-- 
+1.7.10.4
+
