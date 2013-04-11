@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab3DKHpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 03:45:09 -0400
-Received: from mx16.lb01.inode.at ([62.99.145.18]:44127 "EHLO mx.inode.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754654Ab3DKHpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 03:45:03 -0400
-From: Michal Bachraty <michal.bachraty@streamunlimited.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Daniel Mack <zonque@gmail.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v7] clk: add si5351 i2c common clock driver
-Date: Thu, 11 Apr 2013 09:44:47 +0200
-Message-ID: <11205025.2MA5VbIUoF@ganymedes>
-Organization: Stream Unlimited GmbH
-User-Agent: KMail/4.8.4 (Linux/3.2.0-29-generic-pae; KDE/4.8.4; i686; ; )
-In-Reply-To: <5165A0FD.5030308@gmail.com>
-References: <1365439617-18816-1-git-send-email-sebastian.hesselbarth@gmail.com> <14854575.YAd2OMKOy9@ganymedes> <5165A0FD.5030308@gmail.com>
+	id S1759172Ab3DKHqK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 03:46:10 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:15780 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753997Ab3DKHqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 03:46:07 -0400
+X-IronPort-AV: E=Sophos;i="4.87,454,1363132800"; 
+   d="scan'208";a="3446813"
+Message-ID: <1365666364.27868.114.camel@zakaz.uk.xensource.com>
+Subject: Re: [net-next PATCH] xen-netback: switch to use
+ skb_partial_csum_set()
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jason Wang <jasowang@redhat.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davem@davemloft.net" <davem@davemloft.net>
+Date: Thu, 11 Apr 2013 08:46:04 +0100
+In-Reply-To: <1365662129-38031-1-git-send-email-jasowang@redhat.com>
+References: <1365662129-38031-1-git-send-email-jasowang@redhat.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Authenticated-Sender: michal.bachraty@streamunlimited.com
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On Thu, 2013-04-11 at 07:35 +0100, Jason Wang wrote:
+> Switch to use skb_partial_csum_set() to simplify the codes.
 
-On Wednesday, April 10, 2013 19:27:25 Sebastian Hesselbarth wrote:
-> Hmm, is there any driver using the clock output? Does it
-> clk_prepare_enable() the clock? I tend not to mess with anything the
-> bootloader or eeprom config left disabled. It works for me, but here the
-> driver will prepare/enable the clock prior use.
+This is incremental on top of your previous patch, right?
 
-For my case, disabled clock outputs in bootloader are correct. I'm working on 
-module board with lot of purposes. For one I need to tune frequncy, for other 
-not. In some cases I can use  clk_prepare_enable. For now, I need to tune clk, 
-so I can't use clk_prepare_enable. Si5351 chip has no problem with enabling 
-clock output multiple times, when calling clk_set_rate. So if this feature 
-will not be in driver, I need to stay with patch upon driver.
+> 
+> Cc: Ian Campbell <ian.campbell@citrix.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+> Note:
+> - Compile test only.
+> ---
+>  drivers/net/xen-netback/netback.c |   22 ++++++++--------------
+>  1 files changed, 8 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index 83905a9..70631f0 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -1156,7 +1156,6 @@ static int netbk_set_skb_gso(struct xenvif *vif,
+>  static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
+>  {
+>  	struct iphdr *iph;
+> -	unsigned char *th;
+>  	int err = -EPROTO;
+>  	int recalculate_partial_csum = 0;
+>  
+> @@ -1180,28 +1179,26 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
+>  		goto out;
+>  
+>  	iph = (void *)skb->data;
+> -	th = skb->data + 4 * iph->ihl;
+> -	if (th >= skb_tail_pointer(skb))
+> -		goto out;
+> -
+> -	skb_set_transport_header(skb, 4 * iph->ihl);
 
-Many thaks for writting driver,
+Is removing this line really correct?
 
-Michal
+> -	skb->csum_start = th - skb->head;
+>  	switch (iph->protocol) {
+>  	case IPPROTO_TCP:
+> -		skb->csum_offset = offsetof(struct tcphdr, check);
+> +		if (!skb_partial_csum_set(skb, 4 * iph->ihl,
+> +					  offsetof(struct tcphdr, check)))
+> +			goto out;
+>  
+>  		if (recalculate_partial_csum) {
+> -			struct tcphdr *tcph = (struct tcphdr *)th;
+> +			struct tcphdr *tcph = tcp_hdr(skb);
+>  			tcph->check = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
+>  							 skb->len - iph->ihl*4,
+>  							 IPPROTO_TCP, 0);
+>  		}
+>  		break;
+>  	case IPPROTO_UDP:
+> -		skb->csum_offset = offsetof(struct udphdr, check);
+> +		if (!skb_partial_csum_set(skb, 4 * iph->ihl,
+> +					  offsetof(struct udphdr, check)))
+> +			goto out;
+>  
+>  		if (recalculate_partial_csum) {
+> -			struct udphdr *udph = (struct udphdr *)th;
+> +			struct udphdr *udph = udp_hdr(skb);
+>  			udph->check = ~csum_tcpudp_magic(iph->saddr, iph->daddr,
+>  							 skb->len - iph->ihl*4,
+>  							 IPPROTO_UDP, 0);
+> @@ -1215,9 +1212,6 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
+>  		goto out;
+>  	}
+>  
+> -	if ((th + skb->csum_offset + 2) > skb_tail_pointer(skb))
+> -		goto out;
+> -
+>  	err = 0;
+>  
+>  out:
+
 
