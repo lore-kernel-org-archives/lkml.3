@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab3DKGhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 02:37:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52928 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752742Ab3DKGha (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 02:37:30 -0400
-Message-ID: <51665A0E.7080607@redhat.com>
-Date: Thu, 11 Apr 2013 14:37:02 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753018Ab3DKGlN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 02:41:13 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:34505 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750871Ab3DKGlL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 02:41:11 -0400
+Message-ID: <51665AF6.1010402@stericsson.com>
+Date: Thu, 11 Apr 2013 08:40:54 +0200
+From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mst@redhat.com" <mst@redhat.com>, Eric Dumazet <edumazet@google.com>
-Subject: Re: [net-next 4/5] netback: set transport header before passing it
- to kernel
-References: <1364278799-37285-1-git-send-email-jasowang@redhat.com>  <1364278799-37285-5-git-send-email-jasowang@redhat.com> <1365600803.27868.60.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1365600803.27868.60.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset=UTF-8
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regulator: ab8500-ext: Make the return type of ab8500_ext_regulator_exit()
+ void
+References: <1365653058.17060.0.camel@phoenix>
+In-Reply-To: <1365653058.17060.0.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 09:33 PM, Ian Campbell wrote:
-> On Tue, 2013-03-26 at 06:19 +0000, Jason Wang wrote:
->> Currently, for the packets receives from netback, before doing header check,
->> kernel just reset the transport header in netif_receive_skb() which pretends non
->> l4 header. This is suboptimal for precise packet length estimation (introduced
->> in 1def9238: net_sched: more precise pkt_len computation) which needs correct l4
->> header for gso packets.
->>
->> The patch just reuse the header probed by netback for partial checksum packets
->> and tries to use skb_flow_dissect() for other cases, if both fail, just pretend
->> no l4 header.
->>
->> Cc: Eric Dumazet <edumazet@google.com>
->> Cc: Ian Campbell <ian.campbell@citrix.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  drivers/net/xen-netback/netback.c |   12 ++++++++++++
->>  1 files changed, 12 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
->> index aa28550..fc8faa7 100644
->> --- a/drivers/net/xen-netback/netback.c
->> +++ b/drivers/net/xen-netback/netback.c
->> @@ -39,6 +39,7 @@
->>  #include <linux/udp.h>
->>  
->>  #include <net/tcp.h>
->> +#include <net/flow_keys.h>
->>  
->>  #include <xen/xen.h>
->>  #include <xen/events.h>
->> @@ -1184,6 +1185,7 @@ static int checksum_setup(struct xenvif *vif, struct sk_buff *skb)
->>  	if (th >= skb_tail_pointer(skb))
->>  		goto out;
->>  
->> +	skb_set_transport_header(skb, 4 * iph->ihl);
->>  	skb->csum_start = th - skb->head;
-> Should the use of th here (and perhaps above) be replaced with
-> skb_transport_header() too?
-
-Yes, and furthermore looks like we can use skb_partial_csum_set() here,
-will send a patch.
-
-Thanks
->>  	switch (iph->protocol) {
->>  	case IPPROTO_TCP:
->> @@ -1495,6 +1497,7 @@ static void xen_netbk_tx_submit(struct xen_netbk *netbk)
->>  
->>  		skb->dev      = vif->dev;
->>  		skb->protocol = eth_type_trans(skb, skb->dev);
->> +		skb_reset_network_header(skb);
->>  
->>  		if (checksum_setup(vif, skb)) {
->>  			netdev_dbg(vif->dev,
->> @@ -1503,6 +1506,15 @@ static void xen_netbk_tx_submit(struct xen_netbk *netbk)
->>  			continue;
->>  		}
->>  
->> +		if (!skb_transport_header_was_set(skb)) {
->> +			struct flow_keys keys;
->> +
->> +			if (skb_flow_dissect(skb, &keys))
->> +				skb_set_transport_header(skb, keys.thoff);
->> +			else
->> +				skb_reset_transport_header(skb);
->> +		}
->> +
->>  		vif->dev->stats.rx_bytes += skb->len;
->>  		vif->dev->stats.rx_packets++;
->>  
+On 04/11/2013 06:04 AM, Axel Lin wrote:
+> ab8500_ext_regulator_exit() never fails.
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Looks good to me.
+
+Acked-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+> ---
+>   drivers/regulator/ab8500-ext.c   |    4 +---
+>   drivers/regulator/ab8500.c       |    9 +++------
+>   include/linux/regulator/ab8500.h |    2 +-
+>   3 files changed, 5 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+> index dd582be..861ab04 100644
+> --- a/drivers/regulator/ab8500-ext.c
+> +++ b/drivers/regulator/ab8500-ext.c
+> @@ -385,7 +385,7 @@ int ab8500_ext_regulator_init(struct platform_device *pdev)
+>   	return 0;
+>   }
+>   
+> -int ab8500_ext_regulator_exit(struct platform_device *pdev)
+> +void ab8500_ext_regulator_exit(struct platform_device *pdev)
+>   {
+>   	int i;
+>   
+> @@ -398,8 +398,6 @@ int ab8500_ext_regulator_exit(struct platform_device *pdev)
+>   
+>   		regulator_unregister(info->rdev);
+>   	}
+> -
+> -	return 0;
+>   }
+>   
+>   MODULE_LICENSE("GPL v2");
+> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+> index 9ebd131..c200f8b 100644
+> --- a/drivers/regulator/ab8500.c
+> +++ b/drivers/regulator/ab8500.c
+> @@ -3194,12 +3194,9 @@ static int ab8500_regulator_remove(struct platform_device *pdev)
+>   		regulator_unregister(info->regulator);
+>   	}
+>   
+> -	if (!is_ab8505(ab8500)) {
+> -		/* remove external regulators (after Vaux1, 2 and 3) */
+> -		err = ab8500_ext_regulator_exit(pdev);
+> -		if (err)
+> -			return err;
+> -	}
+> +	/* remove external regulators (after Vaux1, 2 and 3) */
+> +	if (!is_ab8505(ab8500))
+> +		ab8500_ext_regulator_exit(pdev);
+>   
+>   	/* remove regulator debug */
+>   	err = ab8500_regulator_debug_exit(pdev);
+> diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
+> index 90b8b5a..7c5ff0c 100644
+> --- a/include/linux/regulator/ab8500.h
+> +++ b/include/linux/regulator/ab8500.h
+> @@ -338,6 +338,6 @@ static inline int ab8500_regulator_debug_exit(struct platform_device *pdev)
+>   
+>   /* AB8500 external regulator functions. */
+>   int ab8500_ext_regulator_init(struct platform_device *pdev);
+> -int ab8500_ext_regulator_exit(struct platform_device *pdev);
+> +void ab8500_ext_regulator_exit(struct platform_device *pdev);
+>   
+>   #endif
 
