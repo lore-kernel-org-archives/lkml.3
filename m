@@ -1,181 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934736Ab3DKXQl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 19:16:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13502 "EHLO
+	id S934634Ab3DKXQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 19:16:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19842 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934213Ab3DKXQY (ORCPT
+	with ESMTP id S934290Ab3DKXQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 19:16:24 -0400
-X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=LrRHo8RgHfoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=93CPO29_dP4A:10 a=zRKbQ67AAAAA:8 a=1NKJqBAhdiGHiarnX9YA:9 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Tr3lDfD-ADgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=jMOoZqmUakEA:10 a=zRKbQ67AAAAA:8 a=EQp6gqqYAAAA:8 a=fKMrNvyTRMrYJqXD_3QA:9 a=NvCvpz8KglQA:10 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=xMqwRu9mWDAA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411231620.139377811@goodmis.org>
+Message-Id: <20130411231621.274616680@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 19:11:51 -0400
+Date: Thu, 11 Apr 2013 19:11:58 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 2/9 ] sfc: Really disable flow control while flushing
+Subject: [ 9/9 ] sfc: Fix timekeeping in efx_mcdi_poll()
 References: <20130411231149.302144972@goodmis.org>
-Content-Disposition: inline; filename=0002-sfc-Really-disable-flow-control-while-flushing.patch
+Content-Disposition: inline; filename=0009-sfc-Fix-timekeeping-in-efx_mcdi_poll.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Hutchings <bhutchings@solarflare.com>
 
-[ Upstream commit d5e8cc6c946e0857826dcfbb3585068858445bfe ]
+[ Upstream commit ebf98e797b4e26ad52ace1511a0b503ee60a6cd4 ]
 
-Receiving pause frames can block TX queue flushes.  Earlier changes
-work around this by reconfiguring the MAC during flushes for VFs, but
-during flushes for the PF we would only change the fc_disable counter.
-Unless the MAC is reconfigured for some other reason during the flush
-(which I would not expect to happen) this had no effect at all.
+efx_mcdi_poll() uses get_seconds() to read the current time and to
+implement a polling timeout.  The use of this function was chosen
+partly because it could easily be replaced in a co-sim environment
+with a macro that read the simulated time.
+
+Unfortunately the real get_seconds() returns the system time (real
+time) which is subject to adjustment by e.g. ntpd.  If the system time
+is adjusted forward during a polled MCDI operation, the effective
+timeout can be shorter than the intended 10 seconds, resulting in a
+spurious failure.  It is also possible for a backward adjustment to
+delay detection of a areal failure.
+
+Use jiffies instead, and change MCDI_RPC_TIMEOUT to be denominated in
+jiffies.  Also correct rounding of the timeout: check time > finish
+(or rather time_after(time, finish)) and not time >= finish.
 
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/ethernet/sfc/falcon.c      |    2 ++
- drivers/net/ethernet/sfc/net_driver.h  |    2 ++
- drivers/net/ethernet/sfc/nic.c         |    3 +--
- drivers/net/ethernet/sfc/nic.h         |    2 ++
- drivers/net/ethernet/sfc/siena.c       |   15 ++++++++++++++-
- drivers/net/ethernet/sfc/siena_sriov.c |    6 ++----
- 6 files changed, 23 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/sfc/mcdi.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/falcon.c b/drivers/net/ethernet/sfc/falcon.c
-index 12b573a..49bcd19 100644
---- a/drivers/net/ethernet/sfc/falcon.c
-+++ b/drivers/net/ethernet/sfc/falcon.c
-@@ -1792,6 +1792,7 @@ const struct efx_nic_type falcon_a1_nic_type = {
- 	.remove_port = falcon_remove_port,
- 	.handle_global_event = falcon_handle_global_event,
- 	.prepare_flush = falcon_prepare_flush,
-+	.finish_flush = efx_port_dummy_op_void,
- 	.update_stats = falcon_update_nic_stats,
- 	.start_stats = falcon_start_nic_stats,
- 	.stop_stats = falcon_stop_nic_stats,
-@@ -1834,6 +1835,7 @@ const struct efx_nic_type falcon_b0_nic_type = {
- 	.remove_port = falcon_remove_port,
- 	.handle_global_event = falcon_handle_global_event,
- 	.prepare_flush = falcon_prepare_flush,
-+	.finish_flush = efx_port_dummy_op_void,
- 	.update_stats = falcon_update_nic_stats,
- 	.start_stats = falcon_start_nic_stats,
- 	.stop_stats = falcon_stop_nic_stats,
-diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
-index 4c454bdc..6288437 100644
---- a/drivers/net/ethernet/sfc/net_driver.h
-+++ b/drivers/net/ethernet/sfc/net_driver.h
-@@ -893,6 +893,7 @@ static inline unsigned int efx_port_num(struct efx_nic *efx)
-  * @remove_port: Free resources allocated by probe_port()
-  * @handle_global_event: Handle a "global" event (may be %NULL)
-  * @prepare_flush: Prepare the hardware for flushing the DMA queues
-+ * @finish_flush: Clean up after flushing the DMA queues
-  * @update_stats: Update statistics not provided by event handling
-  * @start_stats: Start the regular fetching of statistics
-  * @stop_stats: Stop the regular fetching of statistics
-@@ -940,6 +941,7 @@ struct efx_nic_type {
- 	void (*remove_port)(struct efx_nic *efx);
- 	bool (*handle_global_event)(struct efx_channel *channel, efx_qword_t *);
- 	void (*prepare_flush)(struct efx_nic *efx);
-+	void (*finish_flush)(struct efx_nic *efx);
- 	void (*update_stats)(struct efx_nic *efx);
- 	void (*start_stats)(struct efx_nic *efx);
- 	void (*stop_stats)(struct efx_nic *efx);
-diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
-index a1c3d80..a112622 100644
---- a/drivers/net/ethernet/sfc/nic.c
-+++ b/drivers/net/ethernet/sfc/nic.c
-@@ -679,7 +679,6 @@ int efx_nic_flush_queues(struct efx_nic *efx)
- 	struct efx_tx_queue *tx_queue;
- 	int rc = 0;
+diff --git a/drivers/net/ethernet/sfc/mcdi.c b/drivers/net/ethernet/sfc/mcdi.c
+index 319a73e..8407d41 100644
+--- a/drivers/net/ethernet/sfc/mcdi.c
++++ b/drivers/net/ethernet/sfc/mcdi.c
+@@ -22,7 +22,7 @@
+  **************************************************************************
+  */
  
--	efx->fc_disable++;
- 	efx->type->prepare_flush(efx);
+-#define MCDI_RPC_TIMEOUT       10 /*seconds */
++#define MCDI_RPC_TIMEOUT       (10 * HZ)
  
- 	efx_for_each_channel(channel, efx) {
-@@ -741,7 +740,7 @@ int efx_nic_flush_queues(struct efx_nic *efx)
- 		atomic_set(&efx->rxq_flush_outstanding, 0);
+ #define MCDI_PDU(efx)							\
+ 	(efx_port_num(efx) ? MC_SMEM_P1_PDU_OFST : MC_SMEM_P0_PDU_OFST)
+@@ -120,7 +120,7 @@ static void efx_mcdi_copyout(struct efx_nic *efx, u8 *outbuf, size_t outlen)
+ static int efx_mcdi_poll(struct efx_nic *efx)
+ {
+ 	struct efx_mcdi_iface *mcdi = efx_mcdi(efx);
+-	unsigned int time, finish;
++	unsigned long time, finish;
+ 	unsigned int respseq, respcmd, error;
+ 	unsigned int pdu = FR_CZ_MC_TREG_SMEM + MCDI_PDU(efx);
+ 	unsigned int rc, spins;
+@@ -136,7 +136,7 @@ static int efx_mcdi_poll(struct efx_nic *efx)
+ 	 * and poll once a jiffy (approximately)
+ 	 */
+ 	spins = TICK_USEC;
+-	finish = get_seconds() + MCDI_RPC_TIMEOUT;
++	finish = jiffies + MCDI_RPC_TIMEOUT;
+ 
+ 	while (1) {
+ 		if (spins != 0) {
+@@ -146,7 +146,7 @@ static int efx_mcdi_poll(struct efx_nic *efx)
+ 			schedule_timeout_uninterruptible(1);
+ 		}
+ 
+-		time = get_seconds();
++		time = jiffies;
+ 
+ 		rmb();
+ 		efx_readd(efx, &reg, pdu);
+@@ -158,7 +158,7 @@ static int efx_mcdi_poll(struct efx_nic *efx)
+ 		    EFX_DWORD_FIELD(reg, MCDI_HEADER_RESPONSE))
+ 			break;
+ 
+-		if (time >= finish)
++		if (time_after(time, finish))
+ 			return -ETIMEDOUT;
  	}
  
--	efx->fc_disable--;
-+	efx->type->finish_flush(efx);
+@@ -250,7 +250,7 @@ static int efx_mcdi_await_completion(struct efx_nic *efx)
+ 	if (wait_event_timeout(
+ 		    mcdi->wq,
+ 		    atomic_read(&mcdi->state) == MCDI_STATE_COMPLETED,
+-		    msecs_to_jiffies(MCDI_RPC_TIMEOUT * 1000)) == 0)
++		    MCDI_RPC_TIMEOUT) == 0)
+ 		return -ETIMEDOUT;
  
- 	return rc;
- }
-diff --git a/drivers/net/ethernet/sfc/nic.h b/drivers/net/ethernet/sfc/nic.h
-index bab5cd9..a8194b8 100644
---- a/drivers/net/ethernet/sfc/nic.h
-+++ b/drivers/net/ethernet/sfc/nic.h
-@@ -334,6 +334,8 @@ static inline int efx_nic_irq_test_irq_cpu(struct efx_nic *efx)
- 
- /* Global Resources */
- extern int efx_nic_flush_queues(struct efx_nic *efx);
-+extern void siena_prepare_flush(struct efx_nic *efx);
-+extern void siena_finish_flush(struct efx_nic *efx);
- extern void falcon_start_nic_stats(struct efx_nic *efx);
- extern void falcon_stop_nic_stats(struct efx_nic *efx);
- extern void falcon_setup_xaui(struct efx_nic *efx);
-diff --git a/drivers/net/ethernet/sfc/siena.c b/drivers/net/ethernet/sfc/siena.c
-index 6bafd21..4d9bd9b 100644
---- a/drivers/net/ethernet/sfc/siena.c
-+++ b/drivers/net/ethernet/sfc/siena.c
-@@ -127,6 +127,18 @@ static void siena_remove_port(struct efx_nic *efx)
- 	efx_nic_free_buffer(efx, &efx->stats_buffer);
- }
- 
-+void siena_prepare_flush(struct efx_nic *efx)
-+{
-+	if (efx->fc_disable++ == 0)
-+		efx_mcdi_set_mac(efx);
-+}
-+
-+void siena_finish_flush(struct efx_nic *efx)
-+{
-+	if (--efx->fc_disable == 0)
-+		efx_mcdi_set_mac(efx);
-+}
-+
- static const struct efx_nic_register_test siena_register_tests[] = {
- 	{ FR_AZ_ADR_REGION,
- 	  EFX_OWORD32(0x0003FFFF, 0x0003FFFF, 0x0003FFFF, 0x0003FFFF) },
-@@ -658,7 +670,8 @@ const struct efx_nic_type siena_a0_nic_type = {
- 	.reset = siena_reset_hw,
- 	.probe_port = siena_probe_port,
- 	.remove_port = siena_remove_port,
--	.prepare_flush = efx_port_dummy_op_void,
-+	.prepare_flush = siena_prepare_flush,
-+	.finish_flush = siena_finish_flush,
- 	.update_stats = siena_update_nic_stats,
- 	.start_stats = siena_start_nic_stats,
- 	.stop_stats = siena_stop_nic_stats,
-diff --git a/drivers/net/ethernet/sfc/siena_sriov.c b/drivers/net/ethernet/sfc/siena_sriov.c
-index 9cb3b84..78f5408 100644
---- a/drivers/net/ethernet/sfc/siena_sriov.c
-+++ b/drivers/net/ethernet/sfc/siena_sriov.c
-@@ -688,8 +688,7 @@ static int efx_vfdi_fini_all_queues(struct efx_vf *vf)
- 		return VFDI_RC_ENOMEM;
- 
- 	rtnl_lock();
--	if (efx->fc_disable++ == 0)
--		efx_mcdi_set_mac(efx);
-+	siena_prepare_flush(efx);
- 	rtnl_unlock();
- 
- 	/* Flush all the initialized queues */
-@@ -726,8 +725,7 @@ static int efx_vfdi_fini_all_queues(struct efx_vf *vf)
- 	}
- 
- 	rtnl_lock();
--	if (--efx->fc_disable == 0)
--		efx_mcdi_set_mac(efx);
-+	siena_finish_flush(efx);
- 	rtnl_unlock();
- 
- 	/* Irrespective of success/failure, fini the queues */
+ 	/* Check if efx_mcdi_set_mode() switched us back to polled completions.
 -- 
 1.7.10.4
 
