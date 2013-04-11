@@ -1,41 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752924Ab3DKLU3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 07:20:29 -0400
-Received: from sauhun.de ([89.238.76.85]:50157 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751746Ab3DKLU1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 07:20:27 -0400
-Date: Thu, 11 Apr 2013 13:20:21 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Christian Gmeiner <christian.gmeiner@gmail.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, linux-i2c@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/3] x86: Add basic support for the Congatec CGEB BIOS
- interface
-Message-ID: <20130411112021.GA3507@the-dreams.de>
-References: <1360663374-30951-1-git-send-email-s.hauer@pengutronix.de>
- <1360663374-30951-2-git-send-email-s.hauer@pengutronix.de>
- <CAH9NwWdOCo642KqUXk1y5hbwdtW5RYgQnQfZFUEe4FOJzSiByQ@mail.gmail.com>
- <20130326085454.GK1906@pengutronix.de>
- <20130326092435.GB8553@the-dreams.de>
- <20130326093139.GL1906@pengutronix.de>
- <CAH9NwWdUqH8gF8Vz7K_2UW1X==LWbYEd5dhSTPqqYwEnDuRVuQ@mail.gmail.com>
- <CAH9NwWd-UAYG0y2R379hPvntnfPhNEwvXm-f2uO3o1AZZ+OSMw@mail.gmail.com>
+	id S1753363Ab3DKLUz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 07:20:55 -0400
+Received: from relay.parallels.com ([195.214.232.42]:53960 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752436Ab3DKLUx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 07:20:53 -0400
+Message-ID: <51669CA6.7000007@parallels.com>
+Date: Thu, 11 Apr 2013 15:21:10 +0400
+From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAH9NwWd-UAYG0y2R379hPvntnfPhNEwvXm-f2uO3o1AZZ+OSMw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "miklos@szeredi.hu" <miklos@szeredi.hu>
+CC: <dev@parallels.com>, <xemul@parallels.com>,
+        <fuse-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
+        <devel@openvz.org>
+Subject: Re: [fuse-devel] [PATCH 0/5] fuse: close file synchronously
+References: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
+In-Reply-To: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.17.2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Miklos,
 
-> any update on your patch series to support CGEB? I have some time to
-> work on these patches but I don't want to duplicate the work. I really
-> want this watches to hit mainline soon.
+Any feedback would be highly appreciated.
 
-I acked the I2C patch and this is all I can do for this series.
+Thanks,
+Maxim
+
+12/20/2012 04:30 PM, Maxim Patlasov пишет:
+> Hi,
+>
+> There is a long-standing demand for syncronous behaviour of fuse_release:
+>
+> http://sourceforge.net/mailarchive/message.php?msg_id=19343889
+> http://sourceforge.net/mailarchive/message.php?msg_id=29814693
+>
+> A few months ago Avati and me explained why such a feature would be useful:
+>
+> http://sourceforge.net/mailarchive/message.php?msg_id=29889055
+> http://sourceforge.net/mailarchive/message.php?msg_id=29867423
+>
+> In short, the problem is that fuse_release (that's called on last user
+> close(2)) sends FUSE_RELEASE to userspace and returns without waiting for
+> ACK from userspace. Consequently, there is a gap when user regards the
+> file released while userspace fuse is still working on it. An attempt to
+> access the file from another node leads to complicated synchronization
+> problems because the first node still "holds" the file.
+>
+> The patch-set resolves the problem by making fuse_release synchronous:
+> wait for ACK from userspace for FUSE_RELEASE if the feature is ON.
+>
+> To keep single-threaded userspace implementations happy the patch-set
+> ensures that by the time fuse_release_common calls fuse_file_put, no
+> more in-flight I/O exists. Asynchronous fuse callbacks (like
+> fuse_readpages_end) cannot trigger FUSE_RELEASE anymore. Hence, we'll
+> never block in contexts other than close().
+>
+> Thanks,
+> Maxim
+>
+> ---
+>
+> Maxim Patlasov (5):
+>        fuse: add close_wait flag to fuse_conn
+>        fuse: cosmetic rework of fuse_send_readpages
+>        fuse: wait for end of IO on release
+>        fuse: enable close_wait feature
+>        fuse: fix synchronous case of fuse_file_put()
+>
+>
+>   fs/fuse/file.c            |   82 ++++++++++++++++++++++++++++++++++++++-------
+>   fs/fuse/fuse_i.h          |    3 ++
+>   fs/fuse/inode.c           |    5 ++-
+>   include/uapi/linux/fuse.h |    7 +++-
+>   4 files changed, 82 insertions(+), 15 deletions(-)
+>
 
