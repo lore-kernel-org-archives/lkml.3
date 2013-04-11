@@ -1,170 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937583Ab3DKAPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 20:15:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60371 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936176Ab3DKAGt (ORCPT
+	id S937346Ab3DKAQm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 20:16:42 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45404 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934997Ab3DKAQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 20:06:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [PATCH 10/30] usb: exynos: do not include plat/usb-phy.h
-Date: Thu, 11 Apr 2013 02:04:52 +0200
-Message-Id: <1365638712-1028578-11-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
-References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:GIO/GKPpWX/WbsJpvoBIPVPZ+XSbUFTMKbDQdKY+fR1
- jIBis9y4tIxHt6TuwJzXMbzt2DtvmZzzed24gwkyWcWeJGD+uV
- YL7QQ2jSafLFhMA990zi7xZjEnJ1nPIAmwY6iEgICo7wGtsHcI
- vELalqSCgt+LTxTuYEHksPXyaaUlfdYe0PNDujqtZEUF9JJ6wh
- otTEP83xPRqI6r7ZfWlBRZrcl/auG+jhssid5nZ7xbMhna+Jkh
- vkYpp1+y3PN75iItEMPkuioVyrku8zrIMWXibes91fdFKTPUkl
- rT035nUKiB3pzwno7U9byWMLcK6JzNe/JElG1JqIAmy0lV8/gn
- WMhRQ4+WYmhAqIOACEsqKFhCriGo4mnrXV/17t7hdekKC+v+ld
- IToQi1phcwYWg==
+	Wed, 10 Apr 2013 20:16:40 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <5166005B.3060607@jp.fujitsu.com>
+Date: Thu, 11 Apr 2013 09:14:19 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning requirements
+ for kswapd
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <1365505625-9460-3-git-send-email-mgorman@suse.de> <516511DF.5020805@jp.fujitsu.com> <20130410140824.GC3710@suse.de>
+In-Reply-To: <20130410140824.GC3710@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The definitions have moved to include/linux/usb/samsung-usb-phy.h,
-and plat/usb-phy.h is unavailable from drivers in a multiplatform
-configuration.
+(2013/04/10 23:08), Mel Gorman wrote:
+> On Wed, Apr 10, 2013 at 04:16:47PM +0900, Kamezawa Hiroyuki wrote:
+>> (2013/04/09 20:06), Mel Gorman wrote:
+>>> Simplistically, the anon and file LRU lists are scanned proportionally
+>>> depending on the value of vm.swappiness although there are other factors
+>>> taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+>>> the number of pages kswapd reclaims" limits the number of pages kswapd
+>>> reclaims but it breaks this proportional scanning and may evenly shrink
+>>> anon/file LRUs regardless of vm.swappiness.
+>>>
+>>> This patch preserves the proportional scanning and reclaim. It does mean
+>>> that kswapd will reclaim more than requested but the number of pages will
+>>> be related to the high watermark.
+>>>
+>>> [mhocko@suse.cz: Correct proportional reclaim for memcg and simplify]
+>>> Signed-off-by: Mel Gorman <mgorman@suse.de>
+>>> Acked-by: Rik van Riel <riel@redhat.com>
+>>> ---
+>>>    mm/vmscan.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++--------
+>>>    1 file changed, 46 insertions(+), 8 deletions(-)
+>>>
+>>> diff --git a/mm/vmscan.c b/mm/vmscan.c
+>>> index 4835a7a..0742c45 100644
+>>> --- a/mm/vmscan.c
+>>> +++ b/mm/vmscan.c
+>>> @@ -1825,13 +1825,21 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>>>    	enum lru_list lru;
+>>>    	unsigned long nr_reclaimed = 0;
+>>>    	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+>>> +	unsigned long nr_anon_scantarget, nr_file_scantarget;
+>>>    	struct blk_plug plug;
+>>> +	bool scan_adjusted = false;
+>>>
+>>>    	get_scan_count(lruvec, sc, nr);
+>>>
+>>> +	/* Record the original scan target for proportional adjustments later */
+>>> +	nr_file_scantarget = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE] + 1;
+>>> +	nr_anon_scantarget = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON] + 1;
+>>> +
+>>
+>> I'm sorry I couldn't understand the calc...
+>>
+>> Assume here
+>>          nr_file_scantarget = 100
+>>          nr_anon_file_target = 100.
+>>
+>
+> I think you might have meant nr_anon_scantarget here instead of
+> nr_anon_file_target.
+>
+>>
+>>>    	blk_start_plug(&plug);
+>>>    	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+>>>    					nr[LRU_INACTIVE_FILE]) {
+>>> +		unsigned long nr_anon, nr_file, percentage;
+>>> +
+>>>    		for_each_evictable_lru(lru) {
+>>>    			if (nr[lru]) {
+>>>    				nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
+>>> @@ -1841,17 +1849,47 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>>>    							    lruvec, sc);
+>>>    			}
+>>>    		}
+>>> +
+>>> +		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
+>>> +			continue;
+>>> +
+>>>    		/*
+>>> -		 * On large memory systems, scan >> priority can become
+>>> -		 * really large. This is fine for the starting priority;
+>>> -		 * we want to put equal scanning pressure on each zone.
+>>> -		 * However, if the VM has a harder time of freeing pages,
+>>> -		 * with multiple processes reclaiming pages, the total
+>>> -		 * freeing target can get unreasonably large.
+>>> +		 * For global direct reclaim, reclaim only the number of pages
+>>> +		 * requested. Less care is taken to scan proportionally as it
+>>> +		 * is more important to minimise direct reclaim stall latency
+>>> +		 * than it is to properly age the LRU lists.
+>>>    		 */
+>>> -		if (nr_reclaimed >= nr_to_reclaim &&
+>>> -		    sc->priority < DEF_PRIORITY)
+>>> +		if (global_reclaim(sc) && !current_is_kswapd())
+>>>    			break;
+>>> +
+>>> +		/*
+>>> +		 * For kswapd and memcg, reclaim at least the number of pages
+>>> +		 * requested. Ensure that the anon and file LRUs shrink
+>>> +		 * proportionally what was requested by get_scan_count(). We
+>>> +		 * stop reclaiming one LRU and reduce the amount scanning
+>>> +		 * proportional to the original scan target.
+>>> +		 */
+>>> +		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
+>>> +		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
+>>> +
+>>
+>> Then, nr_file = 80, nr_anon=70.
+>>
+>
+> As we scan evenly in SCAN_CLUSTER_MAX groups of pages, this wouldn't happen
+> but for the purposes of discussions, lets assume it did.
+>
+>>
+>>> +		if (nr_file > nr_anon) {
+>>> +			lru = LRU_BASE;
+>>> +			percentage = nr_anon * 100 / nr_anon_scantarget;
+>>> +		} else {
+>>> +			lru = LRU_FILE;
+>>> +			percentage = nr_file * 100 / nr_file_scantarget;
+>>> +		}
+>>
+>> the percentage will be 70.
+>>
+>
+> Yes.
+>
+>>> +
+>>> +		/* Stop scanning the smaller of the LRU */
+>>> +		nr[lru] = 0;
+>>> +		nr[lru + LRU_ACTIVE] = 0;
+>>> +
+>>
+>> this will stop anon scan.
+>>
+>
+> Yes.
+>
+>>> +		/* Reduce scanning of the other LRU proportionally */
+>>> +		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
+>>> +		nr[lru] = nr[lru] * percentage / 100;;
+>>> +		nr[lru + LRU_ACTIVE] = nr[lru + LRU_ACTIVE] * percentage / 100;
+>>> +
+>>
+>> finally, in the next iteration,
+>>
+>>                nr[file] = 80 * 0.7 = 56.
+>>
+>> After loop, anon-scan is 30 pages , file-scan is 76(20+56) pages..
+>>
+>
+> Well spotted, this would indeed reclaim too many pages from the other
+> LRU. I wanted to avoid recording the original scan targets as it's an
+> extra 40 bytes on the stack but it's unavoidable.
+>
+>> I think the calc here should be
+>>
+>>     nr[lru] = nr_lru_scantarget * percentage / 100 - nr[lru]
+>>
+>>     Here, 80-70=10 more pages to scan..should be proportional.
+>>
+>
+> nr[lru] at the end there is pages remaining to be scanned not pages
+> scanned already.
 
-Also fix up the plat/usb-phy.h header file to use the definitions
-from the new header instead of providing a separate copy.
+yes.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-usb@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>
----
- arch/arm/mach-exynos/setup-usb-phy.c         | 8 ++++----
- arch/arm/mach-s3c64xx/setup-usb-phy.c        | 4 ++--
- arch/arm/mach-s5pv210/setup-usb-phy.c        | 4 ++--
- arch/arm/plat-samsung/include/plat/usb-phy.h | 5 +----
- drivers/usb/host/ehci-s5p.c                  | 1 -
- drivers/usb/host/ohci-exynos.c               | 1 -
- 6 files changed, 9 insertions(+), 14 deletions(-)
+> Did you mean something like this?
+>
+> nr[lru] = scantarget[lru] * percentage / 100 - (scantarget[lru] - nr[lru])
+>
 
-diff --git a/arch/arm/mach-exynos/setup-usb-phy.c b/arch/arm/mach-exynos/setup-usb-phy.c
-index b81cc56..6af4066 100644
---- a/arch/arm/mach-exynos/setup-usb-phy.c
-+++ b/arch/arm/mach-exynos/setup-usb-phy.c
-@@ -204,9 +204,9 @@ static int exynos4210_usb_phy1_exit(struct platform_device *pdev)
- 
- int s5p_usb_phy_init(struct platform_device *pdev, int type)
- {
--	if (type == S5P_USB_PHY_DEVICE)
-+	if (type == USB_PHY_TYPE_DEVICE)
- 		return exynos4210_usb_phy0_init(pdev);
--	else if (type == S5P_USB_PHY_HOST)
-+	else if (type == USB_PHY_TYPE_HOST)
- 		return exynos4210_usb_phy1_init(pdev);
- 
- 	return -EINVAL;
-@@ -214,9 +214,9 @@ int s5p_usb_phy_init(struct platform_device *pdev, int type)
- 
- int s5p_usb_phy_exit(struct platform_device *pdev, int type)
- {
--	if (type == S5P_USB_PHY_DEVICE)
-+	if (type == USB_PHY_TYPE_DEVICE)
- 		return exynos4210_usb_phy0_exit(pdev);
--	else if (type == S5P_USB_PHY_HOST)
-+	else if (type == USB_PHY_TYPE_HOST)
- 		return exynos4210_usb_phy1_exit(pdev);
- 
- 	return -EINVAL;
-diff --git a/arch/arm/mach-s3c64xx/setup-usb-phy.c b/arch/arm/mach-s3c64xx/setup-usb-phy.c
-index c8174d9..ca960bd 100644
---- a/arch/arm/mach-s3c64xx/setup-usb-phy.c
-+++ b/arch/arm/mach-s3c64xx/setup-usb-phy.c
-@@ -76,7 +76,7 @@ static int s3c_usb_otgphy_exit(struct platform_device *pdev)
- 
- int s5p_usb_phy_init(struct platform_device *pdev, int type)
- {
--	if (type == S5P_USB_PHY_DEVICE)
-+	if (type == USB_PHY_TYPE_DEVICE)
- 		return s3c_usb_otgphy_init(pdev);
- 
- 	return -EINVAL;
-@@ -84,7 +84,7 @@ int s5p_usb_phy_init(struct platform_device *pdev, int type)
- 
- int s5p_usb_phy_exit(struct platform_device *pdev, int type)
- {
--	if (type == S5P_USB_PHY_DEVICE)
-+	if (type == USB_PHY_TYPE_DEVICE)
- 		return s3c_usb_otgphy_exit(pdev);
- 
- 	return -EINVAL;
-diff --git a/arch/arm/mach-s5pv210/setup-usb-phy.c b/arch/arm/mach-s5pv210/setup-usb-phy.c
-index 356a090..b2ee533 100644
---- a/arch/arm/mach-s5pv210/setup-usb-phy.c
-+++ b/arch/arm/mach-s5pv210/setup-usb-phy.c
-@@ -80,7 +80,7 @@ static int s5pv210_usb_otgphy_exit(struct platform_device *pdev)
- 
- int s5p_usb_phy_init(struct platform_device *pdev, int type)
- {
--	if (type == S5P_USB_PHY_DEVICE)
-+	if (type == USB_PHY_TYPE_DEVICE)
- 		return s5pv210_usb_otgphy_init(pdev);
- 
- 	return -EINVAL;
-@@ -88,7 +88,7 @@ int s5p_usb_phy_init(struct platform_device *pdev, int type)
- 
- int s5p_usb_phy_exit(struct platform_device *pdev, int type)
- {
--	if (type == S5P_USB_PHY_DEVICE)
-+	if (type == USB_PHY_TYPE_DEVICE)
- 		return s5pv210_usb_otgphy_exit(pdev);
- 
- 	return -EINVAL;
-diff --git a/arch/arm/plat-samsung/include/plat/usb-phy.h b/arch/arm/plat-samsung/include/plat/usb-phy.h
-index 959bcdb..ab34dfa 100644
---- a/arch/arm/plat-samsung/include/plat/usb-phy.h
-+++ b/arch/arm/plat-samsung/include/plat/usb-phy.h
-@@ -11,10 +11,7 @@
- #ifndef __PLAT_SAMSUNG_USB_PHY_H
- #define __PLAT_SAMSUNG_USB_PHY_H __FILE__
- 
--enum s5p_usb_phy_type {
--	S5P_USB_PHY_DEVICE,
--	S5P_USB_PHY_HOST,
--};
-+#include <linux/usb/samsung_usb_phy.h>
- 
- extern int s5p_usb_phy_init(struct platform_device *pdev, int type);
- extern int s5p_usb_phy_exit(struct platform_device *pdev, int type);
-diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
-index 20ebf6a..7dc9c15 100644
---- a/drivers/usb/host/ehci-s5p.c
-+++ b/drivers/usb/host/ehci-s5p.c
-@@ -19,7 +19,6 @@
- #include <linux/platform_data/usb-ehci-s5p.h>
- #include <linux/usb/phy.h>
- #include <linux/usb/samsung_usb_phy.h>
--#include <plat/usb-phy.h>
- 
- #define EHCI_INSNREG00(base)			(base + 0x90)
- #define EHCI_INSNREG00_ENA_INCR16		(0x1 << 25)
-diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-index 0bd6f47..0792bfd 100644
---- a/drivers/usb/host/ohci-exynos.c
-+++ b/drivers/usb/host/ohci-exynos.c
-@@ -18,7 +18,6 @@
- #include <linux/usb/phy.h>
- #include <linux/usb/samsung_usb_phy.h>
- 
--#include <plat/usb-phy.h>
- 
- struct exynos_ohci_hcd {
- 	struct device *dev;
--- 
-1.8.1.2
+For clarification, this "percentage" means the ratio of remaining scan target of
+another LRU. So, *scanned* percentage is "100 - percentage", right ?
+
+If I understand the changelog correctly, you'd like to keep
+
+    scantarget[anon] : scantarget[file]
+    == really_scanned_num[anon] : really_scanned_num[file]
+
+even if we stop scanning in the middle of scantarget. And you introduced "percentage"
+to make sure that both scantarget should be done in the same ratio.
+
+So...another lru should scan  scantarget[x] * (100 - percentage)/100 in total.
+
+nr[lru] = scantarget[lru] * (100 - percentage)/100 - (scantarget[lru] - nr[lru])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^    ^^^^^^^^^^^^^^^^^^^^^^^^^
+              proportionally adjusted scan target        already scanned num
+
+        =  nr[lru] - scantarget[lru] * percentage/100.
+
+This means to avoid scanning the amount of pages in the ratio which another lru
+didn't scan.
+
+> With care taken to ensure we do not underflow?
+
+yes.
+
+Regards,
+-Kame
+
+
+> Something like
+>
+>          unsigned long nr[NR_LRU_LISTS];
+>          unsigned long targets[NR_LRU_LISTS];
+>
+> ...
+>
+> 	memcpy(targets, nr, sizeof(nr));
+>
+> ...
+>
+>          nr[lru] = targets[lru] * percentage / 100;
+>          nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
+>
+>          lru += LRU_ACTIVE;
+>          nr[lru] = targets[lru] * percentage / 100;
+>          nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
+>
+> ?
+>
+
 
