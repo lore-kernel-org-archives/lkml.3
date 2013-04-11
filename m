@@ -1,49 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760313Ab3DKWeT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 18:34:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39571 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759089Ab3DKWeD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 18:34:03 -0400
-Date: Thu, 11 Apr 2013 15:34:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paul Clements <paul.clements@steeleye.com>
-Cc: <linux-kernel@vger.kernel.org>, <belczyk@bsd.krakow.pl>
-Subject: Re: [PATCH] nbd: increase default and max request sizes
-Message-Id: <20130411153402.12cfa2ad0c4501be1331e748@linux-foundation.org>
-In-Reply-To: <20130402194120.54043222C0@clements>
-References: <20130402194120.54043222C0@clements>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1762416Ab3DKWe2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 18:34:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760767Ab3DKWeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 18:34:24 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20130411190728.GC32045@kroah.com>
+References: <20130411190728.GC32045@kroah.com> <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
+To: Greg KH <gregkh@linuxfoundation.org>, viro@ZenIV.linux.org.uk
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/26] Eliminate create_proc_read_entry() [RFC]
+Date: Thu, 11 Apr 2013 23:34:21 +0100
+Message-ID: <19749.1365719661@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  2 Apr 2013 15:41:20 -0400 (EDT) Paul Clements <paul.clements@steeleye.com> wrote:
+Greg KH <gregkh@linuxfoundation.org> wrote:
 
-> This patch raises the default max request size for nbd to 128KB (from 127KB)
-> to get it 4KB aligned. This patch also allows the max request size to be
-> increased (via /sys/block/nbd<x>/queue/max_sectors_kb) to 32MB.
-> 
-> The patch makes nbd network traffic more efficient by:
-> - reducing request fragmentation (4KB alignment)
-> - reducing the number of requests (fewer round trips, less network overhead)
-> 
-> Especially in high latency networks, larger request size can make a dramatic
-> difference in performance.
-> 
-> From: Michal Belczyk <belczyk@bsd.krakow.pl>
-> Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+> The ones I've been cc:ed on, with the exception of the hostap patch, I
+> will be glad to take though my trees now, unless you want to take them
+> yourself?
 
-This is a bit odd.
+If Al is happy with it, he might want to take it through his tree since it's
+sat on top of his experimental branch - especially since the last patch is
+dependent on all the intermediate steps.
 
-- The author's "From:" line shouild appear right at the start of the
-  changelog.
-
-- Michal's Signed-off-by: is absent.  Is one available?
-
-Thanks.
+David
