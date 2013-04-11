@@ -1,119 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935177Ab3DKQrh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:47:37 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:41264 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934395Ab3DKQrg (ORCPT
+	id S935461Ab3DKQr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:47:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38126 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935198Ab3DKQry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:47:36 -0400
-Date: Thu, 11 Apr 2013 18:47:26 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 30/33] sched: Debug nohz rq clock
-Message-ID: <20130411164723.GA17039@somewhere.redhat.com>
-References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
- <1357610913-1080-31-git-send-email-fweisbec@gmail.com>
- <514A44F6.8010203@deeprootsystems.com>
+	Thu, 11 Apr 2013 12:47:54 -0400
+Date: Thu, 11 Apr 2013 17:47:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: [PATCH 18/30] ASoC: samsung: move plat/ headers to local
+ directory
+Message-ID: <20130411164751.GK9243@opensource.wolfsonmicro.com>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+ <1365638712-1028578-19-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ttldl3tz4cUGhF4e"
 Content-Disposition: inline
-In-Reply-To: <514A44F6.8010203@deeprootsystems.com>
+In-Reply-To: <1365638712-1028578-19-git-send-email-arnd@arndb.de>
+X-Cookie: Your love life will be... interesting.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 20, 2013 at 04:23:34PM -0700, Kevin Hilman wrote:
-> Hi Frederic,
-> 
-> On 01/07/2013 06:08 PM, Frederic Weisbecker wrote:
-> > The runqueue clock is supposed to be periodically updated by the
-> > tick. On full dynticks CPU we call update_nohz_rq_clock() before
-> > reading it. Now the scheduler code is complicated enough that we
-> > may miss some update_nohz_rq_clock() calls before reading the
-> > runqueue clock.
-> > 
-> > This therefore introduce a new debugging feature that detects
-> > when the rq clock is stale due to missing updates on full
-> > dynticks CPUs.
-> > 
-> > This can be later expanded to debug stale clocks on dynticks-idle
-> > CPUs.
-> 
-> [...]
-> 
-> > diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> > index e1bac76..0fef0b3 100644
-> > --- a/kernel/sched/sched.h
-> > +++ b/kernel/sched/sched.h
-> > @@ -502,16 +502,39 @@ DECLARE_PER_CPU(struct rq, runqueues);
-> >  #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
-> >  #define raw_rq()		(&__raw_get_cpu_var(runqueues))
-> >  
-> > +static inline void rq_clock_check(struct rq *rq)
-> > +{
-> > +#if defined(CONFIG_SCHED_DEBUG) && defined(CONFIG_NO_HZ_FULL)
-> > +	unsigned long long clock;
-> > +	unsigned long flags;
-> > +	int cpu;
-> > +
-> > +	cpu = cpu_of(rq);
-> > +	if (!tick_nohz_full_cpu(cpu) || rq->curr == rq->idle)
-> > +		return;
-> > +
-> > +	local_irq_save(flags);
-> > +	clock = sched_clock_cpu(cpu_of(rq));
-> > +	local_irq_restore(flags);
-> > +
-> > +	if (abs(clock - rq->clock) > (TICK_NSEC * 3))
-> > +		WARN_ON_ONCE(1);
-> > +#endif
-> > +}
-> 
-> In working on the ARM port for full nohz, I'm hitting this
-> warning early in the kernel boot, well before userspace starts
-> (dump below[2].)
-> 
-> I've seen a few different variations of this, but the common
-> thing for all of them is the use of wait_for_completion().
-> 
-> During boot, only swapper is running so it seems
-> any waiting of sufficient length during boot will always trigger
-> this warning.  The hack below[1] avoids checking for the init task,
-> but I'm not sure if it's the right fix.
-> 
-> Kevin
-> 
-> [1]
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index f96329b..56e74df 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -512,7 +512,8 @@ static inline void rq_clock_check(struct rq *rq)
->  	int cpu;
-> 
->  	cpu = cpu_of(rq);
-> -	if (!tick_nohz_full_cpu(cpu) || rq->curr == rq->idle)
-> +	if (!tick_nohz_full_cpu(cpu) || rq->curr == rq->idle ||
-> +	    is_global_init(current))
 
-Makes sense. But we seem to be taking a new direction there after feedback from Ingo
-and Peterz: tag scheduler entry and exit points and invalidate on top of missing rq clock
-updates since the last scheduler entry point.
+--ttldl3tz4cUGhF4e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-thanks.
+On Thu, Apr 11, 2013 at 02:05:00AM +0200, Arnd Bergmann wrote:
+> The plat/iis.h and plat/ac97.h files in the samsung platform are
+> only needed by the ASoC drivers, so they can be moved into the
+> same directory, as one more step towards a multiplatform build.
+
+This doesn't apply to my topic/samsung branch, can you please regenerate
+it against that or let me know what to apply it against?
+
+--ttldl3tz4cUGhF4e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRZuj8AAoJELSic+t+oim9NfMP/3AFkNQ4vUYYj52O/TMmAbrb
+fdsNZ2zyj9Dm0O6dggeEpSzPwMnb8pDzjRItgKXtGg8kHXsy75RtLDO/azasnGwv
+UkKDAvlgOoAnZ9d7PLDXaxBwb46BH6+VTfHqYaF5DBGrvEiRFRjqUMi3fgrkmlzd
+2+hznWx9dASF2VxiJGkH+xZnYkPB5qrfJ0FgtU9caSAGVpu5gKLVcF22X/nELcGa
+ny6hrJf0lB4v/qanfrqGrRnHpLQPrOndG8vjAZ3UBBEm6urm4e2tclyKfzt28ajJ
+E7eiuMUrRSYKGv1jYeULJoJYYPBWlhQ7dwWDBMbMTa7eIEp6HC4gJrVPAbBHsy2/
+lEkFnLq/wgxNkm0Px0DUInYOgxUlM5KmmweJWgv2qR9UtXZvXw0H0Fpq8om5WdBP
+Gz9EFhmA62JJLEgxKpW/IV1DLCwN2WEl25QzAZIIyZ5usfwLzc87OJhrj+bO1ZL4
+kJCqfwCmKR7IJ6hvMXT4t2qHujny608MmlnEoS+bytQ7/ogbhzV58Xbyey3ykJeR
+E9lgQ9IRt0Z+3kZbFqRmcrkRbvpPhNVQuieMdXJ62svzGClRBxVTvAB9Sr1lNf6h
+b2Ux1/xnRGGwI2xE555AQiiAfc8rq7FLA9v7JXtXwXgm0jacAHNSDvqyqwXMEsBn
+EuksXjG51vffotJLIIft
+=jmpU
+-----END PGP SIGNATURE-----
+
+--ttldl3tz4cUGhF4e--
