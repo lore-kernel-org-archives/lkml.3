@@ -1,166 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab3DKT6T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 15:58:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37397 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753764Ab3DKT6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 15:58:17 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
-        Michal Hocko <mhocko@suse.cz>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/10] mm: vmscan: Have kswapd writeback pages based on dirty pages encountered, not priority
-Date: Thu, 11 Apr 2013 20:57:54 +0100
-Message-Id: <1365710278-6807-7-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365710278-6807-1-git-send-email-mgorman@suse.de>
-References: <1365710278-6807-1-git-send-email-mgorman@suse.de>
+	id S1754935Ab3DKT7P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 15:59:15 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:51189 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754719Ab3DKT7M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 15:59:12 -0400
+From: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+To: linux-serial@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Stephen Warren <swarren@wwwdotorg.org>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Subject: [PATCH] drivers: tty: serial: use devm_ioremap_resource()
+Date: Thu, 11 Apr 2013 22:58:57 +0300
+Message-Id: <1365710337-12251-1-git-send-email-silviupopescu1990@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kswapd queues dirty pages for writeback if scanning at an elevated
-priority but the priority kswapd scans at is not related to the number
-of unqueued dirty encountered.  Since commit "mm: vmscan: Flatten kswapd
-priority loop", the priority is related to the size of the LRU and the
-zone watermark which is no indication as to whether kswapd should write
-pages or not.
+Convert  use of devm_request_and_ioremap() to the newly introduced
+devm_ioremap_resource() which provides more consistent error handling.
 
-This patch tracks if an excessive number of unqueued dirty pages are being
-encountered at the end of the LRU.  If so, it indicates that dirty pages
-are being recycled before flusher threads can clean them and flags the
-zone so that kswapd will start writing pages until the zone is balanced.
+devm_ioremap_resource() provides its own error messages so all explicit
+error messages can be removed from the failure code paths.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+This was found with coccinelle.
+
+Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
 ---
- include/linux/mmzone.h |  9 +++++++++
- mm/vmscan.c            | 31 +++++++++++++++++++++++++------
- 2 files changed, 34 insertions(+), 6 deletions(-)
+ drivers/tty/serial/serial-tegra.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index c74092e..ecf0c7d 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -495,6 +495,10 @@ typedef enum {
- 	ZONE_CONGESTED,			/* zone has many dirty pages backed by
- 					 * a congested BDI
- 					 */
-+	ZONE_TAIL_LRU_DIRTY,		/* reclaim scanning has recently found
-+					 * many dirty file pages at the tail
-+					 * of the LRU.
-+					 */
- } zone_flags_t;
+diff --git a/drivers/tty/serial/serial-tegra.c b/drivers/tty/serial/serial-tegra.c
+index 372de8a..2080fd7 100644
+--- a/drivers/tty/serial/serial-tegra.c
++++ b/drivers/tty/serial/serial-tegra.c
+@@ -1301,11 +1301,9 @@ static int tegra_uart_probe(struct platform_device *pdev)
+ 	}
  
- static inline void zone_set_flag(struct zone *zone, zone_flags_t flag)
-@@ -517,6 +521,11 @@ static inline int zone_is_reclaim_congested(const struct zone *zone)
- 	return test_bit(ZONE_CONGESTED, &zone->flags);
- }
+ 	u->mapbase = resource->start;
+-	u->membase = devm_request_and_ioremap(&pdev->dev, resource);
+-	if (!u->membase) {
+-		dev_err(&pdev->dev, "memregion/iomap address req failed\n");
+-		return -EADDRNOTAVAIL;
+-	}
++	u->membase = devm_ioremap_resource(&pdev->dev, resource);
++	if (IS_ERR(u->membase))
++		return PTR_ERR(u->membase);
  
-+static inline int zone_is_reclaim_dirty(const struct zone *zone)
-+{
-+	return test_bit(ZONE_TAIL_LRU_DIRTY, &zone->flags);
-+}
-+
- static inline int zone_is_reclaim_locked(const struct zone *zone)
- {
- 	return test_bit(ZONE_RECLAIM_LOCKED, &zone->flags);
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index bc4c2a7..22e8ca9 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -675,13 +675,14 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 				      struct zone *zone,
- 				      struct scan_control *sc,
- 				      enum ttu_flags ttu_flags,
--				      unsigned long *ret_nr_dirty,
-+				      unsigned long *ret_nr_unqueued_dirty,
- 				      unsigned long *ret_nr_writeback,
- 				      bool force_reclaim)
- {
- 	LIST_HEAD(ret_pages);
- 	LIST_HEAD(free_pages);
- 	int pgactivate = 0;
-+	unsigned long nr_unqueued_dirty = 0;
- 	unsigned long nr_dirty = 0;
- 	unsigned long nr_congested = 0;
- 	unsigned long nr_reclaimed = 0;
-@@ -807,14 +808,17 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		if (PageDirty(page)) {
- 			nr_dirty++;
- 
-+			if (!PageWriteback(page))
-+				nr_unqueued_dirty++;
-+
- 			/*
- 			 * Only kswapd can writeback filesystem pages to
--			 * avoid risk of stack overflow but do not writeback
--			 * unless under significant pressure.
-+			 * avoid risk of stack overflow but only writeback
-+			 * if many dirty pages have been encountered.
- 			 */
- 			if (page_is_file_cache(page) &&
- 					(!current_is_kswapd() ||
--					 sc->priority >= DEF_PRIORITY - 2)) {
-+					 !zone_is_reclaim_dirty(zone))) {
- 				/*
- 				 * Immediately reclaim when written back.
- 				 * Similar in principal to deactivate_page()
-@@ -959,7 +963,7 @@ keep:
- 	list_splice(&ret_pages, page_list);
- 	count_vm_events(PGACTIVATE, pgactivate);
- 	mem_cgroup_uncharge_end();
--	*ret_nr_dirty += nr_dirty;
-+	*ret_nr_unqueued_dirty += nr_unqueued_dirty;
- 	*ret_nr_writeback += nr_writeback;
- 	return nr_reclaimed;
- }
-@@ -1372,6 +1376,15 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 			(nr_taken >> (DEF_PRIORITY - sc->priority)))
- 		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
- 
-+	/*
-+	 * Similarly, if many dirty pages are encountered that are not
-+	 * currently being written then flag that kswapd should start
-+	 * writing back pages.
-+	 */
-+	if (global_reclaim(sc) && nr_dirty &&
-+			nr_dirty >= (nr_taken >> (DEF_PRIORITY - sc->priority)))
-+		zone_set_flag(zone, ZONE_TAIL_LRU_DIRTY);
-+
- 	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
- 		zone_idx(zone),
- 		nr_scanned, nr_reclaimed,
-@@ -2758,8 +2771,12 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				end_zone = i;
- 				break;
- 			} else {
--				/* If balanced, clear the congested flag */
-+				/*
-+				 * If balanced, clear the dirty and congested
-+				 * flags
-+				 */
- 				zone_clear_flag(zone, ZONE_CONGESTED);
-+				zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
- 			}
- 		}
- 
-@@ -2877,8 +2894,10 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 				 * possible there are dirty pages backed by
- 				 * congested BDIs but as pressure is relieved,
- 				 * speculatively avoid congestion waits
-+				 * or writing pages from kswapd context.
- 				 */
- 				zone_clear_flag(zone, ZONE_CONGESTED);
-+				zone_clear_flag(zone, ZONE_TAIL_LRU_DIRTY);
- 		}
- 
- 		/*
+ 	tup->uart_clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(tup->uart_clk)) {
 -- 
-1.8.1.4
+1.7.9.5
 
