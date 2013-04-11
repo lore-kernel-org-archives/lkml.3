@@ -1,195 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab3DKSdh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:33:37 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7370 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab3DKSdg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:33:36 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=RKbimCT2a08A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=j5D2oEQ9Kg0A:10 a=4-pcMlRTT7BXjaTAMckA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=kyoCiWENxn4702s2:21 a=eae_7G5JjKgrkUgW:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365705214.9609.58.camel@gandalf.local.home>
-Subject: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for PREEMPT_RT
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <clark@redhat.com>,
-        John Kacur <jkacur@redhat.com>, Tony Luck <tony.luck@intel.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Thu, 11 Apr 2013 14:33:34 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753379Ab3DKSgD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:36:03 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:33602 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752362Ab3DKSgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 14:36:01 -0400
+Date: Thu, 11 Apr 2013 14:35:12 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Excessive stall times on ext4 in 3.9-rc2
+Message-ID: <20130411183512.GA12298@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
+	LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+	Jiri Slaby <jslaby@suse.cz>
+References: <20130402142717.GH32241@suse.de>
+ <20130402150651.GB31577@thunk.org>
+ <20130410105608.GC1910@suse.de>
+ <20130410131245.GC4862@thunk.org>
+ <20130411170402.GB11656@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411170402.GB11656@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ This time without the hitchhiking process_32.c cruff on the patch ]
+On Thu, Apr 11, 2013 at 06:04:02PM +0100, Mel Gorman wrote:
+> > If we're stalling on lock_buffer(), that implies that buffer was being
+> > written, and for some reason it was taking a very long time to
+> > complete.
+> > 
+> 
+> Yes.
+> 
+> > It might be worthwhile to put a timestamp in struct dm_crypt_io, and
+> > record the time when a particular I/O encryption/decryption is getting
+> > queued to the kcryptd workqueues, and when they finally squirt out.
+> > 
+> 
+> That somewhat assumes that dm_crypt was at fault which is not unreasonable
+> but I was skeptical as the workload on dm_crypt was opening a maildir
+> and mostly reads.
 
-We had a customer report a lockup on a 3.0-rt kernel that had the
-following backtrace:
+Hmm... well, I've reviewed all of the places in the ext4 and jbd2
+layer where we call lock_buffer(), and with one exception[1] we're not
+holding the the bh locked any longer than necessary.  There are a few
+places where we grab a spinlock or two before we can do what we need
+to do and then release the lock'ed buffer head, but the only time we
+hold the bh locked for long periods of time is when we submit metadata
+blocks for I/O.
 
-[ffff88107fca3e80] rt_spin_lock_slowlock at ffffffff81499113
-[ffff88107fca3f40] rt_spin_lock at ffffffff81499a56
-[ffff88107fca3f50] __wake_up at ffffffff81043379
-[ffff88107fca3f80] mce_notify_irq at ffffffff81017328
-[ffff88107fca3f90] intel_threshold_interrupt at ffffffff81019508
-[ffff88107fca3fa0] smp_threshold_interrupt at ffffffff81019fc1
-[ffff88107fca3fb0] threshold_interrupt at ffffffff814a1853
-
-
-It actually bugged because the lock was taken by the same owner that
-already had that lock. What happened was the thread that was setting
-itself on a wait queue had the lock when an MCE triggered. The MCE
-interrupt does a wake up on its wait list and grabs the same lock.
-
-NOTE: THIS IS NOT A BUG ON MAINLINE
-
-Sorry for yelling, but as I Cc'd mainline maintainers I want them to
-know that this is an PREEMPT_RT bug only. I only Cc'd them for advice.
-
-On PREEMPT_RT the wait queue locks are converted from normal
-"spin_locks" into an rt_mutex (see the rt_spin_lock_slowlock above).
-These are not to be taken by hard interrupt context. This usually isn't
-a problem as most all interrupts in PREEMPT_RT are converted into
-schedulable threads. Unfortunately that's not the case with the MCE irq.
-
-As wait queue locks are notorious for long hold times, we can not
-convert them to raw_spin_locks without causing issues with -rt. But
-Thomas has created a "simple-wait" structure that uses raw spin locks
-which may have been a good fit.
-
-Unfortunately, wait queues are not the only issue, as the mce_notify_irq
-also does a schedule_work(), which grabs the workqueue spin locks that
-have the exact same issue.
-
-Thus, this patch I'm proposing is to move the actual work of the MCE
-interrupt into a helper thread that gets woken up on the MCE interrupt
-and does the work in a schedulable context.
-
-NOTE: THIS PATCH ONLY CHANGES THE BEHAVIOR WHEN PREEMPT_RT IS SET
-
-Oops, sorry for yelling again, but I want to stress that I keep the same
-behavior of mainline when PREEMPT_RT is not set. Thus, this only changes
-the MCE behavior when PREEMPT_RT is configured.
-
-Comments?
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index e8d8ad0..060e473 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -18,6 +18,7 @@
- #include <linux/rcupdate.h>
- #include <linux/kobject.h>
- #include <linux/uaccess.h>
-+#include <linux/kthread.h>
- #include <linux/kdebug.h>
- #include <linux/kernel.h>
- #include <linux/percpu.h>
-@@ -1308,6 +1309,61 @@ static void mce_do_trigger(struct work_struct *work)
- 
- static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
- 
-+static void __mce_notify_work(void)
-+{
-+	/* Not more than two messages every minute */
-+	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
-+
-+	/* wake processes polling /dev/mcelog */
-+	wake_up_interruptible(&mce_chrdev_wait);
-+
-+	/*
-+	 * There is no risk of missing notifications because
-+	 * work_pending is always cleared before the function is
-+	 * executed.
-+	 */
-+	if (mce_helper[0] && !work_pending(&mce_trigger_work))
-+		schedule_work(&mce_trigger_work);
-+
-+	if (__ratelimit(&ratelimit))
-+		pr_info(HW_ERR "Machine check events logged\n");
-+}
-+
-+#ifdef CONFIG_PREEMPT_RT_FULL
-+struct task_struct *mce_notify_helper;
-+
-+static int mce_notify_helper_thread(void *unused)
-+{
-+	while (!kthread_should_stop()) {
-+		__mce_notify_work();
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		schedule();
-+	}
-+	return 0;
-+}
-+
-+static int mce_notify_work_init(void)
-+{
-+	mce_notify_helper = kthread_create(mce_notify_helper_thread, NULL,
-+					   "mce-notify");
-+	if (!mce_notify_helper)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-+
-+static void mce_notify_work()
-+{
-+	wake_up_process(mce_notify_helper);
-+}
-+#else
-+static void mce_notify_work(void)
-+{
-+	__mce_notify_work();
-+}
-+static inline int mce_notify_work_init(void) { return 0; }
-+#endif
-+
- /*
-  * Notify the user(s) about new machine check events.
-  * Can be called from interrupt context, but not from machine check/NMI
-@@ -1315,24 +1371,8 @@ static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
-  */
- int mce_notify_irq(void)
- {
--	/* Not more than two messages every minute */
--	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
--
- 	if (test_and_clear_bit(0, &mce_need_notify)) {
--		/* wake processes polling /dev/mcelog */
--		wake_up_interruptible(&mce_chrdev_wait);
--
--		/*
--		 * There is no risk of missing notifications because
--		 * work_pending is always cleared before the function is
--		 * executed.
--		 */
--		if (mce_helper[0] && !work_pending(&mce_trigger_work))
--			schedule_work(&mce_trigger_work);
--
--		if (__ratelimit(&ratelimit))
--			pr_info(HW_ERR "Machine check events logged\n");
--
-+		mce_notify_work();
- 		return 1;
- 	}
- 	return 0;
-@@ -2375,6 +2415,8 @@ static __init int mcheck_init_device(void)
- 	/* register character device /dev/mcelog */
- 	misc_register(&mce_chrdev_device);
- 
-+	err = mce_notify_work_init();
-+
- 	return err;
- }
- device_initcall_sync(mcheck_init_device);
+[1] There is one exception in ext4_xattr_release_block() where I
+believe we should move the call to unlock_buffer(bh) before the call
+to ext4_free_blocks(), since we've already elevanted the bh count and
+ext4_free_blocks() does not need to have the bh locked.  It's not
+related to any of the stalls you've repored, though, as near as I can
+tell (none of the stack traces include the ext4 xattr code, and this
+would only affect external extended attribute blocks).
 
 
+Could you code which checks the hold time of lock_buffer(), measuing
+from when the lock is successfully grabbed, to see if you can see if I
+missed some code path in ext4 or jbd2 where the bh is locked and then
+there is some call to some function which needs to block for some
+random reason?  What I'd suggest is putting a timestamp in buffer_head
+structure, which is set by lock_buffer once it is successfully grabbed
+the lock, and then in unlock_buffer(), if it is held for more than a
+second or some such, to dump out the stack trace.
+
+Because at this point, either I'm missing something or I'm beginning
+to suspect that your hard drive (or maybe something the block layer?)
+is simply taking a long time to service an I/O request.  Putting in
+this check should be able to very quickly determine what code path
+and/or which subsystem we should be focused upon.
+
+Thanks,
+
+					- Ted
