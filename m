@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936153Ab3DKOk5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 10:40:57 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29224 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932712Ab3DKOk4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 10:40:56 -0400
-X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=hhH8zwMFE54A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=bUzm9BIBfnIA:10 a=57SyGIRnAAAA:8 a=sqimn8mf1ZHBRFsDjecA:9 a=QEXdDO2ut3YA:10 a=TIV7c6GJmisA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365691255.9609.34.camel@gandalf.local.home>
-Subject: Re: [PATCH 5/6] tools lib traceevent: Add page_size field to pevent
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 11 Apr 2013 10:40:55 -0400
-In-Reply-To: <1365691175.9609.33.camel@gandalf.local.home>
-References: <1365681898-19897-1-git-send-email-namhyung@kernel.org>
-	 <1365681898-19897-5-git-send-email-namhyung@kernel.org>
-	 <1365691175.9609.33.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
+	id S936222Ab3DKOoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 10:44:08 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54428 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752044Ab3DKOoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 10:44:06 -0400
+Message-ID: <5166CC30.4060507@ti.com>
+Date: Thu, 11 Apr 2013 17:44:00 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Alexander Holler <holler@ahsoftware.de>, <balbi@ti.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] USB: ehci-omap: Select USB_PHY
+References: <5166856C.3080906@ti.com> <20130411100435.GB14394@arwen.pp.htv.fi> <516695A4.2050804@ti.com> <20130411105557.GE14394@arwen.pp.htv.fi> <5166AFD2.4070108@ti.com> <5166B450.1000404@ahsoftware.de>
+In-Reply-To: <5166B450.1000404@ahsoftware.de>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 10:39 -0400, Steven Rostedt wrote:
-> On Thu, 2013-04-11 at 21:04 +0900, Namhyung Kim wrote:
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> > 
-> > It's for saving the page size of traced system.
+Felipe,
+
+On 04/11/2013 04:02 PM, Alexander Holler wrote:
+> Am 11.04.2013 14:42, schrieb Roger Quadros:
+>> On 04/11/2013 01:55 PM, Felipe Balbi wrote:
 > 
-> Can you add a bit more detail in the change log about why this patch is
-> necessary.
+>>> I would avoid 'select' completely and just update omap2plus_defconfig
+>>> adding those two as modules.
 
-For now, you can add my
+Setting USB_PHY as a module gives rise to these problems
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+arch/arm/mach-omap2/built-in.o: In function `usbhs_init_phys':
+/work/linux-2.6/arch/arm/mach-omap2/usb-host.c:652: undefined reference to `usb_bind_phy'
+arch/arm/mach-omap2/built-in.o: In function `omap_2430sdp_init':
+/work/linux-2.6/arch/arm/mach-omap2/board-2430sdp.c:236: undefined reference to `usb_bind_phy'
+arch/arm/mach-omap2/built-in.o: In function `omap3_beagle_init':
+/work/linux-2.6/arch/arm/mach-omap2/board-omap3beagle.c:554: undefined reference to `usb_bind_phy'
+arch/arm/mach-omap2/built-in.o: In function `devkit8000_init':
+/work/linux-2.6/arch/arm/mach-omap2/board-devkit8000.c:596: undefined reference to `usb_bind_phy'
+arch/arm/mach-omap2/built-in.o: In function `omap_ldp_init':
+/work/linux-2.6/arch/arm/mach-omap2/board-ldp.c:379: undefined reference to `usb_bind_phy'
 
-for all but this patch.
+So USB_PHY shouldn't be tristate IMO or at least the platform registration stuff
+as the usb_bind_phy() part is used by platform code.
 
-I just want to know more about this patch before I ack it.
+>>>
+>>
+>> OK, makes sense. I will update the patch to remove "select NOP_USB_XCEIV".
+> 
+> Sorry, but this just will end up with many users having broken configs
+> because of disabled stuff they don't know why they have to enable them.
+> And thus with a never ending stream of questions and thus with a needed
+> FAQ entry.
+> 
 
-Thanks,
+Alexander,
 
--- Steve
+I agree with you that it can get difficult with users. But it is best for
+users do not disable anything they are not familiar with.
 
+As the USB_PHY option doesn't depend on anything, it is safe to select it
+from USB_EHCI_HCD_OMAP.
 
+However, the PHY drivers themselves must be selected from the board configs.
+
+cheers,
+-roger
