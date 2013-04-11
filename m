@@ -1,114 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab3DKLYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 07:24:33 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57357 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751434Ab3DKLYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 07:24:32 -0400
-Date: Thu, 11 Apr 2013 12:24:07 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH 1/4] Documentation: Add memory mapped ARM architected
- timer binding
-Message-ID: <20130411112407.GD8259@e106331-lin.cambridge.arm.com>
-References: <1365474623-29181-1-git-send-email-sboyd@codeaurora.org>
- <1365474623-29181-2-git-send-email-sboyd@codeaurora.org>
- <20130409090843.GS23725@e106331-lin.cambridge.arm.com>
- <516444FE.2080200@codeaurora.org>
- <20130410101336.GB8799@e106331-lin.cambridge.arm.com>
- <51662584.6070906@codeaurora.org>
+	id S1753702Ab3DKL2q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 07:28:46 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:41589 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751587Ab3DKL2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 07:28:45 -0400
+Message-ID: <51669E5F.4000801@parallels.com>
+Date: Thu, 11 Apr 2013 15:28:31 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51662584.6070906@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>, Linux MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/5] mm: Ability to monitor task memory changes (v3)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 03:52:52AM +0100, Stephen Boyd wrote:
-> On 04/10/13 03:13, Mark Rutland wrote:
-> >>>> +
-> >>>> +- #size-cells : Must be 1.
-> >>>> +
-> >>>> +- ranges : Indicates parent and child bus address space are the same.
-> >>>> +
-> >>> Similarly, what if someone wants to write a more complex mapping for some
-> >>> reason?
-> >>>
-> >>> We should be able to handle it if we use the standard accessors.
-> >> Maybe I should just leave this part out? They are standard DT properties
-> >> so I could assume DT writers know what to do.
-> > I'd be happy with that. It may be worth describing them as "as necessary" or
-> > something to that effect.
-> 
-> Ok. I added this and removed the property descriptions:
-> 
-> Note that #address-cells, #size-cells, and ranges shall be present to ensure
-> the CPU can address a frame's registers.
+Hello,
 
-Sounds good to me.
+This is the implementation of the soft-dirty bit concept that should help
+keep track of changes in user memory, which in turn is very-very required by
+the checkpoint-restore project (http://criu.org). Let me briefly remind what
+the issue is.
 
-> 
-> > I can see why we need to specify secure/non-secure, but I'm not sure why we
-> > need to specify hyp/user/kernel usage. Could we not leave this up to the kernel
-> > to figure out?
-> >
-> > A basic overveiew for those that don't know about the memory mapped timers:
-> >
-> > * There's one control frame CNTCTLBase. Some registers in this frame are only
-> >   available for secure accesses, including CNTNSAR which sets whether the
-> >   counter frames are accessible from the non-secure side.
-> >
-> > * There are up to 8 timer frames, which have their own CNTVOFF and
-> >   physical/virtual timers. Each frame CNTBaseN is duplicated at CNTPL0BaseN
-> >   with CNTVOFF and CNTPL0ACR (which controls PL0 accesses) inaccessible.
-> >
-> > I can see that we might have frames/registers we can't access (if we were
-> > booted on the non-secure side), but I can't see anything limiting whether we
-> > use a frame for kernel/hyp/user beyond that. Have I missed something?
-> >
-> > Could we not have something like the following for each frame:
-> >
-> > frame0 {
-> > 	frame-id = <0>;
-> > 	status = "disabled"; /* booted NS, secure firmware has not enabled access */
-> > 	reg = <0x... 0x1000>, /* CNTBase0 */
-> > 	      <0x... 0x1000>; /* CNTPL0Base0 */
-> > };
-> >
-> 
-> I don't think you're missing anything. Technically the second view is
-> not always implemented though. Using the status property should be
-> sufficient I think.
+<< EOF
+To create a dump of an application(s) we save all the information about it
+to files, and the biggest part of such dump is the contents of tasks' memory.
+However, there are usage scenarios where it's not required to get _all_ the
+task memory while creating a dump. For example, when doing periodical dumps,
+it's only required to take full memory dump only at the first step and then
+take incremental changes of memory. Another example is live migration. We 
+copy all the memory to the destination node without stopping all tasks, then
+stop them, check for what pages has changed, dump it and the rest of the state,
+then copy it to the destination node. This decreases freeze time significantly.
 
-Could we say the reg for the second view is optional?
+That said, some help from kernel to watch how processes modify the contents
+of their memory is required.
+EOF
 
-Might we have a hardware / firmware configuration where the kernel can only access
-the secondary view?
+The proposal is to track changes with the help of new soft-dirty bit this way:
 
-> 
-> >> Also to get the frame number, I was thinking maybe we should expand the
-> >> reg property to have two address cells. Then we could have reg = <0
-> >> 0xf0001000 0x1000>.
-> > We could do that, but then you definitely need a more complex ranges property,
-> > and additional parsing code to handle grabbing it out of the reg property. I
-> > can't see what it buys us.
-> 
-> Ok. It would mandate node names like "frame@0", "frame@1", but I'll drop
-> the idea unless someone else finds it useful.
+1. First do "echo 4 > /proc/$pid/clear_refs".
+   At that point kernel clears the soft dirty _and_ the writable bits from all 
+   ptes of process $pid. From now on every write to any page will result in #pf 
+   and the subsequent call to pte_mkdirty/pmd_mkdirty, which in turn will set
+   the soft dirty flag.
 
-I see. I'd prefer to use a separate property for the id. Placing it in the reg
-and then requiring a mapping sounds like it's going to cause a lot of pain.
+2. Then read the /proc/$pid/pagemap2 and check the soft-dirty bit reported there
+   (the 55'th one). If set, the respective pte was written to since last call
+   to clear refs.
 
-Cheers,
-Mark.
+The soft-dirty bit is the _PAGE_BIT_HIDDEN one. Although it's used by kmemcheck,
+the latter one marks kernel pages with it, while the former bit is put on user 
+pages so they do not conflict to each other.
+
+The set is against the v3.9-rc5.
+It includes preparations to /proc/pid's clear_refs file, adds the pagemap2 one
+and the soft-dirty concept itself with Andrew's comments on the previous patch 
+(hopefully) fixed.
+
+
+History of the set:
+
+* Previous version of this patch, commented out by Andrew:
+  http://lwn.net/Articles/546184/
+
+* Pre-previous ftrace-based approach:
+  http://permalink.gmane.org/gmane.linux.kernel.mm/91428
+
+  This one was not nice, because ftrace could drop events so we might
+  miss significant information about page updates.
+
+  Another issue with it -- it was impossible to use one to watch arbitrary
+  task -- task had to mark memory areas with madvise itself to make events
+  occur.
+
+  Also, program, that monitored the update events could interfere with 
+  anyone else trying to mess with ftrace.
+
+Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
