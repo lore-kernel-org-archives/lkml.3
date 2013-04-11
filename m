@@ -1,126 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934871Ab3DKJNN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 05:13:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:41946 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754066Ab3DKJNK (ORCPT
+	id S964846Ab3DKJUe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 05:20:34 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:15494 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756184Ab3DKJUb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 05:13:10 -0400
-Date: Thu, 11 Apr 2013 10:12:56 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Lingzhu Xiang <lxiang@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Josh Boyer <jwboyer@redhat.com>,
-        Michael Schroeder <mls@suse.com>, "Lee, Chun-Yi" <jlee@suse.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: Re: [PATCH 097/102] efivars: explicitly calculate length of
- VariableName
-Message-ID: <20130411091256.GA11370@hercules>
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com>
- <1365414657-29191-98-git-send-email-luis.henriques@canonical.com>
- <1365547506.5814.36.camel@deadeye.wl.decadent.org.uk>
- <51653E81.4090102@redhat.com>
- <20130410121730.GB3049@hercules>
- <A5ED84D3BB3A384992CBB9C77DEDA4D41AF8D09E@USINDEM103.corp.hds.com>
+	Thu, 11 Apr 2013 05:20:31 -0400
+Date: Thu, 11 Apr 2013 11:19:53 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: Re: [PATCH] clk: Add device tree binding to clk-fixed-factor
+Message-ID: <20130411091952.GF8400@ab42.lan>
+References: <1365608443-30350-1-git-send-email-christian.ruppert@abilis.com>
+ <51658BA9.7030508@free-electrons.com>
+ <20130410162747.GG32603@ab42.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D41AF8D09E@USINDEM103.corp.hds.com>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130410162747.GG32603@ab42.lan>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 10, 2013 at 03:57:12PM +0000, Seiji Aguchi wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Luis Henriques [mailto:luis.henriques@canonical.com]
-> > Sent: Wednesday, April 10, 2013 8:18 AM
-> > To: Lingzhu Xiang
-> > Cc: Ben Hutchings; Seiji Aguchi; linux-kernel@vger.kernel.org; stable@vger.kernel.org; kernel-team@lists.ubuntu.com; Matthew
-> > Garrett; Josh Boyer; Michael Schroeder; Lee, Chun-Yi; Matt Fleming
-> > Subject: Re: [PATCH 097/102] efivars: explicitly calculate length of VariableName
-> > 
-> > On Wed, Apr 10, 2013 at 06:27:13PM +0800, Lingzhu Xiang wrote:
-> > > On 04/10/2013 06:45 AM, Ben Hutchings wrote:
-> > > >On Mon, 2013-04-08 at 10:50 +0100, Luis Henriques wrote:
-> > > >>3.5.7.10 -stable review patch.  If anyone has any objections, please let me know.
-> > > >>
-> > > >>------------------
-> > > >>
-> > > >>From: Matt Fleming <matt.fleming@intel.com>
-> > > >>
-> > > >>commit ec50bd32f1672d38ddce10fb1841cbfda89cfe9a upstream.
-> > > >>
-> > > >>It's not wise to assume VariableNameSize represents the length of
-> > > >>VariableName, as not all firmware updates VariableNameSize in the
-> > > >>same way (some don't update it at all if EFI_SUCCESS is returned).
-> > > >>There are even implementations out there that update
-> > > >>VariableNameSize with values that are both larger than the string
-> > > >>returned in VariableName and smaller than the buffer passed to
-> > > >>GetNextVariableName(), which resulted in the following bug report
-> > > >>from Michael Schroeder,
-> > > >>
-> > > >>   > On HP z220 system (firmware version 1.54), some EFI variables are
-> > > >>   > incorrectly named :
-> > > >>   >
-> > > >>   > ls -d /sys/firmware/efi/vars/*8be4d* | grep -v -- -8be returns
-> > > >>   > /sys/firmware/efi/vars/dbxDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > >>   > /sys/firmware/efi/vars/KEKDefault-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > >>   > /sys/firmware/efi/vars/SecureBoot-pport8be4df61-93ca-11d2-aa0d-00e098032b8c
-> > > >>   >
-> > > >> /sys/firmware/efi/vars/SetupMode-Information8be4df61-93ca-11d2-aa0d
-> > > >> -00e098032b8c
-> > > >>
-> > > >>The issue here is that because we blindly use VariableNameSize
-> > > >>without verifying its value, we can potentially read garbage values
-> > > >>from the buffer containing VariableName if VariableNameSize is
-> > > >>larger than the length of VariableName.
-> > > >>
-> > > >>Since VariableName is a string, we can calculate its size by
-> > > >>searching for the terminating NULL character.
-> > > >>
-> > > >>Reported-by: Frederic Crozat <fcrozat@suse.com>
-> > > >>Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-> > > >>Cc: Josh Boyer <jwboyer@redhat.com>
-> > > >>Cc: Michael Schroeder <mls@suse.com>
-> > > >>Cc: Lee, Chun-Yi <jlee@suse.com>
-> > > >>Cc: Lingzhu Xiang <lxiang@redhat.com>
-> > > >>Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-> > > >>Signed-off-by: Matt Fleming <matt.fleming@intel.com> [ Backported
-> > > >>for 3.4-stable. Removed workqueue code added in a93bc0c 3.9-rc1. ]
-> > > >[...]
-> > > >
-> > > >I thought the workqueue addition was a worthwhile fix in its own
-> > > >right, so for 3.2.y I cherry-picked that as well.
-> > >
-> > > FWIW, the workqueue patch is 1/2 of this patchset[1] fixing closely
-> > > related problems. The other one is 81fa4e58.
-> > >
-> > > [1]: http://article.gmane.org/gmane.linux.kernel/1439570
-> > >
-> > > I tried to avoid pulling too much for stable because the patchset is
-> > > quite large and I suspect the problem it fixes is only theoretical.
-> > > I reported the original bug but was unable to break anything except
-> > > getting call traces with various CONFIG_DEBUG_*.
-> > >
-> > > What's your opinion, Seiji?
-> > 
-> > Ok, so just to clarify: you're suggesting me to pick the following commits:
-> > 
-> > 81fa4e581d9283f7992a0d8c534bb141eb840a14 efivars: Disable external interrupt while holding efivars->lock
-> > a93bc0c6e07ed9bac44700280e65e2945d864fd4 efi_pstore: Introducing workqueue updating sysfs
-> > ec50bd32f1672d38ddce10fb1841cbfda89cfe9a efivars: explicitly calculate length of VariableName
-> > e971318bbed610e28bb3fde9d548e6aaf0a6b02e efivars: Handle duplicate names from get_next_variable()
-> 
-> I agree to add these commits to a stable tree.
-> 
-Thank you Seiji.  I'll queue these for the next 3.5 kernel.
+Hi Gregory,
 
-Cheers,
---
-Luis
+Since there doesn't seem to be anyone opposing this feature I just
+checked your patch and after adding the CLK_OF_DECLARE macro in the end
+it works well for us. Tell me if you would like to rebase and resubmit
+your patch or if I should follow up on our own.
+
+Greetings,
+  Christian
+
+On Wed, Apr 10, 2013 at 06:27:47PM +0200, christian ruppert wrote:
+> Hi Gregory,
+> 
+> We use derived clocks with fixed ratios for our TB10x platform. I
+> originally had this in the platform code but Vineet (the platform
+> maintainer) rightly pointed out that the common clock framework would
+> be the correct place for it.
+> Is there any reason not to support this functionality? After all, the
+> generic fixed rate clock also has a device tree binding and I'd guess
+> we're not the only ones statically deriving one clock from another in
+> our SOCs.
+> 
+> Greetings,
+>   Christian
+> 
+> On Wed, Apr 10, 2013 at 05:56:25PM +0200, Gregory CLEMENT wrote:
+> > Hi Christian,
+> > 
+> > On 04/10/2013 05:40 PM, Christian Ruppert wrote:
+> > > This patch adds a device tree binding for the simple fixed factor clock
+> > > divider/multiplier of the common clock tree binding.
+> > 
+> > This patch remind me of something :
+> > http://lists.infradead.org/pipermail/linux-arm-kernel/2012-August/116405.html
+> > 
+> > Do you have a use case for it, this time?
+> > 
+> > My version have been hold off waiting for an user for it.
+> > Will you need it for a driver?
+> > 
+> > Regards,
+> > 
+> > > 
+> > > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> > > ---
+> > >  .../bindings/clock/fixed-factor-clkdiv.txt         |   24 +++++++++++++++
+> > >  drivers/clk/clk-fixed-factor.c                     |   32 ++++++++++++++++++++
+> > >  include/linux/clk-provider.h                       |    1 +
+> > >  3 files changed, 57 insertions(+), 0 deletions(-)
+> > >  create mode 100644 Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt b/Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt
+> > > new file mode 100644
+> > > index 0000000..352bac4
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/clock/fixed-factor-clkdiv.txt
+> > > @@ -0,0 +1,24 @@
+> > > +Device Tree Clock bindings for plat-tb10x
+> > > +
+> > > +This binding uses the common clock binding[1].
+> > > +
+> > > +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> > > +
+> > > +Required properties:
+> > > +- compatible : shall be "fixed-factor-clkdiv"
+> > > +- #clock-cells: from common clock binding; shall be set to 0
+> > > +- clocks: shall be the input parent clock phandle for the clock.
+> > > +- clock-mult: defines the multiplication factor of the output clock frequency
+> > > +  wrt. the input clock frequency.
+> > > +- clock-div: defines the division factor of the output clock frequency wrt.
+> > > +  the input clock frequency.
+> > > +
+> > > +Example:
+> > > +cpu_clk: clkdiv_cpu {	/* CPU clock derived from pll0. 1/2 of pll frequency */
+> > > +	compatible = "fixed-factor-clkdiv";
+> > > +	#clock-cells = <0>;
+> > > +	clocks = <&pll0>;
+> > > +	clock-mult = <1>;
+> > > +	clock-div = <2>;
+> > > +	clock-output-names = "cpu_clk";
+> > > +};
+> > > diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
+> > > index 1ef271e..85e45f1 100644
+> > > --- a/drivers/clk/clk-fixed-factor.c
+> > > +++ b/drivers/clk/clk-fixed-factor.c
+> > > @@ -11,6 +11,7 @@
+> > >  #include <linux/clk-provider.h>
+> > >  #include <linux/slab.h>
+> > >  #include <linux/err.h>
+> > > +#include <linux/of.h>
+> > >  
+> > >  /*
+> > >   * DOC: basic fixed multiplier and divider clock that cannot gate
+> > > @@ -96,3 +97,34 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
+> > >  
+> > >  	return clk;
+> > >  }
+> > > +
+> > > +#ifdef CONFIG_OF
+> > > +/**
+> > > + * of_fixed_factor_clkdiv_setup() - Set up simple fixed factor clock divider
+> > > + */
+> > > +void of_fixed_factor_clkdiv_setup(struct device_node *node)
+> > > +{
+> > > +	struct clk *clk;
+> > > +	const char *clk_name = node->name;
+> > > +	const char *parent_name;
+> > > +	u32 mult, div;
+> > > +
+> > > +	if (of_property_read_u32(node, "clock-mult", &mult))
+> > > +		return;
+> > > +
+> > > +	if (of_property_read_u32(node, "clock-div", &div))
+> > > +		return;
+> > > +
+> > > +	parent_name = of_clk_get_parent_name(node, 0);
+> > > +
+> > > +	of_property_read_string(node, "clock-output-names", &clk_name);
+> > > +
+> > > +	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
+> > > +					mult, div);
+> > > +	if (!IS_ERR(clk))
+> > > +		of_clk_add_provider(node, of_clk_src_simple_get, clk);
+> > > +}
+> > > +EXPORT_SYMBOL_GPL(of_fixed_factor_clkdiv_setup);
+> > > +CLK_OF_DECLARE(fixed_clkdiv, "fixed-factor-clkdiv",
+> > > +		of_fixed_factor_clkdiv_setup);
+> > > +#endif
+> > > diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> > > index 7f197d7..d4937cf 100644
+> > > --- a/include/linux/clk-provider.h
+> > > +++ b/include/linux/clk-provider.h
+> > > @@ -184,6 +184,7 @@ struct clk *clk_register_fixed_rate(struct device *dev, const char *name,
+> > >  		unsigned long fixed_rate);
+> > >  
+> > >  void of_fixed_clk_setup(struct device_node *np);
+> > > +void of_fixed_factor_clkdiv_setup(struct device_node *node);
+> > >  
+> > >  /**
+> > >   * struct clk_gate - gating clock
+> > > 
+> > 
+> > 
+> > -- 
+> > Gregory Clement, Free Electrons
+> > Kernel, drivers, real-time and embedded Linux
+> > development, consulting, training and support.
+> > http://free-electrons.com
+> 
+> -- 
+>   Christian Ruppert              ,          <christian.ruppert@abilis.com>
+>                                 /|
+>   Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+>                              _// | bilis Systems   CH-1228 Plan-les-Ouates
+
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
