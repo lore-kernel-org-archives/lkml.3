@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422661Ab3DKVFB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:05:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10296 "EHLO
+	id S936434Ab3DKVE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:04:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4377 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935731Ab3DKUtQ (ORCPT
+	with ESMTP id S935737Ab3DKUtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:49:16 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=kXhdACzluyoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Jw3m3LiMyfoA:10 a=omOdbC7AAAAA:8 a=VwQbUJbxAAAA:8 a=JDjsHSkAAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=Hf6muOzgCGQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=wcmGBiZDuZMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ZAjoVRll-d8A:10 a=M5GUcnROAAAA:8 a=VwQbUJbxAAAA:8 a=Op-mwl0xAAAA:8 a=vmLDa1wCAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=9RRF0ttvEvMA:10 a=d4CUUju0HPYA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=2_WZD1659A0AaAsh:21 a=6-XEiyBeNNVP2N8t:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202602.651696131@goodmis.org>
+Message-Id: <20130411202602.492885462@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:44 -0400
+Date: Thu, 11 Apr 2013 16:26:43 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: fanchaoting <fanchaoting@cn.fujitsu.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 101/171 ] pnfs-block: removing DM device maybe cause oops when call dev_remove
+Cc: Daniel Drake <dsd@laptop.org>, Marco Cesarano <marco@marvell.com>,
+        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 100/171 ] mwifiex: skip pending commands after function shutdown
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0101-pnfs-block-removing-DM-device-maybe-cause-oops-when-.patch
+Content-Disposition: inline; filename=0100-mwifiex-skip-pending-commands-after-function-shutdow.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,46 +31,63 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: fanchaoting <fanchaoting@cn.fujitsu.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-[ Upstream commit 4376c94618c26225e69e17b7c91169c45a90b292 ]
+[ Upstream commit a3e240cacc93a06bff3313e28938e980d01a2160 ]
 
-when pnfs block using device mapper,if umounting later,it maybe
-cause oops. we apply "1 + sizeof(bl_umount_request)" memory for
-msg->data, the memory maybe overflow when we do "memcpy(&dataptr
-[sizeof(bl_msg)], &bl_umount_request, sizeof(bl_umount_request))",
-because the size of bl_msg is more than 1 byte.
+During rmmod mwifiex_sdio processing FUNC_SHUTDOWN command is
+sent to firmware. Firmware expcets only FUNC_INIT once WLAN
+function is shut down.
 
-Signed-off-by: fanchaoting<fanchaoting@cn.fujitsu.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Any command pending in the command queue should be ignored and
+freed.
+
+Cc: <stable@vger.kernel.org> # 3.8
+Tested-by: Daniel Drake <dsd@laptop.org>
+Tested-by: Marco Cesarano <marco@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/nfs/blocklayout/blocklayoutdm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/mwifiex/cmdevt.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfs/blocklayout/blocklayoutdm.c b/fs/nfs/blocklayout/blocklayoutdm.c
-index 737d839..6fc7b5c 100644
---- a/fs/nfs/blocklayout/blocklayoutdm.c
-+++ b/fs/nfs/blocklayout/blocklayoutdm.c
-@@ -55,7 +55,8 @@ static void dev_remove(struct net *net, dev_t dev)
+diff --git a/drivers/net/wireless/mwifiex/cmdevt.c b/drivers/net/wireless/mwifiex/cmdevt.c
+index da50426..c65efd0 100644
+--- a/drivers/net/wireless/mwifiex/cmdevt.c
++++ b/drivers/net/wireless/mwifiex/cmdevt.c
+@@ -156,6 +156,20 @@ static int mwifiex_dnld_cmd_to_fw(struct mwifiex_private *priv,
+ 		return -1;
+ 	}
  
- 	bl_pipe_msg.bl_wq = &nn->bl_wq;
- 	memset(msg, 0, sizeof(*msg));
--	msg->data = kzalloc(1 + sizeof(bl_umount_request), GFP_NOFS);
-+	msg->len = sizeof(bl_msg) + bl_msg.totallen;
-+	msg->data = kzalloc(msg->len, GFP_NOFS);
- 	if (!msg->data)
- 		goto out;
++	cmd_code = le16_to_cpu(host_cmd->command);
++	cmd_size = le16_to_cpu(host_cmd->size);
++
++	if (adapter->hw_status == MWIFIEX_HW_STATUS_RESET &&
++	    cmd_code != HostCmd_CMD_FUNC_SHUTDOWN &&
++	    cmd_code != HostCmd_CMD_FUNC_INIT) {
++		dev_err(adapter->dev,
++			"DNLD_CMD: FW in reset state, ignore cmd %#x\n",
++			cmd_code);
++		mwifiex_complete_cmd(adapter, cmd_node);
++		mwifiex_insert_cmd_to_free_q(adapter, cmd_node);
++		return -1;
++	}
++
+ 	/* Set command sequence number */
+ 	adapter->seq_num++;
+ 	host_cmd->seq_num = cpu_to_le16(HostCmd_SET_SEQ_NO_BSS_INFO
+@@ -167,9 +181,6 @@ static int mwifiex_dnld_cmd_to_fw(struct mwifiex_private *priv,
+ 	adapter->curr_cmd = cmd_node;
+ 	spin_unlock_irqrestore(&adapter->mwifiex_cmd_lock, flags);
  
-@@ -66,7 +67,6 @@ static void dev_remove(struct net *net, dev_t dev)
- 	memcpy(msg->data, &bl_msg, sizeof(bl_msg));
- 	dataptr = (uint8_t *) msg->data;
- 	memcpy(&dataptr[sizeof(bl_msg)], &bl_umount_request, sizeof(bl_umount_request));
--	msg->len = sizeof(bl_msg) + bl_msg.totallen;
- 
- 	add_wait_queue(&nn->bl_wq, &wq);
- 	if (rpc_queue_upcall(nn->bl_device_pipe, msg) < 0) {
+-	cmd_code = le16_to_cpu(host_cmd->command);
+-	cmd_size = le16_to_cpu(host_cmd->size);
+-
+ 	/* Adjust skb length */
+ 	if (cmd_node->cmd_skb->len > cmd_size)
+ 		/*
 -- 
 1.7.10.4
 
