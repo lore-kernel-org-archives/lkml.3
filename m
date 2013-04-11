@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964942Ab3DKPjr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 11:39:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41867 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964848Ab3DKPjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 11:39:46 -0400
-Date: Thu, 11 Apr 2013 17:39:16 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH] module: add kset_obj_exists() and use it
-Message-ID: <20130411153916.GH21320@redhat.com>
-References: <1365506529-8396-1-git-send-email-vfalico@redhat.com>
- <87y5cq6ei9.fsf@rustcorp.com.au>
- <20130411095537.GC21320@redhat.com>
- <20130411132831.GC2909@kroah.com>
- <20130411135340.GF21320@redhat.com>
- <20130411152003.GC20943@kroah.com>
+	id S1161622Ab3DKPl5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 11:41:57 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42111 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932840Ab3DKPlz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 11:41:55 -0400
+Date: Thu, 11 Apr 2013 08:37:21 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 4/4] nohz: New option to force all CPUs in full dynticks
+ range
+Message-ID: <20130411153721.GA3742@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1364398359-21990-1-git-send-email-fweisbec@gmail.com>
+ <1364398359-21990-5-git-send-email-fweisbec@gmail.com>
+ <20130328074507.GC24433@gmail.com>
+ <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com>
+ <20130330091037.GA31743@gmail.com>
+ <0000013dea26b171-8095c339-dc81-4459-a3ad-a8d69c803448-000000@email.amazonses.com>
+ <20130411151956.GF15699@somewhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130411152003.GC20943@kroah.com>
+In-Reply-To: <20130411151956.GF15699@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041115-2398-0000-0000-0000132FC8DF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 08:20:03AM -0700, Greg KH wrote:
->On Thu, Apr 11, 2013 at 03:53:40PM +0200, Veaceslav Falico wrote:
->> On Thu, Apr 11, 2013 at 06:28:31AM -0700, Greg KH wrote:
->> >On Thu, Apr 11, 2013 at 11:55:37AM +0200, Veaceslav Falico wrote:
-...
->>
->> In both examples we don't look at that kobject, and only uselessly
->> _get()/_put() it. And it looks a bit ugly. After the patch, in both cases,
->> it takes only one call to kset_obj_exists() to find out if the object
->> exists at that time.
->
->But as your function does the same thing, logically it's the same code
->path :)
->
->Anyway, yes, I understand your point here, and in some new code I'm
->writing right now, we had to do much the same check as well.  But as
->there are only 2 in-kernel users of this "pattern", I don't think it's
->justified to add a new api call for it, especially if it were to be
->misused as you were attempting to use it, which would only mask the real
->problem you were trying to solve.
+On Thu, Apr 11, 2013 at 05:19:59PM +0200, Frederic Weisbecker wrote:
+> On Mon, Apr 08, 2013 at 02:57:18PM +0000, Christoph Lameter wrote:
+> > I think we could simplify things quite a bit if we either
+> > 
+> > 1. Add any cpus specified with nohz_full/extended=xxx to
+> > rcu_nocb. No check is then necessary anymore.
+> 
+> Yeah in the long term we probably want that indeed.
 
-Good point, it really might mask the real problem, as it would actually do
-for the initial race.
+Or just build with RCU_NOCB_CPU_ALL=y to unconditionally offload all
+the CPUs when using nohz_extended.
 
->
->So, thanks for the idea, but for now, I'll pass.
+							Thanx, Paul
 
-Fair enough. Thank you for explaining :)
-
->
->thanks,
->
->greg k-h
