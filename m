@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936476Ab3DKBNU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 21:13:20 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:28624 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934997Ab3DKBNT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 21:13:19 -0400
-X-Spam-Score: -100.8
-Message-ID: <51660E0D.7030205@asianux.com>
-Date: Thu, 11 Apr 2013 09:12:45 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S936386Ab3DKBT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 21:19:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48144 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762769Ab3DKBT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 21:19:27 -0400
+Message-ID: <51660F85.4000105@ti.com>
+Date: Wed, 10 Apr 2013 21:19:01 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel: auditfilter: looping issue, memory leak if has
- 2 or more AUDIT_FILTERKEYs
-References: <51653645.90401@asianux.com> <51653C7A.6030405@asianux.com> <51653EC2.5030107@asianux.com> <516540CB.7090301@asianux.com> <1145090153.12320456.1365629897666.JavaMail.root@redhat.com>
-In-Reply-To: <1145090153.12320456.1365629897666.JavaMail.root@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-pm@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, <eduardo.valentin@ti.com>
+Subject: Re: [PATCH 14/30] thermal/exynos: remove unnecessary header inclusions
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de> <1365638712-1028578-15-git-send-email-arnd@arndb.de>
+In-Reply-To: <1365638712-1028578-15-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月11日 05:38, Eric Paris wrote:
-> ----- Original Message -----
->> > 
->> >   also for function audit_list_rules:
->> >     when call audit_make_reply fails (will return NULL).
->> >     we also need process data->buf, not only data itself.
->> > 
->> >   please help check, thanks.
-> struct audit_rule_data {
-> [...]
->         char            buf[0]; /* string fields buffer */
-> };
-> 
-> The last element in the struct is 0 length.  But the allocation in audit_krule_to_data() looks like:
-> 
-> data = kmalloc(sizeof(*data) + krule->buflen, GFP_KERNEL);
-> 
-> So now data->buf appears as an allocation of size krule->buflen.
-> 
-> We do not need to free it separately.  This is a pretty common C trick.
+Rui, Arnd,
 
-  ok, thanks
+As agreed in [1], I will be helping on the thermal maintenance.
 
-  it is my fault.
+On 10-04-2013 20:04, Arnd Bergmann wrote:
+> In multiplatform configurations, we cannot include headers
+> provided by only the exynos platform. Fortunately a number
+> of drivers that include those headers do not actually need
+> them, so we can just remove the inclusions.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-pm@vger.kernel.org
+> Cc: Zhang Rui <rui.zhang@intel.com>
 
-  :-)
+This patch looks good to me.
 
--- 
-Chen Gang
+You can add my:
+Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
 
-Asianux Corporation
+
+[1] - http://marc.info/?l=linux-pm&m=136560509922173&w=2
