@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161382Ab3DKJmN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 05:42:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39519 "EHLO comal.ext.ti.com"
+	id S1161604Ab3DKJmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 05:42:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16660 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935568Ab3DKJmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 05:42:10 -0400
-Message-ID: <5166856C.3080906@ti.com>
-Date: Thu, 11 Apr 2013 12:42:04 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Alan Stern <stern@rowland.harvard.edu>, "Balbi, Felipe" <balbi@ti.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: [PATCH] USB: ehci-omap: Select USB_PHY
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S936115Ab3DKJmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 05:42:09 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [net-next PATCH 2/2] tuntap: initialize vlan_features
+Date: Thu, 11 Apr 2013 17:32:22 +0800
+Message-Id: <1365672742-42258-3-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1365672742-42258-1-git-send-email-jasowang@redhat.com>
+References: <1365672742-42258-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+The vlan_features was zero which prevents vlan GSO packets to be transmitted to
+userspace. This is suboptimal so enable this by initialize vlan_features for
+tuntap.
 
-The following patch gets rid of Kbuild warnings when USB_EHCI_HCD_OMAP
-is enabled.
+Netperf shows better performance of guest receiving since vlan TSO works for
+tuntap:
 
-Patch is based on your usb-next branch and is needed for 3.10.
+before:
+netperf -H 192.168.5.4
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.5.4 ()
+port 0 AF_INET : demo
+Recv   Send    Send
+Socket Socket  Message  Elapsed
+Size   Size    Size     Time     Throughput
+bytes  bytes   bytes    secs.    10^6bits/sec
 
-From: Roger Quadros <rogerq@ti.com>
-Date: Thu, 11 Apr 2013 12:08:19 +0300
-Subject: [PATCH] USB: ehci-omap: Select USB_PHY
+ 87380  16384  16384    10.01    2786.67
 
-As we need NOP_USB_XCEIV which depends on USB_PHY
-we need to select USB_PHY as well.
+after:
+netperf -H 192.168.5.4
+MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.5.4 ()
+port 0 AF_INET : demo
+Recv   Send    Send
+Socket Socket  Message  Elapsed
+Size   Size    Size     Time     Throughput
+bytes  bytes   bytes    secs.    10^6bits/sec
 
-Gets rid of the below warnings when USB_EHCI_HCD_OMAP
-is enabled.
+ 87380  16384  16384    10.00    8085.49
 
-warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet direct dependencies (USB_SUPPORT && USB_PHY)
-warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet direct dependencies (USB_SUPPORT && USB_PHY)
-
-Signed-off-by: Roger Quadros <rogerq@ti.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/usb/host/Kconfig |    1 +
+ drivers/net/tun.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-index c0be25c..931b437 100644
---- a/drivers/usb/host/Kconfig
-+++ b/drivers/usb/host/Kconfig
-@@ -150,6 +150,7 @@ config USB_EHCI_MXC
- config USB_EHCI_HCD_OMAP
- 	tristate "EHCI support for OMAP3 and later chips"
- 	depends on ARCH_OMAP
-+	select USB_PHY
- 	select NOP_USB_XCEIV
- 	default y
- 	---help---
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 29538e6..316c759 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1656,6 +1656,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 		dev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST |
+ 			TUN_USER_FEATURES;
+ 		dev->features = dev->hw_features;
++		dev->vlan_features = dev->features;
+ 
+ 		INIT_LIST_HEAD(&tun->disabled);
+ 		err = tun_attach(tun, file);
 -- 
-1.7.4.1
+1.7.1
+
