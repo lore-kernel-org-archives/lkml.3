@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935777Ab3DKQ5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:57:10 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:45121 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935114Ab3DKQ5I (ORCPT
+	id S935989Ab3DKQ5S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:57:18 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:41164 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935114Ab3DKQ5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:57:08 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18OvbG+IvcxAInrpeXFstZS
-Date: Thu, 11 Apr 2013 09:57:03 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>, viro@ZenIV.linux.org.uk,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 25/26] arm: Don't use create_proc_read_entry() [RFC]
-Message-ID: <20130411165702.GZ10155@atomide.com>
-References: <20130411154806.GU10155@atomide.com>
- <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
- <20130411133058.32763.5466.stgit@warthog.procyon.org.uk>
- <13448.1365698725@warthog.procyon.org.uk>
+	Thu, 11 Apr 2013 12:57:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <13448.1365698725@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130410233059.5cdcc119@skate>
+References: <1365578969-30966-1-git-send-email-Andrew.Murray@arm.com>
+	<1365578969-30966-2-git-send-email-Andrew.Murray@arm.com>
+	<51656592.7070806@gmail.com>
+	<20130410233059.5cdcc119@skate>
+Date: Thu, 11 Apr 2013 18:57:12 +0200
+Message-ID: <CACRpkdY1PNLp7guzazCUvLCs8OqTopm40wg6L0DAC+2+Eu91og@mail.gmail.com>
+Subject: Re: [PATCH v5 1/3] of/pci: Unify pci_process_bridge_OF_ranges from
+ Microblaze and PowerPC
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Michal Simek <monstr@monstr.eu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Andrew Murray <Andrew.Murray@arm.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        siva.kallam@samsung.com, linux-pci@vger.kernel.org,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Jingoo Han <jg1.han@samsung.com>, Liviu.Dudau@arm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Paul Mackerras <paulus@samba.org>,
+        "bhelgaas@google.com" <bhelgaas@google.com>, suren.reddy@samsung.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Howells <dhowells@redhat.com> [130411 09:50]:
-> Tony Lindgren <tony@atomide.com> wrote:
-> 
-> > Looks like the mach-omap1/pm.c part we can make into
-> > a debugfs entry as it only contains PM debug data. But
-> > that we can do after this patch.
-> 
-> If you have a patch to do that, I can substitute it for this one.
+On Wed, Apr 10, 2013 at 11:30 PM, Thomas Petazzoni
+<thomas.petazzoni@free-electrons.com> wrote:
 
-Sure will do.
+> Ben, Michal, could you review/test this patch from Andrew Murray? I
+> need it as a dependency of "[PATCH v5 2/3] of/pci: Provide support for
+> parsing PCI DT ranges property", which itself is used by the Marvell
+> PCIe driver I'm hoping to get merged in 3.10.
 
-Tony
+Second this, I also have a patch series that depend on these patches.
+
+Yours,
+Linus Walleij
