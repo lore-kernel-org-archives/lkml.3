@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935461Ab3DKJ0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 05:26:20 -0400
-Received: from smtp-out-204.synserver.de ([212.40.185.204]:1024 "EHLO
+	id S935363Ab3DKJ0S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 05:26:18 -0400
+Received: from smtp-out-204.synserver.de ([212.40.185.204]:1034 "EHLO
 	smtp-out-204.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765335Ab3DKJZq (ORCPT
+	with ESMTP id S1765434Ab3DKJZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 05:25:46 -0400
 X-SynServer-TrustedSrc: 1
@@ -14,75 +14,90 @@ From: Lars-Peter Clausen <lars@metafoo.de>
 To: Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Rodolfo Giometti <giometti@enneenne.com>
-Subject: [PATCH 4/4] misc: tsl2550: Use dev_pm_ops
-Date: Thu, 11 Apr 2013 11:24:42 +0200
-Message-Id: <1365672282-10449-4-git-send-email-lars@metafoo.de>
+        Hong Liu <hong.liu@intel.com>
+Subject: [PATCH 1/4] misc: apds9802als: Fix suspend/resume
+Date: Thu, 11 Apr 2013 11:24:39 +0200
+Message-Id: <1365672282-10449-1-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1365672282-10449-1-git-send-email-lars@metafoo.de>
-References: <1365672282-10449-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use dev_pm_ops instead of the deprecated legacy suspend/resume callbacks.
+The apds9802als driver implements runtime pm and at the same time uses the
+legacy pm callbacks for suspend and resume. This does not work since the i2c
+core wont look at the legacy pm callbacks if a driver has the 'pm' field set.
+This patch fixes it by moving over to dev_pm_ops for suspend/resume as well.
+Since both runtime pm and suspend/resume behave the same way this can easily be
+done using the UNIVERSAL_DEV_PM_OPS macro.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Rodolfo Giometti <giometti@enneenne.com>
+Cc: Hong Liu <hong.liu@intel.com>
 ---
- drivers/misc/tsl2550.c | 21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ drivers/misc/apds9802als.c | 25 ++++---------------------
+ 1 file changed, 4 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/misc/tsl2550.c b/drivers/misc/tsl2550.c
-index 1e7bc0e..1dfde4d 100644
---- a/drivers/misc/tsl2550.c
-+++ b/drivers/misc/tsl2550.c
-@@ -417,24 +417,26 @@ static int tsl2550_remove(struct i2c_client *client)
+diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
+index d648b08..5b5fd84 100644
+--- a/drivers/misc/apds9802als.c
++++ b/drivers/misc/apds9802als.c
+@@ -272,19 +272,8 @@ static int apds9802als_remove(struct i2c_client *client)
+ }
+ 
+ #ifdef CONFIG_PM
+-static int apds9802als_suspend(struct i2c_client *client, pm_message_t mesg)
+-{
+-	als_set_power_state(client, false);
+-	return 0;
+-}
+-
+-static int apds9802als_resume(struct i2c_client *client)
+-{
+-	als_set_default_config(client);
+-	return 0;
+-}
+ 
+-static int apds9802als_runtime_suspend(struct device *dev)
++static int apds9802als_suspend(struct device *dev)
+ {
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 
+@@ -292,7 +281,7 @@ static int apds9802als_runtime_suspend(struct device *dev)
  	return 0;
  }
  
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- 
--static int tsl2550_suspend(struct i2c_client *client, pm_message_t mesg)
-+static int tsl2550_suspend(struct device *dev)
+-static int apds9802als_runtime_resume(struct device *dev)
++static int apds9802als_resume(struct device *dev)
  {
--	return tsl2550_set_power_state(client, 0);
-+	return tsl2550_set_power_state(to_i2c_client(dev), 0);
+ 	struct i2c_client *client = to_i2c_client(dev);
+ 
+@@ -300,16 +289,12 @@ static int apds9802als_runtime_resume(struct device *dev)
+ 	return 0;
  }
  
--static int tsl2550_resume(struct i2c_client *client)
-+static int tsl2550_resume(struct device *dev)
- {
--	return tsl2550_set_power_state(client, 1);
-+	return tsl2550_set_power_state(to_i2c_client(dev), 1);
- }
+-static const struct dev_pm_ops apds9802als_pm_ops = {
+-	.runtime_suspend = apds9802als_runtime_suspend,
+-	.runtime_resume = apds9802als_runtime_resume,
+-};
++static UNIVERSAL_DEV_PM_OPS(apds9802als_pm_ops, apds9802als_suspend,
++	apds9802als_resume, NULL);
  
-+static SIMPLE_DEV_PM_OPS(tsl2550_pm_ops, tsl2550_suspend, tsl2550_resume);
-+#define TSL2550_PM_OPS (&tsl2550_pm_ops)
-+
- #else
+ #define APDS9802ALS_PM_OPS (&apds9802als_pm_ops)
  
--#define tsl2550_suspend		NULL
--#define tsl2550_resume		NULL
-+#define TSL2550_PM_OPS NULL
+ #else	/* CONFIG_PM */
+-#define apds9802als_suspend NULL
+-#define apds9802als_resume NULL
+ #define APDS9802ALS_PM_OPS NULL
+ #endif	/* CONFIG_PM */
  
--#endif /* CONFIG_PM */
-+#endif /* CONFIG_PM_SLEEP */
- 
- static const struct i2c_device_id tsl2550_id[] = {
- 	{ "tsl2550", 0 },
-@@ -446,9 +448,8 @@ static struct i2c_driver tsl2550_driver = {
- 	.driver = {
- 		.name	= TSL2550_DRV_NAME,
- 		.owner	= THIS_MODULE,
-+		.pm	= TSL2550_PM_OPS,
+@@ -327,8 +312,6 @@ static struct i2c_driver apds9802als_driver = {
  	},
--	.suspend = tsl2550_suspend,
--	.resume	= tsl2550_resume,
- 	.probe	= tsl2550_probe,
- 	.remove	= tsl2550_remove,
- 	.id_table = tsl2550_id,
+ 	.probe = apds9802als_probe,
+ 	.remove = apds9802als_remove,
+-	.suspend = apds9802als_suspend,
+-	.resume = apds9802als_resume,
+ 	.id_table = apds9802als_id,
+ };
+ 
 -- 
 1.8.0
 
