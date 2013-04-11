@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965062Ab3DKOZS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 10:25:18 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38963 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S964874Ab3DKOZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 10:25:17 -0400
-Message-ID: <1365690315.1929.8.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: Warn on comparisons to true and false
-From: Joe Perches <joe@perches.com>
-To: =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: Dave Jones <davej@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Date: Thu, 11 Apr 2013 07:25:15 -0700
-In-Reply-To: <878v4pwa9l.fsf@nemi.mork.no>
-References: <1365563834.27174.12.camel@joe-AO722>
-	 <20130410155751.7ecc6738d616fb8771991ce1@linux-foundation.org>
-	 <20130411021415.GA16118@redhat.com> <878v4pwa9l.fsf@nemi.mork.no>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S935831Ab3DKO1I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 10:27:08 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34160 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932712Ab3DKO1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 10:27:07 -0400
+Date: Thu, 11 Apr 2013 15:27:06 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        alsa-devel@alsa-project.org, Liam Girdwood <lgirdwood@gmail.com>
+Subject: Re: [PATCH 20/30] ASoC: samsung: convert to dmaengine API
+Message-ID: <20130411142706.GB24971@opensource.wolfsonmicro.com>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de> <1365638712-1028578-21-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365638712-1028578-21-git-send-email-arnd@arndb.de>
+X-Cookie: You dialed 5483.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 13:56 +0200, Bjørn Mork wrote:
-> I felt I had to share this little gem
-> which showed up in drivers/gpu/drm/exynos/exynos_drm_vidi.c:
-> 
-> static int vidi_power_on(struct vidi_context *ctx, bool enable)
-> {
->         struct exynos_drm_subdrv *subdrv = &ctx->subdrv;
->         struct device *dev = subdrv->dev;
-> 
->         DRM_DEBUG_KMS("%s\n", __FILE__);
-> 
->         if (enable != false && enable != true)
->                 return -EINVAL;
-> ..
-> That's taking failsafe to the next step :)
+On Thu, Apr 11, 2013 at 02:05:02AM +0200, Arnd Bergmann wrote:
+> In order to build the exynos kernel with CONFIG_ARCH_MULTIPLATFORM,
+> we must convert all users of the Samsung private DMA interface to
+> the generic dmaengine API. This version of the patch adds the
+> generic dmaengine API as an alternative to the existing samsung
+> specific one. Once all the older platforms provide support for
+> the common dmaengine interfaces, we can remove the old code.
 
-Cute.  It's a relatively new driver too so I'd guess
-the "int -> bool conversion leftover" defense isn't
-too likely.
-
+There's generic ASoC dmaengine code which should be used instead of open
+coding this.  Lars-Peter Clausen and Lee Jones have been working on
+making this a totally generic driver, right now it's a library.
