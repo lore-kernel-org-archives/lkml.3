@@ -1,137 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932522Ab3DKMsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 08:48:01 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:55333 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab3DKMsA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 08:48:00 -0400
-Message-ID: <5166B05E.8010904@linux.vnet.ibm.com>
-Date: Thu, 11 Apr 2013 18:15:18 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Robin Holt <holt@sgi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot to
- boot cpu.)
-References: <20130403193743.GB29151@sgi.com> <20130408155701.GB19974@gmail.com> <5162EC1A.4050204@zytor.com> <20130408165916.GA3672@sgi.com> <20130410111620.GB29752@gmail.com> <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com> <20130411053106.GA9042@drongo>
-In-Reply-To: <20130411053106.GA9042@drongo>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041112-3864-0000-0000-000007ABDF68
+	id S935320Ab3DKMs7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 08:48:59 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:34351 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751004Ab3DKMs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 08:48:58 -0400
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        Dmitry Monakhov <dmonakhov@openvz.org>
+Subject: [PATCH] fs: fix differed error reporting
+Date: Thu, 11 Apr 2013 16:47:59 +0400
+Message-Id: <1365684479-29187-1-git-send-email-dmonakhov@openvz.org>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 11:01 AM, Paul Mackerras wrote:
-> On Wed, Apr 10, 2013 at 08:10:05AM -0700, Linus Torvalds wrote:
->> The optimal solution would be to just speed up the
->> disable_nonboot_cpus() code so much that it isn't an issue. That would
->> be good for suspending too, although I guess suspend isn't a big issue
->> if you have a thousand CPU's.
->>
->> Has anybody checked whether we could do the cpu_down() on non-boot
->> CPU's in parallel? Right now we serialize the thing completely, with
-> 
-> I thought Srivatsa S. Bhat had a patchset that did exactly that.
-> Srivatsa?
-> 
+There are two convenient ways to report errors to userspace
+1) retun error to original syscall for example write(2)
+2) mark mapping with error flag and return it on later fsync(2)
 
-Thanks for the CC, Paul! Adding some more people to CC.
+Second one is broken if (mapping->nrpages == 0)
+This is real-life situation because after error pages are likey
+to be truncated or invalidated.
 
-Actually, my patchset was about removing stop_machine() from the CPU
-offline path.
-http://lwn.net/Articles/538819/
+We have to return an error regardless to number of pages in the mapping.
 
-And here is the performance improvement I had measured in the version
-prior to that:
-http://article.gmane.org/gmane.linux.kernel/1435249
+#Original testcase: git@github.com:dmonakhov/xfstests.git
+MOUNT_OPTIONS="-b1024"
+./check shared/305
 
-I'm planning to revive this patchset after the 3.10 merge window closes,
-because it depends on doing a tree-wide sweep, and I think its a little
-late to do it in time for the upcoming 3.10 merge window itself.
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+---
+ mm/filemap.c |   29 +++++++++++++++++++++--------
+ 1 files changed, 21 insertions(+), 8 deletions(-)
 
-Anyway, that's about removing stop_machine from CPU hotplug.
-
-Coming to bulk CPU hotplug, yes, I had ideas similar to what Russ suggested.
-But I believe we can do more than that.
-
-As Russ pointed out, the notifiers are not thread-safe, so calling them
-in parallel with different CPUs as arguments isn't going to work.
-
-So, first, we can convert all the CPU hotplug notifiers to take a cpumask
-instead of a single CPU. So assuming that there are 'n' notifiers in total,
-the number of function calls would become n, instead of n*1024.
-But that itself most likely won't give us much benefit over the for-loop
-that Russ has done in his patch, because it'll simply do longer processing
-in each of those 'n' notifiers, by iterating over the cpumask inside each
-notifier.
-
-Now comes the interesting thing:
-
-Consider a notifier chain that looks like this:
-Priority 0: A->B->C->D
-
-We can't invoke say notifier callback A simultaneously on 2 CPUs with 2
-different hotcpus as argument. *However*, since A, B, C, D all (more or less)
-belong to different subsystems, we can call A, B, C and D in parallel on
-different CPUs. They won't even serialize amongst themselves because they
-take locks (if any) of different subsystems. And since they are of same
-priority, the ordering (A after B or B after A) doesn't matter as well.
-
-So with this, if we combine the idea I wrote above about giving a cpumask
-to each of these notifiers to work with, we end up in this:
-
-CPU 0          CPU 1          CPU2           ....
-A(cpumask)     B(cpumask)     C(cpumask)     ....
-
-So, for example, the CPU_DOWN_PREPARE notification can be processed in parallel
-on multiple CPUs at a time, for a given cpumask! That should definitely
-give us a good speed-up.
-
-One more thing we have to note is that, there are 4 notifiers for taking a
-CPU offline:
-
-CPU_DOWN_PREPARE
-CPU_DYING
-CPU_DEAD
-CPU_POST_DEAD
-
-The first can be run in parallel as mentioned above. The second is run in
-parallel in the stop_machine() phase as shown in Russ' patch. But the third
-and fourth set of notifications all end up running only on CPU0, which will
-again slow down things.
-
-So I suggest taking down the 1024 CPUs in multiple phases, like a binary search.
-First, take 512 CPUs down, then 256 CPUs, then 128 CPUs etc. So at every bulk
-CPU hotplug, we have enough online CPUs to handle the notifier load, and that
-helps speed things up. Moreover, a handful of calls to stop_machine() is OK
-because, stop_machine() takes progressively lesser and lesser time because
-lesser CPUs are online on each iteration (and hence it reduces the
-synchronization overhead of the stop-machine phase).
-
-The only downside to this whole idea of running the notifiers of a given
-priority in parallel, is error handling - if a notifier fails, it would be
-troublesome to rollback I guess. But if we forget that for a moment, we can
-give this idea a try!
-
-Regards,
-Srivatsa S. Bhat
+diff --git a/mm/filemap.c b/mm/filemap.c
+index e1979fd..ca47f0b 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -184,6 +184,17 @@ static int sleep_on_page_killable(void *word)
+ 	return fatal_signal_pending(current) ? -EINTR : 0;
+ }
+ 
++static int filemap_check_errors(struct address_space *mapping)
++{
++	int ret = 0;
++	/* Check for outstanding write errors */
++	if (test_and_clear_bit(AS_ENOSPC, &mapping->flags))
++		ret = -ENOSPC;
++	if (test_and_clear_bit(AS_EIO, &mapping->flags))
++		ret = -EIO;
++	return ret;
++}
++
+ /**
+  * __filemap_fdatawrite_range - start writeback on mapping dirty pages in range
+  * @mapping:	address space structure to write
+@@ -265,10 +276,10 @@ int filemap_fdatawait_range(struct address_space *mapping, loff_t start_byte,
+ 	pgoff_t end = end_byte >> PAGE_CACHE_SHIFT;
+ 	struct pagevec pvec;
+ 	int nr_pages;
+-	int ret = 0;
++	int ret2, ret = 0;
+ 
+ 	if (end_byte < start_byte)
+-		return 0;
++		goto out;
+ 
+ 	pagevec_init(&pvec, 0);
+ 	while ((index <= end) &&
+@@ -291,12 +302,10 @@ int filemap_fdatawait_range(struct address_space *mapping, loff_t start_byte,
+ 		pagevec_release(&pvec);
+ 		cond_resched();
+ 	}
+-
+-	/* Check for outstanding write errors */
+-	if (test_and_clear_bit(AS_ENOSPC, &mapping->flags))
+-		ret = -ENOSPC;
+-	if (test_and_clear_bit(AS_EIO, &mapping->flags))
+-		ret = -EIO;
++out:
++	ret2 = filemap_check_errors(mapping);
++	if (!ret)
++		ret = ret2;
+ 
+ 	return ret;
+ }
+@@ -337,6 +346,8 @@ int filemap_write_and_wait(struct address_space *mapping)
+ 			if (!err)
+ 				err = err2;
+ 		}
++	} else {
++		err = filemap_check_errors(mapping);
+ 	}
+ 	return err;
+ }
+@@ -368,6 +379,8 @@ int filemap_write_and_wait_range(struct address_space *mapping,
+ 			if (!err)
+ 				err = err2;
+ 		}
++	} else {
++		err = filemap_check_errors(mapping);
+ 	}
+ 	return err;
+ }
+-- 
+1.7.1
 
