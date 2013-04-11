@@ -1,50 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933462Ab3DKOLX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 10:11:23 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63290 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab3DKOLV (ORCPT
+	id S934901Ab3DKOPk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 10:15:40 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:37559 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513Ab3DKOPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 10:11:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 00/26] Eliminate create_proc_read_entry() [RFC]
-Date: Thu, 11 Apr 2013 16:11:05 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk
-References: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
+	Thu, 11 Apr 2013 10:15:37 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: "Bedia\, Vaibhav" <vaibhav.bedia@ti.com>
+Cc: "Poddar\, Sourav" <sourav.poddar@ti.com>,
+        "gregkh\@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "tony\@atomide.com" <tony@atomide.com>,
+        "rmk+kernel\@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial\@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "Shilimkar\, Santosh" <santosh.shilimkar@ti.com>,
+        "Balbi\, Felipe" <balbi@ti.com>, "Nayak\, Rajendra" <rnayak@ti.com>
+Subject: Re: [PATCHv3] driver: serial: prevent UART console idle on suspend while using "no_console_suspend"
+References: <1365167733-28083-1-git-send-email-sourav.poddar@ti.com>
+	<87mwtclvua.fsf@linaro.org> <516463D2.2070008@ti.com>
+	<87obdnh6au.fsf@linaro.org> <516501A0.4000004@ti.com>
+	<B5906170F1614E41A8A28DE3B8D121433ED96446@DBDE01.ent.ti.com>
+	<51653450.2010200@ti.com>
+	<B5906170F1614E41A8A28DE3B8D121433ED96C45@DBDE01.ent.ti.com>
+	<87bo9myt52.fsf@linaro.org>
+Date: Thu, 11 Apr 2013 07:15:33 -0700
+In-Reply-To: <87bo9myt52.fsf@linaro.org> (Kevin Hilman's message of "Wed, 10
+	Apr 2013 14:26:17 -0700")
+Message-ID: <87y5cpxiey.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304111611.05520.arnd@arndb.de>
-X-Provags-ID: V02:K0:1L78XCwctXrXRYFHKCcW4J+YP/hQfxgjQEZgeGjF8g1
- yzj7PMdWsl9dbx8tvb8ohrb3W2r9jZtYPi3JI5ZaQC/bQkfKPQ
- 2I7fzfrUAzl2s979aE9OymK0RLrezt412nBDE5lCc27x4vOp83
- UTpUUKwCDkVp9NN6KzX5wD9uVXAF8ZbEu6ziQ+5pHspAZjx2LH
- ndMuLNoTy1S+W6mCG1elDO/SjtvTWmY17EW69jOGjlmtqmzB2r
- jb652ZpX42DPG6cEh4LIm+sR3g03XWXnKdoq8nLxH3jlux1oE2
- 16CbiUX0N/+7idvK48lUahaeg208j7VPQi1mcPDWK4iowuqtI4
- Vi+4VkS0um/S8v6hBIZA=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 April 2013, David Howells wrote:
-> 
-> Here is a series of patches to eliminate create_proc_read_entry(), replacing it
-> with proc_create() and proc_create_data() and the use of seq_file facilities.
-> These patches can be seen here also:
-> 
-> 	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=vfs-experimental
+Kevin Hilman <khilman@linaro.org> writes:
 
-Nice series. I did something  similar about two years ago but never got
-around to actually send them. If you like you can take a look at
+> "Bedia, Vaibhav" <vaibhav.bedia@ti.com> writes:
+>
+>> Hi Sourav,
+>>
+>> On Wed, Apr 10, 2013 at 15:13:44, Poddar, Sourav wrote:
+>> [...]
+>>> Yes, had a look at that and found your situation similar to UART.
+>>> 
+>>> But how exactly this gets used, I mean I don't  see any drivers/ in mainline
+>>> making use of this compatible string  "ti,am3352-ocmcram".  ?
+>>
+>> OCMC clock is enabled during bootup (not sure whether that's the h/w
+>> default or ROM does it) since the initial bootloader runs from there.
+>> By marking the corresponding hwmod with HWMOD_INIT_NO_IDLE we leave the
+>> clock running. Right now the sram code under arch/arm/plat-omap/ is what
+>> manages the OCMC. I guess this needs to move somewhere under drivers/
+>> and start managing the clocks. Even then we'll need a mechanism
+>> to leave the clocks running as part of the kernel suspend process
+>> since the assembly code which runs at the fag end of the suspend
+>> process runs out of OCMC and hence we can't cut its clock.
+>>
+>> On AM335x, the OCMC clock is cut to have PER power domain transition
+>> but that's done in the WKUP-M3 firmware when going down. During the
+>> wakeup sequence, WKUP-M3 re-enables the OCMC clock so that when the
+>> kernel resumes the h/w state is same.
+>
+> OK, but *today*, in *mainline*, where in the linux kernel (not the M3
+> firmware) is the OCMRAM clock cut during suspend?
+>
+> From what I can see, there is no driver for this device, so there are no
+> system PM calls being done for that device, and thus no omap_device
+> calls being done for that device, so the no_idle_on_suspend has no
+> effect.
 
-   git.kernel.org/pub/scm/linux/kernel/git/arnd/playground.git procfs
+OK, I think I confused things here, sorry. I was thinking runtime PM
+here, but wrote system PM.  The no_idle_on_suspend feature only affects
+system PM, and the omap_device calls will still be called during system
+PM, even without a driver.
 
-for my patches and see if how I did them for comparison. They are based on linux-3.1 though.
+That being said, the commit below[1], added in v3.6 should prevent the
+any automaic clock gating for devices without drivers bound.  Since
+there is no driver for the OCM RAM block, you shouldn't be affected by
+the automatic idle on suspend anyways.
 
-	Arnd
+So, my proposal is that Sourav remove that flag from the AM33xx hwmod
+when he removes this feature.
+
+Kevin
+
+
+[1]
+commit 72bb6f9b51c82c820ddef892455a85b115460904
+Author: Kevin Hilman <khilman@ti.com>
+Date:   Tue Jul 10 15:29:04 2012 -0700
+
+    ARM: OMAP: omap_device: don't attempt late suspend if no driver bound
+    
+    Currently, the omap_device PM domain layer uses the late suspend and
+    early resume callbacks to ensure devices are in their low power
+    states.
+    
+    However, this is attempted even in cases where a driver probe has
+    failed.  If a driver's ->probe() method fails, the driver is likely in
+    a state where it is not expecting its runtime PM callbacks to be
+    called, yet currently the omap_device PM domain code attempts to call
+    the drivers callbacks.
+    
+    To fix, use the omap_device driver_status field to check whether a
+    driver is bound to the omap_device before attempting to trigger driver
+    callbacks.
+    
+    Reviewed-by: Paul Walmsley <paul@pwsan.com>
+    Signed-off-by: Kevin Hilman <khilman@ti.com>
