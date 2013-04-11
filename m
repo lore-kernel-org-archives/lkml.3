@@ -1,64 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934841Ab3DKXRu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 19:17:50 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4099 "EHLO
+	id S934733Ab3DKXRt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 19:17:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27717 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933891Ab3DKXQW (ORCPT
+	with ESMTP id S933904Ab3DKXQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 19:16:22 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=LWIIR5Ca6dEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=Wa4Ca_ta9k0A:10 a=zRKbQ67AAAAA:8 a=fqJWJNsUBNL_Q-EgwOAA:9 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=gifenA44UdVckHGn:21 a=hysIHlfqb8Y6M7Hy:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=zdOiDach05EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=J44BlkJKnn8A:10 a=zRKbQ67AAAAA:8 a=nXRD0Ro-ZfH_0W-zERYA:9 a=1Dwx9gnmAe4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411231620.618570346@goodmis.org>
+Message-Id: <20130411231620.953609038@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 19:11:54 -0400
+Date: Thu, 11 Apr 2013 19:11:56 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Ben Hutchings <bhutchings@solarflare.com>
-Subject: [ 5/9 ] sfc: Fix MCDI structure field lookup
+Subject: [ 7/9 ] sfc: Work-around flush timeout when flushes have completed
 References: <20130411231149.302144972@goodmis.org>
-Content-Disposition: inline; filename=0005-sfc-Fix-MCDI-structure-field-lookup.patch
+Content-Disposition: inline; filename=0007-sfc-Work-around-flush-timeout-when-flushes-have-comp.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Daniel Pieczko <dpieczko@solarflare.com>
 
-[ Upstream commit 0a6e5008a9df678b48f8d4e57601aa4270df6c14 ]
+[ Upstream commit 525d9e824018cd7cc8d8d44832ddcd363abfe6e1 ]
 
-The least significant bit number (LBN) of a field within an MCDI
-structure is counted from the start of the structure, not the
-containing dword.  In MCDI_ARRAY_FIELD() we need to mask it rather
-than using the usual EFX_DWORD_FIELD() macro.
+We sometimes hit a "failed to flush" timeout on some TX queues, but the
+flushes have completed and the flush completion events seem to go missing.
+In this case, we can check the TX_DESC_PTR_TBL register and drain the
+queues if the flushes had finished.
 
+[bwh: Minor fixes to coding style]
 Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/ethernet/sfc/mcdi.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/sfc/net_driver.h |    1 +
+ drivers/net/ethernet/sfc/nic.c        |   56 ++++++++++++++++++++++++++++++---
+ 2 files changed, 53 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/ethernet/sfc/mcdi.h b/drivers/net/ethernet/sfc/mcdi.h
-index 0bdf3e3..96f43d2 100644
---- a/drivers/net/ethernet/sfc/mcdi.h
-+++ b/drivers/net/ethernet/sfc/mcdi.h
-@@ -107,11 +107,13 @@ extern void efx_mcdi_sensor_event(struct efx_nic *efx, efx_qword_t *ev);
- #define MCDI_EVENT_FIELD(_ev, _field)			\
- 	EFX_QWORD_FIELD(_ev, MCDI_EVENT_ ## _field)
- #define MCDI_ARRAY_FIELD(_buf, _field1, _type, _index, _field2)		\
--	EFX_DWORD_FIELD(						\
-+	EFX_EXTRACT_DWORD(						\
- 		*((efx_dword_t *)					\
- 		  (MCDI_ARRAY_PTR(_buf, _field1, _type, _index) +	\
- 		   (MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _OFST & ~3))), \
--		MC_CMD_ ## _type ## _TYPEDEF_ ## _field2)
-+		MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _LBN & 0x1f, \
-+		(MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _LBN & 0x1f) + \
-+		MC_CMD_ ## _type ## _TYPEDEF_ ## _field2 ## _WIDTH - 1)
+diff --git a/drivers/net/ethernet/sfc/net_driver.h b/drivers/net/ethernet/sfc/net_driver.h
+index 6288437..30d2f4f 100644
+--- a/drivers/net/ethernet/sfc/net_driver.h
++++ b/drivers/net/ethernet/sfc/net_driver.h
+@@ -196,6 +196,7 @@ struct efx_tx_queue {
+ 	/* Members shared between paths and sometimes updated */
+ 	unsigned int empty_read_count ____cacheline_aligned_in_smp;
+ #define EFX_EMPTY_COUNT_VALID 0x80000000
++	atomic_t flush_outstanding;
+ };
  
- extern void efx_mcdi_print_fwver(struct efx_nic *efx, char *buf, size_t len);
- extern int efx_mcdi_drv_attach(struct efx_nic *efx, bool driver_operating,
+ /**
+diff --git a/drivers/net/ethernet/sfc/nic.c b/drivers/net/ethernet/sfc/nic.c
+index a112622..d29b4e4 100644
+--- a/drivers/net/ethernet/sfc/nic.c
++++ b/drivers/net/ethernet/sfc/nic.c
+@@ -73,6 +73,8 @@
+ 	_EFX_CHANNEL_MAGIC(_EFX_CHANNEL_MAGIC_TX_DRAIN,			\
+ 			   (_tx_queue)->queue)
+ 
++static void efx_magic_event(struct efx_channel *channel, u32 magic);
++
+ /**************************************************************************
+  *
+  * Solarstorm hardware access
+@@ -493,6 +495,9 @@ static void efx_flush_tx_queue(struct efx_tx_queue *tx_queue)
+ 	struct efx_nic *efx = tx_queue->efx;
+ 	efx_oword_t tx_flush_descq;
+ 
++	WARN_ON(atomic_read(&tx_queue->flush_outstanding));
++	atomic_set(&tx_queue->flush_outstanding, 1);
++
+ 	EFX_POPULATE_OWORD_2(tx_flush_descq,
+ 			     FRF_AZ_TX_FLUSH_DESCQ_CMD, 1,
+ 			     FRF_AZ_TX_FLUSH_DESCQ, tx_queue->queue);
+@@ -668,6 +673,47 @@ static bool efx_flush_wake(struct efx_nic *efx)
+ 		 && atomic_read(&efx->rxq_flush_pending) > 0));
+ }
+ 
++static bool efx_check_tx_flush_complete(struct efx_nic *efx)
++{
++	bool i = true;
++	efx_oword_t txd_ptr_tbl;
++	struct efx_channel *channel;
++	struct efx_tx_queue *tx_queue;
++
++	efx_for_each_channel(channel, efx) {
++		efx_for_each_channel_tx_queue(tx_queue, channel) {
++			efx_reado_table(efx, &txd_ptr_tbl,
++					FR_BZ_TX_DESC_PTR_TBL, tx_queue->queue);
++			if (EFX_OWORD_FIELD(txd_ptr_tbl,
++					    FRF_AZ_TX_DESCQ_FLUSH) ||
++			    EFX_OWORD_FIELD(txd_ptr_tbl,
++					    FRF_AZ_TX_DESCQ_EN)) {
++				netif_dbg(efx, hw, efx->net_dev,
++					  "flush did not complete on TXQ %d\n",
++					  tx_queue->queue);
++				i = false;
++			} else if (atomic_cmpxchg(&tx_queue->flush_outstanding,
++						  1, 0)) {
++				/* The flush is complete, but we didn't
++				 * receive a flush completion event
++				 */
++				netif_dbg(efx, hw, efx->net_dev,
++					  "flush complete on TXQ %d, so drain "
++					  "the queue\n", tx_queue->queue);
++				/* Don't need to increment drain_pending as it
++				 * has already been incremented for the queues
++				 * which did not drain
++				 */
++				efx_magic_event(channel,
++						EFX_CHANNEL_MAGIC_TX_DRAIN(
++							tx_queue));
++			}
++		}
++	}
++
++	return i;
++}
++
+ /* Flush all the transmit queues, and continue flushing receive queues until
+  * they're all flushed. Wait for the DRAIN events to be recieved so that there
+  * are no more RX and TX events left on any channel. */
+@@ -728,7 +774,8 @@ int efx_nic_flush_queues(struct efx_nic *efx)
+ 					     timeout);
+ 	}
+ 
+-	if (atomic_read(&efx->drain_pending)) {
++	if (atomic_read(&efx->drain_pending) &&
++	    !efx_check_tx_flush_complete(efx)) {
+ 		netif_err(efx, hw, efx->net_dev, "failed to flush %d queues "
+ 			  "(rx %d+%d)\n", atomic_read(&efx->drain_pending),
+ 			  atomic_read(&efx->rxq_flush_outstanding),
+@@ -1015,9 +1062,10 @@ efx_handle_tx_flush_done(struct efx_nic *efx, efx_qword_t *event)
+ 	if (qid < EFX_TXQ_TYPES * efx->n_tx_channels) {
+ 		tx_queue = efx_get_tx_queue(efx, qid / EFX_TXQ_TYPES,
+ 					    qid % EFX_TXQ_TYPES);
+-
+-		efx_magic_event(tx_queue->channel,
+-				EFX_CHANNEL_MAGIC_TX_DRAIN(tx_queue));
++		if (atomic_cmpxchg(&tx_queue->flush_outstanding, 1, 0)) {
++			efx_magic_event(tx_queue->channel,
++					EFX_CHANNEL_MAGIC_TX_DRAIN(tx_queue));
++		}
+ 	}
+ }
+ 
 -- 
 1.7.10.4
 
