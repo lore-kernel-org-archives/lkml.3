@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab3DKEqL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 00:46:11 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:54304 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab3DKEqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 00:46:09 -0400
+	id S1753256Ab3DKFGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 01:06:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49290 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752530Ab3DKFGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 01:06:14 -0400
+Date: Thu, 11 Apr 2013 07:05:43 +0200
+From: Veaceslav Falico <vfalico@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, bhelgaas@google.com
+Subject: Re: [PATCH] module: add kset_obj_exists() and use it
+Message-ID: <20130411050543.GB21812@redhat.com>
+References: <1365506529-8396-1-git-send-email-vfalico@redhat.com>
+ <20130410172713.GB1881@kroah.com>
+ <87vc7t4ymp.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <51658B1A.6090706@wwwdotorg.org>
-References: <CAFNq8R5FFUyH+JgjoGc5ctgEfiLvxzi7fzawM7+wFX5nEyTv-w@mail.gmail.com>
-	<51658B1A.6090706@wwwdotorg.org>
-Date: Thu, 11 Apr 2013 12:46:07 +0800
-Message-ID: <CAFNq8R6mRJRygfnYvZgwVWOqsrhrjNUYzyZGU0cVsnE30W_xGg@mail.gmail.com>
-Subject: Re: Kexec couldn't reboot capture kernel on pandaboard ES with OMAP4460
-From: Li Haifeng <omycle@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: pandaboard@googlegroups.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <87vc7t4ymp.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/10 Stephen Warren <swarren@wwwdotorg.org>:
-> On 04/10/2013 03:35 AM, Li Haifeng wrote:
->> Hi, everyone.
->>
->> Recently, I try to run kdump on pandaboard ES with omap4460. After
->> load capture kernel by "kexec -l" and execute "kexec -e", the serial
->> port output "Starting new kernel" and "Bye", then the system hangs up.
->>
->> I have tried the upstream Linux Kernel v3.4 and v3.8. All are with this issue.
+On Thu, Apr 11, 2013 at 11:28:06AM +0930, Rusty Russell wrote:
+>Greg KH <gregkh@linuxfoundation.org> writes:
 >
-> This is a shot in the dark. I assume you have SMP enabled. Can you use
-> hotplug to remove all CPUs other than CPU0, so that the kexec happens on
-> the boot CPU? That is certainly necessary for kexec to work correctly on
-> Tegra.
+>> On Tue, Apr 09, 2013 at 01:22:09PM +0200, Veaceslav Falico wrote:
+>>> Add a new function, kset_obj_exists(), which is identical to
+>>> kset_find_obj() but doesn't take a reference to the kobject
+>>> found and only returns bool if found/not found.
+>>>
+>>> The main purpose would be to avoid the possible race scenario,
+>>> when we could get the reference in between the kref_put() and
+>>> kobject_release() functions (i.e. kref_put() already ran,
+>>> refcount became 0, but the kobject_release() function still
+>>> didn't run, and we try to get via kobject_get() and thus ending
+>>> up with a released kobject). It can be triggered, for example,
+>>> by running insmod/rmmod bonding in parallel, which ends up in
+>>> a race between kset_obj_find() in mod_sysfs_init() and rmmod's
+>>> mod_sysfs_fini()/kobject_put().
+>>
+>> As Rusty points out, this isn't a kobject issue that can be solved with
+>> a new api call, but rather, the user of the kobject code needs to be
+>> fixed, with something like his proposed patch instead.
+>>
+>> So, because of this, I can't take this patch, sorry.
+>
+>Greg, I'm shocked!  Surely you've been doing this long enough to know
+>that we don't use that kind of language on lkml?
+>
+>To restore the list's reputation as a hostile pressure cooker powered by
+>the smouldering remains of flame-roasted newcomers, allow me to correct
+>your reply:
+>
+>        "NAK.  And you smell."
 
-Thanks for your attention.
+Got it :). Thank you for your input and your patch, I'll come back with a
+proper fix when I'll have one.
 
-I do disable SMP feature. And the .config file for v3.8 could be found here:
-http://pastehtml.com/view/cylyrfejt.txt
+Thanks all.
 
-The log and operation could be found here:
-http://pastehtml.com/view/cylyfrb3a.txt
-
-Some key setting list below.
-
-bootargs:
-rw vram=32M fixrtc mem=1G@0x80000000 root=/dev/mmcblk0p2
-console=ttyO2,115200n8 rootwait crashkernel=64M@0x82000000
-
-operation:
-/ # ./kexec -l  --append="rw vram=32M fixrtc  root=/dev/mmcblk0p2 console=ttyO2,
-115200n8 rootwait" uImage
-/ # ./kexec -d -e
-
-The output:
-[   57.373687] Starting new kernel
-[   57.377044] Bye!
-
-Then system hangs.
+>
+>Crisis averted,
+>Rusty.
+>PS.  Thanks :)
