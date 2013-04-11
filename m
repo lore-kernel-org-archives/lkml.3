@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936372Ab3DKOxS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 10:53:18 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40075 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936304Ab3DKOxP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 10:53:15 -0400
-Message-ID: <5166CE56.2070400@ti.com>
-Date: Thu, 11 Apr 2013 17:53:10 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1161485Ab3DKOx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 10:53:28 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:13882 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936304Ab3DKOx0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 10:53:26 -0400
+X-Spam-Score: -100.8
+Message-ID: <5166CE42.2080100@asianux.com>
+Date: Thu, 11 Apr 2013 22:52:50 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] USB: ehci-omap: Select USB_PHY
-References: <5166856C.3080906@ti.com> <20130411100435.GB14394@arwen.pp.htv.fi> <516695A4.2050804@ti.com> <20130411105557.GE14394@arwen.pp.htv.fi> <5166AFD2.4070108@ti.com> <5166B829.1020304@ti.com> <20130411143404.GO14394@arwen.pp.htv.fi>
-In-Reply-To: <20130411143404.GO14394@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: Eric Paris <eparis@redhat.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel: auditfilter: looping issue, memory leak if has
+ 2 or more AUDIT_FILTERKEYs
+References: <51653645.90401@asianux.com> <51653C7A.6030405@asianux.com> <2119919725.12278128.1365628773876.JavaMail.root@redhat.com> <516637BB.90606@asianux.com> <992669598.15460218.1365687629641.JavaMail.root@redhat.com> <5166C9DB.9030606@asianux.com>
+In-Reply-To: <5166C9DB.9030606@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 05:34 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Thu, Apr 11, 2013 at 04:18:33PM +0300, Roger Quadros wrote:
->> On 04/11/2013 03:42 PM, Roger Quadros wrote:
->>> On 04/11/2013 01:55 PM, Felipe Balbi wrote:
->>>> Hi,
->>>>
->>>> On Thu, Apr 11, 2013 at 01:51:16PM +0300, Roger Quadros wrote:
->>>>> On 04/11/2013 01:04 PM, Felipe Balbi wrote:
->>>>>> Hi,
->>>>>>
->>>>>> On Thu, Apr 11, 2013 at 12:42:04PM +0300, Roger Quadros wrote:
->>>>>>> Hi Greg,
->>>>>>>
->>>>>>> The following patch gets rid of Kbuild warnings when USB_EHCI_HCD_OMAP
->>>>>>> is enabled.
->>>>>>>
->>>>>>> Patch is based on your usb-next branch and is needed for 3.10.
->>>>>>>
->>>>>>> From: Roger Quadros <rogerq@ti.com>
->>>>>>> Date: Thu, 11 Apr 2013 12:08:19 +0300
->>>>>>> Subject: [PATCH] USB: ehci-omap: Select USB_PHY
->>>>>>>
->>>>>>> As we need NOP_USB_XCEIV which depends on USB_PHY
->>>>>>> we need to select USB_PHY as well.
->>>>>>>
->>>>>>> Gets rid of the below warnings when USB_EHCI_HCD_OMAP
->>>>>>> is enabled.
->>>>>>>
->>>>>>> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet direct dependencies (USB_SUPPORT && USB_PHY)
->>>>>>> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet direct dependencies (USB_SUPPORT && USB_PHY)
->>>>>>>
->>>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>>>>>
->>>>>> Ideally, however, we wouldn't select any PHY in particular as different
->>>>>> boards might need a different PHY driver, even on OMAP ;-)
->>>>>>
->>>>> Right, but we need to select USB_PHY here as the driver uses
->>>>> the USB_PHY APIs.
->>>>>
->>>>> The NOP_USB_XCEIV selection could be done by the board config.
->>>>
->>>> I would avoid 'select' completely and just update omap2plus_defconfig
->>>> adding those two as modules.
->>>>
->>>
->>> OK, makes sense. I will update the patch to remove "select NOP_USB_XCEIV".
->>>
->>
->> One more issue to clarify.
->>
->> if USB_PHY is not enabled, then all phy_get() API's should return NULL and not
->> -ENXIO as it does now.
-> 
-> ENXIO means "No such device or address", looks alright to me ;-)
-> 
->> This way the drivers need not treat it as an error and all PHY ops can
->> be NOPs.
-> 
-> drivers will already be using if (IS_ERR()) construction, returning
-> -ENXIO when the API is disabled gives them an oportunity to *not*
-> request probe deferral since the API isn't enabled anyway.
+On 2013年04月11日 22:34, Chen Gang wrote:
+> On 2013年04月11日 21:40, Eric Paris wrote:
+>>>> >> >   can we add it in audit_free_rule ?
+>>>> >> > 
+>>>> >> >   maybe like this:
+>>>> >> > 
+>>>> >> > @@ -75,6 +75,8 @@ static inline void audit_free_rule(struct audit_entry *e)
+>>>> >> >  	/* some rules don't have associated watches */
+>>>> >> >  	if (erule->watch)
+>>>> >> >  		audit_put_watch(erule->watch);
+>>>> >> > +	if (erule->tree)
+>>>> >> > +		audit_put_tree(erule->tree);
+>>>> >> >  	if (erule->fields)
+>>>> >> >  		for (i = 0; i < erule->field_count; i++) {
+>>>> >> >  			struct audit_field *f = &erule->fields[i];
+>> > Where does the tree information get freed normally?  That's the code you need to run down.  You don't want to start getting double frees on the non-error case.  I'll try to dig into it if Al doesn't.  It's easy to show the leak on current kernels.
+>> > 
 
-on second thoughts I agree with you. So the general understanding is
-that USB_PHY users without USB_PHY enabled is an error case.
+  oh.. it seems another issues need consider !!
 
-This means we need to allow controller drivers to select USB_PHY
-and minimize this possibility.
+    a. in function audit_remove_watch_rule, it does not set NULL for krule->watch.
 
-> 
->> This will make it behave like other frameworks. e.g. clk.
-> 
-> if we return NULL we will need IS_ERR_OR_NULL() which will cause
-> problems with people who aren't careful enough.
-> 
-OK.
+    b. function audit_del_rule and audit_remove_watch_rule need lock protected.
+         it seems we should call audit_del_rule in audit_free_rule.
+           audit_del_rule will instead of audit_put_watch and audit_put_tree.
+         but we need consider whether will cause dead lock !
 
-cheers,
--roger
+       I will continue to see it.
+
+
+>   I think:
+>     it is in function audit_del_rule. when del, also set NULL.
+>     so the deletion in audit_free_rule is safe.
+>     the process of erule->watch and erule->tree are similar.
+> 
+>   please check, thanks.
+> 
+> 
+>> > while(1)
+>> >     auditctl -a exit,always -w /etc -F auid=-1
+>> > 
+>> > 
+>> > 
+>   it is valuable to me, thanks.
+> 
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
