@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422684Ab3DKUoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:44:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27951 "EHLO
+	id S1422703Ab3DKUoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:44:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32712 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab3DKUZy (ORCPT
+	with ESMTP id S1754858Ab3DKUZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:25:54 -0400
-X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=ejFs5i_SpfEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=qKXtviB79OgA:10 a=K33ine3eAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=6UCq8DqREAUA:10 a=o7nkWXKJ22EA:10 a=jeBq3FmKZ4MA:10 a=Wd44rGJ_aIgv1Bxn:21 a=_-AmcQfiGhYET-AD:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=zIy0BurUMUUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=aLBoyjLmYQAA:10 a=20KFwNOVAAAA:8 a=vmLDa1wCAAAA:8 a=J1Y8HTJGAAAA:8 a=vO1rWKhFIqyBCLbNSO4A:9 a=jEp0ucaQiEUA:10 a=gv_BBZfBKR8A:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202547.412489729@goodmis.org>
+Message-Id: <20130411202547.254090549@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:25:10 -0400
+Date: Thu, 11 Apr 2013 16:25:09 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Marek Lindner <lindner_marek@yahoo.de>,
-        Antonio Quartulli <ordex@autistici.org>
-Subject: [ 007/171 ] batman-adv: verify tt len does not exceed packet len
+Cc: Veaceslav Falico <vfalico@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 006/171 ] netconsole: dont call __netpoll_cleanup() while atomic
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0007-batman-adv-verify-tt-len-does-not-exceed-packet-len.patch
+Content-Disposition: inline; filename=0006-netconsole-don-t-call-__netpoll_cleanup-while-atomic.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,46 +30,60 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Marek Lindner <lindner_marek@yahoo.de>
+From: Veaceslav Falico <vfalico@redhat.com>
 
-[ Upstream commit b47506d91259c29b9c75c404737eb6525556f9b4 ]
+[ Upstream commit 3f315bef23075ea8a98a6fe4221a83b83456d970 ]
 
-batadv_iv_ogm_process() accesses the packet using the tt_num_changes
-attribute regardless of the real packet len (assuming the length check
-was done before). Therefore a length check is needed to avoid reading
-random memory.
+__netpoll_cleanup() is called in netconsole_netdev_event() while holding a
+spinlock. Release/acquire the spinlock before/after it and restart the
+loop. Also, disable the netconsole completely, because we won't have chance
+after the restart of the loop, and might end up in a situation where
+nt->enabled == 1 and nt->np.dev == NULL.
 
-Signed-off-by: Marek Lindner <lindner_marek@yahoo.de>
-Signed-off-by: Antonio Quartulli <ordex@autistici.org>
+Signed-off-by: Veaceslav Falico <vfalico@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- net/batman-adv/bat_iv_ogm.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/netconsole.c |   15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/net/batman-adv/bat_iv_ogm.c b/net/batman-adv/bat_iv_ogm.c
-index 1476f26..aca451e 100644
---- a/net/batman-adv/bat_iv_ogm.c
-+++ b/net/batman-adv/bat_iv_ogm.c
-@@ -1273,7 +1273,8 @@ static int batadv_iv_ogm_receive(struct sk_buff *skb,
- 	batadv_ogm_packet = (struct batadv_ogm_packet *)packet_buff;
+diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
+index b332112..2524a69 100644
+--- a/drivers/net/netconsole.c
++++ b/drivers/net/netconsole.c
+@@ -626,6 +626,7 @@ static int netconsole_netdev_event(struct notifier_block *this,
+ 		goto done;
  
- 	/* unpack the aggregated packets and process them one by one */
--	do {
-+	while (batadv_iv_ogm_aggr_packet(buff_pos, packet_len,
-+					 batadv_ogm_packet->tt_num_changes)) {
- 		tt_buff = packet_buff + buff_pos + BATADV_OGM_HLEN;
- 
- 		batadv_iv_ogm_process(ethhdr, batadv_ogm_packet, tt_buff,
-@@ -1284,8 +1285,7 @@ static int batadv_iv_ogm_receive(struct sk_buff *skb,
- 
- 		batadv_ogm_packet = (struct batadv_ogm_packet *)
- 						(packet_buff + buff_pos);
--	} while (batadv_iv_ogm_aggr_packet(buff_pos, packet_len,
--					   batadv_ogm_packet->tt_num_changes));
-+	}
- 
- 	kfree_skb(skb);
- 	return NET_RX_SUCCESS;
+ 	spin_lock_irqsave(&target_list_lock, flags);
++restart:
+ 	list_for_each_entry(nt, &target_list, list) {
+ 		netconsole_target_get(nt);
+ 		if (nt->np.dev == dev) {
+@@ -638,15 +639,17 @@ static int netconsole_netdev_event(struct notifier_block *this,
+ 			case NETDEV_UNREGISTER:
+ 				/*
+ 				 * rtnl_lock already held
++				 * we might sleep in __netpoll_cleanup()
+ 				 */
+-				if (nt->np.dev) {
+-					__netpoll_cleanup(&nt->np);
+-					dev_put(nt->np.dev);
+-					nt->np.dev = NULL;
+-				}
++				spin_unlock_irqrestore(&target_list_lock, flags);
++				__netpoll_cleanup(&nt->np);
++				spin_lock_irqsave(&target_list_lock, flags);
++				dev_put(nt->np.dev);
++				nt->np.dev = NULL;
+ 				nt->enabled = 0;
+ 				stopped = true;
+-				break;
++				netconsole_target_put(nt);
++				goto restart;
+ 			}
+ 		}
+ 		netconsole_target_put(nt);
 -- 
 1.7.10.4
 
