@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935995Ab3DKRby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 13:31:54 -0400
-Received: from arrakis.dune.hu ([78.24.191.176]:39464 "EHLO arrakis.dune.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935364Ab3DKRbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 13:31:52 -0400
-Message-ID: <5166F39C.1050907@openwrt.org>
-Date: Thu, 11 Apr 2013 19:32:12 +0200
-From: Gabor Juhos <juhosg@openwrt.org>
+	id S964890Ab3DKRcE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 13:32:04 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32586 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935364Ab3DKRcA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 13:32:00 -0400
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>
-Subject: Re: [PATCH 2/2] MIPS: implement pcibios_get_phb_of_node
-References: <1365098483-26821-1-git-send-email-juhosg@openwrt.org> <1365098483-26821-2-git-send-email-juhosg@openwrt.org> <CAErSpo4ih-Kgp4LxX1MDodac-eoPo=Mu1d6ex8oNnaEEc_GQnw@mail.gmail.com>
-In-Reply-To: <CAErSpo4ih-Kgp4LxX1MDodac-eoPo=Mu1d6ex8oNnaEEc_GQnw@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Message-ID: <1ffcce76-7e25-4ca5-b201-dedfa3e2e2b1@default>
+Date: Thu, 11 Apr 2013 10:30:11 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Hugh Dickins <hughd@google.com>,
+        Nitin Gupta <ngupta@vflare.org>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Shaohua Li <shli@kernel.org>, Bob Liu <bob.liu@oracle.com>,
+        Shuah Khan <shuah@gonehiking.org>
+Subject: RE: zsmalloc defrag (Was: [PATCH] mm: remove compressed copy from
+ zram in-memory)
+References: <1365400862-9041-1-git-send-email-minchan@kernel.org>
+ <f3c8ef05-a880-47db-86dd-156038fc7d0f@default>
+ <20130409012719.GB3467@blaptop> <20130409013606.GC3467@blaptop>
+ <51647F94.6000907@linux.vnet.ibm.com>
+In-Reply-To: <51647F94.6000907@linux.vnet.ibm.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
+ 12.0.6668.5000 (x86)]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013.04.10. 18:31 keltezéssel, Bjorn Helgaas írta:
-> On Thu, Apr 4, 2013 at 12:01 PM, Gabor Juhos <juhosg@openwrt.org> wrote:
->> The of_node field of the device assigned to a
->> PCI bus is used during scanning of the PCI bus.
->> However on MIPS, the of_node field is assigned
->> only after the bus has been scanned.
->>
->> Implement the architecture specific version of
->> 'pcibios_get_phb_of_node'. Which ensures that the
->> PCI driver core will initialize the of_node field
->> before starting the scan.
->>
->> Also remove the local assignment of bus->dev.of_node,
->> it is not needed after the patch.
->>
->> Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: Re: zsmalloc defrag (Was: [PATCH] mm: remove compressed copy from zram in-memory)
 > 
-> I removed the __weak annotation from include/linux/pci.h and applied
-> this patch to my pci/gabor-get-of-node.
+> On 04/08/2013 08:36 PM, Minchan Kim wrote:
+> > On Tue, Apr 09, 2013 at 10:27:19AM +0900, Minchan Kim wrote:
+> >> Hi Dan,
+> >>
+> >> On Mon, Apr 08, 2013 at 09:32:38AM -0700, Dan Magenheimer wrote:
+> >>>> From: Minchan Kim [mailto:minchan@kernel.org]
+> >>>> Sent: Monday, April 08, 2013 12:01 AM
+> >>>> Subject: [PATCH] mm: remove compressed copy from zram in-memory
+> >>>
+> >>> (patch removed)
+> >>>
+> >>>> Fragment ratio is almost same but memory consumption and compile time
+> >>>> is better. I am working to add defragment function of zsmalloc.
+> >>>
+> >>> Hi Minchan --
+> >>>
+> >>> I would be very interested in your design thoughts on
+> >>> how you plan to add defragmentation for zsmalloc.  In
+> >>
+> >> What I can say now about is only just a word "Compaction".
+> >> As you know, zsmalloc has a transparent handle so we can do whatever
+> >> under user. Of course, there is a tradeoff between performance
+> >> and memory efficiency. I'm biased to latter for embedded usecase.
+> >>
+> >> And I might post it because as you know well, zsmalloc
+> >
+> > Incomplete sentense,
+> >
+> > I might not post it until promoting zsmalloc because as you know well,
+> > zsmalloc/zram's all new stuffs are blocked into staging tree.
+> > Even if we could add it into staging, as you know well, staging is where
+> > every mm guys ignore so we end up needing another round to promote it. sigh.
+> 
+> Yes. The lack of compaction/defragmentation support in zsmalloc has not
+> been raised as an obstacle to mainline acceptance so I think we should
+> wait to add new features to a yet-to-be accepted codebase.
 
-Thank you!
+Um, I explicitly raised as an obstacle the greatly reduced density for
+zsmalloc on active workloads and on zsize distributions that skew fat.
+Understanding that more deeply and hopefully fixing it is an issue,
+and compaction/defragmentation is a step in that direction.
 
-> Give it a try and make sure
-> it solves your problem.  If so, and Ralph approves, I can push both
-> for v3.10.  It should appear at
-> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/gabor-get-of-node
-> soon.
+> Also, I think this feature is more important to zram than it is to
+> zswap/zcache as they can do writeback to free zpages.  In other words,
+> the fragmentation is a transient issue for zswap/zcache since writeback
+> to the swap device is possible.
 
-I have tried your patch on top of 3.9-rc6. The resulting kernel uses the
-architecture specific implementation, and it runs fine.
+Actually, I think I demonstrated that the zpage-based writeback in
+zswap makes fragmentation worse.  Zcache doesn't use zsmalloc
+in part because it doesn't support pagframe writeback.  If zsmalloc
+can fix this (and it may be easier to fix depending on the design
+and implementation of compaction/defrag, which is why I'm asking
+lots of questions), zcache may be able to make use of zsmalloc.
 
-  $ mipsel-openwrt-linux-readelf -s arch/mips/pci/built-in.o \
-    drivers/pci/built-in.o vmlinux.o | grep pcibios_get_phb_of_node
-      93: 0000046c    12 FUNC    GLOBAL DEFAULT    2 pcibios_get_phb_of_node
-    1433: 00012a2c   104 FUNC    WEAK   DEFAULT    2 pcibios_get_phb_of_node
-   31863: 001d4dbc    12 FUNC    GLOBAL DEFAULT    2 pcibios_get_phb_of_node
-  $
+Lots of good discussion fodder for next week!
 
-For completeness, I have compiled it for X64 and for powerpc as well. I did not
-try to run these kernels, but the output of readelf seems to be ok:
-
-  $ readelf -s arch/x86/kernel/built-in.o drivers/pci/built-in.o vmlinux.o | \
-    grep pcibios_get_phb_of_node
-    2761: 000273a0    86 FUNC    GLOBAL DEFAULT    1 pcibios_get_phb_of_node
-    1705: 00018770    77 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
-   60364: 000278a0    86 FUNC    GLOBAL DEFAULT    1 pcibios_get_phb_of_node
-  $
-
-  $ powerpc-openwrt-linux-readelf -s arch/powerpc/kernel/built-in.o \
-    drivers/pci/built-in.o  vmlinux.o | grep pcibios_get_phb_of_node
-    1002: 0000ca28    12 FUNC    GLOBAL DEFAULT    1 pcibios_get_phb_of_node
-    1485: 0001453c    88 FUNC    WEAK   DEFAULT    1 pcibios_get_phb_of_node
-   28959: 0000d598    12 FUNC    GLOBAL DEFAULT    1 pcibios_get_phb_of_node
-  $
-
-> Or if you prefer, you can take them through the MIPS tree.
-
-Either is fine.
-
--Gabor
+Dan
