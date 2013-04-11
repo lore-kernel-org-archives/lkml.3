@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936870Ab3DKBG1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 21:06:27 -0400
-Received: from void.printf.net ([89.145.121.20]:37378 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935469Ab3DKBG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 21:06:26 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH 09/30] mmc: sdhci-s3c: remove platform dependencies
-References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
-	<1365638712-1028578-10-git-send-email-arnd@arndb.de>
-Date: Wed, 10 Apr 2013 21:06:18 -0400
-In-Reply-To: <1365638712-1028578-10-git-send-email-arnd@arndb.de> (Arnd
-	Bergmann's message of "Thu, 11 Apr 2013 02:04:51 +0200")
-Message-ID: <877gk9j2ph.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S937031Ab3DKBHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 21:07:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40406 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S934952Ab3DKBHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 21:07:18 -0400
+Message-ID: <1365642437.2036.5.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: Warn on comparisons to true and false
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Date: Wed, 10 Apr 2013 18:07:17 -0700
+In-Reply-To: <20130410155751.7ecc6738d616fb8771991ce1@linux-foundation.org>
+References: <1365563834.27174.12.camel@joe-AO722>
+	 <20130410155751.7ecc6738d616fb8771991ce1@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2013-04-10 at 15:57 -0700, Andrew Morton wrote:
+> On Tue, 09 Apr 2013 20:17:14 -0700 Joe Perches <joe@perches.com> wrote:
+> > Comparisons of A to true and false are better written
+> > as A and !A.
+> > Bleat a message on use.
+> hm.  I'm counting around 1,100 instances of "== true" and "== false".
 
-On Wed, Apr 10 2013, Arnd Bergmann wrote:
-> plat/regs-sdhci.h is not used anywhere but in the sdhci-s3c
-> driver, so it can become a local file there and all other
-> inclusions removed.
->
-> plat/sdhci.h is used only to define the platform devices,
-> and with the exception of the platform_data structure not
-> needed by the driver, so we can split out the platform_data
-> definition instead and leave the rest to platform code.
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-mmc@vger.kernel.org
-> Cc: Chris Ball <cjb@laptop.org>
+And about all of them in are staging, where I think they
+really should be fixed.
 
-Acked-by: Chris Ball <cjb@laptop.org>
+$ find . -maxdepth 2 -type d \
+   while read file ; do \
+      echo "$(git grep -E '(==|\!=)\s*(true|false)' $file | wc -l)  $file"; \
+  done | sort -rn | head -10
+1375 .
+1298 ./drivers
+1055 ./drivers/staging
+63 ./drivers/net
+59 ./drivers/gpu
+24 ./net
+20 ./drivers/media
+17 ./net/nfc
+13 ./fs
+11 ./drivers/usb
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+> That's a lot of people to shout at.
+
+Not really.
+
+>  Is it really worthwhile? 
+
+I think so.
+
+
