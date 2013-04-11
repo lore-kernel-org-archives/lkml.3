@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934862Ab3DKIIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 04:08:12 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:40783 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784Ab3DKIII (ORCPT
+	id S934974Ab3DKILK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 04:11:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39581 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479Ab3DKILF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 04:08:08 -0400
+	Thu, 11 Apr 2013 04:11:05 -0400
+Date: Thu, 11 Apr 2013 10:10:54 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+cc: Dave Hansen <dave@sr71.net>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
+        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] CPU hotplug, smpboot: Fix crash in smpboot_thread_fn()
+In-Reply-To: <5165713D.7030503@linux.vnet.ibm.com>
+Message-ID: <alpine.LFD.2.02.1304111007270.21884@ionos>
+References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos>
+ <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <516439DF.3050901@sr71.net> <5165713D.7030503@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1365627922.2452.32.camel@falcor1.watson.ibm.com>
-References: <cc87f1242960fad1a9fb44bcec331915e14c832b.1360067333.git.dmitry.kasatkin@intel.com>
-	<20130205181926.GA13942@srcf.ucam.org>
-	<20130205183436.GC12853@redhat.com>
-	<CALLzPKavbsZgHoJrk5iQ0F1fO21SaeEHmCVCh1G1UKCKB3WZZQ@mail.gmail.com>
-	<20130405135000.GB6299@redhat.com>
-	<1365450229.3847.56.camel@falcor1.watson.ibm.com>
-	<20130408200904.GI28292@redhat.com>
-	<CA+5PVA43U_kDSV7p0zhQwmK9pwbVb8qAUePU8svQvoPbDA9iCQ@mail.gmail.com>
-	<20130409143852.GH6320@redhat.com>
-	<1365563230.3074.107.camel@falcor1.watson.ibm.com>
-	<20130410194209.GF6602@redhat.com>
-	<1365627922.2452.32.camel@falcor1.watson.ibm.com>
-Date: Thu, 11 Apr 2013 11:08:05 +0300
-Message-ID: <CACE9dm9P3aFknDNuiwo27F0EWdx8ovg622tjK8biTf7ZVYavLA@mail.gmail.com>
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Josh Boyer <jwboyer@gmail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 10 Apr 2013, Srivatsa S. Bhat wrote:
 
-(in plain text)
+> Interestingly, in every single stack trace, the crashing task is the migration
+> thread. Now, migration thread belongs to the highest priority stop_task sched
+> class, and this particular sched class is very unique in the way it implements
+> its internal sched class functions, and I suspect this has a lot of bearing
+> on how functions like kthread_bind(), wake_up_process() etc react with it
+> (by looking at how it implements its functions such as select_task_rq(),
+> enqueue_task(), dequeue_task() etc).
 
-I respond to the original question of this thread.
-signed initramfs allows not only to add keys to the keyrings but
-perform other initialization,
-which requires user-space.
-Keys can be embedded into the kernel. This is fine.
+I don't think that's relevant. The migration thread can only be woken
+via try_to_wakeup and my previous patch which implements a separate
+task state makes sure that it cannot be woken accidentaly by anything
+else than unpark.
+ 
+> But note that __kthread_bind() can wake up the task if the task is an RT
+> task. So it can be called only when the CPU (to which we want to bind the task)
 
-Regards
+kthread_bind() does NOT wakeup anything. It merily sets the cpus
+allowed ptr without further ado.
 
-- Dmitry
 
+Thanks,
 
-On Thu, Apr 11, 2013 at 12:05 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> On Wed, 2013-04-10 at 15:42 -0400, Vivek Goyal wrote:
->> On Tue, Apr 09, 2013 at 11:07:10PM -0400, Mimi Zohar wrote:
->>
->> [..]
->> > The module keyring is a special case.  Loading these keys from the
->> > kernel and, presumably, locking the keyring is probably fine.  In the
->> > case of IMA, however, files will be signed by any number of package
->> > owners.  If the _ima keyring is locked by the kernel, how would you add
->> > these other keys?
->>
->> Who are package owners here. IOW, in typical IMA setup, where are the keys
->> and when are these keys loaded in ima keyring?
->
-> Suppose I install third party packages not signed by the distro, but by
-> the package owner (eg. google, rpmfusion, ...).  Not only does the
-> package signature need to be verified on installation, but the files
-> need to be installed with signatures.  For IMA to enforce file
-> integrity, the package owner's public key needs to be added to the _ima
-> keyring.
->
->> If we trust root and keys can be loaded any time later, then signed
->> initramfs will not solve the problem either.
->
-> Locking the keyring in the kernel will limit the set of permitted keys
-> to only those specified in UEFI db or builtin.  Locking the keyring in
-> the "early" initramfs, will allow the system owner, whose key is in the
-> UEFI db, to specify additional keys, such as those for third party
-> packages.  Not all public keys belong in the UEFI db.
->
-> Mimi
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+	tglx
