@@ -1,68 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256Ab3DKFGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 01:06:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49290 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752530Ab3DKFGO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 01:06:14 -0400
-Date: Thu, 11 Apr 2013 07:05:43 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, bhelgaas@google.com
-Subject: Re: [PATCH] module: add kset_obj_exists() and use it
-Message-ID: <20130411050543.GB21812@redhat.com>
-References: <1365506529-8396-1-git-send-email-vfalico@redhat.com>
- <20130410172713.GB1881@kroah.com>
- <87vc7t4ymp.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <87vc7t4ymp.fsf@rustcorp.com.au>
+	id S1752808Ab3DKFHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 01:07:07 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:9150 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225Ab3DKFHE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 01:07:04 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-18-516644f6f7c9
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Cc: "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>, linux-kernel@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        "'Inki Dae'" <inki.dae@samsung.com>,
+        "'Donghwa Lee'" <dh09.lee@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+ <1365638712-1028578-13-git-send-email-arnd@arndb.de>
+In-reply-to: <1365638712-1028578-13-git-send-email-arnd@arndb.de>
+Subject: Re: [PATCH 12/30] video/exynos: remove unnecessary header inclusions
+Date: Thu, 11 Apr 2013 14:07:02 +0900
+Message-id: <003201ce3672$66f72e50$34e58af0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac42SHilCvWhzLyNTT+YTyjfM5mdMAAKYGbw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t8zQ91vLmmBBg//S1j8nXSM3eLlIU2L
+	6+ftLCbdn8BicXnhJVaL3gVX2SzONr1ht9j0+BqrxYm+D6wWl3fNYbOYcX4fk8X6+bfYHHg8
+	fv+axOixeUm9R9+WVYwex29sZ/L4vEkugDWKyyYlNSezLLVI3y6BK+Pdpl3sBdMEKx7fPcbW
+	wHiEr4uRk0NCwERi0r//zBC2mMSFe+vZQGwhgWWMEnN/2sLULHvxFKiGCyi+iFGi78pedgjn
+	F6NE/6dJLCBVbAJqEl++HGYHsUUEPCXOnFzAAlLELHCJSeLQ42tQY8skZn+6xdrFyMHBKeAo
+	cbxZHSQsLOArMeP8AlYQm0VAVWLSmuNgF/EK2EocbDjFBmELSvyYfA9sF7OAlsTmbU2sELa8
+	xOY1b5lBRkoIqEs8+qsLcYKRRNPliewQJSIS+168YwQ5R0JgIofE9UWfmCF2CUh8m3yIBaJX
+	VmLTAWhASEocXHGDZQKjxCwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSqV5yYW1yal66X
+	nJ+7iRES6RN3MN4/YH2IMRlo/URmKdHkfGCiyCuJNzQ2M7IwNTE1NjK3NCNNWEmcV73FOlBI
+	ID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDY55bo//TPfuZ6iJ5F3zv7ThuvPa0vKbBC4WelwY/
+	co7n9S4TqDlso+D3e3l84rNq75k/rv1PnrDdyPSfYcWp9TtX72e+P88x5nnzTmOpWdsTe67N
+	vxEvmMx98IqBgM3m5J50MevVE9/ererpaDnCKbt220P/wEDm+IXadSsWem3wzjs0S44lXIml
+	OCPRUIu5qDgRAB24SFAKAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKKsWRmVeSWpSXmKPExsVy+t9jAd1vLmmBBhefC1v8nXSM3eLlIU2L
+	6+ftLCbdn8BicXnhJVaL3gVX2SzONr1ht9j0+BqrxYm+D6wWl3fNYbOYcX4fk8X6+bfYHHg8
+	fv+axOixeUm9R9+WVYwex29sZ/L4vEkugDWqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTM
+	wFDX0NLCXEkhLzE31VbJxSdA1y0zB+g6JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFw
+	PUYGaCBhHWPGu0272AumCVY8vnuMrYHxCF8XIyeHhICJxLIXT5khbDGJC/fWs3UxcnEICSxi
+	lOi7spcdwvnFKNH/aRILSBWbgJrEly+H2UFsEQFPiTMnF7CAFDELXGKSOPT4GhtIQkigTGL2
+	p1usXYwcHJwCjhLHm9VBwsICvhIzzi9gBbFZBFQlJq05DraZV8BW4mDDKTYIW1Dix+R7YLuY
+	BbQkNm9rYoWw5SU2r3nLDDJSQkBd4tFfXYgTjCSaLk9khygRkdj34h3jBEahWUgmzUIyaRaS
+	SbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJEZxInkntYFzZYHGIUYCDUYmH90RD
+	aqAQa2JZcWXuIUYJDmYlEV6unUAh3pTEyqrUovz4otKc1OJDjMlAj05klhJNzgcmubySeENj
+	EzMjSyMzCyMTc3PShJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYPSfqvTe539Y079wtrmL
+	b68xPtE+00X7yb15nIYGB665VCr/nrjPMvC4fC7zCW09jd65cwLYas/FndF+J32N+5Pl7tSg
+	h/N1SrnankafZPzo9FKy6tAyXt85RjufuPhah0dUO/D7/rHQNuoN8BHc9Otg8ORfQk3rjgtM
+	PFTEWpb2faNDyfvo+0osxRmJhlrMRcWJAD2/jd5oAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 11:28:06AM +0930, Rusty Russell wrote:
->Greg KH <gregkh@linuxfoundation.org> writes:
->
->> On Tue, Apr 09, 2013 at 01:22:09PM +0200, Veaceslav Falico wrote:
->>> Add a new function, kset_obj_exists(), which is identical to
->>> kset_find_obj() but doesn't take a reference to the kobject
->>> found and only returns bool if found/not found.
->>>
->>> The main purpose would be to avoid the possible race scenario,
->>> when we could get the reference in between the kref_put() and
->>> kobject_release() functions (i.e. kref_put() already ran,
->>> refcount became 0, but the kobject_release() function still
->>> didn't run, and we try to get via kobject_get() and thus ending
->>> up with a released kobject). It can be triggered, for example,
->>> by running insmod/rmmod bonding in parallel, which ends up in
->>> a race between kset_obj_find() in mod_sysfs_init() and rmmod's
->>> mod_sysfs_fini()/kobject_put().
->>
->> As Rusty points out, this isn't a kobject issue that can be solved with
->> a new api call, but rather, the user of the kobject code needs to be
->> fixed, with something like his proposed patch instead.
->>
->> So, because of this, I can't take this patch, sorry.
->
->Greg, I'm shocked!  Surely you've been doing this long enough to know
->that we don't use that kind of language on lkml?
->
->To restore the list's reputation as a hostile pressure cooker powered by
->the smouldering remains of flame-roasted newcomers, allow me to correct
->your reply:
->
->        "NAK.  And you smell."
+On Thursday, April 11, 2013 9:05 AM, Arnd Bergmann wrote:
+> 
+> In multiplatform configurations, we cannot include headers
+> provided by only the exynos platform. Fortunately a number
+> of drivers that include those headers do not actually need
+> them, so we can just remove the inclusions.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-fbdev@vger.kernel.org
+> Cc: Jingoo Han <jg1.han@samsung.com>
 
-Got it :). Thank you for your input and your patch, I'll come back with a
-proper fix when I'll have one.
+CC'ed Tomi Valkeinen, Inki Dae, Donghwa Lee, Kyungmin Park
 
-Thanks all.
 
->
->Crisis averted,
->Rusty.
->PS.  Thanks :)
+Acked-by: Jingoo Han <jg1.han@samsung.com>
+
+Best regards,
+Jingoo Han
+
+> ---
+>  drivers/video/exynos/exynos_mipi_dsi.c          | 2 --
+>  drivers/video/exynos/exynos_mipi_dsi_common.c   | 2 --
+>  drivers/video/exynos/exynos_mipi_dsi_lowlevel.c | 2 --
+>  3 files changed, 6 deletions(-)
+> 
+> diff --git a/drivers/video/exynos/exynos_mipi_dsi.c b/drivers/video/exynos/exynos_mipi_dsi.c
+> index fac7df6..3dd43ca 100644
+> --- a/drivers/video/exynos/exynos_mipi_dsi.c
+> +++ b/drivers/video/exynos/exynos_mipi_dsi.c
+> @@ -35,8 +35,6 @@
+> 
+>  #include <video/exynos_mipi_dsim.h>
+> 
+> -#include <plat/fb.h>
+> -
+>  #include "exynos_mipi_dsi_common.h"
+>  #include "exynos_mipi_dsi_lowlevel.h"
+> 
+> diff --git a/drivers/video/exynos/exynos_mipi_dsi_common.c
+> b/drivers/video/exynos/exynos_mipi_dsi_common.c
+> index c70cb89..520fc9b 100644
+> --- a/drivers/video/exynos/exynos_mipi_dsi_common.c
+> +++ b/drivers/video/exynos/exynos_mipi_dsi_common.c
+> @@ -31,8 +31,6 @@
+>  #include <video/mipi_display.h>
+>  #include <video/exynos_mipi_dsim.h>
+> 
+> -#include <mach/map.h>
+> -
+>  #include "exynos_mipi_dsi_regs.h"
+>  #include "exynos_mipi_dsi_lowlevel.h"
+>  #include "exynos_mipi_dsi_common.h"
+> diff --git a/drivers/video/exynos/exynos_mipi_dsi_lowlevel.c
+> b/drivers/video/exynos/exynos_mipi_dsi_lowlevel.c
+> index 95cb99a..15c5abd 100644
+> --- a/drivers/video/exynos/exynos_mipi_dsi_lowlevel.c
+> +++ b/drivers/video/exynos/exynos_mipi_dsi_lowlevel.c
+> @@ -26,8 +26,6 @@
+> 
+>  #include <video/exynos_mipi_dsim.h>
+> 
+> -#include <mach/map.h>
+> -
+>  #include "exynos_mipi_dsi_regs.h"
+> 
+>  void exynos_mipi_dsi_func_reset(struct mipi_dsim_device *dsim)
+> --
+> 1.8.1.2
+
