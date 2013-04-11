@@ -1,162 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935413Ab3DKOXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 10:23:08 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:44282 "EHLO relay.sgi.com"
+	id S935675Ab3DKOXk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 10:23:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58202 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757765Ab3DKOXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 10:23:06 -0400
-Date: Thu, 11 Apr 2013 09:23:01 -0500
-From: Russ Anderson <rja@sgi.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Robin Holt <holt@sgi.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Shawn Guo <shawn.guo@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot
- to boot cpu.)
-Message-ID: <20130411142301.GB27990@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <20130403193743.GB29151@sgi.com>
- <20130408155701.GB19974@gmail.com>
- <5162EC1A.4050204@zytor.com>
- <20130408165916.GA3672@sgi.com>
- <20130410111620.GB29752@gmail.com>
- <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
- <20130411053106.GA9042@drongo>
- <5166B05E.8010904@linux.vnet.ibm.com>
+	id S1751787Ab3DKOXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 10:23:39 -0400
+Date: Thu, 11 Apr 2013 16:23:31 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH] x86, FPU: Fix FPU initialization
+Message-ID: <20130411142331.GD27062@pd.tnic>
+References: <1365436666-9837-1-git-send-email-bp@alien8.de>
+ <20130410110840.GA29752@gmail.com>
+ <20130410122411.GE13394@pd.tnic>
+ <20130410122527.GB8686@gmail.com>
+ <20130410133251.GC6857@pd.tnic>
+ <516586CF.90909@zytor.com>
+ <20130410161122.GI6857@pd.tnic>
+ <20130410212950.GA6899@pd.tnic>
+ <20130411120952.GA18879@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5166B05E.8010904@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130411120952.GA18879@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 06:15:18PM +0530, Srivatsa S. Bhat wrote:
-> On 04/11/2013 11:01 AM, Paul Mackerras wrote:
-> > On Wed, Apr 10, 2013 at 08:10:05AM -0700, Linus Torvalds wrote:
-> >> The optimal solution would be to just speed up the
-> >> disable_nonboot_cpus() code so much that it isn't an issue. That would
-> >> be good for suspending too, although I guess suspend isn't a big issue
-> >> if you have a thousand CPU's.
-> >>
-> >> Has anybody checked whether we could do the cpu_down() on non-boot
-> >> CPU's in parallel? Right now we serialize the thing completely, with
-> > 
-> > I thought Srivatsa S. Bhat had a patchset that did exactly that.
-> > Srivatsa?
-> > 
-> 
-> Thanks for the CC, Paul! Adding some more people to CC.
-> 
-> Actually, my patchset was about removing stop_machine() from the CPU
-> offline path.
-> http://lwn.net/Articles/538819/
+On Thu, Apr 11, 2013 at 02:09:52PM +0200, Ingo Molnar wrote:
+> Even with this applied, the attached config is still unhappy and
+> crashes/locks up during user-space init, see the crashlog attached
+> below.
+>
+> The config has MATH_EMULATION=y, so I suspect it's the same problem
+> category.
+>
+> (I'll keep tip:x86/cpu excluded from tip:master so that others are not
+> affected by this bug.)
 
-I certainly agree with the intent.
+Right,
 
-> And here is the performance improvement I had measured in the version
-> prior to that:
-> http://article.gmane.org/gmane.linux.kernel/1435249
-> 
-> I'm planning to revive this patchset after the 3.10 merge window closes,
-> because it depends on doing a tree-wide sweep, and I think its a little
-> late to do it in time for the upcoming 3.10 merge window itself.
-> 
-> Anyway, that's about removing stop_machine from CPU hotplug.
-> 
-> Coming to bulk CPU hotplug, yes, I had ideas similar to what Russ suggested.
-> But I believe we can do more than that.
-> 
-> As Russ pointed out, the notifiers are not thread-safe, so calling them
-> in parallel with different CPUs as arguments isn't going to work.
-> 
-> So, first, we can convert all the CPU hotplug notifiers to take a cpumask
-> instead of a single CPU. So assuming that there are 'n' notifiers in total,
-> the number of function calls would become n, instead of n*1024.
-> But that itself most likely won't give us much benefit over the for-loop
-> that Russ has done in his patch, because it'll simply do longer processing
-> in each of those 'n' notifiers, by iterating over the cpumask inside each
-> notifier.
+of course, I can't trigger it here :(
 
-As an alternative, how about each cpu have their own notifier list?
-Then one task per cpu can spin through that cpu's notifier list, 
-allowing them to run in parallel.
+Let's see:
 
-I don't know if that would be a faster solution than adding cpumask
-to notifiers, but it my guess is it may.
+> INIT: version 2.86 booting
+> [   14.723352] mount (55) used greatest stack depth: 5820 bytes left
+> [   14.723352] mount (55) used greatest stack depth: 5820 bytes left
 
-> Now comes the interesting thing:
-> 
-> Consider a notifier chain that looks like this:
-> Priority 0: A->B->C->D
-> 
-> We can't invoke say notifier callback A simultaneously on 2 CPUs with 2
-> different hotcpus as argument. *However*, since A, B, C, D all (more or less)
-> belong to different subsystems, we can call A, B, C and D in parallel on
-> different CPUs. They won't even serialize amongst themselves because they
-> take locks (if any) of different subsystems. And since they are of same
-> priority, the ordering (A after B or B after A) doesn't matter as well.
-> 
-> So with this, if we combine the idea I wrote above about giving a cpumask
-> to each of these notifiers to work with, we end up in this:
-> 
-> CPU 0          CPU 1          CPU2           ....
-> A(cpumask)     B(cpumask)     C(cpumask)     ....
-> 
-> So, for example, the CPU_DOWN_PREPARE notification can be processed in parallel
-> on multiple CPUs at a time, for a given cpumask! That should definitely
-> give us a good speed-up.
-> 
-> One more thing we have to note is that, there are 4 notifiers for taking a
-> CPU offline:
-> 
-> CPU_DOWN_PREPARE
-> CPU_DYING
-> CPU_DEAD
-> CPU_POST_DEAD
-> 
-> The first can be run in parallel as mentioned above. The second is run in
-> parallel in the stop_machine() phase as shown in Russ' patch. But the third
-> and fourth set of notifications all end up running only on CPU0, which will
-> again slow down things.
+Don't you just hate the repeated lines? :-)
 
-In my testing the third and fourth set were a small part of the overall
-time.  Less than 10%, with cpu notifiers 90+% of the time.  So you may
-not need the added complexity, or at least fix the cpu notifier part
-first.
-
-> So I suggest taking down the 1024 CPUs in multiple phases, like a binary search.
-> First, take 512 CPUs down, then 256 CPUs, then 128 CPUs etc. So at every bulk
-> CPU hotplug, we have enough online CPUs to handle the notifier load, and that
-> helps speed things up. Moreover, a handful of calls to stop_machine() is OK
-> because, stop_machine() takes progressively lesser and lesser time because
-> lesser CPUs are online on each iteration (and hence it reduces the
-> synchronization overhead of the stop-machine phase).
+> [   15.187354] awk (64) used greatest stack depth: 5816 bytes left
+> [   15.187354] awk (64) used greatest stack depth: 5816 bytes left
+> 		Welcome to [   15.327059] gzip (70) used greatest stack depth: 5576 bytes left
+> [   15.327059] gzip (70) used greatest stack depth: 5576 bytes left
+> Fedora Core
+> 		Press 'I' to enter interactive startup.
+> modprobe: FATAL: Could not load /lib/modules/3.9.0-rc6+/modules.dep: No such file or directory
 > 
-> The only downside to this whole idea of running the notifiers of a given
-> priority in parallel, is error handling - if a notifier fails, it would be
-> troublesome to rollback I guess. But if we forget that for a moment, we can
-> give this idea a try!
+> [   15.921486] BUG: unable to handle kernel [   15.921486] BUG: unable to handle kernel paging requestpaging request at 0000407a
+>  at 0000407a
+> [   15.921486] IP:[   15.921486] IP: [<41071ab0>] __lock_acquire.isra.19+0x3e0/0xb00
+>  [<41071ab0>] __lock_acquire.isra.19+0x3e0/0xb00
+> [   15.921486] *pde = 00000000 [   15.921486] *pde = 00000000 
+> 
+> [   15.921486] Oops: 0002 [#1] [   15.921486] Oops: 0002 [#1] SMP SMP 
+> 
+> [   15.921486] Modules linked in:[   15.921486] Modules linked in:
+> 
+> [   15.921486] Pid: 73, comm: hwclock Tainted: G        W    3.9.0-rc6+ #222032 System manufacturer System Product Name/A8N-E
+> [   15.921486] Pid: 73, comm: hwclock Tainted: G        W    3.9.0-rc6+ #222032 System manufacturer System Product Name/A8N-E
 
-Yes.
+Ok, so you're running a M686 32-bit kernel on an Athlon 64?
 
-> Regards,
-> Srivatsa S. Bhat
+Also, what exactly is that kernel: 3.9.0-rc6+? tip:x86/cpu is
+v3.9-rc5-11-g3019653a5758
+
+> [   15.921486] EIP: 0060:[<41071ab0>] EFLAGS: 00013002 CPU: 0
+> [   15.921486] EIP: 0060:[<41071ab0>] EFLAGS: 00013002 CPU: 0
+> [   15.921486] EIP is at __lock_acquire.isra.19+0x3e0/0xb00
+> [   15.921486] EIP is at __lock_acquire.isra.19+0x3e0/0xb00
+> [   15.921486] EAX: 7e917f94 EBX: 00003f76 ECX: 00000000 EDX: 00000000
+> [   15.921486] EAX: 7e917f94 EBX: 00003f76 ECX: 00000000 EDX: 00000000
+> [   15.921486] ESI: 00000000 EDI: 7e9469c0 EBP: 7e9cfed8 ESP: 7e9cfe88
+> [   15.921486] ESI: 00000000 EDI: 7e9469c0 EBP: 7e9cfed8 ESP: 7e9cfe88
+> [   15.921486]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> [   15.921486]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> [   15.921486] CR0: 8005003b CR2: 0000407a CR3: 01768000 CR4: 00000690
+> [   15.921486] CR0: 8005003b CR2: 0000407a CR3: 01768000 CR4: 00000690
+> [   15.921486] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+> [   15.921486] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+> [   15.921486] DR6: ffff0ff0 DR7: 00000400
+> [   15.921486] DR6: ffff0ff0 DR7: 00000400
+> [   15.921486] Process hwclock (pid: 73, ti=7e9ce000 task=7e9469c0 task.ti=7e9ce000)
+> [   15.921486] Process hwclock (pid: 73, ti=7e9ce000 task=7e9469c0 task.ti=7e9ce000)
+> [   15.921486] Stack:
+> [   15.921486] Stack:
+> [   15.921486]  00000003[   15.921486]  00000003 b4fe9c00 b4fe9c00 00000003 00000003 00000001 00000001 7e999500 7e999500 00000000 00000000 7e999d00 7e999d00 7e995340 7e995340
+> 
+> [   15.921486]  00003002[   15.921486]  00003002 7e8e8920 7e8e8920 7e9c0207 7e9c0207 80100008 80100008 7e999500 7e999500 7e9c0207 7e9c0207 7e946d24 7e946d24 7e946d20 7e946d20
+> 
+> [   15.921486]  7e917f94[   15.921486]  7e917f94 00000000 00000000 7e9469c0 7e9469c0 00003246 00003246 7e9cff00 7e9cff00 4107264d 4107264d 00000000 00000000 00000000 00000000
+> 
+> [   15.921486] Call Trace:
+> [   15.921486] Call Trace:
+> [   15.921486]  [<4107264d>] lock_acquire+0x5d/0x80
+> [   15.921486]  [<4107264d>] lock_acquire+0x5d/0x80
+> [   15.921486]  [<41109905>] ? exit_fs+0x35/0x70
+> [   15.921486]  [<41109905>] ? exit_fs+0x35/0x70
+
+Right, so I can't see how exit_fs grabbing a bunch of locks could be
+related to MATH_EMULATION. I'm not saying it can't - I just don't see it
+from the trace.
+
+> [   15.921486]  [<413deba1>] _raw_spin_lock+0x41/0x70
+> [   15.921486]  [<413deba1>] _raw_spin_lock+0x41/0x70
+> [   15.921486]  [<41109905>] ? exit_fs+0x35/0x70
+> [   15.921486]  [<41109905>] ? exit_fs+0x35/0x70
+> [   15.921486]  [<41109905>] exit_fs+0x35/0x70
+> [   15.921486]  [<41109905>] exit_fs+0x35/0x70
+> [   15.921486]  [<4102ddab>] do_exit+0x2fb/0x850
+> [   15.921486]  [<4102ddab>] do_exit+0x2fb/0x850
+> [   15.921486]  [<4102e48c>] do_group_exit+0x6c/0xb0
+> [   15.921486]  [<4102e48c>] do_group_exit+0x6c/0xb0
+> [   15.921486]  [<4102e4e3>] sys_exit_group+0x13/0x20
+> [   15.921486]  [<4102e4e3>] sys_exit_group+0x13/0x20
+> [   15.921486]  [<413e4f05>] sysenter_do_call+0x12/0x31
+> [   15.921486]  [<413e4f05>] sysenter_do_call+0x12/0x31
+> [   15.921486] Code:[   15.921486] Code: 00 00 83 83 3d 3d c0 c0 14 14 d0 d0 41 41 00 00 0f 0f 85 85 18 18 05 05 00 00 00 00 ba ba 34 34 03 03 00 00 00 00 b8 b8 cb cb e0 e0 4e 4e 41 41 e8 e8 ee ee 74 74 fb fb ff ff e9 e9 04 04 05 05 00 00 00 00 85 85 db db 0f 0f 84 84 fc fc 04 04 00 00 00 00 90 90 <3e> <3e> ff ff 83 83 04 04 01 01 00 00 00 00 a1 a1 48 48 48 48 77 77 41 41 8b 8b b7 b7 5c 5c 03 03 00 00 00 00 85 85 c0 c0 0f 0f
+> 
+> [   15.921486] EIP: [<41071ab0>] [   15.921486] EIP: [<41071ab0>] __lock_acquire.isra.19+0x3e0/0xb00__lock_acquire.isra.19+0x3e0/0xb00 SS:ESP 0068:7e9cfe88
+>  SS:ESP 0068:7e9cfe88
+> [   15.921486] CR2: 000000000000407a
+> [   15.921486] CR2: 000000000000407a
+> [   15.921486] ---[ end trace 630c66e4c0c7a4b4 ]---
+> [   15.921486] ---[ end trace 630c66e4c0c7a4b4 ]---
+
+Ok, so I can't trigger this in kvm. What happens here is that the guest
+simply reboots.
+
+Can you please checkout tip:x86/cpu to the commit before the FPU patch,
+i.e. before this one:
+
+commit c70293d0e3fef6b989cd8268027d410cf06ce384
+Author: H. Peter Anvin <hpa@zytor.com>
+Date:   Mon Apr 8 17:57:43 2013 +0200
+
+    x86: Get rid of ->hard_math and all the FPU asm fu
+
+and see whether it still triggers or not.
+
+That would give us some triage insights on what's going on.
+
+Thanks.
 
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
