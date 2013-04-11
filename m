@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936159Ab3DKUve (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:51:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4488 "EHLO
+	id S936145Ab3DKUvd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:51:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26790 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935924Ab3DKUtg (ORCPT
+	with ESMTP id S935925Ab3DKUtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 16:49:36 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=5sl8XVbb5QYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=NgEsN6Y7OP0A:10 a=eh1Yez-EAAAA:8 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=sdsLm1MIxTpCfJA8-tQA:9 a=W6U7dDoXpqQA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=hbz-8L9Mu38A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=EmLvEcgK89wA:10 a=7CQSdrXTAAAA:8 a=JfrnYn6hAAAA:8 a=KKAkSRfTAAAA:8 a=VwQbUJbxAAAA:8 a=azCPoUKV1MNu8TPkOAQA:9 a=ESTKKtUg-DoA:10 a=WwgC8nHKvroA:10 a=Zh68SRI7RUMA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202556.567267119@goodmis.org>
+Message-Id: <20130411202556.227197057@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:06 -0400
+Date: Thu, 11 Apr 2013 16:26:04 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dmitry Torokhov <dtor@vmware.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 063/171 ] USB: xhci - fix bit definitions for IMAN register
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 061/171 ] clockevents: Dont allow dummy broadcast timers
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0063-USB-xhci-fix-bit-definitions-for-IMAN-register.patch
+Content-Disposition: inline; filename=0061-clockevents-Don-t-allow-dummy-broadcast-timers.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,45 +32,44 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dmitry Torokhov <dtor@vmware.com>
+From: Mark Rutland <mark.rutland@arm.com>
 
-[ Upstream commit f8264340e694604863255cc0276491d17c402390 ]
+[ Upstream commit a7dc19b8652c862d5b7c4d2339bd3c428bd29c4a ]
 
-According to XHCI specification (5.5.2.1) the IP is bit 0 and IE is bit 1
-of IMAN register. Previously their definitions were reversed.
+Currently tick_check_broadcast_device doesn't reject clock_event_devices
+with CLOCK_EVT_FEAT_DUMMY, and may select them in preference to real
+hardware if they have a higher rating value. In this situation, the
+dummy timer is responsible for broadcasting to itself, and the core
+clockevents code may attempt to call non-existent callbacks for
+programming the dummy, eventually leading to a panic.
 
-Even though there are no ill effects being observed from the swapped
-definitions (because IMAN_IP is RW1C and in legacy PCI case we come in
-with it already set to 1 so it was clearing itself even though we were
-setting IMAN_IE instead of IMAN_IP), we should still correct the values.
+This patch makes tick_check_broadcast_device always reject dummy timers,
+preventing this problem.
 
-This patch should be backported to kernels as old as 2.6.36, that
-contain the commit 4e833c0b87a30798e67f06120cecebef6ee9644c "xhci: don't
-re-enable IE constantly".
-
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: Jon Medhurst (Tixy) <tixy@linaro.org>
 Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/host/xhci.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/time/tick-broadcast.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 53df4e7..7c75bfe 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -206,8 +206,8 @@ struct xhci_op_regs {
- /* bits 12:31 are reserved (and should be preserved on writes). */
- 
- /* IMAN - Interrupt Management Register */
--#define IMAN_IP		(1 << 1)
--#define IMAN_IE		(1 << 0)
-+#define IMAN_IE		(1 << 1)
-+#define IMAN_IP		(1 << 0)
- 
- /* USBSTS - USB status - status bitmasks */
- /* HC not running - set to 1 when run/stop bit is cleared. */
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index f113755..a13987a 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -66,7 +66,8 @@ static void tick_broadcast_start_periodic(struct clock_event_device *bc)
+  */
+ int tick_check_broadcast_device(struct clock_event_device *dev)
+ {
+-	if ((tick_broadcast_device.evtdev &&
++	if ((dev->features & CLOCK_EVT_FEAT_DUMMY) ||
++	    (tick_broadcast_device.evtdev &&
+ 	     tick_broadcast_device.evtdev->rating >= dev->rating) ||
+ 	     (dev->features & CLOCK_EVT_FEAT_C3STOP))
+ 		return 0;
 -- 
 1.7.10.4
 
