@@ -1,103 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935363Ab3DKJ0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 05:26:18 -0400
-Received: from smtp-out-204.synserver.de ([212.40.185.204]:1034 "EHLO
-	smtp-out-204.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1765434Ab3DKJZq (ORCPT
+	id S935812Ab3DKJaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 05:30:07 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:38996 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935532Ab3DKJaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 05:25:46 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 10881
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>,
-        Hong Liu <hong.liu@intel.com>
-Subject: [PATCH 1/4] misc: apds9802als: Fix suspend/resume
-Date: Thu, 11 Apr 2013 11:24:39 +0200
-Message-Id: <1365672282-10449-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	Thu, 11 Apr 2013 05:30:03 -0400
+Date: Thu, 11 Apr 2013 11:29:58 +0200
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+Cc: "Huangweidong (C)" <weidong.huang@huawei.com>,
+        kvm list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Luonengjun <luonengjun@huawei.com>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zanghongyong <zanghongyong@huawei.com>,
+        Zhanghuanzhong <zhanghuanzhong@huawei.com>, corentin.chary@gmail.com,
+        Gerd Hoffmann <kraxel@redhat.com>
+Subject: Re: [Qemu-devel] reply: reply: qemu crashed when starting vm(kvm)
+ with vnc connect
+Message-ID: <20130411092958.GF8904@stefanha-thinkpad.redhat.com>
+References: <D3E216785288A145B7BC975F83A2ED103FE154C1@szxeml556-mbx.china.huawei.com>
+ <20130405063456.GA27569@stefanha-thinkpad.redhat.com>
+ <D3E216785288A145B7BC975F83A2ED103FE16528@szxeml556-mbx.china.huawei.com>
+ <20130408105052.GC12076@stefanha-thinkpad.redhat.com>
+ <D3E216785288A145B7BC975F83A2ED103FE16749@szxeml556-mbx.china.huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D3E216785288A145B7BC975F83A2ED103FE16749@szxeml556-mbx.china.huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The apds9802als driver implements runtime pm and at the same time uses the
-legacy pm callbacks for suspend and resume. This does not work since the i2c
-core wont look at the legacy pm callbacks if a driver has the 'pm' field set.
-This patch fixes it by moving over to dev_pm_ops for suspend/resume as well.
-Since both runtime pm and suspend/resume behave the same way this can easily be
-done using the UNIVERSAL_DEV_PM_OPS macro.
+On Mon, Apr 08, 2013 at 12:27:06PM +0000, Zhanghaoyu (A) wrote:
+> On Sun, Apr 07, 2013 at 04:58:07AM +0000, Zhanghaoyu (A) wrote:
+> > >>> I start a kvm VM with vnc(using the zrle protocol) connect, sometimes qemu program crashed during starting period, received signal SIGABRT.
+> > >>> Trying about 20 times, this crash may be reproduced.
+> > >>> I guess the cause memory corruption or double free.
+> > >>
+> > >> Which version of QEMU are you running?
+> > >> 
+> > >> Please try qemu.git/master.
+> > >> 
+> > >> Stefan
+> > >
+> > >I used the QEMU download from qemu.git (http://git.qemu.org/git/qemu.git).
+> >
+> > Great, thanks!  Can you please post a backtrace?
+> > 
+> > The easiest way is:
+> > 
+> >  $ ulimit -c unlimited
+> >  $ qemu-system-x86_64 -enable-kvm -m 1024 ...
+> >  ...crash...
+> >  $ gdb -c qemu-system-x86_64.core
+> >  (gdb) bt
+> > 
+> > Depending on how your system is configured the core file might have a different filename but there should be a file name *core* the current working directory
+> after the crash.
+> > 
+> > The backtrace will make it possible to find out where the crash occurred.
+> > 
+> > Thanks,
+> > Stefan
+> 
+> backtrace from core file is shown as below:
+> 
+> Program received signal SIGABRT, Aborted.
+> 0x00007f32eda3dd95 in raise () from /lib64/libc.so.6
+> (gdb) bt
+> #0  0x00007f32eda3dd95 in raise () from /lib64/libc.so.6
+> #1  0x00007f32eda3f2ab in abort () from /lib64/libc.so.6
+> #2  0x00007f32eda77ece in __libc_message () from /lib64/libc.so.6
+> #3  0x00007f32eda7dc06 in malloc_printerr () from /lib64/libc.so.6
+> #4  0x00007f32eda7ecda in _int_free () from /lib64/libc.so.6
+> #5  0x00007f32efd3452c in free_and_trace (mem=0x7f3290000cd0) at vl.c:2880
+> #6  0x00007f32efd251a1 in buffer_free (buffer=0x7f32f0c82890) at ui/vnc.c:505
+> #7  0x00007f32efd20c56 in vnc_zrle_clear (vs=0x7f32f0c762d0)
+>     at ui/vnc-enc-zrle.c:364
+> #8  0x00007f32efd26d07 in vnc_disconnect_finish (vs=0x7f32f0c762d0)
+>     at ui/vnc.c:1050
+> #9  0x00007f32efd275c5 in vnc_client_read (opaque=0x7f32f0c762d0)
+>     at ui/vnc.c:1349
+> #10 0x00007f32efcb397c in qemu_iohandler_poll (readfds=0x7f32f074d020,
+>     writefds=0x7f32f074d0a0, xfds=0x7f32f074d120, ret=1) at iohandler.c:124
+> #11 0x00007f32efcb46e8 in main_loop_wait (nonblocking=0) at main-loop.c:417
+> #12 0x00007f32efd31159 in main_loop () at vl.c:2133
+> #13 0x00007f32efd38070 in main (argc=46, argv=0x7fff7f5df178,
+>     envp=0x7fff7f5df2f0) at vl.c:4481
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Hong Liu <hong.liu@intel.com>
----
- drivers/misc/apds9802als.c | 25 ++++---------------------
- 1 file changed, 4 insertions(+), 21 deletions(-)
+CCing Corentin and Gerd who are more familiar with the VNC code than me.
 
-diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
-index d648b08..5b5fd84 100644
---- a/drivers/misc/apds9802als.c
-+++ b/drivers/misc/apds9802als.c
-@@ -272,19 +272,8 @@ static int apds9802als_remove(struct i2c_client *client)
- }
- 
- #ifdef CONFIG_PM
--static int apds9802als_suspend(struct i2c_client *client, pm_message_t mesg)
--{
--	als_set_power_state(client, false);
--	return 0;
--}
--
--static int apds9802als_resume(struct i2c_client *client)
--{
--	als_set_default_config(client);
--	return 0;
--}
- 
--static int apds9802als_runtime_suspend(struct device *dev)
-+static int apds9802als_suspend(struct device *dev)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
- 
-@@ -292,7 +281,7 @@ static int apds9802als_runtime_suspend(struct device *dev)
- 	return 0;
- }
- 
--static int apds9802als_runtime_resume(struct device *dev)
-+static int apds9802als_resume(struct device *dev)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
- 
-@@ -300,16 +289,12 @@ static int apds9802als_runtime_resume(struct device *dev)
- 	return 0;
- }
- 
--static const struct dev_pm_ops apds9802als_pm_ops = {
--	.runtime_suspend = apds9802als_runtime_suspend,
--	.runtime_resume = apds9802als_runtime_resume,
--};
-+static UNIVERSAL_DEV_PM_OPS(apds9802als_pm_ops, apds9802als_suspend,
-+	apds9802als_resume, NULL);
- 
- #define APDS9802ALS_PM_OPS (&apds9802als_pm_ops)
- 
- #else	/* CONFIG_PM */
--#define apds9802als_suspend NULL
--#define apds9802als_resume NULL
- #define APDS9802ALS_PM_OPS NULL
- #endif	/* CONFIG_PM */
- 
-@@ -327,8 +312,6 @@ static struct i2c_driver apds9802als_driver = {
- 	},
- 	.probe = apds9802als_probe,
- 	.remove = apds9802als_remove,
--	.suspend = apds9802als_suspend,
--	.resume = apds9802als_resume,
- 	.id_table = apds9802als_id,
- };
- 
--- 
-1.8.0
-
+Stefan
