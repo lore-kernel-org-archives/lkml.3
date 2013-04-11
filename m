@@ -1,184 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934800Ab3DKUyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:54:54 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54673 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934590Ab3DKUyv (ORCPT
+	id S936181Ab3DKUzW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:55:22 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9226 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935858Ab3DKUt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:54:51 -0400
-Message-ID: <51672304.2060600@ti.com>
-Date: Thu, 11 Apr 2013 16:54:28 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-CC: <linux-pm@vger.kernel.org>, Thomas Abraham <thomas.abraham@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <amit.kachhap@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, <eduardo.valentin@ti.com>
-Subject: Re: [6/9] thermal: exynos: small cleanups to prepare for adding exynos5440
- driver
-References: <1364297642-2746-7-git-send-email-amit.daniel@samsung.com>
-In-Reply-To: <1364297642-2746-7-git-send-email-amit.daniel@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Apr 2013 16:49:27 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=-vJgqBVB9VwA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3T-csw2ANnMA:10 a=DfNHnWVPAAAA:8 a=VwQbUJbxAAAA:8 a=gvl4HP8tAAAA:8 a=SaoL0fvI8H8q8Zk47FIA:9 a=lBRciGGoxdUA:10 a=OTgC_HKJBnUA:10 a=jeBq3FmKZ4MA:10 a=EVOyJSg-uaN7qu1v:21 a=9o_MTznpoqbhDZwS:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130411202558.685952430@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 11 Apr 2013 16:26:19 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Ming Lei <ming.lei@canonical.com>
+Subject: [ 076/171 ] Bluetooth: Add support for Dell[QCA 0cf3:0036]
+References: <20130411202503.783159048@goodmis.org>
+Content-Disposition: inline; filename=0076-Bluetooth-Add-support-for-Dell-QCA-0cf3-0036.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amit,
+3.6.11.2 stable review patch.
+If anyone has any objections, please let me know.
 
-On 26-03-2013 07:33, Amit Daniel Kachhap wrote:
-> Add calib mode, trigger types and trigger_enable array. This is needed
-> for adding exynos5440 TMU driver.
->
+------------------
 
-I dont think the above are small cleanups. I d rather split this patch 
-into three, one per change and describe them properly.
+From: Ming Lei <ming.lei@canonical.com>
 
-> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->
-> ---
-> drivers/thermal/samsung/exynos4210_thermal.c |   30 ++++++++++++------------
->   include/linux/platform_data/exynos_thermal.h |   32 +++++++++++++-------------
->   2 files changed, 31 insertions(+), 31 deletions(-)
->
-> diff --git a/drivers/thermal/samsung/exynos4210_thermal.c b/drivers/thermal/samsung/exynos4210_thermal.c
-> index 09ea8c8..58d16ac 100644
-> --- a/drivers/thermal/samsung/exynos4210_thermal.c
-> +++ b/drivers/thermal/samsung/exynos4210_thermal.c
-> @@ -276,10 +276,10 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
->
->   	if (on) {
->   		con |= EXYNOS_TMU_CORE_ON;
-> -		interrupt_en = pdata->trigger_level3_en << 12 |
-> -			pdata->trigger_level2_en << 8 |
-> -			pdata->trigger_level1_en << 4 |
-> -			pdata->trigger_level0_en;
-> +		interrupt_en = pdata->trigger_enable[3] << 12 |
-> +			pdata->trigger_enable[2] << 8 |
-> +			pdata->trigger_enable[1] << 4 |
-> +			pdata->trigger_enable[0];
->   		if (pdata->threshold_falling)
->   			interrupt_en |= interrupt_en << 16;
->   	} else {
-> @@ -394,10 +394,10 @@ static struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
->   	.trigger_levels[0] = 5,
->   	.trigger_levels[1] = 20,
->   	.trigger_levels[2] = 30,
-> -	.trigger_level0_en = 1,
-> -	.trigger_level1_en = 1,
-> -	.trigger_level2_en = 1,
-> -	.trigger_level3_en = 0,
-> +	.trigger_enable[0] = 1,
-> +	.trigger_enable[1] = 1,
-> +	.trigger_enable[2] = 1,
-> +	.trigger_enable[3] = 0,
->   	.gain = 15,
->   	.reference_voltage = 7,
->   	.cal_type = TYPE_ONE_POINT_TRIMMING,
-> @@ -423,10 +423,10 @@ static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
->   	.trigger_levels[0] = 85,
->   	.trigger_levels[1] = 103,
->   	.trigger_levels[2] = 110,
-> -	.trigger_level0_en = 1,
-> -	.trigger_level1_en = 1,
-> -	.trigger_level2_en = 1,
-> -	.trigger_level3_en = 0,
-> +	.trigger_enable[0] = 1,
-> +	.trigger_enable[1] = 1,
-> +	.trigger_enable[2] = 1,
-> +	.trigger_enable[3] = 0,
->   	.gain = 8,
->   	.reference_voltage = 16,
->   	.noise_cancel_mode = 4,
-> @@ -566,9 +566,9 @@ static int exynos_tmu_probe(struct platform_device *pdev)
->
->   	/* Register the sensor with thermal management interface */
->   	(&exynos_sensor_conf)->driver_data = data;
-> -	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_level0_en +
-> -			pdata->trigger_level1_en + pdata->trigger_level2_en +
-> -			pdata->trigger_level3_en;
-> +	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_enable[0] +
-> +			pdata->trigger_enable[1] + pdata->trigger_enable[2] +
-> +			pdata->trigger_enable[3];
->
->   	for (i = 0; i < exynos_sensor_conf.trip_data.trip_count; i++)
->   		exynos_sensor_conf.trip_data.trip_val[i] =
-> diff --git a/include/linux/platform_data/exynos_thermal.h b/include/linux/platform_data/exynos_thermal.h
-> index 893b758..1090f48 100644
-> --- a/include/linux/platform_data/exynos_thermal.h
-> +++ b/include/linux/platform_data/exynos_thermal.h
-> @@ -31,6 +31,17 @@ enum calibration_type {
->   	TYPE_NONE,
->   };
->
-> +enum calibration_mode {
-> +	SW_MODE,
-> +	HW_MODE,
-> +};
-> +
-> +enum trigger_type {
-> +	ACTIVE,
-> +	CRITICAL,
-> +	HW_TRIP,
-> +};
-> +
->   enum soc_type {
->   	SOC_ARCH_EXYNOS4210 = 1,
->   	SOC_ARCH_EXYNOS,
-> @@ -71,18 +82,9 @@ struct freq_clip_table {
->    *	3: temperature for trigger_level3 interrupt
->    *	   condition for trigger_level3 interrupt:
->    *		current temperature > threshold + trigger_levels[3]
-> - * @trigger_level0_en:
-> + * @trigger_enable[]: array to denote which trigger levels are enabled.
->    *	1 = enable trigger_level0 interrupt,
->    *	0 = disable trigger_level0 interrupt
-> - * @trigger_level1_en:
-> - *	1 = enable trigger_level1 interrupt,
-> - *	0 = disable trigger_level1 interrupt
-> - * @trigger_level2_en:
-> - *	1 = enable trigger_level2 interrupt,
-> - *	0 = disable trigger_level2 interrupt
-> - * @trigger_level3_en:
-> - *	1 = enable trigger_level3 interrupt,
-> - *	0 = disable trigger_level3 interrupt
->    * @gain: gain of amplifier in the positive-TC generator block
->    *	0 <= gain <= 15
->    * @reference_voltage: reference voltage of amplifier
-> @@ -93,6 +95,7 @@ struct freq_clip_table {
->    * @type: determines the type of SOC
->    * @efuse_value: platform defined fuse value
->    * @cal_type: calibration type for temperature
-> + * @cal_mode: calibration mode for temperature
+[ Upstream commit d66629c1325399cf080ba8b2fb086c10e5439cdd ]
 
-How about trigger_type?
->    * @freq_clip_table: Table representing frequency reduction percentage.
->    * @freq_tab_count: Count of the above table as frequency reduction may
->    *	applicable to only some of the trigger levels.
-> @@ -103,18 +106,15 @@ struct exynos_tmu_platform_data {
->   	u8 threshold;
->   	u8 threshold_falling;
->   	u8 trigger_levels[MAX_TRIP];
-> -	bool trigger_level0_en;
-> -	bool trigger_level1_en;
-> -	bool trigger_level2_en;
-> -	bool trigger_level3_en;
-> -	bool trigger_level4_en;
-> -
-> +	enum trigger_type trigger_type[MAX_TRIP];
-> +	bool trigger_enable[MAX_TRIP];
->   	u8 gain;
->   	u8 reference_voltage;
->   	u8 noise_cancel_mode;
->   	u32 efuse_value;
->
->   	enum calibration_type cal_type;
-> +	enum calibration_mode cal_mode;
->   	enum soc_type type;
->   	struct freq_clip_table freq_tab[MAX_TRIP];
->   	unsigned int freq_tab_count;
->
+Add support for the AR9462 chip
+
+T:  Bus=03 Lev=01 Prnt=01 Port=01 Cnt=01 Dev#=  3 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0cf3 ProdID=0036 Rev= 0.02
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+A:  FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+
+Cc: <stable@vger.kernel.org>
+Cc: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/bluetooth/ath3k.c |    2 ++
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 3 insertions(+)
+
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index fc2de55..3859b23 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -72,6 +72,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x03F0, 0x311D) },
+ 
+ 	/* Atheros AR3012 with sflash firmware*/
++	{ USB_DEVICE(0x0CF3, 0x0036) },
+ 	{ USB_DEVICE(0x0CF3, 0x3004) },
+ 	{ USB_DEVICE(0x0CF3, 0x311D) },
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
+@@ -99,6 +100,7 @@ MODULE_DEVICE_TABLE(usb, ath3k_table);
+ static struct usb_device_id ath3k_blist_tbl[] = {
+ 
+ 	/* Atheros AR3012 with sflash firmware*/
++	{ USB_DEVICE(0x0CF3, 0x0036), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 654e248..57474b1 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -128,6 +128,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+ 
+ 	/* Atheros 3012 with sflash firmware */
++	{ USB_DEVICE(0x0cf3, 0x0036), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x3004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+-- 
+1.7.10.4
+
 
