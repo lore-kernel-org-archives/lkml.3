@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161037Ab3DKMWD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 08:22:03 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41013 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934936Ab3DKMWB (ORCPT
+	id S1161582Ab3DKM3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 08:29:24 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:33526 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934821Ab3DKM3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 08:22:01 -0400
-Date: Thu, 11 Apr 2013 05:20:35 -0700
-From: tip-bot for Andrea Arcangeli <tipbot@zytor.com>
-Message-ID: <tip-f76cfa3c2496c462b5bc01bd0c9340c2715b73ca@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        apw@canonical.com, bp@alien8.de, stefan.bader@canonical.com,
-        aarcange@redhat.com, mgorman@suse.de, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        apw@canonical.com, stefan.bader@canonical.com, bp@alien8.de,
-        aarcange@redhat.com, mgorman@suse.de, tglx@linutronix.de
-In-Reply-To: <1365600505-19314-1-git-send-email-aarcange@redhat.com>
+	Thu, 11 Apr 2013 08:29:23 -0400
+Date: Thu, 11 Apr 2013 14:29:18 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: tip-bot for Andrea Arcangeli <tipbot@zytor.com>
+Cc: linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, apw@canonical.com, bp@alien8.de,
+        stefan.bader@canonical.com, aarcange@redhat.com, mgorman@suse.de,
+        tglx@linutronix.de
+Subject: Re: [tip:x86/urgent] x86/mm/cpa: Convert noop to functional fix
+Message-ID: <20130411122918.GA19491@gmail.com>
 References: <1365600505-19314-1-git-send-email-aarcange@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/mm/cpa: Convert noop to functional fix
-Git-Commit-ID: f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+ <tip-f76cfa3c2496c462b5bc01bd0c9340c2715b73ca@git.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 11 Apr 2013 05:20:41 -0700 (PDT)
+In-Reply-To: <tip-f76cfa3c2496c462b5bc01bd0c9340c2715b73ca@git.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
-Gitweb:     http://git.kernel.org/tip/f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
-Author:     Andrea Arcangeli <aarcange@redhat.com>
-AuthorDate: Wed, 10 Apr 2013 15:28:25 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 11 Apr 2013 10:34:42 +0200
 
-x86/mm/cpa: Convert noop to functional fix
 
-Commit:
+* tip-bot for Andrea Arcangeli <tipbot@zytor.com> wrote:
 
-  a8aed3e0752b ("x86/mm/pageattr: Prevent PSE and GLOABL leftovers to confuse pmd/pte_present and pmd_huge")
+> Commit-ID:  f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
+> Gitweb:     http://git.kernel.org/tip/f76cfa3c2496c462b5bc01bd0c9340c2715b73ca
+> Author:     Andrea Arcangeli <aarcange@redhat.com>
+> AuthorDate: Wed, 10 Apr 2013 15:28:25 +0200
+> Committer:  Ingo Molnar <mingo@kernel.org>
+> CommitDate: Thu, 11 Apr 2013 10:34:42 +0200
+> 
+> x86/mm/cpa: Convert noop to functional fix
 
-introduced a valid fix but one location that didn't trigger the bug that
-lead to finding those (small) problems, wasn't updated using the
-right variable.
+I think it's this commit that causes the following cpa-selftest failure:
 
-The wrong variable was also initialized for no good reason, that
-may have been the source of the confusion. Remove the noop
-initialization accordingly.
+CPA self-test:
+ffff880038000000 level 2 but not PSE 8000000038000062
+ffff880038200000 level 2 but not PSE 8000000038200062
+ffff880038400000 level 2 but not PSE 8000000038400062
+ffff880038600000 level 2 but not PSE 8000000038600062
+ffff880038800000 level 2 but not PSE 8000000038800062
+ffff880038a00000 level 2 but not PSE 8000000038a00062
+ffff880038c00000 level 2 but not PSE 8000000038c00062
+ffff880038e00000 level 2 but not PSE 8000000038e00062
 
-Commit a8aed3e0752b also erroneously removed one canon_pgprot pass meant
-to clear pmd bitflags not supported in hardware by older CPUs, that
-automatically gets corrected by this patch too by applying it to the right
-variable in the new location.
+...
 
-Reported-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Acked-by: Borislav Petkov <bp@alien8.de>
-Cc: Andy Whitcroft <apw@canonical.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Link: http://lkml.kernel.org/r/1365600505-19314-1-git-send-email-aarcange@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/mm/pageattr.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ 4k 134128 large 250 gb 0 x 1[ffff88000009a000-ffff88000009a000] miss 0
+------------[ cut here ]------------
+WARNING: at arch/x86/mm/pageattr-test.c:226 pageattr_test+0x3e1/0x410()
+NOT PASSED. Please report.
+Pid: 32, comm: pageattr-test Not tainted 3.9.0-rc6+ #222036
+Call Trace:
+ [<ffffffff8104fdd3>] warn_slowpath_common+0x62/0x7b
+ [<ffffffff8104fe5a>] warn_slowpath_fmt+0x46/0x48
+ [<ffffffff8102b3d9>] ? lookup_address+0xad/0x127
+ [<ffffffff8102c766>] pageattr_test+0x3e1/0x410
+ [<ffffffff8102c795>] ? pageattr_test+0x410/0x410
+ [<ffffffff8102c7af>] do_pageattr_test+0x1a/0x3d
+ [<ffffffff81070a8d>] kthread+0xa2/0xaa
+ [<ffffffff810709eb>] ? __kthread_parkme+0x65/0x65
+ [<ffffffff81aad73c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff810709eb>] ? __kthread_parkme+0x65/0x65
+---[ end trace 582fec3a45bb42b7 ]---
+device: 'vcs2': device_add
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index 091934e..7896f71 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -467,7 +467,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * We are safe now. Check whether the new pgprot is the same:
- 	 */
- 	old_pte = *kpte;
--	old_prot = new_prot = req_prot = pte_pgprot(old_pte);
-+	old_prot = req_prot = pte_pgprot(old_pte);
- 
- 	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
- 	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
-@@ -478,12 +478,12 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * a non present pmd. The canon_pgprot will clear _PAGE_GLOBAL
- 	 * for the ancient hardware that doesn't support it.
- 	 */
--	if (pgprot_val(new_prot) & _PAGE_PRESENT)
--		pgprot_val(new_prot) |= _PAGE_PSE | _PAGE_GLOBAL;
-+	if (pgprot_val(req_prot) & _PAGE_PRESENT)
-+		pgprot_val(req_prot) |= _PAGE_PSE | _PAGE_GLOBAL;
- 	else
--		pgprot_val(new_prot) &= ~(_PAGE_PSE | _PAGE_GLOBAL);
-+		pgprot_val(req_prot) &= ~(_PAGE_PSE | _PAGE_GLOBAL);
- 
--	new_prot = canon_pgprot(new_prot);
-+	req_prot = canon_pgprot(req_prot);
- 
- 	/*
- 	 * old_pte points to the large page base address. So we need
+Thanks,
+
+	Ingo
