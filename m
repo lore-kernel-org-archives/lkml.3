@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161349Ab3DKVZJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:25:09 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2760 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935369Ab3DKUsr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:48:47 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=0ewMWPA1dsgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=4zo_NAg6AFcA:10 a=pGLkceISAAAA:8 a=J1Y8HTJGAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=MSl-tDqOz04A:10 a=4N9Db7Z2_RYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202612.980288644@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:27:46 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Hong Zhiguo <honkiko@gmail.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 163/171 ] ipv6: fix bad free of addrconf_init_net
-References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0163-ipv6-fix-bad-free-of-addrconf_init_net.patch
+	id S936232Ab3DKV0S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:26:18 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:56515 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759696Ab3DKV0P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 17:26:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        linaro-kernel@lists.linaro.org, patches@linaro.org
+Subject: Re: [PATCH] cpufreq: Call __cpufreq_governor() with correct policy->cpus mask
+Date: Thu, 11 Apr 2013 23:34:03 +0200
+Message-ID: <1706828.TqVJcHNWlq@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <e3001264b4d7328b41130857adbb51e93d224c26.1365667475.git.viresh.kumar@linaro.org>
+References: <e3001264b4d7328b41130857adbb51e93d224c26.1365667475.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.2 stable review patch.
-If anyone has any objections, please let me know.
+On Thursday, April 11, 2013 01:34:53 PM Viresh Kumar wrote:
+> __cpufreq_governor() must be called with correct policy->cpus mask. In
+> __cpufreq_remove_dev() we initially clear policy->cpus with cpumask_clear_cpu()
+> and then call __cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT). In case
+> governor is doing some per-cpu stuff in EXIT callback, this can create uncertain
+> behavior.
+> 
+> Generic governors in drivers/cpufreq/ doesn't do any per-cpu stuff in EXIT
+> callback and so we don't face any issues currently. But its better to keep the
+> code clean, so we don't face any issues in future.
+> 
+> Now, we call cpumask_clear_cpu() only when multiple cpus are managed by policy.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-------------------
+Applied.
 
-From: Hong Zhiguo <honkiko@gmail.com>
+Thanks,
+Rafael
 
-[ Upstream commit a79ca223e029aa4f09abb337accf1812c900a800 ]
 
-Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- net/ipv6/addrconf.c |   26 ++++++++++----------------
- 1 file changed, 10 insertions(+), 16 deletions(-)
-
-diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
-index fd82a30..ec627b5 100644
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -4653,26 +4653,20 @@ static void addrconf_sysctl_unregister(struct inet6_dev *idev)
- 
- static int __net_init addrconf_init_net(struct net *net)
- {
--	int err;
-+	int err = -ENOMEM;
- 	struct ipv6_devconf *all, *dflt;
- 
--	err = -ENOMEM;
--	all = &ipv6_devconf;
--	dflt = &ipv6_devconf_dflt;
-+	all = kmemdup(&ipv6_devconf, sizeof(ipv6_devconf), GFP_KERNEL);
-+	if (all == NULL)
-+		goto err_alloc_all;
- 
--	if (!net_eq(net, &init_net)) {
--		all = kmemdup(all, sizeof(ipv6_devconf), GFP_KERNEL);
--		if (all == NULL)
--			goto err_alloc_all;
-+	dflt = kmemdup(&ipv6_devconf_dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
-+	if (dflt == NULL)
-+		goto err_alloc_dflt;
- 
--		dflt = kmemdup(dflt, sizeof(ipv6_devconf_dflt), GFP_KERNEL);
--		if (dflt == NULL)
--			goto err_alloc_dflt;
--	} else {
--		/* these will be inherited by all namespaces */
--		dflt->autoconf = ipv6_defaults.autoconf;
--		dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
--	}
-+	/* these will be inherited by all namespaces */
-+	dflt->autoconf = ipv6_defaults.autoconf;
-+	dflt->disable_ipv6 = ipv6_defaults.disable_ipv6;
- 
- 	net->ipv6.devconf_all = all;
- 	net->ipv6.devconf_dflt = dflt;
+> ---
+>  drivers/cpufreq/cpufreq.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index fd97a62..3564947 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1105,7 +1105,9 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
+>  
+>  	WARN_ON(lock_policy_rwsem_write(cpu));
+>  	cpus = cpumask_weight(data->cpus);
+> -	cpumask_clear_cpu(cpu, data->cpus);
+> +
+> +	if (cpus > 1)
+> +		cpumask_clear_cpu(cpu, data->cpus);
+>  	unlock_policy_rwsem_write(cpu);
+>  
+>  	if (cpu != data->cpu) {
+> 
 -- 
-1.7.10.4
-
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
