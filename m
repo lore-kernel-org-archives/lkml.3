@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab3DKLRw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 07:17:52 -0400
-Received: from relay.parallels.com ([195.214.232.42]:53144 "EHLO
+	id S1752694Ab3DKLS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 07:18:58 -0400
+Received: from relay.parallels.com ([195.214.232.42]:53440 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab3DKLRu (ORCPT
+	with ESMTP id S1750812Ab3DKLS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 07:17:50 -0400
-Message-ID: <51669BEA.4060808@parallels.com>
-Date: Thu, 11 Apr 2013 15:18:02 +0400
+	Thu, 11 Apr 2013 07:18:57 -0400
+Message-ID: <51669C31.2080705@parallels.com>
+Date: Thu, 11 Apr 2013 15:19:13 +0400
 From: "Maxim V. Patlasov" <mpatlasov@parallels.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
 To: "miklos@szeredi.hu" <miklos@szeredi.hu>
-CC: <dev@parallels.com>, <xemul@parallels.com>,
-        <fuse-devel@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
-        <jbottomley@parallels.com>, <viro@zeniv.linux.org.uk>,
-        <linux-fsdevel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [fuse-devel] [PATCH v4 00/14] fuse: An attempt to implement a
- write-back cache policy
-References: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
-In-Reply-To: <20130401103749.19027.89833.stgit@maximpc.sw.ru>
+CC: <fuse-devel@lists.sourceforge.net>, <dev@parallels.com>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        <xemul@parallels.com>
+Subject: Re: [fuse-devel] [PATCH 0/4] fuse: fix accounting background requests
+ (v2)
+References: <20130321140047.4051.6701.stgit@maximpc.sw.ru>
+In-Reply-To: <20130321140047.4051.6701.stgit@maximpc.sw.ru>
 Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 8bit
 X-Originating-IP: [10.30.17.2]
@@ -35,113 +34,64 @@ Any feedback would be highly appreciated.
 Thanks,
 Maxim
 
-04/01/2013 02:40 PM, Maxim V. Patlasov пишет:
+03/21/2013 06:01 PM, Maxim V. Patlasov пишет:
 > Hi,
 >
-> This is the fourth iteration of Pavel Emelyanov's patch-set implementing
-> write-back policy for FUSE page cache. Initial patch-set description was
-> the following:
+> The feature was added long time ago (commit 08a53cdc...) with the comment:
 >
-> One of the problems with the existing FUSE implementation is that it uses the
-> write-through cache policy which results in performance problems on certain
-> workloads. E.g. when copying a big file into a FUSE file the cp pushes every
-> 128k to the userspace synchronously. This becomes a problem when the userspace
-> back-end uses networking for storing the data.
+>> A task may have at most one synchronous request allocated.  So these requests
+>> need not be otherwise limited.
+>>
+>> However the number of background requests (release, forget, asynchronous
+>> reads, interrupted requests) can grow indefinitely.  This can be used by a
+>> malicous user to cause FUSE to allocate arbitrary amounts of unswappable
+>> kernel memory, denying service.
+>>
+>> For this reason add a limit for the number of background requests, and block
+>> allocations of new requests until the number goes bellow the limit.
+> However, the implementation suffers from the following problems:
 >
-> A good solution of this is switching the FUSE page cache into a write-back policy.
-> With this file data are pushed to the userspace with big chunks (depending on the
-> dirty memory limits, but this is much more than 128k) which lets the FUSE daemons
-> handle the size updates in a more efficient manner.
+> 1. Latency of synchronous requests. As soon as fc->num_background hits the
+> limit, all allocations are blocked: both for synchronous and background
+> requests. This is unnecessary - as the comment cited above states, synchronous
+> requests need not be limited (by fuse). Moreover, sometimes it's very
+> inconvenient. For example, a dozen of tasks aggressively writing to mmap()-ed
+> area may block 'ls' for long while (>1min in my experiments).
 >
-> The writeback feature is per-connection and is explicitly configurable at the
-> init stage (is it worth making it CAP_SOMETHING protected?) When the writeback is
-> turned ON:
+> 2. Thundering herd problem. When fc->num_background falls below the limit,
+> request_end() calls wake_up_all(&fc->blocked_waitq). This wakes up all waiters
+> while it's not impossible that the first waiter getting new request will
+> immediately put it to background increasing fc->num_background again.
+> (experimenting with mmap()-ed writes I observed 2x slowdown as compared with
+> fuse after applying this patch-set)
 >
-> * still copy writeback pages to temporary buffer when sending a writeback request
->    and finish the page writeback immediately
->
-> * make kernel maintain the inode's i_size to avoid frequent i_size synchronization
->    with the user space
->
-> * take NR_WRITEBACK_TEMP into account when makeing balance_dirty_pages decision.
->    This protects us from having too many dirty pages on FUSE
->
-> The provided patchset survives the fsx test. Performance measurements are not yet
-> all finished, but the mentioned copying of a huge file becomes noticeably faster
-> even on machines with few RAM and doesn't make the system stuck (the dirty pages
-> balancer does its work OK). Applies on top of v3.5-rc4.
->
-> We are currently exploring this with our own distributed storage implementation
-> which is heavily oriented on storing big blobs of data with extremely rare meta-data
-> updates (virtual machines' and containers' disk images). With the existing cache
-> policy a typical usage scenario -- copying a big VM disk into a cloud -- takes way
-> too much time to proceed, much longer than if it was simply scp-ed over the same
-> network. The write-back policy (as I mentioned) noticeably improves this scenario.
-> Kirill (in Cc) can share more details about the performance and the storage concepts
-> details if required.
+> The patch-set re-works fuse_get_req (and its callers) to throttle only requests
+> intended for background processing. Having this done, it becomes possible to
+> use exclusive wakeups in chained manner: request_end() wakes up a waiter,
+> the waiter allocates new request and submits it for background processing,
+> the processing ends in request_end() where another wakeup happens an so on.
 >
 > Changed in v2:
->   - numerous bugfixes:
->     - fuse_write_begin and fuse_writepages_fill and fuse_writepage_locked must wait
->       on page writeback because page writeback can extend beyond the lifetime of
->       the page-cache page
->     - fuse_send_writepages can end_page_writeback on original page only after adding
->       request to fi->writepages list; otherwise another writeback may happen inside
->       the gap between end_page_writeback and adding to the list
->     - fuse_direct_io must wait on page writeback; otherwise data corruption is possible
->       due to reordering requests
->     - fuse_flush must flush dirty memory and wait for all writeback on given inode
->       before sending FUSE_FLUSH to userspace; otherwise FUSE_FLUSH is not reliable
->     - fuse_file_fallocate must hold i_mutex around FUSE_FALLOCATE and i_size update;
->       otherwise a race with a writer extending i_size is possible
->     - fix handling errors in fuse_writepages and fuse_send_writepages
->   - handle i_mtime intelligently if writeback cache is on (see patch #7 (update i_mtime
->     on buffered writes) for details.
->   - put enabling writeback cache under fusermount control; (see mount option
->     'allow_wbcache' introduced by patch #13 (turn writeback cache on))
->   - rebased on v3.7-rc5
->
-> Changed in v3:
->   - rebased on for-next branch of the fuse tree (fb05f41f5f96f7423c53da4d87913fb44fd0565d)
->
-> Changed in v4:
->   - rebased on for-next branch of the fuse tree (634734b63ac39e137a1c623ba74f3e062b6577db)
->   - fixed fuse_fillattr() for non-writeback_chace case
->   - added comments explaining why we cannot trust size from server
->   - rewrote patch handling i_mtime; it's titled Trust-kernel-i_mtime-only now
->   - simplified patch titled Flush-files-on-wb-close
->   - eliminated code duplications from fuse_readpage() ans fuse_prepare_write()
->   - added comment about "disk full" errors to fuse_write_begin()
+>   - rebased on for-next branch of the fuse tree
+>   - fixed race when processing request begins before init-reply came
 >
 > Thanks,
 > Maxim
 >
 > ---
 >
-> Maxim V. Patlasov (14):
->        fuse: Linking file to inode helper
->        fuse: Getting file for writeback helper
->        fuse: Prepare to handle short reads
->        fuse: Prepare to handle multiple pages in writeback
->        fuse: Connection bit for enabling writeback
->        fuse: Trust kernel i_size only - v3
->        fuse: Trust kernel i_mtime only
->        fuse: Flush files on wb close
->        fuse: Implement writepages and write_begin/write_end callbacks - v3
->        fuse: fuse_writepage_locked() should wait on writeback
->        fuse: fuse_flush() should wait on writeback
->        fuse: Fix O_DIRECT operations vs cached writeback misorder - v2
->        fuse: Turn writeback cache on
->        mm: Account for WRITEBACK_TEMP in balance_dirty_pages
+> Maxim V. Patlasov (4):
+>        fuse: make request allocations for background processing explicit
+>        fuse: add flag fc->uninitialized
+>        fuse: skip blocking on allocations of synchronous requests
+>        fuse: implement exclusive wakeup for blocked_waitq
 >
 >
->   fs/fuse/cuse.c            |    5
->   fs/fuse/dir.c             |  127 +++++++++-
->   fs/fuse/file.c            |  575 ++++++++++++++++++++++++++++++++++++++++-----
->   fs/fuse/fuse_i.h          |   26 ++
->   fs/fuse/inode.c           |   37 +++
->   include/uapi/linux/fuse.h |    2
->   mm/page-writeback.c       |    3
->   7 files changed, 689 insertions(+), 86 deletions(-)
+>   fs/fuse/cuse.c   |    3 ++
+>   fs/fuse/dev.c    |   69 +++++++++++++++++++++++++++++++++++++++++++-----------
+>   fs/fuse/file.c   |    6 +++--
+>   fs/fuse/fuse_i.h |    8 ++++++
+>   fs/fuse/inode.c  |    4 +++
+>   5 files changed, 73 insertions(+), 17 deletions(-)
 >
 
