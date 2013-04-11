@@ -1,96 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934008Ab3DKNpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 09:45:35 -0400
-Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:5971
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752513Ab3DKNpe (ORCPT
+	id S935098Ab3DKNqR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 09:46:17 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:59810
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932200Ab3DKNqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 09:45:34 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Zhenhua Luo <zhenhua.luo@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Zhenhua Luo <zhenhua.luo@freescale.com>
-Subject: [PATCH] Enable CONFIG_DEVTMPFS_MOUNT to ensure /dev can be mounted correctly
-Date: Thu, 11 Apr 2013 21:48:17 +0800
-Message-ID: <1365688097-5174-1-git-send-email-zhenhua.luo@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	Thu, 11 Apr 2013 09:46:16 -0400
+Message-ID: <1365687946.8824.3.camel@laptop>
+Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling
+ overflow
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
+        fweisbec@gmail.com, rostedt@goodmis.org, akpm@linux-foundation.org,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 11 Apr 2013 15:45:46 +0200
+In-Reply-To: <20130326140147.GB2029@redhat.com>
+References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
+	 <20130326140147.GB2029@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using recent udev, the /dev node mount requires CONFIG_DEVTMPFS_MOUNT
-is enabled in Kernel. The patch enables the option in defconfig of Freescale
-QorIQ targets.
+On Tue, 2013-03-26 at 15:01 +0100, Stanislaw Gruszka wrote:
+> Thoughts?
 
-Changed defconfig list:
-   arch/powerpc/configs/85xx/p1023rds_defconfig
-   arch/powerpc/configs/corenet32_smp_defconfig
-   arch/powerpc/configs/corenet64_smp_defconfig
-   arch/powerpc/configs/mpc85xx_smp_defconfig
+Would something like the below work?
 
-Signed-off-by: Zhenhua Luo <zhenhua.luo@freescale.com>
+(warning: it's never even been near a compiler)
+
 ---
- arch/powerpc/configs/85xx/p1023rds_defconfig |    1 +
- arch/powerpc/configs/corenet32_smp_defconfig |    1 +
- arch/powerpc/configs/corenet64_smp_defconfig |    1 +
- arch/powerpc/configs/mpc85xx_smp_defconfig   |    1 +
- 4 files changed, 4 insertions(+), 0 deletions(-)
+ kernel/sched/cputime.c | 78 +++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 55 insertions(+), 23 deletions(-)
 
-diff --git a/arch/powerpc/configs/85xx/p1023rds_defconfig b/arch/powerpc/configs/85xx/p1023rds_defconfig
-index b80bcc6..18badca 100644
---- a/arch/powerpc/configs/85xx/p1023rds_defconfig
-+++ b/arch/powerpc/configs/85xx/p1023rds_defconfig
-@@ -63,6 +63,7 @@ CONFIG_IPV6=y
- CONFIG_IP_SCTP=m
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
- CONFIG_PROC_DEVICETREE=y
- CONFIG_BLK_DEV_LOOP=y
- CONFIG_BLK_DEV_RAM=y
-diff --git a/arch/powerpc/configs/corenet32_smp_defconfig b/arch/powerpc/configs/corenet32_smp_defconfig
-index 60027c2..3dfab4c 100644
---- a/arch/powerpc/configs/corenet32_smp_defconfig
-+++ b/arch/powerpc/configs/corenet32_smp_defconfig
-@@ -70,6 +70,7 @@ CONFIG_IPV6=y
- CONFIG_IP_SCTP=m
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
- CONFIG_MTD=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
-diff --git a/arch/powerpc/configs/corenet64_smp_defconfig b/arch/powerpc/configs/corenet64_smp_defconfig
-index 3d139fa..914dd3f 100644
---- a/arch/powerpc/configs/corenet64_smp_defconfig
-+++ b/arch/powerpc/configs/corenet64_smp_defconfig
-@@ -57,6 +57,7 @@ CONFIG_IPV6=y
- CONFIG_IP_SCTP=m
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
- CONFIG_MTD=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
-diff --git a/arch/powerpc/configs/mpc85xx_smp_defconfig b/arch/powerpc/configs/mpc85xx_smp_defconfig
-index 8d00ea5b..d2d5135 100644
---- a/arch/powerpc/configs/mpc85xx_smp_defconfig
-+++ b/arch/powerpc/configs/mpc85xx_smp_defconfig
-@@ -80,6 +80,7 @@ CONFIG_IPV6=y
- CONFIG_IP_SCTP=m
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
- CONFIG_MTD=y
- CONFIG_MTD_CMDLINE_PARTS=y
- CONFIG_MTD_CHAR=y
--- 
-1.7.5.4
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 699d597..465f6db 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -522,35 +522,67 @@ void account_idle_ticks(unsigned long ticks)
+ }
+ 
+ /*
+- * Perform (stime * rtime) / total with reduced chances
+- * of multiplication overflows by using smaller factors
+- * like quotient and remainders of divisions between
+- * rtime and total.
++ * Perform: (stime * rtime) / total
+  */
+ static cputime_t scale_stime(u64 stime, u64 rtime, u64 total)
+ {
+-	u64 rem, res, scaled;
++	int stime_fls = fls64(stime);
++	int total_fls = fls64(total);
++	int rtime_fls = fls64(rtime);
++	int shift, res_fls;
++	u32 rtime_hi = rtime >> 32, rtime_lo = rtime;
++	u64 hi, lo, t;
+ 
+-	if (rtime >= total) {
+-		/*
+-		 * Scale up to rtime / total then add
+-		 * the remainder scaled to stime / total.
+-		 */
+-		res = div64_u64_rem(rtime, total, &rem);
+-		scaled = stime * res;
+-		scaled += div64_u64(stime * rem, total);
+-	} else {
+-		/*
+-		 * Same in reverse: scale down to total / rtime
+-		 * then substract that result scaled to
+-		 * to the remaining part.
+-		 */
+-		res = div64_u64_rem(total, rtime, &rem);
+-		scaled = div64_u64(stime, res);
+-		scaled -= div64_u64(scaled * rem, total);
++	/*
++	 * Since the stime:utime ratio is already an approximation through
++	 * the sampling, reducing its resolution isn't too big a deal.
++	 * And since total = stime+utime; the total_fls will be the biggest
++	 * of the two;
++	 */
++	if (total_fls > 32) {
++		shift = total_fls - 32; /* a = 2^shift */
++		stime >>= shift;
++		total >>= shift;
++		stime_fls -= shift;
++		total_fls -= shift;
++	}
++
++	/*
++	 * Since we limited stime to 32bits the multiplication reduced to 96bit.
++	 *   stime * rtime = stime * (rl + rh * 2^32) = 
++	 *                   stime * rl + stime * rh * 2^32
++	 */
++	lo = stime * rtime_lo;
++	hi = stime * rtime_hi;
++	t = hi << 32;
++	lo += t;
++	if (lo < t) /* overflow */
++		hi += 0x100000000L;
++	hi >>= 32;
++	
++	/*
++	 * Pick the 64 most significant bits for division into @lo.
++	 * 
++	 * NOTE: res_fls is an approximation (upper-bound) do we want to
++	 *       properly calculate?
++	 */
++	shift = 0;
++	res_fls = stime_fls + rtime_fls;
++	if (res_fls > 64) {
++		shift = res_fls - 64; /* b = 2^shift */
++		lo >>= shift;
++		hi <<= 64 - shift;
++		lo |= hi;
+ 	}
+ 
+-	return (__force cputime_t) scaled;
++	/*
++	 * So here we do:
++	 *
++	 *    ((stime / a) * rtime / b)
++	 *    --------------------------- / b
++	 *           (total / a)
++	 */
++	return div_u64(lo, total) >> shift;
+ }
+ 
+ /*
 
 
