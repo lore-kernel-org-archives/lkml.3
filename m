@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab3DKT6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 15:58:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37343 "EHLO mx2.suse.de"
+	id S1754236Ab3DKUBJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:01:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37358 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752461Ab3DKT6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 15:58:05 -0400
+	id S1753523Ab3DKT6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 15:58:08 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
@@ -15,183 +15,131 @@ Cc: Jiri Slaby <jslaby@suse.cz>, Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
         Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 0/10] Reduce system disruption due to kswapd V3
-Date: Thu, 11 Apr 2013 20:57:48 +0100
-Message-Id: <1365710278-6807-1-git-send-email-mgorman@suse.de>
+Subject: [PATCH 02/10] mm: vmscan: Obey proportional scanning requirements for kswapd
+Date: Thu, 11 Apr 2013 20:57:50 +0100
+Message-Id: <1365710278-6807-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365710278-6807-1-git-send-email-mgorman@suse.de>
+References: <1365710278-6807-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Big change is again related to proportional reclaim.
+Simplistically, the anon and file LRU lists are scanned proportionally
+depending on the value of vm.swappiness although there are other factors
+taken into account by get_scan_count().  The patch "mm: vmscan: Limit
+the number of pages kswapd reclaims" limits the number of pages kswapd
+reclaims but it breaks this proportional scanning and may evenly shrink
+anon/file LRUs regardless of vm.swappiness.
 
-Changelog since V2
-o Preserve ratio properly for proportional scanning		(kamezawa)
+This patch preserves the proportional scanning and reclaim. It does mean
+that kswapd will reclaim more than requested but the number of pages will
+be related to the high watermark.
 
-Changelog since V1
-o Rename ZONE_DIRTY to ZONE_TAIL_LRU_DIRTY			(andi)
-o Reformat comment in shrink_page_list				(andi)
-o Clarify some comments						(dhillf)
-o Rework how the proportional scanning is preserved
-o Add PageReclaim check before kswapd starts writeback
-o Reset sc.nr_reclaimed on every full zone scan
+[mhocko@suse.cz: Correct proportional reclaim for memcg and simplify]
+[kamezawa.hiroyu@jp.fujitsu.com: Recalculate scan based on target]
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ mm/vmscan.c | 64 +++++++++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 56 insertions(+), 8 deletions(-)
 
-Kswapd and page reclaim behaviour has been screwy in one way or the other
-for a long time. Very broadly speaking it worked in the far past because
-machines were limited in memory so it did not have that many pages to scan
-and it stalled congestion_wait() frequently to prevent it going completely
-nuts. In recent times it has behaved very unsatisfactorily with some of
-the problems compounded by the removal of stall logic and the introduction
-of transparent hugepage support with high-order reclaims.
-
-There are many variations of bugs that are rooted in this area. One example
-is reports of a large copy operations or backup causing the machine to
-grind to a halt or applications pushed to swap. Sometimes in low memory
-situations a large percentage of memory suddenly gets reclaimed. In other
-cases an application starts and kswapd hits 100% CPU usage for prolonged
-periods of time and so on. There is now talk of introducing features like
-an extra free kbytes tunable to work around aspects of the problem instead
-of trying to deal with it. It's compounded by the problem that it can be
-very workload and machine specific.
-
-This series aims at addressing some of the worst of these problems without
-attempting to fundmentally alter how page reclaim works.
-
-Patches 1-2 limits the number of pages kswapd reclaims while still obeying
-	the anon/file proportion of the LRUs it should be scanning.
-
-Patches 3-4 control how and when kswapd raises its scanning priority and
-	deletes the scanning restart logic which is tricky to follow.
-
-Patch 5 notes that it is too easy for kswapd to reach priority 0 when
-	scanning and then reclaim the world. Down with that sort of thing.
-
-Patch 6 notes that kswapd starts writeback based on scanning priority which
-	is not necessarily related to dirty pages. It will have kswapd
-	writeback pages if a number of unqueued dirty pages have been
-	recently encountered at the tail of the LRU.
-
-Patch 7 notes that sometimes kswapd should stall waiting on IO to complete
-	to reduce LRU churn and the likelihood that it'll reclaim young
-	clean pages or push applications to swap. It will cause kswapd
-	to block on IO if it detects that pages being reclaimed under
-	writeback are recycling through the LRU before the IO completes.
-
-Patch 8 shrinks slab just once per priority scanned or if a zone is otherwise
-	unreclaimable to avoid hammering slab when kswapd has to skip a
-	large number of pages.
-
-Patches 9-10 are cosmetic but balance_pgdat() might be easier to follow.
-
-This was tested using memcached+memcachetest while some background IO
-was in progress as implemented by the parallel IO tests implement in MM
-Tests. memcachetest benchmarks how many operations/second memcached can
-service and it is run multiple times. It starts with no background IO and
-then re-runs the test with larger amounts of IO in the background to roughly
-simulate a large copy in progress.  The expectation is that the IO should
-have little or no impact on memcachetest which is running entirely in memory.
-
-                                         3.9.0-rc6                   3.9.0-rc6
-                                           vanilla            lessdisrupt-v3r6
-Ops memcachetest-0M             10868.00 (  0.00%)          10932.00 (  0.59%)
-Ops memcachetest-749M           10976.00 (  0.00%)          10986.00 (  0.09%)
-Ops memcachetest-2498M           3406.00 (  0.00%)          10871.00 (219.17%)
-Ops memcachetest-4246M           2402.00 (  0.00%)          10936.00 (355.29%)
-Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)
-Ops io-duration-749M               15.00 (  0.00%)              9.00 ( 40.00%)
-Ops io-duration-2498M             107.00 (  0.00%)             27.00 ( 74.77%)
-Ops io-duration-4246M             193.00 (  0.00%)             47.00 ( 75.65%)
-Ops swaptotal-0M                    0.00 (  0.00%)              0.00 (  0.00%)
-Ops swaptotal-749M             155965.00 (  0.00%)             25.00 ( 99.98%)
-Ops swaptotal-2498M            335917.00 (  0.00%)            287.00 ( 99.91%)
-Ops swaptotal-4246M            463021.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-749M                     0.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-2498M               139128.00 (  0.00%)              0.00 (  0.00%)
-Ops swapin-4246M               156276.00 (  0.00%)              0.00 (  0.00%)
-Ops minorfaults-0M            1677257.00 (  0.00%)        1642376.00 (  2.08%)
-Ops minorfaults-749M          1819566.00 (  0.00%)        1572243.00 ( 13.59%)
-Ops minorfaults-2498M         1842140.00 (  0.00%)        1652508.00 ( 10.29%)
-Ops minorfaults-4246M         1796116.00 (  0.00%)        1651464.00 (  8.05%)
-Ops majorfaults-0M                  6.00 (  0.00%)              6.00 (  0.00%)
-Ops majorfaults-749M               55.00 (  0.00%)             49.00 ( 10.91%)
-Ops majorfaults-2498M           20936.00 (  0.00%)            110.00 ( 99.47%)
-Ops majorfaults-4246M           22487.00 (  0.00%)            185.00 ( 99.18%)
-
-Note how the vanilla kernels performance collapses when there is enough IO
-taking place in the background. This drop in performance is part of users
-complain of when they start backups. Note how the swapin and major fault
-figures indicate that processes were being pushed to swap prematurely. With
-the series applied, there is no noticable performance drop and while there
-is still some swap activity, it's tiny.
-
-                             3.9.0-rc6   3.9.0-rc6
-                               vanillalessdisrupt-v3r6
-Page Ins                       1281068       89224
-Page Outs                     15697620    11478616
-Swap Ins                        295654           0
-Swap Outs                       659499         312
-Direct pages scanned                 0       78668
-Kswapd pages scanned           7166977     4416457
-Kswapd pages reclaimed         1185518     1051751
-Direct pages reclaimed               0       72993
-Kswapd efficiency                  16%         23%
-Kswapd velocity               5558.640    3420.614
-Direct efficiency                 100%         92%
-Direct velocity                  0.000      60.930
-Percentage direct scans             0%          1%
-Page writes by reclaim         2044715     2922251
-Page writes file               1385216     2921939
-Page writes anon                659499         312
-Page reclaim immediate            4040         218
-Page rescued immediate               0           0
-Slabs scanned                    35456       26624
-Direct inode steals                  0           0
-Kswapd inode steals              19898        1420
-Kswapd skipped wait                  0           0
-THP fault alloc                     11          51
-THP collapse alloc                 574         609
-THP splits                           9           6
-THP fault fallback                   0           0
-THP collapse fail                    0           0
-Compaction stalls                    0           0
-Compaction success                   0           0
-Compaction failures                  0           0
-Page migrate success                 0           0
-Page migrate failure                 0           0
-Compaction pages isolated            0           0
-Compaction migrate scanned           0           0
-Compaction free scanned              0           0
-Compaction cost                      0           0
-NUMA PTE updates                     0           0
-NUMA hint faults                     0           0
-NUMA hint local faults               0           0
-NUMA pages migrated                  0           0
-AutoNUMA cost                        0           0
-
-Note that kswapd efficiency is slightly improved. Unfortunately, also note
-that there is a small amount of direct reclaim due to kswapd no longer reclaiming
-the world. Using ftrace it would appear that the direct reclaim stalls are mostly
-harmless with the vast bulk of the stalls incurred by dd
-
-      2 gzip-3111
-      5 memcachetest-12607
-     26 tclsh-3109
-     67 tee-3110
-     89 flush-8:0-286
-   2055 dd-12795
-
-There is a risk that kswapd not reclaiming the world may mean that it
-stays awake balancing zones, does not stall on the appropriate events
-and continually scans pages it cannot reclaim consuming CPU. This will
-be visible as continued high CPU usage but in my own tests I only saw a
-single spike lasting less than a second and I did not observe any problems
-related to reclaim while running the series on my desktop.
-
- include/linux/mmzone.h |  17 ++
- mm/vmscan.c            | 461 ++++++++++++++++++++++++++++++-------------------
- 2 files changed, 305 insertions(+), 173 deletions(-)
-
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 4835a7a..a6bca2c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1821,17 +1821,24 @@ out:
+ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ {
+ 	unsigned long nr[NR_LRU_LISTS];
++	unsigned long targets[NR_LRU_LISTS];
+ 	unsigned long nr_to_scan;
+ 	enum lru_list lru;
+ 	unsigned long nr_reclaimed = 0;
+ 	unsigned long nr_to_reclaim = sc->nr_to_reclaim;
+ 	struct blk_plug plug;
++	bool scan_adjusted = false;
+ 
+ 	get_scan_count(lruvec, sc, nr);
+ 
++	/* Record the original scan target for proportional adjustments later */
++	memcpy(targets, nr, sizeof(nr));
++
+ 	blk_start_plug(&plug);
+ 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+ 					nr[LRU_INACTIVE_FILE]) {
++		unsigned long nr_anon, nr_file, percentage;
++
+ 		for_each_evictable_lru(lru) {
+ 			if (nr[lru]) {
+ 				nr_to_scan = min(nr[lru], SWAP_CLUSTER_MAX);
+@@ -1841,17 +1848,58 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+ 							    lruvec, sc);
+ 			}
+ 		}
++
++		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
++			continue;
++
+ 		/*
+-		 * On large memory systems, scan >> priority can become
+-		 * really large. This is fine for the starting priority;
+-		 * we want to put equal scanning pressure on each zone.
+-		 * However, if the VM has a harder time of freeing pages,
+-		 * with multiple processes reclaiming pages, the total
+-		 * freeing target can get unreasonably large.
++		 * For global direct reclaim, reclaim only the number of pages
++		 * requested. Less care is taken to scan proportionally as it
++		 * is more important to minimise direct reclaim stall latency
++		 * than it is to properly age the LRU lists.
+ 		 */
+-		if (nr_reclaimed >= nr_to_reclaim &&
+-		    sc->priority < DEF_PRIORITY)
++		if (global_reclaim(sc) && !current_is_kswapd())
+ 			break;
++
++		/*
++		 * For kswapd and memcg, reclaim at least the number of pages
++		 * requested. Ensure that the anon and file LRUs shrink
++		 * proportionally what was requested by get_scan_count(). We
++		 * stop reclaiming one LRU and reduce the amount scanning
++		 * proportional to the original scan target.
++		 */
++		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
++		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
++
++		if (nr_file > nr_anon) {
++			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
++						targets[LRU_ACTIVE_ANON] + 1;
++			lru = LRU_BASE;
++			percentage = nr_anon * 100 / scan_target;
++		} else {
++			unsigned long scan_target = targets[LRU_INACTIVE_FILE] +
++						targets[LRU_ACTIVE_FILE] + 1;
++			lru = LRU_FILE;
++			percentage = nr_file * 100 / scan_target;
++		}
++
++		/* Stop scanning the smaller of the LRU */
++		nr[lru] = 0;
++		nr[lru + LRU_ACTIVE] = 0;
++
++		/*
++		 * Recalculate the other LRU scan count based on its original
++		 * scan target and the percentage scanning already complete
++		 */
++		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
++		nr[lru] = targets[lru] * (100 - percentage) / 100;
++		nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
++
++		lru += LRU_ACTIVE;
++		nr[lru] = targets[lru] * (100 - percentage) / 100;
++		nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
++
++		scan_adjusted = true;
+ 	}
+ 	blk_finish_plug(&plug);
+ 	sc->nr_reclaimed += nr_reclaimed;
 -- 
 1.8.1.4
 
