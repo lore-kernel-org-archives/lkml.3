@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab3DKUCj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:02:39 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:38691 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752710Ab3DKUCi (ORCPT
+	id S1753974Ab3DKUEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:04:31 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:52996 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab3DKUEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:02:38 -0400
-Date: Thu, 11 Apr 2013 16:02:31 -0400 (EDT)
-Message-Id: <20130411.160231.1367130064866607872.davem@davemloft.net>
-To: dp@highloadlab.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] tcp: incoming connections might use wrong route
- under synflood
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130411225507.427b369046e53d03222b8fd3@highloadlab.com>
-References: <20130411225507.427b369046e53d03222b8fd3@highloadlab.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Thu, 11 Apr 2013 13:02:37 -0700 (PDT)
+	Thu, 11 Apr 2013 16:04:30 -0400
+Date: Thu, 11 Apr 2013 13:04:28 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <bob.liu@oracle.com>
+Subject: Re: [PATCH 05/10] staging: ramster: Move debugfs code out of
+ ramster.c file
+Message-ID: <20130411200428.GA31680@kroah.com>
+References: <1365553560-32258-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1365553560-32258-6-git-send-email-liwanp@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1365553560-32258-6-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Popov <dp@highloadlab.com>
-Date: Thu, 11 Apr 2013 22:55:07 +0400
+On Wed, Apr 10, 2013 at 08:25:55AM +0800, Wanpeng Li wrote:
+> Note that at this point there is no CONFIG_RAMSTER_DEBUG
+> option in the Kconfig. So in effect all of the counters
+> are nop until that option gets re-introduced in:
+> zcache/ramster/debug: Add RAMSTE_DEBUG Kconfig entry
 
-> There is a bug in cookie_v4_check (net/ipv4/syncookies.c):
-> 	flowi4_init_output(&fl4, 0, sk->sk_mark, RT_CONN_FLAGS(sk),
-> 			   RT_SCOPE_UNIVERSE, IPPROTO_TCP,
-> 			   inet_sk_flowi_flags(sk),
-> 			   (opt && opt->srr) ? opt->faddr : ireq->rmt_addr,
-> 			   ireq->loc_addr, th->source, th->dest);
-> 
-> Here we do not respect sk->sk_bound_dev_if, therefore wrong dst_entry may be
-> taken. This dst_entry is used by new socket (get_cookie_sock -> 
-> tcp_v4_syn_recv_sock), so its packets may take the wrong path.
-> 
-> Signed-off-by: Dmitry Popov <dp@highloadlab.com>
+This patch breaks the build badly:
 
-Applied.
+drivers/staging/zcache/ramster/ramster.c: In function ‘ramster_localify’:
+drivers/staging/zcache/ramster/ramster.c:159:4: error: ‘ramster_remote_eph_pages_unsucc_get’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c:159:4: note: each undeclared identifier is reported only once for each function it appears in
+drivers/staging/zcache/ramster/ramster.c:161:4: error: ‘ramster_remote_pers_pages_unsucc_get’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c:212:3: error: ‘ramster_remote_eph_pages_succ_get’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c:214:3: error: ‘ramster_remote_pers_pages_succ_get’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c: In function ‘ramster_pampd_repatriate_preload’:
+drivers/staging/zcache/ramster/ramster.c:299:3: error: ‘ramster_pers_pages_remote_nomem’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c: In function ‘ramster_remote_flush_page’:
+drivers/staging/zcache/ramster/ramster.c:437:3: error: ‘ramster_remote_pages_flushed’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c:439:3: error: ‘ramster_remote_page_flushes_failed’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c: In function ‘ramster_remote_flush_object’:
+drivers/staging/zcache/ramster/ramster.c:454:3: error: ‘ramster_remote_objects_flushed’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c:456:3: error: ‘ramster_remote_object_flushes_failed’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c: In function ‘ramster_remotify_pageframe’:
+drivers/staging/zcache/ramster/ramster.c:507:5: error: ‘ramster_eph_pages_remote_failed’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c:509:5: error: ‘ramster_pers_pages_remote_failed’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c:516:4: error: ‘ramster_eph_pages_remoted’ undeclared (first use in this function)
+drivers/staging/zcache/ramster/ramster.c:518:4: error: ‘ramster_pers_pages_remoted’ undeclared (first use in this function)
+make[3]: *** [drivers/staging/zcache/ramster/ramster.o] Error 1
+
+Please always test your patches.
+
+I've applied patch 1, 3, and 4 in this series.  Please fix this up if you want
+me to apply anything else.
+
+greg k-h
