@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934702Ab3DKUeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:34:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18255 "EHLO
+	id S1759883Ab3DKUd6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:33:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10923 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757254Ab3DKU0N (ORCPT
+	with ESMTP id S1757748Ab3DKU0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:26:13 -0400
-X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=Yn3arrLjY2EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=5dYAlnOqI5YA:10 a=yQdBAQUQAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=q6qRh1ou-MTl8AK-j0EA:9 a=IcxpeKGZWnEA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:26:14 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=6LstSCgQ-xEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=M78_CQRQiDQA:10 a=VwQbUJbxAAAA:8 a=jmWCE8W1go-RpaolMxwA:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202552.540204016@goodmis.org>
+Message-Id: <20130411202551.894982360@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:25:42 -0400
+Date: Thu, 11 Apr 2013 16:25:38 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 039/171 ] rtlwifi: rtl8192cu: Fix schedule while atomic bug splat
+Subject: [ 035/171 ] tracing: Fix race in snapshot swapping
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0039-rtlwifi-rtl8192cu-Fix-schedule-while-atomic-bug-spla.patch
+Content-Disposition: inline; filename=0035-tracing-Fix-race-in-snapshot-swapping.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,63 +28,53 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-[ Upstream commit 664899786cb49cb52f620e06ac19c0be524a7cfa ]
+[ Upstream commit 2721e72dd10f71a3ba90f59781becf02638aa0d9 ]
 
-When run at debug 3 or higher, rtl8192cu reports a BUG as follows:
+Although the swap is wrapped with a spin_lock, the assignment
+of the temp buffer used to swap is not within that lock.
+It needs to be moved into that lock, otherwise two swaps
+happening on two different CPUs, can end up using the wrong
+temp buffer to assign in the swap.
 
-BUG: scheduling while atomic: kworker/u:0/5281/0x00000002
-INFO: lockdep is turned off.
-Modules linked in: rtl8192cu rtl8192c_common rtlwifi fuse af_packet bnep bluetooth b43 mac80211 cfg80211 ipv6 snd_hda_codec_conexant kvm_amd k
-vm snd_hda_intel snd_hda_codec bcma rng_core snd_pcm ssb mmc_core snd_seq snd_timer snd_seq_device snd i2c_nforce2 sr_mod pcmcia forcedeth i2c_core soundcore
- cdrom sg serio_raw k8temp hwmon joydev ac battery pcmcia_core snd_page_alloc video button wmi autofs4 ext4 mbcache jbd2 crc16 thermal processor scsi_dh_alua
- scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic pata_acpi pata_amd [last unloaded: rtlwifi]
-Pid: 5281, comm: kworker/u:0 Tainted: G        W    3.8.0-wl+ #119
-Call Trace:
- [<ffffffff814531e7>] __schedule_bug+0x62/0x70
- [<ffffffff81459af0>] __schedule+0x730/0xa30
- [<ffffffff81326e49>] ? usb_hcd_link_urb_to_ep+0x19/0xa0
- [<ffffffff8145a0d4>] schedule+0x24/0x70
- [<ffffffff814575ec>] schedule_timeout+0x18c/0x2f0
- [<ffffffff81459ec0>] ? wait_for_common+0x40/0x180
- [<ffffffff8133f461>] ? ehci_urb_enqueue+0xf1/0xee0
- [<ffffffff810a579d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81459f65>] wait_for_common+0xe5/0x180
- [<ffffffff8107d1c0>] ? try_to_wake_up+0x2d0/0x2d0
- [<ffffffff8145a08e>] wait_for_completion_timeout+0xe/0x10
- [<ffffffff8132ab1c>] usb_start_wait_urb+0x8c/0x100
- [<ffffffff8132adf9>] usb_control_msg+0xd9/0x130
- [<ffffffffa057dd8d>] _usb_read_sync+0xcd/0x140 [rtlwifi]
- [<ffffffffa057de0e>] _usb_read32_sync+0xe/0x10 [rtlwifi]
- [<ffffffffa04b0555>] rtl92cu_update_hal_rate_table+0x1a5/0x1f0 [rtl8192cu]
+Luckily, all current callers of the swap function appear to have
+their own locks. But in case something is added that allows two
+different callers to call the swap, then there's a chance that
+this race can trigger and corrupt the buffers.
 
-The cause is a synchronous read from routine rtl92cu_update_hal_rate_table().
-The resulting output is not critical, thus the debug statement is
-deleted.
+New code is coming soon that will allow for this race to trigger.
 
-Reported-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Stable <stable@vger.kernel.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+I've Cc'd stable, so this bug will not show up if someone backports
+one of the changes that can trigger this bug.
+
+Cc: stable@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c |    2 --
- 1 file changed, 2 deletions(-)
+ kernel/trace/trace.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-index 4bbb711..b4b2e43 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -2058,8 +2058,6 @@ void rtl92cu_update_hal_rate_table(struct ieee80211_hw *hw,
- 			       (shortgi_rate << 4) | (shortgi_rate);
- 	}
- 	rtl_write_dword(rtlpriv, REG_ARFR0 + ratr_index * 4, ratr_value);
--	RT_TRACE(rtlpriv, COMP_RATR, DBG_DMESG, "%x\n",
--		 rtl_read_dword(rtlpriv, REG_ARFR0));
- }
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5c38c81..0293d9a 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -693,7 +693,7 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ void
+ update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ {
+-	struct ring_buffer *buf = tr->buffer;
++	struct ring_buffer *buf;
  
- void rtl92cu_update_hal_rate_mask(struct ieee80211_hw *hw, u8 rssi_level)
+ 	if (trace_stop_count)
+ 		return;
+@@ -705,6 +705,7 @@ update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ 	}
+ 	arch_spin_lock(&ftrace_max_lock);
+ 
++	buf = tr->buffer;
+ 	tr->buffer = max_tr.buffer;
+ 	max_tr.buffer = buf;
+ 
 -- 
 1.7.10.4
 
