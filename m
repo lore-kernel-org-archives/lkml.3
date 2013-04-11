@@ -1,147 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab3DKSaD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:30:03 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35553 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751106Ab3DKSaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:30:00 -0400
-Date: Thu, 11 Apr 2013 21:29:46 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Alexander Holler <holler@ahsoftware.de>
-CC: Roger Quadros <rogerq@ti.com>, <balbi@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] USB: ehci-omap: Select USB_PHY
-Message-ID: <20130411182946.GA20264@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <5166856C.3080906@ti.com>
- <20130411100435.GB14394@arwen.pp.htv.fi>
- <516695A4.2050804@ti.com>
- <20130411105557.GE14394@arwen.pp.htv.fi>
- <5166AFD2.4070108@ti.com>
- <5166B450.1000404@ahsoftware.de>
- <5166CC30.4060507@ti.com>
- <5166F3EC.8040807@ahsoftware.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
-Content-Disposition: inline
-In-Reply-To: <5166F3EC.8040807@ahsoftware.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755061Ab3DKSdh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:33:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7370 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab3DKSdg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 14:33:36 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=RKbimCT2a08A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=j5D2oEQ9Kg0A:10 a=4-pcMlRTT7BXjaTAMckA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=kyoCiWENxn4702s2:21 a=eae_7G5JjKgrkUgW:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365705214.9609.58.camel@gandalf.local.home>
+Subject: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for PREEMPT_RT
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Clark Williams <clark@redhat.com>,
+        John Kacur <jkacur@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Thu, 11 Apr 2013 14:33:34 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---zYM0uCDKw75PZbzx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[ This time without the hitchhiking process_32.c cruff on the patch ]
 
-Hi,
+We had a customer report a lockup on a 3.0-rt kernel that had the
+following backtrace:
 
-On Thu, Apr 11, 2013 at 07:33:32PM +0200, Alexander Holler wrote:
-> >>Sorry, but this just will end up with many users having broken configs
-> >>because of disabled stuff they don't know why they have to enable them.
-> >>And thus with a never ending stream of questions and thus with a needed
-> >>FAQ entry.
-> >>
-> >
-> >Alexander,
-> >
-> >I agree with you that it can get difficult with users. But it is best for
-> >users do not disable anything they are not familiar with.
-> >
-> >As the USB_PHY option doesn't depend on anything, it is safe to select it
-> >from USB_EHCI_HCD_OMAP.
-> >
-> >However, the PHY drivers themselves must be selected from the board conf=
-igs.
->=20
-> Maybe I understood something wrong, but if the OMAP USB driver
-> requires CONFIG_USB_PHY (or similiar), it should be selected
-> automatically and not just enabled in the board config.
+[ffff88107fca3e80] rt_spin_lock_slowlock at ffffffff81499113
+[ffff88107fca3f40] rt_spin_lock at ffffffff81499a56
+[ffff88107fca3f50] __wake_up at ffffffff81043379
+[ffff88107fca3f80] mce_notify_irq at ffffffff81017328
+[ffff88107fca3f90] intel_threshold_interrupt at ffffffff81019508
+[ffff88107fca3fa0] smp_threshold_interrupt at ffffffff81019fc1
+[ffff88107fca3fb0] threshold_interrupt at ffffffff814a1853
 
-and who said OMAP USB depends on CONFIG_USB_PHY ? Some platforms need to
-control a PHY and some don't.
 
-> I just had it to often, that I needed to search around why a driver
-> doesn't work (or even compiles), just to find out that I need to
-> enable some strange config option which wasn't selected
-> automatically. Especially with OMAPs. ;)
+It actually bugged because the lock was taken by the same owner that
+already had that lock. What happened was the thread that was setting
+itself on a wait queue had the lock when an MCE triggered. The MCE
+interrupt does a wake up on its wait list and grabs the same lock.
 
-so ? Send a patch fixing it, those are really welcome. You see, it's
-very difficult to get all of this perfectly right and if people continue
-to rant rather than fix, we will get nowhere.
+NOTE: THIS IS NOT A BUG ON MAINLINE
 
-> And this not only occured when disabling options, it often occured by
-> just updating the kernel. Suddenly some obscur option was needed too,
-> it wasn't selected automatically by make oldconfig, bang. So the
-> argument to not remove anything from a board config doesn't help
-> much.
+Sorry for yelling, but as I Cc'd mainline maintainers I want them to
+know that this is an PREEMPT_RT bug only. I only Cc'd them for advice.
 
-blablabla, Kconfig changes are *always* necessary. Specially when we
-need to re-design an entire API because the previous one was just a
-*SINGLE* global pointer.
+On PREEMPT_RT the wait queue locks are converted from normal
+"spin_locks" into an rt_mutex (see the rt_spin_lock_slowlock above).
+These are not to be taken by hard interrupt context. This usually isn't
+a problem as most all interrupts in PREEMPT_RT are converted into
+schedulable threads. Unfortunately that's not the case with the MCE irq.
 
-Go check out kernel 2.6.39 (maybe even 3.1 and 3.2) and you'll see that
-we're much better off today where we can actually have multiple PHY
-drivers and multiple UDC drivers enabled (either as modules or
-built-in), but the fact is that changing all of this over takes time and
-sometimes people make mistakes, but that's alright, since we have the
--rc series to catch those unwanted errors.
+As wait queue locks are notorious for long hold times, we can not
+convert them to raw_spin_locks without causing issues with -rt. But
+Thomas has created a "simple-wait" structure that uses raw spin locks
+which may have been a good fit.
 
-Without the help of the rest of the community, though, it'll just get
-slower and slower. With the whole single zImage effort going on in the
-ARM land, things have gotten much more critical WRT getting rid of
-"selects" and turning legacy "drivers" into real drivers, not just a
-bunch of exported functions which a single architecture uses.
+Unfortunately, wait queues are not the only issue, as the mce_notify_irq
+also does a schedule_work(), which grabs the workqueue spin locks that
+have the exact same issue.
 
-Add to that all the rework going on in the Gadget Framework, PHY layer
-and EHCI drivers (which now has a core re-usable library thanks to Alan
-Stern) and you have a lot of work to do.
+Thus, this patch I'm proposing is to move the actual work of the MCE
+interrupt into a helper thread that gets woken up on the MCE interrupt
+and does the work in a schedulable context.
 
-Next time you consider ranting about something, use that 'frustration'
-and turn it into motivation to write patches, then we all win. Also
-consider that under drivers/usb/ alone we have 270K LOCs, and that's
-quite a lot of code to handle with only a few of us (Greg, Sarah, Alan,
-Alex and myself) being the gateway towards mainline.
+NOTE: THIS PATCH ONLY CHANGES THE BEHAVIOR WHEN PREEMPT_RT IS SET
 
-With all that comes the responsibility of revieweing drivers for
-architectures we, most of the times, don't have access to with drivers
-that only compile in some ceratin ways.
+Oops, sorry for yelling again, but I want to stress that I keep the same
+behavior of mainline when PREEMPT_RT is not set. Thus, this only changes
+the MCE behavior when PREEMPT_RT is configured.
 
-Cleaning all of that takes time. Look at all the effort it's taking the
-Chipidea folks just to get rid of a couple copies of the chipidea
-driver. It takes time, it takes sweat and we can all use some help
-rather than some random rant.
+Comments?
 
---=20
-balbi
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
---zYM0uCDKw75PZbzx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index e8d8ad0..060e473 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -18,6 +18,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/kobject.h>
+ #include <linux/uaccess.h>
++#include <linux/kthread.h>
+ #include <linux/kdebug.h>
+ #include <linux/kernel.h>
+ #include <linux/percpu.h>
+@@ -1308,6 +1309,61 @@ static void mce_do_trigger(struct work_struct *work)
+ 
+ static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
+ 
++static void __mce_notify_work(void)
++{
++	/* Not more than two messages every minute */
++	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
++
++	/* wake processes polling /dev/mcelog */
++	wake_up_interruptible(&mce_chrdev_wait);
++
++	/*
++	 * There is no risk of missing notifications because
++	 * work_pending is always cleared before the function is
++	 * executed.
++	 */
++	if (mce_helper[0] && !work_pending(&mce_trigger_work))
++		schedule_work(&mce_trigger_work);
++
++	if (__ratelimit(&ratelimit))
++		pr_info(HW_ERR "Machine check events logged\n");
++}
++
++#ifdef CONFIG_PREEMPT_RT_FULL
++struct task_struct *mce_notify_helper;
++
++static int mce_notify_helper_thread(void *unused)
++{
++	while (!kthread_should_stop()) {
++		__mce_notify_work();
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule();
++	}
++	return 0;
++}
++
++static int mce_notify_work_init(void)
++{
++	mce_notify_helper = kthread_create(mce_notify_helper_thread, NULL,
++					   "mce-notify");
++	if (!mce_notify_helper)
++		return -ENOMEM;
++
++	return 0;
++}
++
++static void mce_notify_work()
++{
++	wake_up_process(mce_notify_helper);
++}
++#else
++static void mce_notify_work(void)
++{
++	__mce_notify_work();
++}
++static inline int mce_notify_work_init(void) { return 0; }
++#endif
++
+ /*
+  * Notify the user(s) about new machine check events.
+  * Can be called from interrupt context, but not from machine check/NMI
+@@ -1315,24 +1371,8 @@ static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
+  */
+ int mce_notify_irq(void)
+ {
+-	/* Not more than two messages every minute */
+-	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
+-
+ 	if (test_and_clear_bit(0, &mce_need_notify)) {
+-		/* wake processes polling /dev/mcelog */
+-		wake_up_interruptible(&mce_chrdev_wait);
+-
+-		/*
+-		 * There is no risk of missing notifications because
+-		 * work_pending is always cleared before the function is
+-		 * executed.
+-		 */
+-		if (mce_helper[0] && !work_pending(&mce_trigger_work))
+-			schedule_work(&mce_trigger_work);
+-
+-		if (__ratelimit(&ratelimit))
+-			pr_info(HW_ERR "Machine check events logged\n");
+-
++		mce_notify_work();
+ 		return 1;
+ 	}
+ 	return 0;
+@@ -2375,6 +2415,8 @@ static __init int mcheck_init_device(void)
+ 	/* register character device /dev/mcelog */
+ 	misc_register(&mce_chrdev_device);
+ 
++	err = mce_notify_work_init();
++
+ 	return err;
+ }
+ device_initcall_sync(mcheck_init_device);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRZwEaAAoJEIaOsuA1yqRE+5sP/0zFNqWTCH/vFp6tPZl6d4pq
-vbI9jBkSUb7lFQmegMZ7LX/DjcWYE9pXMV6sEPSjsSU+Nggf34Mo+1avSY/DSfh+
-W/9npi1oRvIVEsQ1KA3Z4CRN3GcRyzAarCWthiphlOareRhPmSSWsA9vUy7QjdoT
-89LL2gE4f7TCRfU5bg2aknwfQbT1vH0mhsCdZ1iIbXKkga+JTylgc4I1DckxcokM
-KavM8kaSmfG0t5Xv219iB9H7tL8qpx9jvzDnbkB+JOinPi3hpmeNJ0BG+sve46VZ
-jrJkB9BuVVL27zswFfa9yEOLT34wMdoTGz0JNIYiqaMQz24hE76pn1u1LzQb69yC
-YZT6B4kBG4w4QmMO2GCNLVuFzmZ/yb9zOqVJP7AG6fZISUAt0HYWmvwj7dLtFZth
-aIWSB96T6u8CvvT9QR8lyUxP8vz4+8GFlVulk4xKlTyk3NdM3ajAHrUuJRStdA7d
-BLsigFlrZnCMRnI4rGKBYaojD/HtFG0+SZlcTE83p1R4FG1tiRt+gLXKzJ5KCUgr
-Z+CXzCLmqZar9/Mn4wiVaWULmpKm0nOPVtecBuUGoLkWlRJI2t2kZzNdz6OfcV++
-s3CkPv75zSF0oZxyndO8oxqCaimMF8mCV4n+KdTtMDSkpMJCrNuhaqnSGBA7HcTF
-VV4X/YEy9HzNnx6elen/
-=ppBP
------END PGP SIGNATURE-----
-
---zYM0uCDKw75PZbzx--
