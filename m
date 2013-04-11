@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937031Ab3DKBHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 21:07:20 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40406 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934952Ab3DKBHS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Apr 2013 21:07:18 -0400
-Message-ID: <1365642437.2036.5.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: Warn on comparisons to true and false
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@shadowen.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Date: Wed, 10 Apr 2013 18:07:17 -0700
-In-Reply-To: <20130410155751.7ecc6738d616fb8771991ce1@linux-foundation.org>
-References: <1365563834.27174.12.camel@joe-AO722>
-	 <20130410155751.7ecc6738d616fb8771991ce1@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S936476Ab3DKBNU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 21:13:20 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:28624 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934997Ab3DKBNT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Apr 2013 21:13:19 -0400
+X-Spam-Score: -100.8
+Message-ID: <51660E0D.7030205@asianux.com>
+Date: Thu, 11 Apr 2013 09:12:45 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Eric Paris <eparis@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel: auditfilter: looping issue, memory leak if has
+ 2 or more AUDIT_FILTERKEYs
+References: <51653645.90401@asianux.com> <51653C7A.6030405@asianux.com> <51653EC2.5030107@asianux.com> <516540CB.7090301@asianux.com> <1145090153.12320456.1365629897666.JavaMail.root@redhat.com>
+In-Reply-To: <1145090153.12320456.1365629897666.JavaMail.root@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 15:57 -0700, Andrew Morton wrote:
-> On Tue, 09 Apr 2013 20:17:14 -0700 Joe Perches <joe@perches.com> wrote:
-> > Comparisons of A to true and false are better written
-> > as A and !A.
-> > Bleat a message on use.
-> hm.  I'm counting around 1,100 instances of "== true" and "== false".
+On 2013年04月11日 05:38, Eric Paris wrote:
+> ----- Original Message -----
+>> > 
+>> >   also for function audit_list_rules:
+>> >     when call audit_make_reply fails (will return NULL).
+>> >     we also need process data->buf, not only data itself.
+>> > 
+>> >   please help check, thanks.
+> struct audit_rule_data {
+> [...]
+>         char            buf[0]; /* string fields buffer */
+> };
+> 
+> The last element in the struct is 0 length.  But the allocation in audit_krule_to_data() looks like:
+> 
+> data = kmalloc(sizeof(*data) + krule->buflen, GFP_KERNEL);
+> 
+> So now data->buf appears as an allocation of size krule->buflen.
+> 
+> We do not need to free it separately.  This is a pretty common C trick.
 
-And about all of them in are staging, where I think they
-really should be fixed.
+  ok, thanks
 
-$ find . -maxdepth 2 -type d \
-   while read file ; do \
-      echo "$(git grep -E '(==|\!=)\s*(true|false)' $file | wc -l)  $file"; \
-  done | sort -rn | head -10
-1375 .
-1298 ./drivers
-1055 ./drivers/staging
-63 ./drivers/net
-59 ./drivers/gpu
-24 ./net
-20 ./drivers/media
-17 ./net/nfc
-13 ./fs
-11 ./drivers/usb
+  it is my fault.
 
-> That's a lot of people to shout at.
+  :-)
 
-Not really.
+-- 
+Chen Gang
 
->  Is it really worthwhile? 
-
-I think so.
-
-
+Asianux Corporation
