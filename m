@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3DKQXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 12:23:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49074 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752904Ab3DKQXS (ORCPT
+	id S1753726Ab3DKQZR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 12:25:17 -0400
+Received: from mail-ia0-f179.google.com ([209.85.210.179]:58759 "EHLO
+	mail-ia0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab3DKQZP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 12:23:18 -0400
-Date: Thu, 11 Apr 2013 17:23:15 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: Re: [PATCH 2/2] mfd: wm8994: Add some OF properties
-Message-ID: <20130411162315.GF9243@opensource.wolfsonmicro.com>
-References: <1365604763-13122-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1365604763-13122-2-git-send-email-broonie@opensource.wolfsonmicro.com>
- <5166BCCC.5020307@samsung.com>
- <20130411142100.GA24971@opensource.wolfsonmicro.com>
- <5166E21C.7080009@samsung.com>
+	Thu, 11 Apr 2013 12:25:15 -0400
+Date: Thu, 11 Apr 2013 11:25:10 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 3/3] convert headers_install.pl to headers_install.sh
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Josh Boyer <jwboyer@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowell@redhat.com>, Sam Ravnborg <sam@ravnborg.org>
+In-Reply-To: <5163F2F0.1070405@suse.cz> (from mmarek@suse.cz on Tue Apr  9
+	05:52:32 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1365697510.18069.78@driftwood>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DHioQtdaSVZskSfq"
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <5166E21C.7080009@samsung.com>
-X-Cookie: Your love life will be... interesting.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/09/2013 05:52:32 AM, Michal Marek wrote:
+> On 28.2.2013 09:19, Michal Marek wrote:
+> > On 27.2.2013 06:58, Rob Landley wrote:
+> >> From: Rob Landley <rob@landley.net>
+> >>
+> >> Remove perl from make headers_install by replacing a perl script  
+> (doing
+> >> a simple regex search and replace) with a smaller, faster, simpler,
+> >> POSIX-2008 shell script implementation.  The new shell script is a  
+> single
+> >> for loop calling sed and piping its output through unifdef to  
+> produce the
+> >> target file.
+> >>
+> >> Same as last time except for minor tweak to deal with code review  
+> from here:
+> >> http://lkml.indiana.edu/hypermail/linux/kernel/1302.3/00078.html
+> >>
+> >> (Note that this drops the "arch" argument, which isn't used. Kbuild
+> >> already points to the right input files on the command line.)
+> >>
+> >> Signed-off-by: Rob Landley <rob@landley.net>
+> >
+> > Looks good, I will apply it after v3.9-rc1 is out.
+> 
+> I forgot to do it right after rc1, but I took the patch from the mm  
+> tree
+> now. I also added Sam's Ack from the earlier submission.
+> 
+> Michal
 
---DHioQtdaSVZskSfq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yay!
 
-On Thu, Apr 11, 2013 at 06:17:32PM +0200, Sylwester Nawrocki wrote:
+Is this for 3.10? (Not seeing it in Linus's tree now, and -rc7 seems a  
+bit late for anything to go in...)
 
-> Anyway it worked pretty well! Just needed to add patches for the regulator
-> you pointed out and that small patch:
+Thanks,
 
-Ah, great - just redoing the bindings just now for your other comments,
-hopefully I won't break anything in the process.  Can you post that as a
-normal patch for git am please (or I can fish it out by hand)?
-
---DHioQtdaSVZskSfq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRZuNrAAoJELSic+t+oim9O6kP/io+/U2YrEZIcR+mLLITYVQa
-0VkVxrYkYyMfkXujFvYqS5yEK2Jp7eG/AHq5IWLPJ44D+2bs5CArTH2Ix6dPTmR7
-TGH+72Qxy3F9WdZPNCQUX2tLAczShMGBGqXFx38tCNhyMinLyqaPYqMY8E6BVqJe
-DoBskhOMiYI3G8HXYGVHyWVyaWB7/Fbv3nQGtpay6IKoVk44Uc3SaU//XQLUKBfc
-9520qIswhsX0mXvHsVKtKiL1576ep7UV5VMIhEzjWYukEL7y0cxSeh4mJOFbFjO1
-vrdb6wl2BHAnSZyCtyLrrHUWbeclZMNDfcsRGONxXW2x2LsIrF7txu+QzyMxH/ou
-Qygv062x5v20tmXqgvbqG2bVppiBs81uCkEqAy1W9MGLxvTB1M9Z1JmNsncVLITs
-QSqjwnntTec7AqTUySGf0gxCk59PjCpSa0armmUAYr4tbcRi7TaP81G2nu8EQpjZ
-6sxR+/jpuNw4UhAAsZneK1ITLSGxZGAzkuWq0k6v3dteYtDG3FRR5byLbVaDWe3Q
-L5NA6WiM26AMdVBTytHQ0qDO1lh0jqbUFo6aLjtUH1KtYVyrqDEuZZz5BYfckGjy
-H0+fKqOBbAp8F4aQF+jF0DKVnOFkt3UT0T0X3ir9ptgInQ0i76/xim4W7DZl9wFK
-GfBB0iLx5dS9i4JIgs1d
-=kHJ6
------END PGP SIGNATURE-----
-
---DHioQtdaSVZskSfq--
+Rob
