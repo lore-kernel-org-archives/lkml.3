@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934041Ab3DKSop (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 14:44:45 -0400
-Received: from lan.nucleusys.com ([92.247.61.126]:58424 "EHLO
-	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752376Ab3DKSon (ORCPT
+	id S934232Ab3DKSpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 14:45:10 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:56563 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab3DKSpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 14:44:43 -0400
-Date: Thu, 11 Apr 2013 21:44:19 +0300 (EEST)
-From: Petko Manolov <petkan@nucleusys.com>
-X-X-Sender: petkan@fry
-To: Dan Williams <dcbw@redhat.com>
-cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: [PATCH] net: usb: active URB submitted multiple times
-In-Reply-To: <1365698297.22668.5.camel@dcbw.foobar.com>
-Message-ID: <alpine.DEB.2.02.1304112138370.4309@fry>
-References: <alpine.DEB.2.02.1304102354010.9358@fry>  <20130410.232241.1038793023507666278.davem@davemloft.net>  <alpine.DEB.2.02.1304110956110.4237@fry> <1365698297.22668.5.camel@dcbw.foobar.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 11 Apr 2013 14:45:06 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Fri, 12 Apr 2013 00:15:05 +0530
+Message-ID: <CA+G9fYu0q31fca5yBdX1f=yhAS2B5R16S+=sK=UE=rVRG9yqrg@mail.gmail.com>
+Subject: [Linaro-QA-Service] [linux-next] Snowball build broken
+From: Naresh Kamboju <naresh.kamboju@linaro.org>
+To: linux-kernel@vger.kernel.org,
+        Lists linaro-dev <linaro-dev@lists.linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Apr 2013, Dan Williams wrote:
+Hi All,
 
-> On Thu, 2013-04-11 at 10:09 +0300, Petko Manolov wrote:
-> > From: Petko Manolov <petkan@nucleusys.com>
-> > 
-> > (For inclusion in 3.10, diff against latest net-next.)
-> 
-> Your mail client replaced tabs with spaces.  Make sure when adding the 
-> patch to the mail, you choose the "preformatted" option or whatever the 
-> client has to ensure that the patch text itself is not modified when 
-> pasting it into the mail.
+Greetings from Linaro QA services.
+We have setup the process of validating Linux on ARM Kernel builds.
+One of those ARM targets is Snowball. Snowball build broken log can be
+found here
 
-The patch is indeed fucked up.  Some tabs survived Apline's take on them, 
-but not nearly enough.  I am sorry for the noise.  It's been a while since 
-i last submitted a patch.  Lets hope third time will be the charm...
+Build Error:
+--------------
+04:48:08   CC      drivers/mfd/ab8500-debugfs.o
+04:48:09 /mnt/ci_build/workspace/linux-next/hwpack/snowball/label/precise_hwpack_cloud/drivers/mfd/ab8500-debugfs.c:95:23:
+fatal error: mach/irqs.h: No such file or directory
+04:48:09 compilation terminated.
+04:48:09 make[3]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
+04:48:09 make[2]: *** [drivers/mfd] Error 2
+04:48:09 make[1]: *** [drivers] Error 2
 
+Code snippet:
+------------------
+File: drivers/mfd/ab8500-debugfs.c
 
-cheers,
-Petko
+ 89 #ifdef CONFIG_DEBUG_FS
+  90 #include <linux/string.h>
+  91 #include <linux/ctype.h>
+  92 #endif
+  93
+  94 /* TODO: this file should not reference IRQ_DB8500_AB8500! */
+  95 #include <mach/irqs.h>
+  96
+  97 static u32 debug_bank;
+  98 static u32 debug_address;
+  99
+
+Kernel Commit id:
+----------------------
+484eecb3dc4d7173015feeb41e2995bbcb724523
+
+Please let me know if you need more info.
+
+Best regards
+Naresh Kamboju
