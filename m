@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936434Ab3DKVE6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:04:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4377 "EHLO
+	id S935435Ab3DKVF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:05:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2760 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935737Ab3DKUtQ (ORCPT
+	with ESMTP id S935722Ab3DKUtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:49:16 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=wcmGBiZDuZMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ZAjoVRll-d8A:10 a=M5GUcnROAAAA:8 a=VwQbUJbxAAAA:8 a=Op-mwl0xAAAA:8 a=vmLDa1wCAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=9RRF0ttvEvMA:10 a=d4CUUju0HPYA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=2_WZD1659A0AaAsh:21 a=6-XEiyBeNNVP2N8t:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Thu, 11 Apr 2013 16:49:15 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=qM-UFpwvO98A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=SjTHzbZEtv8A:10 a=JDjsHSkAAAAA:8 a=DfNHnWVPAAAA:8 a=VwQbUJbxAAAA:8 a=fl-NfxdDmfoU_9gv9iwA:9 a=Hf6muOzgCGQA:10 a=lBRciGGoxdUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130411202602.492885462@goodmis.org>
+Message-Id: <20130411202602.819728198@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Thu, 11 Apr 2013 16:26:43 -0400
+Date: Thu, 11 Apr 2013 16:26:45 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Daniel Drake <dsd@laptop.org>, Marco Cesarano <marco@marvell.com>,
-        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 100/171 ] mwifiex: skip pending commands after function shutdown
+Cc: Dave Chiluk <dave.chiluk@canonical.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Bryan Schumaker <bjschuma@netapp.com>
+Subject: [ 102/171 ] NFSv4: Fix the string length returned by the idmapper
 References: <20130411202503.783159048@goodmis.org>
-Content-Disposition: inline; filename=0100-mwifiex-skip-pending-commands-after-function-shutdow.patch
+Content-Disposition: inline; filename=0102-NFSv4-Fix-the-string-length-returned-by-the-idmapper.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,63 +31,62 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-[ Upstream commit a3e240cacc93a06bff3313e28938e980d01a2160 ]
+[ Upstream commit cf4ab538f1516606d3ae730dce15d6f33d96b7e1 ]
 
-During rmmod mwifiex_sdio processing FUNC_SHUTDOWN command is
-sent to firmware. Firmware expcets only FUNC_INIT once WLAN
-function is shut down.
+Functions like nfs_map_uid_to_name() and nfs_map_gid_to_group() are
+expected to return a string without any terminating NUL character.
+Regression introduced by commit 57e62324e469e092ecc6c94a7a86fe4bd6ac5172
+(NFS: Store the legacy idmapper result in the keyring).
 
-Any command pending in the command queue should be ignored and
-freed.
-
-Cc: <stable@vger.kernel.org> # 3.8
-Tested-by: Daniel Drake <dsd@laptop.org>
-Tested-by: Marco Cesarano <marco@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Dave Chiluk <dave.chiluk@canonical.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Bryan Schumaker <bjschuma@netapp.com>
+Cc: stable@vger.kernel.org [>=3.4]
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/mwifiex/cmdevt.c |   17 ++++++++++++++---
- 1 file changed, 14 insertions(+), 3 deletions(-)
+ fs/nfs/idmap.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/cmdevt.c b/drivers/net/wireless/mwifiex/cmdevt.c
-index da50426..c65efd0 100644
---- a/drivers/net/wireless/mwifiex/cmdevt.c
-+++ b/drivers/net/wireless/mwifiex/cmdevt.c
-@@ -156,6 +156,20 @@ static int mwifiex_dnld_cmd_to_fw(struct mwifiex_private *priv,
- 		return -1;
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index a850079..e720df5 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -707,9 +707,9 @@ out1:
+ 	return ret;
+ }
+ 
+-static int nfs_idmap_instantiate(struct key *key, struct key *authkey, char *data)
++static int nfs_idmap_instantiate(struct key *key, struct key *authkey, char *data, size_t datalen)
+ {
+-	return key_instantiate_and_link(key, data, strlen(data) + 1,
++	return key_instantiate_and_link(key, data, datalen,
+ 					id_resolver_cache->thread_keyring,
+ 					authkey);
+ }
+@@ -717,15 +717,18 @@ static int nfs_idmap_instantiate(struct key *key, struct key *authkey, char *dat
+ static int nfs_idmap_read_message(struct idmap_msg *im, struct key *key, struct key *authkey)
+ {
+ 	char id_str[NFS_UINT_MAXLEN];
++	size_t len;
+ 	int ret = -EINVAL;
+ 
+ 	switch (im->im_conv) {
+ 	case IDMAP_CONV_NAMETOID:
+-		sprintf(id_str, "%d", im->im_id);
+-		ret = nfs_idmap_instantiate(key, authkey, id_str);
++		/* Note: here we store the NUL terminator too */
++		len = sprintf(id_str, "%d", im->im_id) + 1;
++		ret = nfs_idmap_instantiate(key, authkey, id_str, len);
+ 		break;
+ 	case IDMAP_CONV_IDTONAME:
+-		ret = nfs_idmap_instantiate(key, authkey, im->im_name);
++		len = strlen(im->im_name);
++		ret = nfs_idmap_instantiate(key, authkey, im->im_name, len);
+ 		break;
  	}
  
-+	cmd_code = le16_to_cpu(host_cmd->command);
-+	cmd_size = le16_to_cpu(host_cmd->size);
-+
-+	if (adapter->hw_status == MWIFIEX_HW_STATUS_RESET &&
-+	    cmd_code != HostCmd_CMD_FUNC_SHUTDOWN &&
-+	    cmd_code != HostCmd_CMD_FUNC_INIT) {
-+		dev_err(adapter->dev,
-+			"DNLD_CMD: FW in reset state, ignore cmd %#x\n",
-+			cmd_code);
-+		mwifiex_complete_cmd(adapter, cmd_node);
-+		mwifiex_insert_cmd_to_free_q(adapter, cmd_node);
-+		return -1;
-+	}
-+
- 	/* Set command sequence number */
- 	adapter->seq_num++;
- 	host_cmd->seq_num = cpu_to_le16(HostCmd_SET_SEQ_NO_BSS_INFO
-@@ -167,9 +181,6 @@ static int mwifiex_dnld_cmd_to_fw(struct mwifiex_private *priv,
- 	adapter->curr_cmd = cmd_node;
- 	spin_unlock_irqrestore(&adapter->mwifiex_cmd_lock, flags);
- 
--	cmd_code = le16_to_cpu(host_cmd->command);
--	cmd_size = le16_to_cpu(host_cmd->size);
--
- 	/* Adjust skb length */
- 	if (cmd_node->cmd_skb->len > cmd_size)
- 		/*
 -- 
 1.7.10.4
 
