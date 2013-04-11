@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935551Ab3DKVQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 17:16:42 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:51109 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934821Ab3DKVQB (ORCPT
+	id S936075Ab3DKVRO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 17:17:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28463 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935513Ab3DKUs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 17:16:01 -0400
-Message-ID: <1365714957.7355.39.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [ 026/171 ] sfc: Only use TX push if a single descriptor is to
- be written
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
-Date: Thu, 11 Apr 2013 22:15:57 +0100
-In-Reply-To: <20130411202550.471143447@goodmis.org>
+	Thu, 11 Apr 2013 16:48:58 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=xGhuVBcC6csA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=YH3CfvmEkfEA:10 a=20KFwNOVAAAA:8 a=omOdbC7AAAAA:8 a=Tty9oNO6AAAA:8 a=VwQbUJbxAAAA:8 a=i5l3BeYsPBN1KbzBBJEA:9 a=jEp0ucaQiEUA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130411202609.110357787@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 11 Apr 2013 16:27:22 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: FuXiangChun <xfu@redhat.com>, Amit Shah <amit.shah@redhat.com>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>, Asias He <asias@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, <stable@kernel.org>
+Subject: [ 139/171 ] virtio: console: add locking around c_ovq operations
 References: <20130411202503.783159048@goodmis.org>
-	 <20130411202550.471143447@goodmis.org>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19790.000
-X-TM-AS-Result: No--20.506500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Content-Disposition: inline; filename=0139-virtio-console-add-locking-around-c_ovq-operations.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aside from #21-26 in this series, and the deadlock fix required on top
-of #24, there are several more fixes for sfc that I think are suitable
-for 3.6.11.y.
+3.6.11.2 stable review patch.
+If anyone has any objections, please let me know.
 
-These commits were cherry-picked for 3.4.38 and can also be
-cherry-picked cleanly on top of 3.6.11.1 plus the 7 patches you already
-have:
+------------------
 
-d5e8cc6c946e sfc: Really disable flow control while flushing
-bfeed902946a sfc: Convert firmware subtypes to native byte order in efx_mcdi_get_board_cfg()
-9724a8504c87 sfc: Add parentheses around use of bitfield macro arguments
-0a6e5008a9df sfc: Fix MCDI structure field lookup
-450783747f42 sfc: Avoid generating over-length MC_CMD_FLUSH_RX_QUEUES request
-525d9e824018 sfc: Work-around flush timeout when flushes have completed
-ef492f11efed sfc: Correctly initialise reset_method in siena_test_chip()
-ebf98e797b4e sfc: Fix timekeeping in efx_mcdi_poll()
+From: Amit Shah <amit.shah@redhat.com>
 
-Please let me know whether you're prepared to include these in the
-current update.  I can then run some automated tests with your selected
-set of patches applied.
+[ Upstream commit 9ba5c80b1aea8648a3efe5f22dc1f7cacdfbeeb8 ]
 
-Ben.
+When multiple ovq operations are being performed (lots of open/close
+operations on virtio_console fds), the __send_control_msg() function can
+get confused without locking.
 
+A simple recipe to cause badness is:
+* create a QEMU VM with two virtio-serial ports
+* in the guest, do
+  while true;do echo abc >/dev/vport0p1;done
+  while true;do echo edf >/dev/vport0p2;done
+
+In one run, this caused a panic in __send_control_msg().  In another, I
+got
+
+   virtio_console virtio0: control-o:id 0 is not a head!
+
+This also results repeated messages similar to these on the host:
+
+  qemu-kvm: virtio-serial-bus: Unexpected port id 478762112 for device virtio-serial-bus.0
+  qemu-kvm: virtio-serial-bus: Unexpected port id 478762368 for device virtio-serial-bus.0
+
+Reported-by: FuXiangChun <xfu@redhat.com>
+Signed-off-by: Amit Shah <amit.shah@redhat.com>
+Reviewed-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reviewed-by: Asias He <asias@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Cc: stable@kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/char/virtio_console.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+index 86cfffe..d2f7eb0 100644
+--- a/drivers/char/virtio_console.c
++++ b/drivers/char/virtio_console.c
+@@ -132,6 +132,7 @@ struct ports_device {
+ 
+ 	/* To protect the vq operations for the control channel */
+ 	spinlock_t c_ivq_lock;
++	spinlock_t c_ovq_lock;
+ 
+ 	/* The current config space is stored here */
+ 	struct virtio_console_config config;
+@@ -457,11 +458,14 @@ static ssize_t __send_control_msg(struct ports_device *portdev, u32 port_id,
+ 	vq = portdev->c_ovq;
+ 
+ 	sg_init_one(sg, &cpkt, sizeof(cpkt));
++
++	spin_lock(&portdev->c_ovq_lock);
+ 	if (virtqueue_add_buf(vq, sg, 1, 0, &cpkt, GFP_ATOMIC) >= 0) {
+ 		virtqueue_kick(vq);
+ 		while (!virtqueue_get_buf(vq, &len))
+ 			cpu_relax();
+ 	}
++	spin_unlock(&portdev->c_ovq_lock);
+ 	return 0;
+ }
+ 
+@@ -1743,6 +1747,7 @@ static int __devinit virtcons_probe(struct virtio_device *vdev)
+ 		unsigned int nr_added_bufs;
+ 
+ 		spin_lock_init(&portdev->c_ivq_lock);
++		spin_lock_init(&portdev->c_ovq_lock);
+ 		INIT_WORK(&portdev->control_work, &control_work_handler);
+ 
+ 		nr_added_bufs = fill_queue(portdev->c_ivq,
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.10.4
+
 
