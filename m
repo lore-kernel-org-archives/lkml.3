@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934374Ab3DKXX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 19:23:56 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:46398 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761650Ab3DKXXy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 19:23:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <1365415054-30771-1-git-send-email-amit.daniel@samsung.com>
-References: <CAKohpo=t_YTCTRCfnwQ+GPF=frsTGDigT3RZHJuVQ+R+YZU7Hg@mail.gmail.com>
-	<1365415054-30771-1-git-send-email-amit.daniel@samsung.com>
-Date: Thu, 11 Apr 2013 18:23:52 -0500
-X-Google-Sender-Auth: -elkM2j6FmGgQi09EdtRPh6M5eg
-Message-ID: <CAGo_u6oZM0K8XDMtmXKFyoGy2qf+-HSPvU0EMangM5Jj_prKsA@mail.gmail.com>
-Subject: Re: [RESEND PATCH V6 1/4] cpufreq: exynos: Add cpufreq driver for exynos5440
-From: Nishanth Menon <nm@ti.com>
-To: Amit Daniel Kachhap <amit.daniel@samsung.com>
-Cc: linux-pm@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Inderpal Singh <inderpal.singh@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934526Ab3DKXZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 19:25:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57918 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1765536Ab3DKXZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 19:25:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,458,1363158000"; 
+   d="scan'208";a="293743608"
+Message-ID: <1365722723.2183.6.camel@rzhang1-mobl4>
+Subject: Re: [PATCH] thermal: step_wise: set throttle target within thermal
+ instance limits
+From: Zhang Rui <rui.zhang@intel.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Andrew Bresticker <abrestic@chromium.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 12 Apr 2013 07:25:23 +0800
+In-Reply-To: <5165CA11.3090709@ti.com>
+References: <1365544787-22940-1-git-send-email-abrestic@chromium.org>
+	 <1365577575.2183.70.camel@rzhang1-mobl4> <5165CA11.3090709@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-On Mon, Apr 8, 2013 at 4:57 AM, Amit Daniel Kachhap
-<amit.daniel@samsung.com> wrote:
-> +
-> +static int init_div_table(void)
-> +{
-> +       struct cpufreq_frequency_table *freq_tbl = dvfs_info->freq_table;
-> +       unsigned int tmp, clk_div, ema_div, freq, volt_id;
-> +       int i = 0;
-> +       struct opp *opp;
-> +
-> +       for (i = 0; freq_tbl[i].frequency != CPUFREQ_TABLE_END; i++) {
-> +
-> +               opp = opp_find_freq_exact(dvfs_info->dev,
-> +                                       freq_tbl[i].frequency * 1000, true);
-> +               if (IS_ERR(opp)) {
-> +                       dev_err(dvfs_info->dev,
-> +                               "failed to find valid OPP for %u KHZ\n",
-> +                               freq_tbl[i].frequency);
-> +                       return PTR_ERR(opp);
-> +               }
-please use RCU read locks.
+On Wed, 2013-04-10 at 16:22 -0400, Eduardo Valentin wrote:
+> On 10-04-2013 03:06, Zhang Rui wrote:
+> > On Tue, 2013-04-09 at 14:59 -0700, Andrew Bresticker wrote:
+> >> When selecting a target cooling state in get_target_state(), make sure
+> >> that the state is at least as high as the minimum when the temperature
+> >> is rising and at least as low as the maximum when the temperature is
+> >> falling.  This is necessary because, in the THREAML_TREND_RAISING and
+> >> THERMAL_TREND_DROPPING cases, the current state may only be incremented
+> >> or decremented by one even if it is outside the bounds of the thermal
+> >> instance.  This might occur, for example, if the CPU is heating up
+> >> and hits a thermal trip point for the first time when it's frequency
+> >> is much higher than the range specified by the thermal instance
+> >> corresponding to the trip point.
+> >>
+> >> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+> >
+> > applied.
+> 
+> Rui,
+> 
+> Can you please add my:
+> 
+> Acked-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> 
+sure. Thanks for reviewing.
 
-> +
-> +               freq = freq_tbl[i].frequency / 1000; /* In MHZ */
-> +               clk_div = ((freq / CPU_DIV_FREQ_MAX) & P0_7_CPUCLKDEV_MASK)
-> +                                       << P0_7_CPUCLKDEV_SHIFT;
-> +               clk_div |= ((freq / CPU_ATB_FREQ_MAX) & P0_7_ATBCLKDEV_MASK)
-> +                                       << P0_7_ATBCLKDEV_SHIFT;
-> +               clk_div |= ((freq / CPU_DBG_FREQ_MAX) & P0_7_CSCLKDEV_MASK)
-> +                                       << P0_7_CSCLKDEV_SHIFT;
-> +
-> +               /* Calculate EMA */
-> +               volt_id = opp_get_voltage(opp);
-Please use RCU read locks as documented for OPP library.
+thanks,
+rui
+> 
+> Thanks,
+> >
+> > thanks,
+> > rui
+> >> ---
+> >>   drivers/thermal/step_wise.c | 10 ++++++++--
+> >>   1 file changed, 8 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+> >> index 407cde3..ca4f79f 100644
+> >> --- a/drivers/thermal/step_wise.c
+> >> +++ b/drivers/thermal/step_wise.c
+> >> @@ -59,9 +59,12 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+> >>
+> >>   	switch (trend) {
+> >>   	case THERMAL_TREND_RAISING:
+> >> -		if (throttle)
+> >> +		if (throttle) {
+> >>   			cur_state = cur_state < instance->upper ?
+> >>   				    (cur_state + 1) : instance->upper;
+> >> +			if (cur_state < instance->lower)
+> >> +				cur_state = instance->lower;
+> >> +		}
+> >>   		break;
+> >>   	case THERMAL_TREND_RAISE_FULL:
+> >>   		if (throttle)
+> >> @@ -71,8 +74,11 @@ static unsigned long get_target_state(struct thermal_instance *instance,
+> >>   		if (cur_state == instance->lower) {
+> >>   			if (!throttle)
+> >>   				cur_state = -1;
+> >> -		} else
+> >> +		} else {
+> >>   			cur_state -= 1;
+> >> +			if (cur_state > instance->upper)
+> >> +				cur_state = instance->upper;
+> >> +		}
+> >>   		break;
+> >>   	case THERMAL_TREND_DROP_FULL:
+> >>   		if (cur_state == instance->lower) {
+> >
+> >
+> >
+> >
+> 
 
-Regards,
-Nishanth Menon
+
