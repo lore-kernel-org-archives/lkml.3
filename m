@@ -1,38 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab3DKUZv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:25:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38872 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097Ab3DKUZt (ORCPT
+	id S1755680Ab3DKU0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:26:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24786 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab3DKUZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:25:49 -0400
-Date: Thu, 11 Apr 2013 13:25:47 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-s390@vger.kernel.org, koverstreet@google.com, bcrl@kvack.org,
-        schwidefsky@de.ibm.com, kirill.shutemov@linux.intel.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH v2] aio: convert the ioctx list to radix tree
-Message-Id: <20130411132547.cd0df05abeea6a7f49646b0c@linux-foundation.org>
-In-Reply-To: <1364995248-11028-1-git-send-email-octavian.purdila@intel.com>
-References: <1364995248-11028-1-git-send-email-octavian.purdila@intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Apr 2013 16:25:53 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=L-0Blh_sbI4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=nW2SK8sdaUMA:10 a=jmWCE8W1go-RpaolMxwA:9 a=jeBq3FmKZ4MA:10 a=D4g3Wo-3sDB463hv:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130411202546.428767806@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 11 Apr 2013 16:25:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: [ 001/171 ] IP_GRE: Revert "IP_GRE: Fix kernel panic in IP_GRE with GRE csum"
+References: <20130411202503.783159048@goodmis.org>
+Content-Disposition: inline; filename=0001-IP_GRE-Revert-IP_GRE-Fix-kernel-panic-in-IP_GRE-with.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  3 Apr 2013 16:20:48 +0300 Octavian Purdila <octavian.purdila@intel.com> wrote:
+3.6.11.2 stable review patch.
+If anyone has any objections, please let me know.
 
-> This patchs converts the ioctx list to a radix tree.
+------------------
 
-This looks rather nice, but unfortunately all the pending aio work in
--mm/linux-next totally messes it up.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Could you please redo and retest it over the pending work?  Perhaps
-after 3.10-rc1 would be a convenient time.
+Commit 1bef9ca32aaed714a204a3eceb856a5000328c5b
+"IP_GRE: Fix kernel panic in IP_GRE with GRE csum." which was
+upstream commit d0a7cc630a337b0f56dc145e7eb6232852b14dd4 was
+added to the 3.6.11.1 by mistake. Ben Hutchings reported to me
+that this commit fixes a bug introduced by commit 6b78f16e4bdde3936b
+which was added in the 3.7-rc cycle, and not needed to be back ported to
+3.6.  I removed it from my queue, but the git repo I used to push still
+included it.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ net/ipv4/ip_gre.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/net/ipv4/ip_gre.c b/net/ipv4/ip_gre.c
+index 3ee08ce..b062a98 100644
+--- a/net/ipv4/ip_gre.c
++++ b/net/ipv4/ip_gre.c
+@@ -946,12 +946,8 @@ static netdev_tx_t ipgre_tunnel_xmit(struct sk_buff *skb, struct net_device *dev
+ 			ptr--;
+ 		}
+ 		if (tunnel->parms.o_flags&GRE_CSUM) {
+-			int offset = skb_transport_offset(skb);
+-
+ 			*ptr = 0;
+-			*(__sum16 *)ptr = csum_fold(skb_checksum(skb, offset,
+-								 skb->len - offset,
+-								 0));
++			*(__sum16 *)ptr = ip_compute_csum((void *)(iph+1), skb->len - sizeof(struct iphdr));
+ 		}
+ 	}
+ 
+-- 
+1.7.10.4
+
 
