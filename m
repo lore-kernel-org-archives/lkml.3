@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422639Ab3DKU5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 16:57:31 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:50895 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130Ab3DKU51 (ORCPT
+	id S1422686Ab3DKU6D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 16:58:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5406 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935849Ab3DKUt0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 16:57:27 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@canonical.com>
+	Thu, 11 Apr 2013 16:49:26 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=jlfF-uorvd4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=3Ym1OGTNcIYA:10 a=DfNHnWVPAAAA:8 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=aqEMo31ULdOIbiBSTlkA:9 a=lBRciGGoxdUA:10 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20130411202559.325937386@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Thu, 11 Apr 2013 16:26:23 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Dave Jones <davej@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Ming Lei <ming.lei@canonical.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 080/171 ] sysfs: handle failure path correctly for readdir()
 References: <20130411202503.783159048@goodmis.org>
-	<20130411202604.352966800@goodmis.org>
-Date: Thu, 11 Apr 2013 13:57:19 -0700
-In-Reply-To: <20130411202604.352966800@goodmis.org> (Steven Rostedt's message
-	of "Thu, 11 Apr 2013 16:26:53 -0400")
-Message-ID: <87vc7su6og.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19xC6aNhxpwQnjWNUW0ql1Kc6kAor2EhZY=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Steven Rostedt <rostedt@goodmis.org>
-X-Spam-Relay-Country: 
-Subject: Re: [ 110/171 ] vfs: Add a mount flag to lock read only bind mounts
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Disposition: inline; filename=0080-sysfs-handle-failure-path-correctly-for-readdir.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt <rostedt@goodmis.org> writes:
+3.6.11.2 stable review patch.
+If anyone has any objections, please let me know.
 
-> 3.6.11.2 stable review patch.
-> If anyone has any objections, please let me know.
+------------------
 
-Mounting only with privilege in the user namespace (where we use
-MNT_LOCK_READONLY) only dates back to 3.8 so this is not needed in 3.6.
+From: Ming Lei <ming.lei@canonical.com>
 
-Not that it should do any harm, but there doesn't seem to be much point
-in backporting this one.
+[ Upstream commit e5110f411d2ee35bf8d202ccca2e89c633060dca ]
 
-Eric
+In case of 'if (filp->f_pos ==  0 or 1)' of sysfs_readdir(),
+the failure from filldir() isn't handled, and the reference counter
+of the sysfs_dirent object pointed by filp->private_data will be
+released without clearing filp->private_data, so use after free
+bug will be triggered later.
 
-> ------------------
->
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
->
-> [ Upstream commit 90563b198e4c6674c63672fae1923da467215f45 ]
->
-> When a read-only bind mount is copied from mount namespace in a higher
-> privileged user namespace to a mount namespace in a lesser privileged
-> user namespace, it should not be possible to remove the the read-only
-> restriction.
->
-> Add a MNT_LOCK_READONLY mount flag to indicate that a mount must
-> remain read-only.
->
-> CC: stable@vger.kernel.org
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  fs/namespace.c        |    3 +++
->  include/linux/mount.h |    2 ++
->  2 files changed, 5 insertions(+)
->
-> diff --git a/fs/namespace.c b/fs/namespace.c
-> index c48b0d3..48c7edb 100644
-> --- a/fs/namespace.c
-> +++ b/fs/namespace.c
-> @@ -1702,6 +1702,9 @@ static int change_mount_flags(struct vfsmount *mnt, int ms_flags)
->  	if (readonly_request == __mnt_is_readonly(mnt))
->  		return 0;
->  
-> +	if (mnt->mnt_flags & MNT_LOCK_READONLY)
-> +		return -EPERM;
-> +
->  	if (readonly_request)
->  		error = mnt_make_readonly(real_mount(mnt));
->  	else
-> diff --git a/include/linux/mount.h b/include/linux/mount.h
-> index d7029f4..73005f9 100644
-> --- a/include/linux/mount.h
-> +++ b/include/linux/mount.h
-> @@ -47,6 +47,8 @@ struct mnt_namespace;
->  
->  #define MNT_INTERNAL	0x4000
->  
-> +#define MNT_LOCK_READONLY	0x400000
-> +
->  struct vfsmount {
->  	struct dentry *mnt_root;	/* root of the mounted tree */
->  	struct super_block *mnt_sb;	/* pointer to superblock */
+This patch returns immeadiately under the situation for fixing the bug,
+and it is reasonable to return from readdir() when filldir() fails.
+
+Reported-by: Dave Jones <davej@redhat.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ fs/sysfs/dir.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
+index b65a354..4b93159 100644
+--- a/fs/sysfs/dir.c
++++ b/fs/sysfs/dir.c
+@@ -1020,6 +1020,8 @@ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 		ino = parent_sd->s_ino;
+ 		if (filldir(dirent, ".", 1, filp->f_pos, ino, DT_DIR) == 0)
+ 			filp->f_pos++;
++		else
++			return 0;
+ 	}
+ 	if (filp->f_pos == 1) {
+ 		if (parent_sd->s_parent)
+@@ -1028,6 +1030,8 @@ static int sysfs_readdir(struct file * filp, void * dirent, filldir_t filldir)
+ 			ino = parent_sd->s_ino;
+ 		if (filldir(dirent, "..", 2, filp->f_pos, ino, DT_DIR) == 0)
+ 			filp->f_pos++;
++		else
++			return 0;
+ 	}
+ 	mutex_lock(&sysfs_mutex);
+ 	for (pos = sysfs_dir_pos(ns, parent_sd, filp->f_pos, pos);
+-- 
+1.7.10.4
+
+
