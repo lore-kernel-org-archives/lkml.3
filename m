@@ -1,212 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S937779Ab3DKANt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Apr 2013 20:13:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52058 "EHLO
+	id S937199Ab3DKANs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Apr 2013 20:13:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59477 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S937298Ab3DKAGx (ORCPT
+	with ESMTP id S937300Ab3DKAGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 10 Apr 2013 20:06:53 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
         linux-samsung-soc@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: [PATCH 17/30] pwm: samsung: repair the worst MMIO abuses
-Date: Thu, 11 Apr 2013 02:04:59 +0200
-Message-Id: <1365638712-1028578-18-git-send-email-arnd@arndb.de>
+        alsa-devel@alsa-project.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Subject: [PATCH 18/30] ASoC: samsung: move plat/ headers to local directory
+Date: Thu, 11 Apr 2013 02:05:00 +0200
+Message-Id: <1365638712-1028578-19-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
 References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:u9yWnfeNlhl72CdYMhmFTSoV4VATRU7OrQaMpOYfdUI
- FJBrjwRdndptWXlKM0j0wE66BUugcF1lCmY6sSO+rEE6S1gI2l
- EX5PACRbkf1psIXUccs/5uUJONHdSGwHOsqfTPCX+GvU4i7jRQ
- OEV8UziafyrEjHHhw5Shg9yqZM6yy5R1WdZ0VNR6i6VYV3N+v1
- XYpPpvs7HxfN/KjhzaxriPjV8S13axA4MOZfq0/zx+dn5XkZWz
- XZ9Iaq3Dcpe781QArAStcufVtPnfz5VqBxwBWH91XBvxwthRmI
- T8JEBtN8o/m9gv8po3I1kO2p1Y9Ly+NF05UimUr9r4D7qz4H3V
- vD3lvHkKIDoiEH8aO9rX6jZ7DOh46NGJW77LLnqiyU21BJiEtb
- DrljsmMvEpEpA==
+X-Provags-ID: V02:K0:80qn5mUHdyccZbF7CN5XZMZCwyTW8IBhI4VhK60X+jD
+ a3y5XgBlzEvmNhuf5r5hNao4tlwVr9529LWEDnY4aW7DKXC2Mf
+ oY5P3bJ13xJTMeWnsOfYS8FZ20whvNlcA9A3uLXzKyfiwhwdvD
+ Fywz+0y3NHjvkwjT6ur4WtyItPYxzRwW4t0xLmrpTjemmhD4i1
+ j3aA0tJU17IUZ74siH/u1bKjyOTeNwaLdHqF/bU80CClaAMxXi
+ ksSUXH28DC+lm6fCvVb1MiM1fn99GyEPdagFLJkqRhlyJbn9o5
+ Jz2rPuKvYC+yisNK5jyXbmjcBpFAuqwxADrIwLNVXJRsibSE1+
+ sNNVbuZIpIj+1yRETMwaU5dTq9bUr5QoTeCGdNMJOcPSacsmij
+ tgm0To/3DoJfw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Samsung PWM driver uses "magic" pointers that are mapped
-at boot time to point its MMIO registers. This fails horribly
-with a multiplatform kernel, which can not rely on platform
-specific header files to contain the right values, aside from
-this being a really bad idea in general.
-
-This changes the driver to at least pass an __iomem token
-around in the device structure to dereference that. Fixing
-the platform code is much harder, so we'll leave that
-until we have a DT binding for pwm-samsung, which may require
-other changes in this area. Since we are already touching
-every MMIO accessor in this driver, let's also use the
-proper readl_relaxed variant rather than __raw_readl.
-
-Tomasz Figa has a set of patches to clean this up in a proper
-way, but that might be too late for 3.10.
+The plat/iis.h and plat/ac97.h files in the samsung platform are
+only needed by the ASoC drivers, so they can be moved into the
+same directory, as one more step towards a multiplatform build.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Tomasz Figa <t.figa@samsung.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: alsa-devel@alsa-project.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
 ---
- drivers/pwm/pwm-samsung.c | 60 +++++++++++++++++++++++++++++++++--------------
- 1 file changed, 42 insertions(+), 18 deletions(-)
+ arch/arm/mach-s3c24xx/dma-s3c2410.c                                   | 2 --
+ arch/arm/mach-s3c24xx/dma-s3c2412.c                                   | 2 --
+ arch/arm/mach-s3c24xx/dma-s3c2440.c                                   | 2 --
+ arch/arm/mach-s3c24xx/dma-s3c2443.c                                   | 2 --
+ sound/soc/samsung/ac97.c                                              | 2 +-
+ sound/soc/samsung/h1940_uda1380.c                                     | 2 +-
+ sound/soc/samsung/neo1973_wm8753.c                                    | 2 +-
+ {arch/arm/plat-samsung/include/plat => sound/soc/samsung}/regs-ac97.h | 0
+ {arch/arm/plat-samsung/include/plat => sound/soc/samsung}/regs-iis.h  | 0
+ sound/soc/samsung/rx1950_uda1380.c                                    | 2 +-
+ sound/soc/samsung/s3c24xx-i2s.c                                       | 2 +-
+ sound/soc/samsung/s3c24xx_uda134x.c                                   | 2 +-
+ 12 files changed, 6 insertions(+), 14 deletions(-)
+ rename {arch/arm/plat-samsung/include/plat => sound/soc/samsung}/regs-ac97.h (100%)
+ rename {arch/arm/plat-samsung/include/plat => sound/soc/samsung}/regs-iis.h (100%)
 
-diff --git a/drivers/pwm/pwm-samsung.c b/drivers/pwm/pwm-samsung.c
-index 5207e6c..9d7234d 100644
---- a/drivers/pwm/pwm-samsung.c
-+++ b/drivers/pwm/pwm-samsung.c
-@@ -22,9 +22,25 @@
- #include <linux/io.h>
- #include <linux/pwm.h>
+diff --git a/arch/arm/mach-s3c24xx/dma-s3c2410.c b/arch/arm/mach-s3c24xx/dma-s3c2410.c
+index a6c94b8..30aa53f 100644
+--- a/arch/arm/mach-s3c24xx/dma-s3c2410.c
++++ b/arch/arm/mach-s3c24xx/dma-s3c2410.c
+@@ -25,10 +25,8 @@
  
--#include <mach/map.h>
-+#ifndef CONFIG_ARCH_MULTIPLATFORM
-+/*
-+ * This is gross: the platform maps the timer at a fixed
-+ * virtual address and expects us to use that address
-+ * rather than a proper resource. This should get done properly
-+ * when we get a DT binding for this driver.
-+ */
-+#include <plat/map-base.h>
-+static inline void dummy(void)
-+{
-+	BUILD_BUG_ON(S3C_VA_TIMER != IOMEM(0xf6300000));
-+}
-+#else
-+#define S3C_VA_TIMER IOMEM(0xf6300000);
-+#endif
+ #include <plat/regs-serial.h>
+ #include <mach/regs-gpio.h>
+-#include <plat/regs-ac97.h>
+ #include <plat/regs-dma.h>
+ #include <mach/regs-lcd.h>
+-#include <plat/regs-iis.h>
+ #include <plat/regs-spi.h>
  
--#include <plat/regs-timer.h>
-+#define S3C2410_TCON		8
-+#define S3C2410_TCNTB(tmr)	(0x0c + (tmr)*0x0c + 0x00)
-+#define S3C2410_TCMPB(tmr)	(0x0c + (tmr)*0x0c + 0x04)
+ static struct s3c24xx_dma_map __initdata s3c2410_dma_mappings[] = {
+diff --git a/arch/arm/mach-s3c24xx/dma-s3c2412.c b/arch/arm/mach-s3c24xx/dma-s3c2412.c
+index c0e8c3f..ab1700e 100644
+--- a/arch/arm/mach-s3c24xx/dma-s3c2412.c
++++ b/arch/arm/mach-s3c24xx/dma-s3c2412.c
+@@ -25,10 +25,8 @@
  
- struct s3c_chip {
- 	struct platform_device	*pdev;
-@@ -38,6 +54,7 @@ struct s3c_chip {
+ #include <plat/regs-serial.h>
+ #include <mach/regs-gpio.h>
+-#include <plat/regs-ac97.h>
+ #include <plat/regs-dma.h>
+ #include <mach/regs-lcd.h>
+-#include <plat/regs-iis.h>
+ #include <plat/regs-spi.h>
  
- 	unsigned char		 tcon_base;
- 	unsigned char		 pwm_id;
-+	void __iomem		*base;
- 	struct pwm_chip		 chip;
- };
+ #define MAP(x) { (x)| DMA_CH_VALID, (x)| DMA_CH_VALID, (x)| DMA_CH_VALID, (x)| DMA_CH_VALID }
+diff --git a/arch/arm/mach-s3c24xx/dma-s3c2440.c b/arch/arm/mach-s3c24xx/dma-s3c2440.c
+index 1c08eccd..cd25de2 100644
+--- a/arch/arm/mach-s3c24xx/dma-s3c2440.c
++++ b/arch/arm/mach-s3c24xx/dma-s3c2440.c
+@@ -25,10 +25,8 @@
  
-@@ -65,9 +82,9 @@ static int s3c_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ #include <plat/regs-serial.h>
+ #include <mach/regs-gpio.h>
+-#include <plat/regs-ac97.h>
+ #include <plat/regs-dma.h>
+ #include <mach/regs-lcd.h>
+-#include <plat/regs-iis.h>
+ #include <plat/regs-spi.h>
  
- 	local_irq_save(flags);
+ static struct s3c24xx_dma_map __initdata s3c2440_dma_mappings[] = {
+diff --git a/arch/arm/mach-s3c24xx/dma-s3c2443.c b/arch/arm/mach-s3c24xx/dma-s3c2443.c
+index 000e4c6..5fe3539 100644
+--- a/arch/arm/mach-s3c24xx/dma-s3c2443.c
++++ b/arch/arm/mach-s3c24xx/dma-s3c2443.c
+@@ -25,10 +25,8 @@
  
--	tcon = __raw_readl(S3C2410_TCON);
-+	tcon = readl_relaxed(s3c->base + S3C2410_TCON);
- 	tcon |= pwm_tcon_start(s3c);
--	__raw_writel(tcon, S3C2410_TCON);
-+	writel_relaxed(tcon, s3c->base + S3C2410_TCON);
+ #include <plat/regs-serial.h>
+ #include <mach/regs-gpio.h>
+-#include <plat/regs-ac97.h>
+ #include <plat/regs-dma.h>
+ #include <mach/regs-lcd.h>
+-#include <plat/regs-iis.h>
+ #include <plat/regs-spi.h>
  
- 	local_irq_restore(flags);
+ #define MAP(x) { \
+diff --git a/sound/soc/samsung/ac97.c b/sound/soc/samsung/ac97.c
+index 0df3c56..c76abdf 100644
+--- a/sound/soc/samsung/ac97.c
++++ b/sound/soc/samsung/ac97.c
+@@ -20,7 +20,7 @@
+ #include <sound/soc.h>
  
-@@ -82,9 +99,9 @@ static void s3c_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ #include <mach/dma.h>
+-#include <plat/regs-ac97.h>
++#include "regs-ac97.h"
+ #include <linux/platform_data/asoc-s3c.h>
  
- 	local_irq_save(flags);
+ #include "dma.h"
+diff --git a/sound/soc/samsung/h1940_uda1380.c b/sound/soc/samsung/h1940_uda1380.c
+index 15a3817..fa91376 100644
+--- a/sound/soc/samsung/h1940_uda1380.c
++++ b/sound/soc/samsung/h1940_uda1380.c
+@@ -20,7 +20,7 @@
+ #include <sound/soc.h>
+ #include <sound/jack.h>
  
--	tcon = __raw_readl(S3C2410_TCON);
-+	tcon = readl_relaxed(s3c->base + S3C2410_TCON);
- 	tcon &= ~pwm_tcon_start(s3c);
--	__raw_writel(tcon, S3C2410_TCON);
-+	writel_relaxed(tcon, s3c->base + S3C2410_TCON);
+-#include <plat/regs-iis.h>
++#include "regs-iis.h"
+ #include <asm/mach-types.h>
  
- 	local_irq_restore(flags);
- }
-@@ -133,8 +150,8 @@ static int s3c_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	/* The TCMP and TCNT can be read without a lock, they're not
- 	 * shared between the timers. */
+ #include "s3c24xx-i2s.h"
+diff --git a/sound/soc/samsung/neo1973_wm8753.c b/sound/soc/samsung/neo1973_wm8753.c
+index a301d8c..ccc601d 100644
+--- a/sound/soc/samsung/neo1973_wm8753.c
++++ b/sound/soc/samsung/neo1973_wm8753.c
+@@ -21,7 +21,7 @@
+ #include <sound/soc.h>
  
--	tcmp = __raw_readl(S3C2410_TCMPB(s3c->pwm_id));
--	tcnt = __raw_readl(S3C2410_TCNTB(s3c->pwm_id));
-+	tcmp = readl_relaxed(s3c->base + S3C2410_TCMPB(s3c->pwm_id));
-+	tcnt = readl_relaxed(s3c->base + S3C2410_TCNTB(s3c->pwm_id));
+ #include <asm/mach-types.h>
+-#include <plat/regs-iis.h>
++#include "regs-iis.h"
+ #include <mach/gta02.h>
  
- 	period = NS_IN_HZ / period_ns;
+ #include "../codecs/wm8753.h"
+diff --git a/arch/arm/plat-samsung/include/plat/regs-ac97.h b/sound/soc/samsung/regs-ac97.h
+similarity index 100%
+rename from arch/arm/plat-samsung/include/plat/regs-ac97.h
+rename to sound/soc/samsung/regs-ac97.h
+diff --git a/arch/arm/plat-samsung/include/plat/regs-iis.h b/sound/soc/samsung/regs-iis.h
+similarity index 100%
+rename from arch/arm/plat-samsung/include/plat/regs-iis.h
+rename to sound/soc/samsung/regs-iis.h
+diff --git a/sound/soc/samsung/rx1950_uda1380.c b/sound/soc/samsung/rx1950_uda1380.c
+index a5826ea..704460a 100644
+--- a/sound/soc/samsung/rx1950_uda1380.c
++++ b/sound/soc/samsung/rx1950_uda1380.c
+@@ -24,7 +24,7 @@
+ #include <sound/soc.h>
+ #include <sound/jack.h>
  
-@@ -177,16 +194,16 @@ static int s3c_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+-#include <plat/regs-iis.h>
++#include "regs-iis.h"
+ #include <asm/mach-types.h>
  
- 	local_irq_save(flags);
+ #include "s3c24xx-i2s.h"
+diff --git a/sound/soc/samsung/s3c24xx-i2s.c b/sound/soc/samsung/s3c24xx-i2s.c
+index 13f6dd1..a7b17c1 100644
+--- a/sound/soc/samsung/s3c24xx-i2s.c
++++ b/sound/soc/samsung/s3c24xx-i2s.c
+@@ -24,7 +24,7 @@
+ #include <sound/pcm_params.h>
  
--	__raw_writel(tcmp, S3C2410_TCMPB(s3c->pwm_id));
--	__raw_writel(tcnt, S3C2410_TCNTB(s3c->pwm_id));
-+	writel_relaxed(tcmp, s3c->base + S3C2410_TCMPB(s3c->pwm_id));
-+	writel_relaxed(tcnt, s3c->base + S3C2410_TCNTB(s3c->pwm_id));
+ #include <mach/dma.h>
+-#include <plat/regs-iis.h>
++#include "regs-iis.h"
  
--	tcon = __raw_readl(S3C2410_TCON);
-+	tcon = readl_relaxed(s3c->base + S3C2410_TCON);
- 	tcon |= pwm_tcon_manulupdate(s3c);
- 	tcon |= pwm_tcon_autoreload(s3c);
--	__raw_writel(tcon, S3C2410_TCON);
-+	writel_relaxed(tcon, s3c->base + S3C2410_TCON);
+ #include "dma.h"
+ #include "s3c24xx-i2s.h"
+diff --git a/sound/soc/samsung/s3c24xx_uda134x.c b/sound/soc/samsung/s3c24xx_uda134x.c
+index 333e1b7..1b7b52b 100644
+--- a/sound/soc/samsung/s3c24xx_uda134x.c
++++ b/sound/soc/samsung/s3c24xx_uda134x.c
+@@ -18,7 +18,7 @@
+ #include <sound/soc.h>
+ #include <sound/s3c24xx_uda134x.h>
  
- 	tcon &= ~pwm_tcon_manulupdate(s3c);
--	__raw_writel(tcon, S3C2410_TCON);
-+	writel_relaxed(tcon, s3c->base + S3C2410_TCON);
+-#include <plat/regs-iis.h>
++#include "regs-iis.h"
  
- 	local_irq_restore(flags);
+ #include "s3c24xx-i2s.h"
  
-@@ -207,6 +224,7 @@ static int s3c_pwm_probe(struct platform_device *pdev)
- 	unsigned long flags;
- 	unsigned long tcon;
- 	unsigned int id = pdev->id;
-+	struct resource *res;
- 	int ret;
- 
- 	if (id == 4) {
-@@ -220,6 +238,12 @@ static int s3c_pwm_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 
-+	/* try to get a proper base address, fall back to S3C_VA_TIMER */
-+	s3c->base = S3C_VA_TIMER;
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (res)
-+		s3c->base = devm_ioremap(dev, res->start, resource_size(res));
-+
- 	/* calculate base of control bits in TCON */
- 	s3c->tcon_base = id == 0 ? 0 : (id * 4) + 4;
- 	s3c->pwm_id = id;
-@@ -245,9 +269,9 @@ static int s3c_pwm_probe(struct platform_device *pdev)
- 
- 	local_irq_save(flags);
- 
--	tcon = __raw_readl(S3C2410_TCON);
-+	tcon = readl_relaxed(s3c->base + S3C2410_TCON);
- 	tcon |= pwm_tcon_invert(s3c);
--	__raw_writel(tcon, S3C2410_TCON);
-+	writel_relaxed(tcon, s3c->base + S3C2410_TCON);
- 
- 	local_irq_restore(flags);
- 
-@@ -258,7 +282,7 @@ static int s3c_pwm_probe(struct platform_device *pdev)
- 	}
- 
- 	pwm_dbg(s3c, "config bits %02x\n",
--		(__raw_readl(S3C2410_TCON) >> s3c->tcon_base) & 0x0f);
-+		(readl_relaxed(s3c->base + S3C2410_TCON) >> s3c->tcon_base) & 0x0f);
- 
- 	dev_info(dev, "tin at %lu, tdiv at %lu, tin=%sclk, base %d\n",
- 		 clk_get_rate(s3c->clk),
-@@ -310,9 +334,9 @@ static int s3c_pwm_resume(struct platform_device *pdev)
- 	unsigned long tcon;
- 
- 	/* Restore invertion */
--	tcon = __raw_readl(S3C2410_TCON);
-+	tcon = readl_relaxed(s3c->base + S3C2410_TCON);
- 	tcon |= pwm_tcon_invert(s3c);
--	__raw_writel(tcon, S3C2410_TCON);
-+	writel_relaxed(tcon, s3c->base + S3C2410_TCON);
- 
- 	return 0;
- }
 -- 
 1.8.1.2
 
