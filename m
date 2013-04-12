@@ -1,128 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967Ab3DLNYx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 09:24:53 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:49523 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab3DLNYv (ORCPT
+	id S1755310Ab3DLN0z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 09:26:55 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50056 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753798Ab3DLN0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 09:24:51 -0400
-Message-ID: <51680B20.9090202@hitachi.com>
-Date: Fri, 12 Apr 2013 22:24:48 +0900
-From: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 12 Apr 2013 09:26:54 -0400
+Date: Fri, 12 Apr 2013 14:26:52 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Cc: Liam Girdwood <lrg@ti.com>, Guenter Roeck <linux@roeck-us.net>,
+        Jean Delvare <khali@linux-fr.org>, Randy Dunlap <rdunlap@xenotime.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+Message-ID: <20130412132651.GB12534@opensource.wolfsonmicro.com>
+References: <201304121310.r3CDAJHh011814@latitude>
 MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
- memory error on dirty cache selectable
-References: <51662D5B.3050001@hitachi.com> <1365664306-rvrpdnsl-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1365664306-rvrpdnsl-mutt-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gatW/ieO32f1wygP"
+Content-Disposition: inline
+In-Reply-To: <201304121310.r3CDAJHh011814@latitude>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/11 16:11), Naoya Horiguchi wrote:
-> Hi Tanino-san,
-> 
-> On Thu, Apr 11, 2013 at 12:26:19PM +0900, Mitsuhiro Tanino wrote:
-> ...
->> Solution
->> ---------
->> The patch proposes a new sysctl interface, vm.memory_failure_dirty_panic,
->> in order to prevent data corruption comes from data lost problem.
->> Also this patch displays information of affected file such as device name,
->> inode number, file offset and file type if the file is mapped on a memory
->> and the page is dirty cache.
->>
->> When SRAO machine check occurs on a dirty page cache, corresponding
->> data cannot be recovered any more. Therefore, the patch proposes a kernel
->> option to keep a system running or force system panic in order
->> to avoid further trouble such as data corruption problem of application.
->>
->> System administrator can select an error action using this option
->> according to characteristics of target system.
-> 
-> Can we do this in userspace?
-> mcelog can trigger scripts when a MCE which matches the user-configurable
-> conditions happens, so I think that we can trigger a kernel panic by
-> chekcing kernel messages from the triggered script.
-> For that purpose, I recently fixed the dirty/clean messaging in commit
-> ff604cf6d4 "mm: hwpoison: fix action_result() to print out dirty/clean".
 
-Hi Horiguchi-san,
+--gatW/ieO32f1wygP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thank you for your comment.
-I know mcelog has error trigger scripts such as page-error-trigger.
+On Fri, Apr 12, 2013 at 02:05:28PM +0100, Anthony Olech wrote:
 
-However, if userspace process triggers a kernel panic, I am afraid that
-the following case is not handled.
+This looks good, I assume there's some dependencies on the MFD or other
+earlier patches so I won't apply it, let me know if there aren't any and
+I will:
 
-- Several SRAO memory errors occur at the same time.
-- Then, some of memory errors are related to mcelog and the others are
-  related to dirty cache.
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-In my understanding, mcelog process is killed if memory error is related
-to mcelog process and mcelog can not cause a kernel panic in this case.
+Please use subject lines reflecting the subsystem.
 
+> +static int da9058_buck_ramp_voltage(struct regulator_dev *rdev,
+> +					unsigned int old_selector,
+> +					unsigned int new_selector)
+> +{
+> +	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
+> +	struct da9058 *da9058 = regulator->da9058;
+> +	int ret;
+> +
+> +	if (regulator->ramp_register == 0)
+> +		return -EINVAL;
+> +
+> +	if (regulator->ramp_enable_mask == 0)
+> +		return -EINVAL;
+> +
+> +	ret = da9058_set_bits(da9058, regulator->ramp_register,
+> +					regulator->ramp_enable_mask);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	return 2200; /* micro Seconds needed to ramp to new voltage*/
+> +}
 
->> Use Case
->> ---------
->> This option is intended to be adopted in KVM guest because it is
->> supposed that Linux on KVM guest operates customers business and
->> it is big impact to lost or corrupt customers data by memory failure.
->>
->> On the other hand, this option does not recommend to apply KVM host
->> as following reasons.
->>
->> - Making KVM host panic has a big impact because all virtual guests are
->>   affected by their host panic. Affected virtual guests are forced to stop
->>   and have to be restarted on the other hypervisor.
-> 
-> In this reasoning, you seem to assume that important data (business data)
-> are only handled on guest OS. That's true in most cases, but not always.
-> I think that the more general approach for this use case is that
-> we trigger kernel panic if memory errors happened on dirty pagecaches
-> used by 'important' processes (for example by adding process flags
-> controlled by prctl(),) and set it on qemu processes.
-> 
->> - If disk cached model of qemu is set to "none", I/O type of virtual
->>   guests becomes O_DIRECT and KVM host does not cache guest's disk I/O.
->>   Therefore, if SRAO machine check is reported on a dirty page cache
->>   in KVM host, its virtual machines are not affected by the machine check.
->>   So the host is expected to keep operating instead of kernel panic.
-> 
-> What to do if there're multiple guests, and some have "none" cache and
-> others have other types?
-> I think that we need more flexible settings for this use case.
+Hrm, this really should be implementable with a generic regmap
+operation...
 
-OK. If I find another helpful use case, I would propose it.
+> +	rdev = regulator_register(&reg->desc, &config);
+> +
+> +	if (IS_ERR(rdev)) {
+> +		dev_err(&pdev->dev, "failed to register %s\n",
+> +			rpdata->regulator_name);
+> +		ret = PTR_ERR(rdev);
+> +		goto failed_to_register;
+> +	}
 
+In general it's a bit better style to print out the return value to help
+with diagnosis but it's no big deal.
 
->>
->> Past discussion
->> --------------------
->> This problem was previously discussed in the kernel community, 
->> (refer: mail threads pertaining to
->> http://marc.info/?l=linux-kernel&m=135187403804934&w=4). 
->>
->>>> - I worry that if a hardware error occurs, it might affect a large
->>>>   amount of memory all at the same time.  For example, if a 4G memory
->>>>   block goes bad, this message will be printed a million times?
->>
->> As Andrew mentioned in the above threads, if 4GB memory blocks goes bad,
->> error messages will be printed a million times and this behavior loses
->> a system reliability.
-> 
-> Maybe "4G memory block goes bad" is not a MCE SRAO but a MCE with higher
-> severity, so we have no choice but to make kernel panic.
+--gatW/ieO32f1wygP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Yes. I agree with your opinion.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Regards,
-Mitsuhiro Tanino
+iQIcBAEBAgAGBQJRaAuQAAoJELSic+t+oim9KasQAI0Ga2Zq7aFHL/f79QLCyAAr
+SNnMCXlqf5oAXhuKBWT6XgYL93Q+Y/EzwW61Z1ySZJhCF4b6D9tdy/8a0ZqZceG7
+LK0sCGAFV+JkjvpOj4dWuxb2pPCKizKDXSfP4iigydDU73hK/Tib2j9oNzOBHeKA
+lBqx6zzgZbrNzCisORj7ov7Y37KhOAW/9RFzDw2cinSzt27Sf+54f/vhVvr2Dud2
+OhKzlhiFFMSuKyIuTfMXoIdITSGeH1axjhFIlOFxP1dn2lFFcX2Q1FdScdmgWScw
+cXK+X96k59dJy+KpBWQZ71amqHmVeafB+CTjpOResGhF/nvPA/e/6EjjAodTUVkR
+WV7yRZo1dzVFpwJ0G4v+MFCIwqxSHTFzkV53MCJTu4fW3ZSujr0MB0m2RRUFLwrT
+poOyejF1BkOsCluUeJ0hiqVzPmz6x6v2XwxUEt+ekKWPDSCoBQreBsFB1AJnZtgm
+FAp5rK9aIDkj/xJYX6HK1KBqPPseLVkDj0Gg2s/4KtOfSPn4KN23X2dpz+VuXayT
+SX7zSvhxmDDzQjvkql7AaSHtKYYX42sOODTDhb+b8yYc0g4cmssxHD20h/MpTkzU
+Xc6YmQbbknWMUtjtowT6z2fouP/ck7qveE47gvnHvJ2/9awfwp0wlA0C2CGOFgf9
+93+t8wAfyMEvOzGqXrZi
+=+1AA
+-----END PGP SIGNATURE-----
 
+--gatW/ieO32f1wygP--
