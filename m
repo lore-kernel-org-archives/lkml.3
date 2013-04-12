@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab3DLXbt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:31:49 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:36593 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752759Ab3DLXbs (ORCPT
+	id S1754161Ab3DLXcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:32:22 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:46610 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753613Ab3DLXcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:31:48 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+/8iaDiJyGJVRITTFr1KdS
-Date: Fri, 12 Apr 2013 16:31:43 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <b-cousson@ti.com>,
-        Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH V4 1/6] clk: OMAP: introduce device tree binding to
- kernel clock data
-Message-ID: <20130412233142.GE10155@atomide.com>
-References: <1365807278-554-1-git-send-email-nm@ti.com>
- <1365807278-554-2-git-send-email-nm@ti.com>
+	Fri, 12 Apr 2013 19:32:21 -0400
+Date: Fri, 12 Apr 2013 16:32:11 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/8] RCU callback-numbering simplifications for
+ 3.11
+Message-ID: <20130412233211.GA20993@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365807278-554-2-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041223-7408-0000-0000-00000EDDB48F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [130412 15:59]:
-> --- /dev/null
-> +++ b/drivers/clk/omap/clk.c
-> +/**
-> + * omap_clk_src_get() - Get OMAP clock from node name when needed
-> + * @clkspec:	clkspec argument
-> + * @data:	unused
-> + *
-> + * REVISIT: We assume the following:
-> + * 1. omap clock names end with _ck
-> + * 2. omap clock names are under 32 characters in length
-> + */
-> +static struct clk *omap_clk_src_get(struct of_phandle_args *clkspec, void *data)
-> +{
-> +	struct clk *clk;
-> +	char clk_name[32];
-> +	struct device_node *np = clkspec->np;
-> +
-> +	/* Set up things so consumer can call clk_get() with name */
+Hello!
 
-I would leave out the comment above, it's a leftover from
-the clk_add_alias() version that we don't need because of
-of_clk_get().
+This series takes advantage of callback numbering to simplify RCU's
+grace-period machinery, in some cases also reducing the number of
+lock acquisitions (though the resulting change in performance is not
+perceptible).  The individual patches are as follows:
 
-> +	snprintf(clk_name, 32, "%s_ck", np->name);
-> +	clk = clk_get(NULL, clk_name);
-> +	if (IS_ERR(clk)) {
-> +		pr_err("%s: could not get clock %s(%ld)\n", __func__,
-> +		       clk_name, PTR_ERR(clk));
-> +		goto out;
-> +	}
-> +	clk_put(clk);
-> +
-> +out:
-> +	return clk;
-> +}
-> +
-> +/**
-> + * omap_clk_probe() - create link from DT definition to clock data
-> + * @pdev:	device node
-> + *
-> + * NOTE: We assume that omap clocks are not removed.
-> + */
+1.	Move code to make way for the code-combining in later patches.
+	This commit makes no changes, just moves code.
 
-How about drop the comment on clocks being removed above.
-It no longer an issue, so maybe something like this instead:
+2.	Make __note_new_gpnum() also check for the ends of prior grace
+	periods, thus eliminating the earlier possibility of a given
+	CPU becoming aware of the start of the next grace period before
+	becoming aware of the end of the previous grace period.  Yes,
+	the code did handle this correctly, but now it doesn't need to.
+	More important, now I don't need to think about how it handles
+	this correctly.
 
-* Note that we look up the clock lazily when the consumer
-* driver does of_clk_get() and initialize a NULL clock here.
+3.	Rename note_new_gpnum() to note_gp_changes() in preparation for
+	later merge of rcu_process_gp_end() into this function.
 
-> +static int omap_clk_probe(struct platform_device *pdev)
-> +{
-> +	int res;
-> +	struct device_node *np = pdev->dev.of_node;
-> +
-> +	/* This allows the driver to of_clk_get() */
-> +	res = of_clk_add_provider(np, omap_clk_src_get, NULL);
-> +	if (res)
-> +		dev_err(&pdev->dev, "could not add provider(%d)\n", res);
-> +
-> +	return res;
-> +}
-> +
-> +/* We assume here that OMAP clocks will not be removed */
+4.	Change calls to rcu_process_gp_end() to instead call
+	note_gp_changes(), and also remove the now-used rcu_process_gp_end().
 
-Then the above comment can be removed too.
+5.	Remove duplicate code by merging __rcu_process_gp_end() into
+	__note_gp_changes().
 
-Regards,
+6.	Eliminate now-redundant call to check_for_new_grace_period().  This
+	leaves only a single caller, so inline check_for_new_grace_period().
 
-Tony
+7.	Given that rcu_start_gp_per_cpu() is a trivial wrapper function
+	with only one caller, inline it into its sole remaining call site.
+
+8.	Eliminate now-redundant call to note_gp_changes().
+
+							Thanx, Paul
+
+ b/kernel/rcutree.c        |  262 ++++++++++++++--------------------------------
+ b/kernel/rcutree_plugin.h |    2 
+ 2 files changed, 85 insertions(+), 179 deletions(-)
+
