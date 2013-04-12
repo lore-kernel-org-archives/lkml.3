@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab3DLHkl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 03:40:41 -0400
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:41336 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab3DLHkj (ORCPT
+	id S1754353Ab3DLHqF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 03:46:05 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:53070 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab3DLHqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 03:40:39 -0400
-Message-ID: <5167BA67.5080403@synopsys.com>
-Date: Fri, 12 Apr 2013 13:10:23 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 12 Apr 2013 03:46:03 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Arnd Bergmann <arnd@arndb.de>, linux-samsung-soc@vger.kernel.org,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH 17/30] pwm: samsung: repair the worst MMIO abuses
+Date: Fri, 12 Apr 2013 00:46:00 -0700 (PDT)
+Message-ID: <1469653.nxt3obZ5EV@flatron>
+User-Agent: KMail/4.10.2 (Linux/3.8.6-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <20130412070635.GA16956@avionic-0098.mockup.avionic-design.de>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de> <1365638712-1028578-18-git-send-email-arnd@arndb.de> <20130412070635.GA16956@avionic-0098.mockup.avionic-design.de>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        <linux-kbuild@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH] Kbuild: Avoid DTB rebuilds if source files are untouched
-References: <1364973141-16354-1-git-send-email-vgupta@synopsys.com> <515BD6B8.1020607@synopsys.com> <515C5652.8070705@wwwdotorg.org> <515D0FFB.4030803@synopsys.com> <515DBA0E.6000604@wwwdotorg.org> <51642158.3070205@synopsys.com>
-In-Reply-To: <51642158.3070205@synopsys.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.39]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 07:40 PM, Vineet Gupta wrote:
-> On 04/04/2013 11:06 PM, Stephen Warren wrote:
->
->> +.SECONDARY: $(obj)/%.dtb.S
->> +
->>  $(obj)/%.dtb.S: $(obj)/%.dtb
->>         $(call cmd,dt_S_dtb)
->>
->> and no longer see make rm'ing the .dtb.S file. So, the .SECONDARY is
->> behaving as expected, and should fix your problem.
-> Interestingly, if I make the file name explicit, .SECONDARY works for me too.
->
-> .SECONDARY: $(obj)/angel4.dtb.S
->
-> http://stackoverflow.com/questions/5426934/why-this-makefile-removes-my-goal
->
-> Is this a make bug or is it related to when the rule is parsed by make !
->
-> -Vineet
+On Friday 12 of April 2013 09:06:35 Thierry Reding wrote:
+> On Thu, Apr 11, 2013 at 02:04:59AM +0200, Arnd Bergmann wrote:
+> > The Samsung PWM driver uses "magic" pointers that are mapped
+> > at boot time to point its MMIO registers. This fails horribly
+> > with a multiplatform kernel, which can not rely on platform
+> > specific header files to contain the right values, aside from
+> > this being a really bad idea in general.
+> > 
+> > This changes the driver to at least pass an __iomem token
+> > around in the device structure to dereference that. Fixing
+> > the platform code is much harder, so we'll leave that
+> > until we have a DT binding for pwm-samsung, which may require
+> > other changes in this area. Since we are already touching
+> > every MMIO accessor in this driver, let's also use the
+> > proper readl_relaxed variant rather than __raw_readl.
+> > 
+> > Tomasz Figa has a set of patches to clean this up in a proper
+> > way, but that might be too late for 3.10.
+> 
+> Joonyoung Shim (Cc'ed) posted a driver for Exynos back in December. I
+> had a few comments on it but never saw an updated version. Is Tomasz'
+> work based on that patch?
 
-Ping ? Anyone know how to resolve this
+Is this the patch you are talking about?
 
--Vineet
+https://lkml.org/lkml/2012/12/13/84
 
+If yes, it solves the problems only for Exynos SoCs (excluding Exynos 4210 
+rev0), which don't need to share the PWM hardware between two drivers.
+
+On older platforms (S3C24xx, S3C64xx, S5P64x0, S5PC100, S5PV210 and Exynos 
+4210 rev0) the same hardware block is used for two drivers - clocksource 
+driver and PWM driver.
+
+You can get more information from these two threads:
+
+- http://thread.gmane.org/gmane.linux.kernel.samsung-soc/16480/focus=16510
+(starting from the linked post)
+
+- http://thread.gmane.org/gmane.linux.kernel.samsung-soc/17464
+ 
+
+> Given that this patch solves a real problem and doesn't make things any
+> worse, I think it's okay to use it temporarily until Tomasz has had time
+> to finish up the proper driver, so:
+
+Well, from what I've seen, the PWM might have been already broken on non-
+DT platforms using channels higher than 0, because the driver registers 
+each channel passing -1 as base, which makes the id being assigned 
+dynamically (usually to 0, since it's the only PWM channel used), while in 
+all platform data, the real (hardware) PWM channel id is used and no PWM 
+lookup is registered.
+
+You can use the following grep to find all platforms with broken PWM:
+git grep pwm_id arch/arm/mach-s[35]* | grep -v "= 0"
+
+I have a set of patches to fix everything up in the PWM driver, but they 
+depend on my patches providing the infrastructure to share the PWM 
+hardware, on next version of which I'm currently working.
+
+So, for now, Arnd's patch is fine to me as well.
+
+Best regards,
+Tomasz
 
