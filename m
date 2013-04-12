@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab3DLPrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:47:07 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:49586 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756441Ab3DLPrC (ORCPT
+	id S1756701Ab3DLPrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:47:14 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:55444 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756597Ab3DLPrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:47:02 -0400
+	Fri, 12 Apr 2013 11:47:10 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J . Wysocki" <rjw@sisk.pl>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -17,12 +17,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-ia64@vger.kernel.org,
-        x86@kernel.org
-Subject: [PATCH v9 07/16] PCI, ACPI: prepare stub functions to handle ACPI PCI (hotplug) slots
-Date: Fri, 12 Apr 2013 23:44:21 +0800
-Message-Id: <1365781470-32379-8-git-send-email-jiang.liu@huawei.com>
+        linux-ia64@vger.kernel.org
+Subject: [PATCH v9 08/16] PCI, IA64: implement pcibios_{add|remove}_bus() hooks
+Date: Fri, 12 Apr 2013 23:44:22 +0800
+Message-Id: <1365781470-32379-9-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365781470-32379-1-git-send-email-jiang.liu@huawei.com>
 References: <1365781470-32379-1-git-send-email-jiang.liu@huawei.com>
@@ -30,15 +28,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare two stub functions to handle ACPI PCI slots and ACPI PCI hotplug
-slots, which will be invoked by the PCI core when creating/destroying
-PCI buses.
-
-It will be used to get rid of ACPI PCI subdrivers for pci_slot and
-acpiphp, and eventually remove the ACPI PCI subdriver mechanism.
-
-And it will also be used to handle ACPI PCI (hotplug) slots in a unified
-way, both at boot time and for PCI hotplug operations.
+Implement pcibios_{add|remove}_bus() hooks for IA64 platforms.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
@@ -47,73 +37,41 @@ Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Cc: Toshi Kani <toshi.kani@hp.com>
 Cc: Tony Luck <tony.luck@intel.com>
 Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>
-Cc: linux-pci@vger.kernel.org
 Cc: linux-ia64@vger.kernel.org
-Cc: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/pci/pci-acpi.c   |   24 ++++++++++++++++++++++++
- include/linux/pci-acpi.h |    8 +++++++-
- 2 files changed, 31 insertions(+), 1 deletion(-)
+ arch/ia64/pci/pci.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
-index dee5ddd..b8b8437 100644
---- a/drivers/pci/pci-acpi.c
-+++ b/drivers/pci/pci-acpi.c
-@@ -287,6 +287,30 @@ static struct pci_platform_pm_ops acpi_pci_platform_pm = {
- 	.run_wake = acpi_pci_run_wake,
- };
- 
-+void acpi_pci_add_bus(struct pci_bus *bus)
-+{
-+	acpi_handle handle = NULL;
-+
-+	if (bus->bridge)
-+		handle = ACPI_HANDLE(bus->bridge);
-+	if (acpi_pci_disabled || handle == NULL)
-+		return;
-+
-+	/* TODO: add PCI slots and acpiphp hotplug slots */
-+}
-+
-+void acpi_pci_remove_bus(struct pci_bus *bus)
-+{
-+	/*
-+	 * bus->bridge->acpi_node.handle has already been reset to NULL
-+	 * when acpi_pci_remove_bus() is called, so don't check ACPI handle.
-+	 */
-+	if (acpi_pci_disabled)
-+		return;
-+
-+	/* TODO: remove PCI slots and acpiphp hotplug slots */
-+}
-+
- /* ACPI bus type */
- static int acpi_pci_find_device(struct device *dev, acpi_handle *handle)
- {
-diff --git a/include/linux/pci-acpi.h b/include/linux/pci-acpi.h
-index 9a22b5e..2b1743c 100644
---- a/include/linux/pci-acpi.h
-+++ b/include/linux/pci-acpi.h
-@@ -41,7 +41,13 @@ static inline acpi_handle acpi_pci_get_bridge_handle(struct pci_bus *pbus)
- 
- 	return DEVICE_ACPI_HANDLE(dev);
+diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+index 60532ab..de1474f 100644
+--- a/arch/ia64/pci/pci.c
++++ b/arch/ia64/pci/pci.c
+@@ -15,6 +15,7 @@
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/pci.h>
++#include <linux/pci-acpi.h>
+ #include <linux/init.h>
+ #include <linux/ioport.h>
+ #include <linux/slab.h>
+@@ -458,6 +459,16 @@ void pcibios_fixup_bus(struct pci_bus *b)
+ 	platform_pci_fixup_bus(b);
  }
--#endif
-+
-+void acpi_pci_add_bus(struct pci_bus *bus);
-+void acpi_pci_remove_bus(struct pci_bus *bus);
-+#else	/* CONFIG_ACPI */
-+static inline void acpi_pci_add_bus(struct pci_bus *bus) { }
-+static inline void acpi_pci_remove_bus(struct pci_bus *bus) { }
-+#endif	/* CONFIG_ACPI */
  
- #ifdef CONFIG_ACPI_APEI
- extern bool aer_acpi_firmware_first(void);
++void pcibios_add_bus(struct pci_bus *bus)
++{
++	acpi_pci_add_bus(bus);
++}
++
++void pcibios_remove_bus(struct pci_bus *bus)
++{
++	acpi_pci_remove_bus(bus);
++}
++
+ void pcibios_set_master (struct pci_dev *dev)
+ {
+ 	/* No special bus mastering setup handling */
 -- 
 1.7.9.5
 
