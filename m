@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3DLPjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:39:06 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:65228 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab3DLPjE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:39:04 -0400
-Date: Fri, 12 Apr 2013 08:39:00 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        Platform Driver <platform-driver-x86@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH v2] Introduce Intel RAPL cooling device driver
-Message-ID: <20130412153900.GB25603@kroah.com>
-References: <1365195724-8945-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <1365195724-8945-2-git-send-email-jacob.jun.pan@linux.intel.com>
- <1365197195.2075.23.camel@joe-AO722>
- <20130405213518.GA5615@kroah.com>
- <20130412083203.13cf56b0@chromoly>
+	id S1754919Ab3DLPmh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:42:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60977 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753111Ab3DLPmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 11:42:36 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Benjamin LaHaise <bcrl@kvack.org>
+Subject: Re: [PATCH 01/33] mm: remove old aio use_mm() comment
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+	<1363883754-27966-2-git-send-email-koverstreet@google.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 12 Apr 2013 11:42:00 -0400
+In-Reply-To: <1363883754-27966-2-git-send-email-koverstreet@google.com> (Kent
+	Overstreet's message of "Thu, 21 Mar 2013 09:35:22 -0700")
+Message-ID: <x49y5cnu56f.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130412083203.13cf56b0@chromoly>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 08:32:03AM -0700, Jacob Pan wrote:
-> If so, the reason being I don't know if there is a standard way
-> to a transaction via sysfs where I can commit multiple inputs
-> atomically.
+Kent Overstreet <koverstreet@google.com> writes:
 
-That is by design.
+> From: Zach Brown <zab@redhat.com>
+>
+> use_mm() is used in more places than just aio.  There's no need to mention
+> callers when describing the function.
+>
+> Signed-off-by: Zach Brown <zab@redhat.com>
+> Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Mark Fasheh <mfasheh@suse.com>
+> Cc: Joel Becker <jlbec@evilplan.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Asai Thambi S P <asamymuthupa@micron.com>
+> Cc: Selvan Mani <smani@micron.com>
+> Cc: Sam Bradshaw <sbradshaw@micron.com>
+> Cc: Jeff Moyer <jmoyer@redhat.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Benjamin LaHaise <bcrl@kvack.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
