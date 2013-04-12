@@ -1,95 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab3DLLvn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 07:51:43 -0400
-Received: from mail-ia0-f180.google.com ([209.85.210.180]:44016 "EHLO
-	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074Ab3DLLvl (ORCPT
+	id S1755423Ab3DLLwG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 07:52:06 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:44668 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755371Ab3DLLwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 07:51:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <1586707.acL064pYmb@vostro.rjw.lan>
-References: <CAKohpo=t_YTCTRCfnwQ+GPF=frsTGDigT3RZHJuVQ+R+YZU7Hg@mail.gmail.com>
-	<1365415054-30771-1-git-send-email-amit.daniel@samsung.com>
-	<CAGo_u6oZM0K8XDMtmXKFyoGy2qf+-HSPvU0EMangM5Jj_prKsA@mail.gmail.com>
-	<1586707.acL064pYmb@vostro.rjw.lan>
-Date: Fri, 12 Apr 2013 17:21:40 +0530
-X-Google-Sender-Auth: E7ZacrSdds7s8xUjHIVtwZjB4E8
-Message-ID: <CADGdYn4qJRuLz8=PoXNRRwaNpKO92UshuiQTaK6W6Jj4p79T1A@mail.gmail.com>
-Subject: Re: [RESEND PATCH V6 1/4] cpufreq: exynos: Add cpufreq driver for exynos5440
-From: amit daniel kachhap <amit.daniel@samsung.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Nishanth Menon <nm@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-pm@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Inderpal Singh <inderpal.singh@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Apr 2013 07:52:04 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-fc-5167f561bf02
+Date: Fri, 12 Apr 2013 11:52:01 +0000 (GMT)
+From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
+Subject: Re: Re: [RESEND][PATCH 1/3] PM / devfreq: exynos4_bus: Fix missing
+ mutex_unlock if opp_find_freq_floor fails
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Axel Lin <axel.lin@ingics.com>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        =?euc-kr?Q?=B1=E8=B1=B9=C1=F8?= <kgene.kim@samsung.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20130412115002607@myungjoo.ham
+Msgkey: 20130412115002607@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130412115002607@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <15500134.204421365767518757.JavaMail.weblogic@epv6ml01>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsWyRsSkWDfxa3qgwfJuMYvLu+awOTB6fN4k
+	F8AYxWWTkpqTWZZapG+XwJXx4t5H5oJZ/BX7Lu5la2B8wtfFyMkhJKAusWjJSTYQW0LAROL1
+	ql0sELaYxIV764HiXEA1Sxklvh66zgRTdK1vNhNEYj6jxP6PW9lBEiwCqhJLp+0Bsjk42ATM
+	Je7PCAIJCwuUSsxctI4VpF5E4DijxP0zJ5hBHGaBdYwS0z4uYYY4Q0lizb5XYKt5BQQlTs58
+	AnWGqsTGVTeZIeJqEs+3r4WKS0jMmn6BFcLmlZjR/hQqLicx7esaZghbWuL8rA2MMO8s/v4Y
+	Ks4vcez2DiaQQ0F6n9wPhhmze/MXaEgISEw9cxCqVUviw4RuqPF8EmsWvmWBGbPr1HJmmN77
+	W+aCA4hZQFFiSvdDdghbS+LLj31s6N7iFXCROP3yI/MERuVZSFKzkLTPQtKOrGYBI8sqRtHU
+	guSC4qT0IlO94sTc4tK8dL3k/NxNjMDUcPrfs4k7GO8fsD7EmAyMk4nMUqLJ+cDUklcSb2hs
+	ZmRhamJqbGRuaUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxuU3lN2FvaWS
+	Jk/cd88zZ5Kd+o1Dt8X4Octe3LSZplN684R6td6D//vLp635w/HPZNGGR3NVfqfu7fUxP3JD
+	qG3HY267FeaOdxzt5pRXq9QfDBBdznf8ztWe1prX5XX9l+Z53/mxd4NMdJyTSNyestms+zQ2
+	Xdrx77xnzrwVzybHJHHl++gY5iuxFGckGmoxFxUnAgDrf+pvIwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2DN3Er+mBBqd+8ltc3jWHzYHR4/Mm
+	uQDGqDSbjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWhDcyM9IwM9UyM9Q+NYK0MDAyNToJqEtIwX
+	9z4yF8zir9h3cS9bA+MTvi5GTg4hAXWJRUtOsoHYEgImEtf6ZjNB2GISF+6tB4pzAdXMZ5TY
+	/3ErO0iCRUBVYum0PUA2BwebgLnE/RlBIGFhgVKJmYvWsYLUiwgcZ5S4f+YEM4jDLLCOUWLa
+	xyXMENuUJNbse8UCYvMKCEqcnPmEBWKbqsTGVTeZIeJqEs+3r4WKS0jMmn6BFcLmlZjR/hQq
+	Licx7esaZghbWuL8rA2MMFcv/v4YKs4vcez2DiaQQ0F6n9wPhhmze/MXqIcFJKaeOQjVqiXx
+	YUI31Hg+iTUL37LAjNl1ajkzTO/9LXPBAcQsoCgxpfshO4StJfHlxz42dG/xCrhInH75kXkC
+	o9wsJKlZSNpnIWlHVrOAkWUVo2hqQXJBcVJ6hYlecWJucWleul5yfu4mRnCCerZkB2PDBetD
+	jAIcjEo8vC+E0wOFWBPLiitzDzFKcDArifDG7E0LFOJNSaysSi3Kjy8qzUktPsSYDIzBicxS
+	osn5wOSZVxJvaGxsYmZiamliYWBqTpqwkjjvs1brQCGB9MSS1OzU1ILUIpgtTBycUg2Mi4Lm
+	vnrQ+XhZ5jmlSRXrwvRSPjx0zwhVfrTF9nhxw5eM6lq74vjjHi8TLt2QfyaxUU5t5q9et687
+	tQraPZ3SVyr/En22tee1o+Wb5vt32a+pOx5hr+9xNTi9IOab2pzuCSzLq05Vb4gLyL7lovKf
+	1exjwvrHc1/c3+JpGXrg45UVx+4c+m3rpsRSnJFoqMVcVJwIAPXH38CUAwAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3CBqC62012608
 
-Hi Rafael,
-
-On Fri, Apr 12, 2013 at 4:49 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, April 11, 2013 06:23:52 PM Nishanth Menon wrote:
->> Hi,
->> On Mon, Apr 8, 2013 at 4:57 AM, Amit Daniel Kachhap
->> <amit.daniel@samsung.com> wrote:
->> > +
->> > +static int init_div_table(void)
->> > +{
->> > +       struct cpufreq_frequency_table *freq_tbl = dvfs_info->freq_table;
->> > +       unsigned int tmp, clk_div, ema_div, freq, volt_id;
->> > +       int i = 0;
->> > +       struct opp *opp;
->> > +
->> > +       for (i = 0; freq_tbl[i].frequency != CPUFREQ_TABLE_END; i++) {
->> > +
->> > +               opp = opp_find_freq_exact(dvfs_info->dev,
->> > +                                       freq_tbl[i].frequency * 1000, true);
->> > +               if (IS_ERR(opp)) {
->> > +                       dev_err(dvfs_info->dev,
->> > +                               "failed to find valid OPP for %u KHZ\n",
->> > +                               freq_tbl[i].frequency);
->> > +                       return PTR_ERR(opp);
->> > +               }
->> please use RCU read locks.
->>
->> > +
->> > +               freq = freq_tbl[i].frequency / 1000; /* In MHZ */
->> > +               clk_div = ((freq / CPU_DIV_FREQ_MAX) & P0_7_CPUCLKDEV_MASK)
->> > +                                       << P0_7_CPUCLKDEV_SHIFT;
->> > +               clk_div |= ((freq / CPU_ATB_FREQ_MAX) & P0_7_ATBCLKDEV_MASK)
->> > +                                       << P0_7_ATBCLKDEV_SHIFT;
->> > +               clk_div |= ((freq / CPU_DBG_FREQ_MAX) & P0_7_CSCLKDEV_MASK)
->> > +                                       << P0_7_CSCLKDEV_SHIFT;
->> > +
->> > +               /* Calculate EMA */
->> > +               volt_id = opp_get_voltage(opp);
->> Please use RCU read locks as documented for OPP library.
->
-> Argh.  I overlooked that and the series has been applied already.  Care to send
-> a fix against linux-pm.git/linux-next?
-
-Will submit a patch with RCU lock changes.
-
-Thanks,
-Amit Daniel
->
+> On Friday, April 12, 2013 01:54:18 PM Axel Lin wrote:
+> > We need to call mutex_unlock() in the error path.
+> > 
+> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> 
+> All three patches applied to linux-pm.git/linux-next.
+> 
+> Exynos maintainers, if you have any objections, please holler.
+> 
+> Thanks,
 > Rafael
->
->
-> --
+
+This patch was included in the last pull-request patchset
+though the path was updated. (its precedessor patch moved
+exynos drivers to /drivers/devfreq/exynos/* after adding
+Exynos common driver files)
+
+
+Cheers,
+MyungJoo.
+
+> 
+> > ---
+> >  drivers/devfreq/exynos4_bus.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
+> > index 1deee09..54b9615 100644
+> > --- a/drivers/devfreq/exynos4_bus.c
+> > +++ b/drivers/devfreq/exynos4_bus.c
+> > @@ -974,7 +974,8 @@ static int exynos4_busfreq_pm_notifier_event(struct notifier_block *this,
+> >  			rcu_read_unlock();
+> >  			dev_err(data->dev, "%s: unable to find a min freq\n",
+> >  				__func__);
+> > -			return PTR_ERR(opp);
+> > +			err = PTR_ERR(opp);
+> > +			goto unlock;
+> >  		}
+> >  		new_oppinfo.rate = opp_get_freq(opp);
+> >  		new_oppinfo.volt = opp_get_voltage(opp);
+> > 
+> -- 
 > I speak only for myself.
 > Rafael J. Wysocki, Intel Open Source Technology Center.
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+> 
+> 
+>        
+>   
+>          
+> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
