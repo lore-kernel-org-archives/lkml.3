@@ -1,71 +1,482 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3DLPqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:46:15 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:37451 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab3DLPqM (ORCPT
+	id S1758345Ab3DLPvY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:51:24 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:44573 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753809Ab3DLPvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:46:12 -0400
-From: Jiang Liu <liuj97@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J . Wysocki" <rjw@sisk.pl>
-Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>, Jiang Liu <liuj97@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH v9 01/16] PCI: do not check is_added flag in pci_remove_bus()
-Date: Fri, 12 Apr 2013 23:44:15 +0800
-Message-Id: <1365781470-32379-2-git-send-email-jiang.liu@huawei.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365781470-32379-1-git-send-email-jiang.liu@huawei.com>
-References: <1365781470-32379-1-git-send-email-jiang.liu@huawei.com>
+	Fri, 12 Apr 2013 11:51:22 -0400
+Message-ID: <51682E0C.4090605@metafoo.de>
+Date: Fri, 12 Apr 2013 17:53:48 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+MIME-Version: 1.0
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+CC: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Randy Dunlap <rdunlap@xenotime.net>, lm-sensors@lm-sensors.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [NEW DRIVER V4 6/7] DA9058 HWMON driver
+References: <201304121312.r3CDCJte011826@latitude>
+In-Reply-To: <201304121312.r3CDCJte011826@latitude>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The is_added flag in struct pci_bus is always set after invoking
-device_register() and pci_create_legacy_files(). The related code
-paths are:
-1) pci_create_root_bus() and pci_add_new_bus()
-	bus = pci_alloc_bus()
-	device_register(&bus->dev)
-	pci_create_legacy_file(bus)
-2.a) pci_scan_child_bus(bus)
-	set is_added flag for PCI root buses
-2.b) pci_bus_add_devices(bus)
-	set is_added flag for normal PCI buses
+On 04/12/2013 03:05 PM, Anthony Olech wrote:
+> This is the HWMON component driver of the Dialog DA9058 PMIC.
+> This driver is just one component of the whole DA9058 PMIC driver.
+> It depends on the CORE and ADC component drivers of the DA9058 MFD.
+> 
+> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
 
-So pci_remove_bus() shouldn't use is_added flag to guard invoking of
-pci_remove_lagecy_files() and device_unregister().
+Hi,
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-pci@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/pci/remove.c |    3 ---
- 1 file changed, 3 deletions(-)
+can't you use the generic IIO to HWMON bridge driver? And if not it's probably
+better to extent the bridge driver than writing this custom driver.
 
-diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-index cc875e6..a831880 100644
---- a/drivers/pci/remove.c
-+++ b/drivers/pci/remove.c
-@@ -50,9 +50,6 @@ void pci_remove_bus(struct pci_bus *bus)
- 	list_del(&bus->node);
- 	pci_bus_release_busn_res(bus);
- 	up_write(&pci_bus_sem);
--	if (!bus->is_added)
--		return;
--
- 	pci_remove_legacy_files(bus);
- 	device_unregister(&bus->dev);
- }
--- 
-1.7.9.5
+- Lars
+
+
+> ---
+>  Documentation/hwmon/da9058   |   38 +++++
+>  drivers/hwmon/Kconfig        |   10 ++
+>  drivers/hwmon/Makefile       |    3 +-
+>  drivers/hwmon/da9058-hwmon.c |  341 ++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 391 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/hwmon/da9058
+>  create mode 100644 drivers/hwmon/da9058-hwmon.c
+> 
+> diff --git a/Documentation/hwmon/da9058 b/Documentation/hwmon/da9058
+> new file mode 100644
+> index 0000000..841148f
+> --- /dev/null
+> +++ b/Documentation/hwmon/da9058
+> @@ -0,0 +1,38 @@
+> +Kernel driver da9058-hwmon
+> +==========================
+> +
+> +Supported chips:
+> +  * Dialog Semiconductor DA9058 PMIC
+> +    Prefix: 'da9058'
+> +    Datasheet:
+> +	http://www.dialog-semiconductor.com/products/power-management/da9058
+> +
+> +Authors: Opensource [Anthony Olech] <anthony.olech.opensource@diasemi.com>
+> +
+> +Description
+> +-----------
+> +
+> +The DA9058 PMIC contains a 5 channel ADC which can be used to monitor a
+> +range of system operating parameters, including the battery voltage and
+> +temperature.  The ADC measures voltage, but two of the ADC channels can
+> +be configured to supply a current, so that if an NTC termister is connected
+> +then the voltage reading can be converted to a temperature. Currently the
+> +driver provides reporting of all the input values but does not provide any
+> +alarms.
+> +
+> +Voltage Monitoring
+> +------------------
+> +
+> +Voltages are sampled in either 'automatic' or 'manual' mode, which is an
+> +initialization parameter set in the platform data by the machine driver.
+> +In manual mode the ADC conversion is 12 bit and in automatic mode it is
+> +10 bit. However all the raw readings are reported as 12 bit numbers.
+> +
+> +Physical Limits
+> +---------------
+> +
+> +vbat   2500 - 4500 milliVolts
+> +tbat   0    - 2500 milliVolts
+> +adc    0    - 2500 milliVolts
+> +vfpin  0    - 4095 milliVolts
+> +tjunc  there is a correction factor programmed during manufacturing
+> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> index 89ac1cb..9a3f226 100644
+> --- a/drivers/hwmon/Kconfig
+> +++ b/drivers/hwmon/Kconfig
+> @@ -304,6 +304,16 @@ config SENSORS_ATXP1
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called atxp1.
+>  
+> +config SENSORS_DA9058
+> +	tristate "Dialog Semiconductor DA9058 ADC"
+> +	depends on MFD_DA9058 && DA9058_ADC
+> +	help
+> +	  If you say yes here you get support for the hardware monitoring
+> +	  functionality of the Dialog Semiconductor DA9058 PMIC.
+> +
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called da9058-hwmon.
+> +
+>  config SENSORS_DS620
+>  	tristate "Dallas Semiconductor DS620"
+>  	depends on I2C
+> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+> index 8d6d97e..c3b103b 100644
+> --- a/drivers/hwmon/Makefile
+> +++ b/drivers/hwmon/Makefile
+> @@ -44,7 +44,8 @@ obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
+>  obj-$(CONFIG_SENSORS_ATXP1)	+= atxp1.o
+>  obj-$(CONFIG_SENSORS_CORETEMP)	+= coretemp.o
+>  obj-$(CONFIG_SENSORS_DA9052_ADC)+= da9052-hwmon.o
+> -obj-$(CONFIG_SENSORS_DA9055)+= da9055-hwmon.o
+> +obj-$(CONFIG_SENSORS_DA9055)	+= da9055-hwmon.o
+> +obj-$(CONFIG_SENSORS_DA9058)	+= da9058-hwmon.o
+>  obj-$(CONFIG_SENSORS_DME1737)	+= dme1737.o
+>  obj-$(CONFIG_SENSORS_DS620)	+= ds620.o
+>  obj-$(CONFIG_SENSORS_DS1621)	+= ds1621.o
+> diff --git a/drivers/hwmon/da9058-hwmon.c b/drivers/hwmon/da9058-hwmon.c
+> new file mode 100644
+> index 0000000..3859b16
+> --- /dev/null
+> +++ b/drivers/hwmon/da9058-hwmon.c
+> @@ -0,0 +1,341 @@
+> +/*
+> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/err.h>
+> +#include <linux/hwmon.h>
+> +#include <linux/hwmon-sysfs.h>
+> +#include <linux/regmap.h>
+> +#include <linux/mfd/core.h>
+> +
+> +#include <linux/mfd/da9058/version.h>
+> +#include <linux/mfd/da9058/registers.h>
+> +#include <linux/mfd/da9058/core.h>
+> +#include <linux/mfd/da9058/hwmon.h>
+> +
+> +static ssize_t da9058_vbat_show_adc(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
+> +	int voltage; /* x000 .. xFFF = 2500 .. 4500 mV */
+> +	int ret;
+> +
+> +	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_VBAT,
+> +					hwmon->use_automatic_adc, &voltage);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return sprintf(buf, "%d\n", 2500 + voltage * 2000 / 0xFFF);
+> +}
+> +
+> +static ssize_t da9058_tbat_show_type(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
+> +
+> +	return sprintf(buf, "%d\n", hwmon->battery_sensor_type);
+> +}
+> +
+> +static ssize_t da9058_tbat_show_adc(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
+> +	int voltage; /* x000 .. xFFF = 0 .. 2500 mV */
+> +	int ret;
+> +
+> +	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_TEMP,
+> +					hwmon->use_automatic_adc, &voltage);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return sprintf(buf, "%d\n", voltage * 2500 / 0xFFF);
+> +}
+> +
+> +static ssize_t da9058_gp_show_adc(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
+> +	int voltage; /* xFFF .. x800 = 0 .. 2500 mV */
+> +	int ret;
+> +
+> +	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_ADCIN,
+> +				hwmon->use_automatic_adc, &voltage);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return sprintf(buf, "%d\n", (0xFFF - voltage) * 2500 / 0x7FF);
+> +}
+> +
+> +static ssize_t da9058_tjunc_show_min(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
+> +	unsigned int toffreg;
+> +	int ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	return sprintf(buf, "%d\n", -(1708 * (s8)((u8)toffreg) + 108800));
+> +}
+> +
+> +static ssize_t da9058_tjunc_show_max(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
+> +	unsigned int toffreg;
+> +	int ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
+> +
+> +	if (ret)
+> +		return ret;
+> +
+> +	return sprintf(buf, "%d\n", 1708*(255 - (s8)((u8)toffreg)) - 108800);
+> +}
+> +
+> +/*
+> + *  The algorithm for converting the value is
+> + *  Degrees celsius = 1.708 * (TJUNC_RES - T_OFFSET) - 108.8
+> + *  T_OFFSET is a trim value used to improve accuracy of the result
+> + */
+> +static ssize_t da9058_tjunc_show_adc(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
+> +	int tjunc;
+> +	unsigned int toffreg;
+> +	int ret;
+> +
+> +	ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_TJUNC,
+> +					hwmon->use_automatic_adc, &tjunc);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	tjunc >>= 4;	/* recover most sig 8 bits as a pos/zero number */
+> +
+> +	return sprintf(buf, "%d\n", 1708*(tjunc - (s8)((u8)toffreg)) - 108800);
+> +}
+> +static ssize_t da9058_tjunc_show_offset(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
+> +	unsigned int toffreg;
+> +	int ret;
+> +
+> +	ret = da9058_reg_read(hwmon->da9058, DA9058_TOFFSET_REG, &toffreg);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return sprintf(buf, "%d\n", -1708*(s8)((u8)toffreg) - 108800);
+> +}
+> +
+> +static ssize_t da9058_vfpin_show_adc(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	struct da9058_hwmon *hwmon = dev_get_drvdata(dev);
+> +	int voltage; /* x000 .. xFFF = 0 .. 4095 mV */
+> +	int ret;
+> +
+> +	ret = da9058_adc_read(hwmon->da9058, DA9058_ADCMAN_MUXSEL_VF,
+> +					hwmon->use_automatic_adc, &voltage);
+> +	if (ret)
+> +		return ret;
+> +
+> +	return sprintf(buf, "%d\n", voltage);
+> +}
+> +
+> +static ssize_t da9058_hwmon_show_name(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	return sprintf(buf, "da9058\n");
+> +}
+> +
+> +static ssize_t da9058_show_label(struct device *dev,
+> +				struct device_attribute *devattr, char *buf)
+> +{
+> +	int channel = to_sensor_dev_attr(devattr)->index;
+> +
+> +	switch (channel) {
+> +	case 0:	return sprintf(buf, "vbat\n");
+> +	case 1:	return sprintf(buf, "tbat\n");
+> +	case 2:	return sprintf(buf, "vfpin\n");
+> +	case 3:	return sprintf(buf, "adc\n");
+> +	case 4:	return sprintf(buf, "tjunc\n");
+> +	default: return -EINVAL;
+> +	}
+> +}
+> +
+> +static DEVICE_ATTR(name, S_IRUGO, da9058_hwmon_show_name, NULL);
+> +
+> +static SENSOR_DEVICE_ATTR(in0_label, S_IRUGO, da9058_show_label, NULL, 0);
+> +static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, da9058_vbat_show_adc, NULL, 0);
+> +
+> +static SENSOR_DEVICE_ATTR(temp1_label, S_IRUGO, da9058_show_label, NULL, 1);
+> +static SENSOR_DEVICE_ATTR(temp1_type, S_IRUGO, da9058_tbat_show_type, NULL, 1);
+> +static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, da9058_tbat_show_adc, NULL, 1);
+> +
+> +static SENSOR_DEVICE_ATTR(in1_label, S_IRUGO, da9058_show_label, NULL, 2);
+> +static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, da9058_vfpin_show_adc, NULL, 2);
+> +
+> +static SENSOR_DEVICE_ATTR(in2_label, S_IRUGO, da9058_show_label, NULL, 3);
+> +static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, da9058_gp_show_adc, NULL, 3);
+> +
+> +static SENSOR_DEVICE_ATTR(temp2_label, S_IRUGO, da9058_show_label, NULL, 4);
+> +static SENSOR_DEVICE_ATTR(temp2_min, S_IRUGO, da9058_tjunc_show_min, NULL, 4);
+> +static SENSOR_DEVICE_ATTR(temp2_max, S_IRUGO, da9058_tjunc_show_max, NULL, 4);
+> +static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, da9058_tjunc_show_adc, NULL, 4);
+> +static SENSOR_DEVICE_ATTR(temp2_offset, S_IRUGO, da9058_tjunc_show_offset, NULL,
+> +				4);
+> +
+> +static struct attribute *da9058_attr[] = {
+> +	&dev_attr_name.attr,
+> +	&sensor_dev_attr_in0_label.dev_attr.attr,
+> +	&sensor_dev_attr_in0_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_label.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_type.dev_attr.attr,
+> +	&sensor_dev_attr_temp1_input.dev_attr.attr,
+> +	&sensor_dev_attr_in1_label.dev_attr.attr,
+> +	&sensor_dev_attr_in1_input.dev_attr.attr,
+> +	&sensor_dev_attr_in2_label.dev_attr.attr,
+> +	&sensor_dev_attr_in2_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_label.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_min.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_max.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_input.dev_attr.attr,
+> +	&sensor_dev_attr_temp2_offset.dev_attr.attr,
+> +	NULL
+> +};
+> +
+> +static const struct attribute_group da9058_attr_group = {.attrs = da9058_attr};
+> +
+> +static int da9058_hwmon_probe(struct platform_device *pdev)
+> +{
+> +	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
+> +	const struct mfd_cell *cell = mfd_get_cell(pdev);
+> +	struct da9058_hwmon_pdata *hwmon_pdata;
+> +	struct da9058_hwmon *hwmon;
+> +	int ret;
+> +
+> +	if (cell == NULL) {
+> +		ret = -ENODEV;
+> +		goto exit;
+> +	}
+> +
+> +	hwmon_pdata = cell->platform_data;
+> +
+> +	if (hwmon_pdata == NULL) {
+> +		ret = -EINVAL;
+> +		goto exit;
+> +	}
+> +
+> +	if (hwmon_pdata->use_automatic_adc &&
+> +			!hwmon_pdata->temp_adc_resistance) {
+> +		ret = -EINVAL; /* impossible setting */
+> +		goto exit;
+> +	}
+> +
+> +	hwmon = devm_kzalloc(&pdev->dev, sizeof(struct da9058_hwmon),
+> +				GFP_KERNEL);
+> +	if (!hwmon) {
+> +		ret = -ENOMEM;
+> +		goto exit;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, hwmon);
+> +
+> +	hwmon->da9058 = da9058;
+> +	hwmon->pdev = pdev;
+> +	hwmon->use_automatic_adc = hwmon_pdata->use_automatic_adc;
+> +	hwmon->temp_adc_resistance = hwmon_pdata->temp_adc_resistance;
+> +	hwmon->vf_adc_resistance = hwmon_pdata->vf_adc_resistance;
+> +	hwmon->battery_sensor_type = hwmon_pdata->battery_sensor_type;
+> +
+> +	if (hwmon->use_automatic_adc) {
+> +		unsigned int mode = DA9058_ADCCONT_AUTOADCEN |
+> +				DA9058_ADCCONT_TEMPISRCEN |
+> +				DA9058_ADCCONT_AUTOVBATEN |
+> +				DA9058_ADCCONT_AUTOVFEN |
+> +				DA9058_ADCCONT_AUTOAINEN;
+> +
+> +		if (hwmon->vf_adc_resistance)
+> +			mode |= DA9058_ADCCONT_VFISRCEN;
+> +
+> +		ret = da9058_reg_write(da9058, DA9058_ADCCONT_REG, mode);
+> +		if (ret)
+> +			goto failed_to_initialize_device;
+> +	} else {
+> +		unsigned int mode = 0;
+> +
+> +		if (hwmon->temp_adc_resistance)
+> +			mode |= DA9058_ADCCONT_TEMPISRCEN;
+> +		if (hwmon->vf_adc_resistance)
+> +			mode |= DA9058_ADCCONT_VFISRCEN;
+> +
+> +		ret = da9058_reg_write(da9058, DA9058_ADCCONT_REG, mode);
+> +		if (ret)
+> +			goto failed_to_initialize_device;
+> +	}
+> +
+> +	mutex_init(&hwmon->hwmon_lock);
+> +
+> +	hwmon->class_device = hwmon_device_register(&pdev->dev);
+> +	if (IS_ERR(hwmon->class_device)) {
+> +		ret = PTR_ERR(hwmon->class_device);
+> +		goto failed_to_register_device;
+> +	}
+> +
+> +	ret = sysfs_create_group(&pdev->dev.kobj, &da9058_attr_group);
+> +	if (ret)
+> +		goto failed_to_create_sysfs_group;
+> +
+> +	goto exit;
+> +
+> +failed_to_create_sysfs_group:
+> +	hwmon_device_unregister(hwmon->class_device);
+> +failed_to_register_device:
+> +	sysfs_remove_group(&pdev->dev.kobj, &da9058_attr_group);
+> +failed_to_initialize_device:
+> +	devm_kfree(&pdev->dev, hwmon);
+> +exit:
+> +	return ret;
+> +}
+> +
+> +static int da9058_hwmon_remove(struct platform_device *pdev)
+> +{
+> +	struct da9058_hwmon *hwmon = platform_get_drvdata(pdev);
+> +
+> +	sysfs_remove_group(&pdev->dev.kobj, &da9058_attr_group);
+> +
+> +
+> +	hwmon_device_unregister(hwmon->class_device);
+> +
+> +	devm_kfree(&pdev->dev, hwmon);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver da9058_hwmon_driver = {
+> +	.probe = da9058_hwmon_probe,
+> +	.remove = da9058_hwmon_remove,
+> +	.driver = {
+> +		.name = "da9058-hwmon",
+> +		.owner = THIS_MODULE,
+> +	},
+> +};
+> +
+> +module_platform_driver(da9058_hwmon_driver);
+> +
+> +MODULE_DESCRIPTION("Dialog DA9058 PMIC HardWare Monitor Driver");
+> +MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:da9058-hwmon");
 
