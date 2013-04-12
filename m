@@ -1,67 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab3DLMZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 08:25:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51300 "EHLO
+	id S1755408Ab3DLM0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 08:26:25 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51306 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753442Ab3DLMZ5 (ORCPT
+	by vger.kernel.org with ESMTP id S1754967Ab3DLMZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 08:25:57 -0400
+	Fri, 12 Apr 2013 08:25:58 -0400
 From: Serban Constantinescu <serban.constantinescu@arm.com>
 To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
         Dave.Butcher@arm.com
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v3 0/6] Android Binder IPC Fixes
-Date: Fri, 12 Apr 2013 13:25:49 +0100
-Message-Id: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
+Subject: [PATCH v3 6/6] staging: android: binder: replace types with portable ones
+Date: Fri, 12 Apr 2013 13:25:55 +0100
+Message-Id: <1365769555-6052-7-git-send-email-serban.constantinescu@arm.com>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
+References: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Since this driver is meant to be used on different types of processors
+and a portable driver should specify the size a variable expects to be
+this patch changes the types used throughout the binder interface.
 
-This set of patches will clean-up and fix some of the issues that arise
-with the current binder interface when moving to a 64bit kernel. All these
-changes will not affect the existing 32bit Android interface and are meant
-to stand as the base for the 64bit binder compat layer(kernel or userpsace).
+We use "userspace" types since this header will be exported and used by
+the Android filesystem.
 
-The patch set has been successfully tested with a 64bit Linux userspace and
-64bit binder unit-tests.
+The patch does not change in any way the functionality of the binder driver.
 
-This patch set has been successfully tested on 32bit platforms(ARMv7 VExpress)
-and 64bit platforms(ARMv8 RTSM) running a 32bit Android userspace and an in
-kernel binder compat layer.
+Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+---
+ drivers/staging/android/binder.h |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-Changes for v3:
-1:  Dropped the patch that was replacing uint32_t types with unsigned int
-2:  Dropped the patch fixing the IOCTL types(since it has been added to Greg's
-    staging tree)
-3:  Split one patch into two: 'modify binder_write_read' and '64bit changes'
-4:  Modified BINDER_SET_MAX_THREADS ioctl definition accordint to Arve's review
-5:  Modified the binder command IOCTL declarations according to Arve's review
-
-Changes for v2:
-1: 1/7: Modified the commit message according to Greg's feedback;
-2: 3/7: Merged with the patch fixing the printk format specifiers.
-
-Serban Constantinescu (6):
-  staging: android: binder: modify struct binder_write_read to use
-    size_t
-  staging: android: binder: fix binder interface for 64bit compat layer
-  staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
-  staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
-  staging: android: binder: fix alignment issues
-  staging: android: binder: replace types with portable ones
-
- drivers/staging/android/binder.c |   40 ++++++++++++++++-----------------
- drivers/staging/android/binder.h |   46 +++++++++++++++++++-------------------
- 2 files changed, 43 insertions(+), 43 deletions(-)
-
+diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+index c3562c4..bff1c74 100644
+--- a/drivers/staging/android/binder.h
++++ b/drivers/staging/android/binder.h
+@@ -123,10 +123,10 @@ struct binder_transaction_data {
+ 		void	*ptr;	/* target descriptor of return transaction */
+ 	} target;
+ 	void		*cookie;	/* target object cookie */
+-	unsigned int	code;		/* transaction command */
++	__u32		code;		/* transaction command */
+ 
+ 	/* General information about the transaction. */
+-	unsigned int	flags;
++	__u32	        flags;
+ 	pid_t		sender_pid;
+ 	uid_t		sender_euid;
+ 	size_t		data_size;	/* number of bytes of data */
+@@ -143,7 +143,7 @@ struct binder_transaction_data {
+ 			/* offsets from buffer to flat_binder_object structs */
+ 			const void __user	*offsets;
+ 		} ptr;
+-		uint8_t	buf[8];
++		__u8	buf[8];
+ 	} data;
+ };
+ 
+@@ -153,18 +153,18 @@ struct binder_ptr_cookie {
+ };
+ 
+ struct binder_pri_desc {
+-	int priority;
+-	int desc;
++	__s32 priority;
++	__s32 desc;
+ };
+ 
+ struct binder_pri_ptr_cookie {
+-	int priority;
++	__s32 priority;
+ 	void *ptr;
+ 	void *cookie;
+ };
+ 
+ enum binder_driver_return_protocol {
+-	BR_ERROR = _IOR('r', 0, int),
++	BR_ERROR = _IOR('r', 0, __s32),
+ 	/*
+ 	 * int: error code
+ 	 */
+@@ -178,7 +178,7 @@ enum binder_driver_return_protocol {
+ 	 * binder_transaction_data: the received command.
+ 	 */
+ 
+-	BR_ACQUIRE_RESULT = _IOR('r', 4, int),
++	BR_ACQUIRE_RESULT = _IOR('r', 4, __s32),
+ 	/*
+ 	 * not currently supported
+ 	 * int: 0 if the last bcATTEMPT_ACQUIRE was not successful.
+@@ -258,7 +258,7 @@ enum binder_driver_command_protocol {
+ 	 * binder_transaction_data: the sent command.
+ 	 */
+ 
+-	BC_ACQUIRE_RESULT = _IOW('c', 2, int),
++	BC_ACQUIRE_RESULT = _IOW('c', 2, __s32),
+ 	/*
+ 	 * not currently supported
+ 	 * int:  0 if the last BR_ATTEMPT_ACQUIRE was not successful.
+@@ -270,10 +270,10 @@ enum binder_driver_command_protocol {
+ 	 * void *: ptr to transaction data received on a read
+ 	 */
+ 
+-	BC_INCREFS = _IOW('c', 4, int),
+-	BC_ACQUIRE = _IOW('c', 5, int),
+-	BC_RELEASE = _IOW('c', 6, int),
+-	BC_DECREFS = _IOW('c', 7, int),
++	BC_INCREFS = _IOW('c', 4, __u32),
++	BC_ACQUIRE = _IOW('c', 5, __u32),
++	BC_RELEASE = _IOW('c', 6, __u32),
++	BC_DECREFS = _IOW('c', 7, __u32),
+ 	/*
+ 	 * int:	descriptor
+ 	 */
 -- 
 1.7.9.5
 
