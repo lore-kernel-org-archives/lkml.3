@@ -1,169 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685Ab3DLWpd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:45:33 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47280 "EHLO
+	id S1755573Ab3DLWpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:45:31 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47285 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334Ab3DLWpZ (ORCPT
+	with ESMTP id S1755408Ab3DLWp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:45:25 -0400
+	Fri, 12 Apr 2013 18:45:27 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 27/29] PCI: Make piix4 quirk to use addon_res
-Date: Fri, 12 Apr 2013 15:44:41 -0700
-Message-Id: <1365806683-26717-28-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 09/29] PCI: Use for_each_pci_resource() with IOV releated functions
+Date: Fri, 12 Apr 2013 15:44:23 -0700
+Message-Id: <1365806683-26717-10-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After they are put in add-on resources, they will be safely claimed later.
-
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/quirks.c | 95 +++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 79 insertions(+), 16 deletions(-)
+ drivers/pci/iov.c | 31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 2dac170..6706182 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -382,14 +382,14 @@ static void quirk_ali7101_acpi(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AL,	PCI_DEVICE_ID_AL_M7101,		quirk_ali7101_acpi);
+diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+index ee599f2..baf6c80 100644
+--- a/drivers/pci/iov.c
++++ b/drivers/pci/iov.c
+@@ -93,17 +93,20 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
+ 	pci_setup_device(virtfn);
+ 	virtfn->dev.parent = dev->dev.parent;
  
--static void piix4_io_quirk(struct pci_dev *dev, const char *name, unsigned int port, unsigned int enable)
-+static int piix4_read_io(struct pci_dev *dev, struct resource *res, int port)
- {
- 	u32 devres;
- 	u32 mask, size, base;
-+	struct pci_bus_region bus_region;
- 
- 	pci_read_config_dword(dev, port, &devres);
--	if ((devres & enable) != enable)
--		return;
+-	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+-		res = dev->resource + PCI_IOV_RESOURCES + i;
++	for_each_pci_resource(dev, res, i, PCI_IOV_RES) {
++		struct resource *virtfn_res;
 +
- 	mask = (devres >> 16) & 15;
- 	base = devres & 0xffff;
- 	size = 16;
-@@ -399,23 +399,54 @@ static void piix4_io_quirk(struct pci_dev *dev, const char *name, unsigned int p
- 			break;
- 		size = bit;
+ 		if (!res->parent)
+ 			continue;
+-		virtfn->resource[i].name = pci_name(virtfn);
+-		virtfn->resource[i].flags = res->flags;
++
++		virtfn_res = pci_dev_resource_n(virtfn, i - PCI_IOV_RESOURCES);
++		virtfn_res->name = pci_name(virtfn);
++		virtfn_res->flags = res->flags;
+ 		size = resource_size(res);
+ 		do_div(size, iov->total_VFs);
+-		virtfn->resource[i].start = res->start + size * id;
+-		virtfn->resource[i].end = virtfn->resource[i].start + size - 1;
+-		rc = request_resource(res, &virtfn->resource[i]);
++		virtfn_res->start = res->start + size * id;
++		virtfn_res->end = virtfn_res->start + size - 1;
++		rc = request_resource(res, virtfn_res);
+ 		BUG_ON(rc);
  	}
--	/*
--	 * For now we only print it out. Eventually we'll want to
--	 * reserve it (at least if it's in the 0x1000+ range), but
--	 * let's get enough confirmation reports first. 
--	 */
- 	base &= -size;
--	dev_info(&dev->dev, "%s PIO at %04x-%04x\n", name, base, base + size - 1);
-+
-+	bus_region.start = base;
-+	bus_region.end = base + size - 1;
-+	res->flags |= IORESOURCE_IO;
-+	pcibios_bus_to_resource(dev, res, &bus_region);
-+	dev_info(&dev->dev, "PIO at %pR\n", res);
-+
-+	return 0;
- }
-+static int piix4_write_io(struct pci_dev *dev, struct resource *res, int port)
-+{
-+	u32 devres;
-+	struct pci_bus_region bus_region;
-+	unsigned size = to_pci_dev_addon_resource(res)->size;
  
--static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int port, unsigned int enable)
-+	pcibios_resource_to_bus(dev, &bus_region, res);
-+
-+	pci_read_config_dword(dev, port, &devres);
-+	devres &= 0xffff0000 | (size - 1);
-+	devres |= bus_region.start & 0xffff & (~(size - 1));
-+	pci_write_config_dword(dev, port, devres);
-+
-+	return 0;
-+}
-+static struct resource_ops piix4_io_ops = {
-+	.read = piix4_read_io,
-+	.write = piix4_write_io,
-+};
-+static void piix4_io_quirk(struct pci_dev *dev, char *name, unsigned int port,
-+				unsigned int enable)
- {
- 	u32 devres;
--	u32 mask, size, base;
+@@ -305,9 +308,8 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
+ 		return -EIO;
  
- 	pci_read_config_dword(dev, port, &devres);
- 	if ((devres & enable) != enable)
- 		return;
-+
-+	pci_add_dev_addon_resource(dev, port, 0, &piix4_io_ops, name);
-+}
-+
-+static int piix4_read_mem(struct pci_dev *dev, struct resource *res, int port)
-+{
-+	u32 devres;
-+	u32 mask, size, base;
-+	struct pci_bus_region bus_region;
-+
-+	pci_read_config_dword(dev, port, &devres);
- 	base = devres & 0xffff0000;
- 	mask = (devres & 0x3f) << 16;
- 	size = 128 << 16;
-@@ -425,12 +456,44 @@ static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int
- 			break;
- 		size = bit;
+ 	nres = 0;
+-	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+-		bars |= (1 << (i + PCI_IOV_RESOURCES));
+-		res = dev->resource + PCI_IOV_RESOURCES + i;
++	for_each_pci_resource(dev, res, i, PCI_IOV_RES) {
++		bars |= 1 << i;
+ 		if (res->parent)
+ 			nres++;
  	}
--	/*
--	 * For now we only print it out. Eventually we'll want to
--	 * reserve it, but let's get enough confirmation reports first. 
--	 */
- 	base &= -size;
--	dev_info(&dev->dev, "%s MMIO at %04x-%04x\n", name, base, base + size - 1);
-+	bus_region.start = base;
-+	bus_region.end = base + size - 1;
-+	res->flags |= IORESOURCE_MEM;
-+	pcibios_bus_to_resource(dev, res, &bus_region);
-+	dev_info(&dev->dev, "MMIO at %pR\n", res);
-+
-+	return 0;
-+}
-+static int piix4_write_mem(struct pci_dev *dev, struct resource *res, int port)
-+{
-+	u32 devres;
-+	struct pci_bus_region bus_region;
-+	unsigned size = to_pci_dev_addon_resource(res)->size;
-+
-+	pcibios_resource_to_bus(dev, &bus_region, res);
-+
-+	pci_read_config_dword(dev, port, &devres);
-+	devres &= 0x0000ffff | ((size - 1) & 0xffff0000);
-+	devres |= bus_region.start & 0xffff0000 & (~(size - 1));
-+	pci_write_config_dword(dev, port, devres);
-+
-+	return 0;
-+}
-+static struct resource_ops piix4_mem_ops = {
-+	.read = piix4_read_mem,
-+	.write = piix4_write_mem,
-+};
-+static void piix4_mem_quirk(struct pci_dev *dev, char *name, unsigned int port,
-+				unsigned int enable)
-+{
-+	u32 devres;
-+
-+	pci_read_config_dword(dev, port, &devres);
-+	if ((devres & enable) != enable)
-+		return;
-+
-+	pci_add_dev_addon_resource(dev, port, 0, &piix4_mem_ops, name);
- }
+@@ -465,10 +467,9 @@ found:
+ 	pci_write_config_dword(dev, pos + PCI_SRIOV_SYS_PGSIZE, pgsz);
  
- /*
+ 	nres = 0;
+-	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+-		res = dev->resource + PCI_IOV_RESOURCES + i;
++	for_each_pci_resource(dev, res, i, PCI_IOV_RES) {
+ 		i += __pci_read_base(dev, pci_bar_unknown, res,
+-				     pos + PCI_SRIOV_BAR + i * 4);
++			     pos + PCI_SRIOV_BAR + (i - PCI_IOV_RESOURCES) * 4);
+ 		if (!res->flags)
+ 			continue;
+ 		if (resource_size(res) & (PAGE_SIZE - 1)) {
+@@ -511,10 +512,8 @@ found:
+ 	return 0;
+ 
+ failed:
+-	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
+-		res = dev->resource + PCI_IOV_RESOURCES + i;
++	for_each_pci_resource(dev, res, i, PCI_IOV_RES)
+ 		res->flags = 0;
+-	}
+ 
+ 	return rc;
+ }
 -- 
 1.8.1.4
 
