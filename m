@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab3DLBBy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 21:01:54 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37237 "EHLO
+	id S1753538Ab3DLBBx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 21:01:53 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37238 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab3DLA50 (ORCPT
+	with ESMTP id S1752515Ab3DLA50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 20:57:26 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,119 +13,162 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 01/22] x86: Change get_ramdisk_image() to global
-Date: Thu, 11 Apr 2013 17:55:47 -0700
-Message-Id: <1365728168-32067-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 12/22] x86, mm, numa: Move node_map_pfn alignment() to x86
+Date: Thu, 11 Apr 2013 17:55:58 -0700
+Message-Id: <1365728168-32067-13-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
 References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need to use get_ramdisk_image() with early microcode_updating in other file.
-Change it to global.
+Move node_map_pfn_alignment() to arch/x86/mm as no other user for it.
 
-Also make it to take boot_params pointer, as head_32.S need to access it via
-phys address during 32bit flat mode.
+Will update it to use numa_meminfo instead of memblock.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Tejun Heo <tj@kernel.org>
-Tested-by: Thomas Renninger <trenn@suse.de>
 ---
- arch/x86/include/asm/setup.h |  3 +++
- arch/x86/kernel/setup.c      | 28 ++++++++++++++--------------
- 2 files changed, 17 insertions(+), 14 deletions(-)
+ arch/x86/mm/numa.c | 50 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mm.h |  1 -
+ mm/page_alloc.c    | 50 --------------------------------------------------
+ 3 files changed, 50 insertions(+), 51 deletions(-)
 
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index b7bf350..4f71d48 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -106,6 +106,9 @@ void *extend_brk(size_t size, size_t align);
- 	RESERVE_BRK(name, sizeof(type) * entries)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index b7173f6..24155b2 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -477,6 +477,56 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
+ 	return true;
+ }
  
- extern void probe_roms(void);
-+u64 get_ramdisk_image(struct boot_params *bp);
-+u64 get_ramdisk_size(struct boot_params *bp);
++/**
++ * node_map_pfn_alignment - determine the maximum internode alignment
++ *
++ * This function should be called after node map is populated and sorted.
++ * It calculates the maximum power of two alignment which can distinguish
++ * all the nodes.
++ *
++ * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
++ * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
++ * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
++ * shifted, 1GiB is enough and this function will indicate so.
++ *
++ * This is used to test whether pfn -> nid mapping of the chosen memory
++ * model has fine enough granularity to avoid incorrect mapping for the
++ * populated node map.
++ *
++ * Returns the determined alignment in pfn's.  0 if there is no alignment
++ * requirement (single node).
++ */
++unsigned long __init node_map_pfn_alignment(void)
++{
++	unsigned long accl_mask = 0, last_end = 0;
++	unsigned long start, end, mask;
++	int last_nid = -1;
++	int i, nid;
 +
- #ifdef __i386__
- 
- void __init i386_start_kernel(void);
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 90d8cc9..1629577 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -300,19 +300,19 @@ static void __init reserve_brk(void)
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
--static u64 __init get_ramdisk_image(void)
-+u64 __init get_ramdisk_image(struct boot_params *bp)
++	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
++		if (!start || last_nid < 0 || last_nid == nid) {
++			last_nid = nid;
++			last_end = end;
++			continue;
++		}
++
++		/*
++		 * Start with a mask granular enough to pin-point to the
++		 * start pfn and tick off bits one-by-one until it becomes
++		 * too coarse to separate the current node from the last.
++		 */
++		mask = ~((1 << __ffs(start)) - 1);
++		while (mask && last_end <= (start & (mask << 1)))
++			mask <<= 1;
++
++		/* accumulate all internode masks */
++		accl_mask |= mask;
++	}
++
++	/* convert mask to number of pages */
++	return ~accl_mask + 1;
++}
++
+ static int __init numa_register_memblks(struct numa_meminfo *mi)
  {
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+	u64 ramdisk_image = bp->hdr.ramdisk_image;
- 
--	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
-+	ramdisk_image |= (u64)bp->ext_ramdisk_image << 32;
- 
- 	return ramdisk_image;
+ 	unsigned long uninitialized_var(pfn_align);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 192806c..77a71fb 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1322,7 +1322,6 @@ extern void free_initmem(void);
+  * CONFIG_HAVE_MEMBLOCK_NODE_MAP.
+  */
+ extern void free_area_init_nodes(unsigned long *max_zone_pfn);
+-unsigned long node_map_pfn_alignment(void);
+ extern unsigned long absent_pages_in_range(unsigned long start_pfn,
+ 						unsigned long end_pfn);
+ extern void get_pfn_range_for_nid(unsigned int nid,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 580d919..f368db4 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -4725,56 +4725,6 @@ static inline void setup_nr_node_ids(void)
  }
--static u64 __init get_ramdisk_size(void)
-+u64 __init get_ramdisk_size(struct boot_params *bp)
+ #endif
+ 
+-/**
+- * node_map_pfn_alignment - determine the maximum internode alignment
+- *
+- * This function should be called after node map is populated and sorted.
+- * It calculates the maximum power of two alignment which can distinguish
+- * all the nodes.
+- *
+- * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
+- * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
+- * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
+- * shifted, 1GiB is enough and this function will indicate so.
+- *
+- * This is used to test whether pfn -> nid mapping of the chosen memory
+- * model has fine enough granularity to avoid incorrect mapping for the
+- * populated node map.
+- *
+- * Returns the determined alignment in pfn's.  0 if there is no alignment
+- * requirement (single node).
+- */
+-unsigned long __init node_map_pfn_alignment(void)
+-{
+-	unsigned long accl_mask = 0, last_end = 0;
+-	unsigned long start, end, mask;
+-	int last_nid = -1;
+-	int i, nid;
+-
+-	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
+-		if (!start || last_nid < 0 || last_nid == nid) {
+-			last_nid = nid;
+-			last_end = end;
+-			continue;
+-		}
+-
+-		/*
+-		 * Start with a mask granular enough to pin-point to the
+-		 * start pfn and tick off bits one-by-one until it becomes
+-		 * too coarse to separate the current node from the last.
+-		 */
+-		mask = ~((1 << __ffs(start)) - 1);
+-		while (mask && last_end <= (start & (mask << 1)))
+-			mask <<= 1;
+-
+-		/* accumulate all internode masks */
+-		accl_mask |= mask;
+-	}
+-
+-	/* convert mask to number of pages */
+-	return ~accl_mask + 1;
+-}
+-
+ /* Find the lowest pfn for a node */
+ static unsigned long __init find_min_pfn_for_node(int nid)
  {
--	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_size = bp->hdr.ramdisk_size;
- 
--	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
-+	ramdisk_size |= (u64)bp->ext_ramdisk_size << 32;
- 
- 	return ramdisk_size;
- }
-@@ -321,8 +321,8 @@ static u64 __init get_ramdisk_size(void)
- static void __init relocate_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	u64 ramdisk_here;
- 	unsigned long slop, clen, mapaddr;
-@@ -361,8 +361,8 @@ static void __init relocate_initrd(void)
- 		ramdisk_size  -= clen;
- 	}
- 
--	ramdisk_image = get_ramdisk_image();
--	ramdisk_size  = get_ramdisk_size();
-+	ramdisk_image = get_ramdisk_image(&boot_params);
-+	ramdisk_size  = get_ramdisk_size(&boot_params);
- 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
- 		" [mem %#010llx-%#010llx]\n",
- 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
-@@ -372,8 +372,8 @@ static void __init relocate_initrd(void)
- static void __init early_reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 
- 	if (!boot_params.hdr.type_of_loader ||
-@@ -385,8 +385,8 @@ static void __init early_reserve_initrd(void)
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = get_ramdisk_image();
--	u64 ramdisk_size  = get_ramdisk_size();
-+	u64 ramdisk_image = get_ramdisk_image(&boot_params);
-+	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 mapped_size;
- 
 -- 
 1.8.1.4
 
