@@ -1,160 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab3DLSiT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 14:38:19 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:40715 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab3DLSiS convert rfc822-to-8bit (ORCPT
+	id S1753789Ab3DLSjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 14:39:51 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:42215 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab3DLSju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 14:38:18 -0400
-Content-Type: text/plain; charset="utf-8"
+	Fri, 12 Apr 2013 14:39:50 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Michal Bachraty <michal.bachraty@streamunlimited.com>,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1365495975-792-1-git-send-email-michal.bachraty@streamunlimited.com>
-Cc: sebastian.hesselbarth@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Michal Bachraty <michal.bachraty@streamunlimited.com>
-References: <1365495975-792-1-git-send-email-michal.bachraty@streamunlimited.com>
-Message-ID: <20130412183809.6507.27844@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH] clk: si5351: Add gapless tuning for SI5351 PLL
-Date: Fri, 12 Apr 2013 11:38:09 -0700
+In-Reply-To: <516849A9.1070206@gmx.de>
+References: <51681FAA.7030108@gmx.de>
+	<CAFLxGvzUQ3yi_rRL94MLi2ajC4Rb+GWDw-ijZGajGA=WTgaaGQ@mail.gmail.com>
+	<516843C4.5030104@gmx.de>
+	<CAFLxGvyp+zZx_TTyz1Zji5BGxd=JUFzhp594sxPLHgZ6kpsBCA@mail.gmail.com>
+	<516849A9.1070206@gmx.de>
+Date: Fri, 12 Apr 2013 20:39:49 +0200
+Message-ID: <CAFLxGvx4KmTify-EEipcNr3GXUZwUx60Q+d=8=p5CXuJvqqh+Q@mail.gmail.com>
+Subject: Re: build error with latest git kernel for a user mode linux build
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>
+Cc: "user-mode-linux-user@lists.sourceforge.net" 
+	<user-mode-linux-user@lists.sourceforge.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=f46d043894055d37f404da2e3a0c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Michal Bachraty (2013-04-09 01:26:15)
-> For gapless tuning, there is no need for PLL reset and clkout power-down
-> when tuning output. "silabs,gapless-tuning" parameter enables gapless tuning
-> for specific clock output.
-> 
-> Signed-off-by: Michal Bachraty <michal.bachraty@streamunlimited.com>
+--f46d043894055d37f404da2e3a0c
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Hi Michal,
+On Fri, Apr 12, 2013 at 7:51 PM, Toralf F=F6rster <toralf.foerster@gmx.de> =
+wrote:
+> On 04/12/2013 07:41 PM, richard -rw- weinberger wrote:
+>> You .config build perfectly fine here.
+>> Have you tried a "make mrproper"?
+> ick - I forgot to un-apply your patch you sent to me related to the trini=
+ty-madvise UML problem - compiles fine now again
+>
+> but this now seems not to work any longer :
+>
+> $ cat devel/stub_pte_fix.diff
+> diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
+> index b30f34a..db2d885 100644
+> --- a/arch/um/include/asm/Kbuild
+> +++ b/arch/um/include/asm/Kbuild
+> @@ -3,3 +3,4 @@ generic-y +=3D hw_irq.h irq_regs.h kdebug.h percpu.h sect=
+ions.h topology.h xor.h
+>  generic-y +=3D ftrace.h pci.h io.h param.h delay.h mutex.h current.h exe=
+c.h
+>  generic-y +=3D switch_to.h clkdev.h
+>  generic-y +=3D trace_clock.h
+> +header-y +=3D mman.h
+> diff --git a/arch/um/include/asm/mman.h b/arch/um/include/asm/mman.h
+> new file mode 100644
+> index 0000000..d8fb362
+> --- /dev/null
+> +++ b/arch/um/include/asm/mman.h
+> @@ -0,0 +1,10 @@
+> +#ifndef __UM_MMAN_H__
+> ...
 
-This did not apply cleanly on the latest (v8) si5351 clk driver.  Can
-you refresh it?  I do not plan on taking any more patches for 3.10 after
-3.9-rc7 drops (likely on Sunday or Monday).  So this patch may need to
-wait until after the merge window.
+The attached patch is an updated version of stub_pte_fix.diff. It
+should fix your issues. :-)
 
-Regards,
-Mike
+--
+Thanks,
+//richard
 
-> ---
->  .../devicetree/bindings/clock/silabs,si5351.txt    |    2 ++
->  drivers/clk/clk-si5351.c                           |   27 +++++++++++++++++---
->  2 files changed, 25 insertions(+), 4 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/silabs,si5351.txt b/Documentation/devicetree/bindings/clock/silabs,si5351.txt
-> index cc37465..e16ab2b 100644
-> --- a/Documentation/devicetree/bindings/clock/silabs,si5351.txt
-> +++ b/Documentation/devicetree/bindings/clock/silabs,si5351.txt
-> @@ -44,6 +44,8 @@ Optional child node properties:
->  - silabs,multisynth-source: source pll A(0) or B(1) of corresponding multisynth
->    divider.
->  - silabs,pll-master: boolean, multisynth can change pll frequency.
-> +- silabs,gapless-tuning: boolean, enable gapless (glitch-free) tuning. Depends on
-> +  "silabs,multisynth-source" parameter.
->  
->  ==Example==
->  
-> diff --git a/drivers/clk/clk-si5351.c b/drivers/clk/clk-si5351.c
-> index e259cec..d3933a9 100644
-> --- a/drivers/clk/clk-si5351.c
-> +++ b/drivers/clk/clk-si5351.c
-> @@ -54,6 +54,7 @@ struct si5351_hw_data {
->         struct si5351_driver_data       *drvdata;
->         struct si5351_parameters        params;
->         unsigned char                   num;
-> +       unsigned char                   gapless_tuning;
->  };
->  
->  struct si5351_driver_data {
-> @@ -526,8 +527,10 @@ static int si5351_pll_set_rate(struct clk_hw *hw, unsigned long rate,
->                 (hwdata->params.p2 == 0) ? SI5351_CLK_INTEGER_MODE : 0);
->  
->         /* reset pll */
-> -       val = (hwdata->num == 0) ? SI5351_PLL_RESET_A : SI5351_PLL_RESET_B;
-> -       si5351_set_bits(hwdata->drvdata, SI5351_PLL_RESET, val, val);
-> +       if (!hwdata->gapless_tuning) {
-> +               val = (hwdata->num == 0) ? SI5351_PLL_RESET_A : SI5351_PLL_RESET_B;
-> +               si5351_set_bits(hwdata->drvdata, SI5351_PLL_RESET, val, val);
-> +       }
->  
->         dev_dbg(&hwdata->drvdata->client->dev,
->                 "%s - %s: p1 = %lu, p2 = %lu, p3 = %lu, parent_rate = %lu, rate = %lu\n",
-> @@ -1064,8 +1067,9 @@ static int si5351_clkout_set_rate(struct clk_hw *hw, unsigned long rate,
->         } while (1);
->  
->         /* powerdown clkout */
-> -       si5351_set_bits(hwdata->drvdata, SI5351_CLK0_CTRL + hwdata->num,
-> -                       SI5351_CLK_POWERDOWN, SI5351_CLK_POWERDOWN);
-> +       if (!hwdata->gapless_tuning)
-> +               si5351_set_bits(hwdata->drvdata, SI5351_CLK0_CTRL + hwdata->num,
-> +                               SI5351_CLK_POWERDOWN, SI5351_CLK_POWERDOWN);
->  
->         /* write output divider */
->         switch (hwdata->num) {
-> @@ -1117,6 +1121,7 @@ static void si5351_dt_setup(
->         struct property *prop;
->         const __be32 *p;
->         unsigned int num, val;
-> +       int pll = -1;
->  
->         if (np == NULL)
->                 return;
-> @@ -1167,6 +1172,8 @@ static void si5351_dt_setup(
->                                 dev_warn(&client->dev,
->                                          "unable to reparent multisynth %d to %d\n",
->                                          num, val);
-> +                       else
-> +                               pll = val;
->                 }
->  
->                 if (!of_property_read_u32(np, "silabs,clock-source", &val)) {
-> @@ -1178,6 +1185,15 @@ static void si5351_dt_setup(
->  
->                 if (!of_property_read_u32(np, "clock-frequency", &val))
->                         clk_set_rate(drvdata->onecell.clks[num], val);
-> +
-> +               if (of_property_read_bool(np, "silabs,gapless-tuning")) {
-> +                       if (pll >= 0) {
-> +                               drvdata->clkout[num].gapless_tuning = 1;
-> +                               drvdata->pll[pll].gapless_tuning = 1;
-> +                       } else
-> +                               dev_warn(&client->dev,
-> +                                       "unable to set gapless tuning");
-> +               }
->         }
->  }
->  
-> @@ -1294,6 +1310,7 @@ static int si5351_i2c_probe(struct i2c_client *client,
->         drvdata->pll[0].num = 0;
->         drvdata->pll[0].drvdata = drvdata;
->         drvdata->pll[0].hw.init = &init;
-> +       drvdata->pll[0].gapless_tuning = 0;
->         memset(&init, 0, sizeof(init));
->         init.name = si5351_pll_names[0];
->         init.ops = &si5351_pll_ops;
-> @@ -1310,6 +1327,7 @@ static int si5351_i2c_probe(struct i2c_client *client,
->         drvdata->pll[1].num = 1;
->         drvdata->pll[1].drvdata = drvdata;
->         drvdata->pll[1].hw.init = &init;
-> +       drvdata->pll[1].gapless_tuning = 0;
->         memset(&init, 0, sizeof(init));
->         if (drvdata->variant == SI5351_VARIANT_B) {
->                 init.name = si5351_pll_names[2];
-> @@ -1380,6 +1398,7 @@ static int si5351_i2c_probe(struct i2c_client *client,
->                 drvdata->clkout[n].num = n;
->                 drvdata->clkout[n].drvdata = drvdata;
->                 drvdata->clkout[n].hw.init = &init;
-> +               drvdata->clkout[n].gapless_tuning = 0;
->                 memset(&init, 0, sizeof(init));
->                 init.name = si5351_clkout_names[n];
->                 init.ops = &si5351_clkout_ops;
-> -- 
-> 1.7.9.5
+--f46d043894055d37f404da2e3a0c
+Content-Type: application/octet-stream; name="stub_pte_fix.diff"
+Content-Disposition: attachment; filename="stub_pte_fix.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hffpa5dj0
+
+ZGlmZiAtLWdpdCBhL2FyY2gvdW0vaW5jbHVkZS9hc20vS2J1aWxkIGIvYXJjaC91bS9pbmNsdWRl
+L2FzbS9LYnVpbGQKaW5kZXggYjMwZjM0YS4uZGIyZDg4NSAxMDA2NDQKLS0tIGEvYXJjaC91bS9p
+bmNsdWRlL2FzbS9LYnVpbGQKKysrIGIvYXJjaC91bS9pbmNsdWRlL2FzbS9LYnVpbGQKQEAgLTMs
+MyArMyw0IEBAIGdlbmVyaWMteSArPSBod19pcnEuaCBpcnFfcmVncy5oIGtkZWJ1Zy5oIHBlcmNw
+dS5oIHNlY3Rpb25zLmggdG9wb2xvZ3kuaCB4b3IuaAogZ2VuZXJpYy15ICs9IGZ0cmFjZS5oIHBj
+aS5oIGlvLmggcGFyYW0uaCBkZWxheS5oIG11dGV4LmggY3VycmVudC5oIGV4ZWMuaAogZ2VuZXJp
+Yy15ICs9IHN3aXRjaF90by5oIGNsa2Rldi5oCiBnZW5lcmljLXkgKz0gdHJhY2VfY2xvY2suaAor
+aGVhZGVyLXkgKz0gbW1hbi5oCmRpZmYgLS1naXQgYS9hcmNoL3VtL2luY2x1ZGUvYXNtL21tYW4u
+aCBiL2FyY2gvdW0vaW5jbHVkZS9hc20vbW1hbi5oCm5ldyBmaWxlIG1vZGUgMTAwNjQ0CmluZGV4
+IDAwMDAwMDAuLmJiMGE4YzcKLS0tIC9kZXYvbnVsbAorKysgYi9hcmNoL3VtL2luY2x1ZGUvYXNt
+L21tYW4uaApAQCAtMCwwICsxLDkgQEAKKyNpZm5kZWYgX19VTV9NTUFOX0hfXworI2RlZmluZSBf
+X1VNX01NQU5fSF9fCisKKyNpbmNsdWRlIDx1YXBpL2FzbS9tbWFuLmg+CisKKyNkZWZpbmUgYXJj
+aF9tbWFwX2NoZWNrIHVtbF9tbWFwX2NoZWNrCitpbnQgdW1sX21tYXBfY2hlY2sodW5zaWduZWQg
+bG9uZyBhZGRyLCB1bnNpZ25lZCBsb25nIGxlbiwgdW5zaWduZWQgbG9uZyBmbGFncyk7CisKKyNl
+bmRpZiAvKiBfX1VNX01NQU5fSF9fICovCmRpZmYgLS1naXQgYS9hcmNoL3VtL2tlcm5lbC9tZW0u
+YyBiL2FyY2gvdW0va2VybmVsL21lbS5jCmluZGV4IDVhYmNiZmIuLjYzMmMwNjYgMTAwNjQ0Ci0t
+LSBhL2FyY2gvdW0va2VybmVsL21lbS5jCisrKyBiL2FyY2gvdW0va2VybmVsL21lbS5jCkBAIC0x
+MCw2ICsxMCw3IEBACiAjaW5jbHVkZSA8bGludXgvbW0uaD4KICNpbmNsdWRlIDxsaW51eC9zd2Fw
+Lmg+CiAjaW5jbHVkZSA8bGludXgvc2xhYi5oPgorI2luY2x1ZGUgPGxpbnV4L21tYW4uaD4KICNp
+bmNsdWRlIDxhc20vZml4bWFwLmg+CiAjaW5jbHVkZSA8YXNtL3BhZ2UuaD4KICNpbmNsdWRlIDxh
+cy1sYXlvdXQuaD4KQEAgLTMyMCwzICszMjEsOCBAQCB2b2lkICp1bWxfa21hbGxvYyhpbnQgc2l6
+ZSwgaW50IGZsYWdzKQogewogCXJldHVybiBrbWFsbG9jKHNpemUsIGZsYWdzKTsKIH0KKworaW50
+IHVtbF9tbWFwX2NoZWNrKHVuc2lnbmVkIGxvbmcgYWRkciwgdW5zaWduZWQgbG9uZyBsZW4sIHVu
+c2lnbmVkIGxvbmcgZmxhZ3MpCit7CisJcmV0dXJuIChmbGFncyAmIE1BUF9GSVhFRCAmJiBhZGRy
+IDwgU1RVQl9TVEFSVCArIFNUVUJfRU5EKSA/IC1FSU5WQUwgOiAwOworfQpkaWZmIC0tZ2l0IGEv
+YXJjaC91bS9rZXJuZWwvc2thcy9tbXUuYyBiL2FyY2gvdW0va2VybmVsL3NrYXMvbW11LmMKaW5k
+ZXggZmYwMzA2Ny4uZGIwOTMyMiAxMDA2NDQKLS0tIGEvYXJjaC91bS9rZXJuZWwvc2thcy9tbXUu
+YworKysgYi9hcmNoL3VtL2tlcm5lbC9za2FzL21tdS5jCkBAIC0xMDMsNyArMTAzLDcgQEAgaW50
+IGluaXRfbmV3X2NvbnRleHQoc3RydWN0IHRhc2tfc3RydWN0ICp0YXNrLCBzdHJ1Y3QgbW1fc3Ry
+dWN0ICptbSkKIAogdm9pZCB1bWxfc2V0dXBfc3R1YnMoc3RydWN0IG1tX3N0cnVjdCAqbW0pCiB7
+Ci0JaW50IGVyciwgcmV0OworCWludCByZXQ7CiAKIAlpZiAoIXNrYXNfbmVlZHNfc3R1YikKIAkJ
+cmV0dXJuOwpAQCAtMTIwLDE1ICsxMjAsMTAgQEAgdm9pZCB1bWxfc2V0dXBfc3R1YnMoc3RydWN0
+IG1tX3N0cnVjdCAqbW0pCiAJbW0tPmNvbnRleHQuc3R1Yl9wYWdlc1swXSA9IHZpcnRfdG9fcGFn
+ZSgmX19zeXNjYWxsX3N0dWJfc3RhcnQpOwogCW1tLT5jb250ZXh0LnN0dWJfcGFnZXNbMV0gPSB2
+aXJ0X3RvX3BhZ2UobW0tPmNvbnRleHQuaWQuc3RhY2spOwogCi0JLyogZHVwX21tYXAgYWxyZWFk
+eSBob2xkcyBtbWFwX3NlbSAqLwotCWVyciA9IGluc3RhbGxfc3BlY2lhbF9tYXBwaW5nKG1tLCBT
+VFVCX1NUQVJULCBTVFVCX0VORCAtIFNUVUJfU1RBUlQsCi0JCQkJICAgICAgVk1fUkVBRCB8IFZN
+X01BWVJFQUQgfCBWTV9FWEVDIHwKLQkJCQkgICAgICBWTV9NQVlFWEVDIHwgVk1fRE9OVENPUFks
+Ci0JCQkJICAgICAgbW0tPmNvbnRleHQuc3R1Yl9wYWdlcyk7Ci0JaWYgKGVycikgewotCQlwcmlu
+dGsoS0VSTl9FUlIgImluc3RhbGxfc3BlY2lhbF9tYXBwaW5nIHJldHVybmVkICVkXG4iLCBlcnIp
+OwotCQlnb3RvIG91dDsKLQl9CisJLyogWFhYOiB0aGUgc3R1YiBwYWdlcyBkb24ndCBoYXZlIGEg
+Vk1BLCBlbnN1cmUgdGhhdCB0aGUgUFRSIGNvdW50ZXIKKwkgKiBpcyBjb3JyZWN0IGF0IHByb2Nl
+c3MgZXhpdC4gKi8KKwltbS0+bnJfcHRlcy0tOworCiAJcmV0dXJuOwogCiBvdXQ6Cg==
+--f46d043894055d37f404da2e3a0c--
