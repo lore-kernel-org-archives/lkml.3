@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758427Ab3DLBQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 21:16:56 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:41183 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327Ab3DLBOl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 21:14:41 -0400
+	id S1759814Ab3DLBRd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 21:17:33 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:49742 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754352Ab3DLBOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 21:14:40 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>,
         Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v2 16/25] page_alloc: transplant pages that are being flushed from the per-cpu lists
-Date: Thu, 11 Apr 2013 18:13:48 -0700
-Message-Id: <1365729237-29711-17-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [RFC PATCH v2 15/25] page_alloc: use dnuma to transplant newly freed pages in free_hot_cold_page()
+Date: Thu, 11 Apr 2013 18:13:47 -0700
+Message-Id: <1365729237-29711-16-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1365729237-29711-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1365729237-29711-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041201-2398-0000-0000-000013343869
+x-cbid: 13041201-9360-0000-0000-000011B4F8FE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In free_pcppages_bulk(), check if a page needs to be moved to a new
-node/zone & then perform the transplant (in a slightly defered manner).
+free_hot_cold_page() is used for order == 0 pages, and is where the
+page's zone is decided.
+
+In the normal case, these pages are freed to the per-cpu lists. When a
+page needs transplanting (ie: the actual node it belongs to has changed,
+and it needs to be moved to another zone), the pcp lists are skipped &
+the page is freed via free_one_page().
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- mm/page_alloc.c | 36 +++++++++++++++++++++++++++++++++++-
- 1 file changed, 35 insertions(+), 1 deletion(-)
+ mm/page_alloc.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 98ac7c6..97bdf6b 100644
+index f8ae178..98ac7c6 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -643,13 +643,14 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 	int migratetype = 0;
- 	int batch_free = 0;
- 	int to_free = count;
-+	struct page *pos, *page;
-+	LIST_HEAD(need_move);
+@@ -1357,6 +1357,7 @@ void mark_free_pages(struct zone *zone)
+  */
+ void free_hot_cold_page(struct page *page, int cold)
+ {
++	int dest_nid;
+ 	struct zone *zone = page_zone(page);
+ 	struct per_cpu_pages *pcp;
+ 	unsigned long flags;
+@@ -1370,6 +1371,15 @@ void free_hot_cold_page(struct page *page, int cold)
+ 	local_irq_save(flags);
+ 	__count_vm_event(PGFREE);
  
- 	spin_lock(&zone->lock);
- 	zone->all_unreclaimable = 0;
- 	zone->pages_scanned = 0;
- 
- 	while (to_free) {
--		struct page *page;
- 		struct list_head *list;
- 
- 		/*
-@@ -672,11 +673,23 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 
- 		do {
- 			int mt;	/* migratetype of the to-be-freed page */
-+			int dest_nid;
- 
- 			page = list_entry(list->prev, struct page, lru);
- 			/* must delete as __free_one_page list manipulates */
- 			list_del(&page->lru);
- 			mt = get_freepage_migratetype(page);
-+
-+			dest_nid = dnuma_page_needs_move(page);
-+			if (dest_nid != NUMA_NO_NODE) {
-+				dnuma_prior_free_to_new_zone(page, 0,
-+						nid_zone(dest_nid,
-+							page_zonenum(page)),
-+						dest_nid);
-+				list_add(&page->lru, &need_move);
-+				continue;
-+			}
-+
- 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
- 			__free_one_page(page, zone, 0, mt);
- 			trace_mm_page_pcpu_drain(page, 0, mt);
-@@ -688,6 +701,27 @@ static void free_pcppages_bulk(struct zone *zone, int count,
- 		} while (--to_free && --batch_free && !list_empty(list));
- 	}
- 	spin_unlock(&zone->lock);
-+
-+	list_for_each_entry_safe(page, pos, &need_move, lru) {
-+		struct zone *dest_zone = page_zone(page);
-+		int mt;
-+
-+		spin_lock(&dest_zone->lock);
-+
-+		VM_BUG_ON(dest_zone != page_zone(page));
-+		pr_devel("freeing pcp page %pK with changed node\n", page);
-+		list_del(&page->lru);
-+		mt = get_freepage_migratetype(page);
-+		__free_one_page(page, dest_zone, 0, mt);
-+		trace_mm_page_pcpu_drain(page, 0, mt);
-+
-+		/* XXX: fold into "post_free_to_new_zone()" ? */
-+		if (is_migrate_cma(mt))
-+			__mod_zone_page_state(dest_zone, NR_FREE_CMA_PAGES, 1);
++	dest_nid = dnuma_page_needs_move(page);
++	if (dest_nid != NUMA_NO_NODE) {
++		struct zone *dest_zone = nid_zone(dest_nid, page_zonenum(page));
++		dnuma_prior_free_to_new_zone(page, 0, dest_zone, dest_nid);
++		free_one_page(dest_zone, page, 0, migratetype);
 +		dnuma_post_free_to_new_zone(0);
-+
-+		spin_unlock(&dest_zone->lock);
++		goto out;
 +	}
- }
- 
- static void free_one_page(struct zone *zone, struct page *page, int order,
++
+ 	/*
+ 	 * We only track unmovable, reclaimable and movable on pcp lists.
+ 	 * Free ISOLATE pages back to the allocator because they are being
 -- 
 1.8.2.1
 
