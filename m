@@ -1,37 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab3DLDSV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 23:18:21 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:56390 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750731Ab3DLDSU (ORCPT
+	id S1752629Ab3DLDyn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 23:54:43 -0400
+Received: from sjdciscan02.udc.trendmicro.com ([66.180.82.18]:57717 "EHLO
+	sjdciscan02.udc.trendmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751655Ab3DLDym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 23:18:20 -0400
+	Thu, 11 Apr 2013 23:54:42 -0400
+X-Greylist: delayed 1560 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Apr 2013 23:54:42 EDT
+From: "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>
+To: Eric Paris <eparis@redhat.com>, Wei Yongjun <weiyj.lk@gmail.com>
+CC: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH -next] audit: remove duplicated include from audit.c
+Thread-Topic: [PATCH -next] audit: remove duplicated include from audit.c
+Thread-Index: Ac43Lc94QGubB33dQHGvphSp1r0KFg==
+Date: Fri, 12 Apr 2013 03:28:34 +0000
+Message-ID: <A360F954C61C69449463B0606663711259EE4EBC@CDCEXMBX01.tw.trendnet.org>
+References: <CAPgLHd-M-q-xf+mp3VTAabxXS3bOjZ4g8EWLeE2NdjC2O7qCSA@mail.gmail.com>
+ <170253117.11083340.1365614765343.JavaMail.root@redhat.com>
+In-Reply-To: <170253117.11083340.1365614765343.JavaMail.root@redhat.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.64.44.136]
+Content-Type: text/plain;
+	charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAPgLHd8FKGg=JFK3_f2PJxNjS5S5OD-+PotHEKLM6pi9C5QJOg@mail.gmail.com>
-References: <CAPgLHd8FKGg=JFK3_f2PJxNjS5S5OD-+PotHEKLM6pi9C5QJOg@mail.gmail.com>
-Date: Fri, 12 Apr 2013 12:18:19 +0900
-Message-ID: <CAKYAXd9tKVrS-=T+6aW2cqwr+hr+_5o23vHZdborfNcmyVzcaQ@mail.gmail.com>
-Subject: Re: [PATCH -next] f2fs: fix error return code in f2fs_fill_super()
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: jaegeuk.kim@samsung.com, namjae.jeon@samsung.com,
-        yongjun_wei@trendmicro.com.cn, linux-f2fs-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+X-TM-AS-MML: No
+X-TM-AS-Product-Ver: IMSVA-8.2.0.1679-7.0.0.1014-19792.004
+X-TMASE-Version: IMSVA-8.2.0.1679-7.0.1014-19792.004
+X-TMASE-Result: 10--31.483400-5.000000
+X-TMASE-MatchedRID: hye8xZuNxhC8GTsHd+EMkBk4wcN85RIuAya39voTToV7k1ZHmKLF7a6x
+	L0KIHMvxyWCL+8tLbvb6viSyhRDzBf1BNBACQf6m81jB92PyJHSKOc/QAD5CQczWN98iBBeGKWP
+	nYJ5Ay2pbIM8dAZrOYJBn0Y6NyRFoM21CreAEMZgQkEWOYEwCV94I2x3xsCoojhXy0Khej9JUEN
+	BIMyKD0aq9wgXVNwtgmE/wZ0tmNYbz39bev2BML83cbPzvuBsp9JCRdcMOvVlWdBPqAOaXVavd3
+	WuZF0KAAoI6+29MrRlXeicg/7kQMH2VMDa97gjg/tVkYhEwz5onJ7hwR4FMAE+4wmL9kCTxLi2d
+	wKiMR9wUcciLnfRUUi57hWH2lkqmoTCA5Efyn8DeYfIaXhttiN0H8LFZNFG7JQhrLH5KSJ0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3C3skbO010431
 
-2013/4/12, Wei Yongjun <weiyj.lk@gmail.com>:
+Hi Eric,
+
+Sorry reply on top.
+
+>From the source code from linex-next.git tree, line 55~64:
+
+#include <net/sock.h>
+#include <net/netlink.h>            *******
+#include <linux/skbuff.h>
+#ifdef CONFIG_SECURITY
+#include <linux/security.h>
+#endif
+#include <net/netlink.h>            *******
+#include <linux/freezer.h>
+#include <linux/tty.h>
+#include <linux/pid_namespace.h>
+
+net/netlink.h is included twice, and linux/netlink.h is not included by this file.
+
+-----Original Message-----
+From: Eric Paris [mailto:eparis@redhat.com] 
+Sent: 2013Âπ¥4Êúà11Êó• 1:26
+To: Wei Yongjun
+Cc: viro@zeniv.linux.org.uk; Yongjun Wei (RD-CN); linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] audit: remove duplicated include from audit.c
+
+net/netlink.h includes linux/netlink.h but linux/netlink.h does not include net/netlink.h
+
+since the audit code uses the nlmsg_* functions provided in net/netlink.h it seems we need this include.
+
+since the audit code uses netlink_unicast provided in linux/netlink.h it seems we need that include.
+
+I don't see duplication even if by chance one of them would have included the other...
+
+----- Original Message -----
 > From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
->
-> Fix to return a negative error code from the error handling
-> case instead of 0, as returned elsewhere in this function.
-> Introduce by commit c0d39e(f2fs: fix return values from validate
-> superblock)
->
+> 
+> Remove duplicated include.
+> 
 > Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Acked-by: Namjae Jeon <namjae.jeon@samsung.com>
+> ---
+>  kernel/audit.c | 1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/kernel/audit.c b/kernel/audit.c index 488f85f..9377913 
+> 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -58,7 +58,6 @@
+>  #ifdef CONFIG_SECURITY
+>  #include <linux/security.h>
+>  #endif
+> -#include <net/netlink.h>
+>  #include <linux/freezer.h>
+>  #include <linux/tty.h>
+>  #include <linux/pid_namespace.h>
+> 
+> 
 
-Thanks.
+<table class="TM_EMAIL_NOTICE"><tr><td><pre>
+TREND MICRO EMAIL NOTICE
+The information contained in this email and any attachments is confidential 
+and may be subject to copyright or other intellectual property protection. 
+If you are not the intended recipient, you are not authorized to use or 
+disclose this information, and we request that you notify us by reply mail or
+telephone and delete the original message from your mail system.
+</pre></td></tr></table>ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
