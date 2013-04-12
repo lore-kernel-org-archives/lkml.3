@@ -1,61 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415Ab3DLKYC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 06:24:02 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:46252 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819Ab3DLKX7 (ORCPT
+	id S1753426Ab3DLKaq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 06:30:46 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:22421 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751998Ab3DLKap convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 06:23:59 -0400
-Message-ID: <5167E0BD.5080808@pobox.com>
-Date: Fri, 12 Apr 2013 06:23:57 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	Fri, 12 Apr 2013 06:30:45 -0400
+Date: Fri, 12 Apr 2013 12:30:10 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.or,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCH v2] clk: add device tree fixed-factor-clock binding
+ support
+Message-ID: <20130412103007.GE29291@ab42.lan>
+References: <1365760708-4763-1-git-send-email-gregory.clement@free-electrons.com>
+ <1365760708-4763-2-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
-CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: ata: rcar: use devm_ioremap_resource()
-References: <1365749477-22770-1-git-send-email-silviupopescu1990@gmail.com>
-In-Reply-To: <1365749477-22770-1-git-send-email-silviupopescu1990@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1365760708-4763-2-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 02:51 AM, Silviu-Mihai Popescu wrote:
-> Convert  use of devm_request_and_ioremap() to the newly introduced
-> devm_ioremap_resource() which provides more consistent error handling.
-> This was found with coccinelle.
->
-> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+Hi Gregory,
+
+Just tested the patch and it works perfectly. Did you forget to update
+Documentation/devicetree/bindings/clock/fixed-factor-clock.txt, however?
+
+Greetings,
+  Christian
+
+On Fri, Apr 12, 2013 at 11:58:28AM +0200, Gregory CLEMENT wrote:
+> Add support for DT "fixed-factor-clock" binding to the common fixed
+> factor clock support.
+> 
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 > ---
->   drivers/ata/sata_rcar.c |    6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/ata/sata_rcar.c b/drivers/ata/sata_rcar.c
-> index caf33f6..8c51a3a 100644
-> --- a/drivers/ata/sata_rcar.c
-> +++ b/drivers/ata/sata_rcar.c
-> @@ -799,9 +799,9 @@ static int sata_rcar_probe(struct platform_device *pdev)
->
->   	host->private_data = priv;
->
-> -	priv->base = devm_request_and_ioremap(&pdev->dev, mem);
-> -	if (!priv->base) {
-> -		ret = -EADDRNOTAVAIL;
-> +	priv->base = devm_ioremap_resource(&pdev->dev, mem);
-> +	if (IS_ERR(priv->base)) {
-> +		ret = PTR_ERR(priv->base);
->   		goto cleanup;
->   	}
->
->
+>  .../bindings/clock/fixed-factor-clock.txt          |   24 +++++++++++++
+>  drivers/clk/clk-fixed-factor.c                     |   36 ++++++++++++++++++++
+>  include/linux/clk-provider.h                       |    2 ++
+>  3 files changed, 62 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/clock/fixed-factor-clock.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/clock/fixed-factor-clock.txt b/Documentation/devicetree/bindings/clock/fixed-factor-clock.txt
+> new file mode 100644
+> index 0000000..7ed236f
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/fixed-factor-clock.txt
+> @@ -0,0 +1,24 @@
+> +Binding for simple fixed factor rate clock sources.
+> +
+> +This binding uses the common clock binding[1].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +
+> +Required properties:
+> +- compatible : shall be "fixed-factor-clock".
+> +- #clock-cells : from common clock binding; shall be set to 0.
+> +- div: fixed divider.
+> +- mult: fixed multiplier.
+> +- clocks: parent clock.
+> +
+> +Optional properties:
+> +- clock-output-names : From common clock binding.
+> +
+> +Example:
+> +	clock {
+> +		compatible = "fixed-factor-clock";
+> +		clocks = <&parentclk>;
+> +		#clock-cells = <0>;
+> +		div = <2>;
+> +		mult = <1>;
+> +	};
+> diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
+> index 1ef271e..9ff7d51 100644
+> --- a/drivers/clk/clk-fixed-factor.c
+> +++ b/drivers/clk/clk-fixed-factor.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/clk-provider.h>
+>  #include <linux/slab.h>
+>  #include <linux/err.h>
+> +#include <linux/of.h>
+>  
+>  /*
+>   * DOC: basic fixed multiplier and divider clock that cannot gate
+> @@ -96,3 +97,38 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
+>  
+>  	return clk;
+>  }
+> +#ifdef CONFIG_OF
+> +/**
+> + * of_fixed_factor_clk_setup() - Setup function for simple fixed factor clock
+> + */
+> +void __init of_fixed_factor_clk_setup(struct device_node *node)
+> +{
+> +	struct clk *clk;
+> +	const char *clk_name = node->name;
+> +	const char *parent_name;
+> +	u32 div, mult;
+> +
+> +	if (of_property_read_u32(node, "clock-div", &div)) {
+> +		pr_err("%s Fixed factor clock <%s> must have a clock-div property\n",
+> +			__func__, node->name);
+> +		return;
+> +	}
+> +
+> +	if (of_property_read_u32(node, "clock-mult", &mult)) {
+> +		pr_err("%s Fixed factor clock <%s> must have a clokc-mult property\n",
+> +			__func__, node->name);
+> +		return;
+> +	}
+> +
+> +	of_property_read_string(node, "clock-output-names", &clk_name);
+> +	parent_name = of_clk_get_parent_name(node, 0);
+> +
+> +	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
+> +					mult, div);
+> +	if (!IS_ERR(clk))
+> +		of_clk_add_provider(node, of_clk_src_simple_get, clk);
+> +}
+> +EXPORT_SYMBOL_GPL(of_fixed_factor_clk_setup);
+> +CLK_OF_DECLARE(fixed_factor_clk, "fixed-factor-clock",
+> +		of_fixed_factor_clk_setup);
+> +#endif
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index 7f197d7..7ea501b 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -325,6 +325,8 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
+>  		const char *parent_name, unsigned long flags,
+>  		unsigned int mult, unsigned int div);
+>  
+> +void of_fixed_factor_clk_setup(struct device_node *node);
+> +
+>  /**
+>   * clk_register - allocate a new clock, register it and return an opaque cookie
+>   * @dev: device that is registering this clock
+> -- 
+> 1.7.9.5
+> 
 
-See 2de1d5e159ccf317a9285a0dfaa6e4262500d7dd in libata-dev.git#upstream.
-
-	Jeff
-
-
-
-
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
