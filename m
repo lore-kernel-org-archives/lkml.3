@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab3DLJe3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 05:34:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59922 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751982Ab3DLJe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 05:34:28 -0400
-Date: Fri, 12 Apr 2013 10:34:20 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Ric Mason <ric.masonn@gmail.com>
-Cc: Will Huck <will.huckk@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Zlatko Calusic <zcalusic@bitsync.net>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
- reclaims at each priority
-Message-ID: <20130412093420.GG11656@suse.de>
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
- <1363525456-10448-2-git-send-email-mgorman@suse.de>
- <20130321155705.GA27848@cmpxchg.org>
- <514BA04D.2090002@gmail.com>
- <514BD56F.6050709@redhat.com>
- <5166510E.2050709@gmail.com>
- <51679FAE.7090504@gmail.com>
+	id S1754147Ab3DLJej (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 05:34:39 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:47945 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982Ab3DLJef (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 05:34:35 -0400
+Date: Fri, 12 Apr 2013 11:33:33 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: rtc-linux@googlegroups.com, Andrew Victor <linux@maxim.org.za>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Johan Hovold <jhovold@gmail.com>
+Subject: Re: [rtc-linux] Re: [PATCH v2 0/5] ARM: at91: fix hanged boot
+Message-ID: <20130412093333.GF21305@localhost>
+References: <20130311180611.GF8797@localhost>
+ <1363025279-17615-1-git-send-email-jhovold@gmail.com>
+ <20130411155505.GD21305@localhost>
+ <20130411165414.GC25242@game.jcrosoft.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51679FAE.7090504@gmail.com>
+In-Reply-To: <20130411165414.GC25242@game.jcrosoft.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 01:46:22PM +0800, Ric Mason wrote:
-> Ping Rik, I also want to know the answer. ;-)
+On Thu, Apr 11, 2013 at 06:54:14PM +0200, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> On 17:55 Thu 11 Apr     , Johan Hovold wrote:
+> > On Mon, Mar 11, 2013 at 07:07:54PM +0100, Johan Hovold wrote:
+> > > These patches fix a few severe issues affecting most AT91 SOCs where
+> > > boot can hang after a non-general reset, and where the only way to get
+> > > the system booting again is to do a general reset -- something which
+> > > could require physically removing any backup battery.
+> > 
+> > Have you had time to look at these patches yet, Nicolas?
+> > 
+> > I don't think not having decided on the path forward for DT-support for
+> > rtc-at91sam9 needs to be a blocker. The rtt-nodes will be needed in any
+> > case.
+> > 
+> > I could respin the series on top of the DT-patch for rtc-at91rm9200, and
+> > add interrupt and status-disabled properties to the DT-nodes as well.
+> for this this is still a no go
+> 
+> this way too much ugly
 
-This question, like a *lot* of list traffic recently, is a "how long is a
-piece of string" with hints that it is an important question but really
-is just going to waste a developers time because the question lacks any
-relevant meaning. The Inter-Reference Distance (IRD) is mentioned as a
-problem but gives no context as to why it is perceived as a problem. IRD is
-the distance in time or events between two references of the same page and
-is a function of the workload and an arbitrary page, not the page reclaim
-algorithm. A page algorithm may take IRD into account but IRD is not and
-cannot be a "problem" so the question framing is already confusing.
+I understand that you prefer fixing every bootloader. I was just making
+sure everyone agrees that that is the best solution.
 
-Furthermore, the upsides and downsides of any given page reclaim algorithm
-are complex but in most cases are discussed in the academic pages describing
-them. People who are interested need to research and read these papers
-and then see how it might apply to the algorithm implemented in Linux or
-alternatively investigate what important workloads Linux treats badly
-and addressing the problem. The result of such research (and patches)
-is then a relevant discussion.
+The two interrupt masks has to be cleared before the kernel enables the
+system interrupt; either it needs to be done by the bootloader or by the
+at91 arch code.
 
-This question asks what the "downside" is versus anonymous pages.  To me
-the question lacks any meaning because how can a page reclaim algorithm
-"against" anonymous pages? As the question lacks meaning, answering it is
-impossible and it is effectively asking a developer to write a small paper
-to try and discover the meaning of the question before then answering it.
+The various bootloaders may not know anything about RTT or RTC, but
+have all made sure interrupts are disabled before executing the kernel.
+That is, they have fulfilled the requirement that interrupts must be
+disabled.
 
-I do not speak for Rik but I at least am ignoring most of these questions
-because there is not enough time in the day already. Pings are not
-likely to change my opinion.
+So the trade-off seems to be: Either we fix this once and for all using
+the infrastructure already in place in the kernel (DT), or risk further
+(apparently) bricked systems as there are bound to be bootloaders that
+won't get updated.
 
--- 
-Mel Gorman
-SUSE Labs
+[...]
+
+> > > The problems stem from the fact that the RTC and RTT-peripherals are
+> > > powered by backup power (VDDBU) and are not reset on wake-up, user,
+> > > watchdog or software reset. Consequently, RTC and RTT-alarms and their
+> > > interrupts may be enabled at boot, leading to a system lock-up when an
+> > > interrupt arrives on the shared system-interrupt line before the
+> > > appropriate handler (e.g. RTC-driver) has been installed.
+> > > 
+> > > The easiest way to trigger this is to simply wake up from an RTC-alarm
+> > > on at91sam9g45. The RTC-driver currently does not disable interrupts at
+> > > shutdown so even after a clean shut-down the system will always hang
+> > > after waking up.
+> > > 
+> > > The first patch fixes this very general case of RTC-wake up after a
+> > > clean shutdown in the RTC-driver and is marked for stable as it is
+> > > perfectly straight-forward. [ Note that the other, RTT-based, AT91
+> > > RTC-driver already disables its interrupts at shutdown. ]
+
+And what about this patch? If it's decided that every bootloader needs
+to be updated, then perhaps it's better to risk bricked systems also
+after a clean shutdown to enforce those updates? Should we then remove
+the corresponding disable of interrupts at shutdown from the rtc-at91sam9
+driver by the same logic?
+
+> > > The more general problem can be triggered, for example, by doing a
+> > > user-reset while updating the RTC-time or if an RTC or RTT-alarm goes
+> > > off after a non-clean shutdown.
+> > > 
+> > > To fix this I propose that arch-code should mask the relevant interrupts
+> > > before enabling the system interrupt at early boot, and this is what
+> > > the fifth patch does. To access the RTC-registers I choose to revert a
+> > > recent patch that moved the register definitions to drivers/rtc.
+> > > 
+> > > Arguably, the relevant interrupts could also be disabled in bootloaders,
+> > > but I suggest fixing it in the kernel once and for all.
+
+Thanks,
+Johan
