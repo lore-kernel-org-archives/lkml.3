@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab3DLWpb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:45:31 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47285 "EHLO
+	id S1756105Ab3DLWqL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:46:11 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47460 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab3DLWp1 (ORCPT
+	with ESMTP id S1753193Ab3DLWqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:45:27 -0400
+	Fri, 12 Apr 2013 18:46:06 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 09/29] PCI: Use for_each_pci_resource() with IOV releated functions
-Date: Fri, 12 Apr 2013 15:44:23 -0700
-Message-Id: <1365806683-26717-10-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 26/29] PCI: Assign/update resource to addon_res
+Date: Fri, 12 Apr 2013 15:44:40 -0700
+Message-Id: <1365806683-26717-27-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Extend pci_update_resource to check resno and call addon resources
+ops to update bar for it.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/iov.c | 31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+ drivers/pci/setup-res.c | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index ee599f2..baf6c80 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -93,17 +93,20 @@ static int virtfn_add(struct pci_dev *dev, int id, int reset)
- 	pci_setup_device(virtfn);
- 	virtfn->dev.parent = dev->dev.parent;
+diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
+index 94ef232..6a85dcf 100644
+--- a/drivers/pci/setup-res.c
++++ b/drivers/pci/setup-res.c
+@@ -35,7 +35,7 @@ void pci_update_resource(struct pci_dev *dev, int resno)
+ 	u32 new, check, mask;
+ 	int reg;
+ 	enum pci_bar_type type;
+-	struct resource *res = dev->resource + resno;
++	struct resource *res = pci_dev_resource_n(dev, resno);
  
--	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
--		res = dev->resource + PCI_IOV_RESOURCES + i;
-+	for_each_pci_resource(dev, res, i, PCI_IOV_RES) {
-+		struct resource *virtfn_res;
+ 	/*
+ 	 * Ignore resources for unimplemented BARs and unused resource slots
+@@ -52,6 +52,21 @@ void pci_update_resource(struct pci_dev *dev, int resno)
+ 	if (res->flags & IORESOURCE_PCI_FIXED)
+ 		return;
+ 
++	if (resno >= PCI_NUM_RESOURCES) {
++		struct pci_dev_addon_resource *addon_res;
 +
- 		if (!res->parent)
- 			continue;
--		virtfn->resource[i].name = pci_name(virtfn);
--		virtfn->resource[i].flags = res->flags;
++		addon_res = to_pci_dev_addon_resource(res);
++		reg = addon_res->reg_addr;
++		if (addon_res->ops) {
++			addon_res->ops->write(dev, res, reg);
++			return;
++		}
++	} else
++		reg = pci_resource_bar(dev, resno, &type);
 +
-+		virtfn_res = pci_dev_resource_n(virtfn, i - PCI_IOV_RESOURCES);
-+		virtfn_res->name = pci_name(virtfn);
-+		virtfn_res->flags = res->flags;
- 		size = resource_size(res);
- 		do_div(size, iov->total_VFs);
--		virtfn->resource[i].start = res->start + size * id;
--		virtfn->resource[i].end = virtfn->resource[i].start + size - 1;
--		rc = request_resource(res, &virtfn->resource[i]);
-+		virtfn_res->start = res->start + size * id;
-+		virtfn_res->end = virtfn_res->start + size - 1;
-+		rc = request_resource(res, virtfn_res);
- 		BUG_ON(rc);
++	if (!reg)
++		return;
++
+ 	pcibios_resource_to_bus(dev, &region, res);
+ 
+ 	new = region.start | (res->flags & PCI_REGION_FLAG_MASK);
+@@ -60,9 +75,6 @@ void pci_update_resource(struct pci_dev *dev, int resno)
+ 	else
+ 		mask = (u32)PCI_BASE_ADDRESS_MEM_MASK;
+ 
+-	reg = pci_resource_bar(dev, resno, &type);
+-	if (!reg)
+-		return;
+ 	if (type != pci_bar_unknown) {
+ 		if (!(res->flags & IORESOURCE_ROM_ENABLE))
+ 			return;
+@@ -286,7 +298,7 @@ int pci_assign_resource(struct pci_dev *dev, int resno)
+ 	if (!ret) {
+ 		res->flags &= ~IORESOURCE_STARTALIGN;
+ 		dev_info(&dev->dev, "BAR %d: assigned %pR\n", resno, res);
+-		if (resno < PCI_BRIDGE_RESOURCES)
++		if (!is_pci_bridge_resource_idx(resno))
+ 			pci_update_resource(dev, resno);
  	}
- 
-@@ -305,9 +308,8 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
- 		return -EIO;
- 
- 	nres = 0;
--	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
--		bars |= (1 << (i + PCI_IOV_RESOURCES));
--		res = dev->resource + PCI_IOV_RESOURCES + i;
-+	for_each_pci_resource(dev, res, i, PCI_IOV_RES) {
-+		bars |= 1 << i;
- 		if (res->parent)
- 			nres++;
+ 	return ret;
+@@ -311,7 +323,7 @@ int pci_reassign_resource(struct pci_dev *dev, int resno, resource_size_t addsiz
+ 	if (!ret) {
+ 		res->flags &= ~IORESOURCE_STARTALIGN;
+ 		dev_info(&dev->dev, "BAR %d: reassigned %pR\n", resno, res);
+-		if (resno < PCI_BRIDGE_RESOURCES)
++		if (!is_pci_bridge_resource_idx(resno))
+ 			pci_update_resource(dev, resno);
  	}
-@@ -465,10 +467,9 @@ found:
- 	pci_write_config_dword(dev, pos + PCI_SRIOV_SYS_PGSIZE, pgsz);
- 
- 	nres = 0;
--	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
--		res = dev->resource + PCI_IOV_RESOURCES + i;
-+	for_each_pci_resource(dev, res, i, PCI_IOV_RES) {
- 		i += __pci_read_base(dev, pci_bar_unknown, res,
--				     pos + PCI_SRIOV_BAR + i * 4);
-+			     pos + PCI_SRIOV_BAR + (i - PCI_IOV_RESOURCES) * 4);
- 		if (!res->flags)
- 			continue;
- 		if (resource_size(res) & (PAGE_SIZE - 1)) {
-@@ -511,10 +512,8 @@ found:
- 	return 0;
- 
- failed:
--	for (i = 0; i < PCI_SRIOV_NUM_BARS; i++) {
--		res = dev->resource + PCI_IOV_RESOURCES + i;
-+	for_each_pci_resource(dev, res, i, PCI_IOV_RES)
- 		res->flags = 0;
--	}
- 
- 	return rc;
- }
+ 	return ret;
 -- 
 1.8.1.4
 
