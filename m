@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311Ab3DLC54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 22:57:56 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:33692 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752169Ab3DLC5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 22:57:54 -0400
-Date: Thu, 11 Apr 2013 22:57:08 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Jan Kara <jack@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Excessive stall times on ext4 in 3.9-rc2
-Message-ID: <20130412025708.GB7445@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-	Mel Gorman <mgorman@suse.de>, linux-ext4@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-	Jiri Slaby <jslaby@suse.cz>
-References: <20130402142717.GH32241@suse.de>
- <20130402150651.GB31577@thunk.org>
- <20130410105608.GC1910@suse.de>
- <20130410131245.GC4862@thunk.org>
- <20130411170402.GB11656@suse.de>
- <20130411183512.GA12298@thunk.org>
- <20130411213335.GE9379@quack.suse.cz>
+	id S1753432Ab3DLDF4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 23:05:56 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:59293 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab3DLDFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 23:05:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411213335.GE9379@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Date: Fri, 12 Apr 2013 11:05:54 +0800
+Message-ID: <CAPgLHd8j_fWcgqe=KLWjpBj+=o0Pw6Z-SEq=NTPU08c2w1tngQ@mail.gmail.com>
+Subject: [PATCH -next] perf: fix error return code
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@ghostprotocols.net
+Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 11:33:35PM +0200, Jan Kara wrote:
->   I think it might be more enlightening if Mel traced which process in
-> which funclion is holding the buffer lock. I suspect we'll find out that
-> the flusher thread has submitted the buffer for IO as an async write and
-> thus it takes a long time to complete in presence of reads which have
-> higher priority.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-That's an interesting theory.  If the workload is one which is very
-heavy on reads and writes, that could explain the high latency.  That
-would explain why those of us who are using primarily SSD's are seeing
-the problems, because would be reads are nice and fast.
+Fix to return a negative error code from the error handling
+case instead of 0, as returned elsewhere in this function.
 
-If that is the case, one possible solution that comes to mind would be
-to mark buffer_heads that contain metadata with a flag, so that the
-flusher thread can write them back at the same priority as reads.
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ kernel/events/core.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-The only problem I can see with this hypothesis is that if this is the
-explanation for what Mel and Jiri are seeing, it's something that
-would have been around for a long time, and would affect ext3 as well
-as ext4.  That isn't quite consistent, however, with Mel's observation
-that this is a probablem which has gotten worse in relatively
-recently.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 2427107..7504140 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6033,8 +6033,10 @@ skip_type:
+ 		goto got_cpu_context;
+ 
+ 	pmu->pmu_cpu_context = alloc_percpu(struct perf_cpu_context);
+-	if (!pmu->pmu_cpu_context)
++	if (!pmu->pmu_cpu_context) {
++		ret = -ENOMEM;
+ 		goto free_dev;
++	}
+ 
+ 	for_each_possible_cpu(cpu) {
+ 		struct perf_cpu_context *cpuctx;
 
-	  	    	   	    	       - Ted
