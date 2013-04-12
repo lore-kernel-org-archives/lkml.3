@@ -1,126 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab3DLLwG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 07:52:06 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:44668 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755371Ab3DLLwE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 07:52:04 -0400
-X-AuditID: cbfee691-b7f5f6d000002fda-fc-5167f561bf02
-Date: Fri, 12 Apr 2013 11:52:01 +0000 (GMT)
-From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
-Subject: Re: Re: [RESEND][PATCH 1/3] PM / devfreq: exynos4_bus: Fix missing
- mutex_unlock if opp_find_freq_floor fails
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Axel Lin <axel.lin@ingics.com>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        =?euc-kr?Q?=B1=E8=B1=B9=C1=F8?= <kgene.kim@samsung.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20130412115002607@myungjoo.ham
-Msgkey: 20130412115002607@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130412115002607@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <15500134.204421365767518757.JavaMail.weblogic@epv6ml01>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAKsWRmVeSWpSXmKPExsWyRsSkWDfxa3qgwfJuMYvLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJXx4t5H5oJZ/BX7Lu5la2B8wtfFyMkhJKAusWjJSTYQW0LAROL1
-	ql0sELaYxIV764HiXEA1Sxklvh66zgRTdK1vNhNEYj6jxP6PW9lBEiwCqhJLp+0Bsjk42ATM
-	Je7PCAIJCwuUSsxctI4VpF5E4DijxP0zJ5hBHGaBdYwS0z4uYYY4Q0lizb5XYKt5BQQlTs58
-	AnWGqsTGVTeZIeJqEs+3r4WKS0jMmn6BFcLmlZjR/hQqLicx7esaZghbWuL8rA2MMO8s/v4Y
-	Ks4vcez2DiaQQ0F6n9wPhhmze/MXaEgISEw9cxCqVUviw4RuqPF8EmsWvmWBGbPr1HJmmN77
-	W+aCA4hZQFFiSvdDdghbS+LLj31s6N7iFXCROP3yI/MERuVZSFKzkLTPQtKOrGYBI8sqRtHU
-	guSC4qT0IlO94sTc4tK8dL3k/NxNjMDUcPrfs4k7GO8fsD7EmAyMk4nMUqLJ+cDUklcSb2hs
-	ZmRhamJqbGRuaUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxuU3lN2FvaWS
-	Jk/cd88zZ5Kd+o1Dt8X4Octe3LSZplN684R6td6D//vLp635w/HPZNGGR3NVfqfu7fUxP3JD
-	qG3HY267FeaOdxzt5pRXq9QfDBBdznf8ztWe1prX5XX9l+Z53/mxd4NMdJyTSNyestms+zQ2
-	Xdrx77xnzrwVzybHJHHl++gY5iuxFGckGmoxFxUnAgDrf+pvIwMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkk+LIzCtJLcpLzFFi42I5/e/2DN3Er+mBBqd+8ltc3jWHzYHR4/Mm
-	uQDGqDSbjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWhDcyM9IwM9UyM9Q+NYK0MDAyNToJqEtIwX
-	9z4yF8zir9h3cS9bA+MTvi5GTg4hAXWJRUtOsoHYEgImEtf6ZjNB2GISF+6tB4pzAdXMZ5TY
-	/3ErO0iCRUBVYum0PUA2BwebgLnE/RlBIGFhgVKJmYvWsYLUiwgcZ5S4f+YEM4jDLLCOUWLa
-	xyXMENuUJNbse8UCYvMKCEqcnPmEBWKbqsTGVTeZIeJqEs+3r4WKS0jMmn6BFcLmlZjR/hQq
-	Licx7esaZghbWuL8rA2MMFcv/v4YKs4vcez2DiaQQ0F6n9wPhhmze/MXqIcFJKaeOQjVqiXx
-	YUI31Hg+iTUL37LAjNl1ajkzTO/9LXPBAcQsoCgxpfshO4StJfHlxz42dG/xCrhInH75kXkC
-	o9wsJKlZSNpnIWlHVrOAkWUVo2hqQXJBcVJ6hYlecWJucWleul5yfu4mRnCCerZkB2PDBetD
-	jAIcjEo8vC+E0wOFWBPLiitzDzFKcDArifDG7E0LFOJNSaysSi3Kjy8qzUktPsSYDIzBicxS
-	osn5wOSZVxJvaGxsYmZiamliYWBqTpqwkjjvs1brQCGB9MSS1OzU1ILUIpgtTBycUg2Mi4Lm
-	vnrQ+XhZ5jmlSRXrwvRSPjx0zwhVfrTF9nhxw5eM6lq74vjjHi8TLt2QfyaxUU5t5q9et687
-	tQraPZ3SVyr/En22tee1o+Wb5vt32a+pOx5hr+9xNTi9IOab2pzuCSzLq05Vb4gLyL7lovKf
-	1exjwvrHc1/c3+JpGXrg45UVx+4c+m3rpsRSnJFoqMVcVJwIAPXH38CUAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	id S1755145Ab3DLLyQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 07:54:16 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:56989 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753139Ab3DLLyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 07:54:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: konrad.wilk@oracle.com
+Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/paravirt] x86-64, gdt: Store/ load GDT for ACPI S3 or hibernate/resume path is not needed.
+Date: Fri, 12 Apr 2013 14:02:01 +0200
+Message-ID: <4054620.GA2vTd0F6g@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <tip-e7a5cd063c7b4c58417f674821d63f5eb6747e37@git.kernel.org>
+References: <1365194544-14648-2-git-send-email-konrad.wilk@oracle.com> <tip-e7a5cd063c7b4c58417f674821d63f5eb6747e37@git.kernel.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3CBqC62012608
 
-> On Friday, April 12, 2013 01:54:18 PM Axel Lin wrote:
-> > We need to call mutex_unlock() in the error path.
-> > 
-> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+On Thursday, April 11, 2013 03:59:11 PM tip-bot for Konrad Rzeszutek Wilk wrote:
+> Commit-ID:  e7a5cd063c7b4c58417f674821d63f5eb6747e37
+> Gitweb:     http://git.kernel.org/tip/e7a5cd063c7b4c58417f674821d63f5eb6747e37
+> Author:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> AuthorDate: Fri, 5 Apr 2013 16:42:21 -0400
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Thu, 11 Apr 2013 15:39:38 -0700
 > 
-> All three patches applied to linux-pm.git/linux-next.
+> x86-64, gdt: Store/load GDT for ACPI S3 or hibernate/resume path is not needed.
 > 
-> Exynos maintainers, if you have any objections, please holler.
+> During the ACPI S3 resume path the trampoline code handles it already.
 > 
-> Thanks,
-> Rafael
+> During the ACPI S3 suspend phase (acpi_suspend_lowlevel) we set:
+> early_gdt_descr.address = (..)get_cpu_gdt_table(smp_processor_id());
+> 
+> which is then used during the resume path and has the same exact
+> value as what the store/load_gdt do with the saved_context
+> (which is saved/restored via save/restore_processor_state()).
+> 
+> The flow during resume is complex and for 64-bit kernels we use three GDTs
+> - one early bootstrap GDT (wakeup_igdt) that we load to workaround
+> broken BIOSes, an early Protected Mode to Long Mode transition one
+> (tr_gdt), and the final one - early_gdt_descr (which points to the real GDT).
+> 
+> The early ('wakeup_gdt') is loaded in 'trampoline_start' for working
+> around broken BIOSes, and then when we end up in Protected Mode in the
+> startup_32 (in trampoline_64.s, not head_32.s) we use the 'tr_gdt'
+> (still in trampoline_64.s). This 'tr_gdt' has a a 32-bit code segment,
+> 64-bit code segment with L=1, and a 32-bit data segment.
+> 
+> Once we have transitioned from Protected Mode to Long Mode we then
+> set the GDT to 'early_gdt_desc' and then via an iretq emerge in
+> wakeup_long64 (set via 'initial_code' variable in acpi_suspend_lowlevel).
+> 
+> In the wakeup_long64 we end up restoring the %rip (which is set to
+> 'resume_point') and jump there.
+> 
+> In 'resume_point' we call 'restore_processor_state' which does
+> the load_gdt on the saved context. This load_gdt is redundant as the
+> GDT loaded via early_gdt_desc is the same.
+> 
+> Here is the call-chain:
+>  wakeup_start
+>    |- lgdtl wakeup_gdt [the work-around broken BIOSes]
+>    |
+>    \-- trampoline_start (trampoline_64.S)
+>          |- lgdtl tr_gdt
+>          |
+>          \-- startup_32 (trampoline_64.S)
+>                |
+>                \-- startup_64 (trampoline_64.S)
+>                       |
+>                       \-- secondary_startup_64
+>                                |- lgdtl early_gdt_desc
+>                                | ...
+>                                |- movq initial_code(%rip), %eax
+>                                |-.. lretq
+>                                \-- wakeup_64
+>                                      |-- other registers are reloaded
+>                                      |-- call restore_processor_state
+> 
+> The hibernate path is much simpler. During the saving of the hibernation
+> image we call save_processor_state() and save the contents of that along
+> with the rest of the kernel in the hibernation image destination.
+> We save the EIP of 'restore_registers' (restore_jump_address) and cr3
+> (restore_cr3).
+> 
+> During hibernate resume, the 'restore_registers' (via the
+> 'restore_jump_address) in hibernate_asm_64.S is invoked which restores
+> the contents of most registers. Naturally the resume path benefits from
+> already being in 64-bit mode, so it does not have to load the GDT.
+> 
+> It only reloads the cr3 (from restore_cr3) and continues on. Note that
+> the restoration of the restore image page-tables is done prior to this.
+> 
+> After the 'restore_registers' it returns and we end up called
+> restore_processor_state() - where we reload the GDT. The reload of
+> the GDT is not needed as bootup kernel has already loaded the GDT which
+> is at the same physical location as the the restored kernel.
 
-This patch was included in the last pull-request patchset
-though the path was updated. (its precedessor patch moved
-exynos drivers to /drivers/devfreq/exynos/* after adding
-Exynos common driver files)
+I'm not sure if this particular statement is actually correct.  It is correct
+on 32-bit, but here it is not necessary for the bootup kernel to be the same
+as the image one.  Different kernel version may be used for that even (at
+least theoretically).  So the question is, and I'm quite unsure about the
+answer, if the GDT of from the bootup kernel is really *guaranteed* to be
+at the same location (given that those kernels may be really different).
+
+Thanks,
+Rafael
 
 
-Cheers,
-MyungJoo.
-
-> 
-> > ---
-> >  drivers/devfreq/exynos4_bus.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
-> > index 1deee09..54b9615 100644
-> > --- a/drivers/devfreq/exynos4_bus.c
-> > +++ b/drivers/devfreq/exynos4_bus.c
-> > @@ -974,7 +974,8 @@ static int exynos4_busfreq_pm_notifier_event(struct notifier_block *this,
-> >  			rcu_read_unlock();
-> >  			dev_err(data->dev, "%s: unable to find a min freq\n",
-> >  				__func__);
-> > -			return PTR_ERR(opp);
-> > +			err = PTR_ERR(opp);
-> > +			goto unlock;
-> >  		}
-> >  		new_oppinfo.rate = opp_get_freq(opp);
-> >  		new_oppinfo.volt = opp_get_voltage(opp);
-> > 
-> -- 
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-> 
-> 
-> 
->        
->   
->          
-> 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
