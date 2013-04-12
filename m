@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab3DLUQX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 16:16:23 -0400
-Received: from smtp2.ispfabriek.nl ([188.142.0.19]:49009 "EHLO
-	smtp2.ispfabriek.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab3DLUQT (ORCPT
+	id S1756267Ab3DLUWP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 16:22:15 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:39792 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab3DLUWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 16:16:19 -0400
-Message-ID: <51686B74.2040204@xmsnet.nl>
-Date: Fri, 12 Apr 2013 22:15:48 +0200
-From: Hans de Bruin <jmdebruin@xmsnet.nl>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121030 Thunderbird/16.0.2
+	Fri, 12 Apr 2013 16:22:13 -0400
+From: D M German <dmg@uvic.ca>
+To: stable@vger.kernel.org
+Subject: helping with tracking commits across repos
+Organization: University of Victoria
+cc: linux-kernel@vger.kernel.org
+Reply-To: dmg@uvic.ca
+Date: Fri, 12 Apr 2013 13:22:09 -0700
+Message-ID: <87r4ifxzwu.fsf@mn.cs.uvic.ca>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Alexander van Heukelum <heukelum@fastmail.fm>
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH v2] x86, vm86: fix VM86 syscalls: use SYSCALL_DEFINEx(...)
-References: <514F6DF9.1070602@xmsnet.nl> <1364332526.8559.140661209554365.0203B0A4@webmail.messagingengine.com> <5152F321.7020604@xmsnet.nl> <1364412662.12858.140661209988437.506AD50B@webmail.messagingengine.com> <20130327194614.GA21522@ZenIV.linux.org.uk> <1364419085.8454.140661210031889.49ED573A@webmail.messagingengine.com>
-In-Reply-To: <1364419085.8454.140661210031889.49ED573A@webmail.messagingengine.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2013 10:18 PM, Alexander van Heukelum wrote:
-> On Wed, Mar 27, 2013, at 20:46, Al Viro wrote:
->> On Wed, Mar 27, 2013 at 08:31:02PM +0100, Alexander van Heukelum wrote:
->>> Hi Al,
->>>
->>> Hans de Bruin found a regression due to one of your changes. I asked him to test a fix and he reported back that it worked. (Thanks!) Can you see if you agree with the fix? Patch is attached due to webmail...
->>
->> Use SYSCALL_DEFINE{1,2} for vm86_old and vm86, please.
->
-> Like this?
->
-> Greetings,
->      Alexander
->
 
-Is there any progress?
+Hi Everybody,
 
--- 
-Hans
+I am professor of computer science at the University of Victoria
+(Canada).
+
+During the last year and a half, we have been trying to track the
+commits as they move in the entire linux git repos ecosystem. We have
+amassed a good amount of data that tell us for every commit (and in fact
+for every unique patch inside a commit) where it has been and whether it
+has reached linus or not ---or any other repository, as a matter of
+fact.
+
+please look at the following URLs:
+
+http://o.cs.uvic.ca:20810/perl/cid.pl?cid=9753dfe19a85e7e45a34a56f4cb2048bb4f50e27
+
+http://o.cs.uvic.ca:20810/perl/cid.pl?cid=55345fb9ff68e2e5c0259c814542e72aec972c02
+
+or
+
+http://o.cs.uvic.ca:20810/perl/cid.pl?cid=e59bcdae87ec116dde25da6d725f79fefb253693
+
+it will give you an idea of the data we have. You can also track other
+commits using the input box, if you are interested.
+
+I wonder if this information is of use to any of you. If you have
+specific needs on how you think this info (and some more we have) can be
+of use, please let me know.
+
+By the way, I'll be at the Linux Collaboration Summit next week (I am
+involved with the development of SPDX). If any of you is interested to
+meet, please let me know,
+
+
+--daniel german
+dmg@uvic.ca
+http://turingmachine.org
