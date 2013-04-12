@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab3DLPnR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:43:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49759 "EHLO mx1.redhat.com"
+	id S1755379Ab3DLPnd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:43:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24150 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755075Ab3DLPnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:43:15 -0400
+	id S1752441Ab3DLPnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 11:43:31 -0400
 From: Jeff Moyer <jmoyer@redhat.com>
 To: Kent Overstreet <koverstreet@google.com>
 Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
@@ -18,16 +18,16 @@ Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
         Al Viro <viro@zeniv.linux.org.uk>, Benjamin LaHaise <bcrl@kvack.org>,
         "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH 03/33] gadget: remove only user of aio retry
+Subject: Re: [PATCH 04/33] aio: remove retry-based AIO
 References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
-	<1363883754-27966-4-git-send-email-koverstreet@google.com>
+	<1363883754-27966-5-git-send-email-koverstreet@google.com>
 X-PGP-KeyID: 1F78E1B4
 X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
 X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 12 Apr 2013 11:42:43 -0400
-In-Reply-To: <1363883754-27966-4-git-send-email-koverstreet@google.com> (Kent
-	Overstreet's message of "Thu, 21 Mar 2013 09:35:24 -0700")
-Message-ID: <x49ppxzu558.fsf@segfault.boston.devel.redhat.com>
+Date: Fri, 12 Apr 2013 11:43:06 -0400
+In-Reply-To: <1363883754-27966-5-git-send-email-koverstreet@google.com> (Kent
+	Overstreet's message of "Thu, 21 Mar 2013 09:35:25 -0700")
+Message-ID: <x49li8nu54l.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -39,18 +39,25 @@ Kent Overstreet <koverstreet@google.com> writes:
 
 > From: Zach Brown <zab@redhat.com>
 >
-> This removes the only in-tree user of aio retry.  This will let us remove
-> the retry code from the aio core.
+> This removes the retry-based AIO infrastructure now that nothing in tree
+> is using it.
 >
-> Removing retry is relatively easy as the USB gadget wasn't using it to
-> retry IOs at all.  It always fully submitted the IO in the context of the
-> initial io_submit() call.  It only used the AIO retry facility to get the
-> submitter's mm context for copying the result of a read back to user
-> space.  This is easy to implement with use_mm() and a work struct, much
-> like kvm does with async_pf_execute() for get_user_pages().
+> We want to remove retry-based AIO because it is fundemantally unsafe.  It
+> retries IO submission from a kernel thread that has only assumed the mm of
+> the submitting task.  All other task_struct references in the IO
+> submission path will see the kernel thread, not the submitting task.  This
+> design flaw means that nothing of any meaningful complexity can use
+> retry-based AIO.
 >
-> Signed-off-by: Zach Brown <zab@redhat.com>
+> This removes all the code and data associated with the retry machinery.
+> The most significant benefit of this is the removal of the locking around
+> the unused run list in the submission path.
+>
+> This has only been compiled.
+>
 > Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> Signed-off-by: Zach Brown <zab@redhat.com>
+> Cc: Zach Brown <zab@redhat.com>
 > Cc: Felipe Balbi <balbi@ti.com>
 > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > Cc: Mark Fasheh <mfasheh@suse.com>
