@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3DLS3N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 14:29:13 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60079 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab3DLS3L (ORCPT
+	id S1753496Ab3DLS3s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 14:29:48 -0400
+Received: from mail-qe0-f47.google.com ([209.85.128.47]:33757 "EHLO
+	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409Ab3DLS3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 14:29:11 -0400
-Message-ID: <51685272.8010304@wwwdotorg.org>
-Date: Fri, 12 Apr 2013 12:29:06 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 12 Apr 2013 14:29:47 -0400
+Date: Fri, 12 Apr 2013 11:29:41 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
+        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
+        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Christian Schmidt <schmidt@digadd.de>,
+        "Alasdair G. Kergon" <agk@redhat.com>
+Subject: Re: [PATCH v2] make dm and dm-crypt forward cgroup context (was:
+ dm-crypt parallelization patches)
+Message-ID: <20130412182941.GF11956@mtj.dyndns.org>
+References: <Pine.LNX.4.64.1304091624110.19672@file.rdu.redhat.com>
+ <20130409210735.GR6320@redhat.com>
+ <Pine.LNX.4.64.1304091710150.24735@file.rdu.redhat.com>
+ <20130410192427.GA14911@redhat.com>
+ <Pine.LNX.4.64.1304101938280.24258@file.rdu.redhat.com>
+ <20130410235009.GI17641@mtj.dyndns.org>
+ <Pine.LNX.4.64.1304111544050.32536@file.rdu.redhat.com>
+ <20130411195203.GA11956@mtj.dyndns.org>
+ <20130411200005.GB11956@mtj.dyndns.org>
+ <Pine.LNX.4.64.1304121340350.3359@file.rdu.redhat.com>
 MIME-Version: 1.0
-To: Jay Agarwal <jagarwal@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Krishna Thota <kthota@nvidia.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        Juha Tukkinen <jtukkinen@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH 1/3] ARM: tegra: pcie: Add tegra3 support
-References: <1365435688-4179-1-git-send-email-jagarwal@nvidia.com> <51630ABB.1020200@wwwdotorg.org> <C79B248886DD134989C8FF6B096A91AB91B36FB300@BGMAIL01.nvidia.com> <51683E00.4020506@wwwdotorg.org> <C79B248886DD134989C8FF6B096A91AB91B36FB302@BGMAIL01.nvidia.com>
-In-Reply-To: <C79B248886DD134989C8FF6B096A91AB91B36FB302@BGMAIL01.nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1304121340350.3359@file.rdu.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 11:06 AM, Jay Agarwal wrote:
->> On 04/12/2013 10:43 AM, Jay Agarwal wrote:
->>>> On 04/08/2013 09:41 AM, Jay Agarwal wrote:
->>>>> Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
->>>>>
->>>>> - Enable pcie root port 2 for cardhu
->>>>> - Make private data structure for each SOC
->>>>> - Add required tegra3 clocks and regulators
->>>>> - Add tegra3 specific code in enable controller
->>>>> - Modify clock tree to get clocks based on device
->>>>> - Based on git://gitorious.org/thierryreding/linux.git
->>>>
->>>> A couple more points on this patch:
->>>>
->>>> * You didn't mention that this series is based on Thierry's
->>>> work-in-progress tree, and not something immediately destined for
->>>> upstream. As such, only Thierry is expected to actually apply any of these
->> patches.
->>>>
->>> [>] Stephen, I have mentioned it in comment description as Based on
->> git://gitorious.org/thierryreding/linux.git, is this not enough?
->>
->> Well, first off, there are many branches there, and secondly the branch that
->> a series is based on doesn't necessarily imply much about what you expect
->> people to do with it.
->>
-> I am not clear, What should I mention then?
+On Fri, Apr 12, 2013 at 02:01:08PM -0400, Mikulas Patocka wrote:
+> So if you think that reference counts should be incremented by every clone 
+> of the original bio, what kind of bug should it protect against? If we 
+> don't increment reference counts for pages, why should we do it for cgroup 
+> pointers?
 
-The branch name. Thierry's branch has the following:
+These things are called trade-offs.  You look at the overhead of the
+things and how complex / fragile things get when certain shortcuts are
+taken and how well contained and easy to verify / debug when things go
+wrong and then make your choice.
 
-  remotes/gitorious_thierryreding_linux/drm/hdmi-for-3.9
-  remotes/gitorious_thierryreding_linux/drm/tegra-for-3.9
-  remotes/gitorious_thierryreding_linux/tegra/drm/for-3.8
-  remotes/gitorious_thierryreding_linux/tegra/drm/next
-  remotes/gitorious_thierryreding_linux/tegra/next
-  remotes/gitorious_thierryreding_linux/tegra/next-20130122
+Do the two really look the same to you?  The page refs are much more
+expensive, mostly contained in and the main focus of dm.  ioc/css refs
+aren't that expensive to begin with, css refcnting is widely scattered
+across the kernel, the association interface is likely to be used by
+any entity issuing IOs asynchronously soonish, and there is much saner
+way to improve it - which would be beneficial not only to block / dm
+but everyone else using it.
 
-which of those was it based on?
+Something being done in one place doesn't automatically make it okay
+everywhere else.  We can and do use hackery but *with* discretion.
 
-Also, you simply said it was based on that repo. If you intend Thierry
-to apply the patches to his repo/branch, rather than the usual
-maintainers of the files you're editing, who you also CC'd, you should
-specify that.
+If you still can't understand, I'm not sure what more I can tell you.
+
+-- 
+tejun
