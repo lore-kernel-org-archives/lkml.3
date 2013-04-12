@@ -1,38 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab3DLKWy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 06:22:54 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:43244 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab3DLKWw (ORCPT
+	id S1753415Ab3DLKYC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 06:24:02 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:46252 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab3DLKX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 06:22:52 -0400
-Message-ID: <5167E079.5060900@intel.com>
-Date: Fri, 12 Apr 2013 11:22:49 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 12 Apr 2013 06:23:59 -0400
+Message-ID: <5167E0BD.5080808@pobox.com>
+Date: Fri, 12 Apr 2013 06:23:57 -0400
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Lingzhu Xiang <lxiang@redhat.com>
-CC: Matthew Garrett <matthew.garrett@nebula.com>, linux-efi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 1/3] efi: Determine how much space is used by boot
- services-only variables
-References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com> <1365615967-27346-1-git-send-email-matthew.garrett@nebula.com> <5167DEE9.6050006@redhat.com>
-In-Reply-To: <5167DEE9.6050006@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: ata: rcar: use devm_ioremap_resource()
+References: <1365749477-22770-1-git-send-email-silviupopescu1990@gmail.com>
+In-Reply-To: <1365749477-22770-1-git-send-email-silviupopescu1990@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/13 11:16, Lingzhu Xiang wrote:
-> On 04/11/2013 01:46 AM, Matthew Garrett wrote:
->>       ops.query_variable_store = efi_query_variable_store;
-> 
-> Can't apply here. ops.query_variable_info = efi.query_variable_info?
+On 04/12/2013 02:51 AM, Silviu-Mihai Popescu wrote:
+> Convert  use of devm_request_and_ioremap() to the newly introduced
+> devm_ioremap_resource() which provides more consistent error handling.
+> This was found with coccinelle.
+>
+> Signed-off-by: Silviu-Mihai Popescu <silviupopescu1990@gmail.com>
+> ---
+>   drivers/ata/sata_rcar.c |    6 +++---
+>   1 file changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/ata/sata_rcar.c b/drivers/ata/sata_rcar.c
+> index caf33f6..8c51a3a 100644
+> --- a/drivers/ata/sata_rcar.c
+> +++ b/drivers/ata/sata_rcar.c
+> @@ -799,9 +799,9 @@ static int sata_rcar_probe(struct platform_device *pdev)
+>
+>   	host->private_data = priv;
+>
+> -	priv->base = devm_request_and_ioremap(&pdev->dev, mem);
+> -	if (!priv->base) {
+> -		ret = -EADDRNOTAVAIL;
+> +	priv->base = devm_ioremap_resource(&pdev->dev, mem);
+> +	if (IS_ERR(priv->base)) {
+> +		ret = PTR_ERR(priv->base);
+>   		goto cleanup;
+>   	}
+>
+>
 
-It's against the 'urgent' branch at,
+See 2de1d5e159ccf317a9285a0dfaa6e4262500d7dd in libata-dev.git#upstream.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git
+	Jeff
+
+
+
+
