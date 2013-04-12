@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758435Ab3DLWtf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:49:35 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47196 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab3DLWpJ (ORCPT
+	id S1754850Ab3DLWpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:45:07 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46636 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754719Ab3DLWpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:45:09 -0400
+	Fri, 12 Apr 2013 18:45:04 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 07/29] PCI, x86: Use for_each_pci_resource() with pci_allocate_bridge_resources
-Date: Fri, 12 Apr 2013 15:44:21 -0700
-Message-Id: <1365806683-26717-8-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH v4 21/29] PCI, xen: Use for_each_pci_resource() with xen pci
+Date: Fri, 12 Apr 2013 15:44:35 -0700
+Message-Id: <1365806683-26717-22-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: virtualization@lists.linux-foundation.org
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/pci/i386.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/pci/xen-pcifront.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 94919e3..7c3395a 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -206,8 +206,7 @@ static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
- 	int idx;
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index 966abc6..c90835f 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -395,9 +395,7 @@ static int pcifront_claim_resource(struct pci_dev *dev, void *data)
+ 	int i;
  	struct resource *r;
  
--	for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
--		r = &dev->resource[idx];
-+	for_each_pci_resource(dev, r, idx, PCI_BRIDGE_RES) {
- 		if (!r->flags)
- 			continue;
- 		if (!r->start || pci_claim_resource(dev, idx) < 0) {
+-	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+-		r = &dev->resource[i];
+-
++	for_each_pci_resource(dev, r, i, PCI_ALL_RES) {
+ 		if (!r->parent && r->start && r->flags) {
+ 			dev_info(&pdev->xdev->dev, "claiming resource %s/%d\n",
+ 				pci_name(dev), i);
 -- 
 1.8.1.4
 
