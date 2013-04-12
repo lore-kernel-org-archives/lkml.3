@@ -1,106 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab3DLJSw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 05:18:52 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63166 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132Ab3DLJSu (ORCPT
+	id S1753340Ab3DLJUZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 05:20:25 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:42619 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752239Ab3DLJUU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 05:18:50 -0400
-X-AuditID: 9c930179-b7bd8ae000004629-75-5167d17711e0
-From: "Jongsung Kim" <neidhard.kim@lge.com>
-To: "Russell King" <linux@arm.linux.org.uk>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>, <jslaby@suse.cz>
-Cc: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ARM: PL011: add support for extended FIFO-size of PL011-r1p5
-Date: Fri, 12 Apr 2013 18:18:47 +0900
-Message-ID: <007301ce375e$bcf6d6b0$36e48410$@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: Ac43XGlbMBBJQkfeQo6UEqzOg1RrHQ==
-Content-Language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 12 Apr 2013 05:20:20 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Florian Fainelli <florian@openwrt.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Dale Farnsworth <dale@farnsworth.org>,
+        Ben Hutchings <bhutchings@solarflare.com>, Soeren Moch <smoch@web.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Willy Tarreau <w@1wt.eu>,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] net: mv643xx_eth: remove deprecated inet_lro support
+Date: Fri, 12 Apr 2013 11:20:00 +0200
+Message-Id: <1365758400-12565-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1365707488-28819-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1365707488-28819-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest r1p5-revision of the ARM PL011 UART has 32-byte FIFOs, while all
-earlier ones have 16-byte FIFOs. This patch suggests a way to set the
-FIFO-size correctly & flexibly by using a
-function(vendor_data::get_fifosize) rather than using the
-vendor_data::fifosize variable. The function takes the UARTPeriphID, and
-returns the correct size.
+With recent support for GRO, there is no need to keep both LRO and
+GRO. This patch therefore removes the deprecated inet_lro support
+from mv643xx_eth. This is work is based on an experimental patch
+provided by Eric Dumazet and Willy Tarreau.
 
-Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Based-on-patch-by: Eric Dumazet <eric.dumazet@gmail.com>
+Based-on-patch-by: Willy Tarreau <w@1wt.eu>
+---
+Changes from v1:
+- also remove INET_LRO from Kconfig (Reported by Eric Dumazet)
 
- drivers/tty/serial/amba-pl011.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Florian Fainelli <florian@openwrt.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Dale Farnsworth <dale@farnsworth.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Soeren Moch <smoch@web.de>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Willy Tarreau <w@1wt.eu>
+Cc: netdev@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/net/ethernet/marvell/Kconfig       |    1 -
+ drivers/net/ethernet/marvell/mv643xx_eth.c |   97 +---------------------------
+ 2 files changed, 3 insertions(+), 95 deletions(-)
 
-diff --git a/drivers/tty/serial/amba-pl011.c
-b/drivers/tty/serial/amba-pl011.c
-index 3ea5408..22af0c8 100644
---- a/drivers/tty/serial/amba-pl011.c
-+++ b/drivers/tty/serial/amba-pl011.c
-@@ -72,32 +72,44 @@
- /* There is by now at least one vendor with differing details, so handle it
-*/
- struct vendor_data {
- 	unsigned int		ifls;
--	unsigned int		fifosize;
- 	unsigned int		lcrh_tx;
- 	unsigned int		lcrh_rx;
- 	bool			oversampling;
- 	bool			dma_threshold;
- 	bool			cts_event_workaround;
-+
-+	unsigned int (*get_fifosize)(unsigned int periphid);
+diff --git a/drivers/net/ethernet/marvell/Kconfig b/drivers/net/ethernet/marvell/Kconfig
+index 5170ecb..0051f0e 100644
+--- a/drivers/net/ethernet/marvell/Kconfig
++++ b/drivers/net/ethernet/marvell/Kconfig
+@@ -21,7 +21,6 @@ if NET_VENDOR_MARVELL
+ config MV643XX_ETH
+ 	tristate "Marvell Discovery (643XX) and Orion ethernet support"
+ 	depends on (MV64X60 || PPC32 || PLAT_ORION) && INET
+-	select INET_LRO
+ 	select PHYLIB
+ 	select MVMDIO
+ 	---help---
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index c850d04..d0afeea 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -56,8 +56,8 @@
+ #include <linux/phy.h>
+ #include <linux/mv643xx_eth.h>
+ #include <linux/io.h>
++#include <linux/interrupt.h>
+ #include <linux/types.h>
+-#include <linux/inet_lro.h>
+ #include <linux/slab.h>
+ #include <linux/clk.h>
+ 
+@@ -316,12 +316,6 @@ struct mib_counters {
+ 	u32 rx_overrun;
  };
  
-+static unsigned int get_fifosize_arm(unsigned int periphid)
-+{
-+	unsigned int rev = (periphid >> 20) & 0xf;
-+	return rev < 3 ? 16 : 32;
-+}
-+
- static struct vendor_data vendor_arm = {
- 	.ifls			= UART011_IFLS_RX4_8|UART011_IFLS_TX4_8,
--	.fifosize		= 16,
- 	.lcrh_tx		= UART011_LCRH,
- 	.lcrh_rx		= UART011_LCRH,
- 	.oversampling		= false,
- 	.dma_threshold		= false,
- 	.cts_event_workaround	= false,
-+	.get_fifosize		= get_fifosize_arm,
+-struct lro_counters {
+-	u32 lro_aggregated;
+-	u32 lro_flushed;
+-	u32 lro_no_desc;
+-};
+-
+ struct rx_queue {
+ 	int index;
+ 
+@@ -335,9 +329,6 @@ struct rx_queue {
+ 	dma_addr_t rx_desc_dma;
+ 	int rx_desc_area_size;
+ 	struct sk_buff **rx_skb;
+-
+-	struct net_lro_mgr lro_mgr;
+-	struct net_lro_desc lro_arr[8];
  };
  
-+static unsigned int get_fifosize_st(unsigned int periphid)
-+{
-+	return 64;
-+}
-+
- static struct vendor_data vendor_st = {
- 	.ifls			= UART011_IFLS_RX_HALF|UART011_IFLS_TX_HALF,
--	.fifosize		= 64,
- 	.lcrh_tx		= ST_UART011_LCRH_TX,
- 	.lcrh_rx		= ST_UART011_LCRH_RX,
- 	.oversampling		= true,
- 	.dma_threshold		= true,
- 	.cts_event_workaround	= true,
-+	.get_fifosize		= get_fifosize_st,
+ struct tx_queue {
+@@ -373,8 +364,6 @@ struct mv643xx_eth_private {
+ 	spinlock_t mib_counters_lock;
+ 	struct mib_counters mib_counters;
+ 
+-	struct lro_counters lro_counters;
+-
+ 	struct work_struct tx_timeout_task;
+ 
+ 	struct napi_struct napi;
+@@ -503,42 +492,12 @@ static void txq_maybe_wake(struct tx_queue *txq)
+ 	}
+ }
+ 
+-
+-/* rx napi ******************************************************************/
+-static int
+-mv643xx_get_skb_header(struct sk_buff *skb, void **iphdr, void **tcph,
+-		       u64 *hdr_flags, void *priv)
+-{
+-	unsigned long cmd_sts = (unsigned long)priv;
+-
+-	/*
+-	 * Make sure that this packet is Ethernet II, is not VLAN
+-	 * tagged, is IPv4, has a valid IP header, and is TCP.
+-	 */
+-	if ((cmd_sts & (RX_IP_HDR_OK | RX_PKT_IS_IPV4 |
+-		       RX_PKT_IS_ETHERNETV2 | RX_PKT_LAYER4_TYPE_MASK |
+-		       RX_PKT_IS_VLAN_TAGGED)) !=
+-	    (RX_IP_HDR_OK | RX_PKT_IS_IPV4 |
+-	     RX_PKT_IS_ETHERNETV2 | RX_PKT_LAYER4_TYPE_TCP_IPV4))
+-		return -1;
+-
+-	skb_reset_network_header(skb);
+-	skb_set_transport_header(skb, ip_hdrlen(skb));
+-	*iphdr = ip_hdr(skb);
+-	*tcph = tcp_hdr(skb);
+-	*hdr_flags = LRO_IPV4 | LRO_TCP;
+-
+-	return 0;
+-}
+-
+ static int rxq_process(struct rx_queue *rxq, int budget)
+ {
+ 	struct mv643xx_eth_private *mp = rxq_to_mp(rxq);
+ 	struct net_device_stats *stats = &mp->dev->stats;
+-	int lro_flush_needed;
+ 	int rx;
+ 
+-	lro_flush_needed = 0;
+ 	rx = 0;
+ 	while (rx < budget && rxq->rx_desc_count) {
+ 		struct rx_desc *rx_desc;
+@@ -599,12 +558,7 @@ static int rxq_process(struct rx_queue *rxq, int budget)
+ 			skb->ip_summed = CHECKSUM_UNNECESSARY;
+ 		skb->protocol = eth_type_trans(skb, mp->dev);
+ 
+-		if (skb->dev->features & NETIF_F_LRO &&
+-		    skb->ip_summed == CHECKSUM_UNNECESSARY) {
+-			lro_receive_skb(&rxq->lro_mgr, skb, (void *)cmd_sts);
+-			lro_flush_needed = 1;
+-		} else
+-			napi_gro_receive(&mp->napi, skb);
++		napi_gro_receive(&mp->napi, skb);
+ 
+ 		continue;
+ 
+@@ -624,9 +578,6 @@ err:
+ 		dev_kfree_skb(skb);
+ 	}
+ 
+-	if (lro_flush_needed)
+-		lro_flush_all(&rxq->lro_mgr);
+-
+ 	if (rx < budget)
+ 		mp->work_rx &= ~(1 << rxq->index);
+ 
+@@ -1118,26 +1069,6 @@ static struct net_device_stats *mv643xx_eth_get_stats(struct net_device *dev)
+ 	return stats;
+ }
+ 
+-static void mv643xx_eth_grab_lro_stats(struct mv643xx_eth_private *mp)
+-{
+-	u32 lro_aggregated = 0;
+-	u32 lro_flushed = 0;
+-	u32 lro_no_desc = 0;
+-	int i;
+-
+-	for (i = 0; i < mp->rxq_count; i++) {
+-		struct rx_queue *rxq = mp->rxq + i;
+-
+-		lro_aggregated += rxq->lro_mgr.stats.aggregated;
+-		lro_flushed += rxq->lro_mgr.stats.flushed;
+-		lro_no_desc += rxq->lro_mgr.stats.no_desc;
+-	}
+-
+-	mp->lro_counters.lro_aggregated = lro_aggregated;
+-	mp->lro_counters.lro_flushed = lro_flushed;
+-	mp->lro_counters.lro_no_desc = lro_no_desc;
+-}
+-
+ static inline u32 mib_read(struct mv643xx_eth_private *mp, int offset)
+ {
+ 	return rdl(mp, MIB_COUNTERS(mp->port_num) + offset);
+@@ -1301,10 +1232,6 @@ struct mv643xx_eth_stats {
+ 	{ #m, FIELD_SIZEOF(struct mib_counters, m),		\
+ 	  -1, offsetof(struct mv643xx_eth_private, mib_counters.m) }
+ 
+-#define LROSTAT(m)						\
+-	{ #m, FIELD_SIZEOF(struct lro_counters, m),		\
+-	  -1, offsetof(struct mv643xx_eth_private, lro_counters.m) }
+-
+ static const struct mv643xx_eth_stats mv643xx_eth_stats[] = {
+ 	SSTAT(rx_packets),
+ 	SSTAT(tx_packets),
+@@ -1346,9 +1273,6 @@ static const struct mv643xx_eth_stats mv643xx_eth_stats[] = {
+ 	MIBSTAT(late_collision),
+ 	MIBSTAT(rx_discard),
+ 	MIBSTAT(rx_overrun),
+-	LROSTAT(lro_aggregated),
+-	LROSTAT(lro_flushed),
+-	LROSTAT(lro_no_desc),
  };
  
- static struct uart_amba_port *amba_ports[UART_NR];
-@@ -2010,7 +2022,7 @@ static int pl011_probe(struct amba_device *dev, const
-struct amba_id *id)
- 	uap->lcrh_rx = vendor->lcrh_rx;
- 	uap->lcrh_tx = vendor->lcrh_tx;
- 	uap->old_cr = 0;
--	uap->fifosize = vendor->fifosize;
-+	uap->fifosize = vendor->get_fifosize(dev->periphid);
- 	uap->port.dev = &dev->dev;
- 	uap->port.mapbase = dev->res.start;
- 	uap->port.membase = base;
+ static int
+@@ -1578,7 +1502,6 @@ static void mv643xx_eth_get_ethtool_stats(struct net_device *dev,
+ 
+ 	mv643xx_eth_get_stats(dev);
+ 	mib_counters_update(mp);
+-	mv643xx_eth_grab_lro_stats(mp);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(mv643xx_eth_stats); i++) {
+ 		const struct mv643xx_eth_stats *stat;
+@@ -1851,19 +1774,6 @@ static int rxq_init(struct mv643xx_eth_private *mp, int index)
+ 					nexti * sizeof(struct rx_desc);
+ 	}
+ 
+-	rxq->lro_mgr.dev = mp->dev;
+-	memset(&rxq->lro_mgr.stats, 0, sizeof(rxq->lro_mgr.stats));
+-	rxq->lro_mgr.features = LRO_F_NAPI;
+-	rxq->lro_mgr.ip_summed = CHECKSUM_UNNECESSARY;
+-	rxq->lro_mgr.ip_summed_aggr = CHECKSUM_UNNECESSARY;
+-	rxq->lro_mgr.max_desc = ARRAY_SIZE(rxq->lro_arr);
+-	rxq->lro_mgr.max_aggr = 32;
+-	rxq->lro_mgr.frag_align_pad = 0;
+-	rxq->lro_mgr.lro_arr = rxq->lro_arr;
+-	rxq->lro_mgr.get_skb_header = mv643xx_get_skb_header;
+-
+-	memset(&rxq->lro_arr, 0, sizeof(rxq->lro_arr));
+-
+ 	return 0;
+ 
+ 
+@@ -2851,8 +2761,7 @@ static int mv643xx_eth_probe(struct platform_device *pdev)
+ 	dev->watchdog_timeo = 2 * HZ;
+ 	dev->base_addr = 0;
+ 
+-	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM |
+-		NETIF_F_RXCSUM | NETIF_F_LRO;
++	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
+ 	dev->features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
+ 	dev->vlan_features = NETIF_F_SG | NETIF_F_IP_CSUM;
+ 
+-- 
+1.7.10.4
 
