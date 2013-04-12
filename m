@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3DLSrw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 14:47:52 -0400
-Received: from mout.gmx.net ([212.227.17.22]:51513 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754352Ab3DLSrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 14:47:51 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+OtwIaePiOu95HKez2XTt411n6XuWVFHuys6Ymox
-	mpQ8D3mq06mcMW
-Message-ID: <516856D3.3000303@gmx.de>
-Date: Fri, 12 Apr 2013 20:47:47 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130405 Thunderbird/17.0.5
+	id S1754794Ab3DLSxJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 14:53:09 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:44835 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753482Ab3DLSxG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 14:53:06 -0400
+Date: Fri, 12 Apr 2013 11:53:01 -0700
+From: Kent Overstreet <koverstreet@google.com>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, axboe@kernel.dk
+Subject: Re: NULL pointer due to malformed bcache bio
+Message-ID: <20130412185301.GA31442@localhost>
+References: <20130410205439.GA18092@redhat.com>
+ <20130410224914.GD30871@google.com>
+ <20130411000342.GA19451@redhat.com>
 MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: "user-mode-linux-user@lists.sourceforge.net" 
-	<user-mode-linux-user@lists.sourceforge.net>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: build error with latest git kernel for a user mode linux build
-References: <51681FAA.7030108@gmx.de> <CAFLxGvzUQ3yi_rRL94MLi2ajC4Rb+GWDw-ijZGajGA=WTgaaGQ@mail.gmail.com> <516843C4.5030104@gmx.de> <CAFLxGvyp+zZx_TTyz1Zji5BGxd=JUFzhp594sxPLHgZ6kpsBCA@mail.gmail.com> <516849A9.1070206@gmx.de> <CAFLxGvx4KmTify-EEipcNr3GXUZwUx60Q+d=8=p5CXuJvqqh+Q@mail.gmail.com>
-In-Reply-To: <CAFLxGvx4KmTify-EEipcNr3GXUZwUx60Q+d=8=p5CXuJvqqh+Q@mail.gmail.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411000342.GA19451@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 08:39 PM, richard -rw- weinberger wrote:
-> The attached patch is an updated version of stub_pte_fix.diff. It
-> should fix your issues. :-)
+On Wed, Apr 10, 2013 at 08:03:42PM -0400, Mike Snitzer wrote:
+> On Wed, Apr 10 2013 at  6:49pm -0400,
+> Kent Overstreet <koverstreet@google.com> wrote:
+> 
+> > On Wed, Apr 10, 2013 at 04:54:40PM -0400, Mike Snitzer wrote:
+> > > Hey,
+> > > 
+> > > So DM core clearly needs to be more defensive about the possibility for
+> > > a NULL return from bio_alloc_bioset() given I'm hitting a NULL pointer
+> > > in DM's alloc_tio() because nr_iovecs=512.  bio_alloc_bioset()'s call to
+> > > bvec_alloc() only supports nr_iovecs up to BIO_MAX_PAGES (256).
+> > > 
+> > > Seems bcache should be using bio_get_nr_vecs() or something else?
+> > > 
+> > > But by using a bcache bucket size of 2MB, with the bcache staged in
+> > > Jens' for-next, I've caused bcache to issue bios with nr_iovecs=512:
+> > 
+> > Argh. Why is dm using bi_max_vecs instead of bi_vcnt? I could hack
+> > around this in bcache but I think dm is doing the wrong thing here.
+> 
+> But even bio_alloc_bioset() sets: bio->bi_max_vecs = nr_iovecs;
+> And bio_clone_bioset() calls bio_alloc_bioset() with bio->bi_max_vecs.
+> Similarly, __bio_clone() is using bi_max_vecs when cloning the bi_io_vec.
+> So I'm missing why DM is doing the wrong thing.
 
-yup - thx
-:-)
+I forgot about the bio_clone() one - you're right, that's also a
+problem.
 
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+So, I had a patch queued up at one point as part of the immutable
+biovecs series that changed bio_clone() and the dm bio cloning/splitting
+stuff to use bio_segments() instead of bi_max_vecs. That is IMO a better
+way of doing it anyways and as far as I could tell perfectly safe (it
+was tested), but the patch ended up squashed for various reasons and I'm
+not sure I want to recreate it just for this... though it would be the
+cleanest fix.
+
+> > Unless I've missed something in my testing (and bcache's BIO_MAX_PAGES
+> > check isn't quite right, actually) bcache _is_ splitting its bios
+> > whenever bio_segments(bio) > BIO_MAX_PAGES, it's only bi_max_vecs that's
+> > potentially > BIO_MAX_PAGES.
+> 
+> OK, but why drive bi_max_vecs larger than BIO_MAX_PAGES?
+
+bcache has a mempool for bios that are used for reading/writing
+(potentially) entire buckets - but in the case where we're only writing
+to part of a btree node and the bio didn't have to be split, that's when
+we pass down our original huge bio.
+
+I just had the horrible thought that an easy fix would probably be to
+just reset bi_max_vecs to bi_vcnt in bcache before passing it down. If I
+can't come up with any reasons that won't work, I may just do that.
