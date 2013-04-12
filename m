@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab3DLM0p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 08:26:45 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51302 "EHLO
+	id S1755735Ab3DLM0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 08:26:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51301 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754353Ab3DLMZ5 (ORCPT
+	by vger.kernel.org with ESMTP id S1753568Ab3DLMZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Apr 2013 08:25:57 -0400
 From: Serban Constantinescu <serban.constantinescu@arm.com>
@@ -12,156 +12,57 @@ To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
         Dave.Butcher@arm.com
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v3 2/6] staging: android: binder: fix binder interface for 64bit compat layer
-Date: Fri, 12 Apr 2013 13:25:51 +0100
-Message-Id: <1365769555-6052-3-git-send-email-serban.constantinescu@arm.com>
+Subject: [PATCH v3 4/6] staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
+Date: Fri, 12 Apr 2013 13:25:53 +0100
+Message-Id: <1365769555-6052-5-git-send-email-serban.constantinescu@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
 References: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The changes in this patch will fix the binder interface for use on 64bit
-machines and stand as the base of the 64bit compat support. The changes
-apply to the structures that are passed between the kernel and
-userspace.
+BinderDriverCommands mirror the ioctl usage. Thus the size of the
+structure passed through the interface should be used to generate the
+ioctl No.
 
-Most of the  changes applied mirror the change to struct binder_version
-where there is no need for a 64bit wide protocol_version(on 64bit
-machines). The change inlines with the existing 32bit userspace(the
-structure has the same size) and simplifies the compat layer such that
-the same handler can service the BINDER_VERSION ioctl.
+The change reflects the type being passed from the user space-a pointer
+to a binder_buffer. This change should not affect the existing 32bit
+user space since BC_FREE_BUFFER is computed as:
 
-Other changes make use of kernel types as well as user-exportable ones
-and fix format specifier issues.
+   #define _IOW(type,nr,size)         \
+      ((type) << _IOC_TYPESHIFT) |    \
+      ((nr)   << _IOC_NRSHIFT) |      \
+      ((size) << _IOC_SIZESHIFT))
 
-The changes do not affect existing 32bit ABI.
+and for a 32bit compiler BC_FREE_BUFFER will have the same computed
+value. This change will also ease our work in differentiating
+BC_FREE_BUFFER from COMPAT_BC_FREE_BUFFER.
+
+The change does not affect existing 32bit ABI.
 
 Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+Acked-by: Arve Hjønnevåg <arve@android.com>
 ---
- drivers/staging/android/binder.c |   20 ++++++++++----------
- drivers/staging/android/binder.h |    8 ++++----
- 2 files changed, 14 insertions(+), 14 deletions(-)
+ drivers/staging/android/binder.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index b7a8bec..06004cf 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -1271,7 +1271,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 		case BINDER_TYPE_WEAK_HANDLE: {
- 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
- 			if (ref == NULL) {
--				pr_err("transaction release %d bad handle %ld\n",
-+				pr_err("transaction release %d bad handle %d\n",
- 				 debug_id, fp->handle);
- 				break;
- 			}
-@@ -1283,13 +1283,13 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 
- 		case BINDER_TYPE_FD:
- 			binder_debug(BINDER_DEBUG_TRANSACTION,
--				     "        fd %ld\n", fp->handle);
-+				     "        fd %d\n", fp->handle);
- 			if (failed_at)
- 				task_close_fd(proc, fp->handle);
- 			break;
- 
- 		default:
--			pr_err("transaction release %d bad object type %lx\n",
-+			pr_err("transaction release %d bad object type %x\n",
- 				debug_id, fp->type);
- 			break;
- 		}
-@@ -1547,7 +1547,7 @@ static void binder_transaction(struct binder_proc *proc,
- 		case BINDER_TYPE_WEAK_HANDLE: {
- 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
- 			if (ref == NULL) {
--				binder_user_error("%d:%d got transaction with invalid handle, %ld\n",
-+				binder_user_error("%d:%d got transaction with invalid handle, %d\n",
- 						proc->pid,
- 						thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
-@@ -1590,13 +1590,13 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 			if (reply) {
- 				if (!(in_reply_to->flags & TF_ACCEPT_FDS)) {
--					binder_user_error("%d:%d got reply with fd, %ld, but target does not allow fds\n",
-+					binder_user_error("%d:%d got reply with fd, %d, but target does not allow fds\n",
- 						proc->pid, thread->pid, fp->handle);
- 					return_error = BR_FAILED_REPLY;
- 					goto err_fd_not_allowed;
- 				}
- 			} else if (!target_node->accept_fds) {
--				binder_user_error("%d:%d got transaction with fd, %ld, but target does not allow fds\n",
-+				binder_user_error("%d:%d got transaction with fd, %d, but target does not allow fds\n",
- 					proc->pid, thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
- 				goto err_fd_not_allowed;
-@@ -1604,7 +1604,7 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 			file = fget(fp->handle);
- 			if (file == NULL) {
--				binder_user_error("%d:%d got transaction with invalid fd, %ld\n",
-+				binder_user_error("%d:%d got transaction with invalid fd, %d\n",
- 					proc->pid, thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
- 				goto err_fget_failed;
-@@ -1618,13 +1618,13 @@ static void binder_transaction(struct binder_proc *proc,
- 			task_fd_install(target_proc, target_fd, file);
- 			trace_binder_transaction_fd(t, fp->handle, target_fd);
- 			binder_debug(BINDER_DEBUG_TRANSACTION,
--				     "        fd %ld -> %d\n", fp->handle, target_fd);
-+				     "        fd %d -> %d\n", fp->handle, target_fd);
- 			/* TODO: fput? */
- 			fp->handle = target_fd;
- 		} break;
- 
- 		default:
--			binder_user_error("%d:%d got transaction with invalid object type, %lx\n",
-+			binder_user_error("%d:%d got transaction with invalid object type, %x\n",
- 				proc->pid, thread->pid, fp->type);
- 			return_error = BR_FAILED_REPLY;
- 			goto err_bad_object_type;
-@@ -2578,7 +2578,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			goto err;
- 		}
- 		binder_debug(BINDER_DEBUG_READ_WRITE,
--			     "%d:%d write %zd at %08lx, read %zd at %08lx\n",
-+			     "%d:%d write %zd at %016lx, read %zd at %016lx\n",
- 			     proc->pid, thread->pid, bwr.write_size,
- 			     bwr.write_buffer, bwr.read_size, bwr.read_buffer);
- 
 diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index edab249..2f94d16 100644
+index 1761541..c3562c4 100644
 --- a/drivers/staging/android/binder.h
 +++ b/drivers/staging/android/binder.h
-@@ -48,13 +48,13 @@ enum {
-  */
- struct flat_binder_object {
- 	/* 8 bytes for large_flat_header. */
--	unsigned long		type;
--	unsigned long		flags;
-+	__u32		type;
-+	__u32		flags;
+@@ -265,7 +265,7 @@ enum binder_driver_command_protocol {
+ 	 * Else you have acquired a primary reference on the object.
+ 	 */
  
- 	/* 8 bytes of data. */
- 	union {
- 		void __user	*binder;	/* local object */
--		signed long	handle;		/* remote object */
-+		__s32	    handle;		/* remote object */
- 	};
- 
- 	/* extra data associated with local object */
-@@ -78,7 +78,7 @@ struct binder_write_read {
- /* Use with BINDER_VERSION, driver fills in fields. */
- struct binder_version {
- 	/* driver protocol version -- increment with incompatible change */
--	signed long	protocol_version;
-+	__s32       protocol_version;
- };
- 
- /* This is the current protocol version. */
+-	BC_FREE_BUFFER = _IOW('c', 3, int),
++	BC_FREE_BUFFER = _IOW('c', 3, void *),
+ 	/*
+ 	 * void *: ptr to transaction data received on a read
+ 	 */
 -- 
 1.7.9.5
 
