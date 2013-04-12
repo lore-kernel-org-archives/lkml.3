@@ -1,100 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab3DLXrx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:47:53 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:39050 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab3DLXrw (ORCPT
+	id S1755418Ab3DLXsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:48:24 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:38186 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab3DLXsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:47:52 -0400
+	Fri, 12 Apr 2013 19:48:23 -0400
+Date: Fri, 12 Apr 2013 16:48:10 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: [PATCH tip/core/rcu 0/12] TINY_RCU changes for 3.11
+Message-ID: <20130412234810.GA23678@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-In-Reply-To: <1365805938-22826-1-git-send-email-anatol.pomozov@gmail.com>
-References: <1365805938-22826-1-git-send-email-anatol.pomozov@gmail.com>
-Date: Fri, 12 Apr 2013 16:47:50 -0700
-X-Google-Sender-Auth: 4LhBMbU0Ey_wZTsrlvtcsjo6uME
-Message-ID: <CA+55aFzxxGBU3AOeNg3UEicHrx3nzWRyo5DOd=hh6SHJfYvB3g@mail.gmail.com>
-Subject: Re: [PATCH] module: Fix race condition between load and unload module
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Salman Qazi <sqazi@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: multipart/mixed; boundary=14dae9cdcad7f5595404da32870f
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041223-2398-0000-0000-000013401289
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---14dae9cdcad7f5595404da32870f
-Content-Type: text/plain; charset=UTF-8
+Hello!
 
-On Fri, Apr 12, 2013 at 3:32 PM, Anatol Pomozov
-<anatol.pomozov@gmail.com> wrote:
->
-> Here is timeline for the crash in case if kset_find_obj() searches for
-> an object tht nobody holds and other thread is doing kobject_put()
-> on the same kobject:
->
-> THREAD A (calls kset_find_obj())     THREAD B (calls kobject_put())
-> splin_lock()
->                                      atomic_dec_return(kobj->kref), counter gets zero here
->                                      ... starts kobject cleanup ....
->                                      spin_lock() // WAIT thread A in kobj_kset_leave()
-> iterate over kset->list
-> atomic_inc(kobj->kref) (counter becomes 1)
-> spin_unlock()
->                                      spin_lock() // taken
->                                      // it does not know that thread A increased counter so it
->                                      remove obj from list
->                                      spin_unlock()
->                                      vfree(module) // frees module object with containing kobj
->
-> // kobj points to freed memory area!!
-> koubject_put(kobj) // OOPS!!!!
+This series removes TINY_PREEMPT_RCU, as promised/threatened at
+http://lwn.net/Articles/541037/ and https://lkml.org/lkml/2012/11/12/545.
 
-This is a much more generic bug in kobjects, and I would hate to add
-some random workaround for just one case of this bug like you do. The
-more fundamental bug needs to be fixed too.
+1.	Remove TINY_PREEMPT_RCU.  This is a straight syntactic removal,
+	with no attempt at cleanup.  The remaining patches do the cleanup.
 
-I think the more fundamental bugfix is to just fix kobject_get() to
-return NULL if the refcount was zero, because in that case the kobject
-no longer really exists.
+2.	Inline the now-empty show_tiny_preempt_stats() function.
 
-So instead of having
+3.	Inline the now-empty rcu_preempt_check_callbacks() function.
 
-    kref_get(&kobj->kref);
+4.	Inline the now-empty rcu_preempt_remove_callbacks() function.
 
-it should do
+5.	Inline the now-empty rcu_preempt_process_callbacks() function.
 
-    if (!atomic_inc_not_zero(&kobj->kref.refcount))
-        kobj = NULL;
+6.	Because TINY_RCU no longer has kthreads, remove the code that
+	used to abstract away kthread vs. softirq invocation.
 
-and I think that should fix your race automatically, no? Proper patch
-attached (but TOTALLY UNTESTED - it seems to compile, though).
+7.	Inline the now-empty check_cpu_stall_preempt() function.
 
-The problem is that we lose the warning for when the refcount is zero
-and somebody does a kobject_get(), but that is ok *assuming* that
-people actually check the return value of kobject_get() rather than
-just "know" that if they passed in a non-NULL kobj, they'll get it
-right back.
+8.	Remove CONFIG_TINY_RCU ifdefs from include/linux/rcutiny.h
 
-Greg - please take a look... I'm adding Al to the discussion too,
-because Al just *loooves* these kinds of races ;)
+9.	Inline the now-empty rcu_preempt_note_context_switch() function.
 
-                  Linus
+10.	Move code to allow consolidating ifdefs in kernel/rcutiny_plugin.h.
 
---14dae9cdcad7f5595404da32870f
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hfg09qa70
+11.	Remove TINY_PREEMPT_RCU's tracing formats from documentation.
 
-IGxpYi9rb2JqZWN0LmMgfCAzICsrLQogMSBmaWxlIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwg
-MSBkZWxldGlvbigtKQoKZGlmZiAtLWdpdCBhL2xpYi9rb2JqZWN0LmMgYi9saWIva29iamVjdC5j
-CmluZGV4IGUwN2VlMWZjZDZmMS4uOGQzNWZhMGQyYzE1IDEwMDY0NAotLS0gYS9saWIva29iamVj
-dC5jCisrKyBiL2xpYi9rb2JqZWN0LmMKQEAgLTUyNSw3ICs1MjUsOCBAQCB2b2lkIGtvYmplY3Rf
-ZGVsKHN0cnVjdCBrb2JqZWN0ICprb2JqKQogc3RydWN0IGtvYmplY3QgKmtvYmplY3RfZ2V0KHN0
-cnVjdCBrb2JqZWN0ICprb2JqKQogewogCWlmIChrb2JqKQotCQlrcmVmX2dldCgma29iai0+a3Jl
-Zik7CisJCWlmICghYXRvbWljX2luY19ub3RfemVybygma29iai0+a3JlZi5yZWZjb3VudCkpCisJ
-CQlrb2JqID0gTlVMTDsKIAlyZXR1cm4ga29iajsKIH0KIAo=
---14dae9cdcad7f5595404da32870f--
+12.	Shrink TINY_RCU a bit by moving exit_rcu() to TREE_RCU, leaving
+	TINY_RCU with a static inline empty function.
+
+							Thanx, Paul
+
+
+ b/Documentation/RCU/trace.txt |  100 ----
+ b/include/linux/hardirq.h     |    2 
+ b/include/linux/rcupdate.h    |    5 
+ b/include/linux/rcutiny.h     |   41 -
+ b/include/linux/rcutree.h     |    3 
+ b/init/Kconfig                |   10 
+ b/kernel/rcupdate.c           |   26 -
+ b/kernel/rcutiny.c            |   17 
+ b/kernel/rcutiny_plugin.h     | 1017 +-----------------------------------------
+ b/kernel/rcutree_plugin.h     |   26 +
+ 10 files changed, 90 insertions(+), 1157 deletions(-)
+
