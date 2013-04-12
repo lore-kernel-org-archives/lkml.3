@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755360Ab3DLQsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 12:48:46 -0400
-Received: from mout.gmx.net ([212.227.15.15]:50408 "EHLO mout.gmx.net"
+	id S1755394Ab3DLQvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 12:51:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440Ab3DLQso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 12:48:44 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX187hQxlUac7hXradIKm7llPjwDe/SRmPwFe+/9Pnj
-	2lAM+mLRJmpQ+4
-Message-ID: <1365785311.5814.36.camel@marge.simpson.net>
-Subject: Re: [patch v7 0/21] sched: power aware scheduling
-From: Mike Galbraith <efault@gmx.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Alex Shi <alex.shi@intel.com>, Len Brown <lenb@kernel.org>,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com, Linux PM list <linux-pm@vger.kernel.org>
-Date: Fri, 12 Apr 2013 18:48:31 +0200
-In-Reply-To: <20130412162348.GE2368@pd.tnic>
-References: <1365040862-8390-1-git-send-email-alex.shi@intel.com>
-	 <516724F5.20504@kernel.org> <5167C9FA.8050406@intel.com>
-	 <20130412162348.GE2368@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1751183Ab3DLQvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 12:51:51 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Benjamin LaHaise <bcrl@kvack.org>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH 10/33] aio: do fget() after aio_get_req()
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+	<1363883754-27966-11-git-send-email-koverstreet@google.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 12 Apr 2013 12:51:23 -0400
+In-Reply-To: <1363883754-27966-11-git-send-email-koverstreet@google.com> (Kent
+	Overstreet's message of "Thu, 21 Mar 2013 09:35:31 -0700")
+Message-ID: <x49vc7rsnec.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-12 at 18:23 +0200, Borislav Petkov wrote: 
-> On Fri, Apr 12, 2013 at 04:46:50PM +0800, Alex Shi wrote:
-> > Thanks a lot for comments, Len!
-> 
-> AFAICT, you kinda forgot to answer his most important question:
-> 
-> > These numbers suggest that this patch series simultaneously
-> > has a negative impact on performance and energy required
-> > to retire the workload.  Why do it?
+Kent Overstreet <koverstreet@google.com> writes:
 
-Hm.  When I tested AIM7 compute on a NUMA box, there was a marked
-throughput increase at the low to moderate load end of the test spectrum
-IIRC.  Fully repeatable.  There were also other benefits unrelated to
-power, ie mitigation of the evil face of select_idle_sibling().  I
-rather liked what I saw during ~big box test-drive.
-
-(just saying there are other aspects besides joules in there)
-
--Mike
+> aio_get_req() will fail if we have the maximum number of requests
+> outstanding, which depending on the application may not be uncommon.  So
+> avoid doing an unnecessary fget().
 
 
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 2637555..4f23d43 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -587,6 +587,8 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
+>  {
+>  	assert_spin_locked(&ctx->ctx_lock);
+>  
+> +	if (req->ki_filp)
+> +		fput(req->ki_filp);
+>  	if (req->ki_eventfd != NULL)
+>  		eventfd_ctx_put(req->ki_eventfd);
+>  	if (req->ki_dtor)
+[snip]
+> @@ -618,8 +617,6 @@ static void __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+>  	req->ki_cancel = NULL;
+>  	req->ki_retry = NULL;
+>  
+> -	fput(req->ki_filp);
+> -	req->ki_filp = NULL;
+>  	really_put_req(ctx, req);
+>  }
+
+So you've removed the setting of req->ki_filp to NULL here, and I think
+it's okay.  The only function called after that which could possibly be
+tripped up is req->ki_dtor.  That function has no business looking at
+ki_filp, I think (and the only in-tree user does not look at it).
+
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
