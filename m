@@ -1,274 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab3DLMpN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 08:45:13 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51119 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755074Ab3DLMpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 08:45:12 -0400
-Message-ID: <516801CC.9090203@ti.com>
-Date: Fri, 12 Apr 2013 08:45:00 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1756946Ab3DLMzZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 08:55:25 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43982 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755202Ab3DLMzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 08:55:24 -0400
+Date: Fri, 12 Apr 2013 13:55:21 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Padma Venkat <padma.kvr@gmail.com>
+Subject: Re: [PATCH v2] spi: s3c64xx: move to generic dmaengine API
+Message-ID: <20130412125521.GA12534@opensource.wolfsonmicro.com>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+ <1365638712-1028578-30-git-send-email-arnd@arndb.de>
+ <20130411165536.GO9243@opensource.wolfsonmicro.com>
+ <201304112242.03252.arnd@arndb.de>
 MIME-Version: 1.0
-To: amit daniel kachhap <amit.daniel@samsung.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Zhang Rui <rui.zhang@intel.com>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [5/9] thermal: exynos: Make the zone handling dependent on trip
- count
-References: <1364297642-2746-6-git-send-email-amit.daniel@samsung.com> <51672183.3030109@ti.com> <CADGdYn4aAoPWSA94R+io5GEzD9i-pA5JMBg_SqXMb3K4c+FqNg@mail.gmail.com>
-In-Reply-To: <CADGdYn4aAoPWSA94R+io5GEzD9i-pA5JMBg_SqXMb3K4c+FqNg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
+Content-Disposition: inline
+In-Reply-To: <201304112242.03252.arnd@arndb.de>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-04-2013 07:16, amit daniel kachhap wrote:
-> Hi Eduardo,
->
-> On Fri, Apr 12, 2013 at 2:18 AM, Eduardo Valentin
-> <eduardo.valentin@ti.com> wrote:
->> On 26-03-2013 07:33, Amit Daniel Kachhap wrote:
->>>
->>> This code changes the zone handling to use the trip count passed
->>> by the TMU driver. This also helps in adding more zone support.
->>>
->>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
->>>
->>> ---
->>> drivers/thermal/samsung/exynos_common.c      |   56
->>> +++++++++++++------------
->>>    drivers/thermal/samsung/exynos_common.h      |   13 +++---
->>>    include/linux/platform_data/exynos_thermal.h |    7 ++-
->>>    3 files changed, 40 insertions(+), 36 deletions(-)
->>>
->>> diff --git a/drivers/thermal/samsung/exynos_common.c
->>> b/drivers/thermal/samsung/exynos_common.c
->>> index 649d67c..0c0098d 100644
->>> --- a/drivers/thermal/samsung/exynos_common.c
->>> +++ b/drivers/thermal/samsung/exynos_common.c
->>> @@ -84,17 +84,16 @@ static int exynos_set_mode(struct thermal_zone_device
->>> *thermal,
->>>    static int exynos_get_trip_type(struct thermal_zone_device *thermal, int
->>> trip,
->>>                                   enum thermal_trip_type *type)
->>>    {
->>> -       switch (GET_ZONE(trip)) {
->>> -       case MONITOR_ZONE:
->>> -       case WARN_ZONE:
->>> -               *type = THERMAL_TRIP_ACTIVE;
->>> -               break;
->>> -       case PANIC_ZONE:
->>> -               *type = THERMAL_TRIP_CRITICAL;
->>> -               break;
->>> -       default:
->>> +       struct exynos_thermal_zone *th_zone = thermal->devdata;
->>> +       int max_trip = th_zone->sensor_conf->trip_data.trip_count;
->>> +
->>> +       if (trip < 0 || trip >= max_trip)
->>>                  return -EINVAL;
->>> -       }
->>> +       else if (trip == (max_trip - 1))
->>> +               *type = THERMAL_TRIP_CRITICAL;
->>> +       else
->>> +               *type = THERMAL_TRIP_ACTIVE;
->>> +
->>>          return 0;
->>>    }
->>>
->>> @@ -103,8 +102,9 @@ static int exynos_get_trip_temp(struct
->>> thermal_zone_device *thermal, int trip,
->>>                                  unsigned long *temp)
->>>    {
->>>          struct exynos_thermal_zone *th_zone = thermal->devdata;
->>> +       int max_trip = th_zone->sensor_conf->trip_data.trip_count;
->>>
->>> -       if (trip < GET_TRIP(MONITOR_ZONE) || trip > GET_TRIP(PANIC_ZONE))
->>> +       if (trip < 0 || trip >= max_trip)
->>>                  return -EINVAL;
->>>
->>>          *temp = th_zone->sensor_conf->trip_data.trip_val[trip];
->>> @@ -118,10 +118,10 @@ static int exynos_get_trip_temp(struct
->>> thermal_zone_device *thermal, int trip,
->>>    static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
->>>                                  unsigned long *temp)
->>>    {
->>> -       int ret;
->>> -       /* Panic zone */
->>> -       ret = exynos_get_trip_temp(thermal, GET_TRIP(PANIC_ZONE), temp);
->>> -       return ret;
->>> +       struct exynos_thermal_zone *th_zone = thermal->devdata;
->>> +       int max_trip = th_zone->sensor_conf->trip_data.trip_count;
->>> +       /* Get the temp of highest trip*/
->>> +       return exynos_get_trip_temp(thermal, max_trip - 1, temp);
->>>    }
->>>
->>>    int exynos_get_frequency_level(unsigned int cpu, unsigned int freq)
->>> @@ -157,7 +157,7 @@ static int exynos_bind(struct thermal_zone_device
->>> *thermal,
->>>          tab_size = data->cooling_data.freq_clip_count;
->>>
->>>          if (tab_ptr == NULL || tab_size == 0)
->>> -               return -EINVAL;
->>> +               return 0;
->>>
->>>          /* find the cooling device registered*/
->>>          for (i = 0; i < th_zone->cool_dev_size; i++)
->>> @@ -206,7 +206,7 @@ static int exynos_unbind(struct thermal_zone_device
->>> *thermal,
->>>          tab_size = data->cooling_data.freq_clip_count;
->>>
->>>          if (tab_size == 0)
->>> -               return -EINVAL;
->>> +               return 0;
->>>
->>>          /* find the cooling device registered*/
->>>          for (i = 0; i < th_zone->cool_dev_size; i++)
->>
->>
->> The above two chunks are confusing. I dont understand how they are now
->> supposed to be valid settings.
-> Well it is made valid when there is no cooling table registered and
-> hence no cooling.
 
-I suppose that is the case when you have sensors covering domains 
-different of your CPU domain, where you cool off using cpufreq (table), 
-right?
+--LZvS9be/3tNcYl/X
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I suggest you adding a comment explaining why this is now valid..
+On Thu, Apr 11, 2013 at 10:42:03PM +0200, Arnd Bergmann wrote:
+> The spi-s3c64xx uses a Samsung proprietary interface for
+> talking to the DMA engine, which does not work with
+> multiplatform kernels.
 
+Applied, thanks.
 
->>
->>
->>> @@ -366,19 +366,21 @@ int exynos_register_thermal(struct
->>> thermal_sensor_conf *sensor_conf)
->>>                  return -ENOMEM;
->>>
->>>          th_zone->sensor_conf = sensor_conf;
->>> -       cpumask_set_cpu(0, &mask_val);
->>> -       th_zone->cool_dev[0] = cpufreq_cooling_register(&mask_val);
->>> -       if (IS_ERR(th_zone->cool_dev[0])) {
->>> -               pr_err("Failed to register cpufreq cooling device\n");
->>> -               ret = -EINVAL;
->>> -               goto err_unregister;
->>> +       if (sensor_conf->cooling_data.freq_clip_count > 0) {
->>> +               cpumask_set_cpu(0, &mask_val);
->>> +               th_zone->cool_dev[0] =
->>> cpufreq_cooling_register(&mask_val);
->>> +               if (IS_ERR(th_zone->cool_dev[0])) {
->>> +                       pr_err("Failed to register cpufreq cooling
->>> device\n");
->>> +                       ret = -EINVAL;
->>> +                       goto err_unregister;
->>> +               }
->>> +               th_zone->cool_dev_size++;
->>>          }
->>> -       th_zone->cool_dev_size++;
->>>
->>>          th_zone->therm_dev =
->>> thermal_zone_device_register(sensor_conf->name,
->>> -                       EXYNOS_ZONE_COUNT, 0, th_zone, &exynos_dev_ops,
->>> NULL, 0,
->>> -                       sensor_conf->trip_data.trigger_falling ?
->>> -                       0 : IDLE_INTERVAL);
->>> +               sensor_conf->trip_data.trip_count, 0, th_zone,
->>> &exynos_dev_ops,
->>> +               NULL, 0, sensor_conf->trip_data.trigger_falling ?
->>> +               0 : IDLE_INTERVAL);
->>>
->>>          if (IS_ERR(th_zone->therm_dev)) {
->>>                  pr_err("Failed to register thermal zone device\n");
->>> diff --git a/drivers/thermal/samsung/exynos_common.h
->>> b/drivers/thermal/samsung/exynos_common.h
->>> index b8d289e..453e09a 100644
->>> --- a/drivers/thermal/samsung/exynos_common.h
->>> +++ b/drivers/thermal/samsung/exynos_common.h
->>> @@ -27,23 +27,22 @@
->>>    #define SENSOR_NAME_LEN       16
->>>    #define MAX_TRIP_COUNT        8
->>>    #define MAX_COOLING_DEVICE 4
->>> -#define MAX_THRESHOLD_LEVS 4
->>> +#define MAX_THRESHOLD_LEVS 5
->>>
->>>    #define ACTIVE_INTERVAL 500
->>>    #define IDLE_INTERVAL 10000
->>>    #define MCELSIUS      1000
->>>
->>>    /* CPU Zone information */
->>> -#define PANIC_ZONE      4
->>> -#define WARN_ZONE       3
->>> -#define MONITOR_ZONE    2
->>> -#define SAFE_ZONE       1
->>> +#define PANIC_ZONE     5
->>> +#define ALARM_ZONE     4
->>> +#define WARN_ZONE      3
->>> +#define MONITOR_ZONE   2
->>> +#define SAFE_ZONE      1
->>>
->>
->>
->> Updating this does not seam to be part of the intent of this patch. You
->> probably want to send a separate patch for this.
-> yes right.
->>
->>
->>>    #define GET_ZONE(trip) (trip + 2)
->>>    #define GET_TRIP(zone) (zone - 2)
->>>
->>> -#define EXYNOS_ZONE_COUNT      3
->>> -
->>>    struct        thermal_trip_point_conf {
->>>          int trip_val[MAX_TRIP_COUNT];
->>>          int trip_count;
->>> diff --git a/include/linux/platform_data/exynos_thermal.h
->>> b/include/linux/platform_data/exynos_thermal.h
->>> index da7e627..893b758 100644
->>> --- a/include/linux/platform_data/exynos_thermal.h
->>> +++ b/include/linux/platform_data/exynos_thermal.h
->>> @@ -23,6 +23,8 @@
->>>    #define _LINUX_EXYNOS_THERMAL_H
->>>    #include <linux/cpu_cooling.h>
->>>
->>> +#define MAX_TRIP       5
->>> +
->>
->>
->>
->> Should MAX_TRIP/THRESHOLD_LEVEL/PANIC_ZONE be somewhat same
-> Yes they can be removed.
->>
->>
->>>    enum calibration_type {
->>>          TYPE_ONE_POINT_TRIMMING,
->>>          TYPE_TWO_POINT_TRIMMING,
->>> @@ -100,11 +102,12 @@ struct freq_clip_table {
->>>    struct exynos_tmu_platform_data {
->>>          u8 threshold;
->>>          u8 threshold_falling;
->>> -       u8 trigger_levels[4];
->>> +       u8 trigger_levels[MAX_TRIP];
->>>          bool trigger_level0_en;
->>>          bool trigger_level1_en;
->>>          bool trigger_level2_en;
->>>          bool trigger_level3_en;
->>> +       bool trigger_level4_en;
->>>
->>>          u8 gain;
->>>          u8 reference_voltage;
->>> @@ -113,7 +116,7 @@ struct exynos_tmu_platform_data {
->>>
->>>          enum calibration_type cal_type;
->>>          enum soc_type type;
->>> -       struct freq_clip_table freq_tab[4];
->>> +       struct freq_clip_table freq_tab[MAX_TRIP];
->>>          unsigned int freq_tab_count;
->>>    };
->>>    #endif /* _LINUX_EXYNOS_THERMAL_H */
->>>
->>
->
->
+--LZvS9be/3tNcYl/X
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRaAQyAAoJELSic+t+oim9TUcP/3PKIvuiWou4mfU71VB/mwcN
+ZLMNz/HtiY31ff5s1Z2Sz6nrG4lzaFuY2OD/J3q2xxJ/WH8qNwDmKw7KR6tYOKBf
+2itG8KEuSJvf1J7T6qRb0wYlWYzR2hkZi1o2X8Itln6y6NQsH+UVplgN/0S1FiB5
+WpyTQjuLiNBe+E+Ij9Issk4iNbi32/PeqiHH/gXkxNhbiisCpzuXO2fLCkErq2XV
+jvboOYb7j4Q6g6L2hTNyodZhjNAvPUsoHqSVAZKm4kVMWtRydgKMwOY4P0EpneUk
++guKm2c6y9uAf6mLcASBj7OqQ71XfZ71vYAfpttaNt0DHxZJkG2UL/tiQSF8Fgyq
+vN9ey9miXQc/75HphjqJt/H9xvGj5mmXDsiw83qFNmSkHd7fJt+z9wFyqGzMsJXS
+fBmVY6xXPKUXthItwyPdCJS5CtCdrRSHo8teFBE0WYWGMqzKTjYEtNTSJUt45JU+
+O7L4cilI70pcxoLUHrkkiBDYJ8H153x1rm8PPZ2FXkvyA3EJtRCHTr86ZqYnuoMq
+lUMp3KD8RusRxbd6WzzJbDeT78GdJCnpGl8rr0nVr+wpj/sQVhrgU1pZyn42yDf1
+jc29u+sFZxEBFdk1sC/t5eFq5R2L2eomibwDx/HAVShRNkS1OB29UU+LpwowH+lq
+kh3o1lqApOaTSdFetfPe
+=wIGk
+-----END PGP SIGNATURE-----
+
+--LZvS9be/3tNcYl/X--
