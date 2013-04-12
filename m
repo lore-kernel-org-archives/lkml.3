@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab3DLRZq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 13:25:46 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55690 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751440Ab3DLRZo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 13:25:44 -0400
-Message-ID: <1365787538.8465.1.camel@phoenix>
-Subject: [PATCH] regulator: rc5t583: Remove unused fields from struct
- rc5t583_regulator_info
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Sat, 13 Apr 2013 01:25:38 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756006Ab3DLR0f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 13:26:35 -0400
+Received: from mout.gmx.net ([212.227.15.18]:57230 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753893Ab3DLR0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 13:26:33 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18q2LMrR/Qq4PB2MDT91zrrPgJasbK4ye8Myjdqij
+	f02JE4eT0F5BA+
+Message-ID: <516843C4.5030104@gmx.de>
+Date: Fri, 12 Apr 2013 19:26:28 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130405 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: "user-mode-linux-user@lists.sourceforge.net" 
+	<user-mode-linux-user@lists.sourceforge.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: build error with latest git kernel for a user mode linux build
+References: <51681FAA.7030108@gmx.de> <CAFLxGvzUQ3yi_rRL94MLi2ajC4Rb+GWDw-ijZGajGA=WTgaaGQ@mail.gmail.com>
+In-Reply-To: <CAFLxGvzUQ3yi_rRL94MLi2ajC4Rb+GWDw-ijZGajGA=WTgaaGQ@mail.gmail.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The *dev and *mfd of struct rc5t583_regulator_info are not used after convert
-to use regmap, remove them.
+On 04/12/2013 05:00 PM, richard -rw- weinberger wrote:
+> Did you specify ARCH=um and SUBARCH=?
+Only ARCH=um, but the full line give the same :
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/rc5t583-regulator.c |    6 ------
- 1 file changed, 6 deletions(-)
+$ make ARCH=um SUBARCH=x86
+scripts/kconfig/conf --silentoldconfig arch/x86/um/Kconfig
+  CHK     include/generated/uapi/linux/version.h
+make[3]: Nothing to be done for `all'.
+make[1]: `arch/x86/um/user-offsets.s' is up to date.
+  CHK     include/generated/utsrelease.h
+  CC      arch/um/kernel/asm-offsets.s
+In file included from /home/tfoerste/devel/linux/arch/um/include/asm/mman.h:5:0,
+                 from /home/tfoerste/devel/linux/arch/x86/um/shared/sysdep/kernel-offsets.h:5,
+                 from arch/um/kernel/asm-offsets.c:1:
+/home/tfoerste/devel/linux/arch/um/include/shared/as-layout.h:9:35: fatal error: generated/asm-offsets.h: No such file or directory
+compilation terminated.
+make[1]: *** [arch/um/kernel/asm-offsets.s] Error 1
+make: *** [prepare0] Error 2
 
-diff --git a/drivers/regulator/rc5t583-regulator.c b/drivers/regulator/rc5t583-regulator.c
-index 9e6f786..5885b45 100644
---- a/drivers/regulator/rc5t583-regulator.c
-+++ b/drivers/regulator/rc5t583-regulator.c
-@@ -49,10 +49,6 @@ struct rc5t583_regulator_info {
- 
- struct rc5t583_regulator {
- 	struct rc5t583_regulator_info *reg_info;
--
--	/* Devices */
--	struct device		*dev;
--	struct rc5t583		*mfd;
- 	struct regulator_dev	*rdev;
- };
- 
-@@ -155,8 +151,6 @@ static int rc5t583_regulator_probe(struct platform_device *pdev)
- 		reg = &regs[id];
- 		ri = &rc5t583_reg_info[id];
- 		reg->reg_info = ri;
--		reg->mfd = rc5t583;
--		reg->dev = &pdev->dev;
- 
- 		if (ri->deepsleep_id == RC5T583_DS_NONE)
- 			goto skip_ext_pwr_config;
+
 -- 
-1.7.10.4
-
-
-
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
