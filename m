@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3DLXLU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:11:20 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:47500 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754497Ab3DLXLP (ORCPT
+	id S1754729Ab3DLXLS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:11:18 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:60821 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306Ab3DLXLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:11:15 -0400
+	Fri, 12 Apr 2013 19:11:11 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         mhocko@suse.cz, kamezawa.hiroyu@jp.fujitsu.com,
         linux-kernel@vger.kernel.org, glommer@parallels.com, vgoyal@redhat.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/4] memcg: force use_hierarchy if sane_behavior
-Date: Fri, 12 Apr 2013 16:10:59 -0700
-Message-Id: <1365808259-31073-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 2/4] move cgroupfs_root to include/linux/cgroup.h
+Date: Fri, 12 Apr 2013 16:10:57 -0700
+Message-Id: <1365808259-31073-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365808259-31073-1-git-send-email-tj@kernel.org>
 References: <1365808259-31073-1-git-send-email-tj@kernel.org>
@@ -23,76 +23,178 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Turn on use_hierarchy by default if sane_behavior is specified and
-don't create .use_hierarchy file.
+While controllers shouldn't be accessing cgroupfs_root directly, it
+being hidden inside kern/cgroup.c makes somethings pretty silly.  This
+makes routing hierarchy-wide settings which need to be visible to
+controllers cumbersome.
 
-It is debatable whether to remove .use_hierarchy file or make it ro as
-the former could make transition easier in certain cases; however, the
-behavior changes which will be gated by sane_behavior are intensive
-including changing basic meaning of certain control knobs in a few
-controllers and I don't really think keeping this piece would make
-things easier in any noticeable way, so let's remove it.
+We're gonna add another hierarchy-wide setting which needs to be
+accessed from controllers.  Move cgroupfs_root and its flags to the
+header file so that we can access root settings with inline helpers.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- include/linux/cgroup.h |  3 +++
- mm/memcontrol.c        | 13 +++++++++++++
- 2 files changed, 16 insertions(+)
+ include/linux/cgroup.h | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/cgroup.c        | 57 --------------------------------------------------
+ 2 files changed, 57 insertions(+), 57 deletions(-)
 
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 9c300ad..c562e33 100644
+index 45aee0f..b21881e 100644
 --- a/include/linux/cgroup.h
 +++ b/include/linux/cgroup.h
-@@ -269,6 +269,9 @@ enum {
- 	 *
- 	 * - Remount is disallowed.
- 	 *
-+	 * - memcg: use_hierarchy is on by default and the cgroup file for
-+	 *   the flag is not created.
-+	 *
- 	 * The followings are planned changes.
- 	 *
- 	 * - release_agent will be disallowed once replacement notification
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9715c0c..a651131 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5814,6 +5814,7 @@ static struct cftype mem_cgroup_files[] = {
- 	},
- 	{
- 		.name = "use_hierarchy",
-+		.flags = CFTYPE_INSANE,
- 		.write_u64 = mem_cgroup_hierarchy_write,
- 		.read_u64 = mem_cgroup_hierarchy_read,
- 	},
-@@ -6784,6 +6785,17 @@ static void mem_cgroup_move_task(struct cgroup *cont,
- }
- #endif
+@@ -19,6 +19,7 @@
+ #include <linux/idr.h>
+ #include <linux/workqueue.h>
+ #include <linux/xattr.h>
++#include <linux/fs.h>
  
-+/*
-+ * Cgroup retains root cgroups across [un]mount cycles making it necessary
-+ * to verify sane_behavior flag on each mount attempt.
-+ */
-+static void mem_cgroup_bind(struct cgroup *root)
-+{
-+	/* use_hierarchy is forced with sane_behavior */
-+	if (cgroup_sane_behavior(root))
-+		mem_cgroup_from_cont(root)->use_hierarchy = true;
-+}
+ #ifdef CONFIG_CGROUPS
+ 
+@@ -238,6 +239,62 @@ struct cgroup {
+ 	struct simple_xattrs xattrs;
+ };
+ 
++#define MAX_CGROUP_ROOT_NAMELEN 64
 +
- struct cgroup_subsys mem_cgroup_subsys = {
- 	.name = "memory",
- 	.subsys_id = mem_cgroup_subsys_id,
-@@ -6794,6 +6806,7 @@ struct cgroup_subsys mem_cgroup_subsys = {
- 	.can_attach = mem_cgroup_can_attach,
- 	.cancel_attach = mem_cgroup_cancel_attach,
- 	.attach = mem_cgroup_move_task,
-+	.bind = mem_cgroup_bind,
- 	.base_cftypes = mem_cgroup_files,
- 	.early_init = 0,
- 	.use_id = 1,
++/* cgroupfs_root->flags */
++enum {
++	CGRP_ROOT_NOPREFIX	= (1 << 1), /* mounted subsystems have no named prefix */
++	CGRP_ROOT_XATTR		= (1 << 2), /* supports extended attributes */
++};
++
++/*
++ * A cgroupfs_root represents the root of a cgroup hierarchy, and may be
++ * associated with a superblock to form an active hierarchy.  This is
++ * internal to cgroup core.  Don't access directly from controllers.
++ */
++struct cgroupfs_root {
++	struct super_block *sb;
++
++	/*
++	 * The bitmask of subsystems intended to be attached to this
++	 * hierarchy
++	 */
++	unsigned long subsys_mask;
++
++	/* Unique id for this hierarchy. */
++	int hierarchy_id;
++
++	/* The bitmask of subsystems currently attached to this hierarchy */
++	unsigned long actual_subsys_mask;
++
++	/* A list running through the attached subsystems */
++	struct list_head subsys_list;
++
++	/* The root cgroup for this hierarchy */
++	struct cgroup top_cgroup;
++
++	/* Tracks how many cgroups are currently defined in hierarchy.*/
++	int number_of_cgroups;
++
++	/* A list running through the active hierarchies */
++	struct list_head root_list;
++
++	/* All cgroups on this root, cgroup_mutex protected */
++	struct list_head allcg_list;
++
++	/* Hierarchy-specific flags */
++	unsigned long flags;
++
++	/* IDs for cgroups in this hierarchy */
++	struct ida cgroup_ida;
++
++	/* The path to use for release notifications. */
++	char release_agent_path[PATH_MAX];
++
++	/* The name for this hierarchy - may be empty */
++	char name[MAX_CGROUP_ROOT_NAMELEN];
++};
++
+ /*
+  * A css_set is a structure holding pointers to a set of
+  * cgroup_subsys_state objects. This saves space in the task struct
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index a372eaa..8848070 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -30,7 +30,6 @@
+ #include <linux/cred.h>
+ #include <linux/ctype.h>
+ #include <linux/errno.h>
+-#include <linux/fs.h>
+ #include <linux/init_task.h>
+ #include <linux/kernel.h>
+ #include <linux/list.h>
+@@ -104,56 +103,6 @@ static struct cgroup_subsys *subsys[CGROUP_SUBSYS_COUNT] = {
+ #include <linux/cgroup_subsys.h>
+ };
+ 
+-#define MAX_CGROUP_ROOT_NAMELEN 64
+-
+-/*
+- * A cgroupfs_root represents the root of a cgroup hierarchy,
+- * and may be associated with a superblock to form an active
+- * hierarchy
+- */
+-struct cgroupfs_root {
+-	struct super_block *sb;
+-
+-	/*
+-	 * The bitmask of subsystems intended to be attached to this
+-	 * hierarchy
+-	 */
+-	unsigned long subsys_mask;
+-
+-	/* Unique id for this hierarchy. */
+-	int hierarchy_id;
+-
+-	/* The bitmask of subsystems currently attached to this hierarchy */
+-	unsigned long actual_subsys_mask;
+-
+-	/* A list running through the attached subsystems */
+-	struct list_head subsys_list;
+-
+-	/* The root cgroup for this hierarchy */
+-	struct cgroup top_cgroup;
+-
+-	/* Tracks how many cgroups are currently defined in hierarchy.*/
+-	int number_of_cgroups;
+-
+-	/* A list running through the active hierarchies */
+-	struct list_head root_list;
+-
+-	/* All cgroups on this root, cgroup_mutex protected */
+-	struct list_head allcg_list;
+-
+-	/* Hierarchy-specific flags */
+-	unsigned long flags;
+-
+-	/* IDs for cgroups in this hierarchy */
+-	struct ida cgroup_ida;
+-
+-	/* The path to use for release notifications. */
+-	char release_agent_path[PATH_MAX];
+-
+-	/* The name for this hierarchy - may be empty */
+-	char name[MAX_CGROUP_ROOT_NAMELEN];
+-};
+-
+ /*
+  * The "rootnode" hierarchy is the "dummy hierarchy", reserved for the
+  * subsystems that are otherwise unattached - it never has more than a
+@@ -296,12 +245,6 @@ bool cgroup_is_descendant(struct cgroup *cgrp, struct cgroup *ancestor)
+ }
+ EXPORT_SYMBOL_GPL(cgroup_is_descendant);
+ 
+-/* cgroupfs_root->flags */
+-enum {
+-	CGRP_ROOT_NOPREFIX	= (1 << 1), /* mounted subsystems have no named prefix */
+-	CGRP_ROOT_XATTR		= (1 << 2), /* supports extended attributes */
+-};
+-
+ static int cgroup_is_releasable(const struct cgroup *cgrp)
+ {
+ 	const int bits =
 -- 
 1.8.1.4
 
