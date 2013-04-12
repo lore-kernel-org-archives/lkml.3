@@ -1,112 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab3DLUO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 16:14:27 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:36017 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754176Ab3DLUO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 16:14:26 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH 4/6] x86: relocs: build separate 32/64-bit tools
-Date: Fri, 12 Apr 2013 13:13:45 -0700
-Message-Id: <1365797627-20874-5-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365797627-20874-1-git-send-email-keescook@chromium.org>
-References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
-X-HELO: www.outflux.net
+	id S1756463Ab3DLUQX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 16:16:23 -0400
+Received: from smtp2.ispfabriek.nl ([188.142.0.19]:49009 "EHLO
+	smtp2.ispfabriek.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754553Ab3DLUQT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 16:16:19 -0400
+Message-ID: <51686B74.2040204@xmsnet.nl>
+Date: Fri, 12 Apr 2013 22:15:48 +0200
+From: Hans de Bruin <jmdebruin@xmsnet.nl>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121030 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Alexander van Heukelum <heukelum@fastmail.fm>
+CC: Al Viro <viro@ZenIV.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v2] x86, vm86: fix VM86 syscalls: use SYSCALL_DEFINEx(...)
+References: <514F6DF9.1070602@xmsnet.nl> <1364332526.8559.140661209554365.0203B0A4@webmail.messagingengine.com> <5152F321.7020604@xmsnet.nl> <1364412662.12858.140661209988437.506AD50B@webmail.messagingengine.com> <20130327194614.GA21522@ZenIV.linux.org.uk> <1364419085.8454.140661210031889.49ED573A@webmail.messagingengine.com>
+In-Reply-To: <1364419085.8454.140661210031889.49ED573A@webmail.messagingengine.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the ELF structures and access macros change size based on 32 vs
-64 bits, build a separate 32-bit relocs tool (for handling realmode
-and 32-bit relocations), and a 64-bit relocs tool (for handling 64-bit
-kernel relocations).
+On 03/27/2013 10:18 PM, Alexander van Heukelum wrote:
+> On Wed, Mar 27, 2013, at 20:46, Al Viro wrote:
+>> On Wed, Mar 27, 2013 at 08:31:02PM +0100, Alexander van Heukelum wrote:
+>>> Hi Al,
+>>>
+>>> Hans de Bruin found a regression due to one of your changes. I asked him to test a fix and he reported back that it worked. (Thanks!) Can you see if you agree with the fix? Patch is attached due to webmail...
+>>
+>> Use SYSCALL_DEFINE{1,2} for vm86_old and vm86, please.
+>
+> Like this?
+>
+> Greetings,
+>      Alexander
+>
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
---
-This is ugly with the "cp". Is there some other cleaner way to trigger
-two builds with different defines from the same source file?
----
- arch/x86/boot/compressed/Makefile |    2 +-
- arch/x86/realmode/rm/Makefile     |    2 +-
- arch/x86/tools/.gitignore         |    3 ++-
- arch/x86/tools/Makefile           |   20 ++++++++++++++++++--
- 4 files changed, 22 insertions(+), 5 deletions(-)
+Is there any progress?
 
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index 5ef205c..0dac175 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -44,7 +44,7 @@ $(obj)/vmlinux.bin: vmlinux FORCE
- 
- targets += $(patsubst $(obj)/%,%,$(VMLINUX_OBJS)) vmlinux.bin.all vmlinux.relocs
- 
--CMD_RELOCS = arch/x86/tools/relocs
-+CMD_RELOCS = arch/x86/tools/relocs_$(BITS)
- quiet_cmd_relocs = RELOCS  $@
-       cmd_relocs = $(CMD_RELOCS) $< > $@;$(CMD_RELOCS) --abs-relocs $<
- $(obj)/vmlinux.relocs: vmlinux FORCE
-diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-index 8869287..2b1e429 100644
---- a/arch/x86/realmode/rm/Makefile
-+++ b/arch/x86/realmode/rm/Makefile
-@@ -56,7 +56,7 @@ $(obj)/realmode.bin: $(obj)/realmode.elf $(obj)/realmode.relocs
- 	$(call if_changed,objcopy)
- 
- quiet_cmd_relocs = RELOCS  $@
--      cmd_relocs = arch/x86/tools/relocs --realmode $< > $@
-+      cmd_relocs = arch/x86/tools/relocs_32 --realmode $< > $@
- 
- targets += realmode.relocs
- $(obj)/realmode.relocs: $(obj)/realmode.elf FORCE
-diff --git a/arch/x86/tools/.gitignore b/arch/x86/tools/.gitignore
-index be0ed06..2b45d5f 100644
---- a/arch/x86/tools/.gitignore
-+++ b/arch/x86/tools/.gitignore
-@@ -1 +1,2 @@
--relocs
-+relocs_32*
-+relocs_64*
-diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
-index bae601f..a8cb70c 100644
---- a/arch/x86/tools/Makefile
-+++ b/arch/x86/tools/Makefile
-@@ -37,6 +37,22 @@ $(obj)/test_get_len.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/in
- 
- $(obj)/insn_sanity.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/inat.c $(srctree)/arch/x86/include/asm/inat_types.h $(srctree)/arch/x86/include/asm/inat.h $(srctree)/arch/x86/include/asm/insn.h $(objtree)/arch/x86/lib/inat-tables.c
- 
-+HOSTCFLAGS_relocs_32.o += -DELF_BITS=32
-+HOSTCFLAGS_relocs_64.o += -DELF_BITS=64
-+
-+quiet_cmd_cp_reloc = GEN     $@
-+      cmd_cp_reloc = cp $< $@
-+
-+$(obj)/relocs_%.c: $(srctree)/arch/x86/tools/relocs.c
-+	$(call cmd,cp_reloc)
-+
- HOST_EXTRACFLAGS += -I$(srctree)/tools/include
--hostprogs-y	+= relocs
--relocs: $(obj)/relocs
-+hostprogs-y    += relocs_$(BITS)
-+relocs_binaries = relocs_$(BITS)
-+ifeq ($(CONFIG_64BIT),y)
-+	hostprogs-y  += relocs_32
-+	relocs_binaries += relocs_32
-+endif
-+relocs: $(relocs_binaries)
-+relocs_32: $(obj)/relocs_32
-+relocs_64: $(obj)/relocs_64
 -- 
-1.7.9.5
-
+Hans
