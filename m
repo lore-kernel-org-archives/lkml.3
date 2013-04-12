@@ -1,179 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab3DLPxy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:53:54 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:21104 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753193Ab3DLPxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:53:53 -0400
-Message-ID: <51682E08.9050107@parallels.com>
-Date: Fri, 12 Apr 2013 19:53:44 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 6/5] selftest: Add simple test for soft-dirty bit
-References: <51669E5F.4000801@parallels.com> <51669EB8.2020102@parallels.com>
-In-Reply-To: <51669EB8.2020102@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755359Ab3DLPzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:55:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56003 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab3DLPzb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 11:55:31 -0400
+Message-ID: <1365782115.17140.68.camel@laptop>
+Subject: Re: [PATCH] process cputimer is moving faster than its
+ corresponding clock
+From: Peter Zijlstra <peterz@infradead.org>
+To: Olivier Langlois <olivier@trillion01.com>
+Cc: mingo@redhat.com, tglx@linutronix.de, fweisbec@gmail.com,
+        schwidefsky@de.ibm.com, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 12 Apr 2013 17:55:15 +0200
+In-Reply-To: <1365763837.17140.52.camel@laptop>
+References: <1365184746.874.103.camel@Wailaba2>
+	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
+	 <1365763837.17140.52.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It creates a mapping of 3 pages and checks that reads, writes and clear-refs
-result in present and soft-dirt bits reported from pagemap2 set as expected.
+On Fri, 2013-04-12 at 12:50 +0200, Peter Zijlstra wrote:
 
-Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+> I'll try and dig through the rest of your email later.. sorry for
+> being
+> a tad slow etc.
+
+
+So at thread_group_cputimer() we initialize the cputimer->cputime state
+by using thread_group_cputime() which iterates all tasks of the process
+and calls task_sched_runtime() upon them (which includes the current
+delta).
+
+Upon subsequent account_group_exec_runtime() calls (from all schedule
+events and timer ticks) we add the current delta to cputimer->cputime.
+
+However since we already added the first (or part thereof) delta to the
+initial state, we account this double. Thus we can be up to
+NR_CPUS*TICK_NSEC ahead.
+
+On every timer tick we evaluate the cputimer state using
+cpu_timer_sample_group() which adds the current tasks delta. This can
+thus be up to (NR_CPUS-1)*TICK_NSEC behind.
+
+The combination of the timeline behind ahead and the sample being
+behind make it a virtual guarantee we'll hit early by almost
+2*NR_CPUS*TICK_NSEC.
+
+This is what you've been saying right?
+
+
+So how about we do not include the deltas into the initial sum, so that
+we're up to NR_CPUS*TICK_NSEC behind. That way, with the sample up to
+(NR_CPUS-1)*TICK_NSEC behind, we're in the order of TICK_NSEC late with
+firing.
+
+Hmm?
 
 ---
+ include/linux/sched.h     |  5 +++--
+ kernel/posix-cpu-timers.c | 15 ++++++++++-----
+ kernel/sched/core.c       |  6 ++++--
+ kernel/sched/cputime.c    |  8 ++++----
+ 4 files changed, 21 insertions(+), 13 deletions(-)
 
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 575ef80..827f2c0 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -6,6 +6,7 @@ TARGETS += cpu-hotplug
- TARGETS += memory-hotplug
- TARGETS += efivarfs
- TARGETS += ptrace
-+TARGETS += soft-dirty
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 88ec7f4..abe5870 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1832,7 +1832,7 @@ static inline void disable_sched_clock_irqtime(void) {}
+ #endif
  
- all:
- 	for TARGET in $(TARGETS); do \
-diff --git a/tools/testing/selftests/soft-dirty/Makefile b/tools/testing/selftests/soft-dirty/Makefile
-new file mode 100644
-index 0000000..a9cdc82
---- /dev/null
-+++ b/tools/testing/selftests/soft-dirty/Makefile
-@@ -0,0 +1,10 @@
-+CFLAGS += -iquote../../../../include/uapi -Wall
-+soft-dirty: soft-dirty.c
-+
-+all: soft-dirty
-+
-+clean:
-+	rm -f soft-dirty
-+
-+run_tests: all
-+	@./soft-dirty || echo "soft-dirty selftests: [FAIL]"
-diff --git a/tools/testing/selftests/soft-dirty/soft-dirty.c b/tools/testing/selftests/soft-dirty/soft-dirty.c
-new file mode 100644
-index 0000000..aba4f87
---- /dev/null
-+++ b/tools/testing/selftests/soft-dirty/soft-dirty.c
-@@ -0,0 +1,114 @@
-+#include <stdlib.h>
-+#include <stdio.h>
-+#include <sys/mman.h>
-+#include <unistd.h>
-+#include <fcntl.h>
-+#include <sys/types.h>
-+
-+typedef unsigned long long u64;
-+
-+#define PME_PRESENT	(1ULL << 63)
-+#define PME_SOFT_DIRTY	(1Ull << 55)
-+
-+#define PAGES_TO_TEST	3
-+#ifndef PAGE_SIZE
-+#define PAGE_SIZE	4096
-+#endif
-+
-+static void get_pagemap2(char *mem, u64 *map)
-+{
-+	int fd;
-+
-+	fd = open("/proc/self/pagemap2", O_RDONLY);
-+	if (fd < 0) {
-+		perror("Can't open pagemap2");
-+		exit(1);
-+	}
-+
-+	lseek(fd, (unsigned long)mem / PAGE_SIZE * sizeof(u64), SEEK_SET);
-+	read(fd, map, sizeof(u64) * PAGES_TO_TEST);
-+	close(fd);
-+}
-+
-+static inline char map_p(u64 map)
-+{
-+	return map & PME_PRESENT ? 'p' : '-';
-+}
-+
-+static inline char map_sd(u64 map)
-+{
-+	return map & PME_SOFT_DIRTY ? 'd' : '-';
-+}
-+
-+static int check_pte(int step, int page, u64 *map, u64 want)
-+{
-+	if ((map[page] & want) != want) {
-+		printf("Step %d Page %d has %c%c, want %c%c\n",
-+				step, page,
-+				map_p(map[page]), map_sd(map[page]),
-+				map_p(want), map_sd(want));
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+static void clear_refs(void)
-+{
-+	int fd;
-+	char *v = "4";
-+
-+	fd = open("/proc/self/clear_refs", O_WRONLY);
-+	if (write(fd, v, 3) < 3) {
-+		perror("Can't clear soft-dirty bit");
-+		exit(1);
-+	}
-+	close(fd);
-+}
-+
-+int main(void)
-+{
-+	char *mem, x;
-+	u64 map[PAGES_TO_TEST];
-+
-+	mem = mmap(NULL, PAGES_TO_TEST * PAGE_SIZE,
-+			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, 0, 0);
-+
-+	x = mem[0];
-+	mem[2 * PAGE_SIZE] = 'c';
-+	get_pagemap2(mem, map);
-+
-+	if (check_pte(1, 0, map, PME_PRESENT))
-+		return 1;
-+	if (check_pte(1, 1, map, 0))
-+		return 1;
-+	if (check_pte(1, 2, map, PME_PRESENT | PME_SOFT_DIRTY))
-+		return 1;
-+
-+	clear_refs();
-+	get_pagemap2(mem, map);
-+
-+	if (check_pte(2, 0, map, PME_PRESENT))
-+		return 1;
-+	if (check_pte(2, 1, map, 0))
-+		return 1;
-+	if (check_pte(2, 2, map, PME_PRESENT))
-+		return 1;
-+
-+	mem[0] = 'a';
-+	mem[PAGE_SIZE] = 'b';
-+	x = mem[2 * PAGE_SIZE];
-+	get_pagemap2(mem, map);
-+
-+	if (check_pte(3, 0, map, PME_PRESENT | PME_SOFT_DIRTY))
-+		return 1;
-+	if (check_pte(3, 1, map, PME_PRESENT | PME_SOFT_DIRTY))
-+		return 1;
-+	if (check_pte(3, 2, map, PME_PRESENT))
-+		return 1;
-+
-+	(void)x; /* gcc warn */
-+
-+	printf("PASS\n");
-+	return 0;
-+}
+ extern unsigned long long
+-task_sched_runtime(struct task_struct *task);
++task_sched_runtime(struct task_struct *task, bool add_delta);
+ 
+ /* sched_exec is called by processes performing an exec */
+ #ifdef CONFIG_SMP
+@@ -2496,7 +2496,8 @@ static inline void current_clr_polling(void) { }
+ /*
+  * Thread group CPU time accounting.
+  */
+-void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times);
++void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times,
++			  bool add_delta);
+ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
+ 
+ static inline void thread_group_cputime_init(struct signal_struct *sig)
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 8fd709c..d8133ad 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -220,7 +220,7 @@ static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
+ 		cpu->cpu = virt_ticks(p);
+ 		break;
+ 	case CPUCLOCK_SCHED:
+-		cpu->sched = task_sched_runtime(p);
++		cpu->sched = task_sched_runtime(p, true);
+ 		break;
+ 	}
+ 	return 0;
+@@ -250,8 +250,13 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
+ 		 * values through the TIMER_ABSTIME flag, therefore we have
+ 		 * to synchronize the timer to the clock every time we start
+ 		 * it.
++		 *
++		 * Do no add the current delta, because
++		 * account_group_exec_runtime() will also add this delta and we
++		 * wouldn't want to double account time and get ahead of
++		 * ourselves.
+ 		 */
+-		thread_group_cputime(tsk, &sum);
++		thread_group_cputime(tsk, &sum, false);
+ 		raw_spin_lock_irqsave(&cputimer->lock, flags);
+ 		cputimer->running = 1;
+ 		update_gt_cputime(&cputimer->cputime, &sum);
+@@ -275,15 +280,15 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
+ 	default:
+ 		return -EINVAL;
+ 	case CPUCLOCK_PROF:
+-		thread_group_cputime(p, &cputime);
++		thread_group_cputime(p, &cputime, true);
+ 		cpu->cpu = cputime.utime + cputime.stime;
+ 		break;
+ 	case CPUCLOCK_VIRT:
+-		thread_group_cputime(p, &cputime);
++		thread_group_cputime(p, &cputime, true);
+ 		cpu->cpu = cputime.utime;
+ 		break;
+ 	case CPUCLOCK_SCHED:
+-		thread_group_cputime(p, &cputime);
++		thread_group_cputime(p, &cputime, true);
+ 		cpu->sched = cputime.sum_exec_runtime;
+ 		break;
+ 	}
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index e8167e3..704fa44 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2677,14 +2677,16 @@ unsigned long long task_delta_exec(struct task_struct *p)
+  * In case the task is currently running, return the runtime plus current's
+  * pending runtime that have not been accounted yet.
+  */
+-unsigned long long task_sched_runtime(struct task_struct *p)
++unsigned long long task_sched_runtime(struct task_struct *p, bool add_delta)
+ {
+ 	unsigned long flags;
+ 	struct rq *rq;
+ 	u64 ns = 0;
+ 
+ 	rq = task_rq_lock(p, &flags);
+-	ns = p->se.sum_exec_runtime + do_task_delta_exec(p, rq);
++	ns = p->se.sum_exec_runtime;
++        if (add_delta)
++		ns += do_task_delta_exec(p, rq);
+ 	task_rq_unlock(rq, p, &flags);
+ 
+ 	return ns;
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index ea32f02..c3495e1 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -277,7 +277,7 @@ static __always_inline bool steal_account_process_tick(void)
+  * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
+  * tasks (sum on group iteration) belonging to @tsk's group.
+  */
+-void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
++void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times, bool add_delta)
+ {
+ 	struct signal_struct *sig = tsk->signal;
+ 	cputime_t utime, stime;
+@@ -297,7 +297,7 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+ 		task_cputime(t, &utime, &stime);
+ 		times->utime += utime;
+ 		times->stime += stime;
+-		times->sum_exec_runtime += task_sched_runtime(t);
++		times->sum_exec_runtime += task_sched_runtime(t, add_delta);
+ 	} while_each_thread(tsk, t);
+ out:
+ 	rcu_read_unlock();
+@@ -444,7 +444,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
+ {
+ 	struct task_cputime cputime;
+ 
+-	thread_group_cputime(p, &cputime);
++	thread_group_cputime(p, &cputime, true);
+ 
+ 	*ut = cputime.utime;
+ 	*st = cputime.stime;
+@@ -606,7 +606,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
+ {
+ 	struct task_cputime cputime;
+ 
+-	thread_group_cputime(p, &cputime);
++	thread_group_cputime(p, &cputime, true);
+ 	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
+ }
+ #endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+
+
