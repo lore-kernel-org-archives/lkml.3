@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3DLJdx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 05:33:53 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:53250 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753733Ab3DLJdv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 05:33:51 -0400
-Message-ID: <5167D4E3.5020504@stericsson.com>
-Date: Fri, 12 Apr 2013 11:33:23 +0200
-From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753976Ab3DLJe3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 05:34:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59922 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751982Ab3DLJe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 05:34:28 -0400
+Date: Fri, 12 Apr 2013 10:34:20 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Ric Mason <ric.masonn@gmail.com>
+Cc: Will Huck <will.huckk@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd
+ reclaims at each priority
+Message-ID: <20130412093420.GG11656@suse.de>
+References: <1363525456-10448-1-git-send-email-mgorman@suse.de>
+ <1363525456-10448-2-git-send-email-mgorman@suse.de>
+ <20130321155705.GA27848@cmpxchg.org>
+ <514BA04D.2090002@gmail.com>
+ <514BD56F.6050709@redhat.com>
+ <5166510E.2050709@gmail.com>
+ <51679FAE.7090504@gmail.com>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFT][PATCH] regulator: ab8500: Fix voltage_mask for AB8505_LDO_AUDIO
-References: <1365752005.15003.1.camel@phoenix>
-In-Reply-To: <1365752005.15003.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <51679FAE.7090504@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 09:33 AM, Axel Lin wrote:
-> The voltage_mask and voltage_shift settings of AB8505_LDO_AUDIO are not matched.
-> It looks like a typo in the voltage_mask settings.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
-> Hi Lee and Bengt,
-> I don't have the datasheet. Can you confirm if this fix is correct?
->
-> Thanks,
-> Axel
-Yes it is correct. The voltage bits are in 0x70. Thank you!
+On Fri, Apr 12, 2013 at 01:46:22PM +0800, Ric Mason wrote:
+> Ping Rik, I also want to know the answer. ;-)
 
-Acked-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
->   drivers/regulator/ab8500.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-> index ea182d3..b81ff04 100644
-> --- a/drivers/regulator/ab8500.c
-> +++ b/drivers/regulator/ab8500.c
-> @@ -1130,7 +1130,7 @@ static struct ab8500_regulator_info
->   		.update_val		= 0x02,
->   		.voltage_bank		= 0x01,
->   		.voltage_reg		= 0x57,
-> -		.voltage_mask		= 0x7,
-> +		.voltage_mask		= 0x70,
->   		.voltage_shift		= 4,
->   	},
->   	[AB8505_LDO_ANAMIC1] = {
+This question, like a *lot* of list traffic recently, is a "how long is a
+piece of string" with hints that it is an important question but really
+is just going to waste a developers time because the question lacks any
+relevant meaning. The Inter-Reference Distance (IRD) is mentioned as a
+problem but gives no context as to why it is perceived as a problem. IRD is
+the distance in time or events between two references of the same page and
+is a function of the workload and an arbitrary page, not the page reclaim
+algorithm. A page algorithm may take IRD into account but IRD is not and
+cannot be a "problem" so the question framing is already confusing.
 
+Furthermore, the upsides and downsides of any given page reclaim algorithm
+are complex but in most cases are discussed in the academic pages describing
+them. People who are interested need to research and read these papers
+and then see how it might apply to the algorithm implemented in Linux or
+alternatively investigate what important workloads Linux treats badly
+and addressing the problem. The result of such research (and patches)
+is then a relevant discussion.
+
+This question asks what the "downside" is versus anonymous pages.  To me
+the question lacks any meaning because how can a page reclaim algorithm
+"against" anonymous pages? As the question lacks meaning, answering it is
+impossible and it is effectively asking a developer to write a small paper
+to try and discover the meaning of the question before then answering it.
+
+I do not speak for Rik but I at least am ignoring most of these questions
+because there is not enough time in the day already. Pings are not
+likely to change my opinion.
+
+-- 
+Mel Gorman
+SUSE Labs
