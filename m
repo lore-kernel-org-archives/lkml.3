@@ -1,149 +1,538 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab3DLNQB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 09:16:01 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:22974 "EHLO
+	id S1754654Ab3DLNRZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 09:17:25 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:21641 "EHLO
 	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753379Ab3DLNPD (ORCPT
+	with ESMTP id S1753608Ab3DLNRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 09:15:03 -0400
-Message-Id: <201304121307.r3CD7tDi011782@latitude>
+	Fri, 12 Apr 2013 09:17:24 -0400
+Message-Id: <201304121316.r3CDGK2S012451@latitude>
 From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Fri, 12 Apr 2013 14:05:29 +0100
-Subject: [NEW DRIVER V4 0/7] DA9058 PMIC - please comment on this new driver
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Andrew Jones <drjones@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Eric Andersson <eric.andersson@unixphere.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Liam Girdwood <lrg@ti.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-iio@vger.kernel.org
-Cc: linux-input@vger.kernel.org
-Cc: lm-sensors@lm-sensors.org
+Date: Fri, 12 Apr 2013 14:05:26 +0100
+Subject: [NEW DRIVER V4 4/7] DA9058 RTC driver
+To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Michael Krufky <mkrufky@kernellabs.com>
 Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: rtc-linux@googlegroups.com
 Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Steven Toth <stoth@kernellabs.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com
+Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: David Dajun Chen <david.chen@diasemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is submission attempt number 4 to have this driver included in
-the linux kernel source tree. This is the driver for the Dialog DA9058.
+This is the RTC component driver of the Dialog DA9058 PMIC.
+This driver is just one component of the whole DA9058 PMIC driver.
+It depends on the CORE component driver of the DA9058 MFD.
 
-The DA9058 is a low power Power Management Integrated Circuit with extra
-functionality. It is a Multi Function Device controlled only from an I2C
-bus whose components can raise an interrupt request on a single IRQ line.
-
-The driver for the DA9058 consists of a core (i2c) device driver that
-instantiates the individual component device drivers for:
-
-adc - 5 ADC channels
-gpio - 2 available pins
-onkey - 1 device
-regulator - 4 BUCKS, 19 LDO and 3 fixed
-rtc - low power clock
-hwmon - 5 monitored voltages/temperatures
-
-All the above seven component device drivers depend on the 'core'
-component driver, which is number one in the patch series.
-
-This driver has been tested on a Samsung SMDK6410 connected to a Dialog
-DA9058 Evaluation Board via one GPIO and a 3-wire I2C connection.
-
-All the components can be builtin to the kernel or compiled as modules.
-As far as I can tell, all the latest APIs both for the core driver and
-all the component drivers have been adhered to, but if I have missed
-something please let me know.
-
-Many thanks,
-Anthony Olech, Dialog Semiconductor Ltd.
-
-Tony Olech (at Home) (7):
-  DA9058 MFD core driver
-  DA9058 ADC driver
-  DA9058 ONKEY driver
-  DA9058 RTC driver
-  DA9058 GPIO driver
-  DA9058 HWMON driver
-  DA9058 REGULATOR driver
-
- Documentation/hwmon/da9058           |   38 ++
- drivers/gpio/Kconfig                 |   12 +
- drivers/gpio/Makefile                |    1 +
- drivers/gpio/gpio-da9058.c           |  377 ++++++++++++++
- drivers/hwmon/Kconfig                |   10 +
- drivers/hwmon/Makefile               |    3 +-
- drivers/hwmon/da9058-hwmon.c         |  341 +++++++++++++
- drivers/iio/adc/Kconfig              |   14 +
- drivers/iio/adc/Makefile             |    1 +
- drivers/iio/adc/da9058-adc.c         |  397 +++++++++++++++
- drivers/input/misc/Kconfig           |   10 +
- drivers/input/misc/Makefile          |    1 +
- drivers/input/misc/da9058_onkey.c    |  177 +++++++
- drivers/mfd/Kconfig                  |   18 +
- drivers/mfd/Makefile                 |    3 +
- drivers/mfd/da9058-core.c            |   74 +++
- drivers/mfd/da9058-i2c.c             |   97 ++++
- drivers/mfd/da9058-info.c            |  929 ++++++++++++++++++++++++++++++++++
- drivers/mfd/da9058-irq.c             |   57 +++
- drivers/regulator/Kconfig            |   11 +
- drivers/regulator/Makefile           |    1 +
- drivers/regulator/da9058-regulator.c |  228 +++++++++
- drivers/rtc/Kconfig                  |   10 +
- drivers/rtc/Makefile                 |    1 +
- drivers/rtc/rtc-da9058.c             |  458 +++++++++++++++++
- include/linux/mfd/da9058/bat.h       |   33 ++
- include/linux/mfd/da9058/codec.h     |   22 +
- include/linux/mfd/da9058/conf.h      |   22 +
- include/linux/mfd/da9058/core.h      |   66 +++
- include/linux/mfd/da9058/gpio.h      |   19 +
- include/linux/mfd/da9058/hwmon.h     |   33 ++
- include/linux/mfd/da9058/i2c.h       |   22 +
- include/linux/mfd/da9058/irq.h       |   50 ++
- include/linux/mfd/da9058/onkey.h     |   17 +
- include/linux/mfd/da9058/pdata.h     |   30 ++
- include/linux/mfd/da9058/registers.h |  480 ++++++++++++++++++
- include/linux/mfd/da9058/regulator.h |   33 ++
- include/linux/mfd/da9058/rtc.h       |   17 +
- 38 files changed, 4112 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/hwmon/da9058
- create mode 100644 drivers/gpio/gpio-da9058.c
- create mode 100644 drivers/hwmon/da9058-hwmon.c
- create mode 100644 drivers/iio/adc/da9058-adc.c
- create mode 100644 drivers/input/misc/da9058_onkey.c
- create mode 100644 drivers/mfd/da9058-core.c
- create mode 100644 drivers/mfd/da9058-i2c.c
- create mode 100644 drivers/mfd/da9058-info.c
- create mode 100644 drivers/mfd/da9058-irq.c
- create mode 100644 drivers/regulator/da9058-regulator.c
+Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+---
+ drivers/rtc/Kconfig      |   10 +
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-da9058.c |  458 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 469 insertions(+)
  create mode 100644 drivers/rtc/rtc-da9058.c
- create mode 100644 include/linux/mfd/da9058/bat.h
- create mode 100644 include/linux/mfd/da9058/codec.h
- create mode 100644 include/linux/mfd/da9058/conf.h
- create mode 100644 include/linux/mfd/da9058/core.h
- create mode 100644 include/linux/mfd/da9058/gpio.h
- create mode 100644 include/linux/mfd/da9058/hwmon.h
- create mode 100644 include/linux/mfd/da9058/i2c.h
- create mode 100644 include/linux/mfd/da9058/irq.h
- create mode 100644 include/linux/mfd/da9058/onkey.h
- create mode 100644 include/linux/mfd/da9058/pdata.h
- create mode 100644 include/linux/mfd/da9058/registers.h
- create mode 100644 include/linux/mfd/da9058/regulator.h
- create mode 100644 include/linux/mfd/da9058/rtc.h
 
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 79fbe38..d5acd5b 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -155,6 +155,16 @@ config RTC_DRV_88PM80X
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-88pm80x.
+ 
++config RTC_DRV_DA9058
++	tristate "Dialog DA9058"
++	depends on MFD_DA9058
++	help
++	  If you say yes here you will get support for the
++	  RTC of the Dialog DA9058 PMIC.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-da9058.
++
+ config RTC_DRV_DS1307
+ 	tristate "Dallas/Maxim DS1307/37/38/39/40, ST M41T00, EPSON RX-8025"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index c33f86f..983028f 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -32,6 +32,7 @@ obj-$(CONFIG_RTC_DRV_COH901331)	+= rtc-coh901331.o
+ obj-$(CONFIG_RTC_DRV_DA9052)	+= rtc-da9052.o
+ obj-$(CONFIG_RTC_DRV_DA9055)	+= rtc-da9055.o
+ obj-$(CONFIG_RTC_DRV_DAVINCI)	+= rtc-davinci.o
++obj-$(CONFIG_RTC_DRV_DA9058)	+= rtc-da9058.o
+ obj-$(CONFIG_RTC_DRV_DM355EVM)	+= rtc-dm355evm.o
+ obj-$(CONFIG_RTC_DRV_VRTC)	+= rtc-mrst.o
+ obj-$(CONFIG_RTC_DRV_DS1216)	+= rtc-ds1216.o
+diff --git a/drivers/rtc/rtc-da9058.c b/drivers/rtc/rtc-da9058.c
+new file mode 100644
+index 0000000..ca72f42
+--- /dev/null
++++ b/drivers/rtc/rtc-da9058.c
+@@ -0,0 +1,458 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/rtc.h>
++#include <linux/regmap.h>
++#include <linux/mfd/core.h>
++
++#include <linux/mfd/da9058/version.h>
++#include <linux/mfd/da9058/registers.h>
++#include <linux/mfd/da9058/core.h>
++#include <linux/mfd/da9058/irq.h>
++#include <linux/mfd/da9058/rtc.h>
++
++/*
++ *  Limit values
++ */
++#define DA9058_RTC_SECONDS_LIMIT		59
++#define DA9058_RTC_MINUTES_LIMIT		59
++#define DA9058_RTC_HOURS_LIMIT			23
++#define DA9058_RTC_DAYS_LIMIT			31
++#define DA9058_RTC_MONTHS_LIMIT			12
++#define DA9058_RTC_YEARS_LIMIT			63
++
++struct da9058_rtc {
++	struct da9058 *da9058;
++	struct platform_device *pdev;
++	struct rtc_device *rtc_dev;
++	int alarm_irq;
++	int tick_irq;
++	int alarm_enabled;	/* used over suspend/resume */
++};
++
++static int da9058_rtc_check_param(struct rtc_time *rtc_tm)
++{
++	if ((rtc_tm->tm_sec > DA9058_RTC_SECONDS_LIMIT) || (rtc_tm->tm_sec < 0))
++		return -EIO;
++
++	if ((rtc_tm->tm_min > DA9058_RTC_MINUTES_LIMIT) || (rtc_tm->tm_min < 0))
++		return -EIO;
++
++	if ((rtc_tm->tm_hour > DA9058_RTC_HOURS_LIMIT) || (rtc_tm->tm_hour < 0))
++		return -EIO;
++
++	if ((rtc_tm->tm_mday > DA9058_RTC_DAYS_LIMIT) || (rtc_tm->tm_mday <= 0))
++		return -EIO;
++
++	if ((rtc_tm->tm_mon > DA9058_RTC_MONTHS_LIMIT) || (rtc_tm->tm_mon <= 0))
++		return -EIO;
++
++	if ((rtc_tm->tm_year > DA9058_RTC_YEARS_LIMIT) || (rtc_tm->tm_year < 0))
++		return -EIO;
++
++	return 0;
++}
++
++static int da9058_rtc_readtime(struct device *dev, struct rtc_time *tm)
++{
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++	struct da9058 *da9058 = rtc->da9058;
++	u8 rtc_time[6];
++	int ret;
++
++	ret = da9058_bulk_read(da9058, DA9058_COUNTS_REG, rtc_time, 6);
++	if (ret)
++		return ret;
++
++	tm->tm_sec = rtc_time[0] & DA9058_RTC_SECS_MASK;
++
++	tm->tm_min = rtc_time[1] & DA9058_RTC_MINS_MASK;
++
++	tm->tm_hour = rtc_time[2] & DA9058_RTC_HRS_MASK;
++
++	tm->tm_mday = (rtc_time[3] & DA9058_RTC_DAY_MASK);
++
++	tm->tm_mon = (rtc_time[4] & DA9058_RTC_MTH_MASK);
++
++	tm->tm_year = (rtc_time[5] & DA9058_RTC_YRS_MASK);
++
++	ret = da9058_rtc_check_param(tm);
++
++	if (ret)
++		return ret;
++
++	tm->tm_yday = rtc_year_days(tm->tm_mday, tm->tm_mon,
++						tm->tm_year);
++	tm->tm_year += 100;
++	tm->tm_mon -= 1;
++
++	return 0;
++}
++
++static int da9058_rtc_settime(struct device *dev, struct rtc_time *tm)
++{
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++	struct da9058 *da9058 = rtc->da9058;
++	unsigned int rtc_ctrl, val;
++	u8 rtc_time[6];
++	int ret;
++
++	tm->tm_year -= 100;
++	tm->tm_mon += 1;
++
++	ret = da9058_rtc_check_param(tm);
++	if (ret < 0)
++		return ret;
++
++	ret = da9058_reg_read(da9058, DA9058_COUNTS_REG, &rtc_ctrl);
++	if (ret)
++		return ret;
++	rtc_ctrl &= ~DA9058_RTC_SECS_MASK;
++
++	rtc_time[0] = rtc_ctrl | tm->tm_sec;
++	rtc_time[1] = tm->tm_min;
++	rtc_time[2] = tm->tm_hour;
++	rtc_time[3] = tm->tm_mday;
++	rtc_time[4] = tm->tm_mon;
++	rtc_time[5] = tm->tm_year;
++
++	ret = da9058_bulk_write(da9058, DA9058_COUNTS_REG, rtc_time, 6);
++	if (ret) {
++		dev_dbg(dev, "failed %d to write to RTC\n", ret);
++		return ret;
++	}
++	ret = da9058_reg_read(da9058, DA9058_COUNTY_REG, &val);
++	if (ret)
++		return ret;
++
++	val &= DA9058_COUNTY_MONITOR;
++	if (val)
++		return 0;
++
++	ret = da9058_set_bits(da9058, DA9058_COUNTY_REG, DA9058_COUNTY_MONITOR);
++
++	return ret;
++}
++
++static int da9058_rtc_readalarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++	struct da9058 *da9058 = rtc->da9058;
++	struct rtc_time *tm = &alrm->time;
++	unsigned int val;
++	u8 alm_time[6];
++	int ret;
++
++	ret = da9058_bulk_read(da9058, DA9058_ALARMS_REG, alm_time, 6);
++	if (ret)
++		return ret;
++
++	tm->tm_min = alm_time[0] & DA9058_RTC_ALMSECS_MASK;
++
++	tm->tm_min = alm_time[1] & DA9058_RTC_ALMMINS_MASK;
++
++	tm->tm_hour = alm_time[2] & DA9058_RTC_ALMHRS_MASK;
++
++	tm->tm_mday = alm_time[3] & DA9058_RTC_ALMDAY_MASK;
++
++	tm->tm_mon = alm_time[4] & DA9058_RTC_ALMMTH_MASK;
++
++	tm->tm_year = alm_time[5] & DA9058_RTC_ALMYRS_MASK;
++
++	ret = da9058_rtc_check_param(tm);
++	if (ret < 0)
++		return ret;
++
++	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &val);
++	if (ret)
++		return ret;
++
++	alrm->enabled = val & DA9058_ALARMY_ALARMON;
++
++	tm->tm_year += 100;
++	tm->tm_mon -= 1;
++
++	return 0;
++}
++
++static int da9058_rtc_stop_alarm(struct da9058_rtc *rtc)
++{
++	return da9058_clear_bits(rtc->da9058, DA9058_ALARMY_REG,
++						DA9058_ALARMY_ALARMON);
++}
++
++static int da9058_rtc_start_alarm(struct da9058_rtc *rtc)
++{
++	return da9058_set_bits(rtc->da9058, DA9058_ALARMY_REG,
++						DA9058_ALARMY_ALARMON);
++}
++
++static int da9058_rtc_setalarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++	struct da9058 *da9058 = rtc->da9058;
++	struct rtc_time *tm = &alrm->time;
++	unsigned int rtc_ctrl;
++	u8 alm_time[6];
++	int ret;
++
++	tm->tm_year -= 100;
++	tm->tm_mon += 1;
++
++	ret = da9058_rtc_check_param(tm);
++	if (ret < 0)
++		return ret;
++
++	memset(alm_time, 0, sizeof(alm_time));
++
++	if (tm->tm_sec != -1)
++		alm_time[0] |= tm->tm_sec;
++	else
++		alm_time[0] |= DA9058_RTC_ALMSECS_MASK;
++
++	ret = da9058_reg_read(da9058, DA9058_ALARMMI_REG, &rtc_ctrl);
++	if (ret)
++		return ret;
++	rtc_ctrl &= ~DA9058_RTC_ALMMINS_MASK;
++
++	if (tm->tm_min != -1)
++		alm_time[1] = rtc_ctrl | tm->tm_min;
++	else
++		alm_time[1] = rtc_ctrl | DA9058_RTC_ALMMINS_MASK;
++
++	if (tm->tm_hour != -1)
++		alm_time[2] |= tm->tm_hour;
++	else
++		alm_time[2] |= DA9058_RTC_ALMHRS_MASK;
++
++	if (tm->tm_mday != -1)
++		alm_time[3] |= tm->tm_mday;
++	else
++		alm_time[3] |= DA9058_RTC_ALMDAY_MASK;
++
++	if (tm->tm_mon != -1)
++		alm_time[4] |= tm->tm_mon;
++	else
++		alm_time[4] |= DA9058_RTC_ALMMTH_MASK;
++
++	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &rtc_ctrl);
++	if (ret)
++		return ret;
++
++	rtc_ctrl &= ~DA9058_RTC_ALMYRS_MASK;
++
++	if (tm->tm_year != -1)
++		alm_time[5] = rtc_ctrl | tm->tm_year;
++	else
++		alm_time[5] = rtc_ctrl | DA9058_RTC_ALMYRS_MASK;
++
++	ret = da9058_rtc_stop_alarm(rtc);
++	if (ret < 0)
++		return ret;
++
++	ret = da9058_bulk_write(da9058, DA9058_ALARMS_REG, alm_time, 6);
++	if (ret)
++		return ret;
++
++	if (alrm->enabled)
++		ret = da9058_rtc_start_alarm(rtc);
++
++	return ret;
++}
++
++static int da9058_rtc_alarm_irq_enable(struct device *dev,
++						unsigned int enabled)
++{
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++
++	if (enabled)
++		return da9058_rtc_start_alarm(rtc);
++	else
++		return da9058_rtc_stop_alarm(rtc);
++}
++
++static irqreturn_t da9058_rtc_timer_alarm_handler(int irq, void *data)
++{
++	struct da9058_rtc *rtc = data;
++
++	da9058_rtc_stop_alarm(rtc);
++	rtc_update_irq(rtc->rtc_dev, 1, RTC_IRQF | RTC_AF);
++
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t da9058_rtc_tick_alarm_handler(int irq, void *data)
++{
++	struct da9058_rtc *rtc = data;
++
++	rtc_update_irq(rtc->rtc_dev, 1, RTC_PF | RTC_IRQF);
++
++	return IRQ_HANDLED;
++}
++static int da9058_rtc_proc(struct device *dev, struct seq_file *seq)
++{
++	struct da9058_rtc *rtc = dev_get_drvdata(dev);
++	struct da9058 *da9058 = rtc->da9058;
++	unsigned int rtc_ctrl;
++	int ret;
++
++	ret = da9058_reg_read(da9058, DA9058_ALARMY_REG, &rtc_ctrl);
++
++	seq_printf(seq, rtc_ctrl & DA9058_ALARMY_ALARMON ?
++		"ALRM is running\n" : "ALRM is not running\n");
++
++	return 0;
++}
++
++static const struct rtc_class_ops da9058_rtc_ops = {
++	.read_time = da9058_rtc_readtime,
++	.set_time = da9058_rtc_settime,
++	.read_alarm = da9058_rtc_readalarm,
++	.set_alarm = da9058_rtc_setalarm,
++	.proc = da9058_rtc_proc,
++	.alarm_irq_enable = da9058_rtc_alarm_irq_enable,
++};
++
++static int da9058_rtc_probe(struct platform_device *pdev)
++{
++	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
++	const struct mfd_cell *cell = mfd_get_cell(pdev);
++	struct da9058_rtc_pdata *rtc_pdata;
++	struct da9058_rtc *rtc;
++	int ret;
++
++	if (cell == NULL) {
++		ret = -ENODEV;
++		goto exit;
++	}
++
++	rtc_pdata = cell->platform_data;
++
++	if (rtc_pdata == NULL) {
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	rtc = devm_kzalloc(&pdev->dev, sizeof(struct da9058_rtc), GFP_KERNEL);
++	if (!rtc) {
++		ret = -ENOMEM;
++		goto exit;
++	}
++
++	platform_set_drvdata(pdev, rtc);
++
++	rtc->da9058 = da9058;
++	rtc->pdev = pdev;
++	ret = da9058_clear_bits(da9058, DA9058_WAITCONT_REG,
++						DA9058_WAITCONT_RTCCLOCK);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to set RTC running: %d\n", ret);
++		goto unable_to_init_device;
++	}
++
++	ret = da9058_set_bits(da9058, DA9058_COUNTY_REG, DA9058_COUNTY_MONITOR);
++	if (ret) {
++		dev_err(&pdev->dev, "Failed No gating RTC: %d\n", ret);
++		goto unable_to_init_device;
++	}
++
++	device_init_wakeup(&pdev->dev, 1);
++
++	rtc->rtc_dev = rtc_device_register("da9058", &pdev->dev,
++						&da9058_rtc_ops, THIS_MODULE);
++	if (IS_ERR(rtc->rtc_dev)) {
++		ret = PTR_ERR(rtc->rtc_dev);
++		dev_err(&pdev->dev, "failed to register RTC: %d\n", ret);
++		goto unable_to_register_device;
++	}
++
++	rtc->alarm_irq = platform_get_irq(pdev, 0);
++	if (rtc->alarm_irq < 0) {
++		dev_err(&pdev->dev, "can not get RTC ALARM IRQ error=%d\n",
++				rtc->alarm_irq);
++		ret = -ENODEV;
++		goto failed_to_get_alarm_irq;
++	}
++
++	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
++							rtc->alarm_irq),
++				NULL, da9058_rtc_timer_alarm_handler,
++				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
++				"DA9058 RTC Timer Alarm", rtc);
++
++	if (ret) {
++		dev_err(&pdev->dev,
++			"Failed to get rtc timer alarm IRQ %d: %d\n",
++			rtc->alarm_irq, ret);
++		goto unable_to_setup_timer_irq;
++	}
++
++	rtc->tick_irq = platform_get_irq(pdev, 1);
++	if (rtc->tick_irq < 0) {
++		dev_err(&pdev->dev, "can not get RTC TICK IRQ error=%d\n",
++				rtc->tick_irq);
++		ret = -ENODEV;
++		goto failed_to_get_tick_irq;
++	}
++	ret = request_threaded_irq(da9058_to_virt_irq_num(da9058,
++							rtc->tick_irq),
++				NULL, da9058_rtc_tick_alarm_handler,
++				IRQF_TRIGGER_RISING | IRQF_ONESHOT,
++				"DA9058 RTC Tick Alarm", rtc);
++	if (ret) {
++		dev_err(&pdev->dev,
++			"Failed to get rtc timer alarm IRQ %d: %d\n",
++			DA9058_IRQ_ETICK, ret);
++		goto unable_to_setup_alarm_irq;
++	}
++	goto exit;
++
++failed_to_get_tick_irq:
++unable_to_setup_alarm_irq:
++	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
++failed_to_get_alarm_irq:
++unable_to_setup_timer_irq:
++	rtc_device_unregister(rtc->rtc_dev);
++unable_to_register_device:
++unable_to_init_device:
++	platform_set_drvdata(pdev, NULL);
++exit:
++	return ret;
++}
++
++static int da9058_rtc_remove(struct platform_device *pdev)
++{
++	struct da9058_rtc *rtc = platform_get_drvdata(pdev);
++	struct da9058 *da9058 = rtc->da9058;
++
++	free_irq(da9058_to_virt_irq_num(da9058, rtc->alarm_irq), rtc);
++	free_irq(da9058_to_virt_irq_num(da9058, rtc->tick_irq), rtc);
++
++	rtc_device_unregister(rtc->rtc_dev);
++
++	return 0;
++}
++
++static struct platform_driver da9058_rtc_driver = {
++	.probe = da9058_rtc_probe,
++	.remove = da9058_rtc_remove,
++	.driver = {
++		.name = "da9058-rtc",
++		.owner = THIS_MODULE,
++	},
++};
++
++module_platform_driver(da9058_rtc_driver);
++
++MODULE_DESCRIPTION("Dialog DA9058 PMIC Real Time Clock Driver");
++MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:da9058-rtc");
 -- 
 end-of-patch for NEW DRIVER V4
 
