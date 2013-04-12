@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678Ab3DLPW0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:22:26 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:43390 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab3DLPWZ (ORCPT
+	id S1754047Ab3DLPWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:22:41 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:48149 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab3DLPWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:22:25 -0400
-Message-ID: <516826AC.20006@wwwdotorg.org>
-Date: Fri, 12 Apr 2013 09:22:20 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 12 Apr 2013 11:22:39 -0400
+Date: Fri, 12 Apr 2013 17:22:37 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] mm/hugetlb: gigantic hugetlb page pools shrink
+ supporting
+Message-ID: <20130412152237.GM16732@two.firstfloor.org>
+References: <1365066554-29195-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20130411232907.GC29398@hacker.(null)>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Li Haifeng <omycle@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "pandaboard@googlegroups.com" <pandaboard@googlegroups.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Kexec couldn't reboot capture kernel on pandaboard ES with OMAP4460
-References: <CAFNq8R5FFUyH+JgjoGc5ctgEfiLvxzi7fzawM7+wFX5nEyTv-w@mail.gmail.com> <51658B1A.6090706@wwwdotorg.org> <CAFNq8R6mRJRygfnYvZgwVWOqsrhrjNUYzyZGU0cVsnE30W_xGg@mail.gmail.com> <5166E289.8070104@wwwdotorg.org> <20130412104528.GE12363@mudshark.cambridge.arm.com>
-In-Reply-To: <20130412104528.GE12363@mudshark.cambridge.arm.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411232907.GC29398@hacker.(null)>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 04:45 AM, Will Deacon wrote:
-...
-> Back to the SMP point: Stephen, did you ever get anywhere with that
-> disable_nonboot_cpus thread from a few months back? I'm still keen to get
-> that working, and I *thought* we had a potential solution...
+On Fri, Apr 12, 2013 at 07:29:07AM +0800, Wanpeng Li wrote:
+> Ping Andi,
+> On Thu, Apr 04, 2013 at 05:09:08PM +0800, Wanpeng Li wrote:
+> >order >= MAX_ORDER pages are only allocated at boot stage using the 
+> >bootmem allocator with the "hugepages=xxx" option. These pages are never 
+> >free after boot by default since it would be a one-way street(>= MAX_ORDER
+> >pages cannot be allocated later), but if administrator confirm not to 
+> >use these gigantic pages any more, these pinned pages will waste memory
+> >since other users can't grab free pages from gigantic hugetlb pool even
+> >if OOM, it's not flexible.  The patchset add hugetlb gigantic page pools
+> >shrink supporting. Administrator can enable knob exported in sysctl to
+> >permit to shrink gigantic hugetlb pool.
 
-No, I've been side-tracked on too many other things to follow up on that:-(
+
+I originally didn't allow this because it's only one way and it seemed
+dubious.  I've been recently working on a new patchkit to allocate
+GB pages from CMA. With that freeing actually makes sense, as 
+the pages can be reallocated.
+
+-Andi
