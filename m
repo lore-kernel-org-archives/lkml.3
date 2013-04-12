@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab3DLVwt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 17:52:49 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53077 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796Ab3DLVws (ORCPT
+	id S1752461Ab3DLWAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:00:09 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:39857 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab3DLWAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 17:52:48 -0400
-Message-ID: <5168822C.6040303@wwwdotorg.org>
-Date: Fri, 12 Apr 2013 15:52:44 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 12 Apr 2013 18:00:06 -0400
+Date: Fri, 12 Apr 2013 14:59:56 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org,
+        rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
+        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
+        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
+        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
+        jonas@southpole.se, rkuo@codeaurora.org, schwidefsky@de.ibm.com,
+        liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
+        vgupta@synopsys.com, chris@zankel.net, ysato@users.sourceforge.jp,
+        gxt@mprc.pku.edu.cn, jdike@addtoit.com,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH 3/7] dump_stack: consolidate dump_stack() implementations
+ and unify their behaviors
+Message-ID: <20130412215956.GG11956@mtj.dyndns.org>
+References: <1365016497-32033-1-git-send-email-tj@kernel.org>
+ <1365016497-32033-4-git-send-email-tj@kernel.org>
+ <516870E5.3050901@tilera.com>
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kbuild@vger.kernel.org,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH] Kbuild: Avoid DTB rebuilds if source files are untouched
-References: <1364973141-16354-1-git-send-email-vgupta@synopsys.com> <515BD6B8.1020607@synopsys.com> <515C5652.8070705@wwwdotorg.org> <515D0FFB.4030803@synopsys.com> <515DBA0E.6000604@wwwdotorg.org> <51642158.3070205@synopsys.com> <5167BA67.5080403@synopsys.com>
-In-Reply-To: <5167BA67.5080403@synopsys.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <516870E5.3050901@tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 01:40 AM, Vineet Gupta wrote:
-> On 04/09/2013 07:40 PM, Vineet Gupta wrote:
->> On 04/04/2013 11:06 PM, Stephen Warren wrote:
->>
->>> +.SECONDARY: $(obj)/%.dtb.S
->>> +
->>>  $(obj)/%.dtb.S: $(obj)/%.dtb
->>>         $(call cmd,dt_S_dtb)
->>>
->>> and no longer see make rm'ing the .dtb.S file. So, the .SECONDARY is
->>> behaving as expected, and should fix your problem.
->> Interestingly, if I make the file name explicit, .SECONDARY works for me too.
->>
->> .SECONDARY: $(obj)/angel4.dtb.S
->>
->> http://stackoverflow.com/questions/5426934/why-this-makefile-removes-my-goal
->>
->> Is this a make bug or is it related to when the rule is parsed by make !
->>
->> -Vineet
+Hello,
+
+On Fri, Apr 12, 2013 at 04:39:01PM -0400, Chris Metcalf wrote:
+> On 4/3/2013 3:14 PM, Tejun Heo wrote:
+> > This patch expands the dummy fallback dump_stack() implementation in
+> > lib/dump_stack.c such that it prints out debug information (taken from
+> > x86) and invokes show_stack(NULL, NULL) and drops arch-specific
+> > dump_stack() implementations in all archs except blackfin.  Blackfin's
+> > dump_stack() does something wonky that I don't understand.
 > 
-> Ping ? Anyone know how to resolve this
+> arch/tile has a dump_stack() entry point in assembly (see
+> arch/tile/kernel/entry.S) that passes to _dump_stack(), which passes
+> to dump_stack_regs(), which passes to tile_show_stack().  Similarly,
+> show_stack() passes to tile_show_stack(), which does lots of work to
+> cross into userspace and continue showing the stack if possible,
+> print symbol info for both kernel and userspace, etc.  I don't know
+> if that's all supported fully in Tejun's generic version.
 
-After installing the ARC toolchain (which was a bit painful to track
-down and install...) I reproduced your exact problem. I believe the
-patch below fixes it:
+I see.  In that case, this patchset shouldn't change anything for tile
+as the generic dump_stack() is linked iff arch implementation doesn't
+exist.
 
-diff --git a/arch/arc/boot/dts/Makefile b/arch/arc/boot/dts/Makefile
-index 5776835..2f2cf23 100644
---- a/arch/arc/boot/dts/Makefile
-+++ b/arch/arc/boot/dts/Makefile
-@@ -8,6 +8,8 @@ endif
- obj-y   += $(builtindtb-y).dtb.o
- targets += $(builtindtb-y).dtb
+> Would it make sense for me to look at this after it's merged up into
+> -next and see what tile needs?  Unfortunately I'm taking off for a
+> week's vacation so won't be able to do much until after the 23rd.
 
-+.SECONDARY: $(obj)/$(builtindtb-y).dtb.S
-+
- dtbs:  $(addprefix  $(obj)/, $(builtindtb-y).dtb)
+It'd be nice to get it inline with other archs but I don't think
+updating tile to print the common debug info is a priority, so no
+problem with dealing with it later.
 
- clean-files := *.dtb
+Thanks.
 
+Thanks.
+
+-- 
+tejun
