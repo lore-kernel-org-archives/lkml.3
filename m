@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab3DLVj0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 17:39:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36824 "EHLO mx1.redhat.com"
+	id S1754798Ab3DLVpf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 17:45:35 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37278 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752796Ab3DLVjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 17:39:24 -0400
-Date: Fri, 12 Apr 2013 17:39:22 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: viro@ZenIV.linux.org.uk
-Cc: rbriggs@redhat.com, jjaburek@redhat.com, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix audit_inode call in O_CREAT case of do_last
-Message-ID: <20130412173922.72cf60b4@tlielax.poochiereds.net>
-In-Reply-To: <1365794192-9471-1-git-send-email-jlayton@redhat.com>
-References: <1365794192-9471-1-git-send-email-jlayton@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752719Ab3DLVpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 17:45:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,465,1363158000"; 
+   d="scan'208";a="226630056"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>
+CC: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: RE: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for
+ PREEMPT_RT
+Thread-Topic: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for
+ PREEMPT_RT
+Thread-Index: AQHONuMqTVyUqg8MxEi8983/yrrOVpjTC5gAgAADMYCAABC44A==
+Date: Fri, 12 Apr 2013 21:44:07 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1EA45A63@ORSMSX104.amr.corp.intel.com>
+References: <1365705214.9609.58.camel@gandalf.local.home>
+	 <20130412133118.GC2368@pd.tnic>
+ <1365774163.9609.80.camel@gandalf.local.home>
+In-Reply-To: <1365774163.9609.80.camel@gandalf.local.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3CLjhAr016406
 
-On Fri, 12 Apr 2013 15:16:32 -0400
-Jeff Layton <jlayton@redhat.com> wrote:
+> I'm not (yet). But I just wanted to make sure there wasn't any little
+> subtleties that I might be missing.
 
-> Jiri reported a regression in auditing of open(..., O_CREAT) syscalls.
-> In older kernels, creating a file with open(..., O_CREAT) created
-> audit_name records that looked like this:
-> 
-> type=PATH msg=audit(1360255720.628:64): item=1 name="/abc/foo" inode=138810 dev=fd:00 mode=0100640 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-> type=PATH msg=audit(1360255720.628:64): item=0 name="/abc/" inode=138635 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-> 
-> ...in recent kernels though, they look like this:
-> 
-> type=PATH msg=audit(1360255402.886:12574): item=2 name=(null) inode=264599 dev=fd:00 mode=0100640 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-> type=PATH msg=audit(1360255402.886:12574): item=1 name=(null) inode=264598 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-> type=PATH msg=audit(1360255402.886:12574): item=0 name="/abc/foo" inode=264598 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-> 
-> Richard bisected to determine that the problems started with commit
-> bfcec708, but the log messages have changed with some later
-> audit-related patches.
-> 
-> The problem is that this audit_inode call is passing in the parent of
-> the dentry being opened, but audit_inode is being called with the parent
-> flag false. This causes later audit_inode and audit_inode_child calls to
-> match the wrong entry in the audit_names list.
-> 
-> This patch simply sets the flag to properly indicate that this inode
-> represents the parent. With this, the audit_names entries are back to
-> looking like they did before.
-> 
-> Cc: <stable@vger.kernel.org> # v3.7+
-> Cc: Richard Guy Briggs <rbriggs@redhat.com>
-> Reported-by: Jiri Jaburek <jjaburek@redhat.com>
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/namei.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 57ae9c8..85e40d1 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -2740,7 +2740,7 @@ static int do_last(struct nameidata *nd, struct path *path,
->  		if (error)
->  			return error;
->  
-> -		audit_inode(name, dir, 0);
-> +		audit_inode(name, dir, LOOKUP_PARENT);
->  		error = -EISDIR;
->  		/* trailing slashes? */
->  		if (nd->last.name[nd->last.len])
+I don't think there are any hidden subtleties ... if there are then they are hidden from me too.
 
-BTW, there are a couple of other calls to audit_inode earlier in this
-function (the LAST_BIND and LAST_ROOT cases). I suspect those also need
-similar treatment, but I've left them alone for now since I didn't have
-a clear way to verify it. Let me know if you'd like me to respin this
-with those changed as well.
-
-Thanks,
--- 
-Jeff Layton <jlayton@redhat.com>
+-Tony
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
