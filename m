@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab3DLNnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 09:43:55 -0400
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:38331 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab3DLNny (ORCPT
+	id S1756003Ab3DLNn4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 09:43:56 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:41707 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754949Ab3DLNnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 09:43:54 -0400
+	Fri, 12 Apr 2013 09:43:55 -0400
+Message-ID: <51680F97.3020407@hitachi.com>
+Date: Fri, 12 Apr 2013 22:43:51 +0900
+From: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <201304121248.54005.arnd@arndb.de>
-References: <1365669779-14953-1-git-send-email-linus.walleij@stericsson.com>
-	<201304121008.51300.arnd@arndb.de>
-	<CACRpkdatbhais8gP3rTRkz0Y1v816Uz8KL6ZhDsh+ByfbjXuxg@mail.gmail.com>
-	<201304121248.54005.arnd@arndb.de>
-Date: Fri, 12 Apr 2013 15:43:52 +0200
-Message-ID: <CACRpkdb=HzwNrhyAn5wTw9Rb0Gtoxqau5hh7_2BP8hipaqoLow@mail.gmail.com>
-Subject: Re: [PATCH] MFD: ab8500: pass AB8500 IRQ to debugfs code by resource
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Rickard ANDERSSON <rickard.andersson@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ric Mason <ric.masonn@gmail.com>
+Cc: Simon Jeons <simon.jeons@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
+ memory error on dirty cache selectable
+References: <51662D5B.3050001@hitachi.com> <516633BB.40307@gmail.com> <5166B1DF.8070504@hitachi.com> <5166B3FE.4000002@gmail.com>
+In-Reply-To: <5166B3FE.4000002@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 12:48 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 12 April 2013, Linus Walleij wrote:
->> On Fri, Apr 12, 2013 at 10:08 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Friday 12 April 2013, Linus Walleij wrote:
+(2013/04/11 22:00), Ric Mason wrote:
+> Hi Mitsuhiro,
+> On 04/11/2013 08:51 PM, Mitsuhiro Tanino wrote:
+>> (2013/04/11 12:53), Simon Jeons wrote:
+>>> One question against mce instead of the patchset. ;-)
+>>>
+>>> When check memory is bad? Before memory access? Is there a process scan it period?
+>> Hi Simon-san,
 >>
->> >> Actually, well, this one IRQ (the one I start to pass) is already
->> >> domain-mapped to the global IRQ numberspace, so that one will
->> >> be correct.
->> >
->> > I don't know if we're talking about the same thing here.
->> >
->> > My point was that passing a domain-mapped IRQ number into mfd_add_devices
->> > with another domain will result in the attempt to map that number into
->> > another domain, which does not work.
+>> Yes, there is a process to scan memory periodically.
 >>
->> Ah, yes you're right ... now I need to find some other way
->> to pass this resource ... hm.
->
-> What is it actually needed for? In the code I'm looking at in linux-next
-> it only gets passed to a function that ignores it.
+>> At Intel Nehalem-EX and CPUs after Nehalem-EX generation, MCA recovery
+>> is supported. MCA recovery provides error detection and isolation
+>> features to work together with OS.
+>> One of the MCA Recovery features is Memory Scrubbing. It periodically
+>> checks memory in the background of OS.
+> 
+> Memory Scrubbing is a kernel thread? Where is the codes of memory scrubbing?
 
-Well that is a __attribute((weak)) function. It is overridden
-by suspend/resume code in the machine to ask the suspend
-code whether the AB8500 woke the system up.
+Hi Ric,
 
-Arguably not such a nice design :-/
+No. One of the MCA Recovery features is Memory Scrubbing.
+And Memory Scrubbing is a hardware feature of Intel CPU.
 
-However that suspend code is being posted to the linux-pm
-mailinglist as we speak, so I don't want to make their life
-miserable by just deleting some hook they're actually using
-for testing.
+OS has a hwpoison feature which is included at mm/memory-failure.c.
+A main function is memory_failure().
 
-Yours,
-Linus Walleij
+If Memory Scrubbing finds a memory error, MCA recovery notifies SRAO error
+into OS and OS handles the SRAO error using hwpoison function.
+
+
+>> If Memory Scrubbing find an uncorrectable error on a memory before
+>> OS accesses the memory bit, MCA recovery notifies SRAO error into OS
+> 
+> It maybe can't find memory error timely since it is sleeping when memory error occur, can this case happened?
+
+Memory Scrubbing seems to be operated periodically but I don't have
+information about how oftern it is executed.
+
+Regards,
+Mitsuhiro Tanino
+
