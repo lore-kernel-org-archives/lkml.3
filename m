@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab3DLPeU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:34:20 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58601 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3DLPeS (ORCPT
+	id S1754193Ab3DLPjG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:39:06 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:65228 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753111Ab3DLPjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:34:18 -0400
-Message-ID: <51682975.1080302@wwwdotorg.org>
-Date: Fri, 12 Apr 2013 09:34:13 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 12 Apr 2013 11:39:04 -0400
+Date: Fri, 12 Apr 2013 08:39:00 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH v2] Introduce Intel RAPL cooling device driver
+Message-ID: <20130412153900.GB25603@kroah.com>
+References: <1365195724-8945-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1365195724-8945-2-git-send-email-jacob.jun.pan@linux.intel.com>
+ <1365197195.2075.23.camel@joe-AO722>
+ <20130405213518.GA5615@kroah.com>
+ <20130412083203.13cf56b0@chromoly>
 MIME-Version: 1.0
-To: Jay Agarwal <jagarwal@nvidia.com>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Krishna Thota <kthota@nvidia.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        Juha Tukkinen <jtukkinen@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Subject: Re: [PATCH 1/3] ARM: tegra: pcie: Add tegra3 support
-References: <1365435688-4179-1-git-send-email-jagarwal@nvidia.com> <51630852.1000107@wwwdotorg.org> <C79B248886DD134989C8FF6B096A91AB91B36FB2FD@BGMAIL01.nvidia.com>
-In-Reply-To: <C79B248886DD134989C8FF6B096A91AB91B36FB2FD@BGMAIL01.nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130412083203.13cf56b0@chromoly>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 08:58 AM, Jay Agarwal wrote:
->>>  	err = regulator_disable(pcie->pex_clk_supply);
->>>  	if (err < 0)
->>> -		dev_err(pcie->dev, "failed to disable pex-clk regulator:
->> %d\n",
->>> +		dev_warn(pcie->dev, "failed to disable pex-clk regulator:
->> %d\n",
->>>  			err);
->>>
->>>  	err = regulator_disable(pcie->vdd_supply);
->>>  	if (err < 0)
->>> -		dev_err(pcie->dev, "failed to disable VDD regulator: %d\n",
->>> +		dev_warn(pcie->dev, "failed to disable VDD regulator:
->> %d\n",
->>>  			err);
->>
->> Please explain why that change is correct. If the regulators only exist on
->> Tegra20, please represent that fact in the SoC data. Regulators must always
->> exist, so enable/disable should never fail due to missing regulators. Actual
->> run-time failures seem like something that really is an error.
->>
-> [>] These regulators are needed for both tegra20 & tegra30. Since we are not returning error here, so changed to dev_warn.
+On Fri, Apr 12, 2013 at 08:32:03AM -0700, Jacob Pan wrote:
+> If so, the reason being I don't know if there is a standard way
+> to a transaction via sysfs where I can commit multiple inputs
+> atomically.
 
-If the regulators are required, then any failure to operate them should
-be an error, hence dev_err() seems correct.
-
-As to why the code doesn't actually return an error? I'm not sure.
-Perhaps that should be fixed with a separate patch, although I don't
-recall exactly where in the code the above excerpt is; if it's in
-remove(), then continuing on without returning an error would be
-appropriate.
+That is by design.
