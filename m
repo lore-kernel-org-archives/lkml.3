@@ -1,137 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab3DLL56 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 07:57:58 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:39573 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab3DLL54 (ORCPT
+	id S1755243Ab3DLMCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 08:02:15 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43489 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753442Ab3DLMCN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 07:57:56 -0400
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Cc: Shawn Guo <shawn.guo@freescale.com>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH v3] clk: add device tree fixed-factor-clock binding support
-Date: Fri, 12 Apr 2013 13:57:44 +0200
-Message-Id: <1365767864-7829-2-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365767864-7829-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1365767864-7829-1-git-send-email-gregory.clement@free-electrons.com>
+	Fri, 12 Apr 2013 08:02:13 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Federico Vaga <federico.vaga@gmail.com>
+Subject: [PATCH] base/core.c: improve comment of the function device_find_child()
+Date: Fri, 12 Apr 2013 13:59:32 +0200
+Message-Id: <1365767972-23727-1-git-send-email-federico.vaga@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for DT "fixed-factor-clock" binding to the common fixed
-factor clock support.
-
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Tested-by: Christian Ruppert <christian.ruppert@abilis.com>
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
 ---
- .../bindings/clock/fixed-factor-clock.txt          |   24 +++++++++++++
- drivers/clk/clk-fixed-factor.c                     |   36 ++++++++++++++++++++
- include/linux/clk-provider.h                       |    2 ++
- 3 files changed, 62 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/fixed-factor-clock.txt
+ drivers/base/core.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/clock/fixed-factor-clock.txt b/Documentation/devicetree/bindings/clock/fixed-factor-clock.txt
-new file mode 100644
-index 0000000..5757f9a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/fixed-factor-clock.txt
-@@ -0,0 +1,24 @@
-+Binding for simple fixed factor rate clock sources.
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible : shall be "fixed-factor-clock".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clock-div: fixed divider.
-+- clock-mult: fixed multiplier.
-+- clocks: parent clock.
-+
-+Optional properties:
-+- clock-output-names : From common clock binding.
-+
-+Example:
-+	clock {
-+		compatible = "fixed-factor-clock";
-+		clocks = <&parentclk>;
-+		#clock-cells = <0>;
-+		div = <2>;
-+		mult = <1>;
-+	};
-diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
-index 1ef271e..9ff7d51 100644
---- a/drivers/clk/clk-fixed-factor.c
-+++ b/drivers/clk/clk-fixed-factor.c
-@@ -11,6 +11,7 @@
- #include <linux/clk-provider.h>
- #include <linux/slab.h>
- #include <linux/err.h>
-+#include <linux/of.h>
- 
- /*
-  * DOC: basic fixed multiplier and divider clock that cannot gate
-@@ -96,3 +97,38 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
- 
- 	return clk;
- }
-+#ifdef CONFIG_OF
-+/**
-+ * of_fixed_factor_clk_setup() - Setup function for simple fixed factor clock
-+ */
-+void __init of_fixed_factor_clk_setup(struct device_node *node)
-+{
-+	struct clk *clk;
-+	const char *clk_name = node->name;
-+	const char *parent_name;
-+	u32 div, mult;
-+
-+	if (of_property_read_u32(node, "clock-div", &div)) {
-+		pr_err("%s Fixed factor clock <%s> must have a clock-div property\n",
-+			__func__, node->name);
-+		return;
-+	}
-+
-+	if (of_property_read_u32(node, "clock-mult", &mult)) {
-+		pr_err("%s Fixed factor clock <%s> must have a clokc-mult property\n",
-+			__func__, node->name);
-+		return;
-+	}
-+
-+	of_property_read_string(node, "clock-output-names", &clk_name);
-+	parent_name = of_clk_get_parent_name(node, 0);
-+
-+	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
-+					mult, div);
-+	if (!IS_ERR(clk))
-+		of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+}
-+EXPORT_SYMBOL_GPL(of_fixed_factor_clk_setup);
-+CLK_OF_DECLARE(fixed_factor_clk, "fixed-factor-clock",
-+		of_fixed_factor_clk_setup);
-+#endif
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 7f197d7..7ea501b 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -325,6 +325,8 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
- 		const char *parent_name, unsigned long flags,
- 		unsigned int mult, unsigned int div);
- 
-+void of_fixed_factor_clk_setup(struct device_node *node);
-+
- /**
-  * clk_register - allocate a new clock, register it and return an opaque cookie
-  * @dev: device that is registering this clock
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 016312437..eb0c6ea 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1372,6 +1372,10 @@ int device_for_each_child(struct device *parent, void *data,
+  * if it does.  If the callback returns non-zero and a reference to the
+  * current device can be obtained, this function will return to the caller
+  * and not iterate over any more devices.
++ *
++ * NOTE: internally, the function does get_device() on the retrieved child.
++ * It is duty of the caller performing a put_device() on the retrieved
++ * child device when the caller finishes to work on it.
+  */
+ struct device *device_find_child(struct device *parent, void *data,
+ 				 int (*match)(struct device *dev, void *data))
 -- 
-1.7.9.5
+1.8.1.4
 
