@@ -1,157 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab3DLLWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 07:22:47 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:53476 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab3DLLWp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 07:22:45 -0400
-X-IronPort-AV: E=Sophos;i="4.87,462,1363132800"; 
-   d="scan'208";a="19052622"
-Message-ID: <5167EE79.7060601@eu.citrix.com>
-Date: Fri, 12 Apr 2013 12:22:33 +0100
-From: George Dunlap <george.dunlap@eu.citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1755066Ab3DLL0W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 07:26:22 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57700 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753650Ab3DLL0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 07:26:21 -0400
+Date: Fri, 12 Apr 2013 12:26:18 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, alsa-devel@alsa-project.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH 18/30] ASoC: samsung: move plat/ headers to
+ local directory
+Message-ID: <20130412112618.GW9243@opensource.wolfsonmicro.com>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+ <1365638712-1028578-19-git-send-email-arnd@arndb.de>
+ <20130411164751.GK9243@opensource.wolfsonmicro.com>
+ <201304111908.42532.arnd@arndb.de>
+ <20130411171938.GS9243@opensource.wolfsonmicro.com>
+ <5167EA36.5080505@metafoo.de>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Konrad Wilk <konrad.wilk@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Cooper <Andrew.Cooper3@citrix.com>
-Subject: Re: [PATCH v3] perf: Check all MSRs before passing hw check
-References: <1365000388-32448-1-git-send-email-george.dunlap@eu.citrix.com>
-In-Reply-To: <1365000388-32448-1-git-send-email-george.dunlap@eu.citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ftt3SnK74BQwCaZF"
+Content-Disposition: inline
+In-Reply-To: <5167EA36.5080505@metafoo.de>
+X-Cookie: Your love life will be... interesting.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any thoughts on this?
 
-Thanks,
-  -George
+--Ftt3SnK74BQwCaZF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On 03/04/13 15:46, George Dunlap wrote:
-> check_hw_exists has a number of checks which go to two exit paths:
-> msr_fail and bios_fail.  Checks classified as msr_fail will cause
-> check_hw_exists() to return false, causing the PMU not to be used;
-> bios_fail checks will only cause a warning to be printed, but will
-> return true.
->
-> The problem is that if there are both msr failures and bios failures,
-> and the routine hits a bios_fail check first, it will exit early and
-> return true, not finishing the rest of the msr checks.  If those msrs
-> are in fact broken, it will cause them to be used erroneously.
->
-> In the case of a Xen PV VM, the guest OS has read access to all the
-> MSRs, but write access is white-listed to supported features.  Writes
-> to unsupported MSRs have no effect.  The PMU MSRs are not (typically)
-> supported, because they are expensive to save and restore on a VM
-> context switch.  One of the "msr_fail" checks is supposed to detect
-> this circumstance (ether for Xen or KVM) and disable the harware PMU.
->
-> However, on one of my AMD boxen, there is (apparently) a broken BIOS
-> which triggers one of the bios_fail checks.  In particular,
-> MSR_K7_EVNTSEL0 has the ARCH_PERFMON_EVENTSEL_ENABLE bit set.  The
-> guest kernel detects this because it has read access to all MSRs, and
-> causes it to skip the rest of the checks and try to use the
-> non-existent hardware PMU.  This minimally causes a lot of useless
-> instruction emulation and Xen console spam; it may cause other issues
-> with the watchdog as well.
->
-> This changset causes check_hw_exists() to go through all of the msr
-> checks, failing and returning false if any of them fail.  This makes
-> sure that a guest running under Xen without a virtual PMU will detect
-> that there is no functioning PMU and not attempt to use it.
->
-> This problem affects kernels as far back as 3.2, and should thus be
-> considered for backport.
->
-> v3:
->   - Save the register and value which failed, and print them once at the end.
-> v2:
->   - Print the warning when the event happens so the reg,val make sense
->   - But print it only for the first such instance
->   - Update changelog to include details of failing system
->
-> Signed-off-by: George Dunlap <george.dunlap@eu.citrix.com>
-> CC: Konrad Wilk <konrad.wilk@oracle.com>
-> CC: Thomas Gleixner <tglx@linutronix.de>
-> CC: "H. Peter Anvin" <hpa@zytor.com>
-> CC: Ingo Molnar <mingo@kernel.org>
-> CC: x86@kernel.org
-> CC: Ian Campbell <ian.campbell@citrix.com>
-> CC: David Vrabel <david.vrabel@citrix.com>
-> CC: Andrew Cooper <andrew.cooper3@citrix.com>
-> ---
->   arch/x86/kernel/cpu/perf_event.c |   30 ++++++++++++++++++------------
->   1 file changed, 18 insertions(+), 12 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index 6774c17..2456bae 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -180,8 +180,9 @@ static void release_pmc_hardware(void) {}
->   
->   static bool check_hw_exists(void)
->   {
-> -	u64 val, val_new = ~0;
-> -	int i, reg, ret = 0;
-> +	u64 val, val_fail, val_new= ~0;
-> +	int i, reg, reg_fail, ret = 0;
-> +	int bios_fail = 0;
->   
->   	/*
->   	 * Check to see if the BIOS enabled any of the counters, if so
-> @@ -192,8 +193,11 @@ static bool check_hw_exists(void)
->   		ret = rdmsrl_safe(reg, &val);
->   		if (ret)
->   			goto msr_fail;
-> -		if (val & ARCH_PERFMON_EVENTSEL_ENABLE)
-> -			goto bios_fail;
-> +		if (val & ARCH_PERFMON_EVENTSEL_ENABLE) {
-> +			bios_fail = 1;
-> +			val_fail = val;
-> +			reg_fail = reg;
-> +		}
->   	}
->   
->   	if (x86_pmu.num_counters_fixed) {
-> @@ -202,8 +206,11 @@ static bool check_hw_exists(void)
->   		if (ret)
->   			goto msr_fail;
->   		for (i = 0; i < x86_pmu.num_counters_fixed; i++) {
-> -			if (val & (0x03 << i*4))
-> -				goto bios_fail;
-> +			if (val & (0x03 << i*4)) {
-> +				bios_fail = 1;
-> +				val_fail = val;
-> +				reg_fail = reg;
-> +			}
->   		}
->   	}
->   
-> @@ -221,14 +228,13 @@ static bool check_hw_exists(void)
->   	if (ret || val != val_new)
->   		goto msr_fail;
->   
-> -	return true;
-> -
-> -bios_fail:
->   	/*
->   	 * We still allow the PMU driver to operate:
-> -	 */
-> -	printk(KERN_CONT "Broken BIOS detected, complain to your hardware vendor.\n");
-> -	printk(KERN_ERR FW_BUG "the BIOS has corrupted hw-PMU resources (MSR %x is %Lx)\n", reg, val);
-> +	 */ 						
-> +	if (bios_fail) {
-> +		printk(KERN_CONT "Broken BIOS detected, complain to your hardware vendor.\n");
-> +		printk(KERN_ERR FW_BUG "the BIOS has corrupted hw-PMU resources (MSR %x is %Lx)\n", reg_fail, val_fail);
-> +	}
->   
->   	return true;
->   
+On Fri, Apr 12, 2013 at 01:04:22PM +0200, Lars-Peter Clausen wrote:
+> On 04/11/2013 07:19 PM, Mark Brown wrote:
 
+> > Hrm, someone killed GTA02 support?  That's sad...  if that's really the
+> > case we could kill the machine driver but not tonight as I'm running
+> > late...
+
+> I think the file was moved, we should pull over the audio relevant GPIO
+> definitions into the ASoC board driver.
+
+Yeah, so I see - Heiko sent a patch fixing this.
+
+--Ftt3SnK74BQwCaZF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRZ+9TAAoJELSic+t+oim9uP8P/i1HOXQ5B8MtbPthMbo6BVVe
+UDbTO4LTWolXJPTtdWpTU55OfGFS+gpQyG81d0n+MXZU036gw3N70aPZJbRLuLn4
+TyTh7zdlTekhN/sRMyOYhM2JdJt/UBmu4i1lRVfh2te1Xlgitqg4N3ZQQLAkvX1n
+F2zGsJt2iF3hT5wvIaAmxDsOpD0s0qupy/SABfcrze/XL0jzDBCuuU+8bCyC74ol
+xZjmDiPMoZSWU64AU9eE84V2lcGEExFYWvbiHb61saHQ8RYrMc8Wew7M7T/3hHJm
+mC83zpvnqCysT0/1+aAbHk8fonBW7czR9JF0j+ebo+Ac3gnADlgVo3YKy/oKrnN1
+i6hwVrg9/KbIK8sq7HMEI16GHwXSqsF1+9GlNCmAxKqrpT3IawXfF4qnFnmk/uwc
+6QOgOpiMc7EhTKtOFvmIkT5tyj0jOiEh02PGetm6ieEqMzbdXuSO/xXiW+2c3TV5
+sEZ3bf7AyqTgaMY30Ql/71N8hYpUGyfSeKvLmjbyCTQA5cFaxmPRYnTDAb044x+d
+DBep/Exd5qDGQ7ooK6nlCeDF4cxGH6T7iWEAPKFsh+IoNZzr57NEifxprjxbpkoZ
+gigfJR5tGpDujl7fs010lmbSKUTJfZWDbXvdGptd5ypYKLsVzJmnxMcyPMVJw7l7
+0h4Dw09bMhf6JZkfGZe8
+=Dh60
+-----END PGP SIGNATURE-----
+
+--Ftt3SnK74BQwCaZF--
