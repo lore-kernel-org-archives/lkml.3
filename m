@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab3DLNoT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 09:44:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18473 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755794Ab3DLNoR (ORCPT
+	id S1756271Ab3DLNuN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 09:50:13 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:33416 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755749Ab3DLNuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 09:44:17 -0400
-X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=P6hlpVgoKeYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ayLHJbDuenQA:10 a=EGXMQeyfTzD_Iz5F8w4A:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365774255.9609.82.camel@gandalf.local.home>
-Subject: Re: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for
- PREEMPT_RT
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Fri, 12 Apr 2013 09:44:15 -0400
-In-Reply-To: <20130412133846.GD2368@pd.tnic>
-References: <1365705214.9609.58.camel@gandalf.local.home>
-	 <20130412133846.GD2368@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Apr 2013 09:50:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <1365532783-27425-3-git-send-email-lee.jones@linaro.org>
+References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org> <1365532783-27425-3-git-send-email-lee.jones@linaro.org>
+From: Rabin Vincent <rabin@rab.in>
+Date: Fri, 12 Apr 2013 15:49:31 +0200
+X-Google-Sender-Auth: aGnVfVJTzehhny2rpCo0e3G18SI
+Message-ID: <CAH+eYFB_fYmCjvh5PXKRhd-FnaWfeu+LtH+q3VywhCk-PYhHVQ@mail.gmail.com>
+Subject: Re: [PATCH 3/8] dmaengine: ste_dma40: Actually write the runtime
+ configuration to registers
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-12 at 15:38 +0200, Borislav Petkov wrote:
+2013/4/9 Lee Jones <lee.jones@linaro.org>:
+> Someone has spent a fair amount of effort writing a runtime configuration
+> changing algorithm for DMA clients. However, the config appears to never
+> actually make it to hardware. In order for the configuration to take hold
+> we need to issue a d40_config_write(), as this is the routine which writes
+> it into the hardware's registers.
 
-> > +static void __mce_notify_work(void)
-> > +{
-> > +	/* Not more than two messages every minute */
-> > +	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
-> > +
-> > +	/* wake processes polling /dev/mcelog */
-> > +	wake_up_interruptible(&mce_chrdev_wait);
-> > +
-> > +	/*
-> > +	 * There is no risk of missing notifications because
-> > +	 * work_pending is always cleared before the function is
-> > +	 * executed.
-> > +	 */
-> 
-> You must be using some tree != mainline because this comment is gone
-> upstream and that whole second hunk below which moves it here doesn't
-> apply.
-> 
+No, it's not.  This function is only for initial configuration which
+should only be written when the channel is allocated.  In fact, by
+calling it here in runtime_config, you are introducing a serious bug:
+other logical channels on the same physical channel will stop because of
+the SSLNK/SDLNK of the physical channel being zeroed.
 
-I forgot to state that I based this off of 3.6-rt, and will be
-backporting it to 3.0-rt as that's the kernel that the bug was reported
-on. But the problem still exists in mainline as well (for -rt).
-
--- Steve
-
-
+The runtime config already makes it the hardware in the existing code,
+via d40_*_cfg().
