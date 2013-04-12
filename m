@@ -1,75 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab3DLQCU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 12:02:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38699 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753459Ab3DLQCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 12:02:18 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
-        Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Benjamin LaHaise <bcrl@kvack.org>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH 09/33] aio: dprintk() -> pr_debug()
-References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
-	<1363883754-27966-10-git-send-email-koverstreet@google.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 12 Apr 2013 12:01:55 -0400
-In-Reply-To: <1363883754-27966-10-git-send-email-koverstreet@google.com> (Kent
-	Overstreet's message of "Thu, 21 Mar 2013 09:35:30 -0700")
-Message-ID: <x49zjx3spos.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1755232Ab3DLQED (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 12:04:03 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:36235 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947Ab3DLQEA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 12:04:00 -0400
+Date: Fri, 12 Apr 2013 17:03:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2] MFD: ab8500: pass AB8500 IRQ to debugfs code by
+ resource
+Message-ID: <20130412160353.GA18459@gmail.com>
+References: <1365778929-27168-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1365778929-27168-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Overstreet <koverstreet@google.com> writes:
+Code looks good.
 
-> Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> Cc: Zach Brown <zab@redhat.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Mark Fasheh <mfasheh@suse.com>
-> Cc: Joel Becker <jlbec@evilplan.org>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Asai Thambi S P <asamymuthupa@micron.com>
-> Cc: Selvan Mani <smani@micron.com>
-> Cc: Sam Bradshaw <sbradshaw@micron.com>
-> Cc: Jeff Moyer <jmoyer@redhat.com>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Benjamin LaHaise <bcrl@kvack.org>
-> Cc: Theodore Ts'o <tytso@mit.edu>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Feel free to add my Ack or whathaveyou, after you've fixed-up the typos.
+
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> The AB8500 debug code which was merged in parallell with the
+
+Typo
+
+> multiplatform work incidentally introduced a new instance using
+> the <mach/irqs.h> header which is now deleted, causing this
+> build regression:
+> 
+> drivers/mfd/ab8500-debugfs.c:95:23:
+> fatal error: mach/irqs.h: No such file or directory
+> compilation terminated.
+> make[4]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
+> 
+> The code most certainly never worked with device tree either
+> since that does not rely on this kind of hard-coded interrupt
+> numbers.
+> 
+> Fix the problem at the root by passing it as a named resource
+> from the ab8500-core driver. Use an untyped resource to
+> stop the MFD core from remapping this IRQ relative to the
+> AB8500 irqdomain.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > ---
->  fs/aio.c | 57 ++++++++++++++++++++++++---------------------------------
->  1 file changed, 24 insertions(+), 33 deletions(-)
->
-> diff --git a/fs/aio.c b/fs/aio.c
-> index b3b61d1..2637555 100644
-> --- a/fs/aio.c
-> +++ b/fs/aio.c
-> @@ -8,6 +8,8 @@
->   *
->   *	See ../COPYING for licensing terms.
->   */
-> +#define pr_fmt(fmt) "%s: " fmt, __func__
+> ChangeLog v1->v2:
+> - Pass an untyped resource to avoid problems due to IRQ
+>   remapping.
+> 
+> Sam this would have to go into the v3.10-targetted stuff...
+> Either immediately before you send it upstream or as a fixup.
+> ---
+>  drivers/mfd/ab8500-core.c    | 15 +++++++++++++++
+>  drivers/mfd/ab8500-debugfs.c | 16 ++++++++++++----
+>  2 files changed, 27 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+> index 8e8a016..65cd46b 100644
+> --- a/drivers/mfd/ab8500-core.c
+> +++ b/drivers/mfd/ab8500-core.c
+> @@ -868,6 +868,15 @@ static struct resource ab8500_chargalg_resources[] = {};
+>  #ifdef CONFIG_DEBUG_FS
+>  static struct resource ab8500_debug_resources[] = {
+>  	{
+> +		.name	= "IRQ_AB8500",
+> +		/*
+> +		 * Number will be filled in. NOTE: this is deliberately
+> +		 * not flagged as an IRQ in ordet to avoid remapping using
+
+typo
+
+> +		 * the irqdomain in the MFD core, so that this IRQ passes
+> +		 * unremapped to the debug code.
+> +		 */
+> +	},
+> +	{
+>  		.name	= "IRQ_FIRST",
+>  		.start	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
+>  		.end	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
+> @@ -1712,6 +1721,12 @@ static int ab8500_probe(struct platform_device *pdev)
+>  	if (ret)
+>  		return ret;
+>  
+> +#if CONFIG_DEBUG_FS
+> +	/* Pass to debugfs */
+> +	ab8500_debug_resources[0].start = ab8500->irq;
+> +	ab8500_debug_resources[0].end = ab8500->irq;
+> +#endif
 > +
+>  	if (is_ab9540(ab8500))
+>  		ret = mfd_add_devices(ab8500->dev, 0, ab9540_devs,
+>  				ARRAY_SIZE(ab9540_devs), NULL,
+> diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
+> index b88bbbc..37b7ce4 100644
+> --- a/drivers/mfd/ab8500-debugfs.c
+> +++ b/drivers/mfd/ab8500-debugfs.c
+> @@ -91,12 +91,10 @@
+>  #include <linux/ctype.h>
+>  #endif
+>  
+> -/* TODO: this file should not reference IRQ_DB8500_AB8500! */
+> -#include <mach/irqs.h>
+> -
+>  static u32 debug_bank;
+>  static u32 debug_address;
+>  
+> +static int irq_ab8500;
+>  static int irq_first;
+>  static int irq_last;
+>  static u32 *irq_count;
+> @@ -1589,7 +1587,7 @@ void ab8500_debug_register_interrupt(int line)
+>  {
+>  	if (line < num_interrupt_lines) {
+>  		num_interrupts[line]++;
+> -		if (suspend_test_wake_cause_interrupt_is_mine(IRQ_DB8500_AB8500))
+> +		if (suspend_test_wake_cause_interrupt_is_mine(irq_ab8500))
+>  			num_wake_interrupts[line]++;
+>  	}
+>  }
+> @@ -2941,6 +2939,7 @@ static int ab8500_debug_probe(struct platform_device *plf)
+>  	struct dentry *file;
+>  	int ret = -ENOMEM;
+>  	struct ab8500 *ab8500;
+> +	struct resource *res;
+>  	debug_bank = AB8500_MISC;
+>  	debug_address = AB8500_REV_REG & 0x00FF;
+>  
+> @@ -2959,6 +2958,15 @@ static int ab8500_debug_probe(struct platform_device *plf)
+>  	if (!event_name)
+>  		goto out_freedev_attr;
+>  
+> +	res = platform_get_resource_byname(plf, 0, "IRQ_AB8500");
+> +	if (!res) {
+> +		dev_err(&plf->dev, "AB8500 irq not found, err %d\n",
+> +			irq_first);
+> +		ret = -ENXIO;
+> +		goto out_freeevent_name;
+> +	}
+> +	irq_ab8500 = res->start;
+> +
+>  	irq_first = platform_get_irq_byname(plf, "IRQ_FIRST");
+>  	if (irq_first < 0) {
+>  		dev_err(&plf->dev, "First irq not found, err %d\n",
 
-Curious, this isn't used anywhere.
-
-Other than that:
-
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
