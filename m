@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab3DLUbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 16:31:51 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:52541 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755506Ab3DLUbu (ORCPT
+	id S1756714Ab3DLUhW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 16:37:22 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:60900 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755542Ab3DLUhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 16:31:50 -0400
-Date: Fri, 12 Apr 2013 13:31:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: D M German <dmg@uvic.ca>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: helping with tracking commits across repos
-Message-ID: <20130412203146.GA31283@kroah.com>
-References: <87r4ifxzwu.fsf@mn.cs.uvic.ca>
+	Fri, 12 Apr 2013 16:37:20 -0400
+Message-ID: <5168707E.6040304@tilera.com>
+Date: Fri, 12 Apr 2013 16:37:18 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4ifxzwu.fsf@mn.cs.uvic.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <mingo@redhat.com>, <x86@kernel.org>,
+        <rth@twiddle.net>, <linux@arm.linux.org.uk>, <msalter@redhat.com>,
+        <starvik@axis.com>, <dhowells@redhat.com>, <tony.luck@intel.com>,
+        <benh@kernel.crashing.org>, <takata@linux-m32r.org>,
+        <geert@linux-m68k.org>, <james.hogan@imgtec.com>, <monstr@monstr.eu>,
+        <ralf@linux-mips.org>, <jonas@southpole.se>, <rkuo@codeaurora.org>,
+        <schwidefsky@de.ibm.com>, <liqin.chen@sunplusct.com>,
+        <davem@davemloft.net>, <lethal@linux-sh.org>, <vgupta@synopsys.com>,
+        <chris@zankel.net>, <ysato@users.sourceforge.jp>,
+        <gxt@mprc.pku.edu.cn>, <jdike@addtoit.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH 6/7] dump_stack: unify debug information printed by show_regs()
+References: <1365016497-32033-1-git-send-email-tj@kernel.org> <1365016497-32033-7-git-send-email-tj@kernel.org>
+In-Reply-To: <1365016497-32033-7-git-send-email-tj@kernel.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 01:22:09PM -0700, D M German wrote:
-> 
-> Hi Everybody,
-> 
-> I am professor of computer science at the University of Victoria
-> (Canada).
-> 
-> During the last year and a half, we have been trying to track the
-> commits as they move in the entire linux git repos ecosystem. We have
-> amassed a good amount of data that tell us for every commit (and in fact
-> for every unique patch inside a commit) where it has been and whether it
-> has reached linus or not ---or any other repository, as a matter of
-> fact.
-> 
-> please look at the following URLs:
-> 
-> http://o.cs.uvic.ca:20810/perl/cid.pl?cid=9753dfe19a85e7e45a34a56f4cb2048bb4f50e27
-> 
-> http://o.cs.uvic.ca:20810/perl/cid.pl?cid=55345fb9ff68e2e5c0259c814542e72aec972c02
-> 
-> or
-> 
-> http://o.cs.uvic.ca:20810/perl/cid.pl?cid=e59bcdae87ec116dde25da6d725f79fefb253693
-> 
-> it will give you an idea of the data we have. You can also track other
-> commits using the input box, if you are interested.
+On 4/3/2013 3:14 PM, Tejun Heo wrote:
+> show_regs() is inherently arch-dependent but it does make sense to
+> print generic debug information and some archs already do albeit in
+> slightly different forms.  This patch introduces a generic function to
+> print debug information from show_regs() so that different archs print
+> out the same information and it's much easier to modify what's
+> printed.
+>
+> show_regs_print_info() prints out the same debug info as dump_stack()
+> does plus task and thread_info pointers.
+>
+> * Archs which didn't print debug info now do.
+>
+>   alpha, arc, blackfin, c6x, cris, frv, h8300, hexagon, ia64, m32r,
+>   metag, microblaze, mn10300, openrisc, parisc, score, sh64, sparc,
+>   um, xtensa
+>
+> * Already prints debug info.  Replaced with show_regs_print_info().
+>   The printed information is superset of what used to be there.
+>
+>   arm, arm64, avr32, mips, powerpc, sh32, tile, unicore32, x86
 
-Very interesting, thanks for the links.
+Acked-by: Chris Metcalf <cmetcalf@tilera.com> [for tile]
 
-> I wonder if this information is of use to any of you. If you have
-> specific needs on how you think this info (and some more we have) can be
-> of use, please let me know.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-For stable releases, I can't think of anything, other than the tracking
-of commits from a stable tree into a distro tree, as you do show
-happening above into the openSUSE kernel, which is really nice.
-
-But, for the linux-next stuff, that could be very interesting.  We
-always like seeing what commits in a -rc1 release did NOT previously
-show up in linux-next.  Stephen has some tools on how to do this, it
-would be interesting to see if your tools could do something like that
-to track down the "rouge" commits that don't get community testing.
-
-> By the way, I'll be at the Linux Collaboration Summit next week (I am
-> involved with the development of SPDX). If any of you is interested to
-> meet, please let me know,
-
-I'll be there as well, if you want to talk about this in person, just
-grab me if you see me around.
-
-thanks,
-
-greg k-h
