@@ -1,79 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab3DLQSf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 12:18:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53811 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab3DLQSc (ORCPT
+	id S1754637Ab3DLQWh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 12:22:37 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:38023 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267Ab3DLQWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 12:18:32 -0400
-Date: Fri, 12 Apr 2013 17:18:28 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Jonghwan Choi <jhbird.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "'Steven Whitehouse'" <swhiteho@redhat.com>
-Subject: Re: [PATCH 3.8-stable] GFS2: Fix unlock of fcntl locks during
- withdrawn state
-Message-ID: <20130412161828.GA18956@hercules>
-References: <000601ce3659$042adbf0$0c8093d0$%choi@samsung.com>
+	Fri, 12 Apr 2013 12:22:36 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: linux-kernel@vger.kernel.org, trivial@kernel.org, linux@roeck-us.net,
+        khali@linux-fr.org, lm-sensors@lm-sensors.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] documentation: hwmon: Fix typo in documentation/hwmon
+Date: Sat, 13 Apr 2013 01:22:11 +0900
+Message-Id: <1365783731-17253-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000601ce3659$042adbf0$0c8093d0$%choi@samsung.com>
+Content-Type: text/plain; charset=y
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 11:05:18AM +0900, Jonghwan Choi wrote:
-> This patch looks like it should be in the 3.8-stable tree, should we apply
-> it?
+Correct spelling typo in Documentation/hwmon
 
-I believe this is also applicable to the 3.5 kernel.  Queuing it
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ Documentation/hwmon/adt7410 | 2 +-
+ Documentation/hwmon/sht15   | 2 +-
+ Documentation/hwmon/zl6100  | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-Cheers,
---
-Luis
+diff --git a/Documentation/hwmon/adt7410 b/Documentation/hwmon/adt7410
+index 58150c4..bb6a4f3 100644
+--- a/Documentation/hwmon/adt7410
++++ b/Documentation/hwmon/adt7410
+@@ -27,7 +27,7 @@ temperature set point has been exceeded. Both pins can be set up with a common
+ hysteresis of 0°C - 15°C and a fault queue, ranging from 1 to 4 events. Both
+ pins can individually set to be active-low or active-high, while the whole
+ device can either run in comparator mode or interrupt mode. The ADT7410
+-supports continous temperature sampling, as well as sampling one temperature
++supports continuous temperature sampling, as well as sampling one temperature
+ value per second or even justget one sample on demand for power saving.
+ Besides, it can completely power down its ADC, if power management is
+ required.
+diff --git a/Documentation/hwmon/sht15 b/Documentation/hwmon/sht15
+index 02850bd..778987d 100644
+--- a/Documentation/hwmon/sht15
++++ b/Documentation/hwmon/sht15
+@@ -40,7 +40,7 @@ bits for humidity, or 12 bits for temperature and 8 bits for humidity.
+ The humidity calibration coefficients are programmed into an OTP memory on the
+ chip. These coefficients are used to internally calibrate the signals from the
+ sensors. Disabling the reload of those coefficients allows saving 10ms for each
+-measurement and decrease power consumption, while loosing on precision.
++measurement and decrease power consumption, while losing on precision.
+ 
+ Some options may be set directly in the sht15_platform_data structure
+ or via sysfs attributes.
+diff --git a/Documentation/hwmon/zl6100 b/Documentation/hwmon/zl6100
+index 756b57c..33908a4 100644
+--- a/Documentation/hwmon/zl6100
++++ b/Documentation/hwmon/zl6100
+@@ -125,7 +125,7 @@ in2_label		"vmon"
+ in2_input		Measured voltage on VMON (ZL2004) or VDRV (ZL9101M,
+ 			ZL9117M) pin. Reported voltage is 16x the voltage on the
+ 			pin (adjusted internally by the chip).
+-in2_lcrit		Critical minumum VMON/VDRV Voltage.
++in2_lcrit		Critical minimum VMON/VDRV Voltage.
+ in2_crit		Critical maximum VMON/VDRV voltage.
+ in2_lcrit_alarm		VMON/VDRV voltage critical low alarm.
+ in2_crit_alarm		VMON/VDRV voltage critical high alarm.
+-- 
+1.8.2.1.342.gfa7285d
 
-> 
-> ------------------
-> 
-> From: "Steven Whitehouse <swhiteho@redhat.com>"
-> 
-> commit c2952d202f710d326ac36a8ea6bd216b20615ec8 upstream
-> 
-> When withdraw occurs, we need to continue to allow unlocks of fcntl
-> locks to occur, however these will only be local, since the node has
-> withdrawn from the cluster. This prevents triggering a VFS level
-> bug trap due to locks remaining when a file is closed.
-> 
-> Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> ---
->  fs/gfs2/file.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-> index 991ab2d..7af426b 100644
-> --- a/fs/gfs2/file.c
-> +++ b/fs/gfs2/file.c
-> @@ -924,8 +924,11 @@ static int gfs2_lock(struct file *file, int cmd, struct
-> file_lock *fl)
->  		cmd = F_SETLK;
->  		fl->fl_type = F_UNLCK;
->  	}
-> -	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags)))
-> +	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags))) {
-> +		if (fl->fl_type == F_UNLCK)
-> +			posix_lock_file_wait(file, fl);
->  		return -EIO;
-> +	}
->  	if (IS_GETLK(cmd))
->  		return dlm_posix_get(ls->ls_dlm, ip->i_no_addr, file, fl);
->  	else if (fl->fl_type == F_UNLCK)
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
