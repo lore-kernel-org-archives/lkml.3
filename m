@@ -1,69 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab3DLLHK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 07:07:10 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:4531 "EHLO SMTP02.CITRIX.COM"
+	id S1753887Ab3DLLIL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 07:08:11 -0400
+Received: from mout.gmx.net ([212.227.15.19]:62430 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752934Ab3DLLHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 07:07:06 -0400
-X-IronPort-AV: E=Sophos;i="4.87,462,1363132800"; 
-   d="scan'208";a="18153228"
-Date: Fri, 12 Apr 2013 11:58:21 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Will Deacon <will.deacon@arm.com>
-CC: Rob Herring <robherring2@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Arnd Bergmann <arnd@arndb.de>,
+	id S1753037Ab3DLLII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 07:08:08 -0400
+X-Authenticated: #9008106
+X-Provags-ID: V01U2FsdGVkX1/fSzs+bYbfT3dVWzfumYoCIKRcINElXdwBxKbohm
+	Hln+pPn6X0ECjX
+Date: Fri, 12 Apr 2013 13:09:35 +0200
+From: Michael Brunner <mibru@gmx.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Kevin Strasser <kevin.strasser@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/4 v6] arm: introduce psci_smp_ops and use them on Xen
-In-Reply-To: <20130412085748.GC12363@mudshark.cambridge.arm.com>
-Message-ID: <alpine.DEB.2.02.1304121152310.7254@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <alpine.DEB.2.02.1304081102500.5353@kaball.uk.xensource.com> <20130411082519.GD31465@quad.lixom.net> <51671A39.6090105@gmail.com> <20130412085748.GC12363@mudshark.cambridge.arm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+        Michael Brunner <michael.brunner@kontron.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Ben Dooks <ben-linux@fluff.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        Darren Hart <dvhart@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/4] gpio: Kontron PLD gpio driver
+Message-ID: <20130412130936.3f428cc9@hyperion>
+In-Reply-To: <CACRpkdaU-QT-VBiG8i5XreEP-DvTosHeptUo+5vdmSyi0=uWTw@mail.gmail.com>
+References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
+	<1365441321-21952-3-git-send-email-kevin.strasser@linux.intel.com>
+	<CACRpkdaU-QT-VBiG8i5XreEP-DvTosHeptUo+5vdmSyi0=uWTw@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Apr 2013, Will Deacon wrote:
-> On Thu, Apr 11, 2013 at 09:16:57PM +0100, Rob Herring wrote:
-> > On 04/11/2013 03:25 AM, Olof Johansson wrote:
-> > > On Mon, Apr 08, 2013 at 12:05:17PM +0100, Stefano Stabellini wrote:
-> > >> Arnd, Olof,
-> > >> do you have any thoughts on this series?
-> > >> Would you be happy to carry it in the arm-soc tree?
-> > >>
-> > >> The last patch, "xen/arm: introduce xen_early_init, use PSCI on xen" has
-> > >> a (small) dependency on this series:
-> > >>
-> > >> http://marc.info/?l=linux-kernel&m=136430893610688&w=2
-> > >>
-> > >> would you be OK with taking that one too, or should that go through the
-> > >> Xen tree?
-> > > 
-> > > I think it'd make sense to get Russell to ack the changes to the core ARM code.
-> > > We can merge the series through arm-soc, or he can take them, whatever is
-> > > easiest for everybody.
-> > > 
-> > > Given the dependencies on the second branch it might be easier to merge
-> > > through Russell's tree.
-> > 
-> > I'm also dependent on the 1st patch for converting highbank to use PSCI
-> > and am just waiting on a stable branch to base it on. I believe Russell
-> > said he is offline for the next week.
-> 
-> By the first patch, do you just mean 6/6 in that series ("[RFC] arm: use PSCI if
-> available"), or do you have dependencies on others in that series too?
- 
-FYI in few days, as soon as I am back from vacation, I am planning on
-sending out a single patch series to avoid further confusions. I'll also
-include the new version of the smp_init patch, as requested by Nicolas.
+Hi Linus,
 
-Of course we'll still need all the acks from Russell.
+As this code is from me I will comment on your review.
+
+On Wed, 10 Apr 2013 22:45:51 +0200
+Linus Walleij <linus.walleij@linaro.org> wrote:
+(...)
+> Trying to do some real review...
+> 
+> (...)  
+> > +++ b/drivers/gpio/gpio-kempld.c
+> > +#include <linux/acpi.h>  
+> 
+> Is this used?  
+
+Actually not, this can be removed.
+
+> > +#include <linux/platform_device.h>
+> > +#include <linux/gpio.h>
+> > +#include <linux/mfd/kempld.h>
+> > +#include <linux/seq_file.h>
+> > +
+> > +#include "gpio-kempld.h"
+> > +
+> > +static int gpiobase = -1;
+> > +static int gpioien = 0x00;
+> > +static int gpioevt_lvl_edge = -1;
+> > +static int gpioevt_low_high = -1;
+> > +static int gpionmien = 0x00;  
+> 
+> (...)
+> 
+> +static int kempld_gpio_to_irq(struct gpio_chip *chip, unsigned
+> offset) +{
+> +       struct kempld_gpio_data *gpio
+> +               = container_of(chip, struct kempld_gpio_data, chip);
+> +       return gpio->irq;
+> +}
+> 
+> I don't understand this *at all* so help me out here.
+> 
+> .gpio_to_irq() should return a *Linux* IRQ number, usually we take
+> the event offset (in this case) and map to a Linux IRQ using the
+> irqdomain helper library. Can you explain how we can be sure that
+> this number (apparently just a read from a register on the device)
+> can be made to correspond to a Linux IRQ?
+> 
+> Also if this thing can generate IRQs, are these one line to the CPU
+> per IRQ really? Don't you need to demux the status register and
+> create a cascades irqchip?
+> 
+> Maybe it's just me not understanding x86 & ACPI so bear with me...  
+
+The chip is connected to the CPU through a serial IRQ line and IRQs
+are managed through the (A)PIC which is configured by the
+firmware. I never saw a difference between Linux and HW IRQ numbers
+for the legacy IRQs (0-15) this chip generates. But I will take
+another look at the IRQ handling of this driver.
+
+> > +static int kempld_gpio_setup_event(struct kempld_gpio_data *gpio)
+> > +{
+> > +       struct kempld_device_data *pld = gpio->pld;
+> > +       struct gpio_chip *chip = &gpio->chip;
+> > +       int irq;
+> > +
+> > +       irq = gpio->irq;
+> > +
+> > +       kempld_get_mutex_set_index(pld, KEMPLD_IRQ_GPIO);
+> > +       irq = kempld_read8(pld, KEMPLD_IRQ_GPIO);
+> > +
+> > +       /* Leave if interrupts are not supported by the GPIO core */
+> > +       if ((irq & 0xf0) == 0xf0)
+> > +               return 0;
+> > +
+> > +       gpio->irq = irq & 0x0f;  
+> 
+> So you read the IRQ from some plug-n-play here, and it's some
+> system-wide IRQ number?  
+
+Correct.
+
+> (...)  
+> > +       if (gpio->irq)
+> > +               chip->to_irq =          kempld_gpio_to_irq;  
+> 
+> So that is this mystery with the IRQs and how they turn into
+> Linux IRQs.
+>   
+> > +module_param(gpiobase, int, 0444);  
+> 
+> Why do you need to be able to configure this?
+> It must be a real usecase, debugging can be done by patching
+> the code.  
+
+This was intended to help developing userspace applications or scripts.
+For this parameter I had in mind that one configures a static
+GPIO base and then maps the GPIOs with the help of the sysfs interface
+without the need to first find out which is the actual GPIO base. If you think this shouldn't be done this way I won't insist
+to keep this parameter.
+
+> > +module_param(gpioien, int, 0444);
+> > +module_param(gpioevt_lvl_edge, int, 0444);
+> > +module_param(gpioevt_low_high, int, 0444);
+> > +module_param(gpionmien, int, 0444);  
+> 
+> Argh how can anyone possibly make this out ... do you really
+> need them or can we get rid of some and rely on autodetect?  
+
+As the chip sits on a computer module that is usually only configured
+generically, it is not possible to auto detect the needed configuration.
+Those parameters are intended to let the developer configure the chip
+without having to touch the driver code.
+You are right anyway, doing it this way might not be the best way. So if
+there is a good way to configure this stuff at runtime by using a
+generic interface I would also prefer this.
+
+> > +MODULE_DESCRIPTION("KEM PLD GPIO Driver");
+> > +MODULE_AUTHOR("Michael Brunner <michael.brunner@kontron.com>");
+> > +MODULE_LICENSE("GPL");
+> > +MODULE_ALIAS("platform:kempld_gpio");
+> > +MODULE_PARM_DESC(gpiobase, "Set GPIO base (default -1=dynamic)");
+> > +MODULE_PARM_DESC(gpioien, "Set GPIO IEN register (default 0x00)");
+> > +MODULE_PARM_DESC(gpioevt_lvl_edge,
+> > +                       "Set GPIO EVT_LVL_EDGE register (default
+> > -1=no change)"); +MODULE_PARM_DESC(gpioevt_low_high,
+> > +                       "Set GPIO EVT_LOW_HIGH register (default
+> > -1=no change)"); +MODULE_PARM_DESC(gpionmien, "Set GPIO NMIEN
+> > register (default 0x00)");  
+> 
+> 
+> So I don't really like that interrupt enablement and edge and low/high
+> is done with module parameters instead of just creating an irqchip and
+> have it implement the operations to do exactly these things at runtime
+> instead.
+> 
+> Again maybe some x86 thing I don't get...  
+
+Possibly not. I am not very familiar with irqchip so far, therefore I
+will have a look at it and check if the whole IRQ handling can be
+ported to this framework.
+
+> > diff --git a/drivers/gpio/gpio-kempld.h
+> > b/drivers/gpio/gpio-kempld.h  
+> (...)  
+> > +struct kempld_gpio_data {
+> > +       struct gpio_chip                chip;
+> > +       int                             irq;
+> > +       struct kempld_device_data       *pld;
+> > +       uint16_t                        mask;  
+> 
+> Just u16?  
+
+The specification allows 16 GPIOs for this device, therefore this seems
+to be the right size. Would it be better to use another type instead?
+
+> > +};  
+> 
+> (...)  
+> > diff --git a/drivers/gpio/gpio-kempld_now1.c
+> > b/drivers/gpio/gpio-kempld_now1.c +#include <linux/io.h>  
+> 
+> Do you use this?  
+
+This can be removed.
+
+> > +#include <linux/slab.h>
+> > +#include <linux/errno.h>
+> > +#include <linux/acpi.h>  
+> 
+> And this?  
+
+linux/slab.h is necessary for kzalloc, but the rest can be removed.
+
+> > +#include <linux/platform_device.h>
+> > +#include <linux/gpio.h>
+> > +#include <linux/mfd/kempld.h>
+> > +#include <linux/seq_file.h>
+> > +
+> > +#include "gpio-kempld.h"  
+> (...)  
+> > +  
+> 
+> Most comments concern the other driver too.
+> 
+> Yours,
+> Linus Walleij  
+
+Thank you for the review!
+
+Best regards,
+  Michael
