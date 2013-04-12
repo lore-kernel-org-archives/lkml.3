@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab3DLBbx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 21:31:53 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:36767 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab3DLBbv (ORCPT
+	id S1753018Ab3DLBbt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 21:31:49 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49253 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409Ab3DLBbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 21:31:51 -0400
+	Thu, 11 Apr 2013 21:31:44 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
@@ -16,134 +16,122 @@ Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Bob Liu <bob.liu@oracle.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH PART2 v2 6/7] staging: zcache/debug: fix coding style
-Date: Fri, 12 Apr 2013 09:31:26 +0800
-Message-Id: <1365730287-16876-7-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH PART2 v2 3/7] staging: ramster/debug: Use an array to initialize/use debugfs attributes
+Date: Fri, 12 Apr 2013 09:31:23 +0800
+Message-Id: <1365730287-16876-4-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1365730287-16876-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1365730287-16876-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041201-6102-0000-0000-0000034CF8BC
+x-cbid: 13041201-3864-0000-0000-000007ADB234
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix coding style issue: ERROR: space prohibited before that '++' (ctx:WxO)
-and line beyond 8 characters.
+Use an array to initialize/use debugfs attributes, it makes them 
+neater as zcache/debug.c does.
 
 Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/debug.h |   95 ++++++++++++++++++++++++++++++++--------
- 1 file changed, 76 insertions(+), 19 deletions(-)
+ drivers/staging/zcache/ramster/debug.c |   68 +++++++++++++++-----------------
+ 1 file changed, 32 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/staging/zcache/debug.h b/drivers/staging/zcache/debug.h
-index ddad92f..8088d28 100644
---- a/drivers/staging/zcache/debug.h
-+++ b/drivers/staging/zcache/debug.h
-@@ -174,26 +174,83 @@ extern ssize_t zcache_writtenback_pages;
- extern ssize_t zcache_outstanding_writeback_pages;
- #endif
+diff --git a/drivers/staging/zcache/ramster/debug.c b/drivers/staging/zcache/ramster/debug.c
+index 76861e4..bf34133 100644
+--- a/drivers/staging/zcache/ramster/debug.c
++++ b/drivers/staging/zcache/ramster/debug.c
+@@ -3,8 +3,6 @@
  
--static inline void inc_zcache_flush_total(void) { zcache_flush_total ++; };
--static inline void inc_zcache_flush_found(void) { zcache_flush_found ++; };
--static inline void inc_zcache_flobj_total(void) { zcache_flobj_total ++; };
--static inline void inc_zcache_flobj_found(void) { zcache_flobj_found ++; };
--static inline void inc_zcache_failed_eph_puts(void) { zcache_failed_eph_puts ++; };
--static inline void inc_zcache_failed_pers_puts(void) { zcache_failed_pers_puts ++; };
--static inline void inc_zcache_failed_getfreepages(void) { zcache_failed_getfreepages ++; };
--static inline void inc_zcache_failed_alloc(void) { zcache_failed_alloc ++; };
--static inline void inc_zcache_put_to_flush(void) { zcache_put_to_flush ++; };
--static inline void inc_zcache_compress_poor(void) { zcache_compress_poor ++; };
--static inline void inc_zcache_mean_compress_poor(void) { zcache_mean_compress_poor ++; };
--static inline void inc_zcache_eph_ate_tail(void) { zcache_eph_ate_tail ++; };
--static inline void inc_zcache_eph_ate_tail_failed(void) { zcache_eph_ate_tail_failed ++; };
--static inline void inc_zcache_pers_ate_eph(void) { zcache_pers_ate_eph ++; };
--static inline void inc_zcache_pers_ate_eph_failed(void) { zcache_pers_ate_eph_failed ++; };
--static inline void inc_zcache_evicted_eph_zpages(unsigned zpages) { zcache_evicted_eph_zpages += zpages; };
--static inline void inc_zcache_evicted_eph_pageframes(void) { zcache_evicted_eph_pageframes ++; };
-+static inline void inc_zcache_flush_total(void)
-+{
-+	zcache_flush_total++;
-+};
-+static inline void inc_zcache_flush_found(void)
-+{
-+	zcache_flush_found++;
-+};
-+static inline void inc_zcache_flobj_total(void)
-+{
-+	zcache_flobj_total++;
-+};
-+static inline void inc_zcache_flobj_found(void)
-+{
-+	zcache_flobj_found++;
-+};
-+static inline void inc_zcache_failed_eph_puts(void)
-+{
-+	zcache_failed_eph_puts++;
-+};
-+static inline void inc_zcache_failed_pers_puts(void)
-+{
-+	zcache_failed_pers_puts++;
-+};
-+static inline void inc_zcache_failed_getfreepages(void)
-+{
-+	zcache_failed_getfreepages++;
-+};
-+static inline void inc_zcache_failed_alloc(void)
-+{
-+	zcache_failed_alloc++;
-+};
-+static inline void inc_zcache_put_to_flush(void)
-+{
-+	zcache_put_to_flush++;
-+};
-+static inline void inc_zcache_compress_poor(void)
-+{
-+	zcache_compress_poor++;
-+};
-+static inline void inc_zcache_mean_compress_poor(void)
-+{
-+	zcache_mean_compress_poor++;
-+};
-+static inline void inc_zcache_eph_ate_tail(void)
-+{
-+	zcache_eph_ate_tail++;
-+};
-+static inline void inc_zcache_eph_ate_tail_failed(void)
-+{
-+	zcache_eph_ate_tail_failed++;
-+};
-+static inline void inc_zcache_pers_ate_eph(void)
-+{
-+	zcache_pers_ate_eph++;
-+};
-+static inline void inc_zcache_pers_ate_eph_failed(void)
-+{
-+	zcache_pers_ate_eph_failed++;
-+};
-+static inline void inc_zcache_evicted_eph_zpages(unsigned zpages)
-+{
-+	zcache_evicted_eph_zpages += zpages;
-+};
-+static inline void inc_zcache_evicted_eph_pageframes(void)
-+{
-+	zcache_evicted_eph_pageframes++;
-+};
+ #ifdef CONFIG_DEBUG_FS
+ #include <linux/debugfs.h>
+-#define zdfs    debugfs_create_size_t
+-#define zdfs64  debugfs_create_u64
  
--static inline void inc_zcache_eph_nonactive_puts_ignored(void) { zcache_eph_nonactive_puts_ignored ++; };
--static inline void inc_zcache_pers_nonactive_puts_ignored(void) { zcache_pers_nonactive_puts_ignored ++; };
-+static inline void inc_zcache_eph_nonactive_puts_ignored(void)
-+{
-+	zcache_eph_nonactive_puts_ignored++;
-+};
-+static inline void inc_zcache_pers_nonactive_puts_ignored(void)
-+{
-+	zcache_pers_nonactive_puts_ignored++;
-+};
+ ssize_t ramster_eph_pages_remoted;
+ ssize_t ramster_pers_pages_remoted;
+@@ -20,48 +18,46 @@ ssize_t ramster_remote_object_flushes_failed;
+ ssize_t ramster_remote_pages_flushed;
+ ssize_t ramster_remote_page_flushes_failed;
  
- int zcache_debugfs_init(void);
++#define ATTR(x)  { .name = #x, .val = &ramster_##x, }
++static struct debug_entry {
++	const char *name;
++	ssize_t *val;
++} attrs[] = {
++	ATTR(eph_pages_remoted),
++	ATTR(pers_pages_remoted),
++	ATTR(eph_pages_remote_failed),
++	ATTR(pers_pages_remote_failed),
++	ATTR(remote_eph_pages_succ_get),
++	ATTR(remote_pers_pages_succ_get),
++	ATTR(remote_eph_pages_unsucc_get),
++	ATTR(remote_pers_pages_unsucc_get),
++	ATTR(pers_pages_remote_nomem),
++	ATTR(remote_objects_flushed),
++	ATTR(remote_pages_flushed),
++	ATTR(remote_object_flushes_failed),
++	ATTR(remote_page_flushes_failed),
++	ATTR(foreign_eph_pages),
++	ATTR(foreign_eph_pages_max),
++	ATTR(foreign_pers_pages),
++	ATTR(foreign_pers_pages_max),
++};
++#undef ATTR
++
+ int __init ramster_debugfs_init(void)
+ {
++	int i;
+ 	struct dentry *root = debugfs_create_dir("ramster", NULL);
+ 	if (root == NULL)
+ 		return -ENXIO;
+ 
+-	zdfs("eph_pages_remoted", S_IRUGO, root, &ramster_eph_pages_remoted);
+-	zdfs("pers_pages_remoted", S_IRUGO, root, &ramster_pers_pages_remoted);
+-	zdfs("eph_pages_remote_failed", S_IRUGO, root,
+-		&ramster_eph_pages_remote_failed);
+-	zdfs("pers_pages_remote_failed", S_IRUGO, root,
+-		&ramster_pers_pages_remote_failed);
+-	zdfs("remote_eph_pages_succ_get", S_IRUGO, root,
+-		&ramster_remote_eph_pages_succ_get);
+-	zdfs("remote_pers_pages_succ_get", S_IRUGO, root,
+-		&ramster_remote_pers_pages_succ_get);
+-	zdfs("remote_eph_pages_unsucc_get", S_IRUGO, root,
+-		&ramster_remote_eph_pages_unsucc_get);
+-	zdfs("remote_pers_pages_unsucc_get", S_IRUGO, root,
+-		&ramster_remote_pers_pages_unsucc_get);
+-	zdfs("pers_pages_remote_nomem", S_IRUGO, root,
+-		&ramster_pers_pages_remote_nomem);
+-	zdfs("remote_objects_flushed", S_IRUGO, root,
+-		&ramster_remote_objects_flushed);
+-	zdfs("remote_pages_flushed", S_IRUGO, root,
+-		&ramster_remote_pages_flushed);
+-	zdfs("remote_object_flushes_failed", S_IRUGO, root,
+-		&ramster_remote_object_flushes_failed);
+-	zdfs("remote_page_flushes_failed", S_IRUGO, root,
+-		&ramster_remote_page_flushes_failed);
+-	zdfs("foreign_eph_pages", S_IRUGO, root,
+-		&ramster_foreign_eph_pages);
+-	zdfs("foreign_eph_pages_max", S_IRUGO, root,
+-		&ramster_foreign_eph_pages_max);
+-	zdfs("foreign_pers_pages", S_IRUGO, root,
+-		&ramster_foreign_pers_pages);
+-	zdfs("foreign_pers_pages_max", S_IRUGO, root,
+-		&ramster_foreign_pers_pages_max);
++	for (i = 0; i < ARRAY_SIZE(attrs); i++)
++		if (!debugfs_create_size_t(attrs[i].name,
++				S_IRUGO, root, attrs[i].val))
++			goto out;
+ 	return 0;
++out:
++	return -ENODEV;
+ }
+-#undef  zdebugfs
+-#undef  zdfs64
  #else
+ static inline int ramster_debugfs_init(void)
+ {
 -- 
 1.7.10.4
 
