@@ -1,117 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753778Ab3DLXTZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:19:25 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:53863 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784Ab3DLXTX (ORCPT
+	id S1753720Ab3DLXX3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:23:29 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:38223 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab3DLXX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:19:23 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing delay from HZ
-Date: Fri, 12 Apr 2013 16:19:13 -0700
-Message-Id: <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130412231846.GA20038@linux.vnet.ibm.com>
- <1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041223-5406-0000-0000-0000076916F5
+	Fri, 12 Apr 2013 19:23:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <1364805775-12396-2-git-send-email-wangyijing@huawei.com>
+References: <1364805775-12396-1-git-send-email-wangyijing@huawei.com> <1364805775-12396-2-git-send-email-wangyijing@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 12 Apr 2013 17:23:07 -0600
+Message-ID: <CAErSpo7g7dG=FB69-w1UniO_fpBVO39P82rqgdQstdfG=p-bkQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PCI/IA64: fix pci_dev->enable_cnt balance when doing
+ pci hotplug
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Tony Luck <tony.luck@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Mon, Apr 1, 2013 at 2:42 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+> In IA64 platform, we don't call pci_enable_bridges()
+> when scan all pci buses during system boot up. But in
+> X86 we do it in
+>
+> pcibios_assign_resources()
+>    pci_assign_unassigned_resources()
+>        ...........
+>        pci_enable_bridges()
+>
+> Then when we doing hot remove
+>
+> acpiphp_disable_slot()
+>    pci_stop_and_remove_bus_device()
+>        pci_stop_bus_device()
+>           .............
+>           pcie_portdrv_remove()
+>                           pcie_port_device_remove()
+>                   pci_disable_device()   first decrease enable_cnt  here
+>                           pci_disable_device()     second decrease enable_cnt
+> So pci_dev->enable_cnt is unbalanced in IA64.
+>
+> Following Warning info found under IA64 when doing pci hotplug.
+>
+> ------------[ cut here ]------------
+> WARNING: at drivers/pci/pci.c:1397 pci_disable_device+0x1c0/0x220()
+> Hardware name: MH8900
+> Device pcieport
+> disabling already-disabled device
+> Modules linked in: acpiphp ipv6 ipmi_si(+) ipmi_devintf ipmi_msghandler fuse vfaa
+> t fat dm_mod iTCO_wdt iTCO_vendor_support lpc_ich i2c_i801 mfd_core i2c_core sg
+> sd_mod crc_t10dif ext3 mbcache jbd ata_piix
+>
+> Call Trace:
+>  [<a000000100015c00>] show_stack+0x80/0xa0
+>                                 sp=e000000fd629fc00 bsp=e000000fd62996e0
+>  [<a000000100a9ca20>] dump_stack+0x30/0x50
+>                                 sp=e000000fd629fdd0 bsp=e000000fd62996c8
+>  [<a000000100061960>] warn_slowpath_common+0xc0/0x100
+>                                 sp=e000000fd629fdd0 bsp=e000000fd6299688
+>  [<a000000100061b50>] warn_slowpath_fmt+0x90/0xc0
+>                                 sp=e000000fd629fdd0 bsp=e000000fd6299628
+>  [<a000000100495be0>] pci_disable_device+0x1c0/0x220
+>                                 sp=e000000fd629fe10 bsp=e000000fd62995e8
+>  [<a0000001004b3ba0>] pcie_portdrv_remove+0xc0/0xe0
+>                                 sp=e000000fd629fe10 bsp=e000000fd62995c8
+>  [<a000000100499670>] pci_device_remove+0x90/0x1e0
+>                                 sp=e000000fd629fe10 bsp=e000000fd6299598
+>  [<a000000100636490>] __device_release_driver+0x150/0x280
+>                                 sp=e000000fd629fe10 bsp=e000000fd6299560
+>  [<a000000100636830>] device_release_driver+0x30/0x60
+>                                 sp=e000000fd629fe10 bsp=e000000fd6299538
+>  [<a000000100634a40>] bus_remove_device+0x2c0/0x3c0
+>                                 sp=e000000fd629fe10 bsp=e000000fd62994f0
+>  [<a0000001006306d0>] device_del+0x290/0x440
+>                                 sp=e000000fd629fe10 bsp=e000000fd62994a8
+>  [<a00000010048d550>] pci_stop_bus_device+0x150/0x200
+>                                 sp=e000000fd629fe10 bsp=e000000fd6299478
+>  [<a00000010048d470>] pci_stop_bus_device+0x70/0x200
+>                                 sp=e000000fd629fe10 bsp=e000000fd6299448
+>  [<a00000010048d470>] pci_stop_bus_device+0x70/0x200
+>                                 sp=e000000fd629fe10 bsp=e000000fd6299418
+>  [<a00000010048d9a0>] pci_stop_and_remove_bus_device+0x20/0x60
+>                                 sp=e000000fd629fe10 bsp=e000000fd62993f0
+>  [<a0000002089aa100>] acpiphp_disable_slot+0x240/0x4e0 [acpiphp]
+>                                 sp=e000000fd629fe10 bsp=e000000fd62993a0
+>  [<a0000002089a8a30>] disable_slot+0x50/0x160 [acpiphp]
+>                                 sp=e000000fd629fe20 bsp=e000000fd6299378
+>  [<a0000001004ba080>] power_write_file+0x140/0x2a0
+>                                 sp=e000000fd629fe20 bsp=e000000fd6299348
+>  [<a0000001004a6320>] pci_slot_attr_store+0x60/0xa0
+>                                 sp=e000000fd629fe20 bsp=e000000fd6299310
+>  [<a00000010032a100>] sysfs_write_file+0x240/0x340
+>                                 sp=e000000fd629fe20 bsp=e000000fd62992b8
+>  [<a00000010023c910>] vfs_write+0x1b0/0x3a0
+>                                 sp=e000000fd629fe20 bsp=e000000fd6299270
+>  [<a00000010023cc90>] sys_write+0x90/0xe0
+>                                 sp=e000000fd629fe20 bsp=e000000fd62991f0
+>  [<a00000010000bce0>] ia64_ret_from_syscall+0x0/0x20
+>                                 sp=e000000fd629fe30 bsp=e000000fd62991f0
+>  [<a000000000040720>] __kernel_syscall_via_break+0x0/0x20
+>                                 sp=e000000fd62a0000 bsp=e000000fd62991f0
+> ---[ end trace 34d87c78dbff78ce ]---
+> GSI 37 (level, low) -> CPU 15 (0x01e0) vector 68 unregistered
+> pcie_pme 0000:00:07.0:pcie01: unloading service driver pcie_pme
+> aer 0000:00:07.0:pcie02: unloading service driver aer
+>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Thierry Reding <thierry.reding@avionic-design.de>
+> Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+> ---
+>  arch/ia64/pci/pci.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+> index 60532ab..a557096 100644
+> --- a/arch/ia64/pci/pci.c
+> +++ b/arch/ia64/pci/pci.c
+> @@ -383,6 +383,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+>         }
+>
+>         pci_scan_child_bus(pbus);
+> +       pci_enable_bridges(pbus);
+>         return pbus;
+>
+>  out3:
 
-Systems with HZ=100 can have slow bootup times due to the default
-three-jiffy delays between quiescent-state forcing attempts.  This
-commit therefore auto-tunes the RCU_JIFFIES_TILL_FORCE_QS value based
-on the value of HZ.  However, this would break very large systems that
-require more time between quiescent-state forcing attempts.  This
-commit therefore also ups the default delay by one jiffy for each
-256 CPUs that might be on the system (based off of nr_cpu_ids at
-runtime, -not- NR_CPUS at build time).
+I think that with this patch, if you hot-add a PCI host bridge, you
+will call pci_enable_bridges() twice (once in pci_acpi_scan_root() and
+again in acpi_pci_root_add()), so there will be an enable_cnt error in
+the opposite direction.
 
-Reported-by: Paul Mackerras <paulus@au1.ibm.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- kernel/rcutree.c | 18 ++++++++++++++++--
- kernel/rcutree.h | 12 +++++++++++-
- 2 files changed, 27 insertions(+), 3 deletions(-)
+I'd like to see the pci_enable_bridges() calls pushed up into the
+generic code because I don't think there's anything arch-specific
+about it.
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 3710d74..cbfb4ee 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -218,8 +218,8 @@ module_param(blimit, long, 0444);
- module_param(qhimark, long, 0444);
- module_param(qlowmark, long, 0444);
- 
--static ulong jiffies_till_first_fqs = RCU_JIFFIES_TILL_FORCE_QS;
--static ulong jiffies_till_next_fqs = RCU_JIFFIES_TILL_FORCE_QS;
-+static ulong jiffies_till_first_fqs = ULONG_MAX;
-+static ulong jiffies_till_next_fqs = ULONG_MAX;
- 
- module_param(jiffies_till_first_fqs, ulong, 0644);
- module_param(jiffies_till_next_fqs, ulong, 0644);
-@@ -3252,11 +3252,25 @@ static void __init rcu_init_one(struct rcu_state *rsp,
-  */
- static void __init rcu_init_geometry(void)
- {
-+	ulong d;
- 	int i;
- 	int j;
- 	int n = nr_cpu_ids;
- 	int rcu_capacity[MAX_RCU_LVLS + 1];
- 
-+	/*
-+	 * Initialize any unspecified boot parameters.
-+	 * The default values of jiffies_till_first_fqs and
-+	 * jiffies_till_next_fqs are set to the RCU_JIFFIES_TILL_FORCE_QS
-+	 * value, which is a function of HZ, then adding one for each
-+	 * RCU_JIFFIES_FQS_DIV CPUs that might be on the system.
-+	 */
-+	d = RCU_JIFFIES_TILL_FORCE_QS + nr_cpu_ids / RCU_JIFFIES_FQS_DIV;
-+	if (jiffies_till_first_fqs == ULONG_MAX)
-+		jiffies_till_first_fqs = d;
-+	if (jiffies_till_next_fqs == ULONG_MAX)
-+		jiffies_till_next_fqs = d;
-+
- 	/* If the compile-time values are accurate, just leave. */
- 	if (rcu_fanout_leaf == CONFIG_RCU_FANOUT_LEAF &&
- 	    nr_cpu_ids == NR_CPUS)
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 08972c9..7d5f876 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -342,7 +342,17 @@ struct rcu_data {
- #define RCU_FORCE_QS		3	/* Need to force quiescent state. */
- #define RCU_SIGNAL_INIT		RCU_SAVE_DYNTICK
- 
--#define RCU_JIFFIES_TILL_FORCE_QS	 3	/* for rsp->jiffies_force_qs */
-+#if HZ > 500
-+#define RCU_JIFFIES_TILL_FORCE_QS	 3	/* for jiffies_till_first_fqs */
-+#elif HZ > 250
-+#define RCU_JIFFIES_TILL_FORCE_QS	 2
-+#else
-+#define RCU_JIFFIES_TILL_FORCE_QS	 1
-+#endif
-+#define RCU_JIFFIES_FQS_DIV		256	/* Very large systems need */
-+						/*  more delay between bouts */
-+						/*  of quiescent-state */
-+						/*  forcing. */
- 
- #define RCU_STALL_RAT_DELAY		2	/* Allow other CPUs time */
- 						/*  to take at least one */
--- 
-1.8.1.5
-
+Bjorn
