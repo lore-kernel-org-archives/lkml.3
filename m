@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019Ab3DLWzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:55:18 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:32792 "EHLO
+	id S1758888Ab3DLWzQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:55:16 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:32791 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758748Ab3DLWzM (ORCPT
+	with ESMTP id S1758735Ab3DLWzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Apr 2013 18:55:12 -0400
 From: Nishanth Menon <nm@ti.com>
@@ -15,9 +15,9 @@ CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
         Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
         Kevin Hilman <khilman@deeprootsystems.com>,
         Mike Turquette <mturquette@linaro.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V4 5/6] ARM: OMAP2+: AM33XX: add lateinit hook for calling pm late init
-Date: Fri, 12 Apr 2013 17:54:37 -0500
-Message-ID: <1365807278-554-6-git-send-email-nm@ti.com>
+Subject: [PATCH V4 6/6] ARM: OMAP3+: use cpu0-cpufreq driver in device tree supported boot
+Date: Fri, 12 Apr 2013 17:54:38 -0500
+Message-ID: <1365807278-554-7-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365807278-554-1-git-send-email-nm@ti.com>
 References: <1365807278-554-1-git-send-email-nm@ti.com>
@@ -27,9 +27,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call OMAP2+ generic lateinit hook from AM specific late init hook.
-This allows the generic late initializations such as cpufreq hooks
-to be active.
+With OMAP3+ and AM33xx supported SoC having defined CPU device tree
+entries with operating-points and clock nodes defined, we can now use
+the SoC generic cpufreq-cpu0 driver by registering appropriate device.
 
 Cc: Benoit Cousson <b-cousson@ti.com>
 Cc: Kevin Hilman <khilman@deeprootsystems.com>
@@ -40,53 +40,43 @@ Signed-off-by: Nishanth Menon <nm@ti.com>
 Introduced as a result of alignment in http://marc.info/?t=136450773400004&r=1&w=2
 previous versions do not use this approach.
 
-[Probably belongs to Kevin/Tony's tree?]
- arch/arm/mach-omap2/board-generic.c |    1 +
- arch/arm/mach-omap2/common.h        |    1 +
- arch/arm/mach-omap2/io.c            |    6 ++++++
- 3 files changed, 8 insertions(+)
+This would probably be good to get merged *after* Rafael's tree is merged in.
 
-diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
-index afa509a..86e8479 100644
---- a/arch/arm/mach-omap2/board-generic.c
-+++ b/arch/arm/mach-omap2/board-generic.c
-@@ -141,6 +141,7 @@ DT_MACHINE_START(AM33XX_DT, "Generic AM33XX (Flattened Device Tree)")
- 	.init_irq	= omap_intc_of_init,
- 	.handle_irq	= omap3_intc_handle_irq,
- 	.init_machine	= omap_generic_init,
-+	.init_late	= am33xx_init_late,
- 	.init_time	= omap3_am33xx_gptimer_timer_init,
- 	.dt_compat	= am33xx_boards_compat,
- 	.restart	= am33xx_restart,
-diff --git a/arch/arm/mach-omap2/common.h b/arch/arm/mach-omap2/common.h
-index 14522d0..65f2ebc 100644
---- a/arch/arm/mach-omap2/common.h
-+++ b/arch/arm/mach-omap2/common.h
-@@ -108,6 +108,7 @@ void omap35xx_init_late(void);
- void omap3630_init_late(void);
- void am35xx_init_late(void);
- void ti81xx_init_late(void);
-+void am33xx_init_late(void);
- int omap2_common_pm_late_init(void);
+[Probably belongs to Kevin/Tony's tree?]
+
+ arch/arm/mach-omap2/pm.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
+index 8d15f9a..6cf95160 100644
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -267,7 +267,12 @@ static void __init omap4_init_voltages(void)
  
- #if defined(CONFIG_SOC_OMAP2420) || defined(CONFIG_SOC_OMAP2430)
-diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
-index 5c445ca..61f5b84 100644
---- a/arch/arm/mach-omap2/io.c
-+++ b/arch/arm/mach-omap2/io.c
-@@ -576,6 +576,12 @@ void __init am33xx_init_early(void)
- 	omap_hwmod_init_postsetup();
- 	omap_clk_init = am33xx_clk_init;
+ static inline void omap_init_cpufreq(void)
+ {
+-	struct platform_device_info devinfo = { .name = "omap-cpufreq", };
++	struct platform_device_info devinfo = { };
++
++	if (!of_have_populated_dt())
++		devinfo.name = "omap-cpufreq";
++	else
++		devinfo.name = "cpufreq-cpu0";
+ 	platform_device_register_full(&devinfo);
  }
-+
-+void __init am33xx_init_late(void)
-+{
-+	omap2_common_pm_late_init();
-+}
-+
- #endif
  
- #ifdef CONFIG_ARCH_OMAP4
+@@ -301,9 +306,9 @@ int __init omap2_common_pm_late_init(void)
+ 		/* Smartreflex device init */
+ 		omap_devinit_smartreflex();
+ 
+-		/* cpufreq dummy device instantiation */
+-		omap_init_cpufreq();
+ 	}
++	/* cpufreq dummy device instantiation */
++	omap_init_cpufreq();
+ 
+ #ifdef CONFIG_SUSPEND
+ 	suspend_set_ops(&omap_pm_ops);
 -- 
 1.7.9.5
 
