@@ -1,70 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab3DLTwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 15:52:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54862 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752523Ab3DLTwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 15:52:08 -0400
-Date: Fri, 12 Apr 2013 20:52:04 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Zlatko Calusic <zcalusic@bitsync.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        dormando <dormando@rydia.net>, Satoru Moriya <satoru.moriya@hds.com>,
-        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/10] Reduce system disruption due to kswapd V2
-Message-ID: <20130412195152.GK11656@suse.de>
-References: <1365505625-9460-1-git-send-email-mgorman@suse.de>
- <51672331.6070605@bitsync.net>
- <20130412193947.GJ11656@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130412193947.GJ11656@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754950Ab3DLT4m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 15:56:42 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:18308 "EHLO
+	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866Ab3DLT4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 15:56:41 -0400
+X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Apr 2013 15:56:40 EDT
+X-MDAV-Processed: mail.digidescorp.com, Fri, 12 Apr 2013 14:47:07 -0500
+X-Spam-Processed: mail.digidescorp.com, Fri, 12 Apr 2013 14:47:06 -0500
+	(not processed: message from trusted or authenticated source)
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: smagnani@iscandar.digidescorp.com
+X-Envelope-From: smagnani@iscandar.digidescorp.com
+From: Steve Magnani <smagnani@iscandar.digidescorp.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Steven J. Magnani" <steve@digidescorp.com>
+Subject: [PATCH] mmc: debugfs: Add debugfs ability to read CID and CSD
+Date: Fri, 12 Apr 2013 14:46:53 -0500
+Message-Id: <1365796013-11399-1-git-send-email-smagnani@iscandar.digidescorp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 08:40:04PM +0100, Mel Gorman wrote:
-> On Thu, Apr 11, 2013 at 10:55:13PM +0200, Zlatko Calusic wrote:
-> > On 09.04.2013 13:06, Mel Gorman wrote:
-> > <SNIP>
-> >
-> > - The only slightly negative thing I observed is that with the patch
-> > applied kswapd burns 10x - 20x more CPU. So instead of about 15
-> > seconds, it has now spent more than 4 minutes on one particular
-> > machine with a quite steady load (after about 12 days of uptime).
-> > Admittedly, that's still nothing too alarming, but...
-> > 
-> 
-> Would you happen to know what circumstances trigger the higher CPU
-> usage?
-> 
+Adds 'cid' and 'csd' debugfs entries for SD/MMC devices that allow
+userland to obtain the values of the corresponding device registers.
 
-There is also a slight possibility it has been fixed in V3 by the
-proportional scanning changes. In my own parallelio tests I got the
-following kswapd CPU times from top.
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+--- a/drivers/mmc/core/debugfs.c	2013-04-12 07:39:22.532586948 -0500
++++ b/drivers/mmc/core/debugfs.c	2013-04-12 07:40:14.513331587 -0500
+@@ -321,7 +321,7 @@ static ssize_t mmc_ext_csd_read(struct f
+ 				       buf, EXT_CSD_STR_LEN);
+ }
+ 
+-static int mmc_ext_csd_release(struct inode *inode, struct file *file)
++static int mmc_dbg_buf_release(struct inode *inode, struct file *file)
+ {
+ 	kfree(file->private_data);
+ 	return 0;
+@@ -330,7 +330,65 @@ static int mmc_ext_csd_release(struct in
+ static const struct file_operations mmc_dbg_ext_csd_fops = {
+ 	.open		= mmc_ext_csd_open,
+ 	.read		= mmc_ext_csd_read,
+-	.release	= mmc_ext_csd_release,
++	.release	= mmc_dbg_buf_release,
++	.llseek		= default_llseek,
++};
++
++/* CSD and CID have the same length and so can be handled much the same */
++#define CXD_STR_LEN 33
++
++static int mmc_cxd_open(struct file *filp, u32 *raw_cxd)
++{
++	char *buf;
++	ssize_t n = 0;
++	int i;
++
++	buf = kmalloc(CXD_STR_LEN + 1, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	for (i = 0; i < 4; i++)
++		n += sprintf(buf + n, "%08x", raw_cxd[i]);
++	n += sprintf(buf + n, "\n");
++	BUG_ON(n != CXD_STR_LEN);
++
++	filp->private_data = buf;
++	return 0;
++}
++
++static ssize_t mmc_cxd_read(struct file *filp, char __user *ubuf,
++				size_t cnt, loff_t *ppos)
++{
++	char *buf = filp->private_data;
++
++	return simple_read_from_buffer(ubuf, cnt, ppos,
++				       buf, CXD_STR_LEN);
++}
++
++static int mmc_csd_open(struct inode *inode, struct file *filp)
++{
++	struct mmc_card *card = inode->i_private;
++	return mmc_cxd_open(filp, card->raw_csd);
++}
++
++static const struct file_operations mmc_dbg_csd_fops = {
++	.open		= mmc_csd_open,
++	.read		= mmc_cxd_read,
++	.release	= mmc_dbg_buf_release,
++	.llseek		= default_llseek,
++};
++
++
++static int mmc_cid_open(struct inode *inode, struct file *filp)
++{
++	struct mmc_card *card = inode->i_private;
++	return mmc_cxd_open(filp, card->raw_cid);
++}
++
++static const struct file_operations mmc_dbg_cid_fops = {
++	.open		= mmc_cid_open,
++	.read		= mmc_cxd_read,
++	.release	= mmc_dbg_buf_release,
+ 	.llseek		= default_llseek,
+ };
+ 
+@@ -356,10 +414,17 @@ void mmc_add_card_debugfs(struct mmc_car
+ 	if (!debugfs_create_x32("state", S_IRUSR, root, &card->state))
+ 		goto err;
+ 
+-	if (mmc_card_mmc(card) || mmc_card_sd(card))
++	if (mmc_card_mmc(card) || mmc_card_sd(card)) {
+ 		if (!debugfs_create_file("status", S_IRUSR, root, card,
+ 					&mmc_dbg_card_status_fops))
+ 			goto err;
++		if (!debugfs_create_file("csd", S_IRUSR, root, card,
++					&mmc_dbg_csd_fops))
++			goto err;
++		if (!debugfs_create_file("cid", S_IRUSR, root, card,
++					&mmc_dbg_cid_fops))
++			goto err;
++	}
+ 
+ 	if (mmc_card_mmc(card))
+ 		if (!debugfs_create_file("ext_csd", S_IRUSR, root, card,
 
-3.9.0-rc6-vanilla           0:05.21
-3.9.0-rc6-lessdisrupt-v2r11 0:07.44
-3.9.0-rc6-lessdisrupt-v3r6  0:03.21
-
-In v2, I did see slightly higher CPU usage but it was reduced in v3. For
-a general set of page reclaim tests I got
-
-3.9.0-rc6-vanilla-micro     3:09.51
-3.9.0-rc6-lessdisrupt-v2r11 2:57.78
-3.9.0-rc6-lessdisrupt-v3r6  1:10.05
-
-In that case, v2 was comparable so unfortunately I was never seeing the
-10-20x more CPU that you got.
-
-Thanks.
-
--- 
-Mel Gorman
-SUSE Labs
