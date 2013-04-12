@@ -1,166 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab3DLQED (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 12:04:03 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:36235 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947Ab3DLQEA (ORCPT
+	id S1754963Ab3DLQGq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 12:06:46 -0400
+Received: from a9-50.smtp-out.amazonses.com ([54.240.9.50]:49291 "EHLO
+	a9-50.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753031Ab3DLQGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 12:04:00 -0400
-Date: Fri, 12 Apr 2013 17:03:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2] MFD: ab8500: pass AB8500 IRQ to debugfs code by
- resource
-Message-ID: <20130412160353.GA18459@gmail.com>
-References: <1365778929-27168-1-git-send-email-linus.walleij@stericsson.com>
+	Fri, 12 Apr 2013 12:06:45 -0400
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Apr 2013 12:06:45 EDT
+Date: Fri, 12 Apr 2013 15:59:59 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 4/4] nohz: New option to force all CPUs in full dynticks
+ range
+In-Reply-To: <20130411170420.GA17129@somewhere.redhat.com>
+Message-ID: <0000013dfef98b2d-ed5980b1-86ff-47de-8aa1-fd7fdd02f034-000000@email.amazonses.com>
+References: <1364398359-21990-1-git-send-email-fweisbec@gmail.com> <1364398359-21990-5-git-send-email-fweisbec@gmail.com> <20130328074507.GC24433@gmail.com> <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com> <20130330091037.GA31743@gmail.com>
+ <0000013dea26b171-8095c339-dc81-4459-a3ad-a8d69c803448-000000@email.amazonses.com> <20130411151956.GF15699@somewhere> <20130411153721.GA3742@linux.vnet.ibm.com> <20130411155349.GA16797@somewhere.redhat.com> <0000013df9f8d526-2783fba3-4dc9-44c6-8b02-2c321eb5b37b-000000@email.amazonses.com>
+ <20130411170420.GA17129@somewhere.redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1365778929-27168-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.04.12-54.240.9.50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Code looks good.
+On Thu, 11 Apr 2013, Frederic Weisbecker wrote:
 
-Feel free to add my Ack or whathaveyou, after you've fixed-up the typos.
+> It may be too general for a naming. But I don't mind just
+> selecting CONFIG_RCU_NOCBS_ALL unconditionally. It's easily
+> changed in the future if anybody complains.
 
-> From: Linus Walleij <linus.walleij@linaro.org>
-> 
-> The AB8500 debug code which was merged in parallell with the
 
-Typo
+I like the general nature of that config option since it removes the need
+to configure all the details. For an average user the current sets of
+options must look pretty complicated.
 
-> multiplatform work incidentally introduced a new instance using
-> the <mach/irqs.h> header which is now deleted, causing this
-> build regression:
-> 
-> drivers/mfd/ab8500-debugfs.c:95:23:
-> fatal error: mach/irqs.h: No such file or directory
-> compilation terminated.
-> make[4]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
-> 
-> The code most certainly never worked with device tree either
-> since that does not rely on this kind of hard-coded interrupt
-> numbers.
-> 
-> Fix the problem at the root by passing it as a named resource
-> from the ab8500-core driver. Use an untyped resource to
-> stop the MFD core from remapping this IRQ relative to the
-> AB8500 irqdomain.
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> ---
-> ChangeLog v1->v2:
-> - Pass an untyped resource to avoid problems due to IRQ
->   remapping.
-> 
-> Sam this would have to go into the v3.10-targetted stuff...
-> Either immediately before you send it upstream or as a fixup.
-> ---
->  drivers/mfd/ab8500-core.c    | 15 +++++++++++++++
->  drivers/mfd/ab8500-debugfs.c | 16 ++++++++++++----
->  2 files changed, 27 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-> index 8e8a016..65cd46b 100644
-> --- a/drivers/mfd/ab8500-core.c
-> +++ b/drivers/mfd/ab8500-core.c
-> @@ -868,6 +868,15 @@ static struct resource ab8500_chargalg_resources[] = {};
->  #ifdef CONFIG_DEBUG_FS
->  static struct resource ab8500_debug_resources[] = {
->  	{
-> +		.name	= "IRQ_AB8500",
-> +		/*
-> +		 * Number will be filled in. NOTE: this is deliberately
-> +		 * not flagged as an IRQ in ordet to avoid remapping using
+> > Btw, if CONFIG_RCU_NOCBS_ALL isset, the rcu_nocbs=
+parameter > is ignored, right? If you want to keep that direction and not
+> override the Kconfig choice, may be warn the user about that
+> if the boot parameter is passed?
 
-typo
-
-> +		 * the irqdomain in the MFD core, so that this IRQ passes
-> +		 * unremapped to the debug code.
-> +		 */
-> +	},
-> +	{
->  		.name	= "IRQ_FIRST",
->  		.start	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
->  		.end	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
-> @@ -1712,6 +1721,12 @@ static int ab8500_probe(struct platform_device *pdev)
->  	if (ret)
->  		return ret;
->  
-> +#if CONFIG_DEBUG_FS
-> +	/* Pass to debugfs */
-> +	ab8500_debug_resources[0].start = ab8500->irq;
-> +	ab8500_debug_resources[0].end = ab8500->irq;
-> +#endif
-> +
->  	if (is_ab9540(ab8500))
->  		ret = mfd_add_devices(ab8500->dev, 0, ab9540_devs,
->  				ARRAY_SIZE(ab9540_devs), NULL,
-> diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
-> index b88bbbc..37b7ce4 100644
-> --- a/drivers/mfd/ab8500-debugfs.c
-> +++ b/drivers/mfd/ab8500-debugfs.c
-> @@ -91,12 +91,10 @@
->  #include <linux/ctype.h>
->  #endif
->  
-> -/* TODO: this file should not reference IRQ_DB8500_AB8500! */
-> -#include <mach/irqs.h>
-> -
->  static u32 debug_bank;
->  static u32 debug_address;
->  
-> +static int irq_ab8500;
->  static int irq_first;
->  static int irq_last;
->  static u32 *irq_count;
-> @@ -1589,7 +1587,7 @@ void ab8500_debug_register_interrupt(int line)
->  {
->  	if (line < num_interrupt_lines) {
->  		num_interrupts[line]++;
-> -		if (suspend_test_wake_cause_interrupt_is_mine(IRQ_DB8500_AB8500))
-> +		if (suspend_test_wake_cause_interrupt_is_mine(irq_ab8500))
->  			num_wake_interrupts[line]++;
->  	}
->  }
-> @@ -2941,6 +2939,7 @@ static int ab8500_debug_probe(struct platform_device *plf)
->  	struct dentry *file;
->  	int ret = -ENOMEM;
->  	struct ab8500 *ab8500;
-> +	struct resource *res;
->  	debug_bank = AB8500_MISC;
->  	debug_address = AB8500_REV_REG & 0x00FF;
->  
-> @@ -2959,6 +2958,15 @@ static int ab8500_debug_probe(struct platform_device *plf)
->  	if (!event_name)
->  		goto out_freedev_attr;
->  
-> +	res = platform_get_resource_byname(plf, 0, "IRQ_AB8500");
-> +	if (!res) {
-> +		dev_err(&plf->dev, "AB8500 irq not found, err %d\n",
-> +			irq_first);
-> +		ret = -ENXIO;
-> +		goto out_freeevent_name;
-> +	}
-> +	irq_ab8500 = res->start;
-> +
->  	irq_first = platform_get_irq_byname(plf, "IRQ_FIRST");
->  	if (irq_first < 0) {
->  		dev_err(&plf->dev, "First irq not found, err %d\n",
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Ok. But all these complicated things would go away if we had an option
+CONFIG_LOWLATENCY and then everything would just follow the best setup
+possible given the hardware. Would remove a lot of guesswork and a lot of
+knobs.
