@@ -1,155 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab3DLWo4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:44:56 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:46514 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab3DLWoy (ORCPT
+	id S932876Ab3DLWzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:55:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:32775 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753675Ab3DLWzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:44:54 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 06/29] PCI: pci resource iterator
-Date: Fri, 12 Apr 2013 15:44:20 -0700
-Message-Id: <1365806683-26717-7-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 12 Apr 2013 18:55:06 -0400
+From: Nishanth Menon <nm@ti.com>
+To: <linux-omap@vger.kernel.org>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Mike Turquette <mturquette@linaro.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH V4 2/6] ARM: dts: OMAP3: add clock nodes for CPU
+Date: Fri, 12 Apr 2013 17:54:34 -0500
+Message-ID: <1365807278-554-3-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365807278-554-1-git-send-email-nm@ti.com>
+References: <1365807278-554-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ram Pai <linuxram@us.ibm.com>
+OMAP34xx and OMAP36xx platforms use dpll1 clock. Add same to common
+definition.
 
-Currently pci_dev structure holds an array of 17 PCI resources; six base
-BARs, one ROM BAR, four BRIDGE BARs, six sriov BARs.  This is wasteful.
-A bridge device just needs the 4 bridge resources. A non-bridge device
-just needs the six base resources and one ROM resource. The sriov
-resources are needed only if the device has SRIOV capability.
-
-The pci_dev structure needs to be re-organized to avoid unnecessary
-bloating.  However too much code outside the pci-bus driver, assumes the
-internal details of the pci_dev structure, thus making it hard to
-re-organize the datastructure.
-
-As a first step this patch provides generic methods to access the
-resource structure of the pci_dev.
-
-Finally we can re-organize the resource structure in the pci_dev
-structure and correspondingly update the methods.
-
--v2: Consolidated iterator interface as per Bjorn's suggestion.
--v3: Add the idx back - Yinghai Lu
--v7: Change to use bitmap for searching - Yinghai Lu
--v8: Fix acpiphp module compiling error that is found by
-	Steven Newbury <steve@snewbury.org.uk> - Yinghai Lu
--v9: According to Bjorn, remove PCI_NO_... that is too confusing
-				- Yinghai Lu
-
-Signed-off-by: Ram Pai <linuxram@us.ibm.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Benoit Cousson <b-cousson@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/pci/probe.c | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/pci.h | 24 ++++++++++++++++++++++++
- 2 files changed, 72 insertions(+)
+RFC of this patch was discussed in http://marc.info/?t=136370325600009&r=1&w=2
+along with the detailed context as to why this is an intermediate step.
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 1df75f7..ac751a6 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -123,6 +123,54 @@ int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
- 	return -1;
- }
+previous revisions of cpufreq-cpu0 support do not use this approach.
+
+[Probably belongs to Benoit's tree]
+ arch/arm/boot/dts/omap3.dtsi |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm/boot/dts/omap3.dtsi b/arch/arm/boot/dts/omap3.dtsi
+index 559b02f..58c6ed6 100644
+--- a/arch/arm/boot/dts/omap3.dtsi
++++ b/arch/arm/boot/dts/omap3.dtsi
+@@ -23,6 +23,8 @@
+ 	cpus {
+ 		cpu@0 {
+ 			compatible = "arm,cortex-a8";
++			clocks = <&dpll1>;
++			clock-names = "cpu";
+ 		};
+ 	};
  
-+static void __init_res_idx_mask(unsigned long *mask, int flag)
-+{
-+	bitmap_zero(mask, PCI_NUM_RESOURCES);
-+	if (flag & PCI_STD_RES)
-+		bitmap_set(mask, PCI_STD_RESOURCES,
-+			PCI_STD_RESOURCE_END - PCI_STD_RESOURCES + 1);
-+	if (flag & PCI_ROM_RES)
-+		bitmap_set(mask, PCI_ROM_RESOURCE, 1);
-+#ifdef CONFIG_PCI_IOV
-+	if (flag & PCI_IOV_RES)
-+		bitmap_set(mask, PCI_IOV_RESOURCES,
-+			PCI_IOV_RESOURCE_END - PCI_IOV_RESOURCES + 1);
-+#endif
-+	if (flag & PCI_BRIDGE_RES)
-+		bitmap_set(mask, PCI_BRIDGE_RESOURCES,
-+			PCI_BRIDGE_RESOURCE_END - PCI_BRIDGE_RESOURCES + 1);
-+}
-+
-+static DECLARE_BITMAP(res_idx_mask[1 << PCI_RES_BLOCK_NUM], PCI_NUM_RESOURCES);
-+static int __init pci_res_idx_mask_init(void)
-+{
-+	int i;
-+
-+	for (i = 0; i < (1 << PCI_RES_BLOCK_NUM); i++)
-+		__init_res_idx_mask(res_idx_mask[i], i);
-+
-+	return 0;
-+}
-+postcore_initcall(pci_res_idx_mask_init);
-+
-+static inline unsigned long *get_res_idx_mask(int flag)
-+{
-+	return res_idx_mask[flag & ((1 << PCI_RES_BLOCK_NUM) - 1)];
-+}
-+
-+int pci_next_resource_idx(int i, int flag)
-+{
-+	i++;
-+	if (i < PCI_NUM_RESOURCES)
-+		i = find_next_bit(get_res_idx_mask(flag), PCI_NUM_RESOURCES, i);
-+
-+	if (i < PCI_NUM_RESOURCES)
-+		return i;
-+
-+	return -1;
-+}
-+EXPORT_SYMBOL(pci_next_resource_idx);
-+
- static u64 pci_size(u64 base, u64 maxbase, u64 mask)
- {
- 	u64 size = mask & maxbase;	/* Find the significant bits */
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 14b7de4..044c474 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -379,6 +379,30 @@ struct pci_dev {
- struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
- int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
+@@ -73,6 +75,11 @@
+ 			ti,hwmods = "counter_32k";
+ 		};
  
-+#define PCI_STD_RES		(1<<0)
-+#define PCI_ROM_RES		(1<<1)
-+#define PCI_IOV_RES		(1<<2)
-+#define PCI_BRIDGE_RES		(1<<3)
-+#define PCI_RES_BLOCK_NUM	4
++		dpll1: dpll1 {
++			#clock-cells = <0>;
++			compatible = "ti,omap-clock";
++		};
 +
-+#define PCI_ALL_RES		(PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
-+#define PCI_ROM_IOV_BRIDGE_RES	(PCI_ROM_RES | PCI_BRIDGE_RES | PCI_IOV_RES)
-+#define PCI_STD_ROM_BRIDGE_RES	(PCI_STD_RES | PCI_ROM_RES | PCI_BRIDGE_RES)
-+#define PCI_STD_IOV_BRIDGE_RES	(PCI_STD_RES | PCI_IOV_RES | PCI_BRIDGE_RES)
-+#define PCI_STD_ROM_IOV_RES	(PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
-+#define PCI_STD_ROM_RES		(PCI_STD_RES | PCI_ROM_RES)
-+#define PCI_STD_IOV_RES		(PCI_STD_RES | PCI_IOV_RES)
-+#define PCI_STD_ROM_IOV_RES	(PCI_STD_RES | PCI_ROM_RES | PCI_IOV_RES)
-+
-+int pci_next_resource_idx(int i, int flag);
-+
-+#define for_each_pci_resource(dev, res, i, flag)	\
-+	for (i = pci_next_resource_idx(-1, flag),	\
-+		res = pci_dev_resource_n(dev, i);	\
-+	     res;					\
-+	     i = pci_next_resource_idx(i, flag),	\
-+		res = pci_dev_resource_n(dev, i))
-+
- static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
- {
- #ifdef CONFIG_PCI_IOV
+ 		intc: interrupt-controller@48200000 {
+ 			compatible = "ti,omap2-intc";
+ 			interrupt-controller;
 -- 
-1.8.1.4
+1.7.9.5
 
