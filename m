@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab3DLIE4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 04:04:56 -0400
-Received: from 8bytes.org ([85.214.48.195]:41067 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752448Ab3DLIEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 04:04:52 -0400
-Date: Fri, 12 Apr 2013 10:04:49 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
-Cc: iommu@lists.linux-foundation.org, Borislav Petkov <bp@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/9] iommu/amd: Add ioapic and hpet ivrs override
-Message-ID: <20130412080448.GM6858@8bytes.org>
-References: <1365538384-12426-1-git-send-email-joro@8bytes.org>
- <1365538384-12426-8-git-send-email-joro@8bytes.org>
- <20130409202941.GJ6858@8bytes.org>
- <51672DB7.4010403@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51672DB7.4010403@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Fri Apr 12 10:04:50 2013
-X-DSPAM-Confidence: 0.9989
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5167c02223675852723513
+	id S1753966Ab3DLIFS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 04:05:18 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:37141
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752180Ab3DLIFL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 04:05:11 -0400
+Message-ID: <1365753904.17140.22.camel@laptop>
+Subject: Re: [PATCH documentation 1/2] nohz1: Add documentation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, Arjan van de Ven <arjan@linux.intel.com>,
+        Kevin Hilman <khilman@linaro.org>, Christoph Lameter <cl@linux.com>
+Date: Fri, 12 Apr 2013 10:05:04 +0200
+In-Reply-To: <20130411191355.GO29861@linux.vnet.ibm.com>
+References: <20130411160524.GA30384@linux.vnet.ibm.com>
+	 <1365696359-30958-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20130411182502.GA31684@pd.tnic>
+	 <20130411191355.GO29861@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 04:40:07PM -0500, Suthikulpanit, Suravee wrote:
-> On 4/9/2013 3:29 PM, Joerg Roedel wrote:
-> >On Tue, Apr 09, 2013 at 10:13:02PM +0200, Joerg Roedel wrote:
-> >>Add two new kernel commandline parameters ivrs_ioapic and
-> >>ivrs_hpet to override the Id->DeviceId mapping from the IVRS
-> >>ACPI table. This can be used to work around broken BIOSes to
-> >>get interrupt remapping working on AMD systems.
-> >>
-> >>Signed-off-by: Joerg Roedel <joro@8bytes.org>
-> >Forgot to add:
-> >
-> >Tested-by: Borislav Petkov <bp@suse.de>
-> I also tested on some other systems here and the patch works also.
+On Thu, 2013-04-11 at 12:13 -0700, Paul E. McKenney wrote:
+> > > +2. Many architectures will place dyntick-idle CPUs into deep sleep
+> > > +   states, which further degrades from-idle transition latencies.
+> > 
+> > Above you say "to and from the idle loop", now it is from-idle. Simply say:
+> > 
+> > "... which further degrades idle transision latencies" which means both :).
+> 
+> If people speak for this item, I will update it.  Arjan suggested removing
+> it entirely.
 
-Cool, thanks for testing. I'll add your
+So I haven't yet read the entire document, but:
 
-Tested-by: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
++2.     Many architectures will place dyntick-idle CPUs into deep sleep
++       states, which further degrades from-idle transition latencies.
++
++Therefore, systems with aggressive real-time response constraints
++often run CONFIG_NO_HZ=n kernels in order to avoid degrading from-idle
++transition latencies.
 
+I'm not sure that's the reason.. We can (and do) limit C states to curb
+the idle-exit times. The reason we often turn off NOHZ all together is
+to further reduce the cost of the idle paths.
 
-	Joerg
+All the mucking about with clock states and such is a rather expensive
+thing
+to do all the time.
+
 
 
