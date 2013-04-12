@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab3DLXSI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:18:08 -0400
-Received: from tex.lwn.net ([70.33.254.29]:49852 "EHLO vena.lwn.net"
+	id S1753785Ab3DLXSi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:18:38 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60948 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577Ab3DLXSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:18:07 -0400
-Date: Fri, 12 Apr 2013 17:18:05 -0600
-From: Jake Edge <jake@lwn.net>
-To: Jake Edge <jake@lwn.net>
-Cc: hpa@linux.intel.com, rjw@sisk.pl, linux-kernel@vger.kernel.org
-Subject: Re: sleep/fan problem bisected to
- 73201dbec64aebf6b0dca855b523f437972dc7bb
-Message-ID: <20130412171805.1077ae7f@chukar.edge2.net>
-In-Reply-To: <20130412120831.1402b440@chukar.edge2.net>
-References: <20130412120831.1402b440@chukar.edge2.net>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.16; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752577Ab3DLXSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 19:18:37 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <51688803.8020401@sr71.net>
+References: <1365683207-42425-1-git-send-email-trenn@suse.de> <1365683207-42425-6-git-send-email-trenn@suse.de> <CAE9FiQXnZzVC7dtvXWrqz=jYAGH053R8Vw1qkrMd2F+hAaMxdQ@mail.gmail.com> <5166D18A.7090800@zytor.com> <20130412143104.GA4301@redhat.com> <5168208B.7050107@zytor.com> <51688803.8020401@sr71.net>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 5/5] kexec: X86: Pass memory ranges via e820 table instead of memmap= boot parameter
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 12 Apr 2013 16:17:17 -0700
+To: Dave Hansen <dave@sr71.net>
+CC: Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Simon Horman <horms@verge.net.au>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cliff Wickman <cpw@sgi.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <a13f7af9-9272-4407-9684-4d3693b5d3f2@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Apr 2013 12:08:31 -0600 Jake Edge wrote:
+Yes... That is one reason I think it is a real problem.
 
-> I have been having a problem on my laptop (HP Compaq 2510p) over the
-> last two months with >= 3.7 kernels.  After the first resume, it turns
-> on the fan and leaves it running at top speed no matter what the
-> system is doing.  I finally bisected it over the last two days and
-> that points the finger at your patch
-> 73201dbec64aebf6b0dca855b523f437972dc7bb:
-> 
->  x86, suspend: On wakeup always initialize cr4 and EFER
->     
->     We already have a flag word to indicate the existence of
->  MISC_ENABLES, so use the same flag word to indicate existence of cr4
->  and EFER, and always restore them if they exist.  That way if
->  something passes a nonzero value when the value *should* be zero, we
->  will still initialize it.
-> 
-> I should note that the bisection (between 3.6, which works, and 3.7,
-> which doesn't) did not exhibit the same symptoms as I see with any 3.7
-> or 3.8 kernel (either from Fedora or built myself), but would instead
-> refuse to come out of sleep (but still have the fan running at top
-> speed) ... so maybe I've really bisected the "fails to come out of
-> sleep" problem, rather than the "fan runs at top speed after resume"
-> problem, dunno ... 
 
-As you've undoubtedly surmised, I was in fact tracking down the resume
-failure which was caused by the above and fixed by another of your
-patches: 1396adc3c2bdc556d4cdd1cf107aa0b6d59fbb1e ... neither of which
-were related to the fan issue as far as I can tell ... now I am off
-bisecting while applying those ...
+Dave Hansen <dave@sr71.net> wrote:
 
-sorry for the noise ...
-
-jake
+>On 04/12/2013 07:56 AM, H. Peter Anvin wrote:
+>> On 04/12/2013 07:31 AM, Vivek Goyal wrote:
+>>>> I also have to admit that I don't see the difference between
+>/dev/mem
+>>>> and /dev/oldmem, as the former allows access to memory ranges
+>outside
+>>>> the ones used by the current kernel, which is what the oldmem
+>device
+>>>> seems to be intended to od.
+>
+>It varies from arch to arch of course.
+>
+>But, /dev/mem has restrictions on it, like CONFIG_STRICT_DEVMEM or the
+>ARCH_HAS_VALID_PHYS_ADDR_RANGE.  There's a lot of stuff that depends on
+>it, *and* folks have tried to fix it up so that it's not _as_ blatant
+>of
+>a way to completely screw your system.
+>
+>/dev/mem also tries to be nice to arches that have restrictions like:
+>
+>>                         /*
+>>                          * On ia64 if a page has been mapped
+>somewhere as
+>>                          * uncached, then it must also be accessed
+>uncached
+>>                          * by the kernel or data corruption may occur
+>>                          */
+>
+>I think /dev/oldmem isn't so nice and could actually cause some real
+>problems if used on ia64 where the cached/uncached accesses are mixed.
 
 -- 
-Jake Edge - LWN - jake@lwn.net - http://lwn.net
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
