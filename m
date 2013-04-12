@@ -1,316 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3DLSHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 14:07:22 -0400
-Received: from nm10-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.122]:33723
-	"EHLO nm10-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754031Ab3DLSHU (ORCPT
+	id S932072Ab3DLSHg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 14:07:36 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:38100 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab3DLSHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 14:07:20 -0400
-X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Apr 2013 14:07:20 EDT
-X-Yahoo-Newman-Id: 945224.57484.bm@smtp109.biz.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: JOU5UUQVM1mC.1f3CNf1cbflz_utHxPP_A4vfx6.ARRJaGT
- 27wKVTT7GRAeZoUvjrpTKxSAduvWZtio_3lsi4aZmcruEcpoBTDxjpP9t89u
- .KUvEdpSmj71cvWgg9lsKKeGii3f29a1RU84NozS0RopWLfN1PslBL8oJGMs
- dionLA7SCQkknJceIEF7x7_zWIvBiw5Xo8K18Ia0FZv.txdXd5r1nMIGBe8V
- FGM_2HH9YmItBAURibMw3Z0fJcyCoarEm4qKuU5qD065VIhfzdZbfWoTVYdJ
- UFV2znqRoFa7RL8GrXcB7csbTSEJFPC1XSKCpL607gOIgZavdXI73xjnzIi.
- au6i41dLWx1ehtY4Bxpu_ejgeN8edRnVz8zTs8Ag4YWP7aqrA110U_46liy2
- YNtm8v5ykcuczOvB1h80Y.0GjB9bYzbq4hGl.2K.yKwXvpF9CgMnesp9cNpR
- 01Q--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [172.26.30.118] (casey@65.114.90.17 with plain)
-        by smtp109.biz.mail.gq1.yahoo.com with SMTP; 12 Apr 2013 18:00:35 +0000 UTC
-Message-ID: <51684BC7.9080001@schaufler-ca.com>
-Date: Fri, 12 Apr 2013 11:00:39 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Fri, 12 Apr 2013 14:07:34 -0400
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [NEW DRIVER V4 0/7] DA9058 PMIC - please comment on this new driver
+Date: Fri, 12 Apr 2013 11:07:29 -0700
+Message-ID: <1854273.arIzJJ3lWV@dtor-d630.eng.vmware.com>
+User-Agent: KMail/4.10.1 (Linux/3.9.0-rc6+; KDE/4.10.1; x86_64; ; )
+In-Reply-To: <201304121307.r3CD7tDi011782@latitude>
+References: <201304121307.r3CD7tDi011782@latitude>
 MIME-Version: 1.0
-To: =?UTF-8?B?xYF1a2FzeiBTdGVsbWFjaA==?= <l.stelmach@samsung.com>
-CC: Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        linux-security-module@vger.kernel.org, m.szyprowski@samsung.com,
-        kyungmin.park@samsung.com, r.krypa@samsung.com,
-        linux-kernel@vger.kernel.org,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Piotr Bereza <p.bereza@samsung.com>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [RFC] security: smack: add hash table for smack for quick label
- searching
-References: <1365669972-21461-1-git-send-email-t.stanislaws@samsung.com> <5166F9FA.20003@schaufler-ca.com> <871uag812q.fsf@samsung.com>
-In-Reply-To: <871uag812q.fsf@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/12/2013 8:12 AM, Łukasz Stelmach wrote:
-> It was <2013-04-11 czw 19:59>, when Casey Schaufler wrote:
->> On 4/11/2013 1:46 AM, Tomasz Stanislawski wrote:
->>> Hi everyone,
->>> I am a developer working on optimization of the TIZEN system.
->>> Recently, I've discovered a performance issue in SMACK subsystem.
->>> I used the PERF tool to find performance bottlenecks.
->>>
->>> The test scenario was simple. Run multiple applications and
->>> see what the system does using the following command:
->>>
->>>  perf record -a -g
->>>
->>> Next, see the results with the command:
->>>
->>>  perf report -s symbol -g graph,0.5
->>>
->>> Among the many lines, the following ones are especially interesting:
->>>
->>>      5.96%  [k] smk_find_entry                                                                         
->>>             |          
->>>             |--5.06%-- smk_access
->>>             |          |          
->>>             |           --4.99%-- smk_curacc
->>>             |                     |          
->>>             |                     |--3.79%-- smack_ptrace_access_check
-> [...]
->
->>> To sum up, the result indicates that the CPU spents circa 8% (2.16% + 5.96%)
->>> of cycles searching for a SMACK label in the smk_find_entry function.
->>> The function iterates through smack_known_list to find an entry.
->>> The further analysis showed that the size of the list can reach even 600.
->>> I measured that it takes circa 200 tries to find an entry on average.
->>> The value was computed as a total number iterations in the smk_find_entry's
->>> loop divided by the times smk_find_entry was called in a time-window of
->>> the length of 10 seconds.
->>>
->>> IMO, this is a serious performance issue which scales badly with
->>> a complexity of the system.
->>>
->>> I implemented a patch that makes a use of a hash table to quicken searching
->>> for SMACK's labels.  The patch is rebased onto the latest v3.9-rc6 kernel.
->>> The code is thread-safe (I hope) because it shares the RCU mechanism
->>> and locks with smack_known_list.
-> [...]
->
->>> I hope you find the measurement and the patch useful.
->>> All comments are welcome.
->> NAK
->>
->> There will be no hash tables in Smack.
->>
->> The correct solution is simple.
->>
->> In the task_smack structure there are two Smack label pointers,
->> smk_task and smk_forked. Replace these fields with pointers to
->> the smack_known structures that contain the Smack label pointers
->> used today. This will require trivial changes throughout the
->> Smack code to accommodate the type change and a few logical twists
->> around smk_import. It will eliminate the need for smk_lookup_entry.
-> Allow me to join the conversation with an interesting observation.
-> I don't know whether hash table is a good solution to the problem Tomasz
-> has mentioned it definitely improves performance during loading rules.
+On Friday, April 12, 2013 02:05:29 PM Anthony Olech wrote:
+> This is submission attempt number 4 to have this driver included in
+> the linux kernel source tree. This is the driver for the Dialog DA9058.
+> 
+> The DA9058 is a low power Power Management Integrated Circuit with extra
+> functionality. It is a Multi Function Device controlled only from an I2C
+> bus whose components can raise an interrupt request on a single IRQ line.
+> 
+> The driver for the DA9058 consists of a core (i2c) device driver that
+> instantiates the individual component device drivers for:
+> 
+> adc - 5 ADC channels
+> gpio - 2 available pins
+> onkey - 1 device
 
-Loading rules is a rare event and an uninteresting case.
+I have exactly the same comment as ~6 month ago:
 
-> Conditions:
->
-> --8<---------------cut here---------------start------------->8---
-> # number of subjects
-> sh-4.1# cat /etc/smack/accesses.d/* | cut -d\  -f1 | sort -u | wc -l
-> 379
-> # number of rules
-> sh-4.1# cat /etc/smack/accesses.d/* | wc -l   
-> 23895
-> --8<---------------cut here---------------end--------------->8---
->
-> Without the patch
->
-> --8<---------------cut here---------------start------------->8---
-> sh-4.1# time smackctl apply
->
-> real    0m1.255s
-> user    0m0.115s
-> sys     0m0.895s
-> --8<---------------cut here---------------end--------------->8---
->
-> perfs output is:
->
-> --8<---------------cut here---------------start------------->8---
-> # ========
-> # captured on: Tue Jan  1 09:52:14 2013
-> # os release : 3.4.5
-> # arch : armv7l
-> # nrcpus online : 4
-> # nrcpus avail : 4
-> # cpudesc : ARMv7 Processor rev 0 (v7l)
-> # total memory : 1025456 kB
-> # cmdline : /perf record -a -g -- /usr/bin/smackctl apply 
-> # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 45, 46, 47, 48 }
-> # ========
-> #
-> # Events: 1K cycles
-> #
-> # Overhead                              Symbol
-> # ........  ..................................
-> #
->     47.49%  [k] strcmp                        
->             |          
->             |--41.27%-- smk_find_entry
->             |          |          
->             |          |--28.87%-- smk_import_entry
->             |          |          smk_import
->             |          |          smk_fill_rule
->             |          |          smk_parse_long_rule
->             |          |          smk_write_rules_list.clone.3
->             |          |          smk_write_load2
->             |          |          vfs_write
->             |          |          sys_write
->             |          |          ret_fast_syscall
->             |          |          
->             |           --12.41%-- smk_write_rules_list.clone.3
->             |                     smk_write_load2
->             |                     vfs_write
->             |                     sys_write
->             |                     ret_fast_syscall
->             |          
->             |--4.41%-- smk_import_entry
->             |          smk_import
->             |          smk_fill_rule
->             |          smk_parse_long_rule
->             |          smk_write_rules_list.clone.3
->             |          smk_write_load2
->             |          vfs_write
->             |          sys_write
->             |          ret_fast_syscall
->             |          
->              --1.80%-- smk_write_rules_list.clone.3
->                        smk_write_load2
->                        vfs_write
->                        sys_write
->                        ret_fast_syscall
->     19.21%  [k] smk_find_entry                
->             |          
->             |--12.44%-- smk_import_entry
->             |          smk_import
->             |          smk_fill_rule
->             |          smk_parse_long_rule
->             |          smk_write_rules_list.clone.3
->             |          smk_write_load2
->             |          vfs_write
->             |          sys_write
->             |          ret_fast_syscall
->             |          
->              --6.78%-- smk_write_rules_list.clone.3
->                        smk_write_load2
->                        vfs_write
->                        sys_write
->                        ret_fast_syscall
->
-> [ less than 10% per entry ]
->
-> --8<---------------cut here---------------end--------------->8---
->
-> With the patch
->
-> --8<---------------cut here---------------start------------->8---
-> sh-4.1# time smackctl apply                                  
->
-> real    0m0.349s
-> user    0m0.095s
-> sys     0m0.250s
-> --8<---------------cut here---------------end--------------->8---
->
-> still quite long but 3.59598853868 times better.
->
-> --8<---------------cut here---------------start------------->8---
-> # ========
-> # captured on: Tue Jan  1 10:40:45 2013
-> # os release : 3.4.5
-> # arch : armv7l
-> # nrcpus online : 4
-> # nrcpus avail : 4
-> # cpudesc : ARMv7 Processor rev 0 (v7l)
-> # total memory : 1025544 kB
-> # cmdline : /perf record -a -g -- smackctl apply 
-> # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 1, 2, 3, 4 }
-> # ========
-> #
-> # Events: 606  cycles
-> #
-> # Overhead                                 Symbol
-> # ........  .....................................
-> #
->     12.90%  [k] smk_write_rules_list.isra.9      
->             |
->             --- smk_write_load2
->                 vfs_write
->                 sys_write
->                 ret_fast_syscall
->      7.86%  [k] exynos_enter_idle                
->             |
->             --- cpuidle_enter
->                 cpuidle_enter_state
->                 cpuidle_idle_call
->                 cpu_idle
->                |          
->                 --7.69%-- secondary_start_kernel
->                           0x4066df54
->      6.95%  [k] v7_dma_inv_range                 
->             |          
->             |--3.70%-- __dma_page_cpu_to_dev
->             |          arm_dma_map_page
->             |          arm_dma_map_sg
->             |          dw_mci_pre_dma_transfer
->             |          dw_mci_pre_req
->             |          mmc_pre_req
->             |          mmc_start_req
->             |          mmc_blk_issue_rw_rq
->             |          mmc_blk_issue_rq
->             |          mmc_queue_thread
->             |          kthread
->             |          do_exit
->             |          
->              --3.25%-- __dma_page_dev_to_cpu
->                        arm_dma_unmap_page
->                        arm_dma_unmap_sg
->                        dw_mci_post_req
->                        mmc_post_req
->                        mmc_start_req
->                        mmc_blk_issue_rw_rq
->                        mmc_blk_issue_rq
->                        mmc_queue_thread
->                        kthread
->                        do_exit
->      3.56%  [k] _raw_spin_unlock_irq             
->             |          
->             |--1.40%-- mmc_blk_issue_rw_rq
->             |          mmc_blk_issue_rq
->             |          mmc_queue_thread
->             |          kthread
->             |          do_exit
->             |          
->              --1.09%-- finish_task_switch
->                        __schedule
->                        |          
->                         --0.75%-- schedule
->
->
->      3.45%  [.] 0x0000118c                       
->      2.94%  [.] strncpy                          
->      2.67%  [.] vfprintf                         
->      2.44%  [k] strcmp                           
->             |
->             --- smk_find_entry
->                 smk_import_entry
->                 smk_import
->                 smk_fill_rule
->                 smk_parse_long_rule
->                 smk_write_rules_list.isra.9
->                 smk_write_load2
->                 vfs_write
->                 sys_write
->                 ret_fast_syscall
->
-> [ less than 2.5%  per entry ]
-> --8<---------------cut here---------------end--------------->8---
->
+> On Wed, Aug 15, 2012 at 04:05:22PM +0100, Anthony Olech wrote:
+> > This is the ONKEY component driver of the Dialog DA9058 PMIC.
+> > This driver is just one component of the whole DA9058 PMIC driver.
+> > It depends on the CORE component driver of the DA9058 MFD.
+> > 
+> > Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> > Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+> 
+> This is almost exact copy of da9052_onkey, can they be merged together?
+> 
+> Thanks.
 
+-- 
+Dmitry
