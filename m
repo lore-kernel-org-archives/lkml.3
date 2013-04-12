@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3DLGv5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 02:51:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:49381 "EHLO arroyo.ext.ti.com"
+	id S1752762Ab3DLGxB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 02:53:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14747 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776Ab3DLGvz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 02:51:55 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "wim@iguana.be" <wim@iguana.be>
-CC: "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] watchdog: fix cleanup device code on registration
-Thread-Topic: [PATCH 2/2] watchdog: fix cleanup device code on registration
-Thread-Index: Ac43SjRLQa28PaoHS3u5DAJMESPU8Q==
-Date: Fri, 12 Apr 2013 06:51:48 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E4BBCA@DQHE02.ent.ti.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752693Ab3DLGxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 02:53:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,461,1363158000"; 
+   d="scan'208";a="317061747"
+Date: Fri, 12 Apr 2013 09:57:11 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH] gpiolib-acpi: introduce acpi_get_gpio_by_index() helper
+Message-ID: <20130412065710.GM1283@intel.com>
+References: <1364986614-15711-1-git-send-email-mika.westerberg@linux.intel.com>
+ <15166969.9Sfs2U7qQb@vostro.rjw.lan>
+ <20130411072912.GE1283@intel.com>
+ <CACRpkdYiNOLVAgZVhZG3OaJw5ZZ4OM8RPafCxPPfMWo2gVM=dg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYiNOLVAgZVhZG3OaJw5ZZ4OM8RPafCxPPfMWo2gVM=dg@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Duplicate lines of code are moved to cleanup_dev section.
-And it returns 0 explicitly in case of no error.
+On Fri, Apr 12, 2013 at 12:35:05AM +0200, Linus Walleij wrote:
+> On Thu, Apr 11, 2013 at 9:29 AM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> 
+> > Grant and Linus W,
+> >
+> > Do you have any comments on this patch? Could it still be merged for 3.10?
+> 
+> No and yes.
+> 
+> Applied and pushed for linux-next now.
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/watchdog/watchdog_dev.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+Thanks!
 
-diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-index 42bfc9a..37c2dcc 100644
---- a/drivers/watchdog/watchdog_dev.c
-+++ b/drivers/watchdog/watchdog_dev.c
-@@ -613,11 +613,7 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
- 	if (err) {
- 		pr_err("watchdog%d unable to add device %d:%d\n",
- 			watchdog->id,  MAJOR(watchdog_devt), watchdog->id);
--		if (watchdog->id == 0) {
--			misc_deregister(&watchdog_miscdev);
--			old_wdd = NULL;
--		}
--		return err;
-+		goto cleanup_dev;
- 	}
- 
- 	/* Activate the watchdog automatically by the driver itself */
-@@ -625,13 +621,17 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
- 		err = watchdog_auto_start(watchdog);
- 		if (err) {
- 			cdev_del(&watchdog->cdev);
--			if (watchdog->id == 0) {
--				misc_deregister(&watchdog_miscdev);
--				old_wdd = NULL;
--			}
-+			goto cleanup_dev;
- 		}
- 	}
- 
-+	return 0;
-+
-+cleanup_dev:
-+	if (watchdog->id == 0) {
-+		misc_deregister(&watchdog_miscdev);
-+		old_wdd = NULL;
-+	}
- 	return err;
- }
- 
--- 
-1.7.9.5
+> Sorry for taking so long, I was confused by the discussion.
 
+np. We probably need to add another ACPI GPIO helper function to get all
+the GPIOs but I guess we can do that once a need emerges. For a single GPIO
+(like the patch here does) we know already from internal discussion that it
+will be needed.
 
-Best Regards,
-Milo
+> I had to use some fuzzing to apply the patch, please check the
+> result in linux-next.
 
-
+Looks good to me.
