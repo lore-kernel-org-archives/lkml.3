@@ -1,44 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab3DLX3E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:29:04 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:64152 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab3DLX3B (ORCPT
+	id S1754108Ab3DLXbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:31:49 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:36593 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752759Ab3DLXbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:29:01 -0400
-Message-ID: <516898BE.8040209@prisktech.co.nz>
-Date: Sat, 13 Apr 2013 11:29:02 +1200
-From: Tony Prisk <linux@prisktech.co.nz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 12 Apr 2013 19:31:48 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+/8iaDiJyGJVRITTFr1KdS
+Date: Fri, 12 Apr 2013 16:31:43 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nishanth Menon <nm@ti.com>
+Cc: linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <b-cousson@ti.com>,
+        Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH V4 1/6] clk: OMAP: introduce device tree binding to
+ kernel clock data
+Message-ID: <20130412233142.GE10155@atomide.com>
+References: <1365807278-554-1-git-send-email-nm@ti.com>
+ <1365807278-554-2-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: scott.liu@emc.com.tw
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jesse <jesse@emc.com.tw>, Vincent Wang <vincent.wang@emc.com.tw>,
-        Paul <paul.liang@emc.com.tw>, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [v3] Support Elan Touchscreen eKTF product.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365807278-554-2-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Scott,
+* Nishanth Menon <nm@ti.com> [130412 15:59]:
+> --- /dev/null
+> +++ b/drivers/clk/omap/clk.c
+> +/**
+> + * omap_clk_src_get() - Get OMAP clock from node name when needed
+> + * @clkspec:	clkspec argument
+> + * @data:	unused
+> + *
+> + * REVISIT: We assume the following:
+> + * 1. omap clock names end with _ck
+> + * 2. omap clock names are under 32 characters in length
+> + */
+> +static struct clk *omap_clk_src_get(struct of_phandle_args *clkspec, void *data)
+> +{
+> +	struct clk *clk;
+> +	char clk_name[32];
+> +	struct device_node *np = clkspec->np;
+> +
+> +	/* Set up things so consumer can call clk_get() with name */
 
-Not sure what is happening with the patch - seems to have been sitting 
-for quite a while. Is it still being worked on?
-I integrated it into our arm/arch-vt8500 testing tree (based on 3.9-rc6) 
-as we have tablets with eKTF2127 controllers and noticed a few problems.
+I would leave out the comment above, it's a leftover from
+the clk_add_alias() version that we don't need because of
+of_clk_get().
 
-1) __devxxxx attributes cause unused function warnings because they are 
-deprecated.
+> +	snprintf(clk_name, 32, "%s_ck", np->name);
+> +	clk = clk_get(NULL, clk_name);
+> +	if (IS_ERR(clk)) {
+> +		pr_err("%s: could not get clock %s(%ld)\n", __func__,
+> +		       clk_name, PTR_ERR(clk));
+> +		goto out;
+> +	}
+> +	clk_put(clk);
+> +
+> +out:
+> +	return clk;
+> +}
+> +
+> +/**
+> + * omap_clk_probe() - create link from DT definition to clock data
+> + * @pdev:	device node
+> + *
+> + * NOTE: We assume that omap clocks are not removed.
+> + */
 
-2) elants_get_power_state() is only called from elants_resume() which is 
-contained within a #ifdef CONFIG_PM_SLEEP. You should also move the 
-elants_get_power_state() inside the #ifdef to remove the unused_function 
-warning when compiled without CONFIG_PM.
+How about drop the comment on clocks being removed above.
+It no longer an issue, so maybe something like this instead:
 
-Regards
-Tony Prisk
+* Note that we look up the clock lazily when the consumer
+* driver does of_clk_get() and initialize a NULL clock here.
+
+> +static int omap_clk_probe(struct platform_device *pdev)
+> +{
+> +	int res;
+> +	struct device_node *np = pdev->dev.of_node;
+> +
+> +	/* This allows the driver to of_clk_get() */
+> +	res = of_clk_add_provider(np, omap_clk_src_get, NULL);
+> +	if (res)
+> +		dev_err(&pdev->dev, "could not add provider(%d)\n", res);
+> +
+> +	return res;
+> +}
+> +
+> +/* We assume here that OMAP clocks will not be removed */
+
+Then the above comment can be removed too.
+
+Regards,
+
+Tony
