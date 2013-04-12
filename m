@@ -1,80 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab3DLSBb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 14:01:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50853 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab3DLSBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 14:01:30 -0400
-Date: Fri, 12 Apr 2013 14:01:08 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Tejun Heo <tj@kernel.org>
-cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Christian Schmidt <schmidt@digadd.de>,
-        "Alasdair G. Kergon" <agk@redhat.com>
-Subject: Re: [PATCH v2] make dm and dm-crypt forward cgroup context (was:
- dm-crypt parallelization patches)
-In-Reply-To: <20130411200005.GB11956@mtj.dyndns.org>
-Message-ID: <Pine.LNX.4.64.1304121340350.3359@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1304091450410.26327@file.rdu.redhat.com>
- <20130409195259.GL6186@mtj.dyndns.org> <Pine.LNX.4.64.1304091624110.19672@file.rdu.redhat.com>
- <20130409210735.GR6320@redhat.com> <Pine.LNX.4.64.1304091710150.24735@file.rdu.redhat.com>
- <20130410192427.GA14911@redhat.com> <Pine.LNX.4.64.1304101938280.24258@file.rdu.redhat.com>
- <20130410235009.GI17641@mtj.dyndns.org> <Pine.LNX.4.64.1304111544050.32536@file.rdu.redhat.com>
- <20130411195203.GA11956@mtj.dyndns.org> <20130411200005.GB11956@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756523Ab3DLSBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 14:01:51 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14712 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754031Ab3DLSBt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 14:01:49 -0400
+X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=od9ufGozyBcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=B5pM2mQJZ68A:10 a=_SsI_bI6U60u9fbK-aIA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365789706.9609.92.camel@gandalf.local.home>
+Subject: Re: [PATCH 0/1] uprobes/tracing: Don't pass addr=ip to
+ perf_trace_buf_submit()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Date: Fri, 12 Apr 2013 14:01:46 -0400
+In-Reply-To: <20130411115921.GA27492@redhat.com>
+References: <20130329181520.GA20670@redhat.com>
+	 <20130329181545.GA20697@redhat.com>
+	 <20130404142522.GC8986@linux.vnet.ibm.com> <515E4938.6090809@hitachi.com>
+	 <20130405150110.GA31300@redhat.com> <51628DF8.6030102@hitachi.com>
+	 <20130410145818.GA30670@redhat.com> <516692BF.6070904@hitachi.com>
+	 <20130411115921.GA27492@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 11 Apr 2013, Tejun Heo wrote:
-
-> On Thu, Apr 11, 2013 at 12:52:03PM -0700, Tejun Heo wrote:
-> > If this becomes an actual bottleneck, the right thing to do is making
-> > css ref per-cpu.  Please stop messing around with refcounting.
+On Thu, 2013-04-11 at 13:59 +0200, Oleg Nesterov wrote:
+> On 04/11, Masami Hiramatsu wrote:
+> >
+> > (2013/04/10 23:58), Oleg Nesterov wrote:
+> >
+> > > And... Cough, another question ;) To simplify, lets discuss kprobe_perf_func()
+> > > only. Suppose that a task hits the kprobe but this task/cpu doesn't have
+> > > a counter. Can't we avoid perf_trace_buf_prepare/submit in this case?
+> > > IOW, what do you think about the change below?
+> >
+> > Hmm, I'm not so sure how frequently this happens.
 > 
-> If you think this kind of hackery is acceptable, you really need to
-> re-evaluate your priorities in making engineering decisions.  In
-> tightly coupled code, maybe, but you're trying to introduce utterly
-> broken error-prone thing as a generic block layer API.  I mean, are
-> you for real?
+> Suppose that you do, say, "perf record -e probe:some_func workload". Only
+> "workload" will have the active counter, any other task which hits the
+> probed some_func() will do perf_trace_buf_prepare/perf_trace_buf_submit
+> just to realize that nobody wants perf_swevent_event().
+
+Wow, you're right. Seems that perf goes through a lot of work for every
+time a tracepoint is hit for *all tasks*.
+
 > 
-> -- 
-> tejun
+> Simple test-case:
+> 
+> 	#include <unistd.h>
+> 
+> 	int main(void)
+> 	{
+> 		int n;
+> 
+> 		for (n = 0; n < 1000 * 1000; ++n)
+> 			getppid();
+> 
+> 		return 0;
+> 	}
+> 
+> Without kprobe:
+> 
+> 	# time ./ppid
+> 
+> 	real    0m0.663s
+> 	user    0m0.163s
+> 	sys     0m0.500s
+> 
+> Activate the probe:
+> 
+> 	# perf probe sys_getppid
+> 
+> 	# perf record -e probe:sys_getppid sleep 1000 &
+> 	[1] 546
+> 
+> Test it again 3 times:
+> 
+> 	# time ./ppid
+> 
+> Before the patch:
+> 
+> 	real    0m9.727s
+> 	user    0m0.177s
+> 	sys     0m9.547s
+> 
+> 	real    0m9.752s
+> 	user    0m0.180s
+> 	sys     0m9.573s
+> 
+> 	real    0m9.761s
+> 	user    0m0.187s
+> 	sys     0m9.573s
+> 
+> After the patch:
+> 
+> 	real    0m9.605s
+> 	user	0m0.163s
+> 	sys	0m9.437s
+> 
+> 	real	0m9.592s
+> 	user	0m0.167s
+> 	sys	0m9.423s
+> 
+> 	real	0m9.613s
+> 	user	0m0.183s
+> 	sys	0m9.427s
+> 
+> So the difference looks measurable but small, and I did the testing
+> under qemu so I do not really know if we can trust the numbers.
+> 
+> > And, is this right way to
+> > handle that case?
+> 
+> If only I was sure ;) I am asking.
+> 
+> And, to clarify, it is not that I think this change can really
+> improve the perfomance. Just I am trying to understand what I have
+> missed.
+> 
+> > If so, we can do same thing also on trace_events.
+> > (perf_trace_##call in include/trace/ftrace.h)
+> 
+> Yes, yes, this is not kprobe-specific. It seems that more users of
+> perf_trace_buf_submit() could be changed the same way.
 
-Please describe what is wrong with the code? Why do you call it hackery?
+Yeah, looks like include/trace/ftrace.h needs an update.
 
-When device mapper is creating a cloned bio for the lower layer, it is 
-already assumed that the cloned bio has shorter lifetime than the original 
-bio it was created from.
+Frederic?
 
-The device mapper copies a part of the bio vector from the original bio to 
-the cloned bio, it copies pointers to pages without increasing reference 
-counts on those pages. As long as the original bio is not returned with 
-bio_endio, the pages must exist, so there is no need to increase their 
-reference counts.
-
-Now, if copying pointers without increasing reference counts is OK for 
-pages, why do you think it is not OK for cgroup context?
-
-Why do you call this bug-prone? - how do you think a bug could happen? If 
-someone in device mapper errorneously ends the master bio while the cloned 
-bio is still in progress, there is already a memory corruption bug (the 
-cloned bio vector points to potentially free pages) and safeguarding the 
-cgroup pointers won't fix it.
+-- Steve
 
 
-So if you think that reference counts should be incremented by every clone 
-of the original bio, what kind of bug should it protect against? If we 
-don't increment reference counts for pages, why should we do it for cgroup 
-pointers?
-
-Mikulas
