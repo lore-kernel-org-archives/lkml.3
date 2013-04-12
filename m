@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756065Ab3DLNi4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 09:38:56 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57431 "EHLO mail.skyhub.de"
+	id S1754551Ab3DLNlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 09:41:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40363 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753808Ab3DLNiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 09:38:52 -0400
-Date: Fri, 12 Apr 2013 15:38:46 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for
- PREEMPT_RT
-Message-ID: <20130412133846.GD2368@pd.tnic>
-References: <1365705214.9609.58.camel@gandalf.local.home>
+	id S1752832Ab3DLNlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 09:41:09 -0400
+Date: Fri, 12 Apr 2013 15:42:02 +0200
+From: chrubis@suse.cz
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/mmap: Check for RLIMIT_AS before unmapping
+Message-ID: <20130412134202.GA2764@rei.scz.novell.com>
+References: <20130402095402.GA6568@rei>
+ <20130411155734.911dc8bf8e555b169191be5a@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365705214.9609.58.camel@gandalf.local.home>
+In-Reply-To: <20130411155734.911dc8bf8e555b169191be5a@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 02:33:34PM -0400, Steven Rostedt wrote:
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index e8d8ad0..060e473 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -18,6 +18,7 @@
->  #include <linux/rcupdate.h>
->  #include <linux/kobject.h>
->  #include <linux/uaccess.h>
-> +#include <linux/kthread.h>
->  #include <linux/kdebug.h>
->  #include <linux/kernel.h>
->  #include <linux/percpu.h>
-> @@ -1308,6 +1309,61 @@ static void mce_do_trigger(struct work_struct *work)
->  
->  static DECLARE_WORK(mce_trigger_work, mce_do_trigger);
->  
-> +static void __mce_notify_work(void)
-> +{
-> +	/* Not more than two messages every minute */
-> +	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
-> +
-> +	/* wake processes polling /dev/mcelog */
-> +	wake_up_interruptible(&mce_chrdev_wait);
-> +
-> +	/*
-> +	 * There is no risk of missing notifications because
-> +	 * work_pending is always cleared before the function is
-> +	 * executed.
-> +	 */
+Hi!
+> > +static unsigned long count_vma_pages_range(struct mm_struct *mm,
+> > +		unsigned long addr, unsigned long end)
+> > +{
+> > +	unsigned long nr_pages = 0;
+> > +	struct vm_area_struct *vma;
+> > +
+> > +	/* Find first overlaping mapping */
+> > +	vma = find_vma_intersection(mm, addr, end);
+> > +	if (!vma)
+> > +		return 0;
+> > +
+> > +	nr_pages = (min(end, vma->vm_end) -
+> > +		max(addr, vma->vm_start)) >> PAGE_SHIFT;
+> 
+> urgh, these things always make my head spin.  Is it guaranteed that
+> end, vm_end, addr and vm_start are all multiples of PAGE_SIZE?  If not,
+> we have a problem don't we?
 
-You must be using some tree != mainline because this comment is gone
-upstream and that whole second hunk below which moves it here doesn't
-apply.
+Yes, it takes a little of concentration before one can say what the code
+does, unfortunatelly this is the most readable variant I've came up
+with.
+
+The len is page aligned right at the start of the do_mmap_pgoff() (end
+is addr + len). The addr should be aligned in the get_unmapped_area()
+although the codepath is more complicated to follow, but it seems to end
+up in one of the arch_get_unmapped_area* and these makes sure the
+address is aligned.
+
+Moreover mmap() manual page says that the addr passed to mmap() is page
+aligned (although I tend to check the code rather than the docs).
+
+And for the vmas I belive these are page aligned by definition, correct
+me if I'm wrong.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Cyril Hrubis
+chrubis@suse.cz
