@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab3DLNmr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 09:42:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18179 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755256Ab3DLNmq (ORCPT
+	id S1755700Ab3DLNnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 09:43:55 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:38331 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab3DLNny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 09:42:46 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=P6hlpVgoKeYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ayLHJbDuenQA:10 a=DWZekSpwSNPSmUazbnQA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365774163.9609.80.camel@gandalf.local.home>
-Subject: Re: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for
- PREEMPT_RT
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
-Date: Fri, 12 Apr 2013 09:42:43 -0400
-In-Reply-To: <20130412133118.GC2368@pd.tnic>
-References: <1365705214.9609.58.camel@gandalf.local.home>
-	 <20130412133118.GC2368@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Apr 2013 09:43:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <201304121248.54005.arnd@arndb.de>
+References: <1365669779-14953-1-git-send-email-linus.walleij@stericsson.com>
+	<201304121008.51300.arnd@arndb.de>
+	<CACRpkdatbhais8gP3rTRkz0Y1v816Uz8KL6ZhDsh+ByfbjXuxg@mail.gmail.com>
+	<201304121248.54005.arnd@arndb.de>
+Date: Fri, 12 Apr 2013 15:43:52 +0200
+Message-ID: <CACRpkdb=HzwNrhyAn5wTw9Rb0Gtoxqau5hh7_2BP8hipaqoLow@mail.gmail.com>
+Subject: Re: [PATCH] MFD: ab8500: pass AB8500 IRQ to debugfs code by resource
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Rickard ANDERSSON <rickard.andersson@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-12 at 15:31 +0200, Borislav Petkov wrote:
-> On Thu, Apr 11, 2013 at 02:33:34PM -0400, Steven Rostedt wrote:
-> > Comments?
-> 
-> I don't have a problem with it except with the yelling - I think I've
-> gone deaf. And for Rostedt code it is pretty clean and even *I* can
-> understand it :-).
-> 
-> Tony?
-> 
-> Steve, stupid question: since this is -rt only, why even push it
-> upstream?
-> 
+On Fri, Apr 12, 2013 at 12:48 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 12 April 2013, Linus Walleij wrote:
+>> On Fri, Apr 12, 2013 at 10:08 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Friday 12 April 2013, Linus Walleij wrote:
+>>
+>> >> Actually, well, this one IRQ (the one I start to pass) is already
+>> >> domain-mapped to the global IRQ numberspace, so that one will
+>> >> be correct.
+>> >
+>> > I don't know if we're talking about the same thing here.
+>> >
+>> > My point was that passing a domain-mapped IRQ number into mfd_add_devices
+>> > with another domain will result in the attempt to map that number into
+>> > another domain, which does not work.
+>>
+>> Ah, yes you're right ... now I need to find some other way
+>> to pass this resource ... hm.
+>
+> What is it actually needed for? In the code I'm looking at in linux-next
+> it only gets passed to a function that ignores it.
 
-I'm not (yet). But I just wanted to make sure there wasn't any little
-subtleties that I might be missing.
+Well that is a __attribute((weak)) function. It is overridden
+by suspend/resume code in the machine to ask the suspend
+code whether the AB8500 woke the system up.
 
-When -rt goes mainline, code like this will be going mainline too, thus
-the maintainers will see it then.
+Arguably not such a nice design :-/
 
-Thanks!
+However that suspend code is being posted to the linux-pm
+mailinglist as we speak, so I don't want to make their life
+miserable by just deleting some hook they're actually using
+for testing.
 
--- Steve
-  
-
+Yours,
+Linus Walleij
