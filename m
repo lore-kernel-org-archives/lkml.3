@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3DLTgH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 15:36:07 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:45611 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab3DLTgF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 15:36:05 -0400
-Date: Fri, 12 Apr 2013 12:36:00 -0700
-From: Kent Overstreet <koverstreet@google.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, akpm@linux-foundation.org,
-        Zach Brown <zab@redhat.com>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Asai Thambi S P <asamymuthupa@micron.com>,
-        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Benjamin LaHaise <bcrl@kvack.org>
-Subject: Re: [PATCH 23/33] generic dynamic per cpu refcounting
-Message-ID: <20130412193600.GA31761@localhost>
-References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
- <1363883754-27966-24-git-send-email-koverstreet@google.com>
- <20130402162738.GG31577@thunk.org>
+	id S1755277Ab3DLTkM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 15:40:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54460 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753538Ab3DLTkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 15:40:10 -0400
+Date: Fri, 12 Apr 2013 20:40:04 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Zlatko Calusic <zcalusic@bitsync.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        dormando <dormando@rydia.net>, Satoru Moriya <satoru.moriya@hds.com>,
+        Michal Hocko <mhocko@suse.cz>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/10] Reduce system disruption due to kswapd V2
+Message-ID: <20130412193947.GJ11656@suse.de>
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de>
+ <51672331.6070605@bitsync.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20130402162738.GG31577@thunk.org>
+In-Reply-To: <51672331.6070605@bitsync.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 12:27:38PM -0400, Theodore Ts'o wrote:
-> Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
+On Thu, Apr 11, 2013 at 10:55:13PM +0200, Zlatko Calusic wrote:
+> On 09.04.2013 13:06, Mel Gorman wrote:
+> <SNIP>
+>
+> - The only slightly negative thing I observed is that with the patch
+> applied kswapd burns 10x - 20x more CPU. So instead of about 15
+> seconds, it has now spent more than 4 minutes on one particular
+> machine with a quite steady load (after about 12 days of uptime).
+> Admittedly, that's still nothing too alarming, but...
 > 
-> > +		v = atomic64_add_return(1 + (1ULL << PCPU_COUNT_BITS),
-> > +					&ref->count);
-> > +
-> > +		if (!(v >> PCPU_COUNT_BITS) &&
-> > +		    REF_STATUS(pcpu_count) == PCPU_REF_NONE && alloc)
-> > +			percpu_ref_alloc(ref, pcpu_count);
+
+Would you happen to know what circumstances trigger the higher CPU
+usage?
+
+> - I like VERY much how you cleaned up the code so it is more
+> readable now. I'd like to see it in the Linus tree as soon as
+> possible. Very good job there!
 > 
-> This assumes that the kernel is compiled with -fno-strict-overflow.
-> Which we do, and this is not the only place int the kernel where we
-> depend on this, so while I was nervous before, I'm okay with it now.
-> Could we at least have a comment saying that we're depending on
-> -fno-strict-overflow, though?
 
-Well, I don't think it is true that we are depending on
--fno-strict-overflow since the overflow happens in atomic_add() which is
-a black box to the compiler.
+Thanks.
 
-It would be nice if we had unsigned atomic types... but given that we
-don't and I'm pretty sure overflow in atomic types happens all over the
-place that part honestly seems fine to me...
-
-That said, I suppose a comment indicating that it is intentionally
-overflowing is probably merited. Ted, Andrew, is this acceptable to you?
-
----
- lib/percpu-refcount.c | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/lib/percpu-refcount.c b/lib/percpu-refcount.c
-index 79c6158..200088f 100644
---- a/lib/percpu-refcount.c
-+++ b/lib/percpu-refcount.c
-@@ -124,6 +124,13 @@ void __percpu_ref_get(struct percpu_ref *ref, bool alloc)
- 		v = atomic64_add_return(1 + (1ULL << PCPU_COUNT_BITS),
- 					&ref->count);
- 
-+		/*
-+		 * The high bits of the counter count the number of gets() that
-+		 * have occured; we check for overflow to call
-+		 * percpu_ref_alloc() every (1 << (64 - PCPU_COUNT_BITS))
-+		 * iterations.
-+		 */
-+
- 		if (!(v >> PCPU_COUNT_BITS) &&
- 		    REF_STATUS(pcpu_count) == PCPU_REF_NONE && alloc)
- 			percpu_ref_alloc(ref, pcpu_count);
 -- 
-1.7.12.146.g16d26b1
-
+Mel Gorman
+SUSE Labs
