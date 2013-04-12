@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab3DLSHg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 14:07:36 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:38100 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752539Ab3DLSHe (ORCPT
+	id S1754861Ab3DLSNS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 14:13:18 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31115 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753031Ab3DLSNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 14:07:34 -0400
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [NEW DRIVER V4 0/7] DA9058 PMIC - please comment on this new driver
-Date: Fri, 12 Apr 2013 11:07:29 -0700
-Message-ID: <1854273.arIzJJ3lWV@dtor-d630.eng.vmware.com>
-User-Agent: KMail/4.10.1 (Linux/3.9.0-rc6+; KDE/4.10.1; x86_64; ; )
-In-Reply-To: <201304121307.r3CD7tDi011782@latitude>
-References: <201304121307.r3CD7tDi011782@latitude>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 12 Apr 2013 14:13:17 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=KTmiORCV4U8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ozPQQfBhc10A:10 a=57SyGIRnAAAA:8 a=VwQbUJbxAAAA:8 a=2ySQTwxOyORc7gUD1osA:9 a=QEXdDO2ut3YA:10 a=TIV7c6GJmisA:10 a=LI9Vle30uBYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365790396.9609.93.camel@gandalf.local.home>
+Subject: Re: [PATCH v2 2/2] tracing: Reset ftrace_graph_filter_enabled if
+ count is zero
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Date: Fri, 12 Apr 2013 14:13:16 -0400
+In-Reply-To: <1365663698-2413-1-git-send-email-namhyung@kernel.org>
+References: <1365663302-2170-2-git-send-email-namhyung@kernel.org>
+	 <1365663698-2413-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 12, 2013 02:05:29 PM Anthony Olech wrote:
-> This is submission attempt number 4 to have this driver included in
-> the linux kernel source tree. This is the driver for the Dialog DA9058.
+On Thu, 2013-04-11 at 16:01 +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> The DA9058 is a low power Power Management Integrated Circuit with extra
-> functionality. It is a Multi Function Device controlled only from an I2C
-> bus whose components can raise an interrupt request on a single IRQ line.
-> 
-> The driver for the DA9058 consists of a core (i2c) device driver that
-> instantiates the individual component device drivers for:
-> 
-> adc - 5 ADC channels
-> gpio - 2 available pins
-> onkey - 1 device
+> The ftrace_graph_count can be decreased with a "!" pattern, so that
+> the enabled flag should be updated too.
 
-I have exactly the same comment as ~6 month ago:
+Thanks!
 
-> On Wed, Aug 15, 2012 at 04:05:22PM +0100, Anthony Olech wrote:
-> > This is the ONKEY component driver of the Dialog DA9058 PMIC.
-> > This driver is just one component of the whole DA9058 PMIC driver.
-> > It depends on the CORE component driver of the DA9058 MFD.
-> > 
-> > Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
-> > Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
-> 
-> This is almost exact copy of da9052_onkey, can they be merged together?
-> 
-> Thanks.
+Once again I'll push patch 1 to 3.9 and stable as that's a nasty bug.
 
--- 
-Dmitry
+But this patch isn't that big of a deal, and as we are in the later
+-rc's I'll label it with stable and add it to the 3.10 queue.
+
+Thanks,
+
+-- Steve
+
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/trace/ftrace.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index be2bcb7ab2f7..daf8df20b764 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -3779,7 +3779,8 @@ out:
+>  	if (fail)
+>  		return -EINVAL;
+>  
+> -	ftrace_graph_filter_enabled = 1;
+> +	ftrace_graph_filter_enabled = !!(*idx);
+> +
+>  	return 0;
+>  }
+>  
+
+
