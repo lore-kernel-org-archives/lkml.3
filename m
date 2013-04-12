@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab3DLA53 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 20:57:29 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37226 "EHLO
+	id S1752898Ab3DLBAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 21:00:35 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37268 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443Ab3DLA5Z (ORCPT
+	with ESMTP id S1752831Ab3DLA53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 20:57:25 -0400
+	Thu, 11 Apr 2013 20:57:29 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v4 21/22] x86, mm: Make init_mem_mapping be able to be called several times
-Date: Thu, 11 Apr 2013 17:56:07 -0700
-Message-Id: <1365728168-32067-22-git-send-email-yinghai@kernel.org>
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH v4 17/22] x86, ACPI, numa, ia64: split SLIT handling out
+Date: Thu, 11 Apr 2013 17:56:03 -0700
+Message-Id: <1365728168-32067-18-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
 References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
@@ -26,248 +27,190 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare to put page table on local nodes.
+We need to handle slit later, as it need to allocate buffer for distance
+matrix. Also we do not need SLIT info before init_mem_mapping.
 
-Move calling of init_mem_mapping to early_initmem_init.
+So move SLIT parsing later.
 
-Rework alloc_low_pages to alloc page table in following order:
-	BRK, local node, low range
+x86_acpi_numa_init become x86_acpi_numa_init_srat/x86_acpi_numa_init_slit.
 
-Still only load_cr3 one time, otherwise we would break xen 64bit again.
+It should not break ia64 by replacing acpi_numa_init with
+acpi_numa_init_srat/acpi_numa_init_slit/acpi_num_arch_fixup.
+
+-v2: Change name to acpi_numa_init_srat/acpi_numa_init_slit according tj.
+     remove the reset_numa_distance() in numa_init(), as get we only set
+     distance in slit handling.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Jacob Shin <jacob.shin@amd.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
+Tested-by: Tony Luck <tony.luck@intel.com>
 ---
- arch/x86/include/asm/pgtable.h |  2 +-
- arch/x86/kernel/setup.c        |  1 -
- arch/x86/mm/init.c             | 88 ++++++++++++++++++++++++++----------------
- arch/x86/mm/numa.c             | 24 ++++++++++++
- 4 files changed, 79 insertions(+), 36 deletions(-)
+ arch/ia64/kernel/setup.c    |  4 +++-
+ arch/x86/include/asm/acpi.h |  3 ++-
+ arch/x86/mm/numa.c          | 14 ++++++++++++--
+ arch/x86/mm/srat.c          | 11 +++++++----
+ drivers/acpi/numa.c         | 13 +++++++------
+ include/linux/acpi.h        |  3 ++-
+ 6 files changed, 33 insertions(+), 15 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 1e67223..868687c 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -621,7 +621,7 @@ static inline int pgd_none(pgd_t pgd)
- #ifndef __ASSEMBLY__
- 
- extern int direct_gbpages;
--void init_mem_mapping(void);
-+void init_mem_mapping(unsigned long begin, unsigned long end);
- void early_alloc_pgt_buf(void);
- 
- /* local pte updates need not use xchg for locking */
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 6ef3fa2..67ef4bc 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1105,7 +1105,6 @@ void __init setup_arch(char **cmdline_p)
- 	acpi_boot_table_init();
+diff --git a/arch/ia64/kernel/setup.c b/arch/ia64/kernel/setup.c
+index 2029cc0..6a2efb5 100644
+--- a/arch/ia64/kernel/setup.c
++++ b/arch/ia64/kernel/setup.c
+@@ -558,7 +558,9 @@ setup_arch (char **cmdline_p)
+ 	acpi_table_init();
  	early_acpi_boot_init();
- 	early_initmem_init();
--	init_mem_mapping();
- 	memblock.current_limit = get_max_mapped();
- 	early_trap_pf_init();
+ # ifdef CONFIG_ACPI_NUMA
+-	acpi_numa_init();
++	acpi_numa_init_srat();
++	acpi_numa_init_slit();
++	acpi_numa_arch_fixup();
+ #  ifdef CONFIG_ACPI_HOTPLUG_CPU
+ 	prefill_possible_map();
+ #  endif
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index b31bf97..651db0b 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -178,7 +178,8 @@ static inline void disable_acpi(void) { }
  
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 2754e45..8a03283 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -24,7 +24,10 @@ static unsigned long __initdata pgt_buf_start;
- static unsigned long __initdata pgt_buf_end;
- static unsigned long __initdata pgt_buf_top;
+ #ifdef CONFIG_ACPI_NUMA
+ extern int acpi_numa;
+-extern int x86_acpi_numa_init(void);
++int x86_acpi_numa_init_srat(void);
++void x86_acpi_numa_init_slit(void);
+ #endif /* CONFIG_ACPI_NUMA */
  
--static unsigned long min_pfn_mapped;
-+static unsigned long low_min_pfn_mapped;
-+static unsigned long low_max_pfn_mapped;
-+static unsigned long local_min_pfn_mapped;
-+static unsigned long local_max_pfn_mapped;
- 
- static bool __initdata can_use_brk_pgt = true;
- 
-@@ -52,10 +55,17 @@ __ref void *alloc_low_pages(unsigned int num)
- 
- 	if ((pgt_buf_end + num) > pgt_buf_top || !can_use_brk_pgt) {
- 		unsigned long ret;
--		if (min_pfn_mapped >= max_pfn_mapped)
--			panic("alloc_low_page: ran out of memory");
--		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
--					max_pfn_mapped << PAGE_SHIFT,
-+		if (local_min_pfn_mapped >= local_max_pfn_mapped) {
-+			if (low_min_pfn_mapped >= low_max_pfn_mapped)
-+				panic("alloc_low_page: ran out of memory");
-+			ret = memblock_find_in_range(
-+					low_min_pfn_mapped << PAGE_SHIFT,
-+					low_max_pfn_mapped << PAGE_SHIFT,
-+					PAGE_SIZE * num , PAGE_SIZE);
-+		} else
-+			ret = memblock_find_in_range(
-+					local_min_pfn_mapped << PAGE_SHIFT,
-+					local_max_pfn_mapped << PAGE_SHIFT,
- 					PAGE_SIZE * num , PAGE_SIZE);
- 		if (!ret)
- 			panic("alloc_low_page: can not alloc memory");
-@@ -402,60 +412,75 @@ static unsigned long __init get_new_step_size(unsigned long step_size)
- 	return  step_size;
- }
- 
--void __init init_mem_mapping(void)
-+void __init init_mem_mapping(unsigned long begin, unsigned long end)
- {
--	unsigned long end, real_end, start, last_start;
-+	unsigned long real_end, start, last_start;
- 	unsigned long step_size;
- 	unsigned long addr;
- 	unsigned long mapped_ram_size = 0;
- 	unsigned long new_mapped_ram_size;
-+	bool is_low = false;
-+
-+	if (!begin) {
-+		probe_page_size_mask();
-+		/* the ISA range is always mapped regardless of memory holes */
-+		init_memory_mapping(0, ISA_END_ADDRESS);
-+		begin = ISA_END_ADDRESS;
-+		is_low = true;
-+	}
- 
--	probe_page_size_mask();
--
--#ifdef CONFIG_X86_64
--	end = max_pfn << PAGE_SHIFT;
--#else
--	end = max_low_pfn << PAGE_SHIFT;
--#endif
--
--	/* the ISA range is always mapped regardless of memory holes */
--	init_memory_mapping(0, ISA_END_ADDRESS);
-+	if (begin >= end)
-+		return;
- 
- 	/* xen has big range in reserved near end of ram, skip it at first.*/
--	addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE, PMD_SIZE);
-+	addr = memblock_find_in_range(begin, end, PMD_SIZE, PMD_SIZE);
- 	real_end = addr + PMD_SIZE;
- 
- 	/* step_size need to be small so pgt_buf from BRK could cover it */
- 	step_size = PMD_SIZE;
--	max_pfn_mapped = 0; /* will get exact value next */
--	min_pfn_mapped = real_end >> PAGE_SHIFT;
-+	local_max_pfn_mapped = begin >> PAGE_SHIFT;
-+	local_min_pfn_mapped = real_end >> PAGE_SHIFT;
- 	last_start = start = real_end;
--	while (last_start > ISA_END_ADDRESS) {
-+	while (last_start > begin) {
- 		if (last_start > step_size) {
- 			start = round_down(last_start - 1, step_size);
--			if (start < ISA_END_ADDRESS)
--				start = ISA_END_ADDRESS;
-+			if (start < begin)
-+				start = begin;
- 		} else
--			start = ISA_END_ADDRESS;
-+			start = begin;
- 		new_mapped_ram_size = init_range_memory_mapping(start,
- 							last_start);
-+		if ((last_start >> PAGE_SHIFT) > local_max_pfn_mapped)
-+			local_max_pfn_mapped = last_start >> PAGE_SHIFT;
-+		local_min_pfn_mapped = start >> PAGE_SHIFT;
- 		last_start = start;
--		min_pfn_mapped = last_start >> PAGE_SHIFT;
- 		/* only increase step_size after big range get mapped */
- 		if (new_mapped_ram_size > mapped_ram_size)
- 			step_size = get_new_step_size(step_size);
- 		mapped_ram_size += new_mapped_ram_size;
- 	}
- 
--	if (real_end < end)
-+	if (real_end < end) {
- 		init_range_memory_mapping(real_end, end);
-+		if ((end >> PAGE_SHIFT) > local_max_pfn_mapped)
-+			local_max_pfn_mapped = end >> PAGE_SHIFT;
-+	}
- 
-+	if (is_low) {
-+		low_min_pfn_mapped = local_min_pfn_mapped;
-+		low_max_pfn_mapped = local_max_pfn_mapped;
-+	}
-+}
-+
-+#ifndef CONFIG_NUMA
-+void __init early_initmem_init(void)
-+{
- #ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		/* can we preseve max_low_pfn ?*/
-+	init_mem_mapping(0, max_pfn << PAGE_SHIFT);
-+	if (max_pfn > max_low_pfn)
- 		max_low_pfn = max_pfn;
--	}
- #else
-+	init_mem_mapping(0, max_low_pfn << PAGE_SHIFT);
- 	early_ioremap_page_table_range_init();
- #endif
- 
-@@ -464,11 +489,6 @@ void __init init_mem_mapping(void)
- 
- 	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
- }
--
--#ifndef CONFIG_NUMA
--void __init early_initmem_init(void)
--{
--}
- #endif
- 
- /*
+ #define acpi_unlazy_tlb(x)	leave_mm(x)
 diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index c2d4653..d3eb0c9 100644
+index 90fd123..182e085 100644
 --- a/arch/x86/mm/numa.c
 +++ b/arch/x86/mm/numa.c
-@@ -17,8 +17,10 @@
- #include <asm/dma.h>
- #include <asm/acpi.h>
- #include <asm/amd_nb.h>
-+#include <asm/tlbflush.h>
+@@ -598,7 +598,6 @@ static int __init numa_init(int (*init_func)(void))
  
- #include "numa_internal.h"
-+#include "mm_internal.h"
+ 	nodes_clear(numa_nodes_parsed);
+ 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
+-	numa_reset_distance();
  
- int __initdata numa_off;
- nodemask_t numa_nodes_parsed __initdata;
-@@ -668,9 +670,31 @@ static void __init early_x86_numa_init(void)
- 	numa_init(dummy_numa_init);
+ 	ret = init_func();
+ 	if (ret < 0)
+@@ -636,6 +635,10 @@ static int __init dummy_numa_init(void)
+ 	return 0;
  }
  
-+#ifdef CONFIG_X86_64
-+static void __init early_x86_numa_init_mapping(void)
-+{
-+	init_mem_mapping(0, max_pfn << PAGE_SHIFT);
-+	if (max_pfn > max_low_pfn)
-+		max_low_pfn = max_pfn;
-+}
-+#else
-+static void __init early_x86_numa_init_mapping(void)
-+{
-+	init_mem_mapping(0, max_low_pfn << PAGE_SHIFT);
-+	early_ioremap_page_table_range_init();
-+}
++#ifdef CONFIG_ACPI_NUMA
++static bool srat_used __initdata;
 +#endif
 +
- void __init early_initmem_init(void)
- {
+ /**
+  * x86_numa_init - Initialize NUMA
+  *
+@@ -651,8 +654,10 @@ static void __init early_x86_numa_init(void)
+ 			return;
+ #endif
+ #ifdef CONFIG_ACPI_NUMA
+-		if (!numa_init(x86_acpi_numa_init))
++		if (!numa_init(x86_acpi_numa_init_srat)) {
++			srat_used = true;
+ 			return;
++		}
+ #endif
+ #ifdef CONFIG_AMD_NUMA
+ 		if (!numa_init(amd_numa_init))
+@@ -670,6 +675,11 @@ void __init x86_numa_init(void)
+ 
  	early_x86_numa_init();
+ 
++#ifdef CONFIG_ACPI_NUMA
++	if (srat_used)
++		x86_acpi_numa_init_slit();
++#endif
 +
-+	early_x86_numa_init_mapping();
-+
-+	load_cr3(swapper_pg_dir);
-+	__flush_tlb_all();
-+
-+	early_memtest(0, max_pfn_mapped<<PAGE_SHIFT);
+ 	numa_emulation(&numa_meminfo, numa_distance_cnt);
+ 
+ 	node_possible_map = numa_nodes_parsed;
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index cdd0da9..443f9ef 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -185,14 +185,17 @@ out_err:
+ 	return -1;
  }
  
- void __init x86_numa_init(void)
+-void __init acpi_numa_arch_fixup(void) {}
+-
+-int __init x86_acpi_numa_init(void)
++int __init x86_acpi_numa_init_srat(void)
+ {
+ 	int ret;
+ 
+-	ret = acpi_numa_init();
++	ret = acpi_numa_init_srat();
+ 	if (ret < 0)
+ 		return ret;
+ 	return srat_disabled() ? -EINVAL : 0;
+ }
++
++void __init x86_acpi_numa_init_slit(void)
++{
++	acpi_numa_init_slit();
++}
+diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+index 33e609f..6460db4 100644
+--- a/drivers/acpi/numa.c
++++ b/drivers/acpi/numa.c
+@@ -282,7 +282,7 @@ acpi_table_parse_srat(enum acpi_srat_type id,
+ 					    handler, max_entries);
+ }
+ 
+-int __init acpi_numa_init(void)
++int __init acpi_numa_init_srat(void)
+ {
+ 	int cnt = 0;
+ 
+@@ -303,11 +303,6 @@ int __init acpi_numa_init(void)
+ 					    NR_NODE_MEMBLKS);
+ 	}
+ 
+-	/* SLIT: System Locality Information Table */
+-	acpi_table_parse(ACPI_SIG_SLIT, acpi_parse_slit);
+-
+-	acpi_numa_arch_fixup();
+-
+ 	if (cnt < 0)
+ 		return cnt;
+ 	else if (!parsed_numa_memblks)
+@@ -315,6 +310,12 @@ int __init acpi_numa_init(void)
+ 	return 0;
+ }
+ 
++void __init acpi_numa_init_slit(void)
++{
++	/* SLIT: System Locality Information Table */
++	acpi_table_parse(ACPI_SIG_SLIT, acpi_parse_slit);
++}
++
+ int acpi_get_pxm(acpi_handle h)
+ {
+ 	unsigned long long pxm;
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 4b943e6..4a78235 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -85,7 +85,8 @@ int early_acpi_boot_init(void);
+ int acpi_boot_init (void);
+ void acpi_boot_table_init (void);
+ int acpi_mps_check (void);
+-int acpi_numa_init (void);
++int acpi_numa_init_srat(void);
++void acpi_numa_init_slit(void);
+ 
+ int acpi_table_init (void);
+ int acpi_table_parse(char *id, acpi_tbl_table_handler handler);
 -- 
 1.8.1.4
 
