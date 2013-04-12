@@ -1,117 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab3DLXML (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:12:11 -0400
-Received: from mail-qe0-f44.google.com ([209.85.128.44]:64907 "EHLO
-	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976Ab3DLXLJ (ORCPT
+	id S1753802Ab3DLXMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:12:40 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57519 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752577Ab3DLXMf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:11:09 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        mhocko@suse.cz, kamezawa.hiroyu@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org, glommer@parallels.com, vgoyal@redhat.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/4] cgroup: convert cgroupfs_root flag bits to masks and add CGRP_ prefix
-Date: Fri, 12 Apr 2013 16:10:56 -0700
-Message-Id: <1365808259-31073-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365808259-31073-1-git-send-email-tj@kernel.org>
-References: <1365808259-31073-1-git-send-email-tj@kernel.org>
+	Fri, 12 Apr 2013 19:12:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "myungjoo.ham" <myungjoo.ham@samsung.com>,
+        "'Axel Lin'" <axel.lin@ingics.com>
+Cc: "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Rafael J. Wysocki'" <rafael.j.wysocki@intel.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH 1/3] PM / devfreq: exynos4_bus: Fix missing mutex_unlock if opp_find_freq_floor fails
+Date: Sat, 13 Apr 2013 01:20:23 +0200
+Message-ID: <2583577.Kz0O4QXtvD@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <002101ce3776$cbc83f90$6358beb0$@samsung.com>
+References: <1365746058.4025.1.camel@phoenix> <1413655.hhUbBAKNUi@vostro.rjw.lan> <002101ce3776$cbc83f90$6358beb0$@samsung.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no reason to be using bitops, which tends to be more
-cumbersome, to handle root flags.  Convert them to masks.  Also, as
-they'll be moved to include/linux/cgroup.h and it's generally a good
-idea, add CGRP_ prefix.
+On Friday, April 12, 2013 09:11:00 PM myungjoo.ham wrote:
+> > On Friday, April 12, 2013 11:52:01 AM 함명주 wrote:
+> > > > On Friday, April 12, 2013 01:54:18 PM Axel Lin wrote:
+> > > > > We need to call mutex_unlock() in the error path.
+> > > > > 
+> > > > > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> > > > 
+> > > > All three patches applied to linux-pm.git/linux-next.
+> > > > 
+> > > > Exynos maintainers, if you have any objections, please holler.
+> > > > 
+> > > > Thanks,
+> > > > Rafael
+> > > 
+> > > This patch was included in the last pull-request patchset
+> > > though the path was updated. (its precedessor patch moved
+> > > exynos drivers to /drivers/devfreq/exynos/* after adding
+> > > Exynos common driver files)
+> > 
+> > OK, so do you want me to drop it?
+> > 
+> > What about the remaining two?
+> 
+> Yes, please drop 1/3. It's duplicated.
+> 
+> The patches 2~3/3 can wait. They are actually not bugfixes.
 
-Note that flags are assigned from (1 << 1).  The first bit will be
-used by a flag which will be added soon.
+OK, I've dropped all three.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cgroup.c | 21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
+Axel, please push [2-3/3] thorugh the Exynos tree.
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 678a22c..a372eaa 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -296,10 +296,10 @@ bool cgroup_is_descendant(struct cgroup *cgrp, struct cgroup *ancestor)
- }
- EXPORT_SYMBOL_GPL(cgroup_is_descendant);
- 
--/* bits in struct cgroupfs_root flags field */
-+/* cgroupfs_root->flags */
- enum {
--	ROOT_NOPREFIX,	/* mounted subsystems have no named prefix */
--	ROOT_XATTR,	/* supports extended attributes */
-+	CGRP_ROOT_NOPREFIX	= (1 << 1), /* mounted subsystems have no named prefix */
-+	CGRP_ROOT_XATTR		= (1 << 2), /* supports extended attributes */
- };
- 
- static int cgroup_is_releasable(const struct cgroup *cgrp)
-@@ -1137,9 +1137,9 @@ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
- 	mutex_lock(&cgroup_root_mutex);
- 	for_each_subsys(root, ss)
- 		seq_printf(seq, ",%s", ss->name);
--	if (test_bit(ROOT_NOPREFIX, &root->flags))
-+	if (root->flags & CGRP_ROOT_NOPREFIX)
- 		seq_puts(seq, ",noprefix");
--	if (test_bit(ROOT_XATTR, &root->flags))
-+	if (root->flags & CGRP_ROOT_XATTR)
- 		seq_puts(seq, ",xattr");
- 	if (strlen(root->release_agent_path))
- 		seq_printf(seq, ",release_agent=%s", root->release_agent_path);
-@@ -1202,7 +1202,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 			continue;
- 		}
- 		if (!strcmp(token, "noprefix")) {
--			set_bit(ROOT_NOPREFIX, &opts->flags);
-+			opts->flags |= CGRP_ROOT_NOPREFIX;
- 			continue;
- 		}
- 		if (!strcmp(token, "clone_children")) {
-@@ -1210,7 +1210,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 			continue;
- 		}
- 		if (!strcmp(token, "xattr")) {
--			set_bit(ROOT_XATTR, &opts->flags);
-+			opts->flags |= CGRP_ROOT_XATTR;
- 			continue;
- 		}
- 		if (!strncmp(token, "release_agent=", 14)) {
-@@ -1293,8 +1293,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 	 * with the old cpuset, so we allow noprefix only if mounting just
- 	 * the cpuset subsystem.
- 	 */
--	if (test_bit(ROOT_NOPREFIX, &opts->flags) &&
--	    (opts->subsys_mask & mask))
-+	if ((opts->flags & CGRP_ROOT_NOPREFIX) && (opts->subsys_mask & mask))
- 		return -EINVAL;
- 
- 
-@@ -2523,7 +2522,7 @@ static struct simple_xattrs *__d_xattrs(struct dentry *dentry)
- static inline int xattr_enabled(struct dentry *dentry)
- {
- 	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
--	return test_bit(ROOT_XATTR, &root->flags);
-+	return root->flags & CGRP_ROOT_XATTR;
- }
- 
- static bool is_valid_xattr(const char *name)
-@@ -2695,7 +2694,7 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
- 
- 	simple_xattrs_init(&cft->xattrs);
- 
--	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
-+	if (subsys && !(cgrp->root->flags & CGRP_ROOT_NOPREFIX)) {
- 		strcpy(name, subsys->name);
- 		strcat(name, ".");
- 	}
+Thanks,
+Rafael
+
+
+> > > > > ---
+> > > > >  drivers/devfreq/exynos4_bus.c |    3 ++-
+> > > > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > > > 
+> > > > > diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
+> > > > > index 1deee09..54b9615 100644
+> > > > > --- a/drivers/devfreq/exynos4_bus.c
+> > > > > +++ b/drivers/devfreq/exynos4_bus.c
+> > > > > @@ -974,7 +974,8 @@ static int exynos4_busfreq_pm_notifier_event(struct notifier_block *this,
+> > > > >  			rcu_read_unlock();
+> > > > >  			dev_err(data->dev, "%s: unable to find a min freq\n",
+> > > > >  				__func__);
+> > > > > -			return PTR_ERR(opp);
+> > > > > +			err = PTR_ERR(opp);
+> > > > > +			goto unlock;
+> > > > >  		}
+> > > > >  		new_oppinfo.rate = opp_get_freq(opp);
+> > > > >  		new_oppinfo.volt = opp_get_voltage(opp);
+> > > > > 
+> > 
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
-1.8.1.4
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
