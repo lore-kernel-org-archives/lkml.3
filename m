@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757462Ab3DLWqo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:46:44 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47599 "EHLO
+	id S1757685Ab3DLWqx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:46:53 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47634 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756630Ab3DLWqm (ORCPT
+	with ESMTP id S1756037Ab3DLWqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:46:42 -0400
+	Fri, 12 Apr 2013 18:46:51 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 17/29] PCI: Use for_each_pci_resource() in pci_dev_driver()
-Date: Fri, 12 Apr 2013 15:44:31 -0700
-Message-Id: <1365806683-26717-18-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <jiang.liu@huawei.com>
+Subject: [PATCH v4 10/29] PCI, acpiphp: Use for_each_pci_resource() helper
+Date: Fri, 12 Apr 2013 15:44:24 -0700
+Message-Id: <1365806683-26717-11-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace those open code, and make code more readable.
-
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>
 ---
- drivers/pci/pci-driver.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-index 1fa1e48..009f6c2 100644
---- a/drivers/pci/pci-driver.c
-+++ b/drivers/pci/pci-driver.c
-@@ -1170,9 +1170,11 @@ pci_dev_driver(const struct pci_dev *dev)
- 	if (dev->driver)
- 		return dev->driver;
- 	else {
-+		struct resource *res;
- 		int i;
--		for(i=0; i<=PCI_ROM_RESOURCE; i++)
--			if (dev->resource[i].flags & IORESOURCE_BUSY)
-+
-+		for_each_pci_resource((struct pci_dev *)dev, res, i, PCI_STD_ROM_RES)
-+			if (res->flags & IORESOURCE_BUSY)
- 				return &pci_compat_driver;
- 	}
- 	return NULL;
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 270fdba..c35b2b1 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -1085,10 +1085,10 @@ static void acpiphp_sanitize_bus(struct pci_bus *bus)
+ 	struct pci_dev *dev;
+ 	int i;
+ 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM;
++	struct resource *res;
+ 
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+-		for (i=0; i<PCI_BRIDGE_RESOURCES; i++) {
+-			struct resource *res = &dev->resource[i];
++		for_each_pci_resource(dev, res, i, PCI_STD_ROM_IOV_RES) {
+ 			if ((res->flags & type_mask) && !res->start &&
+ 					res->end) {
+ 				/* Could not assign a required resources
 -- 
 1.8.1.4
 
