@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab3DLLnh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 07:43:37 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:56974 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754763Ab3DLLne (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 07:43:34 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Axel Lin <axel.lin@ingics.com>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RESEND][PATCH 1/3] PM / devfreq: exynos4_bus: Fix missing mutex_unlock if opp_find_freq_floor fails
-Date: Fri, 12 Apr 2013 13:51:22 +0200
-Message-ID: <1413655.hhUbBAKNUi@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1365746058.4025.1.camel@phoenix>
-References: <1365746058.4025.1.camel@phoenix>
+	id S1754148Ab3DLLuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 07:50:40 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:49703 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab3DLLui (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 07:50:38 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <CA+V-a8u+jNizu8EFfmwwh6kSr913n1JAFkx7r3_MfXrCyWnG0g@mail.gmail.com>
+References: <CA+V-a8sko61y73odE5efJWwqYyMkBqM7_FPrs7Uvh7sdtBsGvA@mail.gmail.com>
+ <CA+V-a8u+jNizu8EFfmwwh6kSr913n1JAFkx7r3_MfXrCyWnG0g@mail.gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Fri, 12 Apr 2013 17:20:17 +0530
+Message-ID: <CA+V-a8vW50McasFWQJRquvBj=vf5oQeOnHC8eSFjBFUYm_M2eA@mail.gmail.com>
+Subject: Re: [GIT PULL FOR v3.10] DaVinci media cleanups + Updates
+To: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Cc: dlos <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        linux-media <linux-media@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 12, 2013 01:54:18 PM Axel Lin wrote:
-> We need to call mutex_unlock() in the error path.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Hi Hans/Mauro,
 
-All three patches applied to linux-pm.git/linux-next.
+Ahh here is the final pull request hopefully I wont add anymore :)
+sorry for inconvenience,
+had to add on more patch at the final moment. Following is the fresh
+pull request.
+Let me know if replying on top if it is OK or if if you want a fresh mail.
 
-Exynos maintainers, if you have any objections, please holler.
+Note: All the ARM platform changes have been acked by its maintainer.
 
-Thanks,
-Rafael
+Regards,
+--Prabhakar
 
-> ---
->  drivers/devfreq/exynos4_bus.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
-> index 1deee09..54b9615 100644
-> --- a/drivers/devfreq/exynos4_bus.c
-> +++ b/drivers/devfreq/exynos4_bus.c
-> @@ -974,7 +974,8 @@ static int exynos4_busfreq_pm_notifier_event(struct notifier_block *this,
->  			rcu_read_unlock();
->  			dev_err(data->dev, "%s: unable to find a min freq\n",
->  				__func__);
-> -			return PTR_ERR(opp);
-> +			err = PTR_ERR(opp);
-> +			goto unlock;
->  		}
->  		new_oppinfo.rate = opp_get_freq(opp);
->  		new_oppinfo.volt = opp_get_voltage(opp);
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The following changes since commit 81e096c8ac6a064854c2157e0bf802dc4906678c:
+
+  [media] budget: Add support for Philips Semi Sylt PCI ref. design
+(2013-04-08 07:28:01 -0300)
+
+are available in the git repository at:
+  git://linuxtv.org/mhadli/v4l-dvb-davinci_devices.git for_v3.10
+
+Lad, Prabhakar (9):
+      davinci: vpif: add pm_runtime support
+      media: davinci: vpss: enable vpss clocks
+      media: davinci: vpbe: venc: move the enabling of vpss clocks to driver
+      davinic: vpss: trivial cleanup
+      ARM: davinci: dm365: add support for v4l2 video display
+      ARM: davinci: dm365 EVM: add support for VPBE display
+      ARM: davinci: dm355: add support for v4l2 video display
+      ARM: davinci: dm355 EVM: add support for VPBE display
+      ARM: daVinci: dm644x/dm355/dm365: replace V4L2_STD_525_60/625_50
+with V4L2_STD_NTSC/PAL
+
+Sekhar Nori (1):
+      media: davinci: kconfig: fix incorrect selects
+
+ arch/arm/mach-davinci/board-dm355-evm.c      |   71 +++++++++-
+ arch/arm/mach-davinci/board-dm365-evm.c      |  166 ++++++++++++++++++++++-
+ arch/arm/mach-davinci/board-dm644x-evm.c     |    4 +-
+ arch/arm/mach-davinci/davinci.h              |   11 ++-
+ arch/arm/mach-davinci/dm355.c                |  174 ++++++++++++++++++++++--
+ arch/arm/mach-davinci/dm365.c                |  195 +++++++++++++++++++++++---
+ arch/arm/mach-davinci/dm644x.c               |    9 +-
+ arch/arm/mach-davinci/pm_domain.c            |    2 +-
+ drivers/media/platform/davinci/Kconfig       |  103 +++++---------
+ drivers/media/platform/davinci/Makefile      |   17 +--
+ drivers/media/platform/davinci/dm355_ccdc.c  |   39 +-----
+ drivers/media/platform/davinci/dm644x_ccdc.c |   44 ------
+ drivers/media/platform/davinci/isif.c        |   28 +---
+ drivers/media/platform/davinci/vpbe_venc.c   |   25 ++++
+ drivers/media/platform/davinci/vpif.c        |   24 +---
+ drivers/media/platform/davinci/vpss.c        |   36 ++++-
+ 16 files changed, 694 insertions(+), 254 deletions(-)
