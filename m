@@ -1,105 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab3DLLyj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 07:54:39 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:43669 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753721Ab3DLLyh (ORCPT
+	id S1755579Ab3DLL5E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 07:57:04 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:56994 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753938Ab3DLL5C convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 07:54:37 -0400
-Message-ID: <1365767669.2373.58.camel@falcor1.watson.ibm.com>
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Josh Boyer <jwboyer@gmail.com>,
-        "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 12 Apr 2013 07:54:29 -0400
-In-Reply-To: <20130411145225.GC21260@redhat.com>
-References: <20130205183436.GC12853@redhat.com>
-	 <CALLzPKavbsZgHoJrk5iQ0F1fO21SaeEHmCVCh1G1UKCKB3WZZQ@mail.gmail.com>
-	 <20130405135000.GB6299@redhat.com>
-	 <1365450229.3847.56.camel@falcor1.watson.ibm.com>
-	 <20130408200904.GI28292@redhat.com>
-	 <CA+5PVA43U_kDSV7p0zhQwmK9pwbVb8qAUePU8svQvoPbDA9iCQ@mail.gmail.com>
-	 <20130409143852.GH6320@redhat.com>
-	 <1365563230.3074.107.camel@falcor1.watson.ibm.com>
-	 <20130410194209.GF6602@redhat.com>
-	 <1365627922.2452.32.camel@falcor1.watson.ibm.com>
-	 <20130411145225.GC21260@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041211-3620-0000-0000-0000020177FD
+	Fri, 12 Apr 2013 07:57:02 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: myungjoo.ham@samsung.com
+Cc: Axel Lin <axel.lin@ingics.com>,
+        =?utf-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
+        =?utf-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RESEND][PATCH 1/3] PM / devfreq: exynos4_bus: Fix missing mutex_unlock if opp_find_freq_floor fails
+Date: Fri, 12 Apr 2013 14:04:50 +0200
+Message-ID: <5977939.Q0WPVmYRk9@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <15500134.204421365767518757.JavaMail.weblogic@epv6ml01>
+References: <15500134.204421365767518757.JavaMail.weblogic@epv6ml01>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 10:52 -0400, Vivek Goyal wrote:
-> On Wed, Apr 10, 2013 at 05:05:22PM -0400, Mimi Zohar wrote:
-> > On Wed, 2013-04-10 at 15:42 -0400, Vivek Goyal wrote:
-> > > On Tue, Apr 09, 2013 at 11:07:10PM -0400, Mimi Zohar wrote:
+On Friday, April 12, 2013 11:52:01 AM 함명주 wrote:
+> > On Friday, April 12, 2013 01:54:18 PM Axel Lin wrote:
+> > > We need to call mutex_unlock() in the error path.
 > > > 
-> > > [..]
-> > > > The module keyring is a special case.  Loading these keys from the
-> > > > kernel and, presumably, locking the keyring is probably fine.  In the
-> > > > case of IMA, however, files will be signed by any number of package
-> > > > owners.  If the _ima keyring is locked by the kernel, how would you add
-> > > > these other keys?
+> > > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> > 
+> > All three patches applied to linux-pm.git/linux-next.
+> > 
+> > Exynos maintainers, if you have any objections, please holler.
+> > 
+> > Thanks,
+> > Rafael
+> 
+> This patch was included in the last pull-request patchset
+> though the path was updated. (its precedessor patch moved
+> exynos drivers to /drivers/devfreq/exynos/* after adding
+> Exynos common driver files)
+
+OK, so do you want me to drop it?
+
+What about the remaining two?
+
+Do you have any more devfreq patches for me to take into v3.10?  If so,
+please send a pull request ASAP.
+
+Thanks,
+Rafael
+
+
+> > 
+> > > ---
+> > >  drivers/devfreq/exynos4_bus.c |    3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
 > > > 
-> > > Who are package owners here. IOW, in typical IMA setup, where are the keys
-> > > and when are these keys loaded in ima keyring?
+> > > diff --git a/drivers/devfreq/exynos4_bus.c b/drivers/devfreq/exynos4_bus.c
+> > > index 1deee09..54b9615 100644
+> > > --- a/drivers/devfreq/exynos4_bus.c
+> > > +++ b/drivers/devfreq/exynos4_bus.c
+> > > @@ -974,7 +974,8 @@ static int exynos4_busfreq_pm_notifier_event(struct notifier_block *this,
+> > >  			rcu_read_unlock();
+> > >  			dev_err(data->dev, "%s: unable to find a min freq\n",
+> > >  				__func__);
+> > > -			return PTR_ERR(opp);
+> > > +			err = PTR_ERR(opp);
+> > > +			goto unlock;
+> > >  		}
+> > >  		new_oppinfo.rate = opp_get_freq(opp);
+> > >  		new_oppinfo.volt = opp_get_voltage(opp);
+> > > 
+> > -- 
+> > I speak only for myself.
+> > Rafael J. Wysocki, Intel Open Source Technology Center.
 > > 
-> > Suppose I install third party packages not signed by the distro, but by
-> > the package owner (eg. google, rpmfusion, ...).  Not only does the
-> > package signature need to be verified on installation, but the files
-> > need to be installed with signatures.  For IMA to enforce file
-> > integrity, the package owner's public key needs to be added to the _ima
-> > keyring.
-> 
-> Ok, got it. 
-> 
 > > 
-> > > If we trust root and keys can be loaded any time later, then signed
-> > > initramfs will not solve the problem either.
 > > 
-> > Locking the keyring in the kernel will limit the set of permitted keys
-> > to only those specified in UEFI db or builtin.  Locking the keyring in
-> > the "early" initramfs, will allow the system owner, whose key is in the
-> > UEFI db, to specify additional keys, such as those for third party
-> > packages.  Not all public keys belong in the UEFI db.
-> 
-> Ok, so third party public key you don't want to add in UEFI db. Instead
-> platform owner (whose key is in UEFI db) will regenerate initrafs and
-> sign it.
-> 
-> So above use case is primarily for user space files and verifying its
-> integrity and IMA keyring is used for that. secureboot does not require
-> IMA keyring to be locked as none of that code runs at ring0.
-> 
-> This locking requirement of IMA keyring is coming in only because we are
-> trying to also verify the integrity of a process who will load code which
-> runs at ring0.
-> 
-> So how do you like the idea of using another keyring (say system keyring)
-> for this purpose and what keyring to use integrity of a file can be
-> encoded in file signature.
-> 
-> This is something similar to INTEGRITY_KEYRING_MODULE keyring for modules.
-> (Though I don't see this code fully hooked up yet).
-> 
-> Or, given the fact that module signature and here /sbin/kexec verification
-> will make use of similar keys, we can create a system keyring, make module
-> code make use of that keyring. And IMA code can make use of that keyring
-> too if a file's digital signature indicates so.
+> >        
+> >   
+> >          
+> > 
 
-Sounds good to me!
-
-thanks,
-
-Mimi
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
