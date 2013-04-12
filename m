@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab3DLO3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 10:29:38 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:40405 "EHLO
+	id S1752928Ab3DLO3c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 10:29:32 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:40374 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab3DLO3f (ORCPT
+	with ESMTP id S1751691Ab3DLO3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 10:29:35 -0400
+	Fri, 12 Apr 2013 10:29:30 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
         Gregory Clement <gregory.clement@free-electrons.com>
@@ -27,9 +27,9 @@ Cc: Grant Likely <grant.likely@secretlab.ca>,
         Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
         David Marlin <dmarlin@redhat.com>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: [PATCH v4 5/5] ARM: dts: mvebu: Convert mvebu device tree files to 64 bits
-Date: Fri, 12 Apr 2013 16:29:10 +0200
-Message-Id: <1365776950-30094-6-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v4 1/5] ARM: dts: mvebu: fix cpus section indentation
+Date: Fri, 12 Apr 2013 16:29:06 +0200
+Message-Id: <1365776950-30094-2-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365776950-30094-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1365776950-30094-1-git-send-email-gregory.clement@free-electrons.com>
@@ -37,121 +37,177 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to be able to use more than 4GB of RAM when the LPAE is
-activated, the dts must be converted in 64 bits.
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-Only Armada XP is LPAE capable, but as it shares a common dtsi file
-with Armada 370, then the common file include the skeleton64. Thanks
-to the use of the overload capability of the device tree format,
-armada-370 include the 32 bit skeleton and all the armada 370 based
-dts can remain the same.
+Align the cpu node indentation with the rest of the file
 
-This was heavily based on the work of Lior Amsalem.
-
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+[gc]: added a commit description
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 ---
- arch/arm/boot/dts/armada-370-xp.dtsi             |    4 ++--
- arch/arm/boot/dts/armada-370.dtsi                |    2 ++
- arch/arm/boot/dts/armada-xp-db.dts               |    2 +-
- arch/arm/boot/dts/armada-xp-gp.dts               |   14 ++++++++------
- arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts |    2 +-
- 5 files changed, 14 insertions(+), 10 deletions(-)
+ arch/arm/boot/dts/armada-xp-mv78230.dtsi |   32 +++++++++---------
+ arch/arm/boot/dts/armada-xp-mv78260.dtsi |   32 +++++++++---------
+ arch/arm/boot/dts/armada-xp-mv78460.dtsi |   54 +++++++++++++++---------------
+ 3 files changed, 59 insertions(+), 59 deletions(-)
 
-diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
-index bf8f911..272bbc6 100644
---- a/arch/arm/boot/dts/armada-370-xp.dtsi
-+++ b/arch/arm/boot/dts/armada-370-xp.dtsi
-@@ -16,7 +16,7 @@
-  * 370 and Armada XP SoC.
-  */
- 
--/include/ "skeleton.dtsi"
-+/include/ "skeleton64.dtsi"
- 
- / {
- 	model = "Marvell Armada 370 and XP SoC";
-@@ -33,7 +33,7 @@
- 		#size-cells = <1>;
- 		compatible = "simple-bus";
- 		interrupt-parent = <&mpic>;
--		ranges = <0 0xd0000000 0x100000>;
-+		ranges = <0 0 0xd0000000 0x100000>;
- 
- 		internal-regs {
- 			compatible = "simple-bus";
-diff --git a/arch/arm/boot/dts/armada-370.dtsi b/arch/arm/boot/dts/armada-370.dtsi
-index 6ef95dd..b2c1b5a 100644
---- a/arch/arm/boot/dts/armada-370.dtsi
-+++ b/arch/arm/boot/dts/armada-370.dtsi
-@@ -16,6 +16,7 @@
-  */
- 
- /include/ "armada-370-xp.dtsi"
-+/include/ "skeleton.dtsi"
- 
- / {
- 	model = "Marvell Armada 370 family SoC";
-@@ -28,6 +29,7 @@
+diff --git a/arch/arm/boot/dts/armada-xp-mv78230.dtsi b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
+index c2c7845..e072a53 100644
+--- a/arch/arm/boot/dts/armada-xp-mv78230.dtsi
++++ b/arch/arm/boot/dts/armada-xp-mv78230.dtsi
+@@ -25,22 +25,22 @@
  	};
  
- 	soc {
-+		ranges = <0 0xd0000000 0x100000>;
- 		internal-regs {
- 			system-controller@18200 {
- 				compatible = "marvell,armada-370-xp-system-controller";
-diff --git a/arch/arm/boot/dts/armada-xp-db.dts b/arch/arm/boot/dts/armada-xp-db.dts
-index 6c8b032..d6cc8bf 100644
---- a/arch/arm/boot/dts/armada-xp-db.dts
-+++ b/arch/arm/boot/dts/armada-xp-db.dts
-@@ -26,7 +26,7 @@
- 
- 	memory {
- 		device_type = "memory";
--		reg = <0x00000000 0x80000000>; /* 2 GB */
-+		reg = <0 0x00000000 0 0x80000000>; /* 2 GB */
- 	};
- 
- 	soc {
-diff --git a/arch/arm/boot/dts/armada-xp-gp.dts b/arch/arm/boot/dts/armada-xp-gp.dts
-index d9972c9..26ad06f 100644
---- a/arch/arm/boot/dts/armada-xp-gp.dts
-+++ b/arch/arm/boot/dts/armada-xp-gp.dts
-@@ -26,14 +26,16 @@
- 
- 	memory {
- 		device_type = "memory";
+ 	cpus {
+-	    #address-cells = <1>;
+-	    #size-cells = <0>;
 -
- 		/*
--		 * 4 GB of plug-in RAM modules by default but only 3GB
--		 * are visible, the amount of memory available can be
--		 * changed by the bootloader according the size of the
--		 * module actually plugged
-+                 * 8 GB of plug-in RAM modules by default.The amount
-+                 * of memory available can be changed by the
-+                 * bootloader according the size of the module
-+                 * actually plugged. Only 7GB are usable because
-+                 * addresses from 0xC0000000 to 0xffffffff are used by
-+                 * the internal registers of the SoC.
- 		 */
--		reg = <0x00000000 0xC0000000>;
-+		reg = <0x00000000 0x00000000 0x00000000 0xC0000000>,
-+		      <0x00000001 0x00000000 0x00000001 0x00000000>;
+-	    cpu@0 {
+-		device_type = "cpu";
+-		compatible = "marvell,sheeva-v7";
+-		reg = <0>;
+-		clocks = <&cpuclk 0>;
+-	    };
+-
+-	    cpu@1 {
+-		device_type = "cpu";
+-		compatible = "marvell,sheeva-v7";
+-		reg = <1>;
+-		clocks = <&cpuclk 1>;
+-	    };
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "marvell,sheeva-v7";
++			reg = <0>;
++			clocks = <&cpuclk 0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "marvell,sheeva-v7";
++			reg = <1>;
++			clocks = <&cpuclk 1>;
++		};
  	};
  
  	soc {
-diff --git a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-index 15a66a8..f14d36c 100644
---- a/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-+++ b/arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts
-@@ -23,7 +23,7 @@
+diff --git a/arch/arm/boot/dts/armada-xp-mv78260.dtsi b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
+index 885bf22..6dae1bc 100644
+--- a/arch/arm/boot/dts/armada-xp-mv78260.dtsi
++++ b/arch/arm/boot/dts/armada-xp-mv78260.dtsi
+@@ -26,22 +26,22 @@
+ 	};
  
- 	memory {
- 		device_type = "memory";
--		reg = <0x00000000 0xC0000000>; /* 3 GB */
-+		reg = <0 0x00000000 0 0xC0000000>; /* 3 GB */
+ 	cpus {
+-	    #address-cells = <1>;
+-	    #size-cells = <0>;
+-
+-	    cpu@0 {
+-		device_type = "cpu";
+-		compatible = "marvell,sheeva-v7";
+-		reg = <0>;
+-		clocks = <&cpuclk 0>;
+-	    };
+-
+-	    cpu@1 {
+-		device_type = "cpu";
+-		compatible = "marvell,sheeva-v7";
+-		reg = <1>;
+-		clocks = <&cpuclk 1>;
+-	    };
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "marvell,sheeva-v7";
++			reg = <0>;
++			clocks = <&cpuclk 0>;
++		};
++
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "marvell,sheeva-v7";
++			reg = <1>;
++			clocks = <&cpuclk 1>;
++		};
  	};
  
  	soc {
+diff --git a/arch/arm/boot/dts/armada-xp-mv78460.dtsi b/arch/arm/boot/dts/armada-xp-mv78460.dtsi
+index 23a5ac4..b9da5b8 100644
+--- a/arch/arm/boot/dts/armada-xp-mv78460.dtsi
++++ b/arch/arm/boot/dts/armada-xp-mv78460.dtsi
+@@ -27,36 +27,36 @@
+ 
+ 
+ 	cpus {
+-	    #address-cells = <1>;
+-	    #size-cells = <0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
+ 
+-	    cpu@0 {
+-		device_type = "cpu";
+-		compatible = "marvell,sheeva-v7";
+-		reg = <0>;
+-		clocks = <&cpuclk 0>;
+-	    };
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "marvell,sheeva-v7";
++			reg = <0>;
++			clocks = <&cpuclk 0>;
++		};
+ 
+-	    cpu@1 {
+-		device_type = "cpu";
+-		compatible = "marvell,sheeva-v7";
+-		reg = <1>;
+-		clocks = <&cpuclk 1>;
+-	    };
++		cpu@1 {
++			device_type = "cpu";
++			compatible = "marvell,sheeva-v7";
++			reg = <1>;
++			clocks = <&cpuclk 1>;
++		};
+ 
+-	    cpu@2 {
+-		device_type = "cpu";
+-		compatible = "marvell,sheeva-v7";
+-		reg = <2>;
+-		clocks = <&cpuclk 2>;
+-	    };
++		cpu@2 {
++			device_type = "cpu";
++			compatible = "marvell,sheeva-v7";
++			reg = <2>;
++			clocks = <&cpuclk 2>;
++		};
+ 
+-	    cpu@3 {
+-		device_type = "cpu";
+-		compatible = "marvell,sheeva-v7";
+-		reg = <3>;
+-		clocks = <&cpuclk 3>;
+-	    };
++		cpu@3 {
++			device_type = "cpu";
++			compatible = "marvell,sheeva-v7";
++			reg = <3>;
++			clocks = <&cpuclk 3>;
++		};
+ 	};
+ 
+ 	soc {
+@@ -300,4 +300,4 @@
+ 			};
+ 		};
+ 	};
+- };
++};
 -- 
 1.7.9.5
 
