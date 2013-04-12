@@ -1,92 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab3DLXLK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:11:10 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:54056 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975Ab3DLXLH (ORCPT
+	id S1754948Ab3DLXLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:11:20 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:47500 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497Ab3DLXLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:11:07 -0400
+	Fri, 12 Apr 2013 19:11:15 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         mhocko@suse.cz, kamezawa.hiroyu@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org, glommer@parallels.com, vgoyal@redhat.com
-Subject: [PATCHSET] cgroup, memcg: introduce sane_behavior mount option
-Date: Fri, 12 Apr 2013 16:10:55 -0700
-Message-Id: <1365808259-31073-1-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, glommer@parallels.com, vgoyal@redhat.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 4/4] memcg: force use_hierarchy if sane_behavior
+Date: Fri, 12 Apr 2013 16:10:59 -0700
+Message-Id: <1365808259-31073-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365808259-31073-1-git-send-email-tj@kernel.org>
+References: <1365808259-31073-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's a sad fact that at this point various cgroup controllers are
-carrying so many idiosyncrasies and pure insanities that it simply
-isn't possible to reach any sort of sane consistent behavior while
-staying compatible with what already has been exposed to userland.
+Turn on use_hierarchy by default if sane_behavior is specified and
+don't create .use_hierarchy file.
 
-To make progress, those behaviors need to go but we can't simply drop
-or change the crazies as those are directly visible to userland.  This
-patchset implements a mount option - sane_behavior - which turns on
-new saner behaviors, so that we can keep providing the old behaviors
-while and after transitioning to saner ones.
+It is debatable whether to remove .use_hierarchy file or make it ro as
+the former could make transition easier in certain cases; however, the
+behavior changes which will be gated by sane_behavior are intensive
+including changing basic meaning of certain control knobs in a few
+controllers and I don't really think keeping this piece would make
+things easier in any noticeable way, so let's remove it.
 
-As the behaviors which should be changed are still being determined
-and then implemented, __DEVEL__ prefix is added to the mount option
-and it triggers a warning message when used.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/cgroup.h |  3 +++
+ mm/memcontrol.c        | 13 +++++++++++++
+ 2 files changed, 16 insertions(+)
 
-The mount option changes the following behaviors after this patchset.
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 9c300ad..c562e33 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -269,6 +269,9 @@ enum {
+ 	 *
+ 	 * - Remount is disallowed.
+ 	 *
++	 * - memcg: use_hierarchy is on by default and the cgroup file for
++	 *   the flag is not created.
++	 *
+ 	 * The followings are planned changes.
+ 	 *
+ 	 * - release_agent will be disallowed once replacement notification
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9715c0c..a651131 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5814,6 +5814,7 @@ static struct cftype mem_cgroup_files[] = {
+ 	},
+ 	{
+ 		.name = "use_hierarchy",
++		.flags = CFTYPE_INSANE,
+ 		.write_u64 = mem_cgroup_hierarchy_write,
+ 		.read_u64 = mem_cgroup_hierarchy_read,
+ 	},
+@@ -6784,6 +6785,17 @@ static void mem_cgroup_move_task(struct cgroup *cont,
+ }
+ #endif
+ 
++/*
++ * Cgroup retains root cgroups across [un]mount cycles making it necessary
++ * to verify sane_behavior flag on each mount attempt.
++ */
++static void mem_cgroup_bind(struct cgroup *root)
++{
++	/* use_hierarchy is forced with sane_behavior */
++	if (cgroup_sane_behavior(root))
++		mem_cgroup_from_cont(root)->use_hierarchy = true;
++}
++
+ struct cgroup_subsys mem_cgroup_subsys = {
+ 	.name = "memory",
+ 	.subsys_id = mem_cgroup_subsys_id,
+@@ -6794,6 +6806,7 @@ struct cgroup_subsys mem_cgroup_subsys = {
+ 	.can_attach = mem_cgroup_can_attach,
+ 	.cancel_attach = mem_cgroup_cancel_attach,
+ 	.attach = mem_cgroup_move_task,
++	.bind = mem_cgroup_bind,
+ 	.base_cftypes = mem_cgroup_files,
+ 	.early_init = 0,
+ 	.use_id = 1,
+-- 
+1.8.1.4
 
-* Mount options "noprefix" and "clone_children" are disallowed.  Also,
-  cgroupfs file cgroup.clone_children is not created.
-
-* When mounting an existing superblock, mount options should match.
-  This is currently pretty crazy.  If one mounts a cgroup, creates a
-  subdirectory, unmounts it and then mount it again with different
-  option, it looks like the new options are applied but they aren't.
-
-* Remount is disallowed.
-
-* memcg: .use_hierarchy is forced on and the cgroupfs file is not
-  created.
-
-and there are a lot more to come.  Basically, when turned on, all
-controllers should be ready to be mounted in the same hierarchy and
-not get in the way unless specifically configured - making blk-throtl
-hierarchical would need this to flip the meaning of limits, cpuset to
-allow tasks to run by default in new cgroups and handle empty cpusets
-in a way friendly to being co-mounted, and so on.
-
-This patchset contains the following four patches.
-
- 0001-cgroup-convert-cgroupfs_root-flag-bits-to-masks-and-.patch
- 0002-move-cgroupfs_root-to-include-linux-cgroup.h.patch
- 0003-cgroup-introduce-sane_behavior-mount-option.patch
- 0004-memcg-force-use_hierarchy-if-sane_behavior.patch
-
-0001-0002 are prep patches.  It exposes cgroupfs_root in cgroup.h so
-that flags can be tested with inline helpers.
-
-0003 introduces sane_behavior mount option and implements behavior
-changes in cgroup core proper.
-
-0004 makes memcg .use_hierarchy changes.
-
-The memcg patch doesn't conflict with memcg changes in -next, so it
-can be routed through the cgroup tree.  Michal, how do you wanna route
-it?
-
-This patchset is based on top of cgroup/for-3.10 and also available in
-the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cgroup-sane_behavior
-
-Thanks.
-
- include/linux/cgroup.h |  103 +++++++++++++++++++++++++++++++++++++++++
- kernel/cgroup.c        |  121 ++++++++++++++++++++++---------------------------
- mm/memcontrol.c        |   13 +++++
- 3 files changed, 172 insertions(+), 65 deletions(-)
-
---
-tejun
