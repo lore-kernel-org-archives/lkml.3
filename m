@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753186Ab3DLA5f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 20:57:35 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37242 "EHLO
+	id S1753112Ab3DLA5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 20:57:34 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37247 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557Ab3DLA51 (ORCPT
+	with ESMTP id S1752703Ab3DLA51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 20:57:27 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -12,69 +12,96 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 15/22] x86, mm, numa: Move node_possible_map setting later
-Date: Thu, 11 Apr 2013 17:56:01 -0700
-Message-Id: <1365728168-32067-16-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH v4 16/22] x86, mm, numa: Move emulation handling down.
+Date: Thu, 11 Apr 2013 17:56:02 -0700
+Message-Id: <1365728168-32067-17-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
 References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move node_possible_map handling out of numa_check_memblks to avoid side
-changing in numa_check_memblks().
+It needs to allocate buffer for new numa_meminfo and distance matrix,
+so move it down.
 
-Only set once for successful path instead of resetting in numa_init()
-every time.
+Also we change the behavoir:
+before this patch, if user input wrong data in command line, it
+will fall back to next numa probing or disabling numa.
+after this patch, if user input wrong data in command line, it will
+stay with numa info from probing before, like acpi srat or amd_numa.
 
-Suggested-by: Tejun Heo <tj@kernel.org>
+We need to call numa_check_memblks to reject wrong user inputs early,
+so keep the original numa_meminfo not changed.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
 ---
- arch/x86/mm/numa.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ arch/x86/mm/numa.c           | 6 +++---
+ arch/x86/mm/numa_emulation.c | 2 +-
+ arch/x86/mm/numa_internal.h  | 2 ++
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index e2ddcbd..1d5fa08 100644
+index 1d5fa08..90fd123 100644
 --- a/arch/x86/mm/numa.c
 +++ b/arch/x86/mm/numa.c
-@@ -539,12 +539,13 @@ static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
+@@ -537,7 +537,7 @@ static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
+ }
+ #endif
  
- static int __init numa_check_memblks(struct numa_meminfo *mi)
+-static int __init numa_check_memblks(struct numa_meminfo *mi)
++int __init numa_check_memblks(struct numa_meminfo *mi)
  {
-+	nodemask_t nodes_parsed;
+ 	nodemask_t nodes_parsed;
  	unsigned long pfn_align;
+@@ -607,8 +607,6 @@ static int __init numa_init(int (*init_func)(void))
+ 	if (ret < 0)
+ 		return ret;
  
- 	/* Account for nodes with cpus and no memory */
--	node_possible_map = numa_nodes_parsed;
--	numa_nodemask_from_meminfo(&node_possible_map, mi);
--	if (WARN_ON(nodes_empty(node_possible_map)))
-+	nodes_parsed = numa_nodes_parsed;
-+	numa_nodemask_from_meminfo(&nodes_parsed, mi);
-+	if (WARN_ON(nodes_empty(nodes_parsed)))
- 		return -EINVAL;
- 
- 	if (!numa_meminfo_cover_memory(mi))
-@@ -596,7 +597,6 @@ static int __init numa_init(int (*init_func)(void))
- 		set_apicid_to_node(i, NUMA_NO_NODE);
- 
- 	nodes_clear(numa_nodes_parsed);
--	nodes_clear(node_possible_map);
- 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
- 	numa_reset_distance();
- 
-@@ -672,6 +672,9 @@ void __init x86_numa_init(void)
+-	numa_emulation(&numa_meminfo, numa_distance_cnt);
+-
+ 	ret = numa_check_memblks(&numa_meminfo);
+ 	if (ret < 0)
+ 		return ret;
+@@ -672,6 +670,8 @@ void __init x86_numa_init(void)
  
  	early_x86_numa_init();
  
-+	node_possible_map = numa_nodes_parsed;
-+	numa_nodemask_from_meminfo(&node_possible_map, mi);
++	numa_emulation(&numa_meminfo, numa_distance_cnt);
 +
- 	for (i = 0; i < mi->nr_blks; i++) {
- 		struct numa_memblk *mb = &mi->blk[i];
- 		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
+ 	node_possible_map = numa_nodes_parsed;
+ 	numa_nodemask_from_meminfo(&node_possible_map, mi);
+ 
+diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
+index dbbbb47..5a0433d 100644
+--- a/arch/x86/mm/numa_emulation.c
++++ b/arch/x86/mm/numa_emulation.c
+@@ -348,7 +348,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
+ 	if (ret < 0)
+ 		goto no_emu;
+ 
+-	if (numa_cleanup_meminfo(&ei) < 0) {
++	if (numa_cleanup_meminfo(&ei) < 0 || numa_check_memblks(&ei) < 0) {
+ 		pr_warning("NUMA: Warning: constructed meminfo invalid, disabling emulation\n");
+ 		goto no_emu;
+ 	}
+diff --git a/arch/x86/mm/numa_internal.h b/arch/x86/mm/numa_internal.h
+index ad86ec9..bb2fbcc 100644
+--- a/arch/x86/mm/numa_internal.h
++++ b/arch/x86/mm/numa_internal.h
+@@ -21,6 +21,8 @@ void __init numa_reset_distance(void);
+ 
+ void __init x86_numa_init(void);
+ 
++int __init numa_check_memblks(struct numa_meminfo *mi);
++
+ #ifdef CONFIG_NUMA_EMU
+ void __init numa_emulation(struct numa_meminfo *numa_meminfo,
+ 			   int numa_dist_cnt);
 -- 
 1.8.1.4
 
