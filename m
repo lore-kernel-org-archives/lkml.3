@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab3DLA5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 20:57:34 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37247 "EHLO
+	id S1753025Ab3DLA5d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 20:57:33 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37243 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab3DLA51 (ORCPT
+	with ESMTP id S1752653Ab3DLA51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 20:57:27 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,95 +13,168 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH v4 16/22] x86, mm, numa: Move emulation handling down.
-Date: Thu, 11 Apr 2013 17:56:02 -0700
-Message-Id: <1365728168-32067-17-git-send-email-yinghai@kernel.org>
+        Pekka Enberg <penberg@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
+Subject: [PATCH v4 06/22] x86, ACPI: Split acpi_initrd_override to find/copy two functions
+Date: Thu, 11 Apr 2013 17:55:52 -0700
+Message-Id: <1365728168-32067-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
 References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It needs to allocate buffer for new numa_meminfo and distance matrix,
-so move it down.
+To parse srat early, we need to move acpi table probing early.
+acpi_initrd_table_override is before acpi table probing. So we need to
+move it early too.
 
-Also we change the behavoir:
-before this patch, if user input wrong data in command line, it
-will fall back to next numa probing or disabling numa.
-after this patch, if user input wrong data in command line, it will
-stay with numa info from probing before, like acpi srat or amd_numa.
+Current code acpi_initrd_table_override is after init_mem_mapping and
+relocate_initrd(), so it can scan initrd and copy acpi tables with kernel
+virtual address of initrd.
+Copying need to be after memblock is ready, because it need to allocate
+buffer for new acpi tables.
 
-We need to call numa_check_memblks to reject wrong user inputs early,
-so keep the original numa_meminfo not changed.
+So we have to split that function to find and copy two functions.
+Find should be as early as possible. Copy should be after memblock is ready.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
+Finding could be done in head_32.S and head64.c, just like microcode
+early scanning. In head_32.S, it is 32bit flat mode, we don't
+need to set page table to access it. In head64.c, #PF set page table
+could help us access initrd with kernel low mapping address.
+
+Copying could be done just after memblock is ready and before probing
+acpi tables, and we need to early_ioremap to access source and target
+range, as init_mem_mapping is not called yet.
+
+While a dummy version of acpi_initrd_override() was defined when
+!CONFIG_ACPI_INITRD_TABLE_OVERRIDE, the prototype and dummy version
+were conditionalized inside CONFIG_ACPI.  This forced setup_arch() to
+have its own #ifdefs around acpi_initrd_override() as otherwise build
+would fail when !CONFIG_ACPI.  Move the prototypes and dummy
+implementations of the newly split functions below CONFIG_ACPI block
+in acpi.h so that we can do away with #ifdefs in its user.
+
+-v2: Split one patch out according to tj.
+     also don't pass table_nr around.
+-v3: Add Tj's changelog about moving down to #idef in acpi.h to
+     avoid #idef in setup.c
+
+Signed-off-by: Yinghai <yinghai@kernel.org>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Jacob Shin <jacob.shin@amd.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Acked-by: Tejun Heo <tj@kernel.org>
+Tested-by: Thomas Renninger <trenn@suse.de>
 ---
- arch/x86/mm/numa.c           | 6 +++---
- arch/x86/mm/numa_emulation.c | 2 +-
- arch/x86/mm/numa_internal.h  | 2 ++
- 3 files changed, 6 insertions(+), 4 deletions(-)
+ arch/x86/kernel/setup.c |  6 +++---
+ drivers/acpi/osl.c      | 18 +++++++++++++-----
+ include/linux/acpi.h    | 16 ++++++++--------
+ 3 files changed, 24 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 1d5fa08..90fd123 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -537,7 +537,7 @@ static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
- }
- #endif
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index e75c6e6..d0cc176 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1092,9 +1092,9 @@ void __init setup_arch(char **cmdline_p)
  
--static int __init numa_check_memblks(struct numa_meminfo *mi)
-+int __init numa_check_memblks(struct numa_meminfo *mi)
+ 	reserve_initrd();
+ 
+-#if defined(CONFIG_ACPI) && defined(CONFIG_BLK_DEV_INITRD)
+-	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
+-#endif
++	acpi_initrd_override_find((void *)initrd_start,
++					initrd_end - initrd_start);
++	acpi_initrd_override_copy();
+ 
+ 	reserve_crashkernel();
+ 
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index a5a9346..21714fb 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -572,14 +572,13 @@ static const char * const table_sigs[] = {
+ #define ACPI_OVERRIDE_TABLES 64
+ static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
+ 
+-void __init acpi_initrd_override(void *data, size_t size)
++void __init acpi_initrd_override_find(void *data, size_t size)
  {
- 	nodemask_t nodes_parsed;
- 	unsigned long pfn_align;
-@@ -607,8 +607,6 @@ static int __init numa_init(int (*init_func)(void))
- 	if (ret < 0)
- 		return ret;
+-	int sig, no, table_nr = 0, total_offset = 0;
++	int sig, no, table_nr = 0;
+ 	long offset = 0;
+ 	struct acpi_table_header *table;
+ 	char cpio_path[32] = "kernel/firmware/acpi/";
+ 	struct cpio_data file;
+-	char *p;
  
--	numa_emulation(&numa_meminfo, numa_distance_cnt);
--
- 	ret = numa_check_memblks(&numa_meminfo);
- 	if (ret < 0)
- 		return ret;
-@@ -672,6 +670,8 @@ void __init x86_numa_init(void)
- 
- 	early_x86_numa_init();
- 
-+	numa_emulation(&numa_meminfo, numa_distance_cnt);
-+
- 	node_possible_map = numa_nodes_parsed;
- 	numa_nodemask_from_meminfo(&node_possible_map, mi);
- 
-diff --git a/arch/x86/mm/numa_emulation.c b/arch/x86/mm/numa_emulation.c
-index dbbbb47..5a0433d 100644
---- a/arch/x86/mm/numa_emulation.c
-+++ b/arch/x86/mm/numa_emulation.c
-@@ -348,7 +348,7 @@ void __init numa_emulation(struct numa_meminfo *numa_meminfo, int numa_dist_cnt)
- 	if (ret < 0)
- 		goto no_emu;
- 
--	if (numa_cleanup_meminfo(&ei) < 0) {
-+	if (numa_cleanup_meminfo(&ei) < 0 || numa_check_memblks(&ei) < 0) {
- 		pr_warning("NUMA: Warning: constructed meminfo invalid, disabling emulation\n");
- 		goto no_emu;
+ 	if (data == NULL || size == 0)
+ 		return;
+@@ -620,7 +619,14 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 		acpi_initrd_files[table_nr].size = file.size;
+ 		table_nr++;
  	}
-diff --git a/arch/x86/mm/numa_internal.h b/arch/x86/mm/numa_internal.h
-index ad86ec9..bb2fbcc 100644
---- a/arch/x86/mm/numa_internal.h
-+++ b/arch/x86/mm/numa_internal.h
-@@ -21,6 +21,8 @@ void __init numa_reset_distance(void);
- 
- void __init x86_numa_init(void);
- 
-+int __init numa_check_memblks(struct numa_meminfo *mi);
+-	if (table_nr == 0)
++}
 +
- #ifdef CONFIG_NUMA_EMU
- void __init numa_emulation(struct numa_meminfo *numa_meminfo,
- 			   int numa_dist_cnt);
++void __init acpi_initrd_override_copy(void)
++{
++	int no, total_offset = 0;
++	char *p;
++
++	if (!all_tables_size)
+ 		return;
+ 
+ 	/* under 4G at first, then above 4G */
+@@ -652,9 +658,11 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	 * tables one time, we will hit the limit. Need to map table
+ 	 * one by one during copying.
+ 	 */
+-	for (no = 0; no < table_nr; no++) {
++	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
+ 		phys_addr_t size = acpi_initrd_files[no].size;
+ 
++		if (!size)
++			break;
+ 		p = early_ioremap(acpi_tables_addr + total_offset, size);
+ 		memcpy(p, acpi_initrd_files[no].data, size);
+ 		early_iounmap(p, size);
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index bcbdd74..1654a241 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -79,14 +79,6 @@ typedef int (*acpi_tbl_table_handler)(struct acpi_table_header *table);
+ typedef int (*acpi_tbl_entry_handler)(struct acpi_subtable_header *header,
+ 				      const unsigned long end);
+ 
+-#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
+-void acpi_initrd_override(void *data, size_t size);
+-#else
+-static inline void acpi_initrd_override(void *data, size_t size)
+-{
+-}
+-#endif
+-
+ char * __acpi_map_table (unsigned long phys_addr, unsigned long size);
+ void __acpi_unmap_table(char *map, unsigned long size);
+ int early_acpi_boot_init(void);
+@@ -485,6 +477,14 @@ static inline bool acpi_driver_match_device(struct device *dev,
+ 
+ #endif	/* !CONFIG_ACPI */
+ 
++#ifdef CONFIG_ACPI_INITRD_TABLE_OVERRIDE
++void acpi_initrd_override_find(void *data, size_t size);
++void acpi_initrd_override_copy(void);
++#else
++static inline void acpi_initrd_override_find(void *data, size_t size) { }
++static inline void acpi_initrd_override_copy(void) { }
++#endif
++
+ #ifdef CONFIG_ACPI
+ void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+ 			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
 -- 
 1.8.1.4
 
