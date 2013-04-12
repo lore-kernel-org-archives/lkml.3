@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab3DLXSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:18:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60948 "EHLO mail.zytor.com"
+	id S1754054Ab3DLXS5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:18:57 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52389 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752577Ab3DLXSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:18:37 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <51688803.8020401@sr71.net>
-References: <1365683207-42425-1-git-send-email-trenn@suse.de> <1365683207-42425-6-git-send-email-trenn@suse.de> <CAE9FiQXnZzVC7dtvXWrqz=jYAGH053R8Vw1qkrMd2F+hAaMxdQ@mail.gmail.com> <5166D18A.7090800@zytor.com> <20130412143104.GA4301@redhat.com> <5168208B.7050107@zytor.com> <51688803.8020401@sr71.net>
+	id S1753306Ab3DLXSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 19:18:55 -0400
+Date: Fri, 12 Apr 2013 16:18:47 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, sasha.levin@oracle.com,
+        paul.gortmaker@windriver.com, paulus@au1.ibm.com
+Subject: [PATCH tip/core/rcu 0/7] RCU fixes for 3.11
+Message-ID: <20130412231846.GA20038@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 5/5] kexec: X86: Pass memory ranges via e820 table instead of memmap= boot parameter
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 12 Apr 2013 16:17:17 -0700
-To: Dave Hansen <dave@sr71.net>
-CC: Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Simon Horman <horms@verge.net.au>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cliff Wickman <cpw@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <a13f7af9-9272-4407-9684-4d3693b5d3f2@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041223-5806-0000-0000-000020B62100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes... That is one reason I think it is a real problem.
+Hello!
 
+This series contains the following fixes for RCU:
 
-Dave Hansen <dave@sr71.net> wrote:
+1-2.	Convert remaining printk() calls to pr_*().
 
->On 04/12/2013 07:56 AM, H. Peter Anvin wrote:
->> On 04/12/2013 07:31 AM, Vivek Goyal wrote:
->>>> I also have to admit that I don't see the difference between
->/dev/mem
->>>> and /dev/oldmem, as the former allows access to memory ranges
->outside
->>>> the ones used by the current kernel, which is what the oldmem
->device
->>>> seems to be intended to od.
->
->It varies from arch to arch of course.
->
->But, /dev/mem has restrictions on it, like CONFIG_STRICT_DEVMEM or the
->ARCH_HAS_VALID_PHYS_ADDR_RANGE.  There's a lot of stuff that depends on
->it, *and* folks have tried to fix it up so that it's not _as_ blatant
->of
->a way to completely screw your system.
->
->/dev/mem also tries to be nice to arches that have restrictions like:
->
->>                         /*
->>                          * On ia64 if a page has been mapped
->somewhere as
->>                          * uncached, then it must also be accessed
->uncached
->>                          * by the kernel or data corruption may occur
->>                          */
->
->I think /dev/oldmem isn't so nice and could actually cause some real
->problems if used on ia64 where the cached/uncached accesses are mixed.
+3.	Kick adaptive-ticks CPUs that are holding up RCU grace periods.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+4.	Don't allocate bootmem from rcu_init(), courtesy of Sasha Levin.
+
+5.	Remove "Experimental" flags from old RCU Kconfig options.
+
+6.	Automatically tune defaults for delays between attempts to
+	force quiescent states.
+
+7.	Merge adjacent identical #ifdefs.
+
+							Thanx, Paul
+
+ b/init/Kconfig            |    2 -
+ b/kernel/rcupdate.c       |    3 -
+ b/kernel/rcutree.c        |   34 ++++++++++++++++++---
+ b/kernel/rcutree.h        |   13 +++++++-
+ b/kernel/rcutree_plugin.h |   74 +++++++++++++++++++++++++++-------------------
+ 5 files changed, 87 insertions(+), 39 deletions(-)
+
