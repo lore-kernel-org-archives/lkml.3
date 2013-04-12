@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755581Ab3DLVaR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 17:30:17 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:56172 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612Ab3DLVaO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 17:30:14 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 12 Apr 2013 14:30:24 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
-        kexec@lists.infradead.org, wim@iguana.be,
-        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
-Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130412213024.GA5812@roeck-us.net>
-References: <20130408151509.GA20919@roeck-us.net>
- <20130409144431.GL79013@redhat.com>
- <20130409145228.GA1111@roeck-us.net>
- <20130409151423.GM79013@redhat.com>
- <20130409160757.GA27050@roeck-us.net>
- <20130410134039.GV79013@redhat.com>
- <20130410135123.GB15456@roeck-us.net>
- <20130410142055.GW79013@redhat.com>
- <20130410151041.GA6670@roeck-us.net>
- <20130412211627.GM79013@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130412211627.GM79013@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754493Ab3DLVj0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 17:39:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36824 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752796Ab3DLVjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 17:39:24 -0400
+Date: Fri, 12 Apr 2013 17:39:22 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: rbriggs@redhat.com, jjaburek@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: fix audit_inode call in O_CREAT case of do_last
+Message-ID: <20130412173922.72cf60b4@tlielax.poochiereds.net>
+In-Reply-To: <1365794192-9471-1-git-send-email-jlayton@redhat.com>
+References: <1365794192-9471-1-git-send-email-jlayton@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 05:16:27PM -0400, Don Zickus wrote:
-> On Wed, Apr 10, 2013 at 08:10:41AM -0700, Guenter Roeck wrote:
-> > > have no idea how to even find out if multiple watchdogs are open on the
-> > > system.  Is there a list I could walk?  And with regard to 'watchdog is
-> > 
-> > /* the dev_t structure to store the dynamically allocated watchdog devices */
-> > static dev_t watchdog_devt;
-> > 
-> > One way to look up the allocated watchdogs might be to loop through all kobj
-> > instances for the major device using kobj_lookup. Don't know if there is a
-> > better way.
-> 
-> Hmm, I got around to poking at this today and I am not sure kobj_lookup
-> will work.  Besides being surrounded with another mutex, I don't have
-> access to the character device domain to pass to kobj_lookup.
-> 
-> Perhaps I am not reading the code right, but I can't find a good way
-> forward.
-> 
-> The only other hack I can think of, is to embed a list object in the
-> watchdog structure and list_add each new register'd watchdog.  Then it
-> would be trivial to walk the watchdog list.
-> 
-After looking into it again, I agree. Maybe you can give it a try. At least
-other options look even more complicated (eg creating a watchdog class ?).
+On Fri, 12 Apr 2013 15:16:32 -0400
+Jeff Layton <jlayton@redhat.com> wrote:
 
-Guenter
+> Jiri reported a regression in auditing of open(..., O_CREAT) syscalls.
+> In older kernels, creating a file with open(..., O_CREAT) created
+> audit_name records that looked like this:
+> 
+> type=PATH msg=audit(1360255720.628:64): item=1 name="/abc/foo" inode=138810 dev=fd:00 mode=0100640 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
+> type=PATH msg=audit(1360255720.628:64): item=0 name="/abc/" inode=138635 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
+> 
+> ...in recent kernels though, they look like this:
+> 
+> type=PATH msg=audit(1360255402.886:12574): item=2 name=(null) inode=264599 dev=fd:00 mode=0100640 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
+> type=PATH msg=audit(1360255402.886:12574): item=1 name=(null) inode=264598 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
+> type=PATH msg=audit(1360255402.886:12574): item=0 name="/abc/foo" inode=264598 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
+> 
+> Richard bisected to determine that the problems started with commit
+> bfcec708, but the log messages have changed with some later
+> audit-related patches.
+> 
+> The problem is that this audit_inode call is passing in the parent of
+> the dentry being opened, but audit_inode is being called with the parent
+> flag false. This causes later audit_inode and audit_inode_child calls to
+> match the wrong entry in the audit_names list.
+> 
+> This patch simply sets the flag to properly indicate that this inode
+> represents the parent. With this, the audit_names entries are back to
+> looking like they did before.
+> 
+> Cc: <stable@vger.kernel.org> # v3.7+
+> Cc: Richard Guy Briggs <rbriggs@redhat.com>
+> Reported-by: Jiri Jaburek <jjaburek@redhat.com>
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  fs/namei.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 57ae9c8..85e40d1 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -2740,7 +2740,7 @@ static int do_last(struct nameidata *nd, struct path *path,
+>  		if (error)
+>  			return error;
+>  
+> -		audit_inode(name, dir, 0);
+> +		audit_inode(name, dir, LOOKUP_PARENT);
+>  		error = -EISDIR;
+>  		/* trailing slashes? */
+>  		if (nd->last.name[nd->last.len])
+
+BTW, there are a couple of other calls to audit_inode earlier in this
+function (the LAST_BIND and LAST_ROOT cases). I suspect those also need
+similar treatment, but I've left them alone for now since I didn't have
+a clear way to verify it. Let me know if you'd like me to respin this
+with those changed as well.
+
+Thanks,
+-- 
+Jeff Layton <jlayton@redhat.com>
