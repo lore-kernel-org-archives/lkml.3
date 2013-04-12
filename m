@@ -1,96 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855Ab3DLMDX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 08:03:23 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:34019 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754541Ab3DLMDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 08:03:20 -0400
-Message-ID: <1365768185.2373.63.camel@falcor1.watson.ibm.com>
-Subject: Re: [RFC 2/2] initramfs with digital signature protection
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Josh Boyer <jwboyer@gmail.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 12 Apr 2013 08:03:05 -0400
-In-Reply-To: <20130411211316.GA26587@redhat.com>
-References: <1365450229.3847.56.camel@falcor1.watson.ibm.com>
-	 <20130408200904.GI28292@redhat.com>
-	 <CA+5PVA43U_kDSV7p0zhQwmK9pwbVb8qAUePU8svQvoPbDA9iCQ@mail.gmail.com>
-	 <20130409143852.GH6320@redhat.com>
-	 <1365563230.3074.107.camel@falcor1.watson.ibm.com>
-	 <20130410194209.GF6602@redhat.com>
-	 <1365627922.2452.32.camel@falcor1.watson.ibm.com>
-	 <CACE9dm-GZpjco8u6jNxLQpYA8LYSeoVjsyyRXVwxXHzjO-LvGw@mail.gmail.com>
-	 <20130411145550.GD21260@redhat.com>
-	 <CACE9dm-+CY+aLcsrR8CF2TsL26S1wZbYKYS4ropW3ie6tmMZ+Q@mail.gmail.com>
-	 <20130411211316.GA26587@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041212-9360-0000-0000-000011B686AA
+	id S1755266Ab3DLMJY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 08:09:24 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:52152 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539Ab3DLMJX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 08:09:23 -0400
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alessandro Rubini <rubini@gnudd.com>
+Subject: Re: drivers/base/core.c: about device_find_child() function
+Date: Fri, 12 Apr 2013 14:09:20 +0200
+Message-ID: <2849474.HO2K6X9Bdi@harkonnen>
+User-Agent: KMail/4.10.1 (Linux/3.8.5-201.fc18.x86_64; KDE/4.10.1; x86_64; ; )
+In-Reply-To: <20130411134844.GA3489@kroah.com>
+References: <3798489.yISokZugC2@harkonnen> <20130411134844.GA3489@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 17:13 -0400, Vivek Goyal wrote:
-> On Thu, Apr 11, 2013 at 09:42:54PM +0300, Dmitry Kasatkin wrote:
-> 
-> [..]
-> > > What other initialization user space need to do where we can't trust
-> > > root (even in secureboot mode).
-> > >
-> > > IOW, if keys can be embedded in kernel (or read from UEFI db and MOK db),
-> > > what other operation requires initramfs to be signed. It could very well
-> > > be unsigned initramfs like today.
-> > >
+On Thursday 11 April 2013 06:48:44 Greg Kroah-Hartman wrote:
+> On Thu, Apr 11, 2013 at 01:52:36PM +0200, Federico Vaga wrote:
+> > Hello,
 > > 
-> > It looks like you do not hear me.
-> > I said that any user space initialization can be done from signed user space.
-> > For example IMA policy can be initialized.
+> > I'm using the function device_find_child() [drivers/base/core.c] to
+> > retrieve a specific child of a device. I see that this function invokes
+> > get_device(child) when a child matches. I think that this function must
+> > return the reference to the child device without getting it.
+> 
+> No, it should not, otherwise the device could "disappear" at any moment,
+> and the caller who had the handle, would now have a stale pointer.
+
+I know, I am aware of this, but sometimes it *seems* that it does not
+matter. (argument later [**])
+
+> > The function's comment does not explicitly talk about an increment of the
+> > refcount of the device. So, "man 9 device_find_child" and various
+> > derivative webpages do not talk about this. The developer is not
+> > correctly informed about this function, unless (s)he looks at the source
+> > code.
+> 
+> You are right, I would gladly take a patch adding that comment to the
+> function, can you send me one?
+
+Already sent.
+
+> > I see that users of this function, usually, immediately do put_device()
+> > after the call to device_find_child(), so it is not expected that a
+> > device_find_child() does a get_device() on the found child.
 > > 
+> >    Immediately does put_device():
+> >      drivers/firewire/core-device.c
+> >      drivers/rpmsg/virtio_rpmsg_bus.c
+> >      drivers/s390/kvm/kvm_virtio.c
 > 
-> I am hearing you. Yes I heard you saying  "but perform other initialization,
-> which requires user-space". I am just trying to figure out more details.
-> You are assuming that a single line statement gives all the context and it
-> often might not be the case.
+> That's correct.
+
+[**] (argumentation based, obviously, on my limited understanding)
+
+These drivers work like this:
+
+	child = device_find_child(parent, data, match_function);
+	if (child) {
+		put_device(child);		
+		<do something unrelated with child> 
+	}
+
+In these cases we do not need to get_device(). But we need to know if there 
+is a child that match a rule. It can also "disapper" after the
+put_device(child) but the driver continues on its way because it does not
+use the child. For example virtio_rpmsg_bus.c:
+
+	/* make sure a similar channel doesn't already exist */
+	tmp = device_find_child(dev, chinfo, rpmsg_channel_match);
+	if (tmp) {
+		/* decrement the matched device's refcount back */
+		put_device(tmp);
+		dev_err(dev, "channel %s:%x:%x already exist\n",
+				chinfo->name, chinfo->src, chinfo->dst);
+		return NULL;
+	}
+
+In this case, it does not matter to get_device(), the driver is interested
+only on the child existence, it does not use the child.
+Maybe it is wrong a driver that works like this. I mean, why retrieve a
+child if you do not want to use it? This can be implemented also with
+the function device_for_each_child() and return an error if a channel already
+exist (-EBUSY).
+
+The same argumentation for firewire/core-device.c:
+
+	revived_dev = device_find_child(card->device,
+					device, lookup_existing_device);
+	if (revived_dev) {
+		put_device(revived_dev);
+		fw_device_release(&device->device);
+
+		return;
+	}
+
+This can be done with device_for_each_child() because it does not use the
+the retrieved device. The function fw_device_release() can be done in the
+function lookup_existing_device() when it finds the child. 
+
+Also the driver s390/kvm/kvm_virtio.c:
+
+		/* device already exists */
+		dev = device_find_child(kvm_root, d, match_desc);
+		if (dev) {
+			/* XXX check for hotplug remove */
+			put_device(dev);
+			continue;
+		}
+
+Probably here, in a future patch XXX will be replaced with some code,
+so it is correct to use device_find_child().
+
+Now I'm thinking that device_for_each_child() is better in the above
+cases. Am I wrong? Am I missing something? Which is the cleaner solution?
+
+
+Anyway, my suggestion was more about the function name rather than its 
+content (again, I am aware that the refcount must be increased if I
+work on the retrieved child). Because the verb 'find' does not imply the
+verb 'get', so, a function named device_find_child() should not do
+get_device() because it may not obvious for the reader. I think that
+the name should be something like get_device_child(), get_child_device(),
+get_child(), and for symmetry the user will do put_device() on the
+retrived child. But I understand that for legacy reason it could be
+better to continue use device_find_child()
+
+
+> >    Maybe bugged because they do not do put_device():
+> >      drivers/media/platform/s5p-mfc/s5p_mfc.c
+
+Fixed with commit 6e83e6e25eb49dc57a69b3f8ecc1e764c9775101. I did not see
+it before, sorry.
+
+> >      drivers/tty/serial/serial_core.c
+> >    Probably I'm wrong on this and I do not find the associated 
+put_device()
+>
+> I think the serial core is correct, but I'll audit it, the media one
+> should be fixed as well.
+
+I did not study serial_core, I was looking only for device_find_child().
+Probably I'm missing something. Anyway, here what does not convice me:
+
+(line number on next-20130412)
+serial_core.c:2003
+	tty_dev = device_find_child(uport->dev, &match, serial_match_port);
+	if (!uport->suspended && device_may_wakeup(tty_dev)) {
+		if (uport->irq_wake) {
+			disable_irq_wake(uport->irq);
+			uport->irq_wake = 0;
+		}
++               put_device(tty_dev);
+		mutex_unlock(&port->mutex);
+		return 0;
+	}
++	put_device(tty_dev);
+	uport->suspended = 0; 
+
+serial_core:1936
+	tty_dev = device_find_child(uport->dev, &match, serial_match_port);
+	if (device_may_wakeup(tty_dev)) {
+		if (!enable_irq_wake(uport->irq))
+			uport->irq_wake = 1;
+		put_device(tty_dev);
+		mutex_unlock(&port->mutex);
+		return 0;
+	}
++	put_device(tty_dev);
+
+
+> >    They effectively need a get_device():
+> >      drivers/net/bluetooth/hci_sysfs.c
+> >      drivers/net/dsa/dsa.c
 > 
-> What makes it important that IMA policy is loaded from an signed initramfs
-> and not from unsigned one.
+> Please fix these.
 
-> Also how would you make use of it without secureboot. Only secureboot will
-> allow to keep keys in firmware so that one can have a key in there and be
-> able to sign initramfs. 
+Misunderstood. They are correct. I meant: in these cases is useful to have 
+get_device() inside device_find_child() because they need to do something on 
+child device before putting it
 
-You don't have a monopoly on secure boot.  We're all assuming a secure
-boot environment.  The only question is what happens afterwards.  You're
-interested in appraising a few particular files: kernel modules, kexec,
-and the files kexec loads.  I'm interested in having all files in the
-TCB measured and appraised.  Dmitry is interested in having all files
-appraised.  The kernel needs to be able to support these and other
-scenarios.
-
-> In regular system, distributions do not ship pre-loaded keys so one can 
-> not sign initramfs. So only thing possible is that distributions enforce
-> some policy in signed initramfs and if distributions have to enforce a
-> policy they can do that in kernel itself and no need for signed initramfs.
-
-The difference is that one hard codes policy in the kernel, while the
-other doesn't.  Having the policy in a signed initramfs, permits the
-platform owner, for example, to change the policy.
-
-Having said this, both Dmitry and I agreed with you that the UEFI keys
-can be loaded from the kernel.  We disagree with you, that there is no
-other purpose for a signed early initramfs.  Dmitry's example was
-loading the IMA policy.  Another example is locking the _ima keyring.
-Each scenario has its own requirements.
-
-thanks,
-
-Mimi
+	child = device_find_child(parent, data, match_function);
+	if (child) {
+		<do something on child> 
+		put_device(child);		
+	}
 
 
+
+In the previous email I forgot the following caller of device_find_child().
+It is too complex for me to understand everything in few minutes; I just
+looked in the file and around the function occurence.
+
+arch/sparc/kernel/vio.c:335
+
+static void vio_remove(struct mdesc_handle *hp, u64 node)
+{
+	struct device *dev;
+
+	dev = device_find_child(&root_vdev->dev, (void *) node,
+				vio_md_node_match);
+	if (dev) {
+		printk(KERN_INFO "VIO: Removing device %s\n", dev_name(dev));
+		device_unregister(dev);
++               put_device(dev);
+	}
+}
+
+Otherwise the refcount of dev after this function will be 1, but I suppose
+that the expected result is 0 (remove)
+
+
+
+Thank you very much for your patience :)
+
+-- 
+Federico Vaga
