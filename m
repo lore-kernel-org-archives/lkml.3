@@ -1,204 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab3DLBOT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 21:14:19 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:35424 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752282Ab3DLBOS (ORCPT
+	id S1752796Ab3DLBbl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 21:31:41 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49242 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409Ab3DLBbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 21:14:18 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v2 00/25] Dynamic NUMA: Runtime NUMA memory layout reconfiguration
-Date: Thu, 11 Apr 2013 18:13:32 -0700
-Message-Id: <1365729237-29711-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.1
+	Thu, 11 Apr 2013 21:31:40 -0400
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <bob.liu@oracle.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Subject: [PATCH PART2 v2 0/7] staging: zcache/ramster: fix and ramster/debugfs improvement
+Date: Fri, 12 Apr 2013 09:31:20 +0800
+Message-Id: <1365730287-16876-1-git-send-email-liwanp@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041201-7606-0000-0000-00000A5628BF
+x-cbid: 13041201-3864-0000-0000-000007ADB22C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches allow the NUMA memory layout (meaning which node each physical
-page belongs to, the mapping from physical pages to NUMA nodes) to be changed
-at runtime in place (without hotplugging).
+Changelog: 
+ v1 -> v2:  
+ * fix bisect issue 
+ * fix issue in patch staging: ramster: Provide accessory functions for counter decrease
+ * drop patch staging: zcache: remove zcache_freeze 
+ * Add Dan Acked-by
 
-Depends on "mm: avoid duplication of setup_nr_node_ids()",
-http://comments.gmane.org/gmane.linux.kernel.mm/96880, which is merged into the
-current MMOTM.
+Fix bugs in zcache and rips out the debug counters out of ramster.c and 
+sticks them in a debug.c file. Introduce accessory functions for counters 
+increase/decrease, they are available when config RAMSTER_DEBUG, otherwise 
+they are empty non-debug functions. Using an array to initialize/use debugfs 
+attributes to make them neater. Dan Magenheimer confirm these works 
+are needed. http://marc.info/?l=linux-mm&m=136535713106882&w=2
 
-TODO:
+Patch 1~2 fix bugs in zcache
 
- - Update sysfs node information when reconfiguration occurs
- - Currently, I use pageflag setters without "owning" pages which could cause
-   loss of pageflag updates when combined with non-atomic pageflag users in
-   mm/*. Some options for solving this: (a) make all pageflags access atomic,
-   (b) use pageblock flags, (c) use bits in a new bitmap, or (d) attempt to work
-   around races in a similar way to memory-failure.
+Patch 3~8 rips out the debug counters out of ramster.c and sticks them 
+		  in a debug.c file 
 
-= Why/when is this useful? =
+Patch 9 fix coding style issue introduced in zcache2 cleanups 
+        (s/int/bool + debugfs movement) patchset 
 
-In virtual machines (VMs) running on NUMA systems both [a] if/when the
-hypervisor decides to move their backing memory around (compacting,
-prioritizing another VMs desired layout, etc) and [b] in general for
-migration of VMs.
+Patch 10 add how-to for ramster 
 
-The hardware is _already_ changing the NUMA layout underneath us. We have
-powerpc64 systems with firmware that currently move the backing memory around,
-and have the ability to notify Linux of new NUMA info.
+Dan Magenheimer (1):
+	staging: ramster: add how-to for ramster
+	
+Wanpeng Li (6):
+	staging: ramster: decrease foregin pers pages when count < 0
+	staging: ramster: Move debugfs code out of ramster.c files
+	staging: ramster/debug: Use an array to initialize/use debugfs attributes
+	staging: ramster/debug: Add RAMSTER_DEBUG Kconfig entry
+	staging: ramster: Add incremental accessory counters
+	staging: zcache/debug: fix coding style
 
-= How are you managing to do this? =
-
-Reconfiguration of page->node mappings is done at the page allocator
-level by both pulling free pages out of the free lists (when a new memory
-layout is committed) & redirecting pages on free to their new node.
-
-Because we can't change page_node(A) while A is allocated [1], a rbtree
-holding the mapping from pfn ranges to node ids ('struct memlayout')
-is introduced to track the pfn->node mapping for
-yet-to-be-transplanted pages. A lookup in this rbtree occurs on any
-page allocator path that decides which zone to free a page to.
-
-To avoid horrible performance due to rbtree lookups all the time, the
-rbtree is only consulted when the page is marked with a new pageflag
-(LookupNode).
-
-[1]: quite a few users of page_node() depend on it not changing, some
-accumulate per-node stats by using this. We'd also have to change it via atomic
-operations to avoid disturbing the pageflags which share the same unsigned
-long.
-
-= Code & testing =
-
-A debugfs interface allows the NUMA memory layout to be changed.  Basically,
-you don't need to have weird systems to test this, in fact, I've done all my
-testing so far in plain old qemu-i386.
-
-A script which stripes the memory between nodes or pushes all memory to a
-(potentially new) node is avaliable here:
-
-	https://raw.github.com/jmesmon/trifles/master/bin/dnuma-test
-
-The patches are also available via:
-
-	https://github.com/jmesmon/linux.git dnuma/v32
-
-	f16107a..db6f5c3
-
-= Current Limitations =
-
-For the reconfiguration to be effective (and not make the allocator make
-poorer choices), updating the cpu->node mappings is also needed. This patchset
-does _not_ handle this. Also missing is a way to update topology (node
-distances), which is slightly less fatal.
-
-These patches only work on SPARSEMEM and the node id _must_ fit in the pageflags
-(can't be pushed out to the section). This generally means that 32-bit
-platforms are out (unless you hack MAX_PHYS{ADDR,MEM}_BITS).
-
-This code does the reconfiguration without hotplugging memory at all (1
-errant page doesn't keep us from fixing the rest of them). But it still
-depends on MEMORY_HOTPLUG for functions that online nodes & adjust
-zone/pgdat size.
-
-Things that need doing or would be nice to have but aren't bugs:
-
- - While the interface is meant to be driven via a hypervisor/firmware, that
-   portion is not yet included.
- - notifier for kernel users of memory that need/want their allocations on a
-   particular node (NODE_DATA(), for instance).
- - notifier for userspace.
- - a way to allocate things from the appropriate node prior to the page
-   allocator being fully updated (could just be "allocate it wrong now &
-   reallocate later").
- - Make memlayout faster (potentially via per-node allocation, different data
-   structure, and/or more/smarter caching).
- - (potentially) propagation of updated layout knowledge into kmem_caches
-   (SL*B).
-
---
-
-Since v1: http://comments.gmane.org/gmane.linux.kernel.mm/95541
-
- - Update watermarks.
- - Update zone percpu pageset ->batch & ->high only when needed.
- - Don't lazily adjust {pgdat,zone}->{present_pages,managed_pages}, set them all at once.
- - Don't attempt to use more than nr_node_ids nodes.
-
---
-
-Cody P Schafer (25):
-  rbtree: add postorder iteration functions.
-  rbtree: add rbtree_postorder_for_each_entry_safe() helper.
-  mm/memory_hotplug: factor out zone+pgdat growth.
-  memory_hotplug: export ensure_zone_is_initialized() in mm/internal.h
-  mm/memory_hotplug: use {pgdat,zone}_is_empty() when resizing zones &
-    pgdats
-  mm: add nid_zone() helper
-  page_alloc: add return_pages_to_zone() when DYNAMIC_NUMA is enabled.
-  page_alloc: in move_freepages(), skip pages instead of VM_BUG on node
-    differences.
-  page_alloc: when dynamic numa is enabled, don't check that all pages
-    in a block belong to the same zone
-  page-flags dnuma: reserve a pageflag for determining if a page needs a
-    node lookup.
-  memory_hotplug: factor out locks in mem_online_cpu()
-  mm: add memlayout & dnuma to track pfn->nid & transplant pages between
-    nodes
-  mm: memlayout+dnuma: add debugfs interface
-  page_alloc: use dnuma to transplant newly freed pages in
-    __free_pages_ok()
-  page_alloc: use dnuma to transplant newly freed pages in
-    free_hot_cold_page()
-  page_alloc: transplant pages that are being flushed from the per-cpu
-    lists
-  x86: memlayout: add a arch specific inital memlayout setter.
-  init/main: call memlayout_global_init() in start_kernel().
-  dnuma: memlayout: add memory_add_physaddr_to_nid() for memory_hotplug
-  x86/mm/numa: when dnuma is enabled, use memlayout to handle memory
-    hotplug's physaddr_to_nid.
-  mm/memory_hotplug: VM_BUG if nid is too large.
-  mm/page_alloc: in page_outside_zone_boundaries(), avoid premature
-    decisions.
-  mm/page_alloc: make pr_err() in page_outside_zone_boundaries() more
-    useful
-  mm/page_alloc: use manage_pages instead of present pages when
-    calculating default_zonelist_order()
-  mm: add a early_param "extra_nr_node_ids" to increase nr_node_ids
-    above the minimum by a percentage.
-
- Documentation/kernel-parameters.txt |   6 +
- arch/x86/mm/numa.c                  |  32 ++-
- include/linux/dnuma.h               |  97 ++++++++
- include/linux/memlayout.h           | 133 +++++++++++
- include/linux/memory_hotplug.h      |   4 +
- include/linux/mm.h                  |   7 +-
- include/linux/page-flags.h          |  19 ++
- include/linux/rbtree.h              |  12 +
- init/main.c                         |   2 +
- lib/rbtree.c                        |  40 ++++
- mm/Kconfig                          |  54 +++++
- mm/Makefile                         |   2 +
- mm/dnuma.c                          | 441 ++++++++++++++++++++++++++++++++++++
- mm/internal.h                       |  13 +-
- mm/memlayout-debugfs.c              | 339 +++++++++++++++++++++++++++
- mm/memlayout-debugfs.h              |  39 ++++
- mm/memlayout.c                      | 265 ++++++++++++++++++++++
- mm/memory_hotplug.c                 |  54 +++--
- mm/page_alloc.c                     | 154 +++++++++++--
- 19 files changed, 1669 insertions(+), 44 deletions(-)
- create mode 100644 include/linux/dnuma.h
- create mode 100644 include/linux/memlayout.h
- create mode 100644 mm/dnuma.c
- create mode 100644 mm/memlayout-debugfs.c
- create mode 100644 mm/memlayout-debugfs.h
- create mode 100644 mm/memlayout.c
+ drivers/staging/zcache/Kconfig           |    8 +
+ drivers/staging/zcache/Makefile          |    1 +
+ drivers/staging/zcache/debug.h           |   95 ++++++++---
+ drivers/staging/zcache/ramster/HOWTO.txt |  257 ++++++++++++++++++++++++++++++
+ drivers/staging/zcache/ramster/debug.c   |   66 ++++++++
+ drivers/staging/zcache/ramster/debug.h   |  143 +++++++++++++++++
+ drivers/staging/zcache/ramster/ramster.c |  148 +++--------------
+ 7 files changed, 573 insertions(+), 145 deletions(-)
+ create mode 100644 drivers/staging/zcache/ramster/HOWTO.txt
+ create mode 100644 drivers/staging/zcache/ramster/debug.c
+ create mode 100644 drivers/staging/zcache/ramster/debug.h
 
 -- 
-1.8.2.1
+1.7.10.4
 
