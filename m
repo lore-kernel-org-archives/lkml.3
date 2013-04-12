@@ -1,164 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753838Ab3DLLSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 07:18:37 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:39351 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629Ab3DLLSg (ORCPT
+	id S1754391Ab3DLLSs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 07:18:48 -0400
+Received: from mail-ia0-f173.google.com ([209.85.210.173]:65113 "EHLO
+	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab3DLLSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 07:18:36 -0400
-Message-ID: <5167ED84.4020000@free-electrons.com>
-Date: Fri, 12 Apr 2013 13:18:28 +0200
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 12 Apr 2013 07:18:46 -0400
 MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.or,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCH v2] clk: add device tree fixed-factor-clock binding support
-References: <1365760708-4763-1-git-send-email-gregory.clement@free-electrons.com> <1365760708-4763-2-git-send-email-gregory.clement@free-electrons.com> <20130412103007.GE29291@ab42.lan>
-In-Reply-To: <20130412103007.GE29291@ab42.lan>
-X-Enigmail-Version: 1.5.1
+In-Reply-To: <51672304.2060600@ti.com>
+References: <1364297642-2746-7-git-send-email-amit.daniel@samsung.com>
+	<51672304.2060600@ti.com>
+Date: Fri, 12 Apr 2013 16:48:45 +0530
+X-Google-Sender-Auth: Qe55QtlckUBWXqKqllJOVQt7bLg
+Message-ID: <CADGdYn7TzwYu4HAOLTSkpcj_fyGFNV5W_=-eGP6GWemTmM1D8w@mail.gmail.com>
+Subject: Re: [6/9] thermal: exynos: small cleanups to prepare for adding
+ exynos5440 driver
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-pm@vger.kernel.org, Thomas Abraham <thomas.abraham@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 12:30 PM, Christian Ruppert wrote:
-> Hi Gregory,
-> 
-> Just tested the patch and it works perfectly. Did you forget to update
-> Documentation/devicetree/bindings/clock/fixed-factor-clock.txt, however?
-
-Oh yes you're right. I will send a v3 with this modification.
-Can I also add your tested-by flag?
-
-Thanks,
+Hi Eduardo,
 
 
-> 
-> Greetings,
->   Christian
-> 
-> On Fri, Apr 12, 2013 at 11:58:28AM +0200, Gregory CLEMENT wrote:
->> Add support for DT "fixed-factor-clock" binding to the common fixed
->> factor clock support.
+On Fri, Apr 12, 2013 at 2:24 AM, Eduardo Valentin
+<eduardo.valentin@ti.com> wrote:
+> Amit,
+>
+>
+> On 26-03-2013 07:33, Amit Daniel Kachhap wrote:
 >>
->> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>> Add calib mode, trigger types and trigger_enable array. This is needed
+>> for adding exynos5440 TMU driver.
+>>
+>
+> I dont think the above are small cleanups. I d rather split this patch into
+> three, one per change and describe them properly.
+Yes Right.
+>
+>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>>
 >> ---
->>  .../bindings/clock/fixed-factor-clock.txt          |   24 +++++++++++++
->>  drivers/clk/clk-fixed-factor.c                     |   36 ++++++++++++++++++++
->>  include/linux/clk-provider.h                       |    2 ++
->>  3 files changed, 62 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/clock/fixed-factor-clock.txt
+>> drivers/thermal/samsung/exynos4210_thermal.c |   30
+>> ++++++++++++------------
+>>   include/linux/platform_data/exynos_thermal.h |   32
+>> +++++++++++++-------------
+>>   2 files changed, 31 insertions(+), 31 deletions(-)
 >>
->> diff --git a/Documentation/devicetree/bindings/clock/fixed-factor-clock.txt b/Documentation/devicetree/bindings/clock/fixed-factor-clock.txt
->> new file mode 100644
->> index 0000000..7ed236f
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/clock/fixed-factor-clock.txt
->> @@ -0,0 +1,24 @@
->> +Binding for simple fixed factor rate clock sources.
->> +
->> +This binding uses the common clock binding[1].
->> +
->> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
->> +
->> +Required properties:
->> +- compatible : shall be "fixed-factor-clock".
->> +- #clock-cells : from common clock binding; shall be set to 0.
->> +- div: fixed divider.
->> +- mult: fixed multiplier.
->> +- clocks: parent clock.
->> +
->> +Optional properties:
->> +- clock-output-names : From common clock binding.
->> +
->> +Example:
->> +	clock {
->> +		compatible = "fixed-factor-clock";
->> +		clocks = <&parentclk>;
->> +		#clock-cells = <0>;
->> +		div = <2>;
->> +		mult = <1>;
->> +	};
->> diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
->> index 1ef271e..9ff7d51 100644
->> --- a/drivers/clk/clk-fixed-factor.c
->> +++ b/drivers/clk/clk-fixed-factor.c
->> @@ -11,6 +11,7 @@
->>  #include <linux/clk-provider.h>
->>  #include <linux/slab.h>
->>  #include <linux/err.h>
->> +#include <linux/of.h>
->>  
->>  /*
->>   * DOC: basic fixed multiplier and divider clock that cannot gate
->> @@ -96,3 +97,38 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
->>  
->>  	return clk;
->>  }
->> +#ifdef CONFIG_OF
->> +/**
->> + * of_fixed_factor_clk_setup() - Setup function for simple fixed factor clock
->> + */
->> +void __init of_fixed_factor_clk_setup(struct device_node *node)
->> +{
->> +	struct clk *clk;
->> +	const char *clk_name = node->name;
->> +	const char *parent_name;
->> +	u32 div, mult;
->> +
->> +	if (of_property_read_u32(node, "clock-div", &div)) {
->> +		pr_err("%s Fixed factor clock <%s> must have a clock-div property\n",
->> +			__func__, node->name);
->> +		return;
->> +	}
->> +
->> +	if (of_property_read_u32(node, "clock-mult", &mult)) {
->> +		pr_err("%s Fixed factor clock <%s> must have a clokc-mult property\n",
->> +			__func__, node->name);
->> +		return;
->> +	}
->> +
->> +	of_property_read_string(node, "clock-output-names", &clk_name);
->> +	parent_name = of_clk_get_parent_name(node, 0);
->> +
->> +	clk = clk_register_fixed_factor(NULL, clk_name, parent_name, 0,
->> +					mult, div);
->> +	if (!IS_ERR(clk))
->> +		of_clk_add_provider(node, of_clk_src_simple_get, clk);
->> +}
->> +EXPORT_SYMBOL_GPL(of_fixed_factor_clk_setup);
->> +CLK_OF_DECLARE(fixed_factor_clk, "fixed-factor-clock",
->> +		of_fixed_factor_clk_setup);
->> +#endif
->> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
->> index 7f197d7..7ea501b 100644
->> --- a/include/linux/clk-provider.h
->> +++ b/include/linux/clk-provider.h
->> @@ -325,6 +325,8 @@ struct clk *clk_register_fixed_factor(struct device *dev, const char *name,
->>  		const char *parent_name, unsigned long flags,
->>  		unsigned int mult, unsigned int div);
->>  
->> +void of_fixed_factor_clk_setup(struct device_node *node);
->> +
->>  /**
->>   * clk_register - allocate a new clock, register it and return an opaque cookie
->>   * @dev: device that is registering this clock
->> -- 
->> 1.7.9.5
+>> diff --git a/drivers/thermal/samsung/exynos4210_thermal.c
+>> b/drivers/thermal/samsung/exynos4210_thermal.c
+>> index 09ea8c8..58d16ac 100644
+>> --- a/drivers/thermal/samsung/exynos4210_thermal.c
+>> +++ b/drivers/thermal/samsung/exynos4210_thermal.c
+>> @@ -276,10 +276,10 @@ static void exynos_tmu_control(struct
+>> platform_device *pdev, bool on)
 >>
-> 
-
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+>>         if (on) {
+>>                 con |= EXYNOS_TMU_CORE_ON;
+>> -               interrupt_en = pdata->trigger_level3_en << 12 |
+>> -                       pdata->trigger_level2_en << 8 |
+>> -                       pdata->trigger_level1_en << 4 |
+>> -                       pdata->trigger_level0_en;
+>> +               interrupt_en = pdata->trigger_enable[3] << 12 |
+>> +                       pdata->trigger_enable[2] << 8 |
+>> +                       pdata->trigger_enable[1] << 4 |
+>> +                       pdata->trigger_enable[0];
+>>                 if (pdata->threshold_falling)
+>>                         interrupt_en |= interrupt_en << 16;
+>>         } else {
+>> @@ -394,10 +394,10 @@ static struct exynos_tmu_platform_data const
+>> exynos4210_default_tmu_data = {
+>>         .trigger_levels[0] = 5,
+>>         .trigger_levels[1] = 20,
+>>         .trigger_levels[2] = 30,
+>> -       .trigger_level0_en = 1,
+>> -       .trigger_level1_en = 1,
+>> -       .trigger_level2_en = 1,
+>> -       .trigger_level3_en = 0,
+>> +       .trigger_enable[0] = 1,
+>> +       .trigger_enable[1] = 1,
+>> +       .trigger_enable[2] = 1,
+>> +       .trigger_enable[3] = 0,
+>>         .gain = 15,
+>>         .reference_voltage = 7,
+>>         .cal_type = TYPE_ONE_POINT_TRIMMING,
+>> @@ -423,10 +423,10 @@ static struct exynos_tmu_platform_data const
+>> exynos_default_tmu_data = {
+>>         .trigger_levels[0] = 85,
+>>         .trigger_levels[1] = 103,
+>>         .trigger_levels[2] = 110,
+>> -       .trigger_level0_en = 1,
+>> -       .trigger_level1_en = 1,
+>> -       .trigger_level2_en = 1,
+>> -       .trigger_level3_en = 0,
+>> +       .trigger_enable[0] = 1,
+>> +       .trigger_enable[1] = 1,
+>> +       .trigger_enable[2] = 1,
+>> +       .trigger_enable[3] = 0,
+>>         .gain = 8,
+>>         .reference_voltage = 16,
+>>         .noise_cancel_mode = 4,
+>> @@ -566,9 +566,9 @@ static int exynos_tmu_probe(struct platform_device
+>> *pdev)
+>>
+>>         /* Register the sensor with thermal management interface */
+>>         (&exynos_sensor_conf)->driver_data = data;
+>> -       exynos_sensor_conf.trip_data.trip_count = pdata->trigger_level0_en
+>> +
+>> -                       pdata->trigger_level1_en +
+>> pdata->trigger_level2_en +
+>> -                       pdata->trigger_level3_en;
+>> +       exynos_sensor_conf.trip_data.trip_count = pdata->trigger_enable[0]
+>> +
+>> +                       pdata->trigger_enable[1] +
+>> pdata->trigger_enable[2] +
+>> +                       pdata->trigger_enable[3];
+>>
+>>         for (i = 0; i < exynos_sensor_conf.trip_data.trip_count; i++)
+>>                 exynos_sensor_conf.trip_data.trip_val[i] =
+>> diff --git a/include/linux/platform_data/exynos_thermal.h
+>> b/include/linux/platform_data/exynos_thermal.h
+>> index 893b758..1090f48 100644
+>> --- a/include/linux/platform_data/exynos_thermal.h
+>> +++ b/include/linux/platform_data/exynos_thermal.h
+>> @@ -31,6 +31,17 @@ enum calibration_type {
+>>         TYPE_NONE,
+>>   };
+>>
+>> +enum calibration_mode {
+>> +       SW_MODE,
+>> +       HW_MODE,
+>> +};
+>> +
+>> +enum trigger_type {
+>> +       ACTIVE,
+>> +       CRITICAL,
+>> +       HW_TRIP,
+>> +};
+>> +
+>>   enum soc_type {
+>>         SOC_ARCH_EXYNOS4210 = 1,
+>>         SOC_ARCH_EXYNOS,
+>> @@ -71,18 +82,9 @@ struct freq_clip_table {
+>>    *    3: temperature for trigger_level3 interrupt
+>>    *       condition for trigger_level3 interrupt:
+>>    *            current temperature > threshold + trigger_levels[3]
+>> - * @trigger_level0_en:
+>> + * @trigger_enable[]: array to denote which trigger levels are enabled.
+>>    *    1 = enable trigger_level0 interrupt,
+>>    *    0 = disable trigger_level0 interrupt
+>> - * @trigger_level1_en:
+>> - *     1 = enable trigger_level1 interrupt,
+>> - *     0 = disable trigger_level1 interrupt
+>> - * @trigger_level2_en:
+>> - *     1 = enable trigger_level2 interrupt,
+>> - *     0 = disable trigger_level2 interrupt
+>> - * @trigger_level3_en:
+>> - *     1 = enable trigger_level3 interrupt,
+>> - *     0 = disable trigger_level3 interrupt
+>>    * @gain: gain of amplifier in the positive-TC generator block
+>>    *    0 <= gain <= 15
+>>    * @reference_voltage: reference voltage of amplifier
+>> @@ -93,6 +95,7 @@ struct freq_clip_table {
+>>    * @type: determines the type of SOC
+>>    * @efuse_value: platform defined fuse value
+>>    * @cal_type: calibration type for temperature
+>> + * @cal_mode: calibration mode for temperature
+>
+>
+> How about trigger_type?
+will add. Thanks for the detailed review.
+>
+>>    * @freq_clip_table: Table representing frequency reduction percentage.
+>>    * @freq_tab_count: Count of the above table as frequency reduction may
+>>    *    applicable to only some of the trigger levels.
+>> @@ -103,18 +106,15 @@ struct exynos_tmu_platform_data {
+>>         u8 threshold;
+>>         u8 threshold_falling;
+>>         u8 trigger_levels[MAX_TRIP];
+>> -       bool trigger_level0_en;
+>> -       bool trigger_level1_en;
+>> -       bool trigger_level2_en;
+>> -       bool trigger_level3_en;
+>> -       bool trigger_level4_en;
+>> -
+>> +       enum trigger_type trigger_type[MAX_TRIP];
+>> +       bool trigger_enable[MAX_TRIP];
+>>         u8 gain;
+>>         u8 reference_voltage;
+>>         u8 noise_cancel_mode;
+>>         u32 efuse_value;
+>>
+>>         enum calibration_type cal_type;
+>> +       enum calibration_mode cal_mode;
+>>         enum soc_type type;
+>>         struct freq_clip_table freq_tab[MAX_TRIP];
+>>         unsigned int freq_tab_count;
+>>
+>
