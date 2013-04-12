@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab3DLO5X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 10:57:23 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:54309 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab3DLO5W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 10:57:22 -0400
-X-Originating-IP: 108.223.40.66
-Date: Fri, 12 Apr 2013 07:57:33 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "wim@iguana.be" <wim@iguana.be>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] watchdog: fix cleanup device code on registration
-Message-ID: <20130412145733.GA28704@roeck-us.net>
-References: <A874F61F95741C4A9BA573A70FE3998F82E4BBCA@DQHE02.ent.ti.com>
+	id S1753675Ab3DLO5b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 10:57:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56285 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752989Ab3DLO53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 10:57:29 -0400
+Message-ID: <5168208B.7050107@zytor.com>
+Date: Fri, 12 Apr 2013 07:56:11 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E4BBCA@DQHE02.ent.ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Renninger <trenn@suse.de>,
+        Simon Horman <horms@verge.net.au>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Cliff Wickman <cpw@sgi.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Hansen <dave@sr71.net>
+Subject: Re: [PATCH 5/5] kexec: X86: Pass memory ranges via e820 table instead
+ of memmap= boot parameter
+References: <1365683207-42425-1-git-send-email-trenn@suse.de> <1365683207-42425-6-git-send-email-trenn@suse.de> <CAE9FiQXnZzVC7dtvXWrqz=jYAGH053R8Vw1qkrMd2F+hAaMxdQ@mail.gmail.com> <5166D18A.7090800@zytor.com> <20130412143104.GA4301@redhat.com>
+In-Reply-To: <20130412143104.GA4301@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 06:51:48AM +0000, Kim, Milo wrote:
-> Duplicate lines of code are moved to cleanup_dev section.
-> And it returns 0 explicitly in case of no error.
+On 04/12/2013 07:31 AM, Vivek Goyal wrote:
+>>
+>> I also have to admit that I don't see the difference between /dev/mem
+>> and /dev/oldmem, as the former allows access to memory ranges outside
+>> the ones used by the current kernel, which is what the oldmem device
+>> seems to be intended to od.
 > 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> ---
->  drivers/watchdog/watchdog_dev.c |   18 +++++++++---------
->  1 file changed, 9 insertions(+), 9 deletions(-)
+> I think one difference seems to be that /dev/mem assumes that validly
+> accessed memory is already mapped in kernel while /dev/oldmeme assumes
+> it is not mapped and creates temporary mappings explicitly.
 > 
-> diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
-> index 42bfc9a..37c2dcc 100644
-> --- a/drivers/watchdog/watchdog_dev.c
-> +++ b/drivers/watchdog/watchdog_dev.c
-> @@ -613,11 +613,7 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
->  	if (err) {
->  		pr_err("watchdog%d unable to add device %d:%d\n",
->  			watchdog->id,  MAJOR(watchdog_devt), watchdog->id);
-> -		if (watchdog->id == 0) {
-> -			misc_deregister(&watchdog_miscdev);
-> -			old_wdd = NULL;
-> -		}
-> -		return err;
-> +		goto cleanup_dev;
->  	}
->  
->  	/* Activate the watchdog automatically by the driver itself */
-> @@ -625,13 +621,17 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
->  		err = watchdog_auto_start(watchdog);
->  		if (err) {
->  			cdev_del(&watchdog->cdev);
 
-If you are doing this, you should also move cdev_del into the cleanup path:
+Dave Hansen has been working on fixing /dev/mem for HIGHMEM.
 
-> -			if (watchdog->id == 0) {
-> -				misc_deregister(&watchdog_miscdev);
-> -				old_wdd = NULL;
-> -			}
-> +			goto cleanup_dev;
->  		}
->  	}
->  
-> +	return 0;
-> +
-cleanup_cdev:
-	cdev_del(&watchdog->cdev);
+	-hpa
 
-> +cleanup_dev:
-> +	if (watchdog->id == 0) {
-> +		misc_deregister(&watchdog_miscdev);
-> +		old_wdd = NULL;
-> +	}
->  	return err;
->  }
->  
-> -- 
-> 1.7.9.5
-> 
-> 
-> Best Regards,
-> Milo
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+
