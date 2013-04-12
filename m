@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab3DLPAP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:00:15 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:10103 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753496Ab3DLPAK convert rfc822-to-8bit (ORCPT
+	id S1753456Ab3DLPDj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:03:39 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11256 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab3DLPDh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:00:10 -0400
+	Fri, 12 Apr 2013 11:03:37 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 12 Apr 2013 08:00:04 -0700
+	by hqnvupgp07.nvidia.com on Fri, 12 Apr 2013 08:01:55 -0700
 From: Jay Agarwal <jagarwal@nvidia.com>
-To: "'Stephen Warren'" <swarren@wwwdotorg.org>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
 CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
         "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
         Laxman Dewangan <ldewangan@nvidia.com>,
@@ -18,7 +19,6 @@ CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
         "olof@lixom.net" <olof@lixom.net>, Hiroshi Doyu <hdoyu@nvidia.com>,
         Prashant Gaikwad <pgaikwad@nvidia.com>,
         "mturquette@linaro.org" <mturquette@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
@@ -26,14 +26,16 @@ CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         Juha Tukkinen <jtukkinen@nvidia.com>,
         Krishna Thota <kthota@nvidia.com>
-Date: Fri, 12 Apr 2013 20:28:30 +0530
-Subject: RE: [PATCH 1/3] ARM: tegra: pcie: Add tegra3 support
-Thread-Topic: [PATCH 1/3] ARM: tegra: pcie: Add tegra3 support
-Thread-Index: Ac40hJQ0WEaybtu2QIqjIvY4b5fyJQDCSkkQ
-Message-ID: <C79B248886DD134989C8FF6B096A91AB91B36FB2FD@BGMAIL01.nvidia.com>
+Date: Fri, 12 Apr 2013 20:33:20 +0530
+Subject: RE: [PATCH 2/3] ARM: dts: tegra: Correct PCIe entry
+Thread-Topic: [PATCH 2/3] ARM: dts: tegra: Correct PCIe entry
+Thread-Index: Ac40/I9IYk++End9Te6hXC5uW9xOIwCkh9Mw
+Message-ID: <C79B248886DD134989C8FF6B096A91AB91B36FB2FE@BGMAIL01.nvidia.com>
 References: <1365435688-4179-1-git-send-email-jagarwal@nvidia.com>
- <51630852.1000107@wwwdotorg.org>
-In-Reply-To: <51630852.1000107@wwwdotorg.org>
+ <1365435688-4179-2-git-send-email-jagarwal@nvidia.com>
+ <51630BF4.6000605@wwwdotorg.org>
+ <20130409083050.GQ3572@tbergstrom-lnx.Nvidia.com>
+In-Reply-To: <20130409083050.GQ3572@tbergstrom-lnx.Nvidia.com>
 Accept-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
@@ -46,25 +48,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >  	err = regulator_disable(pcie->pex_clk_supply);
-> >  	if (err < 0)
-> > -		dev_err(pcie->dev, "failed to disable pex-clk regulator:
-> %d\n",
-> > +		dev_warn(pcie->dev, "failed to disable pex-clk regulator:
-> %d\n",
-> >  			err);
+> On Mon, Apr 08, 2013 at 08:27:00PM +0200, Stephen Warren wrote:
+> > On 04/08/2013 09:41 AM, Jay Agarwal wrote:
+> > > Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
 > >
-> >  	err = regulator_disable(pcie->vdd_supply);
-> >  	if (err < 0)
-> > -		dev_err(pcie->dev, "failed to disable VDD regulator: %d\n",
-> > +		dev_warn(pcie->dev, "failed to disable VDD regulator:
-> %d\n",
-> >  			err);
+> > Your s-o-b line should be below the patch description, not above it.
+> > Please see Documentation/SubmittingPatches.
+> >
+> > I also don't see a --- line between the patch description and diffstat.
+> > How are you generating these patch emails? Please see our internal
+> > wiki, or other git documentation.
+> >
+> > > diff --git a/arch/arm/boot/dts/tegra30.dtsi
+> > > b/arch/arm/boot/dts/tegra30.dtsi
+> >
+> > > -		clock-names = "pex", "afi", "pcie_xclk", "pll_e", "cml";
+> > > +		clock-names = "pex", "afi", "pcie_xclk", "pll_e", "cml0";
+> >
+> > Can you please explain more about this change?
+> >
+> > I see the Tegra clock driver provides both a "cml0" and a "cml1" clock.
+> > Are both of those used for PCIe?
+> >
 > 
-> Please explain why that change is correct. If the regulators only exist on
-> Tegra20, please represent that fact in the SoC data. Regulators must always
-> exist, so enable/disable should never fail due to missing regulators. Actual
-> run-time failures seem like something that really is an error.
+> cml0 is used for pcie and cml1 is used for sata.
 > 
-[>] These regulators are needed for both tegra20 & tegra30. Since we are not returning error here, so changed to dev_warn.
-
+[>] Yes correct.
