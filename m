@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758888Ab3DLWzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:55:16 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:32791 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758735Ab3DLWzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:55:12 -0400
+	id S1759126Ab3DLW4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:56:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59683 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932272Ab3DLWzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 18:55:08 -0400
 From: Nishanth Menon <nm@ti.com>
 To: <linux-omap@vger.kernel.org>
 CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
@@ -15,9 +14,9 @@ CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
         Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
         Kevin Hilman <khilman@deeprootsystems.com>,
         Mike Turquette <mturquette@linaro.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V4 6/6] ARM: OMAP3+: use cpu0-cpufreq driver in device tree supported boot
-Date: Fri, 12 Apr 2013 17:54:38 -0500
-Message-ID: <1365807278-554-7-git-send-email-nm@ti.com>
+Subject: [PATCH V4 3/6] ARM: dts: OMAP4: add clock nodes for CPU
+Date: Fri, 12 Apr 2013 17:54:35 -0500
+Message-ID: <1365807278-554-4-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365807278-554-1-git-send-email-nm@ti.com>
 References: <1365807278-554-1-git-send-email-nm@ti.com>
@@ -27,56 +26,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With OMAP3+ and AM33xx supported SoC having defined CPU device tree
-entries with operating-points and clock nodes defined, we can now use
-the SoC generic cpufreq-cpu0 driver by registering appropriate device.
+OMAP443x, OMAP446x and OMAP447x platforms use dpll_mpu clock.
+Add same to common definition.
 
 Cc: Benoit Cousson <b-cousson@ti.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
-Introduced as a result of alignment in http://marc.info/?t=136450773400004&r=1&w=2
-previous versions do not use this approach.
+RFC of this patch approach for OMAP3 was discussed in http://marc.info/?t=136370325600009&r=1&w=2
+along with the detailed context as to why this is an intermediate step.
 
-This would probably be good to get merged *after* Rafael's tree is merged in.
+previous revisions of cpufreq-cpu0 support do not use this approach.
+[Probably belongs to Benoit's tree]
 
-[Probably belongs to Kevin/Tony's tree?]
+ arch/arm/boot/dts/omap4.dtsi |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
- arch/arm/mach-omap2/pm.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/mach-omap2/pm.c b/arch/arm/mach-omap2/pm.c
-index 8d15f9a..6cf95160 100644
---- a/arch/arm/mach-omap2/pm.c
-+++ b/arch/arm/mach-omap2/pm.c
-@@ -267,7 +267,12 @@ static void __init omap4_init_voltages(void)
+diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
+index 2a56428..1c6d969 100644
+--- a/arch/arm/boot/dts/omap4.dtsi
++++ b/arch/arm/boot/dts/omap4.dtsi
+@@ -31,6 +31,8 @@
+ 		cpu@0 {
+ 			compatible = "arm,cortex-a9";
+ 			next-level-cache = <&L2>;
++			clocks = <&dpll_mpu>;
++			clock-names = "cpu";
+ 		};
+ 		cpu@1 {
+ 			compatible = "arm,cortex-a9";
+@@ -106,6 +108,11 @@
+ 			ti,hwmods = "counter_32k";
+ 		};
  
- static inline void omap_init_cpufreq(void)
- {
--	struct platform_device_info devinfo = { .name = "omap-cpufreq", };
-+	struct platform_device_info devinfo = { };
++		dpll_mpu: dpll_mpu {
++			#clock-cells = <0>;
++			compatible = "ti,omap-clock";
++		};
 +
-+	if (!of_have_populated_dt())
-+		devinfo.name = "omap-cpufreq";
-+	else
-+		devinfo.name = "cpufreq-cpu0";
- 	platform_device_register_full(&devinfo);
- }
- 
-@@ -301,9 +306,9 @@ int __init omap2_common_pm_late_init(void)
- 		/* Smartreflex device init */
- 		omap_devinit_smartreflex();
- 
--		/* cpufreq dummy device instantiation */
--		omap_init_cpufreq();
- 	}
-+	/* cpufreq dummy device instantiation */
-+	omap_init_cpufreq();
- 
- #ifdef CONFIG_SUSPEND
- 	suspend_set_ops(&omap_pm_ops);
+ 		omap4_pmx_core: pinmux@4a100040 {
+ 			compatible = "ti,omap4-padconf", "pinctrl-single";
+ 			reg = <0x4a100040 0x0196>;
 -- 
 1.7.9.5
 
