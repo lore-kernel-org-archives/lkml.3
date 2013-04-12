@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794Ab3DLBOX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 21:14:23 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:46991 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab3DLBOV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753686Ab3DLBOV (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 11 Apr 2013 21:14:21 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:49580 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752329Ab3DLBOS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 21:14:18 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>,
         Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v2 03/25] mm/memory_hotplug: factor out zone+pgdat growth.
-Date: Thu, 11 Apr 2013 18:13:35 -0700
-Message-Id: <1365729237-29711-4-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [RFC PATCH v2 01/25] rbtree: add postorder iteration functions.
+Date: Thu, 11 Apr 2013 18:13:33 -0700
+Message-Id: <1365729237-29711-2-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1365729237-29711-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1365729237-29711-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041201-5518-0000-0000-00000D761CED
+x-cbid: 13041201-9360-0000-0000-000011B4F88D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a new function grow_pgdat_and_zone() which handles locking +
-growth of a zone & the pgdat which it is associated with.
+Add postorder iteration functions for rbtree. These are useful for
+safely freeing an entire rbtree without modifying the tree at all.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- include/linux/memory_hotplug.h |  3 +++
- mm/memory_hotplug.c            | 17 +++++++++++------
- 2 files changed, 14 insertions(+), 6 deletions(-)
+ include/linux/rbtree.h |  4 ++++
+ lib/rbtree.c           | 40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+)
 
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index b6a3be7..cd393014 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -78,6 +78,9 @@ static inline void zone_seqlock_init(struct zone *zone)
- {
- 	seqlock_init(&zone->span_seqlock);
- }
-+extern void grow_pgdat_and_zone(struct zone *zone, unsigned long start_pfn,
-+				unsigned long end_pfn);
-+
- extern int zone_grow_free_lists(struct zone *zone, unsigned long new_nr_pages);
- extern int zone_grow_waitqueues(struct zone *zone, unsigned long nr_pages);
- extern int add_one_highpage(struct page *page, int pfn, int bad_ppro);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 46de32a..8f4d8d3 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -390,13 +390,22 @@ static void grow_pgdat_span(struct pglist_data *pgdat, unsigned long start_pfn,
- 					pgdat->node_start_pfn;
- }
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index 0022c1b..2879e96 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -68,6 +68,10 @@ extern struct rb_node *rb_prev(const struct rb_node *);
+ extern struct rb_node *rb_first(const struct rb_root *);
+ extern struct rb_node *rb_last(const struct rb_root *);
  
-+void grow_pgdat_and_zone(struct zone *zone, unsigned long start_pfn,
-+		unsigned long end_pfn)
++/* Postorder iteration - always visit the parent after it's children */
++extern struct rb_node *rb_first_postorder(const struct rb_root *);
++extern struct rb_node *rb_next_postorder(const struct rb_node *);
++
+ /* Fast replacement of a single node without remove/rebalance/add/rebalance */
+ extern void rb_replace_node(struct rb_node *victim, struct rb_node *new, 
+ 			    struct rb_root *root);
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index c0e31fe..65f4eff 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -518,3 +518,43 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
+ 	*new = *victim;
+ }
+ EXPORT_SYMBOL(rb_replace_node);
++
++static struct rb_node *rb_left_deepest_node(const struct rb_node *node)
 +{
-+	unsigned long flags;
-+	pgdat_resize_lock(zone->zone_pgdat, &flags);
-+	grow_zone_span(zone, start_pfn, end_pfn);
-+	grow_pgdat_span(zone->zone_pgdat, start_pfn, end_pfn);
-+	pgdat_resize_unlock(zone->zone_pgdat, &flags);
++	for (;;) {
++		if (node->rb_left)
++			node = node->rb_left;
++		else if (node->rb_right)
++			node = node->rb_right;
++		else
++			return (struct rb_node *)node;
++	}
 +}
 +
- static int __meminit __add_zone(struct zone *zone, unsigned long phys_start_pfn)
- {
- 	struct pglist_data *pgdat = zone->zone_pgdat;
- 	int nr_pages = PAGES_PER_SECTION;
- 	int nid = pgdat->node_id;
- 	int zone_type;
--	unsigned long flags;
- 	int ret;
- 
- 	zone_type = zone - pgdat->node_zones;
-@@ -404,11 +413,7 @@ static int __meminit __add_zone(struct zone *zone, unsigned long phys_start_pfn)
- 	if (ret)
- 		return ret;
- 
--	pgdat_resize_lock(zone->zone_pgdat, &flags);
--	grow_zone_span(zone, phys_start_pfn, phys_start_pfn + nr_pages);
--	grow_pgdat_span(zone->zone_pgdat, phys_start_pfn,
--			phys_start_pfn + nr_pages);
--	pgdat_resize_unlock(zone->zone_pgdat, &flags);
-+	grow_pgdat_and_zone(zone, phys_start_pfn, phys_start_pfn + nr_pages);
- 	memmap_init_zone(nr_pages, nid, zone_type,
- 			 phys_start_pfn, MEMMAP_HOTPLUG);
- 	return 0;
++struct rb_node *rb_next_postorder(const struct rb_node *node)
++{
++	const struct rb_node *parent;
++	if (!node)
++		return NULL;
++	parent = rb_parent(node);
++
++	/* If we're sitting on node, we've already seen our children */
++	if (parent && node == parent->rb_left && parent->rb_right) {
++		/* If we are the parent's left node, go to the parent's right
++		 * node then all the way down to the left */
++		return rb_left_deepest_node(parent->rb_right);
++	} else
++		/* Otherwise we are the parent's right node, and the parent
++		 * should be next */
++		return (struct rb_node *)parent;
++}
++EXPORT_SYMBOL(rb_next_postorder);
++
++struct rb_node *rb_first_postorder(const struct rb_root *root)
++{
++	if (!root->rb_node)
++		return NULL;
++
++	return rb_left_deepest_node(root->rb_node);
++}
++EXPORT_SYMBOL(rb_first_postorder);
 -- 
 1.8.2.1
 
