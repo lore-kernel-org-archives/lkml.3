@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab3DLWRl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:17:41 -0400
-Received: from www.sr71.net ([198.145.64.142]:33192 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974Ab3DLWRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:17:41 -0400
-Message-ID: <51688803.8020401@sr71.net>
-Date: Fri, 12 Apr 2013 15:17:39 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1753287Ab3DLWRu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:17:50 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:61061 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab3DLWRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 18:17:48 -0400
+Date: Fri, 12 Apr 2013 15:17:44 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <bob.liu@oracle.com>
+Subject: Re: [PATCH PART2 v2 2/7] staging: ramster: Move debugfs code out of
+ ramster.c file
+Message-ID: <20130412221744.GA11340@kroah.com>
+References: <1365730287-16876-1-git-send-email-liwanp@linux.vnet.ibm.com>
+ <1365730287-16876-3-git-send-email-liwanp@linux.vnet.ibm.com>
+ <20130412221603.GA11282@kroah.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Simon Horman <horms@verge.net.au>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Cliff Wickman <cpw@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] kexec: X86: Pass memory ranges via e820 table instead
- of memmap= boot parameter
-References: <1365683207-42425-1-git-send-email-trenn@suse.de> <1365683207-42425-6-git-send-email-trenn@suse.de> <CAE9FiQXnZzVC7dtvXWrqz=jYAGH053R8Vw1qkrMd2F+hAaMxdQ@mail.gmail.com> <5166D18A.7090800@zytor.com> <20130412143104.GA4301@redhat.com> <5168208B.7050107@zytor.com>
-In-Reply-To: <5168208B.7050107@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130412221603.GA11282@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 07:56 AM, H. Peter Anvin wrote:
-> On 04/12/2013 07:31 AM, Vivek Goyal wrote:
->>> I also have to admit that I don't see the difference between /dev/mem
->>> and /dev/oldmem, as the former allows access to memory ranges outside
->>> the ones used by the current kernel, which is what the oldmem device
->>> seems to be intended to od.
+On Fri, Apr 12, 2013 at 03:16:03PM -0700, Greg Kroah-Hartman wrote:
+> On Fri, Apr 12, 2013 at 09:31:22AM +0800, Wanpeng Li wrote:
+> > Note that at this point there is no CONFIG_RAMSTER_DEBUG
+> > option in the Kconfig. So in effect all of the counters
+> > are nop until that option gets re-introduced in:
+> > zcache/ramster/debug: Add RAMSTE_DEBUG Kconfig entry
+> 
+> RAMSTE_DEBUG?  :)
+> 
 
-It varies from arch to arch of course.
+And I fat-fingered my scripts, and deleted this email, sorry.
 
-But, /dev/mem has restrictions on it, like CONFIG_STRICT_DEVMEM or the
-ARCH_HAS_VALID_PHYS_ADDR_RANGE.  There's a lot of stuff that depends on
-it, *and* folks have tried to fix it up so that it's not _as_ blatant of
-a way to completely screw your system.
+Can you send the 2-7 patches again, it's my fault.
 
-/dev/mem also tries to be nice to arches that have restrictions like:
-
->                         /*
->                          * On ia64 if a page has been mapped somewhere as
->                          * uncached, then it must also be accessed uncached
->                          * by the kernel or data corruption may occur
->                          */
-
-I think /dev/oldmem isn't so nice and could actually cause some real
-problems if used on ia64 where the cached/uncached accesses are mixed.
+greg k-h
