@@ -1,120 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab3DLLAI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 07:00:08 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52776 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab3DLLAG (ORCPT
+	id S1753018Ab3DLLDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 07:03:51 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:50493 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463Ab3DLLDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 07:00:06 -0400
-Date: Fri, 12 Apr 2013 12:59:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-cc: Borislav Petkov <bp@alien8.de>, Dave Hansen <dave@sr71.net>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>,
-        dhillf@gmail.com, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
- wrong cpu
-In-Reply-To: <516728F6.4090701@linux.vnet.ibm.com>
-Message-ID: <alpine.LFD.2.02.1304112347390.21884@ionos>
-References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos>
- <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <51670C17.8070608@linux.vnet.ibm.com> <alpine.LFD.2.02.1304112158040.21884@ionos> <516728F6.4090701@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 12 Apr 2013 07:03:49 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <51671868.2030102@ti.com>
+References: <1364297642-2746-3-git-send-email-amit.daniel@samsung.com>
+	<51671868.2030102@ti.com>
+Date: Fri, 12 Apr 2013 16:33:49 +0530
+Message-ID: <CADGdYn4tudSV-V=UcD-9252nGUWML2SDEWUfkmfHYz-kt3ENkg@mail.gmail.com>
+Subject: Re: [2/9] thermal: exynos: Add support for instance based register/unregister
+From: amit kachhap <amit.kachhap@gmail.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: linux-pm@vger.kernel.org, Thomas Abraham <thomas.abraham@linaro.org>,
+        Zhang Rui <rui.zhang@intel.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Srivatsa,
+Hi Eduardo,
 
-On Fri, 12 Apr 2013, Srivatsa S. Bhat wrote:
-> On 04/12/2013 02:17 AM, Thomas Gleixner wrote:
-> >> +
-> >> +	/*
-> >> +	 * Wait for p->on_rq to be reset to 0, to ensure that the per-cpu
-> >> +	 * migration thread (which belongs to the stop_task sched class)
-> >> +	 * doesn't run until the cpu is actually onlined and the thread is
-> >> +	 * unparked.
-> >> +	 */
-> >> +	if (!wait_task_inactive(p, TASK_INTERRUPTIBLE))
-> >> +		WARN_ON(1);
-> > 
-> > Yay, we rely on TASK_INTERRUPTIBLE state with a task which already has
-> > references outside the creation code.
-> 
-> I doubt that. We have not even onlined the CPU, how would any else even
-> _know_ that we created this kthread??
-
-The problem is not only at the thread creation time. We have the same
-issue at offline/online and there we have a reference to that very
-thread.
- 
-> >>  /**
-> >>   * kthread_unpark - unpark a thread created by kthread_create().
-> >>   * @k:		thread created by kthread_create().
-> >> @@ -337,18 +357,29 @@ void kthread_unpark(struct task_struct *k)
-> >>  	struct kthread *kthread = task_get_live_kthread(k);
-> >>  
-> >>  	if (kthread) {
-> >> +		/*
-> >> +		 * Per-cpu kthreads such as ksoftirqd can get woken up by
-> >> +		 * other events. So after binding the thread, ensure that
-> >> +		 * it goes off the CPU atleast once, by parking it again.
-> >> +		 * This way, we can ensure that it will run on the correct
-> >> +		 * CPU on subsequent wakeup.
-> >> +		 */
-> >> +		if (test_bit(KTHREAD_IS_PER_CPU, &kthread->flags)) {
-> >> +			__kthread_bind(k, kthread->cpu);
-> >> +			clear_bit(KTHREAD_IS_PARKED, &kthread->flags);
-> > 
-> > And how is that f*cking different from the previous code?
-> > 
-> > CPU0	   		CPU1		       CPU2
-> > 				       	       wakeup(T) -> run on CPU1 (last cpu)
-> > 
-> > 			switch_to(T)
-> > 
-> > __kthread_bind(T, CPU2)
-> > 
-> > clear(KTHREAD_IS_PARKED)
-> > 
-> > 			leave loop due to !KTHREAD_IS_PARKED
-> 
-> 			How?? The task will leave the loop only when we clear
-> 			SHOULD_PARK, not when we clear IS_PARKED. So it won't
-> 			leave the loop here. It will cause the kthread to
-> 			perform a fresh complete() for the waiting kthread_park()
-> 			on CPU0.
-
-You are right on that, but you tricked me into misreading your
-patch. Why? Simply because it is too complex for no reason.
-
-> No, the purpose of clear(IS_PARKED) followed by __kthread_park() is to
-> ensure that the task gets *descheduled* atleast once after we did the
-> kthread_bind(). And that's because we can't use set_cpus_allowed_ptr() to
-> migrate a running kthread (because the kthread could be the migration
-> thread). So instead, we use kthread_bind() and depend on sleep->wakeup
-> to put the task on the right CPU.
-
-Yeah, it's a nice workaround, though I really prefer a guaranteed well
-defined state over this wakeup/sleep/wakeup trickery, which also adds
-the additional cost of a wakeup/sleep cycle to the online operation.
-
-> > TASK_PARKED is the very obvious and robust solution which fixes _ALL_
-> > of the corner cases, at least as far as I can imagine them. And
-> > robustness rules at least in my world.
-> > 
-> 
-> Yes, I agree that it is robust and has clear semantics. No doubt about
-> that. So I won't insist on going with my suggestions.
-
-I'm glad, that we can agree on the robust solution :)
-
-Thanks,
-
-	tglx
+On Fri, Apr 12, 2013 at 1:39 AM, Eduardo Valentin
+<eduardo.valentin@ti.com> wrote:
+> Hey Amit,
+>
+>
+> On 26-03-2013 07:33, Amit Daniel Kachhap wrote:
+>>
+>> This code modifies the thermal driver to have multiple thermal zone
+>> support by replacing the global thermal zone varibale with device data
+>
+>
+> s/varibale/variable
+ok type mistake :)
+>
+>
+>> member of thermal_zone_device.
+>>
+>> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+>
+>
+> I understand the idea of your patch but I also see that you do at least to
+> major changes. One is to set the thermal_device.devdata. The second is to
+> split your internal reference private_data into driver_data and pzone_data.
+> Is it possible to split this patch into two, one per modification? So it is
+> easier to review your changes?
+yes agreed..the kind of patch restructuring suggested by you makes sense.
+>
+>
+>>
+>> ---
+>> drivers/thermal/exynos_thermal.c |   65
+>> ++++++++++++++++++++++---------------
+>>   1 files changed, 39 insertions(+), 26 deletions(-)
+>>
+>> diff --git a/drivers/thermal/exynos_thermal.c
+>> b/drivers/thermal/exynos_thermal.c
+>> index 1cd7837..dc9b91b 100644
+>> --- a/drivers/thermal/exynos_thermal.c
+>> +++ b/drivers/thermal/exynos_thermal.c
+>> @@ -148,7 +148,8 @@ struct thermal_sensor_conf {
+>>         int (*write_emul_temp)(void *drv_data, unsigned long temp);
+>>         struct thermal_trip_point_conf trip_data;
+>>         struct thermal_cooling_conf cooling_data;
+>> -       void *private_data;
+>> +       void *driver_data;
+>> +       void *pzone_data;
+>>   };
+>>
+>>   struct exynos_thermal_zone {
+>> @@ -161,14 +162,14 @@ struct exynos_thermal_zone {
+>>         bool bind;
+>>   };
+>>
+>> -static struct exynos_thermal_zone *th_zone;
+>> -static void exynos_unregister_thermal(void);
+>> +static void exynos_unregister_thermal(struct thermal_sensor_conf
+>> *sensor_conf);
+>>   static int exynos_register_thermal(struct thermal_sensor_conf
+>> *sensor_conf);
+>>
+>>   /* Get mode callback functions for thermal zone */
+>>   static int exynos_get_mode(struct thermal_zone_device *thermal,
+>>                         enum thermal_device_mode *mode)
+>>   {
+>> +       struct exynos_thermal_zone *th_zone = thermal->devdata;
+>>         if (th_zone)
+>>                 *mode = th_zone->mode;
+>>         return 0;
+>> @@ -178,25 +179,26 @@ static int exynos_get_mode(struct
+>> thermal_zone_device *thermal,
+>>   static int exynos_set_mode(struct thermal_zone_device *thermal,
+>>                         enum thermal_device_mode mode)
+>>   {
+>> -       if (!th_zone->therm_dev) {
+>> +       struct exynos_thermal_zone *th_zone = thermal->devdata;
+>> +       if (!th_zone) {
+>>                 pr_notice("thermal zone not registered\n");
+>>                 return 0;
+>>         }
+>>
+>> -       mutex_lock(&th_zone->therm_dev->lock);
+>> +       mutex_lock(&thermal->lock);
+>>
+>>         if (mode == THERMAL_DEVICE_ENABLED &&
+>>                 !th_zone->sensor_conf->trip_data.trigger_falling)
+>> -               th_zone->therm_dev->polling_delay = IDLE_INTERVAL;
+>> +               thermal->polling_delay = IDLE_INTERVAL;
+>>         else
+>> -               th_zone->therm_dev->polling_delay = 0;
+>> +               thermal->polling_delay = 0;
+>>
+>> -       mutex_unlock(&th_zone->therm_dev->lock);
+>> +       mutex_unlock(&thermal->lock);
+>>
+>>         th_zone->mode = mode;
+>> -       thermal_zone_device_update(th_zone->therm_dev);
+>> +       thermal_zone_device_update(thermal);
+>>         pr_info("thermal polling set for duration=%d msec\n",
+>> -                               th_zone->therm_dev->polling_delay);
+>> +                               thermal->polling_delay);
+>>         return 0;
+>>   }
+>>
+>> @@ -223,6 +225,8 @@ static int exynos_get_trip_type(struct
+>> thermal_zone_device *thermal, int trip,
+>>   static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int
+>> trip,
+>>                                 unsigned long *temp)
+>>   {
+>> +       struct exynos_thermal_zone *th_zone = thermal->devdata;
+>> +
+>>         if (trip < GET_TRIP(MONITOR_ZONE) || trip > GET_TRIP(PANIC_ZONE))
+>>                 return -EINVAL;
+>>
+>> @@ -269,6 +273,7 @@ static int exynos_bind(struct thermal_zone_device
+>> *thermal,
+>>   {
+>>         int ret = 0, i, tab_size, level;
+>>         struct freq_clip_table *tab_ptr, *clip_data;
+>> +       struct exynos_thermal_zone *th_zone = thermal->devdata;
+>>         struct thermal_sensor_conf *data = th_zone->sensor_conf;
+>>
+>>         tab_ptr = (struct freq_clip_table *)data->cooling_data.freq_data;
+>> @@ -315,6 +320,7 @@ static int exynos_unbind(struct thermal_zone_device
+>> *thermal,
+>>                         struct thermal_cooling_device *cdev)
+>>   {
+>>         int ret = 0, i, tab_size;
+>> +       struct exynos_thermal_zone *th_zone = thermal->devdata;
+>>         struct thermal_sensor_conf *data = th_zone->sensor_conf;
+>>
+>>         if (th_zone->bind == false)
+>> @@ -357,13 +363,14 @@ static int exynos_unbind(struct thermal_zone_device
+>> *thermal,
+>>   static int exynos_get_temp(struct thermal_zone_device *thermal,
+>>                         unsigned long *temp)
+>>   {
+>> +       struct exynos_thermal_zone *th_zone = thermal->devdata;
+>>         void *data;
+>>
+>>         if (!th_zone->sensor_conf) {
+>>                 pr_info("Temperature sensor not initialised\n");
+>>                 return -EINVAL;
+>>         }
+>> -       data = th_zone->sensor_conf->private_data;
+>> +       data = th_zone->sensor_conf->driver_data;
+>>         *temp = th_zone->sensor_conf->read_temperature(data);
+>>         /* convert the temperature into millicelsius */
+>>         *temp = *temp * MCELSIUS;
+>> @@ -376,12 +383,13 @@ static int exynos_set_emul_temp(struct
+>> thermal_zone_device *thermal,
+>>   {
+>>         void *data;
+>>         int ret = -EINVAL;
+>> +       struct exynos_thermal_zone *th_zone = thermal->devdata;
+>>
+>>         if (!th_zone->sensor_conf) {
+>>                 pr_info("Temperature sensor not initialised\n");
+>>                 return -EINVAL;
+>>         }
+>> -       data = th_zone->sensor_conf->private_data;
+>> +       data = th_zone->sensor_conf->driver_data;
+>>         if (th_zone->sensor_conf->write_emul_temp)
+>>                 ret = th_zone->sensor_conf->write_emul_temp(data, temp);
+>>         return ret;
+>> @@ -391,7 +399,7 @@ static int exynos_set_emul_temp(struct
+>> thermal_zone_device *thermal,
+>>   static int exynos_get_trend(struct thermal_zone_device *thermal,
+>>                         int trip, enum thermal_trend *trend)
+>>   {
+>> -       int ret;
+>> +       int ret = 0;
+>>         unsigned long trip_temp;
+>>
+>>         ret = exynos_get_trip_temp(thermal, trip, &trip_temp);
+>> @@ -403,7 +411,7 @@ static int exynos_get_trend(struct thermal_zone_device
+>> *thermal,
+>>         else
+>>                 *trend = THERMAL_TREND_DROP_FULL;
+>>
+>> -       return 0;
+>> +       return ret;
+>>   }
+>>   /* Operation callback functions for thermal zone */
+>>   static struct thermal_zone_device_ops const exynos_dev_ops = {
+>> @@ -423,11 +431,12 @@ static struct thermal_zone_device_ops const
+>> exynos_dev_ops = {
+>>    * This function may be called from interrupt based temperature sensor
+>>    * when threshold is changed.
+>>    */
+>> -static void exynos_report_trigger(void)
+>> +static void exynos_report_trigger(struct thermal_sensor_conf *conf)
+>>   {
+>>         unsigned int i;
+>>         char data[10];
+>>         char *envp[] = { data, NULL };
+>> +       struct exynos_thermal_zone *th_zone = conf->pzone_data;
+>>
+>>         if (!th_zone || !th_zone->therm_dev)
+>>                 return;
+>> @@ -468,6 +477,7 @@ static int exynos_register_thermal(struct
+>> thermal_sensor_conf *sensor_conf)
+>>   {
+>>         int ret;
+>>         struct cpumask mask_val;
+>> +       struct exynos_thermal_zone *th_zone;
+>>
+>>         if (!sensor_conf || !sensor_conf->read_temperature) {
+>>                 pr_err("Temperature sensor not initialised\n");
+>> @@ -489,7 +499,7 @@ static int exynos_register_thermal(struct
+>> thermal_sensor_conf *sensor_conf)
+>>         th_zone->cool_dev_size++;
+>>
+>>         th_zone->therm_dev =
+>> thermal_zone_device_register(sensor_conf->name,
+>> -                       EXYNOS_ZONE_COUNT, 0, NULL, &exynos_dev_ops, NULL,
+>> 0,
+>> +                       EXYNOS_ZONE_COUNT, 0, th_zone, &exynos_dev_ops,
+>> NULL, 0,
+>>                         sensor_conf->trip_data.trigger_falling ?
+>>                         0 : IDLE_INTERVAL);
+>>
+>> @@ -499,20 +509,22 @@ static int exynos_register_thermal(struct
+>> thermal_sensor_conf *sensor_conf)
+>>                 goto err_unregister;
+>>         }
+>>         th_zone->mode = THERMAL_DEVICE_ENABLED;
+>> +       sensor_conf->pzone_data = th_zone;
+>>
+>>         pr_info("Exynos: Kernel Thermal management registered\n");
+>>
+>>         return 0;
+>>
+>>   err_unregister:
+>> -       exynos_unregister_thermal();
+>> +       exynos_unregister_thermal(sensor_conf);
+>>         return ret;
+>>   }
+>>
+>>   /* Un-Register with the in-kernel thermal management */
+>> -static void exynos_unregister_thermal(void)
+>> +static void exynos_unregister_thermal(struct thermal_sensor_conf
+>> *sensor_conf)
+>>   {
+>>         int i;
+>> +       struct exynos_thermal_zone *th_zone = sensor_conf->pzone_data;
+>>
+>>         if (!th_zone)
+>>                 return;
+>> @@ -774,12 +786,18 @@ static int exynos_tmu_set_emulation(void *drv_data,
+>> unsigned long temp)
+>>         { return -EINVAL; }
+>>   #endif/*CONFIG_THERMAL_EMULATION*/
+>>
+>> +static struct thermal_sensor_conf exynos_sensor_conf = {
+>> +       .name                   = "exynos-therm",
+>> +       .read_temperature       = (int (*)(void *))exynos_tmu_read,
+>> +       .write_emul_temp        = exynos_tmu_set_emulation,
+>> +};
+>> +
+>
+>
+> Assuming you have only one exynos_sensor_conf and this is the parameter for
+> each call to exynos_register_thermal, if you plan to add support to
+> different pzone_data, then the above needs to be allocated. Or there is no
+> point in having this.
+Yes creating this structure by allocation is a good idea. Actually In
+my case I used a different file for another type of sensor so left it
+like this. Anyway your suggestion is worth implementing.
+>
+>
+>>   static void exynos_tmu_work(struct work_struct *work)
+>>   {
+>>         struct exynos_tmu_data *data = container_of(work,
+>>                         struct exynos_tmu_data, irq_work);
+>>
+>> -       exynos_report_trigger();
+>> +       exynos_report_trigger(&exynos_sensor_conf);
+>>         mutex_lock(&data->lock);
+>>         clk_enable(data->clk);
+>>         if (data->soc == SOC_ARCH_EXYNOS)
+>> @@ -804,11 +822,6 @@ static irqreturn_t exynos_tmu_irq(int irq, void *id)
+>>
+>>         return IRQ_HANDLED;
+>>   }
+>> -static struct thermal_sensor_conf exynos_sensor_conf = {
+>> -       .name                   = "exynos-therm",
+>> -       .read_temperature       = (int (*)(void *))exynos_tmu_read,
+>> -       .write_emul_temp        = exynos_tmu_set_emulation,
+>> -};
+>>
+>>   #if defined(CONFIG_CPU_EXYNOS4210)
+>>   static struct exynos_tmu_platform_data const exynos4210_default_tmu_data
+>> = {
+>> @@ -987,7 +1000,7 @@ static int exynos_tmu_probe(struct platform_device
+>> *pdev)
+>>         exynos_tmu_control(pdev, true);
+>>
+>>         /* Register the sensor with thermal management interface */
+>> -       (&exynos_sensor_conf)->private_data = data;
+>> +       (&exynos_sensor_conf)->driver_data = data;
+>>         exynos_sensor_conf.trip_data.trip_count = pdata->trigger_level0_en
+>> +
+>>                         pdata->trigger_level1_en +
+>> pdata->trigger_level2_en +
+>>                         pdata->trigger_level3_en;
+>> @@ -1026,7 +1039,7 @@ static int exynos_tmu_remove(struct platform_device
+>> *pdev)
+>>
+>>         exynos_tmu_control(pdev, false);
+>>
+>> -       exynos_unregister_thermal();
+>> +       exynos_unregister_thermal(&exynos_sensor_conf);
+>>
+>>         clk_put(data->clk);
+>>
+>>
+>
