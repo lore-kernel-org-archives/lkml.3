@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab3DLRrR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 13:47:17 -0400
-Received: from mout.gmx.net ([212.227.15.18]:54653 "EHLO mout.gmx.net"
+	id S1756153Ab3DLRvl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 13:51:41 -0400
+Received: from mout.gmx.net ([212.227.17.21]:51002 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab3DLRrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 13:47:16 -0400
+	id S1752934Ab3DLRvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 13:51:40 -0400
 X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+u5qEJHjeuwiXWi7P7ivAcJlBN0Y3a5pp4ETakGo
-	ersA+VwS/qSDpG
-Message-ID: <516848A0.20402@gmx.de>
-Date: Fri, 12 Apr 2013 19:47:12 +0200
+X-Provags-ID: V01U2FsdGVkX1/bG1Y1ERXbwxyNSYeIfowzppbQu6VtaS1VYqVcfN
+	Lv//iP/NUGIM3/
+Message-ID: <516849A9.1070206@gmx.de>
+Date: Fri, 12 Apr 2013 19:51:37 +0200
 From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130405 Thunderbird/17.0.5
 MIME-Version: 1.0
@@ -32,25 +32,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On 04/12/2013 07:41 PM, richard -rw- weinberger wrote:
 > You .config build perfectly fine here.
 > Have you tried a "make mrproper"?
+ick - I forgot to un-apply your patch you sent to me related to the trinity-madvise UML problem - compiles fine now again
 
-$ cp .config ../; make mrproper; make mrproper ARCH=um; make mrproper ARCH=um SUBARCH=x86; cp ../.config .; make ARCH=um SUBARCH=x86 oldconfig; make ARCH=um SUBARCH=x86 linux
-  CLEAN   .
-  CLEAN   .tmp_versions
+but this now seems not to work any longer :
+
+$ cat devel/stub_pte_fix.diff 
+diff --git a/arch/um/include/asm/Kbuild b/arch/um/include/asm/Kbuild
+index b30f34a..db2d885 100644
+--- a/arch/um/include/asm/Kbuild
++++ b/arch/um/include/asm/Kbuild
+@@ -3,3 +3,4 @@ generic-y += hw_irq.h irq_regs.h kdebug.h percpu.h sections.h topology.h xor.h
+ generic-y += ftrace.h pci.h io.h param.h delay.h mutex.h current.h exec.h
+ generic-y += switch_to.h clkdev.h
+ generic-y += trace_clock.h
++header-y += mman.h
+diff --git a/arch/um/include/asm/mman.h b/arch/um/include/asm/mman.h
+new file mode 100644
+index 0000000..d8fb362
+--- /dev/null
++++ b/arch/um/include/asm/mman.h
+@@ -0,0 +1,10 @@
++#ifndef __UM_MMAN_H__
 ...
-  GEN     include/generated/bounds.h
-  CC      arch/um/kernel/asm-offsets.s
-In file included from /home/tfoerste/devel/linux/arch/um/include/asm/mman.h:5:0,
-                 from /home/tfoerste/devel/linux/arch/x86/um/shared/sysdep/kernel-offsets.h:5,
-                 from arch/um/kernel/asm-offsets.c:1:
-/home/tfoerste/devel/linux/arch/um/include/shared/as-layout.h:9:35: fatal error: generated/asm-offsets.h: No such file or directory
-compilation terminated.
-make[1]: *** [arch/um/kernel/asm-offsets.s] Error 1
-make: *** [prepare0] Error 2
-
-
-
-
-:-(
 
 -- 
 MfG/Sincerely
