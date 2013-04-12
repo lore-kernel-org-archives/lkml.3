@@ -1,51 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab3DLWpX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:45:23 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47249 "EHLO
+	id S1755685Ab3DLWpd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:45:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47280 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755334Ab3DLWpT (ORCPT
+	with ESMTP id S1755334Ab3DLWpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:45:19 -0400
+	Fri, 12 Apr 2013 18:45:25 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH v4 16/29] PCI, x86: Use for_each_pci_resource() with noassign_bars
-Date: Fri, 12 Apr 2013 15:44:30 -0700
-Message-Id: <1365806683-26717-17-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v4 27/29] PCI: Make piix4 quirk to use addon_res
+Date: Fri, 12 Apr 2013 15:44:41 -0700
+Message-Id: <1365806683-26717-28-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace those open code, and make code more readable.
+After they are put in add-on resources, they will be safely claimed later.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: x86@kernel.org
-Cc: Myron Stowe <myron.stowe@redhat.com>
 ---
- arch/x86/pci/common.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/pci/quirks.c | 95 +++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 79 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
-index 901177d..a2afe2e 100644
---- a/arch/x86/pci/common.c
-+++ b/arch/x86/pci/common.c
-@@ -136,8 +136,7 @@ static void pcibios_fixup_device_resources(struct pci_dev *dev)
- 		* resource so the kernel doesn't attmept to assign
- 		* it later on in pci_assign_unassigned_resources
- 		*/
--		for (bar = 0; bar <= PCI_STD_RESOURCE_END; bar++) {
--			bar_r = &dev->resource[bar];
-+		for_each_pci_resource(dev, bar_r, bar, PCI_STD_RES) {
- 			if (bar_r->start == 0 && bar_r->end != 0) {
- 				bar_r->flags = 0;
- 				bar_r->end = 0;
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index 2dac170..6706182 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -382,14 +382,14 @@ static void quirk_ali7101_acpi(struct pci_dev *dev)
+ }
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AL,	PCI_DEVICE_ID_AL_M7101,		quirk_ali7101_acpi);
+ 
+-static void piix4_io_quirk(struct pci_dev *dev, const char *name, unsigned int port, unsigned int enable)
++static int piix4_read_io(struct pci_dev *dev, struct resource *res, int port)
+ {
+ 	u32 devres;
+ 	u32 mask, size, base;
++	struct pci_bus_region bus_region;
+ 
+ 	pci_read_config_dword(dev, port, &devres);
+-	if ((devres & enable) != enable)
+-		return;
++
+ 	mask = (devres >> 16) & 15;
+ 	base = devres & 0xffff;
+ 	size = 16;
+@@ -399,23 +399,54 @@ static void piix4_io_quirk(struct pci_dev *dev, const char *name, unsigned int p
+ 			break;
+ 		size = bit;
+ 	}
+-	/*
+-	 * For now we only print it out. Eventually we'll want to
+-	 * reserve it (at least if it's in the 0x1000+ range), but
+-	 * let's get enough confirmation reports first. 
+-	 */
+ 	base &= -size;
+-	dev_info(&dev->dev, "%s PIO at %04x-%04x\n", name, base, base + size - 1);
++
++	bus_region.start = base;
++	bus_region.end = base + size - 1;
++	res->flags |= IORESOURCE_IO;
++	pcibios_bus_to_resource(dev, res, &bus_region);
++	dev_info(&dev->dev, "PIO at %pR\n", res);
++
++	return 0;
+ }
++static int piix4_write_io(struct pci_dev *dev, struct resource *res, int port)
++{
++	u32 devres;
++	struct pci_bus_region bus_region;
++	unsigned size = to_pci_dev_addon_resource(res)->size;
+ 
+-static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int port, unsigned int enable)
++	pcibios_resource_to_bus(dev, &bus_region, res);
++
++	pci_read_config_dword(dev, port, &devres);
++	devres &= 0xffff0000 | (size - 1);
++	devres |= bus_region.start & 0xffff & (~(size - 1));
++	pci_write_config_dword(dev, port, devres);
++
++	return 0;
++}
++static struct resource_ops piix4_io_ops = {
++	.read = piix4_read_io,
++	.write = piix4_write_io,
++};
++static void piix4_io_quirk(struct pci_dev *dev, char *name, unsigned int port,
++				unsigned int enable)
+ {
+ 	u32 devres;
+-	u32 mask, size, base;
+ 
+ 	pci_read_config_dword(dev, port, &devres);
+ 	if ((devres & enable) != enable)
+ 		return;
++
++	pci_add_dev_addon_resource(dev, port, 0, &piix4_io_ops, name);
++}
++
++static int piix4_read_mem(struct pci_dev *dev, struct resource *res, int port)
++{
++	u32 devres;
++	u32 mask, size, base;
++	struct pci_bus_region bus_region;
++
++	pci_read_config_dword(dev, port, &devres);
+ 	base = devres & 0xffff0000;
+ 	mask = (devres & 0x3f) << 16;
+ 	size = 128 << 16;
+@@ -425,12 +456,44 @@ static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int
+ 			break;
+ 		size = bit;
+ 	}
+-	/*
+-	 * For now we only print it out. Eventually we'll want to
+-	 * reserve it, but let's get enough confirmation reports first. 
+-	 */
+ 	base &= -size;
+-	dev_info(&dev->dev, "%s MMIO at %04x-%04x\n", name, base, base + size - 1);
++	bus_region.start = base;
++	bus_region.end = base + size - 1;
++	res->flags |= IORESOURCE_MEM;
++	pcibios_bus_to_resource(dev, res, &bus_region);
++	dev_info(&dev->dev, "MMIO at %pR\n", res);
++
++	return 0;
++}
++static int piix4_write_mem(struct pci_dev *dev, struct resource *res, int port)
++{
++	u32 devres;
++	struct pci_bus_region bus_region;
++	unsigned size = to_pci_dev_addon_resource(res)->size;
++
++	pcibios_resource_to_bus(dev, &bus_region, res);
++
++	pci_read_config_dword(dev, port, &devres);
++	devres &= 0x0000ffff | ((size - 1) & 0xffff0000);
++	devres |= bus_region.start & 0xffff0000 & (~(size - 1));
++	pci_write_config_dword(dev, port, devres);
++
++	return 0;
++}
++static struct resource_ops piix4_mem_ops = {
++	.read = piix4_read_mem,
++	.write = piix4_write_mem,
++};
++static void piix4_mem_quirk(struct pci_dev *dev, char *name, unsigned int port,
++				unsigned int enable)
++{
++	u32 devres;
++
++	pci_read_config_dword(dev, port, &devres);
++	if ((devres & enable) != enable)
++		return;
++
++	pci_add_dev_addon_resource(dev, port, 0, &piix4_mem_ops, name);
+ }
+ 
+ /*
 -- 
 1.8.1.4
 
