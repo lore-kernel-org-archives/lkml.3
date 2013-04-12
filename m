@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab3DLP6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:58:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44357 "EHLO mx1.redhat.com"
+	id S1758414Ab3DLP7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:59:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752409Ab3DLP6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:58:48 -0400
+	id S1754929Ab3DLP7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 11:59:21 -0400
 From: Jeff Moyer <jmoyer@redhat.com>
 To: Kent Overstreet <koverstreet@google.com>
 Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
@@ -18,16 +18,16 @@ Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
         Al Viro <viro@zeniv.linux.org.uk>, Benjamin LaHaise <bcrl@kvack.org>,
         "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH 07/33] aio: add kiocb_cancel()
+Subject: Re: [PATCH 08/33] aio: move private stuff out of aio.h
 References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
-	<1363883754-27966-8-git-send-email-koverstreet@google.com>
+	<1363883754-27966-9-git-send-email-koverstreet@google.com>
 X-PGP-KeyID: 1F78E1B4
 X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
 X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 12 Apr 2013 11:58:24 -0400
-In-Reply-To: <1363883754-27966-8-git-send-email-koverstreet@google.com> (Kent
-	Overstreet's message of "Thu, 21 Mar 2013 09:35:28 -0700")
-Message-ID: <x498v4nu4f3.fsf@segfault.boston.devel.redhat.com>
+Date: Fri, 12 Apr 2013 11:59:00 -0400
+In-Reply-To: <1363883754-27966-9-git-send-email-koverstreet@google.com> (Kent
+	Overstreet's message of "Thu, 21 Mar 2013 09:35:29 -0700")
+Message-ID: <x494nfbu4e3.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -37,9 +37,6 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Kent Overstreet <koverstreet@google.com> writes:
 
-> Minor refactoring, to get rid of some duplicated code
->
-> [akpm@linux-foundation.org: fix warning]
 > Signed-off-by: Kent Overstreet <koverstreet@google.com>
 > Cc: Zach Brown <zab@redhat.com>
 > Cc: Felipe Balbi <balbi@ti.com>
@@ -56,24 +53,5 @@ Kent Overstreet <koverstreet@google.com> writes:
 > Cc: Benjamin LaHaise <bcrl@kvack.org>
 > Cc: Theodore Ts'o <tytso@mit.edu>
 > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-The patch looks to preserve existing behaviour.  However, the man page
-and the code disagree about the return code in the event that there is
-no cancelation routine (well, in the event that the iocb could not be
-canceled):
-
-ERRORS
-       EAGAIN The iocb specified was not canceled.
-
-       EFAULT One of the data structures points to invalid data.
-
-       EINVAL The AIO context specified by ctx_id is invalid.
-
-       ENOSYS io_cancel() is not implemented on this architecture.
-
-The code (before and after the patch) returns EINVAL when the iocb was
-not canceled.  Should we fix the code or the docs, here?
-
-For the patch:
 
 Acked-by: Jeff Moyer <jmoyer@redhat.com>
