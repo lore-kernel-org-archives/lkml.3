@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab3DLBCn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 21:02:43 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37229 "EHLO
+	id S1752965Ab3DLBCm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 21:02:42 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37232 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab3DLA50 (ORCPT
+	with ESMTP id S1752451Ab3DLA50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 20:57:26 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,94 +13,108 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 11/22] x86, mm, numa: Call numa_meminfo_cover_memory() checking early
-Date: Thu, 11 Apr 2013 17:55:57 -0700
-Message-Id: <1365728168-32067-12-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 00/22] x86, ACPI, numa: Parse numa info early
+Date: Thu, 11 Apr 2013 17:55:46 -0700
+Message-Id: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
-References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the separation, we need to set memblock nid later, as it
-could change memblock array, and possible doube memblock.memory
-array that will need to allocate buffer.
+One commit that tried to parse SRAT early get reverted before v3.9-rc1.
 
-We do not need to use nid in memblock to find out absent pages.
-So we can move that numa_meminfo_cover_memory() early.
+| commit e8d1955258091e4c92d5a975ebd7fd8a98f5d30f
+| Author: Tang Chen <tangchen@cn.fujitsu.com>
+| Date:   Fri Feb 22 16:33:44 2013 -0800
+|
+|    acpi, memory-hotplug: parse SRAT before memblock is ready
 
-Also could change __absent_pages_in_range() to static and use
-absent_pages_in_range() directly.
+It broke several things, like acpi override and fall back path etc.
 
-Later we can only set memblock nid one time on successful path.
+This patchset is clean implementation that will parse numa info early.
+1. keep the acpi table initrd override working by split finding with copying.
+   finding is done at head_32.S and head64.c stage,
+        in head_32.S, initrd is accessed in 32bit flat mode with phys addr.
+        in head64.c, initrd is accessed via kernel low mapping address
+        with help of #PF set page table.
+   copying is done with early_ioremap just after memblock is setup.
+2. keep fallback path working. numaq and ACPI and amd_nmua and dummy.
+   seperate initmem_init to two stages.
+   early_initmem_init will only extract numa info early into numa_meminfo.
+   initmem_init will keep slit and emulation handling.
+3. keep other old code flow untouched like relocate_initrd and initmem_init.
+   early_initmem_init will take old init_mem_mapping position.
+   it call early_x86_numa_init and init_mem_mapping for every nodes.
+   For 64bit, we avoid having size limit on initrd, as relocate_initrd
+   is still after init_mem_mapping for all memory.
+4. last patch will try to put page table on local node, so that memory
+   hotplug will be happy.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/mm/numa.c | 7 ++++---
- include/linux/mm.h | 2 --
- mm/page_alloc.c    | 2 +-
- 3 files changed, 5 insertions(+), 6 deletions(-)
+In short, early_initmem_init will parse numa info early and call
+init_mem_mapping to set page table for every nodes's mem.
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index d545638..b7173f6 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -460,7 +460,7 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
- 		u64 s = mi->blk[i].start >> PAGE_SHIFT;
- 		u64 e = mi->blk[i].end >> PAGE_SHIFT;
- 		numaram += e - s;
--		numaram -= __absent_pages_in_range(mi->blk[i].nid, s, e);
-+		numaram -= absent_pages_in_range(s, e);
- 		if ((s64)numaram < 0)
- 			numaram = 0;
- 	}
-@@ -488,6 +488,9 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 	if (WARN_ON(nodes_empty(node_possible_map)))
- 		return -EINVAL;
- 
-+	if (!numa_meminfo_cover_memory(mi))
-+		return -EINVAL;
-+
- 	for (i = 0; i < mi->nr_blks; i++) {
- 		struct numa_memblk *mb = &mi->blk[i];
- 		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
-@@ -506,8 +509,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 		return -EINVAL;
- 	}
- #endif
--	if (!numa_meminfo_cover_memory(mi))
--		return -EINVAL;
- 
- 	return 0;
- }
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e19ff30..192806c 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1323,8 +1323,6 @@ extern void free_initmem(void);
-  */
- extern void free_area_init_nodes(unsigned long *max_zone_pfn);
- unsigned long node_map_pfn_alignment(void);
--unsigned long __absent_pages_in_range(int nid, unsigned long start_pfn,
--						unsigned long end_pfn);
- extern unsigned long absent_pages_in_range(unsigned long start_pfn,
- 						unsigned long end_pfn);
- extern void get_pfn_range_for_nid(unsigned int nid,
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 8fcced7..580d919 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4356,7 +4356,7 @@ static unsigned long __meminit zone_spanned_pages_in_node(int nid,
-  * Return the number of holes in a range on a node. If nid is MAX_NUMNODES,
-  * then all holes in the requested range will be accounted for.
-  */
--unsigned long __meminit __absent_pages_in_range(int nid,
-+static unsigned long __meminit __absent_pages_in_range(int nid,
- 				unsigned long range_start_pfn,
- 				unsigned long range_end_pfn)
- {
+could be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-mm
+
+and it is based on today's Linus tree.
+
+-v2: Address tj's review and split patches to small ones.
+-v3: Add some Acked-by from tj, also stop abusing cpio_data for acpi_files info
+-v4: fix one typo found by Tang Chen.
+     Also added tested-by from Thomas Renninger and Tony.
+
+Thanks
+
+Yinghai
+
+Yinghai Lu (22):
+  x86: Change get_ramdisk_image() to global
+  x86, microcode: Use common get_ramdisk_image()
+  x86, ACPI, mm: Kill max_low_pfn_mapped
+  x86, ACPI: Search buffer above 4G in second try for acpi override
+    tables
+  x86, ACPI: Increase override tables number limit
+  x86, ACPI: Split acpi_initrd_override to find/copy two functions
+  x86, ACPI: Store override acpi tables phys addr in cpio files info
+    array
+  x86, ACPI: Make acpi_initrd_override_find work with 32bit flat mode
+  x86, ACPI: Find acpi tables in initrd early from head_32.S/head64.c
+  x86, mm, numa: Move two functions calling on successful path later
+  x86, mm, numa: Call numa_meminfo_cover_memory() checking early
+  x86, mm, numa: Move node_map_pfn alignment() to x86
+  x86, mm, numa: Use numa_meminfo to check node_map_pfn alignment
+  x86, mm, numa: Set memblock nid later
+  x86, mm, numa: Move node_possible_map setting later
+  x86, mm, numa: Move emulation handling down.
+  x86, ACPI, numa, ia64: split SLIT handling out
+  x86, mm, numa: Add early_initmem_init() stub
+  x86, mm: Parse numa info early
+  x86, mm: Add comments for step_size shift
+  x86, mm: Make init_mem_mapping be able to be called several times
+  x86, mm, numa: Put pagetable on local node ram for 64bit
+
+ arch/ia64/kernel/setup.c                |   4 +-
+ arch/x86/include/asm/acpi.h             |   3 +-
+ arch/x86/include/asm/page_types.h       |   2 +-
+ arch/x86/include/asm/pgtable.h          |   2 +-
+ arch/x86/include/asm/setup.h            |   9 ++
+ arch/x86/kernel/head64.c                |   2 +
+ arch/x86/kernel/head_32.S               |   4 +
+ arch/x86/kernel/microcode_intel_early.c |   8 +-
+ arch/x86/kernel/setup.c                 |  86 +++++++-----
+ arch/x86/mm/init.c                      | 109 ++++++++++-----
+ arch/x86/mm/numa.c                      | 240 +++++++++++++++++++++++++-------
+ arch/x86/mm/numa_emulation.c            |   2 +-
+ arch/x86/mm/numa_internal.h             |   2 +
+ arch/x86/mm/srat.c                      |  11 +-
+ drivers/acpi/numa.c                     |  13 +-
+ drivers/acpi/osl.c                      | 138 ++++++++++++------
+ include/linux/acpi.h                    |  20 +--
+ include/linux/mm.h                      |   3 -
+ mm/page_alloc.c                         |  52 +------
+ 19 files changed, 467 insertions(+), 243 deletions(-)
+
 -- 
 1.8.1.4
 
