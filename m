@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab3DLOYX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 10:24:23 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:57520 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab3DLOYV (ORCPT
+	id S1752827Ab3DLO2z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 10:28:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22279 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab3DLO2y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 10:24:21 -0400
+	Fri, 12 Apr 2013 10:28:54 -0400
+X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=tLUlnkoJZcZI9ocdGARlSQ==:17 a=c11ml42nfjYA:10 a=wom5GMh1gUkA:10 a=mDLtzay-EBQA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=hBqU3vQJAAAA:8 a=aPza9ZebU9UA:10 a=40MIqcmNAAAA:8 a=DfNHnWVPAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=Keo2ReyYu9XSrpqQYO4A:9 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=-tENaG0q7zQA:10 a=lBRciGGoxdUA:10 a=tLUlnkoJZcZI9ocdGARlSQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 70.114.148.7
+Date: Fri, 12 Apr 2013 09:29:49 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel: acct: kfree, also set related variable to NULL
+ after kfree
+Message-ID: <20130412142949.GA21714@austin.hallyn.com>
+References: <51652E31.7090806@asianux.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAKohpom7Mn8aQZTUx-_fQF+9KWste0uYsZcaQ5rcM6ab45-0+g@mail.gmail.com>
-References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com>
-	<31778276.CDMUtaAAnc@vostro.rjw.lan>
-	<CA+icZUXXHb9vmcNuFmYha34SV7xch2S8OcgZ+cLVVnNebs5pNQ@mail.gmail.com>
-	<CAKohpok+9dRaENjBfnN9gZF3zvFU9v19xV_eFfcM3Pj6Cv=S2w@mail.gmail.com>
-	<CA+icZUWH5Ni9koj4V8Ws8jJ7smwmU7JuUWBFh=aiCqkrCpqB5A@mail.gmail.com>
-	<CAKohponzmLzPN8ua3p4TCt2waZCQCd+4Znh+tSQ4MBjcy+Ss6A@mail.gmail.com>
-	<CA+icZUW12caZHDfgCV6E-1T4ExBPmu5bBNSqCzDwjUeidfRUPA@mail.gmail.com>
-	<CA+icZUUEExm5Mktxoj6=UdzBe5HUzskktKWdHNOKaFXVHaySBg@mail.gmail.com>
-	<CA+icZUW2LQmWMdaVjf5oE8y3zCq8Y2829WM9dwDKxA42N5tVDQ@mail.gmail.com>
-	<CAKohpom7Mn8aQZTUx-_fQF+9KWste0uYsZcaQ5rcM6ab45-0+g@mail.gmail.com>
-Date: Fri, 12 Apr 2013 16:24:19 +0200
-Message-ID: <CA+icZUULhGR61V=wCXYctzBaM7Dei0-zGXApmfqQyiByzd5-cw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51652E31.7090806@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 10:23 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 10 April 2013 11:44, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> I found this "[RFC PATCH] kbuild: Build linux-tools package with 'make
->> deb-pkg'" from February 2012.
->> Can't say what happened to it...
->
-> Sedat,
->
-> Sorry for being late. I am down with Fever and throat infection since few days.
-> Still struggling with it..
->
-> There are few things i tried. Firstly the tag: next-20130326 is bad as there are
-> some bad commits in cpufreq core in it.
->
-> I then tried latest linux-next/master on my Thinkpad (model name        : Intel(R)
-> Core(TM) i7-2640M CPU @ 2.80GHz) and couldn't boot it up. My ubuntu
-> just hanged.
->
-> Then i tried Rafael's linux-next branch
->
-> 079576f Merge branch 'pm-cpufreq-next' into linux-next
->
-> And couldn't find any issues with it. I am easily able to remove/add cpus at
-> runtime..
->
-> Can you give this branch a try?
->
+Quoting Chen Gang (gang.chen@asianux.com):
+> 
+>   after kfree acct, also set ns->bacct to NULL.
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-OK, you seem to be well again, nice to hear.
+Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-I was doing the whole week spring-cleaning in the apartment of my parents.
-Now, I have some minutes for a compilation run.
-
-I guess "cpufreq: Call __cpufreq_governor() with correct policy->cpus
-mask" could be the correct fix, but will try the GIT branch you have
-mentioned.
-
-- Sedat -
-
-[1] http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=e4969ebac83fdea78d89c779331396728a4e6199
-
+> ---
+>  kernel/acct.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/acct.c b/kernel/acct.c
+> index 85389fe..91a23eb 100644
+> --- a/kernel/acct.c
+> +++ b/kernel/acct.c
+> @@ -332,6 +332,7 @@ void acct_exit_ns(struct pid_namespace *ns)
+>  	spin_lock(&acct_lock);
+>  	if (acct->file != NULL)
+>  		acct_file_reopen(acct, NULL, NULL);
+> +	ns->bacct = NULL;
+>  	spin_unlock(&acct_lock);
+>  
+>  	kfree(acct);
+> -- 
+> 1.7.7.6
 > --
-> viresh
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
