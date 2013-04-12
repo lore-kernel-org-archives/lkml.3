@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759314Ab3DLW4j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:56:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:32777 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758618Ab3DLWzI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:55:08 -0400
+	id S1758592Ab3DLWzH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:55:07 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50155 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753568Ab3DLWzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 18:55:05 -0400
 From: Nishanth Menon <nm@ti.com>
 To: <linux-omap@vger.kernel.org>
 CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
@@ -15,262 +14,137 @@ CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
         Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
         Kevin Hilman <khilman@deeprootsystems.com>,
         Mike Turquette <mturquette@linaro.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH V4 1/6] clk: OMAP: introduce device tree binding to kernel clock data
-Date: Fri, 12 Apr 2013 17:54:33 -0500
-Message-ID: <1365807278-554-2-git-send-email-nm@ti.com>
+Subject: [PATCH V4 0/6] ARM: OMAP3+: support cpufreq-cpu0 for device tree boot
+Date: Fri, 12 Apr 2013 17:54:32 -0500
+Message-ID: <1365807278-554-1-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365807278-554-1-git-send-email-nm@ti.com>
-References: <1365807278-554-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP clock data is located in arch/arm/mach-omap2/cclockXYZ_data.c.
-However, this presents an obstacle for using these clock nodes in
-Device Tree definitions. This is especially true for board specific
-clocks initially. The fixed clocks are currently found via clock
-aliases table. There are many possible approaches to this problem as
-discussed in the following thread:
-http://marc.info/?t=136370325600009&r=1&w=2.
-Highlights of the options:
-a) device specific clk_add_alias:
-   cons: driver handling required
-b) using an generic clk node and indexing to reach the clock required.
-   This is similar in approach taken by tegra and few other platforms.
-   Example usage: clock = <&clk 5>;
-   cons: potential to have mismatches in indexed table and associated
-   dtb data. In addition, managing continued documentation in bindings
-   as clock indexing increases. Even though readability angle could be
-   improved by using preprocessing of DT using macros, indexed
-   approach is inherently risky from cases like the following:
-   clk indexes in kernel:
-   1 - mpu_dpll
-   2 - aux_clk1
-   3 - core_clk
-   DT entry for peripheral X uses <&clk 2> to reach aux_clk1. Now, let's
-   say kernel updates indices to:
-   1 - mpu_dpll
-   2 - per_dpll
-   3 - aux_clk1
-   4 - core_clk
-   using the old dtb(or dts missing an update), on new kernel which
-   has updated indices will result in per_dpll now controlled for
-   peripheral X without warning or any potential error detection.
+The following version 4 of the series arose from trying to use BeagleBoard-XM
+(OMAP3 variant) for doing CPU DVFS using cpufreq-cpu0. This series enables the
+generic cpufreq-cpu0 driver to be used in device tree enabled boot while
+maintaining support of the legacy omap-cpufreq driver when used in non device
+tree enabled boot.
 
-   Even though we could claim this is user error, such errors are hard
-   to track down and fix.
+However, in order to enable complete SoC entitlement for OMAP platforms, with
+this series, key features are still pending on device tree adaptation for OMAP:
+A) clock framework data transition to DT - this should happen soon, so this
+series hacks the clock node for the time being as suggested in review of
+original series[1].
+B) On processors that use voltage controller, voltage processor (VC/VP hardware
+loop using I2C_SR path) - we have started work on transitioning them to
+regulator framework driven by DT.
+C) Adaptive Body Bias and SmartReflex AVS conversion to DT. [2]
 
-An alternate approach introduced here is to introduce device tree
-bindings corresponding to the clock nodes required in DT definition
-for SoC which automatically maps back to the definitions in
-cclockXYZ_data.c.
+Note: At this point in time, we do not have DT entries for clock on OMAP
+platforms. Common Clock Framework(CCF) could also control regulators[3].
+Once these conversions are complete, there might be minimal cleanup work to
+switch to the new data structure changes.
 
-The driver introduced here to do this mapping will eventually be the
-place where the clock handling will migrate to. We need to consider
-this angle as well so that the solution will be an valid transition
-point for moving the clock data out of kernel image (into device tree
-or firmware load etc..).
+Key benefit of the series is to allow all relevant TI platforms now to use a
+single cpufreq driver and equivalent frameworks in addition be part of the
+transition to device tree.
+NOTE: As a result of this series:
+1. omap-cpufreq will be used only in non device tree boot scenario. we should
+   delete this driver once the 100% DT conversion is complete.
+2. Generic cpufreq-cpu0 will be used only in device tree boot scenario.
+   boot systems.
 
-Overall strategy introduced here is simple: a clock node described in
-device tree blob is used to identify the exact clock provided in the
-SoC specific data. This is then linked back using of_clk_add_provider
-to the device node to be accessible by of_clk_get.
+Key changes in version 4 since version 3:
+	- OMAP clock driver introduced as discussed in
+		http://marc.info/?t=136370325600009&r=1&w=2
+	- cpufreq-cpu0 dummy device introduced in pm.c late_initcall: discussed
+	  in http://marc.info/?t=136450773400004&r=1&w=2
+	- updated test script (prints regulator voltage where available)
+	- parts of the series probably belong to different maintainer:
+	  consolidated as a single series to aid review in-context.
 
-Based on discussion contributions from Roger Quadros, Grygorii Strashko
-and others.
+version 3 of the series:
+	http://marc.info/?l=linux-pm&m=136450759315742&w=2
+	available at:
+	http://git.kernel.org/cgit/linux/kernel/git/bcousson/linux-omap-dt.git/log/?h=for_3.10/dts
 
-Cc: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Paul Walmsley <paul@pwsan.com>
-[tony@atomide.com: co-developed]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
+version 2 of the series:
+	http://marc.info/?t=136371570200003&r=1&w=2
+	available at:
+	https://github.com/nmenon/linux-2.6-playground/commits/push/cpufreq-cpu0-omap-all-v2
 
-RFC of this patch was discussed in http://marc.info/?t=136370325600009&r=1&w=2
-along with the detailed context as to why this is an intermediate step.
+version 1 of the series:
+	http://marc.info/?t=136329485400005&r=1&w=2
+	available at:
+	https://github.com/nmenon/linux-2.6-playground/commits/push/cpufreq-cpu0-omap-all-v1
 
-Previous revisions of cpufreq-cpu0 support do not use this approach.
-[Might eventually belong to Mike's tree.]
+[1] Original discussion thread which triggered this series:
+	http://marc.info/?l=linux-pm&m=136304313700602&w=2
+	https://patchwork.kernel.org/patch/2251841/
+	https://patchwork.kernel.org/patch/2251851/
+[2] ABB RFC: http://marc.info/?l=linux-omap&m=136449099409794&w=2 
+[3] CCF DVFS patches:
+https://patchwork.kernel.org/patch/2195431/
+https://patchwork.kernel.org/patch/2195421/
+https://patchwork.kernel.org/patch/2195451/
+https://patchwork.kernel.org/patch/2195441/
+https://patchwork.kernel.org/patch/2195461/
+
+Version 4 is now based on a few branches to prevent merge conflicts(v3.9-rc6):
+	git://git.linaro.org/people/mturquette/linux.git
+		clk-next 38e4aa0 clk: sunxi: Unify oscillator clock
+	git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git
+		linux-next 584fa10 Merge branch 'pm-runtime-next'
+	git://git.kernel.org/pub/scm/linux/kernel/git/bcousson/linux-omap-dt.git
+		for_3.10/dts 1fac4ff ARM: dts: Add OMAP3430
+	(merged branch is called baseline-v4 on my tree)
+
+Version 4 is also available at:
+	https://github.com/nmenon/linux-2.6-playground/commits/push/cpufreq-cpu0-omap-all-v4
+	git link: git://github.com/nmenon/linux-2.6-playground.git
+	branch: cpufreq-cpu0-omap-all-v4
+
+Test coverage:
+	test script: http://pastebin.com/z4yqZrBg
+Platforms verified:
+	beaglebone(rev A6a) - AM33xx compatible - http://pastebin.com/YnSNiTnx
+	beagleboard (rev C1D) - OMAP3430 compatible
+		- DT enabled boot: http://pastebin.com/eGaDD3B4
+		- No DT enabled boot: http://pastebin.com/5xqsNBA6
+	omap3-beagle-xm -OMAP3630 compatible - http://pastebin.com/FdrG4Rna
+	Pandaboard -(OMAP4430 ES2.1) - http://pastebin.com/1jjSRKQh
+	Pandaboard-ES -(OMAP4460 ES1.1) - http://pastebin.com/B5acTbch
+
+Nishanth Menon (6):
+  clk: OMAP: introduce device tree binding to kernel clock data
+[Clk probably belongs to mike's tree?]
+  ARM: dts: OMAP3: add clock nodes for CPU
+  ARM: dts: OMAP4: add clock nodes for CPU
+  ARM: dts: AM33XX: add clock nodes for CPU
+[The above probably belong to Benoit's tree]
+  ARM: OMAP2+: AM33XX: add lateinit hook for calling pm late init
+  ARM: OMAP3+: use cpu0-cpufreq driver in device tree supported boot
+[The above probably belong to Kevin/Tony's tree]
 
  .../devicetree/bindings/clock/omap-clock.txt       |   40 ++++++++
+ arch/arm/boot/dts/am33xx.dtsi                      |    7 ++
+ arch/arm/boot/dts/omap3.dtsi                       |    7 ++
+ arch/arm/boot/dts/omap4.dtsi                       |    7 ++
+ arch/arm/mach-omap2/board-generic.c                |    1 +
+ arch/arm/mach-omap2/cclock33xx_data.c              |    1 -
+ arch/arm/mach-omap2/common.h                       |    1 +
+ arch/arm/mach-omap2/io.c                           |    6 ++
+ arch/arm/mach-omap2/pm.c                           |   11 ++-
  drivers/clk/Makefile                               |    1 +
  drivers/clk/omap/Makefile                          |    1 +
  drivers/clk/omap/clk.c                             |   96 ++++++++++++++++++++
- 4 files changed, 138 insertions(+)
+ 12 files changed, 175 insertions(+), 4 deletions(-)
  create mode 100644 Documentation/devicetree/bindings/clock/omap-clock.txt
  create mode 100644 drivers/clk/omap/Makefile
  create mode 100644 drivers/clk/omap/clk.c
 
-diff --git a/Documentation/devicetree/bindings/clock/omap-clock.txt b/Documentation/devicetree/bindings/clock/omap-clock.txt
-new file mode 100644
-index 0000000..047c1e7
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/omap-clock.txt
-@@ -0,0 +1,40 @@
-+Device Tree Clock bindings for Texas Instrument's OMAP compatible platforms
-+
-+This binding is an initial minimal binding that may be enhanced as part of
-+transitioning OMAP clock data out of kernel image.
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible : shall be "ti,omap-clock"
-+- #clock-cells : from common clock binding; shall be set to 0.
-+NOTE:
-+node name should map to clock database in arch/arm/mach-omap2/cclock<SoC>_data.c
-+Since all clocks are described with _ck, the node name is optimized to drop the
-+usage of _ck. For example, a clock called dpll1_ck will be defined as dpll1.
-+
-+Example #1: describing clock node for CPU on OMAP34xx platform:
-+Ref: arch/arm/mach-omap2/cclock3xxx_data.c
-+describes the CPU clock to be as follows
-+	CLK(NULL,	"dpll1_ck",	&dpll1_ck,	CK_3XXX),
-+Corresponding binding will be:
-+	dpll1: dpll1 {
-+		#clock-cells = <0>;
-+		compatible = "ti,omap-clock";
-+	};
-+And it's usage will be:
-+		clocks = <&dpll1>;
-+
-+Example #2: describing clock node for auxilary clock #3 on OMAP443x platform:
-+Ref: arch/arm/mach-omap2/cclock44xx_data.c
-+describes the auxclk3 clock to be as follows:
-+	CLK(NULL,	"auxclk3_ck",	&auxclk3_ck,	CK_443X),
-+Corresponding binding will be:
-+	auxclk3: auxclk3 {
-+		#clock-cells = <0>;
-+		compatible = "ti,omap-clock";
-+	};
-+And it's usage will be:
-+	clocks = <&auxclk3>;
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index e7f7fe9..dbf9b13 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_ARCH_U8500)	+= ux500/
- obj-$(CONFIG_ARCH_VT8500)	+= clk-vt8500.o
- obj-$(CONFIG_ARCH_ZYNQ)		+= clk-zynq.o
- obj-$(CONFIG_ARCH_TEGRA)	+= tegra/
-+obj-$(CONFIG_ARCH_OMAP)		+= omap/
- 
- obj-$(CONFIG_X86)		+= x86/
- 
-diff --git a/drivers/clk/omap/Makefile b/drivers/clk/omap/Makefile
-new file mode 100644
-index 0000000..8195931
---- /dev/null
-+++ b/drivers/clk/omap/Makefile
-@@ -0,0 +1 @@
-+obj-y					+= clk.o
-diff --git a/drivers/clk/omap/clk.c b/drivers/clk/omap/clk.c
-new file mode 100644
-index 0000000..6f12023
---- /dev/null
-+++ b/drivers/clk/omap/clk.c
-@@ -0,0 +1,96 @@
-+/*
-+ * Texas Instruments OMAP Clock driver
-+ *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-+ *	Nishanth Menon <nm@ti.com>
-+ *	Tony Lindgren <tony@atomide.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/clkdev.h>
-+#include <linux/clk-provider.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+#include <linux/string.h>
-+
-+static const struct of_device_id omap_clk_of_match[] = {
-+	{.compatible = "ti,omap-clock",},
-+	{},
-+};
-+
-+/**
-+ * omap_clk_src_get() - Get OMAP clock from node name when needed
-+ * @clkspec:	clkspec argument
-+ * @data:	unused
-+ *
-+ * REVISIT: We assume the following:
-+ * 1. omap clock names end with _ck
-+ * 2. omap clock names are under 32 characters in length
-+ */
-+static struct clk *omap_clk_src_get(struct of_phandle_args *clkspec, void *data)
-+{
-+	struct clk *clk;
-+	char clk_name[32];
-+	struct device_node *np = clkspec->np;
-+
-+	/* Set up things so consumer can call clk_get() with name */
-+	snprintf(clk_name, 32, "%s_ck", np->name);
-+	clk = clk_get(NULL, clk_name);
-+	if (IS_ERR(clk)) {
-+		pr_err("%s: could not get clock %s(%ld)\n", __func__,
-+		       clk_name, PTR_ERR(clk));
-+		goto out;
-+	}
-+	clk_put(clk);
-+
-+out:
-+	return clk;
-+}
-+
-+/**
-+ * omap_clk_probe() - create link from DT definition to clock data
-+ * @pdev:	device node
-+ *
-+ * NOTE: We assume that omap clocks are not removed.
-+ */
-+static int omap_clk_probe(struct platform_device *pdev)
-+{
-+	int res;
-+	struct device_node *np = pdev->dev.of_node;
-+
-+	/* This allows the driver to of_clk_get() */
-+	res = of_clk_add_provider(np, omap_clk_src_get, NULL);
-+	if (res)
-+		dev_err(&pdev->dev, "could not add provider(%d)\n", res);
-+
-+	return res;
-+}
-+
-+/* We assume here that OMAP clocks will not be removed */
-+static struct platform_driver omap_clk_driver = {
-+	.probe = omap_clk_probe,
-+	.driver = {
-+		   .name = "omap_clk",
-+		   .of_match_table = of_match_ptr(omap_clk_of_match),
-+		   },
-+};
-+
-+static int __init omap_clk_init(void)
-+{
-+	return platform_driver_register(&omap_clk_driver);
-+}
-+arch_initcall(omap_clk_init);
-+
-+MODULE_DESCRIPTION("OMAP Clock driver");
-+MODULE_AUTHOR("Texas Instruments Inc.");
-+MODULE_LICENSE("GPL v2");
+Regards,
+Nishanth Menon
 -- 
 1.7.9.5
 
