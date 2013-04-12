@@ -1,96 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab3DLNfl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 09:35:41 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:60452 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab3DLNfj (ORCPT
+	id S1755918Ab3DLNir (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 09:38:47 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:55191 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831Ab3DLNiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 09:35:39 -0400
+	Fri, 12 Apr 2013 09:38:46 -0400
+Message-ID: <51680E63.3070100@hitachi.com>
+Date: Fri, 12 Apr 2013 22:38:43 +0900
+From: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <1364402946-32715-1-git-send-email-honkiko@gmail.com>
-References: <1364402946-32715-1-git-send-email-honkiko@gmail.com>
-Date: Fri, 12 Apr 2013 09:35:37 -0400
-Message-ID: <CACLa4pu5OVK64NLe2y+Msd5suSAdVGgfw1A4G5RVwUezm5HHSA@mail.gmail.com>
-Subject: Re: [PATCH 2/6] audit: replace obsolete NLMSG_* with type safe nlmsg_*
-From: Eric Paris <eparis@parisplace.org>
-To: Hong Zhiguo <honkiko@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Netdev List <netdev@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andi Kleen <andi@firstfloor.org>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
+ memory error on dirty cache selectable
+References: <51662D5B.3050001@hitachi.com> <20130411134915.GH16732@two.firstfloor.org> <1365693788-djsd2ymu-mutt-n-horiguchi@ah.jp.nec.com> <20130411181004.GK16732@two.firstfloor.org>
+In-Reply-To: <20130411181004.GK16732@two.firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 12:49 PM, Hong Zhiguo <honkiko@gmail.com> wrote:
-> Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
-> ---
->  kernel/audit.c |   10 +++++-----
->  1 file changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index d596e53..4dbb047 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -58,7 +58,7 @@
->  #ifdef CONFIG_SECURITY
->  #include <linux/security.h>
->  #endif
-> -#include <linux/netlink.h>
-> +#include <net/netlink.h>
+(2013/04/12 3:10), Andi Kleen wrote:
+> On Thu, Apr 11, 2013 at 11:23:08AM -0400, Naoya Horiguchi wrote:
+>> On Thu, Apr 11, 2013 at 03:49:16PM +0200, Andi Kleen wrote:
+>>>> As a result, if the dirty cache includes user data, the data is lost,
+>>>> and data corruption occurs if an application uses old data.
+>>>
+>>> The application cannot use old data, the kernel code kills it if it
+>>> would do that. And if it's IO data there is an EIO triggered.
+>>>
+>>> iirc the only concern in the past was that the application may miss
+>>> the asynchronous EIO because it's cleared on any fd access. 
+>>>
+>>> This is a general problem not specific to memory error handling, 
+>>> as these asynchronous IO errors can happen due to other reason
+>>> (bad disk etc.) 
+>>>
+>>> If you're really concerned about this case I think the solution
+>>> is to make the EIO more sticky so that there is a higher chance
+>>> than it gets returned.  This will make your data much more safe,
+>>> as it will cover all kinds of IO errors, not just the obscure memory
+>>> errors.
 
-This is a duplicate include.  We already included net/netlink.h a
-couple of lines above.  We use netlink_unicast, which comes from
-linux/netlink.h.  I recognize that it comes in from net/netlink.h, but
-I thought it good practice to pull it in ourselves.  Should I send a
-separate patch to revert back to linux/netlink.h or a patch to just
-remove the include altogether?
+I agree with Andi. We need to care both memory error and asynchronous
+I/O error.
 
--Eric
+>> I'm interested in this topic, and in previous discussion, what I was said
+>> is that we can't expect user applications to change their behaviors when
+>> they get EIO, so globally changing EIO's stickiness is not a great approach.
+> 
+> Not sure. Some of the current behavior may be dubious and it may 
+> be possible to change it. But would need more analysis.
+> 
+> I don't think we're concerned that much about "correct" applications,
+> but more ones that do not check everything. So returning more
+> errors should be safer.
+> 
+> For example you could have a sysctl that enables always stick
+> IO error -- that keeps erroring until it is closed.
+> 
+>> I'm working on a new pagecache tag based mechanism to solve this.
+>> But it needs time and more discussions.
+>> So I guess Tanino-san suggests giving up on dirty pagecache errors
+>> as a quick solution.
+> 
+> A quick solution would be enabling panic for any asynchronous IO error.
+> I don't think the memory error code is the right point to hook into.
 
->  #include <linux/freezer.h>
->  #include <linux/tty.h>
->  #include <linux/pid_namespace.h>
-> @@ -910,7 +910,7 @@ static void audit_receive_skb(struct sk_buff *skb)
->  {
->         struct nlmsghdr *nlh;
->         /*
-> -        * len MUST be signed for NLMSG_NEXT to be able to dec it below 0
-> +        * len MUST be signed for nlmsg_next to be able to dec it below 0
->          * if the nlmsg_len was not aligned
->          */
->         int len;
-> @@ -919,13 +919,13 @@ static void audit_receive_skb(struct sk_buff *skb)
->         nlh = nlmsg_hdr(skb);
->         len = skb->len;
->
-> -       while (NLMSG_OK(nlh, len)) {
-> +       while (nlmsg_ok(nlh, len)) {
->                 err = audit_receive_msg(skb, nlh);
->                 /* if err or if this message says it wants a response */
->                 if (err || (nlh->nlmsg_flags & NLM_F_ACK))
->                         netlink_ack(skb, nlh, err);
->
-> -               nlh = NLMSG_NEXT(nlh, len);
-> +               nlh = nlmsg_next(nlh, len);
->         }
->  }
->
-> @@ -1483,7 +1483,7 @@ void audit_log_end(struct audit_buffer *ab)
->                 audit_log_lost("rate limit exceeded");
->         } else {
->                 struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
-> -               nlh->nlmsg_len = ab->skb->len - NLMSG_SPACE(0);
-> +               nlh->nlmsg_len = ab->skb->len - NLMSG_HDRLEN;
->
->                 if (audit_pid) {
->                         skb_queue_tail(&audit_skb_queue, ab->skb);
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Yes. I think both short term solution and long term solution is necessary
+in order to enable hwpoison feature for Linux as KVM hypervisor.
+
+So my proposal is as follows,
+  For short term solution to care both memory error and I/O error:
+    - I will resend a panic knob to handle data lost related to dirty cache
+      which is caused by memory error and I/O error.
+
+  For long term solution:
+    - Andi's proposal or Horiguchi-san's new pagecache tag based mechanism
+
+Regards,
+Mitsuhiro Tanino
+
