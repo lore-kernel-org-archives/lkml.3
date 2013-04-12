@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3DLKpy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 06:45:54 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49238 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752713Ab3DLKpx (ORCPT
+	id S1753885Ab3DLKs7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 06:48:59 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58640 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab3DLKs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 06:45:53 -0400
-Date: Fri, 12 Apr 2013 11:45:28 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Li Haifeng <omycle@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "pandaboard@googlegroups.com" <pandaboard@googlegroups.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+	Fri, 12 Apr 2013 06:48:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH] MFD: ab8500: pass AB8500 IRQ to debugfs code by resource
+Date: Fri, 12 Apr 2013 12:48:53 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Kexec couldn't reboot capture kernel on pandaboard ES with
- OMAP4460
-Message-ID: <20130412104528.GE12363@mudshark.cambridge.arm.com>
-References: <CAFNq8R5FFUyH+JgjoGc5ctgEfiLvxzi7fzawM7+wFX5nEyTv-w@mail.gmail.com>
- <51658B1A.6090706@wwwdotorg.org>
- <CAFNq8R6mRJRygfnYvZgwVWOqsrhrjNUYzyZGU0cVsnE30W_xGg@mail.gmail.com>
- <5166E289.8070104@wwwdotorg.org>
+        Anmar Oueja <anmar.oueja@linaro.org>, Lee Jones <lee.jones@linaro.org>
+References: <1365669779-14953-1-git-send-email-linus.walleij@stericsson.com> <201304121008.51300.arnd@arndb.de> <CACRpkdatbhais8gP3rTRkz0Y1v816Uz8KL6ZhDsh+ByfbjXuxg@mail.gmail.com>
+In-Reply-To: <CACRpkdatbhais8gP3rTRkz0Y1v816Uz8KL6ZhDsh+ByfbjXuxg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5166E289.8070104@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304121248.54005.arnd@arndb.de>
+X-Provags-ID: V02:K0:WQEfm58F9GYa2J3tZiOjIsTn+W6o0mNekm1X5PcOvta
+ zdDDO/6LKbUFU6V6oZxBr/Iv7n8kkjyaxOarN5WFf4qHd3Bp2b
+ 5yzgv7U+8v/r+VRAC/bW7b7Lf0vioNgmicog8hUqWJnXJxjuOi
+ psEkduNencp7M2LFAK2SdvEW67FLSUtjPcnJn0oUDjeb0yq5ZV
+ ILS6kteycxO35oQHxGkU6WdNvbn4QKrbxphYs3S/quEM12TO95
+ uf5voFWtVZ+0gM86wYRaEqYwu96PNOdcVDTQnPoMIO+yxo8D56
+ xabIOWS84ba2+OBK00uACcv7YKHsnZYcSFR+OXUwihjOpHkFvW
+ EryBClOWCJbqW3rBpg/w=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 05:19:21PM +0100, Stephen Warren wrote:
-> On 04/10/2013 10:46 PM, Li Haifeng wrote:
-> > 2013/4/10 Stephen Warren <swarren@wwwdotorg.org>:
-> >> On 04/10/2013 03:35 AM, Li Haifeng wrote:
-> >>> Hi, everyone.
-> >>>
-> >>> Recently, I try to run kdump on pandaboard ES with omap4460. After
-> >>> load capture kernel by "kexec -l" and execute "kexec -e", the serial
-> >>> port output "Starting new kernel" and "Bye", then the system hangs up.
-> >>>
-> >>> I have tried the upstream Linux Kernel v3.4 and v3.8. All are with this issue.
-> >>
-> >> This is a shot in the dark. I assume you have SMP enabled. Can you use
-> >> hotplug to remove all CPUs other than CPU0, so that the kexec happens on
-> >> the boot CPU? That is certainly necessary for kexec to work correctly on
-> >> Tegra.
-> > 
-> > Thanks for your attention.
-> > 
-> > I do disable SMP feature. And the .config file for v3.8 could be found here:
-> > http://pastehtml.com/view/cylyrfejt.txt
-> ...
-> > The output:
-> > [   57.373687] Starting new kernel
-> > [   57.377044] Bye!
-> > 
-> > Then system hangs.
+On Friday 12 April 2013, Linus Walleij wrote:
+> On Fri, Apr 12, 2013 at 10:08 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Friday 12 April 2013, Linus Walleij wrote:
 > 
-> Oh well, you've exhausted my knowledge I'm afraid! I can only suggesting
-> trying to enable earlyprintk and/or uncompressor debug in the kernel
-> you're kexec'ing and see if that yields any clue. Either that, or JTAG!
+> >> Actually, well, this one IRQ (the one I start to pass) is already
+> >> domain-mapped to the global IRQ numberspace, so that one will
+> >> be correct.
+> >
+> > I don't know if we're talking about the same thing here.
+> >
+> > My point was that passing a domain-mapped IRQ number into mfd_add_devices
+> > with another domain will result in the attempt to map that number into
+> > another domain, which does not work.
+> 
+> Ah, yes you're right ... now I need to find some other way
+> to pass this resource ... hm.
+> 
 
-Also worth using the bleeding edge kexec-tools (i.e. build from source),
-especially if you want to anything device-tree related.
+What is it actually needed for? In the code I'm looking at in linux-next
+it only gets passed to a function that ignores it.
 
-Back to the SMP point: Stephen, did you ever get anywhere with that
-disable_nonboot_cpus thread from a few months back? I'm still keen to get
-that working, and I *thought* we had a potential solution...
-
-Will
+	Arnd
