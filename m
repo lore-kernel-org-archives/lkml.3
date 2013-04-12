@@ -1,279 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab3DLCxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 22:53:36 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:2773 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab3DLCxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 22:53:34 -0400
-X-IronPort-AV: E=Sophos;i="4.87,460,1363104000"; 
-   d="scan'208";a="7040372"
-Message-ID: <516777DB.2080109@cn.fujitsu.com>
-Date: Fri, 12 Apr 2013 10:56:27 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1752598Ab3DLC42 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 22:56:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42107 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751367Ab3DLC41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 22:56:27 -0400
+Message-ID: <51677779.8000506@redhat.com>
+Date: Thu, 11 Apr 2013 22:54:49 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        Peter Zijlstra <peterz@infradead.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: Re: [PATCH 2/3] kernel/SRCU: provide a static initializer
-References: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de> <1363702606-31586-2-git-send-email-bigeasy@linutronix.de> <515E7B79.2020707@cn.fujitsu.com> <516295E7.70200@linutronix.de> <51636A64.5050002@cn.fujitsu.com> <20130411170450.GA27081@linutronix.de>
-In-Reply-To: <20130411170450.GA27081@linutronix.de>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/12 10:52:11,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/12 10:52:12,
-	Serialize complete at 2013/04/12 10:52:12
+To: Mel Gorman <mgorman@suse.de>
+CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
+        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/10] mm: vmscan: Block kswapd if it is encountering
+ pages under writeback
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <1365505625-9460-8-git-send-email-mgorman@suse.de>
+In-Reply-To: <1365505625-9460-8-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 01:04 AM, Sebastian Andrzej Siewior wrote:
-> * Lai Jiangshan | 2013-04-09 09:09:56 [+0800]:
-> 
->> If the percpu array can be defined in __SRCU_STRUCT_INIT(),
->> I'm happy to expose it. but it is not currently.
-> 
-> I have no idea how to achieve this.
-> 
->> Why crypto can't use boot time initialization?
-> 
-> It would require something like this:
-> --- linux-stable.orig/crypto/Kconfig
-> +++ linux-stable/crypto/Kconfig
-> @@ -13,7 +13,7 @@ source "crypto/async_tx/Kconfig"
->  # Cryptographic API Configuration
->  #
->  menuconfig CRYPTO
-> -       tristate "Cryptographic API"
-> +       bool "Cryptographic API"
->         help
->           This option provides the core Cryptographic API.
+On 04/09/2013 07:07 AM, Mel Gorman wrote:
+> Historically, kswapd used to congestion_wait() at higher priorities if it
+> was not making forward progress. This made no sense as the failure to make
+> progress could be completely independent of IO. It was later replaced by
+> wait_iff_congested() and removed entirely by commit 258401a6 (mm: don't
+> wait on congested zones in balance_pgdat()) as it was duplicating logic
+> in shrink_inactive_list().
+>
+> This is problematic. If kswapd encounters many pages under writeback and
+> it continues to scan until it reaches the high watermark then it will
+> quickly skip over the pages under writeback and reclaim clean young
+> pages or push applications out to swap.
+>
+> The use of wait_iff_congested() is not suited to kswapd as it will only
+> stall if the underlying BDI is really congested or a direct reclaimer was
+> unable to write to the underlying BDI. kswapd bypasses the BDI congestion
+> as it sets PF_SWAPWRITE but even if this was taken into account then it
+> would cause direct reclaimers to stall on writeback which is not desirable.
+>
+> This patch sets a ZONE_WRITEBACK flag if direct reclaim or kswapd is
+> encountering too many pages under writeback. If this flag is set and
+> kswapd encounters a PageReclaim page under writeback then it'll assume
+> that the LRU lists are being recycled too quickly before IO can complete
+> and block waiting for some IO to complete.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Why convert to "bool"?
-srcu_init_notifier_head() can be called in module-load-time.
+Acked-by: Rik van Riel <riel@redhat.com>
 
-> 
-> --- linux-stable.orig/crypto/api.c
-> +++ linux-stable/crypto/api.c
-> @@ -34,6 +34,13 @@ EXPORT_SYMBOL_GPL(crypto_alg_sem);
->  struct srcu_notifier_head crypto_chain;
->  EXPORT_SYMBOL_GPL(crypto_chain);
-> 
-> +static int __init crypto_api_init(void)
-> +{
-> +       srcu_init_notifier_head(&crypto_chain);
-> +       return 0;
-> +}
-> +core_initcall(crypto_api_init);
-> +
->  static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
->  {
->         atomic_inc(&alg->cra_refcnt);
 
-And again, why crypto can't use boot time nor module-load-time initialization?
-
-> 
-> and there is no need for this.
-> 
->>> Do you have any idea how I could get it done without this? Do you want
->>> to move/merge header files?
->>
->> if crypto has to use static initialization, I will find out some way
->> or use your patch.
-> 
-> The crypto would like this:
-> 
-> Subject: crypto: Convert crypto notifier chain to SRCU
-> From: Peter Zijlstra <peterz@infradead.org>
-> Date: Fri, 05 Oct 2012 09:03:24 +0100
-> 
-> The crypto notifier deadlocks on RT. Though this can be a real deadlock
-> on mainline as well due to fifo fair rwsems.
-> 
-> The involved parties here are:
-> 
-> [   82.172678] swapper/0       S 0000000000000001     0     1      0 0x00000000
-> [   82.172682]  ffff88042f18fcf0 0000000000000046 ffff88042f18fc80 ffffffff81491238
-> [   82.172685]  0000000000011cc0 0000000000011cc0 ffff88042f18c040 ffff88042f18ffd8
-> [   82.172688]  0000000000011cc0 0000000000011cc0 ffff88042f18ffd8 0000000000011cc0
-> [   82.172689] Call Trace:
-> [   82.172697]  [<ffffffff81491238>] ? _raw_spin_unlock_irqrestore+0x6c/0x7a
-> [   82.172701]  [<ffffffff8148fd3f>] schedule+0x64/0x66
-> [   82.172704]  [<ffffffff8148ec6b>] schedule_timeout+0x27/0xd0
-> [   82.172708]  [<ffffffff81043c0c>] ? unpin_current_cpu+0x1a/0x6c
-> [   82.172713]  [<ffffffff8106e491>] ? migrate_enable+0x12f/0x141
-> [   82.172716]  [<ffffffff8148fbbd>] wait_for_common+0xbb/0x11f
-> [   82.172719]  [<ffffffff810709f2>] ? try_to_wake_up+0x182/0x182
-> [   82.172722]  [<ffffffff8148fc96>] wait_for_completion_interruptible+0x1d/0x2e
-> [   82.172726]  [<ffffffff811debfd>] crypto_wait_for_test+0x49/0x6b
-> [   82.172728]  [<ffffffff811ded32>] crypto_register_alg+0x53/0x5a
-> [   82.172730]  [<ffffffff811ded6c>] crypto_register_algs+0x33/0x72
-> [   82.172734]  [<ffffffff81ad7686>] ? aes_init+0x12/0x12
-> [   82.172737]  [<ffffffff81ad76ea>] aesni_init+0x64/0x66
-> [   82.172741]  [<ffffffff81000318>] do_one_initcall+0x7f/0x13b
-> [   82.172744]  [<ffffffff81ac4d34>] kernel_init+0x199/0x22c
-> [   82.172747]  [<ffffffff81ac44ef>] ? loglevel+0x31/0x31
-> [   82.172752]  [<ffffffff814987c4>] kernel_thread_helper+0x4/0x10
-> [   82.172755]  [<ffffffff81491574>] ? retint_restore_args+0x13/0x13
-> [   82.172759]  [<ffffffff81ac4b9b>] ? start_kernel+0x3ca/0x3ca
-> [   82.172761]  [<ffffffff814987c0>] ? gs_change+0x13/0x13
-> 
-> [   82.174186] cryptomgr_test  S 0000000000000001     0    41      2 0x00000000
-> [   82.174189]  ffff88042c971980 0000000000000046 ffffffff81d74830 0000000000000292
-> [   82.174192]  0000000000011cc0 0000000000011cc0 ffff88042c96eb80 ffff88042c971fd8
-> [   82.174195]  0000000000011cc0 0000000000011cc0 ffff88042c971fd8 0000000000011cc0
-> [   82.174195] Call Trace:
-> [   82.174198]  [<ffffffff8148fd3f>] schedule+0x64/0x66
-> [   82.174201]  [<ffffffff8148ec6b>] schedule_timeout+0x27/0xd0
-> [   82.174204]  [<ffffffff81043c0c>] ? unpin_current_cpu+0x1a/0x6c
-> [   82.174206]  [<ffffffff8106e491>] ? migrate_enable+0x12f/0x141
-> [   82.174209]  [<ffffffff8148fbbd>] wait_for_common+0xbb/0x11f
-> [   82.174212]  [<ffffffff810709f2>] ? try_to_wake_up+0x182/0x182
-> [   82.174215]  [<ffffffff8148fc96>] wait_for_completion_interruptible+0x1d/0x2e
-> [   82.174218]  [<ffffffff811e4883>] cryptomgr_notify+0x280/0x385
-> [   82.174221]  [<ffffffff814943de>] notifier_call_chain+0x6b/0x98
-> [   82.174224]  [<ffffffff8108a11c>] ? rt_down_read+0x10/0x12
-> [   82.174227]  [<ffffffff810677cd>] __blocking_notifier_call_chain+0x70/0x8d
-> [   82.174230]  [<ffffffff810677fe>] blocking_notifier_call_chain+0x14/0x16
-> [   82.174234]  [<ffffffff811dd272>] crypto_probing_notify+0x24/0x50
-> [   82.174236]  [<ffffffff811dd7a1>] crypto_alg_mod_lookup+0x3e/0x74
-> [   82.174238]  [<ffffffff811dd949>] crypto_alloc_base+0x36/0x8f
-> [   82.174241]  [<ffffffff811e9408>] cryptd_alloc_ablkcipher+0x6e/0xb5
-> [   82.174243]  [<ffffffff811dd591>] ? kzalloc.clone.5+0xe/0x10
-> [   82.174246]  [<ffffffff8103085d>] ablk_init_common+0x1d/0x38
-> [   82.174249]  [<ffffffff8103852a>] ablk_ecb_init+0x15/0x17
-> [   82.174251]  [<ffffffff811dd8c6>] __crypto_alloc_tfm+0xc7/0x114
-> [   82.174254]  [<ffffffff811e0caa>] ? crypto_lookup_skcipher+0x1f/0xe4
-> [   82.174256]  [<ffffffff811e0dcf>] crypto_alloc_ablkcipher+0x60/0xa5
-> [   82.174258]  [<ffffffff811e5bde>] alg_test_skcipher+0x24/0x9b
-> [   82.174261]  [<ffffffff8106d96d>] ? finish_task_switch+0x3f/0xfa
-> [   82.174263]  [<ffffffff811e6b8e>] alg_test+0x16f/0x1d7
-> [   82.174267]  [<ffffffff811e45ac>] ? cryptomgr_probe+0xac/0xac
-> [   82.174269]  [<ffffffff811e45d8>] cryptomgr_test+0x2c/0x47
-> [   82.174272]  [<ffffffff81061161>] kthread+0x7e/0x86
-> [   82.174275]  [<ffffffff8106d9dd>] ? finish_task_switch+0xaf/0xfa
-> [   82.174278]  [<ffffffff814987c4>] kernel_thread_helper+0x4/0x10
-> [   82.174281]  [<ffffffff81491574>] ? retint_restore_args+0x13/0x13
-> [   82.174284]  [<ffffffff810610e3>] ? __init_kthread_worker+0x8c/0x8c
-> [   82.174287]  [<ffffffff814987c0>] ? gs_change+0x13/0x13
-> 
-> [   82.174329] cryptomgr_probe D 0000000000000002     0    47      2 0x00000000
-> [   82.174332]  ffff88042c991b70 0000000000000046 ffff88042c991bb0 0000000000000006
-> [   82.174335]  0000000000011cc0 0000000000011cc0 ffff88042c98ed00 ffff88042c991fd8
-> [   82.174338]  0000000000011cc0 0000000000011cc0 ffff88042c991fd8 0000000000011cc0
-> [   82.174338] Call Trace:
-> [   82.174342]  [<ffffffff8148fd3f>] schedule+0x64/0x66
-> [   82.174344]  [<ffffffff814901ad>] __rt_mutex_slowlock+0x85/0xbe
-> [   82.174347]  [<ffffffff814902d2>] rt_mutex_slowlock+0xec/0x159
-> [   82.174351]  [<ffffffff81089c4d>] rt_mutex_fastlock.clone.8+0x29/0x2f
-> [   82.174353]  [<ffffffff81490372>] rt_mutex_lock+0x33/0x37
-> [   82.174356]  [<ffffffff8108a0f2>] __rt_down_read+0x50/0x5a
-> [   82.174358]  [<ffffffff8108a11c>] ? rt_down_read+0x10/0x12
-> [   82.174360]  [<ffffffff8108a11c>] rt_down_read+0x10/0x12
-> [   82.174363]  [<ffffffff810677b5>] __blocking_notifier_call_chain+0x58/0x8d
-> [   82.174366]  [<ffffffff810677fe>] blocking_notifier_call_chain+0x14/0x16
-> [   82.174369]  [<ffffffff811dd272>] crypto_probing_notify+0x24/0x50
-> [   82.174372]  [<ffffffff811debd6>] crypto_wait_for_test+0x22/0x6b
-> [   82.174374]  [<ffffffff811decd3>] crypto_register_instance+0xb4/0xc0
-> [   82.174377]  [<ffffffff811e9b76>] cryptd_create+0x378/0x3b6
-> [   82.174379]  [<ffffffff811de512>] ? __crypto_lookup_template+0x5b/0x63
-> [   82.174382]  [<ffffffff811e4545>] cryptomgr_probe+0x45/0xac
-> [   82.174385]  [<ffffffff811e4500>] ? crypto_alloc_pcomp+0x1b/0x1b
-> [   82.174388]  [<ffffffff81061161>] kthread+0x7e/0x86
-> [   82.174391]  [<ffffffff8106d9dd>] ? finish_task_switch+0xaf/0xfa
-> [   82.174394]  [<ffffffff814987c4>] kernel_thread_helper+0x4/0x10
-> [   82.174398]  [<ffffffff81491574>] ? retint_restore_args+0x13/0x13
-> [   82.174401]  [<ffffffff810610e3>] ? __init_kthread_worker+0x8c/0x8c
-> [   82.174403]  [<ffffffff814987c0>] ? gs_change+0x13/0x13
-> 
-> cryptomgr_test spawns the cryptomgr_probe thread from the notifier
-> call. The probe thread fires the same notifier as the test thread and
-> deadlocks on the rwsem on RT.
-> 
-> Now this is a potential deadlock in mainline as well, because we have
-> fifo fair rwsems. If another thread blocks with a down_write() on the
-> notifier chain before the probe thread issues the down_read() it will
-> block the probe thread and the whole party is dead locked.
-> 
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  crypto/algapi.c   |    4 ++--
->  crypto/api.c      |    6 +++---
->  crypto/internal.h |    4 ++--
->  3 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> --- a/crypto/algapi.c
-> +++ b/crypto/algapi.c
-> @@ -683,13 +683,13 @@ EXPORT_SYMBOL_GPL(crypto_spawn_tfm2);
->  
->  int crypto_register_notifier(struct notifier_block *nb)
->  {
-> -	return blocking_notifier_chain_register(&crypto_chain, nb);
-> +	return srcu_notifier_chain_register(&crypto_chain, nb);
->  }
->  EXPORT_SYMBOL_GPL(crypto_register_notifier);
->  
->  int crypto_unregister_notifier(struct notifier_block *nb)
->  {
-> -	return blocking_notifier_chain_unregister(&crypto_chain, nb);
-> +	return srcu_notifier_chain_unregister(&crypto_chain, nb);
->  }
->  EXPORT_SYMBOL_GPL(crypto_unregister_notifier);
->  
-> --- a/crypto/api.c
-> +++ b/crypto/api.c
-> @@ -31,7 +31,7 @@ EXPORT_SYMBOL_GPL(crypto_alg_list);
->  DECLARE_RWSEM(crypto_alg_sem);
->  EXPORT_SYMBOL_GPL(crypto_alg_sem);
->  
-> -BLOCKING_NOTIFIER_HEAD(crypto_chain);
-> +SRCU_NOTIFIER_HEAD(crypto_chain);
->  EXPORT_SYMBOL_GPL(crypto_chain);
->  
->  static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
-> @@ -237,10 +237,10 @@ int crypto_probing_notify(unsigned long
->  {
->  	int ok;
->  
-> -	ok = blocking_notifier_call_chain(&crypto_chain, val, v);
-> +	ok = srcu_notifier_call_chain(&crypto_chain, val, v);
->  	if (ok == NOTIFY_DONE) {
->  		request_module("cryptomgr");
-> -		ok = blocking_notifier_call_chain(&crypto_chain, val, v);
-> +		ok = srcu_notifier_call_chain(&crypto_chain, val, v);
->  	}
->  
->  	return ok;
-> --- a/crypto/internal.h
-> +++ b/crypto/internal.h
-> @@ -48,7 +48,7 @@ struct crypto_larval {
->  
->  extern struct list_head crypto_alg_list;
->  extern struct rw_semaphore crypto_alg_sem;
-> -extern struct blocking_notifier_head crypto_chain;
-> +extern struct srcu_notifier_head crypto_chain;
->  
->  #ifdef CONFIG_PROC_FS
->  void __init crypto_init_proc(void);
-> @@ -136,7 +136,7 @@ static inline int crypto_is_moribund(str
->  
->  static inline void crypto_notify(unsigned long val, void *v)
->  {
-> -	blocking_notifier_call_chain(&crypto_chain, val, v);
-> +	srcu_notifier_call_chain(&crypto_chain, val, v);
->  }
->  
->  #endif	/* _CRYPTO_INTERNAL_H */
-> 
->> Thanks,
->> Lai
-> 
-> Sebastian
-> 
-
+-- 
+All rights reversed
