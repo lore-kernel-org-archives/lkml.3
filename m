@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab3DLMTZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 08:19:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53374 "EHLO mx1.redhat.com"
+	id S1754733Ab3DLMVi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 08:21:38 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50854 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753139Ab3DLMTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 08:19:23 -0400
-Message-ID: <5167FBC1.2090609@redhat.com>
-Date: Fri, 12 Apr 2013 20:19:13 +0800
-From: Lingzhu Xiang <lxiang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753805Ab3DLMVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 08:21:36 -0400
+Message-ID: <5167FC3B.2070200@ti.com>
+Date: Fri, 12 Apr 2013 08:21:15 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4 1/3] efi: Determine how much space is used by boot
- services-only variables
-References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com> <1365615967-27346-1-git-send-email-matthew.garrett@nebula.com>
-In-Reply-To: <1365615967-27346-1-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Zhang Rui <rui.zhang@intel.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <amit.daniel@samsung.com>,
+        <durgadoss.r@intel.com>, <andi@lisas.de>
+Subject: Re: [PATCH V2 1/3] Thermal: rename thermal_sys.c to thermal_core.c
+References: <1364567196-3560-1-git-send-email-rui.zhang@intel.com>  <1364567196-3560-2-git-send-email-rui.zhang@intel.com>  <515DE192.1030408@ti.com> <1365729176.2183.20.camel@rzhang1-mobl4>
+In-Reply-To: <1365729176.2183.20.camel@rzhang1-mobl4>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2013 01:46 AM, Matthew Garrett wrote:
-> EFI variables can be flagged as being accessible only within boot services.
-> This makes it awkward for us to figure out how much space they use at
-> runtime. In theory we could figure this out by simply comparing the results
-> from QueryVariableInfo() to the space used by all of our variables, but
-> that fails if the platform doesn't garbage collect on every boot. Thankfully,
-> calling QueryVariableInfo() while still inside boot services gives a more
-> reliable answer. This patch passes that information from the EFI boot stub
-> up to the efivars code, letting us calculate a reasonably accurate value.
+On 11-04-2013 21:12, Zhang Rui wrote:
+> On Thu, 2013-04-04 at 16:24 -0400, Eduardo Valentin wrote:
+>> On 29-03-2013 10:26, Zhang Rui wrote:
+>>> this is the preparation work to build all the thermal core framework
+>>> source file, like governors, cpu cooling, etc, into one module.
+>>>
+>>> No functional change in this patch.
+>>>
+>>> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+>>
+>> Durga and me have already reviewed and acked this patch. Can you please
+>> add our Acked-by on this patch?
 >
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+> sure.
+> BTW, I've talked with Rafael, and we agree on adding prefix "acpi_" for
+> ACPI drivers, and then we can rename thermal_sys.ko to thermal.ko.
+>
 
-I just tried this 3.9-rc6 with this patchset with pstore fulling up 
-space and various attempts to manually fulling up space. So far I've 
-been able to delete variables and continue creating variables.
+Good!
 
-Since QueryVariableInfo is no longer trusted and the accounting is done 
-by the kernel, I'm somewhat concerned that variables can be repeatedly 
-created and deleted until nvram is full of garbage to collect and the 
-firmware hits EFI_OUT_OF_RESOURCES. Could this be any kind of problem?
+> But I'll try to push this patch set for 3.10, to fix the problem on
+> hand, also for easily back porting to 3.8 and 3.9 stable kernel.
+> Then, we'll rename a couple of ACPI drivers and then thermal driver in
+> 3.11.
+>
+> what do you think?
 
+I am OK with this approach.
 
-Lingzhu Xiang
+Thanks for keeping this up.
+
+>
+> thanks,
+> rui
+>
+>>
+>>> ---
+>>>    drivers/thermal/Makefile                          |    1 +
+>>>    drivers/thermal/{thermal_sys.c => thermal_core.c} |    0
+>>>    2 files changed, 1 insertion(+)
+>>>    rename drivers/thermal/{thermal_sys.c => thermal_core.c} (100%)
+>>>
+>>> diff --git a/drivers/thermal/Makefile b/drivers/thermal/Makefile
+>>> index d3a2b38..b2009bd 100644
+>>> --- a/drivers/thermal/Makefile
+>>> +++ b/drivers/thermal/Makefile
+>>> @@ -3,6 +3,7 @@
+>>>    #
+>>>
+>>>    obj-$(CONFIG_THERMAL)		+= thermal_sys.o
+>>> +thermal_sys-y			+= thermal_core.o
+>>>
+>>>    # governors
+>>>    obj-$(CONFIG_THERMAL_GOV_FAIR_SHARE)	+= fair_share.o
+>>> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_core.c
+>>> similarity index 100%
+>>> rename from drivers/thermal/thermal_sys.c
+>>> rename to drivers/thermal/thermal_core.c
+>>>
+>>
+>
+>
+>
+>
+
