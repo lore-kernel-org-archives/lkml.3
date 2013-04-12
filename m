@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753753Ab3DLA7i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 20:59:38 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:35875 "EHLO
+	id S1753691Ab3DLA7h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 20:59:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:35880 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab3DLA5a (ORCPT
+	with ESMTP id S1752849Ab3DLA5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 20:57:30 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,88 +13,64 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 14/22] x86, mm, numa: Set memblock nid later
-Date: Thu, 11 Apr 2013 17:56:00 -0700
-Message-Id: <1365728168-32067-15-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 20/22] x86, mm: Add comments for step_size shift
+Date: Thu, 11 Apr 2013 17:56:06 -0700
+Message-Id: <1365728168-32067-21-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
 References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the separation, we need to set memblock nid later, as it
-could change memblock array, and possible doube memblock.memory
-array that will need to allocate buffer.
-
-Only set memblock nid one time for successful path.
-
-Also rename numa_register_memblks to numa_check_memblks()
-after move out code for setting memblock nid.
+As request by hpa, add comments for why we choose 5 for
+step size shift.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/numa.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ arch/x86/mm/init.c | 21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index fcaeba9..e2ddcbd 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -537,10 +537,9 @@ static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 28b294f..2754e45 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -385,8 +385,23 @@ static unsigned long __init init_range_memory_mapping(
+ 	return mapped_ram_size;
  }
- #endif
  
--static int __init numa_register_memblks(struct numa_meminfo *mi)
-+static int __init numa_check_memblks(struct numa_meminfo *mi)
+-/* (PUD_SHIFT-PMD_SHIFT)/2 */
+-#define STEP_SIZE_SHIFT 5
++static unsigned long __init get_new_step_size(unsigned long step_size)
++{
++	/*
++	 * initial mapped size is PMD_SIZE, aka 2M.
++	 * We can not set step_size to be PUD_SIZE aka 1G yet.
++	 * In worse case, when 1G is cross the 1G boundary, and
++	 * PG_LEVEL_2M is not set, we will need 1+1+512 pages (aka 2M + 8k)
++	 * to map 1G range with PTE. Use 5 as shift for now.
++	 */
++	unsigned long new_step_size = step_size << 5;
++
++	if (new_step_size > step_size)
++		step_size = new_step_size;
++
++	return  step_size;
++}
++
+ void __init init_mem_mapping(void)
  {
- 	unsigned long pfn_align;
--	int i;
- 
- 	/* Account for nodes with cpus and no memory */
- 	node_possible_map = numa_nodes_parsed;
-@@ -563,11 +562,6 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
- 		return -EINVAL;
+ 	unsigned long end, real_end, start, last_start;
+@@ -428,7 +443,7 @@ void __init init_mem_mapping(void)
+ 		min_pfn_mapped = last_start >> PAGE_SHIFT;
+ 		/* only increase step_size after big range get mapped */
+ 		if (new_mapped_ram_size > mapped_ram_size)
+-			step_size <<= STEP_SIZE_SHIFT;
++			step_size = get_new_step_size(step_size);
+ 		mapped_ram_size += new_mapped_ram_size;
  	}
  
--	for (i = 0; i < mi->nr_blks; i++) {
--		struct numa_memblk *mb = &mi->blk[i];
--		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
--	}
--
- 	return 0;
- }
- 
-@@ -604,7 +598,6 @@ static int __init numa_init(int (*init_func)(void))
- 	nodes_clear(numa_nodes_parsed);
- 	nodes_clear(node_possible_map);
- 	memset(&numa_meminfo, 0, sizeof(numa_meminfo));
--	WARN_ON(memblock_set_node(0, ULLONG_MAX, MAX_NUMNODES));
- 	numa_reset_distance();
- 
- 	ret = init_func();
-@@ -616,7 +609,7 @@ static int __init numa_init(int (*init_func)(void))
- 
- 	numa_emulation(&numa_meminfo, numa_distance_cnt);
- 
--	ret = numa_register_memblks(&numa_meminfo);
-+	ret = numa_check_memblks(&numa_meminfo);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -679,6 +672,11 @@ void __init x86_numa_init(void)
- 
- 	early_x86_numa_init();
- 
-+	for (i = 0; i < mi->nr_blks; i++) {
-+		struct numa_memblk *mb = &mi->blk[i];
-+		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
-+	}
-+
- 	/* Finally register nodes. */
- 	for_each_node_mask(nid, node_possible_map) {
- 		u64 start = PFN_PHYS(max_pfn);
 -- 
 1.8.1.4
 
