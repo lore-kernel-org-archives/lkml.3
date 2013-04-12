@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab3DLUPf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 16:15:35 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:37030 "EHLO smtp.outflux.net"
+	id S1755630Ab3DLUO1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 16:14:27 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:36017 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754176Ab3DLUO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 16:14:28 -0400
+	id S1754176Ab3DLUO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 16:14:26 -0400
 From: Kees Cook <keescook@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
@@ -17,25 +17,96 @@ Cc: kernel-hardening@lists.openwall.com, "H. Peter Anvin" <hpa@zytor.com>,
         Dan Rosenberg <drosenberg@vsecurity.com>,
         Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>,
         Kees Cook <keescook@chromium.org>
-Subject: [PATCH v2 0/6] kernel ASLR
-Date: Fri, 12 Apr 2013 13:13:41 -0700
-Message-Id: <1365797627-20874-1-git-send-email-keescook@chromium.org>
+Subject: [PATCH 4/6] x86: relocs: build separate 32/64-bit tools
+Date: Fri, 12 Apr 2013 13:13:45 -0700
+Message-Id: <1365797627-20874-5-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365797627-20874-1-git-send-email-keescook@chromium.org>
+References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This splits up the relocs tool changes into the separate logical pieces,
-which should be easier to review. I could use some suggestions on a
-better way to build it in the 4th patch. What I have now seems ugly,
-but Kbuild would not give me its secrets.
+Since the ELF structures and access macros change size based on 32 vs
+64 bits, build a separate 32-bit relocs tool (for handling realmode
+and 32-bit relocations), and a 64-bit relocs tool (for handling 64-bit
+kernel relocations).
 
-RO IDT was sent separately is is living in the tip/kaslr tree at the
-moment. The main logic for KASLR remains split into two pieces: offset
-selection and offset usage.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+--
+This is ugly with the "cp". Is there some other cleaner way to trigger
+two builds with different defines from the same source file?
+---
+ arch/x86/boot/compressed/Makefile |    2 +-
+ arch/x86/realmode/rm/Makefile     |    2 +-
+ arch/x86/tools/.gitignore         |    3 ++-
+ arch/x86/tools/Makefile           |   20 ++++++++++++++++++--
+ 4 files changed, 22 insertions(+), 5 deletions(-)
 
-Thanks,
-
--Kees
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 5ef205c..0dac175 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -44,7 +44,7 @@ $(obj)/vmlinux.bin: vmlinux FORCE
+ 
+ targets += $(patsubst $(obj)/%,%,$(VMLINUX_OBJS)) vmlinux.bin.all vmlinux.relocs
+ 
+-CMD_RELOCS = arch/x86/tools/relocs
++CMD_RELOCS = arch/x86/tools/relocs_$(BITS)
+ quiet_cmd_relocs = RELOCS  $@
+       cmd_relocs = $(CMD_RELOCS) $< > $@;$(CMD_RELOCS) --abs-relocs $<
+ $(obj)/vmlinux.relocs: vmlinux FORCE
+diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
+index 8869287..2b1e429 100644
+--- a/arch/x86/realmode/rm/Makefile
++++ b/arch/x86/realmode/rm/Makefile
+@@ -56,7 +56,7 @@ $(obj)/realmode.bin: $(obj)/realmode.elf $(obj)/realmode.relocs
+ 	$(call if_changed,objcopy)
+ 
+ quiet_cmd_relocs = RELOCS  $@
+-      cmd_relocs = arch/x86/tools/relocs --realmode $< > $@
++      cmd_relocs = arch/x86/tools/relocs_32 --realmode $< > $@
+ 
+ targets += realmode.relocs
+ $(obj)/realmode.relocs: $(obj)/realmode.elf FORCE
+diff --git a/arch/x86/tools/.gitignore b/arch/x86/tools/.gitignore
+index be0ed06..2b45d5f 100644
+--- a/arch/x86/tools/.gitignore
++++ b/arch/x86/tools/.gitignore
+@@ -1 +1,2 @@
+-relocs
++relocs_32*
++relocs_64*
+diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
+index bae601f..a8cb70c 100644
+--- a/arch/x86/tools/Makefile
++++ b/arch/x86/tools/Makefile
+@@ -37,6 +37,22 @@ $(obj)/test_get_len.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/in
+ 
+ $(obj)/insn_sanity.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/inat.c $(srctree)/arch/x86/include/asm/inat_types.h $(srctree)/arch/x86/include/asm/inat.h $(srctree)/arch/x86/include/asm/insn.h $(objtree)/arch/x86/lib/inat-tables.c
+ 
++HOSTCFLAGS_relocs_32.o += -DELF_BITS=32
++HOSTCFLAGS_relocs_64.o += -DELF_BITS=64
++
++quiet_cmd_cp_reloc = GEN     $@
++      cmd_cp_reloc = cp $< $@
++
++$(obj)/relocs_%.c: $(srctree)/arch/x86/tools/relocs.c
++	$(call cmd,cp_reloc)
++
+ HOST_EXTRACFLAGS += -I$(srctree)/tools/include
+-hostprogs-y	+= relocs
+-relocs: $(obj)/relocs
++hostprogs-y    += relocs_$(BITS)
++relocs_binaries = relocs_$(BITS)
++ifeq ($(CONFIG_64BIT),y)
++	hostprogs-y  += relocs_32
++	relocs_binaries += relocs_32
++endif
++relocs: $(relocs_binaries)
++relocs_32: $(obj)/relocs_32
++relocs_64: $(obj)/relocs_64
+-- 
+1.7.9.5
 
