@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569Ab3DLWqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:46:32 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47030 "EHLO
+	id S1757167Ab3DLWqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:46:39 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47058 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755522Ab3DLWq1 (ORCPT
+	with ESMTP id S1756630Ab3DLWqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:46:27 -0400
+	Fri, 12 Apr 2013 18:46:33 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 03/29] PCI: Update pci_resource_start etc to use pci_dev_resource_n()
-Date: Fri, 12 Apr 2013 15:44:17 -0700
-Message-Id: <1365806683-26717-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 14/29] PCI: Use for_each_pci_resource() with pci bar reassign funcs
+Date: Fri, 12 Apr 2013 15:44:28 -0700
+Message-Id: <1365806683-26717-15-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
@@ -22,62 +22,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now pci_resource_start is using dev->resource[n] directly.
-Replace it with pci_dev_resource[n] to prepare for addon resource support.
-
--v2: fix warning about const pointer that Fengguang found.
+Replace those open code, and make code more readable.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/pci.h | 35 +++++++++++++++++++++++++----------
- 1 file changed, 25 insertions(+), 10 deletions(-)
+ drivers/pci/setup-bus.c | 28 ++++++++++++----------------
+ 1 file changed, 12 insertions(+), 16 deletions(-)
 
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index ffff013..6d450d2 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1455,16 +1455,31 @@ static inline struct pci_dev *pci_dev_get(struct pci_dev *dev)
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index 7e8739e..b23ef4c 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -106,7 +106,7 @@ static resource_size_t get_res_add_size(struct list_head *head,
  
- /* these helpers provide future and backwards compatibility
-  * for accessing popular PCI BAR info */
--#define pci_resource_start(dev, bar)	((dev)->resource[(bar)].start)
--#define pci_resource_end(dev, bar)	((dev)->resource[(bar)].end)
--#define pci_resource_flags(dev, bar)	((dev)->resource[(bar)].flags)
--#define pci_resource_len(dev,bar) \
--	((pci_resource_start((dev), (bar)) == 0 &&	\
--	  pci_resource_end((dev), (bar)) ==		\
--	  pci_resource_start((dev), (bar))) ? 0 :	\
--							\
--	 (pci_resource_end((dev), (bar)) -		\
--	  pci_resource_start((dev), (bar)) + 1))
-+static inline resource_size_t pci_resource_start(const struct pci_dev *dev,
-+						 int bar)
-+{
-+	return pci_dev_resource_n((struct pci_dev *)dev, bar)->start;
-+}
-+static inline resource_size_t pci_resource_end(const struct pci_dev *dev,
-+						int bar)
-+{
-+	return pci_dev_resource_n((struct pci_dev *)dev, bar)->end;
-+}
-+static inline unsigned long pci_resource_flags(const struct pci_dev *dev,
-+						 int bar)
-+{
-+	return pci_dev_resource_n((struct pci_dev *)dev, bar)->flags;
-+}
-+static inline resource_size_t pci_resource_len(const struct pci_dev *dev,
-+							 int bar)
-+{
-+	struct resource *res = pci_dev_resource_n((struct pci_dev *)dev, bar);
-+
-+	if (res->start == 0 && res->end == res->start)
-+		return 0;
-+
-+	return res->end - res->start + 1;
-+}
+ 	list_for_each_entry(dev_res, head, list) {
+ 		if (dev_res->res == res) {
+-			int idx = res - &dev_res->dev->resource[0];
++			int idx = pci_dev_resource_idx(dev_res->dev, res);
  
- /* Similar to the helpers above, these manipulate per-pci_dev
-  * driver-specific data.  They are really just a wrapper around
+ 			dev_printk(KERN_DEBUG, &dev_res->dev->dev,
+ 				 "res[%d]=%pR get_res_add_size add_size %llx\n",
+@@ -124,15 +124,13 @@ static resource_size_t get_res_add_size(struct list_head *head,
+ static void pdev_sort_resources(struct pci_dev *dev, struct list_head *head)
+ {
+ 	int i;
++	struct resource *r;
+ 
+-	for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+-		struct resource *r;
++	for_each_pci_resource(dev, r, i, PCI_ALL_RES) {
+ 		struct pci_dev_resource *dev_res, *tmp;
+ 		resource_size_t r_align;
+ 		struct list_head *n;
+ 
+-		r = &dev->resource[i];
+-
+ 		if (r->flags & IORESOURCE_PCI_FIXED)
+ 			continue;
+ 
+@@ -237,7 +235,7 @@ static void reassign_resources_sorted(struct list_head *realloc_head,
+ 		if (!found_match)/* just skip */
+ 			continue;
+ 
+-		idx = res - &add_res->dev->resource[0];
++		idx = pci_dev_resource_idx(add_res->dev, res);
+ 		add_size = add_res->add_size;
+ 		if (!resource_size(res)) {
+ 			res->start = add_res->start;
+@@ -280,7 +278,7 @@ static void assign_requested_resources_sorted(struct list_head *head,
+ 
+ 	list_for_each_entry(dev_res, head, list) {
+ 		res = dev_res->res;
+-		idx = res - &dev_res->dev->resource[0];
++		idx = pci_dev_resource_idx(dev_res->dev, res);
+ 		if (resource_size(res) &&
+ 		    pci_assign_resource(dev_res->dev, idx)) {
+ 			if (fail_head) {
+@@ -757,9 +755,9 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
+ 	io_align = min_align = window_alignment(bus, IORESOURCE_IO);
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		int i;
++		struct resource *r;
+ 
+-		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+-			struct resource *r = &dev->resource[i];
++		for_each_pci_resource(dev, r, i, PCI_ALL_RES) {
+ 			unsigned long r_size;
+ 
+ 			if (r->parent || !(r->flags & IORESOURCE_IO))
+@@ -870,9 +868,9 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 
+ 	list_for_each_entry(dev, &bus->devices, bus_list) {
+ 		int i;
++		struct resource *r;
+ 
+-		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+-			struct resource *r = &dev->resource[i];
++		for_each_pci_resource(dev, r, i, PCI_ALL_RES) {
+ 			resource_size_t r_size;
+ 
+ 			if (r->parent || (r->flags & mask) != type)
+@@ -1196,9 +1194,7 @@ static void pci_bridge_release_resources(struct pci_bus *bus,
+ 				  IORESOURCE_PREFETCH;
+ 
+ 	dev = bus->self;
+-	for (idx = PCI_BRIDGE_RESOURCES; idx <= PCI_BRIDGE_RESOURCE_END;
+-	     idx++) {
+-		r = &dev->resource[idx];
++	for_each_pci_resource(dev, r, idx, PCI_BRIDGE_RES) {
+ 		if ((r->flags & type_mask) != type)
+ 			continue;
+ 		if (!r->parent)
+@@ -1369,9 +1365,9 @@ static void __init pci_realloc_detect(void)
+ 
+ 	for_each_pci_dev(dev) {
+ 		int i;
++		struct resource *r;
+ 
+-		for (i = PCI_IOV_RESOURCES; i <= PCI_IOV_RESOURCE_END; i++) {
+-			struct resource *r = &dev->resource[i];
++		for_each_pci_resource(dev, r, i, PCI_IOV_RES) {
+ 
+ 			/* Not assigned, or rejected by kernel ? */
+ 			if (r->flags && !r->start) {
 -- 
 1.8.1.4
 
