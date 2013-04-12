@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab3DLWqx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:46:53 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47634 "EHLO
+	id S932114Ab3DLWrK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:47:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47687 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756037Ab3DLWqv (ORCPT
+	with ESMTP id S1753764Ab3DLWrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:46:51 -0400
+	Fri, 12 Apr 2013 18:47:07 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <jiang.liu@huawei.com>
-Subject: [PATCH v4 10/29] PCI, acpiphp: Use for_each_pci_resource() helper
-Date: Fri, 12 Apr 2013 15:44:24 -0700
-Message-Id: <1365806683-26717-11-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v4 25/29] PCI: Update pci_resource_bar() to support addon_resource
+Date: Fri, 12 Apr 2013 15:44:39 -0700
+Message-Id: <1365806683-26717-26-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
@@ -24,31 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Toshi Kani <toshi.kani@hp.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>
----
- drivers/pci/hotplug/acpiphp_glue.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Need to loop addon resource list to retrieve reg_addr in it.
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 270fdba..c35b2b1 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -1085,10 +1085,10 @@ static void acpiphp_sanitize_bus(struct pci_bus *bus)
- 	struct pci_dev *dev;
- 	int i;
- 	unsigned long type_mask = IORESOURCE_IO | IORESOURCE_MEM;
-+	struct resource *res;
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ drivers/pci/pci.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index c1010be..7677c6b 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3613,6 +3613,13 @@ int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type)
+ 		reg = pci_iov_resource_bar(dev, resno, type);
+ 		if (reg)
+ 			return reg;
++	} else if (resno >= PCI_NUM_RESOURCES) {
++		struct resource *res = pci_dev_resource_n(dev, resno);
++
++		if (res) {
++			*type = pci_bar_unknown;
++			return to_pci_dev_addon_resource(res)->reg_addr;
++		}
+ 	}
  
- 	list_for_each_entry(dev, &bus->devices, bus_list) {
--		for (i=0; i<PCI_BRIDGE_RESOURCES; i++) {
--			struct resource *res = &dev->resource[i];
-+		for_each_pci_resource(dev, res, i, PCI_STD_ROM_IOV_RES) {
- 			if ((res->flags & type_mask) && !res->start &&
- 					res->end) {
- 				/* Could not assign a required resources
+ 	dev_err(&dev->dev, "BAR %d: invalid resource\n", resno);
 -- 
 1.8.1.4
 
