@@ -1,131 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab3DLT4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 15:56:42 -0400
-Received: from mail.digidescorp.com ([50.73.98.161]:18308 "EHLO
-	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866Ab3DLT4l (ORCPT
+	id S1755460Ab3DLUB5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 16:01:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39347 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753296Ab3DLUBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 15:56:41 -0400
-X-Greylist: delayed 572 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Apr 2013 15:56:40 EDT
-X-MDAV-Processed: mail.digidescorp.com, Fri, 12 Apr 2013 14:47:07 -0500
-X-Spam-Processed: mail.digidescorp.com, Fri, 12 Apr 2013 14:47:06 -0500
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: smagnani@iscandar.digidescorp.com
-X-Envelope-From: smagnani@iscandar.digidescorp.com
-From: Steve Magnani <smagnani@iscandar.digidescorp.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH] mmc: debugfs: Add debugfs ability to read CID and CSD
-Date: Fri, 12 Apr 2013 14:46:53 -0500
-Message-Id: <1365796013-11399-1-git-send-email-smagnani@iscandar.digidescorp.com>
-X-Mailer: git-send-email 1.8.1.4
+	Fri, 12 Apr 2013 16:01:55 -0400
+Message-ID: <5168681A.20405@infradead.org>
+Date: Fri, 12 Apr 2013 13:01:30 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Eric Andersson <eric.andersson@unixphere.com>,
+        Andrew Jones <drjones@redhat.com>, linux-input@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [NEW DRIVER V4 3/7] DA9058 ONKEY driver
+References: <201304121318.r3CDILZS013210@latitude>
+In-Reply-To: <201304121318.r3CDILZS013210@latitude>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds 'cid' and 'csd' debugfs entries for SD/MMC devices that allow
-userland to obtain the values of the corresponding device registers.
+On 04/12/13 06:05, Anthony Olech wrote:
+> This is the ONKEY component driver of the Dialog DA9058 PMIC.
+> This driver is just one component of the whole DA9058 PMIC driver.
+> It depends on the CORE component driver of the DA9058 MFD.
+> 
+> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+> Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+> ---
+>  drivers/input/misc/Kconfig        |   10 +++
+>  drivers/input/misc/Makefile       |    1 +
+>  drivers/input/misc/da9058_onkey.c |  177 +++++++++++++++++++++++++++++++++++++
+>  3 files changed, 188 insertions(+)
+>  create mode 100644 drivers/input/misc/da9058_onkey.c
+> 
+> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+> index 259ef31..bd07b38 100644
+> --- a/drivers/input/misc/Kconfig
+> +++ b/drivers/input/misc/Kconfig
+> @@ -93,6 +93,16 @@ config INPUT_BMA150
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called bma150.
+>  
+> +config INPUT_DA9058_ONKEY
+> +	tristate "DA9058 ONKEY support"
+> +	depends on MFD_DA9058
+> +	help
+> +	  Support the ONKEY of DA9058 PMICs as an input device
+> +	  reporting power button status.
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
----
---- a/drivers/mmc/core/debugfs.c	2013-04-12 07:39:22.532586948 -0500
-+++ b/drivers/mmc/core/debugfs.c	2013-04-12 07:40:14.513331587 -0500
-@@ -321,7 +321,7 @@ static ssize_t mmc_ext_csd_read(struct f
- 				       buf, EXT_CSD_STR_LEN);
- }
- 
--static int mmc_ext_csd_release(struct inode *inode, struct file *file)
-+static int mmc_dbg_buf_release(struct inode *inode, struct file *file)
- {
- 	kfree(file->private_data);
- 	return 0;
-@@ -330,7 +330,65 @@ static int mmc_ext_csd_release(struct in
- static const struct file_operations mmc_dbg_ext_csd_fops = {
- 	.open		= mmc_ext_csd_open,
- 	.read		= mmc_ext_csd_read,
--	.release	= mmc_ext_csd_release,
-+	.release	= mmc_dbg_buf_release,
-+	.llseek		= default_llseek,
-+};
-+
-+/* CSD and CID have the same length and so can be handled much the same */
-+#define CXD_STR_LEN 33
-+
-+static int mmc_cxd_open(struct file *filp, u32 *raw_cxd)
-+{
-+	char *buf;
-+	ssize_t n = 0;
-+	int i;
-+
-+	buf = kmalloc(CXD_STR_LEN + 1, GFP_KERNEL);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < 4; i++)
-+		n += sprintf(buf + n, "%08x", raw_cxd[i]);
-+	n += sprintf(buf + n, "\n");
-+	BUG_ON(n != CXD_STR_LEN);
-+
-+	filp->private_data = buf;
-+	return 0;
-+}
-+
-+static ssize_t mmc_cxd_read(struct file *filp, char __user *ubuf,
-+				size_t cnt, loff_t *ppos)
-+{
-+	char *buf = filp->private_data;
-+
-+	return simple_read_from_buffer(ubuf, cnt, ppos,
-+				       buf, CXD_STR_LEN);
-+}
-+
-+static int mmc_csd_open(struct inode *inode, struct file *filp)
-+{
-+	struct mmc_card *card = inode->i_private;
-+	return mmc_cxd_open(filp, card->raw_csd);
-+}
-+
-+static const struct file_operations mmc_dbg_csd_fops = {
-+	.open		= mmc_csd_open,
-+	.read		= mmc_cxd_read,
-+	.release	= mmc_dbg_buf_release,
-+	.llseek		= default_llseek,
-+};
-+
-+
-+static int mmc_cid_open(struct inode *inode, struct file *filp)
-+{
-+	struct mmc_card *card = inode->i_private;
-+	return mmc_cxd_open(filp, card->raw_cid);
-+}
-+
-+static const struct file_operations mmc_dbg_cid_fops = {
-+	.open		= mmc_cid_open,
-+	.read		= mmc_cxd_read,
-+	.release	= mmc_dbg_buf_release,
- 	.llseek		= default_llseek,
- };
- 
-@@ -356,10 +414,17 @@ void mmc_add_card_debugfs(struct mmc_car
- 	if (!debugfs_create_x32("state", S_IRUSR, root, &card->state))
- 		goto err;
- 
--	if (mmc_card_mmc(card) || mmc_card_sd(card))
-+	if (mmc_card_mmc(card) || mmc_card_sd(card)) {
- 		if (!debugfs_create_file("status", S_IRUSR, root, card,
- 					&mmc_dbg_card_status_fops))
- 			goto err;
-+		if (!debugfs_create_file("csd", S_IRUSR, root, card,
-+					&mmc_dbg_csd_fops))
-+			goto err;
-+		if (!debugfs_create_file("cid", S_IRUSR, root, card,
-+					&mmc_dbg_cid_fops))
-+			goto err;
-+	}
- 
- 	if (mmc_card_mmc(card))
- 		if (!debugfs_create_file("ext_csd", S_IRUSR, root, card,
+What possible values can a power button status have?
+Must be more than my KISS guess:
+	this software is running => ON
+	software not running     => OFF
+eh?
 
+> +
+> +	  To compile this driver as a module, choose M here: the module
+> +	  will be called da9058_onkey.
+> +
+>  config INPUT_PCSPKR
+>  	tristate "PC Speaker support"
+>  	depends on PCSPKR_PLATFORM
+> diff --git a/drivers/input/misc/da9058_onkey.c b/drivers/input/misc/da9058_onkey.c
+> new file mode 100644
+> index 0000000..969ad70
+> --- /dev/null
+> +++ b/drivers/input/misc/da9058_onkey.c
+> @@ -0,0 +1,177 @@
+> +/*
+> + *  Copyright (C) 2012 Dialog Semiconductor Ltd.
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License as published by
+> + *  the Free Software Foundation; either version 2 of the License, or
+> + *  (at your option) any later version.
+> + *
+> + */
+> +
+> +
+> +static int da9058_onkey_probe(struct platform_device *pdev)
+> +{
+> +	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
+> +	const struct mfd_cell *cell = mfd_get_cell(pdev);
+> +	struct da9058_onkey_pdata *onkey_pdata;
+> +	struct da9058_onkey *onkey;
+> +	int ret;
+> +
+> +	if (cell == NULL) {
+> +		ret = -ENODEV;
+> +		goto exit;
+> +	}
+> +
+> +	onkey_pdata = cell->platform_data;
+> +
+> +	if (onkey_pdata == NULL) {
+> +		ret = -EINVAL;
+> +		goto exit;
+> +	}
+> +
+> +	dev_info(&pdev->dev, "Starting ONKEY\n");
+> +
+> +	onkey = devm_kzalloc(&pdev->dev, sizeof(struct da9058_onkey),
+> +				GFP_KERNEL);
+> +	if (!onkey) {
+> +		ret = -ENOMEM;
+> +		goto exit;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, onkey);
+> +
+> +	onkey->da9058 = da9058;
+> +	onkey->pdev = pdev;
+> +
+> +	onkey->irq = platform_get_irq(pdev, 0);
+> +	if (onkey->irq < 0) {
+> +		dev_err(&pdev->dev, "can not get ONKEY IRQ error=%d\n",
+
+		                     cannot
+
+> +				onkey->irq);
+
+
+-- 
+~Randy
