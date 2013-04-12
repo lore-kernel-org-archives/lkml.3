@@ -1,148 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3DLSBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 14:01:51 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14712 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab3DLSBt (ORCPT
+	id S1756710Ab3DLSHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 14:07:22 -0400
+Received: from nm10-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.122]:33723
+	"EHLO nm10-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754031Ab3DLSHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 14:01:49 -0400
-X-Authority-Analysis: v=2.0 cv=C51rOHz+ c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=od9ufGozyBcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=B5pM2mQJZ68A:10 a=_SsI_bI6U60u9fbK-aIA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1365789706.9609.92.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/1] uprobes/tracing: Don't pass addr=ip to
- perf_trace_buf_submit()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Date: Fri, 12 Apr 2013 14:01:46 -0400
-In-Reply-To: <20130411115921.GA27492@redhat.com>
-References: <20130329181520.GA20670@redhat.com>
-	 <20130329181545.GA20697@redhat.com>
-	 <20130404142522.GC8986@linux.vnet.ibm.com> <515E4938.6090809@hitachi.com>
-	 <20130405150110.GA31300@redhat.com> <51628DF8.6030102@hitachi.com>
-	 <20130410145818.GA30670@redhat.com> <516692BF.6070904@hitachi.com>
-	 <20130411115921.GA27492@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Apr 2013 14:07:20 -0400
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Apr 2013 14:07:20 EDT
+X-Yahoo-Newman-Id: 945224.57484.bm@smtp109.biz.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: JOU5UUQVM1mC.1f3CNf1cbflz_utHxPP_A4vfx6.ARRJaGT
+ 27wKVTT7GRAeZoUvjrpTKxSAduvWZtio_3lsi4aZmcruEcpoBTDxjpP9t89u
+ .KUvEdpSmj71cvWgg9lsKKeGii3f29a1RU84NozS0RopWLfN1PslBL8oJGMs
+ dionLA7SCQkknJceIEF7x7_zWIvBiw5Xo8K18Ia0FZv.txdXd5r1nMIGBe8V
+ FGM_2HH9YmItBAURibMw3Z0fJcyCoarEm4qKuU5qD065VIhfzdZbfWoTVYdJ
+ UFV2znqRoFa7RL8GrXcB7csbTSEJFPC1XSKCpL607gOIgZavdXI73xjnzIi.
+ au6i41dLWx1ehtY4Bxpu_ejgeN8edRnVz8zTs8Ag4YWP7aqrA110U_46liy2
+ YNtm8v5ykcuczOvB1h80Y.0GjB9bYzbq4hGl.2K.yKwXvpF9CgMnesp9cNpR
+ 01Q--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [172.26.30.118] (casey@65.114.90.17 with plain)
+        by smtp109.biz.mail.gq1.yahoo.com with SMTP; 12 Apr 2013 18:00:35 +0000 UTC
+Message-ID: <51684BC7.9080001@schaufler-ca.com>
+Date: Fri, 12 Apr 2013 11:00:39 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: =?UTF-8?B?xYF1a2FzeiBTdGVsbWFjaA==?= <l.stelmach@samsung.com>
+CC: Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        linux-security-module@vger.kernel.org, m.szyprowski@samsung.com,
+        kyungmin.park@samsung.com, r.krypa@samsung.com,
+        linux-kernel@vger.kernel.org,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Piotr Bereza <p.bereza@samsung.com>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFC] security: smack: add hash table for smack for quick label
+ searching
+References: <1365669972-21461-1-git-send-email-t.stanislaws@samsung.com> <5166F9FA.20003@schaufler-ca.com> <871uag812q.fsf@samsung.com>
+In-Reply-To: <871uag812q.fsf@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-11 at 13:59 +0200, Oleg Nesterov wrote:
-> On 04/11, Masami Hiramatsu wrote:
-> >
-> > (2013/04/10 23:58), Oleg Nesterov wrote:
-> >
-> > > And... Cough, another question ;) To simplify, lets discuss kprobe_perf_func()
-> > > only. Suppose that a task hits the kprobe but this task/cpu doesn't have
-> > > a counter. Can't we avoid perf_trace_buf_prepare/submit in this case?
-> > > IOW, what do you think about the change below?
-> >
-> > Hmm, I'm not so sure how frequently this happens.
-> 
-> Suppose that you do, say, "perf record -e probe:some_func workload". Only
-> "workload" will have the active counter, any other task which hits the
-> probed some_func() will do perf_trace_buf_prepare/perf_trace_buf_submit
-> just to realize that nobody wants perf_swevent_event().
+On 4/12/2013 8:12 AM, Łukasz Stelmach wrote:
+> It was <2013-04-11 czw 19:59>, when Casey Schaufler wrote:
+>> On 4/11/2013 1:46 AM, Tomasz Stanislawski wrote:
+>>> Hi everyone,
+>>> I am a developer working on optimization of the TIZEN system.
+>>> Recently, I've discovered a performance issue in SMACK subsystem.
+>>> I used the PERF tool to find performance bottlenecks.
+>>>
+>>> The test scenario was simple. Run multiple applications and
+>>> see what the system does using the following command:
+>>>
+>>>  perf record -a -g
+>>>
+>>> Next, see the results with the command:
+>>>
+>>>  perf report -s symbol -g graph,0.5
+>>>
+>>> Among the many lines, the following ones are especially interesting:
+>>>
+>>>      5.96%  [k] smk_find_entry                                                                         
+>>>             |          
+>>>             |--5.06%-- smk_access
+>>>             |          |          
+>>>             |           --4.99%-- smk_curacc
+>>>             |                     |          
+>>>             |                     |--3.79%-- smack_ptrace_access_check
+> [...]
+>
+>>> To sum up, the result indicates that the CPU spents circa 8% (2.16% + 5.96%)
+>>> of cycles searching for a SMACK label in the smk_find_entry function.
+>>> The function iterates through smack_known_list to find an entry.
+>>> The further analysis showed that the size of the list can reach even 600.
+>>> I measured that it takes circa 200 tries to find an entry on average.
+>>> The value was computed as a total number iterations in the smk_find_entry's
+>>> loop divided by the times smk_find_entry was called in a time-window of
+>>> the length of 10 seconds.
+>>>
+>>> IMO, this is a serious performance issue which scales badly with
+>>> a complexity of the system.
+>>>
+>>> I implemented a patch that makes a use of a hash table to quicken searching
+>>> for SMACK's labels.  The patch is rebased onto the latest v3.9-rc6 kernel.
+>>> The code is thread-safe (I hope) because it shares the RCU mechanism
+>>> and locks with smack_known_list.
+> [...]
+>
+>>> I hope you find the measurement and the patch useful.
+>>> All comments are welcome.
+>> NAK
+>>
+>> There will be no hash tables in Smack.
+>>
+>> The correct solution is simple.
+>>
+>> In the task_smack structure there are two Smack label pointers,
+>> smk_task and smk_forked. Replace these fields with pointers to
+>> the smack_known structures that contain the Smack label pointers
+>> used today. This will require trivial changes throughout the
+>> Smack code to accommodate the type change and a few logical twists
+>> around smk_import. It will eliminate the need for smk_lookup_entry.
+> Allow me to join the conversation with an interesting observation.
+> I don't know whether hash table is a good solution to the problem Tomasz
+> has mentioned it definitely improves performance during loading rules.
 
-Wow, you're right. Seems that perf goes through a lot of work for every
-time a tracepoint is hit for *all tasks*.
+Loading rules is a rare event and an uninteresting case.
 
-> 
-> Simple test-case:
-> 
-> 	#include <unistd.h>
-> 
-> 	int main(void)
-> 	{
-> 		int n;
-> 
-> 		for (n = 0; n < 1000 * 1000; ++n)
-> 			getppid();
-> 
-> 		return 0;
-> 	}
-> 
-> Without kprobe:
-> 
-> 	# time ./ppid
-> 
-> 	real    0m0.663s
-> 	user    0m0.163s
-> 	sys     0m0.500s
-> 
-> Activate the probe:
-> 
-> 	# perf probe sys_getppid
-> 
-> 	# perf record -e probe:sys_getppid sleep 1000 &
-> 	[1] 546
-> 
-> Test it again 3 times:
-> 
-> 	# time ./ppid
-> 
-> Before the patch:
-> 
-> 	real    0m9.727s
-> 	user    0m0.177s
-> 	sys     0m9.547s
-> 
-> 	real    0m9.752s
-> 	user    0m0.180s
-> 	sys     0m9.573s
-> 
-> 	real    0m9.761s
-> 	user    0m0.187s
-> 	sys     0m9.573s
-> 
-> After the patch:
-> 
-> 	real    0m9.605s
-> 	user	0m0.163s
-> 	sys	0m9.437s
-> 
-> 	real	0m9.592s
-> 	user	0m0.167s
-> 	sys	0m9.423s
-> 
-> 	real	0m9.613s
-> 	user	0m0.183s
-> 	sys	0m9.427s
-> 
-> So the difference looks measurable but small, and I did the testing
-> under qemu so I do not really know if we can trust the numbers.
-> 
-> > And, is this right way to
-> > handle that case?
-> 
-> If only I was sure ;) I am asking.
-> 
-> And, to clarify, it is not that I think this change can really
-> improve the perfomance. Just I am trying to understand what I have
-> missed.
-> 
-> > If so, we can do same thing also on trace_events.
-> > (perf_trace_##call in include/trace/ftrace.h)
-> 
-> Yes, yes, this is not kprobe-specific. It seems that more users of
-> perf_trace_buf_submit() could be changed the same way.
-
-Yeah, looks like include/trace/ftrace.h needs an update.
-
-Frederic?
-
--- Steve
-
+> Conditions:
+>
+> --8<---------------cut here---------------start------------->8---
+> # number of subjects
+> sh-4.1# cat /etc/smack/accesses.d/* | cut -d\  -f1 | sort -u | wc -l
+> 379
+> # number of rules
+> sh-4.1# cat /etc/smack/accesses.d/* | wc -l   
+> 23895
+> --8<---------------cut here---------------end--------------->8---
+>
+> Without the patch
+>
+> --8<---------------cut here---------------start------------->8---
+> sh-4.1# time smackctl apply
+>
+> real    0m1.255s
+> user    0m0.115s
+> sys     0m0.895s
+> --8<---------------cut here---------------end--------------->8---
+>
+> perfs output is:
+>
+> --8<---------------cut here---------------start------------->8---
+> # ========
+> # captured on: Tue Jan  1 09:52:14 2013
+> # os release : 3.4.5
+> # arch : armv7l
+> # nrcpus online : 4
+> # nrcpus avail : 4
+> # cpudesc : ARMv7 Processor rev 0 (v7l)
+> # total memory : 1025456 kB
+> # cmdline : /perf record -a -g -- /usr/bin/smackctl apply 
+> # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 45, 46, 47, 48 }
+> # ========
+> #
+> # Events: 1K cycles
+> #
+> # Overhead                              Symbol
+> # ........  ..................................
+> #
+>     47.49%  [k] strcmp                        
+>             |          
+>             |--41.27%-- smk_find_entry
+>             |          |          
+>             |          |--28.87%-- smk_import_entry
+>             |          |          smk_import
+>             |          |          smk_fill_rule
+>             |          |          smk_parse_long_rule
+>             |          |          smk_write_rules_list.clone.3
+>             |          |          smk_write_load2
+>             |          |          vfs_write
+>             |          |          sys_write
+>             |          |          ret_fast_syscall
+>             |          |          
+>             |           --12.41%-- smk_write_rules_list.clone.3
+>             |                     smk_write_load2
+>             |                     vfs_write
+>             |                     sys_write
+>             |                     ret_fast_syscall
+>             |          
+>             |--4.41%-- smk_import_entry
+>             |          smk_import
+>             |          smk_fill_rule
+>             |          smk_parse_long_rule
+>             |          smk_write_rules_list.clone.3
+>             |          smk_write_load2
+>             |          vfs_write
+>             |          sys_write
+>             |          ret_fast_syscall
+>             |          
+>              --1.80%-- smk_write_rules_list.clone.3
+>                        smk_write_load2
+>                        vfs_write
+>                        sys_write
+>                        ret_fast_syscall
+>     19.21%  [k] smk_find_entry                
+>             |          
+>             |--12.44%-- smk_import_entry
+>             |          smk_import
+>             |          smk_fill_rule
+>             |          smk_parse_long_rule
+>             |          smk_write_rules_list.clone.3
+>             |          smk_write_load2
+>             |          vfs_write
+>             |          sys_write
+>             |          ret_fast_syscall
+>             |          
+>              --6.78%-- smk_write_rules_list.clone.3
+>                        smk_write_load2
+>                        vfs_write
+>                        sys_write
+>                        ret_fast_syscall
+>
+> [ less than 10% per entry ]
+>
+> --8<---------------cut here---------------end--------------->8---
+>
+> With the patch
+>
+> --8<---------------cut here---------------start------------->8---
+> sh-4.1# time smackctl apply                                  
+>
+> real    0m0.349s
+> user    0m0.095s
+> sys     0m0.250s
+> --8<---------------cut here---------------end--------------->8---
+>
+> still quite long but 3.59598853868 times better.
+>
+> --8<---------------cut here---------------start------------->8---
+> # ========
+> # captured on: Tue Jan  1 10:40:45 2013
+> # os release : 3.4.5
+> # arch : armv7l
+> # nrcpus online : 4
+> # nrcpus avail : 4
+> # cpudesc : ARMv7 Processor rev 0 (v7l)
+> # total memory : 1025544 kB
+> # cmdline : /perf record -a -g -- smackctl apply 
+> # event : name = cycles, type = 0, config = 0x0, config1 = 0x0, config2 = 0x0, excl_usr = 0, excl_kern = 0, id = { 1, 2, 3, 4 }
+> # ========
+> #
+> # Events: 606  cycles
+> #
+> # Overhead                                 Symbol
+> # ........  .....................................
+> #
+>     12.90%  [k] smk_write_rules_list.isra.9      
+>             |
+>             --- smk_write_load2
+>                 vfs_write
+>                 sys_write
+>                 ret_fast_syscall
+>      7.86%  [k] exynos_enter_idle                
+>             |
+>             --- cpuidle_enter
+>                 cpuidle_enter_state
+>                 cpuidle_idle_call
+>                 cpu_idle
+>                |          
+>                 --7.69%-- secondary_start_kernel
+>                           0x4066df54
+>      6.95%  [k] v7_dma_inv_range                 
+>             |          
+>             |--3.70%-- __dma_page_cpu_to_dev
+>             |          arm_dma_map_page
+>             |          arm_dma_map_sg
+>             |          dw_mci_pre_dma_transfer
+>             |          dw_mci_pre_req
+>             |          mmc_pre_req
+>             |          mmc_start_req
+>             |          mmc_blk_issue_rw_rq
+>             |          mmc_blk_issue_rq
+>             |          mmc_queue_thread
+>             |          kthread
+>             |          do_exit
+>             |          
+>              --3.25%-- __dma_page_dev_to_cpu
+>                        arm_dma_unmap_page
+>                        arm_dma_unmap_sg
+>                        dw_mci_post_req
+>                        mmc_post_req
+>                        mmc_start_req
+>                        mmc_blk_issue_rw_rq
+>                        mmc_blk_issue_rq
+>                        mmc_queue_thread
+>                        kthread
+>                        do_exit
+>      3.56%  [k] _raw_spin_unlock_irq             
+>             |          
+>             |--1.40%-- mmc_blk_issue_rw_rq
+>             |          mmc_blk_issue_rq
+>             |          mmc_queue_thread
+>             |          kthread
+>             |          do_exit
+>             |          
+>              --1.09%-- finish_task_switch
+>                        __schedule
+>                        |          
+>                         --0.75%-- schedule
+>
+>
+>      3.45%  [.] 0x0000118c                       
+>      2.94%  [.] strncpy                          
+>      2.67%  [.] vfprintf                         
+>      2.44%  [k] strcmp                           
+>             |
+>             --- smk_find_entry
+>                 smk_import_entry
+>                 smk_import
+>                 smk_fill_rule
+>                 smk_parse_long_rule
+>                 smk_write_rules_list.isra.9
+>                 smk_write_load2
+>                 vfs_write
+>                 sys_write
+>                 ret_fast_syscall
+>
+> [ less than 2.5%  per entry ]
+> --8<---------------cut here---------------end--------------->8---
+>
 
