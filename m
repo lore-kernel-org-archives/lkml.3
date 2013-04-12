@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab3DLU41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 16:56:27 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:46958 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755109Ab3DLU4Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 16:56:25 -0400
-Message-ID: <516874F8.6030907@tilera.com>
-Date: Fri, 12 Apr 2013 16:56:24 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1755878Ab3DLVCU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 17:02:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57569 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754553Ab3DLVCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 17:02:19 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        akpm@linux-foundation.org, Zach Brown <zab@redhat.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Asai Thambi S P <asamymuthupa@micron.com>,
+        Selvan Mani <smani@micron.com>, Sam Bradshaw <sbradshaw@micron.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Benjamin LaHaise <bcrl@kvack.org>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH 11/33] aio: make aio_put_req() lockless
+References: <1363883754-27966-1-git-send-email-koverstreet@google.com>
+	<1363883754-27966-12-git-send-email-koverstreet@google.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 12 Apr 2013 17:01:53 -0400
+In-Reply-To: <1363883754-27966-12-git-send-email-koverstreet@google.com> (Kent
+	Overstreet's message of "Thu, 21 Mar 2013 09:35:32 -0700")
+Message-ID: <x49k3o7sbsu.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        David Howells <dhowells@redhat.com>, Mark Salter <msalter@redhat.com>,
-        Jianguo Wu <wujianguo@huawei.com>, <linux-mm@kvack.org>,
-        <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH v4, part3 36/41] mm/tile: prepare for removing num_physpages
- and simplify mem_init()
-References: <1365258760-30821-1-git-send-email-jiang.liu@huawei.com> <1365258760-30821-37-git-send-email-jiang.liu@huawei.com>
-In-Reply-To: <1365258760-30821-37-git-send-email-jiang.liu@huawei.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/6/2013 10:32 AM, Jiang Liu wrote:
-> Prepare for removing num_physpages and simplify mem_init().
+Kent Overstreet <koverstreet@google.com> writes:
+
+> Freeing a kiocb needed to touch the kioctx for three things:
 >
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Bjorn Helgaas <bhelgaas@google.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Wen Congyang <wency@cn.fujitsu.com>
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  arch/tile/kernel/setup.c |   16 ++++++++--------
->  arch/tile/mm/init.c      |   15 +--------------
->  2 files changed, 9 insertions(+), 22 deletions(-)
+>  * Pull it off the reqs_active list
+>  * Decrementing reqs_active
+>  * Issuing a wakeup, if the kioctx was in the process of being freed.
+>
+> This patch moves these to aio_complete(), for a couple reasons:
+>
+>  * aio_complete() already has to issue the wakeup, so if we drop the
+>    kioctx refcount before aio_complete does its wakeup we don't have to
+>    do it twice.
+>  * aio_complete currently has to take the kioctx lock, so it makes sense
+>    for it to pull the kiocb off the reqs_active list too.
+>  * A later patch is going to change reqs_active to include unreaped
+>    completions - this will mean allocating a kiocb doesn't have to look
+>    at the ringbuffer. So taking the decrement of reqs_active out of
+>    kiocb_free() is useful prep work for that patch.
+>
+> This doesn't really affect cancellation, since existing (usb) code that
+> implements a cancel function still calls aio_complete() - we just have
+> to make sure that aio_complete does the necessary teardown for cancelled
+> kiocbs.
+>
+> It does affect code paths where we free kiocbs that were never
+> submitted; they need to decrement reqs_active and pull the kiocb off the
+> reqs_active list. This occurs in two places: kiocb_batch_free(), which
+> is going away in a later patch, and the error path in io_submit_one.
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+After reading the patch description and the patch, I'm left wondering
+whether you did this as a cleanup or a performance patch.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Anyway, I don't see any issue with it.
 
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
