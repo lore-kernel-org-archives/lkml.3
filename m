@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab3DLXub (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:50:31 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57538 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754808Ab3DLXu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:50:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        "Benenati, Chris J" <chris.j.benenati@intel.com>
-Subject: [PATCH] PCI / PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
-Date: Sat, 13 Apr 2013 01:58:17 +0200
-Message-ID: <48795235.crcTAaJqPb@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755955Ab3DLXuM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:50:12 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:57528 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755525Ab3DLXsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 19:48:42 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 03/12] rcu: Remove rcu_preempt_check_callbacks()
+Date: Fri, 12 Apr 2013 16:48:22 -0700
+Message-Id: <1365810511-24811-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1365810511-24811-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130412234810.GA23678@linux.vnet.ibm.com>
+ <1365810511-24811-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041223-3620-0000-0000-000002038F18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Commit b51306c (PCI: Set device power state to PCI_D0 for device
-without native PM support) modified pci_platform_power_transition()
-by adding code causing dev->current_state for devices that don't
-support native PCI PM but are power-manageable by the platform to be
-changed to PCI_D0 regardless of the value returned by the preceding
-platform_pci_set_power_state().  In particular, that also is done
-if the platform_pci_set_power_state() has been successful, which
-causes the correct power state of the device set by
-pci_update_current_state() in that case to be overwritten by PCI_D0.
+With the removal of CONFIG_TINY_PREEMPT_RCU, rcu_preempt_check_callbacks()
+is now an empty function.  This commit therefore eliminates it by
+inlining it.
 
-Fix that mistake by making the fallback to PCI_D0 only happen if
-the platform_pci_set_power_state() has returned an error.
-
-Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: <stable@vger.kernel.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- drivers/pci/pci.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/rcutiny.c        | 1 -
+ kernel/rcutiny_plugin.h | 8 --------
+ 2 files changed, 9 deletions(-)
 
-Index: linux-pm/drivers/pci/pci.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci.c
-+++ linux-pm/drivers/pci/pci.c
-@@ -646,8 +646,7 @@ static int pci_platform_power_transition
- 		error = platform_pci_set_power_state(dev, state);
- 		if (!error)
- 			pci_update_current_state(dev, state);
--		/* Fall back to PCI_D0 if native PM is not supported */
--		if (!dev->pm_cap)
-+		else if (!dev->pm_cap) /* Fall back to PCI_D0 */
- 			dev->current_state = PCI_D0;
- 	} else {
- 		error = -ENODEV;
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index a0714a5..9178282 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -257,7 +257,6 @@ void rcu_check_callbacks(int cpu, int user)
+ 		rcu_sched_qs(cpu);
+ 	else if (!in_softirq())
+ 		rcu_bh_qs(cpu);
+-	rcu_preempt_check_callbacks();
+ }
+ 
+ /*
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index cf0bc22..404b3a3 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -104,14 +104,6 @@ static void check_cpu_stalls(void)
+ 
+ /*
+  * Because preemptible RCU does not exist, it never has any callbacks
+- * to check.
+- */
+-static void rcu_preempt_check_callbacks(void)
+-{
+-}
+-
+-/*
+- * Because preemptible RCU does not exist, it never has any callbacks
+  * to remove.
+  */
+ static void rcu_preempt_remove_callbacks(struct rcu_ctrlblk *rcp)
+-- 
+1.8.1.5
 
