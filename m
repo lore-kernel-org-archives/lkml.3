@@ -1,120 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab3DLWny (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:43:54 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57494 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752662Ab3DLWnw convert rfc822-to-8bit (ORCPT
+	id S1753831Ab3DLWow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:44:52 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47006 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753193Ab3DLWov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:43:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: sedat.dilek@gmail.com
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Nathan Zimmer <nzimmer@sgi.com>
-Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
-Date: Sat, 13 Apr 2013 00:51:39 +0200
-Message-ID: <1923819.6Nb81T2TR8@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CA+icZUW+TB3q58bL+d=A355S4vtRhwMq8AV+tqjv6MgDtHRCaA@mail.gmail.com>
-References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com> <CA+icZUUsAqJ3kyCZivYeTpY7n=EDMv1UcC2VNwQro4h7NHDWag@mail.gmail.com> <CA+icZUW+TB3q58bL+d=A355S4vtRhwMq8AV+tqjv6MgDtHRCaA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Fri, 12 Apr 2013 18:44:51 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v4 00/29] PCI: Add for_each_pci_resource and addon_res support
+Date: Fri, 12 Apr 2013 15:44:14 -0700
+Message-Id: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 12, 2013 11:08:37 PM Sedat Dilek wrote:
-> On Fri, Apr 12, 2013 at 6:27 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> > On Fri, Apr 12, 2013 at 5:45 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> >> On Fri, Apr 12, 2013 at 4:24 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> >>> On Fri, Apr 12, 2013 at 10:23 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >>>> On 10 April 2013 11:44, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> >>>>> I found this "[RFC PATCH] kbuild: Build linux-tools package with 'make
-> >>>>> deb-pkg'" from February 2012.
-> >>>>> Can't say what happened to it...
-> >>>>
-> >>>> Sedat,
-> >>>>
-> >>>> Sorry for being late. I am down with Fever and throat infection since few days.
-> >>>> Still struggling with it..
-> >>>>
-> >>>> There are few things i tried. Firstly the tag: next-20130326 is bad as there are
-> >>>> some bad commits in cpufreq core in it.
-> >>>>
-> >>>> I then tried latest linux-next/master on my Thinkpad (model name        : Intel(R)
-> >>>> Core(TM) i7-2640M CPU @ 2.80GHz) and couldn't boot it up. My ubuntu
-> >>>> just hanged.
-> >>>>
-> >>>> Then i tried Rafael's linux-next branch
-> >>>>
-> >>>> 079576f Merge branch 'pm-cpufreq-next' into linux-next
-> >>>>
-> >>>> And couldn't find any issues with it. I am easily able to remove/add cpus at
-> >>>> runtime..
-> >>>>
-> >>>> Can you give this branch a try?
-> >>>>
-> >>>
-> >>> OK, you seem to be well again, nice to hear.
-> >>>
-> >>> I was doing the whole week spring-cleaning in the apartment of my parents.
-> >>> Now, I have some minutes for a compilation run.
-> >>>
-> >>> I guess "cpufreq: Call __cpufreq_governor() with correct policy->cpus
-> >>> mask" could be the correct fix, but will try the GIT branch you have
-> >>> mentioned.
-> >>>
-> >>> - Sedat -
-> >>>
-> >>> [1] http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=e4969ebac83fdea78d89c779331396728a4e6199
-> >>>
-> >>
-> >> Both BROKEN here, specific pm-next commitid and pulling
-> >> pm.git#linux-next into next-20130411 (see attached files).
-> >>
-> >> Is "cpufreq: convert cpufreq_driver to using RCU" the root cause of this all?
-> >>
-> >
-> > [ CC Nathan ]
-> >
-> > NO, wrong assumption.
-> >
-> > 2013-04-12 18:04 Sedat Dilek        o [revert-cpufreq-rcu] Revert
-> > "cpufreq: convert cpufreq_driver to using RCU"
-> > 2013-04-12 18:04 Sedat Dilek        o Revert "cpufreq: Call
-> > __cpufreq_governor() with correct policy->cpus mask"
-> > 2013-04-11 23:24 Rafael J. Wysocki  M─┐ [pm-next-079576f] Merge branch
-> > 'pm-cpufreq-next' into linux-next
-> >
-> > - Sedat -
-> >
-> >
-> >> - Sedat -
-> >>
-> >> [1] http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=5800043b2488a1c4c6e859af860644d37419d58b
-> >>
-> >>>> --
-> >>>> viresh
-> 
-> [ TO Dirk (Author of Intel pstate driver) ]
-> 
-> With CONFIG_X86_INTEL_PSTATE=n (unset) I do not see the call-trace!
-> 
-> My kernel-config and dmesg are attached.
+First part is for_each_pci_resource support:
+Now pci device resource iteration is done via "for (i=0...)" open code.
+That make code hard to read esp when only bridge or sriov resources
+are involved.
 
-You're seeing a trouble with a new driver, then, so that's not a regression.
+We want to replace those open code with for_each_pci_resource() to make
+the code more readable.
+Also will add addon_resource handling, and need to make addon resource
+to be treated as normal PCI resources during iteration, add
+for_each_pci_resource will make that support transition more simple.
 
-Thanks for taking the time to debug this!
+To make for_each_pci_resource more efficient. We will use preset bitmap
+of different type for searching next idx.
 
-Rafael
+Second part is addon_res support:
+Now there is some non normal pci resources other than standard,rom,
+sriov, bridges.
+Some could be same as standard reg, but using different position.
+Some could have own way to read/write to them.
+Kernel are using different way to hack those resources like abusing
+pci bridge resource spot on non bridge pci device.
 
+Add addon_resources list in pci_dev for those non-standard resources.
+With this patch, will treat addon-resource like standard resources with
+special ops.
+
+At last replace some quirk_io with addon_res.
+
+could get from
+        git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-pci-for-each-res-addon
+
+-v4: split one patch out, and remove PCI_NO_....
+
+Notes: We still need to keep _idx as we use it all the time, and drivers still
+use them to get resource.
+
+Thanks
+
+Yinghai Lu
+
+
+Ram Pai (1):
+  PCI: pci resource iterator
+
+Yinghai Lu (28):
+  PCI: Clean up quirk_io_region
+  PCI: Add pci_dev_resource_n()
+  PCI: Update pci_resource_start etc to use pci_dev_resource_n()
+  PCI: Add pci_dev_resource_idx() helper
+  PCI: Add is_pci_*_resource_idx() helpers
+  PCI, x86: Use for_each_pci_resource() with
+    pci_allocate_bridge_resources
+  PCI, x86: Use for_each_pci_resource() with pci_allocate_dev_resources
+  PCI: Use for_each_pci_resource() with IOV releated functions
+  PCI, acpiphp: Use for_each_pci_resource() helper
+  PCI, pciehp: Use for_each_pci_resource() helper
+  PCI: Use for_each_pci_resource() in pci_enable_dev
+  PCI: Use for_each_pci_resource() in pci_reassigndev
+  PCI: Use for_each_pci_resource() with pci bar reassign funcs
+  PCI: Use for_each_pci_resource() in pci_assign_resource
+  PCI, x86: Use for_each_pci_resource() with noassign_bars
+  PCI: Use for_each_pci_resource() in pci_dev_driver()
+  PCI: Use for_each_pci_resource() in pci resource release
+  PCI: Use for_each_pci_resource() in pci bases reading
+  PCI, x86: Use for_each_pci_resource() with mrst
+  PCI, xen: Use for_each_pci_resource() with xen pci
+  PCI: Add addon_resource support for pci devices
+  PCI: Treat addon res as std resources
+  PCI: Add helpers to add addon_resource
+  PCI: Update pci_resource_bar() to support addon_resource
+  PCI: Assign/update resource to addon_res
+  PCI: Make piix4 quirk to use addon_res
+  PCI: Make quirk_io_region to use addon_res
+  PCI: Use addon_fixed_resource with ati fixed resource
+
+ arch/x86/pci/common.c              |   3 +-
+ arch/x86/pci/i386.c                |  58 +++------
+ arch/x86/pci/mrst.c                |   7 +-
+ drivers/pci/hotplug/acpiphp_glue.c |   4 +-
+ drivers/pci/hotplug/pciehp_hpc.c   |   5 +-
+ drivers/pci/iov.c                  |  31 +++--
+ drivers/pci/pci-driver.c           |   7 +-
+ drivers/pci/pci.c                  |  27 ++--
+ drivers/pci/probe.c                | 176 ++++++++++++++++++++++++-
+ drivers/pci/quirks.c               | 258 ++++++++++++++++++++++---------------
+ drivers/pci/remove.c               |   5 +-
+ drivers/pci/setup-bus.c            |  28 ++--
+ drivers/pci/setup-res.c            |  38 ++++--
+ drivers/pci/xen-pcifront.c         |   4 +-
+ include/linux/pci.h                | 116 +++++++++++++++--
+ 15 files changed, 541 insertions(+), 226 deletions(-)
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.1.4
+
