@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab3DLXLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:11:47 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:43992 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754483Ab3DLXLN (ORCPT
+	id S1755278Ab3DLXML (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:12:11 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:64907 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753976Ab3DLXLJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:11:13 -0400
+	Fri, 12 Apr 2013 19:11:09 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         mhocko@suse.cz, kamezawa.hiroyu@jp.fujitsu.com,
         linux-kernel@vger.kernel.org, glommer@parallels.com, vgoyal@redhat.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/4] cgroup: introduce sane_behavior mount option
-Date: Fri, 12 Apr 2013 16:10:58 -0700
-Message-Id: <1365808259-31073-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 1/4] cgroup: convert cgroupfs_root flag bits to masks and add CGRP_ prefix
+Date: Fri, 12 Apr 2013 16:10:56 -0700
+Message-Id: <1365808259-31073-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365808259-31073-1-git-send-email-tj@kernel.org>
 References: <1365808259-31073-1-git-send-email-tj@kernel.org>
@@ -23,243 +23,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's a sad fact that at this point various cgroup controllers are
-carrying so many idiosyncrasies and pure insanities that it simply
-isn't possible to reach any sort of sane consistent behavior while
-maintaining staying fully compatible with what already has been
-exposed to userland.
+There's no reason to be using bitops, which tends to be more
+cumbersome, to handle root flags.  Convert them to masks.  Also, as
+they'll be moved to include/linux/cgroup.h and it's generally a good
+idea, add CGRP_ prefix.
 
-As we can't break exposed userland interface, transitioning to sane
-behaviors can only be done in steps while maintaining backwards
-compatibility.  This patch introduces a new mount option -
-__DEVEL__sane_behavior - which disables crazy features and enforces
-consistent behaviors in cgroup core proper and various controllers.
-As exactly which behaviors it changes are still being determined, the
-mount option, at this point, is useful only for development of the new
-behaviors.  As such, the mount option is prefixed with __DEVEL__ and
-generates a warning message when used.
-
-Eventually, once we get to the point where all controller's behaviors
-are consistent enough to implement unified hierarchy, the __DEVEL__
-prefix will be dropped, and more importantly, unified-hierarchy will
-enforce sane_behavior by default.  Maybe we'll able to completely drop
-the crazy stuff after a while, maybe not, but we at least have a
-strategy to move on to saner behaviors.
-
-This patch introduces the mount option and changes the following
-behaviors in cgroup core.
-
-* Mount options "noprefix" and "clone_children" are disallowed.  Also,
-  cgroupfs file cgroup.clone_children is not created.
-
-* When mounting an existing superblock, mount options should match.
-  This is currently pretty crazy.  If one mounts a cgroup, creates a
-  subdirectory, unmounts it and then mount it again with different
-  option, it looks like the new options are applied but they aren't.
-
-* Remount is disallowed.
-
-The behaviors changes are documented in the comment above
-CGRP_ROOT_SANE_BEHAVIOR enum and will be expanded as different
-controllers are converted and planned improvements progress.
+Note that flags are assigned from (1 << 1).  The first bit will be
+used by a flag which will be added soon.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- include/linux/cgroup.h | 43 +++++++++++++++++++++++++++++++++++++++++++
- kernel/cgroup.c        | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 92 insertions(+)
+ kernel/cgroup.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index b21881e..9c300ad 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -156,6 +156,8 @@ enum {
- 	 * specified at mount time and thus is implemented here.
- 	 */
- 	CGRP_CPUSET_CLONE_CHILDREN,
-+	/* see the comment above CGRP_ROOT_SANE_BEHAVIOR for details */
-+	CGRP_SANE_BEHAVIOR,
- };
- 
- struct cgroup_name {
-@@ -243,6 +245,37 @@ struct cgroup {
- 
- /* cgroupfs_root->flags */
- enum {
-+	/*
-+	 * Unfortunately, cgroup core and various controllers are riddled
-+	 * with idiosyncrasies and pointless options.  The following flag,
-+	 * when set, will force sane behavior - some options are forced on,
-+	 * others are disallowed, and some controllers will change their
-+	 * hierarchical or other behaviors.
-+	 *
-+	 * The set of behaviors affected by this flag are still being
-+	 * determined and developed and the mount option for this flag is
-+	 * prefixed with __DEVEL__.  The prefix will be dropped once we
-+	 * reach the point where all behaviors are compatible with the
-+	 * planned unified hierarchy, which will automatically turn on this
-+	 * flag.
-+	 *
-+	 * The followings are the behaviors currently affected this flag.
-+	 *
-+	 * - Mount options "noprefix" and "clone_children" are disallowed.
-+	 *   Also, cgroupfs file cgroup.clone_children is not created.
-+	 *
-+	 * - When mounting an existing superblock, mount options should
-+	 *   match.
-+	 *
-+	 * - Remount is disallowed.
-+	 *
-+	 * The followings are planned changes.
-+	 *
-+	 * - release_agent will be disallowed once replacement notification
-+	 *   mechanism is implemented.
-+	 */
-+	CGRP_ROOT_SANE_BEHAVIOR	= (1 << 0),
-+
- 	CGRP_ROOT_NOPREFIX	= (1 << 1), /* mounted subsystems have no named prefix */
- 	CGRP_ROOT_XATTR		= (1 << 2), /* supports extended attributes */
- };
-@@ -360,6 +393,7 @@ struct cgroup_map_cb {
- /* cftype->flags */
- #define CFTYPE_ONLY_ON_ROOT	(1U << 0)	/* only create on root cg */
- #define CFTYPE_NOT_ON_ROOT	(1U << 1)	/* don't create on root cg */
-+#define CFTYPE_INSANE		(1U << 2)	/* don't create if sane_behavior */
- 
- #define MAX_CFTYPE_NAME		64
- 
-@@ -486,6 +520,15 @@ struct cgroup_scanner {
- 	void *data;
- };
- 
-+/*
-+ * See the comment above CGRP_ROOT_SANE_BEHAVIOR for details.  This
-+ * function can be called as long as @cgrp is accessible.
-+ */
-+static inline bool cgroup_sane_behavior(const struct cgroup *cgrp)
-+{
-+	return cgrp->root->flags & CGRP_ROOT_SANE_BEHAVIOR;
-+}
-+
- /* Caller should hold rcu_read_lock() */
- static inline const char *cgroup_name(const struct cgroup *cgrp)
- {
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 8848070..e229800 100644
+index 678a22c..a372eaa 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1080,6 +1080,8 @@ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
+@@ -296,10 +296,10 @@ bool cgroup_is_descendant(struct cgroup *cgrp, struct cgroup *ancestor)
+ }
+ EXPORT_SYMBOL_GPL(cgroup_is_descendant);
+ 
+-/* bits in struct cgroupfs_root flags field */
++/* cgroupfs_root->flags */
+ enum {
+-	ROOT_NOPREFIX,	/* mounted subsystems have no named prefix */
+-	ROOT_XATTR,	/* supports extended attributes */
++	CGRP_ROOT_NOPREFIX	= (1 << 1), /* mounted subsystems have no named prefix */
++	CGRP_ROOT_XATTR		= (1 << 2), /* supports extended attributes */
+ };
+ 
+ static int cgroup_is_releasable(const struct cgroup *cgrp)
+@@ -1137,9 +1137,9 @@ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
  	mutex_lock(&cgroup_root_mutex);
  	for_each_subsys(root, ss)
  		seq_printf(seq, ",%s", ss->name);
-+	if (root->flags & CGRP_ROOT_SANE_BEHAVIOR)
-+		seq_puts(seq, ",sane_behavior");
- 	if (root->flags & CGRP_ROOT_NOPREFIX)
+-	if (test_bit(ROOT_NOPREFIX, &root->flags))
++	if (root->flags & CGRP_ROOT_NOPREFIX)
  		seq_puts(seq, ",noprefix");
- 	if (root->flags & CGRP_ROOT_XATTR)
-@@ -1144,6 +1146,10 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 			all_ss = true;
+-	if (test_bit(ROOT_XATTR, &root->flags))
++	if (root->flags & CGRP_ROOT_XATTR)
+ 		seq_puts(seq, ",xattr");
+ 	if (strlen(root->release_agent_path))
+ 		seq_printf(seq, ",release_agent=%s", root->release_agent_path);
+@@ -1202,7 +1202,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
  			continue;
  		}
-+		if (!strcmp(token, "__DEVEL__sane_behavior")) {
-+			opts->flags |= CGRP_ROOT_SANE_BEHAVIOR;
-+			continue;
-+		}
  		if (!strcmp(token, "noprefix")) {
- 			opts->flags |= CGRP_ROOT_NOPREFIX;
+-			set_bit(ROOT_NOPREFIX, &opts->flags);
++			opts->flags |= CGRP_ROOT_NOPREFIX;
  			continue;
-@@ -1231,6 +1237,20 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 
- 	/* Consistency checks */
- 
-+	if (opts->flags & CGRP_ROOT_SANE_BEHAVIOR) {
-+		pr_warning("cgroup: sane_behavior: this is still under development and its behaviors will change, proceed at your own risk\n");
-+
-+		if (opts->flags & CGRP_ROOT_NOPREFIX) {
-+			pr_err("cgroup: sane_behavior: noprefix is not allowed\n");
-+			return -EINVAL;
-+		}
-+
-+		if (opts->cpuset_clone_children) {
-+			pr_err("cgroup: sane_behavior: clone_children is not allowed\n");
-+			return -EINVAL;
-+		}
-+	}
-+
- 	/*
- 	 * Option noprefix was introduced just for backward compatibility
+ 		}
+ 		if (!strcmp(token, "clone_children")) {
+@@ -1210,7 +1210,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+ 			continue;
+ 		}
+ 		if (!strcmp(token, "xattr")) {
+-			set_bit(ROOT_XATTR, &opts->flags);
++			opts->flags |= CGRP_ROOT_XATTR;
+ 			continue;
+ 		}
+ 		if (!strncmp(token, "release_agent=", 14)) {
+@@ -1293,8 +1293,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
  	 * with the old cpuset, so we allow noprefix only if mounting just
-@@ -1307,6 +1327,11 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
- 	struct cgroup_sb_opts opts;
- 	unsigned long added_mask, removed_mask;
+ 	 * the cpuset subsystem.
+ 	 */
+-	if (test_bit(ROOT_NOPREFIX, &opts->flags) &&
+-	    (opts->subsys_mask & mask))
++	if ((opts->flags & CGRP_ROOT_NOPREFIX) && (opts->subsys_mask & mask))
+ 		return -EINVAL;
  
-+	if (root->flags & CGRP_ROOT_SANE_BEHAVIOR) {
-+		pr_err("cgroup: sane_behavior: remount is not allowed\n");
-+		return -EINVAL;
-+	}
-+
- 	mutex_lock(&cgrp->dentry->d_inode->i_mutex);
- 	mutex_lock(&cgroup_mutex);
- 	mutex_lock(&cgroup_root_mutex);
-@@ -1657,6 +1682,14 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 		 * any) is not needed
- 		 */
- 		cgroup_drop_root(opts.new_root);
-+
-+		if (((root->flags | opts.flags) & CGRP_ROOT_SANE_BEHAVIOR) &&
-+		    root->flags != opts.flags) {
-+			pr_err("cgroup: sane_behavior: new mount options should match the existing superblock\n");
-+			ret = -EINVAL;
-+			goto drop_new_super;
-+		}
-+
- 		/* no subsys rebinding, so refcounts don't change */
- 		drop_parsed_module_refcounts(opts.subsys_mask);
- 	}
-@@ -2197,6 +2230,13 @@ static int cgroup_release_agent_show(struct cgroup *cgrp, struct cftype *cft,
- 	return 0;
+ 
+@@ -2523,7 +2522,7 @@ static struct simple_xattrs *__d_xattrs(struct dentry *dentry)
+ static inline int xattr_enabled(struct dentry *dentry)
+ {
+ 	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
+-	return test_bit(ROOT_XATTR, &root->flags);
++	return root->flags & CGRP_ROOT_XATTR;
  }
  
-+static int cgroup_sane_behavior_show(struct cgroup *cgrp, struct cftype *cft,
-+				     struct seq_file *seq)
-+{
-+	seq_printf(seq, "%d\n", cgroup_sane_behavior(cgrp));
-+	return 0;
-+}
-+
- /* A buffer size big enough for numbers or short strings */
- #define CGROUP_LOCAL_BUFFER_SIZE 64
+ static bool is_valid_xattr(const char *name)
+@@ -2695,7 +2694,7 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
  
-@@ -2678,6 +2718,8 @@ static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+ 	simple_xattrs_init(&cft->xattrs);
  
- 	for (cft = cfts; cft->name[0] != '\0'; cft++) {
- 		/* does cft->flags tell us to skip this file on @cgrp? */
-+		if ((cft->flags & CFTYPE_INSANE) && cgroup_sane_behavior(cgrp))
-+			continue;
- 		if ((cft->flags & CFTYPE_NOT_ON_ROOT) && !cgrp->parent)
- 			continue;
- 		if ((cft->flags & CFTYPE_ONLY_ON_ROOT) && cgrp->parent)
-@@ -3915,10 +3957,17 @@ static struct cftype files[] = {
- 	},
- 	{
- 		.name = "cgroup.clone_children",
-+		.flags = CFTYPE_INSANE,
- 		.read_u64 = cgroup_clone_children_read,
- 		.write_u64 = cgroup_clone_children_write,
- 	},
- 	{
-+		.name = "cgroup.sane_behavior",
-+		.flags = CFTYPE_ONLY_ON_ROOT,
-+		.read_seq_string = cgroup_sane_behavior_show,
-+		.mode = S_IRUGO,
-+	},
-+	{
- 		.name = "release_agent",
- 		.flags = CFTYPE_ONLY_ON_ROOT,
- 		.read_seq_string = cgroup_release_agent_show,
+-	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
++	if (subsys && !(cgrp->root->flags & CGRP_ROOT_NOPREFIX)) {
+ 		strcpy(name, subsys->name);
+ 		strcat(name, ".");
+ 	}
 -- 
 1.8.1.4
 
