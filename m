@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab3DLA5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 20:57:31 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37241 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab3DLA51 (ORCPT
+	id S1753608Ab3DLA6f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 20:58:35 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:35877 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855Ab3DLA5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 20:57:27 -0400
+	Thu, 11 Apr 2013 20:57:30 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -14,89 +14,106 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
-Subject: [PATCH v4 07/22] x86, ACPI: Store override acpi tables phys addr in cpio files info array
-Date: Thu, 11 Apr 2013 17:55:53 -0700
-Message-Id: <1365728168-32067-8-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 05/22] x86, ACPI: Increase override tables number limit
+Date: Thu, 11 Apr 2013 17:55:51 -0700
+Message-Id: <1365728168-32067-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
 References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In 32bit we will find table with phys address during 32bit flat mode
-in head_32.S, because at that time we don't need set page table to
-access initrd.
+Current acpi tables in initrd is limited to 10, that is too small.
+64 should be good enough as we have 35 sigs and could have several
+SSDT.
 
-For copying we could use early_ioremap() with phys directly before mem mapping
-is set.
+Two problems in current code prevent us from increasing limit:
+1. that cpio file info array is put in stack, as every element is 32
+   bytes, could run out of stack if we have that array size to 64.
+   We can move it out from stack, and make it as global and put it in
+   __initdata section.
+2. early_ioremap only can remap 256k one time. Current code is mapping
+   10 tables one time. If we increase that limit, whole size could be
+   more than 256k, early_ioremap will fail with that.
+   We can map table one by one during copying, instead of mapping
+   all them one time.
 
-To keep 32bit and 64bit consistent, use phys_addr for all.
+-v2: According to tj, split it out to separated patch, also
+     rename array name to acpi_initrd_files.
+-v3: Add some comments about mapping table one by one during copying
+     per tj.
 
--v2: introduce file_pos to save phys address instead of abusing cpio_data
-	that tj is not happy with.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Yinghai <yinghai@kernel.org>
 Cc: Rafael J. Wysocki <rjw@sisk.pl>
 Cc: linux-acpi@vger.kernel.org
+Acked-by: Tejun Heo <tj@kernel.org>
 Tested-by: Thomas Renninger <trenn@suse.de>
 ---
- drivers/acpi/osl.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ drivers/acpi/osl.c | 26 +++++++++++++++-----------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-index 21714fb..ee5c531 100644
+index c08cdb6..a5a9346 100644
 --- a/drivers/acpi/osl.c
 +++ b/drivers/acpi/osl.c
-@@ -570,7 +570,11 @@ static const char * const table_sigs[] = {
+@@ -569,8 +569,8 @@ static const char * const table_sigs[] = {
+ 
  #define ACPI_HEADER_SIZE sizeof(struct acpi_table_header)
  
- #define ACPI_OVERRIDE_TABLES 64
--static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
-+struct file_pos {
-+	phys_addr_t data;
-+	phys_addr_t size;
-+};
-+static struct file_pos __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
+-/* Must not increase 10 or needs code modification below */
+-#define ACPI_OVERRIDE_TABLES 10
++#define ACPI_OVERRIDE_TABLES 64
++static struct cpio_data __initdata acpi_initrd_files[ACPI_OVERRIDE_TABLES];
  
- void __init acpi_initrd_override_find(void *data, size_t size)
+ void __init acpi_initrd_override(void *data, size_t size)
  {
-@@ -615,7 +619,7 @@ void __init acpi_initrd_override_find(void *data, size_t size)
+@@ -579,7 +579,6 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	struct acpi_table_header *table;
+ 	char cpio_path[32] = "kernel/firmware/acpi/";
+ 	struct cpio_data file;
+-	struct cpio_data early_initrd_files[ACPI_OVERRIDE_TABLES];
+ 	char *p;
+ 
+ 	if (data == NULL || size == 0)
+@@ -617,8 +616,8 @@ void __init acpi_initrd_override(void *data, size_t size)
  			table->signature, cpio_path, file.name, table->length);
  
  		all_tables_size += table->length;
--		acpi_initrd_files[table_nr].data = file.data;
-+		acpi_initrd_files[table_nr].data = __pa_nodebug(file.data);
- 		acpi_initrd_files[table_nr].size = file.size;
+-		early_initrd_files[table_nr].data = file.data;
+-		early_initrd_files[table_nr].size = file.size;
++		acpi_initrd_files[table_nr].data = file.data;
++		acpi_initrd_files[table_nr].size = file.size;
  		table_nr++;
  	}
-@@ -624,7 +628,7 @@ void __init acpi_initrd_override_find(void *data, size_t size)
- void __init acpi_initrd_override_copy(void)
- {
- 	int no, total_offset = 0;
--	char *p;
-+	char *p, *q;
+ 	if (table_nr == 0)
+@@ -648,14 +647,19 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	memblock_reserve(acpi_tables_addr, acpi_tables_addr + all_tables_size);
+ 	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
  
- 	if (!all_tables_size)
- 		return;
-@@ -659,12 +663,15 @@ void __init acpi_initrd_override_copy(void)
- 	 * one by one during copying.
- 	 */
- 	for (no = 0; no < ACPI_OVERRIDE_TABLES; no++) {
-+		phys_addr_t addr = acpi_initrd_files[no].data;
- 		phys_addr_t size = acpi_initrd_files[no].size;
- 
- 		if (!size)
- 			break;
-+		q = early_ioremap(addr, size);
- 		p = early_ioremap(acpi_tables_addr + total_offset, size);
--		memcpy(p, acpi_initrd_files[no].data, size);
-+		memcpy(p, q, size);
-+		early_iounmap(q, size);
- 		early_iounmap(p, size);
- 		total_offset += size;
+-	p = early_ioremap(acpi_tables_addr, all_tables_size);
+-
++	/*
++	 * early_ioremap only can remap 256k one time. If we map all
++	 * tables one time, we will hit the limit. Need to map table
++	 * one by one during copying.
++	 */
+ 	for (no = 0; no < table_nr; no++) {
+-		memcpy(p + total_offset, early_initrd_files[no].data,
+-		       early_initrd_files[no].size);
+-		total_offset += early_initrd_files[no].size;
++		phys_addr_t size = acpi_initrd_files[no].size;
++
++		p = early_ioremap(acpi_tables_addr + total_offset, size);
++		memcpy(p, acpi_initrd_files[no].data, size);
++		early_iounmap(p, size);
++		total_offset += size;
  	}
+-	early_iounmap(p, all_tables_size);
+ }
+ #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
+ 
 -- 
 1.8.1.4
 
