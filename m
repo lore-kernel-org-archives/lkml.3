@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757981Ab3DLWrq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:47:46 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47878 "EHLO
+	id S1756995Ab3DLWqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:46:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47569 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757803Ab3DLWrp (ORCPT
+	with ESMTP id S1756636Ab3DLWqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:47:45 -0400
+	Fri, 12 Apr 2013 18:46:34 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 04/29] PCI: Add pci_dev_resource_idx() helper
-Date: Fri, 12 Apr 2013 15:44:18 -0700
-Message-Id: <1365806683-26717-5-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 02/29] PCI: Add pci_dev_resource_n()
+Date: Fri, 12 Apr 2013 15:44:16 -0700
+Message-Id: <1365806683-26717-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use resource pointer to get index in pci resources array/list.
+Now pci device resource iteration is done via "for (i=0...)" open code.
+That make code hard to read esp when only bridge or sriov resources
+are involved.
 
--v2: export symbol for acpiphp compiling error, found by
-       Steven Newbury <steve@snewbury.org.uk>
+We want to replace those open code with for_each_pci_resource().
+Also want to add addon_resource handling, and need to make addon resource
+to be treated as normal PCI resources during iteration.
+
+Add pci_device_resource_n() instead of using dev->resources[n].
+Use it with for_each_pci_resource macro and addon_resource support.
+
+-v2: Add EXPORT_SYMBOL to find building error found by Gary Hade
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
  drivers/pci/probe.c | 9 +++++++++
- include/linux/pci.h | 1 +
- 2 files changed, 10 insertions(+)
+ include/linux/pci.h | 2 ++
+ 2 files changed, 11 insertions(+)
 
 diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 9cb3eb3..1df75f7 100644
+index b494066..9cb3eb3 100644
 --- a/drivers/pci/probe.c
 +++ b/drivers/pci/probe.c
-@@ -114,6 +114,15 @@ struct resource *pci_dev_resource_n(struct pci_dev *dev, int n)
+@@ -105,6 +105,15 @@ static int __init pcibus_class_init(void)
  }
- EXPORT_SYMBOL(pci_dev_resource_n);
+ postcore_initcall(pcibus_class_init);
  
-+int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
++struct resource *pci_dev_resource_n(struct pci_dev *dev, int n)
 +{
-+	if (res >= dev->resource &&
-+	    res <= dev->resource + (PCI_NUM_RESOURCES - 1))
-+		return res - dev->resource;
++	if (n >= 0 && n < PCI_NUM_RESOURCES)
++		return &dev->resource[n];
 +
-+	return -1;
++	return NULL;
 +}
++EXPORT_SYMBOL(pci_dev_resource_n);
 +
  static u64 pci_size(u64 base, u64 maxbase, u64 mask)
  {
  	u64 size = mask & maxbase;	/* Find the significant bits */
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 6d450d2..f4da78d 100644
+index bcd9769..ffff013 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -354,6 +354,7 @@ struct pci_dev {
+@@ -353,6 +353,8 @@ struct pci_dev {
+ 	size_t romlen; /* Length of ROM if it's not from the BAR */
  };
  
- struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
-+int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
- 
++struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
++
  static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
  {
+ #ifdef CONFIG_PCI_IOV
 -- 
 1.8.1.4
 
