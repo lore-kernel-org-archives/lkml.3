@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab3DLRGT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 13:06:19 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16774 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab3DLRGR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 13:06:17 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 12 Apr 2013 10:04:47 -0700
-From: Jay Agarwal <jagarwal@nvidia.com>
-To: "'Stephen Warren'" <swarren@wwwdotorg.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Krishna Thota <kthota@nvidia.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        Juha Tukkinen <jtukkinen@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>
-Date: Fri, 12 Apr 2013 22:36:12 +0530
-Subject: RE: [PATCH 1/3] ARM: tegra: pcie: Add tegra3 support
-Thread-Topic: [PATCH 1/3] ARM: tegra: pcie: Add tegra3 support
-Thread-Index: Ac43n3LT50gqXMHXSfS49lWSw/L88gAAGveQ
-Message-ID: <C79B248886DD134989C8FF6B096A91AB91B36FB302@BGMAIL01.nvidia.com>
-References: <1365435688-4179-1-git-send-email-jagarwal@nvidia.com>
- <51630ABB.1020200@wwwdotorg.org>
- <C79B248886DD134989C8FF6B096A91AB91B36FB300@BGMAIL01.nvidia.com>
- <51683E00.4020506@wwwdotorg.org>
-In-Reply-To: <51683E00.4020506@wwwdotorg.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1755148Ab3DLRMs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 13:12:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25453 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753831Ab3DLRMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 13:12:47 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: eparis@redhat.com
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] audit: fix build break when AUDIT_DEBUG == 2
+Date: Fri, 12 Apr 2013 13:12:46 -0400
+Message-Id: <1365786766-7029-1-git-send-email-jlayton@redhat.com>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 04/12/2013 10:43 AM, Jay Agarwal wrote:
-> >> On 04/08/2013 09:41 AM, Jay Agarwal wrote:
-> >>> Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
-> >>>
-> >>> - Enable pcie root port 2 for cardhu
-> >>> - Make private data structure for each SOC
-> >>> - Add required tegra3 clocks and regulators
-> >>> - Add tegra3 specific code in enable controller
-> >>> - Modify clock tree to get clocks based on device
-> >>> - Based on git://gitorious.org/thierryreding/linux.git
-> >>
-> >> A couple more points on this patch:
-> >>
-> >> * You didn't mention that this series is based on Thierry's
-> >> work-in-progress tree, and not something immediately destined for
-> >> upstream. As such, only Thierry is expected to actually apply any of these
-> patches.
-> >>
-> > [>] Stephen, I have mentioned it in comment description as Based on
-> git://gitorious.org/thierryreding/linux.git, is this not enough?
-> 
-> Well, first off, there are many branches there, and secondly the branch that
-> a series is based on doesn't necessarily imply much about what you expect
-> people to do with it.
-> 
-I am not clear, What should I mention then?
+Looks like this one has been around since 5195d8e21:
+
+    kernel/auditsc.c: In function ‘audit_free_names’:
+    kernel/auditsc.c:998: error: ‘i’ undeclared (first use in this function)
+
+...and this warning:
+
+    kernel/auditsc.c: In function ‘audit_putname’:
+    kernel/auditsc.c:2045: warning: ‘i’ may be used uninitialized in this function
+
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ kernel/auditsc.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index a371f85..4083b69 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -987,6 +987,8 @@ static inline void audit_free_names(struct audit_context *context)
+ 
+ #if AUDIT_DEBUG == 2
+ 	if (context->put_count + context->ino_count != context->name_count) {
++		int i = 0;
++
+ 		printk(KERN_ERR "%s:%d(:%d): major=%d in_syscall=%d"
+ 		       " name_count=%d put_count=%d"
+ 		       " ino_count=%d [NOT freeing]\n",
+@@ -995,7 +997,7 @@ static inline void audit_free_names(struct audit_context *context)
+ 		       context->name_count, context->put_count,
+ 		       context->ino_count);
+ 		list_for_each_entry(n, &context->names_list, list) {
+-			printk(KERN_ERR "names[%d] = %p = %s\n", i,
++			printk(KERN_ERR "names[%d] = %p = %s\n", i++,
+ 			       n->name, n->name->name ?: "(null)");
+ 		}
+ 		dump_stack();
+@@ -2040,10 +2042,10 @@ void audit_putname(struct filename *name)
+ 		       __FILE__, __LINE__, context->serial, name);
+ 		if (context->name_count) {
+ 			struct audit_names *n;
+-			int i;
++			int i = 0;
+ 
+ 			list_for_each_entry(n, &context->names_list, list)
+-				printk(KERN_ERR "name[%d] = %p = %s\n", i,
++				printk(KERN_ERR "name[%d] = %p = %s\n", i++,
+ 				       n->name, n->name->name ?: "(null)");
+ 			}
+ #endif
+-- 
+1.7.1
 
