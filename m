@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab3DLMNk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 08:13:40 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35232 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752878Ab3DLMNi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 08:13:38 -0400
-Date: Fri, 12 Apr 2013 13:13:36 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: [PATCH] ASoC: samsung: fix neo1973-wm8753 compilation
-Message-ID: <20130412121320.GX9243@opensource.wolfsonmicro.com>
-References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
- <201304111908.42532.arnd@arndb.de>
- <20130411171938.GS9243@opensource.wolfsonmicro.com>
- <201304112102.43896.heiko@sntech.de>
+	id S1754556Ab3DLMTZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 08:19:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53374 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753139Ab3DLMTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 08:19:23 -0400
+Message-ID: <5167FBC1.2090609@redhat.com>
+Date: Fri, 12 Apr 2013 20:19:13 +0800
+From: Lingzhu Xiang <lxiang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zAIN9dnKNiFxaW1E"
-Content-Disposition: inline
-In-Reply-To: <201304112102.43896.heiko@sntech.de>
-X-Cookie: Your love life will be... interesting.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V4 1/3] efi: Determine how much space is used by boot
+ services-only variables
+References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com> <1365615967-27346-1-git-send-email-matthew.garrett@nebula.com>
+In-Reply-To: <1365615967-27346-1-git-send-email-matthew.garrett@nebula.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/11/2013 01:46 AM, Matthew Garrett wrote:
+> EFI variables can be flagged as being accessible only within boot services.
+> This makes it awkward for us to figure out how much space they use at
+> runtime. In theory we could figure this out by simply comparing the results
+> from QueryVariableInfo() to the space used by all of our variables, but
+> that fails if the platform doesn't garbage collect on every boot. Thankfully,
+> calling QueryVariableInfo() while still inside boot services gives a more
+> reliable answer. This patch passes that information from the EFI boot stub
+> up to the efivars code, letting us calculate a reasonably accurate value.
+>
+> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
 
---zAIN9dnKNiFxaW1E
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I just tried this 3.9-rc6 with this patchset with pstore fulling up 
+space and various attempts to manually fulling up space. So far I've 
+been able to delete variables and continue creating variables.
 
-On Thu, Apr 11, 2013 at 09:02:43PM +0200, Heiko St=FCbner wrote:
-> Commit b2ca78717cea (ARM: S3C24XX: make gta02.h local) already replaced
-> the GTA02_GPIO_* constants in neo1973-wm8753.c but forgot to remove the
-> inclusion of mach/gta02.h before moving the file out of mach/.
+Since QueryVariableInfo is no longer trusted and the accounting is done 
+by the kernel, I'm somewhat concerned that variables can be repeatedly 
+created and deleted until nvram is full of garbage to collect and the 
+firmware hits EFI_OUT_OF_RESOURCES. Could this be any kind of problem?
 
-Applied, thanks.
 
---zAIN9dnKNiFxaW1E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRZ/poAAoJELSic+t+oim9e0AP/R3Lu5s4gScu+xJ0G8nvLVAl
-YLNjq7WzVqz5m0gOzj9gYxCTxEnixXm2RvDyjkhif1QbTn68TGtWaxaiADOzwtEu
-c8BVVUGs/77WZhIBZj0rYLeQCO0W+46LmImbQXf5buToGxJzF/wEvdWiYR9HYOjU
-8assej7avGF4oDD2CjmmVxH+v35ygZmvKTb8nvx2aBiAHVuELnHfN0sM8lOYDQY6
-jynA+FkNjWUpK0u9agcblyflFHxOEcNpHdgEJk1ANV88FFYyLTjy3VR1hECE6Ha7
-jY7I6S2FAhs47a/C4nxmSGCU5Wjpf4Ucrcsygti5Dc01zui5EUTQZjp0sUkG1kcp
-OCBqwbV4K39ej0s5rDv0u5LZQEC+HOek1vg5SIwMuLP6wu3ss+W9H7mD5o/BVv2k
-7XNEe/myhvIsnNGjxSql1DLlUEDNQjXG6fPezbqgoNkRtWGg5D3FedGuRfmpGQnC
-pOuMg2T3bXwXmUrzKVov09fV/sVOR3v5Nxe46ej5YKr0MMDCnYjIq0H4dIz5gg2I
-4fCMJMPZzYHgclJN9osnWTqaR6hviGC402mLaP/3rsYVc8DIrSd53thnap/qhPFp
-lKxfQAXJIsCm0c2zBV3rUeKqaLwm4Ysj9OKhkiUP0Wp5CHwswwGQ12oqy66Dd8bh
-cLOtL0lrcYb3ccHLEDMJ
-=bWTJ
------END PGP SIGNATURE-----
-
---zAIN9dnKNiFxaW1E--
+Lingzhu Xiang
