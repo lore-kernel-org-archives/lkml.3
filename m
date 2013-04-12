@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab3DLBBz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 21:01:55 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:37235 "EHLO
+	id S1753733Ab3DLBBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 21:01:54 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37237 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab3DLA50 (ORCPT
+	with ESMTP id S1752513Ab3DLA50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 20:57:26 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -12,11 +12,10 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH v4 02/22] x86, microcode: Use common get_ramdisk_image()
-Date: Thu, 11 Apr 2013 17:55:48 -0700
-Message-Id: <1365728168-32067-3-git-send-email-yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v4 01/22] x86: Change get_ramdisk_image() to global
+Date: Thu, 11 Apr 2013 17:55:47 -0700
+Message-Id: <1365728168-32067-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
 References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
@@ -25,46 +24,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use common get_ramdisk_image() to get ramdisk start phys address.
+Need to use get_ramdisk_image() with early microcode_updating in other file.
+Change it to global.
 
-We need this to get correct ramdisk adress for 64bit bzImage that
-initrd can be loaded above 4G by kexec-tools.
-
--v2: fix one typo that is found by Tang Chen
+Also make it to take boot_params pointer, as head_32.S need to access it via
+phys address during 32bit flat mode.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
 Acked-by: Tejun Heo <tj@kernel.org>
 Tested-by: Thomas Renninger <trenn@suse.de>
 ---
- arch/x86/kernel/microcode_intel_early.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/setup.h |  3 +++
+ arch/x86/kernel/setup.c      | 28 ++++++++++++++--------------
+ 2 files changed, 17 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/kernel/microcode_intel_early.c b/arch/x86/kernel/microcode_intel_early.c
-index d893e8e..6a0054a 100644
---- a/arch/x86/kernel/microcode_intel_early.c
-+++ b/arch/x86/kernel/microcode_intel_early.c
-@@ -742,8 +742,8 @@ load_ucode_intel_bsp(void)
- 	struct boot_params *boot_params_p;
+diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+index b7bf350..4f71d48 100644
+--- a/arch/x86/include/asm/setup.h
++++ b/arch/x86/include/asm/setup.h
+@@ -106,6 +106,9 @@ void *extend_brk(size_t size, size_t align);
+ 	RESERVE_BRK(name, sizeof(type) * entries)
  
- 	boot_params_p = (struct boot_params *)__pa_nodebug(&boot_params);
--	ramdisk_image = boot_params_p->hdr.ramdisk_image;
--	ramdisk_size  = boot_params_p->hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image(boot_params_p);
-+	ramdisk_size  = get_ramdisk_size(boot_params_p);
- 	initrd_start_early = ramdisk_image;
- 	initrd_end_early = initrd_start_early + ramdisk_size;
+ extern void probe_roms(void);
++u64 get_ramdisk_image(struct boot_params *bp);
++u64 get_ramdisk_size(struct boot_params *bp);
++
+ #ifdef __i386__
  
-@@ -752,8 +752,8 @@ load_ucode_intel_bsp(void)
- 		(unsigned long *)__pa_nodebug(&mc_saved_in_initrd),
- 		initrd_start_early, initrd_end_early, &uci);
- #else
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
+ void __init i386_start_kernel(void);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 90d8cc9..1629577 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -300,19 +300,19 @@ static void __init reserve_brk(void)
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 
+-static u64 __init get_ramdisk_image(void)
++u64 __init get_ramdisk_image(struct boot_params *bp)
+ {
+-	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
++	u64 ramdisk_image = bp->hdr.ramdisk_image;
+ 
+-	ramdisk_image |= (u64)boot_params.ext_ramdisk_image << 32;
++	ramdisk_image |= (u64)bp->ext_ramdisk_image << 32;
+ 
+ 	return ramdisk_image;
+ }
+-static u64 __init get_ramdisk_size(void)
++u64 __init get_ramdisk_size(struct boot_params *bp)
+ {
+-	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_size = bp->hdr.ramdisk_size;
+ 
+-	ramdisk_size |= (u64)boot_params.ext_ramdisk_size << 32;
++	ramdisk_size |= (u64)bp->ext_ramdisk_size << 32;
+ 
+ 	return ramdisk_size;
+ }
+@@ -321,8 +321,8 @@ static u64 __init get_ramdisk_size(void)
+ static void __init relocate_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
+ 	u64 ramdisk_here;
+ 	unsigned long slop, clen, mapaddr;
+@@ -361,8 +361,8 @@ static void __init relocate_initrd(void)
+ 		ramdisk_size  -= clen;
+ 	}
+ 
+-	ramdisk_image = get_ramdisk_image();
+-	ramdisk_size  = get_ramdisk_size();
 +	ramdisk_image = get_ramdisk_image(&boot_params);
 +	ramdisk_size  = get_ramdisk_size(&boot_params);
- 	initrd_start_early = ramdisk_image + PAGE_OFFSET;
- 	initrd_end_early = initrd_start_early + ramdisk_size;
+ 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
+ 		" [mem %#010llx-%#010llx]\n",
+ 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
+@@ -372,8 +372,8 @@ static void __init relocate_initrd(void)
+ static void __init early_reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 
+ 	if (!boot_params.hdr.type_of_loader ||
+@@ -385,8 +385,8 @@ static void __init early_reserve_initrd(void)
+ static void __init reserve_initrd(void)
+ {
+ 	/* Assume only end is not page aligned */
+-	u64 ramdisk_image = get_ramdisk_image();
+-	u64 ramdisk_size  = get_ramdisk_size();
++	u64 ramdisk_image = get_ramdisk_image(&boot_params);
++	u64 ramdisk_size  = get_ramdisk_size(&boot_params);
+ 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+ 	u64 mapped_size;
  
 -- 
 1.8.1.4
