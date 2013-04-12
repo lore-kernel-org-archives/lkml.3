@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab3DLIT2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 04:19:28 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:43197 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752397Ab3DLITZ (ORCPT
+	id S1753988Ab3DLIXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 04:23:41 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:56834 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753500Ab3DLIXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 04:19:25 -0400
-X-Spam-Score: -100.8
-Message-ID: <5167C36A.5000700@asianux.com>
-Date: Fri, 12 Apr 2013 16:18:50 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 12 Apr 2013 04:23:37 -0400
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: audit_watch: resource management: better reset
- to NULL.
-References: <516790ED.6060202@asianux.com> <516792A6.9050904@asianux.com>
-In-Reply-To: <516792A6.9050904@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+icZUW2LQmWMdaVjf5oE8y3zCq8Y2829WM9dwDKxA42N5tVDQ@mail.gmail.com>
+References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com>
+	<31778276.CDMUtaAAnc@vostro.rjw.lan>
+	<CA+icZUXXHb9vmcNuFmYha34SV7xch2S8OcgZ+cLVVnNebs5pNQ@mail.gmail.com>
+	<CAKohpok+9dRaENjBfnN9gZF3zvFU9v19xV_eFfcM3Pj6Cv=S2w@mail.gmail.com>
+	<CA+icZUWH5Ni9koj4V8Ws8jJ7smwmU7JuUWBFh=aiCqkrCpqB5A@mail.gmail.com>
+	<CAKohponzmLzPN8ua3p4TCt2waZCQCd+4Znh+tSQ4MBjcy+Ss6A@mail.gmail.com>
+	<CA+icZUW12caZHDfgCV6E-1T4ExBPmu5bBNSqCzDwjUeidfRUPA@mail.gmail.com>
+	<CA+icZUUEExm5Mktxoj6=UdzBe5HUzskktKWdHNOKaFXVHaySBg@mail.gmail.com>
+	<CA+icZUW2LQmWMdaVjf5oE8y3zCq8Y2829WM9dwDKxA42N5tVDQ@mail.gmail.com>
+Date: Fri, 12 Apr 2013 13:53:36 +0530
+Message-ID: <CAKohpom7Mn8aQZTUx-_fQF+9KWste0uYsZcaQ5rcM6ab45-0+g@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: sedat.dilek@gmail.com
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10 April 2013 11:44, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> I found this "[RFC PATCH] kbuild: Build linux-tools package with 'make
+> deb-pkg'" from February 2012.
+> Can't say what happened to it...
 
-  oh, sorry, this patch is incorrect, please skip it.
+Sedat,
 
+Sorry for being late. I am down with Fever and throat infection since few days.
+Still struggling with it..
 
-On 2013年04月12日 12:50, Chen Gang wrote:
-> 
->   better to set krule->watch = NULL.
->   maybe it is not a real issue, but can make code clearer,
->   so can help the readers to analyse another issues.
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  kernel/audit_watch.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/audit_watch.c b/kernel/audit_watch.c
-> index 22831c4..abd8fdb 100644
-> --- a/kernel/audit_watch.c
-> +++ b/kernel/audit_watch.c
-> @@ -456,6 +456,7 @@ void audit_remove_watch_rule(struct audit_krule *krule)
->  
->  	if (list_empty(&watch->rules)) {
->  		audit_remove_watch(watch);
-> +		krule->watch = NULL;
->  
->  		if (list_empty(&parent->watches)) {
->  			audit_get_parent(parent);
-> 
+There are few things i tried. Firstly the tag: next-20130326 is bad as there are
+some bad commits in cpufreq core in it.
 
+I then tried latest linux-next/master on my Thinkpad (model name	: Intel(R)
+Core(TM) i7-2640M CPU @ 2.80GHz) and couldn't boot it up. My ubuntu
+just hanged.
 
--- 
-Chen Gang
+Then i tried Rafael's linux-next branch
 
-Asianux Corporation
+079576f Merge branch 'pm-cpufreq-next' into linux-next
+
+And couldn't find any issues with it. I am easily able to remove/add cpus at
+runtime..
+
+Can you give this branch a try?
+
+--
+viresh
