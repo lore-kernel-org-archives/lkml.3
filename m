@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab3DLXuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:50:14 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:38330 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755505Ab3DLXsm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:48:42 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 07/12] rcu: Remove check_cpu_stall_preempt()
-Date: Fri, 12 Apr 2013 16:48:26 -0700
-Message-Id: <1365810511-24811-7-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1365810511-24811-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130412234810.GA23678@linux.vnet.ibm.com>
- <1365810511-24811-1-git-send-email-paulmck@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041223-2398-0000-0000-000013401369
+	id S1756271Ab3DLXub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 19:50:31 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:57538 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754808Ab3DLXu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 19:50:28 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        "Benenati, Chris J" <chris.j.benenati@intel.com>
+Subject: [PATCH] PCI / PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
+Date: Sat, 13 Apr 2013 01:58:17 +0200
+Message-ID: <48795235.crcTAaJqPb@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-With the removal of CONFIG_TINY_PREEMPT_RCU, check_cpu_stall_preempt()
-is now an empty function.  This commit therefore eliminates it by
-inlining it.
+Commit b51306c (PCI: Set device power state to PCI_D0 for device
+without native PM support) modified pci_platform_power_transition()
+by adding code causing dev->current_state for devices that don't
+support native PCI PM but are power-manageable by the platform to be
+changed to PCI_D0 regardless of the value returned by the preceding
+platform_pci_set_power_state().  In particular, that also is done
+if the platform_pci_set_power_state() has been successful, which
+causes the correct power state of the device set by
+pci_update_current_state() in that case to be overwritten by PCI_D0.
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Fix that mistake by making the fallback to PCI_D0 only happen if
+the platform_pci_set_power_state() has returned an error.
+
+Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: <stable@vger.kernel.org>
 ---
- kernel/rcutiny_plugin.h | 7 -------
- 1 file changed, 7 deletions(-)
+ drivers/pci/pci.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index 36fd83c..bac3a6e 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -82,8 +82,6 @@ static void check_cpu_stall(struct rcu_ctrlblk *rcp)
- 		rcp->jiffies_stall = jiffies + rcu_jiffies_till_stall_check();
- }
- 
--static void check_cpu_stall_preempt(void);
--
- #endif /* #ifdef CONFIG_RCU_TRACE */
- 
- static void reset_cpu_stall_ticks(struct rcu_ctrlblk *rcp)
-@@ -99,7 +97,6 @@ static void check_cpu_stalls(void)
- {
- 	RCU_TRACE(check_cpu_stall(&rcu_bh_ctrlblk));
- 	RCU_TRACE(check_cpu_stall(&rcu_sched_ctrlblk));
--	RCU_TRACE(check_cpu_stall_preempt());
- }
- 
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
-@@ -182,8 +179,4 @@ MODULE_AUTHOR("Paul E. McKenney");
- MODULE_DESCRIPTION("Read-Copy Update tracing for tiny implementation");
- MODULE_LICENSE("GPL");
- 
--static void check_cpu_stall_preempt(void)
--{
--}
--
- #endif /* #ifdef CONFIG_RCU_TRACE */
--- 
-1.8.1.5
+Index: linux-pm/drivers/pci/pci.c
+===================================================================
+--- linux-pm.orig/drivers/pci/pci.c
++++ linux-pm/drivers/pci/pci.c
+@@ -646,8 +646,7 @@ static int pci_platform_power_transition
+ 		error = platform_pci_set_power_state(dev, state);
+ 		if (!error)
+ 			pci_update_current_state(dev, state);
+-		/* Fall back to PCI_D0 if native PM is not supported */
+-		if (!dev->pm_cap)
++		else if (!dev->pm_cap) /* Fall back to PCI_D0 */
+ 			dev->current_state = PCI_D0;
+ 	} else {
+ 		error = -ENODEV;
 
