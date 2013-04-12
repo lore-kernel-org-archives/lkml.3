@@ -1,66 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab3DLO2z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 10:28:55 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22279 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab3DLO2y (ORCPT
+	id S1753077Ab3DLO3e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 10:29:34 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:40373 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752043Ab3DLO3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 10:28:54 -0400
-X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=tLUlnkoJZcZI9ocdGARlSQ==:17 a=c11ml42nfjYA:10 a=wom5GMh1gUkA:10 a=mDLtzay-EBQA:10 a=Rj1_iGo3bfgA:10 a=kj9zAlcOel0A:10 a=hBqU3vQJAAAA:8 a=aPza9ZebU9UA:10 a=40MIqcmNAAAA:8 a=DfNHnWVPAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=Keo2ReyYu9XSrpqQYO4A:9 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=-tENaG0q7zQA:10 a=lBRciGGoxdUA:10 a=tLUlnkoJZcZI9ocdGARlSQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 70.114.148.7
-Date: Fri, 12 Apr 2013 09:29:49 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "linux-kernel@vger.kernel.org >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: acct: kfree, also set related variable to NULL
- after kfree
-Message-ID: <20130412142949.GA21714@austin.hallyn.com>
-References: <51652E31.7090806@asianux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51652E31.7090806@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 12 Apr 2013 10:29:30 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Nicolas Pitre <nico@fluxnic.net>, Lior Amsalem <alior@marvell.com>,
+        Maen Suleiman <maen@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>, Ike Pan <ike.pan@canonical.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Leif Lindholm <leif.lindholm@arm.com>, Jon Masters <jcm@redhat.com>,
+        David Marlin <dmarlin@redhat.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v4 2/5] ARM: dts: mvebu: move all peripherals inside soc
+Date: Fri, 12 Apr 2013 16:29:07 +0200
+Message-Id: <1365776950-30094-3-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365776950-30094-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1365776950-30094-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Chen Gang (gang.chen@asianux.com):
-> 
->   after kfree acct, also set ns->bacct to NULL.
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+reorganize the .dts and .dtsi files so that all devices are under the
+soc { } node (currently some devices such as the interrupt controller,
+the L2 cache and a few others are outside).
 
-> ---
->  kernel/acct.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/acct.c b/kernel/acct.c
-> index 85389fe..91a23eb 100644
-> --- a/kernel/acct.c
-> +++ b/kernel/acct.c
-> @@ -332,6 +332,7 @@ void acct_exit_ns(struct pid_namespace *ns)
->  	spin_lock(&acct_lock);
->  	if (acct->file != NULL)
->  		acct_file_reopen(acct, NULL, NULL);
-> +	ns->bacct = NULL;
->  	spin_unlock(&acct_lock);
->  
->  	kfree(acct);
-> -- 
-> 1.7.7.6
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+---
+ arch/arm/boot/dts/armada-370-xp.dtsi |   26 +++++++++++++-------------
+ arch/arm/boot/dts/armada-370.dtsi    |   23 ++++++++++++-----------
+ arch/arm/boot/dts/armada-xp.dtsi     |   32 ++++++++++++++++----------------
+ 3 files changed, 41 insertions(+), 40 deletions(-)
+
+diff --git a/arch/arm/boot/dts/armada-370-xp.dtsi b/arch/arm/boot/dts/armada-370-xp.dtsi
+index 9693f79..972448c 100644
+--- a/arch/arm/boot/dts/armada-370-xp.dtsi
++++ b/arch/arm/boot/dts/armada-370-xp.dtsi
+@@ -28,19 +28,6 @@
+ 		};
+ 	};
+ 
+-	mpic: interrupt-controller@d0020000 {
+-	      compatible = "marvell,mpic";
+-	      #interrupt-cells = <1>;
+-	      #size-cells = <1>;
+-	      interrupt-controller;
+-	};
+-
+-	coherency-fabric@d0020200 {
+-		compatible = "marvell,coherency-fabric";
+-		reg = <0xd0020200 0xb0>,
+-		      <0xd0021810 0x1c>;
+-	};
+-
+ 	soc {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+@@ -48,6 +35,19 @@
+ 		interrupt-parent = <&mpic>;
+ 		ranges;
+ 
++		mpic: interrupt-controller@d0020000 {
++			compatible = "marvell,mpic";
++			#interrupt-cells = <1>;
++			#size-cells = <1>;
++			interrupt-controller;
++		};
++
++		coherency-fabric@d0020200 {
++			compatible = "marvell,coherency-fabric";
++			reg = <0xd0020200 0xb0>,
++			      <0xd0021810 0x1c>;
++		};
++
+ 		serial@d0012000 {
+ 				compatible = "snps,dw-apb-uart";
+ 				reg = <0xd0012000 0x100>;
+diff --git a/arch/arm/boot/dts/armada-370.dtsi b/arch/arm/boot/dts/armada-370.dtsi
+index 18f6eb4..209caeb 100644
+--- a/arch/arm/boot/dts/armada-370.dtsi
++++ b/arch/arm/boot/dts/armada-370.dtsi
+@@ -20,12 +20,6 @@
+ / {
+ 	model = "Marvell Armada 370 family SoC";
+ 	compatible = "marvell,armada370", "marvell,armada-370-xp";
+-	L2: l2-cache {
+-		compatible = "marvell,aurora-outer-cache";
+-		reg = <0xd0008000 0x1000>;
+-		cache-id-part = <0x100>;
+-		wt-override;
+-	};
+ 
+ 	aliases {
+ 		gpio0 = &gpio0;
+@@ -33,17 +27,24 @@
+ 		gpio2 = &gpio2;
+ 	};
+ 
+-	mpic: interrupt-controller@d0020000 {
+-	      reg = <0xd0020a00 0x1d0>,
+-		    <0xd0021870 0x58>;
+-	};
+-
+ 	soc {
++		mpic: interrupt-controller@d0020000 {
++			reg = <0xd0020a00 0x1d0>,
++			      <0xd0021870 0x58>;
++		};
++
+ 		system-controller@d0018200 {
+ 				compatible = "marvell,armada-370-xp-system-controller";
+ 				reg = <0xd0018200 0x100>;
+ 		};
+ 
++		L2: l2-cache {
++			compatible = "marvell,aurora-outer-cache";
++			reg = <0xd0008000 0x1000>;
++			cache-id-part = <0x100>;
++			wt-override;
++		};
++
+ 		pinctrl {
+ 			compatible = "marvell,mv88f6710-pinctrl";
+ 			reg = <0xd0018000 0x38>;
+diff --git a/arch/arm/boot/dts/armada-xp.dtsi b/arch/arm/boot/dts/armada-xp.dtsi
+index 29dfeb6..ef3d413 100644
+--- a/arch/arm/boot/dts/armada-xp.dtsi
++++ b/arch/arm/boot/dts/armada-xp.dtsi
+@@ -22,25 +22,25 @@
+ 	model = "Marvell Armada XP family SoC";
+ 	compatible = "marvell,armadaxp", "marvell,armada-370-xp";
+ 
+-	L2: l2-cache {
+-		compatible = "marvell,aurora-system-cache";
+-		reg = <0xd0008000 0x1000>;
+-		cache-id-part = <0x100>;
+-		wt-override;
+-	};
++	soc {
++		L2: l2-cache {
++			compatible = "marvell,aurora-system-cache";
++			reg = <0xd0008000 0x1000>;
++			cache-id-part = <0x100>;
++			wt-override;
++		};
+ 
+-	mpic: interrupt-controller@d0020000 {
+-	      reg = <0xd0020a00 0x2d0>,
+-		    <0xd0021070 0x58>;
+-	};
++		mpic: interrupt-controller@d0020000 {
++		      reg = <0xd0020a00 0x2d0>,
++			    <0xd0021070 0x58>;
++		};
+ 
+-	armada-370-xp-pmsu@d0022000 {
+-		compatible = "marvell,armada-370-xp-pmsu";
+-		reg = <0xd0022100 0x430>,
+-		      <0xd0020800 0x20>;
+-	};
++		armada-370-xp-pmsu@d0022000 {
++			compatible = "marvell,armada-370-xp-pmsu";
++			reg = <0xd0022100 0x430>,
++			      <0xd0020800 0x20>;
++		};
+ 
+-	soc {
+ 		serial@d0012200 {
+ 				compatible = "snps,dw-apb-uart";
+ 				reg = <0xd0012200 0x100>;
+-- 
+1.7.9.5
+
