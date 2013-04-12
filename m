@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab3DLFft (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 01:35:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52008 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836Ab3DLFft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 01:35:49 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130412053234.GB3887@gmail.com>
-References: <20130410110840.GA29752@gmail.com> <20130410122411.GE13394@pd.tnic> <20130410122527.GB8686@gmail.com> <20130410133251.GC6857@pd.tnic> <516586CF.90909@zytor.com> <20130410161122.GI6857@pd.tnic> <20130410212950.GA6899@pd.tnic> <20130411120952.GA18879@gmail.com> <51670E51.6020106@zytor.com> <20130411202328.GA15955@pd.tnic> <20130412053234.GB3887@gmail.com>
+	id S1752891Ab3DLFhZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 01:37:25 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:38990 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab3DLFhX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 01:37:23 -0400
+Date: Fri, 12 Apr 2013 07:37:18 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot
+ to boot cpu.)
+Message-ID: <20130412053718.GC3887@gmail.com>
+References: <20130403193743.GB29151@sgi.com>
+ <20130408155701.GB19974@gmail.com>
+ <5162EC1A.4050204@zytor.com>
+ <20130408165916.GA3672@sgi.com>
+ <20130410111620.GB29752@gmail.com>
+ <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
+ <20130411053106.GA9042@drongo>
+ <5166B05E.8010904@linux.vnet.ibm.com>
+ <20130411134837.GE3672@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] x86, FPU: Fix FPU initialization
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 11 Apr 2013 22:34:48 -0700
-To: Ingo Molnar <mingo@kernel.org>, Borislav Petkov <bp@alien8.de>
-CC: X86 ML <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>
-Message-ID: <f3a4fce2-090e-4a08-b05c-0281a95e8943@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130411134837.GE3672@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I used to have one of these but have it away when cleaning out my study... no space.
 
-Ingo Molnar <mingo@kernel.org> wrote:
+* Robin Holt <holt@sgi.com> wrote:
 
->
->* Borislav Petkov <bp@alien8.de> wrote:
->
->> On Thu, Apr 11, 2013 at 12:26:09PM -0700, H. Peter Anvin wrote:
->> > What host is this?
->> 
->> Judging by the DMI string in the oops:
->> 
->> > [   15.921486] Pid: 73, comm: hwclock Tainted: G        W   
->3.9.0-rc6+ #222032 System manufacturer System Product Name/A8N-E
->> 
->> it is an ASUS board with a K8 on it - probably Ingo's old K8 which
->> triggers all kinds of crap off an on.
->> 
->> 8-)
->
->Yep, with Fedora Core 8, and totally unchanged userspace, booting
->randconfigs of 
->the latest -tip:master tree. This box has booted up over a million
->Linux kernels 
->in the past 4+ years, so when it shows new types of sickness then in
->99.9% of the 
->cases it's something about the kernel.
->
->The lockup went away after excluding x86/cpu. I'll try more testing as
->time 
->permits.
->
->Thanks,
->
->	Ingo
+> For the v3.9 release, can we consider my awful patch?
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+How about trying what I suggested, to make reboot affine to the boot CPU 
+explicitly, not by shutting down all the other CPUs, but by set_cpus_allowed() or 
+so?
+
+That should solve the regression, without the ugly special-casing - while giving 
+time to address the hot-unplug performance bottleneck.
+
+Once that is done disable_nonboot_cpus() can be used again for reboot.
+
+(But no strong feelings either way - both solutions are a workaround in a sense.)
+
+Thanks,
+
+	Ingo
