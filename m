@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab3DLBOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 21:14:40 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48004 "EHLO e9.ny.us.ibm.com"
+	id S1759696Ab3DLBQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 21:16:57 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:48046 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327Ab3DLBOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 21:14:36 -0400
+	id S1754674Ab3DLBOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 21:14:41 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Mel Gorman <mgorman@suse.de>, Linux MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Cody P Schafer <cody@linux.vnet.ibm.com>,
         Simon Jeons <simon.jeons@gmail.com>
-Subject: [RFC PATCH v2 14/25] page_alloc: use dnuma to transplant newly freed pages in __free_pages_ok()
-Date: Thu, 11 Apr 2013 18:13:46 -0700
-Message-Id: <1365729237-29711-15-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [RFC PATCH v2 17/25] x86: memlayout: add a arch specific inital memlayout setter.
+Date: Thu, 11 Apr 2013 18:13:49 -0700
+Message-Id: <1365729237-29711-18-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.1
 In-Reply-To: <1365729237-29711-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1365729237-29711-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041201-7182-0000-0000-000006338E56
+x-cbid: 13041201-7182-0000-0000-000006338E72
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__free_pages_ok() handles higher order (order != 0) pages. Transplant
-hook is added here as this is where the struct zone to free to is
-decided.
+On x86, we have numa_info specifically to track the numa layout, which
+is precisely the data memlayout needs, so use it to create an initial
+memlayout.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- mm/page_alloc.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ arch/x86/mm/numa.c | 28 ++++++++++++++++++++++++++++
+ 1 file changed, 28 insertions(+)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4628443..f8ae178 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -59,6 +59,7 @@
- #include <linux/migrate.h>
- #include <linux/page-debug-flags.h>
- #include <linux/sched/rt.h>
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index a71c4e2..75819ef 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -11,6 +11,7 @@
+ #include <linux/nodemask.h>
+ #include <linux/sched.h>
+ #include <linux/topology.h>
 +#include <linux/dnuma.h>
  
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -732,6 +733,13 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- {
- 	unsigned long flags;
- 	int migratetype;
-+	int dest_nid = dnuma_page_needs_move(page);
-+	struct zone *zone;
-+
-+	if (dest_nid != NUMA_NO_NODE)
-+		zone = nid_zone(dest_nid, page_zonenum(page));
-+	else
-+		zone = page_zone(page);
+ #include <asm/e820.h>
+ #include <asm/proto.h>
+@@ -32,6 +33,33 @@ __initdata
+ #endif
+ ;
  
- 	if (!free_pages_prepare(page, order))
- 		return;
-@@ -740,7 +748,11 @@ static void __free_pages_ok(struct page *page, unsigned int order)
- 	__count_vm_events(PGFREE, 1 << order);
- 	migratetype = get_pageblock_migratetype(page);
- 	set_freepage_migratetype(page, migratetype);
--	free_one_page(page_zone(page), page, order, migratetype);
-+	if (dest_nid != NUMA_NO_NODE)
-+		dnuma_prior_free_to_new_zone(page, order, zone, dest_nid);
-+	free_one_page(zone, page, order, migratetype);
-+	if (dest_nid != NUMA_NO_NODE)
-+		dnuma_post_free_to_new_zone(order);
- 	local_irq_restore(flags);
- }
++#ifdef CONFIG_DYNAMIC_NUMA
++void __init memlayout_global_init(void)
++{
++	struct numa_meminfo *mi = &numa_meminfo;
++	int i;
++	struct numa_memblk *blk;
++	struct memlayout *ml = memlayout_create(ML_INITIAL);
++	if (WARN_ON(!ml))
++		return;
++
++	pr_devel("x86/memlayout: adding ranges from numa_meminfo\n");
++	for (i = 0; i < mi->nr_blks; i++) {
++		blk = mi->blk + i;
++		pr_devel("  adding range {%LX[%LX]-%LX[%LX]}:%d\n",
++			 PFN_DOWN(blk->start), blk->start,
++			 PFN_DOWN(blk->end - PAGE_SIZE / 2 - 1),
++			 blk->end - 1, blk->nid);
++		memlayout_new_range(ml, PFN_DOWN(blk->start),
++				PFN_DOWN(blk->end - PAGE_SIZE / 2 - 1),
++				blk->nid);
++	}
++	pr_devel("  done adding ranges from numa_meminfo\n");
++
++	memlayout_commit(ml);
++}
++#endif
++
+ static int numa_distance_cnt;
+ static u8 *numa_distance;
  
 -- 
 1.8.2.1
