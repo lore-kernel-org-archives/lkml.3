@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab3DLBcm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 21:32:42 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:41698 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703Ab3DLBck (ORCPT
+	id S1753983Ab3DLBc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 21:32:58 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:49438 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752849Ab3DLBbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 21:32:40 -0400
+	Thu, 11 Apr 2013 21:31:48 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
@@ -16,337 +16,69 @@ Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Bob Liu <bob.liu@oracle.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH PART2 v2 2/7] staging: ramster: Move debugfs code out of ramster.c file
-Date: Fri, 12 Apr 2013 09:31:22 +0800
-Message-Id: <1365730287-16876-3-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH PART2 v2 5/7] staging: ramster/debug: Add RAMSTER_DEBUG Kconfig entry 
+Date: Fri, 12 Apr 2013 09:31:25 +0800
+Message-Id: <1365730287-16876-6-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1365730287-16876-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1365730287-16876-1-git-send-email-liwanp@linux.vnet.ibm.com>
-x-cbid: 13041201-1396-0000-0000-000002C99452
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041201-7014-0000-0000-000002D6FB29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note that at this point there is no CONFIG_RAMSTER_DEBUG
-option in the Kconfig. So in effect all of the counters
-are nop until that option gets re-introduced in:
-zcache/ramster/debug: Add RAMSTE_DEBUG Kconfig entry
+Add RAMSTER_DEBUG Kconfig entry.
 
 Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/Makefile          |    1 +
- drivers/staging/zcache/ramster/debug.c   |   70 ++++++++++++++++++
- drivers/staging/zcache/ramster/debug.h   |   76 ++++++++++++++++++++
- drivers/staging/zcache/ramster/ramster.c |  115 ++----------------------------
- 4 files changed, 152 insertions(+), 110 deletions(-)
- create mode 100644 drivers/staging/zcache/ramster/debug.c
- create mode 100644 drivers/staging/zcache/ramster/debug.h
+ drivers/staging/zcache/Kconfig         |    8 ++++++++
+ drivers/staging/zcache/Makefile        |    2 +-
+ drivers/staging/zcache/ramster/debug.h |    2 +-
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
+index c3b8a10..05e87a1 100644
+--- a/drivers/staging/zcache/Kconfig
++++ b/drivers/staging/zcache/Kconfig
+@@ -33,6 +33,14 @@ config RAMSTER
+ 	  zcache2, compresses swap pages into local RAM, but then remotifies
+ 	  the compressed pages to another node in the RAMster cluster.
+ 
++config RAMSTER_DEBUG
++        bool "Enable ramster debug statistics"
++        depends on DEBUG_FS && RAMSTER
++        default n
++        help
++          This is used to provide an debugfs directory with counters of
++          how ramster is doing. You probably want to set this to 'N'.
++
+ # Depends on not-yet-upstreamed mm patches to export end_swap_bio_write and
+ # __add_to_swap_cache, and implement __swap_writepage (which is swap_writepage
+ # without the frontswap call. When these are in-tree, the dependency on
 diff --git a/drivers/staging/zcache/Makefile b/drivers/staging/zcache/Makefile
-index 24fd6aa..4956fa0 100644
+index 4956fa0..845a5c2 100644
 --- a/drivers/staging/zcache/Makefile
 +++ b/drivers/staging/zcache/Makefile
-@@ -1,5 +1,6 @@
+@@ -1,6 +1,6 @@
  zcache-y	:=		zcache-main.o tmem.o zbud.o
  zcache-$(CONFIG_ZCACHE_DEBUG) += debug.o
-+zcache-$(CONFIG_RAMSTER) += ramster/debug.o
+-zcache-$(CONFIG_RAMSTER) += ramster/debug.o
++zcache-$(CONFIG_RAMSTER_DEBUG) += ramster/debug.o
  zcache-$(CONFIG_RAMSTER)	+=	ramster/ramster.o ramster/r2net.o
  zcache-$(CONFIG_RAMSTER)	+=	ramster/nodemanager.o ramster/tcp.o
  zcache-$(CONFIG_RAMSTER)	+=	ramster/heartbeat.o ramster/masklog.o
-diff --git a/drivers/staging/zcache/ramster/debug.c b/drivers/staging/zcache/ramster/debug.c
-new file mode 100644
-index 0000000..76861e4
---- /dev/null
-+++ b/drivers/staging/zcache/ramster/debug.c
-@@ -0,0 +1,70 @@
-+#include <linux/atomic.h>
-+#include "debug.h"
-+
-+#ifdef CONFIG_DEBUG_FS
-+#include <linux/debugfs.h>
-+#define zdfs    debugfs_create_size_t
-+#define zdfs64  debugfs_create_u64
-+
-+ssize_t ramster_eph_pages_remoted;
-+ssize_t ramster_pers_pages_remoted;
-+ssize_t ramster_eph_pages_remote_failed;
-+ssize_t ramster_pers_pages_remote_failed;
-+ssize_t ramster_remote_eph_pages_succ_get;
-+ssize_t ramster_remote_pers_pages_succ_get;
-+ssize_t ramster_remote_eph_pages_unsucc_get;
-+ssize_t ramster_remote_pers_pages_unsucc_get;
-+ssize_t ramster_pers_pages_remote_nomem;
-+ssize_t ramster_remote_objects_flushed;
-+ssize_t ramster_remote_object_flushes_failed;
-+ssize_t ramster_remote_pages_flushed;
-+ssize_t ramster_remote_page_flushes_failed;
-+
-+int __init ramster_debugfs_init(void)
-+{
-+	struct dentry *root = debugfs_create_dir("ramster", NULL);
-+	if (root == NULL)
-+		return -ENXIO;
-+
-+	zdfs("eph_pages_remoted", S_IRUGO, root, &ramster_eph_pages_remoted);
-+	zdfs("pers_pages_remoted", S_IRUGO, root, &ramster_pers_pages_remoted);
-+	zdfs("eph_pages_remote_failed", S_IRUGO, root,
-+		&ramster_eph_pages_remote_failed);
-+	zdfs("pers_pages_remote_failed", S_IRUGO, root,
-+		&ramster_pers_pages_remote_failed);
-+	zdfs("remote_eph_pages_succ_get", S_IRUGO, root,
-+		&ramster_remote_eph_pages_succ_get);
-+	zdfs("remote_pers_pages_succ_get", S_IRUGO, root,
-+		&ramster_remote_pers_pages_succ_get);
-+	zdfs("remote_eph_pages_unsucc_get", S_IRUGO, root,
-+		&ramster_remote_eph_pages_unsucc_get);
-+	zdfs("remote_pers_pages_unsucc_get", S_IRUGO, root,
-+		&ramster_remote_pers_pages_unsucc_get);
-+	zdfs("pers_pages_remote_nomem", S_IRUGO, root,
-+		&ramster_pers_pages_remote_nomem);
-+	zdfs("remote_objects_flushed", S_IRUGO, root,
-+		&ramster_remote_objects_flushed);
-+	zdfs("remote_pages_flushed", S_IRUGO, root,
-+		&ramster_remote_pages_flushed);
-+	zdfs("remote_object_flushes_failed", S_IRUGO, root,
-+		&ramster_remote_object_flushes_failed);
-+	zdfs("remote_page_flushes_failed", S_IRUGO, root,
-+		&ramster_remote_page_flushes_failed);
-+	zdfs("foreign_eph_pages", S_IRUGO, root,
-+		&ramster_foreign_eph_pages);
-+	zdfs("foreign_eph_pages_max", S_IRUGO, root,
-+		&ramster_foreign_eph_pages_max);
-+	zdfs("foreign_pers_pages", S_IRUGO, root,
-+		&ramster_foreign_pers_pages);
-+	zdfs("foreign_pers_pages_max", S_IRUGO, root,
-+		&ramster_foreign_pers_pages_max);
-+	return 0;
-+}
-+#undef  zdebugfs
-+#undef  zdfs64
-+#else
-+static inline int ramster_debugfs_init(void)
-+{
-+	return 0;
-+}
-+#endif
 diff --git a/drivers/staging/zcache/ramster/debug.h b/drivers/staging/zcache/ramster/debug.h
-new file mode 100644
-index 0000000..17a8435
---- /dev/null
+index 7b2deaa..7f80dd4 100644
+--- a/drivers/staging/zcache/ramster/debug.h
 +++ b/drivers/staging/zcache/ramster/debug.h
-@@ -0,0 +1,76 @@
-+#ifdef CONFIG_RAMSTER
-+
-+extern long ramster_flnodes;
-+static atomic_t ramster_flnodes_atomic = ATOMIC_INIT(0);
-+extern unsigned long ramster_flnodes_max;
-+static inline void inc_ramster_flnodes(void)
-+{
-+	ramster_flnodes = atomic_inc_return(&ramster_flnodes_atomic);
-+	if (ramster_flnodes > ramster_flnodes_max)
-+		ramster_flnodes_max = ramster_flnodes;
-+}
-+static inline void dec_ramster_flnodes(void)
-+{
-+	ramster_flnodes = atomic_dec_return(&ramster_flnodes_atomic);
-+}
-+extern ssize_t ramster_foreign_eph_pages;
-+static atomic_t ramster_foreign_eph_pages_atomic = ATOMIC_INIT(0);
-+extern ssize_t ramster_foreign_eph_pages_max;
-+static inline void inc_ramster_foreign_eph_pages(void)
-+{
-+	ramster_foreign_eph_pages = atomic_inc_return(
-+		&ramster_foreign_eph_pages_atomic);
-+	if (ramster_foreign_eph_pages > ramster_foreign_eph_pages_max)
-+		ramster_foreign_eph_pages_max = ramster_foreign_eph_pages;
-+}
-+static inline void dec_ramster_foreign_eph_pages(void)
-+{
-+	ramster_foreign_eph_pages = atomic_dec_return(
-+		&ramster_foreign_eph_pages_atomic);
-+}
-+extern ssize_t ramster_foreign_pers_pages;
-+static atomic_t ramster_foreign_pers_pages_atomic = ATOMIC_INIT(0);
-+extern ssize_t ramster_foreign_pers_pages_max;
-+static inline void inc_ramster_foreign_pers_pages(void)
-+{
-+	ramster_foreign_pers_pages = atomic_inc_return(
-+		&ramster_foreign_pers_pages_atomic);
-+	if (ramster_foreign_pers_pages > ramster_foreign_pers_pages_max)
-+		ramster_foreign_pers_pages_max = ramster_foreign_pers_pages;
-+}
-+static inline void dec_ramster_foreign_pers_pages(void)
-+{
-+	ramster_foreign_pers_pages = atomic_dec_return(
-+		&ramster_foreign_pers_pages_atomic);
-+}
-+
-+extern ssize_t ramster_eph_pages_remoted;
-+extern ssize_t ramster_pers_pages_remoted;
-+extern ssize_t ramster_eph_pages_remote_failed;
-+extern ssize_t ramster_pers_pages_remote_failed;
-+extern ssize_t ramster_remote_eph_pages_succ_get;
-+extern ssize_t ramster_remote_pers_pages_succ_get;
-+extern ssize_t ramster_remote_eph_pages_unsucc_get;
-+extern ssize_t ramster_remote_pers_pages_unsucc_get;
-+extern ssize_t ramster_pers_pages_remote_nomem;
-+extern ssize_t ramster_remote_objects_flushed;
-+extern ssize_t ramster_remote_object_flushes_failed;
-+extern ssize_t ramster_remote_pages_flushed;
-+extern ssize_t ramster_remote_page_flushes_failed;
-+
-+int ramster_debugfs_init(void);
-+
-+#else
-+
-+static inline void inc_ramster_flnodes(void) { };
-+static inline void dec_ramster_flnodes(void) { };
-+static inline void inc_ramster_foreign_eph_pages(void) { };
-+static inline void dec_ramster_foreign_eph_pages(void) { };
-+static inline void inc_ramster_foreign_pers_pages(void) { };
-+static inline void dec_ramster_foreign_pers_pages(void) { };
-+
-+static inline int ramster_debugfs_init(void)
-+{
-+	return 0;
-+}
-+#endif
-diff --git a/drivers/staging/zcache/ramster/ramster.c b/drivers/staging/zcache/ramster/ramster.c
-index 444189e..1d29f5b 100644
---- a/drivers/staging/zcache/ramster/ramster.c
-+++ b/drivers/staging/zcache/ramster/ramster.c
-@@ -42,6 +42,7 @@
- #include "ramster.h"
- #include "ramster_nodemanager.h"
- #include "tcp.h"
-+#include "debug.h"
+@@ -1,4 +1,4 @@
+-#ifdef CONFIG_RAMSTER
++#ifdef CONFIG_RAMSTER_DEBUG
  
- #define RAMSTER_TESTING
- 
-@@ -63,118 +64,12 @@ static atomic_t ramster_remote_pers_pages = ATOMIC_INIT(0);
- static bool ramster_nodes_manual_up[MANUAL_NODES] __read_mostly;
- static int ramster_remote_target_nodenum __read_mostly = -1;
- 
--/* these counters are made available via debugfs */
--static long ramster_flnodes;
--static atomic_t ramster_flnodes_atomic = ATOMIC_INIT(0);
--static unsigned long ramster_flnodes_max;
--static inline void inc_ramster_flnodes(void)
--{
--	ramster_flnodes = atomic_inc_return(&ramster_flnodes_atomic);
--	if (ramster_flnodes > ramster_flnodes_max)
--		ramster_flnodes_max = ramster_flnodes;
--}
--static inline void dec_ramster_flnodes(void)
--{
--	ramster_flnodes = atomic_dec_return(&ramster_flnodes_atomic);
--}
--static ssize_t ramster_foreign_eph_pages;
--static atomic_t ramster_foreign_eph_pages_atomic = ATOMIC_INIT(0);
--static ssize_t ramster_foreign_eph_pages_max;
--static inline void inc_ramster_foreign_eph_pages(void)
--{
--	ramster_foreign_eph_pages = atomic_inc_return(
--			&ramster_foreign_eph_pages_atomic);
--	if (ramster_foreign_eph_pages > ramster_foreign_eph_pages_max)
--		ramster_foreign_eph_pages_max = ramster_foreign_eph_pages;
--}
--static inline void dec_ramster_foreign_eph_pages(void)
--{
--	ramster_foreign_eph_pages = atomic_dec_return(
--			&ramster_foreign_eph_pages_atomic);
--}
--static ssize_t ramster_foreign_pers_pages;
--static atomic_t ramster_foreign_pers_pages_atomic = ATOMIC_INIT(0);
--static ssize_t ramster_foreign_pers_pages_max;
--static inline void inc_ramster_foreign_pers_pages(void)
--{
--	ramster_foreign_pers_pages = atomic_inc_return(
--		&ramster_foreign_pers_pages_atomic);
--	if (ramster_foreign_pers_pages > ramster_foreign_pers_pages_max)
--		ramster_foreign_pers_pages_max = ramster_foreign_pers_pages;
--}
--static inline void dec_ramster_foreign_pers_pages(void)
--{
--	ramster_foreign_pers_pages = atomic_dec_return(
--		&ramster_foreign_pers_pages_atomic);
--}
--static ssize_t ramster_eph_pages_remoted;
--static ssize_t ramster_pers_pages_remoted;
--static ssize_t ramster_eph_pages_remote_failed;
--static ssize_t ramster_pers_pages_remote_failed;
--static ssize_t ramster_remote_eph_pages_succ_get;
--static ssize_t ramster_remote_pers_pages_succ_get;
--static ssize_t ramster_remote_eph_pages_unsucc_get;
--static ssize_t ramster_remote_pers_pages_unsucc_get;
--static ssize_t ramster_pers_pages_remote_nomem;
--static ssize_t ramster_remote_objects_flushed;
--static ssize_t ramster_remote_object_flushes_failed;
--static ssize_t ramster_remote_pages_flushed;
--static ssize_t ramster_remote_page_flushes_failed;
-+/* Used by this code. */
-+long ramster_flnodes;
-+ssize_t ramster_foreign_eph_pages;
-+ssize_t ramster_foreign_pers_pages;
- /* FIXME frontswap selfshrinking knobs in debugfs? */
- 
--#ifdef CONFIG_DEBUG_FS
--#include <linux/debugfs.h>
--#define	zdfs	debugfs_create_size_t
--#define	zdfs64	debugfs_create_u64
--static int __init ramster_debugfs_init(void)
--{
--	struct dentry *root = debugfs_create_dir("ramster", NULL);
--	if (root == NULL)
--		return -ENXIO;
--
--	zdfs("eph_pages_remoted", S_IRUGO, root, &ramster_eph_pages_remoted);
--	zdfs("pers_pages_remoted", S_IRUGO, root, &ramster_pers_pages_remoted);
--	zdfs("eph_pages_remote_failed", S_IRUGO, root,
--			&ramster_eph_pages_remote_failed);
--	zdfs("pers_pages_remote_failed", S_IRUGO, root,
--			&ramster_pers_pages_remote_failed);
--	zdfs("remote_eph_pages_succ_get", S_IRUGO, root,
--			&ramster_remote_eph_pages_succ_get);
--	zdfs("remote_pers_pages_succ_get", S_IRUGO, root,
--			&ramster_remote_pers_pages_succ_get);
--	zdfs("remote_eph_pages_unsucc_get", S_IRUGO, root,
--			&ramster_remote_eph_pages_unsucc_get);
--	zdfs("remote_pers_pages_unsucc_get", S_IRUGO, root,
--			&ramster_remote_pers_pages_unsucc_get);
--	zdfs("pers_pages_remote_nomem", S_IRUGO, root,
--			&ramster_pers_pages_remote_nomem);
--	zdfs("remote_objects_flushed", S_IRUGO, root,
--			&ramster_remote_objects_flushed);
--	zdfs("remote_pages_flushed", S_IRUGO, root,
--			&ramster_remote_pages_flushed);
--	zdfs("remote_object_flushes_failed", S_IRUGO, root,
--			&ramster_remote_object_flushes_failed);
--	zdfs("remote_page_flushes_failed", S_IRUGO, root,
--			&ramster_remote_page_flushes_failed);
--	zdfs("foreign_eph_pages", S_IRUGO, root,
--			&ramster_foreign_eph_pages);
--	zdfs("foreign_eph_pages_max", S_IRUGO, root,
--			&ramster_foreign_eph_pages_max);
--	zdfs("foreign_pers_pages", S_IRUGO, root,
--			&ramster_foreign_pers_pages);
--	zdfs("foreign_pers_pages_max", S_IRUGO, root,
--			&ramster_foreign_pers_pages_max);
--	return 0;
--}
--#undef	zdebugfs
--#undef	zdfs64
--#else
--static inline int ramster_debugfs_init(void)
--{
--	return 0;
--}
--#endif
--
- static LIST_HEAD(ramster_rem_op_list);
- static DEFINE_SPINLOCK(ramster_rem_op_list_lock);
- static DEFINE_PER_CPU(struct ramster_preload, ramster_preloads);
+ extern long ramster_flnodes;
+ static atomic_t ramster_flnodes_atomic = ATOMIC_INIT(0);
 -- 
 1.7.10.4
 
