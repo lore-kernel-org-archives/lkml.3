@@ -1,279 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab3DLJUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 05:20:25 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:42619 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab3DLJUU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 05:20:20 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Florian Fainelli <florian@openwrt.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	id S1753613Ab3DLJb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 05:31:56 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:52053 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753405Ab3DLJbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 05:31:53 -0400
+Date: Fri, 12 Apr 2013 04:31:49 -0500
+From: Robin Holt <holt@sgi.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Robin Holt <holt@sgi.com>,
         Paul Mackerras <paulus@samba.org>,
-        Dale Farnsworth <dale@farnsworth.org>,
-        Ben Hutchings <bhutchings@solarflare.com>, Soeren Moch <smoch@web.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Willy Tarreau <w@1wt.eu>,
-        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] net: mv643xx_eth: remove deprecated inet_lro support
-Date: Fri, 12 Apr 2013 11:20:00 +0200
-Message-Id: <1365758400-12565-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1365707488-28819-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1365707488-28819-1-git-send-email-sebastian.hesselbarth@gmail.com>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot
+ to boot cpu.)
+Message-ID: <20130412093149.GT3658@sgi.com>
+References: <20130408155701.GB19974@gmail.com>
+ <5162EC1A.4050204@zytor.com>
+ <20130408165916.GA3672@sgi.com>
+ <20130410111620.GB29752@gmail.com>
+ <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
+ <20130411053106.GA9042@drongo>
+ <5166B05E.8010904@linux.vnet.ibm.com>
+ <20130411134837.GE3672@sgi.com>
+ <20130412053718.GC3887@gmail.com>
+ <5167A52F.6020503@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5167A52F.6020503@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent support for GRO, there is no need to keep both LRO and
-GRO. This patch therefore removes the deprecated inet_lro support
-from mv643xx_eth. This is work is based on an experimental patch
-provided by Eric Dumazet and Willy Tarreau.
+On Fri, Apr 12, 2013 at 11:39:51AM +0530, Srivatsa S. Bhat wrote:
+> On 04/12/2013 11:07 AM, Ingo Molnar wrote:
+> > 
+> > * Robin Holt <holt@sgi.com> wrote:
+> > 
+> >> For the v3.9 release, can we consider my awful patch?
+> > 
+> > How about trying what I suggested, to make reboot affine to the boot CPU 
+> > explicitly, not by shutting down all the other CPUs, but by set_cpus_allowed() or 
+> > so?
+> > 
+> 
+> I agree, that sounds like the right thing to do for 3.9. Of course, it would be
+> nice if Shawn could verify that doing that doesn't break his platform due to
+> some unknown corner case.
+> 
+> > That should solve the regression, without the ugly special-casing - while giving 
+> > time to address the hot-unplug performance bottleneck.
+> > 
+> > Once that is done disable_nonboot_cpus() can be used again for reboot.
+> > 
+> > (But no strong feelings either way - both solutions are a workaround in a sense.)
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Based-on-patch-by: Eric Dumazet <eric.dumazet@gmail.com>
-Based-on-patch-by: Willy Tarreau <w@1wt.eu>
----
-Changes from v1:
-- also remove INET_LRO from Kconfig (Reported by Eric Dumazet)
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Florian Fainelli <florian@openwrt.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>From 1767003c943325e52ac78cac6fdbaf2ab638888d Mon Sep 17 00:00:00 2001
+From: Robin Holt <holt@sgi.com>
+Date: Wed, 3 Apr 2013 13:52:00 -0500
+Subject: [PATCH] Migrate shutdown/reboot to boot cpu.
+
+We recently noticed that reboot of a 1024 cpu machine takes approx 16
+minutes of just stopping the cpus.  The slowdown was tracked to commit
+f96972f.
+
+The current implementation does all the work of hot removing the cpus
+before halting the system.  We are switching to just migrating to the
+boot cpu and then calling continuing with shutdown/reboot.
+
+This also has the effect of not breaking x86's command line parameter for
+specifying the reboot cpu.  Note, this code was shamelessly copied from
+arch/x86/kernel/reboot.c with bits removed pertaining to the reboot_cpu
+command line parameter.
+
+Signed-off-by: Robin Holt <holt@sgi.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+To: Ingo Molnar <mingo@redhat.com>
+To: Russ Anderson <rja@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Dale Farnsworth <dale@farnsworth.org>
-Cc: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Soeren Moch <smoch@web.de>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Willy Tarreau <w@1wt.eu>
-Cc: netdev@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Robin Holt <holt@sgi.com>
+Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: the arch/x86 maintainers <x86@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: <stable@vger.kernel.org>
 ---
- drivers/net/ethernet/marvell/Kconfig       |    1 -
- drivers/net/ethernet/marvell/mv643xx_eth.c |   97 +---------------------------
- 2 files changed, 3 insertions(+), 95 deletions(-)
+ kernel/sys.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/marvell/Kconfig b/drivers/net/ethernet/marvell/Kconfig
-index 5170ecb..0051f0e 100644
---- a/drivers/net/ethernet/marvell/Kconfig
-+++ b/drivers/net/ethernet/marvell/Kconfig
-@@ -21,7 +21,6 @@ if NET_VENDOR_MARVELL
- config MV643XX_ETH
- 	tristate "Marvell Discovery (643XX) and Orion ethernet support"
- 	depends on (MV64X60 || PPC32 || PLAT_ORION) && INET
--	select INET_LRO
- 	select PHYLIB
- 	select MVMDIO
- 	---help---
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index c850d04..d0afeea 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -56,8 +56,8 @@
- #include <linux/phy.h>
- #include <linux/mv643xx_eth.h>
- #include <linux/io.h>
-+#include <linux/interrupt.h>
- #include <linux/types.h>
--#include <linux/inet_lro.h>
- #include <linux/slab.h>
- #include <linux/clk.h>
- 
-@@ -316,12 +316,6 @@ struct mib_counters {
- 	u32 rx_overrun;
- };
- 
--struct lro_counters {
--	u32 lro_aggregated;
--	u32 lro_flushed;
--	u32 lro_no_desc;
--};
--
- struct rx_queue {
- 	int index;
- 
-@@ -335,9 +329,6 @@ struct rx_queue {
- 	dma_addr_t rx_desc_dma;
- 	int rx_desc_area_size;
- 	struct sk_buff **rx_skb;
--
--	struct net_lro_mgr lro_mgr;
--	struct net_lro_desc lro_arr[8];
- };
- 
- struct tx_queue {
-@@ -373,8 +364,6 @@ struct mv643xx_eth_private {
- 	spinlock_t mib_counters_lock;
- 	struct mib_counters mib_counters;
- 
--	struct lro_counters lro_counters;
--
- 	struct work_struct tx_timeout_task;
- 
- 	struct napi_struct napi;
-@@ -503,42 +492,12 @@ static void txq_maybe_wake(struct tx_queue *txq)
- 	}
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 0da73cf..4d1047d 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -357,6 +357,19 @@ int unregister_reboot_notifier(struct notifier_block *nb)
  }
+ EXPORT_SYMBOL(unregister_reboot_notifier);
  
--
--/* rx napi ******************************************************************/
--static int
--mv643xx_get_skb_header(struct sk_buff *skb, void **iphdr, void **tcph,
--		       u64 *hdr_flags, void *priv)
--{
--	unsigned long cmd_sts = (unsigned long)priv;
--
--	/*
--	 * Make sure that this packet is Ethernet II, is not VLAN
--	 * tagged, is IPv4, has a valid IP header, and is TCP.
--	 */
--	if ((cmd_sts & (RX_IP_HDR_OK | RX_PKT_IS_IPV4 |
--		       RX_PKT_IS_ETHERNETV2 | RX_PKT_LAYER4_TYPE_MASK |
--		       RX_PKT_IS_VLAN_TAGGED)) !=
--	    (RX_IP_HDR_OK | RX_PKT_IS_IPV4 |
--	     RX_PKT_IS_ETHERNETV2 | RX_PKT_LAYER4_TYPE_TCP_IPV4))
--		return -1;
--
--	skb_reset_network_header(skb);
--	skb_set_transport_header(skb, ip_hdrlen(skb));
--	*iphdr = ip_hdr(skb);
--	*tcph = tcp_hdr(skb);
--	*hdr_flags = LRO_IPV4 | LRO_TCP;
--
--	return 0;
--}
--
- static int rxq_process(struct rx_queue *rxq, int budget)
++void migrate_to_boot_cpu(void)
++{
++	/* The boot cpu is always logical cpu 0 */
++	int reboot_cpu_id = 0;
++
++	/* Make certain the cpu I'm about to reboot on is online */
++	if (!cpu_online(reboot_cpu_id))
++		reboot_cpu_id = smp_processor_id();
++
++	/* Make certain I only run on the appropriate processor */
++	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
++}
++
+ /**
+  *	kernel_restart - reboot the system
+  *	@cmd: pointer to buffer containing command to execute for restart
+@@ -368,7 +381,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
+ void kernel_restart(char *cmd)
  {
- 	struct mv643xx_eth_private *mp = rxq_to_mp(rxq);
- 	struct net_device_stats *stats = &mp->dev->stats;
--	int lro_flush_needed;
- 	int rx;
- 
--	lro_flush_needed = 0;
- 	rx = 0;
- 	while (rx < budget && rxq->rx_desc_count) {
- 		struct rx_desc *rx_desc;
-@@ -599,12 +558,7 @@ static int rxq_process(struct rx_queue *rxq, int budget)
- 			skb->ip_summed = CHECKSUM_UNNECESSARY;
- 		skb->protocol = eth_type_trans(skb, mp->dev);
- 
--		if (skb->dev->features & NETIF_F_LRO &&
--		    skb->ip_summed == CHECKSUM_UNNECESSARY) {
--			lro_receive_skb(&rxq->lro_mgr, skb, (void *)cmd_sts);
--			lro_flush_needed = 1;
--		} else
--			napi_gro_receive(&mp->napi, skb);
-+		napi_gro_receive(&mp->napi, skb);
- 
- 		continue;
- 
-@@ -624,9 +578,6 @@ err:
- 		dev_kfree_skb(skb);
- 	}
- 
--	if (lro_flush_needed)
--		lro_flush_all(&rxq->lro_mgr);
--
- 	if (rx < budget)
- 		mp->work_rx &= ~(1 << rxq->index);
- 
-@@ -1118,26 +1069,6 @@ static struct net_device_stats *mv643xx_eth_get_stats(struct net_device *dev)
- 	return stats;
- }
- 
--static void mv643xx_eth_grab_lro_stats(struct mv643xx_eth_private *mp)
--{
--	u32 lro_aggregated = 0;
--	u32 lro_flushed = 0;
--	u32 lro_no_desc = 0;
--	int i;
--
--	for (i = 0; i < mp->rxq_count; i++) {
--		struct rx_queue *rxq = mp->rxq + i;
--
--		lro_aggregated += rxq->lro_mgr.stats.aggregated;
--		lro_flushed += rxq->lro_mgr.stats.flushed;
--		lro_no_desc += rxq->lro_mgr.stats.no_desc;
--	}
--
--	mp->lro_counters.lro_aggregated = lro_aggregated;
--	mp->lro_counters.lro_flushed = lro_flushed;
--	mp->lro_counters.lro_no_desc = lro_no_desc;
--}
--
- static inline u32 mib_read(struct mv643xx_eth_private *mp, int offset)
- {
- 	return rdl(mp, MIB_COUNTERS(mp->port_num) + offset);
-@@ -1301,10 +1232,6 @@ struct mv643xx_eth_stats {
- 	{ #m, FIELD_SIZEOF(struct mib_counters, m),		\
- 	  -1, offsetof(struct mv643xx_eth_private, mib_counters.m) }
- 
--#define LROSTAT(m)						\
--	{ #m, FIELD_SIZEOF(struct lro_counters, m),		\
--	  -1, offsetof(struct mv643xx_eth_private, lro_counters.m) }
--
- static const struct mv643xx_eth_stats mv643xx_eth_stats[] = {
- 	SSTAT(rx_packets),
- 	SSTAT(tx_packets),
-@@ -1346,9 +1273,6 @@ static const struct mv643xx_eth_stats mv643xx_eth_stats[] = {
- 	MIBSTAT(late_collision),
- 	MIBSTAT(rx_discard),
- 	MIBSTAT(rx_overrun),
--	LROSTAT(lro_aggregated),
--	LROSTAT(lro_flushed),
--	LROSTAT(lro_no_desc),
- };
- 
- static int
-@@ -1578,7 +1502,6 @@ static void mv643xx_eth_get_ethtool_stats(struct net_device *dev,
- 
- 	mv643xx_eth_get_stats(dev);
- 	mib_counters_update(mp);
--	mv643xx_eth_grab_lro_stats(mp);
- 
- 	for (i = 0; i < ARRAY_SIZE(mv643xx_eth_stats); i++) {
- 		const struct mv643xx_eth_stats *stat;
-@@ -1851,19 +1774,6 @@ static int rxq_init(struct mv643xx_eth_private *mp, int index)
- 					nexti * sizeof(struct rx_desc);
- 	}
- 
--	rxq->lro_mgr.dev = mp->dev;
--	memset(&rxq->lro_mgr.stats, 0, sizeof(rxq->lro_mgr.stats));
--	rxq->lro_mgr.features = LRO_F_NAPI;
--	rxq->lro_mgr.ip_summed = CHECKSUM_UNNECESSARY;
--	rxq->lro_mgr.ip_summed_aggr = CHECKSUM_UNNECESSARY;
--	rxq->lro_mgr.max_desc = ARRAY_SIZE(rxq->lro_arr);
--	rxq->lro_mgr.max_aggr = 32;
--	rxq->lro_mgr.frag_align_pad = 0;
--	rxq->lro_mgr.lro_arr = rxq->lro_arr;
--	rxq->lro_mgr.get_skb_header = mv643xx_get_skb_header;
--
--	memset(&rxq->lro_arr, 0, sizeof(rxq->lro_arr));
--
- 	return 0;
- 
- 
-@@ -2851,8 +2761,7 @@ static int mv643xx_eth_probe(struct platform_device *pdev)
- 	dev->watchdog_timeo = 2 * HZ;
- 	dev->base_addr = 0;
- 
--	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM |
--		NETIF_F_RXCSUM | NETIF_F_LRO;
-+	dev->hw_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
- 	dev->features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
- 	dev->vlan_features = NETIF_F_SG | NETIF_F_IP_CSUM;
- 
+ 	kernel_restart_prepare(cmd);
+-	disable_nonboot_cpus();
++	migrate_to_boot_cpu();
+ 	syscore_shutdown();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+@@ -414,7 +427,7 @@ void kernel_power_off(void)
+ 	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
+ 	if (pm_power_off_prepare)
+ 		pm_power_off_prepare();
+-	disable_nonboot_cpus();
++	migrate_to_boot_cpu();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "Power down.\n");
+ 	kmsg_dump(KMSG_DUMP_POWEROFF);
 -- 
-1.7.10.4
+1.8.1.2
 
