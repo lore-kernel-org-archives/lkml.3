@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757748Ab3DLWrZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:47:25 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:47217 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754391Ab3DLWrJ (ORCPT
+	id S1757981Ab3DLWrq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:47:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47878 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757803Ab3DLWrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:47:09 -0400
+	Fri, 12 Apr 2013 18:47:45 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 19/29] PCI: Use for_each_pci_resource() in pci bases reading
-Date: Fri, 12 Apr 2013 15:44:33 -0700
-Message-Id: <1365806683-26717-20-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 04/29] PCI: Add pci_dev_resource_idx() helper
+Date: Fri, 12 Apr 2013 15:44:18 -0700
+Message-Id: <1365806683-26717-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
@@ -22,31 +22,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace those open code, and make code more readable.
+Use resource pointer to get index in pci resources array/list.
+
+-v2: export symbol for acpiphp compiling error, found by
+       Steven Newbury <steve@snewbury.org.uk>
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/probe.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/pci/probe.c | 9 +++++++++
+ include/linux/pci.h | 1 +
+ 2 files changed, 10 insertions(+)
 
 diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index ac751a6..263a575 100644
+index 9cb3eb3..1df75f7 100644
 --- a/drivers/pci/probe.c
 +++ b/drivers/pci/probe.c
-@@ -354,9 +354,11 @@ out:
- static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
- {
- 	unsigned int pos, reg;
-+	struct resource *res;
+@@ -114,6 +114,15 @@ struct resource *pci_dev_resource_n(struct pci_dev *dev, int n)
+ }
+ EXPORT_SYMBOL(pci_dev_resource_n);
  
--	for (pos = 0; pos < howmany; pos++) {
--		struct resource *res = &dev->resource[pos];
-+	for_each_pci_resource(dev, res, pos, PCI_STD_RES) {
-+		if (pos >= howmany)
-+			break;
- 		reg = PCI_BASE_ADDRESS_0 + (pos << 2);
- 		pos += __pci_read_base(dev, pci_bar_unknown, res, reg);
- 	}
++int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res)
++{
++	if (res >= dev->resource &&
++	    res <= dev->resource + (PCI_NUM_RESOURCES - 1))
++		return res - dev->resource;
++
++	return -1;
++}
++
+ static u64 pci_size(u64 base, u64 maxbase, u64 mask)
+ {
+ 	u64 size = mask & maxbase;	/* Find the significant bits */
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 6d450d2..f4da78d 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -354,6 +354,7 @@ struct pci_dev {
+ };
+ 
+ struct resource *pci_dev_resource_n(struct pci_dev *dev, int n);
++int pci_dev_resource_idx(struct pci_dev *dev, struct resource *res);
+ 
+ static inline struct pci_dev *pci_physfn(struct pci_dev *dev)
+ {
 -- 
 1.8.1.4
 
