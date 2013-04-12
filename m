@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab3DLC42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 22:56:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42107 "EHLO mx1.redhat.com"
+	id S1752402Ab3DLC53 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 22:57:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37002 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367Ab3DLC41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 22:56:27 -0400
-Message-ID: <51677779.8000506@redhat.com>
-Date: Thu, 11 Apr 2013 22:54:49 -0400
+	id S1751658Ab3DLC52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Apr 2013 22:57:28 -0400
+Message-ID: <516777DF.9090803@redhat.com>
+Date: Thu, 11 Apr 2013 22:56:31 -0400
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
@@ -18,10 +18,10 @@ CC: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
         Johannes Weiner <hannes@cmpxchg.org>, dormando <dormando@rydia.net>,
         Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/10] mm: vmscan: Block kswapd if it is encountering
- pages under writeback
-References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <1365505625-9460-8-git-send-email-mgorman@suse.de>
-In-Reply-To: <1365505625-9460-8-git-send-email-mgorman@suse.de>
+Subject: Re: [PATCH 10/10] mm: vmscan: Move logic from balance_pgdat() to
+ kswapd_shrink_zone()
+References: <1365505625-9460-1-git-send-email-mgorman@suse.de> <1365505625-9460-11-git-send-email-mgorman@suse.de>
+In-Reply-To: <1365505625-9460-11-git-send-email-mgorman@suse.de>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,32 +29,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 04/09/2013 07:07 AM, Mel Gorman wrote:
-> Historically, kswapd used to congestion_wait() at higher priorities if it
-> was not making forward progress. This made no sense as the failure to make
-> progress could be completely independent of IO. It was later replaced by
-> wait_iff_congested() and removed entirely by commit 258401a6 (mm: don't
-> wait on congested zones in balance_pgdat()) as it was duplicating logic
-> in shrink_inactive_list().
->
-> This is problematic. If kswapd encounters many pages under writeback and
-> it continues to scan until it reaches the high watermark then it will
-> quickly skip over the pages under writeback and reclaim clean young
-> pages or push applications out to swap.
->
-> The use of wait_iff_congested() is not suited to kswapd as it will only
-> stall if the underlying BDI is really congested or a direct reclaimer was
-> unable to write to the underlying BDI. kswapd bypasses the BDI congestion
-> as it sets PF_SWAPWRITE but even if this was taken into account then it
-> would cause direct reclaimers to stall on writeback which is not desirable.
->
-> This patch sets a ZONE_WRITEBACK flag if direct reclaim or kswapd is
-> encountering too many pages under writeback. If this flag is set and
-> kswapd encounters a PageReclaim page under writeback then it'll assume
-> that the LRU lists are being recycled too quickly before IO can complete
-> and block waiting for some IO to complete.
+> balance_pgdat() is very long and some of the logic can and should
+> be internal to kswapd_shrink_zone(). Move it so the flow of
+> balance_pgdat() is marginally easier to follow.
 >
 > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
 Acked-by: Rik van Riel <riel@redhat.com>
 
