@@ -1,147 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753733Ab3DLP2l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:28:41 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:36909 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751586Ab3DLP2k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:28:40 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v2] MFD: ab8500: pass AB8500 IRQ to debugfs code by resource
-Date: Fri, 12 Apr 2013 17:02:09 +0200
-Message-ID: <1365778929-27168-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753287Ab3DLPcI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:32:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22822 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751367Ab3DLPcG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 11:32:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,462,1363158000"; 
+   d="scan'208";a="294081949"
+Date: Fri, 12 Apr 2013 08:32:03 -0700
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Platform Driver <platform-driver-x86@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH v2] Introduce Intel RAPL cooling device driver
+Message-ID: <20130412083203.13cf56b0@chromoly>
+In-Reply-To: <20130405213518.GA5615@kroah.com>
+References: <1365195724-8945-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1365195724-8945-2-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1365197195.2075.23.camel@joe-AO722>
+	<20130405213518.GA5615@kroah.com>
+Organization: OTC
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Fri, 5 Apr 2013 14:35:18 -0700
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> wrote:
 
-The AB8500 debug code which was merged in parallell with the
-multiplatform work incidentally introduced a new instance using
-the <mach/irqs.h> header which is now deleted, causing this
-build regression:
+> On Fri, Apr 05, 2013 at 02:26:35PM -0700, Joe Perches wrote:
+> > On Fri, 2013-04-05 at 14:02 -0700, Jacob Pan wrote:
+> > > +static ssize_t store_event_control(struct device *dev,
+> > > +				struct device_attribute *attr,
+> > > +				const char *buf,
+> > > +				size_t size)
+> > > +{
+> > > +	struct rapl_domain *rd = dev_get_drvdata(dev);
+> > > +	unsigned int efd, new_threshold;
+> > > +	struct file *efile = NULL;
+> > > +	int ret = 0;
+> > > +	int prim;
+> > > +	struct rapl_event *ep;
+> > > +	u64 val;
+> > > +	char cmd[MAX_PRIM_NAME];
+> > > +
+> > > +	if (sscanf(buf, "%u %s %u", &efd, cmd,
+> > > &new_threshold) != 3)
+> > > +		return -EINVAL;
+> > 
+> > This sscanf looks fragile.
+> > 
+> > buf = "1 some_really_long_name_longer_than_MAX_PRIM_NAME 2"
+> > 
+> > stack overrun.
+> > 
+> > Where does buf come from?
+> 
+> It comes from the sysfs core, which limits it to a PAGE_SIZE.  But
+> yes, it does look fragile, and flat out wrong, but I'm not going into
+> that just yet, as that whole api should just be deleted for now.
+> 
+> greg k-h
+> 
+I am just curious to know besides fixing string length check, is the
+problem related to the fact that I have more than
+one element for the event_control sysfs node?
+i.e. <eventfd> <event_name> <threshold>
 
-drivers/mfd/ab8500-debugfs.c:95:23:
-fatal error: mach/irqs.h: No such file or directory
-compilation terminated.
-make[4]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
+If so, the reason being I don't know if there is a standard way
+to a transaction via sysfs where I can commit multiple inputs
+atomically.
 
-The code most certainly never worked with device tree either
-since that does not rely on this kind of hard-coded interrupt
-numbers.
-
-Fix the problem at the root by passing it as a named resource
-from the ab8500-core driver. Use an untyped resource to
-stop the MFD core from remapping this IRQ relative to the
-AB8500 irqdomain.
-
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v1->v2:
-- Pass an untyped resource to avoid problems due to IRQ
-  remapping.
-
-Sam this would have to go into the v3.10-targetted stuff...
-Either immediately before you send it upstream or as a fixup.
----
- drivers/mfd/ab8500-core.c    | 15 +++++++++++++++
- drivers/mfd/ab8500-debugfs.c | 16 ++++++++++++----
- 2 files changed, 27 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-index 8e8a016..65cd46b 100644
---- a/drivers/mfd/ab8500-core.c
-+++ b/drivers/mfd/ab8500-core.c
-@@ -868,6 +868,15 @@ static struct resource ab8500_chargalg_resources[] = {};
- #ifdef CONFIG_DEBUG_FS
- static struct resource ab8500_debug_resources[] = {
- 	{
-+		.name	= "IRQ_AB8500",
-+		/*
-+		 * Number will be filled in. NOTE: this is deliberately
-+		 * not flagged as an IRQ in ordet to avoid remapping using
-+		 * the irqdomain in the MFD core, so that this IRQ passes
-+		 * unremapped to the debug code.
-+		 */
-+	},
-+	{
- 		.name	= "IRQ_FIRST",
- 		.start	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
- 		.end	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
-@@ -1712,6 +1721,12 @@ static int ab8500_probe(struct platform_device *pdev)
- 	if (ret)
- 		return ret;
- 
-+#if CONFIG_DEBUG_FS
-+	/* Pass to debugfs */
-+	ab8500_debug_resources[0].start = ab8500->irq;
-+	ab8500_debug_resources[0].end = ab8500->irq;
-+#endif
-+
- 	if (is_ab9540(ab8500))
- 		ret = mfd_add_devices(ab8500->dev, 0, ab9540_devs,
- 				ARRAY_SIZE(ab9540_devs), NULL,
-diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
-index b88bbbc..37b7ce4 100644
---- a/drivers/mfd/ab8500-debugfs.c
-+++ b/drivers/mfd/ab8500-debugfs.c
-@@ -91,12 +91,10 @@
- #include <linux/ctype.h>
- #endif
- 
--/* TODO: this file should not reference IRQ_DB8500_AB8500! */
--#include <mach/irqs.h>
--
- static u32 debug_bank;
- static u32 debug_address;
- 
-+static int irq_ab8500;
- static int irq_first;
- static int irq_last;
- static u32 *irq_count;
-@@ -1589,7 +1587,7 @@ void ab8500_debug_register_interrupt(int line)
- {
- 	if (line < num_interrupt_lines) {
- 		num_interrupts[line]++;
--		if (suspend_test_wake_cause_interrupt_is_mine(IRQ_DB8500_AB8500))
-+		if (suspend_test_wake_cause_interrupt_is_mine(irq_ab8500))
- 			num_wake_interrupts[line]++;
- 	}
- }
-@@ -2941,6 +2939,7 @@ static int ab8500_debug_probe(struct platform_device *plf)
- 	struct dentry *file;
- 	int ret = -ENOMEM;
- 	struct ab8500 *ab8500;
-+	struct resource *res;
- 	debug_bank = AB8500_MISC;
- 	debug_address = AB8500_REV_REG & 0x00FF;
- 
-@@ -2959,6 +2958,15 @@ static int ab8500_debug_probe(struct platform_device *plf)
- 	if (!event_name)
- 		goto out_freedev_attr;
- 
-+	res = platform_get_resource_byname(plf, 0, "IRQ_AB8500");
-+	if (!res) {
-+		dev_err(&plf->dev, "AB8500 irq not found, err %d\n",
-+			irq_first);
-+		ret = -ENXIO;
-+		goto out_freeevent_name;
-+	}
-+	irq_ab8500 = res->start;
-+
- 	irq_first = platform_get_irq_byname(plf, "IRQ_FIRST");
- 	if (irq_first < 0) {
- 		dev_err(&plf->dev, "First irq not found, err %d\n",
 -- 
-1.7.11.3
+Thanks,
 
+Jacob
