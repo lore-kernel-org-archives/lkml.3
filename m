@@ -1,106 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab3DLN0z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 09:26:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50056 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753798Ab3DLN0y (ORCPT
+	id S1755399Ab3DLNad (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 09:30:33 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:41174 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753798Ab3DLNac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 09:26:54 -0400
-Date: Fri, 12 Apr 2013 14:26:52 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Cc: Liam Girdwood <lrg@ti.com>, Guenter Roeck <linux@roeck-us.net>,
-        Jean Delvare <khali@linux-fr.org>, Randy Dunlap <rdunlap@xenotime.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
-Message-ID: <20130412132651.GB12534@opensource.wolfsonmicro.com>
-References: <201304121310.r3CDAJHh011814@latitude>
+	Fri, 12 Apr 2013 09:30:32 -0400
+Message-ID: <51680C74.9010000@hitachi.com>
+Date: Fri, 12 Apr 2013 22:30:28 +0900
+From: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gatW/ieO32f1wygP"
-Content-Disposition: inline
-In-Reply-To: <201304121310.r3CDAJHh011814@latitude>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [RFC Patch 2/2] mm: Add parameters to limit a rate of outputting
+ memory error messages
+References: <1365665524-nj0fhwkj-mutt-n-horiguchi@ah.jp.nec.com> <20130411140012.GI16732@two.firstfloor.org> <1365691626-w2h428s2-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1365691626-w2h428s2-mutt-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2013/04/11 23:47), Naoya Horiguchi wrote:
+> On Thu, Apr 11, 2013 at 04:00:12PM +0200, Andi Kleen wrote:
+>>> I don't think it's enough to do ratelimit only for me_pagecache_dirty().
+>>> When tons of memory errors flood, all of printk()s in memory error handler
+>>> can print out tons of messages.
+>>
+>> Note that when you really have a flood of uncorrected errors you'll
+>> likely die soon anyways as something unrecoverable is very likely to
+>> happen. Error memory recovery cannot fix large scale memory corruptions,
+>> just the rare events that slip through all the other memory error correction
+>> schemes.
+>>
+>> So I wouldn't worry too much about that.
+> 
+> I agree.
+> My previous comment is valid only when we assume the flooding can happen
+> (and I personally don't believe that can happen except for in testing.)
+> 
+> And for paranoid users, we can suggest that they set up mcelog script
+> triggering to turn off vm.memory_failure_recovery when memory errors flood.
+> Such users don't expect that memory error handling works fine in flooding,
+> so just suppressing kernel messages is pointless.
+> 
+> Thanks,
+> Naoya
 
---gatW/ieO32f1wygP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Andi, Horiguchi-san, Kosaki-san
 
-On Fri, Apr 12, 2013 at 02:05:28PM +0100, Anthony Olech wrote:
+Thank you for your comments. I agree with your opinions.
+I think that occurrence of uncorrected error is rare event, too.
 
-This looks good, I assume there's some dependencies on the MFD or other
-earlier patches so I won't apply it, let me know if there aren't any and
-I will:
+I introduced a limitation feature using ratelimit in my patch in honor
+of the previous discussion a half year ago. In the discussion, Andrew-san
+threw a concern of a flood of uncorrected error for the patch proposed by
+Horiguchi-san.
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+I think that ratelimit can be removed to output all "important messages".
 
-Please use subject lines reflecting the subsystem.
+I will try to resend patches sepalately, 
+one is for outputting error messages related to a corrupted file
+and the other is for adding a panic knob to handle data lost of dirty cache
+which is caused by both memory error and I/O error.
 
-> +static int da9058_buck_ramp_voltage(struct regulator_dev *rdev,
-> +					unsigned int old_selector,
-> +					unsigned int new_selector)
-> +{
-> +	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
-> +	struct da9058 *da9058 = regulator->da9058;
-> +	int ret;
-> +
-> +	if (regulator->ramp_register == 0)
-> +		return -EINVAL;
-> +
-> +	if (regulator->ramp_enable_mask == 0)
-> +		return -EINVAL;
-> +
-> +	ret = da9058_set_bits(da9058, regulator->ramp_register,
-> +					regulator->ramp_enable_mask);
-> +
-> +	if (ret)
-> +		return ret;
-> +
-> +	return 2200; /* micro Seconds needed to ramp to new voltage*/
-> +}
+Regards,
+Mitsuhiro Tanino
 
-Hrm, this really should be implementable with a generic regmap
-operation...
-
-> +	rdev = regulator_register(&reg->desc, &config);
-> +
-> +	if (IS_ERR(rdev)) {
-> +		dev_err(&pdev->dev, "failed to register %s\n",
-> +			rpdata->regulator_name);
-> +		ret = PTR_ERR(rdev);
-> +		goto failed_to_register;
-> +	}
-
-In general it's a bit better style to print out the return value to help
-with diagnosis but it's no big deal.
-
---gatW/ieO32f1wygP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRaAuQAAoJELSic+t+oim9KasQAI0Ga2Zq7aFHL/f79QLCyAAr
-SNnMCXlqf5oAXhuKBWT6XgYL93Q+Y/EzwW61Z1ySZJhCF4b6D9tdy/8a0ZqZceG7
-LK0sCGAFV+JkjvpOj4dWuxb2pPCKizKDXSfP4iigydDU73hK/Tib2j9oNzOBHeKA
-lBqx6zzgZbrNzCisORj7ov7Y37KhOAW/9RFzDw2cinSzt27Sf+54f/vhVvr2Dud2
-OhKzlhiFFMSuKyIuTfMXoIdITSGeH1axjhFIlOFxP1dn2lFFcX2Q1FdScdmgWScw
-cXK+X96k59dJy+KpBWQZ71amqHmVeafB+CTjpOResGhF/nvPA/e/6EjjAodTUVkR
-WV7yRZo1dzVFpwJ0G4v+MFCIwqxSHTFzkV53MCJTu4fW3ZSujr0MB0m2RRUFLwrT
-poOyejF1BkOsCluUeJ0hiqVzPmz6x6v2XwxUEt+ekKWPDSCoBQreBsFB1AJnZtgm
-FAp5rK9aIDkj/xJYX6HK1KBqPPseLVkDj0Gg2s/4KtOfSPn4KN23X2dpz+VuXayT
-SX7zSvhxmDDzQjvkql7AaSHtKYYX42sOODTDhb+b8yYc0g4cmssxHD20h/MpTkzU
-Xc6YmQbbknWMUtjtowT6z2fouP/ck7qveE47gvnHvJ2/9awfwp0wlA0C2CGOFgf9
-93+t8wAfyMEvOzGqXrZi
-=+1AA
------END PGP SIGNATURE-----
-
---gatW/ieO32f1wygP--
