@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3DLAXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 20:23:03 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:60807 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab3DLAW6 (ORCPT
+	id S1753290Ab3DLA5g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 20:57:36 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37252 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab3DLA51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 20:22:58 -0400
-Date: Thu, 11 Apr 2013 17:22:52 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Christian Schmidt <schmidt@digadd.de>,
-        "Alasdair G. Kergon" <agk@redhat.com>
-Subject: Re: [PATCH v2] make dm and dm-crypt forward cgroup context (was:
- dm-crypt parallelization patches)
-Message-ID: <20130412002252.GD11956@mtj.dyndns.org>
-References: <Pine.LNX.4.64.1304091624110.19672@file.rdu.redhat.com>
- <20130409210735.GR6320@redhat.com>
- <Pine.LNX.4.64.1304091710150.24735@file.rdu.redhat.com>
- <20130410192427.GA14911@redhat.com>
- <Pine.LNX.4.64.1304101938280.24258@file.rdu.redhat.com>
- <20130410235009.GI17641@mtj.dyndns.org>
- <Pine.LNX.4.64.1304111544050.32536@file.rdu.redhat.com>
- <20130411195203.GA11956@mtj.dyndns.org>
- <20130411200005.GB11956@mtj.dyndns.org>
- <Pine.LNX.4.64.1304111943450.29691@file.rdu.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1304111943450.29691@file.rdu.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 11 Apr 2013 20:57:27 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
+Subject: [PATCH v4 04/22] x86, ACPI: Search buffer above 4G in second try for acpi override tables
+Date: Thu, 11 Apr 2013 17:55:50 -0700
+Message-Id: <1365728168-32067-5-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
+References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 08:06:10PM -0400, Mikulas Patocka wrote:
-> All that I can tell you is that adding an empty atomic operation 
-> "cmpxchg(&bio->bi_css->refcnt, bio->bi_css->refcnt, bio->bi_css->refcnt);" 
-> to bio_clone_context and bio_disassociate_task increases the time to run a 
-> benchmark from 23 to 40 seconds.
+Now we only search buffer for override acpi table under 4G.
+In some case, like user use memmap to exclude all low ram,
+we may not find range for it under 4G.
 
-Right, linear target on ramdisk, very realistic, and you know what,
-hell with dm, let's just hand code everything into submit_bio().  I'm
-sure it will speed up your test case significantly.
+Do second try to search above 4G.
 
-If this actually matters, improve it in *sane* way.  Make the refcnts
-per-cpu and not use atomic ops.  In fact, we already have proposed
-implementation of percpu refcnt which is being used by aio restructure
-patches and likely to be included in some form.  It's not quite ready
-yet, so please work on something useful like that instead of
-continuing this non-sense.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Tested-by: Thomas Renninger <trenn@suse.de>
+---
+ drivers/acpi/osl.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 313d14d..c08cdb6 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -627,6 +627,10 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	/* under 4G at first, then above 4G */
+ 	acpi_tables_addr = memblock_find_in_range(0, (1ULL<<32) - 1,
+ 					all_tables_size, PAGE_SIZE);
++	if (!acpi_tables_addr)
++		acpi_tables_addr = memblock_find_in_range(0,
++					~(phys_addr_t)0,
++					all_tables_size, PAGE_SIZE);
+ 	if (!acpi_tables_addr) {
+ 		WARN_ON(1);
+ 		return;
 -- 
-tejun
+1.8.1.4
+
