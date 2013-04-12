@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab3DLPqi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:46:38 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:63944 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab3DLPqe (ORCPT
+	id S1756368Ab3DLPqz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:46:55 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56168 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755201Ab3DLPqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:46:34 -0400
+	Fri, 12 Apr 2013 11:46:51 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J . Wysocki" <rjw@sisk.pl>
 Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
@@ -15,10 +15,14 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH v9 04/16] PCI/acpiphp: don't rely on function 0 in disable_device()
-Date: Fri, 12 Apr 2013 23:44:18 +0800
-Message-Id: <1365781470-32379-5-git-send-email-jiang.liu@huawei.com>
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-ia64@vger.kernel.org,
+        x86@kernel.org
+Subject: [PATCH v9 06/16] PCI: introduce platform dependent hooks for creating/destroying PCI busses
+Date: Fri, 12 Apr 2013 23:44:20 +0800
+Message-Id: <1365781470-32379-7-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365781470-32379-1-git-send-email-jiang.liu@huawei.com>
 References: <1365781470-32379-1-git-send-email-jiang.liu@huawei.com>
@@ -26,45 +30,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently function disable_device() detects slot state by checking
-existence of PCI device for function 0. It's unreliable because PCI
-device for function 0 may be removed through sysfs interface. If that
-happens, it will cause powering off a hotplug slot without destroying
-all PCI devices.
+On ACPI based platforms, the pci_slot driver creates PCI slot devices
+according to information from ACPI tables by registering an ACPI PCI
+subdriver. The ACPI PCI subdriver will only be called when creating/
+destroying PCI root buses, and it won't be called when hot-plugging
+P2P bridges. It may cause stale PCI slot devices after hot-removing
+a P2P bridge if that bridge has associated PCI slots. And the acpiphp
+driver has the same issue too.
 
-On the other hand, it won't hurt us except wasting some computation
-power if the check is removed, because all code of disable_device()
-is self-protected. So remove the check.
+This patch introduces two hook points into the PCI core, which will
+be invoked when creating/destroying PCI busses for PCI host and P2P
+bridges. They could be used to setup/destroy platform dependent staffs
+in a unified way, both at boot time and for PCI hotplug operations.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Myron Stowe <myron.stowe@redhat.com>
 Cc: linux-pci@vger.kernel.org
+Cc: linux-ia64@vger.kernel.org
+Cc: x86@kernel.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/pci/hotplug/acpiphp_glue.c |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/pci/probe.c  |   12 ++++++++++++
+ drivers/pci/remove.c |    1 +
+ include/linux/pci.h  |    2 ++
+ 3 files changed, 15 insertions(+)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 7948bc9..a1c8dd6 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -914,13 +914,6 @@ static int disable_device(struct acpiphp_slot *slot)
- 	struct pci_dev *pdev;
- 	struct pci_bus *bus = slot->bridge->pci_bus;
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 45c93b3..43ece5d 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -673,6 +673,8 @@ add_dev:
+ 	ret = device_register(&child->dev);
+ 	WARN_ON(ret < 0);
  
--	/* The slot will be enabled when func 0 is added, so check
--	   func 0 before disable the slot. */
--	pdev = pci_get_slot(bus, PCI_DEVFN(slot->device, 0));
--	if (!pdev)
--		goto err_exit;
--	pci_dev_put(pdev);
--
- 	list_for_each_entry(func, &slot->funcs, sibling) {
- 		if (func->bridge) {
- 			/* cleanup p2p bridges under this P2P bridge */
++	pcibios_add_bus(child);
++
+ 	/* Create legacy_io and legacy_mem files for this bus */
+ 	pci_create_legacy_files(child);
+ 
+@@ -1660,6 +1662,14 @@ int __weak pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
+ 	return 0;
+ }
+ 
++void __weak pcibios_add_bus(struct pci_bus *bus)
++{
++}
++
++void __weak pcibios_remove_bus(struct pci_bus *bus)
++{
++}
++
+ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+ {
+@@ -1714,6 +1724,8 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	if (error)
+ 		goto class_dev_reg_err;
+ 
++	pcibios_add_bus(b);
++
+ 	/* Create legacy_io and legacy_mem files for this bus */
+ 	pci_create_legacy_files(b);
+ 
+diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+index a831880..8fc54b7 100644
+--- a/drivers/pci/remove.c
++++ b/drivers/pci/remove.c
+@@ -51,6 +51,7 @@ void pci_remove_bus(struct pci_bus *bus)
+ 	pci_bus_release_busn_res(bus);
+ 	up_write(&pci_bus_sem);
+ 	pci_remove_legacy_files(bus);
++	pcibios_remove_bus(bus);
+ 	device_unregister(&bus->dev);
+ }
+ EXPORT_SYMBOL(pci_remove_bus);
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 849a336..7eb6023 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -693,6 +693,8 @@ extern struct list_head pci_root_buses;	/* list of all known PCI buses */
+ extern int no_pci_devices(void);
+ 
+ void pcibios_resource_survey_bus(struct pci_bus *bus);
++void pcibios_add_bus(struct pci_bus *bus);
++void pcibios_remove_bus(struct pci_bus *bus);
+ void pcibios_fixup_bus(struct pci_bus *);
+ int __must_check pcibios_enable_device(struct pci_dev *, int mask);
+ /* Architecture specific versions may override this (weak) */
 -- 
 1.7.9.5
 
