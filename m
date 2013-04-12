@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754294Ab3DLSnk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 14:43:40 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39977 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753296Ab3DLSni (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 14:43:38 -0400
-Date: Fri, 12 Apr 2013 20:43:35 +0200
-From: Pavel Machek <pavel@denx.de>
-To: dzu@denx.de, hjk@hansjkoch.de, gregkh@linuxfoundation.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Allow binding drivers/uio/uio_pdrv_genirq.c to devices
- using command line option
-Message-ID: <20130412184335.GA5510@amd.pavel.ucw.cz>
+	id S1754709Ab3DLSrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 14:47:52 -0400
+Received: from mout.gmx.net ([212.227.17.22]:51513 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754352Ab3DLSrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 14:47:51 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1+OtwIaePiOu95HKez2XTt411n6XuWVFHuys6Ymox
+	mpQ8D3mq06mcMW
+Message-ID: <516856D3.3000303@gmx.de>
+Date: Fri, 12 Apr 2013 20:47:47 +0200
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130405 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: "user-mode-linux-user@lists.sourceforge.net" 
+	<user-mode-linux-user@lists.sourceforge.net>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: build error with latest git kernel for a user mode linux build
+References: <51681FAA.7030108@gmx.de> <CAFLxGvzUQ3yi_rRL94MLi2ajC4Rb+GWDw-ijZGajGA=WTgaaGQ@mail.gmail.com> <516843C4.5030104@gmx.de> <CAFLxGvyp+zZx_TTyz1Zji5BGxd=JUFzhp594sxPLHgZ6kpsBCA@mail.gmail.com> <516849A9.1070206@gmx.de> <CAFLxGvx4KmTify-EEipcNr3GXUZwUx60Q+d=8=p5CXuJvqqh+Q@mail.gmail.com>
+In-Reply-To: <CAFLxGvx4KmTify-EEipcNr3GXUZwUx60Q+d=8=p5CXuJvqqh+Q@mail.gmail.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds ability to bind uio driver to given open firmware device
-using command line option. Thus, userspace driver can be developed and
-used without modifying the kernel.
+On 04/12/2013 08:39 PM, richard -rw- weinberger wrote:
+> The attached patch is an updated version of stub_pte_fix.diff. It
+> should fix your issues. :-)
 
-Signed-off-by: Pavel Machek <pavel@denx.de> 
-
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index c122bca..8fcc2c7 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -264,9 +275,13 @@ static const struct dev_pm_ops uio_pdrv_genirq_dev_pm_ops = {
- 
- #ifdef CONFIG_OF
- static const struct of_device_id uio_of_genirq_match[] = {
--	{ /* empty for now */ },
-+	{ /* This is filled with module_parm */ },
-+	{ /* Sentinel */ },
- };
- MODULE_DEVICE_TABLE(of, uio_of_genirq_match);
-+
-+module_param_string(of_id, uio_of_genirq_match[0].compatible, 128, 0);
-+MODULE_PARM_DESC(of_id, "Openfirmware id of the device to be handled by uio");
- #else
- # define uio_of_genirq_match NULL
- #endif
+yup - thx
+:-)
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
