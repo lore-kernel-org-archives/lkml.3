@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab3DLA7h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 20:59:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:35880 "EHLO
+	id S1753410Ab3DLBAK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 21:00:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:35878 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab3DLA5a (ORCPT
+	with ESMTP id S1752443Ab3DLA5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Apr 2013 20:57:30 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,64 +13,103 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
         Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 20/22] x86, mm: Add comments for step_size shift
-Date: Thu, 11 Apr 2013 17:56:06 -0700
-Message-Id: <1365728168-32067-21-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 13/22] x86, mm, numa: Use numa_meminfo to check node_map_pfn alignment
+Date: Thu, 11 Apr 2013 17:55:59 -0700
+Message-Id: <1365728168-32067-14-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
 References: <1365728168-32067-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As request by hpa, add comments for why we choose 5 for
-step size shift.
+We could use numa_meminfo directly instead of memblock nid.
+
+So we could move down set memblock nid and only do it one time
+for successful path.
+
+-v2: according to tj, separate moving to another patch.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init.c | 21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ arch/x86/mm/numa.c | 30 +++++++++++++++++++-----------
+ 1 file changed, 19 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 28b294f..2754e45 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -385,8 +385,23 @@ static unsigned long __init init_range_memory_mapping(
- 	return mapped_ram_size;
- }
- 
--/* (PUD_SHIFT-PMD_SHIFT)/2 */
--#define STEP_SIZE_SHIFT 5
-+static unsigned long __init get_new_step_size(unsigned long step_size)
-+{
-+	/*
-+	 * initial mapped size is PMD_SIZE, aka 2M.
-+	 * We can not set step_size to be PUD_SIZE aka 1G yet.
-+	 * In worse case, when 1G is cross the 1G boundary, and
-+	 * PG_LEVEL_2M is not set, we will need 1+1+512 pages (aka 2M + 8k)
-+	 * to map 1G range with PTE. Use 5 as shift for now.
-+	 */
-+	unsigned long new_step_size = step_size << 5;
-+
-+	if (new_step_size > step_size)
-+		step_size = new_step_size;
-+
-+	return  step_size;
-+}
-+
- void __init init_mem_mapping(void)
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 24155b2..fcaeba9 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -496,14 +496,18 @@ static bool __init numa_meminfo_cover_memory(const struct numa_meminfo *mi)
+  * Returns the determined alignment in pfn's.  0 if there is no alignment
+  * requirement (single node).
+  */
+-unsigned long __init node_map_pfn_alignment(void)
++#ifdef NODE_NOT_IN_PAGE_FLAGS
++static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
  {
- 	unsigned long end, real_end, start, last_start;
-@@ -428,7 +443,7 @@ void __init init_mem_mapping(void)
- 		min_pfn_mapped = last_start >> PAGE_SHIFT;
- 		/* only increase step_size after big range get mapped */
- 		if (new_mapped_ram_size > mapped_ram_size)
--			step_size <<= STEP_SIZE_SHIFT;
-+			step_size = get_new_step_size(step_size);
- 		mapped_ram_size += new_mapped_ram_size;
- 	}
+ 	unsigned long accl_mask = 0, last_end = 0;
+ 	unsigned long start, end, mask;
+ 	int last_nid = -1;
+ 	int i, nid;
  
+-	for_each_mem_pfn_range(i, MAX_NUMNODES, &start, &end, &nid) {
++	for (i = 0; i < mi->nr_blks; i++) {
++		start = mi->blk[i].start >> PAGE_SHIFT;
++		end = mi->blk[i].end >> PAGE_SHIFT;
++		nid = mi->blk[i].nid;
+ 		if (!start || last_nid < 0 || last_nid == nid) {
+ 			last_nid = nid;
+ 			last_end = end;
+@@ -526,10 +530,16 @@ unsigned long __init node_map_pfn_alignment(void)
+ 	/* convert mask to number of pages */
+ 	return ~accl_mask + 1;
+ }
++#else
++static unsigned long __init node_map_pfn_alignment(struct numa_meminfo *mi)
++{
++	return 0;
++}
++#endif
+ 
+ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ {
+-	unsigned long uninitialized_var(pfn_align);
++	unsigned long pfn_align;
+ 	int i;
+ 
+ 	/* Account for nodes with cpus and no memory */
+@@ -541,24 +551,22 @@ static int __init numa_register_memblks(struct numa_meminfo *mi)
+ 	if (!numa_meminfo_cover_memory(mi))
+ 		return -EINVAL;
+ 
+-	for (i = 0; i < mi->nr_blks; i++) {
+-		struct numa_memblk *mb = &mi->blk[i];
+-		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
+-	}
+-
+ 	/*
+ 	 * If sections array is gonna be used for pfn -> nid mapping, check
+ 	 * whether its granularity is fine enough.
+ 	 */
+-#ifdef NODE_NOT_IN_PAGE_FLAGS
+-	pfn_align = node_map_pfn_alignment();
++	pfn_align = node_map_pfn_alignment(mi);
+ 	if (pfn_align && pfn_align < PAGES_PER_SECTION) {
+ 		printk(KERN_WARNING "Node alignment %LuMB < min %LuMB, rejecting NUMA config\n",
+ 		       PFN_PHYS(pfn_align) >> 20,
+ 		       PFN_PHYS(PAGES_PER_SECTION) >> 20);
+ 		return -EINVAL;
+ 	}
+-#endif
++
++	for (i = 0; i < mi->nr_blks; i++) {
++		struct numa_memblk *mb = &mi->blk[i];
++		memblock_set_node(mb->start, mb->end - mb->start, mb->nid);
++	}
+ 
+ 	return 0;
+ }
 -- 
 1.8.1.4
 
