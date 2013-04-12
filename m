@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab3DLNmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 09:42:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11966 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754587Ab3DLNmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 09:42:18 -0400
-Message-ID: <51680ED2.4080505@redhat.com>
-Date: Fri, 12 Apr 2013 09:40:34 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Ric Mason <ric.masonn@gmail.com>, Will Huck <will.huckk@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Zlatko Calusic <zcalusic@bitsync.net>, dormando <dormando@rydia.net>,
-        Satoru Moriya <satoru.moriya@hds.com>, Michal Hocko <mhocko@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] mm: vmscan: Limit the number of pages kswapd reclaims
- at each priority
-References: <1363525456-10448-1-git-send-email-mgorman@suse.de> <1363525456-10448-2-git-send-email-mgorman@suse.de> <20130321155705.GA27848@cmpxchg.org> <514BA04D.2090002@gmail.com> <514BD56F.6050709@redhat.com> <5166510E.2050709@gmail.com> <51679FAE.7090504@gmail.com> <20130412093420.GG11656@suse.de>
-In-Reply-To: <20130412093420.GG11656@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1755582Ab3DLNmr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 09:42:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18179 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755256Ab3DLNmq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 09:42:46 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=P6hlpVgoKeYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=ayLHJbDuenQA:10 a=DWZekSpwSNPSmUazbnQA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1365774163.9609.80.camel@gandalf.local.home>
+Subject: Re: [PATCH RT v2] x86/mce: Defer mce wakeups to threads for
+ PREEMPT_RT
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <clark@redhat.com>, John Kacur <jkacur@redhat.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Fri, 12 Apr 2013 09:42:43 -0400
+In-Reply-To: <20130412133118.GC2368@pd.tnic>
+References: <1365705214.9609.58.camel@gandalf.local.home>
+	 <20130412133118.GC2368@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 05:34 AM, Mel Gorman wrote:
+On Fri, 2013-04-12 at 15:31 +0200, Borislav Petkov wrote:
+> On Thu, Apr 11, 2013 at 02:33:34PM -0400, Steven Rostedt wrote:
+> > Comments?
+> 
+> I don't have a problem with it except with the yelling - I think I've
+> gone deaf. And for Rostedt code it is pretty clean and even *I* can
+> understand it :-).
+> 
+> Tony?
+> 
+> Steve, stupid question: since this is -rt only, why even push it
+> upstream?
+> 
 
-> I do not speak for Rik but I at least am ignoring most of these questions
-> because there is not enough time in the day already. Pings are not
-> likely to change my opinion.
+I'm not (yet). But I just wanted to make sure there wasn't any little
+subtleties that I might be missing.
 
-Same here.  Some questions are just so lacking in context
-that trying to answer them is unlikely to help anyone.
+When -rt goes mainline, code like this will be going mainline too, thus
+the maintainers will see it then.
 
--- 
-All rights reversed
+Thanks!
+
+-- Steve
+  
+
