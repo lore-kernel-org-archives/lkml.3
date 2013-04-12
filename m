@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab3DLCET (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Apr 2013 22:04:19 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:53638 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab3DLCES (ORCPT
+	id S1752843Ab3DLCNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Apr 2013 22:13:44 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:56335 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750806Ab3DLCNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Apr 2013 22:04:18 -0400
+	Thu, 11 Apr 2013 22:13:43 -0400
+Date: Fri, 12 Apr 2013 10:13:36 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        linux-crypto@vger.kernel.org
+Subject: Re: linux-next: Tree for Apr 11 [ crypto: aesni-intel ]
+Message-ID: <20130412021336.GA14735@gondor.apana.org.au>
+References: <CA+icZUXR-dYRWkkz=V8=zn7cO=G1Ksa0bNweGn6kbYpjPn4mTg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4b78b961-eb82-4f32-aa09-345c1c1d39c5@default>
-References: <4b78b961-eb82-4f32-aa09-345c1c1d39c5@default>
-Date: Thu, 11 Apr 2013 19:04:17 -0700
-X-Google-Sender-Auth: u9oeOJidSepEaDoNXo9_ypQOj9Y
-Message-ID: <CAE9FiQUR7aBP3SURDG610qLOo-4nveGe+39mxDWOhe_0GJqH+A@mail.gmail.com>
-Subject: Re: [PATCH v4 21/22] x86, mm: Make init_mem_mapping be able to be
- called several times
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: Thomas Renninger <trenn@suse.de>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Jacob Shin <jacob.shin@amd.com>, Tejun Heo <tj@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUXR-dYRWkkz=V8=zn7cO=G1Ksa0bNweGn6kbYpjPn4mTg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 6:05 PM, Konrad Wilk <konrad.wilk@oracle.com> wrote:
->
-> ----- yinghai@kernel.org wrote:
->
->> Prepare to put page table on local nodes.
->>
->> Move calling of init_mem_mapping to early_initmem_init.
->>
->> Rework alloc_low_pages to alloc page table in following order:
->>       BRK, local node, low range
->>
->> Still only load_cr3 one time, otherwise we would break xen 64bit
->> again.
->
-> I have asked you in the previous iteration of the patch to fix that comment.
+On Thu, Apr 11, 2013 at 07:14:31PM +0200, Sedat Dilek wrote:
+> On Thu, Apr 11, 2013 at 10:30 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Hi all,
+> >
+> > Changes since 20130410:
+> >
+> > The tip tree gained conflicts against the net-next and pm trees.
+> >
+> > The driver-core tree gained a conflict against the tip tree.
+> >
+> > The arm-soc tree gained a conflict against the arm-current tree.
+> >
+> > The akpm tree lost a patch that turned up elsewhere.
+> >
+> > ----------------------------------------------------------------------------
+> 
+> [ CC linux-crypto folks ]
+> 
+> On Ubuntu/precise AMD64 I see:
+> 
+> ERROR: "glue_xts_crypt_128bit_one" [arch/x86/crypto/aesni-intel.ko] undefined!
+> ERROR: "glue_xts_crypt_128bit" [arch/x86/crypto/aesni-intel.ko] undefined!
+> make[3]: *** [__modpost] Error 1
+> make[2]: *** [modules] Error 2
 
-Maybe it is not clear enough.
+Should be fixed by:
 
->
-> Please remove it - as it is misleading. The issue with load_cr3 more than
-> once has been fixed under the Xen platform.
+commit 110e7610190cc4693f26c05b43ea83468a0a925c
+Author: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+Date:   Wed Apr 10 18:39:20 2013 +0300
 
-Peter, can you remove those two lines?
-or need to resend -v5?
+    crypto: aesni_intel - fix Kconfig problem with CRYPTO_GLUE_HELPER_X86
 
-Thanks
 
-Yinghai
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
