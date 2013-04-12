@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab3DLWpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:45:14 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:46619 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754666Ab3DLWpD (ORCPT
+	id S1753327Ab3DLWpX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:45:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47249 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334Ab3DLWpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:45:03 -0400
+	Fri, 12 Apr 2013 18:45:19 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v4 11/29] PCI, pciehp: Use for_each_pci_resource() helper
-Date: Fri, 12 Apr 2013 15:44:25 -0700
-Message-Id: <1365806683-26717-12-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, x86@kernel.org,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: [PATCH v4 16/29] PCI, x86: Use for_each_pci_resource() with noassign_bars
+Date: Fri, 12 Apr 2013 15:44:30 -0700
+Message-Id: <1365806683-26717-17-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: Yijing Wang <wangyijing@huawei.com>
----
- drivers/pci/hotplug/pciehp_hpc.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+Replace those open code, and make code more readable.
 
-diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-index 5127f3f..2df1ae3 100644
---- a/drivers/pci/hotplug/pciehp_hpc.c
-+++ b/drivers/pci/hotplug/pciehp_hpc.c
-@@ -807,6 +807,7 @@ static inline void dbg_ctrl(struct controller *ctrl)
- 	int i;
- 	u16 reg16;
- 	struct pci_dev *pdev = ctrl->pcie->port;
-+	struct resource *res;
- 
- 	if (!pciehp_debug)
- 		return;
-@@ -822,11 +823,11 @@ static inline void dbg_ctrl(struct controller *ctrl)
- 		  pdev->subsystem_vendor);
- 	ctrl_info(ctrl, "  PCIe Cap offset      : 0x%02x\n",
- 		  pci_pcie_cap(pdev));
--	for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
-+	for_each_pci_resource(pdev, res, i, PCI_ALL_RES) {
- 		if (!pci_resource_len(pdev, i))
- 			continue;
- 		ctrl_info(ctrl, "  PCI resource [%d]     : %pR\n",
--			  i, &pdev->resource[i]);
-+			  i, res);
- 	}
- 	ctrl_info(ctrl, "Slot Capabilities      : 0x%08x\n", ctrl->slot_cap);
- 	ctrl_info(ctrl, "  Physical Slot Number : %d\n", PSN(ctrl));
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: x86@kernel.org
+Cc: Myron Stowe <myron.stowe@redhat.com>
+---
+ arch/x86/pci/common.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 901177d..a2afe2e 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -136,8 +136,7 @@ static void pcibios_fixup_device_resources(struct pci_dev *dev)
+ 		* resource so the kernel doesn't attmept to assign
+ 		* it later on in pci_assign_unassigned_resources
+ 		*/
+-		for (bar = 0; bar <= PCI_STD_RESOURCE_END; bar++) {
+-			bar_r = &dev->resource[bar];
++		for_each_pci_resource(dev, bar_r, bar, PCI_STD_RES) {
+ 			if (bar_r->start == 0 && bar_r->end != 0) {
+ 				bar_r->flags = 0;
+ 				bar_r->end = 0;
 -- 
 1.8.1.4
 
