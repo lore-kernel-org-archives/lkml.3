@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755647Ab3DLM0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 08:26:43 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51303 "EHLO
+	id S1755548Ab3DLM0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 08:26:42 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51305 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754950Ab3DLMZ5 (ORCPT
+	by vger.kernel.org with ESMTP id S1754955Ab3DLMZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Apr 2013 08:25:57 -0400
 From: Serban Constantinescu <serban.constantinescu@arm.com>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
         Dave.Butcher@arm.com
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v3 1/6] staging: android: binder: modify struct binder_write_read to use size_t
-Date: Fri, 12 Apr 2013 13:25:50 +0100
-Message-Id: <1365769555-6052-2-git-send-email-serban.constantinescu@arm.com>
+Subject: [PATCH v3 5/6] staging: android: binder: fix alignment issues
+Date: Fri, 12 Apr 2013 13:25:54 +0100
+Message-Id: <1365769555-6052-6-git-send-email-serban.constantinescu@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
 References: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
@@ -22,82 +22,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change mirrors the userspace operation where struct binder_write_read
-members that specify the buffer size and consumed size are size_t elements.
+The Android userspace aligns the data written to the binder buffers to
+4bytes. Thus for 32bit platforms or 64bit platforms running an 32bit
+Android userspace we can have a buffer looking like this:
 
-The patch also fixes the binder_thread_write() and binder_thread_read()
-functions prototypes to conform with the definition of binder_write_read.
+platform    buffer(binder_cmd   pointer)      size
+32/32                 32b         32b          8B
+64/32                 32b         64b          12B
+64/64                 32b         64b          12B
 
-The changes do not affect existing 32bit ABI.
+Thus the kernel needs to check that the buffer size is aligned to 4bytes
+not to (void *) that will be 8bytes on 64bit machines.
+
+The change does not affect existing 32bit ABI.
 
 Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
 ---
- drivers/staging/android/binder.c |   10 +++++-----
- drivers/staging/android/binder.h |    8 ++++----
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/staging/android/binder.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 24456a0..b7a8bec 100644
+index 06004cf..6436f22 100644
 --- a/drivers/staging/android/binder.c
 +++ b/drivers/staging/android/binder.c
-@@ -1700,7 +1700,7 @@ err_no_context_mgr_node:
- }
+@@ -658,8 +658,8 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
+ 		return NULL;
+ 	}
  
- int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
--			void __user *buffer, int size, signed long *consumed)
-+			void __user *buffer, size_t size, size_t *consumed)
- {
- 	uint32_t cmd;
- 	void __user *ptr = buffer + *consumed;
-@@ -2080,8 +2080,8 @@ static int binder_has_thread_work(struct binder_thread *thread)
+-	size = ALIGN(data_size, sizeof(void *)) +
+-		ALIGN(offsets_size, sizeof(void *));
++	size = ALIGN(data_size, sizeof(u32)) +
++		ALIGN(offsets_size, sizeof(u32));
  
- static int binder_thread_read(struct binder_proc *proc,
- 			      struct binder_thread *thread,
--			      void  __user *buffer, int size,
--			      signed long *consumed, int non_block)
-+			      void  __user *buffer, size_t size,
-+			      size_t *consumed, int non_block)
- {
- 	void __user *ptr = buffer + *consumed;
- 	void __user *end = buffer + size;
-@@ -2578,7 +2578,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			goto err;
- 		}
- 		binder_debug(BINDER_DEBUG_READ_WRITE,
--			     "%d:%d write %ld at %08lx, read %ld at %08lx\n",
-+			     "%d:%d write %zd at %08lx, read %zd at %08lx\n",
- 			     proc->pid, thread->pid, bwr.write_size,
- 			     bwr.write_buffer, bwr.read_size, bwr.read_buffer);
+ 	if (size < data_size || size < offsets_size) {
+ 		binder_user_error("%d: got transaction with invalid size %zd-%zd\n",
+@@ -807,8 +807,8 @@ static void binder_free_buf(struct binder_proc *proc,
  
-@@ -2604,7 +2604,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			}
- 		}
- 		binder_debug(BINDER_DEBUG_READ_WRITE,
--			     "%d:%d wrote %ld of %ld, read return %ld of %ld\n",
-+			     "%d:%d wrote %zd of %zd, read return %zd of %zd\n",
- 			     proc->pid, thread->pid, bwr.write_consumed, bwr.write_size,
- 			     bwr.read_consumed, bwr.read_size);
- 		if (copy_to_user(ubuf, &bwr, sizeof(bwr))) {
-diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index dbe81ce..edab249 100644
---- a/drivers/staging/android/binder.h
-+++ b/drivers/staging/android/binder.h
-@@ -67,11 +67,11 @@ struct flat_binder_object {
-  */
+ 	buffer_size = binder_buffer_size(proc, buffer);
  
- struct binder_write_read {
--	signed long	write_size;	/* bytes to write */
--	signed long	write_consumed;	/* bytes consumed by driver */
-+	size_t write_size;	/* bytes to write */
-+	size_t write_consumed;	/* bytes consumed by driver */
- 	unsigned long	write_buffer;
--	signed long	read_size;	/* bytes to read */
--	signed long	read_consumed;	/* bytes consumed by driver */
-+	size_t read_size;	/* bytes to read */
-+	size_t read_consumed;	/* bytes consumed by driver */
- 	unsigned long	read_buffer;
- };
+-	size = ALIGN(buffer->data_size, sizeof(void *)) +
+-		ALIGN(buffer->offsets_size, sizeof(void *));
++	size = ALIGN(buffer->data_size, sizeof(u32)) +
++		ALIGN(buffer->offsets_size, sizeof(u32));
  
+ 	binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
+ 		     "%d: binder_free_buf %p size %zd buffer_size %zd\n",
+@@ -1247,7 +1247,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
+ 		struct flat_binder_object *fp;
+ 		if (*offp > buffer->data_size - sizeof(*fp) ||
+ 		    buffer->data_size < sizeof(*fp) ||
+-		    !IS_ALIGNED(*offp, sizeof(void *))) {
++		    !IS_ALIGNED(*offp, sizeof(u32))) {
+ 			pr_err("transaction release %d bad offset %zd, size %zd\n",
+ 			 debug_id, *offp, buffer->data_size);
+ 			continue;
+@@ -1496,7 +1496,7 @@ static void binder_transaction(struct binder_proc *proc,
+ 		struct flat_binder_object *fp;
+ 		if (*offp > t->buffer->data_size - sizeof(*fp) ||
+ 		    t->buffer->data_size < sizeof(*fp) ||
+-		    !IS_ALIGNED(*offp, sizeof(void *))) {
++		    !IS_ALIGNED(*offp, sizeof(u32))) {
+ 			binder_user_error("%d:%d got transaction with invalid offset, %zd\n",
+ 					proc->pid, thread->pid, *offp);
+ 			return_error = BR_FAILED_REPLY;
 -- 
 1.7.9.5
 
