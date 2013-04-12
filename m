@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab3DLWrK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 18:47:10 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:47687 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753764Ab3DLWrH (ORCPT
+	id S1757748Ab3DLWrZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 18:47:25 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47217 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754391Ab3DLWrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 18:47:07 -0400
+	Fri, 12 Apr 2013 18:47:09 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>, Ram Pai <linuxram@us.ibm.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v4 25/29] PCI: Update pci_resource_bar() to support addon_resource
-Date: Fri, 12 Apr 2013 15:44:39 -0700
-Message-Id: <1365806683-26717-26-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v4 19/29] PCI: Use for_each_pci_resource() in pci bases reading
+Date: Fri, 12 Apr 2013 15:44:33 -0700
+Message-Id: <1365806683-26717-20-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
 References: <1365806683-26717-1-git-send-email-yinghai@kernel.org>
@@ -22,31 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need to loop addon resource list to retrieve reg_addr in it.
+Replace those open code, and make code more readable.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- drivers/pci/pci.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/pci/probe.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index c1010be..7677c6b 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -3613,6 +3613,13 @@ int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type)
- 		reg = pci_iov_resource_bar(dev, resno, type);
- 		if (reg)
- 			return reg;
-+	} else if (resno >= PCI_NUM_RESOURCES) {
-+		struct resource *res = pci_dev_resource_n(dev, resno);
-+
-+		if (res) {
-+			*type = pci_bar_unknown;
-+			return to_pci_dev_addon_resource(res)->reg_addr;
-+		}
- 	}
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index ac751a6..263a575 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -354,9 +354,11 @@ out:
+ static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
+ {
+ 	unsigned int pos, reg;
++	struct resource *res;
  
- 	dev_err(&dev->dev, "BAR %d: invalid resource\n", resno);
+-	for (pos = 0; pos < howmany; pos++) {
+-		struct resource *res = &dev->resource[pos];
++	for_each_pci_resource(dev, res, pos, PCI_STD_RES) {
++		if (pos >= howmany)
++			break;
+ 		reg = PCI_BASE_ADDRESS_0 + (pos << 2);
+ 		pos += __pci_read_base(dev, pci_bar_unknown, res, reg);
+ 	}
 -- 
 1.8.1.4
 
