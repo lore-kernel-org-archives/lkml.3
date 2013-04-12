@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab3DLM0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 08:26:00 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51304 "EHLO
+	id S1755112Ab3DLMZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 08:25:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51300 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753482Ab3DLMZ5 (ORCPT
+	by vger.kernel.org with ESMTP id S1753442Ab3DLMZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Apr 2013 08:25:57 -0400
 From: Serban Constantinescu <serban.constantinescu@arm.com>
@@ -12,44 +12,56 @@ To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
         Dave.Butcher@arm.com
 Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v3 3/6] staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
-Date: Fri, 12 Apr 2013 13:25:52 +0100
-Message-Id: <1365769555-6052-4-git-send-email-serban.constantinescu@arm.com>
+Subject: [PATCH v3 0/6] Android Binder IPC Fixes
+Date: Fri, 12 Apr 2013 13:25:49 +0100
+Message-Id: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
-References: <1365769555-6052-1-git-send-email-serban.constantinescu@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change will fix the BINDER_SET_MAX_THREADS ioctl to use __u32
-instead of size_t for setting the max threads. Thus using the same
-handler for 32 and 64bit kernels.
+Hi all,
 
-This value is stored internally in struct binder_proc and set to 15
-on open_binder() in the libbinder API(thus no need for a 64bit size_t
-on 64bit platforms).
+This set of patches will clean-up and fix some of the issues that arise
+with the current binder interface when moving to a 64bit kernel. All these
+changes will not affect the existing 32bit Android interface and are meant
+to stand as the base for the 64bit binder compat layer(kernel or userpsace).
 
-The change does not affect existing 32bit ABI.
+The patch set has been successfully tested with a 64bit Linux userspace and
+64bit binder unit-tests.
 
-Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
----
- drivers/staging/android/binder.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This patch set has been successfully tested on 32bit platforms(ARMv7 VExpress)
+and 64bit platforms(ARMv8 RTSM) running a 32bit Android userspace and an in
+kernel binder compat layer.
 
-diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index 2f94d16..1761541 100644
---- a/drivers/staging/android/binder.h
-+++ b/drivers/staging/android/binder.h
-@@ -86,7 +86,7 @@ struct binder_version {
- 
- #define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
- #define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, __s64)
--#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, size_t)
-+#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, __u32)
- #define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, __s32)
- #define	BINDER_SET_CONTEXT_MGR		_IOW('b', 7, __s32)
- #define	BINDER_THREAD_EXIT		_IOW('b', 8, __s32)
+Changes for v3:
+1:  Dropped the patch that was replacing uint32_t types with unsigned int
+2:  Dropped the patch fixing the IOCTL types(since it has been added to Greg's
+    staging tree)
+3:  Split one patch into two: 'modify binder_write_read' and '64bit changes'
+4:  Modified BINDER_SET_MAX_THREADS ioctl definition accordint to Arve's review
+5:  Modified the binder command IOCTL declarations according to Arve's review
+
+Changes for v2:
+1: 1/7: Modified the commit message according to Greg's feedback;
+2: 3/7: Merged with the patch fixing the printk format specifiers.
+
+Serban Constantinescu (6):
+  staging: android: binder: modify struct binder_write_read to use
+    size_t
+  staging: android: binder: fix binder interface for 64bit compat layer
+  staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
+  staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
+  staging: android: binder: fix alignment issues
+  staging: android: binder: replace types with portable ones
+
+ drivers/staging/android/binder.c |   40 ++++++++++++++++-----------------
+ drivers/staging/android/binder.h |   46 +++++++++++++++++++-------------------
+ 2 files changed, 43 insertions(+), 43 deletions(-)
+
 -- 
 1.7.9.5
 
