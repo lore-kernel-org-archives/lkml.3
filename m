@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab3DLLuk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 07:50:40 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:49703 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab3DLLui (ORCPT
+	id S1755334Ab3DLLvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 07:51:43 -0400
+Received: from mail-ia0-f180.google.com ([209.85.210.180]:44016 "EHLO
+	mail-ia0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab3DLLvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 07:50:38 -0400
+	Fri, 12 Apr 2013 07:51:41 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+V-a8u+jNizu8EFfmwwh6kSr913n1JAFkx7r3_MfXrCyWnG0g@mail.gmail.com>
-References: <CA+V-a8sko61y73odE5efJWwqYyMkBqM7_FPrs7Uvh7sdtBsGvA@mail.gmail.com>
- <CA+V-a8u+jNizu8EFfmwwh6kSr913n1JAFkx7r3_MfXrCyWnG0g@mail.gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 12 Apr 2013 17:20:17 +0530
-Message-ID: <CA+V-a8vW50McasFWQJRquvBj=vf5oQeOnHC8eSFjBFUYm_M2eA@mail.gmail.com>
-Subject: Re: [GIT PULL FOR v3.10] DaVinci media cleanups + Updates
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Cc: dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        linux-media <linux-media@vger.kernel.org>
+In-Reply-To: <1586707.acL064pYmb@vostro.rjw.lan>
+References: <CAKohpo=t_YTCTRCfnwQ+GPF=frsTGDigT3RZHJuVQ+R+YZU7Hg@mail.gmail.com>
+	<1365415054-30771-1-git-send-email-amit.daniel@samsung.com>
+	<CAGo_u6oZM0K8XDMtmXKFyoGy2qf+-HSPvU0EMangM5Jj_prKsA@mail.gmail.com>
+	<1586707.acL064pYmb@vostro.rjw.lan>
+Date: Fri, 12 Apr 2013 17:21:40 +0530
+X-Google-Sender-Auth: E7ZacrSdds7s8xUjHIVtwZjB4E8
+Message-ID: <CADGdYn4qJRuLz8=PoXNRRwaNpKO92UshuiQTaK6W6Jj4p79T1A@mail.gmail.com>
+Subject: Re: [RESEND PATCH V6 1/4] cpufreq: exynos: Add cpufreq driver for exynos5440
+From: amit daniel kachhap <amit.daniel@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Nishanth Menon <nm@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-pm@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Inderpal Singh <inderpal.singh@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans/Mauro,
+Hi Rafael,
 
-Ahh here is the final pull request hopefully I wont add anymore :)
-sorry for inconvenience,
-had to add on more patch at the final moment. Following is the fresh
-pull request.
-Let me know if replying on top if it is OK or if if you want a fresh mail.
+On Fri, Apr 12, 2013 at 4:49 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, April 11, 2013 06:23:52 PM Nishanth Menon wrote:
+>> Hi,
+>> On Mon, Apr 8, 2013 at 4:57 AM, Amit Daniel Kachhap
+>> <amit.daniel@samsung.com> wrote:
+>> > +
+>> > +static int init_div_table(void)
+>> > +{
+>> > +       struct cpufreq_frequency_table *freq_tbl = dvfs_info->freq_table;
+>> > +       unsigned int tmp, clk_div, ema_div, freq, volt_id;
+>> > +       int i = 0;
+>> > +       struct opp *opp;
+>> > +
+>> > +       for (i = 0; freq_tbl[i].frequency != CPUFREQ_TABLE_END; i++) {
+>> > +
+>> > +               opp = opp_find_freq_exact(dvfs_info->dev,
+>> > +                                       freq_tbl[i].frequency * 1000, true);
+>> > +               if (IS_ERR(opp)) {
+>> > +                       dev_err(dvfs_info->dev,
+>> > +                               "failed to find valid OPP for %u KHZ\n",
+>> > +                               freq_tbl[i].frequency);
+>> > +                       return PTR_ERR(opp);
+>> > +               }
+>> please use RCU read locks.
+>>
+>> > +
+>> > +               freq = freq_tbl[i].frequency / 1000; /* In MHZ */
+>> > +               clk_div = ((freq / CPU_DIV_FREQ_MAX) & P0_7_CPUCLKDEV_MASK)
+>> > +                                       << P0_7_CPUCLKDEV_SHIFT;
+>> > +               clk_div |= ((freq / CPU_ATB_FREQ_MAX) & P0_7_ATBCLKDEV_MASK)
+>> > +                                       << P0_7_ATBCLKDEV_SHIFT;
+>> > +               clk_div |= ((freq / CPU_DBG_FREQ_MAX) & P0_7_CSCLKDEV_MASK)
+>> > +                                       << P0_7_CSCLKDEV_SHIFT;
+>> > +
+>> > +               /* Calculate EMA */
+>> > +               volt_id = opp_get_voltage(opp);
+>> Please use RCU read locks as documented for OPP library.
+>
+> Argh.  I overlooked that and the series has been applied already.  Care to send
+> a fix against linux-pm.git/linux-next?
 
-Note: All the ARM platform changes have been acked by its maintainer.
+Will submit a patch with RCU lock changes.
 
-Regards,
---Prabhakar
-
-The following changes since commit 81e096c8ac6a064854c2157e0bf802dc4906678c:
-
-  [media] budget: Add support for Philips Semi Sylt PCI ref. design
-(2013-04-08 07:28:01 -0300)
-
-are available in the git repository at:
-  git://linuxtv.org/mhadli/v4l-dvb-davinci_devices.git for_v3.10
-
-Lad, Prabhakar (9):
-      davinci: vpif: add pm_runtime support
-      media: davinci: vpss: enable vpss clocks
-      media: davinci: vpbe: venc: move the enabling of vpss clocks to driver
-      davinic: vpss: trivial cleanup
-      ARM: davinci: dm365: add support for v4l2 video display
-      ARM: davinci: dm365 EVM: add support for VPBE display
-      ARM: davinci: dm355: add support for v4l2 video display
-      ARM: davinci: dm355 EVM: add support for VPBE display
-      ARM: daVinci: dm644x/dm355/dm365: replace V4L2_STD_525_60/625_50
-with V4L2_STD_NTSC/PAL
-
-Sekhar Nori (1):
-      media: davinci: kconfig: fix incorrect selects
-
- arch/arm/mach-davinci/board-dm355-evm.c      |   71 +++++++++-
- arch/arm/mach-davinci/board-dm365-evm.c      |  166 ++++++++++++++++++++++-
- arch/arm/mach-davinci/board-dm644x-evm.c     |    4 +-
- arch/arm/mach-davinci/davinci.h              |   11 ++-
- arch/arm/mach-davinci/dm355.c                |  174 ++++++++++++++++++++++--
- arch/arm/mach-davinci/dm365.c                |  195 +++++++++++++++++++++++---
- arch/arm/mach-davinci/dm644x.c               |    9 +-
- arch/arm/mach-davinci/pm_domain.c            |    2 +-
- drivers/media/platform/davinci/Kconfig       |  103 +++++---------
- drivers/media/platform/davinci/Makefile      |   17 +--
- drivers/media/platform/davinci/dm355_ccdc.c  |   39 +-----
- drivers/media/platform/davinci/dm644x_ccdc.c |   44 ------
- drivers/media/platform/davinci/isif.c        |   28 +---
- drivers/media/platform/davinci/vpbe_venc.c   |   25 ++++
- drivers/media/platform/davinci/vpif.c        |   24 +---
- drivers/media/platform/davinci/vpss.c        |   36 ++++-
- 16 files changed, 694 insertions(+), 254 deletions(-)
+Thanks,
+Amit Daniel
+>
+> Rafael
+>
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
