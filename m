@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab3DLS3s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 14:29:48 -0400
-Received: from mail-qe0-f47.google.com ([209.85.128.47]:33757 "EHLO
-	mail-qe0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752409Ab3DLS3r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 14:29:47 -0400
-Date: Fri, 12 Apr 2013 11:29:41 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Christian Schmidt <schmidt@digadd.de>,
-        "Alasdair G. Kergon" <agk@redhat.com>
-Subject: Re: [PATCH v2] make dm and dm-crypt forward cgroup context (was:
- dm-crypt parallelization patches)
-Message-ID: <20130412182941.GF11956@mtj.dyndns.org>
-References: <Pine.LNX.4.64.1304091624110.19672@file.rdu.redhat.com>
- <20130409210735.GR6320@redhat.com>
- <Pine.LNX.4.64.1304091710150.24735@file.rdu.redhat.com>
- <20130410192427.GA14911@redhat.com>
- <Pine.LNX.4.64.1304101938280.24258@file.rdu.redhat.com>
- <20130410235009.GI17641@mtj.dyndns.org>
- <Pine.LNX.4.64.1304111544050.32536@file.rdu.redhat.com>
- <20130411195203.GA11956@mtj.dyndns.org>
- <20130411200005.GB11956@mtj.dyndns.org>
- <Pine.LNX.4.64.1304121340350.3359@file.rdu.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1304121340350.3359@file.rdu.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754066Ab3DLSaQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 14:30:16 -0400
+Received: from tex.lwn.net ([70.33.254.29]:48675 "EHLO vena.lwn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752851Ab3DLSaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Apr 2013 14:30:13 -0400
+X-Greylist: delayed 1300 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Apr 2013 14:30:13 EDT
+Date: Fri, 12 Apr 2013 12:08:31 -0600
+From: Jake Edge <jake@lwn.net>
+To: hpa@linux.intel.com, rjw@sisk.pl, linux-kernel@vger.kernel.org
+Subject: sleep/fan problem bisected to
+ 73201dbec64aebf6b0dca855b523f437972dc7bb
+Message-ID: <20130412120831.1402b440@chukar.edge2.net>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.16; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 02:01:08PM -0400, Mikulas Patocka wrote:
-> So if you think that reference counts should be incremented by every clone 
-> of the original bio, what kind of bug should it protect against? If we 
-> don't increment reference counts for pages, why should we do it for cgroup 
-> pointers?
 
-These things are called trade-offs.  You look at the overhead of the
-things and how complex / fragile things get when certain shortcuts are
-taken and how well contained and easy to verify / debug when things go
-wrong and then make your choice.
+Hi Peter,
 
-Do the two really look the same to you?  The page refs are much more
-expensive, mostly contained in and the main focus of dm.  ioc/css refs
-aren't that expensive to begin with, css refcnting is widely scattered
-across the kernel, the association interface is likely to be used by
-any entity issuing IOs asynchronously soonish, and there is much saner
-way to improve it - which would be beneficial not only to block / dm
-but everyone else using it.
+I have been having a problem on my laptop (HP Compaq 2510p) over the
+last two months with >= 3.7 kernels.  After the first resume, it turns
+on the fan and leaves it running at top speed no matter what the system
+is doing.  I finally bisected it over the last two days and that points
+the finger at your patch 73201dbec64aebf6b0dca855b523f437972dc7bb:
 
-Something being done in one place doesn't automatically make it okay
-everywhere else.  We can and do use hackery but *with* discretion.
+ x86, suspend: On wakeup always initialize cr4 and EFER
+    
+    We already have a flag word to indicate the existence of
+ MISC_ENABLES, so use the same flag word to indicate existence of cr4
+ and EFER, and always restore them if they exist.  That way if
+ something passes a nonzero value when the value *should* be zero, we
+ will still initialize it.
 
-If you still can't understand, I'm not sure what more I can tell you.
+I should note that the bisection (between 3.6, which works, and 3.7,
+which doesn't) did not exhibit the same symptoms as I see with any 3.7
+or 3.8 kernel (either from Fedora or built myself), but would instead
+refuse to come out of sleep (but still have the fan running at top
+speed) ... so maybe I've really bisected the "fails to come out of
+sleep" problem, rather than the "fan runs at top speed after resume"
+problem, dunno ... but it would seem that code is still present in 3.7+
+and I have no trouble resuming using those kernels (other than the damn
+noisy fan :)
+
+The output of "sensors" is interesting ... for "temp6" in
+"acpitz-virtual-0" it sits at +100C (near the +110C critical level)
+when things have gone bad (just in Fedora or my kernels >=3.7, not in
+the bisect, cuz those don't come back from the sleep) ... in the "good"
+case, it normally sits around 30, but goes as high as 50 (and sometimes
+reports 0 for a try or two -- frozen motherboard! :) ...
+
+thoughts on this?  Other info you need or things I should be trying?
+
+thanks,
+
+jake
 
 -- 
-tejun
+Jake Edge - LWN - jake@lwn.net - http://lwn.net
