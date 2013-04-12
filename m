@@ -1,153 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab3DLPrp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 11:47:45 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:64618 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab3DLPrl (ORCPT
+	id S1757462Ab3DLPrw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 11:47:52 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:55609 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754123Ab3DLPrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 11:47:41 -0400
-Date: Fri, 12 Apr 2013 17:47:30 +0200 (CEST)
-From: John Kacur <jkacur@redhat.com>
-To: Carsten Emde <C.Emde@osadl.org>
-cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [ANNOUNCE] 3.6.11.1-rt32
-In-Reply-To: <515A4CE4.9050607@osadl.org>
-Message-ID: <alpine.LFD.2.03.1304121746340.5703@tycho>
-References: <1364527527.10629.10.camel@gandalf.local.home> <515A4CE4.9050607@osadl.org>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463806542-124736334-1365781656=:5703"
+	Fri, 12 Apr 2013 11:47:49 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, "Rafael J . Wysocki" <rjw@sisk.pl>
+Cc: Yijing Wang <wangyijing@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
+        Jiang Liu <jiang.liu@huawei.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH v9 13/16] PCI/acpiphp: use normal list to simplify implementation
+Date: Fri, 12 Apr 2013 23:44:27 +0800
+Message-Id: <1365781470-32379-14-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365781470-32379-1-git-send-email-jiang.liu@huawei.com>
+References: <1365781470-32379-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+From: Yijing Wang <wangyijing@huawei.com>
 
----1463806542-124736334-1365781656=:5703
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Use normal list for struct acpiphp_slot to simplify implementation.
 
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/pci/hotplug/acpiphp.h      |    4 ++--
+ drivers/pci/hotplug/acpiphp_glue.c |   23 ++++++++++-------------
+ 2 files changed, 12 insertions(+), 15 deletions(-)
 
-
-On Tue, 2 Apr 2013, Carsten Emde wrote:
-
-> Steven,
-> 
-> > I'm pleased to announce the 3.6.11.1-rt32 stable release.
-> Unfortunately, there is another compile error:
-> drivers/gpu/drm/i915/i915_gem.c: In function ‘i915_gem_wait_for_error’:
-> drivers/gpu/drm/i915/i915_gem.c:118:3: warning: passing argument 1 of
-> ‘rt_spin_lock’ from incompatible pointer type [enabled by default]
-> In file included from include/linux/spinlock.h:273:0,
->                  from include/linux/wait.h:24,
->                  from include/linux/fs.h:396,
->                  from include/drm/drmP.h:47,
->                  from drivers/gpu/drm/i915/i915_gem.c:28:
-> include/linux/spinlock_rt.h:21:24: note: expected ‘struct spinlock_t *’ but
-> argument is of type ‘struct raw_spinlock_t *’
-> drivers/gpu/drm/i915/i915_gem.c:120:3: warning: passing argument 1 of
-> ‘rt_spin_unlock’ from incompatible pointer type [enabled by default]
-> In file included from include/linux/spinlock.h:273:0,
->                  from include/linux/wait.h:24,
->                  from include/linux/fs.h:396,
->                  from include/drm/drmP.h:47,
->                  from drivers/gpu/drm/i915/i915_gem.c:28:
-> include/linux/spinlock_rt.h:24:24: note: expected ‘struct spinlock_t *’ but
-> argument is of type ‘struct raw_spinlock_t *’
-> drivers/gpu/drm/i915/i915_gem.c: In function ‘i915_gem_check_wedge’:
-> drivers/gpu/drm/i915/i915_gem.c:1890:3: warning: passing argument 1 of
-> ‘rt_spin_lock’ from incompatible pointer type [enabled by default]
-> In file included from include/linux/spinlock.h:273:0,
->                  from include/linux/wait.h:24,
->                  from include/linux/fs.h:396,
->                  from include/drm/drmP.h:47,
->                  from drivers/gpu/drm/i915/i915_gem.c:28:
-> include/linux/spinlock_rt.h:21:24: note: expected ‘struct spinlock_t *’ but
-> argument is of type ‘struct raw_spinlock_t *’
-> drivers/gpu/drm/i915/i915_gem.c:1892:3: warning: passing argument 1 of
-> ‘rt_spin_unlock’ from incompatible pointer type [enabled by default]
-> In file included from include/linux/spinlock.h:273:0,
->                  from include/linux/wait.h:24,
->                  from include/linux/fs.h:396,
->                  from include/drm/drmP.h:47,
->                  from drivers/gpu/drm/i915/i915_gem.c:28:
-> include/linux/spinlock_rt.h:24:24: note: expected ‘struct spinlock_t *’ but
-> argument is of type ‘struct raw_spinlock_t *’
-> 
-> I would propose to adopt the mechanism that Sebastian introduced in
-> 3.8.4-rt2 (https://lkml.org/lkml/2013/3/26/600). The kernel compiles
-> and runs without any problem with the below patch on a system that
-> requires the i915 driver module.
-> 
-> 	-Carsten.
-> 
-> 
-> 
-> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Subject: gpu/i915: don't open code these things
-> 
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  drivers/gpu/drm/i915/i915_gem.c |   10 ++--------
->  1 file changed, 2 insertions(+), 8 deletions(-)
-> 
-> Index: linux-3.6.11.1-rt32/drivers/gpu/drm/i915/i915_gem.c
-> ===================================================================
-> --- linux-3.6.11.1-rt32.orig/drivers/gpu/drm/i915/i915_gem.c
-> +++ linux-3.6.11.1-rt32/drivers/gpu/drm/i915/i915_gem.c
-> @@ -90,7 +90,6 @@ i915_gem_wait_for_error(struct drm_devic
->  {
->  	struct drm_i915_private *dev_priv = dev->dev_private;
->  	struct completion *x = &dev_priv->error_completion;
-> -	unsigned long flags;
->  	int ret;
-> 
->  	if (!atomic_read(&dev_priv->mm.wedged))
-> @@ -115,9 +114,7 @@ i915_gem_wait_for_error(struct drm_devic
->  		 * end up waiting upon a subsequent completion event that
->  		 * will never happen.
->  		 */
-> -		spin_lock_irqsave(&x->wait.lock, flags);
-> -		x->done++;
-> -		spin_unlock_irqrestore(&x->wait.lock, flags);
-> +		complete(x);
->  	}
->  	return 0;
->  }
-> @@ -1884,12 +1881,9 @@ i915_gem_check_wedge(struct drm_i915_pri
->  	if (atomic_read(&dev_priv->mm.wedged)) {
->  		struct completion *x = &dev_priv->error_completion;
->  		bool recovery_complete;
-> -		unsigned long flags;
-> 
->  		/* Give the error handler a chance to run. */
-> -		spin_lock_irqsave(&x->wait.lock, flags);
-> -		recovery_complete = x->done > 0;
-> -		spin_unlock_irqrestore(&x->wait.lock, flags);
-> +		recovery_complete = completion_done(x);
-> 
->  		/* Non-interruptible callers can't handle -EAGAIN, hence
-> return
->  		 * -EIO unconditionally for these. */
-> 
-> 
-
-Is there a reason you left off the last hunk?
-
-@@ -4366,7 +4360,7 @@ static bool mutex_is_locked_by(struct mu
- 	if (!mutex_is_locked(mutex))
- 		return false;
+diff --git a/drivers/pci/hotplug/acpiphp.h b/drivers/pci/hotplug/acpiphp.h
+index 69b4aac..0b30045 100644
+--- a/drivers/pci/hotplug/acpiphp.h
++++ b/drivers/pci/hotplug/acpiphp.h
+@@ -73,8 +73,8 @@ static inline const char *slot_name(struct slot *slot)
+  */
+ struct acpiphp_bridge {
+ 	struct list_head list;
++	struct list_head slots;
+ 	acpi_handle handle;
+-	struct acpiphp_slot *slots;
  
--#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_MUTEXES)
-+#if (defined(CONFIG_SMP) || defined(CONFIG_DEBUG_MUTEXES)) && 
-!defined(CONFIG_PREEMPT_RT_BASE)
- 	return mutex->owner == task;
- #else
- 	/* Since UP may be pre-empted, we cannot assume that we own the 
-lock */
----1463806542-124736334-1365781656=:5703--
+ 	/* Ejectable PCI-to-PCI bridge (PCI bridge and PCI function) */
+ 	struct acpiphp_func *func;
+@@ -97,7 +97,7 @@ struct acpiphp_bridge {
+  * PCI slot information for each *physical* PCI slot
+  */
+ struct acpiphp_slot {
+-	struct acpiphp_slot *next;
++	struct list_head node;
+ 	struct acpiphp_bridge *bridge;	/* parent */
+ 	struct list_head funcs;		/* one slot may have different
+ 					   objects (i.e. for each function) */
+diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
+index 372c030..6bfd5a0 100644
+--- a/drivers/pci/hotplug/acpiphp_glue.c
++++ b/drivers/pci/hotplug/acpiphp_glue.c
+@@ -154,7 +154,7 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	acpi_handle tmp;
+ 	acpi_status status = AE_OK;
+ 	unsigned long long adr, sun;
+-	int device, function, retval;
++	int device, function, retval, found = 0;
+ 	struct pci_bus *pbus = bridge->pci_bus;
+ 	struct pci_dev *pdev;
+ 	u32 val;
+@@ -208,14 +208,15 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 	}
+ 
+ 	/* search for objects that share the same slot */
+-	for (slot = bridge->slots; slot; slot = slot->next)
++	list_for_each_entry(slot, &bridge->slots, node)
+ 		if (slot->device == device) {
+ 			if (slot->sun != sun)
+ 				warn("sibling found, but _SUN doesn't match!\n");
++			found = 1;
+ 			break;
+ 		}
+ 
+-	if (!slot) {
++	if (!found) {
+ 		slot = kzalloc(sizeof(struct acpiphp_slot), GFP_KERNEL);
+ 		if (!slot) {
+ 			kfree(newfunc);
+@@ -228,9 +229,7 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 		INIT_LIST_HEAD(&slot->funcs);
+ 		mutex_init(&slot->crit_sect);
+ 
+-		slot->next = bridge->slots;
+-		bridge->slots = slot;
+-
++		list_add_tail(&slot->node, &bridge->slots);
+ 		bridge->nr_slots++;
+ 
+ 		dbg("found ACPI PCI Hotplug slot %llu at PCI %04x:%02x:%02x\n",
+@@ -289,7 +288,7 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
+ 
+  err_exit:
+ 	bridge->nr_slots--;
+-	bridge->slots = slot->next;
++	list_del(&slot->node);
+ 	kfree(slot);
+ 	kfree(newfunc);
+ 
+@@ -353,7 +352,7 @@ static struct acpiphp_func *acpiphp_bridge_handle_to_function(acpi_handle handle
+ 	struct acpiphp_func *func;
+ 
+ 	list_for_each_entry(bridge, &bridge_list, list) {
+-		for (slot = bridge->slots; slot; slot = slot->next) {
++		list_for_each_entry(slot, &bridge->slots, node) {
+ 			list_for_each_entry(func, &slot->funcs, sibling) {
+ 				if (func->handle == handle)
+ 					return func;
+@@ -400,9 +399,7 @@ static void cleanup_bridge(struct acpiphp_bridge *bridge)
+ 			err("failed to install interrupt notify handler\n");
+ 	}
+ 
+-	slot = bridge->slots;
+-	while (slot) {
+-		next = slot->next;
++	list_for_each_entry_safe(slot, next, &bridge->slots, node) {
+ 		list_for_each_entry_safe(func, tmp, &slot->funcs, sibling) {
+ 			if (is_dock_device(func->handle)) {
+ 				unregister_hotplug_dock_device(func->handle);
+@@ -421,7 +418,6 @@ static void cleanup_bridge(struct acpiphp_bridge *bridge)
+ 		acpiphp_unregister_hotplug_slot(slot);
+ 		list_del(&slot->funcs);
+ 		kfree(slot);
+-		slot = next;
+ 	}
+ 
+ 	put_device(&bridge->pci_bus->dev);
+@@ -820,7 +816,7 @@ static int acpiphp_check_bridge(struct acpiphp_bridge *bridge)
+ 
+ 	enabled = disabled = 0;
+ 
+-	for (slot = bridge->slots; slot; slot = slot->next) {
++	list_for_each_entry(slot, &bridge->slots, node) {
+ 		unsigned int status = get_slot_status(slot);
+ 		if (slot->flags & SLOT_ENABLED) {
+ 			if (status == ACPI_STA_ALL)
+@@ -1095,6 +1091,7 @@ void acpiphp_enumerate_slots(struct pci_bus *bus, acpi_handle handle)
+ 		return;
+ 	}
+ 
++	INIT_LIST_HEAD(&bridge->slots);
+ 	bridge->handle = handle;
+ 	bridge->pci_dev = pci_dev_get(bus->self);
+ 	bridge->pci_bus = bus;
+-- 
+1.7.9.5
+
