@@ -1,106 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab3DLNcw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 09:32:52 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:45982 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149Ab3DLNcv convert rfc822-to-8bit (ORCPT
+	id S1755937Ab3DLNfl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 09:35:41 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:60452 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755440Ab3DLNfj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 09:32:51 -0400
-Date: Fri, 12 Apr 2013 09:32:48 -0400 (EDT)
-From: Eric Paris <eparis@redhat.com>
-To: yongjun wei <yongjun_wei@trendmicro.com.cn>
-Cc: Wei Yongjun <weiyj.lk@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <951128173.20228549.1365773568016.JavaMail.root@redhat.com>
-In-Reply-To: <A360F954C61C69449463B0606663711259EE4EBC@CDCEXMBX01.tw.trendnet.org>
-References: <CAPgLHd-M-q-xf+mp3VTAabxXS3bOjZ4g8EWLeE2NdjC2O7qCSA@mail.gmail.com> <170253117.11083340.1365614765343.JavaMail.root@redhat.com> <A360F954C61C69449463B0606663711259EE4EBC@CDCEXMBX01.tw.trendnet.org>
-Subject: Re: [PATCH -next] audit: remove duplicated include from audit.c
+	Fri, 12 Apr 2013 09:35:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF20 (Linux)/8.0.3_GA_5664)
-Thread-Topic: [PATCH -next] audit: remove duplicated include from audit.c
-Thread-Index: Ac43Lc94QGubB33dQHGvphSp1r0KFsUijZq7
+In-Reply-To: <1364402946-32715-1-git-send-email-honkiko@gmail.com>
+References: <1364402946-32715-1-git-send-email-honkiko@gmail.com>
+Date: Fri, 12 Apr 2013 09:35:37 -0400
+Message-ID: <CACLa4pu5OVK64NLe2y+Msd5suSAdVGgfw1A4G5RVwUezm5HHSA@mail.gmail.com>
+Subject: Re: [PATCH 2/6] audit: replace obsolete NLMSG_* with type safe nlmsg_*
+From: Eric Paris <eparis@parisplace.org>
+To: Hong Zhiguo <honkiko@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Netdev List <netdev@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Thomas Graf <tgraf@suug.ch>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Came in via the net-next tree from commit 941912133025926307c7a65b203fa38403b1063a
+On Wed, Mar 27, 2013 at 12:49 PM, Hong Zhiguo <honkiko@gmail.com> wrote:
+> Signed-off-by: Hong Zhiguo <honkiko@gmail.com>
+> ---
+>  kernel/audit.c |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+>
+> diff --git a/kernel/audit.c b/kernel/audit.c
+> index d596e53..4dbb047 100644
+> --- a/kernel/audit.c
+> +++ b/kernel/audit.c
+> @@ -58,7 +58,7 @@
+>  #ifdef CONFIG_SECURITY
+>  #include <linux/security.h>
+>  #endif
+> -#include <linux/netlink.h>
+> +#include <net/netlink.h>
 
-I'll ping dmiller and friends.
+This is a duplicate include.  We already included net/netlink.h a
+couple of lines above.  We use netlink_unicast, which comes from
+linux/netlink.h.  I recognize that it comes in from net/netlink.h, but
+I thought it good practice to pull it in ourselves.  Should I send a
+separate patch to revert back to linux/netlink.h or a patch to just
+remove the include altogether?
 
------ Original Message -----
-> Hi Eric,
-> 
-> Sorry reply on top.
-> 
-> From the source code from linex-next.git tree, line 55~64:
-> 
-> #include <net/sock.h>
-> #include <net/netlink.h>            *******
-> #include <linux/skbuff.h>
-> #ifdef CONFIG_SECURITY
-> #include <linux/security.h>
-> #endif
-> #include <net/netlink.h>            *******
-> #include <linux/freezer.h>
-> #include <linux/tty.h>
-> #include <linux/pid_namespace.h>
-> 
-> net/netlink.h is included twice, and linux/netlink.h is not included by this
-> file.
-> 
-> -----Original Message-----
-> From: Eric Paris [mailto:eparis@redhat.com]
-> Sent: 2013年4月11日 1:26
-> To: Wei Yongjun
-> Cc: viro@zeniv.linux.org.uk; Yongjun Wei (RD-CN);
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH -next] audit: remove duplicated include from audit.c
-> 
-> net/netlink.h includes linux/netlink.h but linux/netlink.h does not include
-> net/netlink.h
-> 
-> since the audit code uses the nlmsg_* functions provided in net/netlink.h it
-> seems we need this include.
-> 
-> since the audit code uses netlink_unicast provided in linux/netlink.h it
-> seems we need that include.
-> 
-> I don't see duplication even if by chance one of them would have included the
-> other...
-> 
-> ----- Original Message -----
-> > From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> > 
-> > Remove duplicated include.
-> > 
-> > Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> > ---
-> >  kernel/audit.c | 1 -
-> >  1 file changed, 1 deletion(-)
-> > 
-> > diff --git a/kernel/audit.c b/kernel/audit.c index 488f85f..9377913
-> > 100644
-> > --- a/kernel/audit.c
-> > +++ b/kernel/audit.c
-> > @@ -58,7 +58,6 @@
-> >  #ifdef CONFIG_SECURITY
-> >  #include <linux/security.h>
-> >  #endif
-> > -#include <net/netlink.h>
-> >  #include <linux/freezer.h>
-> >  #include <linux/tty.h>
-> >  #include <linux/pid_namespace.h>
-> > 
-> > 
-> 
-> <table class="TM_EMAIL_NOTICE"><tr><td><pre>
-> TREND MICRO EMAIL NOTICE
-> The information contained in this email and any attachments is confidential
-> and may be subject to copyright or other intellectual property protection.
-> If you are not the intended recipient, you are not authorized to use or
-> disclose this information, and we request that you notify us by reply mail or
-> telephone and delete the original message from your mail system.
-> </pre></td></tr></table>
+-Eric
+
+>  #include <linux/freezer.h>
+>  #include <linux/tty.h>
+>  #include <linux/pid_namespace.h>
+> @@ -910,7 +910,7 @@ static void audit_receive_skb(struct sk_buff *skb)
+>  {
+>         struct nlmsghdr *nlh;
+>         /*
+> -        * len MUST be signed for NLMSG_NEXT to be able to dec it below 0
+> +        * len MUST be signed for nlmsg_next to be able to dec it below 0
+>          * if the nlmsg_len was not aligned
+>          */
+>         int len;
+> @@ -919,13 +919,13 @@ static void audit_receive_skb(struct sk_buff *skb)
+>         nlh = nlmsg_hdr(skb);
+>         len = skb->len;
+>
+> -       while (NLMSG_OK(nlh, len)) {
+> +       while (nlmsg_ok(nlh, len)) {
+>                 err = audit_receive_msg(skb, nlh);
+>                 /* if err or if this message says it wants a response */
+>                 if (err || (nlh->nlmsg_flags & NLM_F_ACK))
+>                         netlink_ack(skb, nlh, err);
+>
+> -               nlh = NLMSG_NEXT(nlh, len);
+> +               nlh = nlmsg_next(nlh, len);
+>         }
+>  }
+>
+> @@ -1483,7 +1483,7 @@ void audit_log_end(struct audit_buffer *ab)
+>                 audit_log_lost("rate limit exceeded");
+>         } else {
+>                 struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
+> -               nlh->nlmsg_len = ab->skb->len - NLMSG_SPACE(0);
+> +               nlh->nlmsg_len = ab->skb->len - NLMSG_HDRLEN;
+>
+>                 if (audit_pid) {
+>                         skb_queue_tail(&audit_skb_queue, ab->skb);
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
