@@ -1,66 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab3DLI6U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 04:58:20 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47151 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752448Ab3DLI6R (ORCPT
+	id S1754200Ab3DLJBF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 05:01:05 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:37330
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752448Ab3DLJBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 04:58:17 -0400
-Date: Fri, 12 Apr 2013 09:57:48 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 0/4 v6] arm: introduce psci_smp_ops and use them on Xen
-Message-ID: <20130412085748.GC12363@mudshark.cambridge.arm.com>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com>
- <alpine.DEB.2.02.1304081102500.5353@kaball.uk.xensource.com>
- <20130411082519.GD31465@quad.lixom.net>
- <51671A39.6090105@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51671A39.6090105@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 12 Apr 2013 05:01:02 -0400
+Message-ID: <1365757243.17140.28.camel@laptop>
+Subject: Re: sw_perf_event_destroy() oops while fuzzing
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Tommi Rantala <tt.rantala@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Date: Fri, 12 Apr 2013 11:00:43 +0200
+In-Reply-To: <CA+ydwtrhpd2C3sK6B49qdoWg-k97gBXFDgnKXY2Mcb_wSsMiXQ@mail.gmail.com>
+References: <CA+ydwtrhpd2C3sK6B49qdoWg-k97gBXFDgnKXY2Mcb_wSsMiXQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 09:16:57PM +0100, Rob Herring wrote:
-> On 04/11/2013 03:25 AM, Olof Johansson wrote:
-> > On Mon, Apr 08, 2013 at 12:05:17PM +0100, Stefano Stabellini wrote:
-> >> Arnd, Olof,
-> >> do you have any thoughts on this series?
-> >> Would you be happy to carry it in the arm-soc tree?
-> >>
-> >> The last patch, "xen/arm: introduce xen_early_init, use PSCI on xen" has
-> >> a (small) dependency on this series:
-> >>
-> >> http://marc.info/?l=linux-kernel&m=136430893610688&w=2
-> >>
-> >> would you be OK with taking that one too, or should that go through the
-> >> Xen tree?
-> > 
-> > I think it'd make sense to get Russell to ack the changes to the core ARM code.
-> > We can merge the series through arm-soc, or he can take them, whatever is
-> > easiest for everybody.
-> > 
-> > Given the dependencies on the second branch it might be easier to merge
-> > through Russell's tree.
-> 
-> I'm also dependent on the 1st patch for converting highbank to use PSCI
-> and am just waiting on a stable branch to base it on. I believe Russell
-> said he is offline for the next week.
+On Fri, 2013-04-12 at 08:34 +0300, Tommi Rantala wrote:
 
-By the first patch, do you just mean 6/6 in that series ("[RFC] arm: use PSCI if
-available"), or do you have dependencies on others in that series too?
+> [92759.011005] RIP  [<ffffffff811a7200>] sw_perf_event_destroy+0x30/0x90
 
-Will
+> [114607.070003] RIP: 0010:[<ffffffff811a7200>]  [<ffffffff811a7200>]
+> sw_perf_event_destroy+0x30/0x90
+
+> [114607.070003] RIP  [<ffffffff811a7200>] sw_perf_event_destroy+0x30/0x90
+
+Would you have a source line for me that goes with that.. I can't seem
+to poke any holes just by looking.
+
+perf_swevent_init() only sets event->destroy() (to
+sw_perf_event_destroy) _after_ it increments the static key thing and
+enqueues (and allocates) the hash list stuff.
+
+Obviously something is funny, but I'm not seeing it.
+
