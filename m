@@ -1,26 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab3DMMZk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 08:25:40 -0400
-Received: from [186.47.47.195] ([186.47.47.195]:56616 "EHLO
-	mail.ste.cnel.gob.ec" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904Ab3DMMZj (ORCPT
+	id S1753340Ab3DMMhL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 08:37:11 -0400
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:56810 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753132Ab3DMMhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 08:25:39 -0400
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Apr 2013 08:25:39 EDT
-Date: Sat, 13 Apr 2013 07:12:30 -0500 (ECT)
-From: Young Chang <jvera@ste.cnel.gob.ec>
-Reply-To: Young Chang <youngchang46hk@yahoo.com.hk>
-Subject: Re
-Message-ID: <09edcf60-4836-42c3-8ae7-f869c28bac76@mail.ste.cnel.gob.ec>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Sat, 13 Apr 2013 08:37:10 -0400
+Message-ID: <51695169.6090306@gmail.com>
+Date: Sat, 13 Apr 2013 08:36:57 -0400
+From: Kyle Evans <kvans32@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130220 Thunderbird/17.0.3
 MIME-Version: 1.0
-X-Originating-IP: [41.206.15.15]
-X-Mailer: Zimbra 7.1.1_GA_3196 (zclient/7.1.1_GA_3196)
-To: undisclosed-recipients:;
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+Subject: Re: BUG: Fn keys not working on EliteBook 8460p after fabf85e3ca15d5b94058f391dac8df870cdd427a
+References: <201304130331.18301@pali> <1365816906.13667.6.camel@x230.lan>
+In-Reply-To: <1365816906.13667.6.camel@x230.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a business proposal of $18.2m USD that i will like you to handle with me from my bank. If interested, kindly get back to me for more details.
+Sure, sorry about that. I was hoping the GUID would be enough. I'll see 
+what I can come up with.
+
+On 04/12/2013 09:35 PM, Matthew Garrett wrote:
+> On Sat, 2013-04-13 at 03:31 +0200, Pali Rohár wrote:
+>
+>> all Fn keys, wifi switch, web and mute buttons not working anymore
+>> on my notebook HP EliteBook 8460p. I bisected git commit which
+>> broke all above keys: fabf85e3ca15d5b94058f391dac8df870cdd427a
+>>
+>> When I reverted that commit after reboot buttons started working
+>> again. Can you fix it or revert that broken commit? This is
+>> critical problem, which caused my notebook to be unusable...
+> Sure, I'll revert that. Kyle, can you look into figuring out a way to
+> only run this on machines that need it?
+>
+
