@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab3DMNCE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 09:02:04 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:41453 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362Ab3DMNBw (ORCPT
+	id S1753995Ab3DMNCX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 09:02:23 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:39369 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361Ab3DMNCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 09:01:52 -0400
+	Sat, 13 Apr 2013 09:02:02 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
@@ -16,71 +16,134 @@ Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Bob Liu <bob.liu@oracle.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH PART3 v4 4/6] staging: ramster/debug: Add CONFIG_RAMSTER_DEBUG Kconfig entry 
-Date: Sat, 13 Apr 2013 21:01:30 +0800
-Message-Id: <1365858092-21920-5-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH PART3 v4 5/6] staging: zcache/debug: fix coding style
+Date: Sat, 13 Apr 2013 21:01:31 +0800
+Message-Id: <1365858092-21920-6-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1365858092-21920-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1365858092-21920-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041312-1396-0000-0000-000002CC916A
+x-cbid: 13041312-1618-0000-0000-000003AE2378
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CONFIG_RAMSTER_DEBUG Kconfig entry.
+Fix coding style issue: ERROR: space prohibited before that '++' (ctx:WxO)
+and line beyond 8 characters.
 
 Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/Kconfig         |    8 ++++++++
- drivers/staging/zcache/Makefile        |    2 +-
- drivers/staging/zcache/ramster/debug.h |    2 +-
- 3 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/staging/zcache/debug.h |   95 ++++++++++++++++++++++++++++++++--------
+ 1 file changed, 76 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
-index c3b8a10..05e87a1 100644
---- a/drivers/staging/zcache/Kconfig
-+++ b/drivers/staging/zcache/Kconfig
-@@ -33,6 +33,14 @@ config RAMSTER
- 	  zcache2, compresses swap pages into local RAM, but then remotifies
- 	  the compressed pages to another node in the RAMster cluster.
+diff --git a/drivers/staging/zcache/debug.h b/drivers/staging/zcache/debug.h
+index ddad92f..8088d28 100644
+--- a/drivers/staging/zcache/debug.h
++++ b/drivers/staging/zcache/debug.h
+@@ -174,26 +174,83 @@ extern ssize_t zcache_writtenback_pages;
+ extern ssize_t zcache_outstanding_writeback_pages;
+ #endif
  
-+config RAMSTER_DEBUG
-+        bool "Enable ramster debug statistics"
-+        depends on DEBUG_FS && RAMSTER
-+        default n
-+        help
-+          This is used to provide an debugfs directory with counters of
-+          how ramster is doing. You probably want to set this to 'N'.
-+
- # Depends on not-yet-upstreamed mm patches to export end_swap_bio_write and
- # __add_to_swap_cache, and implement __swap_writepage (which is swap_writepage
- # without the frontswap call. When these are in-tree, the dependency on
-diff --git a/drivers/staging/zcache/Makefile b/drivers/staging/zcache/Makefile
-index 4956fa0..845a5c2 100644
---- a/drivers/staging/zcache/Makefile
-+++ b/drivers/staging/zcache/Makefile
-@@ -1,6 +1,6 @@
- zcache-y	:=		zcache-main.o tmem.o zbud.o
- zcache-$(CONFIG_ZCACHE_DEBUG) += debug.o
--zcache-$(CONFIG_RAMSTER) += ramster/debug.o
-+zcache-$(CONFIG_RAMSTER_DEBUG) += ramster/debug.o
- zcache-$(CONFIG_RAMSTER)	+=	ramster/ramster.o ramster/r2net.o
- zcache-$(CONFIG_RAMSTER)	+=	ramster/nodemanager.o ramster/tcp.o
- zcache-$(CONFIG_RAMSTER)	+=	ramster/heartbeat.o ramster/masklog.o
-diff --git a/drivers/staging/zcache/ramster/debug.h b/drivers/staging/zcache/ramster/debug.h
-index 4428c79..5ffab50 100644
---- a/drivers/staging/zcache/ramster/debug.h
-+++ b/drivers/staging/zcache/ramster/debug.h
-@@ -1,6 +1,6 @@
- #include <linux/bug.h>
+-static inline void inc_zcache_flush_total(void) { zcache_flush_total ++; };
+-static inline void inc_zcache_flush_found(void) { zcache_flush_found ++; };
+-static inline void inc_zcache_flobj_total(void) { zcache_flobj_total ++; };
+-static inline void inc_zcache_flobj_found(void) { zcache_flobj_found ++; };
+-static inline void inc_zcache_failed_eph_puts(void) { zcache_failed_eph_puts ++; };
+-static inline void inc_zcache_failed_pers_puts(void) { zcache_failed_pers_puts ++; };
+-static inline void inc_zcache_failed_getfreepages(void) { zcache_failed_getfreepages ++; };
+-static inline void inc_zcache_failed_alloc(void) { zcache_failed_alloc ++; };
+-static inline void inc_zcache_put_to_flush(void) { zcache_put_to_flush ++; };
+-static inline void inc_zcache_compress_poor(void) { zcache_compress_poor ++; };
+-static inline void inc_zcache_mean_compress_poor(void) { zcache_mean_compress_poor ++; };
+-static inline void inc_zcache_eph_ate_tail(void) { zcache_eph_ate_tail ++; };
+-static inline void inc_zcache_eph_ate_tail_failed(void) { zcache_eph_ate_tail_failed ++; };
+-static inline void inc_zcache_pers_ate_eph(void) { zcache_pers_ate_eph ++; };
+-static inline void inc_zcache_pers_ate_eph_failed(void) { zcache_pers_ate_eph_failed ++; };
+-static inline void inc_zcache_evicted_eph_zpages(unsigned zpages) { zcache_evicted_eph_zpages += zpages; };
+-static inline void inc_zcache_evicted_eph_pageframes(void) { zcache_evicted_eph_pageframes ++; };
++static inline void inc_zcache_flush_total(void)
++{
++	zcache_flush_total++;
++};
++static inline void inc_zcache_flush_found(void)
++{
++	zcache_flush_found++;
++};
++static inline void inc_zcache_flobj_total(void)
++{
++	zcache_flobj_total++;
++};
++static inline void inc_zcache_flobj_found(void)
++{
++	zcache_flobj_found++;
++};
++static inline void inc_zcache_failed_eph_puts(void)
++{
++	zcache_failed_eph_puts++;
++};
++static inline void inc_zcache_failed_pers_puts(void)
++{
++	zcache_failed_pers_puts++;
++};
++static inline void inc_zcache_failed_getfreepages(void)
++{
++	zcache_failed_getfreepages++;
++};
++static inline void inc_zcache_failed_alloc(void)
++{
++	zcache_failed_alloc++;
++};
++static inline void inc_zcache_put_to_flush(void)
++{
++	zcache_put_to_flush++;
++};
++static inline void inc_zcache_compress_poor(void)
++{
++	zcache_compress_poor++;
++};
++static inline void inc_zcache_mean_compress_poor(void)
++{
++	zcache_mean_compress_poor++;
++};
++static inline void inc_zcache_eph_ate_tail(void)
++{
++	zcache_eph_ate_tail++;
++};
++static inline void inc_zcache_eph_ate_tail_failed(void)
++{
++	zcache_eph_ate_tail_failed++;
++};
++static inline void inc_zcache_pers_ate_eph(void)
++{
++	zcache_pers_ate_eph++;
++};
++static inline void inc_zcache_pers_ate_eph_failed(void)
++{
++	zcache_pers_ate_eph_failed++;
++};
++static inline void inc_zcache_evicted_eph_zpages(unsigned zpages)
++{
++	zcache_evicted_eph_zpages += zpages;
++};
++static inline void inc_zcache_evicted_eph_pageframes(void)
++{
++	zcache_evicted_eph_pageframes++;
++};
  
--#ifdef CONFIG_RAMSTER
-+#ifdef CONFIG_RAMSTER_DEBUG
+-static inline void inc_zcache_eph_nonactive_puts_ignored(void) { zcache_eph_nonactive_puts_ignored ++; };
+-static inline void inc_zcache_pers_nonactive_puts_ignored(void) { zcache_pers_nonactive_puts_ignored ++; };
++static inline void inc_zcache_eph_nonactive_puts_ignored(void)
++{
++	zcache_eph_nonactive_puts_ignored++;
++};
++static inline void inc_zcache_pers_nonactive_puts_ignored(void)
++{
++	zcache_pers_nonactive_puts_ignored++;
++};
  
- extern long ramster_flnodes;
- static atomic_t ramster_flnodes_atomic = ATOMIC_INIT(0);
+ int zcache_debugfs_init(void);
+ #else
 -- 
 1.7.10.4
 
