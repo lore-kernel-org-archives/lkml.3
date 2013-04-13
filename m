@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab3DMAg2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 20:36:28 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:51423 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755232Ab3DMAg1 (ORCPT
+	id S1756690Ab3DMAgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 20:36:38 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:50936 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756084Ab3DMAg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 20:36:27 -0400
+	Fri, 12 Apr 2013 20:36:29 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
@@ -16,121 +16,218 @@ Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         Bob Liu <bob.liu@oracle.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH PART3 v3 3/6] staging: ramster/debug: Use an array to initialize/use debugfs attributes
-Date: Sat, 13 Apr 2013 08:36:07 +0800
-Message-Id: <1365813371-19006-3-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH PART3 v3 4/6] staging: ramster: Add incremental accessory counters
+Date: Sat, 13 Apr 2013 08:36:08 +0800
+Message-Id: <1365813371-19006-4-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1365813371-19006-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1365813371-19006-1-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041300-3568-0000-0000-0000036B08EA
+x-cbid: 13041300-1396-0000-0000-000002CAC07E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use an array to initialize/use debugfs attributes, it makes them 
-neater as zcache/debug.c does.
+Add incremental accessory counters that are going to be used for 
+debug fs entries.
 
 Acked-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- drivers/staging/zcache/ramster/debug.c |   68 +++++++++++++++-----------------
- 1 file changed, 32 insertions(+), 36 deletions(-)
+ drivers/staging/zcache/ramster/debug.h   |   67 ++++++++++++++++++++++++++++++
+ drivers/staging/zcache/ramster/ramster.c |   32 +++++++-------
+ 2 files changed, 83 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/staging/zcache/ramster/debug.c b/drivers/staging/zcache/ramster/debug.c
-index 76861e4..bf34133 100644
---- a/drivers/staging/zcache/ramster/debug.c
-+++ b/drivers/staging/zcache/ramster/debug.c
-@@ -3,8 +3,6 @@
+diff --git a/drivers/staging/zcache/ramster/debug.h b/drivers/staging/zcache/ramster/debug.h
+index 17a8435..7b2deaa 100644
+--- a/drivers/staging/zcache/ramster/debug.h
++++ b/drivers/staging/zcache/ramster/debug.h
+@@ -60,6 +60,59 @@ extern ssize_t ramster_remote_page_flushes_failed;
  
- #ifdef CONFIG_DEBUG_FS
- #include <linux/debugfs.h>
--#define zdfs    debugfs_create_size_t
--#define zdfs64  debugfs_create_u64
+ int ramster_debugfs_init(void);
  
- ssize_t ramster_eph_pages_remoted;
- ssize_t ramster_pers_pages_remoted;
-@@ -20,48 +18,46 @@ ssize_t ramster_remote_object_flushes_failed;
- ssize_t ramster_remote_pages_flushed;
- ssize_t ramster_remote_page_flushes_failed;
- 
-+#define ATTR(x)  { .name = #x, .val = &ramster_##x, }
-+static struct debug_entry {
-+	const char *name;
-+	ssize_t *val;
-+} attrs[] = {
-+	ATTR(eph_pages_remoted),
-+	ATTR(pers_pages_remoted),
-+	ATTR(eph_pages_remote_failed),
-+	ATTR(pers_pages_remote_failed),
-+	ATTR(remote_eph_pages_succ_get),
-+	ATTR(remote_pers_pages_succ_get),
-+	ATTR(remote_eph_pages_unsucc_get),
-+	ATTR(remote_pers_pages_unsucc_get),
-+	ATTR(pers_pages_remote_nomem),
-+	ATTR(remote_objects_flushed),
-+	ATTR(remote_pages_flushed),
-+	ATTR(remote_object_flushes_failed),
-+	ATTR(remote_page_flushes_failed),
-+	ATTR(foreign_eph_pages),
-+	ATTR(foreign_eph_pages_max),
-+	ATTR(foreign_pers_pages),
-+	ATTR(foreign_pers_pages_max),
++static inline void inc_ramster_eph_pages_remoted(void)
++{
++	ramster_eph_pages_remoted++;
 +};
-+#undef ATTR
++static inline void inc_ramster_pers_pages_remoted(void)
++{
++	ramster_pers_pages_remoted++;
++};
++static inline void inc_ramster_eph_pages_remote_failed(void)
++{
++	ramster_eph_pages_remote_failed++;
++};
++static inline void inc_ramster_pers_pages_remote_failed(void)
++{
++	ramster_pers_pages_remote_failed++;
++};
++static inline void inc_ramster_remote_eph_pages_succ_get(void)
++{
++	ramster_remote_eph_pages_succ_get++;
++};
++static inline void inc_ramster_remote_pers_pages_succ_get(void)
++{
++	ramster_remote_pers_pages_succ_get++;
++};
++static inline void inc_ramster_remote_eph_pages_unsucc_get(void)
++{
++	ramster_remote_eph_pages_unsucc_get++;
++};
++static inline void inc_ramster_remote_pers_pages_unsucc_get(void)
++{
++	ramster_remote_pers_pages_unsucc_get++;
++};
++static inline void inc_ramster_pers_pages_remote_nomem(void)
++{
++	ramster_pers_pages_remote_nomem++;
++};
++static inline void inc_ramster_remote_objects_flushed(void)
++{
++	ramster_remote_objects_flushed++;
++};
++static inline void inc_ramster_remote_object_flushes_failed(void)
++{
++	ramster_remote_object_flushes_failed++;
++};
++static inline void inc_ramster_remote_pages_flushed(void)
++{
++	ramster_remote_pages_flushed++;
++};
++static inline void inc_ramster_remote_page_flushes_failed(void)
++{
++	ramster_remote_page_flushes_failed++;
++};
 +
- int __init ramster_debugfs_init(void)
- {
-+	int i;
- 	struct dentry *root = debugfs_create_dir("ramster", NULL);
- 	if (root == NULL)
- 		return -ENXIO;
- 
--	zdfs("eph_pages_remoted", S_IRUGO, root, &ramster_eph_pages_remoted);
--	zdfs("pers_pages_remoted", S_IRUGO, root, &ramster_pers_pages_remoted);
--	zdfs("eph_pages_remote_failed", S_IRUGO, root,
--		&ramster_eph_pages_remote_failed);
--	zdfs("pers_pages_remote_failed", S_IRUGO, root,
--		&ramster_pers_pages_remote_failed);
--	zdfs("remote_eph_pages_succ_get", S_IRUGO, root,
--		&ramster_remote_eph_pages_succ_get);
--	zdfs("remote_pers_pages_succ_get", S_IRUGO, root,
--		&ramster_remote_pers_pages_succ_get);
--	zdfs("remote_eph_pages_unsucc_get", S_IRUGO, root,
--		&ramster_remote_eph_pages_unsucc_get);
--	zdfs("remote_pers_pages_unsucc_get", S_IRUGO, root,
--		&ramster_remote_pers_pages_unsucc_get);
--	zdfs("pers_pages_remote_nomem", S_IRUGO, root,
--		&ramster_pers_pages_remote_nomem);
--	zdfs("remote_objects_flushed", S_IRUGO, root,
--		&ramster_remote_objects_flushed);
--	zdfs("remote_pages_flushed", S_IRUGO, root,
--		&ramster_remote_pages_flushed);
--	zdfs("remote_object_flushes_failed", S_IRUGO, root,
--		&ramster_remote_object_flushes_failed);
--	zdfs("remote_page_flushes_failed", S_IRUGO, root,
--		&ramster_remote_page_flushes_failed);
--	zdfs("foreign_eph_pages", S_IRUGO, root,
--		&ramster_foreign_eph_pages);
--	zdfs("foreign_eph_pages_max", S_IRUGO, root,
--		&ramster_foreign_eph_pages_max);
--	zdfs("foreign_pers_pages", S_IRUGO, root,
--		&ramster_foreign_pers_pages);
--	zdfs("foreign_pers_pages_max", S_IRUGO, root,
--		&ramster_foreign_pers_pages_max);
-+	for (i = 0; i < ARRAY_SIZE(attrs); i++)
-+		if (!debugfs_create_size_t(attrs[i].name,
-+				S_IRUGO, root, attrs[i].val))
-+			goto out;
- 	return 0;
-+out:
-+	return -ENODEV;
- }
--#undef  zdebugfs
--#undef  zdfs64
  #else
+ 
+ static inline void inc_ramster_flnodes(void) { };
+@@ -69,6 +122,20 @@ static inline void dec_ramster_foreign_eph_pages(void) { };
+ static inline void inc_ramster_foreign_pers_pages(void) { };
+ static inline void dec_ramster_foreign_pers_pages(void) { };
+ 
++static inline void inc_ramster_eph_pages_remoted(void) { };
++static inline void inc_ramster_pers_pages_remoted(void) { };
++static inline void inc_ramster_eph_pages_remote_failed(void) { };
++static inline void inc_ramster_pers_pages_remote_failed(void) { };
++static inline void inc_ramster_remote_eph_pages_succ_get(void) { };
++static inline void inc_ramster_remote_pers_pages_succ_get(void) { };
++static inline void inc_ramster_remote_eph_pages_unsucc_get(void) { };
++static inline void inc_ramster_remote_pers_pages_unsucc_get(void) { };
++static inline void inc_ramster_pers_pages_remote_nomem(void) { };
++static inline void inc_ramster_remote_objects_flushed(void) { };
++static inline void inc_ramster_remote_object_flushes_failed(void) { };
++static inline void inc_ramster_remote_pages_flushed(void) { };
++static inline void inc_ramster_remote_page_flushes_failed(void) { };
++
  static inline int ramster_debugfs_init(void)
  {
+ 	return 0;
+diff --git a/drivers/staging/zcache/ramster/ramster.c b/drivers/staging/zcache/ramster/ramster.c
+index 1d29f5b..8781627 100644
+--- a/drivers/staging/zcache/ramster/ramster.c
++++ b/drivers/staging/zcache/ramster/ramster.c
+@@ -156,9 +156,9 @@ int ramster_localify(int pool_id, struct tmem_oid *oidp, uint32_t index,
+ 		pr_err("UNTESTED pampd==NULL in ramster_localify\n");
+ #endif
+ 		if (eph)
+-			ramster_remote_eph_pages_unsucc_get++;
++			inc_ramster_remote_eph_pages_unsucc_get();
+ 		else
+-			ramster_remote_pers_pages_unsucc_get++;
++			inc_ramster_remote_pers_pages_unsucc_get();
+ 		obj = NULL;
+ 		goto finish;
+ 	} else if (unlikely(!pampd_is_remote(pampd))) {
+@@ -167,9 +167,9 @@ int ramster_localify(int pool_id, struct tmem_oid *oidp, uint32_t index,
+ 		pr_err("UNTESTED dup while waiting in ramster_localify\n");
+ #endif
+ 		if (eph)
+-			ramster_remote_eph_pages_unsucc_get++;
++			inc_ramster_remote_eph_pages_unsucc_get();
+ 		else
+-			ramster_remote_pers_pages_unsucc_get++;
++			inc_ramster_remote_pers_pages_unsucc_get();
+ 		obj = NULL;
+ 		pampd = NULL;
+ 		ret = -EEXIST;
+@@ -178,7 +178,7 @@ int ramster_localify(int pool_id, struct tmem_oid *oidp, uint32_t index,
+ 		/* no remote data, delete the local is_remote pampd */
+ 		pampd = NULL;
+ 		if (eph)
+-			ramster_remote_eph_pages_unsucc_get++;
++			inc_ramster_remote_eph_pages_unsucc_get();
+ 		else
+ 			BUG();
+ 		delete = true;
+@@ -209,9 +209,9 @@ int ramster_localify(int pool_id, struct tmem_oid *oidp, uint32_t index,
+ 	BUG_ON(extra == NULL);
+ 	zcache_decompress_to_page(data, size, (struct page *)extra);
+ 	if (eph)
+-		ramster_remote_eph_pages_succ_get++;
++		inc_ramster_remote_eph_pages_succ_get();
+ 	else
+-		ramster_remote_pers_pages_succ_get++;
++		inc_ramster_remote_pers_pages_succ_get();
+ 	ret = 0;
+ finish:
+ 	tmem_localify_finish(obj, index, pampd, saved_hb, delete);
+@@ -296,7 +296,7 @@ void *ramster_pampd_repatriate_preload(void *pampd, struct tmem_pool *pool,
+ 		c = atomic_dec_return(&ramster_remote_pers_pages);
+ 		WARN_ON_ONCE(c < 0);
+ 	} else {
+-		ramster_pers_pages_remote_nomem++;
++		inc_ramster_pers_pages_remote_nomem();
+ 	}
+ 	local_irq_restore(flags);
+ out:
+@@ -435,9 +435,9 @@ static void ramster_remote_flush_page(struct flushlist_node *flnode)
+ 	remotenode = flnode->xh.client_id;
+ 	ret = r2net_remote_flush(xh, remotenode);
+ 	if (ret >= 0)
+-		ramster_remote_pages_flushed++;
++		inc_ramster_remote_pages_flushed();
+ 	else
+-		ramster_remote_page_flushes_failed++;
++		inc_ramster_remote_page_flushes_failed();
+ 	preempt_enable_no_resched();
+ 	ramster_flnode_free(flnode, NULL);
+ }
+@@ -452,9 +452,9 @@ static void ramster_remote_flush_object(struct flushlist_node *flnode)
+ 	remotenode = flnode->xh.client_id;
+ 	ret = r2net_remote_flush_object(xh, remotenode);
+ 	if (ret >= 0)
+-		ramster_remote_objects_flushed++;
++		inc_ramster_remote_objects_flushed();
+ 	else
+-		ramster_remote_object_flushes_failed++;
++		inc_ramster_remote_object_flushes_failed();
+ 	preempt_enable_no_resched();
+ 	ramster_flnode_free(flnode, NULL);
+ }
+@@ -505,18 +505,18 @@ int ramster_remotify_pageframe(bool eph)
+ 		 * But count them so we know if it becomes a problem.
+ 		 */
+ 			if (eph)
+-				ramster_eph_pages_remote_failed++;
++				inc_ramster_eph_pages_remote_failed();
+ 			else
+-				ramster_pers_pages_remote_failed++;
++				inc_ramster_pers_pages_remote_failed();
+ 			break;
+ 		} else {
+ 			if (!eph)
+ 				atomic_inc(&ramster_remote_pers_pages);
+ 		}
+ 		if (eph)
+-			ramster_eph_pages_remoted++;
++			inc_ramster_eph_pages_remoted();
+ 		else
+-			ramster_pers_pages_remoted++;
++			inc_ramster_pers_pages_remoted();
+ 		/*
+ 		 * data was successfully remoted so change the local version to
+ 		 * point to the remote node where it landed
 -- 
 1.7.10.4
 
