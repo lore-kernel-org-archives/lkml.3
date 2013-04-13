@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755855Ab3DLXyT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 19:54:19 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:36431 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753538Ab3DLXyR (ORCPT
+	id S1753290Ab3DMACI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 20:02:08 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:49833 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab3DMACH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 19:54:17 -0400
+	Fri, 12 Apr 2013 20:02:07 -0400
 X-Originating-IP: 173.246.103.110
-Date: Fri, 12 Apr 2013 16:54:02 -0700
+Date: Fri, 12 Apr 2013 17:01:46 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130412235401.GA8140@jtriplet-mobl1>
+        fweisbec@gmail.com, sbw@mit.edu, sasha.levin@oracle.com,
+        paul.gortmaker@windriver.com, paulus@au1.ibm.com
+Subject: Re: [PATCH tip/core/rcu 0/7] RCU fixes for 3.11
+Message-ID: <20130413000146.GB8140@jtriplet-mobl1>
 References: <20130412231846.GA20038@linux.vnet.ibm.com>
- <1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20130412231846.GA20038@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 04:19:13PM -0700, Paul E. McKenney wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Fri, Apr 12, 2013 at 04:18:47PM -0700, Paul E. McKenney wrote:
+> Hello!
 > 
-> Systems with HZ=100 can have slow bootup times due to the default
-> three-jiffy delays between quiescent-state forcing attempts.  This
-> commit therefore auto-tunes the RCU_JIFFIES_TILL_FORCE_QS value based
-> on the value of HZ.  However, this would break very large systems that
-> require more time between quiescent-state forcing attempts.  This
-> commit therefore also ups the default delay by one jiffy for each
-> 256 CPUs that might be on the system (based off of nr_cpu_ids at
-> runtime, -not- NR_CPUS at build time).
+> This series contains the following fixes for RCU:
 > 
-> Reported-by: Paul Mackerras <paulus@au1.ibm.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 1-2.	Convert remaining printk() calls to pr_*().
+> 
+> 3.	Kick adaptive-ticks CPUs that are holding up RCU grace periods.
+> 
+> 4.	Don't allocate bootmem from rcu_init(), courtesy of Sasha Levin.
+> 
+> 5.	Remove "Experimental" flags from old RCU Kconfig options.
+> 
+> 6.	Automatically tune defaults for delays between attempts to
+> 	force quiescent states.
+> 
+> 7.	Merge adjacent identical #ifdefs.
 
-Something seems very wrong if RCU regularly hits the fqs code during
-boot; feels like there's some more straightforward solution we're
-missing.  What causes these CPUs to fall under RCU's scrutiny during
-boot yet not actually hit the RCU codepaths naturally?
+For 1-5 and 7:
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-Also, a comment below.
-
-> --- a/kernel/rcutree.h
-> +++ b/kernel/rcutree.h
-> @@ -342,7 +342,17 @@ struct rcu_data {
->  #define RCU_FORCE_QS		3	/* Need to force quiescent state. */
->  #define RCU_SIGNAL_INIT		RCU_SAVE_DYNTICK
->  
-> -#define RCU_JIFFIES_TILL_FORCE_QS	 3	/* for rsp->jiffies_force_qs */
-> +#if HZ > 500
-> +#define RCU_JIFFIES_TILL_FORCE_QS	 3	/* for jiffies_till_first_fqs */
-> +#elif HZ > 250
-> +#define RCU_JIFFIES_TILL_FORCE_QS	 2
-> +#else
-> +#define RCU_JIFFIES_TILL_FORCE_QS	 1
-> +#endif
-
-This seems like it really wants to use a duration calculated directly
-from HZ; perhaps (HZ/100)?
+Responded to 6 separately.
 
 - Josh Triplett
