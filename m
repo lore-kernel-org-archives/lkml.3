@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151Ab3DMB13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 21:27:29 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:48056 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754031Ab3DMB12 (ORCPT
+	id S1756899Ab3DMBbX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 21:31:23 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:65524 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752426Ab3DMBbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 21:27:28 -0400
-Date: Fri, 12 Apr 2013 22:27:21 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/6] tools lib traceevent: Add page_size field to pevent
-Message-ID: <20130413012721.GA12924@ghostprotocols.net>
-References: <1365681898-19897-1-git-send-email-namhyung@kernel.org>
- <1365681898-19897-5-git-send-email-namhyung@kernel.org>
- <1365691175.9609.33.camel@gandalf.local.home>
- <1365691255.9609.34.camel@gandalf.local.home>
- <1365815846.1769.11.camel@leonhard>
+	Fri, 12 Apr 2013 21:31:22 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Kyle Evans <kvans32@gmail.com>
+Subject: BUG: Fn keys not working on EliteBook 8460p after fabf85e3ca15d5b94058f391dac8df870cdd427a
+Date: Sat, 13 Apr 2013 03:31:17 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9.0-030900rc4-generic; KDE/4.10.2; x86_64; ; )
+Cc: Matthew Garrett <matthew.garrett@nebula.com>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365815846.1769.11.camel@leonhard>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed;
+  boundary="nextPart4181137.1YX98hxonW";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304130331.18301@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sat, Apr 13, 2013 at 10:17:26AM +0900, Namhyung Kim escreveu:
-> > I just want to know more about this patch before I ack it.
-> 
-> The page size of traced system can be different than current system's
-> because the recorded data file might be analyzed in a different machine.
-> In this case we should use original page size of traced system when
-> accessing the data file, so this information needs to be saved.
+--nextPart4181137.1YX98hxonW
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Excellent explanation! So good it deserves being in the changelog
-commit!
+Hello,
 
-8-)
+all Fn keys, wifi switch, web and mute buttons not working anymore=20
+on my notebook HP EliteBook 8460p. I bisected git commit which=20
+broke all above keys: fabf85e3ca15d5b94058f391dac8df870cdd427a
 
-- Arnaldo
+When I reverted that commit after reboot buttons started working=20
+again. Can you fix it or revert that broken commit? This is=20
+critical problem, which caused my notebook to be unusable...
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart4181137.1YX98hxonW
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlFotWYACgkQi/DJPQPkQ1KymQCgkwd4k/Sh0AITDgZnM7hVAW62
+jFcAn0RhxaOLUKtWOJ56bTsP3XOcIulK
+=w7se
+-----END PGP SIGNATURE-----
+
+--nextPart4181137.1YX98hxonW--
