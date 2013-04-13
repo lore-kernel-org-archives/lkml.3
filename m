@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933126Ab3DMPmN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 11:42:13 -0400
-Received: from mail-da0-f43.google.com ([209.85.210.43]:47279 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932607Ab3DMPmJ (ORCPT
+	id S933266Ab3DMPmV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 11:42:21 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:57355 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932607Ab3DMPmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 11:42:09 -0400
+	Sat, 13 Apr 2013 11:42:18 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Yinghai Lu <yinghai@kernel.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -16,11 +16,10 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         Michal Hocko <mhocko@suse.cz>, David Howells <dhowells@redhat.com>,
         Mark Salter <msalter@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>
-Subject: [RFC PATCH v1 11/19] mm: kill free_all_bootmem_node()
-Date: Sat, 13 Apr 2013 23:36:31 +0800
-Message-Id: <1365867399-21323-12-git-send-email-jiang.liu@huawei.com>
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH v1 12/19] mm/ALPHA: clean up unused VALID_PAGE()
+Date: Sat, 13 Apr 2013 23:36:32 +0800
+Message-Id: <1365867399-21323-13-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365867399-21323-1-git-send-email-jiang.liu@huawei.com>
 References: <1365867399-21323-1-git-send-email-jiang.liu@huawei.com>
@@ -28,62 +27,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now nobody makes use of free_all_bootmem_node(), kill it.
+VALID_PAGE() has been removed from kernel long time ago, so clean up it.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org
 ---
- include/linux/bootmem.h |    1 -
- mm/bootmem.c            |   18 ------------------
- 2 files changed, 19 deletions(-)
+ arch/alpha/include/asm/mmzone.h |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/include/linux/bootmem.h b/include/linux/bootmem.h
-index b585f57..a8866c5 100644
---- a/include/linux/bootmem.h
-+++ b/include/linux/bootmem.h
-@@ -45,7 +45,6 @@ extern unsigned long init_bootmem_node(pg_data_t *pgdat,
- extern unsigned long init_bootmem(unsigned long addr, unsigned long memend);
+diff --git a/arch/alpha/include/asm/mmzone.h b/arch/alpha/include/asm/mmzone.h
+index c5b5d6b..14ce27b 100644
+--- a/arch/alpha/include/asm/mmzone.h
++++ b/arch/alpha/include/asm/mmzone.h
+@@ -71,8 +71,6 @@ PLAT_NODE_DATA_LOCALNR(unsigned long p, int n)
  
- extern unsigned long free_low_memory_core_early(int nodeid);
--extern unsigned long free_all_bootmem_node(pg_data_t *pgdat);
- extern unsigned long free_all_bootmem(void);
- extern void reset_all_zones_managed_pages(void);
+ #define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
  
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index a19404b..fab8f63 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -265,24 +265,6 @@ void __init reset_all_zones_managed_pages(void)
- }
- 
- /**
-- * free_all_bootmem_node - release a node's free pages to the buddy allocator
-- * @pgdat: node to be released
-- *
-- * Returns the number of pages actually released.
-- */
--unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
--{
--	unsigned long pages;
+-#define VALID_PAGE(page)	(((page) - mem_map) < max_mapnr)
 -
--	register_page_bootmem_info_node(pgdat);
--	reset_node_managed_pages(pgdat);
--	pages = free_all_bootmem_core(pgdat->bdata);
--	totalram_pages += pages;
--
--	return pages;
--}
--
--/**
-  * free_all_bootmem - release free pages to the buddy allocator
-  *
-  * Returns the number of pages actually released.
+ #define pmd_page(pmd)		(pfn_to_page(pmd_val(pmd) >> 32))
+ #define pgd_page(pgd)		(pfn_to_page(pgd_val(pgd) >> 32))
+ #define pte_pfn(pte)		(pte_val(pte) >> 32)
 -- 
 1.7.9.5
 
