@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab3DMMwg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 08:52:36 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:56617 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753142Ab3DMMwd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 08:52:33 -0400
-Message-ID: <1365857548.9806.64.camel@host5.omatika.ru>
-Subject: Re: [PATCH v2] wait while adding MMC host to ensure root mounts
-From: Sergey Yanovich <ynvich@gmail.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 13 Apr 2013 16:52:28 +0400
-In-Reply-To: <CAPDyKFrF8pmo7mfa_1Vi2n=JBFd1h+VULQ1hJB75=DmNx0erdw@mail.gmail.com>
-References: <1363223183-3772-1-git-send-email-ynvich@gmail.com>
-	 <1363224194-7366-1-git-send-email-ynvich@gmail.com>
-	 <87620jmkoe.fsf@octavius.laptop.org>
-	 <CAPDyKFp27MUOjhydLXf92vN3cua=XcX4oTJnMGfOJPpBhtwM8Q@mail.gmail.com>
-	 <87ppylf429.fsf@octavius.laptop.org>
-	 <1365850153.9806.59.camel@host5.omatika.ru>
-	 <CAPDyKFrF8pmo7mfa_1Vi2n=JBFd1h+VULQ1hJB75=DmNx0erdw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	id S1753584Ab3DMMyL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 08:54:11 -0400
+Received: from smtp209.alice.it ([82.57.200.105]:41958 "EHLO smtp209.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752975Ab3DMMyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 08:54:10 -0400
+X-Greylist: delayed 333 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Apr 2013 08:54:09 EDT
+Message-ID: <51695273.6080800@alice.it>
+Date: Sat, 13 Apr 2013 14:41:23 +0200
+From: Marco <firefox82@alice.it>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: linux-mm@kvack.org
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Return value of __mm_populate
+References: <51694C2A.4050906@gmail.com>
+In-Reply-To: <51694C2A.4050906@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-04-13 at 13:56 +0200, Ulf Hansson wrote:
-> 
-> Den 13 apr 2013 12:49 skrev "Sergey Yanovich" <ynvich@gmail.com>:
-> > A possible solution is to make card a separate device (now only the
-> host
-> > is a device). In this case, the probing could be done asynchronously
-> > without breaking the assumption in prepare_namespace().
-> 
-> Actually the card is already a separate device, which I connected to
-> the mmc bus.
+Adding in cc: lkml
 
-Great. I failed to see that.
-
-> It is an interesting idea, but the problem is that the card device is
-> only created and added on the fly when a card has been properly
-> detected.
-
-If we include 'detecting' in 'probing' and then do 'probing'
-asynchronously, we will neither have race condition, nor boot time
-regression.
-
+Il 13/04/2013 14:14, Marco Stornelli ha scritto:
+> Hi,
+>
+> I was seeing the code of __mm_populate (in -next) and I've got a doubt
+> about the return value. The function __mlock_posix_error_return should
+> return a proper error for mlock, converting the return value from
+> __get_user_pages. It checks for EFAULT and ENOMEM. Actually
+> __get_user_pages could return, in addition, ERESTARTSYS and EHWPOISON.
+> So it seems to me that we could return to user space not expected value.
+> I can't see them on the man page. In addition we shouldn't ever return
+> ERESTARTSYS to the user space but EINTR. According to the man pages
+> maybe we should return EAGAIN in these cases. Am I missing something?
+>
+> Thanks,
+>
+> Marco
