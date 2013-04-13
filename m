@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465Ab3DMVKO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 17:10:14 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:56981 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab3DMVKN (ORCPT
+	id S1754193Ab3DMVoK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 17:44:10 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:37348 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab3DMVoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 17:10:13 -0400
+	Sat, 13 Apr 2013 17:44:08 -0400
+Date: Sun, 14 Apr 2013 00:44:00 +0300
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>
+To: Jake Edge <jake@lwn.net>
+Cc: Zhang Rui <rui.zhang@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Roberto Oppedisano <roberto.oppedisano@gmail.com>,
+        Salvatore Sisinni <s.sisinni@gmail.com>, auxsvr@gmail.com
+Subject: Re: still in 3.9-rc6 - fan speed at 100% after suspend/resume
+ regression
+Message-ID: <20130413214359.GG25821@sci.fi>
+Mail-Followup-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>,
+	Jake Edge <jake@lwn.net>, Zhang Rui <rui.zhang@intel.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Eduardo Valentin <eduardo.valentin@ti.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Roberto Oppedisano <roberto.oppedisano@gmail.com>,
+	Salvatore Sisinni <s.sisinni@gmail.com>, auxsvr@gmail.com
+References: <20130413100221.70c040fa@chukar.edge2.net>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxhwYO8wrHXHH6ry0pfpPHURsjN_aotT0xsDwZZZj7wvQ@mail.gmail.com>
-References: <1365805938-22826-1-git-send-email-anatol.pomozov@gmail.com>
-	<CA+55aFzxxGBU3AOeNg3UEicHrx3nzWRyo5DOd=hh6SHJfYvB3g@mail.gmail.com>
-	<CAOMFOmVO47+AuC1UgZQX1K0oSMSZ4DCzDEuJGF99ARTfnCDTpw@mail.gmail.com>
-	<CA+55aFxhwYO8wrHXHH6ry0pfpPHURsjN_aotT0xsDwZZZj7wvQ@mail.gmail.com>
-Date: Sat, 13 Apr 2013 14:10:11 -0700
-Message-ID: <CAOMFOmVqL4Ypd804obxoLVh7ntZeRZ66OT6v0rxTgcmwvgiynA@mail.gmail.com>
-Subject: Re: [PATCH] module: Fix race condition between load and unload module
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Salman Qazi <sqazi@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130413100221.70c040fa@chukar.edge2.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Sat, Apr 13, 2013 at 10:02:21AM -0600, Jake Edge wrote:
+> Hi Zhang Rui,
+> 
+> The problem reported in https://lkml.org/lkml/2012/12/4/428 (and
+> incorrectly attributed to a suspend patch by me here:
+> https://lkml.org/lkml/2013/4/12/314) still exists in 3.9-rc6, at least
+> for my HP/Compaq 2510p laptop. It appeared that some folks were seeing
+> some improvement with earlier 3.9-rcs (?) but I just tested rc6 and saw
+> substantially the same behavior.  This all works fine in <= 3.6.11.
+> 
+> A brief recap: after resuming, the fan on the laptop spins up to full
+> speed and stays there. "temp6" in "acpitz-virtual-0" (as shown by
+> "sensors") is 100°C and stays there, which is presumably what is making
+> the fan stay on.
 
-On Sat, Apr 13, 2013 at 10:53 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, Apr 13, 2013 at 8:41 AM, Anatol Pomozov
-> <anatol.pomozov@gmail.com> wrote:
->>
->> Does it make sense to move it to a separate function in kref.h?
->>
->> /** Useful when kref_get is racing with kref_put and refcounter might be 0 */
->> int kref_get_not_zero(kref* ref) {
->>     return atomic_inc_not_zero(&kref->refcount);
->> }
->
-> It turns out we have that, except it's called "unless_zero", because
-> it uses "atomic_add_unless(x,1,0)", rather than the simplified
-> "atomic_inc_not_zero(x)".
->
->> or maybe instead change default behavior of kref_get() to
->> atomic_inc_not_zero and force callers check the return value from
->> kref_get()?
->
-> That would be painful, and _most_ users should have a preexisting
-> refcount. So it's probably better in the long run to just keep the
-> warning (but perhaps fix it to be SMP-safe). So I think the part of
-> your patch that made kref_get() use atomic_inc_return() is probably a
-> good idea regardless.
->
-> Also, I changed my patch to be minimal, and not change other users of
-> kobject_get(). So other users (not kset_find_obj()) will continue to
-> get the warning, and kset_find_obj() uses the safe version.
-Looks good to me.
+My HP Compaq NC6000 exhibits slightly different behaviour. For me the
+reported temp is always accurate but the trip points get out of sync
+with the actual temperature.
 
-> So this is
-> what I'm planning on committing as the minimal patch and marking for
-> stable. The rest (including that atomic_inc_return() in kref_get)
-> would be cleanup.
->
-> Can you give this a quick test?
+With 3.7 I saw two different kinds of problems coming out of resume.
+In one case the fan stays on until the temp rises high enough to get the
+trip points back into sync. In the other case the fan goes off, and stays
+off even when the temperature rises above the highest active trip point,
+but it does appear to get back into sync when the temp starts to come back
+down. I think the difference might stem from resuming when the laptop has
+cooled down fully vs. when it's still warm.
 
-I ran the test case for ~60 minutes with XFS tests in parallel - no any issues.
+I also just tried 3.9-rc6, and that one appears to behave differently
+to 3.7, but still wrong. There the fan goes off after resume, and comes
+back on as the temperature rises, but it never slows back down after
+that.
+
+I'll try to collect some more detailed dumps of all three cases.
+
+-- 
+Ville Syrjälä
+syrjala@sci.fi
+http://www.sci.fi/~syrjala/
