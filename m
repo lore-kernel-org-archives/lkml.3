@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab3DMKrO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 06:47:14 -0400
-Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:47748 "EHLO
-	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746Ab3DMKrH (ORCPT
+	id S1753875Ab3DMKri (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 06:47:38 -0400
+Received: from sd-mail-sa-01.sanoma.fi ([158.127.18.161]:57843 "EHLO
+	sd-mail-sa-01.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753657Ab3DMKrB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 06:47:07 -0400
-Subject: [RFC PATCH 6/6] crypto: camellia - add AVX2/AES-NI/x86_64 assembler
- implementation of camellia cipher
+	Sat, 13 Apr 2013 06:47:01 -0400
+Subject: [RFC PATCH 5/6] crypto: serpent - add AVX2/x86_64 assembler
+ implementation of serpent cipher
 To: linux-crypto@vger.kernel.org
 From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
 Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
         Herbert Xu <herbert@gondor.hengli.com.au>
-Date: Sat, 13 Apr 2013 13:47:00 +0300
-Message-ID: <20130413104700.10667.12679.stgit@localhost6.localdomain6>
+Date: Sat, 13 Apr 2013 13:46:55 +0300
+Message-ID: <20130413104655.10667.18089.stgit@localhost6.localdomain6>
 In-Reply-To: <20130413104245.10667.62267.stgit@localhost6.localdomain6>
 References: <20130413104245.10667.62267.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.16
@@ -25,56 +25,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch adds AVX2/AES-NI/x86-64 implementation of Camellia cipher, requiring
-32 parallel blocks for input (512 bytes). Compared to AVX implementation, this
-version is extended to use the 256-bit wide YMM registers. For AES-NI
-instructions data is split to two 128-bit registers and merged afterwards.
-Even with this additional handling, performance should be higher compared
-to the AES-NI/AVX implementation.
+Patch adds AVX2/x86-64 implementation of Serpent cipher, requiring 16 parallel
+blocks for input (256 bytes). Implementation is based on the AVX implementation
+and extends to use the 256-bit wide YMM registers. Since serpent does not use
+table look-ups, this implementation should be close to two times faster than
+the AVX implementation.
 
 Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
 ---
- arch/x86/crypto/Makefile                     |    2 
- arch/x86/crypto/camellia-aesni-avx2-asm_64.S | 1368 ++++++++++++++++++++++++++
- arch/x86/crypto/camellia_aesni_avx2_glue.c   |  586 +++++++++++
- arch/x86/crypto/camellia_aesni_avx_glue.c    |   17 
- arch/x86/include/asm/crypto/camellia.h       |   19 
- crypto/Kconfig                               |   23 
- crypto/testmgr.c                             |   12 
- 7 files changed, 2024 insertions(+), 3 deletions(-)
- create mode 100644 arch/x86/crypto/camellia-aesni-avx2-asm_64.S
- create mode 100644 arch/x86/crypto/camellia_aesni_avx2_glue.c
+ arch/x86/crypto/Makefile                  |    2 
+ arch/x86/crypto/serpent-avx2-asm_64.S     |  800 +++++++++++++++++++++++++++++
+ arch/x86/crypto/serpent_avx2_glue.c       |  562 ++++++++++++++++++++
+ arch/x86/crypto/serpent_avx_glue.c        |   62 ++
+ arch/x86/include/asm/crypto/serpent-avx.h |   24 +
+ crypto/Kconfig                            |   23 +
+ crypto/testmgr.c                          |   15 +
+ 7 files changed, 1468 insertions(+), 20 deletions(-)
+ create mode 100644 arch/x86/crypto/serpent-avx2-asm_64.S
+ create mode 100644 arch/x86/crypto/serpent_avx2_glue.c
 
 diff --git a/arch/x86/crypto/Makefile b/arch/x86/crypto/Makefile
-index a21af59..a3a0ed8 100644
+index 1f6e0c2..a21af59 100644
 --- a/arch/x86/crypto/Makefile
 +++ b/arch/x86/crypto/Makefile
 @@ -43,6 +43,7 @@ endif
  # These modules require assembler to support AVX2.
  ifeq ($(avx2_supported),yes)
  	obj-$(CONFIG_CRYPTO_BLOWFISH_AVX2_X86_64) += blowfish-avx2.o
-+	obj-$(CONFIG_CRYPTO_CAMELLIA_AESNI_AVX2_X86_64) += camellia-aesni-avx2.o
- 	obj-$(CONFIG_CRYPTO_SERPENT_AVX2_X86_64) += serpent-avx2.o
++	obj-$(CONFIG_CRYPTO_SERPENT_AVX2_X86_64) += serpent-avx2.o
  	obj-$(CONFIG_CRYPTO_TWOFISH_AVX2_X86_64) += twofish-avx2.o
  endif
-@@ -73,6 +74,7 @@ endif
+ 
+@@ -72,6 +73,7 @@ endif
  
  ifeq ($(avx2_supported),yes)
  	blowfish-avx2-y := blowfish-avx2-asm_64.o blowfish_avx2_glue.o
-+	camellia-aesni-avx2-y := camellia-aesni-avx2-asm_64.o camellia_aesni_avx2_glue.o
- 	serpent-avx2-y := serpent-avx2-asm_64.o serpent_avx2_glue.o
++	serpent-avx2-y := serpent-avx2-asm_64.o serpent_avx2_glue.o
  	twofish-avx2-y := twofish-avx2-asm_64.o twofish_avx2_glue.o
  endif
-diff --git a/arch/x86/crypto/camellia-aesni-avx2-asm_64.S b/arch/x86/crypto/camellia-aesni-avx2-asm_64.S
+ 
+diff --git a/arch/x86/crypto/serpent-avx2-asm_64.S b/arch/x86/crypto/serpent-avx2-asm_64.S
 new file mode 100644
-index 0000000..91a1878
+index 0000000..b222085
 --- /dev/null
-+++ b/arch/x86/crypto/camellia-aesni-avx2-asm_64.S
-@@ -0,0 +1,1368 @@
++++ b/arch/x86/crypto/serpent-avx2-asm_64.S
+@@ -0,0 +1,800 @@
 +/*
-+ * x86_64/AVX2/AES-NI assembler implementation of Camellia
++ * x86_64/AVX2 assembler optimized version of Serpent
 + *
-+ * Copyright © 2013 Jussi Kivilinna <jussi.kivilinna@iki.fi>
++ * Copyright © 2012-2013 Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
++ *
++ * Based on AVX assembler implementation of Serpent by:
++ *  Copyright © 2012 Johannes Goetzfried
++ *      <Johannes.Goetzfried@informatik.stud.uni-erlangen.de>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -84,1371 +87,799 @@ index 0000000..91a1878
 + */
 +
 +#include <linux/linkage.h>
++#include "glue_helper-asm-avx2.S"
 +
-+#define CAMELLIA_TABLE_BYTE_LEN 272
-+
-+/* struct camellia_ctx: */
-+#define key_table 0
-+#define key_length CAMELLIA_TABLE_BYTE_LEN
-+
-+/* register macros */
-+#define CTX %rdi
-+#define RIO %r8
-+
-+/**********************************************************************
-+  helper macros
-+ **********************************************************************/
-+#define filter_8bit(x, lo_t, hi_t, mask4bit, tmp0) \
-+	vpand x, mask4bit, tmp0; \
-+	vpandn x, mask4bit, x; \
-+	vpsrld $4, x, x; \
-+	\
-+	vpshufb tmp0, lo_t, tmp0; \
-+	vpshufb x, hi_t, x; \
-+	vpxor tmp0, x, x;
-+
-+#define ymm0_x xmm0
-+#define ymm1_x xmm1
-+#define ymm2_x xmm2
-+#define ymm3_x xmm3
-+#define ymm4_x xmm4
-+#define ymm5_x xmm5
-+#define ymm6_x xmm6
-+#define ymm7_x xmm7
-+#define ymm8_x xmm8
-+#define ymm9_x xmm9
-+#define ymm10_x xmm10
-+#define ymm11_x xmm11
-+#define ymm12_x xmm12
-+#define ymm13_x xmm13
-+#define ymm14_x xmm14
-+#define ymm15_x xmm15
-+
-+/*
-+ * AES-NI instructions do not support ymmX registers, so we need splitting and
-+ * merging.
-+ */
-+#define vaesenclast256(zero, yreg, tmp) \
-+	vextracti128 $1, yreg, tmp##_x; \
-+	vaesenclast zero##_x, yreg##_x, yreg##_x; \
-+	vaesenclast zero##_x, tmp##_x, tmp##_x; \
-+	vinserti128 $1, tmp##_x, yreg, yreg;
-+
-+/**********************************************************************
-+  32-way camellia
-+ **********************************************************************/
-+
-+/*
-+ * IN:
-+ *   x0..x7: byte-sliced AB state
-+ *   mem_cd: register pointer storing CD state
-+ *   key: index for key material
-+ * OUT:
-+ *   x0..x7: new byte-sliced CD state
-+ */
-+#define roundsm32(x0, x1, x2, x3, x4, x5, x6, x7, t0, t1, t2, t3, t4, t5, t6, \
-+		  t7, mem_cd, key) \
-+	/* \
-+	 * S-function with AES subbytes \
-+	 */ \
-+	vbroadcasti128 .Linv_shift_row, t4; \
-+	vpbroadcastb .L0f0f0f0f, t7; \
-+	vbroadcasti128 .Lpre_tf_lo_s1, t0; \
-+	vbroadcasti128 .Lpre_tf_hi_s1, t1; \
-+	\
-+	/* AES inverse shift rows */ \
-+	vpshufb t4, x0, x0; \
-+	vpshufb t4, x7, x7; \
-+	vpshufb t4, x1, x1; \
-+	vpshufb t4, x4, x4; \
-+	vpshufb t4, x2, x2; \
-+	vpshufb t4, x5, x5; \
-+	vpshufb t4, x3, x3; \
-+	vpshufb t4, x6, x6; \
-+	\
-+	/* prefilter sboxes 1, 2 and 3 */ \
-+	vbroadcasti128 .Lpre_tf_lo_s4, t2; \
-+	vbroadcasti128 .Lpre_tf_hi_s4, t3; \
-+	filter_8bit(x0, t0, t1, t7, t6); \
-+	filter_8bit(x7, t0, t1, t7, t6); \
-+	filter_8bit(x1, t0, t1, t7, t6); \
-+	filter_8bit(x4, t0, t1, t7, t6); \
-+	filter_8bit(x2, t0, t1, t7, t6); \
-+	filter_8bit(x5, t0, t1, t7, t6); \
-+	\
-+	/* prefilter sbox 4 */ \
-+	vpxor t4##_x, t4##_x, t4##_x; \
-+	filter_8bit(x3, t2, t3, t7, t6); \
-+	filter_8bit(x6, t2, t3, t7, t6); \
-+	\
-+	/* AES subbytes + AES shift rows */ \
-+	vbroadcasti128 .Lpost_tf_lo_s1, t0; \
-+	vbroadcasti128 .Lpost_tf_hi_s1, t1; \
-+	vaesenclast256(t4, x0, t5); \
-+	vaesenclast256(t4, x7, t5); \
-+	vaesenclast256(t4, x1, t5); \
-+	vaesenclast256(t4, x4, t5); \
-+	vaesenclast256(t4, x2, t5); \
-+	vaesenclast256(t4, x5, t5); \
-+	vaesenclast256(t4, x3, t5); \
-+	vaesenclast256(t4, x6, t5); \
-+	\
-+	/* postfilter sboxes 1 and 4 */ \
-+	vbroadcasti128 .Lpost_tf_lo_s3, t2; \
-+	vbroadcasti128 .Lpost_tf_hi_s3, t3; \
-+	filter_8bit(x0, t0, t1, t7, t6); \
-+	filter_8bit(x7, t0, t1, t7, t6); \
-+	filter_8bit(x3, t0, t1, t7, t6); \
-+	filter_8bit(x6, t0, t1, t7, t6); \
-+	\
-+	/* postfilter sbox 3 */ \
-+	vbroadcasti128 .Lpost_tf_lo_s2, t4; \
-+	vbroadcasti128 .Lpost_tf_hi_s2, t5; \
-+	filter_8bit(x2, t2, t3, t7, t6); \
-+	filter_8bit(x5, t2, t3, t7, t6); \
-+	\
-+	vpbroadcastq key, t0; /* higher 64-bit duplicate ignored */ \
-+	\
-+	/* postfilter sbox 2 */ \
-+	filter_8bit(x1, t4, t5, t7, t2); \
-+	filter_8bit(x4, t4, t5, t7, t2); \
-+	\
-+	vpsrldq $1, t0, t1; \
-+	vpsrldq $2, t0, t2; \
-+	vpsrldq $3, t0, t3; \
-+	vpsrldq $4, t0, t4; \
-+	vpsrldq $5, t0, t5; \
-+	vpsrldq $6, t0, t6; \
-+	vpsrldq $7, t0, t7; \
-+	vpbroadcastb t0##_x, t0; \
-+	vpbroadcastb t1##_x, t1; \
-+	vpbroadcastb t2##_x, t2; \
-+	vpbroadcastb t3##_x, t3; \
-+	vpbroadcastb t4##_x, t4; \
-+	vpbroadcastb t6##_x, t6; \
-+	vpbroadcastb t5##_x, t5; \
-+	vpbroadcastb t7##_x, t7; \
-+	\
-+	/* P-function */ \
-+	vpxor x5, x0, x0; \
-+	vpxor x6, x1, x1; \
-+	vpxor x7, x2, x2; \
-+	vpxor x4, x3, x3; \
-+	\
-+	vpxor x2, x4, x4; \
-+	vpxor x3, x5, x5; \
-+	vpxor x0, x6, x6; \
-+	vpxor x1, x7, x7; \
-+	\
-+	vpxor x7, x0, x0; \
-+	vpxor x4, x1, x1; \
-+	vpxor x5, x2, x2; \
-+	vpxor x6, x3, x3; \
-+	\
-+	vpxor x3, x4, x4; \
-+	vpxor x0, x5, x5; \
-+	vpxor x1, x6, x6; \
-+	vpxor x2, x7, x7; /* note: high and low parts swapped */ \
-+	\
-+	/* Add key material and result to CD (x becomes new CD) */ \
-+	\
-+	vpxor t7, x0, x0; \
-+	vpxor 4 * 32(mem_cd), x0, x0; \
-+	\
-+	vpxor t6, x1, x1; \
-+	vpxor 5 * 32(mem_cd), x1, x1; \
-+	\
-+	vpxor t5, x2, x2; \
-+	vpxor 6 * 32(mem_cd), x2, x2; \
-+	\
-+	vpxor t4, x3, x3; \
-+	vpxor 7 * 32(mem_cd), x3, x3; \
-+	\
-+	vpxor t3, x4, x4; \
-+	vpxor 0 * 32(mem_cd), x4, x4; \
-+	\
-+	vpxor t2, x5, x5; \
-+	vpxor 1 * 32(mem_cd), x5, x5; \
-+	\
-+	vpxor t1, x6, x6; \
-+	vpxor 2 * 32(mem_cd), x6, x6; \
-+	\
-+	vpxor t0, x7, x7; \
-+	vpxor 3 * 32(mem_cd), x7, x7;
-+
-+/*
-+ * Size optimization... with inlined roundsm16 binary would be over 5 times
-+ * larger and would only marginally faster.
-+ */
-+.align 8
-+roundsm32_x0_x1_x2_x3_x4_x5_x6_x7_y0_y1_y2_y3_y4_y5_y6_y7_cd:
-+	roundsm32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		  %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14, %ymm15,
-+		  %rcx, (%r9));
-+	ret;
-+ENDPROC(roundsm32_x0_x1_x2_x3_x4_x5_x6_x7_y0_y1_y2_y3_y4_y5_y6_y7_cd)
-+
-+.align 8
-+roundsm32_x4_x5_x6_x7_x0_x1_x2_x3_y4_y5_y6_y7_y0_y1_y2_y3_ab:
-+	roundsm32(%ymm4, %ymm5, %ymm6, %ymm7, %ymm0, %ymm1, %ymm2, %ymm3,
-+		  %ymm12, %ymm13, %ymm14, %ymm15, %ymm8, %ymm9, %ymm10, %ymm11,
-+		  %rax, (%r9));
-+	ret;
-+ENDPROC(roundsm32_x4_x5_x6_x7_x0_x1_x2_x3_y4_y5_y6_y7_y0_y1_y2_y3_ab)
-+
-+/*
-+ * IN/OUT:
-+ *  x0..x7: byte-sliced AB state preloaded
-+ *  mem_ab: byte-sliced AB state in memory
-+ *  mem_cb: byte-sliced CD state in memory
-+ */
-+#define two_roundsm32(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		      y6, y7, mem_ab, mem_cd, i, dir, store_ab) \
-+	leaq (key_table + (i) * 8)(CTX), %r9; \
-+	call roundsm32_x0_x1_x2_x3_x4_x5_x6_x7_y0_y1_y2_y3_y4_y5_y6_y7_cd; \
-+	\
-+	vmovdqu x0, 4 * 32(mem_cd); \
-+	vmovdqu x1, 5 * 32(mem_cd); \
-+	vmovdqu x2, 6 * 32(mem_cd); \
-+	vmovdqu x3, 7 * 32(mem_cd); \
-+	vmovdqu x4, 0 * 32(mem_cd); \
-+	vmovdqu x5, 1 * 32(mem_cd); \
-+	vmovdqu x6, 2 * 32(mem_cd); \
-+	vmovdqu x7, 3 * 32(mem_cd); \
-+	\
-+	leaq (key_table + ((i) + (dir)) * 8)(CTX), %r9; \
-+	call roundsm32_x4_x5_x6_x7_x0_x1_x2_x3_y4_y5_y6_y7_y0_y1_y2_y3_ab; \
-+	\
-+	store_ab(x0, x1, x2, x3, x4, x5, x6, x7, mem_ab);
-+
-+#define dummy_store(x0, x1, x2, x3, x4, x5, x6, x7, mem_ab) /* do nothing */
-+
-+#define store_ab_state(x0, x1, x2, x3, x4, x5, x6, x7, mem_ab) \
-+	/* Store new AB state */ \
-+	vmovdqu x4, 4 * 32(mem_ab); \
-+	vmovdqu x5, 5 * 32(mem_ab); \
-+	vmovdqu x6, 6 * 32(mem_ab); \
-+	vmovdqu x7, 7 * 32(mem_ab); \
-+	vmovdqu x0, 0 * 32(mem_ab); \
-+	vmovdqu x1, 1 * 32(mem_ab); \
-+	vmovdqu x2, 2 * 32(mem_ab); \
-+	vmovdqu x3, 3 * 32(mem_ab);
-+
-+#define enc_rounds32(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		      y6, y7, mem_ab, mem_cd, i) \
-+	two_roundsm32(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		      y6, y7, mem_ab, mem_cd, (i) + 2, 1, store_ab_state); \
-+	two_roundsm32(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		      y6, y7, mem_ab, mem_cd, (i) + 4, 1, store_ab_state); \
-+	two_roundsm32(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		      y6, y7, mem_ab, mem_cd, (i) + 6, 1, dummy_store);
-+
-+#define dec_rounds32(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		      y6, y7, mem_ab, mem_cd, i) \
-+	two_roundsm32(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		      y6, y7, mem_ab, mem_cd, (i) + 7, -1, store_ab_state); \
-+	two_roundsm32(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		      y6, y7, mem_ab, mem_cd, (i) + 5, -1, store_ab_state); \
-+	two_roundsm32(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		      y6, y7, mem_ab, mem_cd, (i) + 3, -1, dummy_store);
-+
-+/*
-+ * IN:
-+ *  v0..3: byte-sliced 32-bit integers
-+ * OUT:
-+ *  v0..3: (IN <<< 1)
-+ */
-+#define rol32_1_32(v0, v1, v2, v3, t0, t1, t2, zero) \
-+	vpcmpgtb v0, zero, t0; \
-+	vpaddb v0, v0, v0; \
-+	vpabsb t0, t0; \
-+	\
-+	vpcmpgtb v1, zero, t1; \
-+	vpaddb v1, v1, v1; \
-+	vpabsb t1, t1; \
-+	\
-+	vpcmpgtb v2, zero, t2; \
-+	vpaddb v2, v2, v2; \
-+	vpabsb t2, t2; \
-+	\
-+	vpor t0, v1, v1; \
-+	\
-+	vpcmpgtb v3, zero, t0; \
-+	vpaddb v3, v3, v3; \
-+	vpabsb t0, t0; \
-+	\
-+	vpor t1, v2, v2; \
-+	vpor t2, v3, v3; \
-+	vpor t0, v0, v0;
-+
-+/*
-+ * IN:
-+ *   r: byte-sliced AB state in memory
-+ *   l: byte-sliced CD state in memory
-+ * OUT:
-+ *   x0..x7: new byte-sliced CD state
-+ */
-+#define fls32(l, l0, l1, l2, l3, l4, l5, l6, l7, r, t0, t1, t2, t3, tt0, \
-+	      tt1, tt2, tt3, kll, klr, krl, krr) \
-+	/* \
-+	 * t0 = kll; \
-+	 * t0 &= ll; \
-+	 * lr ^= rol32(t0, 1); \
-+	 */ \
-+	vpbroadcastd kll, t0; /* only lowest 32-bit used */ \
-+	vpxor tt0, tt0, tt0; \
-+	vpbroadcastb t0##_x, t3; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t2; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t1; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t0; \
-+	\
-+	vpand l0, t0, t0; \
-+	vpand l1, t1, t1; \
-+	vpand l2, t2, t2; \
-+	vpand l3, t3, t3; \
-+	\
-+	rol32_1_32(t3, t2, t1, t0, tt1, tt2, tt3, tt0); \
-+	\
-+	vpxor l4, t0, l4; \
-+	vmovdqu l4, 4 * 32(l); \
-+	vpxor l5, t1, l5; \
-+	vmovdqu l5, 5 * 32(l); \
-+	vpxor l6, t2, l6; \
-+	vmovdqu l6, 6 * 32(l); \
-+	vpxor l7, t3, l7; \
-+	vmovdqu l7, 7 * 32(l); \
-+	\
-+	/* \
-+	 * t2 = krr; \
-+	 * t2 |= rr; \
-+	 * rl ^= t2; \
-+	 */ \
-+	\
-+	vpbroadcastd krr, t0; /* only lowest 32-bit used */ \
-+	vpbroadcastb t0##_x, t3; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t2; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t1; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t0; \
-+	\
-+	vpor 4 * 32(r), t0, t0; \
-+	vpor 5 * 32(r), t1, t1; \
-+	vpor 6 * 32(r), t2, t2; \
-+	vpor 7 * 32(r), t3, t3; \
-+	\
-+	vpxor 0 * 32(r), t0, t0; \
-+	vpxor 1 * 32(r), t1, t1; \
-+	vpxor 2 * 32(r), t2, t2; \
-+	vpxor 3 * 32(r), t3, t3; \
-+	vmovdqu t0, 0 * 32(r); \
-+	vmovdqu t1, 1 * 32(r); \
-+	vmovdqu t2, 2 * 32(r); \
-+	vmovdqu t3, 3 * 32(r); \
-+	\
-+	/* \
-+	 * t2 = krl; \
-+	 * t2 &= rl; \
-+	 * rr ^= rol32(t2, 1); \
-+	 */ \
-+	vpbroadcastd krl, t0; /* only lowest 32-bit used */ \
-+	vpbroadcastb t0##_x, t3; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t2; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t1; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t0; \
-+	\
-+	vpand 0 * 32(r), t0, t0; \
-+	vpand 1 * 32(r), t1, t1; \
-+	vpand 2 * 32(r), t2, t2; \
-+	vpand 3 * 32(r), t3, t3; \
-+	\
-+	rol32_1_32(t3, t2, t1, t0, tt1, tt2, tt3, tt0); \
-+	\
-+	vpxor 4 * 32(r), t0, t0; \
-+	vpxor 5 * 32(r), t1, t1; \
-+	vpxor 6 * 32(r), t2, t2; \
-+	vpxor 7 * 32(r), t3, t3; \
-+	vmovdqu t0, 4 * 32(r); \
-+	vmovdqu t1, 5 * 32(r); \
-+	vmovdqu t2, 6 * 32(r); \
-+	vmovdqu t3, 7 * 32(r); \
-+	\
-+	/* \
-+	 * t0 = klr; \
-+	 * t0 |= lr; \
-+	 * ll ^= t0; \
-+	 */ \
-+	\
-+	vpbroadcastd klr, t0; /* only lowest 32-bit used */ \
-+	vpbroadcastb t0##_x, t3; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t2; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t1; \
-+	vpsrldq $1, t0, t0; \
-+	vpbroadcastb t0##_x, t0; \
-+	\
-+	vpor l4, t0, t0; \
-+	vpor l5, t1, t1; \
-+	vpor l6, t2, t2; \
-+	vpor l7, t3, t3; \
-+	\
-+	vpxor l0, t0, l0; \
-+	vmovdqu l0, 0 * 32(l); \
-+	vpxor l1, t1, l1; \
-+	vmovdqu l1, 1 * 32(l); \
-+	vpxor l2, t2, l2; \
-+	vmovdqu l2, 2 * 32(l); \
-+	vpxor l3, t3, l3; \
-+	vmovdqu l3, 3 * 32(l);
-+
-+#define transpose_4x4(x0, x1, x2, x3, t1, t2) \
-+	vpunpckhdq x1, x0, t2; \
-+	vpunpckldq x1, x0, x0; \
-+	\
-+	vpunpckldq x3, x2, t1; \
-+	vpunpckhdq x3, x2, x2; \
-+	\
-+	vpunpckhqdq t1, x0, x1; \
-+	vpunpcklqdq t1, x0, x0; \
-+	\
-+	vpunpckhqdq x2, t2, x3; \
-+	vpunpcklqdq x2, t2, x2;
-+
-+#define byteslice_16x16b_fast(a0, b0, c0, d0, a1, b1, c1, d1, a2, b2, c2, d2, \
-+			      a3, b3, c3, d3, st0, st1) \
-+	vmovdqu d2, st0; \
-+	vmovdqu d3, st1; \
-+	transpose_4x4(a0, a1, a2, a3, d2, d3); \
-+	transpose_4x4(b0, b1, b2, b3, d2, d3); \
-+	vmovdqu st0, d2; \
-+	vmovdqu st1, d3; \
-+	\
-+	vmovdqu a0, st0; \
-+	vmovdqu a1, st1; \
-+	transpose_4x4(c0, c1, c2, c3, a0, a1); \
-+	transpose_4x4(d0, d1, d2, d3, a0, a1); \
-+	\
-+	vbroadcasti128 .Lshufb_16x16b, a0; \
-+	vmovdqu st1, a1; \
-+	vpshufb a0, a2, a2; \
-+	vpshufb a0, a3, a3; \
-+	vpshufb a0, b0, b0; \
-+	vpshufb a0, b1, b1; \
-+	vpshufb a0, b2, b2; \
-+	vpshufb a0, b3, b3; \
-+	vpshufb a0, a1, a1; \
-+	vpshufb a0, c0, c0; \
-+	vpshufb a0, c1, c1; \
-+	vpshufb a0, c2, c2; \
-+	vpshufb a0, c3, c3; \
-+	vpshufb a0, d0, d0; \
-+	vpshufb a0, d1, d1; \
-+	vpshufb a0, d2, d2; \
-+	vpshufb a0, d3, d3; \
-+	vmovdqu d3, st1; \
-+	vmovdqu st0, d3; \
-+	vpshufb a0, d3, a0; \
-+	vmovdqu d2, st0; \
-+	\
-+	transpose_4x4(a0, b0, c0, d0, d2, d3); \
-+	transpose_4x4(a1, b1, c1, d1, d2, d3); \
-+	vmovdqu st0, d2; \
-+	vmovdqu st1, d3; \
-+	\
-+	vmovdqu b0, st0; \
-+	vmovdqu b1, st1; \
-+	transpose_4x4(a2, b2, c2, d2, b0, b1); \
-+	transpose_4x4(a3, b3, c3, d3, b0, b1); \
-+	vmovdqu st0, b0; \
-+	vmovdqu st1, b1; \
-+	/* does not adjust output bytes inside vectors */
-+
-+/* load blocks to registers and apply pre-whitening */
-+#define inpack32_pre(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		     y6, y7, rio, key) \
-+	vpbroadcastq key, x0; \
-+	vpshufb .Lpack_bswap, x0, x0; \
-+	\
-+	vpxor 0 * 32(rio), x0, y7; \
-+	vpxor 1 * 32(rio), x0, y6; \
-+	vpxor 2 * 32(rio), x0, y5; \
-+	vpxor 3 * 32(rio), x0, y4; \
-+	vpxor 4 * 32(rio), x0, y3; \
-+	vpxor 5 * 32(rio), x0, y2; \
-+	vpxor 6 * 32(rio), x0, y1; \
-+	vpxor 7 * 32(rio), x0, y0; \
-+	vpxor 8 * 32(rio), x0, x7; \
-+	vpxor 9 * 32(rio), x0, x6; \
-+	vpxor 10 * 32(rio), x0, x5; \
-+	vpxor 11 * 32(rio), x0, x4; \
-+	vpxor 12 * 32(rio), x0, x3; \
-+	vpxor 13 * 32(rio), x0, x2; \
-+	vpxor 14 * 32(rio), x0, x1; \
-+	vpxor 15 * 32(rio), x0, x0;
-+
-+/* byteslice pre-whitened blocks and store to temporary memory */
-+#define inpack32_post(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		      y6, y7, mem_ab, mem_cd) \
-+	byteslice_16x16b_fast(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, \
-+			      y4, y5, y6, y7, (mem_ab), (mem_cd)); \
-+	\
-+	vmovdqu x0, 0 * 32(mem_ab); \
-+	vmovdqu x1, 1 * 32(mem_ab); \
-+	vmovdqu x2, 2 * 32(mem_ab); \
-+	vmovdqu x3, 3 * 32(mem_ab); \
-+	vmovdqu x4, 4 * 32(mem_ab); \
-+	vmovdqu x5, 5 * 32(mem_ab); \
-+	vmovdqu x6, 6 * 32(mem_ab); \
-+	vmovdqu x7, 7 * 32(mem_ab); \
-+	vmovdqu y0, 0 * 32(mem_cd); \
-+	vmovdqu y1, 1 * 32(mem_cd); \
-+	vmovdqu y2, 2 * 32(mem_cd); \
-+	vmovdqu y3, 3 * 32(mem_cd); \
-+	vmovdqu y4, 4 * 32(mem_cd); \
-+	vmovdqu y5, 5 * 32(mem_cd); \
-+	vmovdqu y6, 6 * 32(mem_cd); \
-+	vmovdqu y7, 7 * 32(mem_cd);
-+
-+/* de-byteslice, apply post-whitening and store blocks */
-+#define outunpack32(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, \
-+		    y5, y6, y7, key, stack_tmp0, stack_tmp1) \
-+	byteslice_16x16b_fast(y0, y4, x0, x4, y1, y5, x1, x5, y2, y6, x2, x6, \
-+			      y3, y7, x3, x7, stack_tmp0, stack_tmp1); \
-+	\
-+	vmovdqu x0, stack_tmp0; \
-+	\
-+	vpbroadcastq key, x0; \
-+	vpshufb .Lpack_bswap, x0, x0; \
-+	\
-+	vpxor x0, y7, y7; \
-+	vpxor x0, y6, y6; \
-+	vpxor x0, y5, y5; \
-+	vpxor x0, y4, y4; \
-+	vpxor x0, y3, y3; \
-+	vpxor x0, y2, y2; \
-+	vpxor x0, y1, y1; \
-+	vpxor x0, y0, y0; \
-+	vpxor x0, x7, x7; \
-+	vpxor x0, x6, x6; \
-+	vpxor x0, x5, x5; \
-+	vpxor x0, x4, x4; \
-+	vpxor x0, x3, x3; \
-+	vpxor x0, x2, x2; \
-+	vpxor x0, x1, x1; \
-+	vpxor stack_tmp0, x0, x0;
-+
-+#define write_output(x0, x1, x2, x3, x4, x5, x6, x7, y0, y1, y2, y3, y4, y5, \
-+		     y6, y7, rio) \
-+	vmovdqu x0, 0 * 32(rio); \
-+	vmovdqu x1, 1 * 32(rio); \
-+	vmovdqu x2, 2 * 32(rio); \
-+	vmovdqu x3, 3 * 32(rio); \
-+	vmovdqu x4, 4 * 32(rio); \
-+	vmovdqu x5, 5 * 32(rio); \
-+	vmovdqu x6, 6 * 32(rio); \
-+	vmovdqu x7, 7 * 32(rio); \
-+	vmovdqu y0, 8 * 32(rio); \
-+	vmovdqu y1, 9 * 32(rio); \
-+	vmovdqu y2, 10 * 32(rio); \
-+	vmovdqu y3, 11 * 32(rio); \
-+	vmovdqu y4, 12 * 32(rio); \
-+	vmovdqu y5, 13 * 32(rio); \
-+	vmovdqu y6, 14 * 32(rio); \
-+	vmovdqu y7, 15 * 32(rio);
++.file "serpent-avx2-asm_64.S"
 +
 +.data
-+.align 32
++.align 16
 +
-+#define SHUFB_BYTES(idx) \
-+	0 + (idx), 4 + (idx), 8 + (idx), 12 + (idx)
-+
-+.Lshufb_16x16b:
-+	.byte SHUFB_BYTES(0), SHUFB_BYTES(1), SHUFB_BYTES(2), SHUFB_BYTES(3)
-+	.byte SHUFB_BYTES(0), SHUFB_BYTES(1), SHUFB_BYTES(2), SHUFB_BYTES(3)
-+
-+.Lpack_bswap:
-+	.long 0x00010203, 0x04050607, 0x80808080, 0x80808080
-+	.long 0x00010203, 0x04050607, 0x80808080, 0x80808080
-+
-+/* For CTR-mode IV byteswap */
 +.Lbswap128_mask:
 +	.byte 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
-+
-+/* For XTS mode */
 +.Lxts_gf128mul_and_shl1_mask_0:
 +	.byte 0x87, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0
 +.Lxts_gf128mul_and_shl1_mask_1:
 +	.byte 0x0e, 1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0
 +
-+/*
-+ * pre-SubByte transform
-+ *
-+ * pre-lookup for sbox1, sbox2, sbox3:
-+ *   swap_bitendianness(
-+ *       isom_map_camellia_to_aes(
-+ *           camellia_f(
-+ *               swap_bitendianess(in)
-+ *           )
-+ *       )
-+ *   )
-+ *
-+ * (note: '⊕ 0xc5' inside camellia_f())
-+ */
-+.Lpre_tf_lo_s1:
-+	.byte 0x45, 0xe8, 0x40, 0xed, 0x2e, 0x83, 0x2b, 0x86
-+	.byte 0x4b, 0xe6, 0x4e, 0xe3, 0x20, 0x8d, 0x25, 0x88
-+.Lpre_tf_hi_s1:
-+	.byte 0x00, 0x51, 0xf1, 0xa0, 0x8a, 0xdb, 0x7b, 0x2a
-+	.byte 0x09, 0x58, 0xf8, 0xa9, 0x83, 0xd2, 0x72, 0x23
-+
-+/*
-+ * pre-SubByte transform
-+ *
-+ * pre-lookup for sbox4:
-+ *   swap_bitendianness(
-+ *       isom_map_camellia_to_aes(
-+ *           camellia_f(
-+ *               swap_bitendianess(in <<< 1)
-+ *           )
-+ *       )
-+ *   )
-+ *
-+ * (note: '⊕ 0xc5' inside camellia_f())
-+ */
-+.Lpre_tf_lo_s4:
-+	.byte 0x45, 0x40, 0x2e, 0x2b, 0x4b, 0x4e, 0x20, 0x25
-+	.byte 0x14, 0x11, 0x7f, 0x7a, 0x1a, 0x1f, 0x71, 0x74
-+.Lpre_tf_hi_s4:
-+	.byte 0x00, 0xf1, 0x8a, 0x7b, 0x09, 0xf8, 0x83, 0x72
-+	.byte 0xad, 0x5c, 0x27, 0xd6, 0xa4, 0x55, 0x2e, 0xdf
-+
-+/*
-+ * post-SubByte transform
-+ *
-+ * post-lookup for sbox1, sbox4:
-+ *  swap_bitendianness(
-+ *      camellia_h(
-+ *          isom_map_aes_to_camellia(
-+ *              swap_bitendianness(
-+ *                  aes_inverse_affine_transform(in)
-+ *              )
-+ *          )
-+ *      )
-+ *  )
-+ *
-+ * (note: '⊕ 0x6e' inside camellia_h())
-+ */
-+.Lpost_tf_lo_s1:
-+	.byte 0x3c, 0xcc, 0xcf, 0x3f, 0x32, 0xc2, 0xc1, 0x31
-+	.byte 0xdc, 0x2c, 0x2f, 0xdf, 0xd2, 0x22, 0x21, 0xd1
-+.Lpost_tf_hi_s1:
-+	.byte 0x00, 0xf9, 0x86, 0x7f, 0xd7, 0x2e, 0x51, 0xa8
-+	.byte 0xa4, 0x5d, 0x22, 0xdb, 0x73, 0x8a, 0xf5, 0x0c
-+
-+/*
-+ * post-SubByte transform
-+ *
-+ * post-lookup for sbox2:
-+ *  swap_bitendianness(
-+ *      camellia_h(
-+ *          isom_map_aes_to_camellia(
-+ *              swap_bitendianness(
-+ *                  aes_inverse_affine_transform(in)
-+ *              )
-+ *          )
-+ *      )
-+ *  ) <<< 1
-+ *
-+ * (note: '⊕ 0x6e' inside camellia_h())
-+ */
-+.Lpost_tf_lo_s2:
-+	.byte 0x78, 0x99, 0x9f, 0x7e, 0x64, 0x85, 0x83, 0x62
-+	.byte 0xb9, 0x58, 0x5e, 0xbf, 0xa5, 0x44, 0x42, 0xa3
-+.Lpost_tf_hi_s2:
-+	.byte 0x00, 0xf3, 0x0d, 0xfe, 0xaf, 0x5c, 0xa2, 0x51
-+	.byte 0x49, 0xba, 0x44, 0xb7, 0xe6, 0x15, 0xeb, 0x18
-+
-+/*
-+ * post-SubByte transform
-+ *
-+ * post-lookup for sbox3:
-+ *  swap_bitendianness(
-+ *      camellia_h(
-+ *          isom_map_aes_to_camellia(
-+ *              swap_bitendianness(
-+ *                  aes_inverse_affine_transform(in)
-+ *              )
-+ *          )
-+ *      )
-+ *  ) >>> 1
-+ *
-+ * (note: '⊕ 0x6e' inside camellia_h())
-+ */
-+.Lpost_tf_lo_s3:
-+	.byte 0x1e, 0x66, 0xe7, 0x9f, 0x19, 0x61, 0xe0, 0x98
-+	.byte 0x6e, 0x16, 0x97, 0xef, 0x69, 0x11, 0x90, 0xe8
-+.Lpost_tf_hi_s3:
-+	.byte 0x00, 0xfc, 0x43, 0xbf, 0xeb, 0x17, 0xa8, 0x54
-+	.byte 0x52, 0xae, 0x11, 0xed, 0xb9, 0x45, 0xfa, 0x06
-+
-+/* For isolating SubBytes from AESENCLAST, inverse shift row */
-+.Linv_shift_row:
-+	.byte 0x00, 0x0d, 0x0a, 0x07, 0x04, 0x01, 0x0e, 0x0b
-+	.byte 0x08, 0x05, 0x02, 0x0f, 0x0c, 0x09, 0x06, 0x03
-+
-+.align 4
-+/* 4-bit mask */
-+.L0f0f0f0f:
-+	.long 0x0f0f0f0f
-+
 +.text
 +
++#define CTX %rdi
++
++#define RNOT %ymm0
++#define tp  %ymm1
++
++#define RA1 %ymm2
++#define RA2 %ymm3
++#define RB1 %ymm4
++#define RB2 %ymm5
++#define RC1 %ymm6
++#define RC2 %ymm7
++#define RD1 %ymm8
++#define RD2 %ymm9
++#define RE1 %ymm10
++#define RE2 %ymm11
++
++#define RK0 %ymm12
++#define RK1 %ymm13
++#define RK2 %ymm14
++#define RK3 %ymm15
++
++#define RK0x %xmm12
++#define RK1x %xmm13
++#define RK2x %xmm14
++#define RK3x %xmm15
++
++#define S0_1(x0, x1, x2, x3, x4)      \
++	vpor		x0,   x3, tp; \
++	vpxor		x3,   x0, x0; \
++	vpxor		x2,   x3, x4; \
++	vpxor		RNOT, x4, x4; \
++	vpxor		x1,   tp, x3; \
++	vpand		x0,   x1, x1; \
++	vpxor		x4,   x1, x1; \
++	vpxor		x0,   x2, x2;
++#define S0_2(x0, x1, x2, x3, x4)      \
++	vpxor		x3,   x0, x0; \
++	vpor		x0,   x4, x4; \
++	vpxor		x2,   x0, x0; \
++	vpand		x1,   x2, x2; \
++	vpxor		x2,   x3, x3; \
++	vpxor		RNOT, x1, x1; \
++	vpxor		x4,   x2, x2; \
++	vpxor		x2,   x1, x1;
++
++#define S1_1(x0, x1, x2, x3, x4)      \
++	vpxor		x0,   x1, tp; \
++	vpxor		x3,   x0, x0; \
++	vpxor		RNOT, x3, x3; \
++	vpand		tp,   x1, x4; \
++	vpor		tp,   x0, x0; \
++	vpxor		x2,   x3, x3; \
++	vpxor		x3,   x0, x0; \
++	vpxor		x3,   tp, x1;
++#define S1_2(x0, x1, x2, x3, x4)      \
++	vpxor		x4,   x3, x3; \
++	vpor		x4,   x1, x1; \
++	vpxor		x2,   x4, x4; \
++	vpand		x0,   x2, x2; \
++	vpxor		x1,   x2, x2; \
++	vpor		x0,   x1, x1; \
++	vpxor		RNOT, x0, x0; \
++	vpxor		x2,   x0, x0; \
++	vpxor		x1,   x4, x4;
++
++#define S2_1(x0, x1, x2, x3, x4)      \
++	vpxor		RNOT, x3, x3; \
++	vpxor		x0,   x1, x1; \
++	vpand		x2,   x0, tp; \
++	vpxor		x3,   tp, tp; \
++	vpor		x0,   x3, x3; \
++	vpxor		x1,   x2, x2; \
++	vpxor		x1,   x3, x3; \
++	vpand		tp,   x1, x1;
++#define S2_2(x0, x1, x2, x3, x4)      \
++	vpxor		x2,   tp, tp; \
++	vpand		x3,   x2, x2; \
++	vpor		x1,   x3, x3; \
++	vpxor		RNOT, tp, tp; \
++	vpxor		tp,   x3, x3; \
++	vpxor		tp,   x0, x4; \
++	vpxor		x2,   tp, x0; \
++	vpor		x2,   x1, x1;
++
++#define S3_1(x0, x1, x2, x3, x4)      \
++	vpxor		x3,   x1, tp; \
++	vpor		x0,   x3, x3; \
++	vpand		x0,   x1, x4; \
++	vpxor		x2,   x0, x0; \
++	vpxor		tp,   x2, x2; \
++	vpand		x3,   tp, x1; \
++	vpxor		x3,   x2, x2; \
++	vpor		x4,   x0, x0; \
++	vpxor		x3,   x4, x4;
++#define S3_2(x0, x1, x2, x3, x4)      \
++	vpxor		x0,   x1, x1; \
++	vpand		x3,   x0, x0; \
++	vpand		x4,   x3, x3; \
++	vpxor		x2,   x3, x3; \
++	vpor		x1,   x4, x4; \
++	vpand		x1,   x2, x2; \
++	vpxor		x3,   x4, x4; \
++	vpxor		x3,   x0, x0; \
++	vpxor		x2,   x3, x3;
++
++#define S4_1(x0, x1, x2, x3, x4)      \
++	vpand		x0,   x3, tp; \
++	vpxor		x3,   x0, x0; \
++	vpxor		x2,   tp, tp; \
++	vpor		x3,   x2, x2; \
++	vpxor		x1,   x0, x0; \
++	vpxor		tp,   x3, x4; \
++	vpor		x0,   x2, x2; \
++	vpxor		x1,   x2, x2;
++#define S4_2(x0, x1, x2, x3, x4)      \
++	vpand		x0,   x1, x1; \
++	vpxor		x4,   x1, x1; \
++	vpand		x2,   x4, x4; \
++	vpxor		tp,   x2, x2; \
++	vpxor		x0,   x4, x4; \
++	vpor		x1,   tp, x3; \
++	vpxor		RNOT, x1, x1; \
++	vpxor		x0,   x3, x3;
++
++#define S5_1(x0, x1, x2, x3, x4)      \
++	vpor		x0,   x1, tp; \
++	vpxor		tp,   x2, x2; \
++	vpxor		RNOT, x3, x3; \
++	vpxor		x0,   x1, x4; \
++	vpxor		x2,   x0, x0; \
++	vpand		x4,   tp, x1; \
++	vpor		x3,   x4, x4; \
++	vpxor		x0,   x4, x4;
++#define S5_2(x0, x1, x2, x3, x4)      \
++	vpand		x3,   x0, x0; \
++	vpxor		x3,   x1, x1; \
++	vpxor		x2,   x3, x3; \
++	vpxor		x1,   x0, x0; \
++	vpand		x4,   x2, x2; \
++	vpxor		x2,   x1, x1; \
++	vpand		x0,   x2, x2; \
++	vpxor		x2,   x3, x3;
++
++#define S6_1(x0, x1, x2, x3, x4)      \
++	vpxor		x0,   x3, x3; \
++	vpxor		x2,   x1, tp; \
++	vpxor		x0,   x2, x2; \
++	vpand		x3,   x0, x0; \
++	vpor		x3,   tp, tp; \
++	vpxor		RNOT, x1, x4; \
++	vpxor		tp,   x0, x0; \
++	vpxor		x2,   tp, x1;
++#define S6_2(x0, x1, x2, x3, x4)      \
++	vpxor		x4,   x3, x3; \
++	vpxor		x0,   x4, x4; \
++	vpand		x0,   x2, x2; \
++	vpxor		x1,   x4, x4; \
++	vpxor		x3,   x2, x2; \
++	vpand		x1,   x3, x3; \
++	vpxor		x0,   x3, x3; \
++	vpxor		x2,   x1, x1;
++
++#define S7_1(x0, x1, x2, x3, x4)      \
++	vpxor		RNOT, x1, tp; \
++	vpxor		RNOT, x0, x0; \
++	vpand		x2,   tp, x1; \
++	vpxor		x3,   x1, x1; \
++	vpor		tp,   x3, x3; \
++	vpxor		x2,   tp, x4; \
++	vpxor		x3,   x2, x2; \
++	vpxor		x0,   x3, x3; \
++	vpor		x1,   x0, x0;
++#define S7_2(x0, x1, x2, x3, x4)      \
++	vpand		x0,   x2, x2; \
++	vpxor		x4,   x0, x0; \
++	vpxor		x3,   x4, x4; \
++	vpand		x0,   x3, x3; \
++	vpxor		x1,   x4, x4; \
++	vpxor		x4,   x2, x2; \
++	vpxor		x1,   x3, x3; \
++	vpor		x0,   x4, x4; \
++	vpxor		x1,   x4, x4;
++
++#define SI0_1(x0, x1, x2, x3, x4)     \
++	vpxor		x0,   x1, x1; \
++	vpor		x1,   x3, tp; \
++	vpxor		x1,   x3, x4; \
++	vpxor		RNOT, x0, x0; \
++	vpxor		tp,   x2, x2; \
++	vpxor		x0,   tp, x3; \
++	vpand		x1,   x0, x0; \
++	vpxor		x2,   x0, x0;
++#define SI0_2(x0, x1, x2, x3, x4)     \
++	vpand		x3,   x2, x2; \
++	vpxor		x4,   x3, x3; \
++	vpxor		x3,   x2, x2; \
++	vpxor		x3,   x1, x1; \
++	vpand		x0,   x3, x3; \
++	vpxor		x0,   x1, x1; \
++	vpxor		x2,   x0, x0; \
++	vpxor		x3,   x4, x4;
++
++#define SI1_1(x0, x1, x2, x3, x4)     \
++	vpxor		x3,   x1, x1; \
++	vpxor		x2,   x0, tp; \
++	vpxor		RNOT, x2, x2; \
++	vpor		x1,   x0, x4; \
++	vpxor		x3,   x4, x4; \
++	vpand		x1,   x3, x3; \
++	vpxor		x2,   x1, x1; \
++	vpand		x4,   x2, x2;
++#define SI1_2(x0, x1, x2, x3, x4)     \
++	vpxor		x1,   x4, x4; \
++	vpor		x3,   x1, x1; \
++	vpxor		tp,   x3, x3; \
++	vpxor		tp,   x2, x2; \
++	vpor		x4,   tp, x0; \
++	vpxor		x4,   x2, x2; \
++	vpxor		x0,   x1, x1; \
++	vpxor		x1,   x4, x4;
++
++#define SI2_1(x0, x1, x2, x3, x4)     \
++	vpxor		x1,   x2, x2; \
++	vpxor		RNOT, x3, tp; \
++	vpor		x2,   tp, tp; \
++	vpxor		x3,   x2, x2; \
++	vpxor		x0,   x3, x4; \
++	vpxor		x1,   tp, x3; \
++	vpor		x2,   x1, x1; \
++	vpxor		x0,   x2, x2;
++#define SI2_2(x0, x1, x2, x3, x4)     \
++	vpxor		x4,   x1, x1; \
++	vpor		x3,   x4, x4; \
++	vpxor		x3,   x2, x2; \
++	vpxor		x2,   x4, x4; \
++	vpand		x1,   x2, x2; \
++	vpxor		x3,   x2, x2; \
++	vpxor		x4,   x3, x3; \
++	vpxor		x0,   x4, x4;
++
++#define SI3_1(x0, x1, x2, x3, x4)     \
++	vpxor		x1,   x2, x2; \
++	vpand		x2,   x1, tp; \
++	vpxor		x0,   tp, tp; \
++	vpor		x1,   x0, x0; \
++	vpxor		x3,   x1, x4; \
++	vpxor		x3,   x0, x0; \
++	vpor		tp,   x3, x3; \
++	vpxor		x2,   tp, x1;
++#define SI3_2(x0, x1, x2, x3, x4)     \
++	vpxor		x3,   x1, x1; \
++	vpxor		x2,   x0, x0; \
++	vpxor		x3,   x2, x2; \
++	vpand		x1,   x3, x3; \
++	vpxor		x0,   x1, x1; \
++	vpand		x2,   x0, x0; \
++	vpxor		x3,   x4, x4; \
++	vpxor		x0,   x3, x3; \
++	vpxor		x1,   x0, x0;
++
++#define SI4_1(x0, x1, x2, x3, x4)     \
++	vpxor		x3,   x2, x2; \
++	vpand		x1,   x0, tp; \
++	vpxor		x2,   tp, tp; \
++	vpor		x3,   x2, x2; \
++	vpxor		RNOT, x0, x4; \
++	vpxor		tp,   x1, x1; \
++	vpxor		x2,   tp, x0; \
++	vpand		x4,   x2, x2;
++#define SI4_2(x0, x1, x2, x3, x4)     \
++	vpxor		x0,   x2, x2; \
++	vpor		x4,   x0, x0; \
++	vpxor		x3,   x0, x0; \
++	vpand		x2,   x3, x3; \
++	vpxor		x3,   x4, x4; \
++	vpxor		x1,   x3, x3; \
++	vpand		x0,   x1, x1; \
++	vpxor		x1,   x4, x4; \
++	vpxor		x3,   x0, x0;
++
++#define SI5_1(x0, x1, x2, x3, x4)     \
++	vpor		x2,   x1, tp; \
++	vpxor		x1,   x2, x2; \
++	vpxor		x3,   tp, tp; \
++	vpand		x1,   x3, x3; \
++	vpxor		x3,   x2, x2; \
++	vpor		x0,   x3, x3; \
++	vpxor		RNOT, x0, x0; \
++	vpxor		x2,   x3, x3; \
++	vpor		x0,   x2, x2;
++#define SI5_2(x0, x1, x2, x3, x4)     \
++	vpxor		tp,   x1, x4; \
++	vpxor		x4,   x2, x2; \
++	vpand		x0,   x4, x4; \
++	vpxor		tp,   x0, x0; \
++	vpxor		x3,   tp, x1; \
++	vpand		x2,   x0, x0; \
++	vpxor		x3,   x2, x2; \
++	vpxor		x2,   x0, x0; \
++	vpxor		x4,   x2, x2; \
++	vpxor		x3,   x4, x4;
++
++#define SI6_1(x0, x1, x2, x3, x4)     \
++	vpxor		x2,   x0, x0; \
++	vpand		x3,   x0, tp; \
++	vpxor		x3,   x2, x2; \
++	vpxor		x2,   tp, tp; \
++	vpxor		x1,   x3, x3; \
++	vpor		x0,   x2, x2; \
++	vpxor		x3,   x2, x2; \
++	vpand		tp,   x3, x3;
++#define SI6_2(x0, x1, x2, x3, x4)     \
++	vpxor		RNOT, tp, tp; \
++	vpxor		x1,   x3, x3; \
++	vpand		x2,   x1, x1; \
++	vpxor		tp,   x0, x4; \
++	vpxor		x4,   x3, x3; \
++	vpxor		x2,   x4, x4; \
++	vpxor		x1,   tp, x0; \
++	vpxor		x0,   x2, x2;
++
++#define SI7_1(x0, x1, x2, x3, x4)     \
++	vpand		x0,   x3, tp; \
++	vpxor		x2,   x0, x0; \
++	vpor		x3,   x2, x2; \
++	vpxor		x1,   x3, x4; \
++	vpxor		RNOT, x0, x0; \
++	vpor		tp,   x1, x1; \
++	vpxor		x0,   x4, x4; \
++	vpand		x2,   x0, x0; \
++	vpxor		x1,   x0, x0;
++#define SI7_2(x0, x1, x2, x3, x4)     \
++	vpand		x2,   x1, x1; \
++	vpxor		x2,   tp, x3; \
++	vpxor		x3,   x4, x4; \
++	vpand		x3,   x2, x2; \
++	vpor		x0,   x3, x3; \
++	vpxor		x4,   x1, x1; \
++	vpxor		x4,   x3, x3; \
++	vpand		x0,   x4, x4; \
++	vpxor		x2,   x4, x4;
++
++#define get_key(i,j,t) \
++	vpbroadcastd (4*(i)+(j))*4(CTX), t;
++
++#define K2(x0, x1, x2, x3, x4, i) \
++	get_key(i, 0, RK0); \
++	get_key(i, 1, RK1); \
++	get_key(i, 2, RK2); \
++	get_key(i, 3, RK3); \
++	vpxor RK0,	x0 ## 1, x0 ## 1; \
++	vpxor RK1,	x1 ## 1, x1 ## 1; \
++	vpxor RK2,	x2 ## 1, x2 ## 1; \
++	vpxor RK3,	x3 ## 1, x3 ## 1; \
++		vpxor RK0,	x0 ## 2, x0 ## 2; \
++		vpxor RK1,	x1 ## 2, x1 ## 2; \
++		vpxor RK2,	x2 ## 2, x2 ## 2; \
++		vpxor RK3,	x3 ## 2, x3 ## 2;
++
++#define LK2(x0, x1, x2, x3, x4, i) \
++	vpslld $13,		x0 ## 1, x4 ## 1;          \
++	vpsrld $(32 - 13),	x0 ## 1, x0 ## 1;          \
++	vpor			x4 ## 1, x0 ## 1, x0 ## 1; \
++	vpxor			x0 ## 1, x1 ## 1, x1 ## 1; \
++	vpslld $3,		x2 ## 1, x4 ## 1;          \
++	vpsrld $(32 - 3),	x2 ## 1, x2 ## 1;          \
++	vpor			x4 ## 1, x2 ## 1, x2 ## 1; \
++	vpxor			x2 ## 1, x1 ## 1, x1 ## 1; \
++		vpslld $13,		x0 ## 2, x4 ## 2;          \
++		vpsrld $(32 - 13),	x0 ## 2, x0 ## 2;          \
++		vpor			x4 ## 2, x0 ## 2, x0 ## 2; \
++		vpxor			x0 ## 2, x1 ## 2, x1 ## 2; \
++		vpslld $3,		x2 ## 2, x4 ## 2;          \
++		vpsrld $(32 - 3),	x2 ## 2, x2 ## 2;          \
++		vpor			x4 ## 2, x2 ## 2, x2 ## 2; \
++		vpxor			x2 ## 2, x1 ## 2, x1 ## 2; \
++	vpslld $1,		x1 ## 1, x4 ## 1;          \
++	vpsrld $(32 - 1),	x1 ## 1, x1 ## 1;          \
++	vpor			x4 ## 1, x1 ## 1, x1 ## 1; \
++	vpslld $3,		x0 ## 1, x4 ## 1;          \
++	vpxor			x2 ## 1, x3 ## 1, x3 ## 1; \
++	vpxor			x4 ## 1, x3 ## 1, x3 ## 1; \
++	get_key(i, 1, RK1); \
++		vpslld $1,		x1 ## 2, x4 ## 2;          \
++		vpsrld $(32 - 1),	x1 ## 2, x1 ## 2;          \
++		vpor			x4 ## 2, x1 ## 2, x1 ## 2; \
++		vpslld $3,		x0 ## 2, x4 ## 2;          \
++		vpxor			x2 ## 2, x3 ## 2, x3 ## 2; \
++		vpxor			x4 ## 2, x3 ## 2, x3 ## 2; \
++		get_key(i, 3, RK3); \
++	vpslld $7,		x3 ## 1, x4 ## 1;          \
++	vpsrld $(32 - 7),	x3 ## 1, x3 ## 1;          \
++	vpor			x4 ## 1, x3 ## 1, x3 ## 1; \
++	vpslld $7,		x1 ## 1, x4 ## 1;          \
++	vpxor			x1 ## 1, x0 ## 1, x0 ## 1; \
++	vpxor			x3 ## 1, x0 ## 1, x0 ## 1; \
++	vpxor			x3 ## 1, x2 ## 1, x2 ## 1; \
++	vpxor			x4 ## 1, x2 ## 1, x2 ## 1; \
++	get_key(i, 0, RK0); \
++		vpslld $7,		x3 ## 2, x4 ## 2;          \
++		vpsrld $(32 - 7),	x3 ## 2, x3 ## 2;          \
++		vpor			x4 ## 2, x3 ## 2, x3 ## 2; \
++		vpslld $7,		x1 ## 2, x4 ## 2;          \
++		vpxor			x1 ## 2, x0 ## 2, x0 ## 2; \
++		vpxor			x3 ## 2, x0 ## 2, x0 ## 2; \
++		vpxor			x3 ## 2, x2 ## 2, x2 ## 2; \
++		vpxor			x4 ## 2, x2 ## 2, x2 ## 2; \
++		get_key(i, 2, RK2); \
++	vpxor			RK1, x1 ## 1, x1 ## 1;     \
++	vpxor			RK3, x3 ## 1, x3 ## 1;     \
++	vpslld $5,		x0 ## 1, x4 ## 1;          \
++	vpsrld $(32 - 5),	x0 ## 1, x0 ## 1;          \
++	vpor			x4 ## 1, x0 ## 1, x0 ## 1; \
++	vpslld $22,		x2 ## 1, x4 ## 1;          \
++	vpsrld $(32 - 22),	x2 ## 1, x2 ## 1;          \
++	vpor			x4 ## 1, x2 ## 1, x2 ## 1; \
++	vpxor			RK0, x0 ## 1, x0 ## 1;     \
++	vpxor			RK2, x2 ## 1, x2 ## 1;     \
++		vpxor			RK1, x1 ## 2, x1 ## 2;     \
++		vpxor			RK3, x3 ## 2, x3 ## 2;     \
++		vpslld $5,		x0 ## 2, x4 ## 2;          \
++		vpsrld $(32 - 5),	x0 ## 2, x0 ## 2;          \
++		vpor			x4 ## 2, x0 ## 2, x0 ## 2; \
++		vpslld $22,		x2 ## 2, x4 ## 2;          \
++		vpsrld $(32 - 22),	x2 ## 2, x2 ## 2;          \
++		vpor			x4 ## 2, x2 ## 2, x2 ## 2; \
++		vpxor			RK0, x0 ## 2, x0 ## 2;     \
++		vpxor			RK2, x2 ## 2, x2 ## 2;
++
++#define KL2(x0, x1, x2, x3, x4, i) \
++	vpxor			RK0, x0 ## 1, x0 ## 1;     \
++	vpxor			RK2, x2 ## 1, x2 ## 1;     \
++	vpsrld $5,		x0 ## 1, x4 ## 1;          \
++	vpslld $(32 - 5),	x0 ## 1, x0 ## 1;          \
++	vpor			x4 ## 1, x0 ## 1, x0 ## 1; \
++	vpxor			RK3, x3 ## 1, x3 ## 1;     \
++	vpxor			RK1, x1 ## 1, x1 ## 1;     \
++	vpsrld $22,		x2 ## 1, x4 ## 1;          \
++	vpslld $(32 - 22),	x2 ## 1, x2 ## 1;          \
++	vpor			x4 ## 1, x2 ## 1, x2 ## 1; \
++	vpxor			x3 ## 1, x2 ## 1, x2 ## 1; \
++		vpxor			RK0, x0 ## 2, x0 ## 2;     \
++		vpxor			RK2, x2 ## 2, x2 ## 2;     \
++		vpsrld $5,		x0 ## 2, x4 ## 2;          \
++		vpslld $(32 - 5),	x0 ## 2, x0 ## 2;          \
++		vpor			x4 ## 2, x0 ## 2, x0 ## 2; \
++		vpxor			RK3, x3 ## 2, x3 ## 2;     \
++		vpxor			RK1, x1 ## 2, x1 ## 2;     \
++		vpsrld $22,		x2 ## 2, x4 ## 2;          \
++		vpslld $(32 - 22),	x2 ## 2, x2 ## 2;          \
++		vpor			x4 ## 2, x2 ## 2, x2 ## 2; \
++		vpxor			x3 ## 2, x2 ## 2, x2 ## 2; \
++	vpxor			x3 ## 1, x0 ## 1, x0 ## 1; \
++	vpslld $7,		x1 ## 1, x4 ## 1;          \
++	vpxor			x1 ## 1, x0 ## 1, x0 ## 1; \
++	vpxor			x4 ## 1, x2 ## 1, x2 ## 1; \
++	vpsrld $1,		x1 ## 1, x4 ## 1;          \
++	vpslld $(32 - 1),	x1 ## 1, x1 ## 1;          \
++	vpor			x4 ## 1, x1 ## 1, x1 ## 1; \
++		vpxor			x3 ## 2, x0 ## 2, x0 ## 2; \
++		vpslld $7,		x1 ## 2, x4 ## 2;          \
++		vpxor			x1 ## 2, x0 ## 2, x0 ## 2; \
++		vpxor			x4 ## 2, x2 ## 2, x2 ## 2; \
++		vpsrld $1,		x1 ## 2, x4 ## 2;          \
++		vpslld $(32 - 1),	x1 ## 2, x1 ## 2;          \
++		vpor			x4 ## 2, x1 ## 2, x1 ## 2; \
++	vpsrld $7,		x3 ## 1, x4 ## 1;          \
++	vpslld $(32 - 7),	x3 ## 1, x3 ## 1;          \
++	vpor			x4 ## 1, x3 ## 1, x3 ## 1; \
++	vpxor			x0 ## 1, x1 ## 1, x1 ## 1; \
++	vpslld $3,		x0 ## 1, x4 ## 1;          \
++	vpxor			x4 ## 1, x3 ## 1, x3 ## 1; \
++		vpsrld $7,		x3 ## 2, x4 ## 2;          \
++		vpslld $(32 - 7),	x3 ## 2, x3 ## 2;          \
++		vpor			x4 ## 2, x3 ## 2, x3 ## 2; \
++		vpxor			x0 ## 2, x1 ## 2, x1 ## 2; \
++		vpslld $3,		x0 ## 2, x4 ## 2;          \
++		vpxor			x4 ## 2, x3 ## 2, x3 ## 2; \
++	vpsrld $13,		x0 ## 1, x4 ## 1;          \
++	vpslld $(32 - 13),	x0 ## 1, x0 ## 1;          \
++	vpor			x4 ## 1, x0 ## 1, x0 ## 1; \
++	vpxor			x2 ## 1, x1 ## 1, x1 ## 1; \
++	vpxor			x2 ## 1, x3 ## 1, x3 ## 1; \
++	vpsrld $3,		x2 ## 1, x4 ## 1;          \
++	vpslld $(32 - 3),	x2 ## 1, x2 ## 1;          \
++	vpor			x4 ## 1, x2 ## 1, x2 ## 1; \
++		vpsrld $13,		x0 ## 2, x4 ## 2;          \
++		vpslld $(32 - 13),	x0 ## 2, x0 ## 2;          \
++		vpor			x4 ## 2, x0 ## 2, x0 ## 2; \
++		vpxor			x2 ## 2, x1 ## 2, x1 ## 2; \
++		vpxor			x2 ## 2, x3 ## 2, x3 ## 2; \
++		vpsrld $3,		x2 ## 2, x4 ## 2;          \
++		vpslld $(32 - 3),	x2 ## 2, x2 ## 2;          \
++		vpor			x4 ## 2, x2 ## 2, x2 ## 2;
++
++#define S(SBOX, x0, x1, x2, x3, x4) \
++	SBOX ## _1(x0 ## 1, x1 ## 1, x2 ## 1, x3 ## 1, x4 ## 1); \
++	SBOX ## _2(x0 ## 1, x1 ## 1, x2 ## 1, x3 ## 1, x4 ## 1); \
++	SBOX ## _1(x0 ## 2, x1 ## 2, x2 ## 2, x3 ## 2, x4 ## 2); \
++	SBOX ## _2(x0 ## 2, x1 ## 2, x2 ## 2, x3 ## 2, x4 ## 2);
++
++#define SP(SBOX, x0, x1, x2, x3, x4, i) \
++	get_key(i, 0, RK0); \
++	SBOX ## _1(x0 ## 1, x1 ## 1, x2 ## 1, x3 ## 1, x4 ## 1); \
++	get_key(i, 2, RK2); \
++	SBOX ## _2(x0 ## 1, x1 ## 1, x2 ## 1, x3 ## 1, x4 ## 1); \
++	get_key(i, 3, RK3); \
++	SBOX ## _1(x0 ## 2, x1 ## 2, x2 ## 2, x3 ## 2, x4 ## 2); \
++	get_key(i, 1, RK1); \
++	SBOX ## _2(x0 ## 2, x1 ## 2, x2 ## 2, x3 ## 2, x4 ## 2); \
++
++#define transpose_4x4(x0, x1, x2, x3, t0, t1, t2) \
++	vpunpckldq		x1, x0, t0; \
++	vpunpckhdq		x1, x0, t2; \
++	vpunpckldq		x3, x2, t1; \
++	vpunpckhdq		x3, x2, x3; \
++	\
++	vpunpcklqdq		t1, t0, x0; \
++	vpunpckhqdq		t1, t0, x1; \
++	vpunpcklqdq		x3, t2, x2; \
++	vpunpckhqdq		x3, t2, x3;
++
++#define read_blocks(x0, x1, x2, x3, t0, t1, t2) \
++	transpose_4x4(x0, x1, x2, x3, t0, t1, t2)
++
++#define write_blocks(x0, x1, x2, x3, t0, t1, t2) \
++	transpose_4x4(x0, x1, x2, x3, t0, t1, t2)
++
 +.align 8
-+__camellia_enc_blk32:
++__serpent_enc_blk16:
 +	/* input:
 +	 *	%rdi: ctx, CTX
-+	 *	%rax: temporary storage, 512 bytes
-+	 *	%ymm0..%ymm15: 32 plaintext blocks
++	 *	RA1, RB1, RC1, RD1, RA2, RB2, RC2, RD2: plaintext
 +	 * output:
-+	 *	%ymm0..%ymm15: 32 encrypted blocks, order swapped:
-+	 *       7, 8, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8
++	 *	RA1, RB1, RC1, RD1, RA2, RB2, RC2, RD2: ciphertext
 +	 */
 +
-+	leaq 8 * 32(%rax), %rcx;
++	vpcmpeqd RNOT, RNOT, RNOT;
 +
-+	inpack32_post(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		      %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		      %ymm15, %rax, %rcx);
++	read_blocks(RA1, RB1, RC1, RD1, RK0, RK1, RK2);
++	read_blocks(RA2, RB2, RC2, RD2, RK0, RK1, RK2);
 +
-+	enc_rounds32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rax, %rcx, 0);
++						 K2(RA, RB, RC, RD, RE, 0);
++	S(S0, RA, RB, RC, RD, RE);		LK2(RC, RB, RD, RA, RE, 1);
++	S(S1, RC, RB, RD, RA, RE);		LK2(RE, RD, RA, RC, RB, 2);
++	S(S2, RE, RD, RA, RC, RB);		LK2(RB, RD, RE, RC, RA, 3);
++	S(S3, RB, RD, RE, RC, RA);		LK2(RC, RA, RD, RB, RE, 4);
++	S(S4, RC, RA, RD, RB, RE);		LK2(RA, RD, RB, RE, RC, 5);
++	S(S5, RA, RD, RB, RE, RC);		LK2(RC, RA, RD, RE, RB, 6);
++	S(S6, RC, RA, RD, RE, RB);		LK2(RD, RB, RA, RE, RC, 7);
++	S(S7, RD, RB, RA, RE, RC);		LK2(RC, RA, RE, RD, RB, 8);
++	S(S0, RC, RA, RE, RD, RB);		LK2(RE, RA, RD, RC, RB, 9);
++	S(S1, RE, RA, RD, RC, RB);		LK2(RB, RD, RC, RE, RA, 10);
++	S(S2, RB, RD, RC, RE, RA);		LK2(RA, RD, RB, RE, RC, 11);
++	S(S3, RA, RD, RB, RE, RC);		LK2(RE, RC, RD, RA, RB, 12);
++	S(S4, RE, RC, RD, RA, RB);		LK2(RC, RD, RA, RB, RE, 13);
++	S(S5, RC, RD, RA, RB, RE);		LK2(RE, RC, RD, RB, RA, 14);
++	S(S6, RE, RC, RD, RB, RA);		LK2(RD, RA, RC, RB, RE, 15);
++	S(S7, RD, RA, RC, RB, RE);		LK2(RE, RC, RB, RD, RA, 16);
++	S(S0, RE, RC, RB, RD, RA);		LK2(RB, RC, RD, RE, RA, 17);
++	S(S1, RB, RC, RD, RE, RA);		LK2(RA, RD, RE, RB, RC, 18);
++	S(S2, RA, RD, RE, RB, RC);		LK2(RC, RD, RA, RB, RE, 19);
++	S(S3, RC, RD, RA, RB, RE);		LK2(RB, RE, RD, RC, RA, 20);
++	S(S4, RB, RE, RD, RC, RA);		LK2(RE, RD, RC, RA, RB, 21);
++	S(S5, RE, RD, RC, RA, RB);		LK2(RB, RE, RD, RA, RC, 22);
++	S(S6, RB, RE, RD, RA, RC);		LK2(RD, RC, RE, RA, RB, 23);
++	S(S7, RD, RC, RE, RA, RB);		LK2(RB, RE, RA, RD, RC, 24);
++	S(S0, RB, RE, RA, RD, RC);		LK2(RA, RE, RD, RB, RC, 25);
++	S(S1, RA, RE, RD, RB, RC);		LK2(RC, RD, RB, RA, RE, 26);
++	S(S2, RC, RD, RB, RA, RE);		LK2(RE, RD, RC, RA, RB, 27);
++	S(S3, RE, RD, RC, RA, RB);		LK2(RA, RB, RD, RE, RC, 28);
++	S(S4, RA, RB, RD, RE, RC);		LK2(RB, RD, RE, RC, RA, 29);
++	S(S5, RB, RD, RE, RC, RA);		LK2(RA, RB, RD, RC, RE, 30);
++	S(S6, RA, RB, RD, RC, RE);		LK2(RD, RE, RB, RC, RA, 31);
++	S(S7, RD, RE, RB, RC, RA);		 K2(RA, RB, RC, RD, RE, 32);
 +
-+	fls32(%rax, %ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+	      %rcx, %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+	      %ymm15,
-+	      ((key_table + (8) * 8) + 0)(CTX),
-+	      ((key_table + (8) * 8) + 4)(CTX),
-+	      ((key_table + (8) * 8) + 8)(CTX),
-+	      ((key_table + (8) * 8) + 12)(CTX));
-+
-+	enc_rounds32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rax, %rcx, 8);
-+
-+	fls32(%rax, %ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+	      %rcx, %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+	      %ymm15,
-+	      ((key_table + (16) * 8) + 0)(CTX),
-+	      ((key_table + (16) * 8) + 4)(CTX),
-+	      ((key_table + (16) * 8) + 8)(CTX),
-+	      ((key_table + (16) * 8) + 12)(CTX));
-+
-+	enc_rounds32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rax, %rcx, 16);
-+
-+	movl $24, %r8d;
-+	cmpl $16, key_length(CTX);
-+	jne .Lenc_max32;
-+
-+.Lenc_done:
-+	/* load CD for output */
-+	vmovdqu 0 * 32(%rcx), %ymm8;
-+	vmovdqu 1 * 32(%rcx), %ymm9;
-+	vmovdqu 2 * 32(%rcx), %ymm10;
-+	vmovdqu 3 * 32(%rcx), %ymm11;
-+	vmovdqu 4 * 32(%rcx), %ymm12;
-+	vmovdqu 5 * 32(%rcx), %ymm13;
-+	vmovdqu 6 * 32(%rcx), %ymm14;
-+	vmovdqu 7 * 32(%rcx), %ymm15;
-+
-+	outunpack32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		    %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		    %ymm15, (key_table)(CTX, %r8, 8), (%rax), 1 * 32(%rax));
++	write_blocks(RA1, RB1, RC1, RD1, RK0, RK1, RK2);
++	write_blocks(RA2, RB2, RC2, RD2, RK0, RK1, RK2);
 +
 +	ret;
++ENDPROC(__serpent_enc_blk16)
 +
 +.align 8
-+.Lenc_max32:
-+	movl $32, %r8d;
-+
-+	fls32(%rax, %ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+	      %rcx, %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+	      %ymm15,
-+	      ((key_table + (24) * 8) + 0)(CTX),
-+	      ((key_table + (24) * 8) + 4)(CTX),
-+	      ((key_table + (24) * 8) + 8)(CTX),
-+	      ((key_table + (24) * 8) + 12)(CTX));
-+
-+	enc_rounds32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rax, %rcx, 24);
-+
-+	jmp .Lenc_done;
-+ENDPROC(__camellia_enc_blk32)
-+
-+.align 8
-+__camellia_dec_blk32:
++__serpent_dec_blk16:
 +	/* input:
 +	 *	%rdi: ctx, CTX
-+	 *	%rax: temporary storage, 512 bytes
-+	 *	%r8d: 24 for 16 byte key, 32 for larger
-+	 *	%ymm0..%ymm15: 16 encrypted blocks
++	 *	RA1, RB1, RC1, RD1, RA2, RB2, RC2, RD2: ciphertext
 +	 * output:
-+	 *	%ymm0..%ymm15: 16 plaintext blocks, order swapped:
-+	 *       7, 8, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8
++	 *	RC1, RD1, RB1, RE1, RC2, RD2, RB2, RE2: plaintext
 +	 */
 +
-+	leaq 8 * 32(%rax), %rcx;
++	vpcmpeqd RNOT, RNOT, RNOT;
 +
-+	inpack32_post(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		      %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		      %ymm15, %rax, %rcx);
++	read_blocks(RA1, RB1, RC1, RD1, RK0, RK1, RK2);
++	read_blocks(RA2, RB2, RC2, RD2, RK0, RK1, RK2);
 +
-+	cmpl $32, %r8d;
-+	je .Ldec_max32;
++						 K2(RA, RB, RC, RD, RE, 32);
++	SP(SI7, RA, RB, RC, RD, RE, 31);	KL2(RB, RD, RA, RE, RC, 31);
++	SP(SI6, RB, RD, RA, RE, RC, 30);	KL2(RA, RC, RE, RB, RD, 30);
++	SP(SI5, RA, RC, RE, RB, RD, 29);	KL2(RC, RD, RA, RE, RB, 29);
++	SP(SI4, RC, RD, RA, RE, RB, 28);	KL2(RC, RA, RB, RE, RD, 28);
++	SP(SI3, RC, RA, RB, RE, RD, 27);	KL2(RB, RC, RD, RE, RA, 27);
++	SP(SI2, RB, RC, RD, RE, RA, 26);	KL2(RC, RA, RE, RD, RB, 26);
++	SP(SI1, RC, RA, RE, RD, RB, 25);	KL2(RB, RA, RE, RD, RC, 25);
++	SP(SI0, RB, RA, RE, RD, RC, 24);	KL2(RE, RC, RA, RB, RD, 24);
++	SP(SI7, RE, RC, RA, RB, RD, 23);	KL2(RC, RB, RE, RD, RA, 23);
++	SP(SI6, RC, RB, RE, RD, RA, 22);	KL2(RE, RA, RD, RC, RB, 22);
++	SP(SI5, RE, RA, RD, RC, RB, 21);	KL2(RA, RB, RE, RD, RC, 21);
++	SP(SI4, RA, RB, RE, RD, RC, 20);	KL2(RA, RE, RC, RD, RB, 20);
++	SP(SI3, RA, RE, RC, RD, RB, 19);	KL2(RC, RA, RB, RD, RE, 19);
++	SP(SI2, RC, RA, RB, RD, RE, 18);	KL2(RA, RE, RD, RB, RC, 18);
++	SP(SI1, RA, RE, RD, RB, RC, 17);	KL2(RC, RE, RD, RB, RA, 17);
++	SP(SI0, RC, RE, RD, RB, RA, 16);	KL2(RD, RA, RE, RC, RB, 16);
++	SP(SI7, RD, RA, RE, RC, RB, 15);	KL2(RA, RC, RD, RB, RE, 15);
++	SP(SI6, RA, RC, RD, RB, RE, 14);	KL2(RD, RE, RB, RA, RC, 14);
++	SP(SI5, RD, RE, RB, RA, RC, 13);	KL2(RE, RC, RD, RB, RA, 13);
++	SP(SI4, RE, RC, RD, RB, RA, 12);	KL2(RE, RD, RA, RB, RC, 12);
++	SP(SI3, RE, RD, RA, RB, RC, 11);	KL2(RA, RE, RC, RB, RD, 11);
++	SP(SI2, RA, RE, RC, RB, RD, 10);	KL2(RE, RD, RB, RC, RA, 10);
++	SP(SI1, RE, RD, RB, RC, RA, 9);		KL2(RA, RD, RB, RC, RE, 9);
++	SP(SI0, RA, RD, RB, RC, RE, 8);		KL2(RB, RE, RD, RA, RC, 8);
++	SP(SI7, RB, RE, RD, RA, RC, 7);		KL2(RE, RA, RB, RC, RD, 7);
++	SP(SI6, RE, RA, RB, RC, RD, 6);		KL2(RB, RD, RC, RE, RA, 6);
++	SP(SI5, RB, RD, RC, RE, RA, 5);		KL2(RD, RA, RB, RC, RE, 5);
++	SP(SI4, RD, RA, RB, RC, RE, 4);		KL2(RD, RB, RE, RC, RA, 4);
++	SP(SI3, RD, RB, RE, RC, RA, 3);		KL2(RE, RD, RA, RC, RB, 3);
++	SP(SI2, RE, RD, RA, RC, RB, 2);		KL2(RD, RB, RC, RA, RE, 2);
++	SP(SI1, RD, RB, RC, RA, RE, 1);		KL2(RE, RB, RC, RA, RD, 1);
++	S(SI0, RE, RB, RC, RA, RD);		 K2(RC, RD, RB, RE, RA, 0);
 +
-+.Ldec_max24:
-+	dec_rounds32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rax, %rcx, 16);
-+
-+	fls32(%rax, %ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+	      %rcx, %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+	      %ymm15,
-+	      ((key_table + (16) * 8) + 8)(CTX),
-+	      ((key_table + (16) * 8) + 12)(CTX),
-+	      ((key_table + (16) * 8) + 0)(CTX),
-+	      ((key_table + (16) * 8) + 4)(CTX));
-+
-+	dec_rounds32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rax, %rcx, 8);
-+
-+	fls32(%rax, %ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+	      %rcx, %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+	      %ymm15,
-+	      ((key_table + (8) * 8) + 8)(CTX),
-+	      ((key_table + (8) * 8) + 12)(CTX),
-+	      ((key_table + (8) * 8) + 0)(CTX),
-+	      ((key_table + (8) * 8) + 4)(CTX));
-+
-+	dec_rounds32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rax, %rcx, 0);
-+
-+	/* load CD for output */
-+	vmovdqu 0 * 32(%rcx), %ymm8;
-+	vmovdqu 1 * 32(%rcx), %ymm9;
-+	vmovdqu 2 * 32(%rcx), %ymm10;
-+	vmovdqu 3 * 32(%rcx), %ymm11;
-+	vmovdqu 4 * 32(%rcx), %ymm12;
-+	vmovdqu 5 * 32(%rcx), %ymm13;
-+	vmovdqu 6 * 32(%rcx), %ymm14;
-+	vmovdqu 7 * 32(%rcx), %ymm15;
-+
-+	outunpack32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		    %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		    %ymm15, (key_table)(CTX), (%rax), 1 * 32(%rax));
++	write_blocks(RC1, RD1, RB1, RE1, RK0, RK1, RK2);
++	write_blocks(RC2, RD2, RB2, RE2, RK0, RK1, RK2);
 +
 +	ret;
++ENDPROC(__serpent_dec_blk16)
 +
-+.align 8
-+.Ldec_max32:
-+	dec_rounds32(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rax, %rcx, 24);
-+
-+	fls32(%rax, %ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+	      %rcx, %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+	      %ymm15,
-+	      ((key_table + (24) * 8) + 8)(CTX),
-+	      ((key_table + (24) * 8) + 12)(CTX),
-+	      ((key_table + (24) * 8) + 0)(CTX),
-+	      ((key_table + (24) * 8) + 4)(CTX));
-+
-+	jmp .Ldec_max24;
-+ENDPROC(__camellia_dec_blk32)
-+
-+ENTRY(camellia_ecb_enc_32way)
++ENTRY(serpent_ecb_enc_16way)
 +	/* input:
 +	 *	%rdi: ctx, CTX
-+	 *	%rsi: dst (32 blocks)
-+	 *	%rdx: src (32 blocks)
++	 *	%rsi: dst
++	 *	%rdx: src
 +	 */
 +
 +	vzeroupper;
 +
-+	inpack32_pre(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rdx, (key_table)(CTX));
++	load_16way(%rdx, RA1, RB1, RC1, RD1, RA2, RB2, RC2, RD2);
 +
-+	/* now dst can be used as temporary buffer (even in src == dst case) */
-+	movq	%rsi, %rax;
++	call __serpent_enc_blk16;
 +
-+	call __camellia_enc_blk32;
-+
-+	write_output(%ymm7, %ymm6, %ymm5, %ymm4, %ymm3, %ymm2, %ymm1, %ymm0,
-+		     %ymm15, %ymm14, %ymm13, %ymm12, %ymm11, %ymm10, %ymm9,
-+		     %ymm8, %rsi);
++	store_16way(%rsi, RA1, RB1, RC1, RD1, RA2, RB2, RC2, RD2);
 +
 +	vzeroupper;
 +
 +	ret;
-+ENDPROC(camellia_ecb_enc_32way)
++ENDPROC(serpent_ecb_enc_16way)
 +
-+ENTRY(camellia_ecb_dec_32way)
++ENTRY(serpent_ecb_dec_16way)
 +	/* input:
 +	 *	%rdi: ctx, CTX
-+	 *	%rsi: dst (32 blocks)
-+	 *	%rdx: src (32 blocks)
++	 *	%rsi: dst
++	 *	%rdx: src
 +	 */
 +
 +	vzeroupper;
 +
-+	cmpl $16, key_length(CTX);
-+	movl $32, %r8d;
-+	movl $24, %eax;
-+	cmovel %eax, %r8d; /* max */
++	load_16way(%rdx, RA1, RB1, RC1, RD1, RA2, RB2, RC2, RD2);
 +
-+	inpack32_pre(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rdx, (key_table)(CTX, %r8, 8));
++	call __serpent_dec_blk16;
 +
-+	/* now dst can be used as temporary buffer (even in src == dst case) */
-+	movq	%rsi, %rax;
-+
-+	call __camellia_dec_blk32;
-+
-+	write_output(%ymm7, %ymm6, %ymm5, %ymm4, %ymm3, %ymm2, %ymm1, %ymm0,
-+		     %ymm15, %ymm14, %ymm13, %ymm12, %ymm11, %ymm10, %ymm9,
-+		     %ymm8, %rsi);
++	store_16way(%rsi, RC1, RD1, RB1, RE1, RC2, RD2, RB2, RE2);
 +
 +	vzeroupper;
 +
 +	ret;
-+ENDPROC(camellia_ecb_dec_32way)
++ENDPROC(serpent_ecb_dec_16way)
 +
-+ENTRY(camellia_cbc_dec_32way)
++ENTRY(serpent_cbc_dec_16way)
 +	/* input:
 +	 *	%rdi: ctx, CTX
-+	 *	%rsi: dst (32 blocks)
-+	 *	%rdx: src (32 blocks)
++	 *	%rsi: dst
++	 *	%rdx: src
 +	 */
 +
 +	vzeroupper;
 +
-+	cmpl $16, key_length(CTX);
-+	movl $32, %r8d;
-+	movl $24, %eax;
-+	cmovel %eax, %r8d; /* max */
++	load_16way(%rdx, RA1, RB1, RC1, RD1, RA2, RB2, RC2, RD2);
 +
-+	inpack32_pre(%ymm0, %ymm1, %ymm2, %ymm3, %ymm4, %ymm5, %ymm6, %ymm7,
-+		     %ymm8, %ymm9, %ymm10, %ymm11, %ymm12, %ymm13, %ymm14,
-+		     %ymm15, %rdx, (key_table)(CTX, %r8, 8));
++	call __serpent_dec_blk16;
 +
-+	movq %rsp, %r10;
-+	cmpq %rsi, %rdx;
-+	je .Lcbc_dec_use_stack;
-+
-+	/* dst can be used as temporary storage, src is not overwritten. */
-+	movq %rsi, %rax;
-+	jmp .Lcbc_dec_continue;
-+
-+.Lcbc_dec_use_stack:
-+	/*
-+	 * dst still in-use (because dst == src), so use stack for temporary
-+	 * storage.
-+	 */
-+	subq $(16 * 32), %rsp;
-+	movq %rsp, %rax;
-+
-+.Lcbc_dec_continue:
-+	call __camellia_dec_blk32;
-+
-+	vmovdqu %ymm7, (%rax);
-+	vpxor %ymm7, %ymm7, %ymm7;
-+	vinserti128 $1, (%rdx), %ymm7, %ymm7;
-+	vpxor (%rax), %ymm7, %ymm7;
-+	movq %r10, %rsp;
-+	vpxor (0 * 32 + 16)(%rdx), %ymm6, %ymm6;
-+	vpxor (1 * 32 + 16)(%rdx), %ymm5, %ymm5;
-+	vpxor (2 * 32 + 16)(%rdx), %ymm4, %ymm4;
-+	vpxor (3 * 32 + 16)(%rdx), %ymm3, %ymm3;
-+	vpxor (4 * 32 + 16)(%rdx), %ymm2, %ymm2;
-+	vpxor (5 * 32 + 16)(%rdx), %ymm1, %ymm1;
-+	vpxor (6 * 32 + 16)(%rdx), %ymm0, %ymm0;
-+	vpxor (7 * 32 + 16)(%rdx), %ymm15, %ymm15;
-+	vpxor (8 * 32 + 16)(%rdx), %ymm14, %ymm14;
-+	vpxor (9 * 32 + 16)(%rdx), %ymm13, %ymm13;
-+	vpxor (10 * 32 + 16)(%rdx), %ymm12, %ymm12;
-+	vpxor (11 * 32 + 16)(%rdx), %ymm11, %ymm11;
-+	vpxor (12 * 32 + 16)(%rdx), %ymm10, %ymm10;
-+	vpxor (13 * 32 + 16)(%rdx), %ymm9, %ymm9;
-+	vpxor (14 * 32 + 16)(%rdx), %ymm8, %ymm8;
-+	write_output(%ymm7, %ymm6, %ymm5, %ymm4, %ymm3, %ymm2, %ymm1, %ymm0,
-+		     %ymm15, %ymm14, %ymm13, %ymm12, %ymm11, %ymm10, %ymm9,
-+		     %ymm8, %rsi);
++	store_cbc_16way(%rdx, %rsi, RC1, RD1, RB1, RE1, RC2, RD2, RB2, RE2,
++			RK0);
 +
 +	vzeroupper;
 +
 +	ret;
-+ENDPROC(camellia_cbc_dec_32way)
++ENDPROC(serpent_cbc_dec_16way)
 +
-+#define inc_le128(x, minus_one, tmp) \
-+	vpcmpeqq minus_one, x, tmp; \
-+	vpsubq minus_one, x, x; \
-+	vpslldq $8, tmp, tmp; \
-+	vpsubq tmp, x, x;
-+
-+#define add2_le128(x, minus_one, minus_two, tmp1, tmp2) \
-+	vpcmpeqq minus_one, x, tmp1; \
-+	vpcmpeqq minus_two, x, tmp2; \
-+	vpsubq minus_two, x, x; \
-+	vpor tmp2, tmp1, tmp1; \
-+	vpslldq $8, tmp1, tmp1; \
-+	vpsubq tmp1, x, x;
-+
-+ENTRY(camellia_ctr_32way)
++ENTRY(serpent_ctr_16way)
 +	/* input:
 +	 *	%rdi: ctx, CTX
-+	 *	%rsi: dst (32 blocks)
-+	 *	%rdx: src (32 blocks)
++	 *	%rsi: dst (16 blocks)
++	 *	%rdx: src (16 blocks)
 +	 *	%rcx: iv (little endian, 128bit)
 +	 */
 +
 +	vzeroupper;
 +
-+	movq %rsp, %r10;
-+	cmpq %rsi, %rdx;
-+	je .Lctr_use_stack;
++	load_ctr_16way(%rcx, .Lbswap128_mask, RA1, RB1, RC1, RD1, RA2, RB2, RC2,
++		       RD2, RK0, RK0x, RK1, RK1x, RK2, RK2x, RK3, RK3x, RNOT,
++		       tp);
 +
-+	/* dst can be used as temporary storage, src is not overwritten. */
-+	movq %rsi, %rax;
-+	jmp .Lctr_continue;
++	call __serpent_enc_blk16;
 +
-+.Lctr_use_stack:
-+	subq $(16 * 32), %rsp;
-+	movq %rsp, %rax;
-+
-+.Lctr_continue:
-+	vpcmpeqd %ymm15, %ymm15, %ymm15;
-+	vpsrldq $8, %ymm15, %ymm15; /* ab: -1:0 ; cd: -1:0 */
-+	vpaddq %ymm15, %ymm15, %ymm12; /* ab: -2:0 ; cd: -2:0 */
-+
-+	/* load IV and byteswap */
-+	vmovdqu (%rcx), %xmm0;
-+	vmovdqa %xmm0, %xmm1;
-+	inc_le128(%xmm0, %xmm15, %xmm14);
-+	vbroadcasti128 .Lbswap128_mask, %ymm14;
-+	vinserti128 $1, %xmm0, %ymm1, %ymm0;
-+	vpshufb %ymm14, %ymm0, %ymm13;
-+	vmovdqu %ymm13, 15 * 32(%rax);
-+
-+	/* construct IVs */
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13); /* ab:le2 ; cd:le3 */
-+	vpshufb %ymm14, %ymm0, %ymm13;
-+	vmovdqu %ymm13, 14 * 32(%rax);
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm13;
-+	vmovdqu %ymm13, 13 * 32(%rax);
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm13;
-+	vmovdqu %ymm13, 12 * 32(%rax);
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm13;
-+	vmovdqu %ymm13, 11 * 32(%rax);
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm10;
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm9;
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm8;
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm7;
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm6;
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm5;
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm4;
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm3;
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm2;
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vpshufb %ymm14, %ymm0, %ymm1;
-+	add2_le128(%ymm0, %ymm15, %ymm12, %ymm11, %ymm13);
-+	vextracti128 $1, %ymm0, %xmm13;
-+	vpshufb %ymm14, %ymm0, %ymm0;
-+	inc_le128(%xmm13, %xmm15, %xmm14);
-+	vmovdqu %xmm13, (%rcx);
-+
-+	/* inpack32_pre: */
-+	vpbroadcastq (key_table)(CTX), %ymm15;
-+	vpshufb .Lpack_bswap, %ymm15, %ymm15;
-+	vpxor %ymm0, %ymm15, %ymm0;
-+	vpxor %ymm1, %ymm15, %ymm1;
-+	vpxor %ymm2, %ymm15, %ymm2;
-+	vpxor %ymm3, %ymm15, %ymm3;
-+	vpxor %ymm4, %ymm15, %ymm4;
-+	vpxor %ymm5, %ymm15, %ymm5;
-+	vpxor %ymm6, %ymm15, %ymm6;
-+	vpxor %ymm7, %ymm15, %ymm7;
-+	vpxor %ymm8, %ymm15, %ymm8;
-+	vpxor %ymm9, %ymm15, %ymm9;
-+	vpxor %ymm10, %ymm15, %ymm10;
-+	vpxor 11 * 32(%rax), %ymm15, %ymm11;
-+	vpxor 12 * 32(%rax), %ymm15, %ymm12;
-+	vpxor 13 * 32(%rax), %ymm15, %ymm13;
-+	vpxor 14 * 32(%rax), %ymm15, %ymm14;
-+	vpxor 15 * 32(%rax), %ymm15, %ymm15;
-+
-+	call __camellia_enc_blk32;
-+
-+	movq %r10, %rsp;
-+
-+	vpxor 0 * 32(%rdx), %ymm7, %ymm7;
-+	vpxor 1 * 32(%rdx), %ymm6, %ymm6;
-+	vpxor 2 * 32(%rdx), %ymm5, %ymm5;
-+	vpxor 3 * 32(%rdx), %ymm4, %ymm4;
-+	vpxor 4 * 32(%rdx), %ymm3, %ymm3;
-+	vpxor 5 * 32(%rdx), %ymm2, %ymm2;
-+	vpxor 6 * 32(%rdx), %ymm1, %ymm1;
-+	vpxor 7 * 32(%rdx), %ymm0, %ymm0;
-+	vpxor 8 * 32(%rdx), %ymm15, %ymm15;
-+	vpxor 9 * 32(%rdx), %ymm14, %ymm14;
-+	vpxor 10 * 32(%rdx), %ymm13, %ymm13;
-+	vpxor 11 * 32(%rdx), %ymm12, %ymm12;
-+	vpxor 12 * 32(%rdx), %ymm11, %ymm11;
-+	vpxor 13 * 32(%rdx), %ymm10, %ymm10;
-+	vpxor 14 * 32(%rdx), %ymm9, %ymm9;
-+	vpxor 15 * 32(%rdx), %ymm8, %ymm8;
-+	write_output(%ymm7, %ymm6, %ymm5, %ymm4, %ymm3, %ymm2, %ymm1, %ymm0,
-+		     %ymm15, %ymm14, %ymm13, %ymm12, %ymm11, %ymm10, %ymm9,
-+		     %ymm8, %rsi);
++	store_ctr_16way(%rdx, %rsi, RA1, RB1, RC1, RD1, RA2, RB2, RC2, RD2);
 +
 +	vzeroupper;
 +
 +	ret;
-+ENDPROC(camellia_ctr_32way)
++ENDPROC(serpent_ctr_16way)
 +
-+#define gf128mul_x_ble(iv, mask, tmp) \
-+	vpsrad $31, iv, tmp; \
-+	vpaddq iv, iv, iv; \
-+	vpshufd $0x13, tmp, tmp; \
-+	vpand mask, tmp, tmp; \
-+	vpxor tmp, iv, iv;
-+
-+#define gf128mul_x2_ble(iv, mask1, mask2, tmp0, tmp1) \
-+	vpsrad $31, iv, tmp0; \
-+	vpaddq iv, iv, tmp1; \
-+	vpsllq $2, iv, iv; \
-+	vpshufd $0x13, tmp0, tmp0; \
-+	vpsrad $31, tmp1, tmp1; \
-+	vpand mask2, tmp0, tmp0; \
-+	vpshufd $0x13, tmp1, tmp1; \
-+	vpxor tmp0, iv, iv; \
-+	vpand mask1, tmp1, tmp1; \
-+	vpxor tmp1, iv, iv;
-+
-+.align 8
-+camellia_xts_crypt_32way:
++ENTRY(serpent_xts_enc_16way)
 +	/* input:
 +	 *	%rdi: ctx, CTX
-+	 *	%rsi: dst (32 blocks)
-+	 *	%rdx: src (32 blocks)
++	 *	%rsi: dst (16 blocks)
++	 *	%rdx: src (16 blocks)
 +	 *	%rcx: iv (t ⊕ αⁿ ∈ GF(2¹²⁸))
-+	 *	%r8: index for input whitening key
-+	 *	%r9: pointer to  __camellia_enc_blk32 or __camellia_dec_blk32
 +	 */
 +
 +	vzeroupper;
 +
-+	subq $(16 * 32), %rsp;
-+	movq %rsp, %rax;
++	load_xts_16way(%rcx, %rdx, %rsi, RA1, RB1, RC1, RD1, RA2, RB2, RC2,
++		       RD2, RK0, RK0x, RK1, RK1x, RK2, RK2x, RK3, RK3x, RNOT,
++		       .Lxts_gf128mul_and_shl1_mask_0,
++		       .Lxts_gf128mul_and_shl1_mask_1);
 +
-+	vbroadcasti128 .Lxts_gf128mul_and_shl1_mask_0, %ymm12;
++	call __serpent_enc_blk16;
 +
-+	/* load IV and construct second IV */
-+	vmovdqu (%rcx), %xmm0;
-+	vmovdqa %xmm0, %xmm15;
-+	gf128mul_x_ble(%xmm0, %xmm12, %xmm13);
-+	vbroadcasti128 .Lxts_gf128mul_and_shl1_mask_1, %ymm13;
-+	vinserti128 $1, %xmm0, %ymm15, %ymm0;
-+	vpxor 0 * 32(%rdx), %ymm0, %ymm15;
-+	vmovdqu %ymm15, 15 * 32(%rax);
-+	vmovdqu %ymm0, 0 * 32(%rsi);
-+
-+	/* construct IVs */
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 1 * 32(%rdx), %ymm0, %ymm15;
-+	vmovdqu %ymm15, 14 * 32(%rax);
-+	vmovdqu %ymm0, 1 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 2 * 32(%rdx), %ymm0, %ymm15;
-+	vmovdqu %ymm15, 13 * 32(%rax);
-+	vmovdqu %ymm0, 2 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 3 * 32(%rdx), %ymm0, %ymm15;
-+	vmovdqu %ymm15, 12 * 32(%rax);
-+	vmovdqu %ymm0, 3 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 4 * 32(%rdx), %ymm0, %ymm11;
-+	vmovdqu %ymm0, 4 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 5 * 32(%rdx), %ymm0, %ymm10;
-+	vmovdqu %ymm0, 5 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 6 * 32(%rdx), %ymm0, %ymm9;
-+	vmovdqu %ymm0, 6 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 7 * 32(%rdx), %ymm0, %ymm8;
-+	vmovdqu %ymm0, 7 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 8 * 32(%rdx), %ymm0, %ymm7;
-+	vmovdqu %ymm0, 8 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 9 * 32(%rdx), %ymm0, %ymm6;
-+	vmovdqu %ymm0, 9 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 10 * 32(%rdx), %ymm0, %ymm5;
-+	vmovdqu %ymm0, 10 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 11 * 32(%rdx), %ymm0, %ymm4;
-+	vmovdqu %ymm0, 11 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 12 * 32(%rdx), %ymm0, %ymm3;
-+	vmovdqu %ymm0, 12 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 13 * 32(%rdx), %ymm0, %ymm2;
-+	vmovdqu %ymm0, 13 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 14 * 32(%rdx), %ymm0, %ymm1;
-+	vmovdqu %ymm0, 14 * 32(%rsi);
-+
-+	gf128mul_x2_ble(%ymm0, %ymm12, %ymm13, %ymm14, %ymm15);
-+	vpxor 15 * 32(%rdx), %ymm0, %ymm15;
-+	vmovdqu %ymm15, 0 * 32(%rax);
-+	vmovdqu %ymm0, 15 * 32(%rsi);
-+
-+	vextracti128 $1, %ymm0, %xmm0;
-+	gf128mul_x_ble(%xmm0, %xmm12, %xmm15);
-+	vmovdqu %xmm0, (%rcx);
-+
-+	/* inpack32_pre: */
-+	vpbroadcastq (key_table)(CTX, %r8, 8), %ymm15;
-+	vpshufb .Lpack_bswap, %ymm15, %ymm15;
-+	vpxor 0 * 32(%rax), %ymm15, %ymm0;
-+	vpxor %ymm1, %ymm15, %ymm1;
-+	vpxor %ymm2, %ymm15, %ymm2;
-+	vpxor %ymm3, %ymm15, %ymm3;
-+	vpxor %ymm4, %ymm15, %ymm4;
-+	vpxor %ymm5, %ymm15, %ymm5;
-+	vpxor %ymm6, %ymm15, %ymm6;
-+	vpxor %ymm7, %ymm15, %ymm7;
-+	vpxor %ymm8, %ymm15, %ymm8;
-+	vpxor %ymm9, %ymm15, %ymm9;
-+	vpxor %ymm10, %ymm15, %ymm10;
-+	vpxor %ymm11, %ymm15, %ymm11;
-+	vpxor 12 * 32(%rax), %ymm15, %ymm12;
-+	vpxor 13 * 32(%rax), %ymm15, %ymm13;
-+	vpxor 14 * 32(%rax), %ymm15, %ymm14;
-+	vpxor 15 * 32(%rax), %ymm15, %ymm15;
-+
-+	call *%r9;
-+
-+	addq $(16 * 32), %rsp;
-+
-+	vpxor 0 * 32(%rsi), %ymm7, %ymm7;
-+	vpxor 1 * 32(%rsi), %ymm6, %ymm6;
-+	vpxor 2 * 32(%rsi), %ymm5, %ymm5;
-+	vpxor 3 * 32(%rsi), %ymm4, %ymm4;
-+	vpxor 4 * 32(%rsi), %ymm3, %ymm3;
-+	vpxor 5 * 32(%rsi), %ymm2, %ymm2;
-+	vpxor 6 * 32(%rsi), %ymm1, %ymm1;
-+	vpxor 7 * 32(%rsi), %ymm0, %ymm0;
-+	vpxor 8 * 32(%rsi), %ymm15, %ymm15;
-+	vpxor 9 * 32(%rsi), %ymm14, %ymm14;
-+	vpxor 10 * 32(%rsi), %ymm13, %ymm13;
-+	vpxor 11 * 32(%rsi), %ymm12, %ymm12;
-+	vpxor 12 * 32(%rsi), %ymm11, %ymm11;
-+	vpxor 13 * 32(%rsi), %ymm10, %ymm10;
-+	vpxor 14 * 32(%rsi), %ymm9, %ymm9;
-+	vpxor 15 * 32(%rsi), %ymm8, %ymm8;
-+	write_output(%ymm7, %ymm6, %ymm5, %ymm4, %ymm3, %ymm2, %ymm1, %ymm0,
-+		     %ymm15, %ymm14, %ymm13, %ymm12, %ymm11, %ymm10, %ymm9,
-+		     %ymm8, %rsi);
++	store_xts_16way(%rsi, RA1, RB1, RC1, RD1, RA2, RB2, RC2, RD2);
 +
 +	vzeroupper;
 +
 +	ret;
-+ENDPROC(camellia_xts_crypt_32way)
++ENDPROC(serpent_xts_enc_16way)
 +
-+ENTRY(camellia_xts_enc_32way)
++ENTRY(serpent_xts_dec_16way)
 +	/* input:
 +	 *	%rdi: ctx, CTX
-+	 *	%rsi: dst (32 blocks)
-+	 *	%rdx: src (32 blocks)
++	 *	%rsi: dst (16 blocks)
++	 *	%rdx: src (16 blocks)
 +	 *	%rcx: iv (t ⊕ αⁿ ∈ GF(2¹²⁸))
 +	 */
 +
-+	xorl %r8d, %r8d; /* input whitening key, 0 for enc */
++	vzeroupper;
 +
-+	leaq __camellia_enc_blk32, %r9;
++	load_xts_16way(%rcx, %rdx, %rsi, RA1, RB1, RC1, RD1, RA2, RB2, RC2,
++		       RD2, RK0, RK0x, RK1, RK1x, RK2, RK2x, RK3, RK3x, RNOT,
++		       .Lxts_gf128mul_and_shl1_mask_0,
++		       .Lxts_gf128mul_and_shl1_mask_1);
 +
-+	jmp camellia_xts_crypt_32way;
-+ENDPROC(camellia_xts_enc_32way)
++	call __serpent_dec_blk16;
 +
-+ENTRY(camellia_xts_dec_32way)
-+	/* input:
-+	 *	%rdi: ctx, CTX
-+	 *	%rsi: dst (32 blocks)
-+	 *	%rdx: src (32 blocks)
-+	 *	%rcx: iv (t ⊕ αⁿ ∈ GF(2¹²⁸))
-+	 */
++	store_xts_16way(%rsi, RC1, RD1, RB1, RE1, RC2, RD2, RB2, RE2);
 +
-+	cmpl $16, key_length(CTX);
-+	movl $32, %r8d;
-+	movl $24, %eax;
-+	cmovel %eax, %r8d;  /* input whitening key, last for dec */
++	vzeroupper;
 +
-+	leaq __camellia_dec_blk32, %r9;
-+
-+	jmp camellia_xts_crypt_32way;
-+ENDPROC(camellia_xts_dec_32way)
-diff --git a/arch/x86/crypto/camellia_aesni_avx2_glue.c b/arch/x86/crypto/camellia_aesni_avx2_glue.c
++	ret;
++ENDPROC(serpent_xts_dec_16way)
+diff --git a/arch/x86/crypto/serpent_avx2_glue.c b/arch/x86/crypto/serpent_avx2_glue.c
 new file mode 100644
-index 0000000..414fe5d
+index 0000000..23aabc6
 --- /dev/null
-+++ b/arch/x86/crypto/camellia_aesni_avx2_glue.c
-@@ -0,0 +1,586 @@
++++ b/arch/x86/crypto/serpent_avx2_glue.c
+@@ -0,0 +1,562 @@
 +/*
-+ * Glue Code for x86_64/AVX2/AES-NI assembler optimized version of Camellia
++ * Glue Code for x86_64/AVX2 assembler optimized version of Serpent
 + *
-+ * Copyright © 2013 Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
++ * Copyright © 2012-2013 Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -1465,262 +896,228 @@ index 0000000..414fe5d
 +#include <crypto/ctr.h>
 +#include <crypto/lrw.h>
 +#include <crypto/xts.h>
++#include <crypto/serpent.h>
 +#include <asm/xcr.h>
 +#include <asm/xsave.h>
-+#include <asm/crypto/camellia.h>
++#include <asm/crypto/serpent-avx.h>
 +#include <asm/crypto/ablk_helper.h>
 +#include <asm/crypto/glue_helper.h>
 +
-+#define CAMELLIA_AESNI_PARALLEL_BLOCKS 16
-+#define CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS 32
++#define SERPENT_AVX2_PARALLEL_BLOCKS 16
 +
-+/* 32-way AVX2/AES-NI parallel cipher functions */
-+asmlinkage void camellia_ecb_enc_32way(struct camellia_ctx *ctx, u8 *dst,
-+				       const u8 *src);
-+asmlinkage void camellia_ecb_dec_32way(struct camellia_ctx *ctx, u8 *dst,
-+				       const u8 *src);
++/* 16-way AVX2 parallel cipher functions */
++asmlinkage void serpent_ecb_enc_16way(struct serpent_ctx *ctx, u8 *dst,
++				      const u8 *src);
++asmlinkage void serpent_ecb_dec_16way(struct serpent_ctx *ctx, u8 *dst,
++				      const u8 *src);
++asmlinkage void serpent_cbc_dec_16way(void *ctx, u128 *dst, const u128 *src);
 +
-+asmlinkage void camellia_cbc_dec_32way(struct camellia_ctx *ctx, u8 *dst,
-+				       const u8 *src);
-+asmlinkage void camellia_ctr_32way(struct camellia_ctx *ctx, u8 *dst,
-+				   const u8 *src, le128 *iv);
++asmlinkage void serpent_ctr_16way(void *ctx, u128 *dst, const u128 *src,
++				  le128 *iv);
++asmlinkage void serpent_xts_enc_16way(struct serpent_ctx *ctx, u8 *dst,
++				      const u8 *src, le128 *iv);
++asmlinkage void serpent_xts_dec_16way(struct serpent_ctx *ctx, u8 *dst,
++				      const u8 *src, le128 *iv);
 +
-+asmlinkage void camellia_xts_enc_32way(struct camellia_ctx *ctx, u8 *dst,
-+				       const u8 *src, le128 *iv);
-+asmlinkage void camellia_xts_dec_32way(struct camellia_ctx *ctx, u8 *dst,
-+				       const u8 *src, le128 *iv);
-+
-+static const struct common_glue_ctx camellia_enc = {
-+	.num_funcs = 4,
-+	.fpu_blocks_limit = CAMELLIA_AESNI_PARALLEL_BLOCKS,
-+
-+	.funcs = { {
-+		.num_blocks = CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS,
-+		.fn_u = { .ecb = GLUE_FUNC_CAST(camellia_ecb_enc_32way) }
-+	}, {
-+		.num_blocks = CAMELLIA_AESNI_PARALLEL_BLOCKS,
-+		.fn_u = { .ecb = GLUE_FUNC_CAST(camellia_ecb_enc_16way) }
-+	}, {
-+		.num_blocks = 2,
-+		.fn_u = { .ecb = GLUE_FUNC_CAST(camellia_enc_blk_2way) }
-+	}, {
-+		.num_blocks = 1,
-+		.fn_u = { .ecb = GLUE_FUNC_CAST(camellia_enc_blk) }
-+	} }
-+};
-+
-+static const struct common_glue_ctx camellia_ctr = {
-+	.num_funcs = 4,
-+	.fpu_blocks_limit = CAMELLIA_AESNI_PARALLEL_BLOCKS,
-+
-+	.funcs = { {
-+		.num_blocks = CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS,
-+		.fn_u = { .ctr = GLUE_CTR_FUNC_CAST(camellia_ctr_32way) }
-+	}, {
-+		.num_blocks = CAMELLIA_AESNI_PARALLEL_BLOCKS,
-+		.fn_u = { .ctr = GLUE_CTR_FUNC_CAST(camellia_ctr_16way) }
-+	}, {
-+		.num_blocks = 2,
-+		.fn_u = { .ctr = GLUE_CTR_FUNC_CAST(camellia_crypt_ctr_2way) }
-+	}, {
-+		.num_blocks = 1,
-+		.fn_u = { .ctr = GLUE_CTR_FUNC_CAST(camellia_crypt_ctr) }
-+	} }
-+};
-+
-+static const struct common_glue_ctx camellia_enc_xts = {
++static const struct common_glue_ctx serpent_enc = {
 +	.num_funcs = 3,
-+	.fpu_blocks_limit = CAMELLIA_AESNI_PARALLEL_BLOCKS,
++	.fpu_blocks_limit = 8,
 +
 +	.funcs = { {
-+		.num_blocks = CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS,
-+		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(camellia_xts_enc_32way) }
++		.num_blocks = 16,
++		.fn_u = { .ecb = GLUE_FUNC_CAST(serpent_ecb_enc_16way) }
 +	}, {
-+		.num_blocks = CAMELLIA_AESNI_PARALLEL_BLOCKS,
-+		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(camellia_xts_enc_16way) }
++		.num_blocks = 8,
++		.fn_u = { .ecb = GLUE_FUNC_CAST(serpent_ecb_enc_8way_avx) }
 +	}, {
 +		.num_blocks = 1,
-+		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(camellia_xts_enc) }
++		.fn_u = { .ecb = GLUE_FUNC_CAST(__serpent_encrypt) }
 +	} }
 +};
 +
-+static const struct common_glue_ctx camellia_dec = {
-+	.num_funcs = 4,
-+	.fpu_blocks_limit = CAMELLIA_AESNI_PARALLEL_BLOCKS,
-+
-+	.funcs = { {
-+		.num_blocks = CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS,
-+		.fn_u = { .ecb = GLUE_FUNC_CAST(camellia_ecb_dec_32way) }
-+	}, {
-+		.num_blocks = CAMELLIA_AESNI_PARALLEL_BLOCKS,
-+		.fn_u = { .ecb = GLUE_FUNC_CAST(camellia_ecb_dec_16way) }
-+	}, {
-+		.num_blocks = 2,
-+		.fn_u = { .ecb = GLUE_FUNC_CAST(camellia_dec_blk_2way) }
-+	}, {
-+		.num_blocks = 1,
-+		.fn_u = { .ecb = GLUE_FUNC_CAST(camellia_dec_blk) }
-+	} }
-+};
-+
-+static const struct common_glue_ctx camellia_dec_cbc = {
-+	.num_funcs = 4,
-+	.fpu_blocks_limit = CAMELLIA_AESNI_PARALLEL_BLOCKS,
-+
-+	.funcs = { {
-+		.num_blocks = CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS,
-+		.fn_u = { .cbc = GLUE_CBC_FUNC_CAST(camellia_cbc_dec_32way) }
-+	}, {
-+		.num_blocks = CAMELLIA_AESNI_PARALLEL_BLOCKS,
-+		.fn_u = { .cbc = GLUE_CBC_FUNC_CAST(camellia_cbc_dec_16way) }
-+	}, {
-+		.num_blocks = 2,
-+		.fn_u = { .cbc = GLUE_CBC_FUNC_CAST(camellia_decrypt_cbc_2way) }
-+	}, {
-+		.num_blocks = 1,
-+		.fn_u = { .cbc = GLUE_CBC_FUNC_CAST(camellia_dec_blk) }
-+	} }
-+};
-+
-+static const struct common_glue_ctx camellia_dec_xts = {
++static const struct common_glue_ctx serpent_ctr = {
 +	.num_funcs = 3,
-+	.fpu_blocks_limit = CAMELLIA_AESNI_PARALLEL_BLOCKS,
++	.fpu_blocks_limit = 8,
 +
 +	.funcs = { {
-+		.num_blocks = CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS,
-+		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(camellia_xts_dec_32way) }
-+	}, {
-+		.num_blocks = CAMELLIA_AESNI_PARALLEL_BLOCKS,
-+		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(camellia_xts_dec_16way) }
++		.num_blocks = 16,
++		.fn_u = { .ctr = GLUE_CTR_FUNC_CAST(serpent_ctr_16way) }
++	},  {
++		.num_blocks = 8,
++		.fn_u = { .ctr = GLUE_CTR_FUNC_CAST(serpent_ctr_8way_avx) }
 +	}, {
 +		.num_blocks = 1,
-+		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(camellia_xts_dec) }
++		.fn_u = { .ctr = GLUE_CTR_FUNC_CAST(__serpent_crypt_ctr) }
++	} }
++};
++
++static const struct common_glue_ctx serpent_enc_xts = {
++	.num_funcs = 3,
++	.fpu_blocks_limit = 8,
++
++	.funcs = { {
++		.num_blocks = 16,
++		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(serpent_xts_enc_16way) }
++	}, {
++		.num_blocks = 8,
++		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(serpent_xts_enc_8way_avx) }
++	}, {
++		.num_blocks = 1,
++		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(serpent_xts_enc) }
++	} }
++};
++
++static const struct common_glue_ctx serpent_dec = {
++	.num_funcs = 3,
++	.fpu_blocks_limit = 8,
++
++	.funcs = { {
++		.num_blocks = 16,
++		.fn_u = { .ecb = GLUE_FUNC_CAST(serpent_ecb_dec_16way) }
++	}, {
++		.num_blocks = 8,
++		.fn_u = { .ecb = GLUE_FUNC_CAST(serpent_ecb_dec_8way_avx) }
++	}, {
++		.num_blocks = 1,
++		.fn_u = { .ecb = GLUE_FUNC_CAST(__serpent_decrypt) }
++	} }
++};
++
++static const struct common_glue_ctx serpent_dec_cbc = {
++	.num_funcs = 3,
++	.fpu_blocks_limit = 8,
++
++	.funcs = { {
++		.num_blocks = 16,
++		.fn_u = { .cbc = GLUE_CBC_FUNC_CAST(serpent_cbc_dec_16way) }
++	}, {
++		.num_blocks = 8,
++		.fn_u = { .cbc = GLUE_CBC_FUNC_CAST(serpent_cbc_dec_8way_avx) }
++	}, {
++		.num_blocks = 1,
++		.fn_u = { .cbc = GLUE_CBC_FUNC_CAST(__serpent_decrypt) }
++	} }
++};
++
++static const struct common_glue_ctx serpent_dec_xts = {
++	.num_funcs = 3,
++	.fpu_blocks_limit = 8,
++
++	.funcs = { {
++		.num_blocks = 16,
++		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(serpent_xts_dec_16way) }
++	}, {
++		.num_blocks = 8,
++		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(serpent_xts_dec_8way_avx) }
++	}, {
++		.num_blocks = 1,
++		.fn_u = { .xts = GLUE_XTS_FUNC_CAST(serpent_xts_dec) }
 +	} }
 +};
 +
 +static int ecb_encrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 +		       struct scatterlist *src, unsigned int nbytes)
 +{
-+	return glue_ecb_crypt_128bit(&camellia_enc, desc, dst, src, nbytes);
++	return glue_ecb_crypt_128bit(&serpent_enc, desc, dst, src, nbytes);
 +}
 +
 +static int ecb_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 +		       struct scatterlist *src, unsigned int nbytes)
 +{
-+	return glue_ecb_crypt_128bit(&camellia_dec, desc, dst, src, nbytes);
++	return glue_ecb_crypt_128bit(&serpent_dec, desc, dst, src, nbytes);
 +}
 +
 +static int cbc_encrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 +		       struct scatterlist *src, unsigned int nbytes)
 +{
-+	return glue_cbc_encrypt_128bit(GLUE_FUNC_CAST(camellia_enc_blk), desc,
++	return glue_cbc_encrypt_128bit(GLUE_FUNC_CAST(__serpent_encrypt), desc,
 +				       dst, src, nbytes);
 +}
 +
 +static int cbc_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 +		       struct scatterlist *src, unsigned int nbytes)
 +{
-+	return glue_cbc_decrypt_128bit(&camellia_dec_cbc, desc, dst, src,
++	return glue_cbc_decrypt_128bit(&serpent_dec_cbc, desc, dst, src,
 +				       nbytes);
 +}
 +
 +static int ctr_crypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 +		     struct scatterlist *src, unsigned int nbytes)
 +{
-+	return glue_ctr_crypt_128bit(&camellia_ctr, desc, dst, src, nbytes);
++	return glue_ctr_crypt_128bit(&serpent_ctr, desc, dst, src, nbytes);
 +}
 +
-+static inline bool camellia_fpu_begin(bool fpu_enabled, unsigned int nbytes)
++static inline bool serpent_fpu_begin(bool fpu_enabled, unsigned int nbytes)
 +{
-+	return glue_fpu_begin(CAMELLIA_BLOCK_SIZE,
-+			      CAMELLIA_AESNI_PARALLEL_BLOCKS, NULL, fpu_enabled,
-+			      nbytes);
++	/* since reusing AVX functions, starts using FPU at 8 parallel blocks */
++	return glue_fpu_begin(SERPENT_BLOCK_SIZE, 8, NULL, fpu_enabled, nbytes);
 +}
 +
-+static inline void camellia_fpu_end(bool fpu_enabled)
++static inline void serpent_fpu_end(bool fpu_enabled)
 +{
 +	glue_fpu_end(fpu_enabled);
 +}
 +
-+static int camellia_setkey(struct crypto_tfm *tfm, const u8 *in_key,
-+			   unsigned int key_len)
-+{
-+	return __camellia_setkey(crypto_tfm_ctx(tfm), in_key, key_len,
-+				 &tfm->crt_flags);
-+}
-+
 +struct crypt_priv {
-+	struct camellia_ctx *ctx;
++	struct serpent_ctx *ctx;
 +	bool fpu_enabled;
 +};
 +
 +static void encrypt_callback(void *priv, u8 *srcdst, unsigned int nbytes)
 +{
-+	const unsigned int bsize = CAMELLIA_BLOCK_SIZE;
++	const unsigned int bsize = SERPENT_BLOCK_SIZE;
 +	struct crypt_priv *ctx = priv;
 +	int i;
 +
-+	ctx->fpu_enabled = camellia_fpu_begin(ctx->fpu_enabled, nbytes);
++	ctx->fpu_enabled = serpent_fpu_begin(ctx->fpu_enabled, nbytes);
 +
-+	if (nbytes >= CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS * bsize) {
-+		camellia_ecb_enc_32way(ctx->ctx, srcdst, srcdst);
-+		srcdst += bsize * CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS;
-+		nbytes -= bsize * CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS;
++	if (nbytes >= SERPENT_AVX2_PARALLEL_BLOCKS * bsize) {
++		serpent_ecb_enc_16way(ctx->ctx, srcdst, srcdst);
++		srcdst += bsize * SERPENT_AVX2_PARALLEL_BLOCKS;
++		nbytes -= bsize * SERPENT_AVX2_PARALLEL_BLOCKS;
 +	}
 +
-+	if (nbytes >= CAMELLIA_AESNI_PARALLEL_BLOCKS * bsize) {
-+		camellia_ecb_enc_16way(ctx->ctx, srcdst, srcdst);
-+		srcdst += bsize * CAMELLIA_AESNI_PARALLEL_BLOCKS;
-+		nbytes -= bsize * CAMELLIA_AESNI_PARALLEL_BLOCKS;
-+	}
-+
-+	while (nbytes >= CAMELLIA_PARALLEL_BLOCKS * bsize) {
-+		camellia_enc_blk_2way(ctx->ctx, srcdst, srcdst);
-+		srcdst += bsize * CAMELLIA_PARALLEL_BLOCKS;
-+		nbytes -= bsize * CAMELLIA_PARALLEL_BLOCKS;
++	while (nbytes >= SERPENT_PARALLEL_BLOCKS * bsize) {
++		serpent_ecb_enc_8way_avx(ctx->ctx, srcdst, srcdst);
++		srcdst += bsize * SERPENT_PARALLEL_BLOCKS;
++		nbytes -= bsize * SERPENT_PARALLEL_BLOCKS;
 +	}
 +
 +	for (i = 0; i < nbytes / bsize; i++, srcdst += bsize)
-+		camellia_enc_blk(ctx->ctx, srcdst, srcdst);
++		__serpent_encrypt(ctx->ctx, srcdst, srcdst);
 +}
 +
 +static void decrypt_callback(void *priv, u8 *srcdst, unsigned int nbytes)
 +{
-+	const unsigned int bsize = CAMELLIA_BLOCK_SIZE;
++	const unsigned int bsize = SERPENT_BLOCK_SIZE;
 +	struct crypt_priv *ctx = priv;
 +	int i;
 +
-+	ctx->fpu_enabled = camellia_fpu_begin(ctx->fpu_enabled, nbytes);
++	ctx->fpu_enabled = serpent_fpu_begin(ctx->fpu_enabled, nbytes);
 +
-+	if (nbytes >= CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS * bsize) {
-+		camellia_ecb_dec_32way(ctx->ctx, srcdst, srcdst);
-+		srcdst += bsize * CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS;
-+		nbytes -= bsize * CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS;
++	if (nbytes >= SERPENT_AVX2_PARALLEL_BLOCKS * bsize) {
++		serpent_ecb_dec_16way(ctx->ctx, srcdst, srcdst);
++		srcdst += bsize * SERPENT_AVX2_PARALLEL_BLOCKS;
++		nbytes -= bsize * SERPENT_AVX2_PARALLEL_BLOCKS;
 +	}
 +
-+	if (nbytes >= CAMELLIA_AESNI_PARALLEL_BLOCKS * bsize) {
-+		camellia_ecb_dec_16way(ctx->ctx, srcdst, srcdst);
-+		srcdst += bsize * CAMELLIA_AESNI_PARALLEL_BLOCKS;
-+		nbytes -= bsize * CAMELLIA_AESNI_PARALLEL_BLOCKS;
-+	}
-+
-+	while (nbytes >= CAMELLIA_PARALLEL_BLOCKS * bsize) {
-+		camellia_dec_blk_2way(ctx->ctx, srcdst, srcdst);
-+		srcdst += bsize * CAMELLIA_PARALLEL_BLOCKS;
-+		nbytes -= bsize * CAMELLIA_PARALLEL_BLOCKS;
++	while (nbytes >= SERPENT_PARALLEL_BLOCKS * bsize) {
++		serpent_ecb_dec_8way_avx(ctx->ctx, srcdst, srcdst);
++		srcdst += bsize * SERPENT_PARALLEL_BLOCKS;
++		nbytes -= bsize * SERPENT_PARALLEL_BLOCKS;
 +	}
 +
 +	for (i = 0; i < nbytes / bsize; i++, srcdst += bsize)
-+		camellia_dec_blk(ctx->ctx, srcdst, srcdst);
++		__serpent_decrypt(ctx->ctx, srcdst, srcdst);
 +}
 +
 +static int lrw_encrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 +		       struct scatterlist *src, unsigned int nbytes)
 +{
-+	struct camellia_lrw_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
-+	be128 buf[CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS];
++	struct serpent_lrw_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
++	be128 buf[SERPENT_AVX2_PARALLEL_BLOCKS];
 +	struct crypt_priv crypt_ctx = {
-+		.ctx = &ctx->camellia_ctx,
++		.ctx = &ctx->serpent_ctx,
 +		.fpu_enabled = false,
 +	};
 +	struct lrw_crypt_req req = {
@@ -1735,7 +1132,7 @@ index 0000000..414fe5d
 +
 +	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
 +	ret = lrw_crypt(desc, dst, src, nbytes, &req);
-+	camellia_fpu_end(crypt_ctx.fpu_enabled);
++	serpent_fpu_end(crypt_ctx.fpu_enabled);
 +
 +	return ret;
 +}
@@ -1743,10 +1140,10 @@ index 0000000..414fe5d
 +static int lrw_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 +		       struct scatterlist *src, unsigned int nbytes)
 +{
-+	struct camellia_lrw_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
-+	be128 buf[CAMELLIA_AESNI_AVX2_PARALLEL_BLOCKS];
++	struct serpent_lrw_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
++	be128 buf[SERPENT_AVX2_PARALLEL_BLOCKS];
 +	struct crypt_priv crypt_ctx = {
-+		.ctx = &ctx->camellia_ctx,
++		.ctx = &ctx->serpent_ctx,
 +		.fpu_enabled = false,
 +	};
 +	struct lrw_crypt_req req = {
@@ -1761,7 +1158,7 @@ index 0000000..414fe5d
 +
 +	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
 +	ret = lrw_crypt(desc, dst, src, nbytes, &req);
-+	camellia_fpu_end(crypt_ctx.fpu_enabled);
++	serpent_fpu_end(crypt_ctx.fpu_enabled);
 +
 +	return ret;
 +}
@@ -1769,184 +1166,192 @@ index 0000000..414fe5d
 +static int xts_encrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 +		       struct scatterlist *src, unsigned int nbytes)
 +{
-+	struct camellia_xts_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
++	struct serpent_xts_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
 +
-+	return glue_xts_crypt_128bit(&camellia_enc_xts, desc, dst, src, nbytes,
-+				     XTS_TWEAK_CAST(camellia_enc_blk),
++	return glue_xts_crypt_128bit(&serpent_enc_xts, desc, dst, src, nbytes,
++				     XTS_TWEAK_CAST(__serpent_encrypt),
 +				     &ctx->tweak_ctx, &ctx->crypt_ctx);
 +}
 +
 +static int xts_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
 +		       struct scatterlist *src, unsigned int nbytes)
 +{
-+	struct camellia_xts_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
++	struct serpent_xts_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
 +
-+	return glue_xts_crypt_128bit(&camellia_dec_xts, desc, dst, src, nbytes,
-+				     XTS_TWEAK_CAST(camellia_enc_blk),
++	return glue_xts_crypt_128bit(&serpent_dec_xts, desc, dst, src, nbytes,
++				     XTS_TWEAK_CAST(__serpent_encrypt),
 +				     &ctx->tweak_ctx, &ctx->crypt_ctx);
 +}
 +
-+static struct crypto_alg cmll_algs[10] = { {
-+	.cra_name		= "__ecb-camellia-aesni-avx2",
-+	.cra_driver_name	= "__driver-ecb-camellia-aesni-avx2",
++static struct crypto_alg srp_algs[10] = { {
++	.cra_name		= "__ecb-serpent-avx2",
++	.cra_driver_name	= "__driver-ecb-serpent-avx2",
 +	.cra_priority		= 0,
 +	.cra_flags		= CRYPTO_ALG_TYPE_BLKCIPHER,
-+	.cra_blocksize		= CAMELLIA_BLOCK_SIZE,
-+	.cra_ctxsize		= sizeof(struct camellia_ctx),
++	.cra_blocksize		= SERPENT_BLOCK_SIZE,
++	.cra_ctxsize		= sizeof(struct serpent_ctx),
 +	.cra_alignmask		= 0,
 +	.cra_type		= &crypto_blkcipher_type,
 +	.cra_module		= THIS_MODULE,
++	.cra_list		= LIST_HEAD_INIT(srp_algs[0].cra_list),
 +	.cra_u = {
 +		.blkcipher = {
-+			.min_keysize	= CAMELLIA_MIN_KEY_SIZE,
-+			.max_keysize	= CAMELLIA_MAX_KEY_SIZE,
-+			.setkey		= camellia_setkey,
++			.min_keysize	= SERPENT_MIN_KEY_SIZE,
++			.max_keysize	= SERPENT_MAX_KEY_SIZE,
++			.setkey		= serpent_setkey,
 +			.encrypt	= ecb_encrypt,
 +			.decrypt	= ecb_decrypt,
 +		},
 +	},
 +}, {
-+	.cra_name		= "__cbc-camellia-aesni-avx2",
-+	.cra_driver_name	= "__driver-cbc-camellia-aesni-avx2",
++	.cra_name		= "__cbc-serpent-avx2",
++	.cra_driver_name	= "__driver-cbc-serpent-avx2",
 +	.cra_priority		= 0,
 +	.cra_flags		= CRYPTO_ALG_TYPE_BLKCIPHER,
-+	.cra_blocksize		= CAMELLIA_BLOCK_SIZE,
-+	.cra_ctxsize		= sizeof(struct camellia_ctx),
++	.cra_blocksize		= SERPENT_BLOCK_SIZE,
++	.cra_ctxsize		= sizeof(struct serpent_ctx),
 +	.cra_alignmask		= 0,
 +	.cra_type		= &crypto_blkcipher_type,
 +	.cra_module		= THIS_MODULE,
++	.cra_list		= LIST_HEAD_INIT(srp_algs[1].cra_list),
 +	.cra_u = {
 +		.blkcipher = {
-+			.min_keysize	= CAMELLIA_MIN_KEY_SIZE,
-+			.max_keysize	= CAMELLIA_MAX_KEY_SIZE,
-+			.setkey		= camellia_setkey,
++			.min_keysize	= SERPENT_MIN_KEY_SIZE,
++			.max_keysize	= SERPENT_MAX_KEY_SIZE,
++			.setkey		= serpent_setkey,
 +			.encrypt	= cbc_encrypt,
 +			.decrypt	= cbc_decrypt,
 +		},
 +	},
 +}, {
-+	.cra_name		= "__ctr-camellia-aesni-avx2",
-+	.cra_driver_name	= "__driver-ctr-camellia-aesni-avx2",
++	.cra_name		= "__ctr-serpent-avx2",
++	.cra_driver_name	= "__driver-ctr-serpent-avx2",
 +	.cra_priority		= 0,
 +	.cra_flags		= CRYPTO_ALG_TYPE_BLKCIPHER,
 +	.cra_blocksize		= 1,
-+	.cra_ctxsize		= sizeof(struct camellia_ctx),
++	.cra_ctxsize		= sizeof(struct serpent_ctx),
 +	.cra_alignmask		= 0,
 +	.cra_type		= &crypto_blkcipher_type,
 +	.cra_module		= THIS_MODULE,
++	.cra_list		= LIST_HEAD_INIT(srp_algs[2].cra_list),
 +	.cra_u = {
 +		.blkcipher = {
-+			.min_keysize	= CAMELLIA_MIN_KEY_SIZE,
-+			.max_keysize	= CAMELLIA_MAX_KEY_SIZE,
-+			.ivsize		= CAMELLIA_BLOCK_SIZE,
-+			.setkey		= camellia_setkey,
++			.min_keysize	= SERPENT_MIN_KEY_SIZE,
++			.max_keysize	= SERPENT_MAX_KEY_SIZE,
++			.ivsize		= SERPENT_BLOCK_SIZE,
++			.setkey		= serpent_setkey,
 +			.encrypt	= ctr_crypt,
 +			.decrypt	= ctr_crypt,
 +		},
 +	},
 +}, {
-+	.cra_name		= "__lrw-camellia-aesni-avx2",
-+	.cra_driver_name	= "__driver-lrw-camellia-aesni-avx2",
++	.cra_name		= "__lrw-serpent-avx2",
++	.cra_driver_name	= "__driver-lrw-serpent-avx2",
 +	.cra_priority		= 0,
 +	.cra_flags		= CRYPTO_ALG_TYPE_BLKCIPHER,
-+	.cra_blocksize		= CAMELLIA_BLOCK_SIZE,
-+	.cra_ctxsize		= sizeof(struct camellia_lrw_ctx),
++	.cra_blocksize		= SERPENT_BLOCK_SIZE,
++	.cra_ctxsize		= sizeof(struct serpent_lrw_ctx),
 +	.cra_alignmask		= 0,
 +	.cra_type		= &crypto_blkcipher_type,
 +	.cra_module		= THIS_MODULE,
-+	.cra_exit		= lrw_camellia_exit_tfm,
++	.cra_list		= LIST_HEAD_INIT(srp_algs[3].cra_list),
++	.cra_exit		= lrw_serpent_exit_tfm,
 +	.cra_u = {
 +		.blkcipher = {
-+			.min_keysize	= CAMELLIA_MIN_KEY_SIZE +
-+					  CAMELLIA_BLOCK_SIZE,
-+			.max_keysize	= CAMELLIA_MAX_KEY_SIZE +
-+					  CAMELLIA_BLOCK_SIZE,
-+			.ivsize		= CAMELLIA_BLOCK_SIZE,
-+			.setkey		= lrw_camellia_setkey,
++			.min_keysize	= SERPENT_MIN_KEY_SIZE +
++					  SERPENT_BLOCK_SIZE,
++			.max_keysize	= SERPENT_MAX_KEY_SIZE +
++					  SERPENT_BLOCK_SIZE,
++			.ivsize		= SERPENT_BLOCK_SIZE,
++			.setkey		= lrw_serpent_setkey,
 +			.encrypt	= lrw_encrypt,
 +			.decrypt	= lrw_decrypt,
 +		},
 +	},
 +}, {
-+	.cra_name		= "__xts-camellia-aesni-avx2",
-+	.cra_driver_name	= "__driver-xts-camellia-aesni-avx2",
++	.cra_name		= "__xts-serpent-avx2",
++	.cra_driver_name	= "__driver-xts-serpent-avx2",
 +	.cra_priority		= 0,
 +	.cra_flags		= CRYPTO_ALG_TYPE_BLKCIPHER,
-+	.cra_blocksize		= CAMELLIA_BLOCK_SIZE,
-+	.cra_ctxsize		= sizeof(struct camellia_xts_ctx),
++	.cra_blocksize		= SERPENT_BLOCK_SIZE,
++	.cra_ctxsize		= sizeof(struct serpent_xts_ctx),
 +	.cra_alignmask		= 0,
 +	.cra_type		= &crypto_blkcipher_type,
 +	.cra_module		= THIS_MODULE,
++	.cra_list		= LIST_HEAD_INIT(srp_algs[4].cra_list),
 +	.cra_u = {
 +		.blkcipher = {
-+			.min_keysize	= CAMELLIA_MIN_KEY_SIZE * 2,
-+			.max_keysize	= CAMELLIA_MAX_KEY_SIZE * 2,
-+			.ivsize		= CAMELLIA_BLOCK_SIZE,
-+			.setkey		= xts_camellia_setkey,
++			.min_keysize	= SERPENT_MIN_KEY_SIZE * 2,
++			.max_keysize	= SERPENT_MAX_KEY_SIZE * 2,
++			.ivsize		= SERPENT_BLOCK_SIZE,
++			.setkey		= xts_serpent_setkey,
 +			.encrypt	= xts_encrypt,
 +			.decrypt	= xts_decrypt,
 +		},
 +	},
 +}, {
-+	.cra_name		= "ecb(camellia)",
-+	.cra_driver_name	= "ecb-camellia-aesni-avx2",
-+	.cra_priority		= 500,
++	.cra_name		= "ecb(serpent)",
++	.cra_driver_name	= "ecb-serpent-avx2",
++	.cra_priority		= 600,
 +	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,
-+	.cra_blocksize		= CAMELLIA_BLOCK_SIZE,
++	.cra_blocksize		= SERPENT_BLOCK_SIZE,
 +	.cra_ctxsize		= sizeof(struct async_helper_ctx),
 +	.cra_alignmask		= 0,
 +	.cra_type		= &crypto_ablkcipher_type,
 +	.cra_module		= THIS_MODULE,
++	.cra_list		= LIST_HEAD_INIT(srp_algs[5].cra_list),
 +	.cra_init		= ablk_init,
 +	.cra_exit		= ablk_exit,
 +	.cra_u = {
 +		.ablkcipher = {
-+			.min_keysize	= CAMELLIA_MIN_KEY_SIZE,
-+			.max_keysize	= CAMELLIA_MAX_KEY_SIZE,
++			.min_keysize	= SERPENT_MIN_KEY_SIZE,
++			.max_keysize	= SERPENT_MAX_KEY_SIZE,
 +			.setkey		= ablk_set_key,
 +			.encrypt	= ablk_encrypt,
 +			.decrypt	= ablk_decrypt,
 +		},
 +	},
 +}, {
-+	.cra_name		= "cbc(camellia)",
-+	.cra_driver_name	= "cbc-camellia-aesni-avx2",
-+	.cra_priority		= 500,
++	.cra_name		= "cbc(serpent)",
++	.cra_driver_name	= "cbc-serpent-avx2",
++	.cra_priority		= 600,
 +	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,
-+	.cra_blocksize		= CAMELLIA_BLOCK_SIZE,
++	.cra_blocksize		= SERPENT_BLOCK_SIZE,
 +	.cra_ctxsize		= sizeof(struct async_helper_ctx),
 +	.cra_alignmask		= 0,
 +	.cra_type		= &crypto_ablkcipher_type,
 +	.cra_module		= THIS_MODULE,
++	.cra_list		= LIST_HEAD_INIT(srp_algs[6].cra_list),
 +	.cra_init		= ablk_init,
 +	.cra_exit		= ablk_exit,
 +	.cra_u = {
 +		.ablkcipher = {
-+			.min_keysize	= CAMELLIA_MIN_KEY_SIZE,
-+			.max_keysize	= CAMELLIA_MAX_KEY_SIZE,
-+			.ivsize		= CAMELLIA_BLOCK_SIZE,
++			.min_keysize	= SERPENT_MIN_KEY_SIZE,
++			.max_keysize	= SERPENT_MAX_KEY_SIZE,
++			.ivsize		= SERPENT_BLOCK_SIZE,
 +			.setkey		= ablk_set_key,
 +			.encrypt	= __ablk_encrypt,
 +			.decrypt	= ablk_decrypt,
 +		},
 +	},
 +}, {
-+	.cra_name		= "ctr(camellia)",
-+	.cra_driver_name	= "ctr-camellia-aesni-avx2",
-+	.cra_priority		= 500,
++	.cra_name		= "ctr(serpent)",
++	.cra_driver_name	= "ctr-serpent-avx2",
++	.cra_priority		= 600,
 +	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,
 +	.cra_blocksize		= 1,
 +	.cra_ctxsize		= sizeof(struct async_helper_ctx),
 +	.cra_alignmask		= 0,
 +	.cra_type		= &crypto_ablkcipher_type,
 +	.cra_module		= THIS_MODULE,
++	.cra_list		= LIST_HEAD_INIT(srp_algs[7].cra_list),
 +	.cra_init		= ablk_init,
 +	.cra_exit		= ablk_exit,
 +	.cra_u = {
 +		.ablkcipher = {
-+			.min_keysize	= CAMELLIA_MIN_KEY_SIZE,
-+			.max_keysize	= CAMELLIA_MAX_KEY_SIZE,
-+			.ivsize		= CAMELLIA_BLOCK_SIZE,
++			.min_keysize	= SERPENT_MIN_KEY_SIZE,
++			.max_keysize	= SERPENT_MAX_KEY_SIZE,
++			.ivsize		= SERPENT_BLOCK_SIZE,
 +			.setkey		= ablk_set_key,
 +			.encrypt	= ablk_encrypt,
 +			.decrypt	= ablk_encrypt,
@@ -1954,46 +1359,48 @@ index 0000000..414fe5d
 +		},
 +	},
 +}, {
-+	.cra_name		= "lrw(camellia)",
-+	.cra_driver_name	= "lrw-camellia-aesni-avx2",
-+	.cra_priority		= 500,
++	.cra_name		= "lrw(serpent)",
++	.cra_driver_name	= "lrw-serpent-avx2",
++	.cra_priority		= 600,
 +	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,
-+	.cra_blocksize		= CAMELLIA_BLOCK_SIZE,
++	.cra_blocksize		= SERPENT_BLOCK_SIZE,
 +	.cra_ctxsize		= sizeof(struct async_helper_ctx),
 +	.cra_alignmask		= 0,
 +	.cra_type		= &crypto_ablkcipher_type,
 +	.cra_module		= THIS_MODULE,
++	.cra_list		= LIST_HEAD_INIT(srp_algs[8].cra_list),
 +	.cra_init		= ablk_init,
 +	.cra_exit		= ablk_exit,
 +	.cra_u = {
 +		.ablkcipher = {
-+			.min_keysize	= CAMELLIA_MIN_KEY_SIZE +
-+					  CAMELLIA_BLOCK_SIZE,
-+			.max_keysize	= CAMELLIA_MAX_KEY_SIZE +
-+					  CAMELLIA_BLOCK_SIZE,
-+			.ivsize		= CAMELLIA_BLOCK_SIZE,
++			.min_keysize	= SERPENT_MIN_KEY_SIZE +
++					  SERPENT_BLOCK_SIZE,
++			.max_keysize	= SERPENT_MAX_KEY_SIZE +
++					  SERPENT_BLOCK_SIZE,
++			.ivsize		= SERPENT_BLOCK_SIZE,
 +			.setkey		= ablk_set_key,
 +			.encrypt	= ablk_encrypt,
 +			.decrypt	= ablk_decrypt,
 +		},
 +	},
 +}, {
-+	.cra_name		= "xts(camellia)",
-+	.cra_driver_name	= "xts-camellia-aesni-avx2",
-+	.cra_priority		= 500,
++	.cra_name		= "xts(serpent)",
++	.cra_driver_name	= "xts-serpent-avx2",
++	.cra_priority		= 600,
 +	.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER | CRYPTO_ALG_ASYNC,
-+	.cra_blocksize		= CAMELLIA_BLOCK_SIZE,
++	.cra_blocksize		= SERPENT_BLOCK_SIZE,
 +	.cra_ctxsize		= sizeof(struct async_helper_ctx),
 +	.cra_alignmask		= 0,
 +	.cra_type		= &crypto_ablkcipher_type,
 +	.cra_module		= THIS_MODULE,
++	.cra_list		= LIST_HEAD_INIT(srp_algs[9].cra_list),
 +	.cra_init		= ablk_init,
 +	.cra_exit		= ablk_exit,
 +	.cra_u = {
 +		.ablkcipher = {
-+			.min_keysize	= CAMELLIA_MIN_KEY_SIZE * 2,
-+			.max_keysize	= CAMELLIA_MAX_KEY_SIZE * 2,
-+			.ivsize		= CAMELLIA_BLOCK_SIZE,
++			.min_keysize	= SERPENT_MIN_KEY_SIZE * 2,
++			.max_keysize	= SERPENT_MAX_KEY_SIZE * 2,
++			.ivsize		= SERPENT_BLOCK_SIZE,
 +			.setkey		= ablk_set_key,
 +			.encrypt	= ablk_encrypt,
 +			.decrypt	= ablk_decrypt,
@@ -2001,199 +1408,300 @@ index 0000000..414fe5d
 +	},
 +} };
 +
-+static int __init camellia_aesni_init(void)
++static int __init init(void)
 +{
 +	u64 xcr0;
 +
-+	if (!cpu_has_avx2 || !cpu_has_avx || !cpu_has_aes || !cpu_has_osxsave) {
-+		pr_info("AVX2 or AES-NI instructions are not detected.\n");
++	if (!cpu_has_avx2 || !cpu_has_osxsave) {
++		pr_info("AVX2 instructions are not detected.\n");
 +		return -ENODEV;
 +	}
 +
 +	xcr0 = xgetbv(XCR_XFEATURE_ENABLED_MASK);
 +	if ((xcr0 & (XSTATE_SSE | XSTATE_YMM)) != (XSTATE_SSE | XSTATE_YMM)) {
-+		pr_info("AVX2 detected but unusable.\n");
++		pr_info("AVX detected but unusable.\n");
 +		return -ENODEV;
 +	}
 +
-+	return crypto_register_algs(cmll_algs, ARRAY_SIZE(cmll_algs));
++	return crypto_register_algs(srp_algs, ARRAY_SIZE(srp_algs));
 +}
 +
-+static void __exit camellia_aesni_fini(void)
++static void __exit fini(void)
 +{
-+	crypto_unregister_algs(cmll_algs, ARRAY_SIZE(cmll_algs));
++	crypto_unregister_algs(srp_algs, ARRAY_SIZE(srp_algs));
 +}
 +
-+module_init(camellia_aesni_init);
-+module_exit(camellia_aesni_fini);
++module_init(init);
++module_exit(fini);
 +
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Camellia Cipher Algorithm, AES-NI/AVX2 optimized");
-+MODULE_ALIAS("camellia");
-+MODULE_ALIAS("camellia-asm");
-diff --git a/arch/x86/crypto/camellia_aesni_avx_glue.c b/arch/x86/crypto/camellia_aesni_avx_glue.c
-index 4ff7ed4..37fd0c0 100644
---- a/arch/x86/crypto/camellia_aesni_avx_glue.c
-+++ b/arch/x86/crypto/camellia_aesni_avx_glue.c
-@@ -26,33 +26,44 @@
++MODULE_DESCRIPTION("Serpent Cipher Algorithm, AVX2 optimized");
++MODULE_ALIAS("serpent");
++MODULE_ALIAS("serpent-asm");
+diff --git a/arch/x86/crypto/serpent_avx_glue.c b/arch/x86/crypto/serpent_avx_glue.c
+index 0f8519c..9ae83cf 100644
+--- a/arch/x86/crypto/serpent_avx_glue.c
++++ b/arch/x86/crypto/serpent_avx_glue.c
+@@ -41,7 +41,32 @@
+ #include <asm/crypto/ablk_helper.h>
+ #include <asm/crypto/glue_helper.h>
  
- #define CAMELLIA_AESNI_PARALLEL_BLOCKS 16
- 
--/* 16-way AES-NI parallel cipher functions */
-+/* 16-way parallel cipher functions (avx/aes-ni) */
- asmlinkage void camellia_ecb_enc_16way(struct camellia_ctx *ctx, u8 *dst,
- 				       const u8 *src);
-+EXPORT_SYMBOL_GPL(camellia_ecb_enc_16way);
+-static void serpent_crypt_ctr(void *ctx, u128 *dst, const u128 *src, le128 *iv)
++/* 8-way parallel cipher functions */
++asmlinkage void serpent_ecb_enc_8way_avx(struct serpent_ctx *ctx, u8 *dst,
++					 const u8 *src);
++EXPORT_SYMBOL_GPL(serpent_ecb_enc_8way_avx);
 +
- asmlinkage void camellia_ecb_dec_16way(struct camellia_ctx *ctx, u8 *dst,
- 				       const u8 *src);
-+EXPORT_SYMBOL_GPL(camellia_ecb_dec_16way);
- 
- asmlinkage void camellia_cbc_dec_16way(struct camellia_ctx *ctx, u8 *dst,
- 				       const u8 *src);
-+EXPORT_SYMBOL_GPL(camellia_cbc_dec_16way);
++asmlinkage void serpent_ecb_dec_8way_avx(struct serpent_ctx *ctx, u8 *dst,
++					 const u8 *src);
++EXPORT_SYMBOL_GPL(serpent_ecb_dec_8way_avx);
 +
- asmlinkage void camellia_ctr_16way(struct camellia_ctx *ctx, u8 *dst,
- 				   const u8 *src, le128 *iv);
-+EXPORT_SYMBOL_GPL(camellia_ctr_16way);
- 
- asmlinkage void camellia_xts_enc_16way(struct camellia_ctx *ctx, u8 *dst,
- 				       const u8 *src, le128 *iv);
-+EXPORT_SYMBOL_GPL(camellia_xts_enc_16way);
++asmlinkage void serpent_cbc_dec_8way_avx(struct serpent_ctx *ctx, u8 *dst,
++					 const u8 *src);
++EXPORT_SYMBOL_GPL(serpent_cbc_dec_8way_avx);
 +
- asmlinkage void camellia_xts_dec_16way(struct camellia_ctx *ctx, u8 *dst,
- 				       const u8 *src, le128 *iv);
-+EXPORT_SYMBOL_GPL(camellia_xts_dec_16way);
++asmlinkage void serpent_ctr_8way_avx(struct serpent_ctx *ctx, u8 *dst,
++				     const u8 *src, le128 *iv);
++EXPORT_SYMBOL_GPL(serpent_ctr_8way_avx);
++
++asmlinkage void serpent_xts_enc_8way_avx(struct serpent_ctx *ctx, u8 *dst,
++					 const u8 *src, le128 *iv);
++EXPORT_SYMBOL_GPL(serpent_xts_enc_8way_avx);
++
++asmlinkage void serpent_xts_dec_8way_avx(struct serpent_ctx *ctx, u8 *dst,
++					 const u8 *src, le128 *iv);
++EXPORT_SYMBOL_GPL(serpent_xts_dec_8way_avx);
++
++void __serpent_crypt_ctr(void *ctx, u128 *dst, const u128 *src, le128 *iv)
+ {
+ 	be128 ctrblk;
  
--static void camellia_xts_enc(void *ctx, u128 *dst, const u128 *src, le128 *iv)
-+void camellia_xts_enc(void *ctx, u128 *dst, const u128 *src, le128 *iv)
+@@ -51,18 +76,22 @@ static void serpent_crypt_ctr(void *ctx, u128 *dst, const u128 *src, le128 *iv)
+ 	__serpent_encrypt(ctx, (u8 *)&ctrblk, (u8 *)&ctrblk);
+ 	u128_xor(dst, src, (u128 *)&ctrblk);
+ }
++EXPORT_SYMBOL_GPL(__serpent_crypt_ctr);
+ 
+-static void serpent_xts_enc(void *ctx, u128 *dst, const u128 *src, le128 *iv)
++void serpent_xts_enc(void *ctx, u128 *dst, const u128 *src, le128 *iv)
  {
  	glue_xts_crypt_128bit_one(ctx, dst, src, iv,
- 				  GLUE_FUNC_CAST(camellia_enc_blk));
+ 				  GLUE_FUNC_CAST(__serpent_encrypt));
  }
-+EXPORT_SYMBOL_GPL(camellia_xts_enc);
++EXPORT_SYMBOL_GPL(serpent_xts_enc);
  
--static void camellia_xts_dec(void *ctx, u128 *dst, const u128 *src, le128 *iv)
-+void camellia_xts_dec(void *ctx, u128 *dst, const u128 *src, le128 *iv)
+-static void serpent_xts_dec(void *ctx, u128 *dst, const u128 *src, le128 *iv)
++void serpent_xts_dec(void *ctx, u128 *dst, const u128 *src, le128 *iv)
  {
  	glue_xts_crypt_128bit_one(ctx, dst, src, iv,
- 				  GLUE_FUNC_CAST(camellia_dec_blk));
+ 				  GLUE_FUNC_CAST(__serpent_decrypt));
  }
-+EXPORT_SYMBOL_GPL(camellia_xts_dec);
++EXPORT_SYMBOL_GPL(serpent_xts_dec);
++
  
- static const struct common_glue_ctx camellia_enc = {
- 	.num_funcs = 3,
-diff --git a/arch/x86/include/asm/crypto/camellia.h b/arch/x86/include/asm/crypto/camellia.h
-index 98038ad..bb93333 100644
---- a/arch/x86/include/asm/crypto/camellia.h
-+++ b/arch/x86/include/asm/crypto/camellia.h
-@@ -48,6 +48,22 @@ asmlinkage void __camellia_enc_blk_2way(struct camellia_ctx *ctx, u8 *dst,
- asmlinkage void camellia_dec_blk_2way(struct camellia_ctx *ctx, u8 *dst,
- 				      const u8 *src);
+ static const struct common_glue_ctx serpent_enc = {
+ 	.num_funcs = 2,
+@@ -86,7 +115,7 @@ static const struct common_glue_ctx serpent_ctr = {
+ 		.fn_u = { .ctr = GLUE_CTR_FUNC_CAST(serpent_ctr_8way_avx) }
+ 	}, {
+ 		.num_blocks = 1,
+-		.fn_u = { .ctr = GLUE_CTR_FUNC_CAST(serpent_crypt_ctr) }
++		.fn_u = { .ctr = GLUE_CTR_FUNC_CAST(__serpent_crypt_ctr) }
+ 	} }
+ };
  
-+/* 16-way parallel cipher functions (avx/aes-ni) */
-+asmlinkage void camellia_ecb_enc_16way(struct camellia_ctx *ctx, u8 *dst,
-+				       const u8 *src);
-+asmlinkage void camellia_ecb_dec_16way(struct camellia_ctx *ctx, u8 *dst,
-+				       const u8 *src);
-+
-+asmlinkage void camellia_cbc_dec_16way(struct camellia_ctx *ctx, u8 *dst,
-+				       const u8 *src);
-+asmlinkage void camellia_ctr_16way(struct camellia_ctx *ctx, u8 *dst,
-+				   const u8 *src, le128 *iv);
-+
-+asmlinkage void camellia_xts_enc_16way(struct camellia_ctx *ctx, u8 *dst,
-+				       const u8 *src, le128 *iv);
-+asmlinkage void camellia_xts_dec_16way(struct camellia_ctx *ctx, u8 *dst,
-+				       const u8 *src, le128 *iv);
-+
- static inline void camellia_enc_blk(struct camellia_ctx *ctx, u8 *dst,
- 				    const u8 *src)
+@@ -224,13 +253,8 @@ static void decrypt_callback(void *priv, u8 *srcdst, unsigned int nbytes)
+ 		__serpent_decrypt(ctx->ctx, srcdst, srcdst);
+ }
+ 
+-struct serpent_lrw_ctx {
+-	struct lrw_table_ctx lrw_table;
+-	struct serpent_ctx serpent_ctx;
+-};
+-
+-static int lrw_serpent_setkey(struct crypto_tfm *tfm, const u8 *key,
+-			      unsigned int keylen)
++int lrw_serpent_setkey(struct crypto_tfm *tfm, const u8 *key,
++		       unsigned int keylen)
  {
-@@ -79,4 +95,7 @@ extern void camellia_crypt_ctr(void *ctx, u128 *dst, const u128 *src,
- extern void camellia_crypt_ctr_2way(void *ctx, u128 *dst, const u128 *src,
- 				    le128 *iv);
+ 	struct serpent_lrw_ctx *ctx = crypto_tfm_ctx(tfm);
+ 	int err;
+@@ -243,6 +267,7 @@ static int lrw_serpent_setkey(struct crypto_tfm *tfm, const u8 *key,
+ 	return lrw_init_table(&ctx->lrw_table, key + keylen -
+ 						SERPENT_BLOCK_SIZE);
+ }
++EXPORT_SYMBOL_GPL(lrw_serpent_setkey);
  
-+extern void camellia_xts_enc(void *ctx, u128 *dst, const u128 *src, le128 *iv);
-+extern void camellia_xts_dec(void *ctx, u128 *dst, const u128 *src, le128 *iv);
+ static int lrw_encrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
+ 		       struct scatterlist *src, unsigned int nbytes)
+@@ -296,20 +321,16 @@ static int lrw_decrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
+ 	return ret;
+ }
+ 
+-static void lrw_exit_tfm(struct crypto_tfm *tfm)
++void lrw_serpent_exit_tfm(struct crypto_tfm *tfm)
+ {
+ 	struct serpent_lrw_ctx *ctx = crypto_tfm_ctx(tfm);
+ 
+ 	lrw_free_table(&ctx->lrw_table);
+ }
++EXPORT_SYMBOL_GPL(lrw_serpent_exit_tfm);
+ 
+-struct serpent_xts_ctx {
+-	struct serpent_ctx tweak_ctx;
+-	struct serpent_ctx crypt_ctx;
+-};
+-
+-static int xts_serpent_setkey(struct crypto_tfm *tfm, const u8 *key,
+-			      unsigned int keylen)
++int xts_serpent_setkey(struct crypto_tfm *tfm, const u8 *key,
++		       unsigned int keylen)
+ {
+ 	struct serpent_xts_ctx *ctx = crypto_tfm_ctx(tfm);
+ 	u32 *flags = &tfm->crt_flags;
+@@ -331,6 +352,7 @@ static int xts_serpent_setkey(struct crypto_tfm *tfm, const u8 *key,
+ 	/* second half of xts-key is for tweak */
+ 	return __serpent_setkey(&ctx->tweak_ctx, key + keylen / 2, keylen / 2);
+ }
++EXPORT_SYMBOL_GPL(xts_serpent_setkey);
+ 
+ static int xts_encrypt(struct blkcipher_desc *desc, struct scatterlist *dst,
+ 		       struct scatterlist *src, unsigned int nbytes)
+@@ -420,7 +442,7 @@ static struct crypto_alg serpent_algs[10] = { {
+ 	.cra_alignmask		= 0,
+ 	.cra_type		= &crypto_blkcipher_type,
+ 	.cra_module		= THIS_MODULE,
+-	.cra_exit		= lrw_exit_tfm,
++	.cra_exit		= lrw_serpent_exit_tfm,
+ 	.cra_u = {
+ 		.blkcipher = {
+ 			.min_keysize	= SERPENT_MIN_KEY_SIZE +
+diff --git a/arch/x86/include/asm/crypto/serpent-avx.h b/arch/x86/include/asm/crypto/serpent-avx.h
+index 56e79cc..33c2b8a 100644
+--- a/arch/x86/include/asm/crypto/serpent-avx.h
++++ b/arch/x86/include/asm/crypto/serpent-avx.h
+@@ -6,6 +6,16 @@
+ 
+ #define SERPENT_PARALLEL_BLOCKS 8
+ 
++struct serpent_lrw_ctx {
++	struct lrw_table_ctx lrw_table;
++	struct serpent_ctx serpent_ctx;
++};
 +
- #endif /* ASM_X86_CAMELLIA_H */
++struct serpent_xts_ctx {
++	struct serpent_ctx tweak_ctx;
++	struct serpent_ctx crypt_ctx;
++};
++
+ asmlinkage void serpent_ecb_enc_8way_avx(struct serpent_ctx *ctx, u8 *dst,
+ 					 const u8 *src);
+ asmlinkage void serpent_ecb_dec_8way_avx(struct serpent_ctx *ctx, u8 *dst,
+@@ -21,4 +31,18 @@ asmlinkage void serpent_xts_enc_8way_avx(struct serpent_ctx *ctx, u8 *dst,
+ asmlinkage void serpent_xts_dec_8way_avx(struct serpent_ctx *ctx, u8 *dst,
+ 					 const u8 *src, le128 *iv);
+ 
++extern void __serpent_crypt_ctr(void *ctx, u128 *dst, const u128 *src,
++				le128 *iv);
++
++extern void serpent_xts_enc(void *ctx, u128 *dst, const u128 *src, le128 *iv);
++extern void serpent_xts_dec(void *ctx, u128 *dst, const u128 *src, le128 *iv);
++
++extern int lrw_serpent_setkey(struct crypto_tfm *tfm, const u8 *key,
++			      unsigned int keylen);
++
++extern void lrw_serpent_exit_tfm(struct crypto_tfm *tfm);
++
++extern int xts_serpent_setkey(struct crypto_tfm *tfm, const u8 *key,
++			      unsigned int keylen);
++
+ #endif
 diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 9ad3d78..622d8a4 100644
+index 1ba48dd..9ad3d78 100644
 --- a/crypto/Kconfig
 +++ b/crypto/Kconfig
-@@ -894,6 +894,29 @@ config CRYPTO_CAMELLIA_AESNI_AVX_X86_64
+@@ -1131,6 +1131,29 @@ config CRYPTO_SERPENT_AVX_X86_64
  	  See also:
- 	  <https://info.isl.ntt.co.jp/crypt/eng/camellia/index_s.html>
+ 	  <http://www.cl.cam.ac.uk/~rja14/serpent.html>
  
-+config CRYPTO_CAMELLIA_AESNI_AVX2_X86_64
-+	tristate "Camellia cipher algorithm (x86_64/AES-NI/AVX2)"
++config CRYPTO_SERPENT_AVX2_X86_64
++	tristate "Serpent cipher algorithm (x86_64/AVX2)"
 +	depends on X86 && 64BIT
-+	depends on CRYPTO
 +	select CRYPTO_ALGAPI
 +	select CRYPTO_CRYPTD
 +	select CRYPTO_ABLK_HELPER_X86
 +	select CRYPTO_GLUE_HELPER_X86
-+	select CRYPTO_CAMELLIA_X86_64
-+	select CRYPTO_CAMELLIA_AESNI_AVX_X86_64
++	select CRYPTO_SERPENT
++	select CRYPTO_SERPENT_AVX_X86_64
 +	select CRYPTO_LRW
 +	select CRYPTO_XTS
 +	help
-+	  Camellia cipher algorithm module (x86_64/AES-NI/AVX2).
++	  Serpent cipher algorithm, by Anderson, Biham & Knudsen.
 +
-+	  Camellia is a symmetric key block cipher developed jointly
-+	  at NTT and Mitsubishi Electric Corporation.
++	  Keys are allowed to be from 0 to 256 bits in length, in steps
++	  of 8 bits.
 +
-+	  The Camellia specifies three key sizes: 128, 192 and 256 bits.
++	  This module provides Serpent cipher algorithm that processes 16
++	  blocks parallel using AVX2 instruction set.
 +
 +	  See also:
-+	  <https://info.isl.ntt.co.jp/crypt/eng/camellia/index_s.html>
++	  <http://www.cl.cam.ac.uk/~rja14/serpent.html>
 +
- config CRYPTO_CAMELLIA_SPARC64
- 	tristate "Camellia cipher algorithm (SPARC64)"
- 	depends on SPARC64
+ config CRYPTO_TEA
+ 	tristate "TEA, XTEA and XETA cipher algorithms"
+ 	select CRYPTO_ALGAPI
 diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index f5e13de..5823735 100644
+index fea7841..f5e13de 100644
 --- a/crypto/testmgr.c
 +++ b/crypto/testmgr.c
-@@ -1667,6 +1667,9 @@ static const struct alg_test_desc alg_test_descs[] = {
- 		.alg = "__driver-cbc-camellia-aesni",
+@@ -1645,6 +1645,9 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 		.alg = "__cbc-serpent-avx",
  		.test = alg_test_null,
  	}, {
-+		.alg = "__driver-cbc-camellia-aesni-avx2",
++		.alg = "__cbc-serpent-avx2",
 +		.test = alg_test_null,
 +	}, {
- 		.alg = "__driver-cbc-cast5-avx",
+ 		.alg = "__cbc-serpent-sse2",
  		.test = alg_test_null,
  	}, {
-@@ -1698,6 +1701,9 @@ static const struct alg_test_desc alg_test_descs[] = {
- 		.alg = "__driver-ecb-camellia-aesni",
+@@ -1673,6 +1676,9 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 		.alg = "__driver-cbc-serpent-avx",
  		.test = alg_test_null,
  	}, {
-+		.alg = "__driver-ecb-camellia-aesni-avx2",
++		.alg = "__driver-cbc-serpent-avx2",
 +		.test = alg_test_null,
 +	}, {
- 		.alg = "__driver-ecb-cast5-avx",
+ 		.alg = "__driver-cbc-serpent-sse2",
  		.test = alg_test_null,
  	}, {
-@@ -1978,6 +1984,9 @@ static const struct alg_test_desc alg_test_descs[] = {
+@@ -1701,6 +1707,9 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 		.alg = "__driver-ecb-serpent-avx",
+ 		.test = alg_test_null,
+ 	}, {
++		.alg = "__driver-ecb-serpent-avx2",
++		.test = alg_test_null,
++	}, {
+ 		.alg = "__driver-ecb-serpent-sse2",
+ 		.test = alg_test_null,
+ 	}, {
+@@ -1969,6 +1978,9 @@ static const struct alg_test_desc alg_test_descs[] = {
  		.alg = "cryptd(__driver-cbc-camellia-aesni)",
  		.test = alg_test_null,
  	}, {
-+		.alg = "cryptd(__driver-cbc-camellia-aesni-avx2)",
++		.alg = "cryptd(__driver-cbc-serpent-avx2)",
 +		.test = alg_test_null,
 +	}, {
- 		.alg = "cryptd(__driver-cbc-serpent-avx2)",
+ 		.alg = "cryptd(__driver-ecb-aes-aesni)",
+ 		.test = alg_test_null,
+ 		.fips_allowed = 1,
+@@ -1988,6 +2000,9 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 		.alg = "cryptd(__driver-ecb-serpent-avx)",
  		.test = alg_test_null,
  	}, {
-@@ -1991,6 +2000,9 @@ static const struct alg_test_desc alg_test_descs[] = {
- 		.alg = "cryptd(__driver-ecb-camellia-aesni)",
- 		.test = alg_test_null,
- 	}, {
-+		.alg = "cryptd(__driver-ecb-camellia-aesni-avx2)",
++		.alg = "cryptd(__driver-ecb-serpent-avx2)",
 +		.test = alg_test_null,
 +	}, {
- 		.alg = "cryptd(__driver-ecb-cast5-avx)",
+ 		.alg = "cryptd(__driver-ecb-serpent-sse2)",
  		.test = alg_test_null,
  	}, {
 
