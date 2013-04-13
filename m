@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab3DMCBm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 22:01:42 -0400
-Received: from mail.digidescorp.com ([50.73.98.161]:4931 "EHLO
+	id S1753213Ab3DMCHR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 22:07:17 -0400
+Received: from mail.digidescorp.com ([50.73.98.161]:5076 "EHLO
 	mail.digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751998Ab3DMCBl (ORCPT
+	with ESMTP id S1751670Ab3DMCHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 22:01:41 -0400
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Apr 2013 22:01:41 EDT
-DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=digidescorp.com;
-	c=simple; q=dns; h=message-id:from;
-	b=bqO22c0QX+kPwBLixV69BqUerrdoS7PmiVfXxGjpXl4FKZ2Pp320MTAsQ4QG
-	nHL4H+xtK8gxZ2YqG0eV22EKjm/AP3gr8ZkCb+Bx6I6VrETBgXfOgrghd
-	5sVgtJzB5pkhI4Nj/K3H93V1IGqDAQJm/FpsbMRyrXnsjoLqNJlS5s=;
-X-Spam-Processed: mail.digidescorp.com, Fri, 12 Apr 2013 20:54:09 -0500
+	Fri, 12 Apr 2013 22:07:16 -0400
+X-MDAV-Processed: mail.digidescorp.com, Fri, 12 Apr 2013 21:07:15 -0500
+X-Spam-Processed: mail.digidescorp.com, Fri, 12 Apr 2013 21:07:14 -0500
 	(not processed: message from trusted or authenticated source)
 X-Authenticated-Sender: steve@digidescorp.com
 X-MDRemoteIP: 99.135.161.176
-X-Return-Path: prvs=1815aa1649=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-Message-ID: <1365818043.1691.23.camel@iscandar.digidescorp.com>
-Subject: Re: [PATCH] mmc: debugfs: Add debugfs ability to read CID and CSD
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: Johan Rudholm <jrudholm@gmail.com>
-Cc: Steve Magnani <smagnani@iscandar.digidescorp.com>,
-        Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 12 Apr 2013 20:54:03 -0500
-In-Reply-To: <CA+20K0DFA9r+fLhhbFnzx+t2wQ6+UH3DAWhoiF2W1g=ok8hyBQ@mail.gmail.com>
-References: <1365796013-11399-1-git-send-email-smagnani@iscandar.digidescorp.com>
-	 <CA+20K0DFA9r+fLhhbFnzx+t2wQ6+UH3DAWhoiF2W1g=ok8hyBQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Return-Path: smagnani@iscandar.digidescorp.com
+X-Envelope-From: smagnani@iscandar.digidescorp.com
+From: Steve Magnani <smagnani@iscandar.digidescorp.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org,
+        "Steven J. Magnani" <steve@digidescorp.com>
+Subject: [PATCH, resend] sd: fix infinite kernel/udev loop on non-removable Medium Not Present
+Date: Fri, 12 Apr 2013 21:06:47 -0500
+Message-Id: <1365818807-12292-1-git-send-email-smagnani@iscandar.digidescorp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit eface65c336eff420d70beb0fb6787a732e05ffb (2.6.38) altered
+set_media_not_present() in a way that prevents the sd driver from
+remembering that a non-removable device has reported "Medium Not Present".
+This condition can occur on hotplug of a (i.e.) USB Mass Storage device
+whose medium is offline due to an unrecoverable controller error,
+but which is otherwise capable of SCSI communication (to download new 
+microcode, etc.).
 
-On Sat, 2013-04-13 at 01:06 +0200, Johan Rudholm wrote: 
-> I believe these registers are already available as sysfs nodes? I
-> don't have access to the proper hardware right now, but I'm pretty
-> sure you'll find something if you do for instance "find /sys -name
-> csd".
+Under these conditions, the changed code results in an infinite loop
+between the kernel and udevd. When udevd attempts to open the device
+in response to a change notification, a SCSI "Medium Not Present" error
+occurs which causes the kernel to signal another change. The cycle
+repeats until the device is unplugged, resulting in udevd consuming ever-
+increasing amounts of CPU and virtual memory.
 
-Ahh. Thanks for the tip; I hadn't thought to look there since I found
-the ext_csd under debugfs.
-------------------------------------------------------------------------
-Steven J. Magnani               "I claim this network for MARS!
-www.digidescorp.com              Earthling, return my space modulator!"
+Resolve this by remembering "media not present" whether the device has
+declared itself "removable" or not.
 
-#include <standard.disclaimer> 
-
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+--- a/drivers/scsi/sd.c	2013-04-12 14:16:12.252531097 -0500
++++ b/drivers/scsi/sd.c	2013-04-12 14:21:55.197216521 -0500
+@@ -1298,10 +1298,8 @@ out:
+ 
+ static void set_media_not_present(struct scsi_disk *sdkp)
+ {
+-	if (sdkp->media_present)
++	if (sdkp->media_present) {
+ 		sdkp->device->changed = 1;
+-
+-	if (sdkp->device->removable) {
+ 		sdkp->media_present = 0;
+ 		sdkp->capacity = 0;
+ 	}
 
