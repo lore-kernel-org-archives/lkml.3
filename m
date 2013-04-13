@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab3DMOIr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 10:08:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2931 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753311Ab3DMOIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 10:08:46 -0400
-Date: Sat, 13 Apr 2013 16:02:51 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: [PATCH 1/1] uprobes/perf: Avoid perf_trace_buf_prepare/submit if
-	->perf_events is empty
-Message-ID: <20130413140251.GB32273@redhat.com>
-References: <20130329181545.GA20697@redhat.com> <20130404142522.GC8986@linux.vnet.ibm.com> <515E4938.6090809@hitachi.com> <20130405150110.GA31300@redhat.com> <51628DF8.6030102@hitachi.com> <20130410145818.GA30670@redhat.com> <516692BF.6070904@hitachi.com> <20130411115921.GA27492@redhat.com> <1365801588.9609.95.camel@gandalf.local.home> <20130413140234.GA32273@redhat.com>
+	id S1753790Ab3DMOKk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 10:10:40 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:64918 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab3DMOKi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 10:10:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130413140234.GA32273@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Originating-IP: [114.39.107.246]
+In-Reply-To: <1365424274.21989.2.camel@phoenix>
+References: <1365424274.21989.2.camel@phoenix>
+Date: Sat, 13 Apr 2013 22:10:38 +0800
+Message-ID: <CAFRkauBC3mo3GiVeFJ-yUJscybpHje_94rC6oXZ1O5mm8M=9tA@mail.gmail.com>
+Subject: Re: [PATCH] regulator: ab8500: Fix get_mode for shared mode regulators
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf_trace_buf_prepare() + perf_trace_buf_submit() make no sense
-if this task/CPU has no active counters. Change uprobe_perf_print()
-to return if hlist_empty(call->perf_events).
+Ping.
 
-Note: this is not uprobe-specific, we can change other users too.
+Hi Lee,
+Can you review this patch.
+I think this one is a bug fix.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/trace/trace_uprobe.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+Regards,
+Axel
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 37ccb72..32494fb 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -820,6 +820,10 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 		return;
- 
- 	preempt_disable();
-+	head = this_cpu_ptr(call->perf_events);
-+	if (hlist_empty(head))
-+		goto out;
-+
- 	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
- 	if (!entry)
- 		goto out;
-@@ -836,7 +840,6 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
- 	for (i = 0; i < tu->nr_args; i++)
- 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
- 
--	head = this_cpu_ptr(call->perf_events);
- 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
-  out:
- 	preempt_enable();
--- 
-1.5.5.1
-
-
+2013/4/8 Axel Lin <axel.lin@ingics.com>:
+> The special handling code for getting shared mode status is wrong
+> because it needs to check info->shared_mode->lp_mode_req for
+> both regulators that shared the same mode register.
+>
+> In set_mode(), current code ensures we won't set mode to REGULATOR_MODE_IDLE
+> if only one of the regulator requests to set idle.
+>
+> In get_mode(), we can just remove the special handling code for shared mode.
+> Read the register value always returns correct status no matter the regulator
+> has shared mode register or not.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/regulator/ab8500.c |    8 --------
+>  1 file changed, 8 deletions(-)
+>
+> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+> index 9ebd131..acdffc5 100644
+> --- a/drivers/regulator/ab8500.c
+> +++ b/drivers/regulator/ab8500.c
+> @@ -456,14 +456,6 @@ static unsigned int ab8500_regulator_get_mode(struct regulator_dev *rdev)
+>                 return -EINVAL;
+>         }
+>
+> -       /* Need special handling for shared mode */
+> -       if (info->shared_mode) {
+> -               if (info->shared_mode->lp_mode_req)
+> -                       return REGULATOR_MODE_IDLE;
+> -               else
+> -                       return REGULATOR_MODE_NORMAL;
+> -       }
+> -
+>         if (info->mode_mask) {
+>                 /* Dedicated register for handling mode */
+>                 ret = abx500_get_register_interruptible(info->dev,
+> --
+> 1.7.10.4
+>
+>
+>
