@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab3DMTBL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 15:01:11 -0400
-Received: from ftp.imentarabar.com ([89.144.129.18]:4848 "EHLO host2-askiran"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753000Ab3DMTBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 15:01:08 -0400
-Reply-To: <info@Web-Mail.com>
-From: "Web-Mail Helpdesk" <p.imanzadeh@iautalesh.ac.ir>
-Subject: Dear Email Owner, Please read
-Date: Sat, 13 Apr 2013 19:26:40 +0100
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
+	id S1753511Ab3DMTFp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 15:05:45 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:34216 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751772Ab3DMTFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 15:05:43 -0400
+Message-ID: <1365879943.2358.14.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: whitelist SUPPORTED_*/ADVERTISED_* defines
+ from ethtool.h
+From: Joe Perches <joe@perches.com>
+To: Jonas Gorski <jogo@openwrt.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Andy Whitcroft <apw@canonical.com>
+Date: Sat, 13 Apr 2013 12:05:43 -0700
+In-Reply-To: <1365862257-31151-1-git-send-email-jogo@openwrt.org>
+References: <1365862257-31151-1-git-send-email-jogo@openwrt.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 130413-0, 04/13/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <auto-000005384739@host2-askiran>
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This Email is from Email Customercare Center, We have been monitoring this account through our server's log file and have noticed that this account is been accessed from different distinct location simultaneously and also been used to send out spam messages as against our policy.
+On Sat, 2013-04-13 at 16:10 +0200, Jonas Gorski wrote:
+> Don't complain about camelcase when using SUPPORTED_*/ADVERTISED_*
+> defines, they are part of the user api so can't be (easily) fixed.
 
-For security purpose we will be shutting down this account unless you re-validate your mailbox, by clicking the link below
+CamelCase was downgraded recently to a --strict test.
 
- http://www.emailadministrator.co.uk/
+https://lkml.org/lkml/2013/4/11/273
 
-Failure to update this account after three days of receiving this warning will be tantamount to losing this account permanently.
+Still, there's a large quantity of CamelCase names in
+include/... that would still exist in any case.
 
-Thank you for using our email.
-Copyright 2013 Email Administrator
+A complete whitelist would be very long.
+
