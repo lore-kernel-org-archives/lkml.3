@@ -1,47 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab3DMVCu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 17:02:50 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:43802 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753387Ab3DMVCt (ORCPT
+	id S1754465Ab3DMVKO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 17:10:14 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:56981 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab3DMVKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 17:02:49 -0400
-Message-ID: <1365886961.1089.6.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 6/7] backports: add media subsystem drivers
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: backports@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Date: Sat, 13 Apr 2013 23:02:41 +0200
-In-Reply-To: <1365862424-6530-7-git-send-email-mcgrof@do-not-panic.com> (sfid-20130413_161421_323308_27727044)
-References: <1365862424-6530-1-git-send-email-mcgrof@do-not-panic.com>
-	 <1365862424-6530-7-git-send-email-mcgrof@do-not-panic.com>
-	 (sfid-20130413_161421_323308_27727044)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 13 Apr 2013 17:10:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxhwYO8wrHXHH6ry0pfpPHURsjN_aotT0xsDwZZZj7wvQ@mail.gmail.com>
+References: <1365805938-22826-1-git-send-email-anatol.pomozov@gmail.com>
+	<CA+55aFzxxGBU3AOeNg3UEicHrx3nzWRyo5DOd=hh6SHJfYvB3g@mail.gmail.com>
+	<CAOMFOmVO47+AuC1UgZQX1K0oSMSZ4DCzDEuJGF99ARTfnCDTpw@mail.gmail.com>
+	<CA+55aFxhwYO8wrHXHH6ry0pfpPHURsjN_aotT0xsDwZZZj7wvQ@mail.gmail.com>
+Date: Sat, 13 Apr 2013 14:10:11 -0700
+Message-ID: <CAOMFOmVqL4Ypd804obxoLVh7ntZeRZ66OT6v0rxTgcmwvgiynA@mail.gmail.com>
+Subject: Re: [PATCH] module: Fix race condition between load and unload module
+From: Anatol Pomozov <anatol.pomozov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Salman Qazi <sqazi@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-04-13 at 07:13 -0700, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-> 
-> This adds backport support for all media subsystem
-> drivers. This is enabled only for >= 3.2. Some media
-> drivers rely on the new probe deferrral mechanism
-> (-EPROBE_DEFER see commit d1c3414c), those are only
-> enabled for kernels >= 3.4. Some media drivers only
-> depend on the regulatory but since we only support
-> backporting the regulatory on kernels >= 3.4 we only
-> enable those media drivers for >= 3.4.
-> 
-> This backports 433 media drivers.
+Hi
 
-Heh. Applied. Good thing I can kill the pr_fmt patches again soon.
+On Sat, Apr 13, 2013 at 10:53 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sat, Apr 13, 2013 at 8:41 AM, Anatol Pomozov
+> <anatol.pomozov@gmail.com> wrote:
+>>
+>> Does it make sense to move it to a separate function in kref.h?
+>>
+>> /** Useful when kref_get is racing with kref_put and refcounter might be 0 */
+>> int kref_get_not_zero(kref* ref) {
+>>     return atomic_inc_not_zero(&kref->refcount);
+>> }
+>
+> It turns out we have that, except it's called "unless_zero", because
+> it uses "atomic_add_unless(x,1,0)", rather than the simplified
+> "atomic_inc_not_zero(x)".
+>
+>> or maybe instead change default behavior of kref_get() to
+>> atomic_inc_not_zero and force callers check the return value from
+>> kref_get()?
+>
+> That would be painful, and _most_ users should have a preexisting
+> refcount. So it's probably better in the long run to just keep the
+> warning (but perhaps fix it to be SMP-safe). So I think the part of
+> your patch that made kref_get() use atomic_inc_return() is probably a
+> good idea regardless.
+>
+> Also, I changed my patch to be minimal, and not change other users of
+> kobject_get(). So other users (not kset_find_obj()) will continue to
+> get the warning, and kset_find_obj() uses the safe version.
+Looks good to me.
 
-johannes
+> So this is
+> what I'm planning on committing as the minimal patch and marking for
+> stable. The rest (including that atomic_inc_return() in kref_get)
+> would be cleanup.
+>
+> Can you give this a quick test?
 
+I ran the test case for ~60 minutes with XFS tests in parallel - no any issues.
