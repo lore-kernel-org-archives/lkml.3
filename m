@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab3DMXOb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 19:14:31 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:36309 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511Ab3DMXO3 (ORCPT
+	id S1754143Ab3DMXqw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 19:46:52 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:37950 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511Ab3DMXqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 19:14:29 -0400
+	Sat, 13 Apr 2013 19:46:51 -0400
+Date: Sun, 14 Apr 2013 02:46:46 +0300
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>
+To: Jake Edge <jake@lwn.net>, Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Roberto Oppedisano <roberto.oppedisano@gmail.com>,
+        Salvatore Sisinni <s.sisinni@gmail.com>, auxsvr@gmail.com
+Subject: Re: still in 3.9-rc6 - fan speed at 100% after suspend/resume
+ regression
+Message-ID: <20130413234646.GH25821@sci.fi>
+Mail-Followup-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>,
+	Jake Edge <jake@lwn.net>, Zhang Rui <rui.zhang@intel.com>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Eduardo Valentin <eduardo.valentin@ti.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Roberto Oppedisano <roberto.oppedisano@gmail.com>,
+	Salvatore Sisinni <s.sisinni@gmail.com>, auxsvr@gmail.com
+References: <20130413100221.70c040fa@chukar.edge2.net>
+ <20130413214359.GG25821@sci.fi>
 MIME-Version: 1.0
-In-Reply-To: <20130413152602.GO6858@8bytes.org>
-References: <1365538384-12426-1-git-send-email-joro@8bytes.org>
-	<CAKocOOP5tMsDLS8Wotu0kMNjSVJpN+pPhE9zj+n9ZKS9EcVR+A@mail.gmail.com>
-	<20130412080637.GN6858@8bytes.org>
-	<CAJtEV7aLa2tKw-B0f0ZNHdP86yxpvUAofs9eVPYCeib6m67f8g@mail.gmail.com>
-	<20130413152602.GO6858@8bytes.org>
-Date: Sat, 13 Apr 2013 17:14:24 -0600
-Message-ID: <CAKocOOMZ-s-SHdJ0mb=EngiS2szGraK+=GNPpkmwALhi1hutnQ@mail.gmail.com>
-Subject: Re: [PATCH 0/9] AMD IOMMU cleanups, fixes and IVRS bug workarounds
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Andrew Cooks <acooks@gmail.com>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130413214359.GG25821@sci.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 13, 2013 at 9:26 AM, Joerg Roedel <joro@8bytes.org> wrote:
-> On Sat, Apr 13, 2013 at 11:06:22PM +0800, Andrew Cooks wrote:
->> On Fri, Apr 12, 2013 at 4:06 PM, Joerg Roedel <joro@8bytes.org> wrote:
->
->> > Oh, that's sad. You were the only one having a machine wich actually has
->> > unity-mapped ranges defined in the BIOS table. The code for those
->> > mappings was basically untested before you ran it on that machine.
->> >
->> What is the machine in question? Maybe someone else has access to one,
->> if it's not too exotic.
->
-> Shuah had access to a HP server machine (don't know which one) that
-> defined unity-map ranges in the BIOS table. Shuah certainly knows the
-> details about that machine.
->
+On Sun, Apr 14, 2013 at 12:44:00AM +0300, Ville Syrjälä wrote:
+> On Sat, Apr 13, 2013 at 10:02:21AM -0600, Jake Edge wrote:
+> > Hi Zhang Rui,
+> > 
+> > The problem reported in https://lkml.org/lkml/2012/12/4/428 (and
+> > incorrectly attributed to a suspend patch by me here:
+> > https://lkml.org/lkml/2013/4/12/314) still exists in 3.9-rc6, at least
+> > for my HP/Compaq 2510p laptop. It appeared that some folks were seeing
+> > some improvement with earlier 3.9-rcs (?) but I just tested rc6 and saw
+> > substantially the same behavior.  This all works fine in <= 3.6.11.
+> > 
+> > A brief recap: after resuming, the fan on the laptop spins up to full
+> > speed and stays there. "temp6" in "acpitz-virtual-0" (as shown by
+> > "sensors") is 100°C and stays there, which is presumably what is making
+> > the fan stay on.
+> 
+> My HP Compaq NC6000 exhibits slightly different behaviour. For me the
+> reported temp is always accurate but the trip points get out of sync
+> with the actual temperature.
+> 
+> With 3.7 I saw two different kinds of problems coming out of resume.
+> In one case the fan stays on until the temp rises high enough to get the
+> trip points back into sync. In the other case the fan goes off, and stays
+> off even when the temperature rises above the highest active trip point,
+> but it does appear to get back into sync when the temp starts to come back
+> down. I think the difference might stem from resuming when the laptop has
+> cooled down fully vs. when it's still warm.
+> 
+> I also just tried 3.9-rc6, and that one appears to behave differently
+> to 3.7, but still wrong. There the fan goes off after resume, and comes
+> back on as the temperature rises, but it never slows back down after
+> that.
+> 
+> I'll try to collect some more detailed dumps of all three cases.
 
-Joerg/Andrew,
+I filed a new bug and attached all my logs:
+https://bugzilla.kernel.org/show_bug.cgi?id=56591
 
-It is a DL385 Gen8 server. Unfortunately I left HP as of yesterday and no longer
-have access to the system. Maybe there others that have access to one.
-
--- Shuah
+-- 
+Ville Syrjälä
+syrjala@sci.fi
+http://www.sci.fi/~syrjala/
