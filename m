@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932600Ab3DMPll (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 11:41:41 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:62833 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932156Ab3DMPlh (ORCPT
+	id S932817Ab3DMPlw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 11:41:52 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:42827 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932156Ab3DMPls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 11:41:37 -0400
+	Sat, 13 Apr 2013 11:41:48 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Yinghai Lu <yinghai@kernel.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -17,11 +17,12 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         Mark Salter <msalter@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, linux-parisc@vger.kernel.org
-Subject: [RFC PATCH v1 08/19] mm/PARISC: prepare for killing free_all_bootmem_node()
-Date: Sat, 13 Apr 2013 23:36:28 +0800
-Message-Id: <1365867399-21323-9-git-send-email-jiang.liu@huawei.com>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linuxppc-dev@lists.ozlabs.org
+Subject: [RFC PATCH v1 09/19] mm/PPC: prepare for killing free_all_bootmem_node()
+Date: Sat, 13 Apr 2013 23:36:29 +0800
+Message-Id: <1365867399-21323-10-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365867399-21323-1-git-send-email-jiang.liu@huawei.com>
 References: <1365867399-21323-1-git-send-email-jiang.liu@huawei.com>
@@ -33,40 +34,44 @@ Prepare for killing free_all_bootmem_node() by using
 free_all_bootmem().
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>
-Cc: Helge Deller <deller@gmx.de>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: David Rientjes <rientjes@google.com>
-Cc: linux-parisc@vger.kernel.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Alexander Graf <agraf@suse.de>
+Cc: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/parisc/mm/init.c |   12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+ arch/powerpc/mm/mem.c |   16 +---------------
+ 1 file changed, 1 insertion(+), 15 deletions(-)
 
-diff --git a/arch/parisc/mm/init.c b/arch/parisc/mm/init.c
-index f80c175..ab76b84 100644
---- a/arch/parisc/mm/init.c
-+++ b/arch/parisc/mm/init.c
-@@ -585,18 +585,8 @@ void __init mem_init(void)
- 			> BITS_PER_LONG);
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 07663de..22e46db 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -305,22 +305,8 @@ void __init mem_init(void)
+ #endif
  
- 	high_memory = __va((max_pfn << PAGE_SHIFT));
+ 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
 -
--#ifndef CONFIG_DISCONTIGMEM
--	max_mapnr = page_to_pfn(virt_to_page(high_memory - 1)) + 1;
-+	set_max_mapnr(page_to_pfn(virt_to_page(high_memory - 1)) + 1);
- 	free_all_bootmem();
--#else
+-#ifdef CONFIG_NEED_MULTIPLE_NODES
 -	{
--		int i;
+-		pg_data_t *pgdat;
 -
--		for (i = 0; i < npmem_ranges; i++)
--			free_all_bootmem_node(NODE_DATA(i));
+-		for_each_online_pgdat(pgdat)
+-			if (pgdat->node_spanned_pages != 0) {
+-				printk("freeing bootmem node %d\n",
+-					pgdat->node_id);
+-				free_all_bootmem_node(pgdat);
+-			}
 -	}
+-#else
+-	max_mapnr = max_pfn;
++	set_max_mapnr(max_pfn);
+ 	free_all_bootmem();
 -#endif
  
- #ifdef CONFIG_PA11
- 	if (hppa_dma_ops == &pcxl_dma_ops) {
+ #ifdef CONFIG_HIGHMEM
+ 	{
 -- 
 1.7.9.5
 
