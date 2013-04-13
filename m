@@ -1,56 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab3DMKlx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 06:41:53 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:59557 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab3DMKlv (ORCPT
+	id S1753054Ab3DMKnG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 06:43:06 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:46019 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184Ab3DMKnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 06:41:51 -0400
-Message-ID: <516934C0.2080103@gmail.com>
-Date: Sat, 13 Apr 2013 12:34:40 +0200
+	Sat, 13 Apr 2013 06:43:05 -0400
+Message-ID: <5169350A.9090600@gmail.com>
+Date: Sat, 13 Apr 2013 12:35:54 +0200
 From: Marco Stornelli <marco.stornelli@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
 To: Linux FS Devel <linux-fsdevel@vger.kernel.org>
 CC: Linux Kernel <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
         Al Viro <viro@ZenIV.linux.org.uk>
-Subject: [PATCH 0/3 v3][RFC] fsfreeze: from uninterruptible to killable
+Subject: [PATCH 1/3] fsfreeze: wait in killable state in __sb_start_write
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Added a new enum to decide if we want to sleep in uninterruptible or
+killable state or we want simply to return immediately.
 
-I rebased the work on top of -next and I applied a Jan's comment about __sb_start_write.
-I did some basic tests and they are ok.
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+---
+ fs/super.c         |   24 ++++++++++++++++++------
+ include/linux/fs.h |   19 +++++++++++++------
+ 2 files changed, 31 insertions(+), 12 deletions(-)
 
-Open points:
-- without change mnt_want_write several paths are still blocking paths;
-- page_mkwrite still call blocking variant of __sb_start_write.
-
-Any comments are welcome.
-
-Regards.
-
-Marco Stornelli (3):
-  fsfreeze: wait in killable state in __sb_start_write
-  fsfreeze: added new file_start_write_killable
-  fsfreeze: use sb_start_write_killable instead of sb_start_write
-
- drivers/block/loop.c |    4 +++-
- fs/aio.c             |    7 +++++--
- fs/coda/file.c       |    4 +++-
- fs/open.c            |    8 ++++++--
- fs/read_write.c      |   28 +++++++++++++++++-----------
- fs/splice.c          |    4 +++-
- fs/super.c           |   24 ++++++++++++++++++------
- include/linux/fs.h   |   36 ++++++++++++++++++++++++++++++------
- 8 files changed, 85 insertions(+), 30 deletions(-)
-
+diff --git a/fs/super.c b/fs/super.c
+index 7465d43..6b70c7f 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1190,14 +1190,25 @@ static void acquire_freeze_lock(struct super_block *sb, int level, bool trylock,
+  * This is an internal function, please use sb_start_{write,pagefault,intwrite}
+  * instead.
+  */
+-int __sb_start_write(struct super_block *sb, int level, bool wait)
++int __sb_start_write(struct super_block *sb, int level, int wait)
+ {
++	int ret = 0;
+ retry:
+ 	if (unlikely(sb->s_writers.frozen >= level)) {
+-		if (!wait)
+-			return 0;
+-		wait_event(sb->s_writers.wait_unfrozen,
+-			   sb->s_writers.frozen < level);
++		switch (wait) {
++		case FREEZE_NOWAIT:
++			return ret;
++		case FREEZE_WAIT:
++			wait_event(sb->s_writers.wait_unfrozen,
++				   sb->s_writers.frozen < level);
++			break;
++		case FREEZE_WAIT_KILLABLE:
++			ret = wait_event_killable(sb->s_writers.wait_unfrozen,
++				   sb->s_writers.frozen < level);
++			if (ret)
++				return -EINTR;
++			break;
++		}
+ 	}
+ 
+ #ifdef CONFIG_LOCKDEP
+@@ -1213,7 +1224,8 @@ retry:
+ 		__sb_end_write(sb, level);
+ 		goto retry;
+ 	}
+-	return 1;
++	ret = 1;
++	return ret;
+ }
+ EXPORT_SYMBOL(__sb_start_write);
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 8d47c9a..c8b7325 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1220,6 +1220,13 @@ enum {
+ 
+ #define SB_FREEZE_LEVELS (SB_FREEZE_COMPLETE - 1)
+ 
++/* Possible waiting modes */
++enum {
++	FREEZE_NOWAIT = 0,		/* no blocking call */
++	FREEZE_WAIT	= 1,		/* wait in uninterruptible state */
++	FREEZE_WAIT_KILLABLE = 2,	/* wait in killable state */
++};
++
+ struct sb_writers {
+ 	/* Counters for counting writers at each level */
+ 	struct percpu_counter	counter[SB_FREEZE_LEVELS];
+@@ -1335,7 +1342,7 @@ extern struct timespec current_fs_time(struct super_block *sb);
+  */
+ 
+ void __sb_end_write(struct super_block *sb, int level);
+-int __sb_start_write(struct super_block *sb, int level, bool wait);
++int __sb_start_write(struct super_block *sb, int level, int wait);
+ 
+ /**
+  * sb_end_write - drop write access to a superblock
+@@ -1394,12 +1401,12 @@ static inline void sb_end_intwrite(struct super_block *sb)
+  */
+ static inline void sb_start_write(struct super_block *sb)
+ {
+-	__sb_start_write(sb, SB_FREEZE_WRITE, true);
++	__sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_WAIT);
+ }
+ 
+ static inline int sb_start_write_trylock(struct super_block *sb)
+ {
+-	return __sb_start_write(sb, SB_FREEZE_WRITE, false);
++	return __sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_NOWAIT);
+ }
+ 
+ /**
+@@ -1423,7 +1430,7 @@ static inline int sb_start_write_trylock(struct super_block *sb)
+  */
+ static inline void sb_start_pagefault(struct super_block *sb)
+ {
+-	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, true);
++	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, FREEZE_WAIT);
+ }
+ 
+ /*
+@@ -1441,7 +1448,7 @@ static inline void sb_start_pagefault(struct super_block *sb)
+  */
+ static inline void sb_start_intwrite(struct super_block *sb)
+ {
+-	__sb_start_write(sb, SB_FREEZE_FS, true);
++	__sb_start_write(sb, SB_FREEZE_FS, FREEZE_WAIT);
+ }
+ 
+ 
+@@ -2224,7 +2231,7 @@ static inline void file_start_write(struct file *file)
+ {
+ 	if (!S_ISREG(file_inode(file)->i_mode))
+ 		return;
+-	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, true);
++	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, FREEZE_WAIT);
+ }
+ 
+ static inline void file_end_write(struct file *file)
 -- 
 1.7.3.4
----
-
