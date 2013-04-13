@@ -1,102 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967500Ab3DRJff (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:35:35 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43226 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967442Ab3DRJfa (ORCPT
+	id S967514Ab3DRJgj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:36:39 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36933 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967359Ab3DRJfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:35:30 -0400
-Date: Thu, 18 Apr 2013 11:35:22 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v3] irqchip: Add support for ARMv7-M's NVIC
-In-Reply-To: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Message-ID: <alpine.LFD.2.02.1304180947070.21884@ionos>
-References: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Thu, 18 Apr 2013 05:35:07 -0400
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Subject: [PATCH v4 5/8] vmcore: copy ELF note segments in the 2nd kernel per
+ page vmcore objects
+To: vgoyal@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org
+Cc: cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
+        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com
+Date: Sat, 13 Apr 2013 09:21:33 +0900
+Message-ID: <20130413002133.18245.91528.stgit@localhost6.localdomain6>
+In-Reply-To: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
+References: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2068579284-1366272803=:21884"
-Content-ID: <alpine.LFD.2.02.1304181131040.21884@ionos>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Copy ELF note segmnets in buffer on the 2nd kernel and the buffer is
+allocated on page boundary for the purpose of mmap.
 
---8323328-2068579284-1366272803=:21884
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.LFD.2.02.1304181131041.21884@ionos>
+The reason why we don't allocate ELF note segments in the 1st kernel
+(old memory) on page boundary is to keep backward compatibility for
+old kernels, and one more reason is that if doing so, we waste not a
+little memory due to round-up operation to fit the memory to page
+boundary since most of the buffers are in per-cpu area.
 
-On Wed, 17 Apr 2013, Uwe Kleine-König wrote:
-> +struct nvic_bank_data {
-> +	/*
-> +	 * For irq i base holds nvic_base + 4 * i / 32. So you can access the
-> +	 * right ISER register (i.e ISER[i / 32]) by just taking base + ISER.
-> +	 * Ditto for ICER.
-> +	 */
-> +	void __iomem *base;
-> +};
+ELF notes are per-cpu, so total size of ELF note segments increases
+according to the number of CPUs. The current maximum number of CPUs on
+x86_64 is 5192, and there's already system with 4192 CPUs in SGI,
+where total size amounts to 1MB. This can be larger in the neare
+futrue or possibly even now on another architecture. Thus, to avoid
+the case where memory allocation for large block fails, we allocate
+vmcore objects per pages.
 
-What's the point of a struct with a single member? Why not having an
-array of base pointers ?
+Note that we cannot use remap_vmalloc_range here since the vma passed
+to it as the first argument needs to cover a full range of memory. We
+need to be able to specify where to map in pages, but we cannot do it
+by remap_vmalloc_range.
 
-> +static struct nvic_chip_data {
-> +	struct irq_domain *domain;
-> +	struct nvic_bank_data bdata[NVIC_MAX_BANKS];
-> +} nvic_chip_data;
-> +
-> +asmlinkage void __exception_irq_entry
-> +nvic_do_IRQ(irq_hw_number_t hwirq, struct pt_regs *regs)
-> +{
-> +	unsigned int irq = irq_linear_revmap(nvic_chip_data.domain, hwirq);
-> +
-> +	handle_IRQ(irq, regs);
-> +}
-> +
-> +static inline void __iomem *nvic_bank_base(struct irq_data *d)
-> +{
-> +	struct nvic_bank_data *bank_data = irq_data_get_irq_chip_data(d);
-> +	return bank_data->base;
-> +}
-> +
-> +static void nvic_mask_irq(struct irq_data *d)
-> +{
-> +	u32 mask = 1 << (d->hwirq % 32);
-> +
-> +	writel_relaxed(mask, nvic_bank_base(d) + NVIC_ICER);
-> +}
-> +
-> +static void nvic_unmask_irq(struct irq_data *d)
-> +{
-> +	u32 mask = 1 << (d->hwirq % 32);
-> +
-> +	writel_relaxed(mask, nvic_bank_base(d) + NVIC_ISER);
-> +}
+Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+---
 
-How is that different from what the generic irq chip implementation
-does? The only difference is that mask is generated by d->hwirq and
-not by d->irq. And due to the fact, that you use a full linear mapping
-between hwirq and virq the generic code simply works.
+ fs/proc/vmcore.c |   71 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 69 insertions(+), 2 deletions(-)
 
-Even if it would not work, it would be trivial to extend the generic
-chip with that functionality instead of hacking another slightly
-different copy of the same thing.
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 131d8fa..e27da40 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -200,7 +200,62 @@ static int __init vmcore_add(struct list_head *vc_list, u64 paddr, u64 size)
+ 	return 0;
+ }
+ 
++struct vmcore_per_unit_state {
++	struct vmcore *last;
++	u64 pos;
++	u64 unit;
++	struct list_head *vc_list;
++};
++
++/*
++ * Assumptions:
++ * - given physical addresses are all exclusive; don't check exclusiveness.
++ */
++static int __init vmcore_add_per_unit(struct vmcore_per_unit_state *state,
++				      u64 paddr, u64 size)
++{
++	u64 offset = paddr, remaining_bytes = size;
++	int rc;
++
++	while (remaining_bytes > 0) {
++		u64 read_bytes;
++
++		BUG_ON(state->pos > state->unit);
++
++		if (!state->last || state->pos == state->unit) {
++			struct vmcore *new;
++
++			new = get_new_element();
++			if (!new)
++				return -ENOMEM;
++			new->flag = MEM_TYPE_CURRENT_KERNEL;
++			new->size = PAGE_SIZE;
++			new->buf = (char *)get_zeroed_page(GFP_KERNEL);
++			if (!new->buf) {
++				kfree(new);
++				return -ENOMEM;
++			}
++			list_add_tail(&new->list, state->vc_list);
++			state->last = new;
++			state->pos = 0;
++		}
++
++		read_bytes = min(remaining_bytes, state->unit - state->pos);
++
++		rc = read_from_oldmem(state->last->buf + state->pos, read_bytes,
++				      &offset, 0);
++		if (rc < 0)
++			return rc;
++
++		state->pos += read_bytes;
++		remaining_bytes -= read_bytes;
++	}
++
++	return 0;
++}
++
+ static u64 __init get_vmcore_size_elf64(char *elfptr, size_t elfsz)
++
+ {
+ 	int i;
+ 	u64 size;
+@@ -244,6 +299,12 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+ 	Elf64_Phdr phdr, *phdr_ptr;
+ 	Elf64_Nhdr *nhdr_ptr;
+ 	u64 phdr_sz = 0, note_off;
++	struct vmcore_per_unit_state state = {
++		.last = NULL,
++		.pos = 0,
++		.unit = PAGE_SIZE,
++		.vc_list = vc_list,
++	};
+ 
+ 	ehdr_ptr = (Elf64_Ehdr *)elfptr;
+ 	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
+@@ -276,7 +337,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
+ 		}
+ 
+ 		/* Add this contiguous chunk of notes section to vmcore list.*/
+-		if (vmcore_add(vc_list, phdr_ptr->p_offset, real_sz)) {
++		if (vmcore_add_per_unit(&state, phdr_ptr->p_offset, real_sz)) {
+ 			kfree(notes_section);
+ 			return -ENOMEM;
+ 		}
+@@ -323,6 +384,12 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+ 	Elf32_Phdr phdr, *phdr_ptr;
+ 	Elf32_Nhdr *nhdr_ptr;
+ 	u64 phdr_sz = 0, note_off;
++	struct vmcore_per_unit_state state = {
++		.last = NULL,
++		.pos = 0,
++		.unit = PAGE_SIZE,
++		.vc_list = vc_list,
++	};
+ 
+ 	ehdr_ptr = (Elf32_Ehdr *)elfptr;
+ 	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
+@@ -355,7 +422,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
+ 		}
+ 
+ 		/* Add this contiguous chunk of notes section to vmcore list.*/
+-		if (vmcore_add(vc_list, phdr_ptr->p_offset, real_sz)) {
++		if (vmcore_add_per_unit(&state, phdr_ptr->p_offset, real_sz)) {
+ 			kfree(notes_section);
+ 			return -ENOMEM;
+ 		}
 
-Thanks,
-
-	tglx
-
-
---8323328-2068579284-1366272803=:21884--
