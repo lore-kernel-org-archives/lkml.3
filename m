@@ -1,131 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab3DMJz7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 05:55:59 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:41464 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab3DMJz4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 05:55:56 -0400
+	id S1752866Ab3DMKHW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 06:07:22 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60086 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752482Ab3DMKHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 06:07:20 -0400
+Date: Sat, 13 Apr 2013 15:31:13 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Anton Arapov <anton@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Josh Stone <jistone@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
+Subject: Re: [PATCH v1 6/9] uretprobes: Return probe exit, invoke handlers
+Message-ID: <20130413100113.GC11721@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1365004839-21982-1-git-send-email-anton@redhat.com>
+ <1365004839-21982-7-git-send-email-anton@redhat.com>
+ <20130407105308.GA2899@linux.vnet.ibm.com>
+ <20130409140530.GA20577@redhat.com>
+ <20130409201302.GA30570@redhat.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1923819.6Nb81T2TR8@vostro.rjw.lan>
-References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com>
-	<CA+icZUUsAqJ3kyCZivYeTpY7n=EDMv1UcC2VNwQro4h7NHDWag@mail.gmail.com>
-	<CA+icZUW+TB3q58bL+d=A355S4vtRhwMq8AV+tqjv6MgDtHRCaA@mail.gmail.com>
-	<1923819.6Nb81T2TR8@vostro.rjw.lan>
-Date: Sat, 13 Apr 2013 11:55:54 +0200
-Message-ID: <CA+icZUXUGOjGUAFxgQk0780pcBB-YjiujDLXF+gJFegi+pd+dA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Nathan Zimmer <nzimmer@sgi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20130409201302.GA30570@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041310-9360-0000-0000-000011B9769A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 13, 2013 at 12:51 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Friday, April 12, 2013 11:08:37 PM Sedat Dilek wrote:
->> On Fri, Apr 12, 2013 at 6:27 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> > On Fri, Apr 12, 2013 at 5:45 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> >> On Fri, Apr 12, 2013 at 4:24 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> >>> On Fri, Apr 12, 2013 at 10:23 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> >>>> On 10 April 2013 11:44, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> >>>>> I found this "[RFC PATCH] kbuild: Build linux-tools package with 'make
->> >>>>> deb-pkg'" from February 2012.
->> >>>>> Can't say what happened to it...
->> >>>>
->> >>>> Sedat,
->> >>>>
->> >>>> Sorry for being late. I am down with Fever and throat infection since few days.
->> >>>> Still struggling with it..
->> >>>>
->> >>>> There are few things i tried. Firstly the tag: next-20130326 is bad as there are
->> >>>> some bad commits in cpufreq core in it.
->> >>>>
->> >>>> I then tried latest linux-next/master on my Thinkpad (model name        : Intel(R)
->> >>>> Core(TM) i7-2640M CPU @ 2.80GHz) and couldn't boot it up. My ubuntu
->> >>>> just hanged.
->> >>>>
->> >>>> Then i tried Rafael's linux-next branch
->> >>>>
->> >>>> 079576f Merge branch 'pm-cpufreq-next' into linux-next
->> >>>>
->> >>>> And couldn't find any issues with it. I am easily able to remove/add cpus at
->> >>>> runtime..
->> >>>>
->> >>>> Can you give this branch a try?
->> >>>>
->> >>>
->> >>> OK, you seem to be well again, nice to hear.
->> >>>
->> >>> I was doing the whole week spring-cleaning in the apartment of my parents.
->> >>> Now, I have some minutes for a compilation run.
->> >>>
->> >>> I guess "cpufreq: Call __cpufreq_governor() with correct policy->cpus
->> >>> mask" could be the correct fix, but will try the GIT branch you have
->> >>> mentioned.
->> >>>
->> >>> - Sedat -
->> >>>
->> >>> [1] http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=e4969ebac83fdea78d89c779331396728a4e6199
->> >>>
->> >>
->> >> Both BROKEN here, specific pm-next commitid and pulling
->> >> pm.git#linux-next into next-20130411 (see attached files).
->> >>
->> >> Is "cpufreq: convert cpufreq_driver to using RCU" the root cause of this all?
->> >>
->> >
->> > [ CC Nathan ]
->> >
->> > NO, wrong assumption.
->> >
->> > 2013-04-12 18:04 Sedat Dilek        o [revert-cpufreq-rcu] Revert
->> > "cpufreq: convert cpufreq_driver to using RCU"
->> > 2013-04-12 18:04 Sedat Dilek        o Revert "cpufreq: Call
->> > __cpufreq_governor() with correct policy->cpus mask"
->> > 2013-04-11 23:24 Rafael J. Wysocki  M─┐ [pm-next-079576f] Merge branch
->> > 'pm-cpufreq-next' into linux-next
->> >
->> > - Sedat -
->> >
->> >
->> >> - Sedat -
->> >>
->> >> [1] http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=5800043b2488a1c4c6e859af860644d37419d58b
->> >>
->> >>>> --
->> >>>> viresh
->>
->> [ TO Dirk (Author of Intel pstate driver) ]
->>
->> With CONFIG_X86_INTEL_PSTATE=n (unset) I do not see the call-trace!
->>
->> My kernel-config and dmesg are attached.
->
-> You're seeing a trouble with a new driver, then, so that's not a regression.
->
+* Oleg Nesterov <oleg@redhat.com> [2013-04-09 22:13:02]:
 
-What do you mean by this?
+> On 04/09, Oleg Nesterov wrote:
+> >
+> > > Should we a check here before using top most ri.
+> > > What if the application had done a longjmp and the trampoline he hit
+> > > corresponds to something thats below in the stack?
+> > >
+> > > Not sure if this what you meant by leaking return instances in your next
+> > > patch.
+> >
+> > Oh yes, this should be documented more explicitly in the changelog of
+> > this patch or 7/9 (which tries to document the limitations but should
+> > be more clear).
+> >
+> > Currently we do not support longjmp() and we assume that the probed
+> > function should do the regular return. We should certainly try to improve
+> > this, but I really think that this should go into the next series.
+> >
+> > Because this is nontrivial, needs more discussion, and I'm afraid should
+> > be per-arch. Even on x86 (which can check the stack) this is not simple,
+> > in general we can't know how to check that (to simplify) the first frame
+> > is already invalid. Just for example, we could check regs->sp and detect
+> > that longjmp() was called but sigaltstack() can easily fool this logic.
+> >
 
-What are the next steps to get this fixed?
+Yes, its perfectly fine to keep this logic for the next patchset.
+Can you tell me why sigaltstack() can fool us if we rely on regs->sp.
+I should admit that I am not too familiar with sigaltstack.
 
-- Sedat -
+> > Or we can change prepare_uretprobe() to alloc the new slot for the
+> > trampoline every time (and mark it as "trampoline" for handle_swbp() of
+> > course), this way we can easily discard the invalid ret_instance's in
+> > handler_uretprobe(). But this doesn't solve all problems and this is
+> > not really nice/simple.
+> >
+> > In short. I think we should document the limitations more clearly, push
+> > this functionality, then try to improve things. Do you agree?
+> 
+> IOW. Will you agree with v2 below?
+> 
+> Changes:
+> 
+> 	- s/handler_uretprobe/handle_trampoline/
+> 
+> 	- s/handler_uretprobe_chain/handle_uretprobe_chain/
+> 
+> 	- add the TODO: comments into the changelog and
+> 	  handle_trampoline().
+> 
+> 
+> -------------------------------------------------------------------------------
+> [PATCH v2] uretprobes: Return probe exit, invoke handlers
+> 
+> Uretprobe handlers are invoked when the trampoline is hit, on completion
+> the trampoline is replaced with the saved return address and the uretprobe
+> instance deleted.
+> 
+> TODO: handle_trampoline() assumes that ->return_instances is always valid.
+> We should teach it to handle longjmp() which can invalidate the pending
+> return_instance's. This is nontrivial, we will try to do this in a separate
+> series.
+> 
+> Signed-off-by: Anton Arapov <anton@redhat.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-> Thanks for taking the time to debug this!
->
-> Rafael
->
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  kernel/events/uprobes.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 64 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index e352e18..b9c4325 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1633,6 +1633,62 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
+>  	up_read(&uprobe->register_rwsem);
+>  }
+> 
+> +static void
+> +handle_uretprobe_chain(struct return_instance *ri, struct pt_regs *regs)
+> +{
+> +	struct uprobe *uprobe = ri->uprobe;
+> +	struct uprobe_consumer *uc;
+> +
+> +	down_read(&uprobe->register_rwsem);
+> +	for (uc = uprobe->consumers; uc; uc = uc->next) {
+> +		if (uc->ret_handler)
+> +			uc->ret_handler(uc, ri->func, regs);
+> +	}
+> +	up_read(&uprobe->register_rwsem);
+> +}
+> +
+> +static bool handle_trampoline(struct pt_regs *regs)
+> +{
+> +	struct uprobe_task *utask;
+> +	struct return_instance *ri, *tmp;
+> +	bool chained;
+> +
+> +	utask = current->utask;
+> +	if (!utask)
+> +		return false;
+> +
+> +	ri = utask->return_instances;
+> +	if (!ri)
+> +		return false;
+> +
+> +	/*
+> +	 * TODO: we should throw out return_instance's invalidated by
+> +	 * longjmp(), currently we assume that the probed function always
+> +	 * returns.
+> +	 */
+> +	instruction_pointer_set(regs, ri->orig_ret_vaddr);
+> +
+> +	for (;;) {
+> +		handle_uretprobe_chain(ri, regs);
+> +
+> +		chained = ri->chained;
+> +		put_uprobe(ri->uprobe);
+> +
+> +		tmp = ri;
+> +		ri = ri->next;
+> +		kfree(tmp);
+> +
+> +		if (!chained)
+> +			break;
+> +
+> +		BUG_ON(!ri);
+> +	}
+> +
+> +	utask->return_instances = ri;
+> +
+> +	return true;
+> +}
+> +
+>  /*
+>   * Run handler and ask thread to singlestep.
+>   * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
+> @@ -1644,8 +1700,15 @@ static void handle_swbp(struct pt_regs *regs)
+>  	int uninitialized_var(is_swbp);
+> 
+>  	bp_vaddr = uprobe_get_swbp_addr(regs);
+> -	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
+> +	if (bp_vaddr == get_trampoline_vaddr()) {
+> +		if (handle_trampoline(regs))
+> +			return;
+> 
+> +		pr_warn("uprobe: unable to handle uretprobe pid/tgid=%d/%d\n",
+> +						current->pid, current->tgid);
+> +	}
+> +
+> +	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
+>  	if (!uprobe) {
+>  		if (is_swbp > 0) {
+>  			/* No matching uprobe; signal SIGTRAP. */
+> -- 
+> 1.5.5.1
+> 
+> 
+
+-- 
+Thanks and Regards
+Srikar Dronamraju
+
