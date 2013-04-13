@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755587Ab3DMBOL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 21:14:11 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:62587 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612Ab3DMBOJ (ORCPT
+	id S1755315Ab3DMBRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 21:17:35 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58789 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab3DMBRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 21:14:09 -0400
-X-IronPort-AV: E=Sophos;i="4.87,466,1363158000"; 
-   d="scan'208";a="38055865"
-Message-ID: <59dadf6a3450e5985c3b6f440be5ec07.squirrel@www.codeaurora.org>
-In-Reply-To: <20130411184750.GK17641@mtj.dyndns.org>
-References: <1365016497-32033-1-git-send-email-tj@kernel.org>
-    <20130408153107.GA3021@htj.dyndns.org>
-    <20130411184750.GK17641@mtj.dyndns.org>
-Date: Fri, 12 Apr 2013 18:14:09 -0700
-Subject: Re: [PATCHSET v2] arch: unify task dump debug info
-From: rkuo@codeaurora.org
-To: "Tejun Heo" <tj@kernel.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@redhat.com, x86@kernel.org,
-        rth@twiddle.net, linux@arm.linux.org.uk, msalter@redhat.com,
-        starvik@axis.com, dhowells@redhat.com, tony.luck@intel.com,
-        benh@kernel.crashing.org, takata@linux-m32r.org, geert@linux-m68k.org,
-        james.hogan@imgtec.com, monstr@monstr.eu, ralf@linux-mips.org,
-        jonas@southpole.se, rkuo@codeaurora.org, schwidefsky@de.ibm.com,
-        liqin.chen@sunplusct.com, davem@davemloft.net, lethal@linux-sh.org,
-        vgupta@synopsys.com, chris@zankel.net, cmetcalf@tilera.com,
-        ysato@users.sourceforge.jp, gxt@mprc.pku.edu.cn, jdike@addtoit.com
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Fri, 12 Apr 2013 21:17:34 -0400
+Subject: Re: [PATCH 5/6] tools lib traceevent: Add page_size field to pevent
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1365691255.9609.34.camel@gandalf.local.home>
+References: <1365681898-19897-1-git-send-email-namhyung@kernel.org>
+	 <1365681898-19897-5-git-send-email-namhyung@kernel.org>
+	 <1365691175.9609.33.camel@gandalf.local.home>
+	 <1365691255.9609.34.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 13 Apr 2013 10:17:26 +0900
+Message-ID: <1365815846.1769.11.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Apr 08, 2013 at 08:31:07AM -0700, Tejun Heo wrote:
->> Andrew, ping?
->
-> Ping #2.  Workqueue conversion of writeback in the block tree needs
-> these patches to avoid losing debug information over the conversion,
-> so it'd be great if this can be scheduled for 3.10.
->
-> Thanks.
->
-> --
-> tejun
->
+Hi Steve,
 
-Sorry for the late reply; wasn't able to test this until today.
+2013-04-11 (목), 10:40 -0400, Steven Rostedt:
+> On Thu, 2013-04-11 at 10:39 -0400, Steven Rostedt wrote:
+> > On Thu, 2013-04-11 at 21:04 +0900, Namhyung Kim wrote:
+> > > From: Namhyung Kim <namhyung.kim@lge.com>
+> > > 
+> > > It's for saving the page size of traced system.
+> > 
+> > Can you add a bit more detail in the change log about why this patch is
+> > necessary.
+> 
+> For now, you can add my
+> 
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> for all but this patch.
 
-Hexagon could use the same "don't print into stacktrace machinery", but I
-can add that to my tree.
+Thanks!
 
-So for the Hexagon bits:
+> 
+> I just want to know more about this patch before I ack it.
 
-Acked-by: Richard Kuo <rkuo@codeaurora.org>
+The page size of traced system can be different than current system's
+because the recorded data file might be analyzed in a different machine.
+In this case we should use original page size of traced system when
+accessing the data file, so this information needs to be saved.
 
-
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Thanks,
+Namhyung
 
 
