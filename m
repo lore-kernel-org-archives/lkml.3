@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914Ab3DMPlI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 11:41:08 -0400
-Received: from mail-ea0-f172.google.com ([209.85.215.172]:33081 "EHLO
-	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab3DMPlE (ORCPT
+	id S932147Ab3DMPlP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 11:41:15 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:53282 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab3DMPlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 11:41:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFzxxGBU3AOeNg3UEicHrx3nzWRyo5DOd=hh6SHJfYvB3g@mail.gmail.com>
-References: <1365805938-22826-1-git-send-email-anatol.pomozov@gmail.com>
-	<CA+55aFzxxGBU3AOeNg3UEicHrx3nzWRyo5DOd=hh6SHJfYvB3g@mail.gmail.com>
-Date: Sat, 13 Apr 2013 08:41:02 -0700
-Message-ID: <CAOMFOmVO47+AuC1UgZQX1K0oSMSZ4DCzDEuJGF99ARTfnCDTpw@mail.gmail.com>
-Subject: Re: [PATCH] module: Fix race condition between load and unload module
-From: Anatol Pomozov <anatol.pomozov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Salman Qazi <sqazi@google.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 13 Apr 2013 11:41:08 -0400
+From: Jiang Liu <liuj97@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Yinghai Lu <yinghai@kernel.org>
+Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, David Howells <dhowells@redhat.com>,
+        Mark Salter <msalter@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Ungerer <gerg@uclinux.org>, linux-m68k@vger.kernel.org
+Subject: [RFC PATCH v1 05/19] mm/m68k: prepare for killing free_all_bootmem_node()
+Date: Sat, 13 Apr 2013 23:36:25 +0800
+Message-Id: <1365867399-21323-6-git-send-email-jiang.liu@huawei.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1365867399-21323-1-git-send-email-jiang.liu@huawei.com>
+References: <1365867399-21323-1-git-send-email-jiang.liu@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Prepare for killing free_all_bootmem_node() by using
+free_all_bootmem().
 
-On Fri, Apr 12, 2013 at 4:47 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Apr 12, 2013 at 3:32 PM, Anatol Pomozov
-> <anatol.pomozov@gmail.com> wrote:
->>
->> Here is timeline for the crash in case if kset_find_obj() searches for
->> an object tht nobody holds and other thread is doing kobject_put()
->> on the same kobject:
->>
->> THREAD A (calls kset_find_obj())     THREAD B (calls kobject_put())
->> splin_lock()
->>                                      atomic_dec_return(kobj->kref), counter gets zero here
->>                                      ... starts kobject cleanup ....
->>                                      spin_lock() // WAIT thread A in kobj_kset_leave()
->> iterate over kset->list
->> atomic_inc(kobj->kref) (counter becomes 1)
->> spin_unlock()
->>                                      spin_lock() // taken
->>                                      // it does not know that thread A increased counter so it
->>                                      remove obj from list
->>                                      spin_unlock()
->>                                      vfree(module) // frees module object with containing kobj
->>
->> // kobj points to freed memory area!!
->> koubject_put(kobj) // OOPS!!!!
->
-> This is a much more generic bug in kobjects, and I would hate to add
-> some random workaround for just one case of this bug like you do. The
-> more fundamental bug needs to be fixed too.
->
-> I think the more fundamental bugfix is to just fix kobject_get() to
-> return NULL if the refcount was zero, because in that case the kobject
-> no longer really exists.
->
-> So instead of having
->
->     kref_get(&kobj->kref);
->
-> it should do
->
->     if (!atomic_inc_not_zero(&kobj->kref.refcount))
->         kobj = NULL;
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Ungerer <gerg@uclinux.org>
+Cc: linux-m68k@lists.linux-m68k.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/m68k/mm/init.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-Does it make sense to move it to a separate function in kref.h?
+diff --git a/arch/m68k/mm/init.c b/arch/m68k/mm/init.c
+index 0723141..20d0ae2 100644
+--- a/arch/m68k/mm/init.c
++++ b/arch/m68k/mm/init.c
+@@ -148,12 +148,10 @@ void __init print_memmap(void)
+ 
+ void __init mem_init(void)
+ {
+-	pg_data_t *pgdat;
+ 	int i;
+ 
+ 	/* this will put all memory onto the freelists */
+-	for_each_online_pgdat(pgdat)
+-		free_all_bootmem_node(pgdat);
++	free_all_bootmem();
+ 
+ #if defined(CONFIG_MMU) && !defined(CONFIG_SUN3) && !defined(CONFIG_COLDFIRE)
+ 	/* insert pointer tables allocated so far into the tablelist */
+-- 
+1.7.9.5
 
-/** Useful when kref_get is racing with kref_put and refcounter might be 0 */
-int kref_get_not_zero(kref* ref) {
-    return atomic_inc_not_zero(&kref->refcount);
-}
-
-or maybe instead change default behavior of kref_get() to
-atomic_inc_not_zero and force callers check the return value from
-kref_get()?
-
->
-> and I think that should fix your race automatically, no? Proper patch
-> attached (but TOTALLY UNTESTED - it seems to compile, though).
->
-> The problem is that we lose the warning for when the refcount is zero
-> and somebody does a kobject_get(), but that is ok *assuming* that
-> people actually check the return value of kobject_get() rather than
-> just "know" that if they passed in a non-NULL kobj, they'll get it
-> right back.
->
-> Greg - please take a look... I'm adding Al to the discussion too,
-> because Al just *loooves* these kinds of races ;)
->
->                   Linus
