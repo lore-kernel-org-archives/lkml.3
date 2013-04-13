@@ -1,71 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab3DMUHb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 16:07:31 -0400
-Received: from tex.lwn.net ([70.33.254.29]:54160 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753029Ab3DMUHa convert rfc822-to-8bit (ORCPT
+	id S1753966Ab3DMUNi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 16:13:38 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:59516 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329Ab3DMUNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 16:07:30 -0400
-Date: Sat, 13 Apr 2013 14:07:28 -0600
-From: Jake Edge <jake@lwn.net>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: "Rafael J.Wysocki" <rjw@sisk.pl>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Roberto Oppedisano <roberto.oppedisano@gmail.com>,
-        Ville Syrjala <syrjala@sci.fi>,
-        Salvatore Sisinni <s.sisinni@gmail.com>, auxsvr@gmail.com
-Subject: Re: still in 3.9-rc6 - fan speed at 100% after suspend/resume
- regression
-Message-ID: <20130413140728.038e4b15@chukar.edge2.net>
-In-Reply-To: <1365877215.2221.8.camel@rzhang1-mobl4>
-References: <20130413100221.70c040fa@chukar.edge2.net>
- <1365877215.2221.8.camel@rzhang1-mobl4>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.16; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 13 Apr 2013 16:13:36 -0400
+Message-ID: <5169BC86.7010905@gmail.com>
+Date: Sat, 13 Apr 2013 22:13:58 +0200
+From: Francesco Lavra <francescolavra.fl@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, nicolas.pitre@linaro.org, robin.randhawa@arm.com,
+        linux@arm.linux.org.uk, mark.hambleton@broadcom.com,
+        linux-pm@vger.kernel.org,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>,
+        devicetree-discuss@lists.ozlabs.org, Liviu.Dudau@arm.com,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Steve.Bannister@arm.com,
+        arvind.chauhan@arm.com, linux-arm-kernel@lists.infradead.org,
+        charles.garcia-tobin@arm.com
+Subject: Re: [PATCH V2] cpufreq: ARM big LITTLE: Add generic cpufreq driver
+ and its DT glue
+References: <1f864ec505cae7c5daea3810a3c26e0f5cda38ea.1364290815.git.viresh.kumar@linaro.org>
+In-Reply-To: <1f864ec505cae7c5daea3810a3c26e0f5cda38ea.1364290815.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ not sure why, but the lkml address got munged in Rui's reply ...
-fixed now -- sorry for the dupe ]
+On 03/26/2013 10:51 AM, Viresh Kumar wrote:
+> big LITTLE is ARM's new Architecture focussing power/performance needs of modern
+> world. More information about big LITTLE can be found here:
+> 
+> http://www.arm.com/products/processors/technologies/biglittleprocessing.php
+> http://lwn.net/Articles/481055/
+> 
+> In order to keep cpufreq support for all big LITTLE platforms simple/generic,
+> this patch tries to add a generic cpufreq driver layer for all big LITTLE
+> platforms.
+> 
+> The driver is divided into two parts:
+> - Core driver: Generic and shared across all big LITTLE SoC's
+> - Glue drivers: Per platform drivers providing ops to the core driver
+> 
+> This patch adds in a generic glue driver which would extract information from
+> Device Tree.
+> 
+> Future SoC's can either reuse the DT glue or write their own depending on the
+> need.
+> 
+> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+[...]
+> diff --git a/drivers/cpufreq/arm_big_little_dt.c b/drivers/cpufreq/arm_big_little_dt.c
+> new file mode 100644
+> index 0000000..452ff46
+> --- /dev/null
+> +++ b/drivers/cpufreq/arm_big_little_dt.c
+> @@ -0,0 +1,92 @@
+> +/*
+> + * Generic big.LITTLE CPUFreq Interface driver
+> + *
+> + * It provides necessary ops to arm_big_little cpufreq driver and gets
+> + * Frequency information from Device Tree. Freq table in DT must be in KHz.
+> + *
+> + * Copyright (C) 2013 Linaro.
+> + * Viresh Kumar <viresh.kumar@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed "as is" WITHOUT ANY WARRANTY of any
+> + * kind, whether express or implied; without even the implied warranty
+> + * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+> +#include <linux/cpufreq.h>
+> +#include <linux/device.h>
+> +#include <linux/export.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/opp.h>
+> +#include <linux/slab.h>
+> +#include <linux/types.h>
+> +#include "arm_big_little.h"
+> +
+> +static int dt_init_opp_table(struct device *cpu_dev)
+> +{
+> +	struct device_node *np = NULL;
+> +	int count = 0, ret;
+> +
+> +	for_each_child_of_node(of_find_node_by_path("/cpus"), np) {
 
-On Sun, 14 Apr 2013 02:20:15 +0800 Zhang Rui wrote:
+If of_find_node_by_path() returns NULL, there will be a NULL pointer
+dereference.
 
-> > A brief recap: after resuming, the fan on the laptop spins up to
-> > full speed and stays there. "temp6" in "acpitz-virtual-0" (as shown
-> > by "sensors") is 100°C and stays there, which is presumably what is
-> > making the fan stay on.
-> > 
-> first, this seems like the same problem reported at
-> https://bugzilla.kernel.org/show_bug.cgi?id=50041
-> please refer to comment #17 and #27.
+> +		if (count++ != cpu_dev->id)
+> +			continue;
+> +		if (!of_get_property(np, "operating-points", NULL))
+> +			return -ENODATA;
+> +
+> +		cpu_dev->of_node = np;
+> +
+> +		ret = of_init_opp_table(cpu_dev);
+> +		if (ret)
+> +			return ret;
+> +
+> +		return 0;
 
-Yes, it does seem like the same bug that Matthias is talking about in
-those comments ...
- 
-> > Is more information needed?
-> > 
-> please attach the acpidump output of your laptop.
+of_node_put() should be called on np before returning.
+Also, the reference count of the parent node should be decremented as well.
 
-I have the dump, do you want it on the old closed bug or shall I wait
-until Matthias opens a new one?
+These comments apply to the below function dt_get_transition_latency() too.
 
-> can you please test thermal -thermal branch at
-> git://git.kernel.org/pub/scm/linux/kernel/git/rzhang/linux.git
+> +	}
+> +
+> +	return -ENODEV;
+> +}
+> +
+> +static int dt_get_transition_latency(struct device *cpu_dev)
+> +{
+> +	struct device_node *np = NULL;
+> +	u32 transition_latency = CPUFREQ_ETERNAL;
+> +	int count = 0;
+> +
+> +	for_each_child_of_node(of_find_node_by_path("/cpus"), np) {
+> +		if (count++ != cpu_dev->id)
+> +			continue;
+> +
+> +		of_property_read_u32(np, "clock-latency", &transition_latency);
+> +		return 0;
+> +	}
+> +
+> +	return -ENODEV;
+> +}
 
-I just tried it, no difference in behavior (fan on full, temp6 ==
-100°C) ...
-
-I took all the defaults when I did a 'make oldconfig', some of which
-looked thermal-related ... was I supposed to set them differently?
-
-thanks,
-
-jake
-
--- 
-Jake Edge - LWN - jake@lwn.net - http://lwn.net
+--
+Francesco
