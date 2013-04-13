@@ -1,171 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311Ab3DMBFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 21:05:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19316 "EHLO
+	id S1756474Ab3DMBMK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 21:12:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5168 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754973Ab3DMBFX (ORCPT
+	with ESMTP id S1752997Ab3DMBMI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 21:05:23 -0400
-X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=YVKZjJvMSZMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=ZP9kFTNP1vcA:10 a=57SyGIRnAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=lnjDsGjtaArq365pIfUA:9 a=QEXdDO2ut3YA:10 a=lSinr4eg3GwA:10 a=TIV7c6GJmisA:10 a=LI9Vle30uBYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=KZCNIQ4M42o_z6lkoV4A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 12 Apr 2013 21:12:08 -0400
+X-Authority-Analysis: v=2.0 cv=F+XVh9dN c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=8YNFhi1qPlwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=dkCXd7rf6f8A:10 a=t8pxu81T_Ci53JOa1SoA:9 a=QEXdDO2ut3YA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20130413010521.895741390@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 12 Apr 2013 21:01:22 -0400
+Message-ID: <1365815526.9609.101.camel@gandalf.local.home>
+Subject: Re: [ 026/171 ] sfc: Only use TX push if a single descriptor is to
+ be written
 From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>, <stable@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 1/2] tracing: Fix possible NULL pointer dereferences
-References: <20130413010121.658707789@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Fix-possible-NULL-pointer-dereferences.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Fri, 12 Apr 2013 21:12:06 -0400
+In-Reply-To: <1365804331.2791.11.camel@bwh-desktop.uk.solarflarecom.com>
+References: <20130411202503.783159048@goodmis.org>
+	 <20130411202550.471143447@goodmis.org>
+	 <1365714957.7355.39.camel@bwh-desktop.uk.solarflarecom.com>
+	 <1365804331.2791.11.camel@bwh-desktop.uk.solarflarecom.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2013-04-12 at 23:05 +0100, Ben Hutchings wrote:
+> On Thu, 2013-04-11 at 22:15 +0100, Ben Hutchings wrote:
+> > Aside from #21-26 in this series, and the deadlock fix required on top
+> > of #24, there are several more fixes for sfc that I think are suitable
+> > for 3.6.11.y.
+> > 
+> > These commits were cherry-picked for 3.4.38 and can also be
+> > cherry-picked cleanly on top of 3.6.11.1 plus the 7 patches you already
+> > have:
+> > 
+> > d5e8cc6c946e sfc: Really disable flow control while flushing
+> > bfeed902946a sfc: Convert firmware subtypes to native byte order in efx_mcdi_get_board_cfg()
+> > 9724a8504c87 sfc: Add parentheses around use of bitfield macro arguments
+> > 0a6e5008a9df sfc: Fix MCDI structure field lookup
+> > 450783747f42 sfc: Avoid generating over-length MC_CMD_FLUSH_RX_QUEUES request
+> > 525d9e824018 sfc: Work-around flush timeout when flushes have completed
+> > ef492f11efed sfc: Correctly initialise reset_method in siena_test_chip()
+> > ebf98e797b4e sfc: Fix timekeeping in efx_mcdi_poll()
+> > 
+> > Please let me know whether you're prepared to include these in the
+> > current update.  I can then run some automated tests with your selected
+> > set of patches applied.
+> 
+> The test suite found a regression which I'd forgotten about.  It
+> was introduced in 3.6 by commit b7f514af7d6f 'sfc: Fix interface
+> statistics running backward' and fixed in 3.8 by commit 876be083b669
+> 'sfc: Reset driver's MAC stats after MC reboot seen'.
+> 
+> That latter fix is, again, a clean cherry-pick onto 3.6.y.  I don't
+> think I'm going to be able to re-test with this but it's sufficiently
+> low-risk that I'd be happy for you to add it anyway.
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Thanks!
 
-Currently set_ftrace_pid and set_graph_function files use seq_lseek
-for their fops.  However seq_open() is called only for FMODE_READ in
-the fops->open() so that if an user tries to seek one of those file
-when she open it for writing, it sees NULL seq_file and then panic.
+I included it, and will run some simple tests. If everything works, I'll
+just keep it without another spamming of the mailing lists.
 
-It can be easily reproduced with following command:
+I wont post till after my 3.6.11.2-rt tests passes.
 
-  $ cd /sys/kernel/debug/tracing
-  $ echo 1234 | sudo tee -a set_ftrace_pid
-
-In this example, GNU coreutils' tee opens the file with fopen(, "a")
-and then the fopen() internally calls lseek().
-
-Link: http://lkml.kernel.org/r/1365663302-2170-1-git-send-email-namhyung@ke=
-rnel.org
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/ftrace.h     |    2 +-
- kernel/trace/ftrace.c      |   10 +++++-----
- kernel/trace/trace_stack.c |    2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 167abf9..eb3ce32 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -396,7 +396,7 @@ ssize_t ftrace_filter_write(struct file *file, const ch=
-ar __user *ubuf,
- 			    size_t cnt, loff_t *ppos);
- ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
- 			     size_t cnt, loff_t *ppos);
--loff_t ftrace_regex_lseek(struct file *file, loff_t offset, int whence);
-+loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int whence);
- int ftrace_regex_release(struct inode *inode, struct file *file);
-=20
- void __init
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 926ebfb..affc35d 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2697,7 +2697,7 @@ ftrace_notrace_open(struct inode *inode, struct file =
-*file)
- }
-=20
- loff_t
--ftrace_regex_lseek(struct file *file, loff_t offset, int whence)
-+ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
- {
- 	loff_t ret;
-=20
-@@ -3570,7 +3570,7 @@ static const struct file_operations ftrace_filter_fop=
-s =3D {
- 	.open =3D ftrace_filter_open,
- 	.read =3D seq_read,
- 	.write =3D ftrace_filter_write,
--	.llseek =3D ftrace_regex_lseek,
-+	.llseek =3D ftrace_filter_lseek,
- 	.release =3D ftrace_regex_release,
- };
-=20
-@@ -3578,7 +3578,7 @@ static const struct file_operations ftrace_notrace_fo=
-ps =3D {
- 	.open =3D ftrace_notrace_open,
- 	.read =3D seq_read,
- 	.write =3D ftrace_notrace_write,
--	.llseek =3D ftrace_regex_lseek,
-+	.llseek =3D ftrace_filter_lseek,
- 	.release =3D ftrace_regex_release,
- };
-=20
-@@ -3783,8 +3783,8 @@ static const struct file_operations ftrace_graph_fops=
- =3D {
- 	.open		=3D ftrace_graph_open,
- 	.read		=3D seq_read,
- 	.write		=3D ftrace_graph_write,
-+	.llseek		=3D ftrace_filter_lseek,
- 	.release	=3D ftrace_graph_release,
--	.llseek		=3D seq_lseek,
- };
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-=20
-@@ -4439,7 +4439,7 @@ static const struct file_operations ftrace_pid_fops =
-=3D {
- 	.open		=3D ftrace_pid_open,
- 	.write		=3D ftrace_pid_write,
- 	.read		=3D seq_read,
--	.llseek		=3D seq_lseek,
-+	.llseek		=3D ftrace_filter_lseek,
- 	.release	=3D ftrace_pid_release,
- };
-=20
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 42ca822..83a8b5b 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -322,7 +322,7 @@ static const struct file_operations stack_trace_filter_=
-fops =3D {
- 	.open =3D stack_trace_filter_open,
- 	.read =3D seq_read,
- 	.write =3D ftrace_filter_write,
--	.llseek =3D ftrace_regex_lseek,
-+	.llseek =3D ftrace_filter_lseek,
- 	.release =3D ftrace_regex_release,
- };
-=20
---=20
-1.7.10.4
+-- Steve
 
 
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJRaK9RAAoJEOdOSU1xswtMQaAH/0wiu1Ofje6fLSy5ew7z6F1U
-AesRIB8ujPWJ3SEm845vzbpH5w6wV+nFGbL7MEd9XzAm1Ku8wf0Hh/Jxfdn1PgnT
-ee8tG21o8vGBE9QYAUAQEDamhnUSbu6HPLKAj9OJBHxlKmkdpTMWBRLo2z1VWcL7
-wEW/diVcMQCAVzLxv0SiRl0AljvKweTCQtpaKLHTAMK9AG1EeYN2Q9qnuXX1dzoX
-V8HF1a0OEjCag94yTDlgR7H97kzcY3A6Rf+wLSNMl09E2sfWWMtY60xr/Ng3Cs7E
-+Q1B12BcIc70f8WfDbHlRbpQy4XwEQ5aiLcQD73gTPSAx+uC7ZdbdtcQ+AMG7U4=
-=gC/G
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
