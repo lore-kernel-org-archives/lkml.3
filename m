@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932950Ab3DMPmD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 11:42:03 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:49916 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932156Ab3DMPl6 (ORCPT
+	id S933374Ab3DMPnR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 11:43:17 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:56140 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932607Ab3DMPnO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 11:41:58 -0400
+	Sat, 13 Apr 2013 11:43:14 -0400
 From: Jiang Liu <liuj97@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, Yinghai Lu <yinghai@kernel.org>
 Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
@@ -16,11 +16,11 @@ Cc: Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
         Michal Hocko <mhocko@suse.cz>, David Howells <dhowells@redhat.com>,
         Mark Salter <msalter@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
         linux-mm@kvack.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        Tang Chen <tangchen@cn.fujitsu.com>, linux-sh@vger.kernel.org
-Subject: [RFC PATCH v1 10/19] mm/SH: prepare for killing free_all_bootmem_node()
-Date: Sat, 13 Apr 2013 23:36:30 +0800
-Message-Id: <1365867399-21323-11-git-send-email-jiang.liu@huawei.com>
+        linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        microblaze-uclinux@itee.uq.edu.au
+Subject: [RFC PATCH v1 14/19] mm/microblaze: clean up unused VALID_PAGE()
+Date: Sat, 13 Apr 2013 23:36:34 +0800
+Message-Id: <1365867399-21323-15-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1365867399-21323-1-git-send-email-jiang.liu@huawei.com>
 References: <1365867399-21323-1-git-send-email-jiang.liu@huawei.com>
@@ -28,47 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for killing free_all_bootmem_node() by using
-free_all_bootmem().
+VALID_PAGE() has been removed from kernel long time ago, so clean up it.
 
 Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: linux-sh@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>
+Cc: microblaze-uclinux@itee.uq.edu.au
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/sh/mm/init.c |   16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+ arch/microblaze/include/asm/page.h |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
-index 3826596..485c858 100644
---- a/arch/sh/mm/init.c
-+++ b/arch/sh/mm/init.c
-@@ -412,19 +412,11 @@ void __init mem_init(void)
- 	iommu_init();
+diff --git a/arch/microblaze/include/asm/page.h b/arch/microblaze/include/asm/page.h
+index 85a5ae8..fd85087 100644
+--- a/arch/microblaze/include/asm/page.h
++++ b/arch/microblaze/include/asm/page.h
+@@ -168,7 +168,6 @@ extern int page_is_ram(unsigned long pfn);
+ #  else /* CONFIG_MMU */
+ #  define ARCH_PFN_OFFSET	(memory_start >> PAGE_SHIFT)
+ #  define pfn_valid(pfn)	((pfn) < (max_mapnr + ARCH_PFN_OFFSET))
+-#  define VALID_PAGE(page) 	((page - mem_map) < max_mapnr)
+ #  endif /* CONFIG_MMU */
  
- 	high_memory = NULL;
-+	for_each_online_pgdat(pgdat)
-+		high_memory = max_t(void *, high_memory,
-+			(void *)__va(pgdat_end_pfn(pgdat) << PAGE_SHIFT));
- 
--	for_each_online_pgdat(pgdat) {
--		void *node_high_memory;
--
--		if (pgdat->node_spanned_pages)
--			free_all_bootmem_node(pgdat);
--
--		node_high_memory = (void *)__va((pgdat->node_start_pfn +
--						 pgdat->node_spanned_pages) <<
--						 PAGE_SHIFT);
--		if (node_high_memory > high_memory)
--			high_memory = node_high_memory;
--	}
-+	free_all_bootmem();
- 
- 	/* Set this up early, so we can take care of the zero page */
- 	cpu_cache_init();
+ # endif /* __ASSEMBLY__ */
 -- 
 1.7.9.5
 
