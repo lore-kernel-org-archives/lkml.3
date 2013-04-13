@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab3DMA1u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Apr 2013 20:27:50 -0400
+	id S1756677Ab3DMA2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Apr 2013 20:28:12 -0400
 Received: from wolverine02.qualcomm.com ([199.106.114.251]:37756 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754664Ab3DMA1r (ORCPT
+	with ESMTP id S1755266Ab3DMA1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Apr 2013 20:27:47 -0400
+	Fri, 12 Apr 2013 20:27:48 -0400
 X-IronPort-AV: E=Sophos;i="4.87,466,1363158000"; 
-   d="scan'208";a="38215028"
+   d="scan'208";a="38215030"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
         Mark Rutland <mark.rutland@arm.com>,
         Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: [PATCHv2 1/4] Documentation: Add memory mapped ARM architected timer binding
-Date: Fri, 12 Apr 2013 17:27:40 -0700
-Message-Id: <1365812863-5367-2-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCHv2 4/4] clocksource: arch_timer: Add support for memory mapped timers
+Date: Fri, 12 Apr 2013 17:27:43 -0700
+Message-Id: <1365812863-5367-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1365812863-5367-1-git-send-email-sboyd@codeaurora.org>
 References: <1365812863-5367-1-git-send-email-sboyd@codeaurora.org>
@@ -25,99 +24,604 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a binding for the arm architected timer hardware's memory
-mapped interface. The mmio timer hardware is made up of one base
-frame and a collection of up to 8 timer frames, where each of the
-8 timer frames can have either one or two views. A frame
-typically maps to a privilege level (user/kernel, hypervisor,
-secure). The first view has full access to the registers within a
-frame, while the second view can be restricted to particular
-registers within a frame. Each frame must support a physical
-timer. It's optional for a frame to support a virtual timer.
+Add support for the memory mapped timers by filling in the
+read/write functions and adding some parsing code. Note that we
+only register one clocksource, preferring the cp15 based
+clocksource over the mmio one.
 
-Cc: devicetree-discuss@lists.ozlabs.org
+To keep things simple we register one global clockevent. This
+covers the case of UP and SMP systems with only mmio hardware and
+systems where the memory mapped timers are used as the broadcast
+timer in low power modes.
+
+The DT binding allows for per-CPU memory mapped timers in case we
+want to support that in the future, but the code isn't added
+here. We also don't do much for hypervisor support, although it
+should be possible to support it by searching for at least two
+frames where one frame has the virtual capability and then
+updating KVM timers to support it.
+
 Cc: Mark Rutland <mark.rutland@arm.com>
 Cc: Marc Zyngier <Marc.Zyngier@arm.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- .../devicetree/bindings/arm/arch_timer.txt         | 59 ++++++++++++++++++++--
- 1 file changed, 56 insertions(+), 3 deletions(-)
+ drivers/clocksource/arm_arch_timer.c | 415 ++++++++++++++++++++++++++++++-----
+ include/clocksource/arm_arch_timer.h |   4 +-
+ 2 files changed, 361 insertions(+), 58 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
-index 20746e5..ac20cde 100644
---- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-+++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-@@ -1,10 +1,14 @@
- * ARM architected timer
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 4f1f002..7385fca 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -16,13 +16,39 @@
+ #include <linux/clockchips.h>
+ #include <linux/interrupt.h>
+ #include <linux/of_irq.h>
++#include <linux/of_address.h>
+ #include <linux/io.h>
++#include <linux/slab.h>
  
--ARM cores may have a per-core architected timer, which provides per-cpu timers.
-+ARM cores may have a per-core architected timer, which provides per-cpu timers,
-+or a memory mapped architected timer, which provides up to 8 frames with a
-+physical and optional virtual timer per frame.
+ #include <asm/arch_timer.h>
+ #include <asm/virt.h>
  
--The timer is attached to a GIC to deliver its per-processor interrupts.
-+The per-core architected timer is attached to a GIC to deliver its
-+per-processor interrupts via PPIs. The memory mapped timer is attached to a GIC
-+to deliver its interrupts via SPIs.
+ #include <clocksource/arm_arch_timer.h>
  
--** Timer node properties:
-+** CP15 Timer node properties:
++#define CNTTIDR		0x08
++#define CNTTIDR_VIRT(n)	(BIT(1) << ((n) * 4))
++
++#define CNTVCT_LO	0x08
++#define CNTVCT_HI	0x0c
++#define CNTFRQ		0x10
++#define CNTP_TVAL	0x28
++#define CNTP_CTL	0x2c
++#define CNTV_TVAL	0x38
++#define CNTV_CTL	0x3c
++
++#define ARCH_CP15_TIMER	BIT(0)
++#define ARCH_MEM_TIMER	BIT(1)
++static unsigned arch_timers_present;
++
++static void __iomem *arch_counter_base;
++
++struct arch_timer {
++	void __iomem *base;
++	struct clock_event_device evt;
++};
++
++#define to_arch_timer(e) container_of(e, struct arch_timer, evt)
++
+ static u32 arch_timer_rate;
  
- - compatible : Should at least contain one of
- 	"arm,armv7-timer"
-@@ -26,3 +30,52 @@ Example:
- 			     <1 10 0xf08>;
- 		clock-frequency = <100000000>;
- 	};
+ enum ppi_nr {
+@@ -38,6 +64,7 @@ static int arch_timer_ppi[MAX_TIMER_PPI];
+ static struct clock_event_device __percpu *arch_timer_evt;
+ 
+ static bool arch_timer_use_virtual = true;
++static bool arch_timer_mem_use_virtual = false;
+ 
+ /*
+  * Architected system timer support.
+@@ -46,13 +73,69 @@ static bool arch_timer_use_virtual = true;
+ static inline void arch_timer_reg_write(int access, int reg, u32 val,
+ 					struct clock_event_device *clk)
+ {
+-	arch_timer_reg_write_cp15(access, reg, val);
++	if (access == ARCH_TIMER_MEM_PHYS_ACCESS) {
++		struct arch_timer *timer = to_arch_timer(clk);
++		switch (reg) {
++		case ARCH_TIMER_REG_CTRL:
++			writel_relaxed(val, timer->base + CNTP_CTL);
++			break;
++		case ARCH_TIMER_REG_TVAL:
++			writel_relaxed(val, timer->base + CNTP_TVAL);
++			break;
++		default:
++			BUILD_BUG();
++		}
++	} else if (access == ARCH_TIMER_MEM_VIRT_ACCESS) {
++		struct arch_timer *timer = to_arch_timer(clk);
++		switch (reg) {
++		case ARCH_TIMER_REG_CTRL:
++			writel_relaxed(val, timer->base + CNTV_CTL);
++			break;
++		case ARCH_TIMER_REG_TVAL:
++			writel_relaxed(val, timer->base + CNTV_TVAL);
++			break;
++		default:
++			BUILD_BUG();
++		}
++	} else {
++		arch_timer_reg_write_cp15(access, reg, val);
++	}
+ }
+ 
+ static inline u32 arch_timer_reg_read(int access, int reg,
+ 				      struct clock_event_device *clk)
+ {
+-	return arch_timer_reg_read_cp15(access, reg);
++	u32 val;
 +
-+** Memory mapped timer node properties
++	if (access == ARCH_TIMER_MEM_PHYS_ACCESS) {
++		struct arch_timer *timer = to_arch_timer(clk);
++		switch (reg) {
++		case ARCH_TIMER_REG_CTRL:
++			val = readl_relaxed(timer->base + CNTP_CTL);
++			break;
++		case ARCH_TIMER_REG_TVAL:
++			val = readl_relaxed(timer->base + CNTP_TVAL);
++			break;
++		default:
++			BUILD_BUG();
++		}
++	} else if (access == ARCH_TIMER_MEM_VIRT_ACCESS) {
++		struct arch_timer *timer = to_arch_timer(clk);
++		switch (reg) {
++		case ARCH_TIMER_REG_CTRL:
++			val = readl_relaxed(timer->base + CNTV_CTL);
++			break;
++		case ARCH_TIMER_REG_TVAL:
++			val = readl_relaxed(timer->base + CNTV_TVAL);
++			break;
++		default:
++			BUILD_BUG();
++		}
++	} else {
++		val = arch_timer_reg_read_cp15(access, reg);
++	}
 +
-+- compatible : Should at least contain "arm,armv7-timer-mem".
++	return val;
+ }
+ 
+ static inline irqreturn_t timer_handler(const int access,
+@@ -84,6 +167,20 @@ static irqreturn_t arch_timer_handler_phys(int irq, void *dev_id)
+ 	return timer_handler(ARCH_TIMER_PHYS_ACCESS, evt);
+ }
+ 
++static irqreturn_t arch_timer_handler_phys_mem(int irq, void *dev_id)
++{
++	struct clock_event_device *evt = dev_id;
 +
-+- clock-frequency : The frequency of the main counter, in Hz. Optional.
++	return timer_handler(ARCH_TIMER_MEM_PHYS_ACCESS, evt);
++}
 +
-+- reg : The control frame base address.
++static irqreturn_t arch_timer_handler_virt_mem(int irq, void *dev_id)
++{
++	struct clock_event_device *evt = dev_id;
 +
-+Note that #address-cells, #size-cells, and ranges shall be present to ensure
-+the CPU can address a frame's registers.
++	return timer_handler(ARCH_TIMER_MEM_VIRT_ACCESS, evt);
++}
 +
-+Frame:
+ static inline void timer_set_mode(const int access, int mode,
+ 				  struct clock_event_device *clk)
+ {
+@@ -112,6 +209,18 @@ static void arch_timer_set_mode_phys(enum clock_event_mode mode,
+ 	timer_set_mode(ARCH_TIMER_PHYS_ACCESS, mode, clk);
+ }
+ 
++static void arch_timer_set_mode_virt_mem(enum clock_event_mode mode,
++					 struct clock_event_device *clk)
++{
++	timer_set_mode(ARCH_TIMER_MEM_VIRT_ACCESS, mode, clk);
++}
 +
-+- frame-number: 0 to 7.
++static void arch_timer_set_mode_phys_mem(enum clock_event_mode mode,
++					 struct clock_event_device *clk)
++{
++	timer_set_mode(ARCH_TIMER_MEM_PHYS_ACCESS, mode, clk);
++}
 +
-+- interrupts : Interrupt list for physical and virtual timers in that order.
-+  The virtual timer interrupt is optional.
+ static inline void set_next_event(const int access, unsigned long evt,
+ 				  struct clock_event_device *clk)
+ {
+@@ -137,27 +246,62 @@ static int arch_timer_set_next_event_phys(unsigned long evt,
+ 	return 0;
+ }
+ 
+-static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
++static int arch_timer_set_next_event_virt_mem(unsigned long evt,
++					      struct clock_event_device *clk)
+ {
+-	clk->features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_C3STOP;
+-	clk->name = "arch_sys_timer";
+-	clk->rating = 450;
+-	if (arch_timer_use_virtual) {
+-		clk->irq = arch_timer_ppi[VIRT_PPI];
+-		clk->set_mode = arch_timer_set_mode_virt;
+-		clk->set_next_event = arch_timer_set_next_event_virt;
++	set_next_event(ARCH_TIMER_MEM_VIRT_ACCESS, evt, clk);
++	return 0;
++}
 +
-+- reg : The first and second view base addresses in that order. The second view
-+  base address is optional.
++static int arch_timer_set_next_event_phys_mem(unsigned long evt,
++					      struct clock_event_device *clk)
++{
++	set_next_event(ARCH_TIMER_MEM_PHYS_ACCESS, evt, clk);
++	return 0;
++}
 +
-+- status : "disabled" indicates the frame is not available for use.
++static void __cpuinit __arch_timer_setup(unsigned type,
++				       struct clock_event_device *clk)
++{
++	clk->features = CLOCK_EVT_FEAT_ONESHOT;
 +
-+Example:
++	if (type == ARCH_CP15_TIMER) {
++		clk->features |= CLOCK_EVT_FEAT_C3STOP;
++		clk->name = "arch_sys_timer";
++		clk->rating = 450;
++		clk->cpumask = cpumask_of(smp_processor_id());
++		if (arch_timer_use_virtual) {
++			clk->irq = arch_timer_ppi[VIRT_PPI];
++			clk->set_mode = arch_timer_set_mode_virt;
++			clk->set_next_event = arch_timer_set_next_event_virt;
++		} else {
++			clk->irq = arch_timer_ppi[PHYS_SECURE_PPI];
++			clk->set_mode = arch_timer_set_mode_phys;
++			clk->set_next_event = arch_timer_set_next_event_phys;
++		}
+ 	} else {
+-		clk->irq = arch_timer_ppi[PHYS_SECURE_PPI];
+-		clk->set_mode = arch_timer_set_mode_phys;
+-		clk->set_next_event = arch_timer_set_next_event_phys;
++		clk->name = "arch_mem_timer";
++		clk->rating = 400;
++		clk->cpumask = cpu_all_mask;
++		if (arch_timer_mem_use_virtual) {
++			clk->set_mode = arch_timer_set_mode_virt_mem;
++			clk->set_next_event =
++				arch_timer_set_next_event_virt_mem;
++		} else {
++			clk->set_mode = arch_timer_set_mode_phys_mem;
++			clk->set_next_event =
++				arch_timer_set_next_event_phys_mem;
++		}
+ 	}
+ 
+-	clk->cpumask = cpumask_of(smp_processor_id());
+-
+ 	clk->set_mode(CLOCK_EVT_MODE_SHUTDOWN, clk);
+ 
+-	clockevents_config_and_register(clk, arch_timer_rate,
+-					0xf, 0x7fffffff);
++	clockevents_config_and_register(clk, arch_timer_rate, 0xf, 0x7fffffff);
++}
 +
-+	timer@f0000000 {
-+		compatible = "arm,armv7-timer-mem";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+		reg = <0xf0000000 0x1000>;
-+		clock-frequency = <50000000>;
++static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
++{
++	__arch_timer_setup(ARCH_CP15_TIMER, clk);
+ 
+ 	if (arch_timer_use_virtual)
+ 		enable_percpu_irq(arch_timer_ppi[VIRT_PPI], 0);
+@@ -172,27 +316,41 @@ static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
+ 	return 0;
+ }
+ 
+-static int arch_timer_available(void)
++static void
++arch_timer_detect_rate(void __iomem *cntbase, struct device_node *np)
+ {
+-	u32 freq;
+-
+-	if (arch_timer_rate == 0) {
+-		freq = arch_timer_get_cntfrq();
++	/* Who has more than one independent system counter? */
++	if (arch_timer_rate)
++		return;
+ 
+-		/* Check the timer frequency. */
+-		if (freq == 0) {
+-			pr_warn("Architected timer frequency not available\n");
+-			return -EINVAL;
+-		}
+-
+-		arch_timer_rate = freq;
++	/* Try to determine the frequency from the device tree or CNTFRQ */
++	if (of_property_read_u32(np, "clock-frequency", &arch_timer_rate)) {
++		if (cntbase)
++			arch_timer_rate = readl_relaxed(cntbase + CNTFRQ);
++		else
++			arch_timer_rate = arch_timer_get_cntfrq();
+ 	}
+ 
+-	pr_info_once("Architected local timer running at %lu.%02luMHz (%s).\n",
++	/* Check the timer frequency. */
++	if (arch_timer_rate == 0)
++		pr_warn("Architected timer frequency not available\n");
++}
 +
-+		frame@f0001000 {
-+			frame-number = <0>
-+			interrupts = <0 13 0x8>,
-+				     <0 14 0x8>;
-+			reg = <0xf0001000 0x1000>,
-+			      <0xf0002000 0x1000>;
-+		};
++static void arch_timer_banner(unsigned type)
++{
++	pr_info("Architected %s%s%s timer(s) running at %lu.%02luMHz (%s%s%s).\n",
++		     type & ARCH_CP15_TIMER ? "cp15" : "",
++		     type == (ARCH_CP15_TIMER | ARCH_MEM_TIMER) ?  " and " : "",
++		     type & ARCH_MEM_TIMER ? "mmio" : "",
+ 		     (unsigned long)arch_timer_rate / 1000000,
+ 		     (unsigned long)(arch_timer_rate / 10000) % 100,
+-		     arch_timer_use_virtual ? "virt" : "phys");
+-	return 0;
++		     type & ARCH_CP15_TIMER ?
++			arch_timer_use_virtual ? "virt" : "phys" :
++			"",
++		     type == (ARCH_CP15_TIMER | ARCH_MEM_TIMER) ?  "/" : "",
++		     type & ARCH_MEM_TIMER ?
++			arch_timer_mem_use_virtual ? "virt" : "phys" :
++			"");
+ }
+ 
+ u32 arch_timer_get_rate(void)
+@@ -200,19 +358,35 @@ u32 arch_timer_get_rate(void)
+ 	return arch_timer_rate;
+ }
+ 
+-u64 arch_timer_read_counter(void)
++static u64 arch_counter_get_mem_cntvct(void)
+ {
+-	return arch_counter_get_cntvct();
++	u32 vct_lo, vct_hi, tmp_hi;
 +
-+		frame@f0003000 {
-+			frame-number = <1>
-+			interrupts = <0 15 0x8>;
-+			reg = <0xf0003000 0x1000>;
-+			status = "disabled";
-+		};
-+	};
++	do {
++		vct_hi = readl_relaxed(arch_counter_base + CNTVCT_HI);
++		vct_lo = readl_relaxed(arch_counter_base + CNTVCT_LO);
++		tmp_hi = readl_relaxed(arch_counter_base + CNTVCT_HI);
++	} while (vct_hi != tmp_hi);
++
++	return ((u64) vct_hi << 32) | vct_lo;
+ }
+ 
++/*
++ * Default to cp15 based access because arm64 uses this function for
++ * sched_clock() before DT is probed and the cp15 method is guaranteed
++ * to exist on arm64. arm doesn't use this before DT is probed so even
++ * if we don't have the cp15 accessors we won't have a problem.
++ */
++u64 (*arch_timer_read_counter)(void) = arch_counter_get_cntvct;
++
+ static cycle_t arch_counter_read(struct clocksource *cs)
+ {
+-	return arch_counter_get_cntvct();
++	return arch_timer_read_counter();
+ }
+ 
+ static cycle_t arch_counter_read_cc(const struct cyclecounter *cc)
+ {
+-	return arch_counter_get_cntvct();
++	return arch_timer_read_counter();
+ }
+ 
+ static struct clocksource clocksource_counter = {
+@@ -235,6 +409,23 @@ struct timecounter *arch_timer_get_timecounter(void)
+ 	return &timecounter;
+ }
+ 
++static void __init arch_counter_register(unsigned type)
++{
++	u64 start_count;
++
++	/* Register the CP15 based counter if we have one */
++	if (type & ARCH_CP15_TIMER)
++		arch_timer_read_counter = arch_counter_get_cntvct;
++	else
++		arch_timer_read_counter = arch_counter_get_mem_cntvct;
++
++	start_count = arch_timer_read_counter();
++	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
++	cyclecounter.mult = clocksource_counter.mult;
++	cyclecounter.shift = clocksource_counter.shift;
++	timecounter_init(&timecounter, &cyclecounter, start_count);
++}
++
+ static void __cpuinit arch_timer_stop(struct clock_event_device *clk)
+ {
+ 	pr_debug("arch_timer_teardown disable IRQ%d cpu #%d\n",
+@@ -277,22 +468,12 @@ static int __init arch_timer_register(void)
+ 	int err;
+ 	int ppi;
+ 
+-	err = arch_timer_available();
+-	if (err)
+-		goto out;
+-
+ 	arch_timer_evt = alloc_percpu(struct clock_event_device);
+ 	if (!arch_timer_evt) {
+ 		err = -ENOMEM;
+ 		goto out;
+ 	}
+ 
+-	clocksource_register_hz(&clocksource_counter, arch_timer_rate);
+-	cyclecounter.mult = clocksource_counter.mult;
+-	cyclecounter.shift = clocksource_counter.shift;
+-	timecounter_init(&timecounter, &cyclecounter,
+-			 arch_counter_get_cntvct());
+-
+ 	if (arch_timer_use_virtual) {
+ 		ppi = arch_timer_ppi[VIRT_PPI];
+ 		err = request_percpu_irq(ppi, arch_timer_handler_virt,
+@@ -343,31 +524,51 @@ out:
+ 	return err;
+ }
+ 
++static int __init arch_timer_mem_register(void __iomem *base, unsigned int irq)
++{
++	int ret;
++	irq_handler_t func;
++	struct arch_timer *t;
++
++	t = kzalloc(sizeof(*t), GFP_KERNEL);
++	if (!t)
++		return -ENOMEM;
++
++	t->base = base;
++	t->evt.irq = irq;
++	__arch_timer_setup(ARCH_MEM_TIMER, &t->evt);
++
++	if (arch_timer_mem_use_virtual)
++		func = arch_timer_handler_virt_mem;
++	else
++		func = arch_timer_handler_phys_mem;
++
++	ret = request_irq(irq, func, IRQF_TIMER, "arch_mem_timer", &t->evt);
++	if (ret)
++		kfree(t);
++
++	return ret;
++}
++
+ static const struct of_device_id arch_timer_of_match[] __initconst = {
+ 	{ .compatible	= "arm,armv7-timer",	},
+ 	{ .compatible	= "arm,armv8-timer",	},
+ 	{},
+ };
+ 
+-int __init arch_timer_init(void)
++static int __init arch_timer_parse(void)
+ {
+ 	struct device_node *np;
+-	u32 freq;
+ 	int i;
+ 
+ 	np = of_find_matching_node(NULL, arch_timer_of_match);
+-	if (!np) {
+-		pr_err("arch_timer: can't find DT node\n");
+-		return -ENODEV;
+-	}
+-
+-	/* Try to determine the frequency from the device tree or CNTFRQ */
+-	if (!of_property_read_u32(np, "clock-frequency", &freq))
+-		arch_timer_rate = freq;
++	if (!np)
++		return 0;
+ 
++	arch_timers_present |= ARCH_CP15_TIMER;
+ 	for (i = PHYS_SECURE_PPI; i < MAX_TIMER_PPI; i++)
+ 		arch_timer_ppi[i] = irq_of_parse_and_map(np, i);
+-
++	arch_timer_detect_rate(NULL, np);
+ 	of_node_put(np);
+ 
+ 	/*
+@@ -390,3 +591,103 @@ int __init arch_timer_init(void)
+ 
+ 	return arch_timer_register();
+ }
++
++static const struct of_device_id arch_timer_mem_of_match[] __initconst = {
++	{ .compatible	= "arm,armv7-timer-mem", },
++	{},
++};
++
++static int __init arch_timer_mem_parse(void)
++{
++	struct device_node *np, *frame, *best_frame = NULL;
++	void __iomem *cntctlbase, *base;
++	unsigned int irq;
++	u32 cnttidr;
++
++	np = of_find_matching_node(NULL, arch_timer_mem_of_match);
++	if (!np)
++		return 0;
++
++	arch_timers_present |= ARCH_MEM_TIMER;
++	cntctlbase = of_iomap(np, 0);
++	if (!cntctlbase) {
++		pr_err("arch_timer: Can't find CNTCTLBase\n");
++		of_node_put(np);
++		return -ENOMEM;
++	}
++
++	cnttidr = readl_relaxed(cntctlbase + CNTTIDR);
++	iounmap(cntctlbase);
++
++	/*
++	 * Try to find a virtual capable frame. Otherwise fall back to a
++	 * physical capable frame.
++	 */
++	for_each_available_child_of_node(np, frame) {
++		int n;
++
++		if (of_property_read_u32(frame, "frame-number", &n)) {
++			pr_err("arch_timer: Missing frame-number\n");
++			of_node_put(best_frame);
++			of_node_put(frame);
++			of_node_put(np);
++			return -EINVAL;
++		}
++
++		if (cnttidr & CNTTIDR_VIRT(n)) {
++			of_node_put(best_frame);
++			best_frame = frame;
++			arch_timer_mem_use_virtual = true;
++			break;
++		}
++		of_node_put(best_frame);
++		best_frame = of_node_get(frame);
++	}
++	of_node_put(np);
++
++	base = arch_counter_base = of_iomap(best_frame, 0);
++	if (!base) {
++		pr_err("arch_timer: Can't map frame's registers\n");
++		of_node_put(best_frame);
++		return -ENOMEM;
++	}
++
++	if (arch_timer_mem_use_virtual)
++		irq = irq_of_parse_and_map(best_frame, 1);
++	else
++		irq = irq_of_parse_and_map(best_frame, 0);
++	if (!irq) {
++		pr_err("arch_timer: Frame missing %s irq",
++				arch_timer_mem_use_virtual ? "virt" : "phys");
++		of_node_put(best_frame);
++		return -EINVAL;
++	}
++
++	arch_timer_detect_rate(base, best_frame);
++	of_node_put(best_frame);
++
++	return arch_timer_mem_register(base, irq);
++}
++
++int __init arch_timer_init(void)
++{
++	int err;
++
++	err = arch_timer_parse();
++	if (err)
++		return err;
++
++	err = arch_timer_mem_parse();
++	if (err)
++		return err;
++
++	if (!(arch_timers_present & (ARCH_CP15_TIMER | ARCH_MEM_TIMER))) {
++		pr_err("arch_timer: can't find DT node\n");
++		return -ENODEV;
++	}
++
++	arch_timer_banner(arch_timers_present);
++	arch_counter_register(arch_timers_present);
++
++	return 0;
++}
+diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
+index 3883812..c3ff7fe 100644
+--- a/include/clocksource/arm_arch_timer.h
++++ b/include/clocksource/arm_arch_timer.h
+@@ -28,12 +28,14 @@
+ 
+ #define ARCH_TIMER_PHYS_ACCESS		0
+ #define ARCH_TIMER_VIRT_ACCESS		1
++#define ARCH_TIMER_MEM_PHYS_ACCESS	2
++#define ARCH_TIMER_MEM_VIRT_ACCESS	3
+ 
+ #ifdef CONFIG_ARM_ARCH_TIMER
+ 
+ extern int arch_timer_init(void);
+ extern u32 arch_timer_get_rate(void);
+-extern u64 arch_timer_read_counter(void);
++extern u64 (*arch_timer_read_counter)(void);
+ extern struct timecounter *arch_timer_get_timecounter(void);
+ 
+ #else
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
