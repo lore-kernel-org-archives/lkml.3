@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab3DMXDL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 19:03:11 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:48104 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955Ab3DMXDJ (ORCPT
+	id S1754053Ab3DMXOb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 19:14:31 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:36309 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511Ab3DMXO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 19:03:09 -0400
-Date: Sat, 13 Apr 2013 16:03:06 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Al Viro <viro@zeniv.linux.org.uk>
-cc: Christoph Hellwig <hch@lst.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Suleiman Souhlal <suleiman@google.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] vfs: Revert spurious fix to spinning prevention in
- prune_icache_sb
-Message-ID: <alpine.LNX.2.00.1304131555300.2021@eggly.anvils>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 13 Apr 2013 19:14:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130413152602.GO6858@8bytes.org>
+References: <1365538384-12426-1-git-send-email-joro@8bytes.org>
+	<CAKocOOP5tMsDLS8Wotu0kMNjSVJpN+pPhE9zj+n9ZKS9EcVR+A@mail.gmail.com>
+	<20130412080637.GN6858@8bytes.org>
+	<CAJtEV7aLa2tKw-B0f0ZNHdP86yxpvUAofs9eVPYCeib6m67f8g@mail.gmail.com>
+	<20130413152602.GO6858@8bytes.org>
+Date: Sat, 13 Apr 2013 17:14:24 -0600
+Message-ID: <CAKocOOMZ-s-SHdJ0mb=EngiS2szGraK+=GNPpkmwALhi1hutnQ@mail.gmail.com>
+Subject: Re: [PATCH 0/9] AMD IOMMU cleanups, fixes and IVRS bug workarounds
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Andrew Cooks <acooks@gmail.com>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suleiman Souhlal <suleiman@google.com>
+On Sat, Apr 13, 2013 at 9:26 AM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Sat, Apr 13, 2013 at 11:06:22PM +0800, Andrew Cooks wrote:
+>> On Fri, Apr 12, 2013 at 4:06 PM, Joerg Roedel <joro@8bytes.org> wrote:
+>
+>> > Oh, that's sad. You were the only one having a machine wich actually has
+>> > unity-mapped ranges defined in the BIOS table. The code for those
+>> > mappings was basically untested before you ran it on that machine.
+>> >
+>> What is the machine in question? Maybe someone else has access to one,
+>> if it's not too exotic.
+>
+> Shuah had access to a HP server machine (don't know which one) that
+> defined unity-map ranges in the BIOS table. Shuah certainly knows the
+> details about that machine.
+>
 
-Revert v3.2's 62a3dde ("vfs: fix spinning prevention in prune_icache_sb").
+Joerg/Andrew,
 
-This commit doesn't look right:
-Since we are looking at the tail of the list (sb->s_inode_lru.prev)
-if we want to skip an inode, we should put it back at the head of
-the list instead of the tail, otherwise we will keep spinning on it.
+It is a DL385 Gen8 server. Unfortunately I left HP as of yesterday and no longer
+have access to the system. Maybe there others that have access to one.
 
-Discovered when investigating why prune_icache_sb came top in perf
-reports of a swapping load.
- 
-Signed-off-by: Suleiman Souhlal <suleiman@google.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@vger.kernel.org
----
-
- fs/inode.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-    
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -725,7 +725,7 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan, int priority)
- 		 * inode to the back of the list so we don't spin on it.
- 		 */
- 		if (!spin_trylock(&inode->i_lock)) {
--			list_move_tail(&inode->i_lru, &sb->s_inode_lru);
-+			list_move(&inode->i_lru, &sb->s_inode_lru);
- 			continue;
- 		}
- 
+-- Shuah
