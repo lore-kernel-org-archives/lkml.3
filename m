@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753584Ab3DMOFt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 10:05:49 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:58102 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab3DMOFs (ORCPT
+	id S1753683Ab3DMOHB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 10:07:01 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:38378 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab3DMOHA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 10:05:48 -0400
-Message-ID: <1365861943.3814.3.camel@phoenix>
-Subject: [PATCH] regulator: max8997: Test pdata by NULL checking instead of
- IS_ERR_OR_NULL
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: MyungJoo Ham <myungjoo.ham@smasung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Sat, 13 Apr 2013 22:05:43 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 13 Apr 2013 10:07:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <1365808754-20762-3-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130412231846.GA20038@linux.vnet.ibm.com>
+	<1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	<1365808754-20762-3-git-send-email-paulmck@linux.vnet.ibm.com>
+Date: Sat, 13 Apr 2013 16:06:58 +0200
+Message-ID: <CAFTL4hz9Lf6uPDNR865O3GUK3gEVJy-nSTu8okFJXV3U+KsbDA@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 3/7] rcu: Kick adaptive-ticks CPUs that are
+ holding up RCU grace periods
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, sbw@mit.edu
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pdata is either a valid pointer or NULL, use NULL checking rather than
-IS_ERR_OR_NULL macro.
+2013/4/13 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>
+> Adaptive-ticks CPUs inform RCU when they enter kernel mode, but they do
+> not necessarily turn the scheduler-clock tick back on.  This state of
+> affairs could result in RCU waiting on an adaptive-ticks CPU running
+> for an extended period in kernel mode.  Such a CPU will never run the
+> RCU state machine, and could therefore indefinitely extend the RCU state
+> machine, sooner or later resulting in an OOM condition.
+>
+> This patch, inspired by an earlier patch by Frederic Weisbecker, therefore
+> causes RCU's force-quiescent-state processing to check for this condition
+> and to send an IPI to CPUs that remain in that state for too long.
+> "Too long" currently means about three jiffies by default, which is
+> quite some time for a CPU to remain in the kernel without blocking.
+> The rcu_tree.jiffies_till_first_fqs and rcutree.jiffies_till_next_fqs
+> sysfs variables may be used to tune "too long" if needed.
+>
+> Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/max8997.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+It might be better if I take this patch to get it through
+tip:timers/nohz so that I can keep it in sync with the rest. What do
+you think?
 
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index 0ac7a87..df20069 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -1035,8 +1035,8 @@ static int max8997_pmic_probe(struct platform_device *pdev)
- 	int i, ret, size, nr_dvs;
- 	u8 max_buck1 = 0, max_buck2 = 0, max_buck5 = 0;
- 
--	if (IS_ERR_OR_NULL(pdata)) {
--		dev_err(pdev->dev.parent, "No platform init data supplied.\n");
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "No platform init data supplied.\n");
- 		return -ENODEV;
- 	}
- 
--- 
-1.7.10.4
-
-
-
+Thanks.
