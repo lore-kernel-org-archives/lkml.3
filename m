@@ -1,128 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab3DMVp4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 17:45:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64046 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab3DMVpy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 17:45:54 -0400
-Date: Sat, 13 Apr 2013 23:45:39 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        arm@kernel.org, linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Latest randconfig build errors
-Message-ID: <20130413214539.GA32613@avionic-0098.mockup.avionic-design.de>
-References: <20130304095136.GI17833@n2100.arm.linux.org.uk>
- <20130304184649.GO11806@atomide.com>
- <CAF6AEGv=3453KKS9-8YAgHrxMMbNvLMvt0pz-=qdG+zcd-Trrw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
-Content-Disposition: inline
-In-Reply-To: <CAF6AEGv=3453KKS9-8YAgHrxMMbNvLMvt0pz-=qdG+zcd-Trrw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:YII4PgGEBg3b67CkYmbk8av8xHGWSi8KvTzEBJwXGbS
- ixm9Xlop066aUl8qA+ieSFqV2NP5McXO48RYohWAlK84EyjvP4
- +0fr0JhnZmCoE7uJw0AwmtIaGX1jvEINw24zS1znevXGH7Rg3Y
- a3448ZbeVv2BA2gNpgF+zDJEJXSAyFdDP6cPksdqQ85m3eagu6
- IaQQ9SaQwMk6U4GQi6x5/289aziR15P9i9Y3/0F18hqVc9R+hG
- w2xJrT8LC5eRfNFMDRhdaRN5/rTqdy4obKwJ+VQLDGT5gzV3dB
- MFmhUFEQqIcSP6IY35P+ugSi8Q4TAS0eG6wlNTMxL9kKdBONXX
- CKCnjvlgiz82ujr06QnEFfR/OJFD+bLE3ftn8LoVU9X8kJAOmy
- NM+uvV8HTXjlO3dRXrzDv10mKQjaqtYkEud6hfTOPWIIJSu/RP
- z1Xpz
+	id S1754567Ab3DMVw0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 17:52:26 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:50006 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753788Ab3DMVwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 17:52:25 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] [media] cx88: Fix unsafe locking in suspend-resume
+Date: Sun, 14 Apr 2013 01:52:04 +0400
+Message-Id: <1365889924-5570-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Legacy PCI suspend-resume handlers are called with interrupts enabled.
+But cx8800_suspend/cx8800_resume and cx8802_suspend_common/cx8802_resume_common
+use spin_lock/spin_unlock functions to acquire dev->slock, while the same lock is acquired in
+the corresponding irq-handlers: cx8800_irq and cx8802_irq.
+That means a deadlock is possible if an interrupt happens while suspend or resume owns the lock.
 
---+QahgC5+KEYLbs62
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The patch replaces spin_lock/spin_unlock with spin_lock_irqsave/spin_unlock_irqrestore.
 
-On Sat, Apr 13, 2013 at 08:54:22AM -0400, Rob Clark wrote:
-> On Mon, Mar 4, 2013 at 1:46 PM, Tony Lindgren <tony@atomide.com> wrote:
-> >
-> >> drivers/gpu/drm/tilcdc/tilcdc_slave.o:(.data+0x54): multiple definitio=
-n of `__mod_of_device_table'
-> >> drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
-> >> drivers/gpu/drm/tilcdc/tilcdc_panel.o:(.data+0x54): multiple definitio=
-n of `__mod_of_device_table'
-> >> drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
-> >> drivers/gpu/drm/tilcdc/tilcdc_drv.o:(.data+0x184): multiple definition=
- of `__mod_of_device_table'
-> >> drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
-> >
-> > Rob, I assume you'll do a patch for this one?
->=20
->=20
-> oh, I apologize for the late reply, I didn't see this email...
->=20
-> There is a patch that we can merge to make tilcdc bool instead of
-> tristate[1], which I suppose is ok for a temporary fix.  Although I'm
-> all-ears if someone has a better idea about how to fix this.  The
-> problem is that we have multiple sub-devices for different possible
-> panel drivers, so that depending on DT tables, the correct ones get
-> loaded for the hw.  But they are all built into a single module.
-> Splitting them into multiple modules will be problematic, as panel
-> drivers which are present really need to get probed before the
-> toplevel drm device..
+Found by Linux Driver Verification project (linuxtesting.org).
 
-You could look at the Tegra driver. I had to solve a similar problem
-there. What I did is basically parse the DT in the host1x driver and add
-all device nodes which are required by DRM to a list. Later when the
-individual devices are probed they are removed from that list, so that
-when the list becomes empty we are sure that all required devices are
-there and only then call the drm_platform_init() function.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/media/pci/cx88/cx88-mpeg.c  |   10 ++++++----
+ drivers/media/pci/cx88/cx88-video.c |   10 ++++++----
+ 2 files changed, 12 insertions(+), 8 deletions(-)
 
-This fits very well with how Tegra hardware is designed because host1x
-is the parent for all DRM subdevices (DC, RGB/LVDS, HDMI, ...). So it is
-probed before any of its children and it can easily parse the DT upfront
-and initialize the list of required devices.
+diff --git a/drivers/media/pci/cx88/cx88-mpeg.c b/drivers/media/pci/cx88/cx88-mpeg.c
+index c9d3182..c6cdbdb 100644
+--- a/drivers/media/pci/cx88/cx88-mpeg.c
++++ b/drivers/media/pci/cx88/cx88-mpeg.c
+@@ -532,16 +532,17 @@ static int cx8802_suspend_common(struct pci_dev *pci_dev, pm_message_t state)
+ {
+ 	struct cx8802_dev *dev = pci_get_drvdata(pci_dev);
+ 	struct cx88_core *core = dev->core;
++	unsigned long flags;
+ 
+ 	/* stop mpeg dma */
+-	spin_lock(&dev->slock);
++	spin_lock_irqsave(&dev->slock,flags);
+ 	if (!list_empty(&dev->mpegq.active)) {
+ 		dprintk( 2, "suspend\n" );
+ 		printk("%s: suspend mpeg\n", core->name);
+ 		cx8802_stop_dma(dev);
+ 		del_timer(&dev->mpegq.timeout);
+ 	}
+-	spin_unlock(&dev->slock);
++	spin_unlock_irqrestore(&dev->slock,flags);
+ 
+ 	/* FIXME -- shutdown device */
+ 	cx88_shutdown(dev->core);
+@@ -558,6 +559,7 @@ static int cx8802_resume_common(struct pci_dev *pci_dev)
+ {
+ 	struct cx8802_dev *dev = pci_get_drvdata(pci_dev);
+ 	struct cx88_core *core = dev->core;
++	unsigned long flags;
+ 	int err;
+ 
+ 	if (dev->state.disabled) {
+@@ -584,12 +586,12 @@ static int cx8802_resume_common(struct pci_dev *pci_dev)
+ 	cx88_reset(dev->core);
+ 
+ 	/* restart video+vbi capture */
+-	spin_lock(&dev->slock);
++	spin_lock_irqsave(&dev->slock,flags);
+ 	if (!list_empty(&dev->mpegq.active)) {
+ 		printk("%s: resume mpeg\n", core->name);
+ 		cx8802_restart_queue(dev,&dev->mpegq);
+ 	}
+-	spin_unlock(&dev->slock);
++	spin_unlock_irqrestore(&dev->slock,flags);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/media/pci/cx88/cx88-video.c b/drivers/media/pci/cx88/cx88-video.c
+index bc78354..d72b403 100644
+--- a/drivers/media/pci/cx88/cx88-video.c
++++ b/drivers/media/pci/cx88/cx88-video.c
+@@ -1957,9 +1957,10 @@ static int cx8800_suspend(struct pci_dev *pci_dev, pm_message_t state)
+ {
+ 	struct cx8800_dev *dev = pci_get_drvdata(pci_dev);
+ 	struct cx88_core *core = dev->core;
++	unsigned long flags;
+ 
+ 	/* stop video+vbi capture */
+-	spin_lock(&dev->slock);
++	spin_lock_irqsave(&dev->slock,flags);
+ 	if (!list_empty(&dev->vidq.active)) {
+ 		printk("%s/0: suspend video\n", core->name);
+ 		stop_video_dma(dev);
+@@ -1970,7 +1971,7 @@ static int cx8800_suspend(struct pci_dev *pci_dev, pm_message_t state)
+ 		cx8800_stop_vbi_dma(dev);
+ 		del_timer(&dev->vbiq.timeout);
+ 	}
+-	spin_unlock(&dev->slock);
++	spin_unlock_irqrestore(&dev->slock,flags);
+ 
+ 	if (core->ir)
+ 		cx88_ir_stop(core);
+@@ -1989,6 +1990,7 @@ static int cx8800_resume(struct pci_dev *pci_dev)
+ {
+ 	struct cx8800_dev *dev = pci_get_drvdata(pci_dev);
+ 	struct cx88_core *core = dev->core;
++	unsigned long flags;
+ 	int err;
+ 
+ 	if (dev->state.disabled) {
+@@ -2019,7 +2021,7 @@ static int cx8800_resume(struct pci_dev *pci_dev)
+ 	cx_set(MO_PCI_INTMSK, core->pci_irqmask);
+ 
+ 	/* restart video+vbi capture */
+-	spin_lock(&dev->slock);
++	spin_lock_irqsave(&dev->slock,flags);
+ 	if (!list_empty(&dev->vidq.active)) {
+ 		printk("%s/0: resume video\n", core->name);
+ 		restart_video_queue(dev,&dev->vidq);
+@@ -2028,7 +2030,7 @@ static int cx8800_resume(struct pci_dev *pci_dev)
+ 		printk("%s/0: resume vbi\n", core->name);
+ 		cx8800_restart_vbi_queue(dev,&dev->vbiq);
+ 	}
+-	spin_unlock(&dev->slock);
++	spin_unlock_irqrestore(&dev->slock,flags);
+ 
+ 	return 0;
+ }
+-- 
+1.7.9.5
 
-> I suppose in theory it is possible to make drm
-> cope better with dynamically loaded outputs, but I'm not sure that
-> there is any way to do this without breaking userspace which expects
-> that all of the connectors/encoders are present once the drm device is
-> loaded.
-
-I had been thinking about this on and off for a while, but I haven't
-come up with anything concrete. Ideally we could just have some kind of
-event that userspace would listen for, so that new outputs can be
-dynamically added and userspace informed about them. Last time I checked
-most of the helpers assumed that the complete output configuration is
-known when the DRM device is registered, so some major rework will be
-required to efficiently make use of such dynamicity.
-
-Thierry
-
---+QahgC5+KEYLbs62
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRadIDAAoJEN0jrNd/PrOhcRMP/iLNNmh/eHGZvavVqCkDHtV6
-fWFh93PZJYuBgEUD0VqNjFRs8Hq39NpBgYqVdviK9xEiBhl8IRFx5Ml8hfZORG82
-e3Ops6t9fxSwTUCy+cabXR+a1L1CZ2g6kB015xpvjYxLYf6GXTW04455ARY9ghqB
-tvXqpoyGwTdUrMSGUKLv+VCk2diOudSXPlTrQj1JBXdLrAgr650jcYj+omczL2hy
-Av3/7WUMyzemHqiXpOMReBilar5MJeXG3fXyLm0K21NtOs9ZtPktHMh5MtdyBJ/l
-PaPk3v5xZvFBjW4jvw2jqPOZX9T3eqGEWQ1NgfrMpeE4+VH9kMN07PWDYFz/Xy0q
-zM9jMYTsAJUF7lhDxWmcprxK15uuhCPhhStK83cNO3Jajb/O09cEmL4+qhghiDWI
-rjNH8M5KMHv43kfm5Qzvh7zs2wQx+kbjUsR0Q3WaXgN4skny1il0H11ZX8FEBjd8
-OsVw9xQS6QHxPL1QvBgKDeES8SHP4VpXR2bkU3RCE+G+SK4B+kN1yl/q+FEWxxHW
-g3fmlXt3QmX6vwVfJRbP9LJpw+Shg63GVrAoa7jVV1LYoFDe1Ik/NA7j9GPlh9nC
-pz3nUT6M7J03oYO/52hyklx87Y12JWaLfWHyz4m71tndKu4vejjKG4X4/n3ZCmWC
-l68NeDeb5VQR1FjHHnc5
-=IzKU
------END PGP SIGNATURE-----
-
---+QahgC5+KEYLbs62--
