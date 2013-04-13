@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab3DMOyt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 10:54:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3063 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754161Ab3DMOyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 10:54:47 -0400
-Date: Sat, 13 Apr 2013 16:55:38 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling overflow
-Message-ID: <20130413145538.GB11556@redhat.com>
-References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
- <20130326140147.GB2029@redhat.com>
- <1365687946.8824.3.camel@laptop>
- <CA+55aFway4C89fTewKvED4RvFLaNdM-BVtkJ2YChsvracLKiyA@mail.gmail.com>
+	id S1754108Ab3DMPGZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 11:06:25 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:48937 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753825Ab3DMPGY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 11:06:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFway4C89fTewKvED4RvFLaNdM-BVtkJ2YChsvracLKiyA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130412080637.GN6858@8bytes.org>
+References: <1365538384-12426-1-git-send-email-joro@8bytes.org>
+	<CAKocOOP5tMsDLS8Wotu0kMNjSVJpN+pPhE9zj+n9ZKS9EcVR+A@mail.gmail.com>
+	<20130412080637.GN6858@8bytes.org>
+Date: Sat, 13 Apr 2013 23:06:22 +0800
+Message-ID: <CAJtEV7aLa2tKw-B0f0ZNHdP86yxpvUAofs9eVPYCeib6m67f8g@mail.gmail.com>
+Subject: Re: [PATCH 0/9] AMD IOMMU cleanups, fixes and IVRS bug workarounds
+From: Andrew Cooks <acooks@gmail.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Shuah Khan <shuahkhan@gmail.com>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 08:38:37AM -0700, Linus Torvalds wrote:
->     /* We know one of the values has a bit set in the high 32 bits */
->     for (;;) {
->         /* Make sure "stime" is the bigger of stime/rtime */
->         if (rtime > stime) {
->             u64 tmp = stime; stime = rtime; rtime = tmp;
->         }
+On Fri, Apr 12, 2013 at 4:06 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> Hi Shuah,
+>
+> On Wed, Apr 10, 2013 at 10:06:02AM -0600, Shuah Khan wrote:
+>> On Tue, Apr 9, 2013 at 2:12 PM, Joerg Roedel <joro@8bytes.org> wrote:
+>> >  Documentation/kernel-parameters.txt |   14 ++++
+>> >  drivers/iommu/amd_iommu.c           |   79 +++++++-----------
+>> >  drivers/iommu/amd_iommu_init.c      |  151 +++++++++++++++++++++++++++++++----
+>> >  drivers/iommu/amd_iommu_types.h     |    1 +
+>> >  4 files changed, 182 insertions(+), 63 deletions(-)
+>
+>> Reviewed all the patches in this set. No longer have access to test machine. :(
+>
+> Oh, that's sad. You were the only one having a machine wich actually has
+> unity-mapped ranges defined in the BIOS table. The code for those
+> mappings was basically untested before you ran it on that machine.
+>
+What is the machine in question? Maybe someone else has access to one,
+if it's not too exotic.
 
-For most workloads rtime is bigger than stime, so swapping those would
-save some cycles on common cases. Otherwise this algorithm looks great.
-
-Thanks
-Stanislaw
-
+--
+a.
