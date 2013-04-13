@@ -1,76 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3DMVoK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 17:44:10 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:37348 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab3DMVoI (ORCPT
+	id S1754353Ab3DMVp4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 17:45:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64046 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab3DMVpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 17:44:08 -0400
-Date: Sun, 14 Apr 2013 00:44:00 +0300
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>
-To: Jake Edge <jake@lwn.net>
-Cc: Zhang Rui <rui.zhang@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Roberto Oppedisano <roberto.oppedisano@gmail.com>,
-        Salvatore Sisinni <s.sisinni@gmail.com>, auxsvr@gmail.com
-Subject: Re: still in 3.9-rc6 - fan speed at 100% after suspend/resume
- regression
-Message-ID: <20130413214359.GG25821@sci.fi>
-Mail-Followup-To: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <syrjala@sci.fi>,
-	Jake Edge <jake@lwn.net>, Zhang Rui <rui.zhang@intel.com>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Eduardo Valentin <eduardo.valentin@ti.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Roberto Oppedisano <roberto.oppedisano@gmail.com>,
-	Salvatore Sisinni <s.sisinni@gmail.com>, auxsvr@gmail.com
-References: <20130413100221.70c040fa@chukar.edge2.net>
+	Sat, 13 Apr 2013 17:45:54 -0400
+Date: Sat, 13 Apr 2013 23:45:39 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Rob Clark <robdclark@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        arm@kernel.org, linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Latest randconfig build errors
+Message-ID: <20130413214539.GA32613@avionic-0098.mockup.avionic-design.de>
+References: <20130304095136.GI17833@n2100.arm.linux.org.uk>
+ <20130304184649.GO11806@atomide.com>
+ <CAF6AEGv=3453KKS9-8YAgHrxMMbNvLMvt0pz-=qdG+zcd-Trrw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130413100221.70c040fa@chukar.edge2.net>
+In-Reply-To: <CAF6AEGv=3453KKS9-8YAgHrxMMbNvLMvt0pz-=qdG+zcd-Trrw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:YII4PgGEBg3b67CkYmbk8av8xHGWSi8KvTzEBJwXGbS
+ ixm9Xlop066aUl8qA+ieSFqV2NP5McXO48RYohWAlK84EyjvP4
+ +0fr0JhnZmCoE7uJw0AwmtIaGX1jvEINw24zS1znevXGH7Rg3Y
+ a3448ZbeVv2BA2gNpgF+zDJEJXSAyFdDP6cPksdqQ85m3eagu6
+ IaQQ9SaQwMk6U4GQi6x5/289aziR15P9i9Y3/0F18hqVc9R+hG
+ w2xJrT8LC5eRfNFMDRhdaRN5/rTqdy4obKwJ+VQLDGT5gzV3dB
+ MFmhUFEQqIcSP6IY35P+ugSi8Q4TAS0eG6wlNTMxL9kKdBONXX
+ CKCnjvlgiz82ujr06QnEFfR/OJFD+bLE3ftn8LoVU9X8kJAOmy
+ NM+uvV8HTXjlO3dRXrzDv10mKQjaqtYkEud6hfTOPWIIJSu/RP
+ z1Xpz
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 13, 2013 at 10:02:21AM -0600, Jake Edge wrote:
-> Hi Zhang Rui,
-> 
-> The problem reported in https://lkml.org/lkml/2012/12/4/428 (and
-> incorrectly attributed to a suspend patch by me here:
-> https://lkml.org/lkml/2013/4/12/314) still exists in 3.9-rc6, at least
-> for my HP/Compaq 2510p laptop. It appeared that some folks were seeing
-> some improvement with earlier 3.9-rcs (?) but I just tested rc6 and saw
-> substantially the same behavior.  This all works fine in <= 3.6.11.
-> 
-> A brief recap: after resuming, the fan on the laptop spins up to full
-> speed and stays there. "temp6" in "acpitz-virtual-0" (as shown by
-> "sensors") is 100°C and stays there, which is presumably what is making
-> the fan stay on.
 
-My HP Compaq NC6000 exhibits slightly different behaviour. For me the
-reported temp is always accurate but the trip points get out of sync
-with the actual temperature.
+--+QahgC5+KEYLbs62
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-With 3.7 I saw two different kinds of problems coming out of resume.
-In one case the fan stays on until the temp rises high enough to get the
-trip points back into sync. In the other case the fan goes off, and stays
-off even when the temperature rises above the highest active trip point,
-but it does appear to get back into sync when the temp starts to come back
-down. I think the difference might stem from resuming when the laptop has
-cooled down fully vs. when it's still warm.
+On Sat, Apr 13, 2013 at 08:54:22AM -0400, Rob Clark wrote:
+> On Mon, Mar 4, 2013 at 1:46 PM, Tony Lindgren <tony@atomide.com> wrote:
+> >
+> >> drivers/gpu/drm/tilcdc/tilcdc_slave.o:(.data+0x54): multiple definitio=
+n of `__mod_of_device_table'
+> >> drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
+> >> drivers/gpu/drm/tilcdc/tilcdc_panel.o:(.data+0x54): multiple definitio=
+n of `__mod_of_device_table'
+> >> drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
+> >> drivers/gpu/drm/tilcdc/tilcdc_drv.o:(.data+0x184): multiple definition=
+ of `__mod_of_device_table'
+> >> drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
+> >
+> > Rob, I assume you'll do a patch for this one?
+>=20
+>=20
+> oh, I apologize for the late reply, I didn't see this email...
+>=20
+> There is a patch that we can merge to make tilcdc bool instead of
+> tristate[1], which I suppose is ok for a temporary fix.  Although I'm
+> all-ears if someone has a better idea about how to fix this.  The
+> problem is that we have multiple sub-devices for different possible
+> panel drivers, so that depending on DT tables, the correct ones get
+> loaded for the hw.  But they are all built into a single module.
+> Splitting them into multiple modules will be problematic, as panel
+> drivers which are present really need to get probed before the
+> toplevel drm device..
 
-I also just tried 3.9-rc6, and that one appears to behave differently
-to 3.7, but still wrong. There the fan goes off after resume, and comes
-back on as the temperature rises, but it never slows back down after
-that.
+You could look at the Tegra driver. I had to solve a similar problem
+there. What I did is basically parse the DT in the host1x driver and add
+all device nodes which are required by DRM to a list. Later when the
+individual devices are probed they are removed from that list, so that
+when the list becomes empty we are sure that all required devices are
+there and only then call the drm_platform_init() function.
 
-I'll try to collect some more detailed dumps of all three cases.
+This fits very well with how Tegra hardware is designed because host1x
+is the parent for all DRM subdevices (DC, RGB/LVDS, HDMI, ...). So it is
+probed before any of its children and it can easily parse the DT upfront
+and initialize the list of required devices.
 
--- 
-Ville Syrjälä
-syrjala@sci.fi
-http://www.sci.fi/~syrjala/
+> I suppose in theory it is possible to make drm
+> cope better with dynamically loaded outputs, but I'm not sure that
+> there is any way to do this without breaking userspace which expects
+> that all of the connectors/encoders are present once the drm device is
+> loaded.
+
+I had been thinking about this on and off for a while, but I haven't
+come up with anything concrete. Ideally we could just have some kind of
+event that userspace would listen for, so that new outputs can be
+dynamically added and userspace informed about them. Last time I checked
+most of the helpers assumed that the complete output configuration is
+known when the DRM device is registered, so some major rework will be
+required to efficiently make use of such dynamicity.
+
+Thierry
+
+--+QahgC5+KEYLbs62
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRadIDAAoJEN0jrNd/PrOhcRMP/iLNNmh/eHGZvavVqCkDHtV6
+fWFh93PZJYuBgEUD0VqNjFRs8Hq39NpBgYqVdviK9xEiBhl8IRFx5Ml8hfZORG82
+e3Ops6t9fxSwTUCy+cabXR+a1L1CZ2g6kB015xpvjYxLYf6GXTW04455ARY9ghqB
+tvXqpoyGwTdUrMSGUKLv+VCk2diOudSXPlTrQj1JBXdLrAgr650jcYj+omczL2hy
+Av3/7WUMyzemHqiXpOMReBilar5MJeXG3fXyLm0K21NtOs9ZtPktHMh5MtdyBJ/l
+PaPk3v5xZvFBjW4jvw2jqPOZX9T3eqGEWQ1NgfrMpeE4+VH9kMN07PWDYFz/Xy0q
+zM9jMYTsAJUF7lhDxWmcprxK15uuhCPhhStK83cNO3Jajb/O09cEmL4+qhghiDWI
+rjNH8M5KMHv43kfm5Qzvh7zs2wQx+kbjUsR0Q3WaXgN4skny1il0H11ZX8FEBjd8
+OsVw9xQS6QHxPL1QvBgKDeES8SHP4VpXR2bkU3RCE+G+SK4B+kN1yl/q+FEWxxHW
+g3fmlXt3QmX6vwVfJRbP9LJpw+Shg63GVrAoa7jVV1LYoFDe1Ik/NA7j9GPlh9nC
+pz3nUT6M7J03oYO/52hyklx87Y12JWaLfWHyz4m71tndKu4vejjKG4X4/n3ZCmWC
+l68NeDeb5VQR1FjHHnc5
+=IzKU
+-----END PGP SIGNATURE-----
+
+--+QahgC5+KEYLbs62--
