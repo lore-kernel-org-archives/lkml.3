@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753683Ab3DMOHB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 10:07:01 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:38378 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab3DMOHA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 10:07:00 -0400
+	id S1753654Ab3DMOIr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 10:08:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2931 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753311Ab3DMOIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 10:08:46 -0400
+Date: Sat, 13 Apr 2013 16:02:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: [PATCH 1/1] uprobes/perf: Avoid perf_trace_buf_prepare/submit if
+	->perf_events is empty
+Message-ID: <20130413140251.GB32273@redhat.com>
+References: <20130329181545.GA20697@redhat.com> <20130404142522.GC8986@linux.vnet.ibm.com> <515E4938.6090809@hitachi.com> <20130405150110.GA31300@redhat.com> <51628DF8.6030102@hitachi.com> <20130410145818.GA30670@redhat.com> <516692BF.6070904@hitachi.com> <20130411115921.GA27492@redhat.com> <1365801588.9609.95.camel@gandalf.local.home> <20130413140234.GA32273@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1365808754-20762-3-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130412231846.GA20038@linux.vnet.ibm.com>
-	<1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<1365808754-20762-3-git-send-email-paulmck@linux.vnet.ibm.com>
-Date: Sat, 13 Apr 2013 16:06:58 +0200
-Message-ID: <CAFTL4hz9Lf6uPDNR865O3GUK3gEVJy-nSTu8okFJXV3U+KsbDA@mail.gmail.com>
-Subject: Re: [PATCH tip/core/rcu 3/7] rcu: Kick adaptive-ticks CPUs that are
- holding up RCU grace periods
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130413140234.GA32273@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/13 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->
-> Adaptive-ticks CPUs inform RCU when they enter kernel mode, but they do
-> not necessarily turn the scheduler-clock tick back on.  This state of
-> affairs could result in RCU waiting on an adaptive-ticks CPU running
-> for an extended period in kernel mode.  Such a CPU will never run the
-> RCU state machine, and could therefore indefinitely extend the RCU state
-> machine, sooner or later resulting in an OOM condition.
->
-> This patch, inspired by an earlier patch by Frederic Weisbecker, therefore
-> causes RCU's force-quiescent-state processing to check for this condition
-> and to send an IPI to CPUs that remain in that state for too long.
-> "Too long" currently means about three jiffies by default, which is
-> quite some time for a CPU to remain in the kernel without blocking.
-> The rcu_tree.jiffies_till_first_fqs and rcutree.jiffies_till_next_fqs
-> sysfs variables may be used to tune "too long" if needed.
->
-> Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+perf_trace_buf_prepare() + perf_trace_buf_submit() make no sense
+if this task/CPU has no active counters. Change uprobe_perf_print()
+to return if hlist_empty(call->perf_events).
 
-It might be better if I take this patch to get it through
-tip:timers/nohz so that I can keep it in sync with the rest. What do
-you think?
+Note: this is not uprobe-specific, we can change other users too.
 
-Thanks.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/trace/trace_uprobe.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 37ccb72..32494fb 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -820,6 +820,10 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+ 		return;
+ 
+ 	preempt_disable();
++	head = this_cpu_ptr(call->perf_events);
++	if (hlist_empty(head))
++		goto out;
++
+ 	entry = perf_trace_buf_prepare(size, call->event.type, regs, &rctx);
+ 	if (!entry)
+ 		goto out;
+@@ -836,7 +840,6 @@ static void uprobe_perf_print(struct trace_uprobe *tu,
+ 	for (i = 0; i < tu->nr_args; i++)
+ 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
+ 
+-	head = this_cpu_ptr(call->perf_events);
+ 	perf_trace_buf_submit(entry, size, rctx, 0, 1, regs, head, NULL);
+  out:
+ 	preempt_enable();
+-- 
+1.5.5.1
+
+
