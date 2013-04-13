@@ -1,104 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675Ab3DMTxs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 15:53:48 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:42139 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab3DMTxr (ORCPT
+	id S1754053Ab3DMTyM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 15:54:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41603 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab3DMTyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 15:53:47 -0400
-X-Originating-IP: 50.43.39.152
-Date: Sat, 13 Apr 2013 12:53:36 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130413195336.GA14799@leaf>
-References: <20130412231846.GA20038@linux.vnet.ibm.com>
- <1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130412235401.GA8140@jtriplet-mobl1>
- <20130413063804.GV29861@linux.vnet.ibm.com>
- <20130413181800.GA12096@leaf>
- <20130413193425.GY29861@linux.vnet.ibm.com>
+	Sat, 13 Apr 2013 15:54:10 -0400
+Date: Sat, 13 Apr 2013 12:53:44 -0700
+From: tip-bot for Sam Ravnborg <tipbot@zytor.com>
+Message-ID: <tip-87fa05aeb3a5e8e21b1a5510eef6983650eff092@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        sam@ravnborg.org, srivatsa.bhat@linux.vnet.ibm.com, tglx@linutronix.de,
+        davem@davemloft.net
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sam@ravnborg.org, tglx@linutronix.de, srivatsa.bhat@linux.vnet.ibm.com,
+        davem@davemloft.net
+In-Reply-To: <20130411193850.GA2330@merkur.ravnborg.org>
+References: <20130411193850.GA2330@merkur.ravnborg.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:smp/hotplug] sparc: Use generic idle loop
+Git-Commit-ID: 87fa05aeb3a5e8e21b1a5510eef6983650eff092
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130413193425.GY29861@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 13 Apr 2013 12:53:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 13, 2013 at 12:34:25PM -0700, Paul E. McKenney wrote:
-> On Sat, Apr 13, 2013 at 11:18:00AM -0700, Josh Triplett wrote:
-> > On Fri, Apr 12, 2013 at 11:38:04PM -0700, Paul E. McKenney wrote:
-> > > On Fri, Apr 12, 2013 at 04:54:02PM -0700, Josh Triplett wrote:
-> > > > On Fri, Apr 12, 2013 at 04:19:13PM -0700, Paul E. McKenney wrote:
-> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > 
-> > > > > Systems with HZ=100 can have slow bootup times due to the default
-> > > > > three-jiffy delays between quiescent-state forcing attempts.  This
-> > > > > commit therefore auto-tunes the RCU_JIFFIES_TILL_FORCE_QS value based
-> > > > > on the value of HZ.  However, this would break very large systems that
-> > > > > require more time between quiescent-state forcing attempts.  This
-> > > > > commit therefore also ups the default delay by one jiffy for each
-> > > > > 256 CPUs that might be on the system (based off of nr_cpu_ids at
-> > > > > runtime, -not- NR_CPUS at build time).
-> > > > > 
-> > > > > Reported-by: Paul Mackerras <paulus@au1.ibm.com>
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > Something seems very wrong if RCU regularly hits the fqs code during
-> > > > boot; feels like there's some more straightforward solution we're
-> > > > missing.  What causes these CPUs to fall under RCU's scrutiny during
-> > > > boot yet not actually hit the RCU codepaths naturally?
-> > > 
-> > > The problem is that they are running HZ=100, so that RCU will often
-> > > take 30-60 milliseconds per grace period.  At that point, you only
-> > > need 16-30 grace periods to chew up a full second, so it is not all
-> > > that hard to eat up the additional 8-12 seconds of boot time that
-> > > they were seeing.  IIRC, UP boot was costing them 4 seconds.
-> > > 
-> > > For HZ=1000, this would translate to 800ms to 1.2s, which is nowhere
-> > > near as annoying.
-> > 
-> > That raises two questions, though.  First, who calls synchronize_rcu()
-> > repeatedly during boot, and could they call call_rcu() instead to avoid
-> > blocking for an RCU grace period?  Second, why does RCU need 3-6 jiffies
-> > to resolve a grace period during boot?  That suggests that RCU doesn't
-> > actually resolve a grace period until the force-quiescent-state
-> > machinery kicks in, meaning that the normal quiescent-state mechanism
-> > didn't work.
-> 
-> Indeed, converting synchronize_rcu() to call_rcu() might also be
-> helpful.  The reason that RCU often does not resolve grace periods until
-> force_quiescent_state() is that it is often the case during boot that
-> all but one CPU is idle.  RCU tries hard to avoid waking up idle CPUs,
-> so it must scan them.  Scanning is relatively expensive, so there is
-> reason to wait.
+Commit-ID:  87fa05aeb3a5e8e21b1a5510eef6983650eff092
+Gitweb:     http://git.kernel.org/tip/87fa05aeb3a5e8e21b1a5510eef6983650eff092
+Author:     Sam Ravnborg <sam@ravnborg.org>
+AuthorDate: Thu, 11 Apr 2013 21:38:50 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Sat, 13 Apr 2013 21:36:27 +0200
 
-How are those CPUs going idle without first telling RCU that they're
-quiesced?  Seems like, during boot at least, you want RCU to use its
-idle==quiesced logic to proactively note continuously-quiescent states.
-Ideally, you should not hit the FQS code at all during boot.
+sparc: Use generic idle loop
 
-> One thing that could be done would be to scan immediately during boot,
-> and then back off once boot has completed.  Of course, RCU has no idea
-> when boot has completed, but one way to get this effect is to boot
-> with rcutree.jiffies_till_first_fqs=0, and then use sysfs to set it
-> to 3 once boot has completed.
+Add generic cpu_idle support
 
-What do you mean by "boot has completed" here?  The kernel's early
-initialization, the kernel's initialization up to running /sbin/init, or
-userspace initialization up through supporting user login?
+sparc32:
+- replace call to cpu_idle() with cpu_startup_entry()
+- add arch_cpu_idle()
 
-In any case, I don't think it makes sense to do this with FQS.
+sparc64:
+- smp_callin() now include cpu_startup_entry() call so we can
+  skip calling cpu_idle from assembler
+- add arch_cpu_idle() and arch_cpu_idle_dead()
 
-- Josh Triplett
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Reviewed-by: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: torvalds@linux-foundation.org
+Cc: rusty@rustcorp.com.au
+Cc: paulmck@linux.vnet.ibm.com
+Cc: peterz@infradead.org
+Cc: magnus.damm@gmail.com
+Acked-by: David Miller <davem@davemloft.net>
+Link: http://lkml.kernel.org/r/20130411193850.GA2330@merkur.ravnborg.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/sparc/Kconfig                |  1 +
+ arch/sparc/kernel/hvtramp.S       |  3 +--
+ arch/sparc/kernel/process_32.c    | 21 ++++-------------
+ arch/sparc/kernel/process_64.c    | 49 +++++++++++----------------------------
+ arch/sparc/kernel/smp_32.c        |  2 +-
+ arch/sparc/kernel/smp_64.c        |  2 ++
+ arch/sparc/kernel/trampoline_64.S |  3 +--
+ 7 files changed, 24 insertions(+), 57 deletions(-)
+
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 3d361f2..ee5eacc 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -37,6 +37,7 @@ config SPARC
+ 	select GENERIC_SMP_IDLE_THREAD
+ 	select GENERIC_CMOS_UPDATE
+ 	select GENERIC_CLOCKEVENTS
++	select GENERIC_IDLE_LOOP
+ 	select GENERIC_STRNCPY_FROM_USER
+ 	select GENERIC_STRNLEN_USER
+ 	select MODULES_USE_ELF_RELA
+diff --git a/arch/sparc/kernel/hvtramp.S b/arch/sparc/kernel/hvtramp.S
+index 9365432..605c960 100644
+--- a/arch/sparc/kernel/hvtramp.S
++++ b/arch/sparc/kernel/hvtramp.S
+@@ -128,8 +128,7 @@ hv_cpu_startup:
+ 
+ 	call		smp_callin
+ 	 nop
+-	call		cpu_idle
+-	 mov		0, %o0
++
+ 	call		cpu_panic
+ 	 nop
+ 
+diff --git a/arch/sparc/kernel/process_32.c b/arch/sparc/kernel/process_32.c
+index 62eede1..c852410 100644
+--- a/arch/sparc/kernel/process_32.c
++++ b/arch/sparc/kernel/process_32.c
+@@ -64,23 +64,12 @@ extern void fpsave(unsigned long *, unsigned long *, void *, unsigned long *);
+ struct task_struct *last_task_used_math = NULL;
+ struct thread_info *current_set[NR_CPUS];
+ 
+-/*
+- * the idle loop on a Sparc... ;)
+- */
+-void cpu_idle(void)
++/* Idle loop support. */
++void arch_cpu_idle(void)
+ {
+-	set_thread_flag(TIF_POLLING_NRFLAG);
+-
+-	/* endless idle loop with no priority at all */
+-	for (;;) {
+-		while (!need_resched()) {
+-			if (sparc_idle)
+-				(*sparc_idle)();
+-			else
+-				cpu_relax();
+-		}
+-		schedule_preempt_disabled();
+-	}
++	if (sparc_idle)
++		(*sparc_idle)();
++	local_irq_enable();
+ }
+ 
+ /* XXX cli/sti -> local_irq_xxx here, check this works once SMP is fixed. */
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index cdb80b2..9fbf0d1 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -52,20 +52,17 @@
+ 
+ #include "kstack.h"
+ 
+-static void sparc64_yield(int cpu)
++/* Idle loop support on sparc64. */
++void arch_cpu_idle(void)
+ {
+ 	if (tlb_type != hypervisor) {
+ 		touch_nmi_watchdog();
+-		return;
+-	}
+-
+-	clear_thread_flag(TIF_POLLING_NRFLAG);
+-	smp_mb__after_clear_bit();
+-
+-	while (!need_resched() && !cpu_is_offline(cpu)) {
++	} else {
+ 		unsigned long pstate;
+ 
+-		/* Disable interrupts. */
++                /* The sun4v sleeping code requires that we have PSTATE.IE cleared over
++                 * the cpu sleep hypervisor call.
++                 */
+ 		__asm__ __volatile__(
+ 			"rdpr %%pstate, %0\n\t"
+ 			"andn %0, %1, %0\n\t"
+@@ -73,7 +70,7 @@ static void sparc64_yield(int cpu)
+ 			: "=&r" (pstate)
+ 			: "i" (PSTATE_IE));
+ 
+-		if (!need_resched() && !cpu_is_offline(cpu))
++		if (!need_resched() && !cpu_is_offline(smp_processor_id()))
+ 			sun4v_cpu_yield();
+ 
+ 		/* Re-enable interrupts. */
+@@ -84,36 +81,16 @@ static void sparc64_yield(int cpu)
+ 			: "=&r" (pstate)
+ 			: "i" (PSTATE_IE));
+ 	}
+-
+-	set_thread_flag(TIF_POLLING_NRFLAG);
++	local_irq_enable();
+ }
+ 
+-/* The idle loop on sparc64. */
+-void cpu_idle(void)
+-{
+-	int cpu = smp_processor_id();
+-
+-	set_thread_flag(TIF_POLLING_NRFLAG);
+-
+-	while(1) {
+-		tick_nohz_idle_enter();
+-		rcu_idle_enter();
+-
+-		while (!need_resched() && !cpu_is_offline(cpu))
+-			sparc64_yield(cpu);
+-
+-		rcu_idle_exit();
+-		tick_nohz_idle_exit();
+-
+ #ifdef CONFIG_HOTPLUG_CPU
+-		if (cpu_is_offline(cpu)) {
+-			sched_preempt_enable_no_resched();
+-			cpu_play_dead();
+-		}
+-#endif
+-		schedule_preempt_disabled();
+-	}
++void arch_cpu_idle_dead()
++{
++	sched_preempt_enable_no_resched();
++	cpu_play_dead();
+ }
++#endif
+ 
+ #ifdef CONFIG_COMPAT
+ static void show_regwindow32(struct pt_regs *regs)
+diff --git a/arch/sparc/kernel/smp_32.c b/arch/sparc/kernel/smp_32.c
+index 9e7e6d7..e3f2b81 100644
+--- a/arch/sparc/kernel/smp_32.c
++++ b/arch/sparc/kernel/smp_32.c
+@@ -369,7 +369,7 @@ void __cpuinit sparc_start_secondary(void *arg)
+ 	local_irq_enable();
+ 
+ 	wmb();
+-	cpu_idle();
++	cpu_startup_entry(CPUHP_ONLINE);
+ 
+ 	/* We should never reach here! */
+ 	BUG();
+diff --git a/arch/sparc/kernel/smp_64.c b/arch/sparc/kernel/smp_64.c
+index 537eb66..c025ffc 100644
+--- a/arch/sparc/kernel/smp_64.c
++++ b/arch/sparc/kernel/smp_64.c
+@@ -127,6 +127,8 @@ void __cpuinit smp_callin(void)
+ 
+ 	/* idle thread is expected to have preempt disabled */
+ 	preempt_disable();
++
++	cpu_startup_entry(CPUHP_ONLINE);
+ }
+ 
+ void cpu_panic(void)
+diff --git a/arch/sparc/kernel/trampoline_64.S b/arch/sparc/kernel/trampoline_64.S
+index da1b781..2e973a2 100644
+--- a/arch/sparc/kernel/trampoline_64.S
++++ b/arch/sparc/kernel/trampoline_64.S
+@@ -407,8 +407,7 @@ after_lock_tlb:
+ 
+ 	call		smp_callin
+ 	 nop
+-	call		cpu_idle
+-	 mov		0, %o0
++
+ 	call		cpu_panic
+ 	 nop
+ 1:	b,a,pt		%xcc, 1b
