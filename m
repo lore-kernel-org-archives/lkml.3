@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967514Ab3DRJgj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:36:39 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36933 "EHLO
+	id S967526Ab3DRJhX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:37:23 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36912 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967359Ab3DRJfH (ORCPT
+	with ESMTP id S967239Ab3DRJeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:35:07 -0400
+	Thu, 18 Apr 2013 05:34:50 -0400
 From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: [PATCH v4 5/8] vmcore: copy ELF note segments in the 2nd kernel per
- page vmcore objects
+Subject: [PATCH v4 2/8] vmcore: clean up read_vmcore()
 To: vgoyal@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org
 Cc: cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
         kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
         zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com
-Date: Sat, 13 Apr 2013 09:21:33 +0900
-Message-ID: <20130413002133.18245.91528.stgit@localhost6.localdomain6>
+Date: Sat, 13 Apr 2013 09:21:16 +0900
+Message-ID: <20130413002116.18245.52071.stgit@localhost6.localdomain6>
 In-Reply-To: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
 References: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -26,143 +25,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copy ELF note segmnets in buffer on the 2nd kernel and the buffer is
-allocated on page boundary for the purpose of mmap.
+Rewrite part of read_vmcore() reading objects in vmcore_list in the
+same way as part reading ELF headers, by which some duplicated and
+redundunt codes are removed.
 
-The reason why we don't allocate ELF note segments in the 1st kernel
-(old memory) on page boundary is to keep backward compatibility for
-old kernels, and one more reason is that if doing so, we waste not a
-little memory due to round-up operation to fit the memory to page
-boundary since most of the buffers are in per-cpu area.
-
-ELF notes are per-cpu, so total size of ELF note segments increases
-according to the number of CPUs. The current maximum number of CPUs on
-x86_64 is 5192, and there's already system with 4192 CPUs in SGI,
-where total size amounts to 1MB. This can be larger in the neare
-futrue or possibly even now on another architecture. Thus, to avoid
-the case where memory allocation for large block fails, we allocate
-vmcore objects per pages.
-
-Note that we cannot use remap_vmalloc_range here since the vma passed
-to it as the first argument needs to cover a full range of memory. We
-need to be able to specify where to map in pages, but we cannot do it
-by remap_vmalloc_range.
+Later patch will introduce a flag for vmcore objects to represent
+whether a given memory associated with the vmcore object resides in
+the 1st kernel (old memory) or the 2nd kernel. Then, this function
+will be modified so as to decide where to read according to the flag
+of a given vmcore object. This cleanup will also be useful to make the
+change clearer.
 
 Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
 ---
 
- fs/proc/vmcore.c |   71 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 69 insertions(+), 2 deletions(-)
+ fs/proc/vmcore.c |   68 ++++++++++++++++--------------------------------------
+ 1 files changed, 20 insertions(+), 48 deletions(-)
 
 diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 131d8fa..e27da40 100644
+index cfbd1f7..7e7c7ca 100644
 --- a/fs/proc/vmcore.c
 +++ b/fs/proc/vmcore.c
-@@ -200,7 +200,62 @@ static int __init vmcore_add(struct list_head *vc_list, u64 paddr, u64 size)
- 	return 0;
+@@ -118,27 +118,6 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
+ 	return read;
  }
  
-+struct vmcore_per_unit_state {
-+	struct vmcore *last;
-+	u64 pos;
-+	u64 unit;
-+	struct list_head *vc_list;
-+};
-+
-+/*
-+ * Assumptions:
-+ * - given physical addresses are all exclusive; don't check exclusiveness.
-+ */
-+static int __init vmcore_add_per_unit(struct vmcore_per_unit_state *state,
-+				      u64 paddr, u64 size)
-+{
-+	u64 offset = paddr, remaining_bytes = size;
-+	int rc;
-+
-+	while (remaining_bytes > 0) {
-+		u64 read_bytes;
-+
-+		BUG_ON(state->pos > state->unit);
-+
-+		if (!state->last || state->pos == state->unit) {
-+			struct vmcore *new;
-+
-+			new = get_new_element();
-+			if (!new)
-+				return -ENOMEM;
-+			new->flag = MEM_TYPE_CURRENT_KERNEL;
-+			new->size = PAGE_SIZE;
-+			new->buf = (char *)get_zeroed_page(GFP_KERNEL);
-+			if (!new->buf) {
-+				kfree(new);
-+				return -ENOMEM;
-+			}
-+			list_add_tail(&new->list, state->vc_list);
-+			state->last = new;
-+			state->pos = 0;
-+		}
-+
-+		read_bytes = min(remaining_bytes, state->unit - state->pos);
-+
-+		rc = read_from_oldmem(state->last->buf + state->pos, read_bytes,
-+				      &offset, 0);
-+		if (rc < 0)
-+			return rc;
-+
-+		state->pos += read_bytes;
-+		remaining_bytes -= read_bytes;
-+	}
-+
-+	return 0;
-+}
-+
- static u64 __init get_vmcore_size_elf64(char *elfptr, size_t elfsz)
-+
+-/* Maps vmcore file offset to respective physical address in memroy. */
+-static u64 map_offset_to_paddr(loff_t offset, struct list_head *vc_list,
+-					struct vmcore **m_ptr)
+-{
+-	struct vmcore *m;
+-	u64 paddr;
+-
+-	list_for_each_entry(m, vc_list, list) {
+-		u64 start, end;
+-		start = m->offset;
+-		end = m->offset + m->size - 1;
+-		if (offset >= start && offset <= end) {
+-			paddr = m->paddr + offset - start;
+-			*m_ptr = m;
+-			return paddr;
+-		}
+-	}
+-	*m_ptr = NULL;
+-	return 0;
+-}
+-
+ /* Read from the ELF header and then the crash dump. On error, negative value is
+  * returned otherwise number of bytes read are returned.
+  */
+@@ -147,8 +126,8 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
  {
- 	int i;
- 	u64 size;
-@@ -244,6 +299,12 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
- 	Elf64_Phdr phdr, *phdr_ptr;
- 	Elf64_Nhdr *nhdr_ptr;
- 	u64 phdr_sz = 0, note_off;
-+	struct vmcore_per_unit_state state = {
-+		.last = NULL,
-+		.pos = 0,
-+		.unit = PAGE_SIZE,
-+		.vc_list = vc_list,
-+	};
+ 	ssize_t acc = 0, tmp;
+ 	size_t tsz;
+-	u64 start, nr_bytes;
+-	struct vmcore *curr_m = NULL;
++	u64 start;
++	struct vmcore *m = NULL;
  
- 	ehdr_ptr = (Elf64_Ehdr *)elfptr;
- 	phdr_ptr = (Elf64_Phdr*)(elfptr + sizeof(Elf64_Ehdr));
-@@ -276,7 +337,7 @@ static int __init merge_note_headers_elf64(char *elfptr, size_t *elfsz,
- 		}
+ 	if (buflen == 0 || *fpos >= vmcore_size)
+ 		return 0;
+@@ -174,33 +153,26 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 			return acc;
+ 	}
  
- 		/* Add this contiguous chunk of notes section to vmcore list.*/
--		if (vmcore_add(vc_list, phdr_ptr->p_offset, real_sz)) {
-+		if (vmcore_add_per_unit(&state, phdr_ptr->p_offset, real_sz)) {
- 			kfree(notes_section);
- 			return -ENOMEM;
+-	start = map_offset_to_paddr(*fpos, &vmcore_list, &curr_m);
+-	if (!curr_m)
+-        	return -EINVAL;
+-
+-	while (buflen) {
+-		tsz = min_t(size_t, buflen, PAGE_SIZE - (start & ~PAGE_MASK));
+-
+-		/* Calculate left bytes in current memory segment. */
+-		nr_bytes = (curr_m->size - (start - curr_m->paddr));
+-		if (tsz > nr_bytes)
+-			tsz = nr_bytes;
+-
+-		tmp = read_from_oldmem(buffer, tsz, &start, 1);
+-		if (tmp < 0)
+-			return tmp;
+-		buflen -= tsz;
+-		*fpos += tsz;
+-		buffer += tsz;
+-		acc += tsz;
+-		if (start >= (curr_m->paddr + curr_m->size)) {
+-			if (curr_m->list.next == &vmcore_list)
+-				return acc;	/*EOF*/
+-			curr_m = list_entry(curr_m->list.next,
+-						struct vmcore, list);
+-			start = curr_m->paddr;
++	list_for_each_entry(m, &vmcore_list, list) {
++		if (*fpos < m->offset + m->size) {
++			tsz = m->offset + m->size - *fpos;
++			if (buflen < tsz)
++				tsz = buflen;
++			start = m->paddr + *fpos - m->offset;
++			tmp = read_from_oldmem(buffer, tsz, &start, 1);
++			if (tmp < 0)
++				return tmp;
++			buflen -= tsz;
++			*fpos += tsz;
++			buffer += tsz;
++			acc += tsz;
++
++			/* leave now if filled buffer already */
++			if (buflen == 0)
++				return acc;
  		}
-@@ -323,6 +384,12 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
- 	Elf32_Phdr phdr, *phdr_ptr;
- 	Elf32_Nhdr *nhdr_ptr;
- 	u64 phdr_sz = 0, note_off;
-+	struct vmcore_per_unit_state state = {
-+		.last = NULL,
-+		.pos = 0,
-+		.unit = PAGE_SIZE,
-+		.vc_list = vc_list,
-+	};
+ 	}
++
+ 	return acc;
+ }
  
- 	ehdr_ptr = (Elf32_Ehdr *)elfptr;
- 	phdr_ptr = (Elf32_Phdr*)(elfptr + sizeof(Elf32_Ehdr));
-@@ -355,7 +422,7 @@ static int __init merge_note_headers_elf32(char *elfptr, size_t *elfsz,
- 		}
- 
- 		/* Add this contiguous chunk of notes section to vmcore list.*/
--		if (vmcore_add(vc_list, phdr_ptr->p_offset, real_sz)) {
-+		if (vmcore_add_per_unit(&state, phdr_ptr->p_offset, real_sz)) {
- 			kfree(notes_section);
- 			return -ENOMEM;
- 		}
 
