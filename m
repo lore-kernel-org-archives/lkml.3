@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab3DMOSq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 10:18:46 -0400
-Received: from dkim2.fusionio.com ([66.114.96.54]:53460 "EHLO
-	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753613Ab3DMOSo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 10:18:44 -0400
-X-ASG-Debug-ID: 1365862723-03d6a52ac02855a0001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Content-Type: text/plain; charset="utf-8"
+	id S1754193Ab3DMOTb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 10:19:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15103 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753518Ab3DMOTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 10:19:30 -0400
+Date: Sat, 13 Apr 2013 16:02:35 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
+Subject: [PATCH 0/1] uprobes/perf: Avoid perf_trace_buf_prepare/submit if
+	->perf_events is empty
+Message-ID: <20130413140234.GA32273@redhat.com>
+References: <20130329181520.GA20670@redhat.com> <20130329181545.GA20697@redhat.com> <20130404142522.GC8986@linux.vnet.ibm.com> <515E4938.6090809@hitachi.com> <20130405150110.GA31300@redhat.com> <51628DF8.6030102@hitachi.com> <20130410145818.GA30670@redhat.com> <516692BF.6070904@hitachi.com> <20130411115921.GA27492@redhat.com> <1365801588.9609.95.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>
-Message-ID: <20130413141841.12886.91603@localhost.localdomain>
-From: Chris Mason <chris.mason@fusionio.com>
-User-Agent: alot/0.3.4
-Subject: [GIT PULL] One more btrfs
-Date: Sat, 13 Apr 2013 10:18:41 -0400
-X-ASG-Orig-Subj: [GIT PULL] One more btrfs
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1365862723
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.128005
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365801588.9609.95.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus
+On 04/12, Steven Rostedt wrote:
+>
+> On Thu, 2013-04-11 at 13:59 +0200, Oleg Nesterov wrote:
+>
+> > > If so, we can do same thing also on trace_events.
+> > > (perf_trace_##call in include/trace/ftrace.h)
+> >
+> > Yes, yes, this is not kprobe-specific. It seems that more users of
+> > perf_trace_buf_submit() could be changed the same way.
+> >
+>
+> Oleg,
+>
+> Can you make the necessary changes elsewhere? I talked with Frederic on
+> IRC and he's a bit busy with other work. But he did say he would review
+> changes that you make.
 
-My for-linus branch:
+Sure, will be happy to do.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
+But can I change uprobes/perf first? I have a lot more pending changes in
+trace_uprobe.c which I am going to ask to pull, I'd like to add this simple
+patch to "oleg/misc uprobes/core" if I have your ack.
 
-Has a recent fix from Josef for our tree log replay code.  It fixes
-problems where the inode counter for the number of bytes in the file
-wasn't getting updated properly during fsync replay.
+Oleg.
 
-The commit did get rebased this morning, but it was only to clean up the
-subject line.  The code hasn't changed.
-
-Josef Bacik (1) commits (+42/-6):
-    Btrfs: make sure nbytes are right after log replay
-
-Total: (1) commits (+42/-6)
-
- fs/btrfs/tree-log.c | 48 ++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 42 insertions(+), 6 deletions(-)
