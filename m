@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753790Ab3DMOKk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 10:10:40 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:64918 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab3DMOKi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 10:10:38 -0400
-MIME-Version: 1.0
-X-Originating-IP: [114.39.107.246]
-In-Reply-To: <1365424274.21989.2.camel@phoenix>
-References: <1365424274.21989.2.camel@phoenix>
-Date: Sat, 13 Apr 2013 22:10:38 +0800
-Message-ID: <CAFRkauBC3mo3GiVeFJ-yUJscybpHje_94rC6oXZ1O5mm8M=9tA@mail.gmail.com>
-Subject: Re: [PATCH] regulator: ab8500: Fix get_mode for shared mode regulators
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753912Ab3DMONH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 10:13:07 -0400
+Received: from arrakis.dune.hu ([78.24.191.176]:52649 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753415Ab3DMONF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 10:13:05 -0400
+From: Jonas Gorski <jogo@openwrt.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Subject: [PATCH] checkpatch: whitelist SUPPORTED_*/ADVERTISED_* defines from ethtool.h
+Date: Sat, 13 Apr 2013 16:10:57 +0200
+Message-Id: <1365862257-31151-1-git-send-email-jogo@openwrt.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+Don't complain about camelcase when using SUPPORTED_*/ADVERTISED_*
+defines, they are part of the user api so can't be (easily) fixed.
 
-Hi Lee,
-Can you review this patch.
-I think this one is a bug fix.
+Removes false positives in e.g. ethernet drivers like:
 
-Regards,
-Axel
+WARNING: Avoid CamelCase: <SUPPORTED_Autoneg>
++                                     SUPPORTED_Autoneg |
 
-2013/4/8 Axel Lin <axel.lin@ingics.com>:
-> The special handling code for getting shared mode status is wrong
-> because it needs to check info->shared_mode->lp_mode_req for
-> both regulators that shared the same mode register.
->
-> In set_mode(), current code ensures we won't set mode to REGULATOR_MODE_IDLE
-> if only one of the regulator requests to set idle.
->
-> In get_mode(), we can just remove the special handling code for shared mode.
-> Read the register value always returns correct status no matter the regulator
-> has shared mode register or not.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/regulator/ab8500.c |    8 --------
->  1 file changed, 8 deletions(-)
->
-> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-> index 9ebd131..acdffc5 100644
-> --- a/drivers/regulator/ab8500.c
-> +++ b/drivers/regulator/ab8500.c
-> @@ -456,14 +456,6 @@ static unsigned int ab8500_regulator_get_mode(struct regulator_dev *rdev)
->                 return -EINVAL;
->         }
->
-> -       /* Need special handling for shared mode */
-> -       if (info->shared_mode) {
-> -               if (info->shared_mode->lp_mode_req)
-> -                       return REGULATOR_MODE_IDLE;
-> -               else
-> -                       return REGULATOR_MODE_NORMAL;
-> -       }
-> -
->         if (info->mode_mask) {
->                 /* Dedicated register for handling mode */
->                 ret = abx500_get_register_interruptible(info->dev,
-> --
-> 1.7.10.4
->
->
->
+Signed-off-by: Jonas Gorski <jogo@openwrt.org>
+---
+ scripts/checkpatch.pl |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b28cc38..349559a4 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2931,6 +2931,7 @@ sub process {
+ 			if ($var !~ /$Constant/ &&
+ 			    $var =~ /[A-Z]\w*[a-z]|[a-z]\w*[A-Z]/ &&
+ 			    $var !~ /"^(?:Clear|Set|TestClear|TestSet|)Page[A-Z]/ &&
++			    $var !~ /^(?:SUPPORTED|ADVERTISED)_\w*/ &&
+ 			    !defined $camelcase{$var}) {
+ 				$camelcase{$var} = 1;
+ 				WARN("CAMELCASE",
+-- 
+1.7.10.4
+
