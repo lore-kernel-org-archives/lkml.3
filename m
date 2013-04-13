@@ -1,201 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab3DMKHW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 06:07:22 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:60086 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482Ab3DMKHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 06:07:20 -0400
-Date: Sat, 13 Apr 2013 15:31:13 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Anton Arapov <anton@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Josh Stone <jistone@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        adrian.m.negreanu@intel.com, Torsten.Polle@gmx.de
-Subject: Re: [PATCH v1 6/9] uretprobes: Return probe exit, invoke handlers
-Message-ID: <20130413100113.GC11721@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1365004839-21982-1-git-send-email-anton@redhat.com>
- <1365004839-21982-7-git-send-email-anton@redhat.com>
- <20130407105308.GA2899@linux.vnet.ibm.com>
- <20130409140530.GA20577@redhat.com>
- <20130409201302.GA30570@redhat.com>
+	id S1752928Ab3DMKXe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 06:23:34 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62557 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab3DMKXc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 06:23:32 -0400
+Date: Sat, 13 Apr 2013 12:23:19 +0200
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Jay Agarwal <jagarwal@nvidia.com>, Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Krishna Thota <kthota@nvidia.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "olof@lixom.net" <olof@lixom.net>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Juha Tukkinen <jtukkinen@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Hiroshi Doyu <hdoyu@nvidia.com>
+Subject: Re: [PATCH 1/3] ARM: tegra: pcie: Add tegra3 support
+Message-ID: <20130413102319.GA30758@avionic-0098.mockup.avionic-design.de>
+References: <1365435688-4179-1-git-send-email-jagarwal@nvidia.com>
+ <51630852.1000107@wwwdotorg.org>
+ <C79B248886DD134989C8FF6B096A91AB91B36FB2FD@BGMAIL01.nvidia.com>
+ <51682975.1080302@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fUYQa+Pmc3FrFX/N"
 Content-Disposition: inline
-In-Reply-To: <20130409201302.GA30570@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041310-9360-0000-0000-000011B9769A
+In-Reply-To: <51682975.1080302@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:eVZ55WhWVA9vBNaMKXwzLAj7HiIlChruRely5gnXCIU
+ 5ORWZa7t0sW1Ia+eqHADL6V//UeDvt5LdTRszD2plOoiXXAJaw
+ 1JxD8q5QrA8oJx4E9OmEMEbuhpHt8BingkHUPfQ39MLgY9g4lT
+ 7Ta+8X50lar/pFW4EqRBf1v7sqr3b/tqZekFJ2yCOdXJrlAdPr
+ qW1jvTA15a3/Hx5N+FClZUVN/yIPZjwF4WtcUqZsGFbaDyMG15
+ j83qIsGL5sjj8mv+OPoNJ/iLt8YmrbmawWrvtHoytBi5XmhOor
+ SinkWJcCbC9uxFThXmO098RQcHgWBP2jg3kJqdDVRtkT5NGYU6
+ yWggUry1Ytcvhv9P5fbTy0CIF0/q0XC+97vCDzK8iSSW2QKNE5
+ JwIZtTUUCcv1UTKp0npxNqnEDatEf9/LDY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2013-04-09 22:13:02]:
 
-> On 04/09, Oleg Nesterov wrote:
-> >
-> > > Should we a check here before using top most ri.
-> > > What if the application had done a longjmp and the trampoline he hit
-> > > corresponds to something thats below in the stack?
-> > >
-> > > Not sure if this what you meant by leaking return instances in your next
-> > > patch.
-> >
-> > Oh yes, this should be documented more explicitly in the changelog of
-> > this patch or 7/9 (which tries to document the limitations but should
-> > be more clear).
-> >
-> > Currently we do not support longjmp() and we assume that the probed
-> > function should do the regular return. We should certainly try to improve
-> > this, but I really think that this should go into the next series.
-> >
-> > Because this is nontrivial, needs more discussion, and I'm afraid should
-> > be per-arch. Even on x86 (which can check the stack) this is not simple,
-> > in general we can't know how to check that (to simplify) the first frame
-> > is already invalid. Just for example, we could check regs->sp and detect
-> > that longjmp() was called but sigaltstack() can easily fool this logic.
-> >
+--fUYQa+Pmc3FrFX/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, its perfectly fine to keep this logic for the next patchset.
-Can you tell me why sigaltstack() can fool us if we rely on regs->sp.
-I should admit that I am not too familiar with sigaltstack.
+On Fri, Apr 12, 2013 at 09:34:13AM -0600, Stephen Warren wrote:
+> On 04/12/2013 08:58 AM, Jay Agarwal wrote:
+> >>>  	err =3D regulator_disable(pcie->pex_clk_supply);
+> >>>  	if (err < 0)
+> >>> -		dev_err(pcie->dev, "failed to disable pex-clk regulator:
+> >> %d\n",
+> >>> +		dev_warn(pcie->dev, "failed to disable pex-clk regulator:
+> >> %d\n",
+> >>>  			err);
+> >>>
+> >>>  	err =3D regulator_disable(pcie->vdd_supply);
+> >>>  	if (err < 0)
+> >>> -		dev_err(pcie->dev, "failed to disable VDD regulator: %d\n",
+> >>> +		dev_warn(pcie->dev, "failed to disable VDD regulator:
+> >> %d\n",
+> >>>  			err);
+> >>
+> >> Please explain why that change is correct. If the regulators only exis=
+t on
+> >> Tegra20, please represent that fact in the SoC data. Regulators must a=
+lways
+> >> exist, so enable/disable should never fail due to missing regulators. =
+Actual
+> >> run-time failures seem like something that really is an error.
+> >>
+> > [>] These regulators are needed for both tegra20 & tegra30. Since we ar=
+e not returning error here, so changed to dev_warn.
+>=20
+> If the regulators are required, then any failure to operate them should
+> be an error, hence dev_err() seems correct.
+>=20
+> As to why the code doesn't actually return an error? I'm not sure.
+> Perhaps that should be fixed with a separate patch, although I don't
+> recall exactly where in the code the above excerpt is; if it's in
+> remove(), then continuing on without returning an error would be
+> appropriate.
 
-> > Or we can change prepare_uretprobe() to alloc the new slot for the
-> > trampoline every time (and mark it as "trampoline" for handle_swbp() of
-> > course), this way we can easily discard the invalid ret_instance's in
-> > handler_uretprobe(). But this doesn't solve all problems and this is
-> > not really nice/simple.
-> >
-> > In short. I think we should document the limitations more clearly, push
-> > this functionality, then try to improve things. Do you agree?
-> 
-> IOW. Will you agree with v2 below?
-> 
-> Changes:
-> 
-> 	- s/handler_uretprobe/handle_trampoline/
-> 
-> 	- s/handler_uretprobe_chain/handle_uretprobe_chain/
-> 
-> 	- add the TODO: comments into the changelog and
-> 	  handle_trampoline().
-> 
-> 
-> -------------------------------------------------------------------------------
-> [PATCH v2] uretprobes: Return probe exit, invoke handlers
-> 
-> Uretprobe handlers are invoked when the trampoline is hit, on completion
-> the trampoline is replaced with the saved return address and the uretprobe
-> instance deleted.
-> 
-> TODO: handle_trampoline() assumes that ->return_instances is always valid.
-> We should teach it to handle longjmp() which can invalidate the pending
-> return_instance's. This is nontrivial, we will try to do this in a separate
-> series.
-> 
-> Signed-off-by: Anton Arapov <anton@redhat.com>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+That code is from tegra_pcie_power_off(), which is called only during
+error cleanup or from tegra_pcie_put_resources() which in turn is also
+only called in cleanup paths or during module/device removal. Disabling
+as many regulators as possible is still what we want in that case, so
+returning an error prematurely might leave more regulators turned on
+than necessary.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Thierry
 
-> ---
->  kernel/events/uprobes.c |   65 ++++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 64 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index e352e18..b9c4325 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1633,6 +1633,62 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
->  	up_read(&uprobe->register_rwsem);
->  }
-> 
-> +static void
-> +handle_uretprobe_chain(struct return_instance *ri, struct pt_regs *regs)
-> +{
-> +	struct uprobe *uprobe = ri->uprobe;
-> +	struct uprobe_consumer *uc;
-> +
-> +	down_read(&uprobe->register_rwsem);
-> +	for (uc = uprobe->consumers; uc; uc = uc->next) {
-> +		if (uc->ret_handler)
-> +			uc->ret_handler(uc, ri->func, regs);
-> +	}
-> +	up_read(&uprobe->register_rwsem);
-> +}
-> +
-> +static bool handle_trampoline(struct pt_regs *regs)
-> +{
-> +	struct uprobe_task *utask;
-> +	struct return_instance *ri, *tmp;
-> +	bool chained;
-> +
-> +	utask = current->utask;
-> +	if (!utask)
-> +		return false;
-> +
-> +	ri = utask->return_instances;
-> +	if (!ri)
-> +		return false;
-> +
-> +	/*
-> +	 * TODO: we should throw out return_instance's invalidated by
-> +	 * longjmp(), currently we assume that the probed function always
-> +	 * returns.
-> +	 */
-> +	instruction_pointer_set(regs, ri->orig_ret_vaddr);
-> +
-> +	for (;;) {
-> +		handle_uretprobe_chain(ri, regs);
-> +
-> +		chained = ri->chained;
-> +		put_uprobe(ri->uprobe);
-> +
-> +		tmp = ri;
-> +		ri = ri->next;
-> +		kfree(tmp);
-> +
-> +		if (!chained)
-> +			break;
-> +
-> +		BUG_ON(!ri);
-> +	}
-> +
-> +	utask->return_instances = ri;
-> +
-> +	return true;
-> +}
-> +
->  /*
->   * Run handler and ask thread to singlestep.
->   * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
-> @@ -1644,8 +1700,15 @@ static void handle_swbp(struct pt_regs *regs)
->  	int uninitialized_var(is_swbp);
-> 
->  	bp_vaddr = uprobe_get_swbp_addr(regs);
-> -	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
-> +	if (bp_vaddr == get_trampoline_vaddr()) {
-> +		if (handle_trampoline(regs))
-> +			return;
-> 
-> +		pr_warn("uprobe: unable to handle uretprobe pid/tgid=%d/%d\n",
-> +						current->pid, current->tgid);
-> +	}
-> +
-> +	uprobe = find_active_uprobe(bp_vaddr, &is_swbp);
->  	if (!uprobe) {
->  		if (is_swbp > 0) {
->  			/* No matching uprobe; signal SIGTRAP. */
-> -- 
-> 1.5.5.1
-> 
-> 
+--fUYQa+Pmc3FrFX/N
+Content-Type: application/pgp-signature
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
+iQIcBAEBAgAGBQJRaTIXAAoJEN0jrNd/PrOhIKcP/1dW4nFdFzAQqxKDGXy3ig+W
+ZWCpjQ/K6k8pw6DDoWdTTOfnP+VF/1WWzyPDSeUzbCmZgUxCBKKeANh6yxqtL3TV
+EWQi/rLBMhMLgBdo2VSg2AqVIE3mhP7XdJ2UZMt15qxkER46t+GvQr9pW0OeCxsp
+4nQPwX1WlsCAjov7/ZZiIxwBEjH65Mb2GweME/MU9jMBN7AmsyKgx8+l7QZuyj5B
+ps4RkbSJ9YjNLiHgGmu/ivZaDowsplWuI0vb5FnaAxMVS1dqW5yqv+W5D+Z4zSd7
+O3DspYgHkqAP3WQiFiams+NWlBCyKkKLjLnriQ0s7x0/mRQABJF+WPtB6af5PDC/
+njR1gi96tgDigQQZZxPtuMlFFr8Vkp3H99ZsX+EIVKl/i0NpNAYc6h1LxbNITnES
+5g2z4WhgPDeVwiv7PnS6d5WtwIsEeRYQK0WT04cf7jffvLgeUi7FVTgP0bkrd1BP
+d0m0TSsmO7sI4qzeELaO0wrdwXYg6TV6NB0pf3RDm3dApH/n4Ope02iWE16rP1Dz
+7ZdJvmT5Sg4raoCZab9gm7N5KWnue9Tm3f2tgB6bLbDRis1q1dkHMmFXUDy99FKS
+ugr7mzsTD0W6bI9VZhjrVyT8wRw1LHp9oi6ahmSMMzD9Z5HpisK3Ft409JktZtV6
+X70BkMHKl9nPEl7DRoiG
+=yLzJ
+-----END PGP SIGNATURE-----
+
+--fUYQa+Pmc3FrFX/N--
