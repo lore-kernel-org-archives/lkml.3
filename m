@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751790Ab3DMEsr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 00:48:47 -0400
-Received: from plane.gmane.org ([80.91.229.3]:52716 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750755Ab3DMEsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 00:48:46 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: auxsvr@gmail.com
-Subject: Re: sleep/fan problem bisected to 73201dbec64aebf6b0dca855b523f437972dc7bb
-Date: Sat, 13 Apr 2013 07:48:37 +0300
-Message-ID: <kkao31$hn2$1@ger.gmane.org>
-References: <20130412120831.1402b440@chukar.edge2.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7Bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: cust-27-63.on5.ontelecoms.gr
-User-Agent: KNode/4.10.2
+	id S1751999Ab3DMFkm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 01:40:42 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:54227 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab3DMFkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 01:40:41 -0400
+Date: Fri, 12 Apr 2013 22:40:41 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Tony Prisk <linux@prisktech.co.nz>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com
+Subject: Re: [PATCH] arm: vt8500: Add SDHC support to WM8505 DT
+Message-ID: <20130413054041.GA12845@quad.lixom.net>
+References: <1365706829-9626-1-git-send-email-linux@prisktech.co.nz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365706829-9626-1-git-send-email-linux@prisktech.co.nz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jake Edge wrote:
-
+On Fri, Apr 12, 2013 at 07:00:29AM +1200, Tony Prisk wrote:
+> This patch adds the required node for the SDHC controller on WM8505 SoCs.
 > 
-> Hi Peter,
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> ---
+> Arnd,
 > 
-> I have been having a problem on my laptop (HP Compaq 2510p) over the
-> last two months with >= 3.7 kernels.  After the first resume, it turns
-> on the fan and leaves it running at top speed no matter what the system
-> is doing.
-> The output of "sensors" is interesting ... for "temp6" in
-> "acpitz-virtual-0" it sits at +100C (near the +110C critical level)
-> when things have gone bad (just in Fedora or my kernels >=3.7, not in
-> the bisect, cuz those don't come back from the sleep) ... in the "good"
-> case, it normally sits around 30, but goes as high as 50 (and sometimes
-> reports 0 for a try or two -- frozen motherboard! :) ...
-> 
-> thoughts on this?  Other info you need or things I should be trying?
+> Any chance you can apply this for 3.10
 
-This is known, see https://lkml.org/lkml/2012/12/4/428 for more details.
+Applied to next/dt
 
-> thanks,
-> 
-> jake
 
-Regards,
-Peter
-
+-Olof
