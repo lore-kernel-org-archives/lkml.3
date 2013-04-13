@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab3DMNi6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 09:38:58 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:63487 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753509Ab3DMNiy (ORCPT
+	id S1754106Ab3DMNjP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 09:39:15 -0400
+Received: from mail-da0-f51.google.com ([209.85.210.51]:57090 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753494Ab3DMNjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 09:38:54 -0400
+	Sat, 13 Apr 2013 09:39:12 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: dwmw2@infradead.org, axboe@kernel.dk, shli@kernel.org,
         Paul.Clements@steeleye.com, npiggin@kernel.dk, neilb@suse.de,
@@ -16,9 +16,9 @@ Cc: linux-mtd@lists.infradead.org, nbd-general@lists.sourceforge.net,
         linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Vivek Trivedi <t.vivek@samsung.com>
-Subject: [PATCH 3/8] mtd: use generic helper to set max_discard_sectors
-Date: Sat, 13 Apr 2013 22:38:44 +0900
-Message-Id: <1365860324-21295-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH 4/8] loop: use generic helper to set max_discard_sectors
+Date: Sat, 13 Apr 2013 22:39:00 +0900
+Message-Id: <1365860340-21329-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -42,22 +42,31 @@ This patch fixes this issue.
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Vivek Trivedi <t.vivek@samsung.com>
 ---
- drivers/mtd/mtd_blkdevs.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/loop.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mtd/mtd_blkdevs.c b/drivers/mtd/mtd_blkdevs.c
-index 5ad39bb..cf35f99 100644
---- a/drivers/mtd/mtd_blkdevs.c
-+++ b/drivers/mtd/mtd_blkdevs.c
-@@ -417,7 +417,7 @@ int add_mtd_blktrans_dev(struct mtd_blktrans_dev *new)
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index b2955b3..21f3233 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -806,7 +806,7 @@ static void loop_config_discard(struct loop_device *lo)
+ 	    lo->lo_encrypt_key_size) {
+ 		q->limits.discard_granularity = 0;
+ 		q->limits.discard_alignment = 0;
+-		q->limits.max_discard_sectors = 0;
++		blk_queue_max_discard_sectors(q, 0);
+ 		q->limits.discard_zeroes_data = 0;
+ 		queue_flag_clear_unlocked(QUEUE_FLAG_DISCARD, q);
+ 		return;
+@@ -814,7 +814,7 @@ static void loop_config_discard(struct loop_device *lo)
  
- 	if (tr->discard) {
- 		queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, new->rq);
--		new->rq->limits.max_discard_sectors = UINT_MAX;
-+		blk_queue_max_discard_sectors(new->rq, UINT_MAX >> 9);
- 	}
- 
- 	gd->queue = new->rq;
+ 	q->limits.discard_granularity = inode->i_sb->s_blocksize;
+ 	q->limits.discard_alignment = 0;
+-	q->limits.max_discard_sectors = UINT_MAX >> 9;
++	blk_queue_max_discard_sectors(q, UINT_MAX >> 9);
+ 	q->limits.discard_zeroes_data = 1;
+ 	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
+ }
 -- 
 1.7.9.5
 
