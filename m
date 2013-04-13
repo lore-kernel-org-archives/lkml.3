@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab3DMSZs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Apr 2013 14:25:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55974 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab3DMSZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Apr 2013 14:25:47 -0400
-Date: Sat, 13 Apr 2013 20:22:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 0/1] uprobes/perf: Avoid perf_trace_buf_prepare/submit
-	if ->perf_events is empty
-Message-ID: <20130413182259.GA13760@redhat.com>
-References: <20130329181545.GA20697@redhat.com> <20130404142522.GC8986@linux.vnet.ibm.com> <515E4938.6090809@hitachi.com> <20130405150110.GA31300@redhat.com> <51628DF8.6030102@hitachi.com> <20130410145818.GA30670@redhat.com> <516692BF.6070904@hitachi.com> <20130411115921.GA27492@redhat.com> <1365801588.9609.95.camel@gandalf.local.home> <20130413140234.GA32273@redhat.com>
+	id S1753066Ab3DMS3J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Apr 2013 14:29:09 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:34758 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab3DMS3H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Apr 2013 14:29:07 -0400
+X-Originating-IP: 50.43.39.152
+Date: Sat, 13 Apr 2013 11:28:56 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 08/12] rcu: Remove the CONFIG_TINY_RCU
+ ifdefs in rcutiny.h
+Message-ID: <20130413182856.GB12096@leaf>
+References: <20130412234810.GA23678@linux.vnet.ibm.com>
+ <1365810511-24811-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1365810511-24811-8-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130413140234.GA32273@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1365810511-24811-8-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13, Oleg Nesterov wrote:
->
-> On 04/12, Steven Rostedt wrote:
-> >
-> > Can you make the necessary changes elsewhere? I talked with Frederic on
-> > IRC and he's a bit busy with other work. But he did say he would review
-> > changes that you make.
->
-> Sure, will be happy to do.
+On Fri, Apr 12, 2013 at 04:48:27PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> Now that CONFIG_TINY_PREEMPT_RCU is no more, this commit removes
+> the CONFIG_TINY_RCU ifdefs from include/linux/rcutiny.h in favor of
+> unconditionally compiling the CONFIG_TINY_RCU legs of those ifdefs.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Everything looks trivial except DECLARE_EVENT_CLASS()->perf_trace_*() which
-should also check __task != NULL.
+The #else branches of these ifdefs ought to disappear in the first patch
+of the series, since they cover the CONFIG_TINY_PREEMPT_RCU case.
 
-In fact this _looks_ simple too, we could move TP_perf_assign() logic into
-TP_ARGS(), but probably this is too ugly. I'll try think more.
-
-Oleg.
-
+- Josh Triplett
