@@ -1,89 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab3DNHRI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 03:17:08 -0400
-Received: from ns1.pc-advies.be ([83.149.101.17]:42833 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750804Ab3DNHRG (ORCPT
+	id S1751526Ab3DNHdK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 03:33:10 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:43505 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab3DNHdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 03:17:06 -0400
-Date: Sun, 14 Apr 2013 09:17:03 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [GIT PULL REQUEST] watchdog - v3.9-rc6 Fixes
-Message-ID: <20130414071702.GH14155@spo001.leaseweb.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
+	Sun, 14 Apr 2013 03:33:08 -0400
+Message-ID: <516A5A02.9090606@gmail.com>
+Date: Sun, 14 Apr 2013 09:25:54 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Return value of __mm_populate
+References: <51694C2A.4050906@gmail.com> <5169F5E7.3070100@gmail.com>
+In-Reply-To: <5169F5E7.3070100@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-Please pull from 'master' branch of
-	git://www.linux-watchdog.org/linux-watchdog.git
+Il 14/04/2013 02:18, KOSAKI Motohiro ha scritto:
+> (4/13/13 5:14 AM), Marco Stornelli wrote:
+>> Hi,
+>>
+>> I was seeing the code of __mm_populate (in -next) and I've got a doubt
+>> about the return value. The function __mlock_posix_error_return should
+>> return a proper error for mlock, converting the return value from
+>> __get_user_pages. It checks for EFAULT and ENOMEM. Actually
+>> __get_user_pages could return, in addition, ERESTARTSYS and EHWPOISON.
+>
+> __get_user_pages doesn't return EHWPOISON if FOLL_HWPOISON is not specified.
+> I'm not expert ERESTARTSYS. I understand correctly, ERESTARTSYS is only returned
+> when signal received, and signal handling routine (e.g. do_signal) modify EIP and
+> hidden ERESTARTSYS from userland generically.
+>
 
-It will fix compile errors for teh at91rm9200_wdt driver.
+Yep, you're right, the "magic" is inside the signal management. Thanks!!
 
-This will update the following files:
-
- Kconfig |    2 +-
- 1 files changed, 1 insertion(+), 1 deletion(-)
-
-with these Changes:
-
-commit 09549cd01726a7ff8b102a93e46b059531583ab6
-Author: Nicolas Ferre <nicolas.ferre@atmel.com>
-Date:   Wed Apr 10 14:36:22 2013 +0200
-
-    watchdog: Revert the AT91RM9200_WATCHDOG dependency
-    
-    Compiling the at91rm9200_wdt.c driver without at91rm9200
-    support was leading to several errors:
-    
-    drivers/built-in.o: In function `at91_wdt_close':
-    at91_adc.c:(.text+0xc9fe4): undefined reference to `at91_st_base'
-    drivers/built-in.o: In function `at91_wdt_write':
-    at91_adc.c:(.text+0xca004): undefined reference to `at91_st_base'
-    drivers/built-in.o: In function `at91wdt_shutdown':
-    at91_adc.c:(.text+0xca01c): undefined reference to `at91_st_base'
-    drivers/built-in.o: In function `at91wdt_suspend':
-    at91_adc.c:(.text+0xca038): undefined reference to `at91_st_base'
-    drivers/built-in.o: In function `at91_wdt_open':
-    at91_adc.c:(.text+0xca0cc): undefined reference to `at91_st_base'
-    drivers/built-in.o:at91_adc.c:(.text+0xca2c8): more undefined references to
-    `at91_st_base' follow
-    
-    So, reverting the modification of the "depends" Kconfig line
-    introduced by patch a6a1bcd37 (watchdog: at91rm9200: add DT support)
-    seems to be the good solution.
-    
-    Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-    Acked-by: Guenter Roeck <linux@roeck-us.net>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
-
-For completeness, I added the overal diff below.
-
-Greetings,
-Wim.
-
-================================================================================
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 9fcc70c..e89fc31 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -117,7 +117,7 @@ config ARM_SP805_WATCHDOG
- 
- config AT91RM9200_WATCHDOG
- 	tristate "AT91RM9200 watchdog"
--	depends on ARCH_AT91
-+	depends on ARCH_AT91RM9200
- 	help
- 	  Watchdog timer embedded into AT91RM9200 chips. This will reboot your
- 	  system when the timeout is reached.
+Marco
