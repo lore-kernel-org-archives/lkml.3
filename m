@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab3DNSlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 14:41:09 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:44515 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752208Ab3DNSlI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 14:41:08 -0400
-X-Auth-Info: hnQrN1y5qx/lQCBqXMn9HErtk+Q6PJjLp7X/0zyavDc=
-From: Marek Vasut <marex@denx.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2] UCB1400: Pass ucb1400-gpio data through ac97 bus
-Date: Sun, 14 Apr 2013 20:40:47 +0200
-User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Linus Walleij <linus.walleij@linaro.org>, Jean Delvare <jdelvare@suse.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-References: <CACRpkdZ+ku_-SBTXwwwRDh7F2TXzpgpAF3k+Ksn98BNYXximXw@mail.gmail.com> <1365964548-4193-1-git-send-email-marex@denx.de>
-In-Reply-To: <1365964548-4193-1-git-send-email-marex@denx.de>
+	id S1753491Ab3DNTP0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 15:15:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54978 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753159Ab3DNTPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 15:15:25 -0400
+Date: Sun, 14 Apr 2013 21:12:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Maneesh Soni <maneesh@linux.vnet.ibm.com>,
+        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ptrace/x86: simplify the "disable" logic in
+	ptrace_write_dr7()
+Message-ID: <20130414191228.GA28809@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304142040.48132.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130414191205.GA28791@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Marek Vasut,
+ptrace_write_dr7() looks unnecessarily overcomplicated. We can
+factor out ptrace_modify_breakpoint() and do not do "continue"
+twice, just we need to pass the proper "disabled" argument to
+ptrace_modify_breakpoint().
 
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Jean Delvare <jdelvare@suse.de>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> Cc: linux-kernel <linux-kernel@vger.kernel.org>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Marek Vasut <marex@denx.de>
-> ---
->  drivers/gpio/gpio-ucb1400.c |   19 ++++++-------------
->  drivers/mfd/ucb1400_core.c  |    5 +++++
->  include/linux/ucb1400.h     |   18 ++++++------------
->  3 files changed, 17 insertions(+), 25 deletions(-)
-> 
-> v2: Rebase patch from:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2010-October/028656.h
-> tml
-> 
-> NOTE: I didn't even compile-test this, but the fix was plenty
-> straightforward.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/ptrace.c |   40 +++++++++++++++-------------------------
+ 1 files changed, 15 insertions(+), 25 deletions(-)
 
-But damn, this code is ugly. I'm retrospectively-ashamed.
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 7a98b21..0649f16 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -637,9 +637,7 @@ static int ptrace_write_dr7(struct task_struct *tsk, unsigned long data)
+ 	struct thread_struct *thread = &(tsk->thread);
+ 	unsigned long old_dr7;
+ 	int i, orig_ret = 0, rc = 0;
+-	int enabled, second_pass = 0;
+-	unsigned len, type;
+-	struct perf_event *bp;
++	int second_pass = 0;
+ 
+ 	data &= ~DR_CONTROL_RESERVED;
+ 	old_dr7 = ptrace_get_dr7(thread->ptrace_bps);
+@@ -649,30 +647,22 @@ restore:
+ 	 * appropriate changes to each.
+ 	 */
+ 	for (i = 0; i < HBP_NUM; i++) {
+-		enabled = decode_dr7(data, i, &len, &type);
+-		bp = thread->ptrace_bps[i];
+-
+-		if (!enabled) {
+-			if (bp) {
+-				/*
+-				 * Don't unregister the breakpoints right-away,
+-				 * unless all register_user_hw_breakpoint()
+-				 * requests have succeeded. This prevents
+-				 * any window of opportunity for debug
+-				 * register grabbing by other users.
+-				 */
+-				if (!second_pass)
+-					continue;
+-
+-				rc = ptrace_modify_breakpoint(bp, len, type,
+-							      tsk, 1);
+-				if (rc)
+-					break;
+-			}
+-			continue;
++		unsigned len, type;
++		bool disabled = !decode_dr7(data, i, &len, &type);
++		struct perf_event *bp = thread->ptrace_bps[i];
++
++		if (disabled) {
++			/*
++			 * Don't unregister the breakpoints right-away, unless
++			 * all register_user_hw_breakpoint() requests have
++			 * succeeded. This prevents any window of opportunity
++			 * for debug register grabbing by other users.
++			 */
++			if (!bp || !second_pass)
++				continue;
+ 		}
+ 
+-		rc = ptrace_modify_breakpoint(bp, len, type, tsk, 0);
++		rc = ptrace_modify_breakpoint(bp, len, type, tsk, disabled);
+ 		if (rc)
+ 			break;
+ 	}
+-- 
+1.5.5.1
 
-Best regards,
-Marek Vasut
