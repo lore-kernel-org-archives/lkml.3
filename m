@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750794Ab3DNEBt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 00:01:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39937 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750695Ab3DNEBr (ORCPT
+	id S1750851Ab3DNE3t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 00:29:49 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:62986 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab3DNE3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 00:01:47 -0400
-Message-ID: <1365912098.2783.42.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: helping with tracking commits across repos
-From: Ben Hutchings <ben@decadent.org.uk>
-To: dmg@uvic.ca
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 14 Apr 2013 05:01:38 +0100
-In-Reply-To: <87r4ifxzwu.fsf@mn.cs.uvic.ca>
-References: <87r4ifxzwu.fsf@mn.cs.uvic.ca>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-DxbFV5kwaYTdOmhpStjo"
-X-Mailer: Evolution 3.4.4-2 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:a8e5:9d84:f4af:2b5f
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 14 Apr 2013 00:29:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130413214539.GA32613@avionic-0098.mockup.avionic-design.de>
+References: <20130304095136.GI17833@n2100.arm.linux.org.uk>
+	<20130304184649.GO11806@atomide.com>
+	<CAF6AEGv=3453KKS9-8YAgHrxMMbNvLMvt0pz-=qdG+zcd-Trrw@mail.gmail.com>
+	<20130413214539.GA32613@avionic-0098.mockup.avionic-design.de>
+Date: Sun, 14 Apr 2013 00:29:46 -0400
+Message-ID: <CAF6AEGtbqT23bjniwmGP-PhcxRPk5Q9aDaWM-=vVgkVrvDbCaQ@mail.gmail.com>
+Subject: Re: Latest randconfig build errors
+From: Rob Clark <robdclark@gmail.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        arm@kernel.org, linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Apr 13, 2013 at 5:45 PM, Thierry Reding
+<thierry.reding@avionic-design.de> wrote:
+> On Sat, Apr 13, 2013 at 08:54:22AM -0400, Rob Clark wrote:
+>> On Mon, Mar 4, 2013 at 1:46 PM, Tony Lindgren <tony@atomide.com> wrote:
+>> >
+>> >> drivers/gpu/drm/tilcdc/tilcdc_slave.o:(.data+0x54): multiple definition of `__mod_of_device_table'
+>> >> drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
+>> >> drivers/gpu/drm/tilcdc/tilcdc_panel.o:(.data+0x54): multiple definition of `__mod_of_device_table'
+>> >> drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
+>> >> drivers/gpu/drm/tilcdc/tilcdc_drv.o:(.data+0x184): multiple definition of `__mod_of_device_table'
+>> >> drivers/gpu/drm/tilcdc/tilcdc_tfp410.o:(.data+0x54): first defined here
+>> >
+>> > Rob, I assume you'll do a patch for this one?
+>>
+>>
+>> oh, I apologize for the late reply, I didn't see this email...
+>>
+>> There is a patch that we can merge to make tilcdc bool instead of
+>> tristate[1], which I suppose is ok for a temporary fix.  Although I'm
+>> all-ears if someone has a better idea about how to fix this.  The
+>> problem is that we have multiple sub-devices for different possible
+>> panel drivers, so that depending on DT tables, the correct ones get
+>> loaded for the hw.  But they are all built into a single module.
+>> Splitting them into multiple modules will be problematic, as panel
+>> drivers which are present really need to get probed before the
+>> toplevel drm device..
+>
+> You could look at the Tegra driver. I had to solve a similar problem
+> there. What I did is basically parse the DT in the host1x driver and add
+> all device nodes which are required by DRM to a list. Later when the
+> individual devices are probed they are removed from that list, so that
+> when the list becomes empty we are sure that all required devices are
+> there and only then call the drm_platform_init() function.
 
---=-DxbFV5kwaYTdOmhpStjo
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+thx, ok, I'll have a look at this
 
-I notice that where a commit is cherry-picked cleanly on a stable
-branch, like 6b90466cfec2a2fe027187d675d8d14217c12d82, your script finds
-the corresponding commit on the stable branch.  This is useful.
+> This fits very well with how Tegra hardware is designed because host1x
+> is the parent for all DRM subdevices (DC, RGB/LVDS, HDMI, ...). So it is
+> probed before any of its children and it can easily parse the DT upfront
+> and initialize the list of required devices.
+>
+>> I suppose in theory it is possible to make drm
+>> cope better with dynamically loaded outputs, but I'm not sure that
+>> there is any way to do this without breaking userspace which expects
+>> that all of the connectors/encoders are present once the drm device is
+>> loaded.
+>
+> I had been thinking about this on and off for a while, but I haven't
+> come up with anything concrete. Ideally we could just have some kind of
+> event that userspace would listen for, so that new outputs can be
+> dynamically added and userspace informed about them. Last time I checked
+> most of the helpers assumed that the complete output configuration is
+> known when the DRM device is registered, so some major rework will be
+> required to efficiently make use of such dynamicity.
 
-But where some backporting changes are needed, such as for
-f01fc1a82c2ee68726b400fadb156bd623b5f2f1, which became
-8ebfe28181b02766ac41d9d841801c146e6161c1 on the 3.2.y branch, the
-corresponding commit isn't found.
+I'm less worried about the kernel re-work.. more worried about the
+fact that we have no way to know whether userspace knows to listen for
+this new event.  So anything down this path could, I think, be
+considered as breaking userspace.
 
-It should be possible to find such backported commits based on a simple
-regex search over the commit message:
+I think in the end, we need some way to have sort of "dummy"
+connectors for output drivers which might or might not be probed, so
+that from userspace perspective, non-present panels appear as displays
+that are not plugged in.
 
-	for (<$body>) {
-	    if (/^commit (.*) upstream\.\n/) {
-		$upstream =3D $1;
-	    } elsif (/^\[ Upstream commit (.*) \]\n/) {
-		$upstream =3D $1;
-	    } elsif (/^\(cherry picked from commit (.*)\)\n/) {
-		$upstream =3D $1;
-	    }
-	}
+BR,
+-R
 
-This covers all formats in current use to show a direct correspondence
-between a single mainline and stable branch commit.  (Really we should
-settle on just one format...)
 
-Ben.
-
---=20
-Ben Hutchings
-It is impossible to make anything foolproof because fools are so ingenious.
-
---=-DxbFV5kwaYTdOmhpStjo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUWoqIue/yOyVhhEJAQo9kA//cciWCl3Ugy2CjtPE3JU1YCiqxvKQXWZb
-rSLI0+VIjQzdwJDaZ8RD2pGDk38LmmUCAsfd0Dw91JVr07DQkaMAc4eGFKML69Y7
-ZW006eT7T37715Jp71agpIb5A9/ZoRWZM8MN07hyk+/LiwirFUcdLPc37UPMQVHS
-tRD3S6NDA+efKoEK3E6ayJCJ2mQjdaEuDmQvVlaCjpQXm4pzY3vxIKPbtYxL6gfw
-br7FSvt5jen2EPfJU3bt7B3qUwdlkp8u9miNCuHuL/fQAggsLhQOLsmOax04287B
-XjUxZZTamD/MTtLOOIG9ZJuDJSih9bbmQDDBVSIhDebx1hiMmRlVxvknG0+JgVMC
-kRjxIBmJv36r08XfHlCdYDzLsX15YSgN6Iw5l5sZN6ZfT1p9KpgNV5aBQnkhEiJ5
-rnuXNxoN1EL0YX2VGpMl+CuHM8SKtzmbBHf2rODpBslicaP6MFmqT7eDG4hlLlgE
-6IZAMXWa+QegkdLS8wexd3Mgc7VF8KjjhE8eFLhnHzQEsjKPmklgKtoIqBpmnntK
-ysL96CqlNhWjuYCe9tqQ06aEqgsPdCqVeOVtiNX+ztQz4IKPRSQNUiR98YIvtI+Z
-C7Oiwlv5fz/aMhFy74OiqEQSGG6Eu1HgcN+pjhgvktvFEWy5r/anRrkXGDZpHEb/
-n2zhSGG9EWs=
-=gzEd
------END PGP SIGNATURE-----
-
---=-DxbFV5kwaYTdOmhpStjo--
+> Thierry
