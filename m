@@ -1,137 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab3DNQmy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 12:42:54 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:7826 "EHLO song.cn.fujitsu.com"
+	id S1753187Ab3DNQnD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 12:43:03 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:32114 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752522Ab3DNQmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 12:42:52 -0400
+	id S1752311Ab3DNQm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 12:42:59 -0400
 X-IronPort-AV: E=Sophos;i="4.87,471,1363104000"; 
-   d="scan'208";a="7051545"
+   d="scan'208";a="7051548"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 4/8] workqueue: quit cm mode when sleeping
-Date: Mon, 15 Apr 2013 00:41:52 +0800
-Message-Id: <1365957716-7631-5-git-send-email-laijs@cn.fujitsu.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 5/8] workqueue: remove disabled wq_worker_waking_up()
+Date: Mon, 15 Apr 2013 00:41:53 +0800
+Message-Id: <1365957716-7631-6-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1365957716-7631-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1365957716-7631-1-git-send-email-laijs@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/15 00:41:17,
+ 2013/04/15 00:41:31,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/04/15 00:41:17,
-	Serialize complete at 2013/04/15 00:41:17
+ 2013/04/15 00:41:31,
+	Serialize complete at 2013/04/15 00:41:31
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a work is waken up from sleeping, it makes very small sense if
-we still consider this worker is RUNNING(in view of concurrency management)
-o	if the work goes to sleep again, it is not RUNNING again.
-o	if the work runs long without sleeping, the worker should be consider
-	as CPU_INTENSIVE.
-o	if the work runs short without sleeping, we can still consider
-	this worker is not RUNNING this harmless short time,
-	and fix it up before next work.
+When a worker is sleeping, its flags has WORKER_QUIT_CM, which means
+worker->flags & WORKER_NOT_RUNNING is always non-zero, and which means
+wq_worker_waking_up() is disabled.
 
-o	In almost all cases, the increasing nr_running does not increase
-	nr_running from 0. there are other RUNNING workers, the other
-	workers will not goto sleeping very probably before this worker
-	finishes the work in may cases. this early increasing makes less
-	sense.
+so we removed wq_worker_waking_up(). (the access to worker->flags
+in wq_worker_waking_up() is not protected by "LI". after this, it is alwasy
+protected by "LI")
 
-So don't need consider this worker is RUNNING so early and
-we can delay increasing nr_running a little. we increase it after
-finished the work.
-
-It is done by adding a new worker flag: WORKER_QUIT_CM.
-it used for disabling increasing nr_running in wq_worker_waking_up(),
-and for increasing nr_running after finished the work.
-
-This change maybe cause we wakeup(or create) more workers in raw case,
-but this is not incorrect.
-
-It make the currency management much more simpler
+The patch also do these changes after removal:
+1) because wq_worker_waking_up() is removed, we don't need schedule()
+   before zapping nr_running in wq_unbind_fn(), and don't need to
+   release/regain pool->lock.
+2) the sanity check in worker_enter_idle() is changed to also check for
+   unbound/disassociated pools. (because the above change and nr_running
+   is expected always reliable in worker_enter_idle() now.)
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- kernel/workqueue.c          |   20 ++++++++++++++------
- kernel/workqueue_internal.h |    2 +-
- 2 files changed, 15 insertions(+), 7 deletions(-)
+ kernel/sched/core.c         |    4 ---
+ kernel/workqueue.c          |   58 +++++++-----------------------------------
+ kernel/workqueue_internal.h |    3 +-
+ 3 files changed, 11 insertions(+), 54 deletions(-)
 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index ffc06ad..18f95884 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1276,10 +1276,6 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
+ {
+ 	activate_task(rq, p, en_flags);
+ 	p->on_rq = 1;
+-
+-	/* if a worker is waking up, notify workqueue */
+-	if (p->flags & PF_WQ_WORKER)
+-		wq_worker_waking_up(p, cpu_of(rq));
+ }
+ 
+ /*
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index a4bc589..668e9b7 100644
+index 668e9b7..9f1ebdf 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
-@@ -75,11 +75,13 @@ enum {
- 	WORKER_DIE		= 1 << 1,	/* die die die */
- 	WORKER_IDLE		= 1 << 2,	/* is idle */
- 	WORKER_PREP		= 1 << 3,	/* preparing to run works */
-+	WORKER_QUIT_CM		= 1 << 4,	/* quit concurrency managed */
- 	WORKER_CPU_INTENSIVE	= 1 << 6,	/* cpu intensive */
- 	WORKER_UNBOUND		= 1 << 7,	/* worker is unbound */
- 	WORKER_REBOUND		= 1 << 8,	/* worker was rebound */
+@@ -790,27 +790,6 @@ static void wake_up_worker(struct worker_pool *pool)
+ }
  
--	WORKER_NOT_RUNNING	= WORKER_PREP | WORKER_CPU_INTENSIVE |
-+	WORKER_NOT_RUNNING	= WORKER_PREP | WORKER_QUIT_CM |
-+				  WORKER_CPU_INTENSIVE |
- 				  WORKER_UNBOUND | WORKER_REBOUND,
- 
- 	NR_STD_WORKER_POOLS	= 2,		/* # standard pools per cpu */
-@@ -122,6 +124,10 @@ enum {
-  *    cpu or grabbing pool->lock is enough for read access.  If
-  *    POOL_DISASSOCIATED is set, it's identical to L.
+ /**
+- * wq_worker_waking_up - a worker is waking up
+- * @task: task waking up
+- * @cpu: CPU @task is waking up to
+- *
+- * This function is called during try_to_wake_up() when a worker is
+- * being awoken.
+- *
+- * CONTEXT:
+- * spin_lock_irq(rq->lock)
+- */
+-void wq_worker_waking_up(struct task_struct *task, int cpu)
+-{
+-	struct worker *worker = kthread_data(task);
+-
+-	if (!(worker->flags & WORKER_NOT_RUNNING)) {
+-		WARN_ON_ONCE(worker->pool->cpu != cpu);
+-		atomic_inc(&worker->pool->nr_running);
+-	}
+-}
+-
+-/**
+  * wq_worker_sleeping - a worker is going to sleep
+  * @task: task going to sleep
   *
-+ * LI: If POOL_DISASSOCIATED is NOT set, read/modification access should be
-+ *     done with local IRQ-disabled and only from local cpu.
-+ *     If POOL_DISASSOCIATED is set, it's identical to L.
-+ *
-  * MG: pool->manager_mutex and pool->lock protected.  Writes require both
-  *     locks.  Reads can happen under either lock.
-  *
-@@ -843,11 +849,13 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task)
- 	 * Please read comment there.
- 	 *
- 	 * NOT_RUNNING is clear.  This means that we're bound to and
--	 * running on the local cpu w/ rq lock held and preemption
-+	 * running on the local cpu w/ rq lock held and preemption/irq
- 	 * disabled, which in turn means that none else could be
- 	 * manipulating idle_list, so dereferencing idle_list without pool
--	 * lock is safe.
-+	 * lock is safe. And which in turn also means that we can
-+	 * manipulating worker->flags.
- 	 */
-+	worker->flags |= WORKER_QUIT_CM;
- 	if (atomic_dec_and_test(&pool->nr_running) &&
- 	    !list_empty(&pool->worklist))
- 		to_wakeup = first_worker(pool);
-@@ -2160,9 +2168,9 @@ __acquires(&pool->lock)
+@@ -1564,14 +1543,8 @@ static void worker_enter_idle(struct worker *worker)
+ 	if (too_many_workers(pool) && !timer_pending(&pool->idle_timer))
+ 		mod_timer(&pool->idle_timer, jiffies + IDLE_WORKER_TIMEOUT);
  
- 	spin_lock_irq(&pool->lock);
+-	/*
+-	 * Sanity check nr_running.  Because wq_unbind_fn() releases
+-	 * pool->lock between setting %WORKER_UNBOUND and zapping
+-	 * nr_running, the warning may trigger spuriously.  Check iff
+-	 * unbind is not in progress.
+-	 */
+-	WARN_ON_ONCE(!(pool->flags & POOL_DISASSOCIATED) &&
+-		     pool->nr_workers == pool->nr_idle &&
++	/* Sanity check nr_running. */
++	WARN_ON_ONCE(pool->nr_workers == pool->nr_idle &&
+ 		     atomic_read(&pool->nr_running));
+ }
  
--	/* clear cpu intensive status if it is set */
--	if (unlikely(worker->flags & WORKER_CPU_INTENSIVE))
--		worker_clr_flags(worker, WORKER_CPU_INTENSIVE);
-+	/* clear cpu intensive status or WORKER_QUIT_CM if they are set */
-+	if (unlikely(worker->flags & (WORKER_CPU_INTENSIVE | WORKER_QUIT_CM)))
-+		worker_clr_flags(worker, WORKER_CPU_INTENSIVE | WORKER_QUIT_CM);
+@@ -4385,24 +4358,12 @@ static void wq_unbind_fn(struct work_struct *work)
  
- 	/* we're done with it, release */
- 	hash_del(&worker->hentry);
+ 		pool->flags |= POOL_DISASSOCIATED;
+ 
+-		spin_unlock_irq(&pool->lock);
+-		mutex_unlock(&pool->manager_mutex);
+-
+ 		/*
+-		 * Call schedule() so that we cross rq->lock and thus can
+-		 * guarantee sched callbacks see the %WORKER_UNBOUND flag.
+-		 * This is necessary as scheduler callbacks may be invoked
+-		 * from other cpus.
+-		 */
+-		schedule();
+-
+-		/*
+-		 * Sched callbacks are disabled now.  Zap nr_running.
+-		 * After this, nr_running stays zero and need_more_worker()
+-		 * and keep_working() are always true as long as the
+-		 * worklist is not empty.  This pool now behaves as an
+-		 * unbound (in terms of concurrency management) pool which
+-		 * are served by workers tied to the pool.
++		 * Zap nr_running. After this, nr_running stays zero
++		 * and need_more_worker() and keep_working() are always true
++		 * as long as the worklist is not empty.  This pool now
++		 * behaves as an unbound (in terms of concurrency management)
++		 * pool which are served by workers tied to the pool.
+ 		 */
+ 		atomic_set(&pool->nr_running, 0);
+ 
+@@ -4411,9 +4372,9 @@ static void wq_unbind_fn(struct work_struct *work)
+ 		 * worker blocking could lead to lengthy stalls.  Kick off
+ 		 * unbound chain execution of currently pending work items.
+ 		 */
+-		spin_lock_irq(&pool->lock);
+ 		wake_up_worker(pool);
+ 		spin_unlock_irq(&pool->lock);
++		mutex_unlock(&pool->manager_mutex);
+ 	}
+ }
+ 
+@@ -4466,9 +4427,10 @@ static void rebind_workers(struct worker_pool *pool)
+ 		 * concurrency management.  Note that when or whether
+ 		 * @worker clears REBOUND doesn't affect correctness.
+ 		 *
++		 * Current CPU may not the cpu of this rebinding pool,
+ 		 * ACCESS_ONCE() is necessary because @worker->flags may be
+ 		 * tested without holding any lock in
+-		 * wq_worker_waking_up().  Without it, NOT_RUNNING test may
++		 * wq_worker_sleeping().  Without it, NOT_RUNNING test may
+ 		 * fail incorrectly leading to premature concurrency
+ 		 * management operations.
+ 		 */
 diff --git a/kernel/workqueue_internal.h b/kernel/workqueue_internal.h
-index aec8df4..1713ae7 100644
+index 1713ae7..e9fd05f 100644
 --- a/kernel/workqueue_internal.h
 +++ b/kernel/workqueue_internal.h
-@@ -35,7 +35,7 @@ struct worker {
- 						/* L: for rescuers */
- 	/* 64 bytes boundary on 64bit, 32 on 32bit */
- 	unsigned long		last_active;	/* L: last active timestamp */
--	unsigned int		flags;		/* X: flags */
-+	unsigned int		flags;		/* LI: flags */
- 	int			id;		/* I: worker id */
+@@ -54,9 +54,8 @@ static inline struct worker *current_wq_worker(void)
  
- 	/* used only by rescuers to point to the target workqueue */
+ /*
+  * Scheduler hooks for concurrency managed workqueue.  Only to be used from
+- * sched.c and workqueue.c.
++ * kernel/sched/core.c and kernel/workqueue.c.
+  */
+-void wq_worker_waking_up(struct task_struct *task, int cpu);
+ struct task_struct *wq_worker_sleeping(struct task_struct *task);
+ 
+ #endif /* _KERNEL_WORKQUEUE_INTERNAL_H */
 -- 
 1.7.7.6
 
