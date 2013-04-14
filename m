@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972Ab3DNPPI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 11:15:08 -0400
-Received: from plane.gmane.org ([80.91.229.3]:39249 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751873Ab3DNPPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 11:15:07 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Yeung <yc_matrix@yahoo.com>
-Subject: Re: [PATCH v3 2/2] pps: new client driver using GPIO
-Date: Sun, 14 Apr 2013 15:12:40 +0000 (UTC)
-Message-ID: <loom.20130414T165523-726@post.gmane.org>
-References: <1310138846-1164-1-git-send-email-jamesnuss@nanometrics.ca> <1310138846-1164-3-git-send-email-jamesnuss@nanometrics.ca>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 74.105.84.42 (Mozilla/5.0 (Windows NT 6.0; WOW64; rv:17.0) Gecko/20100101 Firefox/17.0)
+	id S1751996Ab3DNPRl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 11:17:41 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:44887 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab3DNPRk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 11:17:40 -0400
+Date: Sun, 14 Apr 2013 10:24:58 -0400
+From: Anton Vorontsov <anton@enomsg.org>
+To: Bryan Freed <bfreed@chromium.org>, Arnd Bergmann <arnd@arndb.de>
+Cc: Rob Herring <robherring2@gmail.com>, Tony Luck <tony.luck@intel.com>,
+        Kees Cook <keescook@chromium.org>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v6] pstore/ram: Add ramoops support for the Flattened
+ Device Tree.
+Message-ID: <20130414142441.GA3619@teo>
+References: <1347042576-17675-1-git-send-email-bfreed@chromium.org>
+ <20120908052907.GA4724@lizard>
+ <20120917062302.GA768@lizard>
+ <CAL_JsqK_L9nN6+oxUQzNwFjbFf3+3NroeEwzbMdPS4T6=Mnemg@mail.gmail.com>
+ <20130407174313.GA7168@lizard>
+ <CAEYUcX0rQKDGD3_pbc7JnDO6WJ_QMd8AWW+X1giNVL313wODyA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAEYUcX0rQKDGD3_pbc7JnDO6WJ_QMd8AWW+X1giNVL313wODyA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Mon, Apr 08, 2013 at 12:54:01PM -0700, Bryan Freed wrote:
+[...]
+> And as a more general question, why should we try not to put
+> configuration in the device tree?  It seems like a great (and
+> portable) place to put this stuff.
+> It certainly seems better to have it there than hardwired in the
+> kernel or tacked onto the kernel command line.
 
-I am a newbie to linux kernel device driver and would like to use this
-client driver on my uClinux running on the NIOS2. Can you kindly point me to
-the right direction, since I am using a device tree and believe this doesn't
-support device tree, right? What do I need to add/modify so I can use a
-input GPIO as a source? I saw a google post to add this code to (?? an
-unknown) and then you need to call pps_init in the configuration routine (??
-not sure what it mean)
+But then we have two in-kernel APIs to pass kernel parameters? So we'll
+have to maintain two ways of passing the options for each driver. That is
+hardly a good solution.
 
-add
-/* PPS-GPIO platform data */
-static struct pps_gpio_platform_data pps_gpio_info = {
-.assert_falling_edge = false,
-.capture_clear= false,
-.gpio_pin=63,
-.gpio_label="PPS",
+If you would like to see a convenient way to pass kernel/module options
+via the device tree, I would suggest implementing something like this:
+
+chosen {
+	kernel-options {
+		linux,pstore.record-size = 123;
+		linux,foo = "bar";
+	};
 };
 
-static struct platform_device pps_gpio_device = {
-.name = "pps-gpio",
-.id = -1,
-.dev = {
-.platform_data = &pps_gpio_info
-},
+And then let the kernel translate all these to module_param_*().
+
+I am still not sure about placing the options along with devices layout,
+but if we go this route, then that is also viable:
+
+pstore-node {
+	linux,pstore.record-size = 123;
 };
 
-static void pps_init(int evm_id, int profile)
-{
-int err;
+And translate "linux,*" this to module_param_*().
 
-err = platform_device_register(&pps_gpio_device);
-if (err) {
-pr_warning("Could not register PPS_GPIO device");
-}
-}
+How does that sound?
 
-Thanks in advance for any help,
-
-Yeung
-
-
-
+Thanks,
+Anton
