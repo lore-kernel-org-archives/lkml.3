@@ -1,101 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3DNTP0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 15:15:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54978 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753159Ab3DNTPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 15:15:25 -0400
-Date: Sun, 14 Apr 2013 21:12:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Maneesh Soni <maneesh@linux.vnet.ibm.com>,
-        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ptrace/x86: simplify the "disable" logic in
-	ptrace_write_dr7()
-Message-ID: <20130414191228.GA28809@redhat.com>
+	id S932147Ab3DNTRB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 15:17:01 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58032 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753358Ab3DNTQ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 15:16:59 -0400
+Date: Sun, 14 Apr 2013 12:16:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, kay@vrfy.org,
+        lennart@poettering.net, daniel@zonque.org
+Subject: Re: [PATCH 4/4] cgroup: implement task_cgroup_path_from_hierarchy()
+Message-ID: <20130414191655.GA10168@kroah.com>
+References: <1365964619-14762-1-git-send-email-tj@kernel.org>
+ <1365964619-14762-5-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130414191205.GA28791@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1365964619-14762-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ptrace_write_dr7() looks unnecessarily overcomplicated. We can
-factor out ptrace_modify_breakpoint() and do not do "continue"
-twice, just we need to pass the proper "disabled" argument to
-ptrace_modify_breakpoint().
+On Sun, Apr 14, 2013 at 11:36:59AM -0700, Tejun Heo wrote:
+> kdbus folks want a sane way to determine the cgroup path that a given
+> task belongs to on a given hierarchy, which is a reasonble thing to
+> expect from cgroup core.
+> 
+> Implement task_cgroup_path_from_hierarchy().
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Kay Sievers <kay@vrfy.org>
+> Cc: Greg Kroah-Hartman <greg@kroah.com>
+> Cc: Lennart Poettering <lennart@poettering.net>
+> Cc: Daniel Mack <daniel@zonque.org>
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/ptrace.c |   40 +++++++++++++++-------------------------
- 1 files changed, 15 insertions(+), 25 deletions(-)
+Thanks so much for doing this.
 
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 7a98b21..0649f16 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -637,9 +637,7 @@ static int ptrace_write_dr7(struct task_struct *tsk, unsigned long data)
- 	struct thread_struct *thread = &(tsk->thread);
- 	unsigned long old_dr7;
- 	int i, orig_ret = 0, rc = 0;
--	int enabled, second_pass = 0;
--	unsigned len, type;
--	struct perf_event *bp;
-+	int second_pass = 0;
- 
- 	data &= ~DR_CONTROL_RESERVED;
- 	old_dr7 = ptrace_get_dr7(thread->ptrace_bps);
-@@ -649,30 +647,22 @@ restore:
- 	 * appropriate changes to each.
- 	 */
- 	for (i = 0; i < HBP_NUM; i++) {
--		enabled = decode_dr7(data, i, &len, &type);
--		bp = thread->ptrace_bps[i];
--
--		if (!enabled) {
--			if (bp) {
--				/*
--				 * Don't unregister the breakpoints right-away,
--				 * unless all register_user_hw_breakpoint()
--				 * requests have succeeded. This prevents
--				 * any window of opportunity for debug
--				 * register grabbing by other users.
--				 */
--				if (!second_pass)
--					continue;
--
--				rc = ptrace_modify_breakpoint(bp, len, type,
--							      tsk, 1);
--				if (rc)
--					break;
--			}
--			continue;
-+		unsigned len, type;
-+		bool disabled = !decode_dr7(data, i, &len, &type);
-+		struct perf_event *bp = thread->ptrace_bps[i];
-+
-+		if (disabled) {
-+			/*
-+			 * Don't unregister the breakpoints right-away, unless
-+			 * all register_user_hw_breakpoint() requests have
-+			 * succeeded. This prevents any window of opportunity
-+			 * for debug register grabbing by other users.
-+			 */
-+			if (!bp || !second_pass)
-+				continue;
- 		}
- 
--		rc = ptrace_modify_breakpoint(bp, len, type, tsk, 0);
-+		rc = ptrace_modify_breakpoint(bp, len, type, tsk, disabled);
- 		if (rc)
- 			break;
- 	}
--- 
-1.5.5.1
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
