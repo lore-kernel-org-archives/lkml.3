@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751142Ab3DNFKn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 01:10:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:24348 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750718Ab3DNFKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 01:10:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,470,1363158000"; 
-   d="scan'208";a="318812501"
-Message-ID: <516A3A3A.2030205@intel.com>
-Date: Sun, 14 Apr 2013 13:10:18 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Len Brown <lenb@kernel.org>, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
-        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
-        mgorman@suse.de, riel@redhat.com,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [patch v7 0/21] sched: power aware scheduling
-References: <1365040862-8390-1-git-send-email-alex.shi@intel.com> <516724F5.20504@kernel.org> <5167C9FA.8050406@intel.com> <20130412162348.GE2368@pd.tnic> <516A0652.8040505@intel.com>
-In-Reply-To: <516A0652.8040505@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751392Ab3DNF2e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 01:28:34 -0400
+Received: from server.prisktech.co.nz ([115.188.14.127]:49660 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab3DNF2d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 01:28:33 -0400
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        linux-kernel@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH] clk: vt8500: Missing breaks in vtwm_pll_round_rate/_set_rate.
+Date: Sun, 14 Apr 2013 17:28:35 +1200
+Message-Id: <1365917315-3615-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2013 09:28 AM, Alex Shi wrote:
->>>> >> > These numbers suggest that this patch series simultaneously
->>>> >> > has a negative impact on performance and energy required
->>>> >> > to retire the workload.  Why do it?
-> Even some scenario the total energy cost more, at least the avg watts
-> dropped in that scenarios. Len said he has low p-state which can work
-> there. but that's is different. I had sent some data in another email
-> list to show the difference:
-> 
-> The following is 2 times kbuild testing result for 3 kinds condiation on
-> SNB EP box, the middle column is the lowest p-state testing result, we
-> can see, it has the lowest power consumption, also has the lowest
-> performance/watts value.
-> At least for kbuild benchmark, powersaving policy has the best
-> compromise on powersaving and power efficient. Further more, due to cpu
-> boost feature, it has better performance in some scenarios.
+The case of PLL_TYPE_WM8750 in both these functions is missing a break
+statement causing a fall-through to the default: case.
 
-BTW, another benefit on powersaving is that powersaving policy is very
-flexible on system load. when task number in sched domain is beyond LCPU
-number, it will take performance oriented balance. That conduct the
-similar performance when system is busy.
+Insert the missing break statements.
 
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+---
+Mike,
+
+Any chance this can still go in as a fix for 3.9
+The fault makes it impossible to set the PLL clocks on WM8750 and later SoCs.
+
+Regards
+Tony P
+ drivers/clk/clk-vt8500.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
+index 09c6331..debf688 100644
+--- a/drivers/clk/clk-vt8500.c
++++ b/drivers/clk/clk-vt8500.c
+@@ -488,6 +488,7 @@ static int vtwm_pll_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	case PLL_TYPE_WM8750:
+ 		wm8750_find_pll_bits(rate, parent_rate, &filter, &mul, &div1, &div2);
+ 		pll_val = WM8750_BITS_TO_VAL(filter, mul, div1, div2);
++		break;
+ 	default:
+ 		pr_err("%s: invalid pll type\n", __func__);
+ 		return 0;
+@@ -523,6 +524,7 @@ static long vtwm_pll_round_rate(struct clk_hw *hw, unsigned long rate,
+ 	case PLL_TYPE_WM8750:
+ 		wm8750_find_pll_bits(rate, *prate, &filter, &mul, &div1, &div2);
+ 		round_rate = WM8750_BITS_TO_FREQ(*prate, mul, div1, div2);
++		break;
+ 	default:
+ 		round_rate = 0;
+ 	}
 -- 
-Thanks
-    Alex
+1.7.9.5
+
