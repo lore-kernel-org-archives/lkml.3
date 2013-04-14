@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751861Ab3DNIsT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 04:48:19 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:44299 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751819Ab3DNIsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 04:48:18 -0400
-Date: Sun, 14 Apr 2013 09:48:18 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1304140946460.18231@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751036Ab3DNJbV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 05:31:21 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:58982 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab3DNJbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 05:31:19 -0400
+Message-ID: <516A7760.7030907@kernel.org>
+Date: Sun, 14 Apr 2013 12:31:12 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Borislav Petkov <bp@alien8.de>
+CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>
+Subject: Re: [PATCH] x86: Add a Kconfig shortcut for a kvm-bootable kernel
+References: <20130412181956.GA13099@pd.tnic>
+In-Reply-To: <20130412181956.GA13099@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-Hi Linus
+On 4/12/13 9:19 PM, Borislav Petkov wrote:
+> so I'm currently experimenting with my randconfig build scripts and
+> thought that maybe it would be a cool thing to not only do the random
+> builds only but also boot-test them in kvm. Which reminded me that we
+> have that KVMTOOL_TEST_ENABLE config option in the kvmtool with which we
+> can select all the stuff needed to boot the kernel in kvm.
+>
+> So I copied it. I now have an all.config in the repo with
+> CONFIG_KVM_TEST_ENABLE=y in it so that the random builds can have the
+> required support.
+>
+> So what do people think?
+>
+> It is pretty helpful for such testing; AFAICT Fengguang is doing his
+> testing with kvm so he probably could use it too. And regardless, there
+> are more and more reasons to boot the kernel in kvm so having a single
+> option which selects the needed support makes more sense with time.
+>
+> And I haven't picked up the 'make kvmconfig' functionality because it
+> is not strictly needed (yet) but it wouldn't hurt if we took it because
+> someone has a good reason for needing it.
 
-one fix for a hotplug locking regressions, and one fix for an oops if you 
-unplug the monitor at an inopportune moment on the udl device.
+I obviously support having something like this in mainline. I wonder 
+though if we could just call this "default standalone KVM guest config" 
+instead of emphasizing testing angle.
 
-Dave.
-
-The following changes since commit cfb63bafdb87bbcdc5d6dbbca623d3f69475f118:
-
-  Merge branch 'fixes' of git://git.infradead.org/users/vkoul/slave-dma (2013-04-11 20:35:11 -0700)
-
-are available in the git repository at:
-
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 89ced125472b8551c65526934b7f6c733a6864fa:
-
-  drm/fb-helper: Fix locking in drm_fb_helper_hotplug_event (2013-04-12 14:21:12 +1000)
-
-----------------------------------------------------------------
-Daniel Vetter (1):
-      drm/fb-helper: Fix locking in drm_fb_helper_hotplug_event
-
-Dave Airlie (1):
-      udl: handle EDID failure properly.
-
- drivers/gpu/drm/drm_fb_helper.c     | 8 +++++---
- drivers/gpu/drm/udl/udl_connector.c | 4 ++++
- 2 files changed, 9 insertions(+), 3 deletions(-)
+			Pekka
