@@ -1,40 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab3DNToB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 15:44:01 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:48553 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753328Ab3DNToA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 15:44:00 -0400
-Date: Sun, 14 Apr 2013 15:43:58 -0400 (EDT)
-Message-Id: <20130414.154358.755597670486116198.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, festevam@gmail.com, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] freescale: Update logging style
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <cover.1365915548.git.joe@perches.com>
-References: <cover.1365915548.git.joe@perches.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Sun, 14 Apr 2013 12:44:00 -0700 (PDT)
+	id S1754150Ab3DNTql (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 15:46:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12452 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753383Ab3DNTqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 15:46:40 -0400
+Date: Sun, 14 Apr 2013 21:40:49 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Jan Kratochvil <jan.kratochvil@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Maneesh Soni <maneesh@linux.vnet.ibm.com>,
+        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] ptrace/x86: simplify ptrace_write_dr7()
+Message-ID: <20130414194049.GA29540@redhat.com>
+References: <20130414191205.GA28791@redhat.com> <20130414193021.GA20962@host2.jankratochvil.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130414193021.GA20962@host2.jankratochvil.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Sat, 13 Apr 2013 22:03:16 -0700
+On 04/14, Jan Kratochvil wrote:
+>
+> On Sun, 14 Apr 2013 21:12:05 +0200, Oleg Nesterov wrote:
+> > Jan, Frederic, et all. What do you think we should do?
+> >
+> > 	1. Change ptrace_write_dr7() to do register_user_hw_breakpoint()
+> > 	   if necessary.
+> >
+> > 	   This is what I was going to do, but I am no longer sure
+> > 	   we want this. For what? Unlikely it is very useful to use
+> > 	   the "default" addr == 0 for debugging.
+>
+> I do not understand how these functions map to the PTRACE_* syscall.
+>
+> But this was a regression from the application point of view as some
+> application did/do:
+> 	* waitpid - get the process to: t (tracing stop)
+> 	* PTRACE_POKEUSER DR7, enableDR0
+> 	* PTRACE_POKEUSER DR0, address
+> 	* PTRACE_CONT
+>
+> This was perfectly valid before, there is no "default" addr == 0 used for any
+> debugging.  Just the applications did not care about PTRACE_POKEUSER ordering.
+> This is also how the bug was found.
 
-> Convert various printk logging styles to current styles.
-> 
-> Uncompiled, untested.
-> 
-> Joe Perches (3):
->   fec: Convert printks to netdev_<level>
->   gianfar: Use netdev_<level> when possible
->   ucc_geth: Convert ugeth_<level> to pr_<level>
+Yes, exactly.
 
-All applied.
+Except 'there is no "default" addr == 0', the first
+"PTRACE_POKEUSER DR7, enableDR0" used addr == 0 and then it was
+changed by "PTRACE_POKEUSER DR0".
+
+And once again, I am ready to make the patch, it should be simple.
+Just I am not sure it worth the trouble, so I decided to ask first.
+Nobody noticed this problem(?) except you, and this was broken a
+long ago.
+
+	PTRACE_POKEUSER DR0, address
+	PTRACE_POKEUSER DR7, enableDR0
+
+should work and this looks better, we do not enable bp until it
+has the correct address set.  Of course this doesn't really matter
+if the tracee doesn't not run in between, but still...
+
+Oleg.
+
