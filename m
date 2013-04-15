@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab3DOWHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 18:07:20 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:40532 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab3DOWHS (ORCPT
+	id S1755364Ab3DOWVR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 18:21:17 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:55998 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806Ab3DOWVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 18:07:18 -0400
+	Mon, 15 Apr 2013 18:21:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQW5X80bxOURTkhnELuV_AzYXBHEudxN1eUg_1jehrcfww@mail.gmail.com>
-References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
-	<1365797627-20874-7-git-send-email-keescook@chromium.org>
-	<CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com>
-	<516A1D49.1050100@zytor.com>
-	<CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
-	<516C702C.2030209@zytor.com>
-	<CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
-	<516C751B.4020505@zytor.com>
-	<CAE9FiQW5X80bxOURTkhnELuV_AzYXBHEudxN1eUg_1jehrcfww@mail.gmail.com>
-Date: Mon, 15 Apr 2013 15:07:17 -0700
-X-Google-Sender-Auth: kd5YDH4Av85eJZe670nlntpPeeM
-Message-ID: <CAGXu5j+KRVmZqSkvoEH70DCb055uSbVzFkoo+E1Ao=e=Yus_bA@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
-From: Kees Cook <keescook@chromium.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Eric Northup <digitaleric@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+In-Reply-To: <51656992.60203@gmail.com>
+References: <1365563297-12480-1-git-send-email-robherring2@gmail.com>
+	<CAMbhsRSvQPbzJ7Nt=OSSYE_A1e+eaUjO7XY+qRppJ5_gfWmW4A@mail.gmail.com>
+	<51656992.60203@gmail.com>
+Date: Mon, 15 Apr 2013 15:21:14 -0700
+X-Google-Sender-Auth: p86Z6Flr3vAqVYLB12WRvU-kqpA
+Message-ID: <CAMbhsRS1hnBRoomoiNijrXZB-938d2RSs1cu9EdSfmXD3xpSQg@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/3] pstore-ram: use write-combine mappings
+From: Colin Cross <ccross@android.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 3:00 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Apr 15, 2013 at 2:46 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 04/15/2013 02:41 PM, Kees Cook wrote:
->
->> Please read what I wrote.
+On Wed, Apr 10, 2013 at 6:30 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On 04/09/2013 10:53 PM, Colin Cross wrote:
+>> On Tue, Apr 9, 2013 at 8:08 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>> From: Rob Herring <rob.herring@calxeda.com>
+>>>
+>>> Atomic operations are undefined behavior on ARM for device or strongly
+>>> ordered memory types. So use write-combine variants for mappings. This
+>>> corresponds to normal, non-cacheable memory on ARM. For many other
+>>> architectures, this change should not change the mapping type.
 >>
->> The 2 GB limit is for the *virtual* mapping.
->>
->> The *physical* mapping, where it lands in RAM, is completely
->> independent, and if you're going to randomize the latter, there is no
->> reason it has to match the former.  Instead, randomize it freely.
->>
->> That is different from the i386 kernel which runs at its
->> physical-mapping address.
->>
->> Incidentally, for performance reasons please avoid locating the kernel
->> below CONFIG_PHYSICAL_ADDRESS if possible.
->>
->> Also make sure your code works with more than 128 e820 entries.
+>> This is going to make ramconsole less reliable.  A debugging printk
+>> followed by a __raw_writel that causes an immediate hard crash is
+>> likely to lose the last updates, including the most useful message, in
+>> the write buffers.
 >
-> also do not overlap with boot_param, command_line, and initrd.
->
-> and need to double check setup_header.init_size to make sure bss and
-> etc will not
-> fall into memory hole or reserved area in e820.
->
-> also may need to setup page table for target position as bootloader may only
-> has ident mapping only for loaded bzImage 64 areas.
->
-> looks you are trying redo the work for bootloader to pick loaded phys addr.
+> It would have to be a write that hangs the bus. In my experience with
+> AXI, the bus doesn't actually hang until you hit max outstanding
+> transactions.
 
-aslr.S's select_aslr_address uses z_extract_offset as the upper bound.
+I've seen many cases where a single write to device memory in an
+unclocked slave will completely and instantly hang all cpus, and the
+next write will never happen.
 
--Kees
+> I think exclusive stores will limit the buffering, but that is probably
+> not architecturally guaranteed.
+>
+> I could put a wb() in at the end of persistent_ram_write.
+>
+>> Also, isn't this patch unnecessary after patch 3 in this set?
+>
+> It is still needed in the main memory case to be architecturally correct
+> to avoid multiple mappings of different memory types and exclusive
+> accesses to device memory. At least on an A9, it doesn't really seem to
+> matter. I could remove this for the ioremap case.
 
---
-Kees Cook
-Chrome OS Security
+According to my reading of the latest ARM ARM (Issue C, section
+A3.5.7), and Catalin's excellent explanation
+(http://lists.linaro.org/pipermail/linaro-dev/2012-February/010239.html),
+it is no longer considered unpredictable to have both cached and
+non-cached mappings to the same memory, as long as you use proper
+cache maintenance between accessing the two mappings.
+
+In pstore_ram the cached mapping will never be accessed (and we don't
+care about speculative accesses), so no cache maintenance is
+necessary.  I don't see any need for this patch, and I see plenty of
+possible problems.
