@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3DOPEB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:04:01 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10650 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751839Ab3DOPEA (ORCPT
+	id S1753237Ab3DOPF0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:05:26 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:50507 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753161Ab3DOPFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:04:00 -0400
-From: Oskar Andero <oskar.andero@sonymobile.com>
-Date: Mon, 15 Apr 2013 17:03:56 +0200
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "Dolkow, Snild" <Snild.Dolkow@sonymobile.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Brian Swetland <swetland@google.com>
-Subject: Re: [PATCH] lowmemorykiller: prevent multiple instances of low
- memory killer
-Message-ID: <20130415150356.GA22161@caracas.corpusers.net>
-References: <1366031009-21958-1-git-send-email-oskar.andero@sonymobile.com>
- <20130415131815.GG6638@mwanda>
- <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
- <20130415141358.GO6692@mwanda>
+	Mon, 15 Apr 2013 11:05:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130415141358.GO6692@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <001701ce39d2$c0dbf8c0$4293ea40$%jun@samsung.com>
+References: <1365698338-27503-1-git-send-email-dianders@chromium.org>
+	<001701ce39d2$c0dbf8c0$4293ea40$%jun@samsung.com>
+Date: Mon, 15 Apr 2013 08:05:22 -0700
+X-Google-Sender-Auth: cwLJ4M2WCW8UYNDiSDu_zbzLQzc
+Message-ID: <CAD=FV=XqmLRjQPwWCZfw0Nfu_uK16SOP=OgJcrbziWs4e__h7A@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: exynos: Turn SDIO interrupts on
+From: Doug Anderson <dianders@chromium.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Chris Ball <cjb@laptop.org>, Thomas Abraham <thomas.abraham@linaro.org>,
+        Bing Zhao <bzhao@marvell.com>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:13 Mon 15 Apr     , Dan Carpenter wrote:
-> On Mon, Apr 15, 2013 at 03:38:08PM +0200, Dolkow, Snild wrote:
-> > >Where is lowmem_shrink called from?  I only see shrink called from the
-> > >bcache sysfs handler __bch_cache_set().  The return value isn't checked
-> > >there.
-> > >
-> > >Up to now this function has only returns positive numbers.
-> > >
-> > >There isn't a place which check LMK_BUSY so maybe it's best to just
-> > >return zero?
-> > 
-> > Hey Dan,
-> > 
-> > lowmem_shrink is assigned to a shrinker struct
-> > (include/linux/shrinker.h) and called in do_shrinker_shrink() in
-> > mm/vmscan.c. That, in turn, is called and checked in a few places
-> > in vmscan.c.
-> >
-> > >From the comments in shrinker.h: 
-> > "It should return the number of objects which remain in the
-> > cache. If it returns -1, it means it cannot do any scanning at
-> > this time (eg. there is a risk of deadlock). The callback must not
-> > return -1 if nr_to_scan is zero."
-> 
-> Ah.  Good.  -1 is the right return.
-> 
-> But really should be a #define in shrinker.h instead of in
-> drivers/staging/android/.
+Seungwon,
 
-IMO one should use the errno.h values - e.g. EBUSY might be a good
-value in this case. Does anyone know why the shrinker wants -1? Is there
-a reason?
+On Mon, Apr 15, 2013 at 5:14 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+>> +             MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23 | MMC_CAP_SDIO_IRQ,
+>> +     MMC_CAP_CMD23 | MMC_CAP_SDIO_IRQ,
+> This line for [1]
+>> +     MMC_CAP_CMD23 | MMC_CAP_SDIO_IRQ,
+>> +     MMC_CAP_CMD23 | MMC_CAP_SDIO_IRQ,
+> [1] is for mshc1. mshc1 is only used for SDIO.
+> As I know, The others are improper for SDIO.
 
--Oskar
+I'm nearly certain that all of the ports are OK for SDIO.  Specifically:
+
+* On the ARM Chromebook (exynos5250) we are using mmc3 (12230000) for
+the SDIO connection to WiFi.
+
+* I have plugged in an external WiFi module to the SD card slot on the
+ARM Chromebook and seen it work (including interrupts).  This is mmc2
+(12220000).
+
+* I have seen a board where mmc1 was wired up to WiFi and seen it work.
+
+
+It is possible that mmc0 wouldn't work for SDIO.  I've never tested it
+since mmc0 is intended for eMMC and every system I've worked with has
+eMMC on that port.  There is some evidence that mmc0 would work for
+SDIO, though: there is a muxing slot on GPC0[2] for SD_0_CARD_INT_n.
+That implies that mmc0 ought to also work for SDIO (and even could be
+configured for an external eSDIO interrupt, I guess).
+
+
+Thanks!
+
+-Doug
