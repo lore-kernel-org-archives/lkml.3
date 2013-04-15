@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935171Ab3DOVqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 17:46:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47178 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934571Ab3DOVqV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 17:46:21 -0400
-Date: Mon, 15 Apr 2013 14:46:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] mm: Soft-dirty bits for user memory changes
- tracking
-Message-Id: <20130415144619.645394d8ecdb180d7757a735@linux-foundation.org>
-In-Reply-To: <5168089B.7060305@parallels.com>
-References: <51669E5F.4000801@parallels.com>
-	<51669EB8.2020102@parallels.com>
-	<20130411142417.bb58d519b860d06ab84333c2@linux-foundation.org>
-	<5168089B.7060305@parallels.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S935199Ab3DOVq3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 17:46:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32984 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935176Ab3DOVq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 17:46:26 -0400
+Message-ID: <516C751B.4020505@zytor.com>
+Date: Mon, 15 Apr 2013 14:46:03 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Kees Cook <keescook@chromium.org>
+CC: Eric Northup <digitaleric@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
+References: <1365797627-20874-1-git-send-email-keescook@chromium.org> <1365797627-20874-7-git-send-email-keescook@chromium.org> <CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com> <516A1D49.1050100@zytor.com> <CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com> <516C702C.2030209@zytor.com> <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
+In-Reply-To: <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Apr 2013 17:14:03 +0400 Pavel Emelyanov <xemul@parallels.com> wrote:
-
-> On 04/12/2013 01:24 AM, Andrew Morton wrote:
-> > On Thu, 11 Apr 2013 15:30:00 +0400 Pavel Emelyanov <xemul@parallels.com> wrote:
-> > 
-> >> The soft-dirty is a bit on a PTE which helps to track which pages a task
-> >> writes to. In order to do this tracking one should
-> >>
-> >>   1. Clear soft-dirty bits from PTEs ("echo 4 > /proc/PID/clear_refs)
-> >>   2. Wait some time.
-> >>   3. Read soft-dirty bits (55'th in /proc/PID/pagemap2 entries)
-> >>
-> >> To do this tracking, the writable bit is cleared from PTEs when the
-> >> soft-dirty bit is. Thus, after this, when the task tries to modify a page
-> >> at some virtual address the #PF occurs and the kernel sets the soft-dirty
-> >> bit on the respective PTE.
-> >>
-> >> Note, that although all the task's address space is marked as r/o after the
-> >> soft-dirty bits clear, the #PF-s that occur after that are processed fast.
-> >> This is so, since the pages are still mapped to physical memory, and thus
-> >> all the kernel does is finds this fact out and puts back writable, dirty
-> >> and soft-dirty bits on the PTE.
-> >>
-> >> Another thing to note, is that when mremap moves PTEs they are marked with
-> >> soft-dirty as well, since from the user perspective mremap modifies the
-> >> virtual memory at mremap's new address.
-> >>
-> >> ...
-> >>
-> >> +config MEM_SOFT_DIRTY
-> >> +	bool "Track memory changes"
-> >> +	depends on CHECKPOINT_RESTORE && X86
-> > 
-> > I guess we can add the CHECKPOINT_RESTORE dependency for now, but it is
-> > a general facility and I expect others will want to get their hands on
-> > it for unrelated things.
+On 04/15/2013 02:41 PM, Kees Cook wrote:
+>>
+>> You seem to be missing something here...
+>>
+>> There are *two* mappings in 64-bit mode.  Physically, if you're going to
+>> randomize you might as well randomize over the entire range... except
+>> not too far down (on either 32 or 64 bit mode)... in particular, you
+>> don't want to drop below 16 MiB if you can avoid it.
+>>
+>> On 64 bits, there is no reason the virtual address has to be randomized
+>> the same way.
 > 
-> OK. Just tell me when you need the dependency removing patch.
+> Aren't we bound by the negative 2GB addressing due to -mcmodel=kernel?
 > 
-> >>From that perspective, the dependency on X86 is awful.  What's the
-> > problem here and what do other architectures need to do to be able to
-> > support the feature?
-> 
-> The problem here is that I don't know what free bits are available on
-> page table entries on other architectures. I was about to resolve this
-> for ARM very soon, but for the rest of them I need help from other people.
 
-Well, this is also a thing arch maintainers can do when they feel a
-need to support the feature on their architecture.  To support them at
-that time we should provide them with a) adequate information in an
-easy-to-find place (eg, a nice comment at the site of the reference x86
-implementation) and b) a userspace test app.
+Guys,
 
-> > You have a test application, I assume.  It would be helpful if we could
-> > get that into tools/testing/selftests.
-> 
-> If a very stupid 10-lines test is OK, then I can cook a patch with it.
+Please read what I wrote.
 
-I think that would be good.  As a low-priority thing, please.
+The 2 GB limit is for the *virtual* mapping.
+
+The *physical* mapping, where it lands in RAM, is completely
+independent, and if you're going to randomize the latter, there is no
+reason it has to match the former.  Instead, randomize it freely.
+
+That is different from the i386 kernel which runs at its
+physical-mapping address.
+
+Incidentally, for performance reasons please avoid locating the kernel
+below CONFIG_PHYSICAL_ADDRESS if possible.
+
+Also make sure your code works with more than 128 e820 entries.
+
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
