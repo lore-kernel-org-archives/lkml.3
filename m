@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934592Ab3DOCop (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:44:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36539 "EHLO
+	id S934559Ab3DOCon (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:44:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36550 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934471Ab3DOCoI (ORCPT
+	with ESMTP id S934290Ab3DOCoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Apr 2013 22:44:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 21/27] tracing: Fix possible NULL pointer dereferences
-Date: Sun, 14 Apr 2013 19:43:20 -0700
-Message-Id: <20130415024232.926555500@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Alan Cox <alan@linux.intel.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Bryan ODonoghue <bryan.odonoghue.lkml@nexus-software.ie>
+Subject: [ 27/27] tty: dont deadlock while flushing workqueue
+Date: Sun, 14 Apr 2013 19:43:26 -0700
+Message-Id: <20130415024233.376898638@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -29,108 +29,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 6a76f8c0ab19f215af2a3442870eeb5f0e81998d upstream.
+commit 852e4a8152b427c3f318bb0e1b5e938d64dcdc32 upstream.
 
-Currently set_ftrace_pid and set_graph_function files use seq_lseek
-for their fops.  However seq_open() is called only for FMODE_READ in
-the fops->open() so that if an user tries to seek one of those file
-when she open it for writing, it sees NULL seq_file and then panic.
+Since commit 89c8d91e31f2 ("tty: localise the lock") I see a dead lock
+in one of my dummy_hcd + g_nokia test cases. The first run was usually
+okay, the second often resulted in a splat by lockdep and the third was
+usually a dead lock.
+Lockdep complained about tty->hangup_work and tty->legacy_mutex taken
+both ways:
+| ======================================================
+| [ INFO: possible circular locking dependency detected ]
+| 3.7.0-rc6+ #204 Not tainted
+| -------------------------------------------------------
+| kworker/2:1/35 is trying to acquire lock:
+|  (&tty->legacy_mutex){+.+.+.}, at: [<c14051e6>] tty_lock_nested+0x36/0x80
+|
+| but task is already holding lock:
+|  ((&tty->hangup_work)){+.+...}, at: [<c104f6e4>] process_one_work+0x124/0x5e0
+|
+| which lock already depends on the new lock.
+|
+| the existing dependency chain (in reverse order) is:
+|
+| -> #2 ((&tty->hangup_work)){+.+...}:
+|        [<c107fe74>] lock_acquire+0x84/0x190
+|        [<c104d82d>] flush_work+0x3d/0x240
+|        [<c12e6986>] tty_ldisc_flush_works+0x16/0x30
+|        [<c12e7861>] tty_ldisc_release+0x21/0x70
+|        [<c12e0dfc>] tty_release+0x35c/0x470
+|        [<c1105e28>] __fput+0xd8/0x270
+|        [<c1105fcd>] ____fput+0xd/0x10
+|        [<c1051dd9>] task_work_run+0xb9/0xf0
+|        [<c1002a51>] do_notify_resume+0x51/0x80
+|        [<c140550a>] work_notifysig+0x35/0x3b
+|
+| -> #1 (&tty->legacy_mutex/1){+.+...}:
+|        [<c107fe74>] lock_acquire+0x84/0x190
+|        [<c140276c>] mutex_lock_nested+0x6c/0x2f0
+|        [<c14051e6>] tty_lock_nested+0x36/0x80
+|        [<c1405279>] tty_lock_pair+0x29/0x70
+|        [<c12e0bb8>] tty_release+0x118/0x470
+|        [<c1105e28>] __fput+0xd8/0x270
+|        [<c1105fcd>] ____fput+0xd/0x10
+|        [<c1051dd9>] task_work_run+0xb9/0xf0
+|        [<c1002a51>] do_notify_resume+0x51/0x80
+|        [<c140550a>] work_notifysig+0x35/0x3b
+|
+| -> #0 (&tty->legacy_mutex){+.+.+.}:
+|        [<c107f3c9>] __lock_acquire+0x1189/0x16a0
+|        [<c107fe74>] lock_acquire+0x84/0x190
+|        [<c140276c>] mutex_lock_nested+0x6c/0x2f0
+|        [<c14051e6>] tty_lock_nested+0x36/0x80
+|        [<c140523f>] tty_lock+0xf/0x20
+|        [<c12df8e4>] __tty_hangup+0x54/0x410
+|        [<c12dfcb2>] do_tty_hangup+0x12/0x20
+|        [<c104f763>] process_one_work+0x1a3/0x5e0
+|        [<c104fec9>] worker_thread+0x119/0x3a0
+|        [<c1055084>] kthread+0x94/0xa0
+|        [<c140ca37>] ret_from_kernel_thread+0x1b/0x28
+|
+|other info that might help us debug this:
+|
+|Chain exists of:
+|  &tty->legacy_mutex --> &tty->legacy_mutex/1 --> (&tty->hangup_work)
+|
+| Possible unsafe locking scenario:
+|
+|       CPU0                    CPU1
+|       ----                    ----
+|  lock((&tty->hangup_work));
+|                               lock(&tty->legacy_mutex/1);
+|                               lock((&tty->hangup_work));
+|  lock(&tty->legacy_mutex);
+|
+| *** DEADLOCK ***
 
-It can be easily reproduced with following command:
+Before the path mentioned tty_ldisc_release() look like this:
 
-  $ cd /sys/kernel/debug/tracing
-  $ echo 1234 | sudo tee -a set_ftrace_pid
+|	tty_ldisc_halt(tty);
+|	tty_ldisc_flush_works(tty);
+|	tty_lock();
 
-In this example, GNU coreutils' tee opens the file with fopen(, "a")
-and then the fopen() internally calls lseek().
+As it can be seen, it first flushes the workqueue and then grabs the
+tty_lock. Now we grab the lock first:
 
-Link: http://lkml.kernel.org/r/1365663302-2170-1-git-send-email-namhyung@kernel.org
+|	tty_lock_pair(tty, o_tty);
+|	tty_ldisc_halt(tty);
+|	tty_ldisc_flush_works(tty);
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+so lockdep's complaint seems valid.
+
+The earlier version of this patch took the ldisc_mutex since the other
+user of tty_ldisc_flush_works() (tty_set_ldisc()) did this.
+Peter Hurley then said that it is should not be requried. Since it
+wasn't done earlier, I dropped this part.
+The code under tty_ldisc_kill() was executed earlier with the tty lock
+taken so it is taken again.
+
+I was able to reproduce the deadlock on v3.8-rc1, this patch fixes the
+problem in my testcase. I didn't notice any problems so far.
+
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Cc: Bryan O'Donoghue <bryan.odonoghue.lkml@nexus-software.ie>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ftrace.h     |    2 +-
- kernel/trace/ftrace.c      |   10 +++++-----
- kernel/trace/trace_stack.c |    2 +-
- 3 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/tty/tty_ldisc.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -394,7 +394,7 @@ ssize_t ftrace_filter_write(struct file
- 			    size_t cnt, loff_t *ppos);
- ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
- 			     size_t cnt, loff_t *ppos);
--loff_t ftrace_regex_lseek(struct file *file, loff_t offset, int whence);
-+loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int whence);
- int ftrace_regex_release(struct inode *inode, struct file *file);
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -934,17 +934,17 @@ void tty_ldisc_release(struct tty_struct
+ 	 * race with the set_ldisc code path.
+ 	 */
  
- void __init
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2674,7 +2674,7 @@ ftrace_notrace_open(struct inode *inode,
- }
+-	tty_lock_pair(tty, o_tty);
+ 	tty_ldisc_halt(tty);
+-	tty_ldisc_flush_works(tty);
+-	if (o_tty) {
++	if (o_tty)
+ 		tty_ldisc_halt(o_tty);
++
++	tty_ldisc_flush_works(tty);
++	if (o_tty)
+ 		tty_ldisc_flush_works(o_tty);
+-	}
  
- loff_t
--ftrace_regex_lseek(struct file *file, loff_t offset, int whence)
-+ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
- {
- 	loff_t ret;
- 
-@@ -3548,7 +3548,7 @@ static const struct file_operations ftra
- 	.open = ftrace_filter_open,
- 	.read = seq_read,
- 	.write = ftrace_filter_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = ftrace_filter_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-@@ -3556,7 +3556,7 @@ static const struct file_operations ftra
- 	.open = ftrace_notrace_open,
- 	.read = seq_read,
- 	.write = ftrace_notrace_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = ftrace_filter_lseek,
- 	.release = ftrace_regex_release,
- };
- 
-@@ -3761,8 +3761,8 @@ static const struct file_operations ftra
- 	.open		= ftrace_graph_open,
- 	.read		= seq_read,
- 	.write		= ftrace_graph_write,
-+	.llseek		= ftrace_filter_lseek,
- 	.release	= ftrace_graph_release,
--	.llseek		= seq_lseek,
- };
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
- 
-@@ -4420,7 +4420,7 @@ static const struct file_operations ftra
- 	.open		= ftrace_pid_open,
- 	.write		= ftrace_pid_write,
- 	.read		= seq_read,
--	.llseek		= seq_lseek,
-+	.llseek		= ftrace_filter_lseek,
- 	.release	= ftrace_pid_release,
- };
- 
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -322,7 +322,7 @@ static const struct file_operations stac
- 	.open = stack_trace_filter_open,
- 	.read = seq_read,
- 	.write = ftrace_filter_write,
--	.llseek = ftrace_regex_lseek,
-+	.llseek = ftrace_filter_lseek,
- 	.release = ftrace_regex_release,
- };
++	tty_lock_pair(tty, o_tty);
+ 	/* This will need doing differently if we need to lock */
+ 	tty_ldisc_kill(tty);
+-
+ 	if (o_tty)
+ 		tty_ldisc_kill(o_tty);
  
 
 
