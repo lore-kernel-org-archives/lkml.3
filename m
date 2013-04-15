@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934831Ab3DOF5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 01:57:15 -0400
-Received: from www.sr71.net ([198.145.64.142]:47580 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933788Ab3DOF5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 01:57:14 -0400
-Message-ID: <516B9714.80007@sr71.net>
-Date: Sun, 14 Apr 2013 22:58:44 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S934949Ab3DOF6a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 01:58:30 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:60120 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934518Ab3DOF62 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 01:58:28 -0400
+Date: Mon, 15 Apr 2013 07:58:23 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Joe Perches <joe@perches.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux-s390@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: arch/s390/lib/uaccess_pt.c: Missing breaks: ?
+Message-ID: <20130415055822.GC4207@osiris>
+References: <1365919574.1878.13.camel@joe-AO722>
+ <20130415054814.GA4207@osiris>
+ <1366005207.1878.43.camel@joe-AO722>
 MIME-Version: 1.0
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cliff Wickman <cpw@sgi.com>, Simon Horman <horms@verge.net.au>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Renninger <trenn@suse.de>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 5/5] kexec: X86: Pass memory ranges via e820 table instead
- of memmap= boot parameter
-References: <1365683207-42425-1-git-send-email-trenn@suse.de> <1365683207-42425-6-git-send-email-trenn@suse.de> <CAE9FiQXnZzVC7dtvXWrqz=jYAGH053R8Vw1qkrMd2F+hAaMxdQ@mail.gmail.com> <5166D18A.7090800@zytor.com> <20130412143104.GA4301@redhat.com> <5168208B.7050107@zytor.com> <51688803.8020401@sr71.net> <516B87A6.9080708@jp.fujitsu.com>
-In-Reply-To: <516B87A6.9080708@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366005207.1878.43.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041505-2966-0000-0000-00000748F644
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2013 09:52 PM, HATAYAMA Daisuke wrote:
-> This sounds like there's no such issue on x86 cache mechanism. Is it
-> correct? If so, what is the difference between ia64 and x86 cache
-> mechanisms?
+On Sun, Apr 14, 2013 at 10:53:27PM -0700, Joe Perches wrote:
+> On Mon, 2013-04-15 at 07:48 +0200, Heiko Carstens wrote:
+> > On Sat, Apr 13, 2013 at 11:06:14PM -0700, Joe Perches wrote:
+> > > Commit ea81531d ("s390/uaccess: fix page table walk")
+> > > added this code.  It looks like it should have break;
+> > > for each case.
+> > no, the fallthrough is on purpose for each case statement.
+> 
+> Hi again.  It might be useful to add /* fallthrough */
+> or some other comment showing it's intentional.
 
-I'm just going by the code comments:
-
-drivers/char/mem.c
->                 /*
->                  * On ia64 if a page has been mapped somewhere as uncached, then
->                  * it must also be accessed uncached by the kernel or data
->                  * corruption may occur.
->                  */
+I might add some comment above the function, since for everybody
+*knowing* the architecture it's obvious ;) that these must be
+fallthroughs.
+How did you stuble across this?
 
