@@ -1,61 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab3DOQ2e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:28:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19158 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755783Ab3DOQ2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:28:32 -0400
-Message-ID: <516C2A60.6040802@redhat.com>
-Date: Mon, 15 Apr 2013 12:27:12 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Waiman Long <Waiman.Long@hp.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v2 2/3] mutex: Queue mutex spinners with MCS lock to reduce
- cacheline contention
-References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com> <1366036679-9702-3-git-send-email-Waiman.Long@hp.com>
-In-Reply-To: <1366036679-9702-3-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755543Ab3DOQ2U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:28:20 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:48582 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab3DOQ2R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 12:28:17 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>, Prarit Bhargava <prarit@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
+        Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH v8] irq: add quirk for broken interrupt remapping on 55XX chipsets
+Date: Mon, 15 Apr 2013 12:28:04 -0400
+Message-Id: <1366043284-19266-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 10:37 AM, Waiman Long wrote:
-> The current mutex spinning code (with MUTEX_SPIN_ON_OWNER option turned
-> on) allow multiple tasks to spin on a single mutex concurrently. A
-> potential problem with the current approach is that when the mutex
-> becomes available, all the spinning tasks will try to acquire the
-> mutex more or less simultaneously. As a result, there will be a lot of
-> cacheline bouncing especially on systems with a large number of CPUs.
->
-> This patch tries to reduce this kind of contention by putting the
-> mutex spinners into a queue so that only the first one in the queue
-> will try to acquire the mutex. This will reduce contention and allow
-> all the tasks to move forward faster.
->
-> The queuing of mutex spinners is done using an MCS lock based
-> implementation which will further reduce contention on the mutex
-> cacheline than a similar ticket spinlock based implementation. This
-> patch will add a new field into the mutex data structure for holding
-> the MCS lock. This expands the mutex size by 8 bytes for 64-bit system
-> and 4 bytes for 32-bit system. This overhead will be avoid if the
-> MUTEX_SPIN_ON_OWNER option is turned off.
+A few years back intel published a spec update:
+http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+For the 5520 and 5500 chipsets which contained an errata (specificially errata
+53), which noted that these chipsets can't properly do interrupt remapping, and
+as a result the recommend that interrupt remapping be disabled in bios.  While
+many vendors have a bios update to do exactly that, not all do, and of course
+not all users update their bios to a level that corrects the problem.  As a
+result, occasionally interrupts can arrive at a cpu even after affinity for that
+interrupt has be moved, leading to lost or spurrious interrupts (usually
+characterized by the message:
+kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
 
-Acked-by: Rik van Riel <riel@redhat.com>
+There have been several incidents recently of people seeing this error, and
+investigation has shown that they have system for which their BIOS level is such
+that this feature was not properly turned off.  As such, it would be good to
+give them a reminder that their systems are vulnurable to this problem.  For
+details of those that reported the problem, please see:
+https://bugzilla.redhat.com/show_bug.cgi?id=887006
 
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Prarit Bhargava <prarit@redhat.com>
+CC: Don Zickus <dzickus@redhat.com>
+CC: Don Dutile <ddutile@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Asit Mallick <asit.k.mallick@intel.com>
+CC: David Woodhouse <dwmw2@infradead.org>
+CC: linux-pci@vger.kernel.org
+CC: Joerg Roedel <joro@8bytes.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+
+Change notes:
+
+v2)
+
+* Moved the quirk to the x86 arch, since consensus seems to be that the 55XX
+chipset series is x86 only.  I decided however to keep the quirk as a regular
+quirk, not an early_quirk.  Early quirks have no way currently to determine if
+BIOS has properly disabled the feature in the iommu, at least not without
+significant hacking, and since its quite possible this will be a short lived
+quirk, should Don Z's workaround code prove successful (and it looks like it may
+well), I don't think that necessecary.
+
+* Removed the WARNING banner from the quirk, and added the HW_ERR token to the
+string, I opted to leave the newlines in place however, as I really couldnt
+find a way to keep the text on a single line is still legible from a code
+perspective.  I think theres enough language in there that using cscope on just
+about any substring however will turn it up, and again, this may be a short
+lived quirk.
+
+v3)
+
+* Removed defines from pci_ids.h, and used direct id values as per request from
+Bjorn.
+
+v4)
+
+* Converted pr_warn to WARN_TAINT(TAINT_FIRMWARE_WORKAROUND) as per David
+Woodhouse
+
+v5)
+
+* Moved check to an early quirk, and flagged the broken chip, so we could
+reasonably disable irq remapping during bootup.
+
+v6)
+
+* Clean up of stupid extra thrash in quirks.c
+
+v7)
+
+* Move broken check to intel_irq_remapping.c
+* Fixed another typo
+* Finally made the reference bugzilla public
+
+v8)
+
+* Removed extraneous code from irq_remapping_enabled
+---
+ arch/x86/kernel/early-quirks.c      | 25 +++++++++++++++++++++++++
+ drivers/iommu/intel_irq_remapping.c | 10 ++++++++++
+ drivers/iommu/irq_remapping.c       |  1 +
+ drivers/iommu/irq_remapping.h       |  1 +
+ 4 files changed, 37 insertions(+)
+
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index 3755ef4..bfa3139 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -192,6 +192,27 @@ static void __init ati_bugs_contd(int num, int slot, int func)
+ }
+ #endif
+ 
++#ifdef CONFIG_IRQ_REMAP
++static void __init intel_remapping_check(int num, int slot, int func)
++{
++	u8 revision;
++
++	revision = pci_read_config_byte(num, slot, func , PCI_REVISION_ID);
++
++	/*
++	 * Revision 0x13 of this chipset supports irq remapping
++	 * but has an erratum that breaks its behavior, flag it as such
++	 */
++	if (revision == 0x13)
++		irq_remap_broken = 1;
++
++}
++#else
++static void __init intel_remapping_check(int num, int slot, int func)
++{
++}
++#endif
++
+ #define QFLAG_APPLY_ONCE 	0x1
+ #define QFLAG_APPLIED		0x2
+ #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
+@@ -221,6 +242,10 @@ static struct chipset early_qrk[] __initdata = {
+ 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
+ 	{ PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
+ 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
++	{ PCI_VENDOR_ID_INTEL, 0x3403, PCI_CLASS_BRIDGE_HOST,
++	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
++	{ PCI_VENDOR_ID_INTEL, 0x3406, PCI_CLASS_BRIDGE_HOST,
++	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
+ 	{}
+ };
+ 
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index f3b8f23..5b19b2d 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -524,6 +524,16 @@ static int __init intel_irq_remapping_supported(void)
+ 
+ 	if (disable_irq_remap)
+ 		return 0;
++	if (irq_remap_broken) {
++		WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
++			   "This system BIOS has enabled interrupt remapping\n"
++			   "on a chipset that contains an erratum making that\n"
++			   "feature unstable.  To maintain system stability\n"
++			   "interrupt remapping is being disabled.  Please\n"
++			   "contact your BIOS vendor for an update\n");
++		disable_irq_remap = 1;
++		return 0;
++	}
+ 
+ 	if (!dmar_ir_support())
+ 		return 0;
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index d56f8c1..04d975f 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -19,6 +19,7 @@
+ int irq_remapping_enabled;
+ 
+ int disable_irq_remap;
++int irq_remap_broken;
+ int disable_sourceid_checking;
+ int no_x2apic_optout;
+ 
+diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
+index ecb6376..d7537e4 100644
+--- a/drivers/iommu/irq_remapping.h
++++ b/drivers/iommu/irq_remapping.h
+@@ -32,6 +32,7 @@ struct pci_dev;
+ struct msi_msg;
+ 
+ extern int disable_irq_remap;
++extern int irq_remap_broken;
+ extern int disable_sourceid_checking;
+ extern int no_x2apic_optout;
+ extern int irq_remapping_enabled;
 -- 
-All rights reversed
+1.8.1.4
+
