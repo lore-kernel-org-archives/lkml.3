@@ -1,134 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390Ab3DOPdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:33:08 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45952 "EHLO
+	id S934343Ab3DOPdW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:33:22 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45968 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934113Ab3DOPdF (ORCPT
+	with ESMTP id S933381Ab3DOPdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:33:05 -0400
+	Mon, 15 Apr 2013 11:33:18 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3 10/24] n_tty: Remove read_cnt
-Date: Mon, 15 Apr 2013 11:19:14 -0400
-Message-Id: <1366039168-8510-11-git-send-email-peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 00/20] streamline per-char receiving
+Date: Mon, 15 Apr 2013 11:32:31 -0400
+Message-Id: <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
-References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
- <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
+References: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
 X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Storing the read_cnt creates an unnecessary shared variable
-between the single-producer (n_tty_receive_buf()) and the
-single-consumer (n_tty_read()).
+This 4th of 4 patchsets implements efficient per-char receiving
+in the N_TTY line discipline. As mentioned in the initial patchset,
+'lockless n_tty receive path', casual performance measurements show
+a 9~15x speedup in end-to-end copying.
 
-Compute read_cnt from head & tail instead of storing.
+Most of this patchset factors out modal conditions from the per-char
+i/o path. For example, regardless of if ISTRIP is set or not, the modal
+condition, I_ISTRIP(tty), was tested on every char received, despite
+that ISTRIP can only be set by termios changes.
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+The modes handled by separate code paths are:
+1) 'real raw' mode (which was already handled separately)
+2) raw mode
+3) EXTPROC when ISTRIP and IUCLC are not selected
+4) tty closing mode
+5) LNEXT mode
+6) ISTRIP or IUCLC or IPARMRK set
+7) everything else
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 1406b63..fdabd65 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -98,7 +98,6 @@ struct n_tty_data {
- 	char *read_buf;
- 	size_t read_head;
- 	size_t read_tail;
--	int read_cnt;
- 	int minimum_to_wake;
- 
- 	unsigned char *echo_buf;
-@@ -117,7 +116,7 @@ struct n_tty_data {
- 
- static inline size_t read_cnt(struct n_tty_data *ldata)
- {
--	return ldata->read_cnt;
-+	return ldata->read_head - ldata->read_tail;
- }
- 
- static inline unsigned char read_buf(struct n_tty_data *ldata, size_t i)
-@@ -198,7 +197,6 @@ static void put_tty_queue_nolock(unsigned char c, struct n_tty_data *ldata)
- 	if (read_cnt(ldata) < N_TTY_BUF_SIZE) {
- 		*read_buf_addr(ldata, ldata->read_head) = c;
- 		ldata->read_head++;
--		ldata->read_cnt++;
- 	}
- }
- 
-@@ -239,7 +237,7 @@ static void reset_buffer_flags(struct n_tty_data *ldata)
- 	unsigned long flags;
- 
- 	raw_spin_lock_irqsave(&ldata->read_lock, flags);
--	ldata->read_head = ldata->read_tail = ldata->read_cnt = 0;
-+	ldata->read_head = ldata->read_tail = 0;
- 	raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
- 
- 	mutex_lock(&ldata->echo_lock);
-@@ -943,16 +941,12 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 	else {
- 		if (!L_ECHO(tty)) {
- 			raw_spin_lock_irqsave(&ldata->read_lock, flags);
--			ldata->read_cnt -= ((ldata->read_head - ldata->canon_head) &
--					  (N_TTY_BUF_SIZE - 1));
- 			ldata->read_head = ldata->canon_head;
- 			raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
- 			return;
- 		}
- 		if (!L_ECHOK(tty) || !L_ECHOKE(tty) || !L_ECHOE(tty)) {
- 			raw_spin_lock_irqsave(&ldata->read_lock, flags);
--			ldata->read_cnt -= ((ldata->read_head - ldata->canon_head) &
--					  (N_TTY_BUF_SIZE - 1));
- 			ldata->read_head = ldata->canon_head;
- 			raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
- 			finish_erasing(ldata);
-@@ -990,7 +984,6 @@ static void eraser(unsigned char c, struct tty_struct *tty)
- 		cnt = ldata->read_head - head;
- 		raw_spin_lock_irqsave(&ldata->read_lock, flags);
- 		ldata->read_head = head;
--		ldata->read_cnt -= cnt;
- 		raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
- 		if (L_ECHO(tty)) {
- 			if (L_ECHOPRT(tty)) {
-@@ -1449,7 +1442,6 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 		i = min(count, i);
- 		memcpy(read_buf_addr(ldata, ldata->read_head), cp, i);
- 		ldata->read_head += i;
--		ldata->read_cnt += i;
- 		cp += i;
- 		count -= i;
- 
-@@ -1458,7 +1450,6 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 		i = min(count, i);
- 		memcpy(read_buf_addr(ldata, ldata->read_head), cp, i);
- 		ldata->read_head += i;
--		ldata->read_cnt += i;
- 		raw_spin_unlock_irqrestore(&ldata->read_lock, cpuflags);
- 	} else {
- 		for (i = count, p = cp, f = fp; i; i--, p++) {
-@@ -1760,7 +1751,6 @@ static int copy_from_read_buf(struct tty_struct *tty,
- 				ldata->icanon);
- 		raw_spin_lock_irqsave(&ldata->read_lock, flags);
- 		ldata->read_tail += n;
--		ldata->read_cnt -= n;
- 		/* Turn single EOF into zero-length read */
- 		if (L_EXTPROC(tty) && ldata->icanon && is_eof && !read_cnt(ldata))
- 			n = 0;
-@@ -1848,7 +1838,6 @@ static int canon_copy_from_read_buf(struct tty_struct *tty,
- 
- 	raw_spin_lock_irqsave(&ldata->read_lock, flags);
- 	ldata->read_tail += c;
--	ldata->read_cnt -= c;
- 	if (found) {
- 		__clear_bit(eol, ldata->read_flags);
- 		/* this test should be redundant:
+The code duplication is kept to a minimum by carefully factoring out
+shared slow paths (such as specially handled chars in canonical mode
+or receiving PARITY or OVERRUN flags); only the per-char loops themselves
+are duplicated.
+
+
+Peter Hurley (20):
+  n_tty: Fix EOF push handling
+  n_tty: Remove alias ptrs in __receive_buf()
+  n_tty: Move buffers into n_tty_data
+  n_tty: Rename process_char_map to char_map
+  n_tty: Simplify __receive_buf loop count
+  n_tty: Factor 'real raw' receive_buf into standalone fn
+  n_tty: Factor signal char handling into separate fn
+  n_tty: Factor flagged char handling into separate fn
+  n_tty: Factor raw mode receive_buf() into separate fn
+  n_tty: Special case EXTPROC receive_buf() as raw mode
+  n_tty: Factor tty->closing receive_buf() into separate fn
+  n_tty: Factor standard per-char i/o into separate fn
+  n_tty: Eliminate char tests from IXANY restart test
+  n_tty: Split n_tty_receive_char()
+  n_tty: Factor ISTRIP and IUCLC receive_buf into separate fn
+  n_tty: Factor PARMRK from normal per-char i/o
+  n_tty: Remove overflow tests from receive_buf() path
+  n_tty: Un-inline single-use functions
+  n_tty: Factor LNEXT processing from per-char i/o path
+  tty: Remove extra wakeup from pty write() path
+
+ drivers/tty/n_tty.c  | 617 +++++++++++++++++++++++++++++++--------------------
+ drivers/tty/pty.c    |   4 +-
+ drivers/tty/tty_io.c |   1 -
+ include/linux/tty.h  |   1 -
+ 4 files changed, 381 insertions(+), 242 deletions(-)
+
 -- 
 1.8.1.2
 
