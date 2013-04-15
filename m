@@ -1,121 +1,426 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752193Ab3DONrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 09:47:33 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:53972 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282Ab3DONrb (ORCPT
+	id S1751843Ab3DONu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 09:50:28 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:56720 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab3DONu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 09:47:31 -0400
+	Mon, 15 Apr 2013 09:50:26 -0400
+X-IronPort-AV: E=Sophos;i="4.87,476,1363132800"; 
+   d="scan'208";a="3563023"
+Message-ID: <516C05AE.9040904@citrix.com>
+Date: Mon, 15 Apr 2013 15:50:38 +0200
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130415115906.GF6512@gmail.com>
-References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org>
-	<1365532783-27425-3-git-send-email-lee.jones@linaro.org>
-	<CAH+eYFB_fYmCjvh5PXKRhd-FnaWfeu+LtH+q3VywhCk-PYhHVQ@mail.gmail.com>
-	<20130415110601.GE6512@gmail.com>
-	<CAH+eYFB2+oMPXsnzQVVrEK8CjKGVYFa_n4Wxr=CpdtJwFfOGYw@mail.gmail.com>
-	<20130415115906.GF6512@gmail.com>
-Date: Mon, 15 Apr 2013 15:47:30 +0200
-Message-ID: <CACRpkdawUPPzh-EgVdmvOVP2SOjgKXYrfus=yMee7n+PtAQPHg@mail.gmail.com>
-Subject: Re: [PATCH 3/8] dmaengine: ste_dma40: Actually write the runtime
- configuration to registers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Rabin Vincent <rabin@rab.in>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [PATCH v1 5/7] xen-blkback: make the queue of free requests per
+ backend
+References: <1364382643-3711-1-git-send-email-roger.pau@citrix.com> <1364382643-3711-6-git-send-email-roger.pau@citrix.com> <20130409161336.GE3158@phenom.dumpdata.com>
+In-Reply-To: <20130409161336.GE3158@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 1:59 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> On Mon, 15 Apr 2013, Rabin Vincent wrote:
->> 2013/4/15 Lee Jones <lee.jones@linaro.org>:
->> > On Fri, 12 Apr 2013, Rabin Vincent wrote:
->> >> 2013/4/9 Lee Jones <lee.jones@linaro.org>:
->> >> > Someone has spent a fair amount of effort writing a runtime configuration
->> >> > changing algorithm for DMA clients. However, the config appears to never
->> >> > actually make it to hardware. In order for the configuration to take hold
->> >> > we need to issue a d40_config_write(), as this is the routine which writes
->> >> > it into the hardware's registers.
->> >>
->> >> No, it's not.  This function is only for initial configuration which
->> >> should only be written when the channel is allocated.  In fact, by
->> >> calling it here in runtime_config, you are introducing a serious bug:
->> >> other logical channels on the same physical channel will stop because of
->> >> the SSLNK/SDLNK of the physical channel being zeroed.
->> >>
->> >> The runtime config already makes it the hardware in the existing code,
->> >> via d40_*_cfg().
->> >
->> > Sorry Rabin, but the only place I can see the config being written is
->> > in d40_config_write().
->> >
->> > Can you paste the line of code in d40_*_cfg() which actually writes
->> > the config to hardware please? I don't see it.
+On 09/04/13 18:13, Konrad Rzeszutek Wilk wrote:
+> On Wed, Mar 27, 2013 at 12:10:41PM +0100, Roger Pau Monne wrote:
+>> Remove the last dependency from blkbk by moving the list of free
+>> requests to blkif. This change reduces the contention on the list of
+>> available requests.
 >>
->> It's not that simple.  There are some pointers passed to d40_*_cfg() and
->> that function writes the configuration to the variables those pointers
->> point to (d40c->log_def.lcsp1, d40c->src_def_cfg, etc.).  Please read
->> the code to see how those variables end up being used later when the
->> LLIs are prepared for the HW.
->
-> I have read the code, which is why I know that the config only gets
-> written in d40_config_write(). :)
->
-> So the configuration which gets set in the runtime_config routine
-> doesn't ever make it to hardware - hence this patch.
->
-> Unless I'm missing something?
+>> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Cc: xen-devel@lists.xen.org
+>> ---
+>> Changes since RFC:
+>>  * Replace kzalloc with kcalloc.
+>> ---
+>>  drivers/block/xen-blkback/blkback.c |  125 +++++++----------------------------
+>>  drivers/block/xen-blkback/common.h  |   27 ++++++++
+>>  drivers/block/xen-blkback/xenbus.c  |   19 +++++
+>>  3 files changed, 70 insertions(+), 101 deletions(-)
+>>
+>> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+>> index e6542d5..a1c9dad 100644
+>> --- a/drivers/block/xen-blkback/blkback.c
+>> +++ b/drivers/block/xen-blkback/blkback.c
+>> @@ -50,18 +50,14 @@
+>>  #include "common.h"
+>>
+>>  /*
+>> - * These are rather arbitrary. They are fairly large because adjacent requests
+>> - * pulled from a communication ring are quite likely to end up being part of
+>> - * the same scatter/gather request at the disc.
+>> - *
+>> - * ** TRY INCREASING 'xen_blkif_reqs' IF WRITE SPEEDS SEEM TOO LOW **
+>> - *
+>> - * This will increase the chances of being able to write whole tracks.
+>> - * 64 should be enough to keep us competitive with Linux.
+>> + * This is the number of requests that will be pre-allocated for each backend.
+>> + * For better performance this is set to RING_SIZE (32), so requests
+>> + * in the ring will never have to wait for a free pending_req.
+> 
+> You might want to clarify that 'Any value less than that is sure to
+> cause problems.'
+> 
+> At which point perhaps we should have some logic to enforce that?
+>>   */
+>> -static int xen_blkif_reqs = 64;
+>> +
+>> +int xen_blkif_reqs = 32;
+>>  module_param_named(reqs, xen_blkif_reqs, int, 0);
+>> -MODULE_PARM_DESC(reqs, "Number of blkback requests to allocate");
+>> +MODULE_PARM_DESC(reqs, "Number of blkback requests to allocate per backend");
+> 
+> 
+> Do we even need this anymore? I mean if the optimial size is 32 and going
+> below that is silly. Going above that is silly as well - as we won't be using
+> the extra count.
+> 
+> Can we just rip this module parameter out?
 
-The runtime config sets up the config for all *subsequent* jobs.
-struct d40_chan contains e.g. runtime_addr, runtime_direction
-etc to store up the stuff being configured. This is done for
-all the other config as well using d40_log_cfg() or
-d40_phy_cfg(), and the result is cached in the channel
-struct, here called d40c.
+Wiped out, it doesn't make sense.
 
-Next, when preparing jobs, the DMA40 LLI engine will fill in
-job descriptors using e.g. d40_get_dev_addr()
-and pick settings from this cached runtime config.
+> 
+>>
+>>  /*
+>>   * Maximum number of unused free pages to keep in the internal buffer.
+>> @@ -120,53 +116,11 @@ MODULE_PARM_DESC(lru_percent_clean,
+>>  static unsigned int log_stats;
+>>  module_param(log_stats, int, 0644);
+>>
+>> -/*
+>> - * Each outstanding request that we've passed to the lower device layers has a
+>> - * 'pending_req' allocated to it. Each buffer_head that completes decrements
+>> - * the pendcnt towards zero. When it hits zero, the specified domain has a
+>> - * response queued for it, with the saved 'id' passed back.
+>> - */
+>> -struct pending_req {
+>> -     struct xen_blkif        *blkif;
+>> -     u64                     id;
+>> -     int                     nr_pages;
+>> -     atomic_t                pendcnt;
+>> -     unsigned short          operation;
+>> -     int                     status;
+>> -     struct list_head        free_list;
+>> -     struct page             *pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>> -     struct persistent_gnt   *persistent_gnts[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>> -     grant_handle_t          grant_handles[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>> -};
+>> -
+>>  #define BLKBACK_INVALID_HANDLE (~0)
+>>
+>>  /* Number of free pages to remove on each call to free_xenballooned_pages */
+>>  #define NUM_BATCH_FREE_PAGES 10
+>>
+>> -struct xen_blkbk {
+>> -     struct pending_req      *pending_reqs;
+>> -     /* List of all 'pending_req' available */
+>> -     struct list_head        pending_free;
+>> -     /* And its spinlock. */
+>> -     spinlock_t              pending_free_lock;
+>> -     wait_queue_head_t       pending_free_wq;
+>> -};
+>> -
+>> -static struct xen_blkbk *blkbk;
+>> -
+>> -/*
+>> - * Little helpful macro to figure out the index and virtual address of the
+>> - * pending_pages[..]. For each 'pending_req' we have have up to
+>> - * BLKIF_MAX_SEGMENTS_PER_REQUEST (11) pages. The seg would be from 0 through
+>> - * 10 and would index in the pending_pages[..].
+>> - */
+>> -static inline int vaddr_pagenr(struct pending_req *req, int seg)
+>> -{
+>> -     return (req - blkbk->pending_reqs) *
+>> -             BLKIF_MAX_SEGMENTS_PER_REQUEST + seg;
+>> -}
+>> -
+>>  static inline int get_free_page(struct xen_blkif *blkif, struct page **page)
+>>  {
+>>       unsigned long flags;
+>> @@ -471,18 +425,18 @@ finished:
+>>  /*
+>>   * Retrieve from the 'pending_reqs' a free pending_req structure to be used.
+>>   */
+>> -static struct pending_req *alloc_req(void)
+>> +static struct pending_req *alloc_req(struct xen_blkif *blkif)
+>>  {
+>>       struct pending_req *req = NULL;
+>>       unsigned long flags;
+>>
+>> -     spin_lock_irqsave(&blkbk->pending_free_lock, flags);
+>> -     if (!list_empty(&blkbk->pending_free)) {
+>> -             req = list_entry(blkbk->pending_free.next, struct pending_req,
+>> +     spin_lock_irqsave(&blkif->pending_free_lock, flags);
+>> +     if (!list_empty(&blkif->pending_free)) {
+>> +             req = list_entry(blkif->pending_free.next, struct pending_req,
+>>                                free_list);
+>>               list_del(&req->free_list);
+>>       }
+>> -     spin_unlock_irqrestore(&blkbk->pending_free_lock, flags);
+>> +     spin_unlock_irqrestore(&blkif->pending_free_lock, flags);
+>>       return req;
+>>  }
+>>
+>> @@ -490,17 +444,17 @@ static struct pending_req *alloc_req(void)
+>>   * Return the 'pending_req' structure back to the freepool. We also
+>>   * wake up the thread if it was waiting for a free page.
+>>   */
+>> -static void free_req(struct pending_req *req)
+>> +static void free_req(struct xen_blkif *blkif, struct pending_req *req)
+>>  {
+>>       unsigned long flags;
+>>       int was_empty;
+>>
+>> -     spin_lock_irqsave(&blkbk->pending_free_lock, flags);
+>> -     was_empty = list_empty(&blkbk->pending_free);
+>> -     list_add(&req->free_list, &blkbk->pending_free);
+>> -     spin_unlock_irqrestore(&blkbk->pending_free_lock, flags);
+>> +     spin_lock_irqsave(&blkif->pending_free_lock, flags);
+>> +     was_empty = list_empty(&blkif->pending_free);
+>> +     list_add(&req->free_list, &blkif->pending_free);
+>> +     spin_unlock_irqrestore(&blkif->pending_free_lock, flags);
+>>       if (was_empty)
+>> -             wake_up(&blkbk->pending_free_wq);
+>> +             wake_up(&blkif->pending_free_wq);
+>>  }
+>>
+>>  /*
+>> @@ -635,8 +589,8 @@ int xen_blkif_schedule(void *arg)
+>>               if (timeout == 0)
+>>                       goto purge_gnt_list;
+>>               timeout = wait_event_interruptible_timeout(
+>> -                     blkbk->pending_free_wq,
+>> -                     !list_empty(&blkbk->pending_free) ||
+>> +                     blkif->pending_free_wq,
+>> +                     !list_empty(&blkif->pending_free) ||
+>>                       kthread_should_stop(),
+>>                       timeout);
+>>               if (timeout == 0)
+>> @@ -883,7 +837,7 @@ static int dispatch_other_io(struct xen_blkif *blkif,
+>>                            struct blkif_request *req,
+>>                            struct pending_req *pending_req)
+>>  {
+>> -     free_req(pending_req);
+>> +     free_req(blkif, pending_req);
+>>       make_response(blkif, req->u.other.id, req->operation,
+>>                     BLKIF_RSP_EOPNOTSUPP);
+>>       return -EIO;
+>> @@ -943,7 +897,7 @@ static void __end_block_io_op(struct pending_req *pending_req, int error)
+>>                       if (atomic_read(&pending_req->blkif->drain))
+>>                               complete(&pending_req->blkif->drain_complete);
+>>               }
+>> -             free_req(pending_req);
+>> +             free_req(pending_req->blkif, pending_req);
+>>       }
+>>  }
+>>
+>> @@ -986,7 +940,7 @@ __do_block_io_op(struct xen_blkif *blkif)
+>>                       break;
+>>               }
+>>
+>> -             pending_req = alloc_req();
+>> +             pending_req = alloc_req(blkif);
+>>               if (NULL == pending_req) {
+>>                       blkif->st_oo_req++;
+>>                       more_to_do = 1;
+>> @@ -1020,7 +974,7 @@ __do_block_io_op(struct xen_blkif *blkif)
+>>                               goto done;
+>>                       break;
+>>               case BLKIF_OP_DISCARD:
+>> -                     free_req(pending_req);
+>> +                     free_req(blkif, pending_req);
+>>                       if (dispatch_discard_io(blkif, &req))
+>>                               goto done;
+>>                       break;
+>> @@ -1222,7 +1176,7 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+>>   fail_response:
+>>       /* Haven't submitted any bio's yet. */
+>>       make_response(blkif, req->u.rw.id, req->operation, BLKIF_RSP_ERROR);
+>> -     free_req(pending_req);
+>> +     free_req(blkif, pending_req);
+>>       msleep(1); /* back off a bit */
+>>       return -EIO;
+>>
+>> @@ -1279,51 +1233,20 @@ static void make_response(struct xen_blkif *blkif, u64 id,
+>>
+>>  static int __init xen_blkif_init(void)
+>>  {
+>> -     int i;
+>>       int rc = 0;
+>>
+>>       if (!xen_domain())
+>>               return -ENODEV;
+>>
+>> -     blkbk = kzalloc(sizeof(struct xen_blkbk), GFP_KERNEL);
+>> -     if (!blkbk) {
+>> -             pr_alert(DRV_PFX "%s: out of memory!\n", __func__);
+>> -             return -ENOMEM;
+>> -     }
+>> -
+>> -
+>> -     blkbk->pending_reqs          = kzalloc(sizeof(blkbk->pending_reqs[0]) *
+>> -                                     xen_blkif_reqs, GFP_KERNEL);
+>> -
+>> -     if (!blkbk->pending_reqs) {
+>> -             rc = -ENOMEM;
+>> -             goto out_of_memory;
+>> -     }
+>> -
+>>       rc = xen_blkif_interface_init();
+>>       if (rc)
+>>               goto failed_init;
+>>
+>> -     INIT_LIST_HEAD(&blkbk->pending_free);
+>> -     spin_lock_init(&blkbk->pending_free_lock);
+>> -     init_waitqueue_head(&blkbk->pending_free_wq);
+>> -
+>> -     for (i = 0; i < xen_blkif_reqs; i++)
+>> -             list_add_tail(&blkbk->pending_reqs[i].free_list,
+>> -                           &blkbk->pending_free);
+>> -
+>>       rc = xen_blkif_xenbus_init();
+>>       if (rc)
+>>               goto failed_init;
+>>
+>> -     return 0;
+>> -
+>> - out_of_memory:
+>> -     pr_alert(DRV_PFX "%s: out of memory\n", __func__);
+>>   failed_init:
+>> -     kfree(blkbk->pending_reqs);
+>> -     kfree(blkbk);
+>> -     blkbk = NULL;
+>>       return rc;
+>>  }
+>>
+>> diff --git a/drivers/block/xen-blkback/common.h b/drivers/block/xen-blkback/common.h
+>> index f43782c..debff44 100644
+>> --- a/drivers/block/xen-blkback/common.h
+>> +++ b/drivers/block/xen-blkback/common.h
+>> @@ -236,6 +236,14 @@ struct xen_blkif {
+>>       int                     free_pages_num;
+>>       struct list_head        free_pages;
+>>
+>> +     /* Allocation of pending_reqs */
+>> +     struct pending_req      *pending_reqs;
+>> +     /* List of all 'pending_req' available */
+>> +     struct list_head        pending_free;
+>> +     /* And its spinlock. */
+>> +     spinlock_t              pending_free_lock;
+>> +     wait_queue_head_t       pending_free_wq;
+>> +
+>>       /* statistics */
+>>       unsigned long           st_print;
+>>       unsigned long long                      st_rd_req;
+>> @@ -249,6 +257,25 @@ struct xen_blkif {
+>>       wait_queue_head_t       waiting_to_free;
+>>  };
+>>
+>> +/*
+>> + * Each outstanding request that we've passed to the lower device layers has a
+>> + * 'pending_req' allocated to it. Each buffer_head that completes decrements
+>> + * the pendcnt towards zero. When it hits zero, the specified domain has a
+>> + * response queued for it, with the saved 'id' passed back.
+>> + */
+>> +struct pending_req {
+>> +     struct xen_blkif        *blkif;
+>> +     u64                     id;
+>> +     int                     nr_pages;
+>> +     atomic_t                pendcnt;
+>> +     unsigned short          operation;
+>> +     int                     status;
+>> +     struct list_head        free_list;
+>> +     struct page             *pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>> +     struct persistent_gnt   *persistent_gnts[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>> +     grant_handle_t          grant_handles[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>> +};
+>> +
+>>
+>>  #define vbd_sz(_v)   ((_v)->bdev->bd_part ? \
+>>                        (_v)->bdev->bd_part->nr_sects : \
+>> diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+>> index e0fd92a..bf7344f 100644
+>> --- a/drivers/block/xen-blkback/xenbus.c
+>> +++ b/drivers/block/xen-blkback/xenbus.c
+>> @@ -30,6 +30,8 @@ struct backend_info {
+>>       char                    *mode;
+>>  };
+>>
+>> +extern int xen_blkif_reqs;
+> 
+> How about just sticking it in 'common.h'?
 
-When the subsequent jobs trigger, it allocates channel resources
-by calling d40_alloc_chan_resources(). The config is written to the
-hardware by calling d40_config_write().
+Done, I've replaced it with a define instead of a variable.
 
-So the basic misunderstanding here is that you think
-the config shall take effect immediately, that is not the
-idea. The configuration will be cached in the channel
-struct, then it will take effect when the next job that is
-queued up allocates its resources to commence.
+> 
+>> +
+>>  static struct kmem_cache *xen_blkif_cachep;
+>>  static void connect(struct backend_info *);
+>>  static int connect_ring(struct backend_info *);
+>> @@ -105,6 +107,7 @@ static void xen_update_blkif_status(struct xen_blkif *blkif)
+>>  static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+>>  {
+>>       struct xen_blkif *blkif;
+>> +     int i;
+>>
+>>       blkif = kmem_cache_zalloc(xen_blkif_cachep, GFP_KERNEL);
+>>       if (!blkif)
+>> @@ -124,6 +127,21 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+>>       blkif->free_pages_num = 0;
+>>       atomic_set(&blkif->persistent_gnt_in_use, 0);
+>>
+>> +     blkif->pending_reqs = kcalloc(xen_blkif_reqs,
+>> +                                   sizeof(blkif->pending_reqs[0]),
+>> +                                   GFP_KERNEL);
+>> +     if (!blkif->pending_reqs) {
+>> +             kmem_cache_free(xen_blkif_cachep, blkif);
+>> +             return ERR_PTR(-ENOMEM);
+>> +     }
+>> +     INIT_LIST_HEAD(&blkif->pending_free);
+>> +     spin_lock_init(&blkif->pending_free_lock);
+>> +     init_waitqueue_head(&blkif->pending_free_wq);
+>> +
+>> +     for (i = 0; i < xen_blkif_reqs; i++)
+>> +             list_add_tail(&blkif->pending_reqs[i].free_list,
+>> +                           &blkif->pending_free);
+>> +
+>>       return blkif;
+>>  }
+>>
+>> @@ -205,6 +223,7 @@ static void xen_blkif_free(struct xen_blkif *blkif)
+>>  {
+>>       if (!atomic_dec_and_test(&blkif->refcnt))
+>>               BUG();
+> 
+> For sanity, should we have something like this:
+>         struct pending_req *p;
+>         i = 0;
+>         list_for_each_entry (p, &blkif->pending_free, free_list)
+>                 i++;
+> 
+>         BUG_ON(i != xen_blkif_reqs);
+> 
+> As that would mean somebody did not call 'free_req' and we have a loose one laying
+> around.
+> 
+> Or perhaps just leak the offending struct and then don't do 'kfree'?
 
-Maybe you haven't grasped the asynchronous nature
-of the DMAengine? It's a bit like multithreading. You
-queue up things, then they commence at a later time.
-Not immediately.
+I prefer the BUG instead of leaking the struct, if we are indeed still
+using a request better notice and fix it :)
 
-Example: the SPI driver for PL022 may talk to a
-8, 16 or 32bit capable device. Depending on which device
-it wants to queue a job for, it need to be configured differently,
-like for another width.
+> 
+>> +     kfree(blkif->pending_reqs);
+>>       kmem_cache_free(xen_blkif_cachep, blkif);
+>>  }
+>>
+>> --
+>> 1.7.7.5 (Apple Git-26)
+>>
 
-At the time you are queueing a new job, another job may
-already be in flight. If you issue d40_config_write() at this
-point, you will cause undesired effects to the job that may
-already be running. Such as reconfiguring the width
-of the channel.
-
-You may not observe that bug because there is no
-job in flight, or because the actual configuration is identical
-for two consecutive jobs, but if you're really stressing something,
-queuing jobs while others are already in flight, you will
-see it immediately.
-
-Therefore, this patch should be dropped.
-
-Yours,
-Linus Walleij
