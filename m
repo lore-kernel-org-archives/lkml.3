@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab3DOP0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:26:47 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45245 "EHLO
+	id S1755112Ab3DOP0w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:26:52 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45259 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab3DOP0j (ORCPT
+	with ESMTP id S1752249Ab3DOP0t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:26:39 -0400
+	Mon, 15 Apr 2013 11:26:49 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 06/16] tty: Use lockless flip buffer free list
-Date: Mon, 15 Apr 2013 11:25:57 -0400
-Message-Id: <1366039567-8620-7-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 09/16] tty: Make driver-side flip buffers lockless
+Date: Mon, 15 Apr 2013 11:26:00 -0400
+Message-Id: <1366039567-8620-10-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366039567-8620-1-git-send-email-peter@hurleysoftware.com>
 References: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
@@ -23,171 +23,139 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for lockless flip buffers, make the flip buffer
-free list lockless.
+Driver-side flip buffer input is already single-threaded; 'publish'
+the .next link as the last operation on the tail buffer so the
+'consumer' sees the already-completed flip buffer.
 
-NB: using llist is not the optimal solution, as the driver and
-buffer work may contend over the llist head unnecessarily. However,
-test measurements indicate this contention is low.
+The commit buffer index is already 'published' by driver-side functions.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_buffer.c | 29 ++++++++++++-----------------
- include/linux/llist.h    | 23 +++++++++++++++++++++++
- include/linux/tty.h      |  8 ++++++--
- 3 files changed, 41 insertions(+), 19 deletions(-)
+ drivers/tty/tty_buffer.c | 31 ++++---------------------------
+ 1 file changed, 4 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 0259a76..069640e 100644
+index 5d5a564..685757c 100644
 --- a/drivers/tty/tty_buffer.c
 +++ b/drivers/tty/tty_buffer.c
-@@ -44,16 +44,17 @@ static void tty_buffer_reset(struct tty_buffer *p, size_t size)
+@@ -62,8 +62,6 @@ static void tty_buffer_reset(struct tty_buffer *p, size_t size)
+  *
+  *	Remove all the buffers pending on a tty whether queued with data
+  *	or in the free ring. Must be called when the tty is no longer in use
+- *
+- *	Locking: none
+  */
+ 
  void tty_buffer_free_all(struct tty_port *port)
+@@ -216,29 +214,26 @@ void tty_buffer_flush(struct tty_struct *tty)
+  *
+  *	Make at least size bytes of linear space available for the tty
+  *	buffer. If we fail return the size we managed to find.
+- *
+- *	Locking: Takes port->buf.lock
+  */
+ int tty_buffer_request_room(struct tty_port *port, size_t size)
  {
  	struct tty_bufhead *buf = &port->buf;
--	struct tty_buffer *p;
-+	struct tty_buffer *p, *next;
-+	struct llist_node *llist;
- 
- 	while ((p = buf->head) != NULL) {
- 		buf->head = p->next;
- 		kfree(p);
- 	}
--	while ((p = buf->free) != NULL) {
--		buf->free = p->next;
-+	llist = llist_del_all(&buf->free);
-+	llist_for_each_entry_safe(p, next, llist, free)
- 		kfree(p);
--	}
+ 	struct tty_buffer *b, *n;
+ 	int left;
+-	unsigned long flags;
+-	spin_lock_irqsave(&buf->lock, flags);
 +
- 	buf->tail = NULL;
- 	buf->memory_used = 0;
+ 	b = buf->tail;
+ 	left = b->size - b->used;
+ 
+ 	if (left < size) {
+ 		/* This is the slow path - looking for new buffers to use */
+ 		if ((n = tty_buffer_alloc(port, size)) != NULL) {
+-			b->next = n;
+-			b->commit = b->used;
+ 			buf->tail = n;
++			b->commit = b->used;
++			smp_mb();
++			b->next = n;
+ 		} else
+ 			size = left;
+ 	}
+-	spin_unlock_irqrestore(&buf->lock, flags);
+ 	return size;
  }
-@@ -68,22 +69,20 @@ void tty_buffer_free_all(struct tty_port *port)
-  *	allocation behaviour.
-  *	Return NULL if out of memory or the allocation would exceed the
-  *	per device queue
+ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
+@@ -252,8 +247,6 @@ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
+  *
+  *	Queue a series of bytes to the tty buffering. All the characters
+  *	passed are marked with the supplied flag. Returns the number added.
 - *
-- *	Locking: Caller must hold tty->buf.lock
+- *	Locking: Called functions may take port->buf.lock
   */
  
- static struct tty_buffer *tty_buffer_alloc(struct tty_port *port, size_t size)
+ int tty_insert_flip_string_fixed_flag(struct tty_port *port,
+@@ -288,8 +281,6 @@ EXPORT_SYMBOL(tty_insert_flip_string_fixed_flag);
+  *	Queue a series of bytes to the tty buffering. For each character
+  *	the flags array indicates the status of the character. Returns the
+  *	number added.
+- *
+- *	Locking: Called functions may take port->buf.lock
+  */
+ 
+ int tty_insert_flip_string_flags(struct tty_port *port,
+@@ -324,19 +315,14 @@ EXPORT_SYMBOL(tty_insert_flip_string_flags);
+  *	processing by the line discipline.
+  *	Note that this function can only be used when the low_latency flag
+  *	is unset. Otherwise the workqueue won't be flushed.
+- *
+- *	Locking: Takes port->buf.lock
+  */
+ 
+ void tty_schedule_flip(struct tty_port *port)
  {
--	struct tty_buffer **tbh = &port->buf.free;
-+	struct llist_node *free;
- 	struct tty_buffer *p;
+ 	struct tty_bufhead *buf = &port->buf;
+-	unsigned long flags;
+ 	WARN_ON(port->low_latency);
  
- 	/* Round the buffer size out */
- 	size = __ALIGN_MASK(size, TTYB_ALIGN_MASK);
- 
- 	if (size <= MIN_TTYB_SIZE) {
--		if (*tbh) {
--			p = *tbh;
--			*tbh = p->next;
-+		free = llist_del_first(&port->buf.free);
-+		if (free) {
-+			p = llist_entry(free, struct tty_buffer, free);
- 			goto found;
- 		}
- 	}
-@@ -109,8 +108,6 @@ found:
-  *
-  *	Free a tty buffer, or add it to the free list according to our
-  *	internal strategy
+-	spin_lock_irqsave(&buf->lock, flags);
+ 	buf->tail->commit = buf->tail->used;
+-	spin_unlock_irqrestore(&buf->lock, flags);
+ 	schedule_work(&buf->work);
+ }
+ EXPORT_SYMBOL(tty_schedule_flip);
+@@ -352,8 +338,6 @@ EXPORT_SYMBOL(tty_schedule_flip);
+  *	accounted for as ready for normal characters. This is used for drivers
+  *	that need their own block copy routines into the buffer. There is no
+  *	guarantee the buffer is a DMA target!
 - *
-- *	Locking: Caller must hold tty->buf.lock
+- *	Locking: May call functions taking port->buf.lock
   */
  
- static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
-@@ -123,10 +120,8 @@ static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
+ int tty_prepare_flip_string(struct tty_port *port, unsigned char **chars,
+@@ -382,8 +366,6 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
+  *	accounted for as ready for characters. This is used for drivers
+  *	that need their own block copy routines into the buffer. There is no
+  *	guarantee the buffer is a DMA target!
+- *
+- *	Locking: May call functions taking port->buf.lock
+  */
  
- 	if (b->size > MIN_TTYB_SIZE)
- 		kfree(b);
--	else {
--		b->next = buf->free;
--		buf->free = b;
--	}
-+	else
-+		llist_add(&b->free, &buf->free);
- }
- 
- /**
-@@ -542,7 +537,7 @@ void tty_buffer_init(struct tty_port *port)
- 	spin_lock_init(&buf->lock);
- 	buf->head = NULL;
- 	buf->tail = NULL;
--	buf->free = NULL;
-+	init_llist_head(&buf->free);
- 	buf->memory_used = 0;
- 	INIT_WORK(&buf->work, flush_to_ldisc);
- }
-diff --git a/include/linux/llist.h b/include/linux/llist.h
-index a5199f6..97cf31d 100644
---- a/include/linux/llist.h
-+++ b/include/linux/llist.h
-@@ -125,6 +125,29 @@ static inline void init_llist_head(struct llist_head *list)
- 	     (pos) = llist_entry((pos)->member.next, typeof(*(pos)), member))
- 
- /**
-+ * llist_for_each_entry_safe - iterate over some deleted entries of lock-less list of given type
-+ *			       safe against removal of list entry
-+ * @pos:	the type * to use as a loop cursor.
-+ * @n:		another type * to use as temporary storage
-+ * @node:	the first entry of deleted list entries.
-+ * @member:	the name of the llist_node with the struct.
-+ *
-+ * In general, some entries of the lock-less list can be traversed
-+ * safely only after being removed from list, so start with an entry
-+ * instead of list head.
-+ *
-+ * If being used on entries deleted from lock-less list directly, the
-+ * traverse order is from the newest to the oldest added entry.  If
-+ * you want to traverse from the oldest to the newest, you must
-+ * reverse the order by yourself before traversing.
-+ */
-+#define llist_for_each_entry_safe(pos, n, node, member)			       \
-+	for (pos = llist_entry((node), typeof(*pos), member);		       \
-+	     &pos->member != NULL &&					       \
-+	        (n = llist_entry(pos->member.next, typeof(*n), member), true); \
-+	     pos = n)
-+
-+/**
-  * llist_empty - tests whether a lock-less list is empty
-  * @head:	the list to test
+ int tty_prepare_flip_string_flags(struct tty_port *port,
+@@ -511,18 +493,13 @@ void tty_flush_to_ldisc(struct tty_struct *tty)
   *
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index c0ee322..a01fda7 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -11,6 +11,7 @@
- #include <linux/tty_flags.h>
- #include <uapi/linux/tty.h>
- #include <linux/rwsem.h>
-+#include <linux/llist.h>
+  *	In the event of the queue being busy for flipping the work will be
+  *	held off and retried later.
+- *
+- *	Locking: tty buffer lock. Driver locks in low latency mode.
+  */
  
+ void tty_flip_buffer_push(struct tty_port *port)
+ {
+ 	struct tty_bufhead *buf = &port->buf;
+-	unsigned long flags;
  
+-	spin_lock_irqsave(&buf->lock, flags);
+ 	buf->tail->commit = buf->tail->used;
+-	spin_unlock_irqrestore(&buf->lock, flags);
  
-@@ -30,7 +31,10 @@
- #define __DISABLED_CHAR '\0'
- 
- struct tty_buffer {
--	struct tty_buffer *next;
-+	union {
-+		struct tty_buffer *next;
-+		struct llist_node free;
-+	};
- 	int used;
- 	int size;
- 	int commit;
-@@ -65,7 +69,7 @@ struct tty_bufhead {
- 	spinlock_t lock;
- 	struct tty_buffer *head;	/* Queue head */
- 	struct tty_buffer *tail;	/* Active buffer */
--	struct tty_buffer *free;	/* Free queue head */
-+	struct llist_head free;		/* Free queue head */
- 	int memory_used;		/* Buffer space used excluding
- 								free queue */
- };
+ 	if (port->low_latency)
+ 		flush_to_ldisc(&buf->work);
 -- 
 1.8.1.2
 
