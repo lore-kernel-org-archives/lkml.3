@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab3DOGPO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 02:15:14 -0400
-Received: from ozlabs.org ([203.10.76.45]:48528 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751687Ab3DOGPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 02:15:13 -0400
-Date: Mon, 15 Apr 2013 16:15:09 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCH] perf: Power7: Make CPI stack events available in sysfs
-Message-ID: <20130415061508.GD21147@concordia>
-References: <20130406164803.GA408@us.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130406164803.GA408@us.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752638Ab3DOGPW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 02:15:22 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42716 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751814Ab3DOGPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 02:15:19 -0400
+Message-ID: <1366006517.1878.49.camel@joe-AO722>
+Subject: Re: arch/s390/lib/uaccess_pt.c: Missing breaks: ?
+From: Joe Perches <joe@perches.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, linux-s390@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sun, 14 Apr 2013 23:15:17 -0700
+In-Reply-To: <20130415055822.GC4207@osiris>
+References: <1365919574.1878.13.camel@joe-AO722>
+	 <20130415054814.GA4207@osiris> <1366005207.1878.43.camel@joe-AO722>
+	 <20130415055822.GC4207@osiris>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 06, 2013 at 09:48:03AM -0700, Sukadev Bhattiprolu wrote:
-> From bdeacf7175241f6c79b5b2be0fa6b20b0d0b7d1c Mon Sep 17 00:00:00 2001
-> From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> Date: Sat, 6 Apr 2013 08:48:26 -0700
-> Subject: [PATCH] perf: Power7: Make CPI stack events available in sysfs
+On Mon, 2013-04-15 at 07:58 +0200, Heiko Carstens wrote:
+> On Sun, Apr 14, 2013 at 10:53:27PM -0700, Joe Perches wrote:
+> > On Mon, 2013-04-15 at 07:48 +0200, Heiko Carstens wrote:
+> > > On Sat, Apr 13, 2013 at 11:06:14PM -0700, Joe Perches wrote:
+> > > > Commit ea81531d ("s390/uaccess: fix page table walk")
+> > > > added this code.  It looks like it should have break;
+> > > > for each case.
+> > > no, the fallthrough is on purpose for each case statement.
+> > 
+> > Hi again.  It might be useful to add /* fallthrough */
+> > or some other comment showing it's intentional.
 > 
-> A set of Power7 events are often used for Cycles Per Instruction (CPI) stack
-> analysis. Make these events available in sysfs (/sys/devices/cpu/events/) so
-> they can be identified using their symbolic names:
-> 
-> 	perf stat -e 'cpu/PM_CMPLU_STALL_DCACHE_MISS/' /bin/ls
+> I might add some comment above the function, since for everybody
+> *knowing* the architecture it's obvious ;) that these must be
+> fallthroughs.
+> How did you stuble across this?
 
-Should we take these two via the powerpc tree? Or do you want to take
-them Arnaldo?
+Tony Prisk sent an patch about a duplicated set of
+a variable in a switch/case without a break and I
+generalized it and found this and another one in
+arch/arm. (the arm one was a real defect)
 
-cheers
+This one looked like it could be intentional (or not),
+but I thought I'd ask.
+
+$ grep-2.5.4 -rP --include=*.[ch] "\b(\w+)\s*=[^;]+;\s*(?:case\s+\w+:|default:)\s*\1\s*=" *
+
+
