@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752439Ab3DOPIy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:08:54 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:63115 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab3DOPIw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:08:52 -0400
+	id S1752745Ab3DOPKX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:10:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8526 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751022Ab3DOPKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 11:10:22 -0400
+Date: Mon, 15 Apr 2013 18:10:19 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, jan.kiszka@siemens.com, kvm@vger.kernel.org
+Subject: Re: [PATCH v2] kvm: nVMX: check vmcs12 for valid activity state
+Message-ID: <20130415151019.GA10668@redhat.com>
+References: <1366030827-5662-1-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
-References: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
-Date: Mon, 15 Apr 2013 17:08:50 +0200
-Message-ID: <CAJfpegsD2iyP2=Z3zL-yb_TjjQxipOBKV7yqpdPPTH9oobQ=bA@mail.gmail.com>
-Subject: Re: [PATCH 0/5] fuse: close file synchronously
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
-        bfoster@redhat.com, linux-kernel@vger.kernel.org, devel@openvz.org,
-        anand.avati@gmail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366030827-5662-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 1:30 PM, Maxim Patlasov <mpatlasov@parallels.com> wrote:
-> Hi,
->
-> There is a long-standing demand for syncronous behaviour of fuse_release:
->
-> http://sourceforge.net/mailarchive/message.php?msg_id=19343889
-> http://sourceforge.net/mailarchive/message.php?msg_id=29814693
->
-> A few months ago Avati and me explained why such a feature would be useful:
->
-> http://sourceforge.net/mailarchive/message.php?msg_id=29889055
-> http://sourceforge.net/mailarchive/message.php?msg_id=29867423
->
-> In short, the problem is that fuse_release (that's called on last user
-> close(2)) sends FUSE_RELEASE to userspace and returns without waiting for
-> ACK from userspace. Consequently, there is a gap when user regards the
-> file released while userspace fuse is still working on it. An attempt to
-> access the file from another node leads to complicated synchronization
-> problems because the first node still "holds" the file.
->
-> The patch-set resolves the problem by making fuse_release synchronous:
-> wait for ACK from userspace for FUSE_RELEASE if the feature is ON.
->
-> To keep single-threaded userspace implementations happy the patch-set
-> ensures that by the time fuse_release_common calls fuse_file_put, no
-> more in-flight I/O exists. Asynchronous fuse callbacks (like
-> fuse_readpages_end) cannot trigger FUSE_RELEASE anymore. Hence, we'll
-> never block in contexts other than close().
+On Mon, Apr 15, 2013 at 03:00:27PM +0200, Paolo Bonzini wrote:
+> KVM does not use the activity state VMCS field, and does not support
+> it in nested VMX either (the corresponding bits in the misc VMX feature
+> MSR are zero).  Fail entry if the activity state is set to anything but
+> "active".
+> 
+> Since the value will always be the same for L1 and L2, we do not need
+> to read and write the corresponding VMCS field on L1/L2 transitions,
+> either.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Perfect, thanks!
 
-There are a few fput() calls outside sys_close(), all of these can
-trigger FUSE_RELEASE.  Most of those are OK, but for some I'm
-reluctant to enable synchronous release.
+Reviewed-by: Gleb Natapov <gleb@redhat.com>
 
-For example doing a readlink() on a magic symlink under /proc
-shouldn't result in a synchronous call to a fuse filesystem.  Making
-fput() synchronous may actually end up doing that (even if it's not
-very likely).
+> ---
+> 	v1->v2: remove read/write of vmcs12->guest_activity_state,
+> 	use GUEST_ACTIVITY_ACTIVE.
+> 
+>  arch/x86/kvm/vmx.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index c75c25d..c252adf 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -7004,7 +7004,6 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+>  		vmcs12->vm_entry_instruction_len);
+>  	vmcs_write32(GUEST_INTERRUPTIBILITY_INFO,
+>  		vmcs12->guest_interruptibility_info);
+> -	vmcs_write32(GUEST_ACTIVITY_STATE, vmcs12->guest_activity_state);
+>  	vmcs_write32(GUEST_SYSENTER_CS, vmcs12->guest_sysenter_cs);
+>  	kvm_set_dr(vcpu, 7, vmcs12->guest_dr7);
+>  	vmcs_writel(GUEST_RFLAGS, vmcs12->guest_rflags);
+> @@ -7223,6 +7222,11 @@ static int nested_vmx_run(struct kvm_vcpu *vcpu, bool launch)
+>  		return 1;
+>  	}
+>  
+> +	if (vmcs12->guest_activity_state != GUEST_ACTIVITY_ACTIVE) {
+> +		nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+> +		return 1;
+> +	}
+> +
+>  	if ((vmcs12->cpu_based_vm_exec_control & CPU_BASED_USE_MSR_BITMAPS) &&
+>  			!IS_ALIGNED(vmcs12->msr_bitmap, PAGE_SIZE)) {
+>  		/*TODO: Also verify bits beyond physical address width are 0*/
+> @@ -7411,7 +7415,6 @@ static void prepare_vmcs12(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+>  	vmcs12->guest_gdtr_base = vmcs_readl(GUEST_GDTR_BASE);
+>  	vmcs12->guest_idtr_base = vmcs_readl(GUEST_IDTR_BASE);
+>  
+> -	vmcs12->guest_activity_state = vmcs_read32(GUEST_ACTIVITY_STATE);
+>  	vmcs12->guest_interruptibility_info =
+>  		vmcs_read32(GUEST_INTERRUPTIBILITY_INFO);
+>  	vmcs12->guest_pending_dbg_exceptions =
+> -- 
+> 1.8.1.4
 
-At least for the unprivileged fuse daemon case it shouldn't be done.
-If the fuse daemon can be "trusted" then enabling synchronous release
-should be okay, that's why it's enabled for fuseblk.
-
-But maybe I'm just too paranoid...
-
-Thanks,
-Miklos
+--
+			Gleb.
