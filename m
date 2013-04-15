@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab3DOC3q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:29:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36045 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab3DOCZd (ORCPT
+	id S1756237Ab3DOCfW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:35:22 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:60296 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755032Ab3DOCfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:25:33 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alban Bedel <alban.bedel@avionic-design.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 02/17] ASoC: wm8903: Fix the bypass to HP/LINEOUT when no DAC or ADC is running
-Date: Sun, 14 Apr 2013 19:25:12 -0700
-Message-Id: <20130415022352.815224091@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.2.1.368.g99c2266
-In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
-References: <20130415022352.616689034@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Sun, 14 Apr 2013 22:35:21 -0400
+Message-ID: <516B673D.5020201@huawei.com>
+Date: Mon, 15 Apr 2013 10:34:37 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Tony Luck <tony.luck@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH 2/2] PCI/IA64: fix pci_dev->enable_cnt balance when doing
+ pci hotplug
+References: <1364805775-12396-1-git-send-email-wangyijing@huawei.com> <1364805775-12396-2-git-send-email-wangyijing@huawei.com> <CAErSpo7g7dG=FB69-w1UniO_fpBVO39P82rqgdQstdfG=p-bkQ@mail.gmail.com>
+In-Reply-To: <CAErSpo7g7dG=FB69-w1UniO_fpBVO39P82rqgdQstdfG=p-bkQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+>> @@ -383,6 +383,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+>>         }
+>>
+>>         pci_scan_child_bus(pbus);
+>> +       pci_enable_bridges(pbus);
+>>         return pbus;
+>>
+>>  out3:
+> 
+> I think that with this patch, if you hot-add a PCI host bridge, you
+> will call pci_enable_bridges() twice (once in pci_acpi_scan_root() and
+> again in acpi_pci_root_add()), so there will be an enable_cnt error in
+> the opposite direction.
+> 
+> I'd like to see the pci_enable_bridges() calls pushed up into the
+> generic code because I don't think there's anything arch-specific
+> about it.
 
-------------------
+Hi Bjorn,
+   Thanks for your review and comments! This is my fault, I forgot we will enable pci
+bridges when we hot add host bridge. Push pci_enable_bridges() into the generic code is
+a good idea, so we don't need to consider enabling bridge in pci arch-specific code.
+In IA64 we don't assign the unassigned resources like other arch. This is also a weak point.
+I will update this patch and resend soon.
 
-From: Alban Bedel <alban.bedel@avionic-design.de>
+Thanks!
+Yijing.
+> 
+> .
+> 
 
-commit f1ca493b0b5e8f42d3b2dc8877860db2983f47b6 upstream.
 
-The Charge Pump needs the DSP clock to work properly, without it the
-bypass to HP/LINEOUT is not working properly. This requirement is not
-mentioned in the datasheet but has been confirmed by Mark Brown from
-Wolfson.
-
-Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/soc/codecs/wm8903.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/sound/soc/codecs/wm8903.c
-+++ b/sound/soc/codecs/wm8903.c
-@@ -1082,6 +1082,8 @@ static const struct snd_soc_dapm_route w
- 	{ "ROP", NULL, "Right Speaker PGA" },
- 	{ "RON", NULL, "Right Speaker PGA" },
- 
-+	{ "Charge Pump", NULL, "CLK_DSP" },
-+
- 	{ "Left Headphone Output PGA", NULL, "Charge Pump" },
- 	{ "Right Headphone Output PGA", NULL, "Charge Pump" },
- 	{ "Left Line Output PGA", NULL, "Charge Pump" },
-
+-- 
+Thanks!
+Yijing
 
