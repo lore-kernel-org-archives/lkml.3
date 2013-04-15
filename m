@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab3DOKCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 06:02:34 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:50505 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab3DOKCc (ORCPT
+	id S1753389Ab3DOKEl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 06:04:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55182 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab3DOKEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 06:02:32 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] of: add managed version of of_iomap()
-To: Lubomir Rintel <lkundrak@v3.sk>, linux-kernel@vger.kernel.org
-Cc: Lubomir Rintel <lkundrak@v3.sk>, Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Guenter Roeck <linux@roeck-us.net>
-In-Reply-To: <1364133493-25262-1-git-send-email-lkundrak@v3.sk>
-References: <1364133493-25262-1-git-send-email-lkundrak@v3.sk>
-Date: Mon, 15 Apr 2013 11:02:28 +0100
-Message-Id: <20130415100228.B4FED3E0AA8@localhost>
+	Mon, 15 Apr 2013 06:04:40 -0400
+Date: Mon, 15 Apr 2013 12:04:37 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT pull] irq fixes for 3.9
+Message-ID: <alpine.LFD.2.02.1304151201340.21884@ionos>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 24 Mar 2013 14:58:13 +0100, Lubomir Rintel <lkundrak@v3.sk> wrote:
-> This introduces a routine devm_of_iomap(), which acts exactly like of_iomap()
-> apart from that managed deivce resource subsystem takes care of reclaiming the
-> resources wherever appropriate.
-> 
-> Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> Reference: http://lists.infradead.org/pipermail/linux-rpi-kernel/2013-March/000461.html
+Linus,
 
-Hi Lubomir,
+please pull the latest irq-urgent-for-linus git tree from:
 
-Do you have a user for this feature that is posted yet?
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
 
-g.
+* Single bugfix for a wrong return value, which prevents the calling
+  function to invoke the software fallback.
 
+Thanks,
+
+	tglx
+
+------------------>
+Abhijeet Dharmapurikar (1):
+      irqchip: gic: fix irq_trigger return
+
+
+ drivers/irqchip/irq-gic.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index a32e0d5..fc6aebf 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -236,7 +236,8 @@ static int gic_retrigger(struct irq_data *d)
+ 	if (gic_arch_extn.irq_retrigger)
+ 		return gic_arch_extn.irq_retrigger(d);
+ 
+-	return -ENXIO;
++	/* the genirq layer expects 0 if we can't retrigger in hardware */
++	return 0;
+ }
+ 
+ #ifdef CONFIG_SMP
