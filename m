@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935143Ab3DOVYf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 17:24:35 -0400
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:35320 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934043Ab3DOVYe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 17:24:34 -0400
+	id S964858Ab3DOVZm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 17:25:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:32813 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964783Ab3DOVZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 17:25:41 -0400
+Message-ID: <516C702C.2030209@zytor.com>
+Date: Mon, 15 Apr 2013 14:25:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <20130415080808.GC1994@udknight>
-References: <20130415080808.GC1994@udknight>
-Date: Mon, 15 Apr 2013 14:24:33 -0700
-X-Google-Sender-Auth: kRpwZmDIb7GjtggsTdO95V4rh2E
-Message-ID: <CAE9FiQW3G3ncyVHV=0nbhX2cD2sLXTzn6FAprfa3y8AeMbE43A@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm:memblock: add memblock_alloc_in_[range|range_nid]
-From: Yinghai Lu <yinghai@kernel.org>
-To: Wang YanQing <udknight@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric Northup <digitaleric@google.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Kees Cook <keescook@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
+References: <1365797627-20874-1-git-send-email-keescook@chromium.org> <1365797627-20874-7-git-send-email-keescook@chromium.org> <CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com> <516A1D49.1050100@zytor.com> <CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
+In-Reply-To: <CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 1:08 AM, Wang YanQing <udknight@gmail.com> wrote:
-> There is a memblock code use pattern in kernel which looks like below:
-> in nobootmem.c:
->
->        addr = memblock_find_in_range_node(goal, limit, size, align, nid);
->        if (!addr)
->                 return NULL;
->
->        ptr = phys_to_virt(addr);
->        memset(ptr, 0, size);
->        memblock_reserve(addr, size);
->
-> use memblock_alloc_in_[range|range_nid] to do
-> the search and reserve in one function will
-> bring the benefit below:
->
-> 1: clarify the codes
-> 2: we will check memblock_reserve's return value
+On 04/15/2013 02:06 PM, Eric Northup wrote:
+> On Sat, Apr 13, 2013 at 8:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 04/13/2013 05:37 PM, Yinghai Lu wrote:
+>>>
+>>> so decompress code position is changed?
+>>>
+>>> You may push out bss and other data area of run-time kernel of limit
+>>> that boot loader
+>>> chose according to setup_header.init_size.
+>>> aka that make those area overlap with ram hole or other area like
+>>> boot command line or initrd....
+>>>
+>>
+>> Is there a strong reason to randomize the physical address on 64 bits
+>> (and if so, shouldn't we do it right?)
+> 
+> The reason to randomize the physical address is because of the kernel
+> direct mapping range -- a predictable-to-attackers physical address
+> implies a predictable-to-attackers virtual address.
+> 
+> It had seemed to me like changing the virtual base of the direct
+> mapping would be much more involved than physically relocating the
+> kernel, but better suggestions would be most welcome :-)
+> 
 
-No, I don't like this.
+You seem to be missing something here...
 
-It cause confusing.
-alloc usually it means allocate and access it right away.
-find/reserve, is somehow will only access some time later.
+There are *two* mappings in 64-bit mode.  Physically, if you're going to
+randomize you might as well randomize over the entire range... except
+not too far down (on either 32 or 64 bit mode)... in particular, you
+don't want to drop below 16 MiB if you can avoid it.
 
-also in find/reserve path, we don't round size to align.
-   size = round_up(size, align);
+On 64 bits, there is no reason the virtual address has to be randomized
+the same way.
 
-Thanks
+	-hpa
 
-Yinghai
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
