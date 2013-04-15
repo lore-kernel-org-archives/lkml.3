@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934508Ab3DOMv6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 08:51:58 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:31293 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934133Ab3DOMvs (ORCPT
+	id S934573Ab3DOMwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 08:52:13 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:24286 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934526Ab3DOMwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 08:51:48 -0400
+	Mon, 15 Apr 2013 08:52:10 -0400
 From: Libin <huawei.libin@huawei.com>
 To: Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -24,9 +24,9 @@ CC: Konstantin Khlebnikov <khlebnikov@openvz.org>,
         Michel Lespinasse <walken@google.com>, <linux-kernel@vger.kernel.org>,
         <dri-devel@lists.freedesktop.org>, <linux-pci@vger.kernel.org>,
         <linux-mm@kvack.org>, <guohanjun@huawei.com>, <wangyijing@huawei.com>
-Subject: [PATCH 4/6] char: use vma_pages() to replace (vm_end - vm_start) >> PAGE_SHIFT
-Date: Mon, 15 Apr 2013 20:48:56 +0800
-Message-ID: <1366030138-71292-4-git-send-email-huawei.libin@huawei.com>
+Subject: [PATCH 6/6] uio: use vma_pages() to replace (vm_end - vm_start) >> PAGE_SHIFT
+Date: Mon, 15 Apr 2013 20:48:58 +0800
+Message-ID: <1366030138-71292-6-git-send-email-huawei.libin@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1366030138-71292-1-git-send-email-huawei.libin@huawei.com>
 References: <1366030138-71292-1-git-send-email-huawei.libin@huawei.com>
@@ -43,22 +43,22 @@ as a inline funcion vma_pages() in linux/mm.h, so using it.
 
 Signed-off-by: Libin <huawei.libin@huawei.com>
 ---
- drivers/char/mspec.c | 2 +-
+ drivers/uio/uio.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/char/mspec.c b/drivers/char/mspec.c
-index e1f60f9..ed0703f 100644
---- a/drivers/char/mspec.c
-+++ b/drivers/char/mspec.c
-@@ -168,7 +168,7 @@ mspec_close(struct vm_area_struct *vma)
- 	if (!atomic_dec_and_test(&vdata->refcnt))
- 		return;
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index c8b9262..ba5447f 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -676,7 +676,7 @@ static int uio_mmap(struct file *filep, struct vm_area_struct *vma)
+ 	if (mi < 0)
+ 		return -EINVAL;
  
--	last_index = (vdata->vm_end - vdata->vm_start) >> PAGE_SHIFT;
-+	last_index = vma_pages(vdata);
- 	for (index = 0; index < last_index; index++) {
- 		if (vdata->maddr[index] == 0)
- 			continue;
+-	requested_pages = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
++	requested_pages = vma_pages(vma);
+ 	actual_pages = ((idev->info->mem[mi].addr & ~PAGE_MASK)
+ 			+ idev->info->mem[mi].size + PAGE_SIZE -1) >> PAGE_SHIFT;
+ 	if (requested_pages > actual_pages)
 -- 
 1.8.2.1
 
