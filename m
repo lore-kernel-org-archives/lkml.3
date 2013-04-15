@@ -1,101 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab3DODuW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 23:50:22 -0400
-Received: from mail-da0-f50.google.com ([209.85.210.50]:39733 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595Ab3DODuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 23:50:21 -0400
-Date: Sun, 14 Apr 2013 20:50:08 -0700
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kay@vrfy.org, greg@kroah.com,
-        lennart@poettering.net, daniel@zonque.org
-Subject: [PATCH UPDATED 4/4] cgroup: implement
- task_cgroup_path_from_hierarchy()
-Message-ID: <20130415035008.GM3050@htj.dyndns.org>
-References: <1365964619-14762-1-git-send-email-tj@kernel.org>
- <1365964619-14762-5-git-send-email-tj@kernel.org>
+	id S1755208Ab3DODu0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 23:50:26 -0400
+Received: from ozlabs.org ([203.10.76.45]:59181 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754933Ab3DODuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 23:50:23 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Veaceslav Falico <vfalico@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        gregkh@linuxfoundation.org, bhelgaas@google.com
+Subject: Re: [PATCH] module: add kset_obj_exists() and use it
+In-Reply-To: <20130411095537.GC21320@redhat.com>
+References: <1365506529-8396-1-git-send-email-vfalico@redhat.com> <87y5cq6ei9.fsf@rustcorp.com.au> <20130411095537.GC21320@redhat.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 15 Apr 2013 11:56:03 +0930
+Message-ID: <87vc7o8r7o.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365964619-14762-5-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kdbus folks want a sane way to determine the cgroup path that a given
-task belongs to on a given hierarchy, which is a reasonble thing to
-expect from cgroup core.
+Veaceslav Falico <vfalico@redhat.com> writes:
+> On Wed, Apr 10, 2013 at 04:47:34PM +0930, Rusty Russell wrote:
+>>That's a bug.  We should be cleaning up sysfs before we unlike the
+>>removed module from the list.
+>>
+>>Because the same thing applies to ddebug info, which is also keyed by
+>>module name.
+>>
+>>Something like this (untested!):
+>
+> Sorry for the late response - I wanted to test it for a longer time.
+>
+> Your patch works flawlessly and fixes this race, with just a small
+> addition, cause otherwise we could BUG() in show_initstate().
+>
+> Can you apply this patch or should I (re-)send it somehow?
+>
+> Thank you!
+>
+> diff --git a/kernel/module.c b/kernel/module.c
+> index d0afe23..8be6e97 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -1063,6 +1063,9 @@ static ssize_t show_initstate(struct module_attribute *mattr,
+>   	case MODULE_STATE_GOING:
+>   		state = "going";
+>   		break;
+> +	case MODULE_STATE_UNFORMED:
+> +		state = "unformed";
+> +		break;
+>   	default:
+>   		BUG();
+>   	}
 
-Implement task_cgroup_path_from_hierarchy().
+Prefer to remove from sysfs before marking it unformed, like so:
 
-v2: Dropped unnecessary NULL check on the return value of
-    task_cgroup_from_root() as suggested by Li Zefan.
+diff --git a/kernel/module.c b/kernel/module.c
+index 2468fda..2e7189f 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1862,12 +1862,12 @@ static void free_module(struct module *mod)
+ {
+ 	trace_module_free(mod);
+ 
+-	/* We leave it in list to prevent duplicate loads while we clean
+-	 * up sysfs, ddebug and any other external exposure. */
+-	mod->state = MODULE_STATE_UNFORMED;
+-
+ 	mod_sysfs_teardown(mod);
+ 
++	/* We leave it in list to prevent duplicate loads, but make sure
++	 * that noone uses it while it's being deconstructed. */
++	mod->state = MODULE_STATE_UNFORMED;
++
+ 	/* Remove dynamic debug info */
+ 	ddebug_remove_module(mod->name);
+ 
+Here's the updated total patch:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Greg Kroah-Hartman <greg@kroah.com>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Lennart Poettering <lennart@poettering.net>
-Cc: Daniel Mack <daniel@zonque.org>
----
- include/linux/cgroup.h |    2 ++
- kernel/cgroup.c        |   32 ++++++++++++++++++++++++++++++++
- 2 files changed, 34 insertions(+)
+diff --git a/kernel/module.c b/kernel/module.c
+index 69d2600..2e7189f 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1862,12 +1862,12 @@ static void free_module(struct module *mod)
+ {
+ 	trace_module_free(mod);
+ 
+-	/* Delete from various lists */
+-	mutex_lock(&module_mutex);
+-	stop_machine(__unlink_module, mod, NULL);
+-	mutex_unlock(&module_mutex);
+ 	mod_sysfs_teardown(mod);
+ 
++	/* We leave it in list to prevent duplicate loads, but make sure
++	 * that noone uses it while it's being deconstructed. */
++	mod->state = MODULE_STATE_UNFORMED;
++
+ 	/* Remove dynamic debug info */
+ 	ddebug_remove_module(mod->name);
+ 
+@@ -1880,6 +1880,11 @@ static void free_module(struct module *mod)
+ 	/* Free any allocated parameters. */
+ 	destroy_params(mod->kp, mod->num_kp);
+ 
++	/* Now we can delete it from the lists */
++	mutex_lock(&module_mutex);
++	stop_machine(__unlink_module, mod, NULL);
++	mutex_unlock(&module_mutex);
++
+ 	/* This may be NULL, but that's OK */
+ 	unset_module_init_ro_nx(mod);
+ 	module_free(mod, mod->module_init);
 
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -443,6 +443,8 @@ int cgroup_is_removed(const struct cgrou
- bool cgroup_is_descendant(struct cgroup *cgrp, struct cgroup *ancestor);
- 
- int cgroup_path(const struct cgroup *cgrp, char *buf, int buflen);
-+int task_cgroup_path_from_hierarchy(struct task_struct *task, int hierarchy_id,
-+				    char *buf, size_t buflen);
- 
- int cgroup_task_count(const struct cgroup *cgrp);
- 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1842,6 +1842,38 @@ out:
- }
- EXPORT_SYMBOL_GPL(cgroup_path);
- 
-+/**
-+ * task_cgroup_path_from_hierarchy - cgroup path of a task on a hierarchy
-+ * @task: target task
-+ * @hierarchy_id: the hierarchy to look up @task's cgroup from
-+ * @buf: the buffer to write the path into
-+ * @buflen: the length of the buffer
-+ *
-+ * Determine @task's cgroup on the hierarchy specified by @hierarchy_id and
-+ * copy its path into @buf.  This function grabs cgroup_mutex and shouldn't
-+ * be used inside locks used by cgroup controller callbacks.
-+ */
-+int task_cgroup_path_from_hierarchy(struct task_struct *task, int hierarchy_id,
-+				    char *buf, size_t buflen)
-+{
-+	struct cgroupfs_root *root;
-+	struct cgroup *cgrp = NULL;
-+	int ret = -ENOENT;
-+
-+	mutex_lock(&cgroup_mutex);
-+
-+	root = idr_find(&cgroup_hierarchy_idr, hierarchy_id);
-+	if (root) {
-+		cgrp = task_cgroup_from_root(task, root);
-+		ret = cgroup_path(cgrp, buf, buflen);
-+	}
-+
-+	mutex_unlock(&cgroup_mutex);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(task_cgroup_path_from_hierarchy);
-+
- /*
-  * Control Group taskset
-  */
+Thanks,
+Rusty.
