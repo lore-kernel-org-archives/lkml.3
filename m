@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932945Ab3DOCnl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:43:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36454 "EHLO
+	id S934736Ab3DOCtb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:49:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36450 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756962Ab3DOCni (ORCPT
+	with ESMTP id S1756719Ab3DOCng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:43:38 -0400
+	Sun, 14 Apr 2013 22:43:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Pargmann <mpa@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>
-Subject: [ 07/27] ARM: imx35 Bugfix admux clock
-Date: Sun, 14 Apr 2013 19:43:06 -0700
-Message-Id: <20130415024231.910693221@linuxfoundation.org>
+        Nigel Roberts <nigel@nobiscuit.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [ 06/27] ARM: Kirkwood: Fix typo in the definition of ix2-200 rebuild LED
+Date: Sun, 14 Apr 2013 19:43:05 -0700
+Message-Id: <20130415024231.836417139@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -28,34 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Nigel Roberts <nigel@nobiscuit.com>
 
-commit 75498083e25e96932ad998ffdeadb17234c68d3a upstream.
+commit 8f08d6667287241f6818d35e02b223fb5df97cf1 upstream.
 
-The admux clock seems to be the audmux clock as tests show. audmux does
-not work without this clock enabled. Currently imx35 does not register a
-clock device for audmux. This patch adds this registration. imx-audmux
-driver already handles a clock device, so no changes are necessary
-there.
+In the conversion to pinctrl, an error in the pins for the rebuild
+LED was introduced. This patch assigns the correct pins and includes
+the correct name for the LED in kirkwood-iomega_ix2_200.dts.
 
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Nigel Roberts <nigel@nobiscuit.com>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-imx/clk-imx35.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/arch/arm/mach-imx/clk-imx35.c
-+++ b/arch/arm/mach-imx/clk-imx35.c
-@@ -257,6 +257,7 @@ int __init mx35_clocks_init()
- 	clk_register_clkdev(clk[wdog_gate], NULL, "imx2-wdt.0");
- 	clk_register_clkdev(clk[nfc_div], NULL, "imx25-nand.0");
- 	clk_register_clkdev(clk[csi_gate], NULL, "mx3-camera.0");
-+	clk_register_clkdev(clk[admux_gate], "audmux", NULL);
+--- a/arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts
++++ b/arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts
+@@ -96,11 +96,11 @@
+ 				marvell,function = "gpio";
+ 			};
+ 			pmx_led_rebuild_brt_ctrl_1: pmx-led-rebuild-brt-ctrl-1 {
+-				marvell,pins = "mpp44";
++				marvell,pins = "mpp46";
+ 				marvell,function = "gpio";
+ 			};
+ 			pmx_led_rebuild_brt_ctrl_2: pmx-led-rebuild-brt-ctrl-2 {
+-				marvell,pins = "mpp45";
++				marvell,pins = "mpp47";
+ 				marvell,function = "gpio";
+ 			};
  
- 	clk_prepare_enable(clk[spba_gate]);
- 	clk_prepare_enable(clk[gpio1_gate]);
+@@ -157,14 +157,14 @@
+ 			gpios = <&gpio0 16 0>;
+ 			linux,default-trigger = "default-on";
+ 		};
+-		health_led1 {
++		rebuild_led {
++			label = "status:white:rebuild_led";
++			gpios = <&gpio1 4 0>;
++		};
++		health_led {
+ 			label = "status:red:health_led";
+ 			gpios = <&gpio1 5 0>;
+ 		};
+-		health_led2 {
+-			label = "status:white:health_led";
+-			gpios = <&gpio1 4 0>;
+-		};
+ 		backup_led {
+ 			label = "status:blue:backup_led";
+ 			gpios = <&gpio0 15 0>;
 
 
