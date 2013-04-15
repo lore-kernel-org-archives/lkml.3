@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754546Ab3DOQVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:21:47 -0400
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:58347 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab3DOQVp (ORCPT
+	id S1754826Ab3DOQWL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:22:11 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50035 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752573Ab3DOQWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:21:45 -0400
+	Mon, 15 Apr 2013 12:22:09 -0400
+Date: Mon, 15 Apr 2013 17:22:04 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: MyungJoo Ham <myungjoo.ham@smasung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: max8997: Test pdata by NULL checking instead
+ of IS_ERR_OR_NULL
+Message-ID: <20130415162204.GI15837@opensource.wolfsonmicro.com>
+References: <1365861943.3814.3.camel@phoenix>
 MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <alpine.DEB.2.02.1304151205140.17281@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.02.1304151205140.17281@vincent-weaver-1.um.maine.edu>
-Date: Mon, 15 Apr 2013 18:21:44 +0200
-Message-ID: <CAMsRxfLUvRw-PUxgX_909PLCFtqqnKO3iiZ8Wvc5DHGAPp3yxA@mail.gmail.com>
-Subject: Re: perf: forcing instructions event to run on Fixed Counter 0
-From: Stephane Eranian <eranian@googlemail.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="LYw3s/afESlflPpp"
+Content-Disposition: inline
+In-Reply-To: <1365861943.3814.3.camel@phoenix>
+X-Cookie: Be careful!  Is it classified?
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 6:13 PM, Vince Weaver <vincent.weaver@maine.edu> wrote:
->
-> It turns out that perf_event for intel seems to use the INST_RETIRED.ALL
-> event interchangably with the "Fixed Counter 0" event.
->
-Yes, it does.
 
-> It turns out they are not equivelent.  The Fixed Counter 0 event turns out
-> to be deterministic, while INST_RETIRED.ALL has a bug where it counts
-> extra events due to hardware interrupts.
->
-Never heard of that problem. I know there was another problem due to leaking
-during priv level transitions. It would be take a few instr or cycles to realize
-you were not in user level any more when doing event:u.
+--LYw3s/afESlflPpp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Interrupt should impact fixed and generic counters the same way.
+On Sat, Apr 13, 2013 at 10:05:43PM +0800, Axel Lin wrote:
+> pdata is either a valid pointer or NULL, use NULL checking rather than
+> IS_ERR_OR_NULL macro.
 
-> Having a user-accessible deterministic instructions event would be really
-> useful.  So is there a way we can specify we want an event to run on Fixed
-> Counter 0?  I think there is code already that does this for Fixed Counter
-> 2 for similar reasons.
->
-No. Fixed counter 2 (ref-cycles) is a different reason. It's because it measures
-an event that does not exist on generic counters: unhalted_reference_cycles.
+Applied, thanks.
 
-> For an example of this happening in real life, take the
-> ./retired_instr.all.x86_64 from my deterministic benchmark that
-> I'll be presenting at the ISPASS conference next week.
->   (can be found here git://github.com/deater/deterministic.git )
->
-> If you run this benchmark with the same event listed 5 times on an Ivy
-> Bridge machine you get these results, notice the last one is the "proper"
-> deterministic result and thus the one that ran on Fixed Counter 0.
->
-Are you sure that the 5th event stayed in fixed counter 0 all along?
+--LYw3s/afESlflPpp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> $ perf stat -e instructions:u,instructions:u,instructions:u,instructions:u,instructions:u ./retired_instr.all.x86_64
-> ...
->  Performance counter stats for './retired_instr.all.x86_64':
->
->        227,010,687 instructions:u            #    0.00  insns per cycle
->        227,010,687 instructions:u            #    0.00  insns per cycle
->        227,010,687 instructions:u            #    0.00  insns per cycle
->        227,010,687 instructions:u            #    0.00  insns per cycle
->        227,000,723 instructions:u            #    0.00  insns per cycle
->
->        1.902648316 seconds time elapsed
->
-> Thanks,
->
-> Vince Weaver
-> vincent.weaver@maine.edu
-> http://www.eece.maine.edu/~vweaver/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRbCkTAAoJELSic+t+oim93J8P/RpArN9U2VQV36Wc/OWMZRej
+tzpldo6C9TODNAISD6QnyTkAwZNAoBkJz4nBRXCyox4b9dS46MWStQkbWNUlf6ij
+r7RzyPpQqaCbJvO3koJzHH1rVTqZ45iGsWr39bvNv34D0hx2ujAWwDCV7bcdPPAc
++xM6skNZD6Bnpl8xl1Z4DSFaODWBYkpUmtRLCQNlUR6fPdR94J2aidEja8Rhuzgd
+do6QBW2QRiqP2+wYm9qLqBfD2Kn5LDZYhCzrbdh8yzx5+IN7RyHsFIH1C+DfDoPD
+J8pvgyPxsvgvMA+BkBaBKJVcnTWz2OuBhM0DkGz40AdNYnLJOyhxX3KuS0k7uhcm
+HvdjQUjDaJc/vFPXT3kH6p458NCxrVQ5BNYffI92LBIfoP+GRDRSCoMe9nwlME2S
+ho6TEyfOSdzw3d+wSf7ZGJtKjiEUHgYvLJM1adFop8dUcY1UHWVmblgB+S9WAvvr
+upP4N46wfh4sVI012xNc+2ZX8Jv1rBLGN6UBp0DWP1ebYgHHseWfzKJS5ZYgQCC2
+GJ5vUEsi94B76h06KMCYZBl6vzY8g660ISYMxLu7XuAiv7KcNVOqCxWl/YPLcVQ7
+8/NAsBdiObcpZcOR1NqMpf7V0KSV3ISK/krIYK8/+VUS7aKUeKc+hA/kHKmKqUPk
+frfcODa18lRD9awb5awr
+=oEe5
+-----END PGP SIGNATURE-----
+
+--LYw3s/afESlflPpp--
