@@ -1,60 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab3DOPLb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:11:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57173 "EHLO mx1.redhat.com"
+	id S1753165Ab3DOPLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:11:46 -0400
+Received: from ra.se.axis.com ([195.60.68.13]:58515 "EHLO ra.se.axis.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282Ab3DOPLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:11:30 -0400
-Message-ID: <1366038686.2918.101.camel@bling.home>
-Subject: Re: [PATCH -v2] PCI/VFIO: use pcie_flags_reg instead of access
- PCI-E Capabilities Register
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>,
-        jiang.liu@huawei.com
-Date: Mon, 15 Apr 2013 09:11:26 -0600
-In-Reply-To: <1364867547-15300-1-git-send-email-wangyijing@huawei.com>
-References: <1364867547-15300-1-git-send-email-wangyijing@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752954Ab3DOPLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 11:11:45 -0400
+Date: Mon, 15 Apr 2013 17:09:18 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Mikael Starvik <starvik@axis.com>, Jesper Nilsson <jespern@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] CRIS: remove "config OOM_REBOOT"
+Message-ID: <20130415150918.GH11974@axis.com>
+References: <1363988751.1390.199.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1363988751.1390.199.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-02 at 09:52 +0800, Yijing Wang wrote:
-> Currently, we use pcie_flags_reg to cache PCI-E Capabilities Register,
-> because PCI-E Capabilities Register bits are almost read-only. This patch
-> use pcie_caps_reg() instead of another access PCI-E Capabilities Register.
+On Fri, Mar 22, 2013 at 10:45:51PM +0100, Paul Bolle wrote:
+> The Kconfig symbol OOM_REBOOT got added in v2.6.25. It has never been
+> used. Its entry can safely be removed.
 > 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  drivers/vfio/pci/vfio_pci_config.c |    6 +-----
->  1 files changed, 1 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
-> index aeb00fc..12a81f7 100644
-> --- a/drivers/vfio/pci/vfio_pci_config.c
-> +++ b/drivers/vfio/pci/vfio_pci_config.c
-> @@ -1017,13 +1017,9 @@ static int vfio_cap_len(struct vfio_pci_device *vdev, u8 cap, u8 pos)
->  		return byte;
->  	case PCI_CAP_ID_EXP:
->  		/* length based on version */
-> -		ret = pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &word);
-> -		if (ret)
-> -			return pcibios_err_to_errno(ret);
-> -
->  		vdev->extended_caps = true;
->  
-> -		if ((word & PCI_EXP_FLAGS_VERS) == 1)
-> +		if ((pcie_caps_reg(pdev) & PCI_EXP_FLAGS_VERS) == 1)
->  			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V1;
->  		else
->  			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V2;
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 
-Applied.  Thanks!
+Agreed, applied to the for-next branch of the CRIS-tree.
+Sorry for the slow response.
 
-Alex
-
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
