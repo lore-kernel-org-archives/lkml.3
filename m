@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934946Ab3DOW42 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 18:56:28 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:33189 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934768Ab3DOW40 (ORCPT
+	id S964820Ab3DOW5L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 18:57:11 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:42889 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934768Ab3DOW5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 18:56:26 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH] usb: xhci-dbg: Display endpoint number and direction in context dump
-Date: Mon, 15 Apr 2013 15:55:04 -0700
-Message-Id: <1366066504-22389-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.8.1.3
-In-Reply-To: <20130415222446.GA13515@xanatos>
-References: <20130415222446.GA13515@xanatos> <20130408154152.GB6117@xanatos> <1365109384-5333-1-git-send-email-jwerner@chromium.org> <1365466705-12847-1-git-send-email-jwerner@chromium.org>
+	Mon, 15 Apr 2013 18:57:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5jJWxHB-oPjGVV5y2jeSNf0At1+3nFgAR0UET8dzxcjB1g@mail.gmail.com>
+References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
+	<1365797627-20874-7-git-send-email-keescook@chromium.org>
+	<CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com>
+	<516A1D49.1050100@zytor.com>
+	<CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
+	<516C702C.2030209@zytor.com>
+	<CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
+	<516C751B.4020505@zytor.com>
+	<CAE9FiQW5X80bxOURTkhnELuV_AzYXBHEudxN1eUg_1jehrcfww@mail.gmail.com>
+	<CAGXu5j+KRVmZqSkvoEH70DCb055uSbVzFkoo+E1Ao=e=Yus_bA@mail.gmail.com>
+	<CAE9FiQWosJRz14HgSq0cDYfsdSsMO9Vpbjd4f5UL3R6KHmOK5Q@mail.gmail.com>
+	<CAGXu5jJWxHB-oPjGVV5y2jeSNf0At1+3nFgAR0UET8dzxcjB1g@mail.gmail.com>
+Date: Mon, 15 Apr 2013 15:57:09 -0700
+X-Google-Sender-Auth: hQyGhMfQrVWQaa_MCVsijhyN3BM
+Message-ID: <CAE9FiQXZcXpyEqHvON0D3u2ivcWQo1=rC1kkt5GLU4rEYaVoQw@mail.gmail.com>
+Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
+From: Yinghai Lu <yinghai@kernel.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Eric Northup <digitaleric@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_XHCI_HCD_DEBUGGING is activated, the XHCI driver can dump
-device and input contexts to the console. The endpoint contexts in that
-dump are labeled "Endpoint N Context", where N is the XHCI endpoint
-index (DCI - 1). This can be very confusing, especially for people who
-are not that familiar with the XHCI specification. This patch introduces
-an xhci_get_endpoint_address function (as a counterpart to the reverse
-xhci_get_endpoint_index), and uses it to additionally display the
-endpoint number and direction when dumping contexts, which are much more
-commonly used concepts in USB.
+On Mon, Apr 15, 2013 at 3:42 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Apr 15, 2013 at 3:38 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>
+>> so the decompressed image is not moved high?
+>
+> No, I mean the size of the relocated image is using z_extract_offset
+> as the end size of the relocated memory. See select_aslr_address. It
+> takes the chosen aslr offset plus the location of z_extract_offset and
+> keeps reducing the offset until it's inside the physical end of
+> memory.
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/host/xhci-dbg.c |  5 ++++-
- drivers/usb/host/xhci.c     | 10 ++++++++++
- drivers/usb/host/xhci.h     |  1 +
- 3 files changed, 15 insertions(+), 1 deletion(-)
+My point is:
+If you move the decompressed high, for example, before aslr uncompressed
+vmlinx is on [1024g+16M, 1024g+256M).
+after aslr, it is on [1024g+16M + 32M, 1024g+256M + 32M).
 
-diff --git a/drivers/usb/host/xhci-dbg.c b/drivers/usb/host/xhci-dbg.c
-index 5f3a7c7..f2e7689 100644
---- a/drivers/usb/host/xhci-dbg.c
-+++ b/drivers/usb/host/xhci-dbg.c
-@@ -503,11 +503,14 @@ static void xhci_dbg_ep_ctx(struct xhci_hcd *xhci,
- 	if (last_ep < 31)
- 		last_ep_ctx = last_ep + 1;
- 	for (i = 0; i < last_ep_ctx; ++i) {
-+		unsigned int epaddr = xhci_get_endpoint_address(i);
- 		struct xhci_ep_ctx *ep_ctx = xhci_get_ep_ctx(xhci, ctx, i);
- 		dma_addr_t dma = ctx->dma +
- 			((unsigned long)ep_ctx - (unsigned long)ctx->bytes);
- 
--		xhci_dbg(xhci, "Endpoint %02d Context:\n", i);
-+		xhci_dbg(xhci, "%s Endpoint %02d Context (ep_index %02d):\n",
-+				usb_endpoint_out(epaddr) ? "OUT" : "IN",
-+				epaddr & USB_ENDPOINT_NUMBER_MASK, i);
- 		xhci_dbg(xhci, "@%p (virt) @%08llx (dma) %#08x - ep_info\n",
- 				&ep_ctx->ep_info,
- 				(unsigned long long)dma, ep_ctx->ep_info);
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 53b8f89..3a3ac92 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1107,6 +1107,16 @@ unsigned int xhci_get_endpoint_index(struct usb_endpoint_descriptor *desc)
- 	return index;
- }
- 
-+/* The reverse operation to xhci_get_endpoint_index. Calculate the USB endpoint
-+ * address from the XHCI endpoint index.
-+ */
-+unsigned int xhci_get_endpoint_address(unsigned int ep_index)
-+{
-+	unsigned int number = DIV_ROUND_UP(ep_index, 2);
-+	unsigned int direction = ep_index % 2 ? USB_DIR_OUT : USB_DIR_IN;
-+	return direction | number;
-+}
-+
- /* Find the flag for this endpoint (for use in the control context).  Use the
-  * endpoint index to create a bitmask.  The slot context is bit 0, endpoint 0 is
-  * bit 1, etc.
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 6358271..555e911 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1641,6 +1641,7 @@ int xhci_setup_addressable_virt_dev(struct xhci_hcd *xhci, struct usb_device *ud
- void xhci_copy_ep0_dequeue_into_input_ctx(struct xhci_hcd *xhci,
- 		struct usb_device *udev);
- unsigned int xhci_get_endpoint_index(struct usb_endpoint_descriptor *desc);
-+unsigned int xhci_get_endpoint_address(unsigned int ep_index);
- unsigned int xhci_get_endpoint_flag(struct usb_endpoint_descriptor *desc);
- unsigned int xhci_get_endpoint_flag_from_index(unsigned int ep_index);
- unsigned int xhci_last_valid_endpoint(u32 added_ctxs);
--- 
-1.7.12.4
+You will need to make sure that 32M is still RAM in e820 memmap.
+also those range should not be with boot_param, command line, and initrd.
+as bootloader could put boot_param, commandline and initrd in that 32M range.
 
+Yinghai
