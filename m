@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933415Ab3DOCSI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:18:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35998 "EHLO
+	id S933834Ab3DOCTO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:19:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36014 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933146Ab3DOCSG (ORCPT
+	with ESMTP id S933146Ab3DOCSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:18:06 -0400
+	Sun, 14 Apr 2013 22:18:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Siegfried Wulsch <Siegfried.Wulsch@rovema.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 07/11] sched_clock: Prevent 64bit inatomicity on 32bit systems
-Date: Sun, 14 Apr 2013 19:17:39 -0700
-Message-Id: <20130415020614.625782988@linuxfoundation.org>
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 09/11] x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare metal
+Date: Sun, 14 Apr 2013 19:17:41 -0700
+Message-Id: <20130415020614.774067165@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415020614.067692418@linuxfoundation.org>
 References: <20130415020614.067692418@linuxfoundation.org>
@@ -29,141 +29,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-commit a1cbcaa9ea87b87a96b9fc465951dcf36e459ca2 upstream.
+commit 511ba86e1d386f671084b5d0e6f110bb30b8eeb2 upstream.
 
-The sched_clock_remote() implementation has the following inatomicity
-problem on 32bit systems when accessing the remote scd->clock, which
-is a 64bit value.
+Invoking arch_flush_lazy_mmu_mode() results in calls to
+preempt_enable()/disable() which may have performance impact.
 
-CPU0			CPU1
+Since lazy MMU is not used on bare metal we can patch away
+arch_flush_lazy_mmu_mode() so that it is never called in such
+environment.
 
-sched_clock_local()	sched_clock_remote(CPU0)
-...
-			remote_clock = scd[CPU0]->clock
-			    read_low32bit(scd[CPU0]->clock)
-cmpxchg64(scd->clock,...)
-			    read_high32bit(scd[CPU0]->clock)
+[ hpa: the previous patch "Fix vmalloc_fault oops during lazy MMU
+  updates" may cause a minor performance regression on
+  bare metal.  This patch resolves that performance regression.  It is
+  somewhat unclear to me if this is a good -stable candidate. ]
 
-While the update of scd->clock is using an atomic64 mechanism, the
-readout on the remote cpu is not, which can cause completely bogus
-readouts.
-
-It is a quite rare problem, because it requires the update to hit the
-narrow race window between the low/high readout and the update must go
-across the 32bit boundary.
-
-The resulting misbehaviour is, that CPU1 will see the sched_clock on
-CPU1 ~4 seconds ahead of it's own and update CPU1s sched_clock value
-to this bogus timestamp. This stays that way due to the clamping
-implementation for about 4 seconds until the synchronization with
-CLOCK_MONOTONIC undoes the problem.
-
-The issue is hard to observe, because it might only result in a less
-accurate SCHED_OTHER timeslicing behaviour. To create observable
-damage on realtime scheduling classes, it is necessary that the bogus
-update of CPU1 sched_clock happens in the context of an realtime
-thread, which then gets charged 4 seconds of RT runtime, which results
-in the RT throttler mechanism to trigger and prevent scheduling of RT
-tasks for a little less than 4 seconds. So this is quite unlikely as
-well.
-
-The issue was quite hard to decode as the reproduction time is between
-2 days and 3 weeks and intrusive tracing makes it less likely, but the
-following trace recorded with trace_clock=global, which uses
-sched_clock_local(), gave the final hint:
-
-  <idle>-0   0d..30 400269.477150: hrtimer_cancel: hrtimer=0xf7061e80
-  <idle>-0   0d..30 400269.477151: hrtimer_start:  hrtimer=0xf7061e80 ...
-irq/20-S-587 1d..32 400273.772118: sched_wakeup:   comm= ... target_cpu=0
-  <idle>-0   0dN.30 400273.772118: hrtimer_cancel: hrtimer=0xf7061e80
-
-What happens is that CPU0 goes idle and invokes
-sched_clock_idle_sleep_event() which invokes sched_clock_local() and
-CPU1 runs a remote wakeup for CPU0 at the same time, which invokes
-sched_remote_clock(). The time jump gets propagated to CPU0 via
-sched_remote_clock() and stays stale on both cores for ~4 seconds.
-
-There are only two other possibilities, which could cause a stale
-sched clock:
-
-1) ktime_get() which reads out CLOCK_MONOTONIC returns a sporadic
-   wrong value.
-
-2) sched_clock() which reads the TSC returns a sporadic wrong value.
-
-#1 can be excluded because sched_clock would continue to increase for
-   one jiffy and then go stale.
-
-#2 can be excluded because it would not make the clock jump
-   forward. It would just result in a stale sched_clock for one jiffy.
-
-After quite some brain twisting and finding the same pattern on other
-traces, sched_clock_remote() remained the only place which could cause
-such a problem and as explained above it's indeed racy on 32bit
-systems.
-
-So while on 64bit systems the readout is atomic, we need to verify the
-remote readout on 32bit machines. We need to protect the local->clock
-readout in sched_clock_remote() on 32bit as well because an NMI could
-hit between the low and the high readout, call sched_clock_local() and
-modify local->clock.
-
-Thanks to Siegfried Wulsch for bearing with my debug requests and
-going through the tedious tasks of running a bunch of reproducer
-systems to generate the debug information which let me decode the
-issue.
-
-Reported-by: Siegfried Wulsch <Siegfried.Wulsch@rovema.de>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1304051544160.21884@ionos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1364045796-10720-2-git-send-email-konrad.wilk@oracle.com
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched_clock.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ arch/x86/include/asm/paravirt.h       |    5 ++++-
+ arch/x86/include/asm/paravirt_types.h |    2 ++
+ arch/x86/kernel/paravirt.c            |   25 +++++++++++++------------
+ arch/x86/lguest/boot.c                |    1 +
+ arch/x86/xen/mmu.c                    |    1 +
+ 5 files changed, 21 insertions(+), 13 deletions(-)
 
---- a/kernel/sched_clock.c
-+++ b/kernel/sched_clock.c
-@@ -176,10 +176,36 @@ static u64 sched_clock_remote(struct sch
- 	u64 this_clock, remote_clock;
- 	u64 *ptr, old_val, val;
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -731,7 +731,10 @@ static inline void arch_leave_lazy_mmu_m
+ 	PVOP_VCALL0(pv_mmu_ops.lazy_mode.leave);
+ }
  
-+#if BITS_PER_LONG != 64
-+again:
-+	/*
-+	 * Careful here: The local and the remote clock values need to
-+	 * be read out atomic as we need to compare the values and
-+	 * then update either the local or the remote side. So the
-+	 * cmpxchg64 below only protects one readout.
-+	 *
-+	 * We must reread via sched_clock_local() in the retry case on
-+	 * 32bit as an NMI could use sched_clock_local() via the
-+	 * tracer and hit between the readout of
-+	 * the low32bit and the high 32bit portion.
-+	 */
-+	this_clock = sched_clock_local(my_scd);
-+	/*
-+	 * We must enforce atomic readout on 32bit, otherwise the
-+	 * update on the remote cpu can hit inbetween the readout of
-+	 * the low32bit and the high 32bit portion.
-+	 */
-+	remote_clock = cmpxchg64(&scd->clock, 0, 0);
-+#else
-+	/*
-+	 * On 64bit the read of [my]scd->clock is atomic versus the
-+	 * update, so we can avoid the above 32bit dance.
-+	 */
- 	sched_clock_local(my_scd);
- again:
- 	this_clock = my_scd->clock;
- 	remote_clock = scd->clock;
-+#endif
+-void arch_flush_lazy_mmu_mode(void);
++static inline void arch_flush_lazy_mmu_mode(void)
++{
++	PVOP_VCALL0(pv_mmu_ops.lazy_mode.flush);
++}
  
- 	/*
- 	 * Use the opportunity that we have both locks
+ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
+ 				phys_addr_t phys, pgprot_t flags)
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -85,6 +85,7 @@ struct pv_lazy_ops {
+ 	/* Set deferred update mode, used for batching operations. */
+ 	void (*enter)(void);
+ 	void (*leave)(void);
++	void (*flush)(void);
+ };
+ 
+ struct pv_time_ops {
+@@ -673,6 +674,7 @@ void paravirt_end_context_switch(struct
+ 
+ void paravirt_enter_lazy_mmu(void);
+ void paravirt_leave_lazy_mmu(void);
++void paravirt_flush_lazy_mmu(void);
+ 
+ void _paravirt_nop(void);
+ u32 _paravirt_ident_32(u32);
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -253,6 +253,18 @@ void paravirt_leave_lazy_mmu(void)
+ 	leave_lazy(PARAVIRT_LAZY_MMU);
+ }
+ 
++void paravirt_flush_lazy_mmu(void)
++{
++	preempt_disable();
++
++	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
++		arch_leave_lazy_mmu_mode();
++		arch_enter_lazy_mmu_mode();
++	}
++
++	preempt_enable();
++}
++
+ void paravirt_start_context_switch(struct task_struct *prev)
+ {
+ 	BUG_ON(preemptible());
+@@ -282,18 +294,6 @@ enum paravirt_lazy_mode paravirt_get_laz
+ 	return percpu_read(paravirt_lazy_mode);
+ }
+ 
+-void arch_flush_lazy_mmu_mode(void)
+-{
+-	preempt_disable();
+-
+-	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
+-		arch_leave_lazy_mmu_mode();
+-		arch_enter_lazy_mmu_mode();
+-	}
+-
+-	preempt_enable();
+-}
+-
+ struct pv_info pv_info = {
+ 	.name = "bare hardware",
+ 	.paravirt_enabled = 0,
+@@ -462,6 +462,7 @@ struct pv_mmu_ops pv_mmu_ops = {
+ 	.lazy_mode = {
+ 		.enter = paravirt_nop,
+ 		.leave = paravirt_nop,
++		.flush = paravirt_nop,
+ 	},
+ 
+ 	.set_fixmap = native_set_fixmap,
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1309,6 +1309,7 @@ __init void lguest_init(void)
+ 	pv_mmu_ops.read_cr3 = lguest_read_cr3;
+ 	pv_mmu_ops.lazy_mode.enter = paravirt_enter_lazy_mmu;
+ 	pv_mmu_ops.lazy_mode.leave = lguest_leave_lazy_mmu_mode;
++	pv_mmu_ops.lazy_mode.flush = paravirt_flush_lazy_mmu;
+ 	pv_mmu_ops.pte_update = lguest_pte_update;
+ 	pv_mmu_ops.pte_update_defer = lguest_pte_update;
+ 
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2011,6 +2011,7 @@ static const struct pv_mmu_ops xen_mmu_o
+ 	.lazy_mode = {
+ 		.enter = paravirt_enter_lazy_mmu,
+ 		.leave = xen_leave_lazy_mmu,
++		.flush = paravirt_flush_lazy_mmu,
+ 	},
+ 
+ 	.set_fixmap = xen_set_fixmap,
 
 
