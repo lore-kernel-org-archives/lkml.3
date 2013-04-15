@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991Ab3DOCpT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:45:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36539 "EHLO
+	id S934631Ab3DOCpr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:45:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36523 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934425Ab3DOCoG (ORCPT
+	with ESMTP id S934407Ab3DOCoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:44:06 -0400
+	Sun, 14 Apr 2013 22:44:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Josh Boyer <jwboyer@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 26/27] x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare metal
-Date: Sun, 14 Apr 2013 19:43:25 -0700
-Message-Id: <20130415024233.297426933@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 22/27] udl: handle EDID failure properly.
+Date: Sun, 14 Apr 2013 19:43:21 -0700
+Message-Id: <20130415024233.001786045@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -29,138 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+From: Dave Airlie <airlied@gmail.com>
 
-commit 511ba86e1d386f671084b5d0e6f110bb30b8eeb2 upstream.
+commit 1baee58638fc58248625255f5c5fcdb987f11b1f upstream.
 
-Invoking arch_flush_lazy_mmu_mode() results in calls to
-preempt_enable()/disable() which may have performance impact.
+Don't oops seems proper.
 
-Since lazy MMU is not used on bare metal we can patch away
-arch_flush_lazy_mmu_mode() so that it is never called in such
-environment.
-
-[ hpa: the previous patch "Fix vmalloc_fault oops during lazy MMU
-  updates" may cause a minor performance regression on
-  bare metal.  This patch resolves that performance regression.  It is
-  somewhat unclear to me if this is a good -stable candidate. ]
-
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-Link: http://lkml.kernel.org/r/1364045796-10720-2-git-send-email-konrad.wilk@oracle.com
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/paravirt.h       |    5 ++++-
- arch/x86/include/asm/paravirt_types.h |    2 ++
- arch/x86/kernel/paravirt.c            |   25 +++++++++++++------------
- arch/x86/lguest/boot.c                |    1 +
- arch/x86/xen/mmu.c                    |    1 +
- 5 files changed, 21 insertions(+), 13 deletions(-)
+ drivers/gpu/drm/udl/udl_connector.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -703,7 +703,10 @@ static inline void arch_leave_lazy_mmu_m
- 	PVOP_VCALL0(pv_mmu_ops.lazy_mode.leave);
- }
+--- a/drivers/gpu/drm/udl/udl_connector.c
++++ b/drivers/gpu/drm/udl/udl_connector.c
+@@ -61,6 +61,10 @@ static int udl_get_modes(struct drm_conn
+ 	int ret;
  
--void arch_flush_lazy_mmu_mode(void);
-+static inline void arch_flush_lazy_mmu_mode(void)
-+{
-+	PVOP_VCALL0(pv_mmu_ops.lazy_mode.flush);
-+}
- 
- static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
- 				phys_addr_t phys, pgprot_t flags)
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -91,6 +91,7 @@ struct pv_lazy_ops {
- 	/* Set deferred update mode, used for batching operations. */
- 	void (*enter)(void);
- 	void (*leave)(void);
-+	void (*flush)(void);
- };
- 
- struct pv_time_ops {
-@@ -679,6 +680,7 @@ void paravirt_end_context_switch(struct
- 
- void paravirt_enter_lazy_mmu(void);
- void paravirt_leave_lazy_mmu(void);
-+void paravirt_flush_lazy_mmu(void);
- 
- void _paravirt_nop(void);
- u32 _paravirt_ident_32(u32);
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -263,6 +263,18 @@ void paravirt_leave_lazy_mmu(void)
- 	leave_lazy(PARAVIRT_LAZY_MMU);
- }
- 
-+void paravirt_flush_lazy_mmu(void)
-+{
-+	preempt_disable();
-+
-+	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
-+		arch_leave_lazy_mmu_mode();
-+		arch_enter_lazy_mmu_mode();
+ 	edid = (struct edid *)udl_get_edid(udl);
++	if (!edid) {
++		drm_mode_connector_update_edid_property(connector, NULL);
++		return 0;
 +	}
-+
-+	preempt_enable();
-+}
-+
- void paravirt_start_context_switch(struct task_struct *prev)
- {
- 	BUG_ON(preemptible());
-@@ -292,18 +304,6 @@ enum paravirt_lazy_mode paravirt_get_laz
- 	return this_cpu_read(paravirt_lazy_mode);
- }
  
--void arch_flush_lazy_mmu_mode(void)
--{
--	preempt_disable();
--
--	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
--		arch_leave_lazy_mmu_mode();
--		arch_enter_lazy_mmu_mode();
--	}
--
--	preempt_enable();
--}
--
- struct pv_info pv_info = {
- 	.name = "bare hardware",
- 	.paravirt_enabled = 0,
-@@ -475,6 +475,7 @@ struct pv_mmu_ops pv_mmu_ops = {
- 	.lazy_mode = {
- 		.enter = paravirt_nop,
- 		.leave = paravirt_nop,
-+		.flush = paravirt_nop,
- 	},
- 
- 	.set_fixmap = native_set_fixmap,
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -1333,6 +1333,7 @@ __init void lguest_init(void)
- 	pv_mmu_ops.read_cr3 = lguest_read_cr3;
- 	pv_mmu_ops.lazy_mode.enter = paravirt_enter_lazy_mmu;
- 	pv_mmu_ops.lazy_mode.leave = lguest_leave_lazy_mmu_mode;
-+	pv_mmu_ops.lazy_mode.flush = paravirt_flush_lazy_mmu;
- 	pv_mmu_ops.pte_update = lguest_pte_update;
- 	pv_mmu_ops.pte_update_defer = lguest_pte_update;
- 
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2190,6 +2190,7 @@ static const struct pv_mmu_ops xen_mmu_o
- 	.lazy_mode = {
- 		.enter = paravirt_enter_lazy_mmu,
- 		.leave = xen_leave_lazy_mmu,
-+		.flush = paravirt_flush_lazy_mmu,
- 	},
- 
- 	.set_fixmap = xen_set_fixmap,
+ 	/*
+ 	 * We only read the main block, but if the monitor reports extension
 
 
