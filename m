@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934559Ab3DOCon (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:44:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36550 "EHLO
+	id S933991Ab3DOCpT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:45:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934290Ab3DOCoI (ORCPT
+	with ESMTP id S934425Ab3DOCoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:44:08 -0400
+	Sun, 14 Apr 2013 22:44:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Alan Cox <alan@linux.intel.com>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Bryan ODonoghue <bryan.odonoghue.lkml@nexus-software.ie>
-Subject: [ 27/27] tty: dont deadlock while flushing workqueue
-Date: Sun, 14 Apr 2013 19:43:26 -0700
-Message-Id: <20130415024233.376898638@linuxfoundation.org>
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 26/27] x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare metal
+Date: Sun, 14 Apr 2013 19:43:25 -0700
+Message-Id: <20130415024233.297426933@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -29,142 +29,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-commit 852e4a8152b427c3f318bb0e1b5e938d64dcdc32 upstream.
+commit 511ba86e1d386f671084b5d0e6f110bb30b8eeb2 upstream.
 
-Since commit 89c8d91e31f2 ("tty: localise the lock") I see a dead lock
-in one of my dummy_hcd + g_nokia test cases. The first run was usually
-okay, the second often resulted in a splat by lockdep and the third was
-usually a dead lock.
-Lockdep complained about tty->hangup_work and tty->legacy_mutex taken
-both ways:
-| ======================================================
-| [ INFO: possible circular locking dependency detected ]
-| 3.7.0-rc6+ #204 Not tainted
-| -------------------------------------------------------
-| kworker/2:1/35 is trying to acquire lock:
-|  (&tty->legacy_mutex){+.+.+.}, at: [<c14051e6>] tty_lock_nested+0x36/0x80
-|
-| but task is already holding lock:
-|  ((&tty->hangup_work)){+.+...}, at: [<c104f6e4>] process_one_work+0x124/0x5e0
-|
-| which lock already depends on the new lock.
-|
-| the existing dependency chain (in reverse order) is:
-|
-| -> #2 ((&tty->hangup_work)){+.+...}:
-|        [<c107fe74>] lock_acquire+0x84/0x190
-|        [<c104d82d>] flush_work+0x3d/0x240
-|        [<c12e6986>] tty_ldisc_flush_works+0x16/0x30
-|        [<c12e7861>] tty_ldisc_release+0x21/0x70
-|        [<c12e0dfc>] tty_release+0x35c/0x470
-|        [<c1105e28>] __fput+0xd8/0x270
-|        [<c1105fcd>] ____fput+0xd/0x10
-|        [<c1051dd9>] task_work_run+0xb9/0xf0
-|        [<c1002a51>] do_notify_resume+0x51/0x80
-|        [<c140550a>] work_notifysig+0x35/0x3b
-|
-| -> #1 (&tty->legacy_mutex/1){+.+...}:
-|        [<c107fe74>] lock_acquire+0x84/0x190
-|        [<c140276c>] mutex_lock_nested+0x6c/0x2f0
-|        [<c14051e6>] tty_lock_nested+0x36/0x80
-|        [<c1405279>] tty_lock_pair+0x29/0x70
-|        [<c12e0bb8>] tty_release+0x118/0x470
-|        [<c1105e28>] __fput+0xd8/0x270
-|        [<c1105fcd>] ____fput+0xd/0x10
-|        [<c1051dd9>] task_work_run+0xb9/0xf0
-|        [<c1002a51>] do_notify_resume+0x51/0x80
-|        [<c140550a>] work_notifysig+0x35/0x3b
-|
-| -> #0 (&tty->legacy_mutex){+.+.+.}:
-|        [<c107f3c9>] __lock_acquire+0x1189/0x16a0
-|        [<c107fe74>] lock_acquire+0x84/0x190
-|        [<c140276c>] mutex_lock_nested+0x6c/0x2f0
-|        [<c14051e6>] tty_lock_nested+0x36/0x80
-|        [<c140523f>] tty_lock+0xf/0x20
-|        [<c12df8e4>] __tty_hangup+0x54/0x410
-|        [<c12dfcb2>] do_tty_hangup+0x12/0x20
-|        [<c104f763>] process_one_work+0x1a3/0x5e0
-|        [<c104fec9>] worker_thread+0x119/0x3a0
-|        [<c1055084>] kthread+0x94/0xa0
-|        [<c140ca37>] ret_from_kernel_thread+0x1b/0x28
-|
-|other info that might help us debug this:
-|
-|Chain exists of:
-|  &tty->legacy_mutex --> &tty->legacy_mutex/1 --> (&tty->hangup_work)
-|
-| Possible unsafe locking scenario:
-|
-|       CPU0                    CPU1
-|       ----                    ----
-|  lock((&tty->hangup_work));
-|                               lock(&tty->legacy_mutex/1);
-|                               lock((&tty->hangup_work));
-|  lock(&tty->legacy_mutex);
-|
-| *** DEADLOCK ***
+Invoking arch_flush_lazy_mmu_mode() results in calls to
+preempt_enable()/disable() which may have performance impact.
 
-Before the path mentioned tty_ldisc_release() look like this:
+Since lazy MMU is not used on bare metal we can patch away
+arch_flush_lazy_mmu_mode() so that it is never called in such
+environment.
 
-|	tty_ldisc_halt(tty);
-|	tty_ldisc_flush_works(tty);
-|	tty_lock();
+[ hpa: the previous patch "Fix vmalloc_fault oops during lazy MMU
+  updates" may cause a minor performance regression on
+  bare metal.  This patch resolves that performance regression.  It is
+  somewhat unclear to me if this is a good -stable candidate. ]
 
-As it can be seen, it first flushes the workqueue and then grabs the
-tty_lock. Now we grab the lock first:
-
-|	tty_lock_pair(tty, o_tty);
-|	tty_ldisc_halt(tty);
-|	tty_ldisc_flush_works(tty);
-
-so lockdep's complaint seems valid.
-
-The earlier version of this patch took the ldisc_mutex since the other
-user of tty_ldisc_flush_works() (tty_set_ldisc()) did this.
-Peter Hurley then said that it is should not be requried. Since it
-wasn't done earlier, I dropped this part.
-The code under tty_ldisc_kill() was executed earlier with the tty lock
-taken so it is taken again.
-
-I was able to reproduce the deadlock on v3.8-rc1, this patch fixes the
-problem in my testcase. I didn't notice any problems so far.
-
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Alan Cox <alan@linux.intel.com>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Cc: Bryan O'Donoghue <bryan.odonoghue.lkml@nexus-software.ie>
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1364045796-10720-2-git-send-email-konrad.wilk@oracle.com
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_ldisc.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ arch/x86/include/asm/paravirt.h       |    5 ++++-
+ arch/x86/include/asm/paravirt_types.h |    2 ++
+ arch/x86/kernel/paravirt.c            |   25 +++++++++++++------------
+ arch/x86/lguest/boot.c                |    1 +
+ arch/x86/xen/mmu.c                    |    1 +
+ 5 files changed, 21 insertions(+), 13 deletions(-)
 
---- a/drivers/tty/tty_ldisc.c
-+++ b/drivers/tty/tty_ldisc.c
-@@ -934,17 +934,17 @@ void tty_ldisc_release(struct tty_struct
- 	 * race with the set_ldisc code path.
- 	 */
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -703,7 +703,10 @@ static inline void arch_leave_lazy_mmu_m
+ 	PVOP_VCALL0(pv_mmu_ops.lazy_mode.leave);
+ }
  
--	tty_lock_pair(tty, o_tty);
- 	tty_ldisc_halt(tty);
--	tty_ldisc_flush_works(tty);
--	if (o_tty) {
-+	if (o_tty)
- 		tty_ldisc_halt(o_tty);
+-void arch_flush_lazy_mmu_mode(void);
++static inline void arch_flush_lazy_mmu_mode(void)
++{
++	PVOP_VCALL0(pv_mmu_ops.lazy_mode.flush);
++}
+ 
+ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
+ 				phys_addr_t phys, pgprot_t flags)
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -91,6 +91,7 @@ struct pv_lazy_ops {
+ 	/* Set deferred update mode, used for batching operations. */
+ 	void (*enter)(void);
+ 	void (*leave)(void);
++	void (*flush)(void);
+ };
+ 
+ struct pv_time_ops {
+@@ -679,6 +680,7 @@ void paravirt_end_context_switch(struct
+ 
+ void paravirt_enter_lazy_mmu(void);
+ void paravirt_leave_lazy_mmu(void);
++void paravirt_flush_lazy_mmu(void);
+ 
+ void _paravirt_nop(void);
+ u32 _paravirt_ident_32(u32);
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -263,6 +263,18 @@ void paravirt_leave_lazy_mmu(void)
+ 	leave_lazy(PARAVIRT_LAZY_MMU);
+ }
+ 
++void paravirt_flush_lazy_mmu(void)
++{
++	preempt_disable();
 +
-+	tty_ldisc_flush_works(tty);
-+	if (o_tty)
- 		tty_ldisc_flush_works(o_tty);
--	}
++	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
++		arch_leave_lazy_mmu_mode();
++		arch_enter_lazy_mmu_mode();
++	}
++
++	preempt_enable();
++}
++
+ void paravirt_start_context_switch(struct task_struct *prev)
+ {
+ 	BUG_ON(preemptible());
+@@ -292,18 +304,6 @@ enum paravirt_lazy_mode paravirt_get_laz
+ 	return this_cpu_read(paravirt_lazy_mode);
+ }
  
-+	tty_lock_pair(tty, o_tty);
- 	/* This will need doing differently if we need to lock */
- 	tty_ldisc_kill(tty);
+-void arch_flush_lazy_mmu_mode(void)
+-{
+-	preempt_disable();
 -
- 	if (o_tty)
- 		tty_ldisc_kill(o_tty);
+-	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
+-		arch_leave_lazy_mmu_mode();
+-		arch_enter_lazy_mmu_mode();
+-	}
+-
+-	preempt_enable();
+-}
+-
+ struct pv_info pv_info = {
+ 	.name = "bare hardware",
+ 	.paravirt_enabled = 0,
+@@ -475,6 +475,7 @@ struct pv_mmu_ops pv_mmu_ops = {
+ 	.lazy_mode = {
+ 		.enter = paravirt_nop,
+ 		.leave = paravirt_nop,
++		.flush = paravirt_nop,
+ 	},
  
+ 	.set_fixmap = native_set_fixmap,
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1333,6 +1333,7 @@ __init void lguest_init(void)
+ 	pv_mmu_ops.read_cr3 = lguest_read_cr3;
+ 	pv_mmu_ops.lazy_mode.enter = paravirt_enter_lazy_mmu;
+ 	pv_mmu_ops.lazy_mode.leave = lguest_leave_lazy_mmu_mode;
++	pv_mmu_ops.lazy_mode.flush = paravirt_flush_lazy_mmu;
+ 	pv_mmu_ops.pte_update = lguest_pte_update;
+ 	pv_mmu_ops.pte_update_defer = lguest_pte_update;
+ 
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2190,6 +2190,7 @@ static const struct pv_mmu_ops xen_mmu_o
+ 	.lazy_mode = {
+ 		.enter = paravirt_enter_lazy_mmu,
+ 		.leave = xen_leave_lazy_mmu,
++		.flush = paravirt_flush_lazy_mmu,
+ 	},
+ 
+ 	.set_fixmap = xen_set_fixmap,
 
 
