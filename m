@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab3DOQfR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:35:17 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:60937 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754495Ab3DOQfQ (ORCPT
+	id S933461Ab3DOQfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:35:33 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:39588 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754495Ab3DOQfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:35:16 -0400
-X-Originating-IP: 108.223.40.66
-Date: Mon, 15 Apr 2013 09:35:32 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
-Message-ID: <20130415163532.GA24272@roeck-us.net>
-References: <201304121310.r3CDAJHh011814@latitude>
- <20130412133221.GA11293@roeck-us.net>
- <24DF37198A1E704D9811D8F72B87EB514191E103@NB-EX-MBX02.diasemi.com>
+	Mon, 15 Apr 2013 12:35:32 -0400
+Date: Mon, 15 Apr 2013 12:39:05 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: eranian@gmail.com
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf: forcing instructions event to run on Fixed Counter 0
+In-Reply-To: <CAMsRxfLUvRw-PUxgX_909PLCFtqqnKO3iiZ8Wvc5DHGAPp3yxA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1304151231490.17281@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.02.1304151205140.17281@vincent-weaver-1.um.maine.edu> <CAMsRxfLUvRw-PUxgX_909PLCFtqqnKO3iiZ8Wvc5DHGAPp3yxA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <24DF37198A1E704D9811D8F72B87EB514191E103@NB-EX-MBX02.diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 03:00:58PM +0000, Opensource [Anthony Olech] wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Guenter Roeck [mailto:linux@roeck-us.net]
-> > Sent: 12 April 2013 14:32
-> > To: Opensource [Anthony Olech]
-> > Cc: Mark Brown; Liam Girdwood; Jean Delvare; Randy Dunlap; LKML; David
-> > Dajun Chen
-> > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
-> > 
-> > On Fri, Apr 12, 2013 at 02:05:28PM +0100, Anthony Olech wrote:
-> > > This is the REGULATOR component driver of the Dialog DA9058 PMIC.
-> > > This driver is just one component of the whole DA9058 PMIC driver.
-> > > It depends on the CORE component driver of the DA9058 MFD.
-> > >
-> > > There are 6 warnings from scripts/checkpatch.pl, but since it seems to
-> > > be complaining about variable names such as min_uV are in CamelCase,
-> > > when it is obvious that they are not in CamelCase I have ignored them.
-> > >
-> > ??? min_uV _is_ CamelCase ???
-> > 
-> > Ok, maybe it is camelcasE, but you are splitting hairs here.
-> 
-> it is not me splitting hairs, it is scripts/checkpatch.pl
-> 
-Maybe you did not understand what I meant. Per your logic,
+On Mon, 15 Apr 2013, Stephane Eranian wrote:
 
-	MicroVolt is CamelCase
-	uVolt is ???
-	uV is not CamelCase
+> Never heard of that problem. I know there was another problem due to leaking
+> during priv level transitions. It would be take a few instr or cycles to realize
+> you were not in user level any more when doing event:u.
+> 
+> Interrupt should impact fixed and generic counters the same way.
 
-By abbreviating CamelCase to camelCase to cC you make it,
-in your opinion, acceptable.
+Some people inside Intel were reproducing my "deterministic event" work 
+and they informed me of this issue.
 
-If you want to declare CamelCase variables, just do it,
-but don't claim that they are not really CamelCase.
+> Are you sure that the 5th event stayed in fixed counter 0 all along?
 
-Guenter
+No, but is there any way to enforce that currently using perf?
+
+The results are about what I'd expect.  The generic instructions:u
+events are overcounting by roughly 20,008 for page faults (as expected)
+and 650 for hardware interrupts (also as expected) wheras the 
+Fixed Counter 0 event is overcounting 10,000 (for page faults?) and 
+undercounting a bit possibly due to a supposedly known issue involving
+the counts for rep-prefixed string instructions that apparently only 
+happens on Fixed Counter 0.
+ 
+> > $ perf stat -e instructions:u,instructions:u,instructions:u,instructions:u,instructions:u ./retired_instr.all.x86_64
+> > ...
+> >  Performance counter stats for './retired_instr.all.x86_64':
+> >
+> >        227,010,687 instructions:u            #    0.00  insns per cycle
+> >        227,010,687 instructions:u            #    0.00  insns per cycle
+> >        227,010,687 instructions:u            #    0.00  insns per cycle
+> >        227,010,687 instructions:u            #    0.00  insns per cycle
+> >        227,000,723 instructions:u            #    0.00  insns per cycle
+> >
+> >        1.902648316 seconds time elapsed
+
+
+Vince Weaver
+vincent.weaver@maine.edu
+http://www.eece.maine.edu/~vweaver/
