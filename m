@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933296Ab3DOCSD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:18:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35989 "EHLO
+	id S933780Ab3DOCSq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:18:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36024 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933146Ab3DOCSA (ORCPT
+	with ESMTP id S933512Ab3DOCSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:18:00 -0400
+	Sun, 14 Apr 2013 22:18:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huacai Chen <chenhc@lemote.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 05/11] PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
-Date: Sun, 14 Apr 2013 19:17:37 -0700
-Message-Id: <20130415020614.480658197@linuxfoundation.org>
+        Hayes Wang <hayeswang@realtek.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 11/11] r8169: fix auto speed down issue
+Date: Sun, 14 Apr 2013 19:17:43 -0700
+Message-Id: <20130415020614.910439053@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415020614.067692418@linuxfoundation.org>
 References: <20130415020614.067692418@linuxfoundation.org>
@@ -27,57 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huacai Chen <chenhc@lemote.com>
+From: Hayes Wang <hayeswang@realtek.com>
 
-commit 6f389a8f1dd22a24f3d9afc2812b30d639e94625 upstream.
+commit e2409d83434d77874b461b78af6a19cd6e6a1280 upstream.
 
-As commit 40dc166c (PM / Core: Introduce struct syscore_ops for core
-subsystems PM) say, syscore_ops operations should be carried with one
-CPU on-line and interrupts disabled. However, after commit f96972f2d
-(kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()),
-syscore_shutdown() is called before disable_nonboot_cpus(), so break
-the rules. We have a MIPS machine with a 8259A PIC, and there is an
-external timer (HPET) linked at 8259A. Since 8259A has been shutdown
-too early (by syscore_shutdown()), disable_nonboot_cpus() runs without
-timer interrupt, so it hangs and reboot fails. This patch call
-syscore_shutdown() a little later (after disable_nonboot_cpus()) to
-avoid reboot failure, this is the same way as poweroff does.
+It would cause no link after suspending or shutdowning when the
+nic changes the speed to 10M and connects to a link partner which
+forces the speed to 100M.
 
-For consistency, add disable_nonboot_cpus() to kernel_halt().
+Check the link partner ability to determine which speed to set.
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+The link speed down code path is not factored in this kernel version.
+
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/sys.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/r8169.c |   30 ++++++++++++++++++++++++++----
+ 1 file changed, 26 insertions(+), 4 deletions(-)
 
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -320,7 +320,6 @@ void kernel_restart_prepare(char *cmd)
- 	system_state = SYSTEM_RESTART;
- 	usermodehelper_disable();
- 	device_shutdown();
--	syscore_shutdown();
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -3105,11 +3105,34 @@ static void r810x_phy_power_up(struct rt
+ 	rtl_writephy(tp, MII_BMCR, BMCR_ANENABLE);
  }
  
- /**
-@@ -335,6 +334,7 @@ void kernel_restart(char *cmd)
++static void rtl_speed_down(struct rtl8169_private *tp)
++{
++	u32 adv;
++	int lpa;
++
++	rtl_writephy(tp, 0x1f, 0x0000);
++	lpa = rtl_readphy(tp, MII_LPA);
++
++	if (lpa & (LPA_10HALF | LPA_10FULL))
++		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full;
++	else if (lpa & (LPA_100HALF | LPA_100FULL))
++		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
++		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full;
++	else
++		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
++		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full |
++		      (tp->mii.supports_gmii ?
++		       ADVERTISED_1000baseT_Half |
++		       ADVERTISED_1000baseT_Full : 0);
++
++	rtl8169_set_speed(tp->dev, AUTONEG_ENABLE, SPEED_1000, DUPLEX_FULL,
++			  adv);
++}
++
+ static void r810x_pll_power_down(struct rtl8169_private *tp)
  {
- 	kernel_restart_prepare(cmd);
- 	disable_nonboot_cpus();
-+	syscore_shutdown();
- 	if (!cmd)
- 		printk(KERN_EMERG "Restarting system.\n");
- 	else
-@@ -360,6 +360,7 @@ static void kernel_shutdown_prepare(enum
- void kernel_halt(void)
- {
- 	kernel_shutdown_prepare(SYSTEM_HALT);
-+	disable_nonboot_cpus();
- 	syscore_shutdown();
- 	printk(KERN_EMERG "System halted.\n");
- 	kmsg_dump(KMSG_DUMP_HALT);
+ 	if (__rtl8169_get_wol(tp) & WAKE_ANY) {
+-		rtl_writephy(tp, 0x1f, 0x0000);
+-		rtl_writephy(tp, MII_BMCR, 0x0000);
++		rtl_speed_down(tp);
+ 		return;
+ 	}
+ 
+@@ -3201,8 +3224,7 @@ static void r8168_pll_power_down(struct
+ 		rtl_ephy_write(ioaddr, 0x19, 0xff64);
+ 
+ 	if (__rtl8169_get_wol(tp) & WAKE_ANY) {
+-		rtl_writephy(tp, 0x1f, 0x0000);
+-		rtl_writephy(tp, MII_BMCR, 0x0000);
++		rtl_speed_down(tp);
+ 
+ 		if (tp->mac_version == RTL_GIGA_MAC_VER_32 ||
+ 		    tp->mac_version == RTL_GIGA_MAC_VER_33)
 
 
