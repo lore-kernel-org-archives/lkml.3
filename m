@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab3DOCjt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:39:49 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:36739 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753924Ab3DOCjr (ORCPT
+	id S1756946Ab3DOCnh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:43:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36437 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656Ab3DOCnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:39:47 -0400
-Date: Sun, 14 Apr 2013 19:39:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, vgoyal@redhat.com,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH 4/4] memcg: force use_hierarchy if sane_behavior
-Message-ID: <20130415023935.GE3050@htj.dyndns.org>
-References: <1365808259-31073-1-git-send-email-tj@kernel.org>
- <1365808259-31073-5-git-send-email-tj@kernel.org>
- <20130415011336.GF8408@sergelap>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130415011336.GF8408@sergelap>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 14 Apr 2013 22:43:33 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ryo Tsutsui <Ryo.Tsutsui@wolfsonmicro.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 03/27] ASoC: wm5102: Correct lookup of arizona struct in SYSCLK event
+Date: Sun, 14 Apr 2013 19:43:02 -0700
+Message-Id: <20130415024231.612361202@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.2.1.368.g99c2266
+In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
+References: <20130415024231.351969241@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Serge.
+3.8-stable review patch.  If anyone has any objections, please let me know.
 
-On Sun, Apr 14, 2013 at 08:13:36PM -0500, Serge Hallyn wrote:
-> If I do
-> 
-> 	cd /sys/fs/cgroup/memory
-> 	mkdir b
-> 	cd b
-> 	echo 1 > memory.use_hierarchy
-> 	echo 5000 > memory.limit_in_bytes
-> 	cat memory.limit_in_bytes
-> 8192
-> 	mkdir c
-> 	cd c
-> 	cat memory.use_hierarchy
-> 1
-> 	cat memory.limit_in_bytes
-> 9223372036854775807
-> 	echo $$ > tasks
-> 	bash
-> <killed>
-> 
-> So it seems the hierarchy is being enforced, but not reported in
-> child limit_in_bytes files.
+------------------
 
-Hmm.... if I understand you correctly, it ain't bug.  It's supposed to
-work that way.  The parent has certain limits and the child doesn't.
-The child will operate within the paren't limits but in those limits
-it isn't restricted.  We actually have a controller which does
-propagate configuration, the device security one, which I don't think
-is really optimal but it seems to be the easier way to implement
-hierarchical behavior for that controller.
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Anyways, if you think about the use cases, the current memcg way makes
-a lot more sense and is more flexible.  e.g. You can express things
-like A + B shouldn't go above 1000 (whatever the unit is) but A and B
-in each can go upto 700 when there's room.
+commit f6f629f8332ea70255f6c60c904270640a21a114 upstream.
 
-Thanks.
+Reported-by: Ryo Tsutsui <Ryo.Tsutsui@wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
--- 
-tejun
+---
+ sound/soc/codecs/wm5102.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/sound/soc/codecs/wm5102.c
++++ b/sound/soc/codecs/wm5102.c
+@@ -576,7 +576,7 @@ static int wm5102_sysclk_ev(struct snd_s
+ 			    struct snd_kcontrol *kcontrol, int event)
+ {
+ 	struct snd_soc_codec *codec = w->codec;
+-	struct arizona *arizona = dev_get_drvdata(codec->dev);
++	struct arizona *arizona = dev_get_drvdata(codec->dev->parent);
+ 	struct regmap *regmap = codec->control_data;
+ 	const struct reg_default *patch = NULL;
+ 	int i, patch_size;
+
+
