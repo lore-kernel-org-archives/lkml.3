@@ -1,149 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab3DOHri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 03:47:38 -0400
-Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:47928 "EHLO
-	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751987Ab3DOHrh (ORCPT
+	id S1754664Ab3DOHw4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 03:52:56 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:46768 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987Ab3DOHwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 03:47:37 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH v3] MFD: ab8500: pass AB8500 IRQ to debugfs code by resource
-Date: Mon, 15 Apr 2013 09:47:01 +0200
-Message-ID: <1366012021-9039-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Mon, 15 Apr 2013 03:52:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <516BAA36.9030500@intel.com>
+References: <1365860309-21261-1-git-send-email-linkinjeon@gmail.com>
+	<516BAA36.9030500@intel.com>
+Date: Mon, 15 Apr 2013 16:52:54 +0900
+Message-ID: <CAKYAXd8EPHoeKY3GUZof+uzHRQ78EW68DuJfjKx=xXs45uYkOQ@mail.gmail.com>
+Subject: Re: [PATCH 2/8] mmc: fix max_discard_sectors
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: dwmw2@infradead.org, axboe@kernel.dk, shli@kernel.org,
+        Paul.Clements@steeleye.com, npiggin@kernel.dk, neilb@suse.de,
+        cjb@laptop.org, linux-mtd@lists.infradead.org,
+        nbd-general@lists.sourceforge.net, linux-raid@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+2013/4/15, Adrian Hunter <adrian.hunter@intel.com>:
+> On 13/04/13 16:38, Namjae Jeon wrote:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>
+>> https://lkml.org/lkml/2013/4/1/292
+>> As per above discussion, there is possibility that request's __data_len
+>> field may overflow when max_discard_sectors greater than UINT_MAX >> 9
+>>
+>> If multiple discard requests get merged, merged discard request's
+>> size exceeds 4GB, there is possibility that merged discard request's
+>> __data_len field may overflow.
+>>
+>> This patch fixes this issue.
+>>
+>> Reported-by: Max Filippov <jcmvbkbc@gmail.com>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Vivek Trivedi <t.vivek@samsung.com>
+>> Tested-by: Max Filippov <jcmvbkbc@gmail.com>
+>> ---
+>>  drivers/mmc/card/queue.c |    2 +-
+>>  drivers/mmc/core/core.c  |    4 ++--
+>>  2 files changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+>> index 9447a0e..54726b7 100644
+>> --- a/drivers/mmc/card/queue.c
+>> +++ b/drivers/mmc/card/queue.c
+>> @@ -166,7 +166,7 @@ static void mmc_queue_setup_discard(struct
+>> request_queue *q,
+>>  		return;
+>>
+>>  	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
+>> -	q->limits.max_discard_sectors = max_discard;
+>> +	blk_queue_max_discard_sectors(q, max_discard);
+>>  	if (card->erased_byte == 0 && !mmc_can_discard(card))
+>>  		q->limits.discard_zeroes_data = 1;
+>>  	q->limits.discard_granularity = card->pref_erase << 9;
+>> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+>> index 7b435a3..6ee530c 100644
+>> --- a/drivers/mmc/core/core.c
+>> +++ b/drivers/mmc/core/core.c
+>> @@ -2058,7 +2058,7 @@ static unsigned int mmc_do_calc_max_discard(struct
+>> mmc_card *card,
+>>  	if (card->erase_shift)
+>>  		max_qty = UINT_MAX >> card->erase_shift;
+>>  	else if (mmc_card_sd(card))
+>> -		max_qty = UINT_MAX;
+>> +		max_qty = UINT_MAX >> 9;
+>
+> No.  This function calculates max discard for the card not the block layer.
+>  Apply the block layer limitation at the block layer interface e.g.
+> in mmc_queue_setup_discard()
+Hi Adrian,
+Okay, I will remove change in mmc_do_calc_max_discard and mmc_calc_max_discard.
 
-The AB8500 debug code which was merged in parallel with the
-multiplatform work incidentally introduced a new instance using
-the <mach/irqs.h> header which is now deleted, causing this
-build regression:
+>> @@ -166,7 +166,7 @@ static void mmc_queue_setup_discard(struct
+>> request_queue *q,
+>>  		return;
+>>
+>>  	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
+>> -	q->limits.max_discard_sectors = max_discard;
+>> +	blk_queue_max_discard_sectors(q, max_discard);
+>>  	if (card->erased_byte == 0 && !mmc_can_discard(card))
+>>  		q->limits.discard_zeroes_data = 1;
+Above change will handle max discard sectors as we have updated
+blk_queue_max_discard_sectors to check upper limit of max discard
+sectors as UINT_MAX >> 9.
 
-drivers/mfd/ab8500-debugfs.c:95:23:
-fatal error: mach/irqs.h: No such file or directory
-compilation terminated.
-make[4]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
-
-The code most certainly never worked with device tree either
-since that does not rely on this kind of hard-coded interrupt
-numbers.
-
-Fix the problem at the root by passing it as a named resource
-from the ab8500-core driver. Use an untyped resource to
-stop the MFD core from remapping this IRQ relative to the
-AB8500 irqdomain.
-
-Cc: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLov v2->v3:
-- Fix typos.
-ChangeLog v1->v2:
-- Pass an untyped resource to avoid problems due to IRQ
-  remapping.
-
-Sam this would have to go into the v3.10-targetted stuff...
-Either immediately before you send it upstream or as a fixup.
----
- drivers/mfd/ab8500-core.c    | 15 +++++++++++++++
- drivers/mfd/ab8500-debugfs.c | 16 ++++++++++++----
- 2 files changed, 27 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
-index 8e8a016..42abd3a 100644
---- a/drivers/mfd/ab8500-core.c
-+++ b/drivers/mfd/ab8500-core.c
-@@ -868,6 +868,15 @@ static struct resource ab8500_chargalg_resources[] = {};
- #ifdef CONFIG_DEBUG_FS
- static struct resource ab8500_debug_resources[] = {
- 	{
-+		.name	= "IRQ_AB8500",
-+		/*
-+		 * Number will be filled in. NOTE: this is deliberately
-+		 * not flagged as an IRQ in order to avoid remapping using
-+		 * the irqdomain in the MFD core, so that this IRQ passes
-+		 * unremapped to the debug code.
-+		 */
-+	},
-+	{
- 		.name	= "IRQ_FIRST",
- 		.start	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
- 		.end	= AB8500_INT_MAIN_EXT_CH_NOT_OK,
-@@ -1712,6 +1721,12 @@ static int ab8500_probe(struct platform_device *pdev)
- 	if (ret)
- 		return ret;
- 
-+#if CONFIG_DEBUG_FS
-+	/* Pass to debugfs */
-+	ab8500_debug_resources[0].start = ab8500->irq;
-+	ab8500_debug_resources[0].end = ab8500->irq;
-+#endif
-+
- 	if (is_ab9540(ab8500))
- 		ret = mfd_add_devices(ab8500->dev, 0, ab9540_devs,
- 				ARRAY_SIZE(ab9540_devs), NULL,
-diff --git a/drivers/mfd/ab8500-debugfs.c b/drivers/mfd/ab8500-debugfs.c
-index b88bbbc..37b7ce4 100644
---- a/drivers/mfd/ab8500-debugfs.c
-+++ b/drivers/mfd/ab8500-debugfs.c
-@@ -91,12 +91,10 @@
- #include <linux/ctype.h>
- #endif
- 
--/* TODO: this file should not reference IRQ_DB8500_AB8500! */
--#include <mach/irqs.h>
--
- static u32 debug_bank;
- static u32 debug_address;
- 
-+static int irq_ab8500;
- static int irq_first;
- static int irq_last;
- static u32 *irq_count;
-@@ -1589,7 +1587,7 @@ void ab8500_debug_register_interrupt(int line)
- {
- 	if (line < num_interrupt_lines) {
- 		num_interrupts[line]++;
--		if (suspend_test_wake_cause_interrupt_is_mine(IRQ_DB8500_AB8500))
-+		if (suspend_test_wake_cause_interrupt_is_mine(irq_ab8500))
- 			num_wake_interrupts[line]++;
- 	}
- }
-@@ -2941,6 +2939,7 @@ static int ab8500_debug_probe(struct platform_device *plf)
- 	struct dentry *file;
- 	int ret = -ENOMEM;
- 	struct ab8500 *ab8500;
-+	struct resource *res;
- 	debug_bank = AB8500_MISC;
- 	debug_address = AB8500_REV_REG & 0x00FF;
- 
-@@ -2959,6 +2958,15 @@ static int ab8500_debug_probe(struct platform_device *plf)
- 	if (!event_name)
- 		goto out_freedev_attr;
- 
-+	res = platform_get_resource_byname(plf, 0, "IRQ_AB8500");
-+	if (!res) {
-+		dev_err(&plf->dev, "AB8500 irq not found, err %d\n",
-+			irq_first);
-+		ret = -ENXIO;
-+		goto out_freeevent_name;
-+	}
-+	irq_ab8500 = res->start;
-+
- 	irq_first = platform_get_irq_byname(plf, "IRQ_FIRST");
- 	if (irq_first < 0) {
- 		dev_err(&plf->dev, "First irq not found, err %d\n",
--- 
-1.7.11.3
-
+Thanks.
+>
+>>  	else
+>>  		max_qty = UINT_MAX / card->erase_size;
+>>
+>> @@ -2100,7 +2100,7 @@ unsigned int mmc_calc_max_discard(struct mmc_card
+>> *card)
+>>  	unsigned int max_discard, max_trim;
+>>
+>>  	if (!host->max_discard_to)
+>> -		return UINT_MAX;
+>> +		return UINT_MAX >> 9;
+>
+> Ditto.
+>
+>>
+>>  	/*
+>>  	 * Without erase_group_def set, MMC erase timeout depends on clock
+>>
+>
+>
