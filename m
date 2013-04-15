@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab3DOB4S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 21:56:18 -0400
-Received: from nm7.bullet.mail.ird.yahoo.com ([77.238.189.21]:38428 "HELO
-	nm7.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752734Ab3DOB4R convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 21:56:17 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 901203.12370.bm@omp1051.mail.ir2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.uk;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=RmCym/tptc5Iyj5RkqhvCilIzumBRmnI/GLhfgVV3AFl0HQbu1p5N9AQlgoKXRc4O1d7mMmUzlpNDDw9LiFQ7jGWYP/N8Y+5vVgC8YNP44+79Wcny3l4y9JoF9JH9n7tS9XTcfzklV9LEMs1BdGhChpVRk0LqDY3nqQaSdeM9mc=;
-X-YMail-OSG: R_MExMYVM1mx8BBEUfJSsmYXH0uV_lp0w9Z7YMJ8lE0vVU1
- WD7sJKxqERF3hovVU58GiW43miFy_t275d.yoknU8DX_kk.y8H0Jc4A.A1hB
- gLbtIRY9cA4bunr.T9p4ANMSCknDrVCVlnOY_ZFbsI4rPiGfVl143SHhb6AD
- YzbTo_VHVbs73kViAk2opXtTEl3QU3oLpMhsolMW8l5Yrkekyvp5MNIz_I5n
- 2JmZ92a_g.saGnxtgAz2NBLPjqb.2zmdbsPWEUxTRtZwc6UHUe_nIdUXVM4E
- 2cr1vtqTLmWfg4bxJ4klAzlK6ndd1yow.SgwssDYepLoO42AgMUWJoJwADQY
- SNw16DYMwNweIuHpCDPsvEuffxfCYX0.untXTafzYVfILlHRpLKgigAEU_k3
- tJmGboEHhDCx0VGwOOgehyY.WJhtnf_HEgnCdQSesgG5nhJNkGUVNlxok8wV
- 7wbDkcqykHjA1zAhY2Bt5KL4g3A5Y223g5JEByOamcdAqRE8OYYGhwntP7dO
- JKZ9V
-X-Rocket-MIMEInfo: 002.001,LS0tIE9uIE1vbiwgMTUvNC8xMywgSm9lIFBlcmNoZXMgPGpvZUBwZXJjaGVzLmNvbT4gd3JvdGU6Cgo.IE9uIE1vbiwgMjAxMy0wNC0xNSBhdCAwMTo1MyArMDEwMCwKPiBIaW4tVGFrIExldW5nIHdyb3RlOgo.ID4gLS0tIE9uIE1vbiwgOC80LzEzLCBKb2UgUGVyY2hlcyA8am9lQHBlcmNoZXMuY29tPgo.IHdyb3RlOgo.ID4gPiBVc2UgYSBtb3JlIGN1cnJlbnQgbG9nZ2luZyBzdHlsZS4KPiBbXQo.ID4gSSBoYXZlIGJlZW4gc2l0dGluZyBvbiBhIHBhdGNoIHdoaWNoIGNoYW5nZXMgdGhpcyBwYXJ0Cj4gb2YBMAEBAQE-
-X-RocketYMMF: hintak_leung
-X-Mailer: YahooMailClassic/15.1.7 YahooMailWebService/0.8.140.532
-Message-ID: <1365990973.28177.YahooMailClassic@web172303.mail.ir2.yahoo.com>
-Date: Mon, 15 Apr 2013 02:56:13 +0100 (BST)
-From: Hin-Tak Leung <htl10@users.sourceforge.net>
-Reply-To: htl10@users.sourceforge.net
-Subject: Re: [PATCH 1/2] hfs/hfsplus: Convert dprint to hfs_dbg
-To: Joe Perches <joe@perches.com>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1365990674.1878.21.camel@joe-AO722>
+	id S1754733Ab3DOCAW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:00:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52404 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754509Ab3DOCAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 22:00:21 -0400
+Message-ID: <516B5F1F.1040106@zytor.com>
+Date: Sun, 14 Apr 2013 18:59:59 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/4] x86, kdump: Set crashkernel_low automatically
+References: <1365749691-21299-1-git-send-email-yinghai@kernel.org> <1365749691-21299-2-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1365749691-21299-2-git-send-email-yinghai@kernel.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Mon, 15/4/13, Joe Perches <joe@perches.com> wrote:
+On 04/11/2013 11:54 PM, Yinghai Lu wrote:
 
-> On Mon, 2013-04-15 at 01:53 +0100,
-> Hin-Tak Leung wrote:
-> > --- On Mon, 8/4/13, Joe Perches <joe@perches.com>
-> wrote:
-> > > Use a more current logging style.
-> []
-> > I have been sitting on a patch which changes this part
-> of the code to dynamic debugging, and it is much simplier.
-> Just:
-> > #define dprint(flg, fmt, args...) \
-> > -       if (flg &
-> DBG_MASK) \
-> > -           
->    printk(fmt , ## args)
-> > +           
->    pr_debug(fmt , ## args)
-> 
-> This change wouldn't work well as it would make a mess
-> of output that uses no prefix (ie: emits at KERN_DEFAULT)
-> with output that uses KERN_DEBUG
-> 
-> That's the reason for _dbg and _dbg_cont.
+> +		/*
+> +		 * two parts from lib/swiotlb.c:
+> +		 *	swiotlb size: user specified with swiotlb= or default.
+> +		 *	swiotlb overflow buffer: now is hardcoded to 32k,
+> +		 *		round to 8M to cover more others.
+> +		 */
 
-Hmm, I don't get it. Is there any *existing* use of dprint in the hfplus code which is affected by your comment? Or is this another general stylistic comment? i.e. "this does not work in general"?
+This comment is incomprehensible.  "Cover more others"?
 
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
