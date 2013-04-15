@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab3DOQVk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:21:40 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39910 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558Ab3DOQVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:21:39 -0400
-Message-ID: <516C2905.8000200@ti.com>
-Date: Mon, 15 Apr 2013 19:21:25 +0300
-From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1754546Ab3DOQVr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:21:47 -0400
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:58347 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab3DOQVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 12:21:45 -0400
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>,
-        Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Nishanth Menon <nm@ti.com>, Tero Kristo <t-kristo@ti.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC v1] regulator: core: introduce regulator chain locking scheme
-References: <1366031015-17073-1-git-send-email-grygorii.strashko@ti.com> <1366031015-17073-2-git-send-email-grygorii.strashko@ti.com> <20130415155040.GD15837@opensource.wolfsonmicro.com>
-In-Reply-To: <20130415155040.GD15837@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.145.64]
-X-EXCLAIMER-MD-CONFIG: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
+Reply-To: eranian@gmail.com
+In-Reply-To: <alpine.DEB.2.02.1304151205140.17281@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.02.1304151205140.17281@vincent-weaver-1.um.maine.edu>
+Date: Mon, 15 Apr 2013 18:21:44 +0200
+Message-ID: <CAMsRxfLUvRw-PUxgX_909PLCFtqqnKO3iiZ8Wvc5DHGAPp3yxA@mail.gmail.com>
+Subject: Re: perf: forcing instructions event to run on Fixed Counter 0
+From: Stephane Eranian <eranian@googlemail.com>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Mon, Apr 15, 2013 at 6:13 PM, Vince Weaver <vincent.weaver@maine.edu> wrote:
+>
+> It turns out that perf_event for intel seems to use the INST_RETIRED.ALL
+> event interchangably with the "Fixed Counter 0" event.
+>
+Yes, it does.
 
-On 04/15/2013 06:50 PM, Mark Brown wrote:
->> In addition, such locking scheme allows to have access to the supplier
->> regulator API from inside child's (consumer) regulator API.
-> I've still not seen any use case articulated for doing this...
-Use case is introduced in ABB series:
+> It turns out they are not equivelent.  The Fixed Counter 0 event turns out
+> to be deterministic, while INST_RETIRED.ALL has a bug where it counts
+> extra events due to hardware interrupts.
+>
+Never heard of that problem. I know there was another problem due to leaking
+during priv level transitions. It would be take a few instr or cycles to realize
+you were not in user level any more when doing event:u.
 
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg88293.html
+Interrupt should impact fixed and generic counters the same way.
 
-During voltage scaling we would like to have the following sequence:
+> Having a user-accessible deterministic instructions event would be really
+> useful.  So is there a way we can specify we want an event to run on Fixed
+> Counter 0?  I think there is code already that does this for Fixed Counter
+> 2 for similar reasons.
+>
+No. Fixed counter 2 (ref-cycles) is a different reason. It's because it measures
+an event that does not exist on generic counters: unhalted_reference_cycles.
 
-cpufreq_cpu0
-     |
-     |---> set_voltage(ABB)
-                 |
-                 |->set_voltage(AVS)
-                         |
-                         |-->set_voltage(smps123)
+> For an example of this happening in real life, take the
+> ./retired_instr.all.x86_64 from my deterministic benchmark that
+> I'll be presenting at the ISPASS conference next week.
+>   (can be found here git://github.com/deater/deterministic.git )
+>
+> If you run this benchmark with the same event listed 5 times on an Ivy
+> Bridge machine you get these results, notice the last one is the "proper"
+> deterministic result and thus the one that ran on Fixed Counter 0.
+>
+Are you sure that the 5th event stayed in fixed counter 0 all along?
 
-
-Where smps123 is a regulator, connected ot i2c bus. In this particular 
-case "regulator chain" guarantees proper order of calls of voltage 
-scaling sequence.
-
-Regards,
-Andrii
+> $ perf stat -e instructions:u,instructions:u,instructions:u,instructions:u,instructions:u ./retired_instr.all.x86_64
+> ...
+>  Performance counter stats for './retired_instr.all.x86_64':
+>
+>        227,010,687 instructions:u            #    0.00  insns per cycle
+>        227,010,687 instructions:u            #    0.00  insns per cycle
+>        227,010,687 instructions:u            #    0.00  insns per cycle
+>        227,010,687 instructions:u            #    0.00  insns per cycle
+>        227,000,723 instructions:u            #    0.00  insns per cycle
+>
+>        1.902648316 seconds time elapsed
+>
+> Thanks,
+>
+> Vince Weaver
+> vincent.weaver@maine.edu
+> http://www.eece.maine.edu/~vweaver/
