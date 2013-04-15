@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab3DOC2o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:28:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36066 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934002Ab3DOCZj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934017Ab3DOCZj (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 14 Apr 2013 22:25:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36053 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab3DOCZf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 22:25:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sachin Prabhu <sprabhu@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 07/17] cifs: Allow passwords which begin with a delimitor
-Date: Sun, 14 Apr 2013 19:25:17 -0700
-Message-Id: <20130415022353.167061004@linuxfoundation.org>
+        Huacai Chen <chenhc@lemote.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 04/17] PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
+Date: Sun, 14 Apr 2013 19:25:14 -0700
+Message-Id: <20130415022352.956781877@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
 References: <20130415022352.616689034@linuxfoundation.org>
@@ -27,52 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit c369c9a4a7c82d33329d869cbaf93304cc7a0c40 upstream.
+commit 6f389a8f1dd22a24f3d9afc2812b30d639e94625 upstream.
 
-Fixes a regression in cifs_parse_mount_options where a password
-which begins with a delimitor is parsed incorrectly as being a blank
-password.
+As commit 40dc166c (PM / Core: Introduce struct syscore_ops for core
+subsystems PM) say, syscore_ops operations should be carried with one
+CPU on-line and interrupts disabled. However, after commit f96972f2d
+(kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()),
+syscore_shutdown() is called before disable_nonboot_cpus(), so break
+the rules. We have a MIPS machine with a 8259A PIC, and there is an
+external timer (HPET) linked at 8259A. Since 8259A has been shutdown
+too early (by syscore_shutdown()), disable_nonboot_cpus() runs without
+timer interrupt, so it hangs and reboot fails. This patch call
+syscore_shutdown() a little later (after disable_nonboot_cpus()) to
+avoid reboot failure, this is the same way as poweroff does.
 
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+For consistency, add disable_nonboot_cpus() to kernel_halt().
+
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/connect.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ kernel/sys.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1576,14 +1576,24 @@ cifs_parse_mount_options(const char *mou
- 			}
- 			break;
- 		case Opt_blank_pass:
--			vol->password = NULL;
--			break;
--		case Opt_pass:
- 			/* passwords have to be handled differently
- 			 * to allow the character used for deliminator
- 			 * to be passed within them
- 			 */
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -320,7 +320,6 @@ void kernel_restart_prepare(char *cmd)
+ 	system_state = SYSTEM_RESTART;
+ 	usermodehelper_disable();
+ 	device_shutdown();
+-	syscore_shutdown();
+ }
  
-+			/*
-+			 * Check if this is a case where the  password
-+			 * starts with a delimiter
-+			 */
-+			tmp_end = strchr(data, '=');
-+			tmp_end++;
-+			if (!(tmp_end < end && tmp_end[1] == delim)) {
-+				/* No it is not. Set the password to NULL */
-+				vol->password = NULL;
-+				break;
-+			}
-+			/* Yes it is. Drop down to Opt_pass below.*/
-+		case Opt_pass:
- 			/* Obtain the value string */
- 			value = strchr(data, '=');
- 			value++;
+ /**
+@@ -366,6 +365,7 @@ void kernel_restart(char *cmd)
+ {
+ 	kernel_restart_prepare(cmd);
+ 	disable_nonboot_cpus();
++	syscore_shutdown();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+ 	else
+@@ -391,6 +391,7 @@ static void kernel_shutdown_prepare(enum
+ void kernel_halt(void)
+ {
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
++	disable_nonboot_cpus();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "System halted.\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
 
 
