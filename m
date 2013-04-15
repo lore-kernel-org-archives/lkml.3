@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934812Ab3DOPhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:37:16 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45944 "EHLO
+	id S1755345Ab3DOPho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:37:44 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45941 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934017Ab3DOPdD (ORCPT
+	with ESMTP id S933323Ab3DOPdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:33:03 -0400
+	Mon, 15 Apr 2013 11:33:01 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3 16/24] n_tty: Fix type mismatches in receive_buf raw copy
-Date: Mon, 15 Apr 2013 11:19:20 -0400
-Message-Id: <1366039168-8510-17-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v3 17/24] n_tty: Don't wait for buffer work in read() loop
+Date: Mon, 15 Apr 2013 11:19:21 -0400
+Message-Id: <1366039168-8510-18-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
 References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
@@ -23,57 +23,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+User-space read() can run concurrently with receiving from device;
+waiting for receive_buf() to complete is not required.
+
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 31 +++++++++++++++++--------------
- 1 file changed, 17 insertions(+), 14 deletions(-)
+ drivers/tty/n_tty.c | 1 -
+ 1 file changed, 1 deletion(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 98bc9df..c81c270 100644
+index c81c270..2ce01aa 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -1445,24 +1445,27 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+@@ -1722,7 +1722,6 @@ static inline int input_available_p(struct tty_struct *tty, int amt)
+ {
  	struct n_tty_data *ldata = tty->disc_data;
- 	const unsigned char *p;
- 	char *f, flags = TTY_NORMAL;
--	int	i;
- 	char	buf[64];
  
- 	if (ldata->real_raw) {
--		i = min(N_TTY_BUF_SIZE - read_cnt(ldata),
--			N_TTY_BUF_SIZE - (ldata->read_head & (N_TTY_BUF_SIZE - 1)));
--		i = min(count, i);
--		memcpy(read_buf_addr(ldata, ldata->read_head), cp, i);
--		ldata->read_head += i;
--		cp += i;
--		count -= i;
--
--		i = min(N_TTY_BUF_SIZE - read_cnt(ldata),
--			N_TTY_BUF_SIZE - (ldata->read_head & (N_TTY_BUF_SIZE - 1)));
--		i = min(count, i);
--		memcpy(read_buf_addr(ldata, ldata->read_head), cp, i);
--		ldata->read_head += i;
-+		size_t n, head;
-+
-+		head = ldata->read_head & (N_TTY_BUF_SIZE - 1);
-+		n = N_TTY_BUF_SIZE - max(read_cnt(ldata), head);
-+		n = min_t(size_t, count, n);
-+		memcpy(read_buf_addr(ldata, head), cp, n);
-+		ldata->read_head += n;
-+		cp += n;
-+		count -= n;
-+
-+		head = ldata->read_head & (N_TTY_BUF_SIZE - 1);
-+		n = N_TTY_BUF_SIZE - max(read_cnt(ldata), head);
-+		n = min_t(size_t, count, n);
-+		memcpy(read_buf_addr(ldata, head), cp, n);
-+		ldata->read_head += n;
- 	} else {
-+		int i;
-+
- 		for (i = count, p = cp, f = fp; i; i--, p++) {
- 			if (f)
- 				flags = *f++;
+-	tty_flush_to_ldisc(tty);
+ 	if (ldata->icanon && !L_EXTPROC(tty)) {
+ 		if (ldata->canon_head != ldata->read_tail)
+ 			return 1;
 -- 
 1.8.1.2
 
