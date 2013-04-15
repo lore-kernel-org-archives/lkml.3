@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab3DOCGU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:06:20 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42938 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754263Ab3DOCGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:06:19 -0400
-Message-ID: <1365991579.1878.26.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] hfs/hfsplus: Convert dprint to hfs_dbg
-From: Joe Perches <joe@perches.com>
-To: htl10@users.sourceforge.net
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 14 Apr 2013 19:06:19 -0700
-In-Reply-To: <1365990973.28177.YahooMailClassic@web172303.mail.ir2.yahoo.com>
-References: <1365990973.28177.YahooMailClassic@web172303.mail.ir2.yahoo.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932799Ab3DOCG2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:06:28 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:54997 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932600Ab3DOCG0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 22:06:26 -0400
+X-Originating-IP: 108.223.40.66
+Date: Sun, 14 Apr 2013 19:06:42 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "wim@iguana.be" <wim@iguana.be>,
+        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] watchdog: introduce new watchdog AUTOSTART option
+Message-ID: <20130415020642.GA29589@roeck-us.net>
+References: <A874F61F95741C4A9BA573A70FE3998F82E4BBC2@DQHE02.ent.ti.com>
+ <20130412151826.GC28704@roeck-us.net>
+ <A874F61F95741C4A9BA573A70FE3998F82E4BD12@DQHE02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F82E4BD12@DQHE02.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-15 at 02:56 +0100, Hin-Tak Leung wrote:
-> --- On Mon, 15/4/13, Joe Perches <joe@perches.com> wrote:
-> > On Mon, 2013-04-15 at 01:53 +0100,
-> > Hin-Tak Leung wrote:
-> > > --- On Mon, 8/4/13, Joe Perches <joe@perches.com> wrote:
-> > > > Use a more current logging style.
-> > []
-> > > I have been sitting on a patch which changes this part
-> > of the code to dynamic debugging, and it is much simplier.
-[]
-> > This change wouldn't work well as it would make a mess
-> > of output that uses no prefix (ie: emits at KERN_DEFAULT)
-> > with output that uses KERN_DEBUG
-> > 
-> > That's the reason for _dbg and _dbg_cont.
+On Mon, Apr 15, 2013 at 12:43:31AM +0000, Kim, Milo wrote:
+> Hi Guenter
 > 
-> Hmm, I don't get it. Is there any *existing* use of dprint
-> in the hfplus code which is affected by your comment?
+> > I really don't like that idea. It defeats a significant part of the
+> > purpose
+> > for having a watchdog, which is to prevent user-space hangups.
+> > 
+> > To make this a driver option is even more odd - it forces every user of
+> > this
+> > driver to use it in-kernel only, and makes /dev/watchdog quite useless.
+> > 
+> > I mean, really, if you have such a watchdog, what is the point of using
+> > the
+> > watchdog infrastructure in the first place ? Just make it a kernel
+> > thread or
+> > timer-activated platform code which pings your watchdog once in a while.
+> > No
+> > need to get the watchdog infrastructure involved in the first place.
+> > 
+> > Am I missing something ?
+> 
+> I wanted to enable the watchdog timer without the watchdog application for
+> making sure the system alive.
+> However, I think I misunderstood the purpose of the watchdog driver.
+> The watchdog is for detecting user-space hangups rather than kernel stall.
+> Is it correct? If yes, this patch is totally wrong.
+> 
+Correct. After all, if the kernel stalls, user space will stall as well, so by
+covering user space it covers both. Covering kernel alone doesn't help much,
+since most of the stalls (at least in my experience) happen in user space.
 
-Code like this prints out currently on a single line at
-KERN_DEFAULT.
-
-@@ -138,16 +138,16 @@ void hfs_bnode_dump(struct hfs_bnode *node)
-[]
-        for (i = be16_to_cpu(desc.num_recs); i >= 0; off -= 2, i--) {
-                key_off = hfs_bnode_read_u16(node, off);
--               dprint(DBG_BNODE_MOD, " %d", key_off);
-+               hfs_dbg_cont(BNODE_MOD, " %d", key_off);
-
-By converting this dprint() to pr_debug(), it would
-print out on a multiple lines, one for each read.
-
-That's why it should use a mechanism like dbg_cont.
-
-btw: there is no current pr_debug_cont mechanism.
-
-
+Guenter
