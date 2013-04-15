@@ -1,77 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935411Ab3DOIkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 04:40:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42008 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935175Ab3DOIkO (ORCPT
+	id S935434Ab3DOIky (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 04:40:54 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:57024 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932397Ab3DOIkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 04:40:14 -0400
-From: Paolo Pisati <paolo.pisati@canonical.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Paolo Pisati <paolo.pisati@canonical.com>
-Subject: [PATCH] dma: of-dma: check OF pointer property before dereferencing
-Date: Mon, 15 Apr 2013 10:39:52 +0200
-Message-Id: <1366015193-6627-1-git-send-email-paolo.pisati@canonical.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 15 Apr 2013 04:40:52 -0400
+From: Girish K S <girishks2000@gmail.com>
+To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: grant.likely@secretlab.ca, t.figa@samsung.com,
+        broonie@opensource.wolfsonmicro.com,
+        Girish K S <girishks2000@gmail.com>
+Subject: [PATCH V4 2/5] spi: s3c64xx: added support for polling mode
+Date: Mon, 15 Apr 2013 14:10:27 +0530
+Message-Id: <1366015230-18243-1-git-send-email-ks.giri@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = c0004000
-[00000000] *pgd=00000000
-Internal error: Oops: 5 [#1] SMP ARM
-CPU: 0    Tainted: G        W     (3.9.0-rc739rc7fix1-dirty #10)
-PC is at of_dma_controller_register+0xb8/0x11c
-LR is at of_find_property+0x44/0x4c
-pc : [<c01adf8c>]    lr : [<c0281754>]    psr: 60000113
-sp : ef043e40  ip : 00000000  fp : c01af774
-r10: ef015550  r9 : c01af5c0  r8 : 00000000
-r7 : c01afb40  r6 : ef120400  r5 : c48613dc  r4 : ef02e900
-r3 : 00000000  r2 : 00000023  r1 : a0000113  r0 : 00000000
-Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5387d  Table: 0000404a  DAC: 00000015
-Process swapper/0 (pid: 1, stack limit = 0xef042238)
-Stack: (0xef043e40 to 0xef044000)
-3e40: ef015550 ef01558c ef120400 c01affe4 00000000 c01af5c0 ef015584 c01b1170
-3e60: 00000000 ef015550 c033ca54 c48613dc c033ca54 0000007c 00041308 ef103d80
-3e80: a0000113 00000000 ef012440 c03bc7d4 ef120400 00000000 c03bc780 c03bc780
-3ea0: c038c000 00000000 00000000 c01ac1f4 c01ac16c ef120400 c03fa67c c03fa684
-3ec0: 00000000 c01d9570 ef120400 c03bc780 ef120434 00000000 0000008b c01d9718
-3ee0: 00000000 c03bc780 c01d968c c01d7ce4 ef0c2558 ef0eefb4 ef02b100 c03bc780
-3f00: c03bc64c c01d8450 c033cfa8 c03bc1e0 c03bc780 c0398e48 c03a0784 c03cab40
-3f20: 0000008b c01d9ce8 00000000 00000006 c0398e48 c03a0784 c03cab40 0000008b
-3f40: 00000000 c0377878 00000006 00000006 c03b25a4 00000006 00000006 c0398e48
-3f60: c03a0784 c03cab40 0000008b c0398e54 c037727c c0377a44 00000006 00000006
-3f80: c037727c 00000000 00000000 c02bb874 00000000 00000000 00000000 00000000
-3fa0: 00000000 c02bb87c 00000000 c000dfd8 00000000 00000000 00000000 00000000
-3fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-3fe0: 00000000 00000000 00000000 00000000 00000013 00000000 00000000 00000000
-[<c01adf8c>] (of_dma_controller_register+0xb8/0x11c) from [<c01b1170>] (pl330_probe+0x740/0xa9c)
-[<c01b1170>] (pl330_probe+0x740/0xa9c) from [<c01ac1f4>] (amba_probe+0x88/0xa0)
-[<c01ac1f4>] (amba_probe+0x88/0xa0) from [<c01d9570>] (driver_probe_device+0xf8/0x214)
-[<c01d9570>] (driver_probe_device+0xf8/0x214) from [<c01d9718>] (__driver_attach+0x8c/0x90)
-[<c01d9718>] (__driver_attach+0x8c/0x90) from [<c01d7ce4>] (bus_for_each_dev+0x54/0x88)
-[<c01d7ce4>] (bus_for_each_dev+0x54/0x88) from [<c01d8450>] (bus_add_driver+0xdc/0x230)
-[<c01d8450>] (bus_add_driver+0xdc/0x230) from [<c01d9ce8>] (driver_register+0x78/0x14c)
-[<c01d9ce8>] (driver_register+0x78/0x14c) from [<c0377878>] (do_one_initcall+0x90/0x160)
-[<c0377878>] (do_one_initcall+0x90/0x160) from [<c0377a44>] (kernel_init_freeable+0xfc/0x1c4)
-[<c0377a44>] (kernel_init_freeable+0xfc/0x1c4) from [<c02bb87c>] (kernel_init+0x8/0xe4)
-[<c02bb87c>] (kernel_init+0x8/0xe4) from [<c000dfd8>] (ret_from_fork+0x14/0x3c)
-Code: e1a00008 e8bd87f0 e3a04010 eaffffe0 (e5909000)
----[ end trace 1b75b31a2719ed1e ]---
-Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+From: Girish K S <girishks2000@gmail.com>
 
-Paolo Pisati (1):
-  dma: of-dma: check OF pointer property before dereferencing it
+The 64xx spi driver supports partial polling mode.
+Only the last chunk of the transfer length is transferred
+or recieved in polling mode.
 
- drivers/dma/of-dma.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Some SoC's that adopt this controller might not have have dma
+interface. This patch adds support for complete polling mode
+and gives flexibity for the user to select poll/dma mode.
 
+Signed-off-by: Girish K S <ks.giri@samsung.com>
+---
+changes in v4:
+		Handled the dma allocation failure and switching to poll
+if dma resource allocation failed
+
+changes in v3:
+		Separated the polling mode and gpio handling separately
+
+changes in v2:
+		changed the logic to handle the buffer from the user space.
+moved out the timeout code as a separate function.
+
+ drivers/spi/spi-s3c64xx.c |  133 ++++++++++++++++++++++++++++++---------------
+ 1 files changed, 89 insertions(+), 44 deletions(-)
+
+diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+index 4188b2f..a6fdc71 100644
+--- a/drivers/spi/spi-s3c64xx.c
++++ b/drivers/spi/spi-s3c64xx.c
+@@ -35,6 +35,7 @@
+ #include <linux/platform_data/spi-s3c64xx.h>
+ 
+ #define MAX_SPI_PORTS		3
++#define S3C64XX_SPI_QUIRK_POLL		(1 << 0)
+ 
+ /* Registers and bit-fields */
+ 
+@@ -126,6 +127,7 @@
+ #define S3C64XX_SPI_TRAILCNT		S3C64XX_SPI_MAX_TRAILCNT
+ 
+ #define msecs_to_loops(t) (loops_per_jiffy / 1000 * HZ * t)
++#define is_polling(x)	(x->port_conf->quirks & S3C64XX_SPI_QUIRK_POLL)
+ 
+ #define RXBUSY    (1<<2)
+ #define TXBUSY    (1<<3)
+@@ -154,6 +156,7 @@ struct s3c64xx_spi_port_config {
+ 	int	fifo_lvl_mask[MAX_SPI_PORTS];
+ 	int	rx_lvl_offset;
+ 	int	tx_st_done;
++	int	quirks;
+ 	bool	high_speed;
+ 	bool	clk_from_cmu;
+ };
+@@ -419,6 +422,27 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
+ 
+ 	cs = spi->controller_data;
+ 	gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
++
++	/* Start the signals */
++	writel(0, sdd->regs + S3C64XX_SPI_SLAVE_SEL);
++}
++
++static u32 wait_for_timeout(struct s3c64xx_spi_driver_data *sdd,
++					int timeout_ms)
++{
++	void __iomem *regs = sdd->regs;
++	unsigned long val;
++	u32 status;
++	/* max fifo depth available */
++	u32 max_fifo = (FIFO_LVL_MASK(sdd) >> 1) + 1;
++
++	val = msecs_to_loops(timeout_ms);
++	do {
++		status = readl(regs + S3C64XX_SPI_STATUS);
++	} while (RX_FIFO_LVL(status, sdd) < max_fifo && --val);
++
++	/* return the actual received data length */
++	return RX_FIFO_LVL(status, sdd);
+ }
+ 
+ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
+@@ -443,20 +467,19 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
+ 		} while (RX_FIFO_LVL(status, sdd) < xfer->len && --val);
+ 	}
+ 
+-	if (!val)
+-		return -EIO;
+-
+ 	if (dma_mode) {
+ 		u32 status;
+ 
+ 		/*
++		 * If the previous xfer was completed within timeout, then
++		 * proceed further else return -EIO.
+ 		 * DmaTx returns after simply writing data in the FIFO,
+ 		 * w/o waiting for real transmission on the bus to finish.
+ 		 * DmaRx returns only after Dma read data from FIFO which
+ 		 * needs bus transmission to finish, so we don't worry if
+ 		 * Xfer involved Rx(with or without Tx).
+ 		 */
+-		if (xfer->rx_buf == NULL) {
++		if (val && !xfer->rx_buf) {
+ 			val = msecs_to_loops(10);
+ 			status = readl(regs + S3C64XX_SPI_STATUS);
+ 			while ((TX_FIFO_LVL(status, sdd)
+@@ -466,30 +489,53 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
+ 				status = readl(regs + S3C64XX_SPI_STATUS);
+ 			}
+ 
+-			if (!val)
+-				return -EIO;
+ 		}
++
++		/* If timed out while checking rx/tx status return error */
++		if (!val)
++			return -EIO;
+ 	} else {
++		int loops;
++		u32 cpy_len;
++		u8 *buf;
++
+ 		/* If it was only Tx */
+-		if (xfer->rx_buf == NULL) {
++		if (!xfer->rx_buf) {
+ 			sdd->state &= ~TXBUSY;
+ 			return 0;
+ 		}
+ 
+-		switch (sdd->cur_bpw) {
+-		case 32:
+-			ioread32_rep(regs + S3C64XX_SPI_RX_DATA,
+-				xfer->rx_buf, xfer->len / 4);
+-			break;
+-		case 16:
+-			ioread16_rep(regs + S3C64XX_SPI_RX_DATA,
+-				xfer->rx_buf, xfer->len / 2);
+-			break;
+-		default:
+-			ioread8_rep(regs + S3C64XX_SPI_RX_DATA,
+-				xfer->rx_buf, xfer->len);
+-			break;
+-		}
++		/*
++		 * If the receive length is bigger than the controller fifo
++		 * size, calculate the loops and read the fifo as many times.
++		 * loops = length / max fifo size (calculated by using the
++		 * fifo mask).
++		 * For any size less than the fifo size the below code is
++		 * executed atleast once.
++		 */
++		loops = xfer->len / ((FIFO_LVL_MASK(sdd) >> 1) + 1);
++		buf = xfer->rx_buf;
++		do{
++			/* wait for data to be received in the fifo */
++			cpy_len = wait_for_timeout(sdd, ms);
++
++			switch (sdd->cur_bpw) {
++			case 32:
++				ioread32_rep(regs + S3C64XX_SPI_RX_DATA,
++					buf, cpy_len / 4);
++				break;
++			case 16:
++				ioread16_rep(regs + S3C64XX_SPI_RX_DATA,
++					buf, cpy_len / 2);
++				break;
++			default:
++				ioread8_rep(regs + S3C64XX_SPI_RX_DATA,
++					buf, cpy_len);
++				break;
++			}
++
++			buf = buf + cpy_len;
++		}while(loops--);
+ 		sdd->state &= ~RXBUSY;
+ 	}
+ 
+@@ -505,6 +551,9 @@ static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
+ 		sdd->tgl_spi = NULL;
+ 
+ 	gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 0 : 1);
++
++	/* Quiese the signals */
++	writel(S3C64XX_SPI_SLAVE_SIG_INACT, sdd->regs + S3C64XX_SPI_SLAVE_SEL);
+ }
+ 
+ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
+@@ -586,7 +635,7 @@ static int s3c64xx_spi_map_mssg(struct s3c64xx_spi_driver_data *sdd,
+ 	struct device *dev = &sdd->pdev->dev;
+ 	struct spi_transfer *xfer;
+ 
+-	if (msg->is_dma_mapped)
++	if (is_polling(sdd) || msg->is_dma_mapped)
+ 		return 0;
+ 
+ 	/* First mark all xfer unmapped */
+@@ -635,7 +684,7 @@ static void s3c64xx_spi_unmap_mssg(struct s3c64xx_spi_driver_data *sdd,
+ 	struct device *dev = &sdd->pdev->dev;
+ 	struct spi_transfer *xfer;
+ 
+-	if (msg->is_dma_mapped)
++	if (is_polling(sdd) || msg->is_dma_mapped)
+ 		return;
+ 
+ 	list_for_each_entry(xfer, &msg->transfers, transfer_list) {
+@@ -713,7 +762,8 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
+ 		}
+ 
+ 		/* Polling method for xfers not bigger than FIFO capacity */
+-		if (xfer->len <= ((FIFO_LVL_MASK(sdd) >> 1) + 1))
++		if (is_polling(sdd) ||
++			xfer->len <= ((FIFO_LVL_MASK(sdd) >> 1) + 1))
+ 			use_dma = 0;
+ 		else
+ 			use_dma = 1;
+@@ -729,17 +779,10 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
+ 		/* Slave Select */
+ 		enable_cs(sdd, spi);
+ 
+-		/* Start the signals */
+-		writel(0, sdd->regs + S3C64XX_SPI_SLAVE_SEL);
+-
+ 		spin_unlock_irqrestore(&sdd->lock, flags);
+ 
+ 		status = wait_for_xfer(sdd, xfer, use_dma);
+ 
+-		/* Quiese the signals */
+-		writel(S3C64XX_SPI_SLAVE_SIG_INACT,
+-		       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
+-
+ 		if (status) {
+ 			dev_err(&spi->dev, "I/O Error: rx-%d tx-%d res:rx-%c tx-%c len-%d\n",
+ 				xfer->rx_buf ? 1 : 0, xfer->tx_buf ? 1 : 0,
+@@ -795,7 +838,7 @@ static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
+ 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
+ 
+ 	/* Acquire DMA channels */
+-	while (!acquire_dma(sdd))
++	while (!is_polling(sdd) && !acquire_dma(sdd))
+ 		usleep_range(10000, 11000);
+ 
+ 	pm_runtime_get_sync(&sdd->pdev->dev);
+@@ -808,8 +851,10 @@ static int s3c64xx_spi_unprepare_transfer(struct spi_master *spi)
+ 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
+ 
+ 	/* Free DMA channels */
+-	sdd->ops->release(sdd->rx_dma.ch, &s3c64xx_spi_dma_client);
+-	sdd->ops->release(sdd->tx_dma.ch, &s3c64xx_spi_dma_client);
++	if (!is_polling(sdd)) {
++		sdd->ops->release(sdd->rx_dma.ch, &s3c64xx_spi_dma_client);
++		sdd->ops->release(sdd->tx_dma.ch, &s3c64xx_spi_dma_client);
++	}
+ 
+ 	pm_runtime_put(&sdd->pdev->dev);
+ 
+@@ -1220,19 +1265,19 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
+ 	if (!sdd->pdev->dev.of_node) {
+ 		res = platform_get_resource(pdev, IORESOURCE_DMA,  0);
+ 		if (!res) {
+-			dev_err(&pdev->dev, "Unable to get SPI tx dma "
+-					"resource\n");
+-			return -ENXIO;
+-		}
+-		sdd->tx_dma.dmach = res->start;
++			dev_warn(&pdev->dev, "Unable to get SPI tx dma "
++					"resource. Switching to poll mode\n");
++			sdd->port_conf->quirks = S3C64XX_SPI_QUIRK_POLL;
++		} else
++			sdd->tx_dma.dmach = res->start;
+ 
+ 		res = platform_get_resource(pdev, IORESOURCE_DMA,  1);
+ 		if (!res) {
+-			dev_err(&pdev->dev, "Unable to get SPI rx dma "
+-					"resource\n");
+-			return -ENXIO;
+-		}
+-		sdd->rx_dma.dmach = res->start;
++			dev_warn(&pdev->dev, "Unable to get SPI rx dma "
++					"resource. Switching to poll mode\n");
++			sdd->port_conf->quirks = S3C64XX_SPI_QUIRK_POLL;
++		} else
++			sdd->rx_dma.dmach = res->start;
+ 	}
+ 
+ 	sdd->tx_dma.direction = DMA_MEM_TO_DEV;
 -- 
-1.7.10.4
+1.7.5.4
 
