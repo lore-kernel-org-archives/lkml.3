@@ -1,65 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934580Ab3DOJM2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 05:12:28 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:57715 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934370Ab3DOJM1 (ORCPT
+	id S934753Ab3DOJOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 05:14:19 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:8206 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934370Ab3DOJOS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 05:12:27 -0400
-Message-ID: <516BC473.2070907@stericsson.com>
-Date: Mon, 15 Apr 2013 11:12:19 +0200
-From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 15 Apr 2013 05:14:18 -0400
+X-IronPort-AV: E=Sophos;i="4.87,474,1363132800"; 
+   d="scan'208";a="3550091"
+Message-ID: <516BC4F5.10307@citrix.com>
+Date: Mon, 15 Apr 2013 11:14:29 +0200
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFT] regulator: ab8500: Fix voltage_shift setting for
- AB8540_LDO_DMIC
-References: <1366015011.13029.1.camel@phoenix>
-In-Reply-To: <1366015011.13029.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [PATCH v1 2/7] xen-blkback: use balloon pages for all mappings
+References: <1364382643-3711-1-git-send-email-roger.pau@citrix.com> <1364382643-3711-3-git-send-email-roger.pau@citrix.com> <20130409144733.GA3158@phenom.dumpdata.com>
+In-Reply-To: <20130409144733.GA3158@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 10:36 AM, Axel Lin wrote:
-> The voltage_mask is 0xc0, thus we need to set voltage_shift = 6 to get correct
-> selector in get_voltage_sel and set_voltage_sel.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-The patch is correct. Voltage selection is done with 0xc0.
+On 09/04/13 16:47, Konrad Rzeszutek Wilk wrote:
+> On Wed, Mar 27, 2013 at 12:10:38PM +0100, Roger Pau Monne wrote:
+>> Using balloon pages for all granted pages allows us to simplify the
+>> logic in blkback, especially in the xen_blkbk_map function, since now
+>> we can decide if we want to map a grant persistently or not after we
+>> have actually mapped it. This could not be done before because
+>> persistent grants used ballooned pages, whereas non-persistent grants
+>> used pages from the kernel.
+>>
+>> This patch also introduces several changes, the first one is that the
+>> list of free pages is no longer global, now each blkback instance has
+>> it's own list of free pages that can be used to map grants. Also, a
+>> run time parameter (max_buffer_pages) has been added in order to tune
+>> the maximum number of free pages each blkback instance will keep in
+>> it's buffer.
+>>
+>> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+>> Cc: xen-devel@lists.xen.org
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> Sorry for the late review. Some comments.
+>> ---
+>> Changes since RFC:
+>>  * Fix typos in commit message.
+>>  * Minor fixes in code.
+>> ---
+>>  Documentation/ABI/stable/sysfs-bus-xen-backend |    8 +
+>>  drivers/block/xen-blkback/blkback.c            |  265 +++++++++++++-----------
+>>  drivers/block/xen-blkback/common.h             |    5 +
+>>  drivers/block/xen-blkback/xenbus.c             |    3 +
+>>  4 files changed, 165 insertions(+), 116 deletions(-)
+>>
+>> diff --git a/Documentation/ABI/stable/sysfs-bus-xen-backend b/Documentation/ABI/stable/sysfs-bus-xen-backend
+>> index 3d5951c..e04afe0 100644
+>> --- a/Documentation/ABI/stable/sysfs-bus-xen-backend
+>> +++ b/Documentation/ABI/stable/sysfs-bus-xen-backend
+>> @@ -73,3 +73,11 @@ KernelVersion:     3.0
+>>  Contact:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>  Description:
+>>                  Number of sectors written by the frontend.
+>> +
+>> +What:           /sys/module/xen_blkback/parameters/max_buffer_pages
+>> +Date:           March 2013
+>> +KernelVersion:  3.10
+>> +Contact:        Roger Pau Monné <roger.pau@citrix.com>
+>> +Description:
+>> +                Maximum number of free pages to keep in each block
+>> +                backend buffer.
+>> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+>> index f7526db..8a1892a 100644
+>> --- a/drivers/block/xen-blkback/blkback.c
+>> +++ b/drivers/block/xen-blkback/blkback.c
+>> @@ -63,6 +63,21 @@ static int xen_blkif_reqs = 64;
+>>  module_param_named(reqs, xen_blkif_reqs, int, 0);
+>>  MODULE_PARM_DESC(reqs, "Number of blkback requests to allocate");
+>>
+>> +/*
+>> + * Maximum number of unused free pages to keep in the internal buffer.
+>> + * Setting this to a value too low will reduce memory used in each backend,
+>> + * but can have a performance penalty.
+>> + *
+>> + * A sane value is xen_blkif_reqs * BLKIF_MAX_SEGMENTS_PER_REQUEST, but can
+>> + * be set to a lower value that might degrade performance on some intensive
+>> + * IO workloads.
+>> + */
+>> +
+>> +static int xen_blkif_max_buffer_pages = 704;
+>> +module_param_named(max_buffer_pages, xen_blkif_max_buffer_pages, int, 0644);
+>> +MODULE_PARM_DESC(max_buffer_pages,
+>> +"Maximum number of free pages to keep in each block backend buffer");
+>> +
+>>  /* Run-time switchable: /sys/module/blkback/parameters/ */
+>>  static unsigned int log_stats;
+>>  module_param(log_stats, int, 0644);
+>> @@ -82,10 +97,14 @@ struct pending_req {
+>>       int                     status;
+>>       struct list_head        free_list;
+>>       DECLARE_BITMAP(unmap_seg, BLKIF_MAX_SEGMENTS_PER_REQUEST);
+>> +     struct page             *pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+>>  };
+>>
+>>  #define BLKBACK_INVALID_HANDLE (~0)
+>>
+>> +/* Number of free pages to remove on each call to free_xenballooned_pages */
+>> +#define NUM_BATCH_FREE_PAGES 10
+>> +
+>>  struct xen_blkbk {
+>>       struct pending_req      *pending_reqs;
+>>       /* List of all 'pending_req' available */
+>> @@ -93,8 +112,6 @@ struct xen_blkbk {
+>>       /* And its spinlock. */
+>>       spinlock_t              pending_free_lock;
+>>       wait_queue_head_t       pending_free_wq;
+>> -     /* The list of all pages that are available. */
+>> -     struct page             **pending_pages;
+>>       /* And the grant handles that are available. */
+>>       grant_handle_t          *pending_grant_handles;
+>>  };
+>> @@ -143,14 +160,66 @@ static inline int vaddr_pagenr(struct pending_req *req, int seg)
+>>               BLKIF_MAX_SEGMENTS_PER_REQUEST + seg;
+>>  }
+>>
+>> -#define pending_page(req, seg) pending_pages[vaddr_pagenr(req, seg)]
+>> +static inline int get_free_page(struct xen_blkif *blkif, struct page **page)
+>> +{
+>> +     unsigned long flags;
+>> +
+>> +     spin_lock_irqsave(&blkif->free_pages_lock, flags);
+> 
+> I am curious to why you need to use the irqsave variant one here, as
+>> +     if (list_empty(&blkif->free_pages)) {
+>> +             BUG_ON(blkif->free_pages_num != 0);
+>> +             spin_unlock_irqrestore(&blkif->free_pages_lock, flags);
+>> +             return alloc_xenballooned_pages(1, page, false);
+> 
+> This function is using an mutex.
+> 
+> which would imply it is OK to have an non-irq variant of spinlock?
 
-Acked-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-> ---
-> Hi Bengt,
-> I don't have the datasheet. Can you confirm if this fix is correct?
->
-> BTW, can you also review a couple patches for ab8500 and ab8500-ext I sent a few
-> days ago? I ask this because now I have more patches that may depend on previous
-> patches.
->
-> Thanks,
-> Axel
->
->   drivers/regulator/ab8500.c |    1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-> index b81ff04..0a62ef9 100644
-> --- a/drivers/regulator/ab8500.c
-> +++ b/drivers/regulator/ab8500.c
-> @@ -1729,6 +1729,7 @@ static struct ab8500_regulator_info
->   		.voltage_bank		= 0x03,
->   		.voltage_reg		= 0x83,
->   		.voltage_mask		= 0xc0,
-> +		.voltage_shift		= 6,
->   	},
->   
->   	/*
-
+Sorry, the previous response is wrong, I need to use irqsave in order to
+disable interrupts, since put_free_pages is called from interrupt
+context and it could create a race if for example, put_free_pages is
+called while we are inside shrink_free_pagepool.
