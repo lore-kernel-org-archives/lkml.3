@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab3DOC31 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:29:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36057 "EHLO
+	id S1756154Ab3DOC3q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:29:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36045 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881Ab3DOCZh (ORCPT
+	with ESMTP id S1754708Ab3DOCZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:25:37 -0400
+	Sun, 14 Apr 2013 22:25:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eldad Zack <eldad@fogrefinery.com>, Daniel Mack <zonque@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 01/17] ALSA: usb-audio: fix endianness bug in snd_nativeinstruments_*
-Date: Sun, 14 Apr 2013 19:25:11 -0700
-Message-Id: <20130415022352.741780500@linuxfoundation.org>
+        Alban Bedel <alban.bedel@avionic-design.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [ 02/17] ASoC: wm8903: Fix the bypass to HP/LINEOUT when no DAC or ADC is running
+Date: Sun, 14 Apr 2013 19:25:12 -0700
+Message-Id: <20130415022352.815224091@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
 References: <20130415022352.616689034@linuxfoundation.org>
@@ -27,74 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eldad Zack <eldad@fogrefinery.com>
+From: Alban Bedel <alban.bedel@avionic-design.de>
 
-commit 889d66848b12d891248b03abcb2a42047f8e172a upstream.
+commit f1ca493b0b5e8f42d3b2dc8877860db2983f47b6 upstream.
 
-The usb_control_msg() function expects __u16 types and performs
-the endianness conversions by itself.
-However, in three places, a conversion is performed before it is
-handed over to usb_control_msg(), which leads to a double conversion
-(= no conversion):
-* snd_usb_nativeinstruments_boot_quirk()
-* snd_nativeinstruments_control_get()
-* snd_nativeinstruments_control_put()
+The Charge Pump needs the DSP clock to work properly, without it the
+bypass to HP/LINEOUT is not working properly. This requirement is not
+mentioned in the datasheet but has been confirmed by Mark Brown from
+Wolfson.
 
-Caught by sparse:
-
-sound/usb/mixer_quirks.c:512:38: warning: incorrect type in argument 6 (different base types)
-sound/usb/mixer_quirks.c:512:38:    expected unsigned short [unsigned] [usertype] index
-sound/usb/mixer_quirks.c:512:38:    got restricted __le16 [usertype] <noident>
-sound/usb/mixer_quirks.c:543:35: warning: incorrect type in argument 5 (different base types)
-sound/usb/mixer_quirks.c:543:35:    expected unsigned short [unsigned] [usertype] value
-sound/usb/mixer_quirks.c:543:35:    got restricted __le16 [usertype] <noident>
-sound/usb/mixer_quirks.c:543:56: warning: incorrect type in argument 6 (different base types)
-sound/usb/mixer_quirks.c:543:56:    expected unsigned short [unsigned] [usertype] index
-sound/usb/mixer_quirks.c:543:56:    got restricted __le16 [usertype] <noident>
-sound/usb/quirks.c:502:35: warning: incorrect type in argument 5 (different base types)
-sound/usb/quirks.c:502:35:    expected unsigned short [unsigned] [usertype] value
-sound/usb/quirks.c:502:35:    got restricted __le16 [usertype] <noident>
-
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
-Acked-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alban Bedel <alban.bedel@avionic-design.de>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer_quirks.c |    4 ++--
- sound/usb/quirks.c       |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ sound/soc/codecs/wm8903.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/usb/mixer_quirks.c
-+++ b/sound/usb/mixer_quirks.c
-@@ -396,7 +396,7 @@ static int snd_nativeinstruments_control
- 	else
- 		ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
- 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
--				  0, cpu_to_le16(wIndex),
-+				  0, wIndex,
- 				  &tmp, sizeof(tmp), 1000);
- 	up_read(&mixer->chip->shutdown_rwsem);
+--- a/sound/soc/codecs/wm8903.c
++++ b/sound/soc/codecs/wm8903.c
+@@ -1082,6 +1082,8 @@ static const struct snd_soc_dapm_route w
+ 	{ "ROP", NULL, "Right Speaker PGA" },
+ 	{ "RON", NULL, "Right Speaker PGA" },
  
-@@ -427,7 +427,7 @@ static int snd_nativeinstruments_control
- 	else
- 		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
- 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
--				  cpu_to_le16(wValue), cpu_to_le16(wIndex),
-+				  wValue, wIndex,
- 				  NULL, 0, 1000);
- 	up_read(&mixer->chip->shutdown_rwsem);
- 
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -486,7 +486,7 @@ static int snd_usb_nativeinstruments_boo
- {
- 	int ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
- 				  0xaf, USB_TYPE_VENDOR | USB_RECIP_DEVICE,
--				  cpu_to_le16(1), 0, NULL, 0, 1000);
-+				  1, 0, NULL, 0, 1000);
- 
- 	if (ret < 0)
- 		return ret;
++	{ "Charge Pump", NULL, "CLK_DSP" },
++
+ 	{ "Left Headphone Output PGA", NULL, "Charge Pump" },
+ 	{ "Right Headphone Output PGA", NULL, "Charge Pump" },
+ 	{ "Left Line Output PGA", NULL, "Charge Pump" },
 
 
