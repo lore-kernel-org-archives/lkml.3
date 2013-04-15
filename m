@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab3DOOGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 10:06:33 -0400
-Received: from endeavour.telenet.dn.ua ([195.39.211.45]:56052 "EHLO
-	endeavour.telenet.dn.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab3DOOGc (ORCPT
+	id S1752056Ab3DOOI1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 10:08:27 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:63384 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab3DOOI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 10:06:32 -0400
-X-Greylist: delayed 519 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Apr 2013 10:06:31 EDT
-Message-ID: <516C075E.30105@telenet.dn.ua>
-Date: Mon, 15 Apr 2013 16:57:50 +0300
-From: "Vitaly V. Bursov" <vitalyb@telenet.dn.ua>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 15 Apr 2013 10:08:26 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Bonding driver has bad load balancing for forwarded traffic, 3.7+
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87r4ibdh8f.fsf@linaro.org>
+References: <1363822467-6275-1-git-send-email-khilman@linaro.org>
+	<1363822467-6275-2-git-send-email-khilman@linaro.org>
+	<20130411171047.GB17129@somewhere.redhat.com>
+	<87r4ibdh8f.fsf@linaro.org>
+Date: Mon, 15 Apr 2013 16:08:24 +0200
+Message-ID: <CAFTL4hwroTC6HN7WvDRpn=6y-JkX4GeFzS1nro0w3L1CGNMrnA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] cputime_nsecs: use math64.h for nsec resolution
+ conversion helpers
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Kevin Hilman <khilman@linaro.org>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2013/4/15 Kevin Hilman <khilman@linaro.org>:
+> Frederic Weisbecker <fweisbec@gmail.com> writes:
+>
+>> On Wed, Mar 20, 2013 at 04:34:25PM -0700, Kevin Hilman wrote:
+>>> For the nsec resolution conversions to be useable on non 64-bit
+>>> architectures, the helpers in <linux/math64.h> need to be used so the
+>>> right arch-specific 64-bit math helpers can be used (e.g. do_div())
+>>>
+>>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>>> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+>>
+>> Ok the patch is nice!
+>>
+>> I'm queuing it.
+>
+> Thanks, did you queue PATCH 3/3 also to remove the 64-bit limitation
+> from VIRT_CPU_ACCOUNTING_GEN:  https://lkml.org/lkml/2013/3/20/656
 
-I have a bonding device (mode=802.3ad xmit_hash_policy=layer2+3 miimon=300) and
-for kernels <3.7 forwarded IPv4 traffic distributed fine across multiple physical
-links. Ethernet cards are Intel 82576 with igb driver (various versions).
-
-3.7 and 3.8 kernels tend to fully utilize only one link and leave the others almost idling.
-
-Replacing bond_xmit_hash_policy_* functions with older ones (3.6 kernel) looks like
-resolves the issue (but I haven't tested it thoroughly).
-
-So, I added
-         printk(KERN_INFO "hash_policy: protocol = %d, skb_network_header_len = %d, %d %d\n",
-             skb->protocol, skb_network_header_len(skb),
-             skb_headlen(skb), skb_network_offset(skb));
-to bond_xmit_hash_policy_l23() of bond_main.c
-
-and got this:
-[   65.280831] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-[   65.280835] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-[   65.280839] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-[   65.280843] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-[   65.280847] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-[   65.280851] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-
-It's clear that the new check condition (skb_network_header_len(skb) >= sizeof(*iph))
-fails here and hash policy fallbacks to l2 balancing.
-
-I have no idea how to fix this besides removing this check completely, any
-help would be appreciated.
-
--- 
-Thanks
-Vitaly
+Not yet, for this one I need to deeply check we haven't forgotten
+anything concerning cputime_t operations in 32 bits archs.
