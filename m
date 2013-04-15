@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab3DOXRZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 19:17:25 -0400
-Received: from ozlabs.org ([203.10.76.45]:39736 "EHLO ozlabs.org"
+	id S1755110Ab3DOXRY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 19:17:24 -0400
+Received: from ozlabs.org ([203.10.76.45]:50861 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754401Ab3DOXRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753463Ab3DOXRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Apr 2013 19:17:22 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: mst@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net,
-        virtualization@lists.linux-foundation.org,
-        v9fs-developer@lists.sourceforge.net,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH] virtio-spec: document virtio-9p
-In-Reply-To: <1366002828-30037-1-git-send-email-sasha.levin@oracle.com>
-References: <1366002828-30037-1-git-send-email-sasha.levin@oracle.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3]  kernel: kallsyms: memory override issue, need check destination buffer length
+In-Reply-To: <516B867A.1080000@asianux.com>
+References: <51662AC7.1090004@asianux.com> <87eheh4sls.fsf@rustcorp.com.au> <51664B04.7000207@asianux.com> <87y5ck8s5x.fsf@rustcorp.com.au> <516B867A.1080000@asianux.com>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 15 Apr 2013 15:23:41 +0930
-Message-ID: <874nf88hlm.fsf@rustcorp.com.au>
+Date: Mon, 15 Apr 2013 15:18:21 +0930
+Message-ID: <877gk48hui.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sasha Levin <sasha.levin@oracle.com> writes:
-> Add basic documentation for virtio-9p. I can expand more on device operation,
-> but I don't think there's anything significant enough for the spec to be
-> mentioned there. Please let me know if I'm wrong.
+Chen Gang <gang.chen@asianux.com> writes:
+
+>   We don't export any symbols > 128 characters, but if we did then
+>   kallsyms_expand_symbol() would overflow the buffer handed to it.
+>   So we need check destination buffer length when copying.
 >
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+>   the related test:
+>     if we define an EXPORT function which name more than 128.
+>     will panic when call kallsyms_lookup_name by init_kprobes on booting.
+>     after check the length (provide this patch), it is ok.
+>
+>   Implementaion:
+>     add additional destination buffer length parameter (maxlen)
+>     if uncompressed string is too long (>= maxlen), it will be truncated.
+>     not check the parameters whether valid, since it is a static function.
 
-Hmm, I guess so.  I was happy to leave it undocumented.
+Thanks, applied.
 
-Applied,
+I've put this in my modules-next branch.
+
+Cheers,
 Rusty.
