@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934017Ab3DOCZj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:25:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36053 "EHLO
+	id S1754944Ab3DOCZi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:25:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36048 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754872Ab3DOCZf (ORCPT
+	with ESMTP id S1753655Ab3DOCZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:25:35 -0400
+	Sun, 14 Apr 2013 22:25:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Huacai Chen <chenhc@lemote.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 04/17] PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
-Date: Sun, 14 Apr 2013 19:25:14 -0700
-Message-Id: <20130415022352.956781877@linuxfoundation.org>
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 03/17] tracing: Fix double free when function profile init failed
+Date: Sun, 14 Apr 2013 19:25:13 -0700
+Message-Id: <20130415022352.885669048@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
 References: <20130415022352.616689034@linuxfoundation.org>
@@ -27,57 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huacai Chen <chenhc@lemote.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit 6f389a8f1dd22a24f3d9afc2812b30d639e94625 upstream.
+commit 83e03b3fe4daffdebbb42151d5410d730ae50bd1 upstream.
 
-As commit 40dc166c (PM / Core: Introduce struct syscore_ops for core
-subsystems PM) say, syscore_ops operations should be carried with one
-CPU on-line and interrupts disabled. However, after commit f96972f2d
-(kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()),
-syscore_shutdown() is called before disable_nonboot_cpus(), so break
-the rules. We have a MIPS machine with a 8259A PIC, and there is an
-external timer (HPET) linked at 8259A. Since 8259A has been shutdown
-too early (by syscore_shutdown()), disable_nonboot_cpus() runs without
-timer interrupt, so it hangs and reboot fails. This patch call
-syscore_shutdown() a little later (after disable_nonboot_cpus()) to
-avoid reboot failure, this is the same way as poweroff does.
+On the failure path, stat->start and stat->pages will refer same page.
+So it'll attempt to free the same page again and get kernel panic.
 
-For consistency, add disable_nonboot_cpus() to kernel_halt().
+Link: http://lkml.kernel.org/r/1364820385-32027-1-git-send-email-namhyung@kernel.org
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sys.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/trace/ftrace.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -320,7 +320,6 @@ void kernel_restart_prepare(char *cmd)
- 	system_state = SYSTEM_RESTART;
- 	usermodehelper_disable();
- 	device_shutdown();
--	syscore_shutdown();
- }
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -642,7 +642,6 @@ int ftrace_profile_pages_init(struct ftr
+ 		free_page(tmp);
+ 	}
  
- /**
-@@ -366,6 +365,7 @@ void kernel_restart(char *cmd)
- {
- 	kernel_restart_prepare(cmd);
- 	disable_nonboot_cpus();
-+	syscore_shutdown();
- 	if (!cmd)
- 		printk(KERN_EMERG "Restarting system.\n");
- 	else
-@@ -391,6 +391,7 @@ static void kernel_shutdown_prepare(enum
- void kernel_halt(void)
- {
- 	kernel_shutdown_prepare(SYSTEM_HALT);
-+	disable_nonboot_cpus();
- 	syscore_shutdown();
- 	printk(KERN_EMERG "System halted.\n");
- 	kmsg_dump(KMSG_DUMP_HALT);
+-	free_page((unsigned long)stat->pages);
+ 	stat->pages = NULL;
+ 	stat->start = NULL;
+ 
 
 
