@@ -1,31 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934954Ab3DOTtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 15:49:19 -0400
-Received: from www.sr71.net ([198.145.64.142]:53632 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934335Ab3DOTtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 15:49:17 -0400
-Message-ID: <516C59BC.5050801@sr71.net>
-Date: Mon, 15 Apr 2013 12:49:16 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S935056Ab3DOTtv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 15:49:51 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:34183 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933716Ab3DOTtt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 15:49:49 -0400
+Date: Mon, 15 Apr 2013 12:49:47 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Dolkow, Snild" <Snild.Dolkow@sonymobile.com>
+Cc: =?iso-8859-1?B?IkFuZGVy9iwgT3NrYXIi?= <Oskar.Andero@sonymobile.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Brian Swetland <swetland@google.com>
+Subject: Re: [PATCH] lowmemorykiller: prevent multiple instances of low
+ memory killer
+Message-ID: <20130415194947.GA26557@kroah.com>
+References: <1366031009-21958-1-git-send-email-oskar.andero@sonymobile.com>
+ <20130415131815.GG6638@mwanda>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
+ <20130415141358.GO6692@mwanda>
+ <20130415150356.GA22161@caracas.corpusers.net>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC84@seldmbx01.corpusers.net>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, dhillf@gmail.com,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
- wrong cpu
-References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos> <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <51670C17.8070608@linux.vnet.ibm.com> <alpine.LFD.2.02.1304112158040.21884@ionos> <516728F6.4090701@linux.vnet.ibm.com> <alpine.LFD.2.02.1304112347390.21884@ionos>
-In-Reply-To: <alpine.LFD.2.02.1304112347390.21884@ionos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D949F1A1ED65354FA281790D817657A4A4BF33CC84@seldmbx01.corpusers.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just tested out Linus's current tree (bb33db7).  It is quite happy on
-the large system which was exciting this issue.  Thanks, Thomas!
+On Mon, Apr 15, 2013 at 08:28:07PM +0200, Dolkow, Snild wrote:
+> >> > >From the comments in shrinker.h:
+> >> > "It should return the number of objects which remain in the cache.
+> >> > If it returns -1, it means it cannot do any scanning at this time
+> >> > (eg. there is a risk of deadlock). The callback must not return -1
+> >> > if nr_to_scan is zero."
+> >>
+> >
+> >IMO one should use the errno.h values - e.g. EBUSY might be a good value
+> >in this case. Does anyone know why the shrinker wants -1? Is there a
+> >reason?
+> 
+> The positive numbers are used to return information on the remaining
+> cache size (again, see the comment I pasted above). We could use
+> -EBUSY, but we'd have to change vmscan.c, which checks specifically
+> for -1. I can't see a technical reason why -EBUSY couldn't have been
+> chosen instead, but there's also no real reason to change it now.
 
+If it's not the correct thing to do, sure we can change it, just send a
+patch.  It makes way more sense than some random -1 return value to me.
+
+Care to send a series of patches fixing this up properly?
+
+thanks,
+
+greg k-h
