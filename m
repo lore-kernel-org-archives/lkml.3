@@ -1,51 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934743Ab3DOHD2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 03:03:28 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:60670 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932679Ab3DOHD0 (ORCPT
+	id S964817Ab3DOHFi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 03:05:38 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:61293 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932679Ab3DOHFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 03:03:26 -0400
-Message-ID: <516BA63B.5090707@gmail.com>
-Date: Mon, 15 Apr 2013 09:03:23 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Mike Turquette <mturquette@linaro.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the clk tree
-References: <20130415150402.fd83866829f3108f45b7c126@canb.auug.org.au>
-In-Reply-To: <20130415150402.fd83866829f3108f45b7c126@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Apr 2013 03:05:36 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@sisk.pl
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
+        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
+        linaro-kernel@lists.linaro.org, patches@linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 1/2] cpufreq: ARM big LITTLE: put DT nodes after using them
+Date: Mon, 15 Apr 2013 12:35:24 +0530
+Message-Id: <1ff24e0c044fb7a30b6244451dd440455efab43b.1366009279.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 07:04 AM, Stephen Rothwell wrote:
-> After merging the clk tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
->
-> ERROR: "of_clk_add_provider" [drivers/clk/clk-si5351.ko] undefined!
-> ERROR: "of_clk_src_onecell_get" [drivers/clk/clk-si5351.ko] undefined!
+DT nodes should be put using of_node_put() to balance their usage counts. This
+is not done properly in ARM's big LITTLE driver. Fix it.
 
-Stephen,
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+Hi Rafael,
 
-I must have missed the both above when allowing clk-si5351 to be built
-for !OF. I sent a patch to make clk-si5351 depend on CONFIG_OF until
-we sort it out.
+These are fixes for 3.10
 
-> ERROR: "__clk_get_flags" [drivers/clk/clk-si5351.ko] undefined!
+ drivers/cpufreq/arm_big_little_dt.c | 43 +++++++++++++++++++++++++------------
+ 1 file changed, 29 insertions(+), 14 deletions(-)
 
-I sent a patch to export the above function but Mike must have missed
-it. I resent it on list.
-
-Sebastian
-
-> Caused by commit 9abd5f0555df ("clk: add si5351 i2c common clock
-> driver").  It probbaly need to depend on CONFIG_OF.
->
-> I have used the clk tree from next-20130412 for today.
+diff --git a/drivers/cpufreq/arm_big_little_dt.c b/drivers/cpufreq/arm_big_little_dt.c
+index 452ff46..44be311 100644
+--- a/drivers/cpufreq/arm_big_little_dt.c
++++ b/drivers/cpufreq/arm_big_little_dt.c
+@@ -31,22 +31,28 @@
+ 
+ static int dt_init_opp_table(struct device *cpu_dev)
+ {
+-	struct device_node *np = NULL;
++	struct device_node *np, *parent;
+ 	int count = 0, ret;
+ 
+-	for_each_child_of_node(of_find_node_by_path("/cpus"), np) {
++	parent = of_find_node_by_path("/cpus");
++	if (!parent) {
++		pr_err("failed to find OF /cpus\n");
++		return -ENOENT;
++	}
++
++	for_each_child_of_node(parent, np) {
+ 		if (count++ != cpu_dev->id)
+ 			continue;
+-		if (!of_get_property(np, "operating-points", NULL))
+-			return -ENODATA;
+-
+-		cpu_dev->of_node = np;
+-
+-		ret = of_init_opp_table(cpu_dev);
+-		if (ret)
+-			return ret;
+-
+-		return 0;
++		if (!of_get_property(np, "operating-points", NULL)) {
++			ret = -ENODATA;
++		} else {
++			cpu_dev->of_node = np;
++			ret = of_init_opp_table(cpu_dev);
++		}
++		of_node_put(np);
++		of_node_put(parent);
++
++		return ret;
+ 	}
+ 
+ 	return -ENODEV;
+@@ -54,15 +60,24 @@ static int dt_init_opp_table(struct device *cpu_dev)
+ 
+ static int dt_get_transition_latency(struct device *cpu_dev)
+ {
+-	struct device_node *np = NULL;
++	struct device_node *np, *parent;
+ 	u32 transition_latency = CPUFREQ_ETERNAL;
+ 	int count = 0;
+ 
+-	for_each_child_of_node(of_find_node_by_path("/cpus"), np) {
++	parent = of_find_node_by_path("/cpus");
++	if (!parent) {
++		pr_err("failed to find OF /cpus\n");
++		return -ENOENT;
++	}
++
++	for_each_child_of_node(parent, np) {
+ 		if (count++ != cpu_dev->id)
+ 			continue;
+ 
+ 		of_property_read_u32(np, "clock-latency", &transition_latency);
++		of_node_put(np);
++		of_node_put(parent);
++
+ 		return 0;
+ 	}
+ 
+-- 
+1.7.12.rc2.18.g61b472e
 
