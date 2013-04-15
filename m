@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964926Ab3DOIlD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 04:41:03 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:52414 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964810Ab3DOIk7 (ORCPT
+	id S964944Ab3DOIlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 04:41:16 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:53312 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964914Ab3DOIlC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 04:40:59 -0400
+	Mon, 15 Apr 2013 04:41:02 -0400
 From: Girish K S <girishks2000@gmail.com>
 To: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
 Cc: grant.likely@secretlab.ca, t.figa@samsung.com,
         broonie@opensource.wolfsonmicro.com,
         Girish K S <girishks2000@gmail.com>
-Subject: [PATCH V4 4/5] spi: s3c64xx: Added provision for dedicated cs pin
-Date: Mon, 15 Apr 2013 14:10:29 +0530
-Message-Id: <1366015230-18243-3-git-send-email-ks.giri@samsung.com>
+Subject: [PATCH RESEND V3 5/5] spi: s3c64xx: Added support for exynos5440 spi
+Date: Mon, 15 Apr 2013 14:10:30 +0530
+Message-Id: <1366015230-18243-4-git-send-email-ks.giri@samsung.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1366015230-18243-1-git-send-email-ks.giri@samsung.com>
 References: <1366015230-18243-1-git-send-email-ks.giri@samsung.com>
@@ -25,132 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Girish K S <girishks2000@gmail.com>
 
-The existing driver supports gpio based /cs signal.
-For controller's that have one device per controller,
-the slave device's /cs signal might be internally controlled
-by the chip select bit of slave select register. They are not
-externally asserted/deasserted using gpio pin.
-
-This patch adds support for controllers with dedicated /cs pin.
-if "cs-gpio" property doesnt exist in a spi dts node, the controller
-would treat the /cs pin as dedicated.
+This patch adds support for the exynos5440 spi controller.
+The integration of the spi IP in exynos5440 is different from
+other SoC's. The I/O pins are no more configured via gpio, they
+have dedicated pins.
 
 Signed-off-by: Girish K S <ks.giri@samsung.com>
 ---
-changes in v4:
-		moved the struct member cs_gpio from platform data to driver
-private data.
-
-changes in v3:
-		detelted the quirk for GPIO and handled it in the dts file
-
-changes in v2:
-		separated the gpio ios and cs gpio as separate patches
-
- drivers/spi/spi-s3c64xx.c |   32 ++++++++++++++++++++++++--------
- 1 files changed, 24 insertions(+), 8 deletions(-)
+ drivers/spi/spi-s3c64xx.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
-index 79de18f..7fdc940 100644
+index 7fdc940..01db8f7 100644
 --- a/drivers/spi/spi-s3c64xx.c
 +++ b/drivers/spi/spi-s3c64xx.c
-@@ -202,6 +202,7 @@ struct s3c64xx_spi_driver_data {
- 	struct s3c64xx_spi_port_config	*port_conf;
- 	unsigned int			port_id;
- 	unsigned long			gpios[4];
-+	bool				cs_gpio;
+@@ -1550,6 +1550,15 @@ static struct s3c64xx_spi_port_config exynos4_spi_port_config = {
+ 	.clk_from_cmu	= true,
  };
  
- static struct s3c2410_dma_client s3c64xx_spi_dma_client = {
-@@ -414,14 +415,16 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
- 		if (sdd->tgl_spi != spi) { /* if last mssg on diff device */
- 			/* Deselect the last toggled device */
- 			cs = sdd->tgl_spi->controller_data;
--			gpio_set_value(cs->line,
--				spi->mode & SPI_CS_HIGH ? 0 : 1);
-+			if (sdd->cs_gpio)
-+				gpio_set_value(cs->line,
-+					spi->mode & SPI_CS_HIGH ? 0 : 1);
- 		}
- 		sdd->tgl_spi = NULL;
- 	}
- 
- 	cs = spi->controller_data;
--	gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
-+	if (sdd->cs_gpio)
-+		gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
- 
- 	/* Start the signals */
- 	writel(0, sdd->regs + S3C64XX_SPI_SLAVE_SEL);
-@@ -550,7 +553,8 @@ static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
- 	if (sdd->tgl_spi == spi)
- 		sdd->tgl_spi = NULL;
- 
--	gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 0 : 1);
-+	if (sdd->cs_gpio)
-+		gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 0 : 1);
- 
- 	/* Quiese the signals */
- 	writel(S3C64XX_SPI_SLAVE_SIG_INACT, sdd->regs + S3C64XX_SPI_SLAVE_SEL);
-@@ -888,7 +892,10 @@ static struct s3c64xx_spi_csinfo *s3c64xx_get_slave_ctrldata(
- 		return ERR_PTR(-ENOMEM);
- 	}
- 
--	cs->line = of_get_named_gpio(data_np, "cs-gpio", 0);
-+	/* The CS line is asserted/deasserted by the gpio pin */
-+	if (sdd->cs_gpio)
-+		cs->line = of_get_named_gpio(data_np, "cs-gpio", 0);
++static struct s3c64xx_spi_port_config exynos5440_spi_port_config = {
++	.fifo_lvl_mask	= { 0x1ff },
++	.rx_lvl_offset	= 15,
++	.tx_st_done	= 25,
++	.high_speed	= true,
++	.clk_from_cmu	= true,
++	.quirks		= S3C64XX_SPI_QUIRK_POLL,
++};
 +
- 	if (!gpio_is_valid(cs->line)) {
- 		dev_err(&spi->dev, "chip select gpio is not specified or invalid\n");
- 		kfree(cs);
-@@ -928,7 +935,8 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
- 		return -ENODEV;
- 	}
- 
--	if (!spi_get_ctldata(spi)) {
-+	/* Request gpio only if cs line is asserted by gpio pins */
-+	if (sdd->cs_gpio) {
- 		err = gpio_request_one(cs->line, GPIOF_OUT_INIT_HIGH,
- 				       dev_name(&spi->dev));
- 		if (err) {
-@@ -937,9 +945,11 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
- 				cs->line, err);
- 			goto err_gpio_req;
- 		}
--		spi_set_ctldata(spi, cs);
- 	}
- 
-+	if (!spi_get_ctldata(spi))
-+		spi_set_ctldata(spi, cs);
-+
- 	sci = sdd->cntrlr_info;
- 
- 	spin_lock_irqsave(&sdd->lock, flags);
-@@ -1026,8 +1036,10 @@ err_gpio_req:
- static void s3c64xx_spi_cleanup(struct spi_device *spi)
- {
- 	struct s3c64xx_spi_csinfo *cs = spi_get_ctldata(spi);
-+	struct s3c64xx_spi_driver_data *sdd;
- 
--	if (cs) {
-+	sdd = spi_master_get_devdata(spi->master);
-+	if (cs && sdd->cs_gpio) {
- 		gpio_free(cs->line);
- 		if (spi->dev.of_node)
- 			kfree(cs);
-@@ -1256,7 +1268,11 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
- 	sdd->cntrlr_info = sci;
- 	sdd->pdev = pdev;
- 	sdd->sfr_start = mem_res->start;
-+	sdd->cs_gpio = false;
- 	if (pdev->dev.of_node) {
-+		if (of_find_property(pdev->dev.of_node, "cs-gpio", NULL))
-+			sdd->cs_gpio = true;
-+
- 		ret = of_alias_get_id(pdev->dev.of_node, "spi");
- 		if (ret < 0) {
- 			dev_err(&pdev->dev, "failed to get alias id, errno %d\n",
+ static struct platform_device_id s3c64xx_spi_driver_ids[] = {
+ 	{
+ 		.name		= "s3c2443-spi",
+@@ -1578,6 +1587,9 @@ static const struct of_device_id s3c64xx_spi_dt_match[] = {
+ 	{ .compatible = "samsung,exynos4210-spi",
+ 			.data = (void *)&exynos4_spi_port_config,
+ 	},
++	{ .compatible = "samsung,exynos5440-spi",
++			.data = (void *)&exynos5440_spi_port_config,
++	},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(of, s3c64xx_spi_dt_match);
 -- 
 1.7.5.4
 
