@@ -1,104 +1,536 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3DOL1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 07:27:45 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:61559 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab3DOL1n (ORCPT
+	id S1752568Ab3DOL3D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 07:29:03 -0400
+Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:34819 "EHLO
+	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751131Ab3DOL3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 07:27:43 -0400
-X-AuditID: cbfec7f5-b7fd76d000007247-0b-516be42cabc7
-Message-id: <516BE429.9040002@samsung.com>
-Date: Mon, 15 Apr 2013 13:27:37 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-usb@vger.kernel.org,
-        mchehab@redhat.com, linux-doc@vger.kernel.org, linux@arm.linux.org.uk,
-        javier@dowhile0.org, cesarb@cesarb.net, eballetbo@gmail.com,
-        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
-        swarren@nvidia.com, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        balbi@ti.com, santosh.shilimkar@ti.com, akpm@linux-foundation.org,
-        davem@davemloft.net
-Subject: Re: [PATCH v3 0/6] Generic PHY Framework
-References: <1363770725-13717-1-git-send-email-kishon@ti.com>
- <20130415102009.D358E3E0AA8@localhost> <516BD835.8060007@ti.com>
-In-reply-to: <516BD835.8060007@ti.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA02RXUiTURjHOXvfnb0OZ2/m5CBRsEjKzxShk6QFEZ3uppcV5NJNbU5lS9Eu
-	cjQnKGpaZHMfoG5qi+VSIz+ING1qKjlwLcP8yiWoZaQY5lBy2413v+d5/h8XD0OF9tARTG7+
-	PakyX5Ingnx6Yn/UHRvjkaedm+sQYaPdBvH7hTK8bxiHWO9Ox8apchoPGpa42Om1Qrw22Qmx
-	xmyH2O3VQez8UQ1x17Kbi5srLDSe7jdCbLA8onFLm5bCs9MC/NYxzMPDzwc5eL3WRuGZZ+Xc
-	y0JSrqmGpGnLxSMfZnUUeW39yiF7Bi1F+vRzPDKm89JkwGTjkW5LGZnSNQNSo9mAZLXeC8nv
-	d58h+bcaQ0Znejhkq+uEmL3Bv5glzcstlirjUzP4OU2Nam7hd2HJ1opMDdrZKhDEIDYJLX+Z
-	pAMcjpzzdlgF+Ewo2wrQyxYHFRg2Aap0eDk+lYCNQkv2GT/T7Gn0c6wW+hiyCajGUQt8LGTF
-	yGz5xAvoj6KdJ/P+hrAD70Tfjj+UYttotOz55jcfOzAvrjk5gTY1QNsuI+U7BLGRaERr8idR
-	bAwa0DbAAJ9E3bZfVB1g9YdK9Idk+kOyJkC9AEJpUWah6k62IjFOJVGoivKz4zILFF0g8Ozt
-	XtA6kjwEWAaIggX10fK0UK6kWFWqGAKIoURhAo/jYCXIkpTelyoLbiuL8qSqIcBhgiLUIDr+
-	oTDW2jAsTpGdv1B3JaW6OE6mEEe6NBntLuv15unNv+huv2fvzcdXRxKPXzXtupnO8Gu9+3/W
-	B26fjX1g9t68tQckOXL5Sm9lqt3Q6OmHpo1LI4nmBW9yizLk8WRF8BkWJpQmucNLxrPGt6NC
-	KjrqFye4svRTT1l78NiuiFblSBKiKKVK8h9W2ms1ygIAAA==
+	Mon, 15 Apr 2013 07:29:00 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chao Xie <cxie4@marvell.com>
+Date: Mon, 15 Apr 2013 04:28:51 -0700
+Subject: RE: [PATCH 4/4] ARM: mmp: add SMP support for pxa988
+Thread-Topic: [PATCH 4/4] ARM: mmp: add SMP support for pxa988
+Thread-Index: Ac44R/bRegBFTjeeTeqshDknWTBKogBhDbmw
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE2D0F68CFE5@SC-VEXCH4.marvell.com>
+References: <1365651547-11583-1-git-send-email-zhangwm@marvell.com>
+ <CAN1soZxCX1oUg69MTy0ZAL2vH8SOywDBaZHJ7wgnwgasxPAPdQ@mail.gmail.com>
+In-Reply-To: <CAN1soZxCX1oUg69MTy0ZAL2vH8SOywDBaZHJ7wgnwgasxPAPdQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3FBTAqG027916
 
-On 04/15/2013 12:36 PM, Kishon Vijay Abraham I wrote:
-> On Monday 15 April 2013 03:50 PM, Grant Likely wrote:
->> On Wed, 20 Mar 2013 14:41:59 +0530, Kishon Vijay Abraham I <kishon@ti.com>
->> wrote:
->>> Added a generic PHY framework that provides a set of APIs for the PHY drivers
->>> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
->>> the PHY with or without using phandle. To obtain a reference to the PHY
->>> without using phandle, the platform specfic intialization code (say from board
->>> file) should have already called phy_bind with the binding information. The
->>> binding information consists of phy's device name, phy user device name and an
->>> index. The index is used when the same phy user binds to mulitple phys.
->>>
->>> This framework will be of use only to devices that uses external PHY (PHY
->>> functionality is not embedded within the controller).
->>>
->>> The intention of creating this framework is to bring the phy drivers spread
->>> all over the Linux kernel to drivers/phy to increase code re-use and to
->>> increase code maintainability.
->>>
->>> Comments to make PHY as bus wasn't done because PHY devices can be part of
->>> other bus and making a same device attached to multiple bus leads to bad
->>> design.
->>>
->>> Making omap-usb2 and twl4030 to use this framework is provided as a sample.
->>>
->>> This patch series is developed on 3.9-rc3. Once the patch series gets finalised
->>> I'll resend omap-usb2 and twl4030 part based on Felipe's tree.
->>>
->>
->> [...]
->>
->>>   drivers/Kconfig                                    |    2 +
->>>   drivers/Makefile                                   |    2 +
->>>   drivers/phy/Kconfig                                |   13 +
->>>   drivers/phy/Makefile                               |    5 +
->>>   drivers/phy/phy-core.c                             |  574
->>> ++++++++++++++++++++
->>
->> This looks to be very specific for USB PHYs. Are you intending it to be
->> used for other types of PHYs, like Ethernet PHYs? If not, then this
-> 
-> Not really. This can be used by USB, SATA and Sylwester was planning to use it
-> for video PHY's.
 
-Yes, I have already some RFC patches to handle the display and the camera
-interface DPHYs (MIPI DSI, MIPI CSI-2) with this API. I didn't post it, since
-this framework is not settled yet. Those DPHYs need very few operations, like
-disable/enable only and there was really not suitable API in the kernel until
-now to handle them. We had plans in the past to write something like this 
-generic PHY framework for the Samsung SoCs.
 
-Some SoCs have plenty different PHYs: USB, SATA, MIPI CSI-2, MIPI DSI, HDMI... 
-And some of them are simple enough to be covered by this generic PHY API.
 
-Thanks,
-Sylwester
+> -----Original Message-----
+> From: Haojian Zhuang [mailto:haojian.zhuang@gmail.com]
+> Sent: 2013ƒÍ4‘¬13»’ 21:08
+> To: Neil Zhang
+> Cc: Grant Likely; linux-arm-kernel@lists.infradead.org;
+> linux-kernel@vger.kernel.org; Chao Xie
+> Subject: Re: [PATCH 4/4] ARM: mmp: add SMP support for pxa988
+>
+> On Thu, Apr 11, 2013 at 11:39 AM, Neil Zhang <zhangwm@marvell.com>
+> wrote:
+> > Add SMP support for pxa988.
+> >
+> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > Signed-off-by: Chao Xie <chao.xie@marvell.com>
+> > ---
+> >  arch/arm/mach-mmp/Makefile  |    4 +
+> >  arch/arm/mach-mmp/common.h  |    2 +
+> >  arch/arm/mach-mmp/headsmp.S |  104
+> ++++++++++++++++++++++++++
+> >  arch/arm/mach-mmp/mmpx-dt.c |    1 +
+> >  arch/arm/mach-mmp/platsmp.c |  170
+> +++++++++++++++++++++++++++++++++++++++++++
+> >  arch/arm/mach-mmp/reset.c   |   66 +++++++++++++++++
+> >  arch/arm/mach-mmp/reset.h   |   29 +++++++
+> >  7 files changed, 376 insertions(+), 0 deletions(-)  create mode
+> > 100644 arch/arm/mach-mmp/headsmp.S  create mode 100644
+> > arch/arm/mach-mmp/platsmp.c  create mode 100644
+> > arch/arm/mach-mmp/reset.c  create mode 100644
+> > arch/arm/mach-mmp/reset.h
+> >
+> > diff --git a/arch/arm/mach-mmp/Makefile
+> b/arch/arm/mach-mmp/Makefile
+> > index b60065f..e7b6173 100644
+> > --- a/arch/arm/mach-mmp/Makefile
+> > +++ b/arch/arm/mach-mmp/Makefile
+> > @@ -9,6 +9,10 @@ obj-$(CONFIG_CPU_PXA168)       += pxa168.o
+> >  obj-$(CONFIG_CPU_PXA910)       += pxa910.o
+> >  obj-$(CONFIG_CPU_MMP2)         += mmp2.o sram.o
+> >
+> > +ifeq ($(CONFIG_SMP),y)
+> > +obj-$(CONFIG_CPU_PXA988)       += platsmp.o headsmp.o reset.o
+> > +endif
+> > +
+> You already select CONFIG_SMP if PXA988 is selected. There's no reason to
+> check CONFIG_SMP in Makefile again.
+
+CPU_PXA988 only select HAVE_SMP, we can still not enable SMP.
+
+
+>
+> >  ifeq ($(CONFIG_COMMON_CLK), )
+> >  obj-y                          += clock.o
+> >  obj-$(CONFIG_CPU_PXA168)       += clock-pxa168.o
+> > diff --git a/arch/arm/mach-mmp/common.h
+> b/arch/arm/mach-mmp/common.h
+> > index 8c9b510..7496cd0 100644
+> > --- a/arch/arm/mach-mmp/common.h
+> > +++ b/arch/arm/mach-mmp/common.h
+> > @@ -1,5 +1,7 @@
+> >  #define ARRAY_AND_SIZE(x)      (x), ARRAY_SIZE(x)
+> >
+> > +extern struct smp_operations mmp_smp_ops;
+> > +
+> >  extern void timer_init(int irq);
+> >
+> >  extern void __init icu_init_irq(void); diff --git
+> > a/arch/arm/mach-mmp/headsmp.S b/arch/arm/mach-mmp/headsmp.S
+> new file
+> > mode 100644 index 0000000..2b6177e
+> > --- /dev/null
+> > +++ b/arch/arm/mach-mmp/headsmp.S
+> > @@ -0,0 +1,104 @@
+> > +/*
+> > + * linux/arch/arm/mach-mmp/headsmp.S
+> > + *
+> > + * Copyright (C) 2012 Marvell, Inc.
+> > + *
+> > + * Author: Neil Zhang <zhangwm@marvell.com>
+> > + *
+> > + * This software is licensed under the terms of the GNU General
+> > +Public
+> > + * License version 2, as published by the Free Software Foundation,
+> > +and
+> > + * may be copied, distributed, and modified under those terms.
+> > + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + *
+> > + */
+> > +#include <linux/linkage.h>
+> > +#include <linux/init.h>
+> > +#include <asm/memory.h>
+> > +#include <asm/cache.h>
+> > +#include <asm/assembler.h>
+> > +#include <mach/addr-map.h>
+> > +
+> > +       __CPUINIT
+> > +
+> > +/*
+> > + * Marvell specific entry point for secondary CPUs.
+> > + * The secondary kernel init calls v7_flush_dcache_all before it
+> > +enables
+> > + * the L1; however, the L1 comes out of reset in an undefined state,
+> > +so
+> > + * the clean + invalidate performed by v7_flush_dcache_all causes a
+> > +bunch
+> > + * of cache lines with uninitialized data and uninitialized tags to
+> > +get
+> > + * written out to memory, which does really unpleasant things to the
+> > +main
+> > + * processor.  We fix this by performing an invalidate, rather than a
+> > + * clean + invalidate for secondary core, before jumping into the kernel.
+> > + *
+> > + * This funciton is cloned from arch/arm/mach-tegra/headsmp.S, and
+> > +needs
+> > + * to be called for both secondary cores startup and primary core
+> > +resume
+> > + * procedures.
+> > + */
+> > +       .align L1_CACHE_SHIFT
+> > +
+> > +
+> > +/*
+> > + * PXA specific entry point for secondary CPUs.  This provides
+> > + * a "holding pen" into which all secondary cores are held until
+> > +we're
+> > + * ready for them to initialise.
+> > + */
+> > +ENTRY(mmp_secondary_startup)
+> > +       mrc     p15, 0, r0, c0, c0, 5
+> > +       and     r0, r0, #15
+> > +       adr     r4, 1f
+> > +       ldmia   r4, {r5, r6}
+> > +       sub     r4, r4, r5
+> > +       add     r6, r6, r4
+> > +pen:   ldr     r7, [r6]
+> > +       cmp     r7, r0
+> > +       bne     pen
+> > +
+> > +       /*
+> > +        * we've been released from the holding pen: secondary_stack
+> > +        * should now contain the SVC stack for this core
+> > +        */
+> > +       bl      v7_invalidate_l1
+> > +       b       secondary_startup
+> > +ENDPROC(mmp_secondary_startup)
+> > +
+> > +       .align  2
+> > +1:     .long   .
+> > +       .long   pen_release
+> > +
+> > +
+> > +/*
+> > + * Note: The following code is located into the .data section. This is to
+> > + *       allow sw_reset_flag and cpu_plugin_handler to be accessed
+> with a
+> > + *       relative load while we can't rely on any MMU translation.
+> > + *       Reference from: arch/arm/kernel/sleep.S
+> > + */
+> > +
+> > +       .data
+> > +       .align
+> > +
+> > +/*
+> > + * ROM code jumps to this function while waking up from CPU
+> > + * OFF or software reset state. Physical address of the function is
+> > + * stored at CA9_WARM_RESET_VECTOR while system is bring up.
+> > + */
+> > +ENTRY(mmp_cpu_reset_entry)
+> > +       adr     r1, mmp_entry_vectors
+> > +       mrc     p15, 0, r0, c0, c0, 5
+> > +       and     r0, r0, #15             @ fetch CPUID
+> > +1:
+> > +       ldr     r2, [r1, r0, lsl #2]    @ get the handler addr for this
+> core
+> > +       cmp     r2, #0
+> > +       movne   pc, r2                  @ jump to the handler
+> > +       beq     1b
+> > +ENDPROC(mmp_cpu_reset_entry)
+> > +
+> > +       /* Point to the address that save handlers for each core */
+> > +       .global mmp_entry_vectors
+> > +mmp_entry_vectors:
+> > +       .rept   CONFIG_NR_CPUS
+> > +        .long   0                               @ preserve
+> stack phys ptr here
+> > +       .endr
+> > diff --git a/arch/arm/mach-mmp/mmpx-dt.c
+> b/arch/arm/mach-mmp/mmpx-dt.c
+> > index bbc0c50..a5f5501 100644
+> > --- a/arch/arm/mach-mmp/mmpx-dt.c
+> > +++ b/arch/arm/mach-mmp/mmpx-dt.c
+> > @@ -71,6 +71,7 @@ static const char *pxa988_dt_board_compat[]
+> > __initdata = {  };
+> >
+> >  DT_MACHINE_START(PXA988_DT, "Marvell PXA988 (Device Tree
+> Support)")
+> > +       .smp            = smp_ops(mmp_smp_ops),
+> >         .map_io         = mmp_map_io,
+> >         .init_irq       = pxa988_dt_gic_init,
+> >         .init_time      = pxa988_dt_init_timer,
+> > diff --git a/arch/arm/mach-mmp/platsmp.c
+> b/arch/arm/mach-mmp/platsmp.c
+> > new file mode 100644 index 0000000..a6590a3
+> > --- /dev/null
+> > +++ b/arch/arm/mach-mmp/platsmp.c
+> > @@ -0,0 +1,170 @@
+> > +/*
+> > + *  linux/arch/arm/mach-mmp/platsmp.c
+> > + *
+> > + *  Copyright (C) 2002 ARM Ltd.
+> > + *  All Rights Reserved
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > +modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +#include <linux/init.h>
+> > +#include <linux/errno.h>
+> > +#include <linux/delay.h>
+> > +#include <linux/device.h>
+> > +#include <linux/jiffies.h>
+> > +#include <linux/smp.h>
+> > +#include <linux/io.h>
+> > +#include <linux/irq.h>
+> > +
+> > +#include <asm/cacheflush.h>
+> > +#include <mach/hardware.h>
+> > +#include <linux/irqchip/arm-gic.h>
+> > +#include <asm/mach-types.h>
+> > +#include <asm/localtimer.h>
+> > +#include <asm/smp_scu.h>
+> > +
+> > +#include <mach/irqs.h>
+> > +#include <mach/addr-map.h>
+> > +
+> > +#include "common.h"
+> > +#include "reset.h"
+> > +
+> > +/*
+> > + * Write pen_release in a way that is guaranteed to be visible to all
+> > + * observers, irrespective of whether they're taking part in
+> > +coherency
+> > + * or not.  This is necessary for the hotplug code to work reliably.
+> > + */
+> > +static void __cpuinit write_pen_release(int val) {
+> > +       pen_release = val;
+> > +       smp_wmb();
+> > +       __cpuc_flush_dcache_area((void *)&pen_release,
+> sizeof(pen_release));
+> > +       outer_clean_range(__pa(&pen_release), __pa(&pen_release +
+> 1));
+> > +}
+> > +
+> > +#ifdef CONFIG_HAVE_ARM_SCU
+> > +static void __iomem *scu_get_base_addr(void) {
+> > +       return SCU_VIRT_BASE;
+> > +}
+> > +#endif
+> > +
+> > +static inline unsigned int get_core_count(void) {
+> > +       u32 ret = 1;
+> > +#ifdef CONFIG_HAVE_ARM_SCU
+> > +       ret = scu_get_core_count(scu_get_base_addr());
+> > +#endif
+> > +
+> > +       return ret;
+> > +}
+> > +
+> > +static DEFINE_SPINLOCK(boot_lock);
+> > +
+> > +static void __cpuinit mmp_secondary_init(unsigned int cpu) {
+> > +       /*
+> > +        * if any interrupts are already enabled for the primary
+> > +        * core (e.g. timer irq), then they will not have been enabled
+> > +        * for us: do so
+> > +        */
+> > +       gic_secondary_init(0);
+> > +
+> > +       /*
+> > +        * let the primary processor know we're out of the
+> > +        * pen, then head off into the C entry point
+> > +        */
+> > +       write_pen_release(-1);
+> > +
+> > +       /*
+> > +        * Synchronise with the boot thread.
+> > +        */
+> > +       spin_lock(&boot_lock);
+> > +       spin_unlock(&boot_lock);
+> Lock & unlock without protecting anything. If so, you can remove this.
+>
+> > +}
+> > +
+> > +static int __cpuinit mmp_boot_secondary(unsigned int cpu, struct
+> > +task_struct *idle) {
+> > +       unsigned long timeout;
+> > +
+> > +       /*
+> > +        * Avoid timer calibration on slave cpus. Use the value calibrated
+> > +        * on master cpu. Referenced from tegra3
+> > +        */
+> > +       preset_lpj = loops_per_jiffy;
+> > +
+> > +       /*
+> > +        * set synchronisation state between this boot processor
+> > +        * and the secondary one
+> > +        */
+> > +
+> > +       spin_lock(&boot_lock);
+> > +
+> > +       /*
+> > +        * The secondary processor is waiting to be released from
+> > +        * the holding pen - release it, then wait for it to flag
+> > +        * that it has been released by resetting pen_release.
+> > +        *
+> > +        * Note that "pen_release" is the hardware CPU ID, whereas
+> > +        * "cpu" is Linux's internal ID.
+> > +        */
+> > +       write_pen_release(cpu);
+> > +
+> > +       /* reset the cpu, let it branch to the kernel entry */
+> > +       mmp_cpu_power_up(cpu);
+> > +
+> > +       timeout = jiffies + (1 * HZ);
+> > +       while (time_before(jiffies, timeout)) {
+> > +               smp_rmb();
+> > +               if (pen_release == -1)
+> > +                       break;
+> > +
+> > +               udelay(10);
+> > +       }
+> > +
+> > +       /*
+> > +        * now the secondary core is starting up let it run its
+> > +        * calibrations, then wait for it to finish
+> > +        */
+> > +       spin_unlock(&boot_lock);
+> > +
+> > +       return pen_release != -1 ? -ENOSYS : 0; }
+> > +
+> > +/*
+> > + * Initialise the CPU possible map early - this describes the CPUs
+> > + * which may be present or become present in the system.
+> > + */
+> > +static void __init mmp_smp_init_cpus(void) {
+> > +       unsigned int i, ncores = get_core_count();
+> > +
+> > +       for (i = 0; i < ncores; i++)
+> > +               set_cpu_possible(i, true); }
+> > +
+> > +static void __init mmp_smp_prepare_cpus(unsigned int max_cpus) {
+> > +       int i;
+> > +
+> > +       /*
+> > +        * Initialise the present map, which describes the set of CPUs
+> > +        * actually populated at the present time.
+> > +        */
+> > +       for (i = 0; i < max_cpus; i++)
+> > +               set_cpu_present(i, true);
+> > +
+> > +#ifdef CONFIG_HAVE_ARM_SCU
+> > +       scu_enable(scu_get_base_addr()); #endif
+> > +
+> > +       mmp_entry_vector_init();
+> > +}
+> > +
+> > +struct smp_operations mmp_smp_ops __initdata = {
+> > +       .smp_init_cpus          = mmp_smp_init_cpus,
+> > +       .smp_prepare_cpus       = mmp_smp_prepare_cpus,
+> > +       .smp_secondary_init     = mmp_secondary_init,
+> > +       .smp_boot_secondary     = mmp_boot_secondary,
+> > +};
+> > diff --git a/arch/arm/mach-mmp/reset.c b/arch/arm/mach-mmp/reset.c
+> new
+> > file mode 100644 index 0000000..b47e400
+> > --- /dev/null
+> > +++ b/arch/arm/mach-mmp/reset.c
+> > @@ -0,0 +1,66 @@
+> > +/*
+> > + * linux/arch/arm/mach-mmp/reset.c
+> > + *
+> > + * Author:     Neil Zhang <zhangwm@marvell.com>
+> > + * Copyright:  (C) 2012 Marvell International Ltd.
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > +modify
+> > + * it under the terms of the GNU General Public License as published
+> > +by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + */
+> > +
+> > +#include <linux/kernel.h>
+> > +#include <linux/smp.h>
+> > +
+> > +#include <asm/io.h>
+> > +#include <asm/cacheflush.h>
+> > +#include <asm/mach/map.h>
+> > +
+> > +#include <mach/addr-map.h>
+> > +
+> > +#include "reset.h"
+> > +
+> > +#define PMU_CC2_AP                     APMU_REG(0x0100)
+> > +#define CIU_CA9_WARM_RESET_VECTOR      CIU_REG(0x00d8)
+> > +
+> > +/*
+> > + * This function is called from boot_secondary to bootup the secondary
+> cpu.
+> > + */
+> > +void mmp_cpu_power_up(u32 cpu)
+> > +{
+> > +       u32 tmp;
+> > +
+> > +       BUG_ON(cpu == 0);
+> > +
+> > +       tmp = readl(PMU_CC2_AP);
+> > +       if (tmp & CPU_CORE_RST(cpu)) {
+> > +               /* Release secondary core from reset */
+> > +               tmp &= ~(CPU_CORE_RST(cpu)
+> > +                       | CPU_DBG_RST(cpu) |
+> CPU_WDOG_RST(cpu));
+> > +               writel(tmp, PMU_CC2_AP);
+> > +       }
+> > +}
+> > +
+> > +void mmp_set_entry_vector(u32 cpu, u32 addr) {
+> > +       BUG_ON(cpu >= CONFIG_NR_CPUS);
+> > +
+> > +       mmp_entry_vectors[cpu] = addr;
+> > +       smp_wmb();
+> > +       __cpuc_flush_dcache_area((void *)&mmp_entry_vectors[cpu],
+> > +                               sizeof(mmp_entry_vectors[cpu]));
+> > +       outer_clean_range(__pa(&mmp_entry_vectors[cpu]),
+> > +                               __pa(&mmp_entry_vectors[cpu +
+> 1])); }
+> > +
+> > +void __init mmp_entry_vector_init(void) {
+> > +       int cpu;
+> > +
+> > +       /* We will reset from DDR directly by default */
+> > +       writel(__pa(mmp_cpu_reset_entry),
+> CIU_CA9_WARM_RESET_VECTOR);
+> > +
+> > +       for (cpu = 1; cpu < CONFIG_NR_CPUS; cpu++)
+> > +               mmp_set_entry_vector(cpu,
+> > +__pa(mmp_secondary_startup)); }
+> > diff --git a/arch/arm/mach-mmp/reset.h b/arch/arm/mach-mmp/reset.h
+> new
+> > file mode 100644 index 0000000..78d5486
+> > --- /dev/null
+> > +++ b/arch/arm/mach-mmp/reset.h
+> > @@ -0,0 +1,29 @@
+> > +/*
+> > + * linux/arch/arm/mach-mmp/include/mach/reset.h
+> > + *
+> > + * Author:     Neil Zhang <zhangwm@marvell.com>
+> > + * Copyright:  (C) 2012 Marvell International Ltd.
+> > + *
+> > + * This program is free software; you can redistribute it and/or
+> > +modify
+> > + * it under the terms of the GNU General Public License as published
+> > +by
+> > + * the Free Software Foundation; either version 2 of the License, or
+> > + * (at your option) any later version.
+> > + */
+> > +
+> > +#ifndef __RESET_PXA988_H__
+> > +#define __RESET_PXA988_H__
+> > +
+> > +#define CPU_CORE_RST(n)        (1 << ((n) * 4 + 16))
+> > +#define CPU_DBG_RST(n) (1 << ((n) * 4 + 18))
+> > +#define CPU_WDOG_RST(n)        (1 << ((n) * 4 + 19))
+> > +
+> > +extern u32 mmp_entry_vectors[CONFIG_NR_CPUS];
+> > +
+> > +void mmp_secondary_startup(void);
+> > +void mmp_cpu_reset_entry(void);
+> > +
+> > +void mmp_cpu_power_up(u32 cpu);
+> > +void mmp_set_entry_vector(u32 cpu, u32 addr); void __init
+> > +mmp_entry_vector_init(void);
+> > +
+> > +#endif /* __RESET_PXA988_H__ */
+> > --
+> > 1.7.4.1
+> >
+
+
+Best Regards,
+Neil Zhang
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
