@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab3DOCf6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:35:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43139 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754746Ab3DOCf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:35:57 -0400
-Date: Sun, 14 Apr 2013 19:35:52 -0700
-From: Michal Hocko <mhocko@suse.cz>
+	id S1756436Ab3DOCjt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:39:49 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:36739 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753924Ab3DOCjr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 22:39:47 -0400
+Date: Sun, 14 Apr 2013 19:39:35 -0700
+From: Tejun Heo <tj@kernel.org>
 To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Tejun Heo <tj@kernel.org>, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        vgoyal@redhat.com, cgroups@vger.kernel.org
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, vgoyal@redhat.com,
+        cgroups@vger.kernel.org
 Subject: Re: [PATCH 4/4] memcg: force use_hierarchy if sane_behavior
-Message-ID: <20130415023552.GA9955@dhcp22.suse.cz>
+Message-ID: <20130415023935.GE3050@htj.dyndns.org>
 References: <1365808259-31073-1-git-send-email-tj@kernel.org>
  <1365808259-31073-5-git-send-email-tj@kernel.org>
  <20130415011336.GF8408@sergelap>
@@ -26,24 +27,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 14-04-13 20:13:36, Serge Hallyn wrote:
-> Quoting Tejun Heo (tj@kernel.org):
-> > Turn on use_hierarchy by default if sane_behavior is specified and
-> > don't create .use_hierarchy file.
-> > 
-> > It is debatable whether to remove .use_hierarchy file or make it ro as
-> > the former could make transition easier in certain cases; however, the
-> > behavior changes which will be gated by sane_behavior are intensive
-> > including changing basic meaning of certain control knobs in a few
-> > controllers and I don't really think keeping this piece would make
-> > things easier in any noticeable way, so let's remove it.
-> 
-> Hi Tejun,
-> 
-> this actually reminds me of something that's been on my todo list to
-> report for some time, but I haven't had time to find the source of the
-> bug...  And maybe it's already been reported...  but
-> 
+Hello, Serge.
+
+On Sun, Apr 14, 2013 at 08:13:36PM -0500, Serge Hallyn wrote:
 > If I do
 > 
 > 	cd /sys/fs/cgroup/memory
@@ -66,16 +52,20 @@ On Sun 14-04-13 20:13:36, Serge Hallyn wrote:
 > So it seems the hierarchy is being enforced, but not reported in
 > child limit_in_bytes files.
 
-This is an intended behavior. Limits are not propagated to the children
-because they are enforced anyway (by reclaim). The behavior would
-be quite inconsistent when the parent limit would be changed later
-otherwise. We only inherit properties which are enforced hierarchically:
-use_hierarchy, oom_disable and swappiness.
+Hmm.... if I understand you correctly, it ain't bug.  It's supposed to
+work that way.  The parent has certain limits and the child doesn't.
+The child will operate within the paren't limits but in those limits
+it isn't restricted.  We actually have a controller which does
+propagate configuration, the device security one, which I don't think
+is really optimal but it seems to be the easier way to implement
+hierarchical behavior for that controller.
 
-> (Last tested tonight on 3.8.0-17-generic #27-Ubuntu fwiw)
-> 
-> -serge
+Anyways, if you think about the use cases, the current memcg way makes
+a lot more sense and is more flexible.  e.g. You can express things
+like A + B shouldn't go above 1000 (whatever the unit is) but A and B
+in each can go upto 700 when there's room.
+
+Thanks.
 
 -- 
-Michal Hocko
-SUSE Labs
+tejun
