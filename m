@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934043Ab3DOCZt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:25:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36087 "EHLO
+	id S1755551Ab3DOC1Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:27:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36094 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab3DOCZq (ORCPT
+	with ESMTP id S932609Ab3DOCZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:25:46 -0400
+	Sun, 14 Apr 2013 22:25:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Siegfried Wulsch <Siegfried.Wulsch@rovema.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 12/17] sched_clock: Prevent 64bit inatomicity on 32bit systems
-Date: Sun, 14 Apr 2013 19:25:22 -0700
-Message-Id: <20130415022353.537405136@linuxfoundation.org>
+        Josh Boyer <jwboyer@redhat.com>,
+        Samu Kallio <samu.kallio@aberdeencloud.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 13/17] x86, mm, paravirt: Fix vmalloc_fault oops during lazy MMU updates
+Date: Sun, 14 Apr 2013 19:25:23 -0700
+Message-Id: <20130415022353.606462678@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
 References: <20130415022352.616689034@linuxfoundation.org>
@@ -29,141 +29,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Samu Kallio <samu.kallio@aberdeencloud.com>
 
-commit a1cbcaa9ea87b87a96b9fc465951dcf36e459ca2 upstream.
+commit 1160c2779b826c6f5c08e5cc542de58fd1f667d5 upstream.
 
-The sched_clock_remote() implementation has the following inatomicity
-problem on 32bit systems when accessing the remote scd->clock, which
-is a 64bit value.
+In paravirtualized x86_64 kernels, vmalloc_fault may cause an oops
+when lazy MMU updates are enabled, because set_pgd effects are being
+deferred.
 
-CPU0			CPU1
+One instance of this problem is during process mm cleanup with memory
+cgroups enabled. The chain of events is as follows:
 
-sched_clock_local()	sched_clock_remote(CPU0)
-...
-			remote_clock = scd[CPU0]->clock
-			    read_low32bit(scd[CPU0]->clock)
-cmpxchg64(scd->clock,...)
-			    read_high32bit(scd[CPU0]->clock)
+- zap_pte_range enables lazy MMU updates
+- zap_pte_range eventually calls mem_cgroup_charge_statistics,
+  which accesses the vmalloc'd mem_cgroup per-cpu stat area
+- vmalloc_fault is triggered which tries to sync the corresponding
+  PGD entry with set_pgd, but the update is deferred
+- vmalloc_fault oopses due to a mismatch in the PUD entries
 
-While the update of scd->clock is using an atomic64 mechanism, the
-readout on the remote cpu is not, which can cause completely bogus
-readouts.
+The OOPs usually looks as so:
 
-It is a quite rare problem, because it requires the update to hit the
-narrow race window between the low/high readout and the update must go
-across the 32bit boundary.
+------------[ cut here ]------------
+kernel BUG at arch/x86/mm/fault.c:396!
+invalid opcode: 0000 [#1] SMP
+.. snip ..
+CPU 1
+Pid: 10866, comm: httpd Not tainted 3.6.10-4.fc18.x86_64 #1
+RIP: e030:[<ffffffff816271bf>]  [<ffffffff816271bf>] vmalloc_fault+0x11f/0x208
+.. snip ..
+Call Trace:
+ [<ffffffff81627759>] do_page_fault+0x399/0x4b0
+ [<ffffffff81004f4c>] ? xen_mc_extend_args+0xec/0x110
+ [<ffffffff81624065>] page_fault+0x25/0x30
+ [<ffffffff81184d03>] ? mem_cgroup_charge_statistics.isra.13+0x13/0x50
+ [<ffffffff81186f78>] __mem_cgroup_uncharge_common+0xd8/0x350
+ [<ffffffff8118aac7>] mem_cgroup_uncharge_page+0x57/0x60
+ [<ffffffff8115fbc0>] page_remove_rmap+0xe0/0x150
+ [<ffffffff8115311a>] ? vm_normal_page+0x1a/0x80
+ [<ffffffff81153e61>] unmap_single_vma+0x531/0x870
+ [<ffffffff81154962>] unmap_vmas+0x52/0xa0
+ [<ffffffff81007442>] ? pte_mfn_to_pfn+0x72/0x100
+ [<ffffffff8115c8f8>] exit_mmap+0x98/0x170
+ [<ffffffff810050d9>] ? __raw_callee_save_xen_pmd_val+0x11/0x1e
+ [<ffffffff81059ce3>] mmput+0x83/0xf0
+ [<ffffffff810624c4>] exit_mm+0x104/0x130
+ [<ffffffff8106264a>] do_exit+0x15a/0x8c0
+ [<ffffffff810630ff>] do_group_exit+0x3f/0xa0
+ [<ffffffff81063177>] sys_exit_group+0x17/0x20
+ [<ffffffff8162bae9>] system_call_fastpath+0x16/0x1b
 
-The resulting misbehaviour is, that CPU1 will see the sched_clock on
-CPU1 ~4 seconds ahead of it's own and update CPU1s sched_clock value
-to this bogus timestamp. This stays that way due to the clamping
-implementation for about 4 seconds until the synchronization with
-CLOCK_MONOTONIC undoes the problem.
+Calling arch_flush_lazy_mmu_mode immediately after set_pgd makes the
+changes visible to the consistency checks.
 
-The issue is hard to observe, because it might only result in a less
-accurate SCHED_OTHER timeslicing behaviour. To create observable
-damage on realtime scheduling classes, it is necessary that the bogus
-update of CPU1 sched_clock happens in the context of an realtime
-thread, which then gets charged 4 seconds of RT runtime, which results
-in the RT throttler mechanism to trigger and prevent scheduling of RT
-tasks for a little less than 4 seconds. So this is quite unlikely as
-well.
-
-The issue was quite hard to decode as the reproduction time is between
-2 days and 3 weeks and intrusive tracing makes it less likely, but the
-following trace recorded with trace_clock=global, which uses
-sched_clock_local(), gave the final hint:
-
-  <idle>-0   0d..30 400269.477150: hrtimer_cancel: hrtimer=0xf7061e80
-  <idle>-0   0d..30 400269.477151: hrtimer_start:  hrtimer=0xf7061e80 ...
-irq/20-S-587 1d..32 400273.772118: sched_wakeup:   comm= ... target_cpu=0
-  <idle>-0   0dN.30 400273.772118: hrtimer_cancel: hrtimer=0xf7061e80
-
-What happens is that CPU0 goes idle and invokes
-sched_clock_idle_sleep_event() which invokes sched_clock_local() and
-CPU1 runs a remote wakeup for CPU0 at the same time, which invokes
-sched_remote_clock(). The time jump gets propagated to CPU0 via
-sched_remote_clock() and stays stale on both cores for ~4 seconds.
-
-There are only two other possibilities, which could cause a stale
-sched clock:
-
-1) ktime_get() which reads out CLOCK_MONOTONIC returns a sporadic
-   wrong value.
-
-2) sched_clock() which reads the TSC returns a sporadic wrong value.
-
-#1 can be excluded because sched_clock would continue to increase for
-   one jiffy and then go stale.
-
-#2 can be excluded because it would not make the clock jump
-   forward. It would just result in a stale sched_clock for one jiffy.
-
-After quite some brain twisting and finding the same pattern on other
-traces, sched_clock_remote() remained the only place which could cause
-such a problem and as explained above it's indeed racy on 32bit
-systems.
-
-So while on 64bit systems the readout is atomic, we need to verify the
-remote readout on 32bit machines. We need to protect the local->clock
-readout in sched_clock_remote() on 32bit as well because an NMI could
-hit between the low and the high readout, call sched_clock_local() and
-modify local->clock.
-
-Thanks to Siegfried Wulsch for bearing with my debug requests and
-going through the tedious tasks of running a bunch of reproducer
-systems to generate the debug information which let me decode the
-issue.
-
-Reported-by: Siegfried Wulsch <Siegfried.Wulsch@rovema.de>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1304051544160.21884@ionos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+RedHat-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=914737
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+Reported-and-Tested-by: Krishna Raman <kraman@redhat.com>
+Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
+Link: http://lkml.kernel.org/r/1364045796-10720-1-git-send-email-konrad.wilk@oracle.com
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/clock.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ arch/x86/mm/fault.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/kernel/sched/clock.c
-+++ b/kernel/sched/clock.c
-@@ -176,10 +176,36 @@ static u64 sched_clock_remote(struct sch
- 	u64 this_clock, remote_clock;
- 	u64 *ptr, old_val, val;
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -377,10 +377,12 @@ static noinline __kprobes int vmalloc_fa
+ 	if (pgd_none(*pgd_ref))
+ 		return -1;
  
-+#if BITS_PER_LONG != 64
-+again:
-+	/*
-+	 * Careful here: The local and the remote clock values need to
-+	 * be read out atomic as we need to compare the values and
-+	 * then update either the local or the remote side. So the
-+	 * cmpxchg64 below only protects one readout.
-+	 *
-+	 * We must reread via sched_clock_local() in the retry case on
-+	 * 32bit as an NMI could use sched_clock_local() via the
-+	 * tracer and hit between the readout of
-+	 * the low32bit and the high 32bit portion.
-+	 */
-+	this_clock = sched_clock_local(my_scd);
-+	/*
-+	 * We must enforce atomic readout on 32bit, otherwise the
-+	 * update on the remote cpu can hit inbetween the readout of
-+	 * the low32bit and the high 32bit portion.
-+	 */
-+	remote_clock = cmpxchg64(&scd->clock, 0, 0);
-+#else
-+	/*
-+	 * On 64bit the read of [my]scd->clock is atomic versus the
-+	 * update, so we can avoid the above 32bit dance.
-+	 */
- 	sched_clock_local(my_scd);
- again:
- 	this_clock = my_scd->clock;
- 	remote_clock = scd->clock;
-+#endif
+-	if (pgd_none(*pgd))
++	if (pgd_none(*pgd)) {
+ 		set_pgd(pgd, *pgd_ref);
+-	else
++		arch_flush_lazy_mmu_mode();
++	} else {
+ 		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
++	}
  
  	/*
- 	 * Use the opportunity that we have both locks
+ 	 * Below here mismatches are bugs because these lower tables
 
 
