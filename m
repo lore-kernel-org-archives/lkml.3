@@ -1,99 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934919Ab3DOXg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 19:36:59 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:64633 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595Ab3DOXg6 (ORCPT
+	id S935158Ab3DOXho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 19:37:44 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43483 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934997Ab3DOXhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 19:36:58 -0400
-Date: Tue, 16 Apr 2013 01:36:54 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Maneesh Soni <maneesh@linux.vnet.ibm.com>,
-        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] ptrace/x86: simplify ptrace_write_dr7()
-Message-ID: <20130415233652.GE17561@somewhere.redhat.com>
-References: <20130414191205.GA28791@redhat.com>
+	Mon, 15 Apr 2013 19:37:43 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <516C8F23.7050209@jp.fujitsu.com>
+Date: Tue, 16 Apr 2013 08:37:07 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130414191205.GA28791@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <wency@cn.fujitsu.com>, <toshi.kani@hp.com>
+Subject: Re: [PATCH] firmware, memmap: fix firmware_map_entry leak
+References: <516B94A1.4040603@jp.fujitsu.com> <516BC25B.9090708@cn.fujitsu.com>
+In-Reply-To: <516BC25B.9090708@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 14, 2013 at 09:12:05PM +0200, Oleg Nesterov wrote:
-> Hello.
+2013/04/15 18:03, Tang Chen wrote:
 > 
-> On top of "[PATCH 0/5] kill ptrace_{get,put}_breakpoints()".
-> Cleanup and preparation for the potential fix, see below.
-> 
-> ------------------------------------------------------------------------------
-> Now the question. Initially I was going to make more patches
-> and fix the regression introduced by 24f1e32c (although I am
-> not 100% sure which exactly patch should be blamed).
-> 
-> See https://bugzilla.redhat.com/show_bug.cgi?id=660204 for
-> details.
+> Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 
-Oh I missed that.
+Thank you for your review.
+
+Thanks,
+Yasuaki Ishimatsu
 
 > 
-> ptrace_write_dr7() does not create bp if it is zero, the comment
-> says:
+> Thanks. :)
 > 
-> 	/*
-> 	 * We should have at least an inactive breakpoint at
-> 	 * this slot. It means the user is writing dr7 without
-> 	 * having written the address register first.
-> 	 */
->                                                                                                     
-> and this looks logical. However, at least until 72f674d2
-> ptrace_set_debugreg(n => 7) worked even if addr wasn't set
-> by ptrace_set_debugreg(n => 0|1|2|3) before.
-> 
-> And note that ptrace_get_debugreg() does not fail if !ptrace_bps[n],
-> it just returns zero as if the address register was written. And
-> there is no way to know if address was actually set, not good and
-> not consistent.
+> On 04/15/2013 01:48 PM, Yasuaki Ishimatsu wrote:
+>> When hot removing a memory, a firmware_map_entry which has memory range
+>> of the memory is released by release_firmware_map_entry(). If the entry
+>> is allocated by bootmem, release_firmware_map_entry() adds the entry to
+>> map_entires_bootmem list when firmware_map_find_entry() finds the entry
+>> from map_entries list. But firmware_map_find_entry never find the entry
+>> sicne map_entires list does not have the entry. So the entry just leaks.
+>>
+>> Here are steps of leaking firmware_map_entry:
+>> firmware_map_remove()
+>> ->  firmware_map_find_entry()
+>>      Find released entry from map_entries list
+>> ->  firmware_map_remove_entry()
+>>      Delete the entry from map_entries list
+>> ->  remove_sysfs_fw_map_entry()
+>>      ...
+>>      ->  release_firmware_map_entry()
+>>         ->  firmware_map_find_entry()
+>>            Find the entry from map_entries list but the entry has been
+>>            deleted from map_entries list. So the entry is not added
+>>            to map_entries_bootmem. Thus the entry leaks
+>>
+>> release_firmware_map_entry() should not call firmware_map_find_entry()
+>> since releaed entry has been deleted from map_entries list.
+>> So the patch delete firmware_map_find_entry() from releae_firmware_map_entry()
+>>
+>> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+>> ---
+>>    drivers/firmware/memmap.c |    9 +++------
+>>    1 files changed, 3 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
+>> index 0b5b5f6..e2e04b0 100644
+>> --- a/drivers/firmware/memmap.c
+>> +++ b/drivers/firmware/memmap.c
+>> @@ -114,12 +114,9 @@ static void __meminit release_firmware_map_entry(struct kobject *kobj)
+>>    		 * map_entries_bootmem here, and deleted from&map_entries in
+>>    		 * firmware_map_remove_entry().
+>>    		 */
+>> -		if (firmware_map_find_entry(entry->start, entry->end,
+>> -		    entry->type)) {
+>> -			spin_lock(&map_entries_bootmem_lock);
+>> -			list_add(&entry->list,&map_entries_bootmem);
+>> -			spin_unlock(&map_entries_bootmem_lock);
+>> -		}
+>> +		spin_lock(&map_entries_bootmem_lock);
+>> +		list_add(&entry->list,&map_entries_bootmem);
+>> +		spin_unlock(&map_entries_bootmem_lock);
+>>
+>>    		return;
+>>    	}
+>>
+>>
 
-Indeed.
 
-Looking at the bug report, it seems they only reproduced with a homemade
-test. No real app has reported that issue?
-
-Now I guess this is irrelevant. It indeed seems to me saner to be
-consistent with regs read like you are pointing out. And that ABI
-breakage makes me uncomfortable, even though we haven't heard about
-real breakage yet.
-
-> 
-> Jan, Frederic, et all. What do you think we should do?
-> 
-> 	1. Change ptrace_write_dr7() to do register_user_hw_breakpoint()
-> 	   if necessary.
-> 
-> 	   This is what I was going to do, but I am no longer sure
-> 	   we want this. For what? Unlikely it is very useful to use
-> 	   the "default" addr == 0 for debugging.
-
-So you mean assume that the addr is 0 in dr[0-3] if we write dr7 before writing
-the addr register?
-
-Yes, I'm convinced that's the right direction!
-
-> 
-> 	2. Change ptrace_get_debugreg(0-4) to return -ESOMETHING if
-> 	   ptrace_bps[n] == NULL.
-> 
-> 	   This will match ptrace_set_debugreg(), but this can break
-> 	   something else...
-
-Yeah that would be worse, and I'm sure that breaks existing apps :)
-
-Thanks!
