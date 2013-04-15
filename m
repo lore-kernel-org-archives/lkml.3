@@ -1,99 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab3DOK1T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 06:27:19 -0400
-Received: from 8.mo3.mail-out.ovh.net ([87.98.172.249]:51532 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751528Ab3DOK1S (ORCPT
+	id S1754118Ab3DOK14 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 06:27:56 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:52823 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab3DOK1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 06:27:18 -0400
-Date: Mon, 15 Apr 2013 12:14:04 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Tony Lindgren <tony@atomide.com>, linux-doc@vger.kernel.org,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>, Russ Dill <Russ.Dill@ti.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Matt Porter <mporter@ti.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-omap@vger.kernel.org, Matt Ranostay <mranostay@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Rob Clark <robdclark@gmail.com>,
-        Joel A Fernandes <agnel.joel@gmail.com>
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: Re: [PATCH 1/5] capemgr: Beaglebone DT overlay based cape manager
-Message-ID: <20130415101404.GA1952@game.jcrosoft.org>
-References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com>
- <93BF5C62-ADE8-4EFC-9175-C2D7E43300E3@antoniou-consulting.com>
- <20130107210551.GL14149@atomide.com>
- <201301072135.05166.arnd@arndb.de>
+	Mon, 15 Apr 2013 06:27:54 -0400
+Date: Mon, 15 Apr 2013 12:27:50 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 4/4] nohz: New option to force all CPUs in full dynticks
+ range
+Message-ID: <20130415102750.GE18024@gmail.com>
+References: <20130328074507.GC24433@gmail.com>
+ <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com>
+ <20130330091037.GA31743@gmail.com>
+ <0000013dea26b171-8095c339-dc81-4459-a3ad-a8d69c803448-000000@email.amazonses.com>
+ <20130411151956.GF15699@somewhere>
+ <20130411153721.GA3742@linux.vnet.ibm.com>
+ <20130411155349.GA16797@somewhere.redhat.com>
+ <0000013df9f8d526-2783fba3-4dc9-44c6-8b02-2c321eb5b37b-000000@email.amazonses.com>
+ <20130411170420.GA17129@somewhere.redhat.com>
+ <0000013dfef98b2d-ed5980b1-86ff-47de-8aa1-fd7fdd02f034-000000@email.amazonses.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201301072135.05166.arnd@arndb.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 15275646986166119172
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.500008/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeifedrudeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <0000013dfef98b2d-ed5980b1-86ff-47de-8aa1-fd7fdd02f034-000000@email.amazonses.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21:35 Mon 07 Jan     , Arnd Bergmann wrote:
-> (Adding Sascha Hauer, Linus Walleij, Lee Jones to Cc)
-> 
-> On Monday 07 January 2013, Tony Lindgren wrote:
-> > > 
-> > > At the end of the line, some kind of hardware glue is going to be needed.
-> > > 
-> > > I just feel that drawing from a sample size of 1 (maybe 2 if I get to throw
-> > > in the beagleboard), it is a bit premature to think about making it overly
-> > > general, besides the part that are obviously part of the infrastructure 
-> > > (like the DT overlay stuff).
-> > > 
-> > > What I'm getting at, is that we need some user experience about this, before
-> > > going away and creating structure out of possible misconception about the uses. 
-> > 
-> > IMHO stuff like this will be needed by many SoCs. Some examples of similar
-> > things for omaps that have eventually become generic frameworks have been
-> > the clock framework, USB OTG support, runtime PM, pinmux framework and
-> > so on.
-> > 
-> > So I suggest a minimal generic API from the start as that will make things
-> > a lot easier in the long run.
-> 
-> I agree. The ux500 platform already has the concept of "user interface boards",
-> which currently is not well integrated into devicetree. I believe Sascha
-> mentioned that Pengutronix had been shipping some other systems with add-on
-> boards and generating device tree binaries from source for each combination.
-> 
-> Ideally, both of the above should be able to use the same DT overlay logic
-> as BeagleBone, and I'm sure there are more of those.
-I'm looking for this also as on at91 sama9x5ek and sam9cn12ek and the
-sama5d3xek, we have 1 wire eeproms to detect the boards (motherboards and
-daugther boards)
-where we have 1 1-wire per board and cpu boards so we can detect everything
-and have it's revision and more information
 
-we already have barebox that detect the 1-wire but we need the same handling
-in the kernel
+* Christoph Lameter <cl@linux.com> wrote:
 
-Best Regards,
-J.
+> On Thu, 11 Apr 2013, Frederic Weisbecker wrote:
 > 
-> 	Arnd
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+> > It may be too general for a naming. But I don't mind just selecting 
+> > CONFIG_RCU_NOCBS_ALL unconditionally. It's easily changed in the future if 
+> > anybody complains.
+> 
+> 
+> I like the general nature of that config option since it removes the need to 
+> configure all the details. For an average user the current sets of options must 
+> look pretty complicated.
+
+Yes.
+
+It's not just complicated but also fragile and time consuming: as new kernel 
+options arrive you'd always have to be very careful with 'make oldconfig' and make 
+sure you pick up the best options for latency.
+
+Instead what we want is generally a high level knob that documents user preference 
+and then the kernel config language can do the rest.
+
+> > > Btw, if CONFIG_RCU_NOCBS_ALL isset, the rcu_nocbs= parameter is ignored, 
+> > > right? If you want to keep that direction and not override the Kconfig 
+> > > choice, may be warn the user about that if the boot parameter is passed?
+> 
+> Ok. But all these complicated things would go away if we had an option
+> CONFIG_LOWLATENCY and then everything would just follow the best setup
+> possible given the hardware. Would remove a lot of guesswork and a lot of
+> knobs.
+
+In that sense CONFIG_NO_HZ_FULL is such a flag as well, which, like 
+CONFIG_PREEMPT_RT, tries to preconfigure the kernel correctly.
+
+But we have to be careful not to use a too highlevel flag for that. If the user 
+meant 'low latency' to mean 'low latency IRQ execution' - then enabling 
+CONFIG_NO_HZ_FULL might achieve the opposite, it adds overhead to the IRQ paths.
+
+Thanks,
+
+	Ingo
