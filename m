@@ -1,140 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab3DOLeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 07:34:25 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:60524 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab3DOLeV (ORCPT
+	id S1751296Ab3DOLeX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 07:34:23 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:48144 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751018Ab3DOLeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Apr 2013 07:34:21 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3 1/6] drivers: phy: add generic PHY framework
-To: Kishon Vijay Abraham I <kishon@ti.com>, balbi@ti.com,
-        gregkh@linuxfoundation.org, arnd@arndb.de, akpm@linux-foundation.org,
-        rob@landley.net
-Cc: davem@davemloft.net, cesarb@cesarb.net, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tony@atomide.com, rob.herring@calxeda.com, b-cousson@ti.com,
-        linux@arm.linux.org.uk, eballetbo@gmail.com, javier@dowhile0.org,
-        kishon@ti.com, mchehab@redhat.com, santosh.shilimkar@ti.com,
-        broonie@opensource.wolfsonmicro.com, swarren@nvidia.com,
-        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1363770725-13717-2-git-send-email-kishon@ti.com>
-References: <1363770725-13717-1-git-send-email-kishon@ti.com> <1363770725-13717-2-git-send-email-kishon@ti.com>
-Date: Mon, 15 Apr 2013 12:34:16 +0100
-Message-Id: <20130415113416.7C3943E0AA8@localhost>
+Message-ID: <516BE5AE.3020703@stericsson.com>
+Date: Mon, 15 Apr 2013 13:34:06 +0200
+From: =?ISO-8859-1?Q?Bengt_J=F6nsson?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: ab8500: Fix get_mode for shared mode regulators
+References: <1365424274.21989.2.camel@phoenix> <516BB444.7010508@stericsson.com> <CAFRkauDHn88Y8cAemTNVCXW6WUVqvFfhw1iY174nepNymiU8Nw@mail.gmail.com> <CAFRkauDhqwcHtJU_uBf8wMmKr8DohHZnU6DNPBnzZhTp9-eBfg@mail.gmail.com>
+In-Reply-To: <CAFRkauDhqwcHtJU_uBf8wMmKr8DohHZnU6DNPBnzZhTp9-eBfg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 20 Mar 2013 14:42:00 +0530, Kishon Vijay Abraham I <kishon@ti.com> wrote:
-> The PHY framework provides a set of APIs for the PHY drivers to
-> create/destroy a PHY and APIs for the PHY users to obtain a reference to the
-> PHY with or without using phandle. To obtain a reference to the PHY without
-> using phandle, the platform specfic intialization code (say from board file)
-> should have already called phy_bind with the binding information. The binding
-> information consists of phy's device name, phy user device name and an index.
-> The index is used when the same phy user binds to mulitple phys.
-> 
-> PHY drivers should create the PHY by passing phy_descriptor that has
-> describes the PHY (label, type etc..) and ops like init, exit, suspend, resume,
-> poweron, shutdown.
-> 
-> The documentation for the generic PHY framework is added in
-> Documentation/phy.txt and the documentation for the sysfs entry is added
-> in Documentation/ABI/testing/sysfs-class-phy.
-> 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+On 04/15/2013 10:50 AM, Axel Lin wrote:
+>> My understanding is for shared mode regulators:
+>> It can be in LP mode only when *BOTH* are in LP mode.
+>> If only one of the regulator in HP mode, then *BOTH* should be in HP mode.
+>> Did I misunderstand something?
+Your understanding is correct.
+> Let me put this issue this way:
+>
+> Current code behavior:
+> get_mode() returns IDLE if only one lp_mode_req flag is true, but mode
+> register value is HP.
+>
+> AB8540_LDO_ANAMIC1      AB8540_LDO_ANAMIC2      mode register
+> get_mode() returns
+> lp_mode_req=true        lp_mode_req=true        HP
+> REGULATOR_MODE_NORMAL
+> lp_mode_req=true        lp_mode_req=false       HP
+> REGULATOR_MODE_IDLE
+> lp_mode_req=false       lp_mode_req=true        HP
+> REGULATOR_MODE_IDLE
+> lp_mode_req=false       lp_mode_req=false       LP
+> REGULATOR_MODE_IDLE
+I think it looks like this:
 
-Hi Kishon,
+AB8540_LDO_ANAMIC1      AB8540_LDO_ANAMIC2      mode register
+get_mode() returns
+lp_mode_req=true        lp_mode_req=true        LP
+REGULATOR_MODE_IDLE     REGULATOR_MODE_IDLE
+lp_mode_req=true        lp_mode_req=false       HP
+REGULATOR_MODE_IDLE     REGULATOR_MODE_NORMAL
+lp_mode_req=false       lp_mode_req=true        HP
+REGULATOR_MODE_NORMAL   REGULATOR_MODE_IDLE
+lp_mode_req=false       lp_mode_req=false       HP
+REGULATOR_MODE_NORMAL   REGULATOR_MODE_NORMAL
 
-For review purposes, I'll skip most of the implementation and focus on
-the data structures. I think you need to take another look at the
-approach your using. The kernel already provides a lot of support for
-implementing devices and binding them to drivers that you should be
-able to use...
+> with this path:
+> mode register value is consistent with get_mode().
+>
+> AB8540_LDO_ANAMIC1      AB8540_LDO_ANAMIC2      mode register
+> get_mode() returns
+> lp_mode_req=true        lp_mode_req=true        HP
+> REGULATOR_MODE_NORMAL
+> lp_mode_req=true        lp_mode_req=false       HP
+> REGULATOR_MODE_NORMAL
+> lp_mode_req=false       lp_mode_req=true        HP
+> REGULATOR_MODE_NORMAL
+> lp_mode_req=false       lp_mode_req=false       LP
+> REGULATOR_MODE_IDLE
+
+And like this:
+
+AB8540_LDO_ANAMIC1      AB8540_LDO_ANAMIC2      mode register
+get_mode() returns
+lp_mode_req=true        lp_mode_req=true        LP
+REGULATOR_MODE_IDLE     REGULATOR_MODE_IDLE
+lp_mode_req=true        lp_mode_req=false       HP
+REGULATOR_MODE_NORMAL   REGULATOR_MODE_NORMAL
+lp_mode_req=false       lp_mode_req=true        HP
+REGULATOR_MODE_NORMAL   REGULATOR_MODE_NORMAL
+lp_mode_req=false       lp_mode_req=false       HP
+REGULATOR_MODE_NORMAL   REGULATOR_MODE_NORMAL
 
 
-[...]
-> +/**
-> + * struct phy - represent the phy device
-> + * @dev: phy device
-> + * @label: label given to phy
-> + * @type: specifies the phy type
-> + * @of_node: device node of the phy
-> + * @ops: function pointers for performing phy operations
-> + */
-> +struct phy {
-> +	struct device		dev;
-> +	const char		*label;
-> +	int			type;
-> +	struct bus_type		*bus;
-> +	struct device_node	*of_node;
-> +	struct phy_ops		*ops;
-> +};
+I guess what you don't like with the current approach is that the driver returns REGULATOR_MODE_IDLE in some cases where the mode register is set to LP. But I think, with patch applied, the control may be wrong in some cases because the regulator framework will call get_mode and see that the mode is already correct and not call set_mode so lp_mode_req will not get updated. I realised my previous example was incorrect so here I describe another example:
 
-Alright, so the core of the functionality is this 'struct phy' which
-tracks all the instances of PHY devices. As I understand it each
-physical phy will have a 'struct phy' instance tracking it. That makes
-sense.
+0. Start condition:
+ANAMIC1 is requested in LP mode (lp_mode_req=true) and ANAMIC2 is requested in HP mode (lp_mode_req=false).
+So the mode register is set to HP.
 
-struct phy embeds a struct device. Also good. The linux driver model
-knows all about devices and how to handle them. However, most of the
-rest of this structure looks to be reinventing stuff the driver model
-already does.
+1. Now ANAMIC1 is requested to HP mode from consumer side. The regulator framework checks the current mode with get_mode which returns HP. So the regulator framework returns without calling set_mode because the mode is already correct.
+For ANAMIC1 lp_mode_req=true and for ANAMIC2 lp_mode_req=false (still).
+The mode register will be correct at HP.
 
-'label' seems unnecessary. struct device embeds a struct kobject, which
-means it has a name and shows up in sysfs. Is there a reason that the
-device name cannot be used directly?
+2. If ANAMIC2 is now requested to LP mode from consumer side, the regulator framework calls get_mode which returns HP, so the framework calls set_mode.
+In set_mode, the function checks the other regulator's status which is lp_mode_req=true. So the function will continue and set the regulator in LP mode even if it should not be.
 
-'type' I just don't understand. I don't see any users of it in this
-patch. I only see where it is set.
+Bengt
 
-'bus' absolutely should not be here. The bus type should be set in the
-struct device by this subsystem when the device gets registered. There
-is no reason to have a pointer to it here.
-
-'of_node' is already in struct device
-
-Finally, it really doesn't look right for a device object to have an
-'ops' structure. The whole point of the driver model is that a struct
-device doesn't encapsulate any behaviour. A device gets registers to a
-bus type, and then the driver core will associate a struct device_driver
-to a device that it is able to drive, and the struct device_driver is
-supposed to contain any ops structure used to control the device.
-
-> +
-> +/**
-> + * struct phy_bind - represent the binding for the phy
-> + * @dev_name: the device name of the device that will bind to the phy
-> + * @phy_dev_name: the device name of the phy
-> + * @index: used if a single controller uses multiple phys
-> + * @auto_bind: tells if the binding is done explicitly from board file or not
-> + * @phy: reference to the phy
-> + * @list: to maintain a linked list of the binding information
-> + */
-> +struct phy_bind {
-> +	const char	*dev_name;
-> +	const char	*phy_dev_name;
-> +	int		index;
-> +	int		auto_bind:1;
-> +	struct phy	*phy;
-> +	struct list_head list;
-> +};
-
-How are PHYs attached to the system. Would the PHY be a direct child of
-the host controller device, or would a PHY hang off another bus (like
-i2c) for control? (this is how Ethernet phys work; they hang off the
-MDIO bus, but may be attached to any Ethernet controller).
-
-Since there is at most a 1:N relationship between host controllers and
-PHYs, there shouldn't be any need for a separate structure to describe
-binding. Put the inding data into the struct phy itself. Each host
-controller can have a list of phys that it is bound to.
-
-Tring to maintain a separate global list of PHY bindings isn't a good
-idea. Keep it local to the host controller and the specific phys
-instead.
-
-g.
