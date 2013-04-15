@@ -1,62 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965003Ab3DPQhO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:37:14 -0400
-Received: from 8bytes.org ([85.214.48.195]:45896 "EHLO mail.8bytes.org"
+	id S965036Ab3DPQhv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:37:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42081 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935552Ab3DPQhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:37:12 -0400
-Date: Tue, 16 Apr 2013 18:37:05 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <arekm@maven.pl>
-Subject: Re: [PATCH v9] irq: add quirk for broken interrupt remapping on 55XX
- chipsets
-Message-ID: <20130416163705.GT6858@8bytes.org>
-References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
- <1366065677-3431-1-git-send-email-nhorman@tuxdriver.com>
- <20130416102454.GS6858@8bytes.org>
- <20130416133555.GB9241@hmsreliant.think-freely.org>
+	id S936065Ab3DPQg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 12:36:26 -0400
+Date: Mon, 15 Apr 2013 13:59:33 +0200
+From: Jan Kara <jack@suse.cz>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 2/3] fsfreeze: added new file_start_write_killable
+Message-ID: <20130415115933.GC2299@quack.suse.cz>
+References: <51693542.6080808@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130416133555.GB9241@hmsreliant.think-freely.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Apr 16 18:37:08 2013
-X-DSPAM-Confidence: 0.9994
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 516d7e3423672144916604
+In-Reply-To: <51693542.6080808@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 09:35:56AM -0400, Neil Horman wrote:
-> Actually, hold on that last note, the intel iommu init code doesn't seem to
-> create any direct relationship between the set of iommu's and the pci_dev's that
-> implement them.  In the intel_irq_remapping_supported path I can loop over each
-> dmar_dhrd_unit, and interrogate each of the devices on its **devices list to see
-> if the device/vendor and revision ids match, but looking at the dhrd parsing
-> code, I'm not sure the iommu pci_dev is always going to be on that list.  That
-> seems like its going to be pretty ugly in and of itself.  Do you have a
-> suggested way to identify the pci_dev of the device we need in that path without
-> having to simply iterate over every device in that scope?
+On Sat 13-04-13 12:36:50, Marco Stornelli wrote:
+> Replace file_start_write with file_start_write_killable where
+> possible.
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-Hmkay, looks like this is a non-trivial problem. Here is what I suggest:
-Keep the early-quirk as in your current patch. But add a function to
-drivers/iommu/irq_remapping.c to disable irq-remapping and export that
-function via the header-file arch/x86/include/asm/irq_remapping.h. Use
-that function in the quirk instead of setting the disable-flag directly.
-This way you don't have to include any private header file from iommu
-code.
+								Honza
 
-
-	Joerg
-
-
+> 
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> ---
+>  drivers/block/loop.c |    4 +++-
+>  fs/aio.c             |    7 +++++--
+>  fs/coda/file.c       |    4 +++-
+>  fs/read_write.c      |   28 +++++++++++++++++-----------
+>  fs/splice.c          |    4 +++-
+>  include/linux/fs.h   |   17 +++++++++++++++++
+>  6 files changed, 48 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+> index be9a101..2c0d0a3 100644
+> --- a/drivers/block/loop.c
+> +++ b/drivers/block/loop.c
+> @@ -230,7 +230,9 @@ static int __do_lo_send_write(struct file *file,
+>  	ssize_t bw;
+>  	mm_segment_t old_fs = get_fs();
+>  
+> -	file_start_write(file);
+> +	bw = file_start_write_killable(file);
+> +	if (bw < 0)
+> +		return bw;
+>  	set_fs(get_ds());
+>  	bw = file->f_op->write(file, buf, len, &pos);
+>  	set_fs(old_fs);
+> diff --git a/fs/aio.c b/fs/aio.c
+> index 5b7ed78..5deddf5 100644
+> --- a/fs/aio.c
+> +++ b/fs/aio.c
+> @@ -1103,8 +1103,11 @@ static ssize_t aio_rw_vect_retry(struct kiocb *iocb, int rw, aio_rw_op *rw_op)
+>  	if (iocb->ki_pos < 0)
+>  		return -EINVAL;
+>  
+> -	if (rw == WRITE)
+> -		file_start_write(file);
+> +	if (rw == WRITE) {
+> +		ret = file_start_write_killable(file);
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+>  	do {
+>  		ret = rw_op(iocb, &iocb->ki_iovec[iocb->ki_cur_seg],
+>  			    iocb->ki_nr_segs - iocb->ki_cur_seg,
+> diff --git a/fs/coda/file.c b/fs/coda/file.c
+> index 380b798..c5708d0 100644
+> --- a/fs/coda/file.c
+> +++ b/fs/coda/file.c
+> @@ -79,7 +79,9 @@ coda_file_write(struct file *coda_file, const char __user *buf, size_t count, lo
+>  		return -EINVAL;
+>  
+>  	host_inode = file_inode(host_file);
+> -	file_start_write(host_file);
+> +	ret = file_start_write_killable(host_file);
+> +	if (ret < 0)
+> +		return ret;
+>  	mutex_lock(&coda_inode->i_mutex);
+>  
+>  	ret = host_file->f_op->write(host_file, buf, count, ppos);
+> diff --git a/fs/read_write.c b/fs/read_write.c
+> index 7eb7ef3..ed9006f 100644
+> --- a/fs/read_write.c
+> +++ b/fs/read_write.c
+> @@ -438,17 +438,19 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
+>  	ret = rw_verify_area(WRITE, file, pos, count);
+>  	if (ret >= 0) {
+>  		count = ret;
+> -		file_start_write(file);
+> -		if (file->f_op->write)
+> -			ret = file->f_op->write(file, buf, count, pos);
+> -		else
+> -			ret = do_sync_write(file, buf, count, pos);
+> +		ret = file_start_write_killable(file);
+>  		if (ret > 0) {
+> -			fsnotify_modify(file);
+> -			add_wchar(current, ret);
+> +			if (file->f_op->write)
+> +				ret = file->f_op->write(file, buf, count, pos);
+> +			else
+> +				ret = do_sync_write(file, buf, count, pos);
+> +			if (ret > 0) {
+> +				fsnotify_modify(file);
+> +				add_wchar(current, ret);
+> +			}
+> +			inc_syscw(current);
+> +			file_end_write(file);
+>  		}
+> -		inc_syscw(current);
+> -		file_end_write(file);
+>  	}
+>  
+>  	return ret;
+> @@ -718,7 +720,9 @@ static ssize_t do_readv_writev(int type, struct file *file,
+>  	} else {
+>  		fn = (io_fn_t)file->f_op->write;
+>  		fnv = file->f_op->aio_write;
+> -		file_start_write(file);
+> +		ret = file_start_write_killable(file);
+> +		if (ret < 0)
+> +			goto out;
+>  	}
+>  
+>  	if (fnv)
+> @@ -898,7 +902,9 @@ static ssize_t compat_do_readv_writev(int type, struct file *file,
+>  	} else {
+>  		fn = (io_fn_t)file->f_op->write;
+>  		fnv = file->f_op->aio_write;
+> -		file_start_write(file);
+> +		ret = file_start_write_killable(file);
+> +		if (ret < 0)
+> +			goto out;
+>  	}
+>  
+>  	if (fnv)
+> diff --git a/fs/splice.c b/fs/splice.c
+> index e6b2559..b37c30e 100644
+> --- a/fs/splice.c
+> +++ b/fs/splice.c
+> @@ -1115,7 +1115,9 @@ static long do_splice_from(struct pipe_inode_info *pipe, struct file *out,
+>  	else
+>  		splice_write = default_file_splice_write;
+>  
+> -	file_start_write(out);
+> +	ret = file_start_write_killable(out);
+> +	if (ret < 0)
+> +		return ret;
+>  	ret = splice_write(pipe, out, ppos, len, flags);
+>  	file_end_write(out);
+>  	return ret;
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index c8b7325..998ec2a 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1404,6 +1404,16 @@ static inline void sb_start_write(struct super_block *sb)
+>  	__sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_WAIT);
+>  }
+>  
+> +/**
+> + * sb_start_write_killable - get write access to a superblock
+> + * @sb: the super we write to
+> + *
+> + */
+> +static inline int sb_start_write_killable(struct super_block *sb)
+> +{
+> +	return __sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_WAIT_KILLABLE);
+> +}
+> +
+>  static inline int sb_start_write_trylock(struct super_block *sb)
+>  {
+>  	return __sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_NOWAIT);
+> @@ -2227,6 +2237,13 @@ static inline struct inode *file_inode(struct file *f)
+>  	return f->f_inode;
+>  }
+>  
+> +static inline int file_start_write_killable(struct file *file)
+> +{
+> +	if (!S_ISREG(file_inode(file)->i_mode))
+> +		return 1;
+> +	return sb_start_write_killable(file_inode(file)->i_sb);
+> +}
+> +
+>  static inline void file_start_write(struct file *file)
+>  {
+>  	if (!S_ISREG(file_inode(file)->i_mode))
+> -- 
+> 1.7.3.4
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
