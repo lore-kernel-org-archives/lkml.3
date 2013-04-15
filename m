@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab3DOBvU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 21:51:20 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:43959 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752753Ab3DOBvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 21:51:18 -0400
-Message-ID: <1365990674.1878.21.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] hfs/hfsplus: Convert dprint to hfs_dbg
-From: Joe Perches <joe@perches.com>
-To: htl10@users.sourceforge.net
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 14 Apr 2013 18:51:14 -0700
-In-Reply-To: <1365987181.4850.YahooMailClassic@web172306.mail.ir2.yahoo.com>
-References: <1365987181.4850.YahooMailClassic@web172306.mail.ir2.yahoo.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754688Ab3DOBwR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 21:52:17 -0400
+Received: from mail-vb0-f65.google.com ([209.85.212.65]:34191 "EHLO
+	mail-vb0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603Ab3DOBwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 21:52:15 -0400
+X-Greylist: delayed 4092 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Apr 2013 21:52:15 EDT
+MIME-Version: 1.0
+Date: Sun, 14 Apr 2013 17:44:02 -0700
+Message-ID: <CAJ3m7BpZkbGS6+Qhn_KMN1z0bA+8Czf3D6cbC1B8_0fdFjcPvA@mail.gmail.com>
+Subject: [PATCH mainline] btrfs: fix minor typo in comment
+From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+To: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org
+Cc: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, torvalds@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-15 at 01:53 +0100, Hin-Tak Leung wrote:
-> --- On Mon, 8/4/13, Joe Perches <joe@perches.com> wrote:
-> > Use a more current logging style.
-[]
-> I have been sitting on a patch which changes this part of the code to dynamic debugging, and it is much simplier. Just:
-> #define dprint(flg, fmt, args...) \
-> -       if (flg & DBG_MASK) \
-> -               printk(fmt , ## args)
-> +               pr_debug(fmt , ## args)
+In the comment describing the sync_writers field of the btrfs_inode
+struct, "fsyncing" was misspelled "fsycing."
 
-This change wouldn't work well as it would make a mess
-of output that uses no prefix (ie: emits at KERN_DEFAULT)
-with output that uses KERN_DEBUG
+Signed-off-by: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+---
+diff --git a/fs/btrfs/btrfs_inode.h b/fs/btrfs/btrfs_inode.h
+index d9b97d4..08b286b 100644
+--- a/fs/btrfs/btrfs_inode.h
++++ b/fs/btrfs/btrfs_inode.h
+@@ -93,7 +93,7 @@ struct btrfs_inode {
 
-That's the reason for _dbg and _dbg_cont.
+  unsigned long runtime_flags;
 
+- /* Keep track of who's O_SYNC/fsycing currently */
++ /* Keep track of who's O_SYNC/fsyncing currently */
+  atomic_t sync_writers;
 
+  /* full 64 bit generation number, struct vfs_inode doesn't have a big
