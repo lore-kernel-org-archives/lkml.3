@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935199Ab3DOVq3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 17:46:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32984 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935176Ab3DOVq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 17:46:26 -0400
-Message-ID: <516C751B.4020505@zytor.com>
-Date: Mon, 15 Apr 2013 14:46:03 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S935175Ab3DOVrM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 17:47:12 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:61217 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754753Ab3DOVrL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 17:47:11 -0400
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Eric Northup <digitaleric@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
-References: <1365797627-20874-1-git-send-email-keescook@chromium.org> <1365797627-20874-7-git-send-email-keescook@chromium.org> <CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com> <516A1D49.1050100@zytor.com> <CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com> <516C702C.2030209@zytor.com> <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
-In-Reply-To: <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1366058481-21033-1-git-send-email-ccross@android.com>
+References: <1366058481-21033-1-git-send-email-ccross@android.com>
+Date: Mon, 15 Apr 2013 14:47:10 -0700
+X-Google-Sender-Auth: C6nSUxUUOx6zK8-BBi2XmeDedqY
+Message-ID: <CAMbhsRT08Li=P0GnbW-XdwyDSFtOfbr2MiTLeh-DduMOx-g=zw@mail.gmail.com>
+Subject: Re: [PATCH] fuse: use kernel headers when __KERNEL__ is set
+From: Colin Cross <ccross@android.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Colin Cross <ccross@android.com>, Miklos Szeredi <miklos@szeredi.hu>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 02:41 PM, Kees Cook wrote:
->>
->> You seem to be missing something here...
->>
->> There are *two* mappings in 64-bit mode.  Physically, if you're going to
->> randomize you might as well randomize over the entire range... except
->> not too far down (on either 32 or 64 bit mode)... in particular, you
->> don't want to drop below 16 MiB if you can avoid it.
->>
->> On 64 bits, there is no reason the virtual address has to be randomized
->> the same way.
-> 
-> Aren't we bound by the negative 2GB addressing due to -mcmodel=kernel?
-> 
+On Mon, Apr 15, 2013 at 1:41 PM, Colin Cross <ccross@android.com> wrote:
+> Commit 7e98d53086d18c877cb44e9065219335184024de (Synchronize fuse
+> header with one used in library) added #ifdef __linux__ around
+> defines if it is not set.  The kernel build is self-contained and
+> can be built on non-Linux toolchains.  After the mentioned commit
+> builds on non-Linux toolchains will try to include stdint.h and
+> fail due to -nostdinc, and then fail with a bunch of undefined
+> type errors.
+>
+> Change the #ifdef to check for __linux__ or __KERNEL__ so that
+> it uses the kernel typedefs if __KERNEL__ is set.
+>
+> Signed-off-by: Colin Cross <ccross@android.com>
+> ---
+> I think this should go in v3.9, without it bare-metal toolchains
+> that don't define __linux__ will fail to compile the kernel, and
+> cross-compiles from non-linux hosts will probably also fail.
 
-Guys,
-
-Please read what I wrote.
-
-The 2 GB limit is for the *virtual* mapping.
-
-The *physical* mapping, where it lands in RAM, is completely
-independent, and if you're going to randomize the latter, there is no
-reason it has to match the former.  Instead, randomize it freely.
-
-That is different from the i386 kernel which runs at its
-physical-mapping address.
-
-Incidentally, for performance reasons please avoid locating the kernel
-below CONFIG_PHYSICAL_ADDRESS if possible.
-
-Also make sure your code works with more than 128 e820 entries.
-
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Miklos, I see Arve sent an equivalent patch to you a month ago
+(https://lkml.org/lkml/2013/3/11/620), and I agree with his response
+to your question (checking for __linux__ and __KERNEL__ is better than
+just checking for __KERNEL__ if you want this header to be used in
+userspace builds on linux targets).  Can you pull one of these two
+patches before 3.9?
