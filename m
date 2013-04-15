@@ -1,170 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab3DONGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 09:06:18 -0400
-Received: from fieldses.org ([174.143.236.118]:45334 "EHLO fieldses.org"
+	id S1752607Ab3DONG6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 09:06:58 -0400
+Received: from david.siemens.de ([192.35.17.14]:20453 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750739Ab3DONGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 09:06:16 -0400
-Date: Mon, 15 Apr 2013 09:06:14 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nfsd4: Fix NULL dereference in legacy_recdir_name_error()
-Message-ID: <20130415130614.GA20479@fieldses.org>
-References: <s5hfvz71swh.wl%tiwai@suse.de>
- <20130403182410.GC6044@fieldses.org>
- <s5hr4icvutg.wl%tiwai@suse.de>
+	id S1751533Ab3DONG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 09:06:57 -0400
+Message-ID: <516BFB6C.2000303@siemens.com>
+Date: Mon, 15 Apr 2013 15:06:52 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hr4icvutg.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paolo Bonzini <pbonzini@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gnatapov@redhat.com" <gnatapov@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2] kvm: nVMX: check vmcs12 for valid activity state
+References: <1366030827-5662-1-git-send-email-pbonzini@redhat.com>
+In-Reply-To: <1366030827-5662-1-git-send-email-pbonzini@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 02:31:55PM +0200, Takashi Iwai wrote:
-> At Wed, 3 Apr 2013 14:24:10 -0400,
-> J. Bruce Fields wrote:
-> > 
-> > On Wed, Apr 03, 2013 at 06:27:26PM +0200, Takashi Iwai wrote:
-> > > The recent rewrite of NFSv4 recovery client tracking options per net
-> > > (commit 9a9c6478) introduced Oops when it faces an error for recdir
-> > > generation.
-> > 
-> > Thanks.  Looks like that could hit a lot of people actually, so I'll
-> > pass that along for 3.9 soon.--b.
+On 2013-04-15 15:00, Paolo Bonzini wrote:
+> KVM does not use the activity state VMCS field, and does not support
+> it in nested VMX either (the corresponding bits in the misc VMX feature
+> MSR are zero).  Fail entry if the activity state is set to anything but
+> "active".
 > 
-> Any chance for this to be merged in 3.9-final in time?
+> Since the value will always be the same for L1 and L2, we do not need
+> to read and write the corresponding VMCS field on L1/L2 transitions,
+> either.
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+> 	v1->v2: remove read/write of vmcs12->guest_activity_state,
+> 	use GUEST_ACTIVITY_ACTIVE.
+> 
+>  arch/x86/kvm/vmx.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index c75c25d..c252adf 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -7004,7 +7004,6 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+>  		vmcs12->vm_entry_instruction_len);
+>  	vmcs_write32(GUEST_INTERRUPTIBILITY_INFO,
+>  		vmcs12->guest_interruptibility_info);
+> -	vmcs_write32(GUEST_ACTIVITY_STATE, vmcs12->guest_activity_state);
+>  	vmcs_write32(GUEST_SYSENTER_CS, vmcs12->guest_sysenter_cs);
+>  	kvm_set_dr(vcpu, 7, vmcs12->guest_dr7);
+>  	vmcs_writel(GUEST_RFLAGS, vmcs12->guest_rflags);
+> @@ -7223,6 +7222,11 @@ static int nested_vmx_run(struct kvm_vcpu *vcpu, bool launch)
+>  		return 1;
+>  	}
+>  
+> +	if (vmcs12->guest_activity_state != GUEST_ACTIVITY_ACTIVE) {
+> +		nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
+> +		return 1;
+> +	}
+> +
+>  	if ((vmcs12->cpu_based_vm_exec_control & CPU_BASED_USE_MSR_BITMAPS) &&
+>  			!IS_ALIGNED(vmcs12->msr_bitmap, PAGE_SIZE)) {
+>  		/*TODO: Also verify bits beyond physical address width are 0*/
+> @@ -7411,7 +7415,6 @@ static void prepare_vmcs12(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
+>  	vmcs12->guest_gdtr_base = vmcs_readl(GUEST_GDTR_BASE);
+>  	vmcs12->guest_idtr_base = vmcs_readl(GUEST_IDTR_BASE);
+>  
+> -	vmcs12->guest_activity_state = vmcs_read32(GUEST_ACTIVITY_STATE);
+>  	vmcs12->guest_interruptibility_info =
+>  		vmcs_read32(GUEST_INTERRUPTIBILITY_INFO);
+>  	vmcs12->guest_pending_dbg_exceptions =
+> 
 
-Apologies, I changed my mind: since the bug was already in 3.8, I
-decided maybe I was overestimating the scope of the problem.  And we're
-very close to 3.9 now--so I'd rather wait till the merge window.  Then
-it should be backported to 3.9.x fairly quickly.
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
 
---b.
-
-> 
-> 
-> thanks,
-> 
-> Takashi
-> 
-> > > 
-> > >   NFSD: unable to generate recoverydir name (-2).
-> > >   NFSD: disabling legacy clientid tracking. Reboot recovery will not function correctly!
-> > >   BUG: unable to handle kernel NULL pointer dereference at 00000000000007a8
-> > >   IP: [<ffffffffa060c6c7>] nfsd4_client_tracking_exit+0x17/0x70 [nfsd]
-> > >   PGD 0
-> > >   Oops: 0000 [#1] PREEMPT SMP
-> > >   Modules linked in: nfsd fuse nfsv3 nfs_acl nfsv4 auth_rpcgss nfs lockd sunrpc cpufreq_conservative cpufreq_userspace cpufreq_powersave snd_hda_codec_hdmi snd_hda_codec_realtek intel_powerclamp acpi_cpufreq mperf coretemp ghash_clmulni_intel aesni_intel kvm_intel snd_hda_intel ablk_helper snd_hda_codec snd_hwdep kvm snd_pcm cryptd lrw aes_x86_64 snd_timer xts gf128mul e1000e snd sr_mod iTCO_wdt microcode cdrom usb_storage dcdbas iTCO_vendor_support i2c_i801 cdc_acm sg ptp lpc_ich mei soundcore pps_core mfd_core snd_page_alloc pciehp pci_hotplug autofs4 btrfs raid6_pq zlib_deflate xor libcrc32c i915 crc32c_intel drm_kms_helper drm xhci_hcd i2c_algo_bit thermal button video processor thermal_sys scsi_dh_rdac scsi_dh_hp_sw scsi_dh_emc scsi_dh_alua scsi_dh
-> > >   CPU 1
-> > >   Pid: 19567, comm: nfsd Not tainted 3.9.0-rc5-test+ #3 Dell Inc. OptiPlex 9010/0M9KCM
-> > >   RIP: 0010:[<ffffffffa060c6c7>]  [<ffffffffa060c6c7>] nfsd4_client_tracking_exit+0x17/0x70 [nfsd]
-> > >   RSP: 0018:ffff880181099c28  EFLAGS: 00010202
-> > >   RAX: ffff8801810900c0 RBX: 0000000000000004 RCX: 0000000000000006
-> > >   RDX: 0000000000000007 RSI: 0000000000000046 RDI: 0000000000000000
-> > >   RBP: ffff880181099c38 R08: 000000000000000a R09: 000000000000039f
-> > >   R10: 0000000000000000 R11: 000000000000039e R12: 0000000000000000
-> > >   R13: ffffffff81a87280 R14: ffff88014c819220 R15: ffff88020b75d200
-> > >   FS:  0000000000000000(0000) GS:ffff88021e240000(0000) knlGS:0000000000000000
-> > >   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> > >   CR2: 00000000000007a8 CR3: 0000000001a0d000 CR4: 00000000001407e0
-> > >   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> > >   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> > >   Process nfsd (pid: 19567, threadinfo ffff880181098000, task ffff8801810900c0)
-> > >   Stack:
-> > >    00000000fffffffe ffff88020b75d200 ffff880181099c58 ffffffffa060c75c
-> > >    ffffffff81a87280 ffff880002ba7000 ffff880181099cc8 ffffffffa060cb37
-> > >    ffff880181099d20 ffff88014c819220 0000000000000001 ffff88020b75d200
-> > >   Call Trace:
-> > >    [<ffffffffa060c75c>] legacy_recdir_name_error+0x3c/0x40 [nfsd]
-> > >    [<ffffffffa060cb37>] nfsd4_create_clid_dir+0xe7/0x200 [nfsd]
-> > >    [<ffffffffa0600323>] ? nfs4_preprocess_seqid_op+0x63/0x160 [nfsd]
-> > >    [<ffffffffa060ccaf>] nfsd4_client_record_create+0x5f/0x80 [nfsd]
-> > >    [<ffffffffa0604eef>] nfsd4_open_confirm+0x12f/0x1b0 [nfsd]
-> > >    [<ffffffffa05f35cf>] nfsd4_proc_compound+0x55f/0x770 [nfsd]
-> > >    [<ffffffffa05e0ded>] nfsd_dispatch+0xdd/0x220 [nfsd]
-> > >    [<ffffffffa04e58b8>] svc_process_common+0x328/0x6d0 [sunrpc]
-> > >    [<ffffffffa04e5fbc>] svc_process+0x10c/0x160 [sunrpc]
-> > >    [<ffffffffa05e079f>] nfsd+0xbf/0x130 [nfsd]
-> > >    [<ffffffffa05e06e0>] ? nfsd_destroy+0x90/0x90 [nfsd]
-> > >    [<ffffffff8106a4cb>] kthread+0xbb/0xc0
-> > >    [<ffffffff8106a410>] ? kthread_create_on_node+0x130/0x130
-> > >    [<ffffffff815b373c>] ret_from_fork+0x7c/0xb0
-> > >    [<ffffffff8106a410>] ? kthread_create_on_node+0x130/0x130
-> > >   Code: e0 49 8b 84 24 48 01 00 00 e9 25 ff ff ff 66 0f 1f 44 00 00 55 48 89 e5 41 54 49 89 fc 53 8b 1d 44 b4 00 00 e8 bb a9 a5 e0 85 db <49> 8b 84 24 a8 07 00 00 74 43 3b 18 77 3f 83 eb 01 48 63 db 48
-> > >   RIP  [<ffffffffa060c6c7>] nfsd4_client_tracking_exit+0x17/0x70 [nfsd]
-> > >    RSP <ffff880181099c28>
-> > >   CR2: 00000000000007a8
-> > >   ---[ end trace 5dd4307598e98cef ]---
-> > > 
-> > > This patch fixes it by passing the proper net instance instead of
-> > > NULL.
-> > > 
-> > > Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> > > Cc: <stable@vger.kernel.org> [v3.8+]
-> > > ---
-> > >  fs/nfsd/nfs4recover.c | 11 +++++------
-> > >  1 file changed, 5 insertions(+), 6 deletions(-)
-> > > 
-> > > diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-> > > index 899ca26..ae0d5c9 100644
-> > > --- a/fs/nfsd/nfs4recover.c
-> > > +++ b/fs/nfsd/nfs4recover.c
-> > > @@ -146,7 +146,7 @@ out_no_tfm:
-> > >   * then disable recovery tracking.
-> > >   */
-> > >  static void
-> > > -legacy_recdir_name_error(int error)
-> > > +legacy_recdir_name_error(struct net *net, int error)
-> > >  {
-> > >  	printk(KERN_ERR "NFSD: unable to generate recoverydir "
-> > >  			"name (%d).\n", error);
-> > > @@ -160,8 +160,7 @@ legacy_recdir_name_error(int error)
-> > >  		printk(KERN_ERR "NFSD: disabling legacy clientid tracking. "
-> > >  			"Reboot recovery will not function correctly!\n");
-> > >  
-> > > -		/* the argument is ignored by the legacy exit function */
-> > > -		nfsd4_client_tracking_exit(NULL);
-> > > +		nfsd4_client_tracking_exit(net);
-> > >  	}
-> > >  }
-> > >  
-> > > @@ -184,7 +183,7 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
-> > >  
-> > >  	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
-> > >  	if (status)
-> > > -		return legacy_recdir_name_error(status);
-> > > +		return legacy_recdir_name_error(clp->net, status);
-> > >  
-> > >  	status = nfs4_save_creds(&original_cred);
-> > >  	if (status < 0)
-> > > @@ -341,7 +340,7 @@ nfsd4_remove_clid_dir(struct nfs4_client *clp)
-> > >  
-> > >  	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
-> > >  	if (status)
-> > > -		return legacy_recdir_name_error(status);
-> > > +		return legacy_recdir_name_error(clp->net, status);
-> > >  
-> > >  	status = mnt_want_write_file(nn->rec_file);
-> > >  	if (status)
-> > > @@ -601,7 +600,7 @@ nfsd4_check_legacy_client(struct nfs4_client *clp)
-> > >  
-> > >  	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
-> > >  	if (status) {
-> > > -		legacy_recdir_name_error(status);
-> > > +		legacy_recdir_name_error(clp->net, status);
-> > >  		return status;
-> > >  	}
-> > >  
-> > > -- 
-> > > 1.8.1.4
-> > > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
+Corporate Competence Center Embedded Linux
