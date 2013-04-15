@@ -1,171 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab3DOAIK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 20:08:10 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:49512 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab3DOAII (ORCPT
+	id S932306Ab3DOAVz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 20:21:55 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:46989 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752178Ab3DOAVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 20:08:08 -0400
-Date: Sun, 14 Apr 2013 17:08:04 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <bob.liu@oracle.com>
-Subject: Re: [PATCH] staging: ramster: add how-to for ramster
-Message-ID: <20130415000804.GA15244@kroah.com>
-References: <1365983816-30204-1-git-send-email-liwanp@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365983816-30204-1-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 14 Apr 2013 20:21:53 -0400
+X-AuditID: cbfee68d-b7f786d000005188-9c-516b481fa73b
+From: Jonghwan Choi <jhbird.choi@samsung.com>
+To: "'Haojian Zhuang'" <haojian.zhuang@linaro.org>,
+        "'Jonghwan Choi'" <jhbird.choi@gmail.com>
+Cc: "'Linus Walleij'" <linus.walleij@linaro.org>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1365864369-10563-1-git-send-email-jhbird.choi@samsung.com>
+ <CAD6h2NQ06xL_E-BrKFNM-U0g4Xd+8PhPj=zzr9-qhZm+-rei+A@mail.gmail.com>
+In-reply-to: <CAD6h2NQ06xL_E-BrKFNM-U0g4Xd+8PhPj=zzr9-qhZm+-rei+A@mail.gmail.com>
+Subject: RE: [PATCH 3.8-stable] gpio: fix wrong checking condition for gpio
+ range
+Date: Mon, 15 Apr 2013 09:21:52 +0900
+Message-id: <005b01ce396f$3a67fe50$af37faf0$%choi@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac44W0wVTW5of+rpS9mDuiScq2AZfwBE9SXA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zfV15j+xAg1tTpCwunzvMaLH3yFoW
+	iyl/ljNZXN41h81iwcZHjA6sHjtn3WX3uHNtD5vH501yAcxRXDYpqTmZZalF+nYJXBkTTi1n
+	LjjFVvHi+DPGBsaprF2MHBwSAiYSsxpVuxg5gUwxiQv31rN1MXJxCAksY5TY3XeSDSJhInHy
+	+2dmiMR0Rok5U9+yQDh/GSWmt01iBqliE9CVOLZ+CyuILSIQLbFv7Q4mEJtZIE3i9ezDTBAN
+	fYwSFw+dBmvgFAiWOPn2HtgKYSD7ycdnYM0sAqoS2xdcYAGxeQXsJK68ugVlC0r8mHyPBWKo
+	lsT6ncehFshLbF7zlhniHXWJR391IW4wknjSegqqXERi34t3jCA3SAgcY5doPvOSCWKXgMS3
+	yYdYIHplJTYdYIb4WFLi4IobLBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CJDveLE
+	3OLSvHS95PzcTYyQuOzdwXj7gPUhxmSg9ROZpUST84FxnVcSb2hsZmRhamJqbGRuaUaasJI4
+	r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRiGhlQ0H8vpmZHyttfwVMnfej12HWtp3
+	vBYolNwoYrNHvXB91b4yjsLNBjMuamdESXZpXS32bf90MiBtsZVfa2WteNrD5Sz2B4QWRWlY
+	Xvky69G31Vebl+2998eYvynpycPD3VaH9xilRKXmln1WeVmwr7JA6tFazc5is9wdH324vp67
+	cFqrVomlOCPRUIu5qDgRAMEaVH7hAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDKsWRmVeSWpSXmKPExsVy+t9jQV15j+xAgwlLxSwunzvMaLH3yFoW
+	iyl/ljNZXN41h81iwcZHjA6sHjtn3WX3uHNtD5vH501yAcxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZE04tZy44xVbx4vgzxgbGqaxdjJwcEgImEie/f2aGsMUkLtxb
+	z9bFyMUhJDCdUWLO1LcsEM5fRonpbZPAqtgEdCWOrd8C1i0iEC2xb+0OJhCbWSBN4vXsw0wQ
+	DX2MEhcPnQZr4BQIljj59h4biC0MZD/5+AysmUVAVWL7ggssIDavgJ3ElVe3oGxBiR+T77FA
+	DNWSWL/zONQCeYnNa94CzeQAOlVd4tFfXYgbjCSetJ6CKheR2PfiHeMERqFZSCbNQjJpFpJJ
+	s5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHPfPpHYwrmywOMQowMGoxMM7QTs7
+	UIg1say4MvcQowQHs5IIbyALUIg3JbGyKrUoP76oNCe1+BBjMtCjE5mlRJPzgSkpryTe0NjE
+	zMjSyMzCyMTcnDRhJXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoYy5a7lFyc+MXvV+Ds8sRp
+	a5Sflp8+Y2L6uvub6aO2CYoPTqYeMbk4s7LK/8qpo7wfk86qyUoefFxsIzdT/FhTcvPvTSLH
+	rPd8mSRu0M3y5afN/SkOtiWOq5e/6rYQXCM8cVXJPK72lceCHkVYSk+/2tTYsWlqZUy7++sL
+	i/+nivDILJobPa+nQomlOCPRUIu5qDgRAAPx2WI/AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 07:56:56AM +0800, Wanpeng Li wrote:
-> +This is a how-to document for RAMster.  It applies to the March 9, 2013
-> +version of RAMster, re-merged with the new zcache codebase, built and tested
-> +on the 3.9 tree and submitted for the staging tree for 3.9.
+Dear Haojian Ahuang.
 
-This is not needed at all, given that it should just reflect the state
-of the code in the kernel that this file is present in.  Please remove
-it.
+> > This patch looks like it should be in the 3.8-stable tree, should we
+> apply
+> > it?
+> >
+> 
+> It could be merged into 3.8-stable tree.
+>
 
-> +Note that this document was created from notes taken earlier.  I would
-> +appreciate any feedback from anyone who follows the process as described
-> +to confirm that it works and to clarify any possible misunderstandings,
-> +or to report problems.
+Thanks~
 
-Is this needed?
+Best Regards.
 
-> +A. PRELIMINARY
-> +
-> +1) Install two or more Linux systems that are known to work when upgraded
-> +   to a recent upstream Linux kernel version (e.g. v3.9).  I used Oracle
-> +   Linux 6 ("OL6") on two Dell Optiplex 790s.  Note that it should be possible
-> +   to use ocfs2 as a filesystem on your systems but this hasn't been
-> +   tested thoroughly, so if you do use ocfs2 and run into problems, please
-> +   report them.  Up to eight nodes should work, but not much testing has
-> +   been done with more than three nodes.
-> +
-> +On each system:
-> +
-> +2) Configure, build and install then boot Linux (e.g. 3.9), just to ensure it
-> +   can be done with an unmodified upstream kernel.  Confirm you booted
-> +   the upstream kernel with "uname -a".
-> +
-> +3) Install ramster-tools.  The src.rpm and an OL6 rpm are available
-> +   in this directory.  I'm not very good at userspace stuff and
-> +   would welcome any help in turning ramster-tools into more
-> +   distributable rpms/debs for a wider range of distros.
+> -----Original Message-----
+> From: Haojian Zhuang [mailto:haojian.zhuang@linaro.org]
+> Sent: Sunday, April 14, 2013 12:27 AM
+> To: Jonghwan Choi
+> Cc: Linus Walleij; stable@vger.kernel.org; linux-kernel@vger.kernel.org;
+> Jonghwan Choi
+> Subject: Re: [PATCH 3.8-stable] gpio: fix wrong checking condition for
+> gpio range
+> 
+> On 13 April 2013 22:46, Jonghwan Choi <jhbird.choi@gmail.com> wrote:
+> > From: Haojian Zhuang <haojian.zhuang@linaro.org>
+> >
+> > This patch looks like it should be in the 3.8-stable tree, should we
+> apply
+> > it?
+> >
+> 
+> It could be merged into 3.8-stable tree.
+> 
+> Regards
+> Haojian
 
-This isn't true, the rpms are not here.
-
-> +B. BUILDING RAMSTER INTO THE KERNEL
-> +
-> +Do the following on each system:
-> +
-> +1) Ensure you have the new codebase for drivers/staging/zcache in your source.
-> +
-> +2) Change your .config to have:
-> +
-> +	CONFIG_CLEANCACHE=y
-> +	CONFIG_FRONTSWAP=y
-> +	CONFIG_STAGING=y
-> +	CONFIG_ZCACHE=y
-> +	CONFIG_RAMSTER=y
-> +
-> +   You may have to reconfigure your kernel multiple times to ensure
-> +   all of these are set properly.  I use:
-> +
-> +	# yes "" | make oldconfig
-> +
-> +   and then manually check the .config file to ensure my selections
-> +   have "taken".
-
-This last bit isn't needed at all.  Just stick to the "these are the
-settings you need enabled."
-
-> +   Do not bother to build the kernel until you are certain all of
-> +   the above config selections will stick for the build.
-> +
-> +3) Build this kernel and "make install" so that you have a new kernel
-> +   in /etc/grub.conf
-
-Don't assume 'make install' works for all distros, nor that
-/etc/grub.conf is a grub config file (hint, it usually isn't, and what
-about all the people not even using grub for their bootloader?)
-
-> +4) Add "ramster" to the kernel boot line in /etc/grub.conf.
-
-Again, drop grub.conf reference
-
-> +5) Reboot and check dmesg to ensure there are some messages from ramster
-> +   and that "ramster_enabled=1" appears.
-> +
-> +	# dmesg | grep ramster
-
-Are you sure ramster still spits out messages?  If so, provide an
-example of what it should look like.
-
-> +   You should also see a lot of files in:
-> +
-> +	# ls /sys/kernel/debug/zcache
-> +	# ls /sys/kernel/debug/ramster
-
-You forgot to mention that debugfs needs to be mounted.
-
-> +   and a few files in:
-> +
-> +	# ls /sys/kernel/mm/ramster
-> +
-> +   RAMster now will act as a single-system zcache but doesn't yet
-> +   know anything about the cluster so can't do anything remotely.
-> +
-> +C. BUILDING THE RAMSTER CLUSTER
-> +
-> +This is the error prone part unless you are a clustering expert.  We need
-> +to describe the cluster in /etc/ramster.conf file and the init scripts
-> +that parse it are extremely picky about the syntax.
-> +
-> +1) Create the /etc/ramster.conf file and ensure it is identical
-> +   on both systems.  There is a good amount of similar documentation
-> +   for ocfs2 /etc/cluster.conf that can be googled for this, but I use:
-> +
-> +	cluster:
-> +		name = ramster
-> +		node_count = 2
-> +	node:
-> +		name = system1
-> +		cluster = ramster
-> +		number = 0
-> +		ip_address = my.ip.ad.r1
-> +		ip_port = 7777
-> +	node:
-> +		name = system2
-> +		cluster = ramster
-> +		number = 0
-> +		ip_address = my.ip.ad.r2
-> +		ip_port = 7777
-> +
-> +   You must ensure that the "name" field in the file exactly matches
-> +   the output of "hostname" on each system.  The following assumes
-> +   you use "ramster" as the name of your cluster.
-> +
-> +2) Enable the ramster service and configure it:
-> +
-> +	# chkconfig --add ramster
-> +	# service ramster configure
-
-That's a huge assumption as to how your system config/startup scripts
-work, right?  Not all the world is using old-style system V init
-anymore, what about systemd?  openrc?
-
-greg k-h
