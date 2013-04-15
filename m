@@ -1,51 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755148Ab3DOQGF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:06:05 -0400
-Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:41432 "EHLO
-	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753635Ab3DOQGD (ORCPT
+	id S1754192Ab3DOQHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:07:17 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:42357 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541Ab3DOQHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:06:03 -0400
-X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Apr 2013 12:06:02 EDT
-Date: Mon, 15 Apr 2013 16:00:04 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Arjan van de Ven <arjan@linux.intel.com>
-cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, Kevin Hilman <khilman@linaro.org>
-Subject: Re: [PATCH documentation 1/2] nohz1: Add documentation.
-In-Reply-To: <51684AD3.7090305@linux.intel.com>
-Message-ID: <0000013e0e6cacbb-b7e44c6f-d551-49b9-aa07-62a4ee280ae7-000000@email.amazonses.com>
-References: <20130411160524.GA30384@linux.vnet.ibm.com> <1365696359-30958-1-git-send-email-paulmck@linux.vnet.ibm.com> <20130411182502.GA31684@pd.tnic> <20130411191355.GO29861@linux.vnet.ibm.com> <1365753904.17140.22.camel@laptop> <20130412175419.GG29861@linux.vnet.ibm.com>
- <51684AD3.7090305@linux.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 15 Apr 2013 12:07:14 -0400
+Message-ID: <516C25AE.4050503@intel.com>
+Date: Mon, 15 Apr 2013 09:07:10 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.04.15-54.240.9.58
+To: sedat.dilek@gmail.com
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Nathan Zimmer <nzimmer@sgi.com>
+Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
+References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com> <CA+icZUUsAqJ3kyCZivYeTpY7n=EDMv1UcC2VNwQro4h7NHDWag@mail.gmail.com> <CA+icZUW+TB3q58bL+d=A355S4vtRhwMq8AV+tqjv6MgDtHRCaA@mail.gmail.com> <1923819.6Nb81T2TR8@vostro.rjw.lan> <CA+icZUXUGOjGUAFxgQk0780pcBB-YjiujDLXF+gJFegi+pd+dA@mail.gmail.com>
+In-Reply-To: <CA+icZUXUGOjGUAFxgQk0780pcBB-YjiujDLXF+gJFegi+pd+dA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Apr 2013, Arjan van de Ven wrote:
+On 04/13/2013 02:55 AM, Sedat Dilek wrote:
+> On Sat, Apr 13, 2013 at 12:51 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Friday, April 12, 2013 11:08:37 PM Sedat Dilek wrote:
+>>> On Fri, Apr 12, 2013 at 6:27 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>> On Fri, Apr 12, 2013 at 5:45 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>> On Fri, Apr 12, 2013 at 4:24 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>>> On Fri, Apr 12, 2013 at 10:23 AM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>>>>>>> On 10 April 2013 11:44, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>>>>> I found this "[RFC PATCH] kbuild: Build linux-tools package with 'make
+>>>>>>>> deb-pkg'" from February 2012.
+>>>>>>>> Can't say what happened to it...
+>>>>>>>
+>>>>>>> Sedat,
+>>>>>>>
+>>>>>>> Sorry for being late. I am down with Fever and throat infection since few days.
+>>>>>>> Still struggling with it..
+>>>>>>>
+>>>>>>> There are few things i tried. Firstly the tag: next-20130326 is bad as there are
+>>>>>>> some bad commits in cpufreq core in it.
+>>>>>>>
+>>>>>>> I then tried latest linux-next/master on my Thinkpad (model name        : Intel(R)
+>>>>>>> Core(TM) i7-2640M CPU @ 2.80GHz) and couldn't boot it up. My ubuntu
+>>>>>>> just hanged.
+>>>>>>>
+>>>>>>> Then i tried Rafael's linux-next branch
+>>>>>>>
+>>>>>>> 079576f Merge branch 'pm-cpufreq-next' into linux-next
+>>>>>>>
+>>>>>>> And couldn't find any issues with it. I am easily able to remove/add cpus at
+>>>>>>> runtime..
+>>>>>>>
+>>>>>>> Can you give this branch a try?
+>>>>>>>
+>>>>>>
+>>>>>> OK, you seem to be well again, nice to hear.
+>>>>>>
+>>>>>> I was doing the whole week spring-cleaning in the apartment of my parents.
+>>>>>> Now, I have some minutes for a compilation run.
+>>>>>>
+>>>>>> I guess "cpufreq: Call __cpufreq_governor() with correct policy->cpus
+>>>>>> mask" could be the correct fix, but will try the GIT branch you have
+>>>>>> mentioned.
+>>>>>>
+>>>>>> - Sedat -
+>>>>>>
+>>>>>> [1] http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=e4969ebac83fdea78d89c779331396728a4e6199
+>>>>>>
+>>>>>
+>>>>> Both BROKEN here, specific pm-next commitid and pulling
+>>>>> pm.git#linux-next into next-20130411 (see attached files).
+>>>>>
+>>>>> Is "cpufreq: convert cpufreq_driver to using RCU" the root cause of this all?
+>>>>>
+>>>>
+>>>> [ CC Nathan ]
+>>>>
+>>>> NO, wrong assumption.
+>>>>
+>>>> 2013-04-12 18:04 Sedat Dilek        o [revert-cpufreq-rcu] Revert
+>>>> "cpufreq: convert cpufreq_driver to using RCU"
+>>>> 2013-04-12 18:04 Sedat Dilek        o Revert "cpufreq: Call
+>>>> __cpufreq_governor() with correct policy->cpus mask"
+>>>> 2013-04-11 23:24 Rafael J. Wysocki  M─┐ [pm-next-079576f] Merge branch
+>>>> 'pm-cpufreq-next' into linux-next
+>>>>
+>>>> - Sedat -
+>>>>
+>>>>
+>>>>> - Sedat -
+>>>>>
+>>>>> [1] http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=5800043b2488a1c4c6e859af860644d37419d58b
+>>>>>
+>>>>>>> --
+>>>>>>> viresh
+>>>
+>>> [ TO Dirk (Author of Intel pstate driver) ]
+>>>
+>>> With CONFIG_X86_INTEL_PSTATE=n (unset) I do not see the call-trace!
+>>>
+>>> My kernel-config and dmesg are attached.
+>>
+>> You're seeing a trouble with a new driver, then, so that's not a regression.
+>>
 
-> but arguably, that's because of HRTIMERS more than NOHZ
-> (e.g. I bet we still turn off periodic even for nohz as long as hrtimers are
-> enabled)
+This IS a regression.
 
-If we are able to only get rid of one timer tick on average with dynticks
-then I would think that is enough to justify having it on by default.
+If the intel_pstate driver is being used __cpufreq_governor() should NOT be
+called intel_pstate does not implement the target() callback.
 
-If the scheduling period from the schduler is around 20ms then one may be
-able to save processing 20 timer ticks by going to htimers.
+Nathan's commit 5800043b2 changed the fence around the call to
+__cpufreq_governor() in __cpufreq_remove_dev() here is the relevant hunk.
 
-The main issue with hrtimers is likely going to be that is it is too much
-effort for small timerframes less than 10ms. Could we  only switch off the
-timer tick if the next event is more than 10 ticks aways?
+@@ -1007,9 +1068,12 @@ static int __cpufreq_remove_dev(struct device *dev, 
+struct subsys_interface *sif
+  	unsigned int cpu = dev->id, ret, cpus;
+  	unsigned long flags;
+  	struct cpufreq_policy *data;
++	struct cpufreq_driver *driver;
+  	struct kobject *kobj;
+  	struct completion *cmp;
+  	struct device *cpu_dev;
++	bool has_target;
++	int (*exit)(struct cpufreq_policy *policy);
+
+  	pr_debug("%s: unregistering CPU %u\n", __func__, cpu);
+
+@@ -1025,14 +1089,19 @@ static int __cpufreq_remove_dev(struct device *dev, 
+struct subsys_interface *sif
+  		return -EINVAL;
+  	}
+
+-	if (cpufreq_driver->target)
++	rcu_read_lock();
++	driver = rcu_dereference(cpufreq_driver);
++	has_target = driver->target ? true : false;
++	exit = driver->exit;
++	if (has_target)
+  		__cpufreq_governor(data, CPUFREQ_GOV_STOP);
+
+  #ifdef CONFIG_HOTPLUG_CPU
+-	if (!cpufreq_driver->setpolicy)
++	if (!driver->setpolicy)
+  		strncpy(per_cpu(cpufreq_cpu_governor, cpu),
+  			data->governor->name, CPUFREQ_NAME_LEN);
+  #endif
++	rcu_read_unlock();
+
+  	WARN_ON(lock_policy_rwsem_write(cpu));
+  	cpus = cpumask_weight(data->cpus);
+
+
+
+>
+> What do you mean by this?
+>
+> What are the next steps to get this fixed?
+>
+> - Sedat -
+>
+>> Thanks for taking the time to debug this!
+>>
+>> Rafael
+>>
+>>
+>> --
+>> I speak only for myself.
+>> Rafael J. Wysocki, Intel Open Source Technology Center.
 
