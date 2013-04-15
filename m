@@ -1,127 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab3DOCZd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:25:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36041 "EHLO
+	id S1755357Ab3DOCZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:25:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36119 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655Ab3DOCZb (ORCPT
+	with ESMTP id S1754008Ab3DOCZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:25:31 -0400
+	Sun, 14 Apr 2013 22:25:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/17] 3.4.41-stable review
-Date: Sun, 14 Apr 2013 19:25:10 -0700
-Message-Id: <20130415022352.616689034@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 16/17] kobject: fix kset_find_obj() race with concurrent last kobject_put()
+Date: Sun, 14 Apr 2013 19:25:26 -0700
+Message-Id: <20130415022353.835594541@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
+In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
+References: <20130415022352.616689034@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.41 release.
-There are 17 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wed Apr 17 02:23:06 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.41-rc1.gz
-and the diffstat can be found below.
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-thanks,
+commit a49b7e82cab0f9b41f483359be83f44fbb6b4979 upstream.
 
-greg k-h
+Anatol Pomozov identified a race condition that hits module unloading
+and re-loading.  To quote Anatol:
 
--------------
-Pseudo-Shortlog of commits:
+ "This is a race codition that exists between kset_find_obj() and
+  kobject_put().  kset_find_obj() might return kobject that has refcount
+  equal to 0 if this kobject is freeing by kobject_put() in other
+  thread.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.41-rc1
+  Here is timeline for the crash in case if kset_find_obj() searches for
+  an object tht nobody holds and other thread is doing kobject_put() on
+  the same kobject:
 
-Hayes Wang <hayeswang@realtek.com>
-    r8169: fix auto speed down issue
+    THREAD A (calls kset_find_obj())     THREAD B (calls kobject_put())
+    splin_lock()
+                                         atomic_dec_return(kobj->kref), counter gets zero here
+                                         ... starts kobject cleanup ....
+                                         spin_lock() // WAIT thread A in kobj_kset_leave()
+    iterate over kset->list
+    atomic_inc(kobj->kref) (counter becomes 1)
+    spin_unlock()
+                                         spin_lock() // taken
+                                         // it does not know that thread A increased counter so it
+                                         remove obj from list
+                                         spin_unlock()
+                                         vfree(module) // frees module object with containing kobj
 
-Linus Torvalds <torvalds@linux-foundation.org>
-    kobject: fix kset_find_obj() race with concurrent last kobject_put()
+    // kobj points to freed memory area!!
+    kobject_put(kobj) // OOPS!!!!
 
-Linus Torvalds <torvalds@linux-foundation.org>
-    mtdchar: fix offset overflow detection
+  The race above happens because module.c tries to use kset_find_obj()
+  when somebody unloads module.  The module.c code was introduced in
+  commit 6494a93d55fa"
 
-Boris Ostrovsky <boris.ostrovsky@oracle.com>
-    x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare metal
+Anatol supplied a patch specific for module.c that worked around the
+problem by simply not using kset_find_obj() at all, but rather than make
+a local band-aid, this just fixes kset_find_obj() to be thread-safe
+using the proper model of refusing the get a new reference if the
+refcount has already dropped to zero.
 
-Samu Kallio <samu.kallio@aberdeencloud.com>
-    x86, mm, paravirt: Fix vmalloc_fault oops during lazy MMU updates
+See examples of this proper refcount handling not only in the kref
+documentation, but in various other equivalent uses of this pattern by
+grepping for atomic_inc_not_zero().
 
-Thomas Gleixner <tglx@linutronix.de>
-    sched_clock: Prevent 64bit inatomicity on 32bit systems
+[ Side note: the module race does indicate that module loading and
+  unloading is not properly serialized wrt sysfs information using the
+  module mutex.  That may require further thought, but this is the
+  correct fix at the kobject layer regardless. ]
 
-Dave Airlie <airlied@gmail.com>
-    udl: handle EDID failure properly.
+Reported-analyzed-and-tested-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Thomas Hellstrom <thellstrom@vmware.com>
-    kref: Implement kref_get_unless_zero v3
+---
+ lib/kobject.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-Suleiman Souhlal <suleiman@google.com>
-    vfs: Revert spurious fix to spinning prevention in prune_icache_sb
-
-Nicholas Bellinger <nab@linux-iscsi.org>
-    target: Fix incorrect fallthrough of ALUA Standby/Offline/Transition CDBs
-
-Sachin Prabhu <sprabhu@redhat.com>
-    cifs: Allow passwords which begin with a delimitor
-
-Lukasz Dorau <lukasz.dorau@intel.com>
-    SCSI: libsas: fix handling vacant phy in sas_set_ex_phy()
-
-Chris Wilson <chris@chris-wilson.co.uk>
-    drm/i915: Use the correct size of the GTT for placing the per-process entries
-
-Huacai Chen <chenhc@lemote.com>
-    PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
-
-Namhyung Kim <namhyung.kim@lge.com>
-    tracing: Fix double free when function profile init failed
-
-Alban Bedel <alban.bedel@avionic-design.de>
-    ASoC: wm8903: Fix the bypass to HP/LINEOUT when no DAC or ADC is running
-
-Eldad Zack <eldad@fogrefinery.com>
-    ALSA: usb-audio: fix endianness bug in snd_nativeinstruments_*
-
-
--------------
-
-Diffstat:
-
- Makefile                              |  4 +--
- arch/x86/include/asm/paravirt.h       |  5 +++-
- arch/x86/include/asm/paravirt_types.h |  2 ++
- arch/x86/kernel/paravirt.c            | 25 +++++++++---------
- arch/x86/lguest/boot.c                |  1 +
- arch/x86/mm/fault.c                   |  6 +++--
- arch/x86/xen/mmu.c                    |  1 +
- drivers/gpu/drm/i915/i915_gem_gtt.c   |  2 +-
- drivers/gpu/drm/udl/udl_connector.c   |  4 +++
- drivers/mtd/mtdchar.c                 | 48 ++++++++++++++++++++++++++++++-----
- drivers/net/ethernet/realtek/r8169.c  | 28 +++++++++++++++++---
- drivers/scsi/libsas/sas_expander.c    | 12 +++++++++
- drivers/target/target_core_alua.c     |  3 +++
- fs/cifs/connect.c                     | 16 +++++++++---
- fs/inode.c                            |  2 +-
- include/linux/kref.h                  | 21 +++++++++++++++
- kernel/sched/clock.c                  | 26 +++++++++++++++++++
- kernel/sys.c                          |  3 ++-
- kernel/trace/ftrace.c                 |  1 -
- lib/kobject.c                         |  9 ++++++-
- sound/soc/codecs/wm8903.c             |  2 ++
- sound/usb/mixer_quirks.c              |  4 +--
- sound/usb/quirks.c                    |  2 +-
- 23 files changed, 190 insertions(+), 37 deletions(-)
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -531,6 +531,13 @@ struct kobject *kobject_get(struct kobje
+ 	return kobj;
+ }
+ 
++static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
++{
++	if (!kref_get_unless_zero(&kobj->kref))
++		kobj = NULL;
++	return kobj;
++}
++
+ /*
+  * kobject_cleanup - free kobject resources.
+  * @kobj: object to cleanup
+@@ -753,7 +760,7 @@ struct kobject *kset_find_obj(struct kse
+ 
+ 	list_for_each_entry(k, &kset->list, entry) {
+ 		if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
+-			ret = kobject_get(k);
++			ret = kobject_get_unless_zero(k);
+ 			break;
+ 		}
+ 	}
 
 
