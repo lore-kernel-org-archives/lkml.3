@@ -1,74 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab3DORNM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 13:13:12 -0400
-Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:36224
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755735Ab3DORNI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 13:13:08 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ahbe9i1155h)
-From: Sethi Varun-B16395 <B16395@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: Yoder Stuart-B08248 <B08248@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "galak@kernel.crashing.org" <galak@kernel.crashing.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "bhelgaas@google.com" <bhelgaas@google.com>
-Subject: RE: [PATCH 1/3] iommu: Move swap_pci_ref function to pci.h.
-Thread-Topic: [PATCH 1/3] iommu: Move swap_pci_ref function to pci.h.
-Thread-Index: AQHOOUUdmvpHLN9SKk2XFrKoKk+1P5jXYN2AgAAla7A=
-Date: Mon, 15 Apr 2013 17:13:01 +0000
-Message-ID: <C5ECD7A89D1DC44195F34B25E172658D486DF2@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1365966722-1804-1-git-send-email-Varun.Sethi@freescale.com>
- <20130415145834.GR6858@8bytes.org>
-In-Reply-To: <20130415145834.GR6858@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [69.38.217.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S934237Ab3DOROc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 13:14:32 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:41754 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754894Ab3DOROb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 13:14:31 -0400
+Date: Mon, 15 Apr 2013 12:14:29 -0500
+From: Robin Holt <holt@sgi.com>
+To: Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, Robin Holt <holt@sgi.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [Patch -v3 1/4] Migrate shutdown/reboot to boot cpu.
+Message-ID: <20130415171429.GF3672@sgi.com>
+References: <20130415171225.GC3658@sgi.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130415171225.GC3658@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fine, I will move it to iommu.h.
+We recently noticed that reboot of a 1024 cpu machine takes approx 16
+minutes of just stopping the cpus.  The slowdown was tracked to commit
+f96972f.
 
--Varun
+The current implementation does all the work of hot removing the cpus
+before halting the system.  We are switching to just migrating to the
+boot cpu and then continuing with shutdown/reboot.
 
-> -----Original Message-----
-> From: Joerg Roedel [mailto:joro@8bytes.org]
-> Sent: Monday, April 15, 2013 8:29 PM
-> To: Sethi Varun-B16395
-> Cc: Yoder Stuart-B08248; Wood Scott-B07421; iommu@lists.linux-
-> foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
-> kernel@vger.kernel.org; galak@kernel.crashing.org;
-> benh@kernel.crashing.org; bhelgaas@google.com
-> Subject: Re: [PATCH 1/3] iommu: Move swap_pci_ref function to pci.h.
-> 
-> On Mon, Apr 15, 2013 at 12:42:00AM +0530, Varun Sethi wrote:
-> > swap_pci_ref function is used by the IOMMU API code for swapping pci
-> > device pointers, while determining the iommu group for the device.
-> > Currently this function was being implemented for different IOMMU
-> drivers.
-> > This patch moves the function to pci.h so that the implementation can
-> > be shared across various IOMMU drivers.
-> 
-> The function is only used in IOMMU code, so I think its fine to keep it
-> there (unless Bjorn disagrees and wants it in PCI code).
-> 
-> 
-> 	Joerg
-> 
-> 
+This also has the effect of not breaking x86's command line parameter for
+specifying the reboot cpu.  Note, this code was shamelessly copied from
+arch/x86/kernel/reboot.c with bits removed pertaining to the reboot_cpu
+command line parameter.
 
+Signed-off-by: Robin Holt <holt@sgi.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+To: Ingo Molnar <mingo@redhat.com>
+To: Russ Anderson <rja@sgi.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Robin Holt <holt@sgi.com>
+Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: the arch/x86 maintainers <x86@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: <stable@vger.kernel.org>
+
+---
+
+Changes since -v1.
+- Set PF_THREAD_BOUND before migrating to eliminate potential race.
+- Modified kernel_power_off to also migrate instead of using
+  disable_nonboot_cpus().
+---
+ kernel/sys.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 0da73cf..5ef7aa2 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -357,6 +357,22 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+ }
+ EXPORT_SYMBOL(unregister_reboot_notifier);
+ 
++void migrate_to_reboot_cpu(void)
++{
++	/* The boot cpu is always logical cpu 0 */
++	int reboot_cpu_id = 0;
++
++	/* Make certain the cpu I'm about to reboot on is online */
++	if (!cpu_online(reboot_cpu_id))
++		reboot_cpu_id = smp_processor_id();
++
++	/* Prevent races with other tasks migrating this task. */
++	current->flags |= PF_THREAD_BOUND;
++
++	/* Make certain I only run on the appropriate processor */
++	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
++}
++
+ /**
+  *	kernel_restart - reboot the system
+  *	@cmd: pointer to buffer containing command to execute for restart
+@@ -368,7 +384,7 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
+ void kernel_restart(char *cmd)
+ {
+ 	kernel_restart_prepare(cmd);
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+@@ -395,7 +411,7 @@ static void kernel_shutdown_prepare(enum system_states state)
+ void kernel_halt(void)
+ {
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "System halted.\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
+@@ -414,7 +430,7 @@ void kernel_power_off(void)
+ 	kernel_shutdown_prepare(SYSTEM_POWER_OFF);
+ 	if (pm_power_off_prepare)
+ 		pm_power_off_prepare();
+-	disable_nonboot_cpus();
++	migrate_to_reboot_cpu();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "Power down.\n");
+ 	kmsg_dump(KMSG_DUMP_POWEROFF);
+-- 
+1.8.1.2
 
