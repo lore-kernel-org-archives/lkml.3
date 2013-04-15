@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934926Ab3DOJbJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 05:31:09 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:37381 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932601Ab3DOJbH (ORCPT
+	id S934980Ab3DOJdg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 05:33:36 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:55199 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934577Ab3DOJdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 05:31:07 -0400
-Date: Mon, 15 Apr 2013 11:31:03 +0200
+	Mon, 15 Apr 2013 05:33:35 -0400
+Date: Mon, 15 Apr 2013 11:33:30 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+To: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Paul Mundt <lethal@linux-sh.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] ptrace/x86: Revert "hw_breakpoints: Fix racy access
- to ptrace breakpoints"
-Message-ID: <20130415093103.GB17715@gmail.com>
-References: <20130414160501.GA7612@redhat.com>
- <20130414160526.GA7635@redhat.com>
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/2] sched: move content out of core files for load
+ average
+Message-ID: <20130415093330.GC17715@gmail.com>
+References: <1365811457-31924-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130414160526.GA7635@redhat.com>
+In-Reply-To: <1365811457-31924-1-git-send-email-paul.gortmaker@windriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Oleg Nesterov <oleg@redhat.com> wrote:
+* Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 
-> This reverts commit 87dc669ba25777b67796d7262c569429e58b1ed4.
+> Recent activity has had a focus on moving functionally related blocks of stuff 
+> out of sched/core.c into stand-alone files.  The code relating to load average 
+> calculations has grown significantly enough recently to warrant placing it in a 
+> separate file.
 > 
-> The patch was fine but we can no longer race with SIGKILL after
-> 9899d11f "ptrace: ensure arch_ptrace/ptrace_request can never race
-> with SIGKILL", the __TASK_TRACED tracee can't be woken up and
-> ->ptrace_bps[] can't go away.
+> Here we do that, and in doing so, we shed ~20k of code from sched/core.c (~10%).
 > 
-> The patch only removes ptrace_get_breakpoints/ptrace_put_breakpoints
-> and does a couple of "while at it" cleanups, it doesn't remove other
-> changes from the reverted commit.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  arch/x86/kernel/ptrace.c |   28 +++++-----------------------
->  1 files changed, 5 insertions(+), 23 deletions(-)
+> A couple small static functions in the core sched.h header were also localized 
+> to their singular user in sched/fair.c at the same time, with the goal to also 
+> reduce the amount of "broadcast" content in that sched.h file.
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+Nice!
+
+Peter, is this (and the naming of the new file) fine with you too?
 
 Thanks,
 
