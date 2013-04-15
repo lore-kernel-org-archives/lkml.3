@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933009Ab3DOPmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:42:42 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45529 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754872Ab3DOPaH (ORCPT
+	id S1753660Ab3DOPrS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:47:18 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:13361 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768Ab3DOPrQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:30:07 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 1/9] n_tty: Remove unused echo_overrun field
-Date: Mon, 15 Apr 2013 11:29:39 -0400
-Message-Id: <1366039787-8719-2-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
-References: <1366039567-8620-1-git-send-email-peter@hurleysoftware.com>
- <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 15 Apr 2013 11:47:16 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18S+CU8wfueomybnXbnkgLMkA7DuoAZFac=
+Date: Mon, 15 Apr 2013 11:47:00 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Lior Amsalem <alior@marvell.com>,
+        Ike Pan <ike.pan@canonical.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        David Marlin <dmarlin@redhat.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>,
+        Dan Frazier <dann.frazier@canonical.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Leif Lindholm <leif.lindholm@arm.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Jon Masters <jcm@redhat.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Chris Van Hoof <vanhoof@canonical.com>,
+        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
+        Maen Suleiman <maen@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Shadi Ammouri <shadi@marvell.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v4 0/5]  LPAE remaining device tree file
+Message-ID: <20130415154700.GF28693@titan.lakedaemon.net>
+References: <1365776950-30094-1-git-send-email-gregory.clement@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365776950-30094-1-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The echo_overrun field is only assigned and never tested; remove it.
+On Fri, Apr 12, 2013 at 04:29:05PM +0200, Gregory CLEMENT wrote:
+> Hi Jason,
+> 
+> I have just rebased the commits that you haven't applied yet. They are
+> rebased on mvebu/dt. I check that all the dtb can be built.
+> 
+> Thanks,
+> 
+> Gregory CLEMENT (3):
+>   ARM: dts: mvebu: Convert all the mvebu files to use the range
+>     property
+>   ARM: dts: mvebu: introduce internal-regs node
+>   ARM: dts: mvebu: Convert mvebu device tree files to 64 bits
+> 
+> Thomas Petazzoni (2):
+>   ARM: dts: mvebu: fix cpus section indentation
+>   ARM: dts: mvebu: move all peripherals inside soc
+> 
+>  arch/arm/boot/dts/armada-370-db.dts              |  134 +++---
+>  arch/arm/boot/dts/armada-370-mirabox.dts         |  176 ++++----
+>  arch/arm/boot/dts/armada-370-rd.dts              |   96 ++---
+>  arch/arm/boot/dts/armada-370-xp.dtsi             |  336 +++++++--------
+>  arch/arm/boot/dts/armada-370.dtsi                |  330 +++++++--------
+>  arch/arm/boot/dts/armada-xp-db.dts               |  202 ++++-----
+>  arch/arm/boot/dts/armada-xp-gp.dts               |  222 +++++-----
+>  arch/arm/boot/dts/armada-xp-mv78230.dtsi         |  284 ++++++-------
+>  arch/arm/boot/dts/armada-xp-mv78260.dtsi         |  342 +++++++--------
+>  arch/arm/boot/dts/armada-xp-mv78460.dtsi         |  484 +++++++++++-----------
+>  arch/arm/boot/dts/armada-xp-openblocks-ax3-4.dts |  262 ++++++------
+>  arch/arm/boot/dts/armada-xp.dtsi                 |  202 ++++-----
+>  12 files changed, 1549 insertions(+), 1521 deletions(-)
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+whole series applied to mvebu/dt
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 4dbb558..e9a392a 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -96,7 +96,6 @@ struct n_tty_data {
- 
- 	/* must hold exclusive termios_rwsem to reset these */
- 	unsigned char lnext:1, erasing:1, raw:1, real_raw:1, icanon:1;
--	unsigned char echo_overrun:1;
- 
- 	/* shared by producer and consumer */
- 	char *read_buf;
-@@ -325,7 +324,7 @@ static void reset_buffer_flags(struct n_tty_data *ldata)
- 	ldata->read_head = ldata->canon_head = ldata->read_tail = 0;
- 
- 	mutex_lock(&ldata->echo_lock);
--	ldata->echo_pos = ldata->echo_cnt = ldata->echo_overrun = 0;
-+	ldata->echo_pos = ldata->echo_cnt = 0;
- 	mutex_unlock(&ldata->echo_lock);
- 
- 	ldata->erasing = 0;
-@@ -782,14 +781,11 @@ static void process_echoes(struct tty_struct *tty)
- 	if (nr == 0) {
- 		ldata->echo_pos = 0;
- 		ldata->echo_cnt = 0;
--		ldata->echo_overrun = 0;
- 	} else {
- 		int num_processed = ldata->echo_cnt - nr;
- 		ldata->echo_pos += num_processed;
- 		ldata->echo_pos &= N_TTY_BUF_SIZE - 1;
- 		ldata->echo_cnt = nr;
--		if (num_processed > 0)
--			ldata->echo_overrun = 0;
- 	}
- 
- 	mutex_unlock(&ldata->echo_lock);
-@@ -835,8 +831,6 @@ static void add_echo_byte(unsigned char c, struct n_tty_data *ldata)
- 			ldata->echo_pos++;
- 		}
- 		ldata->echo_pos &= N_TTY_BUF_SIZE - 1;
--
--		ldata->echo_overrun = 1;
- 	} else {
- 		new_byte_pos = ldata->echo_pos + ldata->echo_cnt;
- 		new_byte_pos &= N_TTY_BUF_SIZE - 1;
--- 
-1.8.1.2
+thx,
 
+Jason.
