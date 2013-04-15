@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab3DOPBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:01:05 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:14279 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249Ab3DOPBD convert rfc822-to-8bit (ORCPT
+	id S1752852Ab3DOPEB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:04:01 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10650 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751839Ab3DOPEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:01:03 -0400
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Guenter Roeck <linux@roeck-us.net>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
-Thread-Topic: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
-Thread-Index: AQHON39CtDkBnJtRskO6UighSEzvVZjShI+AgATexgA=
-Date: Mon, 15 Apr 2013 15:00:58 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB514191E103@NB-EX-MBX02.diasemi.com>
-References: <201304121310.r3CDAJHh011814@latitude>
- <20130412133221.GA11293@roeck-us.net>
-In-Reply-To: <20130412133221.GA11293@roeck-us.net>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.109]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Apr 2013 11:04:00 -0400
+From: Oskar Andero <oskar.andero@sonymobile.com>
+Date: Mon, 15 Apr 2013 17:03:56 +0200
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: "Dolkow, Snild" <Snild.Dolkow@sonymobile.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Brian Swetland <swetland@google.com>
+Subject: Re: [PATCH] lowmemorykiller: prevent multiple instances of low
+ memory killer
+Message-ID: <20130415150356.GA22161@caracas.corpusers.net>
+References: <1366031009-21958-1-git-send-email-oskar.andero@sonymobile.com>
+ <20130415131815.GG6638@mwanda>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
+ <20130415141358.GO6692@mwanda>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130415141358.GO6692@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Guenter Roeck [mailto:linux@roeck-us.net]
-> Sent: 12 April 2013 14:32
-> To: Opensource [Anthony Olech]
-> Cc: Mark Brown; Liam Girdwood; Jean Delvare; Randy Dunlap; LKML; David
-> Dajun Chen
-> Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
-> 
-> On Fri, Apr 12, 2013 at 02:05:28PM +0100, Anthony Olech wrote:
-> > This is the REGULATOR component driver of the Dialog DA9058 PMIC.
-> > This driver is just one component of the whole DA9058 PMIC driver.
-> > It depends on the CORE component driver of the DA9058 MFD.
+On 16:13 Mon 15 Apr     , Dan Carpenter wrote:
+> On Mon, Apr 15, 2013 at 03:38:08PM +0200, Dolkow, Snild wrote:
+> > >Where is lowmem_shrink called from?  I only see shrink called from the
+> > >bcache sysfs handler __bch_cache_set().  The return value isn't checked
+> > >there.
+> > >
+> > >Up to now this function has only returns positive numbers.
+> > >
+> > >There isn't a place which check LMK_BUSY so maybe it's best to just
+> > >return zero?
+> > 
+> > Hey Dan,
+> > 
+> > lowmem_shrink is assigned to a shrinker struct
+> > (include/linux/shrinker.h) and called in do_shrinker_shrink() in
+> > mm/vmscan.c. That, in turn, is called and checked in a few places
+> > in vmscan.c.
 > >
-> > There are 6 warnings from scripts/checkpatch.pl, but since it seems to
-> > be complaining about variable names such as min_uV are in CamelCase,
-> > when it is obvious that they are not in CamelCase I have ignored them.
-> >
-> ??? min_uV _is_ CamelCase ???
+> > >From the comments in shrinker.h: 
+> > "It should return the number of objects which remain in the
+> > cache. If it returns -1, it means it cannot do any scanning at
+> > this time (eg. there is a risk of deadlock). The callback must not
+> > return -1 if nr_to_scan is zero."
 > 
-> Ok, maybe it is camelcasE, but you are splitting hairs here.
+> Ah.  Good.  -1 is the right return.
+> 
+> But really should be a #define in shrinker.h instead of in
+> drivers/staging/android/.
 
-it is not me splitting hairs, it is scripts/checkpatch.pl
+IMO one should use the errno.h values - e.g. EBUSY might be a good
+value in this case. Does anyone know why the shrinker wants -1? Is there
+a reason?
 
-Tony Olech
-
+-Oskar
