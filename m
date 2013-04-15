@@ -1,98 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934716Ab3DONCi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 09:02:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28004 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752556Ab3DONCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 09:02:37 -0400
-Date: Mon, 15 Apr 2013 09:02:06 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Tejun Heo <tj@kernel.org>
-cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Christian Schmidt <schmidt@digadd.de>,
-        "Alasdair G. Kergon" <agk@redhat.com>
-Subject: Re: [PATCH v2] make dm and dm-crypt forward cgroup context (was:
- dm-crypt parallelization patches)
-In-Reply-To: <20130412182941.GF11956@mtj.dyndns.org>
-Message-ID: <Pine.LNX.4.64.1304150827480.1859@file.rdu.redhat.com>
-References: <Pine.LNX.4.64.1304091624110.19672@file.rdu.redhat.com>
- <20130409210735.GR6320@redhat.com> <Pine.LNX.4.64.1304091710150.24735@file.rdu.redhat.com>
- <20130410192427.GA14911@redhat.com> <Pine.LNX.4.64.1304101938280.24258@file.rdu.redhat.com>
- <20130410235009.GI17641@mtj.dyndns.org> <Pine.LNX.4.64.1304111544050.32536@file.rdu.redhat.com>
- <20130411195203.GA11956@mtj.dyndns.org> <20130411200005.GB11956@mtj.dyndns.org>
- <Pine.LNX.4.64.1304121340350.3359@file.rdu.redhat.com>
- <20130412182941.GF11956@mtj.dyndns.org>
+	id S934773Ab3DONDf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 09:03:35 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:15633 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751385Ab3DONDe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 09:03:34 -0400
+From: Oskar Andero <oskar.andero@sonymobile.com>
+To: <linux-kernel@vger.kernel.org>, <devel@driverdev.osuosl.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Brian Swetland <swetland@google.com>,
+        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
+        Snild Dolkow <snild.dolkow@sonymobile.com>,
+        Oskar Andero <oskar.andero@sonymobile.com>
+Subject: [PATCH] lowmemorykiller: prevent multiple instances of low memory killer
+Date: Mon, 15 Apr 2013 15:03:29 +0200
+Message-ID: <1366031009-21958-1-git-send-email-oskar.andero@sonymobile.com>
+X-Mailer: git-send-email 1.8.1.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Snild Dolkow <snild.dolkow@sonymobile.com>
 
+Running multiple instances of LMK is not useful since it will try to
+kill the same process.
 
-On Fri, 12 Apr 2013, Tejun Heo wrote:
+This patch adds a spinlock to prevent multiple instances of the LMK
+running at the same time. Uses spin_trylock and return on failure to
+avoid blocking.
 
-> On Fri, Apr 12, 2013 at 02:01:08PM -0400, Mikulas Patocka wrote:
-> > So if you think that reference counts should be incremented by every clone 
-> > of the original bio, what kind of bug should it protect against? If we 
-> > don't increment reference counts for pages, why should we do it for cgroup 
-> > pointers?
-> 
-> These things are called trade-offs.  You look at the overhead of the
-> things and how complex / fragile things get when certain shortcuts are
-> taken and how well contained and easy to verify / debug when things go
-> wrong and then make your choice.
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Brian Swetland <swetland@google.com>
+Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
+Signed-off-by: Snild Dolkow <snild.dolkow@sonymobile.com>
+Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+---
+ drivers/staging/android/lowmemorykiller.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-So what we are here trading for what?
+diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
+index 3b91b0f..0b19353 100644
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -38,6 +38,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/profile.h>
+ #include <linux/notifier.h>
++#include <linux/spinlock.h>
+ 
+ static uint32_t lowmem_debug_level = 2;
+ static short lowmem_adj[6] = {
+@@ -57,6 +58,8 @@ static int lowmem_minfree_size = 4;
+ 
+ static unsigned long lowmem_deathpending_timeout;
+ 
++#define LMK_BUSY (-1)
++
+ #define lowmem_print(level, x...)			\
+ 	do {						\
+ 		if (lowmem_debug_level >= (level))	\
+@@ -65,6 +68,7 @@ static unsigned long lowmem_deathpending_timeout;
+ 
+ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ {
++	static DEFINE_SPINLOCK(lowmem_lock);
+ 	struct task_struct *tsk;
+ 	struct task_struct *selected = NULL;
+ 	int rem = 0;
+@@ -104,6 +108,9 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 	}
+ 	selected_oom_score_adj = min_score_adj;
+ 
++	if (spin_trylock(&lowmem_lock) == 0)
++		return LMK_BUSY;
++
+ 	rcu_read_lock();
+ 	for_each_process(tsk) {
+ 		struct task_struct *p;
+@@ -120,6 +127,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
+ 			task_unlock(p);
+ 			rcu_read_unlock();
++			spin_unlock(&lowmem_lock);
+ 			return 0;
+ 		}
+ 		oom_score_adj = p->signal->oom_score_adj;
+@@ -156,6 +164,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
+ 		     sc->nr_to_scan, sc->gfp_mask, rem);
+ 	rcu_read_unlock();
++	spin_unlock(&lowmem_lock);
+ 	return rem;
+ }
+ 
+-- 
+1.8.1.5
 
-
-The patch eliminates the atomic references when passing the bio down the 
-stack of bio drivers.
-
-
-The patch adds a flag BIO_DROP_CGROUP_REFCOUNT, modifies it at two places 
-and tests it on two places - that is not big.
-
-The flag BIO_DROP_CGROUP_REFCOUNT is never supposed to be used outside bio 
-cgroup functions, so it doesn't complicate interface to other subsystems.
-
-The patch is not bug-prone, because we already must make sure that the 
-cloned bio has shorter lifetime than the master bio - so the patch doesn't 
-introduce any new possibilities to make bugs.
-
-
-> Do the two really look the same to you?  The page refs are much more
-> expensive, mostly contained in and the main focus of dm.  ioc/css refs
-> aren't that expensive to begin with, css refcnting is widely scattered
-
-ioc is per-task, so it is likely to be cached (but there are processors 
-that have slow atomic operations even on cached data - on Pentium 4 it 
-takes about 100 cycles). But css is shared between tasks and produces the 
-cache ping-pong effect.
-
-> across the kernel, the association interface is likely to be used by
-> any entity issuing IOs asynchronously soonish, and there is much saner
-> way to improve it - which would be beneficial not only to block / dm
-> but everyone else using it.
-> 
-> Something being done in one place doesn't automatically make it okay
-> everywhere else.  We can and do use hackery but *with* discretion.
->
-> If you still can't understand, I'm not sure what more I can tell you.
-> 
-> -- 
-> tejun
-
-I don't know what's wrong with 4 lines of code to manipulate a flag.
-
-I understand that you don't want to do something complicated and bug-prone 
-to improve performance. But the patch is neither complicated nor 
-bug-prone.
-
-Mikulas
