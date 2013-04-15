@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964820Ab3DOW5L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 18:57:11 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:42889 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934768Ab3DOW5K (ORCPT
+	id S935068Ab3DOW7c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 18:59:32 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:44701 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934768Ab3DOW7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 18:57:10 -0400
+	Mon, 15 Apr 2013 18:59:31 -0400
+Date: Tue, 16 Apr 2013 00:59:27 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Paul Mundt <lethal@linux-sh.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] ptrace: Revert "Prepare to fix racy accesses on task
+ breakpoints"
+Message-ID: <20130415225926.GD17561@somewhere.redhat.com>
+References: <20130414160501.GA7612@redhat.com>
+ <20130414160541.GA7660@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJWxHB-oPjGVV5y2jeSNf0At1+3nFgAR0UET8dzxcjB1g@mail.gmail.com>
-References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
-	<1365797627-20874-7-git-send-email-keescook@chromium.org>
-	<CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com>
-	<516A1D49.1050100@zytor.com>
-	<CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
-	<516C702C.2030209@zytor.com>
-	<CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
-	<516C751B.4020505@zytor.com>
-	<CAE9FiQW5X80bxOURTkhnELuV_AzYXBHEudxN1eUg_1jehrcfww@mail.gmail.com>
-	<CAGXu5j+KRVmZqSkvoEH70DCb055uSbVzFkoo+E1Ao=e=Yus_bA@mail.gmail.com>
-	<CAE9FiQWosJRz14HgSq0cDYfsdSsMO9Vpbjd4f5UL3R6KHmOK5Q@mail.gmail.com>
-	<CAGXu5jJWxHB-oPjGVV5y2jeSNf0At1+3nFgAR0UET8dzxcjB1g@mail.gmail.com>
-Date: Mon, 15 Apr 2013 15:57:09 -0700
-X-Google-Sender-Auth: hQyGhMfQrVWQaa_MCVsijhyN3BM
-Message-ID: <CAE9FiQXZcXpyEqHvON0D3u2ivcWQo1=rC1kkt5GLU4rEYaVoQw@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
-From: Yinghai Lu <yinghai@kernel.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Eric Northup <digitaleric@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130414160541.GA7660@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 3:42 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Apr 15, 2013 at 3:38 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->
->> so the decompressed image is not moved high?
->
-> No, I mean the size of the relocated image is using z_extract_offset
-> as the end size of the relocated memory. See select_aslr_address. It
-> takes the chosen aslr offset plus the location of z_extract_offset and
-> keeps reducing the offset until it's inside the physical end of
-> memory.
+On Sun, Apr 14, 2013 at 06:05:41PM +0200, Oleg Nesterov wrote:
+> This reverts commit bf26c018490c2fce7fe9b629083b96ce0e6ad019.
+> 
+> The patch was fine but we can no longer race with SIGKILL after
+> 9899d11f "ptrace: ensure arch_ptrace/ptrace_request can never race
+> with SIGKILL", the __TASK_TRACED tracee can't be woken up and
+> ->ptrace_bps[] can't go away.
+> 
+> Now that ptrace_get_breakpoints/ptrace_put_breakpoints have no
+> callers, we can kill them and remove task->ptrace_bp_refcnt.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-My point is:
-If you move the decompressed high, for example, before aslr uncompressed
-vmlinx is on [1024g+16M, 1024g+256M).
-after aslr, it is on [1024g+16M + 32M, 1024g+256M + 32M).
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-You will need to make sure that 32M is still RAM in e820 memmap.
-also those range should not be with boot_param, command line, and initrd.
-as bootloader could put boot_param, commandline and initrd in that 32M range.
-
-Yinghai
+Thanks a lot!
