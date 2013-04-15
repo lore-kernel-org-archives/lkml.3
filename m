@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934002Ab3DOUld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 16:41:33 -0400
-Received: from mail-qe0-f74.google.com ([209.85.128.74]:45477 "EHLO
-	mail-qe0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755573Ab3DOUlc (ORCPT
+	id S1756766Ab3DOUrJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 16:47:09 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:59372 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab3DOUrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 16:41:32 -0400
-From: Colin Cross <ccross@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, Colin Cross <ccross@android.com>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        fuse-devel@lists.sourceforge.net (open list:FUSE: FILESYSTEM...)
-Subject: [PATCH] fuse: use kernel headers when __KERNEL__ is set
-Date: Mon, 15 Apr 2013 13:41:21 -0700
-Message-Id: <1366058481-21033-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.8.1.3
+	Mon, 15 Apr 2013 16:47:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130415080621.GA1994@udknight>
+References: <20130415080621.GA1994@udknight>
+Date: Mon, 15 Apr 2013 13:47:07 -0700
+X-Google-Sender-Auth: UmYYWRzaYEkzfKzYth8Vzitaloc
+Message-ID: <CAE9FiQWh_jFUDBHcQC=T_j+4Mneqb47kwpoLv7sBcv_o3HkqwA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] x86: reserve_crashkernel: use memblock_is_region_reserved
+ to simplify code
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wang YanQing <udknight@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 7e98d53086d18c877cb44e9065219335184024de (Synchronize fuse
-header with one used in library) added #ifdef __linux__ around
-defines if it is not set.  The kernel build is self-contained and
-can be built on non-Linux toolchains.  After the mentioned commit
-builds on non-Linux toolchains will try to include stdint.h and
-fail due to -nostdinc, and then fail with a bunch of undefined
-type errors.
+On Mon, Apr 15, 2013 at 1:06 AM, Wang YanQing <udknight@gmail.com> wrote:
+> Use memblock_is_region_reserved instead of memblock_find_in_range
+> to simplify the check codes, and gain a little speed benefit.
+>
+> Signed-off-by: Wang YanQing <udknight@gmail.com>
+> ---
+>  arch/x86/kernel/setup.c | 6 +-----
+>  1 file changed, 1 insertion(+), 5 deletions(-)
+>
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 90d8cc9..9d60c85 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -577,11 +577,7 @@ static void __init reserve_crashkernel(void)
+>                 }
+>
+>         } else {
+> -               unsigned long long start;
+> -
+> -               start = memblock_find_in_range(crash_base,
+> -                                crash_base + crash_size, crash_size, 1<<20);
+> -               if (start != crash_base) {
+> +               if (memblock_is_region_reserved(crash_base, crash_size)) {
+>                         pr_info("crashkernel reservation failed - memory is in use.\n");
+>                         return;
+>                 }
 
-Change the #ifdef to check for __linux__ or __KERNEL__ so that
-it uses the kernel typedefs if __KERNEL__ is set.
+We need to use memblock_find_in_range here.
 
-Signed-off-by: Colin Cross <ccross@android.com>
----
-I think this should go in v3.9, without it bare-metal toolchains
-that don't define __linux__ will fail to compile the kernel, and
-cross-compiles from non-linux hosts will probably also fail.
+As the range [crash_base, crash_base+crash_size) could be not in
+memblock.memory.
 
- include/uapi/linux/fuse.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+for example, if the ram only have 16G installed, and user just specify
+crash_base to 64g.
+and there is no [64g...) in memblock.reserved.
+But that does not mean that we can use that range.
 
-diff --git a/include/uapi/linux/fuse.h b/include/uapi/linux/fuse.h
-index 4c43b44..5b79443 100644
---- a/include/uapi/linux/fuse.h
-+++ b/include/uapi/linux/fuse.h
-@@ -95,7 +95,7 @@
- #ifndef _LINUX_FUSE_H
- #define _LINUX_FUSE_H
- 
--#ifdef __linux__
-+#if defined(__linux__) || defined(__KERNEL__)
- #include <linux/types.h>
- #else
- #include <stdint.h>
--- 
-1.8.1.3
+Thanks
 
+Yinghai
