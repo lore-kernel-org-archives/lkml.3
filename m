@@ -1,62 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab3DOURS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 16:17:18 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:33254 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754351Ab3DOURQ (ORCPT
+	id S1756606Ab3DOUSp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 16:18:45 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:51198 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753095Ab3DOUSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 16:17:16 -0400
-X-RZG-AUTH: :P20JeEWkefDI1ODZs1HHtgV3eF0OpFsRaGIBBWYxhJvJPtnXtogBWn6YvUkYzDKvBT07wx/0LJ4BNA==
-X-RZG-CLASS-ID: mo00
+	Mon, 15 Apr 2013 16:18:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
-Date: Mon, 15 Apr 2013 22:16:57 +0200
-From: Michael Braun <michael.braun@fem.tu-ilmenau.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <projekt-wlan@fem.tu-ilmenau.de>
-Subject: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
- Freescale P1020
-Reply-To: <projekt-wlan@fem.tu-ilmenau.de>
-Mail-Reply-To: <projekt-wlan@fem.tu-ilmenau.de>
-Message-ID: <ee76d61e1b4c516ddb933fa533c3443c@fami-braun.de>
-User-Agent: Roundcube Webmail/0.8.5
+In-Reply-To: <CAE9FiQVEWy2MVfVmv4oL9D24OcF83dQv+OcFd5K6v8ZHeGumJA@mail.gmail.com>
+References: <48795235.crcTAaJqPb@vostro.rjw.lan> <CAE9FiQVEWy2MVfVmv4oL9D24OcF83dQv+OcFd5K6v8ZHeGumJA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 15 Apr 2013 14:18:18 -0600
+Message-ID: <CAErSpo7vUWSoav+rJgGK15xA7f0W+a0_16tZLFGCz5HO-HVZ2g@mail.gmail.com>
+Subject: Re: [PATCH] PCI / PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        "Benenati, Chris J" <chris.j.benenati@intel.com>,
+        Ajaykumar Hotchandani <ajaykumar.hotchandani@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Apr 12, 2013 at 11:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Apr 12, 2013 at 4:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>>
+>> Commit b51306c (PCI: Set device power state to PCI_D0 for device
+>> without native PM support) modified pci_platform_power_transition()
+>> by adding code causing dev->current_state for devices that don't
+>> support native PCI PM but are power-manageable by the platform to be
+>> changed to PCI_D0 regardless of the value returned by the preceding
+>> platform_pci_set_power_state().  In particular, that also is done
+>> if the platform_pci_set_power_state() has been successful, which
+>> causes the correct power state of the device set by
+>> pci_update_current_state() in that case to be overwritten by PCI_D0.
+>>
+>> Fix that mistake by making the fallback to PCI_D0 only happen if
+>> the platform_pci_set_power_state() has returned an error.
+>>
+>> Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
+>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> Cc: <stable@vger.kernel.org>
 
-I'm running OpenWRT Kernel 3.8.3 (which already has 
-f66dea709cd9309b2ee9f715697818001fb518de and 
-5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN (QorlQ, 
-PPC) device.
-Before updating the kernel from 3.3.0, USB host support was working 
-fine. Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and 
-the lsusb output is empty, so USB host support is not working. When I 
-apply the following patch, USB host support starts working again, so I 
-guess 3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
+I folded in Yinghai's simplification and added a URL to Chris's report
+and applied to my pci/rafael-pm branch:
+http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/rafael-pm
 
-Regards,
-  M. Braun
+If it still looks good to you, Rafael, I'll merge it to next for v3.10.
 
---- a/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:52.924403077 
-+0200
-+++ b/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:57.572410838 
-+0200
-@@ -273,7 +273,6 @@ static int ehci_fsl_setup_phy(struct usb
-                 if (!spin_event_timeout(in_be32(non_ehci + 
-FSL_SOC_USB_CTRL) &
-                                 PHY_CLK_VALID, FSL_USB_PHY_CLK_TIMEOUT, 
-0)) {
-                         printk(KERN_WARNING "fsl-ehci: USB PHY clock 
-invalid\n");
--                       return -EINVAL;
-                 }
-         }
+I don't know what the user-visible effect of this is, and it's been
+around for a long time, but if you think this should go in v3.9
+instead, let me know.
 
+Bjorn
 
+>> ---
+>>  drivers/pci/pci.c |    3 +--
+>>  1 file changed, 1 insertion(+), 2 deletions(-)
+>>
+>> Index: linux-pm/drivers/pci/pci.c
+>> ===================================================================
+>> --- linux-pm.orig/drivers/pci/pci.c
+>> +++ linux-pm/drivers/pci/pci.c
+>> @@ -646,8 +646,7 @@ static int pci_platform_power_transition
+>>                 error = platform_pci_set_power_state(dev, state);
+>>                 if (!error)
+>>                         pci_update_current_state(dev, state);
+>> -               /* Fall back to PCI_D0 if native PM is not supported */
+>> -               if (!dev->pm_cap)
+>> +               else if (!dev->pm_cap) /* Fall back to PCI_D0 */
+>>                         dev->current_state = PCI_D0;
+>>         } else {
+>>                 error = -ENODEV;
+>>
+>
+> Acked-by: Yinghai Lu <yinghai@kernel.org>
+>
+> also could simplify it further.
+>
+> ---
+>  drivers/pci/pci.c |   12 ++++--------
+>  1 file changed, 4 insertions(+), 8 deletions(-)
+>
+> Index: linux-2.6/drivers/pci/pci.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/pci/pci.c
+> +++ linux-2.6/drivers/pci/pci.c
+> @@ -646,15 +646,11 @@ static int pci_platform_power_transition
+>          error = platform_pci_set_power_state(dev, state);
+>          if (!error)
+>              pci_update_current_state(dev, state);
+> -        /* Fall back to PCI_D0 if native PM is not supported */
+> -        if (!dev->pm_cap)
+> -            dev->current_state = PCI_D0;
+> -    } else {
+> +    } else
+>          error = -ENODEV;
+> -        /* Fall back to PCI_D0 if native PM is not supported */
+> -        if (!dev->pm_cap)
+> -            dev->current_state = PCI_D0;
+> -    }
+> +
+> +    if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
+> +        dev->current_state = PCI_D0;
+>
+>      return error;
+>  }
