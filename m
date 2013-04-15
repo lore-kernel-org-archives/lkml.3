@@ -1,130 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934477Ab3DOPiB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:38:01 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45933 "EHLO
+	id S933779Ab3DOPc4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:32:56 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45919 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933867Ab3DOPc7 (ORCPT
+	with ESMTP id S933323Ab3DOPcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:32:59 -0400
+	Mon, 15 Apr 2013 11:32:54 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3 19/24] tty: Only guarantee termios read safety for throttle/unthrottle
-Date: Mon, 15 Apr 2013 11:19:23 -0400
-Message-Id: <1366039168-8510-20-git-send-email-peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 11/16] tty: Only perform flip buffer flush from tty_buffer_flush()
+Date: Mon, 15 Apr 2013 11:26:02 -0400
+Message-Id: <1366039567-8620-12-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
-References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
- <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1366039567-8620-1-git-send-email-peter@hurleysoftware.com>
+References: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
+ <1366039567-8620-1-git-send-email-peter@hurleysoftware.com>
 X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No tty driver modifies termios during throttle() or unthrottle().
-Therefore, only read safety is required.
+Now that dropping the buffer lock is not necessary (as result of
+converting the spin lock to a mutex), the flip buffer flush no
+longer needs to be handled by the buffer work.
 
-However, tty_throttle_safe and tty_unthrottle_safe must still be
-mutually exclusive; introduce throttle_mutex for that purpose.
+Simply signal a flush is required; the buffer work will exit the
+i/o loop, which allows tty_buffer_flush() to proceed.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c     | 4 ----
- drivers/tty/tty_io.c    | 1 +
- drivers/tty/tty_ioctl.c | 8 ++++----
- include/linux/tty.h     | 1 +
- 4 files changed, 6 insertions(+), 8 deletions(-)
+ drivers/tty/tty_buffer.c | 63 ++++++++++++++++--------------------------------
+ include/linux/tty.h      |  1 -
+ 2 files changed, 21 insertions(+), 43 deletions(-)
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 3d334ef..dba7e99 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1519,9 +1519,7 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 		tty_set_flow_change(tty, TTY_THROTTLE_SAFE);
- 		if (receive_room(tty) >= TTY_THRESHOLD_THROTTLE)
- 			break;
--		up_read(&tty->termios_rwsem);
- 		throttled = tty_throttle_safe(tty);
--		down_read(&tty->termios_rwsem);
- 		if (!throttled)
- 			break;
- 	}
-@@ -2084,9 +2082,7 @@ do_it_again:
- 			if (!tty->count)
- 				break;
- 			n_tty_set_room(tty);
--			up_read(&tty->termios_rwsem);
- 			unthrottled = tty_unthrottle_safe(tty);
--			down_read(&tty->termios_rwsem);
- 			if (!unthrottled)
- 				break;
- 		}
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 30201e6..55b8594 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -2951,6 +2951,7 @@ void initialize_tty_struct(struct tty_struct *tty,
- 	tty->session = NULL;
- 	tty->pgrp = NULL;
- 	mutex_init(&tty->legacy_mutex);
-+	mutex_init(&tty->throttle_mutex);
- 	init_rwsem(&tty->termios_rwsem);
- 	init_ldsem(&tty->ldisc_sem);
- 	init_waitqueue_head(&tty->write_wait);
-diff --git a/drivers/tty/tty_ioctl.c b/drivers/tty/tty_ioctl.c
-index 490e499..5e55ca4 100644
---- a/drivers/tty/tty_ioctl.c
-+++ b/drivers/tty/tty_ioctl.c
-@@ -151,7 +151,7 @@ int tty_throttle_safe(struct tty_struct *tty)
- {
- 	int ret = 0;
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index c3c606c..39cae61 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -189,19 +189,11 @@ void tty_buffer_flush(struct tty_struct *tty)
+ 	struct tty_port *port = tty->port;
+ 	struct tty_bufhead *buf = &port->buf;
  
--	down_write(&tty->termios_rwsem);
-+	mutex_lock(&tty->throttle_mutex);
- 	if (!test_bit(TTY_THROTTLED, &tty->flags)) {
- 		if (tty->flow_change != TTY_THROTTLE_SAFE)
- 			ret = 1;
-@@ -161,7 +161,7 @@ int tty_throttle_safe(struct tty_struct *tty)
- 				tty->ops->throttle(tty);
- 		}
- 	}
--	up_write(&tty->termios_rwsem);
-+	mutex_unlock(&tty->throttle_mutex);
+-	mutex_lock(&buf->flush_mutex);
+-	/* If the data is being pushed to the tty layer then we can't
+-	   process it here. Instead set a flag and the flush_to_ldisc
+-	   path will process the flush request before it exits */
+-	if (test_bit(TTYP_FLUSHING, &port->iflags)) {
+-		set_bit(TTYP_FLUSHPENDING, &port->iflags);
+-		mutex_unlock(&buf->flush_mutex);
+-		wait_event(tty->read_wait,
+-				test_bit(TTYP_FLUSHPENDING, &port->iflags) == 0);
+-		return;
+-	}
++	set_bit(TTYP_FLUSHPENDING, &port->iflags);
  
- 	return ret;
++	mutex_lock(&buf->flush_mutex);
+ 	__tty_buffer_flush(port);
++	clear_bit(TTYP_FLUSHPENDING, &port->iflags);
+ 	mutex_unlock(&buf->flush_mutex);
  }
-@@ -182,7 +182,7 @@ int tty_unthrottle_safe(struct tty_struct *tty)
- {
- 	int ret = 0;
  
--	down_write(&tty->termios_rwsem);
-+	mutex_lock(&tty->throttle_mutex);
- 	if (test_bit(TTY_THROTTLED, &tty->flags)) {
- 		if (tty->flow_change != TTY_UNTHROTTLE_SAFE)
- 			ret = 1;
-@@ -192,7 +192,7 @@ int tty_unthrottle_safe(struct tty_struct *tty)
- 				tty->ops->unthrottle(tty);
+@@ -429,39 +421,26 @@ static void flush_to_ldisc(struct work_struct *work)
+ 
+ 	mutex_lock(&buf->flush_mutex);
+ 
+-	if (!test_and_set_bit(TTYP_FLUSHING, &port->iflags)) {
+-		while (1) {
+-			struct tty_buffer *head = buf->head;
+-			int count;
+-
+-			count = head->commit - head->read;
+-			if (!count) {
+-				if (head->next == NULL)
+-					break;
+-				buf->head = head->next;
+-				tty_buffer_free(port, head);
+-				continue;
+-			}
+-
+-			mutex_unlock(&buf->flush_mutex);
+-
+-			count = receive_buf(tty, head, count);
+-
+-			mutex_lock(&buf->flush_mutex);
+-
+-			/* Ldisc or user is trying to flush the buffers.
+-			   We may have a deferred request to flush the
+-			   input buffer, if so pull the chain under the lock
+-			   and empty the queue */
+-			if (test_bit(TTYP_FLUSHPENDING, &port->iflags)) {
+-				__tty_buffer_flush(port);
+-				clear_bit(TTYP_FLUSHPENDING, &port->iflags);
+-				wake_up(&tty->read_wait);
+-				break;
+-			} else if (!count)
++	while (1) {
++		struct tty_buffer *head = buf->head;
++		int count;
++
++		/* Ldisc or user is trying to flush the buffers. */
++		if (test_bit(TTYP_FLUSHPENDING, &port->iflags))
++			break;
++
++		count = head->commit - head->read;
++		if (!count) {
++			if (head->next == NULL)
+ 				break;
++			buf->head = head->next;
++			tty_buffer_free(port, head);
++			continue;
  		}
+-		clear_bit(TTYP_FLUSHING, &port->iflags);
++
++		count = receive_buf(tty, head, count);
++		if (!count)
++			break;
  	}
--	up_write(&tty->termios_rwsem);
-+	mutex_unlock(&tty->throttle_mutex);
  
- 	return ret;
- }
+ 	mutex_unlock(&buf->flush_mutex);
 diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 1d1c7c6a..e56ab4c 100644
+index f068c4c..094a909 100644
 --- a/include/linux/tty.h
 +++ b/include/linux/tty.h
-@@ -244,6 +244,7 @@ struct tty_struct {
- 
- 	struct mutex atomic_write_lock;
- 	struct mutex legacy_mutex;
-+	struct mutex throttle_mutex;
- 	struct rw_semaphore termios_rwsem;
- 	spinlock_t ctrl_lock;
- 	/* Termios values are protected by the termios rwsem */
+@@ -213,7 +213,6 @@ struct tty_port {
+ 	wait_queue_head_t	delta_msr_wait;	/* Modem status change */
+ 	unsigned long		flags;		/* TTY flags ASY_*/
+ 	unsigned long		iflags;		/* TTYP_ internal flags */
+-#define TTYP_FLUSHING			1  /* Flushing to ldisc in progress */
+ #define TTYP_FLUSHPENDING		2  /* Queued buffer flush pending */
+ 	unsigned char		console:1,	/* port is a console */
+ 				low_latency:1;	/* direct buffer flush */
 -- 
 1.8.1.2
 
