@@ -1,59 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab3DOXTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 19:19:37 -0400
-Received: from www.sr71.net ([198.145.64.142]:54956 "EHLO blackbird.sr71.net"
+	id S1755541Ab3DOXXM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 19:23:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4646 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752930Ab3DOXTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 19:19:35 -0400
-Message-ID: <516C8B03.7040203@sr71.net>
-Date: Mon, 15 Apr 2013 16:19:31 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+	id S1753465Ab3DOXXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 19:23:10 -0400
+Date: Tue, 16 Apr 2013 01:22:52 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Stephane Eranian <eranian@google.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [RESEND] IOZone with transparent huge page cache
-References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com> <20130415181718.4A1A1E0085@blue.fi.intel.com>
-In-Reply-To: <20130415181718.4A1A1E0085@blue.fi.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 0/5] perf: Add support for hardware breakpoint address
+ masks
+Message-ID: <20130415232252.GA1385@krava.redhat.com>
+References: <1365528113-5458-1-git-send-email-jacob.shin@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365528113-5458-1-git-send-email-jacob.shin@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 11:17 AM, Kirill A. Shutemov wrote:
-> I run iozone using mmap files (-B) with different number of threads.
-> The test machine is 4s Westmere - 4x10 cores + HT.
+On Tue, Apr 09, 2013 at 12:21:48PM -0500, Jacob Shin wrote:
+> The following patchset adds address masks to existing perf hardware
+> breakpoint mechanism to allow trapping on an address range (currently
+> only single address) on supported architectures.
+> 
+> perf uapi is updated, x86 AMD implementation (for AMD Family 16h and
+> beyond) is provided, and perf tool has been extended to do:
+> 
+>   $ perf stat -e mem:0x1000:w:0xf a.out
+>                               ^^^
+>                               "don't care" bit mask
+> 
+>   which will count writes to [0x1000 ~ 0x1010)
+> 
+> Jacob Shin (2):
+>   perf: Add hardware breakpoint address mask
+>   perf, x86: AMD implementation for hardware breakpoint address mask
+> 
+> Suravee Suthikulpanit (3):
+>   perf tools: Add breakpoint address mask to the mem event parser
+>   perf tools: Add breakpoint address mask syntax to perf list and
+>     documentation
+>   perf tools: Add breakpoint address mask test case to
+>     tests/parse-events
+hi,
+the perf tool patches look ok.. thanks for tests! ;)
 
-How did you run this, exactly?  Which iozone arguments?  It was run on
-ramfs, since that's the only thing that transparent huge page cache
-supports right now?
-
-> ** Initial writers **
-> threads:	        1        2        4        8       16       32       64      128      256
-> baseline:	  1103360   912585   500065   260503   128918    62039    34799    18718     9376
-> patched:	  2127476  2155029  2345079  1942158  1127109   571899   127090    52939    25950
-> speed-up(times):     1.93     2.36     4.69     7.46     8.74     9.22     3.65     2.83     2.77
-
-I'm a _bit_ surprised that iozone scales _that_ badly especially while
-threads<nr_cpus.  Is this normal for iozone?  What are the units and
-metric there, btw?
-
-> Minimal speed up is in 1-thread reverse readers - 23%.
-> Maximal is 9.2 times in 32-thread initial writers. It's probably due
-> batched radix tree insert - we insert 512 pages a time. It reduces
-> mapping->tree_lock contention.
-
-It might actually be interesting to see this at 10, 20, 40, 80, etc...
-since that'll actually match iozone threads to CPU cores on your
-particular system.
+jirka
