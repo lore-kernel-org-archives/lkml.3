@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab3DODug (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 23:50:36 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:52335 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755244Ab3DODue (ORCPT
+	id S1755554Ab3DODuz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 23:50:55 -0400
+Received: from ozlabs.org ([203.10.76.45]:40390 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753595Ab3DODuX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 23:50:34 -0400
-Message-ID: <516B78E5.6000109@huawei.com>
-Date: Mon, 15 Apr 2013 11:49:57 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Sun, 14 Apr 2013 23:50:23 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] kernel: kallsyms: memory override issue, need check destination buffer length
+In-Reply-To: <51664B04.7000207@asianux.com>
+References: <51662AC7.1090004@asianux.com> <87eheh4sls.fsf@rustcorp.com.au> <51664B04.7000207@asianux.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 15 Apr 2013 11:35:30 +0930
+Message-ID: <87y5ck8s5x.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kay@vrfy.org>, <greg@kroah.com>,
-        <lennart@poettering.net>, <daniel@zonque.org>
-Subject: Re: [PATCH 4/4] cgroup: implement task_cgroup_path_from_hierarchy()
-References: <1365964619-14762-1-git-send-email-tj@kernel.org> <1365964619-14762-5-git-send-email-tj@kernel.org> <516B7753.9060503@huawei.com> <20130415034613.GK3050@htj.dyndns.org>
-In-Reply-To: <20130415034613.GK3050@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/15 11:46, Tejun Heo wrote:
-> On Mon, Apr 15, 2013 at 11:43:15AM +0800, Li Zefan wrote:
->>> +int task_cgroup_path_from_hierarchy(struct task_struct *task, int hierarchy_id,
->>> +				    char *buf, size_t buflen)
->>> +{
->>> +	struct cgroupfs_root *root;
->>> +	struct cgroup *cgrp = NULL;
->>> +	int ret = -ENOENT;
->>> +
->>> +	mutex_lock(&cgroup_mutex);
->>> +
->>> +	root = idr_find(&cgroup_hierarchy_idr, hierarchy_id);
->>> +	if (root) {
->>> +		cgrp = task_cgroup_from_root(task, root);
->>
->> task_cgroup_from_root() will never return NULL, and there's a BUG_ON(!res) in it.
-> 
-> @hierarchy_id may come from userland, so we probably should update
-> task_cgroup_from_root() to return NULL if the id is invalid.  Will add
-> a patch.
-> 
+Chen Gang <gang.chen@asianux.com> writes:
+>   We don't export any symbols > 128 characters, but if we did then
+>   kallsyms_expand_symbol() would overflow the buffer handed to it.
+>   So we need check destination buffer length when copying.
+>
+>   the related test:
+>     if we define an EXPORT function which name more than 128.
+>     will panic when call kallsyms_lookup_name by init_kprobes on booting.
+>     after check the length (provide this patch), it is ok.
+>
+>   Implementaion:
+>     add additional destination buffer length parameter (maxlen)
+>     if uncompressed string is too long (>= maxlen), it will be truncated.
+>     not check the parameters whether valid, since it is a static function.
 
-But if id is invalid, idr_find() will return NULL. As long as root is not NULL,
-task_cgroup_from_root() will always return a valid cgroup.
+Found a bug already:
 
+kernel/kallsyms.c: In function ‘kallsyms_lookup’:
+kernel/kallsyms.c:305:78: error: negative width in bit-field ‘<anonymous>’
+kernel/kallsyms.c: In function ‘lookup_symbol_name’:
+kernel/kallsyms.c:327:78: error: negative width in bit-field ‘<anonymous>’
+kernel/kallsyms.c: In function ‘lookup_symbol_attrs’:
+kernel/kallsyms.c:346:69: error: negative width in bit-field ‘<anonymous>’
+
+Cheers,
+Rusty.
