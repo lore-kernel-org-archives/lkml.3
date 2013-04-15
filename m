@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab3DOK14 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 06:27:56 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:52823 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467Ab3DOK1y (ORCPT
+	id S1754381Ab3DOK3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 06:29:34 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:21918 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab3DOK3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 06:27:54 -0400
-Date: Mon, 15 Apr 2013 12:27:50 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 4/4] nohz: New option to force all CPUs in full dynticks
- range
-Message-ID: <20130415102750.GE18024@gmail.com>
-References: <20130328074507.GC24433@gmail.com>
- <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com>
- <20130330091037.GA31743@gmail.com>
- <0000013dea26b171-8095c339-dc81-4459-a3ad-a8d69c803448-000000@email.amazonses.com>
- <20130411151956.GF15699@somewhere>
- <20130411153721.GA3742@linux.vnet.ibm.com>
- <20130411155349.GA16797@somewhere.redhat.com>
- <0000013df9f8d526-2783fba3-4dc9-44c6-8b02-2c321eb5b37b-000000@email.amazonses.com>
- <20130411170420.GA17129@somewhere.redhat.com>
- <0000013dfef98b2d-ed5980b1-86ff-47de-8aa1-fd7fdd02f034-000000@email.amazonses.com>
+	Mon, 15 Apr 2013 06:29:33 -0400
+X-RZG-AUTH: :P20JeEWkefDI1ODZs1HHtgV3eF0OpFsRaGIBBWYxhJvJPtnXtogBWn6YvUkYzDKvBT07wx/0LJ4BNA==
+X-RZG-CLASS-ID: mo00
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013dfef98b2d-ed5980b1-86ff-47de-8aa1-fd7fdd02f034-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/mixed;
+ boundary="=_8c1278b61f2227e21bbb3a7ae3ef6627"
+Date: Mon, 15 Apr 2013 12:29:10 +0200
+From: michael-dev <michael-dev@fami-braun.de>
+To: <stephen@networkplumber.org>
+Cc: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <bridge@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <projekt-wlan@fem.tu-ilmenau.de>
+Subject: [PATCH] Notify userspace about bridge learning MAC on new port
+Reply-To: <projekt-wlan@fem.tu-ilmenau.de>
+Mail-Reply-To: <projekt-wlan@fem.tu-ilmenau.de>
+Message-ID: <7a31d9fe5bc9b65d4ffe6e03cbd2823f@fami-braun.de>
+User-Agent: Roundcube Webmail/0.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--=_8c1278b61f2227e21bbb3a7ae3ef6627
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
 
-* Christoph Lameter <cl@linux.com> wrote:
+Hi,
 
-> On Thu, 11 Apr 2013, Frederic Weisbecker wrote:
-> 
-> > It may be too general for a naming. But I don't mind just selecting 
-> > CONFIG_RCU_NOCBS_ALL unconditionally. It's easily changed in the future if 
-> > anybody complains.
-> 
-> 
-> I like the general nature of that config option since it removes the need to 
-> configure all the details. For an average user the current sets of options must 
-> look pretty complicated.
+currently, the userspace is informed about the port the MAC is learned 
+on a bridge and about the bridge removing the MAC from its forwarding 
+table, but not when the MAC is learned on a different port. This is 
+inconsistent and makes it difficult for applications to keep track of 
+all MACs learned by a bridge on a subset of its ports.
 
-Yes.
+Please find attached a patch that fixes this by sending an RTM_NEWNEIGH 
+message when the forwarding destination port changes.
 
-It's not just complicated but also fragile and time consuming: as new kernel 
-options arrive you'd always have to be very careful with 'make oldconfig' and make 
-sure you pick up the best options for latency.
+Regards,
+  M. Braun
+--=_8c1278b61f2227e21bbb3a7ae3ef6627
+Content-Transfer-Encoding: base64
+Content-Type: text/plain;
+ name=999-make-bridge-notify-switched-port.diff
+Content-Disposition: attachment;
+ filename=999-make-bridge-notify-switched-port.diff;
+ size=1213
 
-Instead what we want is generally a high level knob that documents user preference 
-and then the kernel config language can do the rest.
+Tm90aWZ5IHVzZXJzcGFjZSBhYm91dCBicmlkZ2UgbGVhcm5pbmcgTUFDIG9uIG5ldyBwb3J0CgpD
+dXJyZW50bHksIHRoZSB1c2Vyc3BhY2UgaXMgaW5mb3JtZWQgYWJvdXQgdGhlIHBvcnQgdGhlIE1B
+QyBpcyBsZWFybmVkIG9uIGEKYnJpZGdlIGFuZCBhYm91dCB0aGUgYnJpZGdlIHJlbW92aW5nIHRo
+ZSBNQUMgZnJvbSBpdHMgZm9yd2FyZGluZyB0YWJsZSwgYnV0IG5vdAp3aGVuIHRoZSBNQUMgaXMg
+bGVhcm5lZCBvbiBhIGRpZmZlcmVudCBwb3J0LgpUaGlzIGlzIGluY29uc2lzdGVudCBhbmQgbWFr
+ZXMgaXQgZGlmZmljdWx0IGZvciBhcHBsaWNhdGlvbnMgdG8ga2VlcCB0cmFjawpvZiBhbGwgTUFD
+cyBsZWFybmVkIGJ5IGEgYnJpZGdlIG9uIGEgc3Vic2V0IG9mIGl0cyBwb3J0cy4KClNpZ25lZC1v
+ZmYtYnk6IE1pY2hhZWwgQnJhdW4gPG1pY2hhZWwtZGV2QGZhbWktYnJhdW4uZGU+CgotLS0gYS9u
+ZXQvYnJpZGdlL2JyX2ZkYi5jCTIwMTMtMDQtMTUgMTE6MjE6NTEuNjM4OTYzNjY4ICswMjAwCisr
+KyBiL25ldC9icmlkZ2UvYnJfZmRiLmMJMjAxMy0wNC0xNSAxMToyMzo1NS45NDExNjYzMTkgKzAy
+MDAKQEAgLTQwOCw2ICs0MDgsNyBAQCBzdGF0aWMgaW50IGZkYl9pbnNlcnQoc3RydWN0IG5ldF9i
+cmlkZ2UKIHsKIAlzdHJ1Y3QgaGxpc3RfaGVhZCAqaGVhZCA9ICZici0+aGFzaFticl9tYWNfaGFz
+aChhZGRyLCB2aWQpXTsKIAlzdHJ1Y3QgbmV0X2JyaWRnZV9mZGJfZW50cnkgKmZkYjsKKwlzdHJ1
+Y3QgbmV0X2JyaWRnZV9wb3J0ICpvcmlnc3JjOwogCiAJaWYgKCFpc192YWxpZF9ldGhlcl9hZGRy
+KGFkZHIpKQogCQlyZXR1cm4gLUVJTlZBTDsKQEAgLTQ3MSw4ICs0NzIsMTIgQEAgdm9pZCBicl9m
+ZGJfdXBkYXRlKHN0cnVjdCBuZXRfYnJpZGdlICpicgogCQkJCQlzb3VyY2UtPmRldi0+bmFtZSk7
+CiAJCX0gZWxzZSB7CiAJCQkvKiBmYXN0cGF0aDogdXBkYXRlIG9mIGV4aXN0aW5nIGVudHJ5ICov
+CisJCQlvcmlnc3JjID0gZmRiLT5kc3Q7CiAJCQlmZGItPmRzdCA9IHNvdXJjZTsKIAkJCWZkYi0+
+dXBkYXRlZCA9IGppZmZpZXM7CisJCQkvKiBub3RpZnkgYXBwbGljYXRpb25zIG9mIG1vZGlmaWVk
+IHNsYXZlIGRldmljZSAqLworCQkJaWYgKG9yaWdzcmMgIT0gc291cmNlKQorCQkJCWZkYl9ub3Rp
+ZnkoYnIsIGZkYiwgUlRNX05FV05FSUdIKTsKIAkJfQogCX0gZWxzZSB7CiAJCXNwaW5fbG9jaygm
+YnItPmhhc2hfbG9jayk7Cg==
+--=_8c1278b61f2227e21bbb3a7ae3ef6627--
 
-> > > Btw, if CONFIG_RCU_NOCBS_ALL isset, the rcu_nocbs= parameter is ignored, 
-> > > right? If you want to keep that direction and not override the Kconfig 
-> > > choice, may be warn the user about that if the boot parameter is passed?
-> 
-> Ok. But all these complicated things would go away if we had an option
-> CONFIG_LOWLATENCY and then everything would just follow the best setup
-> possible given the hardware. Would remove a lot of guesswork and a lot of
-> knobs.
-
-In that sense CONFIG_NO_HZ_FULL is such a flag as well, which, like 
-CONFIG_PREEMPT_RT, tries to preconfigure the kernel correctly.
-
-But we have to be careful not to use a too highlevel flag for that. If the user 
-meant 'low latency' to mean 'low latency IRQ execution' - then enabling 
-CONFIG_NO_HZ_FULL might achieve the opposite, it adds overhead to the IRQ paths.
-
-Thanks,
-
-	Ingo
