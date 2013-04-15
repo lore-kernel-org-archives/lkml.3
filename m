@@ -1,99 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936193Ab3DPQgb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:36:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42083 "EHLO mx2.suse.de"
+	id S936178Ab3DPQga (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:36:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42066 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936146Ab3DPQg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:36:29 -0400
-Date: Mon, 15 Apr 2013 16:14:39 +0200
+	id S935921Ab3DPQgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 12:36:25 -0400
+Date: Mon, 15 Apr 2013 13:57:14 +0200
 From: Jan Kara <jack@suse.cz>
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org, jack@suse.cz,
-        axboe@kernel.dk
-Subject: Re: [PATCH 1/2] blkdev: add flush generation counter
-Message-ID: <20130415141439.GH2299@quack.suse.cz>
-References: <87wqs4kiyi.fsf@openvz.org>
- <1365968068-11766-1-git-send-email-dmonakhov@openvz.org>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [PATCH 1/3] fsfreeze: wait in killable state in
+ __sb_start_write
+Message-ID: <20130415115714.GB2299@quack.suse.cz>
+References: <5169350A.9090600@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365968068-11766-1-git-send-email-dmonakhov@openvz.org>
+In-Reply-To: <5169350A.9090600@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 14-04-13 23:34:27, Dmitry Monakhov wrote:
-> Callers may use this counter to optimize flushes
-> 
-> Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-> ---
->  block/blk-core.c       |    1 +
->  block/blk-flush.c      |    3 ++-
->  include/linux/blkdev.h |    1 +
->  3 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 074b758..afb5a4b 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -537,6 +537,7 @@ void blk_cleanup_queue(struct request_queue *q)
->  	spin_unlock_irq(lock);
->  	mutex_unlock(&q->sysfs_lock);
->  
-> +	atomic_set(&q->flush_tag, 0);
->  	/*
->  	 * Drain all requests queued before DYING marking. Set DEAD flag to
->  	 * prevent that q->request_fn() gets invoked after draining finished.
-> diff --git a/block/blk-flush.c b/block/blk-flush.c
-> index cc2b827..b1adc75 100644
-> --- a/block/blk-flush.c
-> +++ b/block/blk-flush.c
-> @@ -203,7 +203,7 @@ static void flush_end_io(struct request *flush_rq, int error)
->  	/* account completion of the flush request */
->  	q->flush_running_idx ^= 1;
->  	elv_completed_request(q, flush_rq);
-> -
-> +	atomic_inc(&q->flush_tag);
->  	/* and push the waiting requests to the next stage */
->  	list_for_each_entry_safe(rq, n, running, flush.list) {
->  		unsigned int seq = blk_flush_cur_seq(rq);
-> @@ -268,6 +268,7 @@ static bool blk_kick_flush(struct request_queue *q)
->  	q->flush_rq.end_io = flush_end_io;
->  
->  	q->flush_pending_idx ^= 1;
-> +	atomic_inc(&q->flush_tag);
->  	list_add_tail(&q->flush_rq.queuelist, &q->queue_head);
->  	return true;
->  }
-  But this doesn't quite work, does it? When fs reads flush_tag counter,
-CACHE_FLUSH command can be already issued so you are not sure how the IO
-you are issuing relates to the cache flush in flight. If you want to make
-this work, you really need two counters - one for flush submissions and one
-for flush completions. Fs would need to read the submission counter before
-issuing the IO and the completion counter when it wants to make sure date is
-on the stable storage. But it all gets somewhat complex and I'm not sure
-it's worth it given the block layer tries to merge flush requests by
-itself. But you can try for correct implementation and measure the
-performance impact of course...
+On Sat 13-04-13 12:35:54, Marco Stornelli wrote:
+> Added a new enum to decide if we want to sleep in uninterruptible or
+> killable state or we want simply to return immediately.
+  I like the patch. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
 								Honza
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index 78feda9..e079fbd 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -416,6 +416,7 @@ struct request_queue {
->  	unsigned int		flush_queue_delayed:1;
->  	unsigned int		flush_pending_idx:1;
->  	unsigned int		flush_running_idx:1;
-> +	atomic_t		flush_tag;
->  	unsigned long		flush_pending_since;
->  	struct list_head	flush_queue[2];
->  	struct list_head	flush_data_in_flight;
-> -- 
-> 1.7.1
+
 > 
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> ---
+>  fs/super.c         |   24 ++++++++++++++++++------
+>  include/linux/fs.h |   19 +++++++++++++------
+>  2 files changed, 31 insertions(+), 12 deletions(-)
+> 
+> diff --git a/fs/super.c b/fs/super.c
+> index 7465d43..6b70c7f 100644
+> --- a/fs/super.c
+> +++ b/fs/super.c
+> @@ -1190,14 +1190,25 @@ static void acquire_freeze_lock(struct super_block *sb, int level, bool trylock,
+>   * This is an internal function, please use sb_start_{write,pagefault,intwrite}
+>   * instead.
+>   */
+> -int __sb_start_write(struct super_block *sb, int level, bool wait)
+> +int __sb_start_write(struct super_block *sb, int level, int wait)
+>  {
+> +	int ret = 0;
+>  retry:
+>  	if (unlikely(sb->s_writers.frozen >= level)) {
+> -		if (!wait)
+> -			return 0;
+> -		wait_event(sb->s_writers.wait_unfrozen,
+> -			   sb->s_writers.frozen < level);
+> +		switch (wait) {
+> +		case FREEZE_NOWAIT:
+> +			return ret;
+> +		case FREEZE_WAIT:
+> +			wait_event(sb->s_writers.wait_unfrozen,
+> +				   sb->s_writers.frozen < level);
+> +			break;
+> +		case FREEZE_WAIT_KILLABLE:
+> +			ret = wait_event_killable(sb->s_writers.wait_unfrozen,
+> +				   sb->s_writers.frozen < level);
+> +			if (ret)
+> +				return -EINTR;
+> +			break;
+> +		}
+>  	}
+>  
+>  #ifdef CONFIG_LOCKDEP
+> @@ -1213,7 +1224,8 @@ retry:
+>  		__sb_end_write(sb, level);
+>  		goto retry;
+>  	}
+> -	return 1;
+> +	ret = 1;
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL(__sb_start_write);
+>  
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 8d47c9a..c8b7325 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1220,6 +1220,13 @@ enum {
+>  
+>  #define SB_FREEZE_LEVELS (SB_FREEZE_COMPLETE - 1)
+>  
+> +/* Possible waiting modes */
+> +enum {
+> +	FREEZE_NOWAIT = 0,		/* no blocking call */
+> +	FREEZE_WAIT	= 1,		/* wait in uninterruptible state */
+> +	FREEZE_WAIT_KILLABLE = 2,	/* wait in killable state */
+> +};
+> +
+>  struct sb_writers {
+>  	/* Counters for counting writers at each level */
+>  	struct percpu_counter	counter[SB_FREEZE_LEVELS];
+> @@ -1335,7 +1342,7 @@ extern struct timespec current_fs_time(struct super_block *sb);
+>   */
+>  
+>  void __sb_end_write(struct super_block *sb, int level);
+> -int __sb_start_write(struct super_block *sb, int level, bool wait);
+> +int __sb_start_write(struct super_block *sb, int level, int wait);
+>  
+>  /**
+>   * sb_end_write - drop write access to a superblock
+> @@ -1394,12 +1401,12 @@ static inline void sb_end_intwrite(struct super_block *sb)
+>   */
+>  static inline void sb_start_write(struct super_block *sb)
+>  {
+> -	__sb_start_write(sb, SB_FREEZE_WRITE, true);
+> +	__sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_WAIT);
+>  }
+>  
+>  static inline int sb_start_write_trylock(struct super_block *sb)
+>  {
+> -	return __sb_start_write(sb, SB_FREEZE_WRITE, false);
+> +	return __sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_NOWAIT);
+>  }
+>  
+>  /**
+> @@ -1423,7 +1430,7 @@ static inline int sb_start_write_trylock(struct super_block *sb)
+>   */
+>  static inline void sb_start_pagefault(struct super_block *sb)
+>  {
+> -	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, true);
+> +	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, FREEZE_WAIT);
+>  }
+>  
+>  /*
+> @@ -1441,7 +1448,7 @@ static inline void sb_start_pagefault(struct super_block *sb)
+>   */
+>  static inline void sb_start_intwrite(struct super_block *sb)
+>  {
+> -	__sb_start_write(sb, SB_FREEZE_FS, true);
+> +	__sb_start_write(sb, SB_FREEZE_FS, FREEZE_WAIT);
+>  }
+>  
+>  
+> @@ -2224,7 +2231,7 @@ static inline void file_start_write(struct file *file)
+>  {
+>  	if (!S_ISREG(file_inode(file)->i_mode))
+>  		return;
+> -	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, true);
+> +	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, FREEZE_WAIT);
+>  }
+>  
+>  static inline void file_end_write(struct file *file)
+> -- 
+> 1.7.3.4
 -- 
 Jan Kara <jack@suse.cz>
 SUSE Labs, CR
