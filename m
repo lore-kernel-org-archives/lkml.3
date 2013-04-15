@@ -1,78 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770Ab3DOORk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 10:17:40 -0400
-Received: from hapkido.dreamhost.com ([66.33.216.122]:49825 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab3DOORi (ORCPT
+	id S1751619Ab3DOO2c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 10:28:32 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:51770 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab3DOO2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 10:17:38 -0400
-From: "Jason A. Donenfeld" <Jason@zx2c4.com>
-To: linux-kernel@vger.kernel.org
-Cc: "Jason A. Donenfeld" <Jason@zx2c4.com>, re.emese@gmail.com,
-        pageexec@freemail.hu
-Subject: [PATCH] nfsd4: do not compute undefined pointer arithmetic
-Date: Mon, 15 Apr 2013 16:16:23 +0200
-Message-Id: <1366035383-16825-1-git-send-email-Jason@zx2c4.com>
-X-Mailer: git-send-email 1.8.1.5
+	Mon, 15 Apr 2013 10:28:30 -0400
+Date: Mon, 15 Apr 2013 15:28:24 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Rabin Vincent <rabin@rab.in>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 3/8] dmaengine: ste_dma40: Actually write the runtime
+ configuration to registers
+Message-ID: <20130415142824.GG6512@gmail.com>
+References: <1365532783-27425-1-git-send-email-lee.jones@linaro.org>
+ <1365532783-27425-3-git-send-email-lee.jones@linaro.org>
+ <CAH+eYFB_fYmCjvh5PXKRhd-FnaWfeu+LtH+q3VywhCk-PYhHVQ@mail.gmail.com>
+ <20130415110601.GE6512@gmail.com>
+ <CAH+eYFB2+oMPXsnzQVVrEK8CjKGVYFa_n4Wxr=CpdtJwFfOGYw@mail.gmail.com>
+ <20130415115906.GF6512@gmail.com>
+ <CACRpkdawUPPzh-EgVdmvOVP2SOjgKXYrfus=yMee7n+PtAQPHg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdawUPPzh-EgVdmvOVP2SOjgKXYrfus=yMee7n+PtAQPHg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Jason A. Donenfeld" <Jason@zx2c4.com>
+On Mon, 15 Apr 2013, Linus Walleij wrote:
 
-If statp is NULL, "NULL - ptr_value" will be computed, which is
-undefined behavior:
+> On Mon, Apr 15, 2013 at 1:59 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> > On Mon, 15 Apr 2013, Rabin Vincent wrote:
+> >> 2013/4/15 Lee Jones <lee.jones@linaro.org>:
+> >> > On Fri, 12 Apr 2013, Rabin Vincent wrote:
+> >> >> 2013/4/9 Lee Jones <lee.jones@linaro.org>:
+> >> >> > Someone has spent a fair amount of effort writing a runtime configuration
+> >> >> > changing algorithm for DMA clients. However, the config appears to never
+> >> >> > actually make it to hardware. In order for the configuration to take hold
+> >> >> > we need to issue a d40_config_write(), as this is the routine which writes
+> >> >> > it into the hardware's registers.
+> >> >>
+> >> >> No, it's not.  This function is only for initial configuration which
+> >> >> should only be written when the channel is allocated.  In fact, by
+> >> >> calling it here in runtime_config, you are introducing a serious bug:
+> >> >> other logical channels on the same physical channel will stop because of
+> >> >> the SSLNK/SDLNK of the physical channel being zeroed.
+> >> >>
+> >> >> The runtime config already makes it the hardware in the existing code,
+> >> >> via d40_*_cfg().
+> >> >
+> >> > Sorry Rabin, but the only place I can see the config being written is
+> >> > in d40_config_write().
+> >> >
+> >> > Can you paste the line of code in d40_*_cfg() which actually writes
+> >> > the config to hardware please? I don't see it.
+> >>
+> >> It's not that simple.  There are some pointers passed to d40_*_cfg() and
+> >> that function writes the configuration to the variables those pointers
+> >> point to (d40c->log_def.lcsp1, d40c->src_def_cfg, etc.).  Please read
+> >> the code to see how those variables end up being used later when the
+> >> LLIs are prepared for the HW.
+> >
+> > I have read the code, which is why I know that the config only gets
+> > written in d40_config_write(). :)
+> >
+> > So the configuration which gets set in the runtime_config routine
+> > doesn't ever make it to hardware - hence this patch.
+> >
+> > Unless I'm missing something?
+> 
+> The runtime config sets up the config for all *subsequent* jobs.
+> struct d40_chan contains e.g. runtime_addr, runtime_direction
+> etc to store up the stuff being configured. This is done for
+> all the other config as well using d40_log_cfg() or
+> d40_phy_cfg(), and the result is cached in the channel
+> struct, here called d40c.
+> 
+> Next, when preparing jobs, the DMA40 LLI engine will fill in
+> job descriptors using e.g. d40_get_dev_addr()
+> and pick settings from this cached runtime config.
+> 
+> When the subsequent jobs trigger, it allocates channel resources
+> by calling d40_alloc_chan_resources(). The config is written to the
+> hardware by calling d40_config_write().
+> 
+> So the basic misunderstanding here is that you think
+> the config shall take effect immediately, that is not the
+> idea. The configuration will be cached in the channel
+> struct, then it will take effect when the next job that is
+> queued up allocates its resources to commence.
+> 
+> Maybe you haven't grasped the asynchronous nature
+> of the DMAengine? It's a bit like multithreading. You
+> queue up things, then they commence at a later time.
+> Not immediately.
+> 
+> Example: the SPI driver for PL022 may talk to a
+> 8, 16 or 32bit capable device. Depending on which device
+> it wants to queue a job for, it need to be configured differently,
+> like for another width.
+> 
+> At the time you are queueing a new job, another job may
+> already be in flight. If you issue d40_config_write() at this
+> point, you will cause undesired effects to the job that may
+> already be running. Such as reconfiguring the width
+> of the channel.
+> 
+> You may not observe that bug because there is no
+> job in flight, or because the actual configuration is identical
+> for two consecutive jobs, but if you're really stressing something,
+> queuing jobs while others are already in flight, you will
+> see it immediately.
+> 
+> Therefore, this patch should be dropped.
 
-    When two pointers are subtracted, both shall point to elements of
-    the same array object, or one past the last element of the array
-    object; the result is the difference of the subscripts of the two
-    array elements. -6.5.6.9
+Ah right, thanks for your explanation.
 
-This causes issues with the PaX size overflow gcc plugin, and may cause
-problems in other compiler instrumentation and other issues down the
-line.
+I have also just finished speaking to Rabin privately, who painted a
+good picture of how the configuration side of this driver should
+work.
 
-The PaX error message is as follows:
+I have dropped this patch and will shortly be replacing it with
+something else.
 
-    PAX: size overflow detected in function nfsd_cache_update fs/nfsd/nfscache.c:267 cicus.155_59 min, count: 26
-    Pid: 10581, comm: nfsd Not tainted 3.8.6-grsec #4
-    Call Trace:
-     [<ffffffff8114fbd0>] ? report_size_overflow+0x20/0x30
-     [<ffffffff81241e52>] ? nfsd_cache_update+0x232/0x270
-     [<ffffffff81238062>] ? nfsd_dispatch+0x112/0x190
-     [<ffffffff81616320>] ? svc_process_common+0x410/0x5c0
-     [<ffffffff81617302>] ? svc_process+0x102/0x160
-     [<ffffffff81237a4f>] ? nfsd+0xaf/0x120
-     [<ffffffff812379a0>] ? nfsd_destroy+0x70/0x70
-     [<ffffffff810ad03f>] ? kthread+0xaf/0xc0
-     [<ffffffff810acf90>] ? __kthread_bind+0x30/0x30
-     [<ffffffff8164c2f2>] ? ret_from_fork+0x72/0xa0
-     [<ffffffff810acf90>] ? __kthread_bind+0x30/0x30
+Thanks again to both of you.
 
-Signed-off-by: Jason A. Donenfeld <Jason@zx2c4.com>
----
- fs/nfsd/nfscache.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/fs/nfsd/nfscache.c b/fs/nfsd/nfscache.c
-index ca05f6d..466d108 100644
---- a/fs/nfsd/nfscache.c
-+++ b/fs/nfsd/nfscache.c
-@@ -466,8 +466,11 @@ nfsd_cache_update(struct svc_rqst *rqstp, int cachetype, __be32 *statp)
- 	if (!rp)
- 		return;
- 
--	len = resv->iov_len - ((char*)statp - (char*)resv->iov_base);
--	len >>= 2;
-+	/* Do not calculate NULL - ptr_value, as it overflows. */
-+	if (statp) {
-+		len = resv->iov_len - ((char*)statp - (char*)resv->iov_base);
-+		len >>= 2;
-+	}
- 
- 	/* Don't cache excessive amounts of data and XDR failures */
- 	if (!statp || len > (256 >> 2)) {
 -- 
-1.8.1.5
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
