@@ -1,51 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934494Ab3DOThp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 15:37:45 -0400
-Received: from mailout01.c08.mtsvc.net ([205.186.168.189]:37360 "EHLO
-	mailout01.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768Ab3DOThn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 15:37:43 -0400
-Message-ID: <1366054656.4124.14.camel@thor.lan>
-Subject: Re: [ 27/27] tty: dont deadlock while flushing workqueue
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Bryan ODonoghue <bryan.odonoghue.lkml@nexus-software.ie>
-Date: Mon, 15 Apr 2013 15:37:36 -0400
-In-Reply-To: <20130415024233.376898638@linuxfoundation.org>
-References: <20130415024231.351969241@linuxfoundation.org>
-	 <20130415024233.376898638@linuxfoundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-0pjh1 
-Mime-Version: 1.0
+	id S934954Ab3DOTtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 15:49:19 -0400
+Received: from www.sr71.net ([198.145.64.142]:53632 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934335Ab3DOTtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 15:49:17 -0400
+Message-ID: <516C59BC.5050801@sr71.net>
+Date: Mon, 15 Apr 2013 12:49:16 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Jones <davej@redhat.com>, dhillf@gmail.com,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH] kthread: Prevent unpark race which puts threads on the
+ wrong cpu
+References: <515F457E.5050505@sr71.net> <515FCAC6.8090806@linux.vnet.ibm.com> <alpine.LFD.2.02.1304061019000.21884@ionos> <alpine.LFD.2.02.1304071119100.21884@ionos> <20130407095025.GA31307@pd.tnic> <alpine.LFD.2.02.1304081122040.21884@ionos> <20130408115553.GA4395@pd.tnic> <alpine.LFD.2.02.1304081415570.21884@ionos> <alpine.LFD.2.02.1304091635430.21884@ionos> <51670C17.8070608@linux.vnet.ibm.com> <alpine.LFD.2.02.1304112158040.21884@ionos> <516728F6.4090701@linux.vnet.ibm.com> <alpine.LFD.2.02.1304112347390.21884@ionos>
+In-Reply-To: <alpine.LFD.2.02.1304112347390.21884@ionos>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ -cc Alan Cox ]
-
-On Sun, 2013-04-14 at 19:43 -0700, Greg Kroah-Hartman wrote:
-> 3.8-stable review patch.  If anyone has any objections, please let me know.
-> 
-> ------------------
-> 
-> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> 
-> commit 852e4a8152b427c3f318bb0e1b5e938d64dcdc32 upstream.
-
-Greg,
-
-So many other serious error conditions are possible here, it seems
-pointless to add this to 3.8-stable.
-
-Regards,
-Peter Hurley
-
-
-
+I just tested out Linus's current tree (bb33db7).  It is quite happy on
+the large system which was exciting this issue.  Thanks, Thomas!
 
