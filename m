@@ -1,34 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751165Ab3DOG0y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 02:26:54 -0400
-Received: from mail-da0-f46.google.com ([209.85.210.46]:44767 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750715Ab3DOG0w (ORCPT
+	id S1751571Ab3DOG2l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 02:28:41 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:50856 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab3DOG2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 02:26:52 -0400
-Date: Sun, 14 Apr 2013 23:26:40 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] cgroup: remove cgrp->top_cgroup
-Message-ID: <20130415062640.GQ3050@htj.dyndns.org>
-References: <516B9D41.8080508@huawei.com>
+	Mon, 15 Apr 2013 02:28:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <516B9D41.8080508@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [85.250.125.78]
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 15 Apr 2013 09:28:17 +0300
+Message-ID: <CAK=WgbY=4rosYr2g3fYYk6WrqXjN7f=5Dk5+D-h3cWrOtVmNag@mail.gmail.com>
+Subject: adding rpmsg.git to linux next
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Tivy, Robert" <rtivy@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 02:25:05PM +0800, Li Zefan wrote:
-> It's not used, and it can be retrieved via cgrp->root->top_cgroup.
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+Hi Stephen,
 
-Applied to cgroup/for-3.10.  Thanks.
+Could you please add:
 
--- 
-tejun
+git://git.kernel.org/pub/scm/linux/kernel/git/ohad/rpmsg.git#for-next
+
+to linux-next to include new stuff coming from Rob?
+
+Thanks,
+Ohad.
