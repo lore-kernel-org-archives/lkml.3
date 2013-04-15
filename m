@@ -1,91 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933490Ab3DOMj2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 08:39:28 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55851 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933304Ab3DOMjY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 08:39:24 -0400
-Message-ID: <516BF4F3.5060904@ti.com>
-Date: Mon, 15 Apr 2013 15:39:15 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S933554Ab3DOMlW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 08:41:22 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:57131 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753638Ab3DOMlV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 08:41:21 -0400
+Message-ID: <516BF56A.5010401@stericsson.com>
+Date: Mon, 15 Apr 2013 14:41:14 +0200
+From: =?ISO-8859-1?Q?Bengt_J=F6nsson?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: <b-cousson@ti.com>, <tony@atomide.com>
-CC: Roger Quadros <rogerq@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: omap3-beagle-xm: Add USB Host support for Rev
- Ax/Bx
-References: <1366029306-1824-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1366029306-1824-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: ab8500: Fix get_mode for shared mode regulators
+References: <1365424274.21989.2.camel@phoenix> <516BB444.7010508@stericsson.com> <CAFRkauDHn88Y8cAemTNVCXW6WUVqvFfhw1iY174nepNymiU8Nw@mail.gmail.com> <CAFRkauDhqwcHtJU_uBf8wMmKr8DohHZnU6DNPBnzZhTp9-eBfg@mail.gmail.com> <516BE5AE.3020703@stericsson.com> <CAFRkauBzvdGrYizNZXivrzCdQ0btUamFL2hLjLX4rzS6fWhsWA@mail.gmail.com>
+In-Reply-To: <CAFRkauBzvdGrYizNZXivrzCdQ0btUamFL2hLjLX4rzS6fWhsWA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 03:35 PM, Roger Quadros wrote:
-> Provide RESET and Power regulators for the USB PHY,
-> the USB Host port mode and the PHY device.
-> 
-> Also provide pin multiplexer information for USB host
-> pins.
-> 
-> This will not work for Rev Cx boards because of reversed logic
-> for USB_POWER_Enable.
-> 
-> CC: Benoît Cousson <b-cousson@ti.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  arch/arm/boot/dts/omap3-beagle-xm.dts |   62 +++++++++++++++++++++++++++++++++
->  1 files changed, 62 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
-> index 5a31964..d394c51 100644
-> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-> @@ -57,6 +57,60 @@
->  		ti,mcbsp = <&mcbsp2>;
->  		ti,codec = <&twl_audio>;
->  	};
-> +
-> +	/* HS USB Port 2 RESET */
-> +	hsusb2_reset: hsusb2_reset_reg {
-> +		compatible = "regulator-fixed";
-> +		regulator-name = "hsusb2_reset";
-> +		regulator-min-microvolt = <3300000>;
-> +		regulator-max-microvolt = <3300000>;
-> +		gpio = <&gpio5 19 0>;	/* gpio_147 */
-> +		startup-delay-us = <70000>;
-> +		enable-active-high;
-> +	};
-> +
-> +	/* HS USB Port 2 Power */
-> +	hsusb2_power: hsusb2_power_reg {
-> +		compatible = "regulator-fixed";
-> +		regulator-name = "hsusb2_vbus";
-> +		regulator-min-microvolt = <3300000>;
-> +		regulator-max-microvolt = <3300000>;
-> +		gpio = <&twl_gpio 18 0>;	/* GPIO LEDA */
-> +		startup-delay-us = <70000>;
-> +		enable-active-high;	/* FIXME: active-low for Rev. C */
+On 04/15/2013 02:13 PM, Axel Lin wrote:
+>> I guess what you don't like with the current approach is that the driver
+>> returns REGULATOR_MODE_IDLE in some cases where the mode register is set to
+>> LP. But I think, with patch applied, the control may be wrong in some cases
+>> because the regulator framework will call get_mode and see that the mode is
+>> already correct and not call set_mode so lp_mode_req will not get updated. I
+> I got your point now.
+>
+> My point is get_mode() should always return "correct" status by
+> reading register value.
+> And as you mentioned, regulator_set_mode() did check current mode and won't call
+> set_mode callback if current mode is the same as the target mode.
+> And that is why this patch won't work.
+>
+> However, Make get_mode() return "incorrect" status to avoid above
+> issue looks wrong to me.
+>
+> Regards,
+> Axel
+I understand your point of view, but I think that the framework (as it 
+is currently implemented) expects to get the requested mode of the 
+regulator in this case, not the actual mode (in the shared mode 
+register).The alternative could be to change the framework in some way.
 
-Benoit & Tony,
+Any ideas? Otherwise I propose to keep the code and maybe add a comment.
 
-Any ideas how to tackle the reversed logic for Rev. C boards?
+Regards,
 
-> +	};
-> +
-> +	/* HS USB Host PHY on PORT 2 */
-> +	hsusb2_phy: hsusb2_phy {
-> +		compatible = "usb-nop-xceiv";
-> +		reset-supply = <&hsusb2_reset>;
-> +		vcc-supply = <&hsusb2_power>;
-> +	};
-> +
-> +};
-
-cheers,
--roger
-
+Bengt
