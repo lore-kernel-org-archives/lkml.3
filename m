@@ -1,206 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934640Ab3DOSXD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 14:23:03 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:38760 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753635Ab3DOSXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 14:23:01 -0400
-Date: Mon, 15 Apr 2013 13:22:59 -0500
-From: Robin Holt <holt@sgi.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Patch -v3 4/4] Make reboot_cpuid a kernel parameter.
-Message-ID: <20130415182258.GE3658@sgi.com>
-References: <20130415171225.GC3658@sgi.com>
- <20130415171635.GI3672@sgi.com>
- <71f0c948-cdea-4e8e-86a3-088d306388b9@email.android.com>
- <20130415173324.GD3658@sgi.com>
- <0d5a866d-3d40-4592-bb9d-d938fb3312e2@email.android.com>
+	id S934827Ab3DOSXz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 14:23:55 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:62750 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754753Ab3DOSXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 14:23:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0d5a866d-3d40-4592-bb9d-d938fb3312e2@email.android.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1365806683-26717-2-git-send-email-yinghai@kernel.org>
+References: <1365806683-26717-1-git-send-email-yinghai@kernel.org> <1365806683-26717-2-git-send-email-yinghai@kernel.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 15 Apr 2013 12:23:32 -0600
+Message-ID: <CAErSpo4-_x5ZvMtOTg9_OpikngpHZePjtTj3mhew1TXsmZ6fuw@mail.gmail.com>
+Subject: Re: [PATCH v4 01/29] PCI: Clean up quirk_io_region
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ram Pai <linuxram@us.ibm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 10:47:49AM -0700, H. Peter Anvin wrote:
-> We usually don't break working user setups as a matter if policy.  Only if it can't be avoided.
-> 
-> Robin Holt <holt@sgi.com> wrote:
-> 
-> >On Mon, Apr 15, 2013 at 10:18:31AM -0700, H. Peter Anvin wrote:
-> >> Um... doesn't this break anyone who currently depends on this?
-> >
-> >Yes.  That is also why I kept this separate and not tagged for
-> >stable. They would need to start using the more general kernel
-> >parameter
-> >to get the same functionality.  Should I have done it differently?
+On Fri, Apr 12, 2013 at 4:44 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> Before every quirk_io_region calling, pci_read_config_word is called.
+> We can fold that calling into quirk_io_region() to make
+> code more readable.
+>
+> According to Bjorn, split this one as separated patch from
+> addon resource patch.
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-How about:
-Author: Robin Holt <holt@sgi.com>
-Date:   Mon Apr 15 11:39:33 2013 -0500
+I applied this to my pci/misc branch for v3.10.  Nice cleanup, thanks.
 
-    Make reboot_cpuid a kernel parameter.
-    
-    Moving the reboot=s<##> parameter for x86 to a kernel parameter
-    proper.  I did not find any other arch that was specifying the
-    reboot cpu.
-    
-    I left a compatibility mode in there.  The new parameter always
-    takes precedence.  I also fixed up the current code to support
-    up to cpuid's up to the current max of 4096.
-    
-    Signed-off-by: Robin Holt <holt@sgi.com>
-    To: Ingo Molnar <mingo@redhat.com>
-    To: Russ Anderson <rja@sgi.com>
-    Cc: Shawn Guo <shawn.guo@linaro.org>
-    Cc: Oleg Nesterov <oleg@redhat.com>
-    Cc: Andrew Morton <akpm@linux-foundation.org>
-    Cc: "H. Peter Anvin" <hpa@zytor.com>
-    Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-    Cc: Linus Torvalds <torvalds@linux-foundation.org>
-    Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-    Cc: Michel Lespinasse <walken@google.com>
-    Cc: Oleg Nesterov <oleg@redhat.com>
-    Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-    Cc: Paul Mackerras <paulus@samba.org>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Robin Holt <holt@sgi.com>
-    Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-    Cc: Tejun Heo <tj@kernel.org>
-    Cc: the arch/x86 maintainers <x86@kernel.org>
-    Cc: Thomas Gleixner <tglx@linutronix.de>
+I changed quirk_io_region() so that instead of filling in
+res->start/end with bus addresses, then copying those into bus_region,
+and finally converting bus-to-region, we just fill in bus_region
+directly.  That is a couple lines short and res never contains a bus
+address.  There's no reason to keep bad examples of putting bus
+addresses into a struct resource.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4609e81..11ebb48 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2597,6 +2597,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Format: <reboot_mode>[,<reboot_mode2>[,...]]
- 			See arch/*/kernel/reboot.c or arch/*/kernel/process.c
- 
-+	reboot_cpuid=	[KNL] cpuid to use for reboot/halt, etc operations.
-+
- 	relax_domain_level=
- 			[KNL, SMP] Set scheduler's default relax_domain_level.
- 			See Documentation/cgroups/cpusets.txt.
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 76fa1e9..cdcf28f 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -49,10 +49,6 @@ int reboot_force;
-  */
- static int reboot_default = 1;
- 
--#ifdef CONFIG_SMP
--static int reboot_cpu = -1;
--#endif
--
- /*
-  * This is set if we need to go through the 'emergency' path.
-  * When machine_emergency_restart() is called, we may be on
-@@ -63,6 +59,8 @@ static int reboot_emergency;
- /* This is set by the PCI code if either type 1 or type 2 PCI is detected */
- bool port_cf9_safe = false;
- 
-+extern int reboot_cpuid;
-+
- /*
-  * reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old] | p[ci]
-  * warm   Don't set the cold reboot flag
-@@ -97,10 +95,14 @@ static int __init reboot_setup(char *str)
- 
- #ifdef CONFIG_SMP
- 		case 's':
--			if (isdigit(*(str+1))) {
--				reboot_cpu = (int) (*(str+1) - '0');
--				if (isdigit(*(str+2)))
--					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
-+			if (reboot_cpuid < 0) {
-+				int coffset;
-+
-+				reboot_cpuid = 0;
-+				for (coffset = 1; isdigit(*(str + coffset)); coffset++) {
-+					reboot_cpuid *= 10;
-+					reboot_cpuid += (int)(*(str+2) - '0');
-+				}
- 			}
- 			/*
- 			 * We will leave sorting out the final value
-@@ -615,25 +617,10 @@ void native_machine_shutdown(void)
- 	/* Stop the cpus and apics */
- #ifdef CONFIG_SMP
- 
--	/* The boot cpu is always logical cpu 0 */
--	int reboot_cpu_id = 0;
--
--	/* See if there has been given a command line override */
--	if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
--		cpu_online(reboot_cpu))
--		reboot_cpu_id = reboot_cpu;
--
--	/* Make certain the cpu I'm about to reboot on is online */
--	if (!cpu_online(reboot_cpu_id))
--		reboot_cpu_id = smp_processor_id();
--
--	/* Make certain I only run on the appropriate processor */
--	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
--
- 	/*
--	 * O.K Now that I'm on the appropriate processor, stop all of the
--	 * others. Also disable the local irq to not receive the per-cpu
--	 * timer interrupt which may trigger scheduler's load balance.
-+	 * Stop all of the others. Also disable the local irq to
-+	 * not receive the per-cpu timer interrupt which may trigger
-+	 * scheduler's load balance.
- 	 */
- 	local_irq_disable();
- 	stop_other_cpus();
-diff --git a/kernel/reboot.c b/kernel/reboot.c
-index 187a0d8..8d7b7d4 100644
---- a/kernel/reboot.c
-+++ b/kernel/reboot.c
-@@ -8,6 +8,7 @@
- #include <linux/kexec.h>
- #include <linux/kmod.h>
- #include <linux/kmsg_dump.h>
-+#include <linux/moduleparam.h>
- #include <linux/reboot.h>
- #include <linux/syscalls.h>
- #include <linux/syscore_ops.h>
-@@ -66,13 +67,18 @@ int unregister_reboot_notifier(struct notifier_block *nb)
- }
- EXPORT_SYMBOL(unregister_reboot_notifier);
- 
-+int reboot_cpuid = -1;
-+core_param(reboot_cpuid, reboot_cpuid, int, 0644);
-+
- void migrate_to_reboot_cpu(void)
- {
- 	/* The boot cpu is always logical cpu 0 */
--	int reboot_cpu_id = 0;
-+	int reboot_cpu_id = reboot_cpuid;
- 
- 	/* Make certain the cpu I'm about to reboot on is online */
- 	if (!cpu_online(reboot_cpu_id))
-+		reboot_cpu_id = 0;
-+	if (!cpu_online(reboot_cpu_id))
- 		reboot_cpu_id = smp_processor_id();
- 
- 	/* Prevent races with other tasks migrating this task. */
+Bjorn
+
+> ---
+>  drivers/pci/quirks.c | 132 ++++++++++++++++++---------------------------------
+>  1 file changed, 47 insertions(+), 85 deletions(-)
+>
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index 4273a2d..2dac170 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -324,29 +324,32 @@ static void quirk_cs5536_vsa(struct pci_dev *dev)
+>  }
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA, quirk_cs5536_vsa);
+>
+> -static void quirk_io_region(struct pci_dev *dev, unsigned region,
+> -       unsigned size, int nr, const char *name)
+> +static void quirk_io_region(struct pci_dev *dev, int port,
+> +                               unsigned size, int nr, const char *name)
+>  {
+> -       region &= ~(size-1);
+> -       if (region) {
+> -               struct pci_bus_region bus_region;
+> -               struct resource *res = dev->resource + nr;
+> +       u16 region;
+> +       struct pci_bus_region bus_region;
+> +       struct resource *res = dev->resource + nr;
+>
+> -               res->name = pci_name(dev);
+> -               res->start = region;
+> -               res->end = region + size - 1;
+> -               res->flags = IORESOURCE_IO;
+> +       pci_read_config_word(dev, port, &region);
+> +       region &= ~(size - 1);
+>
+> -               /* Convert from PCI bus to resource space.  */
+> -               bus_region.start = res->start;
+> -               bus_region.end = res->end;
+> -               pcibios_bus_to_resource(dev, res, &bus_region);
+> +       if (!region)
+> +               return;
+>
+> -               if (pci_claim_resource(dev, nr) == 0)
+> -                       dev_info(&dev->dev, "quirk: %pR claimed by %s\n",
+> -                                res, name);
+> -       }
+> -}
+> +       res->name = pci_name(dev);
+> +       res->start = region;
+> +       res->end = region + size - 1;
+> +       res->flags = IORESOURCE_IO;
+> +
+> +       /* Convert from PCI bus to resource space.  */
+> +       bus_region.start = res->start;
+> +       bus_region.end = res->end;
+> +       pcibios_bus_to_resource(dev, res, &bus_region);
+> +
+> +       if (!pci_claim_resource(dev, nr))
+> +               dev_info(&dev->dev, "quirk: %pR claimed by %s\n", res, name);
+> +}
+>
+>  /*
+>   *     ATI Northbridge setups MCE the processor if you even
+> @@ -374,12 +377,8 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_RS100,   quirk_ati_
+>   */
+>  static void quirk_ali7101_acpi(struct pci_dev *dev)
+>  {
+> -       u16 region;
+> -
+> -       pci_read_config_word(dev, 0xE0, &region);
+> -       quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES, "ali7101 ACPI");
+> -       pci_read_config_word(dev, 0xE2, &region);
+> -       quirk_io_region(dev, region, 32, PCI_BRIDGE_RESOURCES+1, "ali7101 SMB");
+> +       quirk_io_region(dev, 0xE0, 64, PCI_BRIDGE_RESOURCES, "ali7101 ACPI");
+> +       quirk_io_region(dev, 0xE2, 32, PCI_BRIDGE_RESOURCES+1, "ali7101 SMB");
+>  }
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_AL,     PCI_DEVICE_ID_AL_M7101,         quirk_ali7101_acpi);
+>
+> @@ -442,12 +441,10 @@ static void piix4_mem_quirk(struct pci_dev *dev, const char *name, unsigned int
+>   */
+>  static void quirk_piix4_acpi(struct pci_dev *dev)
+>  {
+> -       u32 region, res_a;
+> +       u32 res_a;
+>
+> -       pci_read_config_dword(dev, 0x40, &region);
+> -       quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES, "PIIX4 ACPI");
+> -       pci_read_config_dword(dev, 0x90, &region);
+> -       quirk_io_region(dev, region, 16, PCI_BRIDGE_RESOURCES+1, "PIIX4 SMB");
+> +       quirk_io_region(dev, 0x40, 64, PCI_BRIDGE_RESOURCES, "PIIX4 ACPI");
+> +       quirk_io_region(dev, 0x90, 16, PCI_BRIDGE_RESOURCES+1, "PIIX4 SMB");
+>
+>         /* Device resource A has enables for some of the other ones */
+>         pci_read_config_dword(dev, 0x5c, &res_a);
+> @@ -491,7 +488,6 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,       PCI_DEVICE_ID_INTEL_82443MX_3,  qui
+>   */
+>  static void quirk_ich4_lpc_acpi(struct pci_dev *dev)
+>  {
+> -       u32 region;
+>         u8 enable;
+>
+>         /*
+> @@ -503,22 +499,14 @@ static void quirk_ich4_lpc_acpi(struct pci_dev *dev)
+>         */
+>
+>         pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
+> -       if (enable & ICH4_ACPI_EN) {
+> -               pci_read_config_dword(dev, ICH_PMBASE, &region);
+> -               region &= PCI_BASE_ADDRESS_IO_MASK;
+> -               if (region >= PCIBIOS_MIN_IO)
+> -                       quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
+> -                                       "ICH4 ACPI/GPIO/TCO");
+> -       }
+> +       if (enable & ICH4_ACPI_EN)
+> +               quirk_io_region(dev, ICH_PMBASE, 128, PCI_BRIDGE_RESOURCES,
+> +                                "ICH4 ACPI/GPIO/TCO");
+>
+>         pci_read_config_byte(dev, ICH4_GPIO_CNTL, &enable);
+> -       if (enable & ICH4_GPIO_EN) {
+> -               pci_read_config_dword(dev, ICH4_GPIOBASE, &region);
+> -               region &= PCI_BASE_ADDRESS_IO_MASK;
+> -               if (region >= PCIBIOS_MIN_IO)
+> -                       quirk_io_region(dev, region, 64,
+> -                                       PCI_BRIDGE_RESOURCES + 1, "ICH4 GPIO");
+> -       }
+> +       if (enable & ICH4_GPIO_EN)
+> +               quirk_io_region(dev, ICH4_GPIOBASE, 64, PCI_BRIDGE_RESOURCES+1,
+> +                               "ICH4 GPIO");
+>  }
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AA_0,                quirk_ich4_lpc_acpi);
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AB_0,                quirk_ich4_lpc_acpi);
+> @@ -533,26 +521,17 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_ESB_1,               qui
+>
+>  static void ich6_lpc_acpi_gpio(struct pci_dev *dev)
+>  {
+> -       u32 region;
+>         u8 enable;
+>
+>         pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
+> -       if (enable & ICH6_ACPI_EN) {
+> -               pci_read_config_dword(dev, ICH_PMBASE, &region);
+> -               region &= PCI_BASE_ADDRESS_IO_MASK;
+> -               if (region >= PCIBIOS_MIN_IO)
+> -                       quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
+> -                                       "ICH6 ACPI/GPIO/TCO");
+> -       }
+> +       if (enable & ICH6_ACPI_EN)
+> +               quirk_io_region(dev, ICH_PMBASE, 128, PCI_BRIDGE_RESOURCES,
+> +                                "ICH6 ACPI/GPIO/TCO");
+>
+>         pci_read_config_byte(dev, ICH6_GPIO_CNTL, &enable);
+> -       if (enable & ICH6_GPIO_EN) {
+> -               pci_read_config_dword(dev, ICH6_GPIOBASE, &region);
+> -               region &= PCI_BASE_ADDRESS_IO_MASK;
+> -               if (region >= PCIBIOS_MIN_IO)
+> -                       quirk_io_region(dev, region, 64,
+> -                                       PCI_BRIDGE_RESOURCES + 1, "ICH6 GPIO");
+> -       }
+> +       if (enable & ICH6_GPIO_EN)
+> +               quirk_io_region(dev, ICH6_GPIOBASE, 64, PCI_BRIDGE_RESOURCES+1,
+> +                               "ICH6 GPIO");
+>  }
+>
+>  static void ich6_lpc_generic_decode(struct pci_dev *dev, unsigned reg, const char *name, int dynsize)
+> @@ -650,13 +629,9 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,   PCI_DEVICE_ID_INTEL_ICH10_1, qui
+>   */
+>  static void quirk_vt82c586_acpi(struct pci_dev *dev)
+>  {
+> -       u32 region;
+> -
+> -       if (dev->revision & 0x10) {
+> -               pci_read_config_dword(dev, 0x48, &region);
+> -               region &= PCI_BASE_ADDRESS_IO_MASK;
+> -               quirk_io_region(dev, region, 256, PCI_BRIDGE_RESOURCES, "vt82c586 ACPI");
+> -       }
+> +       if (dev->revision & 0x10)
+> +               quirk_io_region(dev, 0x48, 256, PCI_BRIDGE_RESOURCES,
+> +                               "vt82c586 ACPI");
+>  }
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA,    PCI_DEVICE_ID_VIA_82C586_3,     quirk_vt82c586_acpi);
+>
+> @@ -668,18 +643,12 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA,       PCI_DEVICE_ID_VIA_82C586_3,     quirk_vt
+>   */
+>  static void quirk_vt82c686_acpi(struct pci_dev *dev)
+>  {
+> -       u16 hm;
+> -       u32 smb;
+> -
+>         quirk_vt82c586_acpi(dev);
+>
+> -       pci_read_config_word(dev, 0x70, &hm);
+> -       hm &= PCI_BASE_ADDRESS_IO_MASK;
+> -       quirk_io_region(dev, hm, 128, PCI_BRIDGE_RESOURCES + 1, "vt82c686 HW-mon");
+> +       quirk_io_region(dev, 0x70, 128, PCI_BRIDGE_RESOURCES+1,
+> +                                "vt82c686 HW-mon");
+>
+> -       pci_read_config_dword(dev, 0x90, &smb);
+> -       smb &= PCI_BASE_ADDRESS_IO_MASK;
+> -       quirk_io_region(dev, smb, 16, PCI_BRIDGE_RESOURCES + 2, "vt82c686 SMB");
+> +       quirk_io_region(dev, 0x90, 16, PCI_BRIDGE_RESOURCES+2, "vt82c686 SMB");
+>  }
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA,    PCI_DEVICE_ID_VIA_82C686_4,     quirk_vt82c686_acpi);
+>
+> @@ -690,15 +659,8 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA,        PCI_DEVICE_ID_VIA_82C686_4,     quirk_vt
+>   */
+>  static void quirk_vt8235_acpi(struct pci_dev *dev)
+>  {
+> -       u16 pm, smb;
+> -
+> -       pci_read_config_word(dev, 0x88, &pm);
+> -       pm &= PCI_BASE_ADDRESS_IO_MASK;
+> -       quirk_io_region(dev, pm, 128, PCI_BRIDGE_RESOURCES, "vt8235 PM");
+> -
+> -       pci_read_config_word(dev, 0xd0, &smb);
+> -       smb &= PCI_BASE_ADDRESS_IO_MASK;
+> -       quirk_io_region(dev, smb, 16, PCI_BRIDGE_RESOURCES + 1, "vt8235 SMB");
+> +       quirk_io_region(dev, 0x88, 128, PCI_BRIDGE_RESOURCES, "vt8235 PM");
+> +       quirk_io_region(dev, 0xd0, 16, PCI_BRIDGE_RESOURCES+1, "vt8235 SMB");
+>  }
+>  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_VIA,    PCI_DEVICE_ID_VIA_8235, quirk_vt8235_acpi);
+>
+> --
+> 1.8.1.4
+>
