@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934899Ab3DOWnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 18:43:01 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:43159 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932513Ab3DOWm7 (ORCPT
+	id S934991Ab3DOWuP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 18:50:15 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:61505 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932162Ab3DOWuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 18:42:59 -0400
+	Mon, 15 Apr 2013 18:50:13 -0400
+X-Originating-IP: 108.223.40.66
+Date: Mon, 15 Apr 2013 15:50:27 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Dave Young <dyoung@redhat.com>, linux-watchdog@vger.kernel.org,
+        kexec@lists.infradead.org, wim@iguana.be,
+        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com
+Subject: Re: [RFC PATCH] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130415225027.GB11485@roeck-us.net>
+References: <20130409145228.GA1111@roeck-us.net>
+ <20130409151423.GM79013@redhat.com>
+ <20130409160757.GA27050@roeck-us.net>
+ <20130410134039.GV79013@redhat.com>
+ <20130410135123.GB15456@roeck-us.net>
+ <20130410142055.GW79013@redhat.com>
+ <20130410151041.GA6670@roeck-us.net>
+ <20130412211627.GM79013@redhat.com>
+ <20130412213024.GA5812@roeck-us.net>
+ <20130415205504.GQ79013@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWosJRz14HgSq0cDYfsdSsMO9Vpbjd4f5UL3R6KHmOK5Q@mail.gmail.com>
-References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
-	<1365797627-20874-7-git-send-email-keescook@chromium.org>
-	<CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com>
-	<516A1D49.1050100@zytor.com>
-	<CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
-	<516C702C.2030209@zytor.com>
-	<CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
-	<516C751B.4020505@zytor.com>
-	<CAE9FiQW5X80bxOURTkhnELuV_AzYXBHEudxN1eUg_1jehrcfww@mail.gmail.com>
-	<CAGXu5j+KRVmZqSkvoEH70DCb055uSbVzFkoo+E1Ao=e=Yus_bA@mail.gmail.com>
-	<CAE9FiQWosJRz14HgSq0cDYfsdSsMO9Vpbjd4f5UL3R6KHmOK5Q@mail.gmail.com>
-Date: Mon, 15 Apr 2013 15:42:59 -0700
-X-Google-Sender-Auth: QmLc9mSe9GWocdmGgBUl_o20LBo
-Message-ID: <CAGXu5jJWxHB-oPjGVV5y2jeSNf0At1+3nFgAR0UET8dzxcjB1g@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
-From: Kees Cook <keescook@chromium.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Eric Northup <digitaleric@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130415205504.GQ79013@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 3:38 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Apr 15, 2013 at 3:07 PM, Kees Cook <keescook@chromium.org> wrote:
->> On Mon, Apr 15, 2013 at 3:00 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> also do not overlap with boot_param, command_line, and initrd.
->>>
->>> and need to double check setup_header.init_size to make sure bss and
->>> etc will not
->>> fall into memory hole or reserved area in e820.
->>>
->>> also may need to setup page table for target position as bootloader may only
->>> has ident mapping only for loaded bzImage 64 areas.
->>>
->>> looks you are trying redo the work for bootloader to pick loaded phys addr.
->>
->> aslr.S's select_aslr_address uses z_extract_offset as the upper bound.
->
-> so the decompressed image is not moved high?
+On Mon, Apr 15, 2013 at 04:55:04PM -0400, Don Zickus wrote:
+> On Fri, Apr 12, 2013 at 02:30:24PM -0700, Guenter Roeck wrote:
+> > On Fri, Apr 12, 2013 at 05:16:27PM -0400, Don Zickus wrote:
+> > > On Wed, Apr 10, 2013 at 08:10:41AM -0700, Guenter Roeck wrote:
+> > > > > have no idea how to even find out if multiple watchdogs are open on the
+> > > > > system.  Is there a list I could walk?  And with regard to 'watchdog is
+> > > > 
+> > > > /* the dev_t structure to store the dynamically allocated watchdog devices */
+> > > > static dev_t watchdog_devt;
+> > > > 
+> > > > One way to look up the allocated watchdogs might be to loop through all kobj
+> > > > instances for the major device using kobj_lookup. Don't know if there is a
+> > > > better way.
+> > > 
+> > > Hmm, I got around to poking at this today and I am not sure kobj_lookup
+> > > will work.  Besides being surrounded with another mutex, I don't have
+> > > access to the character device domain to pass to kobj_lookup.
+> > > 
+> > > Perhaps I am not reading the code right, but I can't find a good way
+> > > forward.
+> > > 
+> > > The only other hack I can think of, is to embed a list object in the
+> > > watchdog structure and list_add each new register'd watchdog.  Then it
+> > > would be trivial to walk the watchdog list.
+> > > 
+> > After looking into it again, I agree. Maybe you can give it a try. At least
+> > other options look even more complicated (eg creating a watchdog class ?).
+> 
+> I looked at the watchdog class in watchdog_core.c.  Even implemented
+> class_for_each_device.  But got stuck trying to figure out how to go from
+> a struct device *dev to a struct watchdog_device.  Then I realized in the
+> bowels of class_for_each_device were spinlocks. :-(
+> 
+> So I implemented an RCU list.  It isn't the prettiest solution but it
+> seems to work.
+> 
+> I posted a V2 and realized I forgot to cc you on it.  I apologize for
+> that. :-(  I hope you can find it, otherwise I can post a pointer to it.
+> 
+Where did you submit it ? I am subscribed to the watchdog mailing list, but I
+didn't see it.
 
-No, I mean the size of the relocated image is using z_extract_offset
-as the end size of the relocated memory. See select_aslr_address. It
-takes the chosen aslr offset plus the location of z_extract_offset and
-keeps reducing the offset until it's inside the physical end of
-memory.
-
--Kees
-
---
-Kees Cook
-Chrome OS Security
+Thanks,
+Guenter
