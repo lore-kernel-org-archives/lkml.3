@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934368Ab3DOMvy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 08:51:54 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:31304 "EHLO
+	id S934262Ab3DOMvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 08:51:51 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:31290 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934150Ab3DOMvs (ORCPT
+	with ESMTP id S933036Ab3DOMvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Apr 2013 08:51:48 -0400
 From: Libin <huawei.libin@huawei.com>
@@ -24,9 +24,9 @@ CC: Konstantin Khlebnikov <khlebnikov@openvz.org>,
         Michel Lespinasse <walken@google.com>, <linux-kernel@vger.kernel.org>,
         <dri-devel@lists.freedesktop.org>, <linux-pci@vger.kernel.org>,
         <linux-mm@kvack.org>, <guohanjun@huawei.com>, <wangyijing@huawei.com>
-Subject: [PATCH 5/6] drm: use vma_pages() to replace (vm_end - vm_start) >> PAGE_SHIFT
-Date: Mon, 15 Apr 2013 20:48:57 +0800
-Message-ID: <1366030138-71292-5-git-send-email-huawei.libin@huawei.com>
+Subject: [PATCH 3/6] ncpfs: use vma_pages() to replace (vm_end - vm_start) >> PAGE_SHIFT
+Date: Mon, 15 Apr 2013 20:48:55 +0800
+Message-ID: <1366030138-71292-3-git-send-email-huawei.libin@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1366030138-71292-1-git-send-email-huawei.libin@huawei.com>
 References: <1366030138-71292-1-git-send-email-huawei.libin@huawei.com>
@@ -43,31 +43,22 @@ as a inline funcion vma_pages() in linux/mm.h, so using it.
 
 Signed-off-by: Libin <huawei.libin@huawei.com>
 ---
- drivers/gpu/drm/ttm/ttm_bo_vm.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ncpfs/mmap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_bo_vm.c b/drivers/gpu/drm/ttm/ttm_bo_vm.c
-index 74705f3..3df9f16 100644
---- a/drivers/gpu/drm/ttm/ttm_bo_vm.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo_vm.c
-@@ -147,7 +147,7 @@ static int ttm_bo_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+diff --git a/fs/ncpfs/mmap.c b/fs/ncpfs/mmap.c
+index ee24df5..3c5dd55 100644
+--- a/fs/ncpfs/mmap.c
++++ b/fs/ncpfs/mmap.c
+@@ -117,7 +117,7 @@ int ncp_mmap(struct file *file, struct vm_area_struct *vma)
+ 		return -EINVAL;
+ 	/* we do not support files bigger than 4GB... We eventually 
+ 	   supports just 4GB... */
+-	if (((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff 
++	if (vma_pages(vma) + vma->vm_pgoff
+ 	   > (1U << (32 - PAGE_SHIFT)))
+ 		return -EFBIG;
  
- 	page_offset = ((address - vma->vm_start) >> PAGE_SHIFT) +
- 	    bo->vm_node->start - vma->vm_pgoff;
--	page_last = ((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) +
-+	page_last = vma_pages(vma) +
- 	    bo->vm_node->start - vma->vm_pgoff;
- 
- 	if (unlikely(page_offset >= bo->num_pages)) {
-@@ -258,7 +258,7 @@ int ttm_bo_mmap(struct file *filp, struct vm_area_struct *vma,
- 
- 	read_lock(&bdev->vm_lock);
- 	bo = ttm_bo_vm_lookup_rb(bdev, vma->vm_pgoff,
--				 (vma->vm_end - vma->vm_start) >> PAGE_SHIFT);
-+				 vma_pages(vma));
- 	if (likely(bo != NULL) && !kref_get_unless_zero(&bo->kref))
- 		bo = NULL;
- 	read_unlock(&bdev->vm_lock);
 -- 
 1.8.2.1
 
