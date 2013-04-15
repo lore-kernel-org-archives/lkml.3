@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935126Ab3DOVo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 17:44:56 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:54681 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab3DOVoy (ORCPT
+	id S935171Ab3DOVqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 17:46:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47178 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934571Ab3DOVqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 17:44:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
-References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
-	<1365797627-20874-7-git-send-email-keescook@chromium.org>
-	<CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com>
-	<516A1D49.1050100@zytor.com>
-	<CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
-	<516C702C.2030209@zytor.com>
-	<CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
-Date: Mon, 15 Apr 2013 14:44:53 -0700
-Message-ID: <CAG7+5M3rN-NzC5Mf-ox=W8Dror-cCJD4LhG61RtMV9xgpakFdw@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
-From: Eric Northup <digitaleric@google.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Apr 2013 17:46:21 -0400
+Date: Mon, 15 Apr 2013 14:46:19 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Linux MM <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] mm: Soft-dirty bits for user memory changes
+ tracking
+Message-Id: <20130415144619.645394d8ecdb180d7757a735@linux-foundation.org>
+In-Reply-To: <5168089B.7060305@parallels.com>
+References: <51669E5F.4000801@parallels.com>
+	<51669EB8.2020102@parallels.com>
+	<20130411142417.bb58d519b860d06ab84333c2@linux-foundation.org>
+	<5168089B.7060305@parallels.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W/the relocation information, we can pick the virtual address to load
-at independent from the physical load address.
+On Fri, 12 Apr 2013 17:14:03 +0400 Pavel Emelyanov <xemul@parallels.com> wrote:
 
-On Mon, Apr 15, 2013 at 2:41 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Mon, Apr 15, 2013 at 2:25 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 04/15/2013 02:06 PM, Eric Northup wrote:
->>> On Sat, Apr 13, 2013 at 8:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>> On 04/13/2013 05:37 PM, Yinghai Lu wrote:
->>>>>
->>>>> so decompress code position is changed?
->>>>>
->>>>> You may push out bss and other data area of run-time kernel of limit
->>>>> that boot loader
->>>>> chose according to setup_header.init_size.
->>>>> aka that make those area overlap with ram hole or other area like
->>>>> boot command line or initrd....
->>>>>
->>>>
->>>> Is there a strong reason to randomize the physical address on 64 bits
->>>> (and if so, shouldn't we do it right?)
->>>
->>> The reason to randomize the physical address is because of the kernel
->>> direct mapping range -- a predictable-to-attackers physical address
->>> implies a predictable-to-attackers virtual address.
->>>
->>> It had seemed to me like changing the virtual base of the direct
->>> mapping would be much more involved than physically relocating the
->>> kernel, but better suggestions would be most welcome :-)
->>>
->>
->> You seem to be missing something here...
->>
->> There are *two* mappings in 64-bit mode.  Physically, if you're going to
->> randomize you might as well randomize over the entire range... except
->> not too far down (on either 32 or 64 bit mode)... in particular, you
->> don't want to drop below 16 MiB if you can avoid it.
->>
->> On 64 bits, there is no reason the virtual address has to be randomized
->> the same way.
->
-> Aren't we bound by the negative 2GB addressing due to -mcmodel=kernel?
->
-> -Kees
->
-> --
-> Kees Cook
-> Chrome OS Security
+> On 04/12/2013 01:24 AM, Andrew Morton wrote:
+> > On Thu, 11 Apr 2013 15:30:00 +0400 Pavel Emelyanov <xemul@parallels.com> wrote:
+> > 
+> >> The soft-dirty is a bit on a PTE which helps to track which pages a task
+> >> writes to. In order to do this tracking one should
+> >>
+> >>   1. Clear soft-dirty bits from PTEs ("echo 4 > /proc/PID/clear_refs)
+> >>   2. Wait some time.
+> >>   3. Read soft-dirty bits (55'th in /proc/PID/pagemap2 entries)
+> >>
+> >> To do this tracking, the writable bit is cleared from PTEs when the
+> >> soft-dirty bit is. Thus, after this, when the task tries to modify a page
+> >> at some virtual address the #PF occurs and the kernel sets the soft-dirty
+> >> bit on the respective PTE.
+> >>
+> >> Note, that although all the task's address space is marked as r/o after the
+> >> soft-dirty bits clear, the #PF-s that occur after that are processed fast.
+> >> This is so, since the pages are still mapped to physical memory, and thus
+> >> all the kernel does is finds this fact out and puts back writable, dirty
+> >> and soft-dirty bits on the PTE.
+> >>
+> >> Another thing to note, is that when mremap moves PTEs they are marked with
+> >> soft-dirty as well, since from the user perspective mremap modifies the
+> >> virtual memory at mremap's new address.
+> >>
+> >> ...
+> >>
+> >> +config MEM_SOFT_DIRTY
+> >> +	bool "Track memory changes"
+> >> +	depends on CHECKPOINT_RESTORE && X86
+> > 
+> > I guess we can add the CHECKPOINT_RESTORE dependency for now, but it is
+> > a general facility and I expect others will want to get their hands on
+> > it for unrelated things.
+> 
+> OK. Just tell me when you need the dependency removing patch.
+> 
+> >>From that perspective, the dependency on X86 is awful.  What's the
+> > problem here and what do other architectures need to do to be able to
+> > support the feature?
+> 
+> The problem here is that I don't know what free bits are available on
+> page table entries on other architectures. I was about to resolve this
+> for ARM very soon, but for the rest of them I need help from other people.
+
+Well, this is also a thing arch maintainers can do when they feel a
+need to support the feature on their architecture.  To support them at
+that time we should provide them with a) adequate information in an
+easy-to-find place (eg, a nice comment at the site of the reference x86
+implementation) and b) a userspace test app.
+
+> > You have a test application, I assume.  It would be helpful if we could
+> > get that into tools/testing/selftests.
+> 
+> If a very stupid 10-lines test is OK, then I can cook a patch with it.
+
+I think that would be good.  As a low-priority thing, please.
