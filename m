@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab3DOCnc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:43:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36434 "EHLO
+	id S934773Ab3DOCtz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:49:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756656Ab3DOCnb (ORCPT
+	with ESMTP id S1756724Ab3DOCnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:43:31 -0400
+	Sun, 14 Apr 2013 22:43:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [ 02/27] ASoC: core: Fix to check return value of snd_soc_update_bits_locked()
-Date: Sun, 14 Apr 2013 19:43:01 -0700
-Message-Id: <20130415024231.545985335@linuxfoundation.org>
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 05/27] tracing: Fix double free when function profile init failed
+Date: Sun, 14 Apr 2013 19:43:04 -0700
+Message-Id: <20130415024231.756692584@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -27,31 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joonyoung Shim <jy0922.shim@samsung.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit 0eaa6cca1f75e12e4f5ec62cbe887330fe3b5fe9 upstream.
+commit 83e03b3fe4daffdebbb42151d5410d730ae50bd1 upstream.
 
-It can be 0 or 1 return value of snd_soc_update_bits_locked() when it is
-success. So just check return value is negative.
+On the failure path, stat->start and stat->pages will refer same page.
+So it'll attempt to free the same page again and get kernel panic.
 
-Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Link: http://lkml.kernel.org/r/1364820385-32027-1-git-send-email-namhyung@kernel.org
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/soc-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/ftrace.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/sound/soc/soc-core.c
-+++ b/sound/soc/soc-core.c
-@@ -2959,7 +2959,7 @@ int snd_soc_put_volsw_range(struct snd_k
- 	val = val << shift;
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -668,7 +668,6 @@ int ftrace_profile_pages_init(struct ftr
+ 		free_page(tmp);
+ 	}
  
- 	ret = snd_soc_update_bits_locked(codec, reg, val_mask, val);
--	if (ret != 0)
-+	if (ret < 0)
- 		return ret;
+-	free_page((unsigned long)stat->pages);
+ 	stat->pages = NULL;
+ 	stat->start = NULL;
  
- 	if (snd_soc_volsw_is_stereo(mc)) {
 
 
