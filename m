@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab3DOEx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 00:53:29 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33884 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab3DOEx2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 00:53:28 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <516B87A6.9080708@jp.fujitsu.com>
-Date: Mon, 15 Apr 2013 13:52:54 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1752518Ab3DOE4h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 00:56:37 -0400
+Received: from ozlabs.org ([203.10.76.45]:49980 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752396Ab3DOE4e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 00:56:34 -0400
+Date: Mon, 15 Apr 2013 14:56:14 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@huawei.com>, David Rientjes <rientjes@google.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, David Howells <dhowells@redhat.com>,
+        Mark Salter <msalter@redhat.com>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v1 00/19] kill free_all_bootmem() and clean up
+ VALID_PAGE()
+Message-ID: <20130415045614.GB7494@iris.ozlabs.ibm.com>
+References: <1365867399-21323-1-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cliff Wickman <cpw@sgi.com>, Simon Horman <horms@verge.net.au>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Renninger <trenn@suse.de>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 5/5] kexec: X86: Pass memory ranges via e820 table instead
- of memmap= boot parameter
-References: <1365683207-42425-1-git-send-email-trenn@suse.de> <1365683207-42425-6-git-send-email-trenn@suse.de> <CAE9FiQXnZzVC7dtvXWrqz=jYAGH053R8Vw1qkrMd2F+hAaMxdQ@mail.gmail.com> <5166D18A.7090800@zytor.com> <20130412143104.GA4301@redhat.com> <5168208B.7050107@zytor.com> <51688803.8020401@sr71.net>
-In-Reply-To: <51688803.8020401@sr71.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365867399-21323-1-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/13 7:17), Dave Hansen wrote:
-> On 04/12/2013 07:56 AM, H. Peter Anvin wrote:
->> On 04/12/2013 07:31 AM, Vivek Goyal wrote:
->>>> I also have to admit that I don't see the difference between /dev/mem
->>>> and /dev/oldmem, as the former allows access to memory ranges outside
->>>> the ones used by the current kernel, which is what the oldmem device
->>>> seems to be intended to od.
->
-> It varies from arch to arch of course.
->
-> But, /dev/mem has restrictions on it, like CONFIG_STRICT_DEVMEM or the
-> ARCH_HAS_VALID_PHYS_ADDR_RANGE.  There's a lot of stuff that depends on
-> it, *and* folks have tried to fix it up so that it's not _as_ blatant of
-> a way to completely screw your system.
->
-> /dev/mem also tries to be nice to arches that have restrictions like:
->
->>                          /*
->>                           * On ia64 if a page has been mapped somewhere as
->>                           * uncached, then it must also be accessed uncached
->>                           * by the kernel or data corruption may occur
->>                           */
->
-> I think /dev/oldmem isn't so nice and could actually cause some real
-> problems if used on ia64 where the cached/uncached accesses are mixed.
+On Sat, Apr 13, 2013 at 11:36:20PM +0800, Jiang Liu wrote:
+> Commit 600cc5b7f6 "mm: Kill NO_BOOTMEM version free_all_bootmem_node()"
+> has kill free_all_bootmem_node() for NO_BOOTMEM.
+> 
+> Currently the usage pattern for free_all_bootmem_node() is like:
+> for_each_online_pgdat(pgdat)
+> 	free_all_bootmem_node(pgdat);
+> 
+> It's equivalent to free_all_bootmem(), so this patchset goes one
+> step further to kill free_all_bootmem_node() for BOOTMEM too.
+> 
+> This patchset also tries to clean up code and comments related to
+> VALID_PAGE() because it has been removed from kernel long time ago.
+> 
+> Patch 1-11:
+> 	Kill free_all_bootmem_node()
+> Patch 12-16:
+> 	Clean up code and comments related to VALID_PAGE()
+> Patch 17:
+> 	Fix a minor build warning for m68k
+> Patch 18:
+> 	merge Alpha's mem_init() for UMA and NUMA.
+> Patch 19:
+> 	call register_page_bootmem_info_node() from mm core
 
-This sounds like there's no such issue on x86 cache mechanism. Is it 
-correct? If so, what is the difference between ia64 and x86 cache 
-mechanisms?
+How does this not break bisection?  Will a kernel still boot with
+patches 1-11 applied but not patch 19?  As far as I can see such a
+kernel would have no memory available to it after mem_init() time
+and would therefore crash early in boot.
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+Paul.
 
