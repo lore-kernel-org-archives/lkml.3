@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875Ab3DOKrM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 06:47:12 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:39677 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755827Ab3DOKrK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 06:47:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1365434591-21569-1-git-send-email-lee.jones@linaro.org>
-References: <1365434591-21569-1-git-send-email-lee.jones@linaro.org>
-Date: Mon, 15 Apr 2013 12:47:09 +0200
-Message-ID: <CACRpkdauTuDhEq7H9DPLTGwQsZvpOrcJ62Kk7j6BkLMn8CxqVQ@mail.gmail.com>
-Subject: Re: [PATCH 1/5] ARM: ux500: Move DMA40 platform data includes file
- out to include/
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755885Ab3DOKvx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 06:51:53 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:44709 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750847Ab3DOKvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 06:51:52 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Borislav Petkov <bp@suse.de>, David Daney <david.daney@cavium.com>
+Subject: [PATCH] extable: Flip the sorting message
+Date: Mon, 15 Apr 2013 12:51:49 +0200
+Message-Id: <1366023109-12098-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.8.2.135.g7b592fa
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 8, 2013 at 5:23 PM, Lee Jones <lee.jones@linaro.org> wrote:
+From: Borislav Petkov <bp@suse.de>
 
-> The pin names for DB8500 based platforms need to be moved out of
+Now that we do sort the __extable at build time, we actually are
+interested only in the case where we still do need to sort it.
 
-"pin names" ???
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: David Daney <david.daney@cavium.com>
+---
+ kernel/extable.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> ux500 platform data and into the new proper location in include/
-> linux/platform_data/. This way we an reference them from other
-> external locations, such as the main DMA50 driver(s).
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+diff --git a/kernel/extable.c b/kernel/extable.c
+index fe35a634bf76..67460b93b1a1 100644
+--- a/kernel/extable.c
++++ b/kernel/extable.c
+@@ -41,10 +41,10 @@ u32 __initdata main_extable_sort_needed = 1;
+ /* Sort the kernel's built-in exception table */
+ void __init sort_main_extable(void)
+ {
+-	if (main_extable_sort_needed)
++	if (main_extable_sort_needed) {
++		pr_notice("Sorting __ex_table...\n");
+ 		sort_extable(__start___ex_table, __stop___ex_table);
+-	else
+-		pr_notice("__ex_table already sorted, skipping sort\n");
++	}
+ }
+ 
+ /* Given an address, look for it in the exception tables. */
+-- 
+1.8.2.135.g7b592fa
 
-(...)
->  rename arch/arm/mach-ux500/ste-dma40-db8500.h => include/linux/platform_data/dma-ste-dma40-db8500.h (98%)
-
-Those are the DB8500 DMA channel definitions...
-
-I will not interfere with the fruitful discussion with Arnd on this
-subject though, I suspect he's right.
-
-Yours,
-Linus Walleij
