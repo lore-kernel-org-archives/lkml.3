@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755800Ab3DOQL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:11:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37279 "EHLO mail.skyhub.de"
+	id S1755149Ab3DOQMi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:12:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47142 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753508Ab3DOQLY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:11:24 -0400
-Date: Mon, 15 Apr 2013 18:11:21 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+	id S1752548Ab3DOQMh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 12:12:37 -0400
+Date: Mon, 15 Apr 2013 18:09:08 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Robin Holt <holt@sgi.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-edac@vger.kernel.org
-Subject: Re: [PATCH] edac: Handle EDAC ECC errors for Family 16h
-Message-ID: <20130415161121.GA18440@pd.tnic>
-References: <1366039059-15772-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
- <CAErSpo6cD4WtPhTbcBEyfOLNASJzr+cU2Lch=fVyqn-gh15drQ@mail.gmail.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot
+	to boot cpu.)
+Message-ID: <20130415160908.GA17950@redhat.com>
+References: <20130410111620.GB29752@gmail.com> <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com> <20130411053106.GA9042@drongo> <5166B05E.8010904@linux.vnet.ibm.com> <20130411134837.GE3672@sgi.com> <20130412053718.GC3887@gmail.com> <5167A52F.6020503@linux.vnet.ibm.com> <20130412093149.GT3658@sgi.com> <20130413163022.GA7500@redhat.com> <20130415160408.GA3658@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo6cD4WtPhTbcBEyfOLNASJzr+cU2Lch=fVyqn-gh15drQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130415160408.GA3658@sgi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 09:56:08AM -0600, Bjorn Helgaas wrote:
-> On Mon, Apr 15, 2013 at 9:17 AM, Aravind Gopalakrishnan
-> > @@ -172,7 +176,12 @@
-> >   */
-> >  #define PCI_DEVICE_ID_AMD_15H_NB_F1    0x1601
-> >  #define PCI_DEVICE_ID_AMD_15H_NB_F2    0x1602
-> > -
-> > +#define PCI_DEVICE_ID_AMD_16H_NB_F0    0x1530
-> > +#define PCI_DEVICE_ID_AMD_16H_NB_F1    0x1531
-> > +#define PCI_DEVICE_ID_AMD_16H_NB_F2    0x1532
-> > +#define PCI_DEVICE_ID_AMD_16H_NB_F3    0x1533
-> > +#define PCI_DEVICE_ID_AMD_16H_NB_F4    0x1534
-> > +#define PCI_DEVICE_ID_AMD_16H_NB_F5    0x1535
+On 04/15, Robin Holt wrote:
+>
+> On Sat, Apr 13, 2013 at 06:30:22PM +0200, Oleg Nesterov wrote:
+> > On 04/12, Robin Holt wrote:
+> > >
+> > > +void migrate_to_boot_cpu(void)
+> > > +{
+> > > +	/* The boot cpu is always logical cpu 0 */
+> > > +	int reboot_cpu_id = 0;
+> > > +
+> > > +	/* Make certain the cpu I'm about to reboot on is online */
+> > > +	if (!cpu_online(reboot_cpu_id))
+> > > +		reboot_cpu_id = smp_processor_id();
+> > > +
+> > > +	/* Make certain I only run on the appropriate processor */
+> > > +	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
 > >
-> >  /*
-> >   * Function 1 - Address Map
-> > @@ -300,6 +309,7 @@ enum amd_families {
-> >         K8_CPUS = 0,
-> >         F10_CPUS,
-> >         F15_CPUS,
-> > +       F16_CPUS,
-> >         NUM_FAMILIES,
-> >  };
-> >
-> > diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> > index 1679ff6..59f732f 100644
-> > --- a/include/linux/pci_ids.h
-> > +++ b/include/linux/pci_ids.h
-> > @@ -519,6 +519,8 @@
-> >  #define PCI_DEVICE_ID_AMD_11H_NB_LINK  0x1304
-> >  #define PCI_DEVICE_ID_AMD_15H_NB_F3    0x1603
-> >  #define PCI_DEVICE_ID_AMD_15H_NB_F4    0x1604
-> > +#define PCI_DEVICE_ID_AMD_16H_NB_F3    0x1533
-> > +#define PCI_DEVICE_ID_AMD_16H_NB_F4    0x1534
-> 
-> What is the point of adding identical #defines both here and in
-> amd64_edac.h?  Also, read the note at the top of
-> include/linux/pci_ids.h.
+> > This is only theoretical, but perhaps it makes sense to set
+> > PF_THREAD_BOUND before set_cpus_allowed_ptr() ? To prevent the
+> > race with another thread doing sched_setaffinity().
+>
+> I don't quite understand this comment.  We are migrating our own thread.
+> How does setting PF_THREAD_BOUND have any effect?
 
-Yeah, they should be in pci_ids.h since they're used in amd_nb.c and
-amd64_edac.c.
+Suppose that another thread does, say, sys_sched_setaffinity(our_pid)
+right after set_cpus_allowed_ptr(). If we set PF_THREAD_BOUND the
+next set_cpus_allowed() will fail.
 
-But, what shouldn't be is adding unused defines (*_F0 and *_F5).
-Aravind, please drop them.
+Oleg.
 
-I'll review the rest of the patch when I get around to it this week.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
