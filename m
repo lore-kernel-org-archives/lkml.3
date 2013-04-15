@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933505Ab3DOCSL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:18:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36004 "EHLO
+	id S933576Ab3DOCSP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:18:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36021 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933395Ab3DOCSI (ORCPT
+	with ESMTP id S933395Ab3DOCSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:18:08 -0400
+	Sun, 14 Apr 2013 22:18:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Boyer <jwboyer@redhat.com>,
-        Samu Kallio <samu.kallio@aberdeencloud.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 08/11] x86, mm, paravirt: Fix vmalloc_fault oops during lazy MMU updates
-Date: Sun, 14 Apr 2013 19:17:40 -0700
-Message-Id: <20130415020614.697264603@linuxfoundation.org>
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Brad Spengler <spender@grsecurity.net>, linux-mtd@lists.infradead.org
+Subject: [ 10/11] mtdchar: fix offset overflow detection
+Date: Sun, 14 Apr 2013 19:17:42 -0700
+Message-Id: <20130415020614.846683113@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415020614.067692418@linuxfoundation.org>
 References: <20130415020614.067692418@linuxfoundation.org>
@@ -29,88 +31,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Samu Kallio <samu.kallio@aberdeencloud.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 1160c2779b826c6f5c08e5cc542de58fd1f667d5 upstream.
+commit 9c603e53d380459fb62fec7cd085acb0b74ac18f upstream.
 
-In paravirtualized x86_64 kernels, vmalloc_fault may cause an oops
-when lazy MMU updates are enabled, because set_pgd effects are being
-deferred.
+Sasha Levin has been running trinity in a KVM tools guest, and was able
+to trigger the BUG_ON() at arch/x86/mm/pat.c:279 (verifying the range of
+the memory type).  The call trace showed that it was mtdchar_mmap() that
+created an invalid remap_pfn_range().
 
-One instance of this problem is during process mm cleanup with memory
-cgroups enabled. The chain of events is as follows:
+The problem is that mtdchar_mmap() does various really odd and subtle
+things with the vma page offset etc, and uses the wrong types (and the
+wrong overflow) detection for it.
 
-- zap_pte_range enables lazy MMU updates
-- zap_pte_range eventually calls mem_cgroup_charge_statistics,
-  which accesses the vmalloc'd mem_cgroup per-cpu stat area
-- vmalloc_fault is triggered which tries to sync the corresponding
-  PGD entry with set_pgd, but the update is deferred
-- vmalloc_fault oopses due to a mismatch in the PUD entries
+For example, the page offset may well be 32-bit on a 32-bit
+architecture, but after shifting it up by PAGE_SHIFT, we need to use a
+potentially 64-bit resource_size_t to correctly hold the full value.
 
-The OOPs usually looks as so:
+Also, we need to check that the vma length plus offset doesn't overflow
+before we check that it is smaller than the length of the mtdmap region.
 
-------------[ cut here ]------------
-kernel BUG at arch/x86/mm/fault.c:396!
-invalid opcode: 0000 [#1] SMP
-.. snip ..
-CPU 1
-Pid: 10866, comm: httpd Not tainted 3.6.10-4.fc18.x86_64 #1
-RIP: e030:[<ffffffff816271bf>]  [<ffffffff816271bf>] vmalloc_fault+0x11f/0x208
-.. snip ..
-Call Trace:
- [<ffffffff81627759>] do_page_fault+0x399/0x4b0
- [<ffffffff81004f4c>] ? xen_mc_extend_args+0xec/0x110
- [<ffffffff81624065>] page_fault+0x25/0x30
- [<ffffffff81184d03>] ? mem_cgroup_charge_statistics.isra.13+0x13/0x50
- [<ffffffff81186f78>] __mem_cgroup_uncharge_common+0xd8/0x350
- [<ffffffff8118aac7>] mem_cgroup_uncharge_page+0x57/0x60
- [<ffffffff8115fbc0>] page_remove_rmap+0xe0/0x150
- [<ffffffff8115311a>] ? vm_normal_page+0x1a/0x80
- [<ffffffff81153e61>] unmap_single_vma+0x531/0x870
- [<ffffffff81154962>] unmap_vmas+0x52/0xa0
- [<ffffffff81007442>] ? pte_mfn_to_pfn+0x72/0x100
- [<ffffffff8115c8f8>] exit_mmap+0x98/0x170
- [<ffffffff810050d9>] ? __raw_callee_save_xen_pmd_val+0x11/0x1e
- [<ffffffff81059ce3>] mmput+0x83/0xf0
- [<ffffffff810624c4>] exit_mm+0x104/0x130
- [<ffffffff8106264a>] do_exit+0x15a/0x8c0
- [<ffffffff810630ff>] do_group_exit+0x3f/0xa0
- [<ffffffff81063177>] sys_exit_group+0x17/0x20
- [<ffffffff8162bae9>] system_call_fastpath+0x16/0x1b
+This fixes things up and tries to make the code a bit easier to read.
 
-Calling arch_flush_lazy_mmu_mode immediately after set_pgd makes the
-changes visible to the consistency checks.
-
-RedHat-Bugzilla: https://bugzilla.redhat.com/show_bug.cgi?id=914737
-Tested-by: Josh Boyer <jwboyer@redhat.com>
-Reported-and-Tested-by: Krishna Raman <kraman@redhat.com>
-Signed-off-by: Samu Kallio <samu.kallio@aberdeencloud.com>
-Link: http://lkml.kernel.org/r/1364045796-10720-1-git-send-email-konrad.wilk@oracle.com
-Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-and-tested-by: Sasha Levin <levinsasha928@gmail.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Cc: Brad Spengler <spender@grsecurity.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/mm/fault.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/mtd/mtdchar.c |   48 ++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 42 insertions(+), 6 deletions(-)
 
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -376,10 +376,12 @@ static noinline __kprobes int vmalloc_fa
- 	if (pgd_none(*pgd_ref))
- 		return -1;
+--- a/drivers/mtd/mtdchar.c
++++ b/drivers/mtd/mtdchar.c
+@@ -1064,6 +1064,33 @@ static unsigned long mtd_get_unmapped_ar
+ }
+ #endif
  
--	if (pgd_none(*pgd))
-+	if (pgd_none(*pgd)) {
- 		set_pgd(pgd, *pgd_ref);
--	else
-+		arch_flush_lazy_mmu_mode();
-+	} else {
- 		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
-+	}
++static inline unsigned long get_vm_size(struct vm_area_struct *vma)
++{
++	return vma->vm_end - vma->vm_start;
++}
++
++static inline resource_size_t get_vm_offset(struct vm_area_struct *vma)
++{
++	return (resource_size_t) vma->vm_pgoff << PAGE_SHIFT;
++}
++
++/*
++ * Set a new vm offset.
++ *
++ * Verify that the incoming offset really works as a page offset,
++ * and that the offset and size fit in a resource_size_t.
++ */
++static inline int set_vm_offset(struct vm_area_struct *vma, resource_size_t off)
++{
++	pgoff_t pgoff = off >> PAGE_SHIFT;
++	if (off != (resource_size_t) pgoff << PAGE_SHIFT)
++		return -EINVAL;
++	if (off + get_vm_size(vma) - 1 < off)
++		return -EINVAL;
++	vma->vm_pgoff = pgoff;
++	return 0;
++}
++
+ /*
+  * set up a mapping for shared memory segments
+  */
+@@ -1073,20 +1100,29 @@ static int mtd_mmap(struct file *file, s
+ 	struct mtd_file_info *mfi = file->private_data;
+ 	struct mtd_info *mtd = mfi->mtd;
+ 	struct map_info *map = mtd->priv;
+-	unsigned long start;
+-	unsigned long off;
+-	u32 len;
++	resource_size_t start, off;
++	unsigned long len, vma_len;
  
- 	/*
- 	 * Below here mismatches are bugs because these lower tables
+ 	if (mtd->type == MTD_RAM || mtd->type == MTD_ROM) {
+-		off = vma->vm_pgoff << PAGE_SHIFT;
++		off = get_vm_offset(vma);
+ 		start = map->phys;
+ 		len = PAGE_ALIGN((start & ~PAGE_MASK) + map->size);
+ 		start &= PAGE_MASK;
+-		if ((vma->vm_end - vma->vm_start + off) > len)
++		vma_len = get_vm_size(vma);
++
++		/* Overflow in off+len? */
++		if (vma_len + off < off)
++			return -EINVAL;
++		/* Does it fit in the mapping? */
++		if (vma_len + off > len)
+ 			return -EINVAL;
+ 
+ 		off += start;
+-		vma->vm_pgoff = off >> PAGE_SHIFT;
++		/* Did that overflow? */
++		if (off < start)
++			return -EINVAL;
++		if (set_vm_offset(vma, off) < 0)
++			return -EINVAL;
+ 		vma->vm_flags |= VM_IO | VM_RESERVED;
+ 
+ #ifdef pgprot_noncached
 
 
