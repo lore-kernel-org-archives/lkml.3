@@ -1,216 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab3DOOjM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 10:39:12 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:38364 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab3DOOi2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 10:38:28 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH v2 1/3] mutex: Make more scalable by doing less atomic operations
-Date: Mon, 15 Apr 2013 10:37:57 -0400
-Message-Id: <1366036679-9702-2-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>
-References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
+	id S1752993Ab3DOOm7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 10:42:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45134 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751335Ab3DOOm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 10:42:57 -0400
+Date: Mon, 15 Apr 2013 07:42:51 -0700
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, glommer@parallels.com, vgoyal@redhat.com
+Subject: Re: [PATCH 4/4] memcg: force use_hierarchy if sane_behavior
+Message-ID: <20130415144251.GC13662@dhcp22.suse.cz>
+References: <1365808259-31073-1-git-send-email-tj@kernel.org>
+ <1365808259-31073-5-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365808259-31073-5-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the __mutex_lock_common() function, an initial entry into
-the lock slow path will cause two atomic_xchg instructions to be
-issued. Together with the atomic decrement in the fast path, a total
-of three atomic read-modify-write instructions will be issued in
-rapid succession. This can cause a lot of cache bouncing when many
-tasks are trying to acquire the mutex at the same time.
+On Fri 12-04-13 16:10:59, Tejun Heo wrote:
+> Turn on use_hierarchy by default if sane_behavior is specified and
+> don't create .use_hierarchy file.
+> 
+> It is debatable whether to remove .use_hierarchy file or make it ro as
+> the former could make transition easier in certain cases; however, the
+> behavior changes which will be gated by sane_behavior are intensive
+> including changing basic meaning of certain control knobs in a few
+> controllers and I don't really think keeping this piece would make
+> things easier in any noticeable way, so let's remove it.
 
-This patch will reduce the number of atomic_xchg instructions used by
-checking the counter value first before issuing the instruction. The
-atomic_read() function is just a simple memory read. The atomic_xchg()
-function, on the other hand, can be up to 2 order of magnitude or even
-more in cost when compared with atomic_read(). By using atomic_read()
-to check the value first before calling atomic_xchg(), we can avoid a
-lot of unnecessary cache coherency traffic. The only downside with this
-change is that a task on the slow path will have a tiny bit
-less chance of getting the mutex when competing with another task
-in the fast path.
+OK, as the feature has to be enabled explicitly I do not mind not
+exporting the file.
+I have one nit though. Can we extend the comment for mem_cgroup_bind
+that it doesn't have to care about children because there are none
+because rebind_subsystems wouldn't allow remounting otherwise?
+It wasn't obvious, at least from me.
 
-The same is true for the atomic_cmpxchg() function in the
-mutex-spin-on-owner loop. So an atomic_read() is also performed before
-calling atomic_cmpxchg().
+Other than that.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-The mutex locking and unlocking code for the x86 architecture can allow
-any negative number to be used in the mutex count to indicate that some
-tasks are waiting for the mutex. I am not so sure if that is the case
-for the other architectures. So the default is to avoid atomic_xchg()
-if the count has already been set to -1. For x86, the check is modified
-to include all negative numbers to cover a larger case.
+Thanks!
 
-The following table shows the jobs per minutes (JPM) scalability data
-on an 8-node 80-core Westmere box with a 3.7.10 kernel. The numactl
-command is used to restrict the running of the high_systime workloads
-to 1/2/4/8 nodes with hyperthreading on and off.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  include/linux/cgroup.h |  3 +++
+>  mm/memcontrol.c        | 13 +++++++++++++
+>  2 files changed, 16 insertions(+)
+> 
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index 9c300ad..c562e33 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -269,6 +269,9 @@ enum {
+>  	 *
+>  	 * - Remount is disallowed.
+>  	 *
+> +	 * - memcg: use_hierarchy is on by default and the cgroup file for
+> +	 *   the flag is not created.
+> +	 *
+>  	 * The followings are planned changes.
+>  	 *
+>  	 * - release_agent will be disallowed once replacement notification
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9715c0c..a651131 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -5814,6 +5814,7 @@ static struct cftype mem_cgroup_files[] = {
+>  	},
+>  	{
+>  		.name = "use_hierarchy",
+> +		.flags = CFTYPE_INSANE,
+>  		.write_u64 = mem_cgroup_hierarchy_write,
+>  		.read_u64 = mem_cgroup_hierarchy_read,
+>  	},
+> @@ -6784,6 +6785,17 @@ static void mem_cgroup_move_task(struct cgroup *cont,
+>  }
+>  #endif
+>  
+> +/*
+> + * Cgroup retains root cgroups across [un]mount cycles making it necessary
+> + * to verify sane_behavior flag on each mount attempt.
+> + */
+> +static void mem_cgroup_bind(struct cgroup *root)
+> +{
+> +	/* use_hierarchy is forced with sane_behavior */
+> +	if (cgroup_sane_behavior(root))
+> +		mem_cgroup_from_cont(root)->use_hierarchy = true;
+> +}
+> +
+>  struct cgroup_subsys mem_cgroup_subsys = {
+>  	.name = "memory",
+>  	.subsys_id = mem_cgroup_subsys_id,
+> @@ -6794,6 +6806,7 @@ struct cgroup_subsys mem_cgroup_subsys = {
+>  	.can_attach = mem_cgroup_can_attach,
+>  	.cancel_attach = mem_cgroup_cancel_attach,
+>  	.attach = mem_cgroup_move_task,
+> +	.bind = mem_cgroup_bind,
+>  	.base_cftypes = mem_cgroup_files,
+>  	.early_init = 0,
+>  	.use_id = 1,
+> -- 
+> 1.8.1.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-+-----------------+-----------+------------+----------+
-|  Configuration  | Mean JPM  |  Mean JPM  | % Change |
-|		  | w/o patch | with patch |	      |
-+-----------------+-----------------------------------+
-|		  |      User Range 1100 - 2000	      |
-+-----------------+-----------------------------------+
-| 8 nodes, HT on  |    36980   |   148590  | +301.8%  |
-| 8 nodes, HT off |    42799   |   145011  | +238.8%  |
-| 4 nodes, HT on  |    61318   |   118445  |  +51.1%  |
-| 4 nodes, HT off |   158481   |   158592  |   +0.1%  |
-| 2 nodes, HT on  |   180602   |   173967  |   -3.7%  |
-| 2 nodes, HT off |   198409   |   198073  |   -0.2%  |
-| 1 node , HT on  |   149042   |   147671  |   -0.9%  |
-| 1 node , HT off |   126036   |   126533  |   +0.4%  |
-+-----------------+-----------------------------------+
-|		  |       User Range 200 - 1000	      |
-+-----------------+-----------------------------------+
-| 8 nodes, HT on  |   41525    |   122349  | +194.6%  |
-| 8 nodes, HT off |   49866    |   124032  | +148.7%  |
-| 4 nodes, HT on  |   66409    |   106984  |  +61.1%  |
-| 4 nodes, HT off |  119880    |   130508  |   +8.9%  |
-| 2 nodes, HT on  |  138003    |   133948  |   -2.9%  |
-| 2 nodes, HT off |  132792    |   131997  |   -0.6%  |
-| 1 node , HT on  |  116593    |   115859  |   -0.6%  |
-| 1 node , HT off |  104499    |   104597  |   +0.1%  |
-+-----------------+------------+-----------+----------+
-
-At low user range 10-100, the JPM differences were within +/-1%. So
-they are not that interesting.
-
-AIM7 benchmark run has a pretty large run-to-run variance due to random
-nature of the subtests executed. So a difference of less than +-5%
-may not be really significant.
-
-This patch improves high_systime workload performance at 4 nodes
-and up by maintaining transaction rates without significant drop-off
-at high node count.  The patch has practically no impact on 1 and 2
-nodes system.
-
-The table below shows the percentage time (as reported by perf
-record -a -s -g) spent on the __mutex_lock_slowpath() function by
-the high_systime workload at 1500 users for 2/4/8-node configurations
-with hyperthreading off.
-
-+---------------+-----------------+------------------+---------+
-| Configuration | %Time w/o patch | %Time with patch | %Change |
-+---------------+-----------------+------------------+---------+
-|    8 nodes    |      65.34%     |      0.69%       |  -99%   |
-|    4 nodes    |       8.70%	  |      1.02%	     |  -88%   |
-|    2 nodes    |       0.41%     |      0.32%       |  -22%   |
-+---------------+-----------------+------------------+---------+
-
-It is obvious that the dramatic performance improvement at 8
-nodes was due to the drastic cut in the time spent within the
-__mutex_lock_slowpath() function.
-
-The table below show the improvements in other AIM7 workloads (at 8
-nodes, hyperthreading off).
-
-+--------------+---------------+----------------+-----------------+
-|   Workload   | mean % change | mean % change  | mean % change   |
-|              | 10-100 users  | 200-1000 users | 1100-2000 users |
-+--------------+---------------+----------------+-----------------+
-| alltests     |     +0.6%     |   +104.2%      |   +185.9%       |
-| five_sec     |     +1.9%     |     +0.9%      |     +0.9%       |
-| fserver      |     +1.4%     |     -7.7%      |     +5.1%       |
-| new_fserver  |     -0.5%     |     +3.2%      |     +3.1%       |
-| shared       |    +13.1%     |   +146.1%      |   +181.5%       |
-| short        |     +7.4%     |     +5.0%      |     +4.2%       |
-+--------------+---------------+----------------+-----------------+
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Reviewed-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
----
- arch/x86/include/asm/mutex.h |   10 ++++++++++
- kernel/mutex.c               |   19 ++++++++++++++++---
- 2 files changed, 26 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/include/asm/mutex.h b/arch/x86/include/asm/mutex.h
-index 7d3a482..bc2a0b0 100644
---- a/arch/x86/include/asm/mutex.h
-+++ b/arch/x86/include/asm/mutex.h
-@@ -3,3 +3,13 @@
- #else
- # include <asm/mutex_64.h>
- #endif
-+
-+#ifndef	__ASM_MUTEX_H
-+#define	__ASM_MUTEX_H
-+/*
-+ * For the x86 architecture, it allows any negative number (besides -1) in
-+ * the mutex count to indicate that some other threads are waiting on the
-+ * mutex.
-+ */
-+#define __ARCH_ALLOW_ANY_NEGATIVE_MUTEX_COUNT	1
-+#endif
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 52f2301..e3496df 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -37,6 +37,17 @@
- # include <asm/mutex.h>
- #endif
- 
-+/*
-+ * A mutex count of -1 indicates that waiters are sleeping waiting for the
-+ * mutex. Some architectures can allow any negative number, not just -1, for
-+ * this purpose.
-+ */
-+#ifdef __ARCH_ALLOW_ANY_NEGATIVE_MUTEX_COUNT
-+#define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
-+#else
-+#define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) != -1)
-+#endif
-+
- void
- __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
- {
-@@ -171,7 +182,8 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		if (owner && !mutex_spin_on_owner(lock, owner))
- 			break;
- 
--		if (atomic_cmpxchg(&lock->count, 1, 0) == 1) {
-+		if ((atomic_read(&lock->count) == 1) &&
-+		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
- 			lock_acquired(&lock->dep_map, ip);
- 			mutex_set_owner(lock);
- 			preempt_enable();
-@@ -205,7 +217,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 	list_add_tail(&waiter.list, &lock->wait_list);
- 	waiter.task = task;
- 
--	if (atomic_xchg(&lock->count, -1) == 1)
-+	if (MUTEX_SHOW_NO_WAITER(lock) && (atomic_xchg(&lock->count, -1) == 1))
- 		goto done;
- 
- 	lock_contended(&lock->dep_map, ip);
-@@ -220,7 +232,8 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		 * that when we release the lock, we properly wake up the
- 		 * other waiters:
- 		 */
--		if (atomic_xchg(&lock->count, -1) == 1)
-+		if (MUTEX_SHOW_NO_WAITER(lock) &&
-+		   (atomic_xchg(&lock->count, -1) == 1))
- 			break;
- 
- 		/*
 -- 
-1.7.1
-
+Michal Hocko
+SUSE Labs
