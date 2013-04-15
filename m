@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab3DOCZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:25:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36119 "EHLO
+	id S1755418Ab3DOCZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:25:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008Ab3DOCZz (ORCPT
+	with ESMTP id S1755352Ab3DOCZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:25:55 -0400
+	Sun, 14 Apr 2013 22:25:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 16/17] kobject: fix kset_find_obj() race with concurrent last kobject_put()
-Date: Sun, 14 Apr 2013 19:25:26 -0700
-Message-Id: <20130415022353.835594541@linuxfoundation.org>
+        Hayes Wang <hayeswang@realtek.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 17/17] r8169: fix auto speed down issue
+Date: Sun, 14 Apr 2013 19:25:27 -0700
+Message-Id: <20130415022353.912756597@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
 References: <20130415022352.616689034@linuxfoundation.org>
@@ -27,91 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Hayes Wang <hayeswang@realtek.com>
 
-commit a49b7e82cab0f9b41f483359be83f44fbb6b4979 upstream.
+commit e2409d83434d77874b461b78af6a19cd6e6a1280 upstream.
 
-Anatol Pomozov identified a race condition that hits module unloading
-and re-loading.  To quote Anatol:
+It would cause no link after suspending or shutdowning when the
+nic changes the speed to 10M and connects to a link partner which
+forces the speed to 100M.
 
- "This is a race codition that exists between kset_find_obj() and
-  kobject_put().  kset_find_obj() might return kobject that has refcount
-  equal to 0 if this kobject is freeing by kobject_put() in other
-  thread.
+Check the link partner ability to determine which speed to set.
 
-  Here is timeline for the crash in case if kset_find_obj() searches for
-  an object tht nobody holds and other thread is doing kobject_put() on
-  the same kobject:
-
-    THREAD A (calls kset_find_obj())     THREAD B (calls kobject_put())
-    splin_lock()
-                                         atomic_dec_return(kobj->kref), counter gets zero here
-                                         ... starts kobject cleanup ....
-                                         spin_lock() // WAIT thread A in kobj_kset_leave()
-    iterate over kset->list
-    atomic_inc(kobj->kref) (counter becomes 1)
-    spin_unlock()
-                                         spin_lock() // taken
-                                         // it does not know that thread A increased counter so it
-                                         remove obj from list
-                                         spin_unlock()
-                                         vfree(module) // frees module object with containing kobj
-
-    // kobj points to freed memory area!!
-    kobject_put(kobj) // OOPS!!!!
-
-  The race above happens because module.c tries to use kset_find_obj()
-  when somebody unloads module.  The module.c code was introduced in
-  commit 6494a93d55fa"
-
-Anatol supplied a patch specific for module.c that worked around the
-problem by simply not using kset_find_obj() at all, but rather than make
-a local band-aid, this just fixes kset_find_obj() to be thread-safe
-using the proper model of refusing the get a new reference if the
-refcount has already dropped to zero.
-
-See examples of this proper refcount handling not only in the kref
-documentation, but in various other equivalent uses of this pattern by
-grepping for atomic_inc_not_zero().
-
-[ Side note: the module race does indicate that module loading and
-  unloading is not properly serialized wrt sysfs information using the
-  module mutex.  That may require further thought, but this is the
-  correct fix at the kobject layer regardless. ]
-
-Reported-analyzed-and-tested-by: Anatol Pomozov <anatol.pomozov@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Acked-by: Francois Romieu <romieu@fr.zoreil.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/kobject.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/realtek/r8169.c |   28 +++++++++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
 
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -531,6 +531,13 @@ struct kobject *kobject_get(struct kobje
- 	return kobj;
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3483,6 +3483,30 @@ static void __devinit rtl_init_mdio_ops(
+ 	}
  }
  
-+static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
++static void rtl_speed_down(struct rtl8169_private *tp)
 +{
-+	if (!kref_get_unless_zero(&kobj->kref))
-+		kobj = NULL;
-+	return kobj;
++	u32 adv;
++	int lpa;
++
++	rtl_writephy(tp, 0x1f, 0x0000);
++	lpa = rtl_readphy(tp, MII_LPA);
++
++	if (lpa & (LPA_10HALF | LPA_10FULL))
++		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full;
++	else if (lpa & (LPA_100HALF | LPA_100FULL))
++		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
++		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full;
++	else
++		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
++		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full |
++		      (tp->mii.supports_gmii ?
++		       ADVERTISED_1000baseT_Half |
++		       ADVERTISED_1000baseT_Full : 0);
++
++	rtl8169_set_speed(tp->dev, AUTONEG_ENABLE, SPEED_1000, DUPLEX_FULL,
++			  adv);
 +}
 +
- /*
-  * kobject_cleanup - free kobject resources.
-  * @kobj: object to cleanup
-@@ -753,7 +760,7 @@ struct kobject *kset_find_obj(struct kse
+ static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
+ {
+ 	void __iomem *ioaddr = tp->mmio_addr;
+@@ -3508,9 +3532,7 @@ static bool rtl_wol_pll_power_down(struc
+ 	if (!(__rtl8169_get_wol(tp) & WAKE_ANY))
+ 		return false;
  
- 	list_for_each_entry(k, &kset->list, entry) {
- 		if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
--			ret = kobject_get(k);
-+			ret = kobject_get_unless_zero(k);
- 			break;
- 		}
- 	}
+-	rtl_writephy(tp, 0x1f, 0x0000);
+-	rtl_writephy(tp, MII_BMCR, 0x0000);
+-
++	rtl_speed_down(tp);
+ 	rtl_wol_suspend_quirk(tp);
+ 
+ 	return true;
 
 
