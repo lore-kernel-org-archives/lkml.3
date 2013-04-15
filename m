@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934702Ab3DOCsY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:48:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36482 "EHLO
+	id S933148Ab3DOCnn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:43:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36462 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933374Ab3DOCns (ORCPT
+	with ESMTP id S1756972Ab3DOCni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:43:48 -0400
+	Sun, 14 Apr 2013 22:43:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 12/27] GFS2: Fix unlock of fcntl locks during withdrawn state
-Date: Sun, 14 Apr 2013 19:43:11 -0700
-Message-Id: <20130415024232.275402430@linuxfoundation.org>
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [ 08/27] dmaengine: omap-dma: Start DMA without delay for cyclic channels
+Date: Sun, 14 Apr 2013 19:43:07 -0700
+Message-Id: <20130415024231.986725437@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -27,37 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Whitehouse <swhiteho@redhat.com>
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-commit c2952d202f710d326ac36a8ea6bd216b20615ec8 upstream.
+commit 765024697807ad1e1cac332aa891253ca4a339da upstream.
 
-When withdraw occurs, we need to continue to allow unlocks of fcntl
-locks to occur, however these will only be local, since the node has
-withdrawn from the cluster. This prevents triggering a VFS level
-bug trap due to locks remaining when a file is closed.
+cyclic DMA is only used by audio which needs DMA to be started without a
+delay.
+If the DMA for audio is started using the tasklet we experience random
+channel switch (to be more precise: channel shift).
 
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+Reported-by: Peter Meerwald <pmeerw@pmeerw.net>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/gfs2/file.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/dma/omap-dma.c |   20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
 
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -924,8 +924,11 @@ static int gfs2_lock(struct file *file,
- 		cmd = F_SETLK;
- 		fl->fl_type = F_UNLCK;
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -276,12 +276,20 @@ static void omap_dma_issue_pending(struc
+ 
+ 	spin_lock_irqsave(&c->vc.lock, flags);
+ 	if (vchan_issue_pending(&c->vc) && !c->desc) {
+-		struct omap_dmadev *d = to_omap_dma_dev(chan->device);
+-		spin_lock(&d->lock);
+-		if (list_empty(&c->node))
+-			list_add_tail(&c->node, &d->pending);
+-		spin_unlock(&d->lock);
+-		tasklet_schedule(&d->task);
++		/*
++		 * c->cyclic is used only by audio and in this case the DMA need
++		 * to be started without delay.
++		 */
++		if (!c->cyclic) {
++			struct omap_dmadev *d = to_omap_dma_dev(chan->device);
++			spin_lock(&d->lock);
++			if (list_empty(&c->node))
++				list_add_tail(&c->node, &d->pending);
++			spin_unlock(&d->lock);
++			tasklet_schedule(&d->task);
++		} else {
++			omap_dma_start_desc(c);
++		}
  	}
--	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags)))
-+	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags))) {
-+		if (fl->fl_type == F_UNLCK)
-+			posix_lock_file_wait(file, fl);
- 		return -EIO;
-+	}
- 	if (IS_GETLK(cmd))
- 		return dlm_posix_get(ls->ls_dlm, ip->i_no_addr, file, fl);
- 	else if (fl->fl_type == F_UNLCK)
+ 	spin_unlock_irqrestore(&c->vc.lock, flags);
+ }
 
 
