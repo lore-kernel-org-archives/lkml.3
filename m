@@ -1,187 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756005Ab3DOR1K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 13:27:10 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:60520 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751679Ab3DOR1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 13:27:08 -0400
-Message-ID: <516C3868.40903@sgi.com>
-Date: Mon, 15 Apr 2013 12:27:04 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1756179Ab3DOR1p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 13:27:45 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54243 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045Ab3DOR1n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 13:27:43 -0400
+Date: Mon, 15 Apr 2013 10:26:18 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Mackerras <paulus@samba.org>
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
+ delay from HZ
+Message-ID: <20130415172618.GJ29861@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130412231846.GA20038@linux.vnet.ibm.com>
+ <1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130412235401.GA8140@jtriplet-mobl1>
+ <20130413063804.GV29861@linux.vnet.ibm.com>
+ <20130415020354.GB3401@iris.ozlabs.ibm.com>
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: <sedat.dilek@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
-References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com> <CA+icZUUsAqJ3kyCZivYeTpY7n=EDMv1UcC2VNwQro4h7NHDWag@mail.gmail.com> <CA+icZUW+TB3q58bL+d=A355S4vtRhwMq8AV+tqjv6MgDtHRCaA@mail.gmail.com> <1923819.6Nb81T2TR8@vostro.rjw.lan> <CA+icZUXUGOjGUAFxgQk0780pcBB-YjiujDLXF+gJFegi+pd+dA@mail.gmail.com> <516C25AE.4050503@intel.com>
-In-Reply-To: <516C25AE.4050503@intel.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [128.162.233.145]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130415020354.GB3401@iris.ozlabs.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041517-3620-0000-0000-000002096B60
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 11:07 AM, Dirk Brandewie wrote:
-> On 04/13/2013 02:55 AM, Sedat Dilek wrote:
->> On Sat, Apr 13, 2013 at 12:51 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>> On Friday, April 12, 2013 11:08:37 PM Sedat Dilek wrote:
->>>> On Fri, Apr 12, 2013 at 6:27 PM, Sedat Dilek 
->>>> <sedat.dilek@gmail.com> wrote:
->>>>> On Fri, Apr 12, 2013 at 5:45 PM, Sedat Dilek 
->>>>> <sedat.dilek@gmail.com> wrote:
->>>>>> On Fri, Apr 12, 2013 at 4:24 PM, Sedat Dilek 
->>>>>> <sedat.dilek@gmail.com> wrote:
->>>>>>> On Fri, Apr 12, 2013 at 10:23 AM, Viresh Kumar 
->>>>>>> <viresh.kumar@linaro.org> wrote:
->>>>>>>> On 10 April 2013 11:44, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>>>>>>> I found this "[RFC PATCH] kbuild: Build linux-tools package 
->>>>>>>>> with 'make
->>>>>>>>> deb-pkg'" from February 2012.
->>>>>>>>> Can't say what happened to it...
->>>>>>>>
->>>>>>>> Sedat,
->>>>>>>>
->>>>>>>> Sorry for being late. I am down with Fever and throat infection 
->>>>>>>> since few days.
->>>>>>>> Still struggling with it..
->>>>>>>>
->>>>>>>> There are few things i tried. Firstly the tag: next-20130326 is 
->>>>>>>> bad as there are
->>>>>>>> some bad commits in cpufreq core in it.
->>>>>>>>
->>>>>>>> I then tried latest linux-next/master on my Thinkpad (model 
->>>>>>>> name        : Intel(R)
->>>>>>>> Core(TM) i7-2640M CPU @ 2.80GHz) and couldn't boot it up. My 
->>>>>>>> ubuntu
->>>>>>>> just hanged.
->>>>>>>>
->>>>>>>> Then i tried Rafael's linux-next branch
->>>>>>>>
->>>>>>>> 079576f Merge branch 'pm-cpufreq-next' into linux-next
->>>>>>>>
->>>>>>>> And couldn't find any issues with it. I am easily able to 
->>>>>>>> remove/add cpus at
->>>>>>>> runtime..
->>>>>>>>
->>>>>>>> Can you give this branch a try?
->>>>>>>>
->>>>>>>
->>>>>>> OK, you seem to be well again, nice to hear.
->>>>>>>
->>>>>>> I was doing the whole week spring-cleaning in the apartment of 
->>>>>>> my parents.
->>>>>>> Now, I have some minutes for a compilation run.
->>>>>>>
->>>>>>> I guess "cpufreq: Call __cpufreq_governor() with correct 
->>>>>>> policy->cpus
->>>>>>> mask" could be the correct fix, but will try the GIT branch you 
->>>>>>> have
->>>>>>> mentioned.
->>>>>>>
->>>>>>> - Sedat -
->>>>>>>
->>>>>>> [1] 
->>>>>>> http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=e4969ebac83fdea78d89c779331396728a4e6199
->>>>>>>
->>>>>>
->>>>>> Both BROKEN here, specific pm-next commitid and pulling
->>>>>> pm.git#linux-next into next-20130411 (see attached files).
->>>>>>
->>>>>> Is "cpufreq: convert cpufreq_driver to using RCU" the root cause 
->>>>>> of this all?
->>>>>>
->>>>>
->>>>> [ CC Nathan ]
->>>>>
->>>>> NO, wrong assumption.
->>>>>
->>>>> 2013-04-12 18:04 Sedat Dilek        o [revert-cpufreq-rcu] Revert
->>>>> "cpufreq: convert cpufreq_driver to using RCU"
->>>>> 2013-04-12 18:04 Sedat Dilek        o Revert "cpufreq: Call
->>>>> __cpufreq_governor() with correct policy->cpus mask"
->>>>> 2013-04-11 23:24 Rafael J. Wysocki  M─┐ [pm-next-079576f] Merge 
->>>>> branch
->>>>> 'pm-cpufreq-next' into linux-next
->>>>>
->>>>> - Sedat -
->>>>>
->>>>>
->>>>>> - Sedat -
->>>>>>
->>>>>> [1] 
->>>>>> http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=5800043b2488a1c4c6e859af860644d37419d58b
->>>>>>
->>>>>>>> -- 
->>>>>>>> viresh
->>>>
->>>> [ TO Dirk (Author of Intel pstate driver) ]
->>>>
->>>> With CONFIG_X86_INTEL_PSTATE=n (unset) I do not see the call-trace!
->>>>
->>>> My kernel-config and dmesg are attached.
->>>
->>> You're seeing a trouble with a new driver, then, so that's not a 
->>> regression.
->>>
->
-> This IS a regression.
->
-> If the intel_pstate driver is being used __cpufreq_governor() should 
-> NOT be
-> called intel_pstate does not implement the target() callback.
->
-> Nathan's commit 5800043b2 changed the fence around the call to
-> __cpufreq_governor() in __cpufreq_remove_dev() here is the relevant hunk.
->
-> @@ -1007,9 +1068,12 @@ static int __cpufreq_remove_dev(struct device 
-> *dev, struct subsys_interface *sif
->      unsigned int cpu = dev->id, ret, cpus;
->      unsigned long flags;
->      struct cpufreq_policy *data;
-> +    struct cpufreq_driver *driver;
->      struct kobject *kobj;
->      struct completion *cmp;
->      struct device *cpu_dev;
-> +    bool has_target;
-> +    int (*exit)(struct cpufreq_policy *policy);
->
->      pr_debug("%s: unregistering CPU %u\n", __func__, cpu);
->
-> @@ -1025,14 +1089,19 @@ static int __cpufreq_remove_dev(struct device 
-> *dev, struct subsys_interface *sif
->          return -EINVAL;
->      }
->
-> -    if (cpufreq_driver->target)
-> +    rcu_read_lock();
-> +    driver = rcu_dereference(cpufreq_driver);
-> +    has_target = driver->target ? true : false;
-> +    exit = driver->exit;
-> +    if (has_target)
->          __cpufreq_governor(data, CPUFREQ_GOV_STOP);
->
->  #ifdef CONFIG_HOTPLUG_CPU
-> -    if (!cpufreq_driver->setpolicy)
-> +    if (!driver->setpolicy)
->          strncpy(per_cpu(cpufreq_cpu_governor, cpu),
->              data->governor->name, CPUFREQ_NAME_LEN);
->  #endif
-> +    rcu_read_unlock();
->
->      WARN_ON(lock_policy_rwsem_write(cpu));
->      cpus = cpumask_weight(data->cpus);
->
+On Mon, Apr 15, 2013 at 12:03:54PM +1000, Paul Mackerras wrote:
+> On Fri, Apr 12, 2013 at 11:38:04PM -0700, Paul E. McKenney wrote:
+> > On Fri, Apr 12, 2013 at 04:54:02PM -0700, Josh Triplett wrote:
+> > > On Fri, Apr 12, 2013 at 04:19:13PM -0700, Paul E. McKenney wrote:
+> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > Systems with HZ=100 can have slow bootup times due to the default
+> > > > three-jiffy delays between quiescent-state forcing attempts.  This
+> > > > commit therefore auto-tunes the RCU_JIFFIES_TILL_FORCE_QS value based
+> > > > on the value of HZ.  However, this would break very large systems that
+> > > > require more time between quiescent-state forcing attempts.  This
+> > > > commit therefore also ups the default delay by one jiffy for each
+> > > > 256 CPUs that might be on the system (based off of nr_cpu_ids at
+> > > > runtime, -not- NR_CPUS at build time).
+> > > > 
+> > > > Reported-by: Paul Mackerras <paulus@au1.ibm.com>
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > 
+> > > Something seems very wrong if RCU regularly hits the fqs code during
+> > > boot; feels like there's some more straightforward solution we're
+> > > missing.  What causes these CPUs to fall under RCU's scrutiny during
+> > > boot yet not actually hit the RCU codepaths naturally?
+> > 
+> > The problem is that they are running HZ=100, so that RCU will often
+> > take 30-60 milliseconds per grace period.  At that point, you only
+> > need 16-30 grace periods to chew up a full second, so it is not all
+> > that hard to eat up the additional 8-12 seconds of boot time that
+> > they were seeing.  IIRC, UP boot was costing them 4 seconds.
+> 
+> I added some instrumentation, which counted 202 calls to
+> synchronize_sched() during boot (Fedora 17 minimal install +
+> development tools) with a 3.8.0 kernel on a 4-cpu KVM virtual machine
+> on a POWER7.  Without this patch, those 202 calls take up a total of
+> 4.32 seconds; with it, they take up 3.6 seconds.  The kernel is
+> compiled with HZ=100 and NR_CPUS=1024, like the standard Fedora
+> kernel.
 
-I am not clear at what is at issue.  Are you saying __cpufreq_governor 
-can change the value of cpufreq_driver->target?  I hadn't thought that 
-was allowed but if it is the code would need to be fixed.
+Going from 4.32 seconds down to 3.6 seconds is an improvement, but there
+is clearly room for more.  The following experimental not-for-inclusion
+patch might help get most of the remaining 3.6 seconds.  Could you please
+try it out?
 
-Nate
+> I suspect a lot of the calls are in udevd and related processes.
+> Interestingly there were no calls to synchronize_rcu_bh or
+> synchronize_sched_expedited.
+
+The lack of synchronize_rcu_bh() suggests that networking is not
+involved in the slowdown.  The lack of synchronize_sched_expedited()
+is not surprising, unless you booted with rcupdate.rcu_expedited=1,
+but in that case I would expect a much greater reduction in boot time.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+rcu: Not for inclusion: Force expedited grace periods
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index a9610d1..55c5ef6 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2420,7 +2420,7 @@ void synchronize_sched(void)
+ 			   "Illegal synchronize_sched() in RCU-sched read-side critical section");
+ 	if (rcu_blocking_is_gp())
+ 		return;
+-	if (rcu_expedited)
++	if (1)
+ 		synchronize_sched_expedited();
+ 	else
+ 		wait_rcu_gp(call_rcu_sched);
+@@ -2447,7 +2447,7 @@ void synchronize_rcu_bh(void)
+ 			   "Illegal synchronize_rcu_bh() in RCU-bh read-side critical section");
+ 	if (rcu_blocking_is_gp())
+ 		return;
+-	if (rcu_expedited)
++	if (1)
+ 		synchronize_rcu_bh_expedited();
+ 	else
+ 		wait_rcu_gp(call_rcu_bh);
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 46b93b0..190a199 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -711,7 +711,7 @@ void synchronize_rcu(void)
+ 			   "Illegal synchronize_rcu() in RCU read-side critical section");
+ 	if (!rcu_scheduler_active)
+ 		return;
+-	if (rcu_expedited)
++	if (1)
+ 		synchronize_rcu_expedited();
+ 	else
+ 		wait_rcu_gp(call_rcu);
+
