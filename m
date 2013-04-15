@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933576Ab3DOCSP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:18:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36021 "EHLO
+	id S933296Ab3DOCSD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:18:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933395Ab3DOCSL (ORCPT
+	with ESMTP id S933146Ab3DOCSA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:18:11 -0400
+	Sun, 14 Apr 2013 22:18:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Brad Spengler <spender@grsecurity.net>, linux-mtd@lists.infradead.org
-Subject: [ 10/11] mtdchar: fix offset overflow detection
-Date: Sun, 14 Apr 2013 19:17:42 -0700
-Message-Id: <20130415020614.846683113@linuxfoundation.org>
+        Huacai Chen <chenhc@lemote.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 05/11] PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
+Date: Sun, 14 Apr 2013 19:17:37 -0700
+Message-Id: <20130415020614.480658197@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415020614.067692418@linuxfoundation.org>
 References: <20130415020614.067692418@linuxfoundation.org>
@@ -31,113 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 9c603e53d380459fb62fec7cd085acb0b74ac18f upstream.
+commit 6f389a8f1dd22a24f3d9afc2812b30d639e94625 upstream.
 
-Sasha Levin has been running trinity in a KVM tools guest, and was able
-to trigger the BUG_ON() at arch/x86/mm/pat.c:279 (verifying the range of
-the memory type).  The call trace showed that it was mtdchar_mmap() that
-created an invalid remap_pfn_range().
+As commit 40dc166c (PM / Core: Introduce struct syscore_ops for core
+subsystems PM) say, syscore_ops operations should be carried with one
+CPU on-line and interrupts disabled. However, after commit f96972f2d
+(kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()),
+syscore_shutdown() is called before disable_nonboot_cpus(), so break
+the rules. We have a MIPS machine with a 8259A PIC, and there is an
+external timer (HPET) linked at 8259A. Since 8259A has been shutdown
+too early (by syscore_shutdown()), disable_nonboot_cpus() runs without
+timer interrupt, so it hangs and reboot fails. This patch call
+syscore_shutdown() a little later (after disable_nonboot_cpus()) to
+avoid reboot failure, this is the same way as poweroff does.
 
-The problem is that mtdchar_mmap() does various really odd and subtle
-things with the vma page offset etc, and uses the wrong types (and the
-wrong overflow) detection for it.
+For consistency, add disable_nonboot_cpus() to kernel_halt().
 
-For example, the page offset may well be 32-bit on a 32-bit
-architecture, but after shifting it up by PAGE_SHIFT, we need to use a
-potentially 64-bit resource_size_t to correctly hold the full value.
-
-Also, we need to check that the vma length plus offset doesn't overflow
-before we check that it is smaller than the length of the mtdmap region.
-
-This fixes things up and tries to make the code a bit easier to read.
-
-Reported-and-tested-by: Sasha Levin <levinsasha928@gmail.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/mtdchar.c |   48 ++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 42 insertions(+), 6 deletions(-)
+ kernel/sys.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -1064,6 +1064,33 @@ static unsigned long mtd_get_unmapped_ar
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -320,7 +320,6 @@ void kernel_restart_prepare(char *cmd)
+ 	system_state = SYSTEM_RESTART;
+ 	usermodehelper_disable();
+ 	device_shutdown();
+-	syscore_shutdown();
  }
- #endif
  
-+static inline unsigned long get_vm_size(struct vm_area_struct *vma)
-+{
-+	return vma->vm_end - vma->vm_start;
-+}
-+
-+static inline resource_size_t get_vm_offset(struct vm_area_struct *vma)
-+{
-+	return (resource_size_t) vma->vm_pgoff << PAGE_SHIFT;
-+}
-+
-+/*
-+ * Set a new vm offset.
-+ *
-+ * Verify that the incoming offset really works as a page offset,
-+ * and that the offset and size fit in a resource_size_t.
-+ */
-+static inline int set_vm_offset(struct vm_area_struct *vma, resource_size_t off)
-+{
-+	pgoff_t pgoff = off >> PAGE_SHIFT;
-+	if (off != (resource_size_t) pgoff << PAGE_SHIFT)
-+		return -EINVAL;
-+	if (off + get_vm_size(vma) - 1 < off)
-+		return -EINVAL;
-+	vma->vm_pgoff = pgoff;
-+	return 0;
-+}
-+
- /*
-  * set up a mapping for shared memory segments
-  */
-@@ -1073,20 +1100,29 @@ static int mtd_mmap(struct file *file, s
- 	struct mtd_file_info *mfi = file->private_data;
- 	struct mtd_info *mtd = mfi->mtd;
- 	struct map_info *map = mtd->priv;
--	unsigned long start;
--	unsigned long off;
--	u32 len;
-+	resource_size_t start, off;
-+	unsigned long len, vma_len;
- 
- 	if (mtd->type == MTD_RAM || mtd->type == MTD_ROM) {
--		off = vma->vm_pgoff << PAGE_SHIFT;
-+		off = get_vm_offset(vma);
- 		start = map->phys;
- 		len = PAGE_ALIGN((start & ~PAGE_MASK) + map->size);
- 		start &= PAGE_MASK;
--		if ((vma->vm_end - vma->vm_start + off) > len)
-+		vma_len = get_vm_size(vma);
-+
-+		/* Overflow in off+len? */
-+		if (vma_len + off < off)
-+			return -EINVAL;
-+		/* Does it fit in the mapping? */
-+		if (vma_len + off > len)
- 			return -EINVAL;
- 
- 		off += start;
--		vma->vm_pgoff = off >> PAGE_SHIFT;
-+		/* Did that overflow? */
-+		if (off < start)
-+			return -EINVAL;
-+		if (set_vm_offset(vma, off) < 0)
-+			return -EINVAL;
- 		vma->vm_flags |= VM_IO | VM_RESERVED;
- 
- #ifdef pgprot_noncached
+ /**
+@@ -335,6 +334,7 @@ void kernel_restart(char *cmd)
+ {
+ 	kernel_restart_prepare(cmd);
+ 	disable_nonboot_cpus();
++	syscore_shutdown();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+ 	else
+@@ -360,6 +360,7 @@ static void kernel_shutdown_prepare(enum
+ void kernel_halt(void)
+ {
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
++	disable_nonboot_cpus();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "System halted.\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
 
 
