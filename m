@@ -1,145 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935062Ab3DOVUW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 17:20:22 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:34523 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752930Ab3DOVUV (ORCPT
+	id S935143Ab3DOVYf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 17:24:35 -0400
+Received: from mail-ia0-f176.google.com ([209.85.210.176]:35320 "EHLO
+	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934043Ab3DOVYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 17:20:21 -0400
-Message-ID: <516C6F12.5020208@gmail.com>
-Date: Mon, 15 Apr 2013 16:20:18 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 15 Apr 2013 17:24:34 -0400
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 1/4] Documentation: Add memory mapped ARM architected
- timer binding
-References: <1365812863-5367-1-git-send-email-sboyd@codeaurora.org> <1365812863-5367-2-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1365812863-5367-2-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130415080808.GC1994@udknight>
+References: <20130415080808.GC1994@udknight>
+Date: Mon, 15 Apr 2013 14:24:33 -0700
+X-Google-Sender-Auth: kRpwZmDIb7GjtggsTdO95V4rh2E
+Message-ID: <CAE9FiQW3G3ncyVHV=0nbhX2cD2sLXTzn6FAprfa3y8AeMbE43A@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mm:memblock: add memblock_alloc_in_[range|range_nid]
+From: Yinghai Lu <yinghai@kernel.org>
+To: Wang YanQing <udknight@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 7:27 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> Add a binding for the arm architected timer hardware's memory
-> mapped interface. The mmio timer hardware is made up of one base
-> frame and a collection of up to 8 timer frames, where each of the
-> 8 timer frames can have either one or two views. A frame
-> typically maps to a privilege level (user/kernel, hypervisor,
-> secure). The first view has full access to the registers within a
-> frame, while the second view can be restricted to particular
-> registers within a frame. Each frame must support a physical
-> timer. It's optional for a frame to support a virtual timer.
+On Mon, Apr 15, 2013 at 1:08 AM, Wang YanQing <udknight@gmail.com> wrote:
+> There is a memblock code use pattern in kernel which looks like below:
+> in nobootmem.c:
 >
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  .../devicetree/bindings/arm/arch_timer.txt         | 59 ++++++++++++++++++++--
->  1 file changed, 56 insertions(+), 3 deletions(-)
+>        addr = memblock_find_in_range_node(goal, limit, size, align, nid);
+>        if (!addr)
+>                 return NULL;
 >
-> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> index 20746e5..ac20cde 100644
-> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
-> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
-> @@ -1,10 +1,14 @@
->  * ARM architected timer
+>        ptr = phys_to_virt(addr);
+>        memset(ptr, 0, size);
+>        memblock_reserve(addr, size);
 >
-> -ARM cores may have a per-core architected timer, which provides per-cpu timers.
-> +ARM cores may have a per-core architected timer, which provides per-cpu timers,
-> +or a memory mapped architected timer, which provides up to 8 frames with a
-> +physical and optional virtual timer per frame.
+> use memblock_alloc_in_[range|range_nid] to do
+> the search and reserve in one function will
+> bring the benefit below:
 >
-> -The timer is attached to a GIC to deliver its per-processor interrupts.
-> +The per-core architected timer is attached to a GIC to deliver its
-> +per-processor interrupts via PPIs. The memory mapped timer is attached to a GIC
-> +to deliver its interrupts via SPIs.
->
-> -** Timer node properties:
-> +** CP15 Timer node properties:
->
->  - compatible : Should at least contain one of
->         "arm,armv7-timer"
-> @@ -26,3 +30,52 @@ Example:
->                              <1 10 0xf08>;
->                 clock-frequency = <100000000>;
->         };
-> +
-> +** Memory mapped timer node properties
-> +
-> +- compatible : Should at least contain "arm,armv7-timer-mem".
+> 1: clarify the codes
+> 2: we will check memblock_reserve's return value
 
-Everything about this timer is architecturally defined? If not, let's
-use a more specific name.
+No, I don't like this.
 
-> +
-> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
-> +
-> +- reg : The control frame base address.
-> +
-> +Note that #address-cells, #size-cells, and ranges shall be present to ensure
-> +the CPU can address a frame's registers.
-> +
-> +Frame:
-> +
-> +- frame-number: 0 to 7.
+It cause confusing.
+alloc usually it means allocate and access it right away.
+find/reserve, is somehow will only access some time later.
 
-I'd really like to get rid of the frame numbers and sub-nodes. Is the
-frame number significant to software?
+also in find/reserve path, we don't round size to align.
+   size = round_up(size, align);
 
-> +- interrupts : Interrupt list for physical and virtual timers in that order.
-> +  The virtual timer interrupt is optional.
+Thanks
 
-Is that optional per frame?
-
-Rob
-
-> +
-> +- reg : The first and second view base addresses in that order. The second view
-> +  base address is optional.
-> +
-> +- status : "disabled" indicates the frame is not available for use.
-> +
-> +Example:
-> +
-> +       timer@f0000000 {
-> +               compatible = "arm,armv7-timer-mem";
-> +               #address-cells = <1>;
-> +               #size-cells = <1>;
-> +               ranges;
-> +               reg = <0xf0000000 0x1000>;
-> +               clock-frequency = <50000000>;
-> +
-> +               frame@f0001000 {
-> +                       frame-number = <0>
-> +                       interrupts = <0 13 0x8>,
-> +                                    <0 14 0x8>;
-> +                       reg = <0xf0001000 0x1000>,
-> +                             <0xf0002000 0x1000>;
-> +               };
-> +
-> +               frame@f0003000 {
-> +                       frame-number = <1>
-> +                       interrupts = <0 15 0x8>;
-> +                       reg = <0xf0003000 0x1000>;
-> +                       status = "disabled";
-> +               };
-> +       };
-> --
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
->
-> _______________________________________________
-> devicetree-discuss mailing list
-> devicetree-discuss@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/devicetree-discuss
+Yinghai
