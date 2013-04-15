@@ -1,105 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab3DOQDt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:03:49 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:48282 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754826Ab3DOQCs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:02:48 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 16/20] n_tty: Factor PARMRK from normal per-char i/o
-Date: Mon, 15 Apr 2013 11:32:47 -0400
-Message-Id: <1366039971-8770-17-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
-References: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
- <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	id S1755402Ab3DOQEM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:04:12 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:42950 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752019Ab3DOQEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 12:04:10 -0400
+Date: Mon, 15 Apr 2013 11:04:08 -0500
+From: Robin Holt <holt@sgi.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Robin Holt <holt@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot
+ to boot cpu.)
+Message-ID: <20130415160408.GA3658@sgi.com>
+References: <20130408165916.GA3672@sgi.com>
+ <20130410111620.GB29752@gmail.com>
+ <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
+ <20130411053106.GA9042@drongo>
+ <5166B05E.8010904@linux.vnet.ibm.com>
+ <20130411134837.GE3672@sgi.com>
+ <20130412053718.GC3887@gmail.com>
+ <5167A52F.6020503@linux.vnet.ibm.com>
+ <20130412093149.GT3658@sgi.com>
+ <20130413163022.GA7500@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130413163022.GA7500@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handle PARMRK processing on the slow per-char i/o path.
+On Sat, Apr 13, 2013 at 06:30:22PM +0200, Oleg Nesterov wrote:
+> On 04/12, Robin Holt wrote:
+> >
+> > +void migrate_to_boot_cpu(void)
+> > +{
+> > +	/* The boot cpu is always logical cpu 0 */
+> > +	int reboot_cpu_id = 0;
+> > +
+> > +	/* Make certain the cpu I'm about to reboot on is online */
+> > +	if (!cpu_online(reboot_cpu_id))
+> > +		reboot_cpu_id = smp_processor_id();
+> > +
+> > +	/* Make certain I only run on the appropriate processor */
+> > +	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
+> 
+> This is only theoretical, but perhaps it makes sense to set
+> PF_THREAD_BOUND before set_cpus_allowed_ptr() ? To prevent the
+> race with another thread doing sched_setaffinity().
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 45 +++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 43 insertions(+), 2 deletions(-)
+I don't quite understand this comment.  We are migrating our own thread.
+How does setting PF_THREAD_BOUND have any effect?
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 6316426..e26a3bf 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1457,6 +1457,47 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- }
- 
- static inline void
-+n_tty_receive_char_fast(struct tty_struct *tty, unsigned char c)
-+{
-+	struct n_tty_data *ldata = tty->disc_data;
-+
-+	/*
-+	 * If the previous character was LNEXT, or we know that this
-+	 * character is not one of the characters that we'll have to
-+	 * handle specially, do shortcut processing to speed things
-+	 * up.
-+	 */
-+	if (!test_bit(c, ldata->char_map) || ldata->lnext) {
-+		ldata->lnext = 0;
-+
-+		if (tty->stopped && !tty->flow_stopped && I_IXON(tty) &&
-+		    I_IXANY(tty)) {
-+			start_tty(tty);
-+			process_echoes(tty);
-+		}
-+
-+		if (read_cnt(ldata) >= (N_TTY_BUF_SIZE - 1)) {
-+			/* beep if no space */
-+			if (L_ECHO(tty))
-+				process_output('\a', tty);
-+			return;
-+		}
-+		if (L_ECHO(tty)) {
-+			finish_erasing(ldata);
-+			/* Record the column of first canon char. */
-+			if (ldata->canon_head == ldata->read_head)
-+				echo_set_canon_col(ldata);
-+			echo_char(c, tty);
-+			commit_echoes(tty);
-+		}
-+		put_tty_queue(c, ldata);
-+		return;
-+	}
-+
-+	n_tty_receive_char_special(tty, c);
-+}
-+
-+static inline void
- n_tty_receive_char_closing(struct tty_struct *tty, unsigned char c)
- {
- 	if (I_ISTRIP(tty))
-@@ -1608,7 +1649,7 @@ n_tty_receive_buf_fast(struct tty_struct *tty, const unsigned char *cp,
- 		if (fp)
- 			flag = *fp++;
- 		if (likely(flag == TTY_NORMAL))
--			n_tty_receive_char(tty, *cp++);
-+			n_tty_receive_char_fast(tty, *cp++);
- 		else
- 			n_tty_receive_char_flagged(tty, *cp++, flag);
- 	}
-@@ -1627,7 +1668,7 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 	else if (tty->closing && !L_EXTPROC(tty))
- 		n_tty_receive_buf_closing(tty, cp, fp, count);
- 	else {
--		if (!preops)
-+		if (!preops && !I_PARMRK(tty))
- 			n_tty_receive_buf_fast(tty, cp, fp, count);
- 		else
- 			n_tty_receive_buf_standard(tty, cp, fp, count);
--- 
-1.8.1.2
-
+Robin
