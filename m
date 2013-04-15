@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964817Ab3DOHFi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 03:05:38 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:61293 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932679Ab3DOHFg (ORCPT
+	id S964842Ab3DOHFq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 03:05:46 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46287 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935074Ab3DOHFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 03:05:36 -0400
+	Mon, 15 Apr 2013 03:05:43 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@sisk.pl
 Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
@@ -15,97 +15,70 @@ Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
         charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
         linaro-kernel@lists.linaro.org, patches@linaro.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 1/2] cpufreq: ARM big LITTLE: put DT nodes after using them
-Date: Mon, 15 Apr 2013 12:35:24 +0530
-Message-Id: <1ff24e0c044fb7a30b6244451dd440455efab43b.1366009279.git.viresh.kumar@linaro.org>
+Subject: [PATCH 2/2] cpufreq: ARM big LITTLE: Adapt to latest cpufreq updates
+Date: Mon, 15 Apr 2013 12:35:25 +0530
+Message-Id: <c62439c62a0e8bf098a22a44cce0a48bfbddea39.1366009279.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <1ff24e0c044fb7a30b6244451dd440455efab43b.1366009279.git.viresh.kumar@linaro.org>
+References: <1ff24e0c044fb7a30b6244451dd440455efab43b.1366009279.git.viresh.kumar@linaro.org>
+In-Reply-To: <1ff24e0c044fb7a30b6244451dd440455efab43b.1366009279.git.viresh.kumar@linaro.org>
+References: <1ff24e0c044fb7a30b6244451dd440455efab43b.1366009279.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT nodes should be put using of_node_put() to balance their usage counts. This
-is not done properly in ARM's big LITTLE driver. Fix it.
+This driver isn't updated to work with latest cpufreq core updates that happened
+recently. Fix them.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
-Hi Rafael,
+As original patch breaks compilation, its best to merge this patch with original
+patch.
 
-These are fixes for 3.10
+ drivers/cpufreq/arm_big_little.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
- drivers/cpufreq/arm_big_little_dt.c | 43 +++++++++++++++++++++++++------------
- 1 file changed, 29 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/cpufreq/arm_big_little_dt.c b/drivers/cpufreq/arm_big_little_dt.c
-index 452ff46..44be311 100644
---- a/drivers/cpufreq/arm_big_little_dt.c
-+++ b/drivers/cpufreq/arm_big_little_dt.c
-@@ -31,22 +31,28 @@
+diff --git a/drivers/cpufreq/arm_big_little.c b/drivers/cpufreq/arm_big_little.c
+index 1d29d1a..dbdf677 100644
+--- a/drivers/cpufreq/arm_big_little.c
++++ b/drivers/cpufreq/arm_big_little.c
+@@ -77,8 +77,6 @@ static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
+ 			target_freq, relation, &freq_tab_idx);
+ 	freqs.new = freq_table[cur_cluster][freq_tab_idx].frequency;
  
- static int dt_init_opp_table(struct device *cpu_dev)
- {
--	struct device_node *np = NULL;
-+	struct device_node *np, *parent;
- 	int count = 0, ret;
- 
--	for_each_child_of_node(of_find_node_by_path("/cpus"), np) {
-+	parent = of_find_node_by_path("/cpus");
-+	if (!parent) {
-+		pr_err("failed to find OF /cpus\n");
-+		return -ENOENT;
-+	}
-+
-+	for_each_child_of_node(parent, np) {
- 		if (count++ != cpu_dev->id)
- 			continue;
--		if (!of_get_property(np, "operating-points", NULL))
--			return -ENODATA;
+-	freqs.cpu = policy->cpu;
 -
--		cpu_dev->of_node = np;
--
--		ret = of_init_opp_table(cpu_dev);
--		if (ret)
--			return ret;
--
--		return 0;
-+		if (!of_get_property(np, "operating-points", NULL)) {
-+			ret = -ENODATA;
-+		} else {
-+			cpu_dev->of_node = np;
-+			ret = of_init_opp_table(cpu_dev);
-+		}
-+		of_node_put(np);
-+		of_node_put(parent);
-+
-+		return ret;
- 	}
- 
- 	return -ENODEV;
-@@ -54,15 +60,24 @@ static int dt_init_opp_table(struct device *cpu_dev)
- 
- static int dt_get_transition_latency(struct device *cpu_dev)
- {
--	struct device_node *np = NULL;
-+	struct device_node *np, *parent;
- 	u32 transition_latency = CPUFREQ_ETERNAL;
- 	int count = 0;
- 
--	for_each_child_of_node(of_find_node_by_path("/cpus"), np) {
-+	parent = of_find_node_by_path("/cpus");
-+	if (!parent) {
-+		pr_err("failed to find OF /cpus\n");
-+		return -ENOENT;
-+	}
-+
-+	for_each_child_of_node(parent, np) {
- 		if (count++ != cpu_dev->id)
- 			continue;
- 
- 		of_property_read_u32(np, "clock-latency", &transition_latency);
-+		of_node_put(np);
-+		of_node_put(parent);
-+
+ 	pr_debug("%s: cpu: %d, cluster: %d, oldfreq: %d, target freq: %d, new freq: %d\n",
+ 			__func__, cpu, cur_cluster, freqs.old, target_freq,
+ 			freqs.new);
+@@ -86,8 +84,7 @@ static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
+ 	if (freqs.old == freqs.new)
  		return 0;
- 	}
+ 
+-	for_each_cpu(freqs.cpu, policy->cpus)
+-		cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
++	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+ 
+ 	ret = clk_set_rate(clk[cur_cluster], freqs.new * 1000);
+ 	if (ret) {
+@@ -97,8 +94,7 @@ static int bL_cpufreq_set_target(struct cpufreq_policy *policy,
+ 
+ 	policy->cur = freqs.new;
+ 
+-	for_each_cpu(freqs.cpu, policy->cpus)
+-		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
+ 
+ 	return ret;
+ }
+@@ -231,7 +227,7 @@ static struct cpufreq_driver bL_cpufreq_driver = {
+ 	.get			= bL_cpufreq_get,
+ 	.init			= bL_cpufreq_init,
+ 	.exit			= bL_cpufreq_exit,
+-	.have_multiple_policies	= true,
++	.have_governor_per_policy = true,
+ 	.attr			= bL_cpufreq_attr,
+ };
  
 -- 
 1.7.12.rc2.18.g61b472e
