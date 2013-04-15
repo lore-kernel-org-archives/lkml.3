@@ -1,121 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab3DOQCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:02:41 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:48240 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab3DOQCj (ORCPT
+	id S1755148Ab3DOQGF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:06:05 -0400
+Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:41432 "EHLO
+	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753635Ab3DOQGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:02:39 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 11/20] n_tty: Factor tty->closing receive_buf() into separate fn
-Date: Mon, 15 Apr 2013 11:32:42 -0400
-Message-Id: <1366039971-8770-12-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
-References: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
- <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 15 Apr 2013 12:06:03 -0400
+X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Apr 2013 12:06:02 EDT
+Date: Mon, 15 Apr 2013 16:00:04 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Arjan van de Ven <arjan@linux.intel.com>
+cc: paulmck@linux.vnet.ibm.com, Peter Zijlstra <peterz@infradead.org>,
+        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH documentation 1/2] nohz1: Add documentation.
+In-Reply-To: <51684AD3.7090305@linux.intel.com>
+Message-ID: <0000013e0e6cacbb-b7e44c6f-d551-49b9-aa07-62a4ee280ae7-000000@email.amazonses.com>
+References: <20130411160524.GA30384@linux.vnet.ibm.com> <1365696359-30958-1-git-send-email-paulmck@linux.vnet.ibm.com> <20130411182502.GA31684@pd.tnic> <20130411191355.GO29861@linux.vnet.ibm.com> <1365753904.17140.22.camel@laptop> <20130412175419.GG29861@linux.vnet.ibm.com>
+ <51684AD3.7090305@linux.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.04.15-54.240.9.58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert to modal receive_buf() processing; factor receive char
-processing when tty->closing into n_tty_receive_buf_closing().
+On Fri, 12 Apr 2013, Arjan van de Ven wrote:
 
-Note that EXTPROC when ISTRIP or IUCLC is set continues to be
-handled by n_tty_receive_char().
+> but arguably, that's because of HRTIMERS more than NOHZ
+> (e.g. I bet we still turn off periodic even for nohz as long as hrtimers are
+> enabled)
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 50 +++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 39 insertions(+), 11 deletions(-)
+If we are able to only get rid of one timer tick on average with dynticks
+then I would think that is enough to justify having it on by default.
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 9b52bf9..81e2bb3 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1276,17 +1276,6 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 		process_echoes(tty);
- 	}
- 
--	if (tty->closing) {
--		if (I_IXON(tty)) {
--			if (c == START_CHAR(tty)) {
--				start_tty(tty);
--				process_echoes(tty);
--			} else if (c == STOP_CHAR(tty))
--				stop_tty(tty);
--		}
--		return;
--	}
--
- 	/*
- 	 * If the previous character was LNEXT, or we know that this
- 	 * character is not one of the characters that we'll have to
-@@ -1463,6 +1452,27 @@ handle_newline:
- 	put_tty_queue(c, ldata);
- }
- 
-+static inline void
-+n_tty_receive_char_closing(struct tty_struct *tty, unsigned char c)
-+{
-+	if (I_ISTRIP(tty))
-+		c &= 0x7f;
-+	if (I_IUCLC(tty) && L_IEXTEN(tty))
-+		c = tolower(c);
-+
-+	if (I_IXON(tty)) {
-+		if (c == STOP_CHAR(tty))
-+			stop_tty(tty);
-+		else if (c == START_CHAR(tty) ||
-+			 (tty->stopped && !tty->flow_stopped && I_IXANY(tty) &&
-+			  c != INTR_CHAR(tty) && c != QUIT_CHAR(tty) &&
-+			  c != SUSP_CHAR(tty))) {
-+			start_tty(tty);
-+			process_echoes(tty);
-+		}
-+	}
-+}
-+
- static void
- n_tty_receive_char_flagged(struct tty_struct *tty, unsigned char c, char flag)
- {
-@@ -1542,6 +1552,22 @@ n_tty_receive_buf_raw(struct tty_struct *tty, const unsigned char *cp,
- 	}
- }
- 
-+static void
-+n_tty_receive_buf_closing(struct tty_struct *tty, const unsigned char *cp,
-+			  char *fp, int count)
-+{
-+	char flag = TTY_NORMAL;
-+
-+	while (count--) {
-+		if (fp)
-+			flag = *fp++;
-+		if (likely(flag == TTY_NORMAL))
-+			n_tty_receive_char_closing(tty, *cp++);
-+		else
-+			n_tty_receive_char_flagged(tty, *cp++, flag);
-+	}
-+}
-+
- static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 			  char *fp, int count)
- {
-@@ -1552,6 +1578,8 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 		n_tty_receive_buf_real_raw(tty, cp, fp, count);
- 	else if (ldata->raw || (L_EXTPROC(tty) && !preops))
- 		n_tty_receive_buf_raw(tty, cp, fp, count);
-+	else if (tty->closing && !L_EXTPROC(tty))
-+		n_tty_receive_buf_closing(tty, cp, fp, count);
- 	else {
- 		char flag = TTY_NORMAL;
- 
--- 
-1.8.1.2
+If the scheduling period from the schduler is around 20ms then one may be
+able to save processing 20 timer ticks by going to htimers.
+
+The main issue with hrtimers is likely going to be that is it is too much
+effort for small timerframes less than 10ms. Could we  only switch off the
+timer tick if the next event is more than 10 ticks aways?
 
