@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab3DOC0v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:26:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36111 "EHLO
+	id S934043Ab3DOCZt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:25:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36087 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932848Ab3DOCZv (ORCPT
+	with ESMTP id S1755029Ab3DOCZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:25:51 -0400
+	Sun, 14 Apr 2013 22:25:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Brad Spengler <spender@grsecurity.net>, linux-mtd@lists.infradead.org
-Subject: [ 15/17] mtdchar: fix offset overflow detection
-Date: Sun, 14 Apr 2013 19:25:25 -0700
-Message-Id: <20130415022353.757501375@linuxfoundation.org>
+        Siegfried Wulsch <Siegfried.Wulsch@rovema.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 12/17] sched_clock: Prevent 64bit inatomicity on 32bit systems
+Date: Sun, 14 Apr 2013 19:25:22 -0700
+Message-Id: <20130415022353.537405136@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
 References: <20130415022352.616689034@linuxfoundation.org>
@@ -31,113 +29,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 9c603e53d380459fb62fec7cd085acb0b74ac18f upstream.
+commit a1cbcaa9ea87b87a96b9fc465951dcf36e459ca2 upstream.
 
-Sasha Levin has been running trinity in a KVM tools guest, and was able
-to trigger the BUG_ON() at arch/x86/mm/pat.c:279 (verifying the range of
-the memory type).  The call trace showed that it was mtdchar_mmap() that
-created an invalid remap_pfn_range().
+The sched_clock_remote() implementation has the following inatomicity
+problem on 32bit systems when accessing the remote scd->clock, which
+is a 64bit value.
 
-The problem is that mtdchar_mmap() does various really odd and subtle
-things with the vma page offset etc, and uses the wrong types (and the
-wrong overflow) detection for it.
+CPU0			CPU1
 
-For example, the page offset may well be 32-bit on a 32-bit
-architecture, but after shifting it up by PAGE_SHIFT, we need to use a
-potentially 64-bit resource_size_t to correctly hold the full value.
+sched_clock_local()	sched_clock_remote(CPU0)
+...
+			remote_clock = scd[CPU0]->clock
+			    read_low32bit(scd[CPU0]->clock)
+cmpxchg64(scd->clock,...)
+			    read_high32bit(scd[CPU0]->clock)
 
-Also, we need to check that the vma length plus offset doesn't overflow
-before we check that it is smaller than the length of the mtdmap region.
+While the update of scd->clock is using an atomic64 mechanism, the
+readout on the remote cpu is not, which can cause completely bogus
+readouts.
 
-This fixes things up and tries to make the code a bit easier to read.
+It is a quite rare problem, because it requires the update to hit the
+narrow race window between the low/high readout and the update must go
+across the 32bit boundary.
 
-Reported-and-tested-by: Sasha Levin <levinsasha928@gmail.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-Cc: Brad Spengler <spender@grsecurity.net>
+The resulting misbehaviour is, that CPU1 will see the sched_clock on
+CPU1 ~4 seconds ahead of it's own and update CPU1s sched_clock value
+to this bogus timestamp. This stays that way due to the clamping
+implementation for about 4 seconds until the synchronization with
+CLOCK_MONOTONIC undoes the problem.
+
+The issue is hard to observe, because it might only result in a less
+accurate SCHED_OTHER timeslicing behaviour. To create observable
+damage on realtime scheduling classes, it is necessary that the bogus
+update of CPU1 sched_clock happens in the context of an realtime
+thread, which then gets charged 4 seconds of RT runtime, which results
+in the RT throttler mechanism to trigger and prevent scheduling of RT
+tasks for a little less than 4 seconds. So this is quite unlikely as
+well.
+
+The issue was quite hard to decode as the reproduction time is between
+2 days and 3 weeks and intrusive tracing makes it less likely, but the
+following trace recorded with trace_clock=global, which uses
+sched_clock_local(), gave the final hint:
+
+  <idle>-0   0d..30 400269.477150: hrtimer_cancel: hrtimer=0xf7061e80
+  <idle>-0   0d..30 400269.477151: hrtimer_start:  hrtimer=0xf7061e80 ...
+irq/20-S-587 1d..32 400273.772118: sched_wakeup:   comm= ... target_cpu=0
+  <idle>-0   0dN.30 400273.772118: hrtimer_cancel: hrtimer=0xf7061e80
+
+What happens is that CPU0 goes idle and invokes
+sched_clock_idle_sleep_event() which invokes sched_clock_local() and
+CPU1 runs a remote wakeup for CPU0 at the same time, which invokes
+sched_remote_clock(). The time jump gets propagated to CPU0 via
+sched_remote_clock() and stays stale on both cores for ~4 seconds.
+
+There are only two other possibilities, which could cause a stale
+sched clock:
+
+1) ktime_get() which reads out CLOCK_MONOTONIC returns a sporadic
+   wrong value.
+
+2) sched_clock() which reads the TSC returns a sporadic wrong value.
+
+#1 can be excluded because sched_clock would continue to increase for
+   one jiffy and then go stale.
+
+#2 can be excluded because it would not make the clock jump
+   forward. It would just result in a stale sched_clock for one jiffy.
+
+After quite some brain twisting and finding the same pattern on other
+traces, sched_clock_remote() remained the only place which could cause
+such a problem and as explained above it's indeed racy on 32bit
+systems.
+
+So while on 64bit systems the readout is atomic, we need to verify the
+remote readout on 32bit machines. We need to protect the local->clock
+readout in sched_clock_remote() on 32bit as well because an NMI could
+hit between the low and the high readout, call sched_clock_local() and
+modify local->clock.
+
+Thanks to Siegfried Wulsch for bearing with my debug requests and
+going through the tedious tasks of running a bunch of reproducer
+systems to generate the debug information which let me decode the
+issue.
+
+Reported-by: Siegfried Wulsch <Siegfried.Wulsch@rovema.de>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1304051544160.21884@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/mtdchar.c |   48 ++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 42 insertions(+), 6 deletions(-)
+ kernel/sched/clock.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -1123,6 +1123,33 @@ static unsigned long mtdchar_get_unmappe
- }
- #endif
+--- a/kernel/sched/clock.c
++++ b/kernel/sched/clock.c
+@@ -176,10 +176,36 @@ static u64 sched_clock_remote(struct sch
+ 	u64 this_clock, remote_clock;
+ 	u64 *ptr, old_val, val;
  
-+static inline unsigned long get_vm_size(struct vm_area_struct *vma)
-+{
-+	return vma->vm_end - vma->vm_start;
-+}
-+
-+static inline resource_size_t get_vm_offset(struct vm_area_struct *vma)
-+{
-+	return (resource_size_t) vma->vm_pgoff << PAGE_SHIFT;
-+}
-+
-+/*
-+ * Set a new vm offset.
-+ *
-+ * Verify that the incoming offset really works as a page offset,
-+ * and that the offset and size fit in a resource_size_t.
-+ */
-+static inline int set_vm_offset(struct vm_area_struct *vma, resource_size_t off)
-+{
-+	pgoff_t pgoff = off >> PAGE_SHIFT;
-+	if (off != (resource_size_t) pgoff << PAGE_SHIFT)
-+		return -EINVAL;
-+	if (off + get_vm_size(vma) - 1 < off)
-+		return -EINVAL;
-+	vma->vm_pgoff = pgoff;
-+	return 0;
-+}
-+
- /*
-  * set up a mapping for shared memory segments
-  */
-@@ -1132,20 +1159,29 @@ static int mtdchar_mmap(struct file *fil
- 	struct mtd_file_info *mfi = file->private_data;
- 	struct mtd_info *mtd = mfi->mtd;
- 	struct map_info *map = mtd->priv;
--	unsigned long start;
--	unsigned long off;
--	u32 len;
-+	resource_size_t start, off;
-+	unsigned long len, vma_len;
++#if BITS_PER_LONG != 64
++again:
++	/*
++	 * Careful here: The local and the remote clock values need to
++	 * be read out atomic as we need to compare the values and
++	 * then update either the local or the remote side. So the
++	 * cmpxchg64 below only protects one readout.
++	 *
++	 * We must reread via sched_clock_local() in the retry case on
++	 * 32bit as an NMI could use sched_clock_local() via the
++	 * tracer and hit between the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	this_clock = sched_clock_local(my_scd);
++	/*
++	 * We must enforce atomic readout on 32bit, otherwise the
++	 * update on the remote cpu can hit inbetween the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	remote_clock = cmpxchg64(&scd->clock, 0, 0);
++#else
++	/*
++	 * On 64bit the read of [my]scd->clock is atomic versus the
++	 * update, so we can avoid the above 32bit dance.
++	 */
+ 	sched_clock_local(my_scd);
+ again:
+ 	this_clock = my_scd->clock;
+ 	remote_clock = scd->clock;
++#endif
  
- 	if (mtd->type == MTD_RAM || mtd->type == MTD_ROM) {
--		off = vma->vm_pgoff << PAGE_SHIFT;
-+		off = get_vm_offset(vma);
- 		start = map->phys;
- 		len = PAGE_ALIGN((start & ~PAGE_MASK) + map->size);
- 		start &= PAGE_MASK;
--		if ((vma->vm_end - vma->vm_start + off) > len)
-+		vma_len = get_vm_size(vma);
-+
-+		/* Overflow in off+len? */
-+		if (vma_len + off < off)
-+			return -EINVAL;
-+		/* Does it fit in the mapping? */
-+		if (vma_len + off > len)
- 			return -EINVAL;
- 
- 		off += start;
--		vma->vm_pgoff = off >> PAGE_SHIFT;
-+		/* Did that overflow? */
-+		if (off < start)
-+			return -EINVAL;
-+		if (set_vm_offset(vma, off) < 0)
-+			return -EINVAL;
- 		vma->vm_flags |= VM_IO | VM_RESERVED;
- 
- #ifdef pgprot_noncached
+ 	/*
+ 	 * Use the opportunity that we have both locks
 
 
