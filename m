@@ -1,118 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934878Ab3DOVSu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 17:18:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:52769 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932162Ab3DOVSs (ORCPT
+	id S935062Ab3DOVUW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 17:20:22 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:34523 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752930Ab3DOVUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 17:18:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Subject: Re: [PATCH/RFC 3/6] DMA: shdma: add DT support
-Date: Mon, 15 Apr 2013 23:18:42 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>, linux-sh@vger.kernel.org,
-        Magnus Damm <magnus.damm@gmail.com>, linux-kernel@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-References: <1365632389-2249-1-git-send-email-g.liakhovetski@gmx.de> <1365632389-2249-4-git-send-email-g.liakhovetski@gmx.de> <20130415164238.GG12436@intel.com>
-In-Reply-To: <20130415164238.GG12436@intel.com>
+	Mon, 15 Apr 2013 17:20:21 -0400
+Message-ID: <516C6F12.5020208@gmail.com>
+Date: Mon, 15 Apr 2013 16:20:18 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 1/4] Documentation: Add memory mapped ARM architected
+ timer binding
+References: <1365812863-5367-1-git-send-email-sboyd@codeaurora.org> <1365812863-5367-2-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <1365812863-5367-2-git-send-email-sboyd@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304152318.42913.arnd@arndb.de>
-X-Provags-ID: V02:K0:/hXNVHoV74LTekovMSIKZ++k8gKJrrzbx928VnVHV2j
- wxckD/C1dWsvGL4S0woidJIHMcMSFOFm1lCu9VQgbGi+a3BS/y
- afBq1bGJVwm1lx8aBOqSPqPMwaNjSI2VrkmMVm3IQ4bzN7bXu7
- gpawaFYr0x0pRmMaL+BjzrgH+6dE3nyG/fKFgmMAsBXaCzI+ri
- 6xo+JWivVTr2QmWh5zaqnaAcGgZCQILNZNhUtSit2rqXmiLWoH
- agLznmPtJ9iRuybNDh414aYyN0nX64FwVEEWpMz2bVKQimexj2
- qalG0uiFXJeC3tfrXbXhIKx0qSZOggbQ3RdqUlBUHcTpALQhKF
- LbALOZsBiTo41DdeFL+0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 15 April 2013, Vinod Koul wrote:
-> On Thu, Apr 11, 2013 at 12:19:46AM +0200, Guennadi Liakhovetski wrote:
-> > This patch adds Device Tree support to the shdma driver. No special DT
-> > properties are used, only standard DMA DT bindings are implemented. Since
-> > shdma controllers reside on SoCs, their configuration is SoC-specific and
-> > shall be passed to the driver from the SoC platform data, using the
-> > auxdata procedure.
-> > 
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-> > ---
-> Need Arnd to review :)
+On Fri, Apr 12, 2013 at 7:27 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> Add a binding for the arm architected timer hardware's memory
+> mapped interface. The mmio timer hardware is made up of one base
+> frame and a collection of up to 8 timer frames, where each of the
+> 8 timer frames can have either one or two views. A frame
+> typically maps to a privilege level (user/kernel, hypervisor,
+> secure). The first view has full access to the registers within a
+> frame, while the second view can be restricted to particular
+> registers within a frame. Each frame must support a physical
+> timer. It's optional for a frame to support a virtual timer.
+>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Marc Zyngier <Marc.Zyngier@arm.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  .../devicetree/bindings/arm/arch_timer.txt         | 59 ++++++++++++++++++++--
+>  1 file changed, 56 insertions(+), 3 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/arm/arch_timer.txt b/Documentation/devicetree/bindings/arm/arch_timer.txt
+> index 20746e5..ac20cde 100644
+> --- a/Documentation/devicetree/bindings/arm/arch_timer.txt
+> +++ b/Documentation/devicetree/bindings/arm/arch_timer.txt
+> @@ -1,10 +1,14 @@
+>  * ARM architected timer
+>
+> -ARM cores may have a per-core architected timer, which provides per-cpu timers.
+> +ARM cores may have a per-core architected timer, which provides per-cpu timers,
+> +or a memory mapped architected timer, which provides up to 8 frames with a
+> +physical and optional virtual timer per frame.
+>
+> -The timer is attached to a GIC to deliver its per-processor interrupts.
+> +The per-core architected timer is attached to a GIC to deliver its
+> +per-processor interrupts via PPIs. The memory mapped timer is attached to a GIC
+> +to deliver its interrupts via SPIs.
+>
+> -** Timer node properties:
+> +** CP15 Timer node properties:
+>
+>  - compatible : Should at least contain one of
+>         "arm,armv7-timer"
+> @@ -26,3 +30,52 @@ Example:
+>                              <1 10 0xf08>;
+>                 clock-frequency = <100000000>;
+>         };
+> +
+> +** Memory mapped timer node properties
+> +
+> +- compatible : Should at least contain "arm,armv7-timer-mem".
 
-This patch is missing the DT binding document, which is necessary for a proper
-review, and as a documentation for anyone trying to write device tree source
-files.
+Everything about this timer is architecturally defined? If not, let's
+use a more specific name.
 
-In particular, it is not clear what mid/rid refer to here and whether they should
-be represented as one or two cells. The driver here uses one cell, which is probably
-ok, but I'd like to understand that anyway.
+> +
+> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
+> +
+> +- reg : The control frame base address.
+> +
+> +Note that #address-cells, #size-cells, and ranges shall be present to ensure
+> +the CPU can address a frame's registers.
+> +
+> +Frame:
+> +
+> +- frame-number: 0 to 7.
 
-> > + * NOTE 2: This filter function is also used in the DT case by shdma_xlate().
-> > + * In that case the MID-RID value is used for slave channel filtering and is
-> > + * passed to this function in the "arg" parameter.
-> >   */
-> >  bool shdma_chan_filter(struct dma_chan *chan, void *arg)
-> >  {
-> >  	struct shdma_chan *schan = to_shdma_chan(chan);
-> >  	struct shdma_dev *sdev = to_shdma_dev(schan->dma_chan.device);
-> >  	const struct shdma_ops *ops = sdev->ops;
-> > -	int slave_id = (int)arg;
-> > +	int match = (int)arg;
-> >  	int ret;
-> >  
-> > -	if (slave_id < 0)
-> > +	if (match < 0)
-> >  		/* No slave requested - arbitrary channel */
-> >  		return true;
-> >  
-> > -	if (slave_id >= slave_num)
-> > +	if (!schan->dev->of_node && match >= slave_num)
-> >  		return false;
-> >  
-> > -	ret = ops->set_slave(schan, slave_id, true);
-> > +	ret = ops->set_slave(schan, match, true);
-> >  	if (ret < 0)
-> >  		return false;
+I'd really like to get rid of the frame numbers and sub-nodes. Is the
+frame number significant to software?
 
-The filter function should really ensure that the dma_chan.device matches
-the device passed as the argument before accessing any members of
-the outer structures. This seems to be a preexisting bug.
+> +- interrupts : Interrupt list for physical and virtual timers in that order.
+> +  The virtual timer interrupt is optional.
 
-> > +struct dma_chan *shdma_xlate(struct of_phandle_args *dma_spec,
-> > +				 struct of_dma *ofdma)
-> > +{
-> > +	struct shdma_dev *sdev = ofdma->of_dma_data;
-> > +	u32 id = dma_spec->args[0];
-> > +	dma_cap_mask_t mask;
-> > +	struct dma_chan *chan;
-> > +
-> > +	if (dma_spec->args_count != 1 || !sdev)
-> > +		return NULL;
-> > +
-> > +	dma_cap_zero(mask);
-> > +	/* Only slave DMA channels can be allocated via DT */
-> > +	dma_cap_set(DMA_SLAVE, mask);
-> > +
-> > +	chan = dma_request_channel(mask, shdma_chan_filter, (void *)id);
-> > +	if (chan)
-> > +		to_shdma_chan(chan)->hw_req = id;
-> > +
-> > +	return chan;
-> > +}
-> > +EXPORT_SYMBOL(shdma_xlate);
+Is that optional per frame?
 
-And consequently, this function should pass the sdev into the filter function
-along with the id.
+Rob
 
-With a binding document added, the patch seems ok. The check for the device should
-probably be added to the filter function in any case.
-
-
-	Arnd
+> +
+> +- reg : The first and second view base addresses in that order. The second view
+> +  base address is optional.
+> +
+> +- status : "disabled" indicates the frame is not available for use.
+> +
+> +Example:
+> +
+> +       timer@f0000000 {
+> +               compatible = "arm,armv7-timer-mem";
+> +               #address-cells = <1>;
+> +               #size-cells = <1>;
+> +               ranges;
+> +               reg = <0xf0000000 0x1000>;
+> +               clock-frequency = <50000000>;
+> +
+> +               frame@f0001000 {
+> +                       frame-number = <0>
+> +                       interrupts = <0 13 0x8>,
+> +                                    <0 14 0x8>;
+> +                       reg = <0xf0001000 0x1000>,
+> +                             <0xf0002000 0x1000>;
+> +               };
+> +
+> +               frame@f0003000 {
+> +                       frame-number = <1>
+> +                       interrupts = <0 15 0x8>;
+> +                       reg = <0xf0003000 0x1000>;
+> +                       status = "disabled";
+> +               };
+> +       };
+> --
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+> hosted by The Linux Foundation
+>
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
