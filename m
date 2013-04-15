@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934002Ab3DOJBL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 05:01:11 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52512 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933339Ab3DOJBJ (ORCPT
+	id S934580Ab3DOJM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 05:12:28 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:57715 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934370Ab3DOJM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 05:01:09 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <516BC19D.4090303@jp.fujitsu.com>
-Date: Mon, 15 Apr 2013 18:00:13 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Mon, 15 Apr 2013 05:12:27 -0400
+Message-ID: <516BC473.2070907@stericsson.com>
+Date: Mon, 15 Apr 2013 11:12:19 +0200
+From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: joro@8bytes.org, dwmw2@infradead.org
-CC: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
-        kexec@lists.infradead.org, tindoh@gmail.com
-Subject: Re: [PATCH] intel-iommu: Synchronize gcmd value with global command
- register
-References: <1363829556-2128-1-git-send-email-indou.takao@jp.fujitsu.com> <20130326144629.GB2727@8bytes.org> <51527D74.9080209@jp.fujitsu.com> <20130327103122.GK30540@8bytes.org> <51591EEE.60401@jp.fujitsu.com> <20130402140546.GA15687@8bytes.org> <515BD638.8070307@jp.fujitsu.com> <1364977479.28127.15.camel@i7.infradead.org> <20130405110616.GB6858@8bytes.org> <5164EEE6.8000707@jp.fujitsu.com>
-In-Reply-To: <5164EEE6.8000707@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFT] regulator: ab8500: Fix voltage_shift setting for
+ AB8540_LDO_DMIC
+References: <1366015011.13029.1.camel@phoenix>
+In-Reply-To: <1366015011.13029.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/04/10 13:47), Takao Indoh wrote:
-> (2013/04/05 20:06), Joerg Roedel wrote:
->> On Wed, Apr 03, 2013 at 09:24:39AM +0100, David Woodhouse wrote:
->>> On Wed, 2013-04-03 at 16:11 +0900, Takao Indoh wrote:
->>>> Yeah, you are right. I forgot such a case.
->>>
->>> If you disable translation and there's some device still doing DMA, it's
->>> going to scribble over random areas of memory. You really want to have
->>> translation enabled and all the page tables *cleared*, during kexec. I
->>> think it's fair to insist that the secondary kernel should use the IOMMU
->>> if the first one did.
->>
->> Do we really need to insist on that? The IOMMU initialization on x86
->> happens after the kernel scanned and enumerated the PCI bus. While doing
->> this the kernel (at least it should) disables all devices it finds. So
->> when the IOMMU init code runs we should be safe from any in-flight DMA
->> and can either disable translation or re-initialize it for the kdump
->> kernel. Until then translation needs to stay enabled of course, so that
->> the old page-tables are still used and in-flight DMA doesn't corrupt
->> any data.
-> 
-> So we should do in this order, right?
-> (1) PCI initialization. Stop all ongoing DMA here.
-> (2) Disable translation if already enable.
-> (3) Make pgtable and enable translation.
+On 04/15/2013 10:36 AM, Axel Lin wrote:
+> The voltage_mask is 0xc0, thus we need to set voltage_shift = 6 to get correct
+> selector in get_voltage_sel and set_voltage_sel.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+The patch is correct. Voltage selection is done with 0xc0.
 
-Joerg, David,
-
-On DMAR initialization during kdump boot, do you guys agree to change
-order like this?
-
-Current order:
-(1) Disable translation
-(2) PCI initialization
-(3) Make pgtable and enable translation.
-
-Order I'm proposing:
-(1) PCI initialization
-(2) Disable translation
-(3) Make pgtable and enable translation.
-
-The purpose to change the behavior is to stop DMA in PCI layer.
-
-As Joerg said, if we need to consider the case that kdump kernel is
-compiled without dma-remapping(CONFIG_INTEL_IOMMU is off?), I can update
-my patch to handle such a case properly by adding ifdef
-CONFIG_INTEL_IOMMU.
-
-About how to stop the DMA on PCI layer, I'll post another mail to
-discuss it to iommu and pci list.
-
-Thanks,
-Takao Indoh
+Acked-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+> ---
+> Hi Bengt,
+> I don't have the datasheet. Can you confirm if this fix is correct?
+>
+> BTW, can you also review a couple patches for ab8500 and ab8500-ext I sent a few
+> days ago? I ask this because now I have more patches that may depend on previous
+> patches.
+>
+> Thanks,
+> Axel
+>
+>   drivers/regulator/ab8500.c |    1 +
+>   1 file changed, 1 insertion(+)
+>
+> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+> index b81ff04..0a62ef9 100644
+> --- a/drivers/regulator/ab8500.c
+> +++ b/drivers/regulator/ab8500.c
+> @@ -1729,6 +1729,7 @@ static struct ab8500_regulator_info
+>   		.voltage_bank		= 0x03,
+>   		.voltage_reg		= 0x83,
+>   		.voltage_mask		= 0xc0,
+> +		.voltage_shift		= 6,
+>   	},
+>   
+>   	/*
 
