@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757296Ab3DOCr6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:47:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36487 "EHLO
+	id S934702Ab3DOCsY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:48:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36482 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933490Ab3DOCnt (ORCPT
+	with ESMTP id S933374Ab3DOCns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:43:49 -0400
+	Sun, 14 Apr 2013 22:43:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
         Steven Whitehouse <swhiteho@redhat.com>,
         Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: [ 13/27] GFS2: return error if malloc failed in gfs2_rs_alloc()
-Date: Sun, 14 Apr 2013 19:43:12 -0700
-Message-Id: <20130415024232.346690958@linuxfoundation.org>
+Subject: [ 12/27] GFS2: Fix unlock of fcntl locks during withdrawn state
+Date: Sun, 14 Apr 2013 19:43:11 -0700
+Message-Id: <20130415024232.275402430@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -28,33 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Steven Whitehouse <swhiteho@redhat.com>
 
-commit 441362d06be349430d06e37286adce4b90e6ce96 upstream.
+commit c2952d202f710d326ac36a8ea6bd216b20615ec8 upstream.
 
-The error code in gfs2_rs_alloc() is set to ENOMEM when error
-but never be used, instead, gfs2_rs_alloc() always return 0.
-Fix to return 'error'.
+When withdraw occurs, we need to continue to allow unlocks of fcntl
+locks to occur, however these will only be local, since the node has
+withdrawn from the cluster. This prevents triggering a VFS level
+bug trap due to locks remaining when a file is closed.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/gfs2/rgrp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/gfs2/file.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -576,7 +576,7 @@ int gfs2_rs_alloc(struct gfs2_inode *ip)
- 	RB_CLEAR_NODE(&ip->i_res->rs_node);
- out:
- 	up_write(&ip->i_rw_mutex);
--	return 0;
-+	return error;
- }
- 
- static void dump_rs(struct seq_file *seq, const struct gfs2_blkreserv *rs)
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -924,8 +924,11 @@ static int gfs2_lock(struct file *file,
+ 		cmd = F_SETLK;
+ 		fl->fl_type = F_UNLCK;
+ 	}
+-	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags)))
++	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags))) {
++		if (fl->fl_type == F_UNLCK)
++			posix_lock_file_wait(file, fl);
+ 		return -EIO;
++	}
+ 	if (IS_GETLK(cmd))
+ 		return dlm_posix_get(ls->ls_dlm, ip->i_no_addr, file, fl);
+ 	else if (fl->fl_type == F_UNLCK)
 
 
