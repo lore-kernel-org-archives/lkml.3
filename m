@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab3DOCfW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:35:22 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:60296 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755032Ab3DOCfV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:35:21 -0400
-Message-ID: <516B673D.5020201@huawei.com>
-Date: Mon, 15 Apr 2013 10:34:37 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1756311Ab3DOCf6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:35:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43139 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754746Ab3DOCf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 22:35:57 -0400
+Date: Sun, 14 Apr 2013 19:35:52 -0700
+From: Michal Hocko <mhocko@suse.cz>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: Tejun Heo <tj@kernel.org>, lizefan@huawei.com,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        vgoyal@redhat.com, cgroups@vger.kernel.org
+Subject: Re: [PATCH 4/4] memcg: force use_hierarchy if sane_behavior
+Message-ID: <20130415023552.GA9955@dhcp22.suse.cz>
+References: <1365808259-31073-1-git-send-email-tj@kernel.org>
+ <1365808259-31073-5-git-send-email-tj@kernel.org>
+ <20130415011336.GF8408@sergelap>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Tony Luck <tony.luck@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 2/2] PCI/IA64: fix pci_dev->enable_cnt balance when doing
- pci hotplug
-References: <1364805775-12396-1-git-send-email-wangyijing@huawei.com> <1364805775-12396-2-git-send-email-wangyijing@huawei.com> <CAErSpo7g7dG=FB69-w1UniO_fpBVO39P82rqgdQstdfG=p-bkQ@mail.gmail.com>
-In-Reply-To: <CAErSpo7g7dG=FB69-w1UniO_fpBVO39P82rqgdQstdfG=p-bkQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130415011336.GF8408@sergelap>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> @@ -383,6 +383,7 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
->>         }
->>
->>         pci_scan_child_bus(pbus);
->> +       pci_enable_bridges(pbus);
->>         return pbus;
->>
->>  out3:
+On Sun 14-04-13 20:13:36, Serge Hallyn wrote:
+> Quoting Tejun Heo (tj@kernel.org):
+> > Turn on use_hierarchy by default if sane_behavior is specified and
+> > don't create .use_hierarchy file.
+> > 
+> > It is debatable whether to remove .use_hierarchy file or make it ro as
+> > the former could make transition easier in certain cases; however, the
+> > behavior changes which will be gated by sane_behavior are intensive
+> > including changing basic meaning of certain control knobs in a few
+> > controllers and I don't really think keeping this piece would make
+> > things easier in any noticeable way, so let's remove it.
 > 
-> I think that with this patch, if you hot-add a PCI host bridge, you
-> will call pci_enable_bridges() twice (once in pci_acpi_scan_root() and
-> again in acpi_pci_root_add()), so there will be an enable_cnt error in
-> the opposite direction.
+> Hi Tejun,
 > 
-> I'd like to see the pci_enable_bridges() calls pushed up into the
-> generic code because I don't think there's anything arch-specific
-> about it.
+> this actually reminds me of something that's been on my todo list to
+> report for some time, but I haven't had time to find the source of the
+> bug...  And maybe it's already been reported...  but
+> 
+> If I do
+> 
+> 	cd /sys/fs/cgroup/memory
+> 	mkdir b
+> 	cd b
+> 	echo 1 > memory.use_hierarchy
+> 	echo 5000 > memory.limit_in_bytes
+> 	cat memory.limit_in_bytes
+> 8192
+> 	mkdir c
+> 	cd c
+> 	cat memory.use_hierarchy
+> 1
+> 	cat memory.limit_in_bytes
+> 9223372036854775807
+> 	echo $$ > tasks
+> 	bash
+> <killed>
+> 
+> So it seems the hierarchy is being enforced, but not reported in
+> child limit_in_bytes files.
 
-Hi Bjorn,
-   Thanks for your review and comments! This is my fault, I forgot we will enable pci
-bridges when we hot add host bridge. Push pci_enable_bridges() into the generic code is
-a good idea, so we don't need to consider enabling bridge in pci arch-specific code.
-In IA64 we don't assign the unassigned resources like other arch. This is also a weak point.
-I will update this patch and resend soon.
+This is an intended behavior. Limits are not propagated to the children
+because they are enforced anyway (by reclaim). The behavior would
+be quite inconsistent when the parent limit would be changed later
+otherwise. We only inherit properties which are enforced hierarchically:
+use_hierarchy, oom_disable and swappiness.
 
-Thanks!
-Yijing.
+> (Last tested tonight on 3.8.0-17-generic #27-Ubuntu fwiw)
 > 
-> .
-> 
-
+> -serge
 
 -- 
-Thanks!
-Yijing
-
+Michal Hocko
+SUSE Labs
