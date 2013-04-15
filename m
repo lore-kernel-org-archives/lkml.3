@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755621Ab3DOC1r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:27:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36082 "EHLO
+	id S1755106Ab3DOCZn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:25:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36073 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab3DOCZp (ORCPT
+	with ESMTP id S1754935Ab3DOCZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:25:45 -0400
+	Sun, 14 Apr 2013 22:25:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 11/17] udl: handle EDID failure properly.
-Date: Sun, 14 Apr 2013 19:25:21 -0700
-Message-Id: <20130415022353.465590035@linuxfoundation.org>
+        Suleiman Souhlal <suleiman@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 09/17] vfs: Revert spurious fix to spinning prevention in prune_icache_sb
+Date: Sun, 14 Apr 2013 19:25:19 -0700
+Message-Id: <20130415022353.318572333@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
 References: <20130415022352.616689034@linuxfoundation.org>
@@ -26,31 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@gmail.com>
+From: Suleiman Souhlal <suleiman@google.com>
 
-commit 1baee58638fc58248625255f5c5fcdb987f11b1f upstream.
+commit 5b55d708335a9e3e4f61f2dadf7511502205ccd1 upstream.
 
-Don't oops seems proper.
+Revert commit 62a3ddef6181 ("vfs: fix spinning prevention in prune_icache_sb").
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+This commit doesn't look right: since we are looking at the tail of the
+list (sb->s_inode_lru.prev) if we want to skip an inode, we should put
+it back at the head of the list instead of the tail, otherwise we will
+keep spinning on it.
+
+Discovered when investigating why prune_icache_sb came top in perf
+reports of a swapping load.
+
+Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/udl/udl_connector.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/udl/udl_connector.c
-+++ b/drivers/gpu/drm/udl/udl_connector.c
-@@ -61,6 +61,10 @@ static int udl_get_modes(struct drm_conn
- 	int ret;
- 
- 	edid = (struct edid *)udl_get_edid(udl);
-+	if (!edid) {
-+		drm_mode_connector_update_edid_property(connector, NULL);
-+		return 0;
-+	}
- 
- 	connector->display_info.raw_edid = (char *)edid;
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -705,7 +705,7 @@ void prune_icache_sb(struct super_block
+ 		 * inode to the back of the list so we don't spin on it.
+ 		 */
+ 		if (!spin_trylock(&inode->i_lock)) {
+-			list_move_tail(&inode->i_lru, &sb->s_inode_lru);
++			list_move(&inode->i_lru, &sb->s_inode_lru);
+ 			continue;
+ 		}
  
 
 
