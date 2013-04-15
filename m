@@ -1,42 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab3DOOKY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 10:10:24 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:52619 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab3DOOKX (ORCPT
+	id S1753057Ab3DOOKo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 10:10:44 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:42952 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab3DOOKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 10:10:23 -0400
+	Mon, 15 Apr 2013 10:10:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+xJJ1-UPPrkRLuiFcQN6JotG+1G9WS1LftKk67x-AiZuDBf3Q@mail.gmail.com>
-References: <CA+xJJ1-UPPrkRLuiFcQN6JotG+1G9WS1LftKk67x-AiZuDBf3Q@mail.gmail.com>
-Date: Mon, 15 Apr 2013 16:10:21 +0200
-Message-ID: <CAFTL4hxNw9EJJ3ZvjYR55b6ZF2YQxMA2q80E+obkU21v6QfEow@mail.gmail.com>
-Subject: Re: Trouble with full nohz and lttng
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mats Liljegren <mats.liljegren@enea.com>
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1366007087-12090-1-git-send-email-amit.daniel@samsung.com>
+References: <1366007087-12090-1-git-send-email-amit.daniel@samsung.com>
+Date: Mon, 15 Apr 2013 09:10:40 -0500
+X-Google-Sender-Auth: vpxTZ8LXivPVFoOeSwBNQmzDEeM
+Message-ID: <CAGo_u6qD5hO7x0fYwe+cZ5GHRA6tRG+vmhnf4GFjt9G0inQ0xA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: exynos5440: Protect opp search calls with rcu lock
+From: Nishanth Menon <nm@ti.com>
+To: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Cc: linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        lkml <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/15 Mats Liljegren <mats.liljegren@enea.com>:
-> When I use lttng, I keep getting ticks. Without lttng, no ticks. It's the
-> same application I run, the same way. The only difference is whether lttng
-> logging has been started or not.
+Daniel,
+On Mon, Apr 15, 2013 at 1:24 AM, Amit Daniel Kachhap
+<amit.daniel@samsung.com> wrote:
+> As per the OPP library documentation(Documentation/power/opp.txt) all
+> opp find/get calls should be protected by rcu locks.
 >
-> The trace says "sched" as reason for not disabled ticks. Using "top" I can't
-> see any extra process/thread being created while my application runs, my
-> application gets 99-101% of the CPU. There are a couple of kworker threads
-> (3), a migration thread and a ksoftirq thread on the same CPU as my
-> application, though "top" gives no indication that they do any execution.
+> Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+> ---
 >
-> Is this a known limitation of lttng, or is there something else going on
-> here?
+> This patch is created against linux-next tree and is suggested by
+> Nishanth Menon. (https://lkml.org/lkml/2013/4/12/119)
+>
+>  drivers/cpufreq/exynos5440-cpufreq.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
+> index ead7ed4..0c74018 100644
+> --- a/drivers/cpufreq/exynos5440-cpufreq.c
+> +++ b/drivers/cpufreq/exynos5440-cpufreq.c
+> @@ -120,11 +120,13 @@ static int init_div_table(void)
+>         int i = 0;
+>         struct opp *opp;
+>
+> +       rcu_read_lock();
+>         for (i = 0; freq_tbl[i].frequency != CPUFREQ_TABLE_END; i++) {
+>
+>                 opp = opp_find_freq_exact(dvfs_info->dev,
+>                                         freq_tbl[i].frequency * 1000, true);
+>                 if (IS_ERR(opp)) {
+> +                       rcu_read_unlock();
+>                         dev_err(dvfs_info->dev,
+>                                 "failed to find valid OPP for %u KHZ\n",
+>                                 freq_tbl[i].frequency);
+> @@ -159,6 +161,7 @@ static int init_div_table(void)
+>                 __raw_writel(tmp, dvfs_info->base + XMU_PMU_P0_7 + 4 * i);
+>         }
+>
+> +       rcu_read_unlock();
 
-I have no idea. But the "sched" reason means there is more than one
-task in the runqueue at some point. It can be a kthread indeed. Or a
-user task that gets migrated / woken up in the CPU.
-
-You'll need to check the sched:sched_switch tracepoint.
+Is it not possible to reduce the amount of code protected by RCU lock?
+something like this:
++               rcu_read_lock();
+                opp = opp_find_freq_exact(dvfs_info->dev,
+                                        freq_tbl[i].frequency * 1000, true);
+                if (IS_ERR(opp)) {
++                       rcu_read_unlock();
+                        dev_err(dvfs_info->dev,
+                                "failed to find valid OPP for %u KHZ\n",
+                                freq_tbl[i].frequency);
+                        return PTR_ERR(opp);
+                }
++               volt_id = opp_get_voltage(opp);
++               rcu_unlock();
