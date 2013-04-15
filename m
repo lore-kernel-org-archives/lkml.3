@@ -1,54 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755304Ab3DOKJF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 06:09:05 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:39755 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753274Ab3DOKJD (ORCPT
+	id S1755247Ab3DOKOd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 06:14:33 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:16062 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab3DOKOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 06:09:03 -0400
-Date: Mon, 15 Apr 2013 12:08:58 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
-Subject: Re: [PATCH] x86, FPU: Fix FPU initialization
-Message-ID: <20130415100858.GB18024@gmail.com>
-References: <516586CF.90909@zytor.com>
- <20130410161122.GI6857@pd.tnic>
- <20130410212950.GA6899@pd.tnic>
- <20130411120952.GA18879@gmail.com>
- <51670E51.6020106@zytor.com>
- <20130411202328.GA15955@pd.tnic>
- <20130412053234.GB3887@gmail.com>
- <f3a4fce2-090e-4a08-b05c-0281a95e8943@email.android.com>
- <20130412094724.GA2368@pd.tnic>
- <20130412112628.GB2368@pd.tnic>
+	Mon, 15 Apr 2013 06:14:30 -0400
+X-IronPort-AV: E=Sophos;i="4.87,474,1363158000"; 
+   d="scan'208";a="38506451"
+Message-ID: <b06461081f5d78273616300bd8536cd5.squirrel@www.codeaurora.org>
+Date: Mon, 15 Apr 2013 03:14:30 -0700
+Subject: Re: scsi: ufs: add support for query requests
+From: "Dolev Raviv" <draviv@codeaurora.org>
+To: "Santosh Y" <santoshsy@gmail.com>
+Cc: draviv@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        "vinayak holikatti" <vinholikatti@gmail.com>
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130412112628.GB2368@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Borislav Petkov <bp@alien8.de> wrote:
+Santosh, thank you very much for your comments. Most where adopted, others
+where replied inline.
 
-> And 0x00003f76 + 0x104 gives exactly 0x0000407a which is the address at
-> which we #PF:
-> 
-> [   15.921486] BUG: unable to handle kernel paging request at 0000407a
-> [   15.921486] IP: [<41071ab0>] __lock_acquire.isra.19+0x3e0/0xb00
-> 
-> More hmmm...
+Please note the comment on removing ufs_coe.c file. I will appreciated
+your opinion on that.
 
-It gave me the impression of memory corruption - but impressions can deceive ;-)
+> linux-ufs@vger.kernel.org is for UFS filesystem.
+>
+>> The API for submitting a query request is ufs_query_request() in
+ufs_core.c. This function is responsible for:
+>
+> This can be part of ufshcd.c which is actually the core file, no need to
+create a new core file for the function.
 
-Anyway, not sure I can test/bisect it this week - merge window preparations and 
-all that.
+You are right and I moved it for now. But, I think that a good design that
+will allow easy extension and feature development, will be to separate the
+hci and features from the rest.
+>
+>> +
+>> +#define UFS_QUERY_RESERVED_SCSI_CMD_SIZE 10
+>> +
+>
+> Move this to ufs.h, The name seems too big, it can be changed to
+UFS_QUERY_CMD_SIZE.
+>
+>> + if (!hba || !query || !response) {
+>> +               pr_err("%s: NULL pointer hba = %p, query = %p response
+= %p",
+>> +                                   __func__, hba, query, response); +
+return -EINVAL;
+>> + }
+>
+> The function will be called withing the driver, So, no need for these
+checks. The caller will/must pass the correct parameters.
+I disagree. Why not play it safe?
 
-Thanks,
+Anyone can make this function accessible for IOCTLs or EXPORT it in
+future. In case they forget (most do), let's not leave holes.
+>
+>> + /*
+>> + * A SCSI command structure is composed from opcode at the
+>> + * begining and 0 at the end.
+>> + */
+>> + memset(cmd, 0, UFS_QUERY_RESERVED_SCSI_CMD_SIZE);
+>> + cmd[0] = UFS_QUERY_RESERVED_SCSI_CMD;
+>
+> Remove memset. Anyway only the first byte is being checked in
+> ufshcd_is_query_req();
+>
+>> + * ufshcd_is_valid_query_rsp - checks if controller TR response is valid
+>> + * @ucd_rsp_ptr: pointer to response UPIU
+>> + *
+>> + * This function checks the response UPIU for valid transaction type
+in + * response field
+>> + * Returns 0 on success, non-zero on failure
+>> + */
+>> +static inline int
+>> +ufshcd_is_valid_query_rsp(struct utp_upiu_rsp *ucd_rsp_ptr)
+>
+> Combine this with ufshcd_is_valid_req_rsp(), accordingly handle it in
+ufshcd_transfer_rsp_status().
+>
+>> +static inline void ufshcd_copy_query_response(struct ufs_hba *hba, +
+struct ufshcd_lrb *lrbp)
+>> +{
+>> + struct ufs_query_res *query_res = hba->query.response;
+>> + u8 *descp = (u8 *)&lrbp->ucd_rsp_ptr + GENERAL_UPIU_REQUEST_SIZE;
+>
+> This can be done inside the following if condition i.e. if
+> (hba->query.descriptor != NULL).
+> and change the condition to if (!hba->query.descriptor).
+>
+>> + /* Get the descriptor */
+>> + if (hba->query.descriptor != NULL && lrbp->ucd_rsp_ptr->qr.opcode ==
++ UPIU_QUERY_OPCODE_READ_DESC) {
+>
+>
+>> +static int ufshcd_compose_upiu(struct ufs_hba *hba, struct ufshcd_lrb
+*lrbp)
+>> +{
+>> + struct utp_upiu_req *ucd_req_ptr;
+>
+> Remove ucd_req_ptr, it is not doing anything.
+>
+>> + if (!lrbp || !lrbp->cmd || !lrbp->ucd_req_ptr ||
+>> +                                     !lrbp->utr_descriptor_ptr) { +   
+        if (!lrbp)
+>> +                      pr_err("%s: lrbp can not be NULL", __func__); + 
+             if (!lrbp->cmd)
+>> +                      pr_err("%s: lrbp->cmd can not be NULL",
+>> __func__);
+>> +                if (!lrbp->ucd_req_ptr)
+>> +                      pr_err("%s: ucd_req_ptr can not be NULL",
+__func__);
+>> +                 if (!lrbp->utr_descriptor_ptr)
+>> +                      pr_err("%s: utr_descriptor_ptr can not be NULL",
++                                     __func__);
+>> +                  ret = -EINVAL;
+>> +                  goto exit;
+>> + }
 
-	Ingo
+I rather play it safe and not remove it.
+I rewrote it to make it cleaner.
+>
+> These are redundant, remove them.
+>
+>> + if (ufshcd_is_query_req(lrbp))
+>> + lrbp->command_type = UTP_CMD_TYPE_DEV_MANAGE;
+>> + else
+>> + lrbp->command_type = UTP_CMD_TYPE_SCSI;
+>
+>>  /* form UPIU before issuing the command */
+>> - ufshcd_compose_upiu(lrbp);
+>> + ufshcd_compose_upiu(hba, lrbp);
+>> err = ufshcd_map_sg(lrbp);
+>>  if (err)
+>>         goto out;
+>
+> Why call ufshcd_map_sg() and scsi_dma_unmap() in
+> ufshcd_transfer_req_compl() for requests of type
+> UTP_CMD_TYPE_DEV_MANAGE?
+
+We are doing this since there is no harm calling it when the buffer is
+null, as well as this flow is responsible for setting the length parameter
+in the transfer request descriptor.
+Bottom line there is no need to split the original flow.
+>
+>> ufshcd_transfer_rsp_status(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
+>
+>> + if (ufshcd_is_query_req(lrbp))
+>> + result = ufshcd_is_valid_query_rsp(lrbp->ucd_rsp_ptr);
+>> + else
+>> + result = ufshcd_is_valid_req_rsp(lrbp->ucd_rsp_ptr);
+>> +
+>
+> As already mentioned you can combine these.
+>
+>> +/* Query response result code */
+>> +enum {
+>> + QUERY_RESULT_SUCCESS = 0x00,
+>> + QUERY_RESULT_NOT_READABLE = 0xF6,
+>> + QUERY_RESULT_NOT_WRITEABLE = 0xF7,
+>> + QUERY_RESULT_ALREADY_WRITTEN = 0xF8,
+>> + QUERY_RESULT_INVALID_LENGTH = 0xF9,
+>> + QUERY_RESULT_INVALID_VALUE = 0xFA,
+>> + QUERY_RESULT_INVALID_SELECTOR = 0xFB,
+>> + QUERY_RESULT_INVALID_INDEX = 0xFC,
+>> + QUERY_RESULT_INVALID_IDN = 0xFD,
+>> + QUERY_RESULT_INVALID_OPCODE = 0xFE,
+>> + QUERY_RESULT_GENERAL_FAILURE = 0xFF,
+>> +};
+>
+> Move this to ufs.h.
+>
+>
+> --
+> ~Santosh
+>
+
+-- 
+Dolev
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
+
