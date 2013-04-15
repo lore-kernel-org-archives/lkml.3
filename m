@@ -1,63 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934538Ab3DOSVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 14:21:35 -0400
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:46425 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933959Ab3DOSVe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 14:21:34 -0400
+	id S934640Ab3DOSXD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 14:23:03 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:38760 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753635Ab3DOSXB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 14:23:01 -0400
+Date: Mon, 15 Apr 2013 13:22:59 -0500
+From: Robin Holt <holt@sgi.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Patch -v3 4/4] Make reboot_cpuid a kernel parameter.
+Message-ID: <20130415182258.GE3658@sgi.com>
+References: <20130415171225.GC3658@sgi.com>
+ <20130415171635.GI3672@sgi.com>
+ <71f0c948-cdea-4e8e-86a3-088d306388b9@email.android.com>
+ <20130415173324.GD3658@sgi.com>
+ <0d5a866d-3d40-4592-bb9d-d938fb3312e2@email.android.com>
 MIME-Version: 1.0
-In-Reply-To: <1365912098.2783.42.camel@deadeye.wl.decadent.org.uk>
-References: <87r4ifxzwu.fsf@mn.cs.uvic.ca>
-	<1365912098.2783.42.camel@deadeye.wl.decadent.org.uk>
-Date: Mon, 15 Apr 2013 11:21:32 -0700
-X-Google-Sender-Auth: G0pxMpibkDFVSQ65F0oy_1Ho2jc
-Message-ID: <CAEBXXD8CZumwvOH7gLU+HQNAngHbD7eLFB48qUF_8BeYhk7fNQ@mail.gmail.com>
-Subject: Re: helping with tracking commits across repos
-From: dmg <dmg@uvic.ca>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <0d5a866d-3d40-4592-bb9d-d938fb3312e2@email.android.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Mon, Apr 15, 2013 at 10:47:49AM -0700, H. Peter Anvin wrote:
+> We usually don't break working user setups as a matter if policy.  Only if it can't be avoided.
+> 
+> Robin Holt <holt@sgi.com> wrote:
+> 
+> >On Mon, Apr 15, 2013 at 10:18:31AM -0700, H. Peter Anvin wrote:
+> >> Um... doesn't this break anyone who currently depends on this?
+> >
+> >Yes.  That is also why I kept this separate and not tagged for
+> >stable. They would need to start using the more general kernel
+> >parameter
+> >to get the same functionality.  Should I have done it differently?
 
-On 4/13/13, Ben Hutchings <ben@decadent.org.uk> wrote:
-> I notice that where a commit is cherry-picked cleanly on a stable
-> branch, like 6b90466cfec2a2fe027187d675d8d14217c12d82, your script finds
-> the corresponding commit on the stable branch.  This is useful.
->
-> But where some backporting changes are needed, such as for
-> f01fc1a82c2ee68726b400fadb156bd623b5f2f1, which became
-> 8ebfe28181b02766ac41d9d841801c146e6161c1 on the 3.2.y branch, the
-> corresponding commit isn't found.
->
-> It should be possible to find such backported commits based on a simple
-> regex search over the commit message:
+How about:
+Author: Robin Holt <holt@sgi.com>
+Date:   Mon Apr 15 11:39:33 2013 -0500
 
-I took a more aggressive approach. I decided to look for 40 length
-character hashes in the
-comment and patch of the commit.
+    Make reboot_cpuid a kernel parameter.
+    
+    Moving the reboot=s<##> parameter for x86 to a kernel parameter
+    proper.  I did not find any other arch that was specifying the
+    reboot cpu.
+    
+    I left a compatibility mode in there.  The new parameter always
+    takes precedence.  I also fixed up the current code to support
+    up to cpuid's up to the current max of 4096.
+    
+    Signed-off-by: Robin Holt <holt@sgi.com>
+    To: Ingo Molnar <mingo@redhat.com>
+    To: Russ Anderson <rja@sgi.com>
+    Cc: Shawn Guo <shawn.guo@linaro.org>
+    Cc: Oleg Nesterov <oleg@redhat.com>
+    Cc: Andrew Morton <akpm@linux-foundation.org>
+    Cc: "H. Peter Anvin" <hpa@zytor.com>
+    Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+    Cc: Linus Torvalds <torvalds@linux-foundation.org>
+    Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+    Cc: Michel Lespinasse <walken@google.com>
+    Cc: Oleg Nesterov <oleg@redhat.com>
+    Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Robin Holt <holt@sgi.com>
+    Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+    Cc: Tejun Heo <tj@kernel.org>
+    Cc: the arch/x86 maintainers <x86@kernel.org>
+    Cc: Thomas Gleixner <tglx@linutronix.de>
 
-if the hash is in the database of commits I maintain, then I display
-it. if not, it is ignored.
-You can revisit the output of that commit:
-
-http://o.cs.uvic.ca:20810/perl/cid2.pl?cid=8ebfe28181b02766ac41d9d841801c146e6161c1
-
-This means I am able to show when a commit is referenced by another one, and
-the commits that a commit references.
-
-hopefully this solves the use-case you described.
-
-The commit logs are being scanned as I write this. It should be done
-in a couple of hours.
-
---dmg
-
----
-Daniel M. German
-http://turingmachine.org
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 4609e81..11ebb48 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2597,6 +2597,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Format: <reboot_mode>[,<reboot_mode2>[,...]]
+ 			See arch/*/kernel/reboot.c or arch/*/kernel/process.c
+ 
++	reboot_cpuid=	[KNL] cpuid to use for reboot/halt, etc operations.
++
+ 	relax_domain_level=
+ 			[KNL, SMP] Set scheduler's default relax_domain_level.
+ 			See Documentation/cgroups/cpusets.txt.
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 76fa1e9..cdcf28f 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -49,10 +49,6 @@ int reboot_force;
+  */
+ static int reboot_default = 1;
+ 
+-#ifdef CONFIG_SMP
+-static int reboot_cpu = -1;
+-#endif
+-
+ /*
+  * This is set if we need to go through the 'emergency' path.
+  * When machine_emergency_restart() is called, we may be on
+@@ -63,6 +59,8 @@ static int reboot_emergency;
+ /* This is set by the PCI code if either type 1 or type 2 PCI is detected */
+ bool port_cf9_safe = false;
+ 
++extern int reboot_cpuid;
++
+ /*
+  * reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old] | p[ci]
+  * warm   Don't set the cold reboot flag
+@@ -97,10 +95,14 @@ static int __init reboot_setup(char *str)
+ 
+ #ifdef CONFIG_SMP
+ 		case 's':
+-			if (isdigit(*(str+1))) {
+-				reboot_cpu = (int) (*(str+1) - '0');
+-				if (isdigit(*(str+2)))
+-					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
++			if (reboot_cpuid < 0) {
++				int coffset;
++
++				reboot_cpuid = 0;
++				for (coffset = 1; isdigit(*(str + coffset)); coffset++) {
++					reboot_cpuid *= 10;
++					reboot_cpuid += (int)(*(str+2) - '0');
++				}
+ 			}
+ 			/*
+ 			 * We will leave sorting out the final value
+@@ -615,25 +617,10 @@ void native_machine_shutdown(void)
+ 	/* Stop the cpus and apics */
+ #ifdef CONFIG_SMP
+ 
+-	/* The boot cpu is always logical cpu 0 */
+-	int reboot_cpu_id = 0;
+-
+-	/* See if there has been given a command line override */
+-	if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
+-		cpu_online(reboot_cpu))
+-		reboot_cpu_id = reboot_cpu;
+-
+-	/* Make certain the cpu I'm about to reboot on is online */
+-	if (!cpu_online(reboot_cpu_id))
+-		reboot_cpu_id = smp_processor_id();
+-
+-	/* Make certain I only run on the appropriate processor */
+-	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
+-
+ 	/*
+-	 * O.K Now that I'm on the appropriate processor, stop all of the
+-	 * others. Also disable the local irq to not receive the per-cpu
+-	 * timer interrupt which may trigger scheduler's load balance.
++	 * Stop all of the others. Also disable the local irq to
++	 * not receive the per-cpu timer interrupt which may trigger
++	 * scheduler's load balance.
+ 	 */
+ 	local_irq_disable();
+ 	stop_other_cpus();
+diff --git a/kernel/reboot.c b/kernel/reboot.c
+index 187a0d8..8d7b7d4 100644
+--- a/kernel/reboot.c
++++ b/kernel/reboot.c
+@@ -8,6 +8,7 @@
+ #include <linux/kexec.h>
+ #include <linux/kmod.h>
+ #include <linux/kmsg_dump.h>
++#include <linux/moduleparam.h>
+ #include <linux/reboot.h>
+ #include <linux/syscalls.h>
+ #include <linux/syscore_ops.h>
+@@ -66,13 +67,18 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+ }
+ EXPORT_SYMBOL(unregister_reboot_notifier);
+ 
++int reboot_cpuid = -1;
++core_param(reboot_cpuid, reboot_cpuid, int, 0644);
++
+ void migrate_to_reboot_cpu(void)
+ {
+ 	/* The boot cpu is always logical cpu 0 */
+-	int reboot_cpu_id = 0;
++	int reboot_cpu_id = reboot_cpuid;
+ 
+ 	/* Make certain the cpu I'm about to reboot on is online */
+ 	if (!cpu_online(reboot_cpu_id))
++		reboot_cpu_id = 0;
++	if (!cpu_online(reboot_cpu_id))
+ 		reboot_cpu_id = smp_processor_id();
+ 
+ 	/* Prevent races with other tasks migrating this task. */
