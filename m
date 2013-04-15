@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934375Ab3DOCoE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:44:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36511 "EHLO
+	id S934661Ab3DOCqF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:46:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36533 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934326Ab3DOCoA (ORCPT
+	with ESMTP id S934358Ab3DOCoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:44:00 -0400
+	Sun, 14 Apr 2013 22:44:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Hansen <dave.hansen@linux.intel.com>, Peter Anvin <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Artem S Tashkinov <t.artem@mailcity.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 20/27] x86-32: Fix possible incomplete TLB invalidate with PAE pagetables
-Date: Sun, 14 Apr 2013 19:43:19 -0700
-Message-Id: <20130415024232.853890094@linuxfoundation.org>
+        Siegfried Wulsch <Siegfried.Wulsch@rovema.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 24/27] sched_clock: Prevent 64bit inatomicity on 32bit systems
+Date: Sun, 14 Apr 2013 19:43:23 -0700
+Message-Id: <20130415024233.147023181@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -29,111 +29,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Hansen <dave@sr71.net>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 1de14c3c5cbc9bb17e9dcc648cda51c0c85d54b9 upstream.
+commit a1cbcaa9ea87b87a96b9fc465951dcf36e459ca2 upstream.
 
-This patch attempts to fix:
+The sched_clock_remote() implementation has the following inatomicity
+problem on 32bit systems when accessing the remote scd->clock, which
+is a 64bit value.
 
-	https://bugzilla.kernel.org/show_bug.cgi?id=56461
+CPU0			CPU1
 
-The symptom is a crash and messages like this:
+sched_clock_local()	sched_clock_remote(CPU0)
+...
+			remote_clock = scd[CPU0]->clock
+			    read_low32bit(scd[CPU0]->clock)
+cmpxchg64(scd->clock,...)
+			    read_high32bit(scd[CPU0]->clock)
 
-	chrome: Corrupted page table at address 34a03000
-	*pdpt = 0000000000000000 *pde = 0000000000000000
-	Bad pagetable: 000f [#1] PREEMPT SMP
+While the update of scd->clock is using an atomic64 mechanism, the
+readout on the remote cpu is not, which can cause completely bogus
+readouts.
 
-Ingo guesses this got introduced by commit 611ae8e3f520 ("x86/tlb:
-enable tlb flush range support for x86") since that code started to free
-unused pagetables.
+It is a quite rare problem, because it requires the update to hit the
+narrow race window between the low/high readout and the update must go
+across the 32bit boundary.
 
-On x86-32 PAE kernels, that new code has the potential to free an entire
-PMD page and will clear one of the four page-directory-pointer-table
-(aka pgd_t entries).
+The resulting misbehaviour is, that CPU1 will see the sched_clock on
+CPU1 ~4 seconds ahead of it's own and update CPU1s sched_clock value
+to this bogus timestamp. This stays that way due to the clamping
+implementation for about 4 seconds until the synchronization with
+CLOCK_MONOTONIC undoes the problem.
 
-The hardware aggressively "caches" these top-level entries and invlpg
-does not actually affect the CPU's copy.  If we clear one we *HAVE* to
-do a full TLB flush, otherwise we might continue using a freed pmd page.
-(note, we do this properly on the population side in pud_populate()).
+The issue is hard to observe, because it might only result in a less
+accurate SCHED_OTHER timeslicing behaviour. To create observable
+damage on realtime scheduling classes, it is necessary that the bogus
+update of CPU1 sched_clock happens in the context of an realtime
+thread, which then gets charged 4 seconds of RT runtime, which results
+in the RT throttler mechanism to trigger and prevent scheduling of RT
+tasks for a little less than 4 seconds. So this is quite unlikely as
+well.
 
-This patch tracks whenever we clear one of these entries in the 'struct
-mmu_gather', and ensures that we follow up with a full tlb flush.
+The issue was quite hard to decode as the reproduction time is between
+2 days and 3 weeks and intrusive tracing makes it less likely, but the
+following trace recorded with trace_clock=global, which uses
+sched_clock_local(), gave the final hint:
 
-BTW, I disassembled and checked that:
+  <idle>-0   0d..30 400269.477150: hrtimer_cancel: hrtimer=0xf7061e80
+  <idle>-0   0d..30 400269.477151: hrtimer_start:  hrtimer=0xf7061e80 ...
+irq/20-S-587 1d..32 400273.772118: sched_wakeup:   comm= ... target_cpu=0
+  <idle>-0   0dN.30 400273.772118: hrtimer_cancel: hrtimer=0xf7061e80
 
-	if (tlb->fullmm == 0)
-and
-	if (!tlb->fullmm && !tlb->need_flush_all)
+What happens is that CPU0 goes idle and invokes
+sched_clock_idle_sleep_event() which invokes sched_clock_local() and
+CPU1 runs a remote wakeup for CPU0 at the same time, which invokes
+sched_remote_clock(). The time jump gets propagated to CPU0 via
+sched_remote_clock() and stays stale on both cores for ~4 seconds.
 
-generate essentially the same code, so there should be zero impact there
-to the !PAE case.
+There are only two other possibilities, which could cause a stale
+sched clock:
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Artem S Tashkinov <t.artem@mailcity.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+1) ktime_get() which reads out CLOCK_MONOTONIC returns a sporadic
+   wrong value.
+
+2) sched_clock() which reads the TSC returns a sporadic wrong value.
+
+#1 can be excluded because sched_clock would continue to increase for
+   one jiffy and then go stale.
+
+#2 can be excluded because it would not make the clock jump
+   forward. It would just result in a stale sched_clock for one jiffy.
+
+After quite some brain twisting and finding the same pattern on other
+traces, sched_clock_remote() remained the only place which could cause
+such a problem and as explained above it's indeed racy on 32bit
+systems.
+
+So while on 64bit systems the readout is atomic, we need to verify the
+remote readout on 32bit machines. We need to protect the local->clock
+readout in sched_clock_remote() on 32bit as well because an NMI could
+hit between the low and the high readout, call sched_clock_local() and
+modify local->clock.
+
+Thanks to Siegfried Wulsch for bearing with my debug requests and
+going through the tedious tasks of running a bunch of reproducer
+systems to generate the debug information which let me decode the
+issue.
+
+Reported-by: Siegfried Wulsch <Siegfried.Wulsch@rovema.de>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1304051544160.21884@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/tlb.h |    2 +-
- arch/x86/mm/pgtable.c      |    7 +++++++
- include/asm-generic/tlb.h  |    7 ++++++-
- mm/memory.c                |    1 +
- 4 files changed, 15 insertions(+), 2 deletions(-)
+ kernel/sched/clock.c |   26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
---- a/arch/x86/include/asm/tlb.h
-+++ b/arch/x86/include/asm/tlb.h
-@@ -7,7 +7,7 @@
+--- a/kernel/sched/clock.c
++++ b/kernel/sched/clock.c
+@@ -176,10 +176,36 @@ static u64 sched_clock_remote(struct sch
+ 	u64 this_clock, remote_clock;
+ 	u64 *ptr, old_val, val;
  
- #define tlb_flush(tlb)							\
- {									\
--	if (tlb->fullmm == 0)						\
-+	if (!tlb->fullmm && !tlb->need_flush_all) 			\
- 		flush_tlb_mm_range(tlb->mm, tlb->start, tlb->end, 0UL);	\
- 	else								\
- 		flush_tlb_mm_range(tlb->mm, 0UL, TLB_FLUSH_ALL, 0UL);	\
---- a/arch/x86/mm/pgtable.c
-+++ b/arch/x86/mm/pgtable.c
-@@ -58,6 +58,13 @@ void ___pte_free_tlb(struct mmu_gather *
- void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
- {
- 	paravirt_release_pmd(__pa(pmd) >> PAGE_SHIFT);
++#if BITS_PER_LONG != 64
++again:
 +	/*
-+	 * NOTE! For PAE, any changes to the top page-directory-pointer-table
-+	 * entries need a full cr3 reload to flush.
++	 * Careful here: The local and the remote clock values need to
++	 * be read out atomic as we need to compare the values and
++	 * then update either the local or the remote side. So the
++	 * cmpxchg64 below only protects one readout.
++	 *
++	 * We must reread via sched_clock_local() in the retry case on
++	 * 32bit as an NMI could use sched_clock_local() via the
++	 * tracer and hit between the readout of
++	 * the low32bit and the high 32bit portion.
 +	 */
-+#ifdef CONFIG_X86_PAE
-+	tlb->need_flush_all = 1;
++	this_clock = sched_clock_local(my_scd);
++	/*
++	 * We must enforce atomic readout on 32bit, otherwise the
++	 * update on the remote cpu can hit inbetween the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	remote_clock = cmpxchg64(&scd->clock, 0, 0);
++#else
++	/*
++	 * On 64bit the read of [my]scd->clock is atomic versus the
++	 * update, so we can avoid the above 32bit dance.
++	 */
+ 	sched_clock_local(my_scd);
+ again:
+ 	this_clock = my_scd->clock;
+ 	remote_clock = scd->clock;
 +#endif
- 	tlb_remove_page(tlb, virt_to_page(pmd));
- }
  
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -99,7 +99,12 @@ struct mmu_gather {
- 	unsigned int		need_flush : 1,	/* Did free PTEs */
- 				fast_mode  : 1; /* No batching   */
- 
--	unsigned int		fullmm;
-+	/* we are in the middle of an operation to clear
-+	 * a full mm and can make some optimizations */
-+	unsigned int		fullmm : 1,
-+	/* we have performed an operation which
-+	 * requires a complete flush of the tlb */
-+				need_flush_all : 1;
- 
- 	struct mmu_gather_batch *active;
- 	struct mmu_gather_batch	local;
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -212,6 +212,7 @@ void tlb_gather_mmu(struct mmu_gather *t
- 	tlb->mm = mm;
- 
- 	tlb->fullmm     = fullmm;
-+	tlb->need_flush_all = 0;
- 	tlb->start	= -1UL;
- 	tlb->end	= 0;
- 	tlb->need_flush = 0;
+ 	/*
+ 	 * Use the opportunity that we have both locks
 
 
