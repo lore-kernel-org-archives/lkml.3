@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab3DOOOF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 10:14:05 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:16604 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab3DOOOD (ORCPT
+	id S1753280Ab3DOOOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 10:14:23 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:34633 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab3DOOOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 10:14:03 -0400
-Date: Mon, 15 Apr 2013 17:13:59 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Dolkow, Snild" <Snild.Dolkow@sonymobile.com>
-Cc: =?iso-8859-1?B?IkFuZGVy9iwgT3NrYXIi?= <Oskar.Andero@sonymobile.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Brian Swetland <swetland@google.com>
-Subject: Re: [PATCH] lowmemorykiller: prevent multiple instances of low
- memory killer
-Message-ID: <20130415141358.GO6692@mwanda>
-References: <1366031009-21958-1-git-send-email-oskar.andero@sonymobile.com>
- <20130415131815.GG6638@mwanda>
- <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 15 Apr 2013 10:14:20 -0400
+From: Benjamin Poirier <bpoirier@suse.de>
+To: Michal Marek <mmarek@suse.cz>
+Cc: "Yann E. MORIN" <yann.morin.1998@free.fr>,
+        Wang YanQing <udknight@gmail.com>,
+        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] menuconfig: Fix memory leak introduced by jump keys feature
+Date: Mon, 15 Apr 2013 10:13:50 -0400
+Message-Id: <1366035231-24370-1-git-send-email-bpoirier@suse.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 03:38:08PM +0200, Dolkow, Snild wrote:
-> >Where is lowmem_shrink called from?  I only see shrink called from the
-> >bcache sysfs handler __bch_cache_set().  The return value isn't checked
-> >there.
-> >
-> >Up to now this function has only returns positive numbers.
-> >
-> >There isn't a place which check LMK_BUSY so maybe it's best to just
-> >return zero?
-> 
-> Hey Dan,
-> 
-> lowmem_shrink is assigned to a shrinker struct
-> (include/linux/shrinker.h) and called in do_shrinker_shrink() in
-> mm/vmscan.c. That, in turn, is called and checked in a few places
-> in vmscan.c.
->
-> >From the comments in shrinker.h: 
-> "It should return the number of objects which remain in the
-> cache. If it returns -1, it means it cannot do any scanning at
-> this time (eg. there is a risk of deadlock). The callback must not
-> return -1 if nr_to_scan is zero."
+Fixes the memory leak of struct jump_key allocated in get_prompt_str()
 
-Ah.  Good.  -1 is the right return.
+Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
+---
+ scripts/kconfig/list.h  |   13 +++++++++++++
+ scripts/kconfig/mconf.c |    3 +++
+ 2 files changed, 16 insertions(+)
 
-But really should be a #define in shrinker.h instead of in
-drivers/staging/android/.
-
-regards,
-dan carpenter
+diff --git a/scripts/kconfig/list.h b/scripts/kconfig/list.h
+index 0ae730b..b87206c 100644
+--- a/scripts/kconfig/list.h
++++ b/scripts/kconfig/list.h
+@@ -51,6 +51,19 @@ struct list_head {
+ 	     pos = list_entry(pos->member.next, typeof(*pos), member))
+ 
+ /**
++ * list_for_each_entry_safe - iterate over list of given type safe against removal of list entry
++ * @pos:	the type * to use as a loop cursor.
++ * @n:		another type * to use as temporary storage
++ * @head:	the head for your list.
++ * @member:	the name of the list_struct within the struct.
++ */
++#define list_for_each_entry_safe(pos, n, head, member)			\
++	for (pos = list_entry((head)->next, typeof(*pos), member),	\
++		n = list_entry(pos->member.next, typeof(*pos), member);	\
++	     &pos->member != (head);					\
++	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
++
++/**
+  * list_empty - tests whether a list is empty
+  * @head: the list to test.
+  */
+diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
+index 566288a..c5418d6 100644
+--- a/scripts/kconfig/mconf.c
++++ b/scripts/kconfig/mconf.c
+@@ -389,6 +389,7 @@ again:
+ 			.targets = targets,
+ 			.keys = keys,
+ 		};
++		struct jump_key *pos, *tmp;
+ 
+ 		res = get_relations_str(sym_arr, &head);
+ 		dres = show_textbox_ext(_("Search Results"), (char *)
+@@ -402,6 +403,8 @@ again:
+ 				again = true;
+ 			}
+ 		str_free(&res);
++		list_for_each_entry_safe(pos, tmp, &head, entries)
++			free(pos);
+ 	} while (again);
+ 	free(sym_arr);
+ 	str_free(&title);
+-- 
+1.7.10.4
 
