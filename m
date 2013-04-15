@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab3DOPVj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:21:39 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:44736 "EHLO
+	id S1753887Ab3DOPTz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:19:55 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:44705 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab3DOPUF (ORCPT
+	with ESMTP id S1751567Ab3DOPTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:20:05 -0400
+	Mon, 15 Apr 2013 11:19:53 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3 05/24] n_tty: Line copy to user buffer in canonical mode
-Date: Mon, 15 Apr 2013 11:19:09 -0400
-Message-Id: <1366039168-8510-6-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v3 01/24] tty: Don't change receive_room for ioctl(TIOCSETD)
+Date: Mon, 15 Apr 2013 11:19:05 -0400
+Message-Id: <1366039168-8510-2-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
 References: <1363724513-15604-1-git-send-email-peter@hurleysoftware.com>
@@ -23,169 +23,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of pushing one char per loop, pre-compute the data length
-to copy and copy all at once.
+tty_set_ldisc() is guaranteed exclusive use of the line discipline
+by tty_ldisc_lock_pair_timeout(); shutting off input by resetting
+receive_room is unnecessary.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 110 ++++++++++++++++++++++++++++++++++++----------------
- 1 file changed, 77 insertions(+), 33 deletions(-)
+ drivers/tty/tty_ldisc.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 574bc03..c0a187a 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -74,6 +74,13 @@
- #define ECHO_OP_SET_CANON_COL 0x81
- #define ECHO_OP_ERASE_TAB 0x82
- 
-+#undef N_TTY_TRACE
-+#ifdef N_TTY_TRACE
-+# define n_tty_trace(f, args...)	trace_printk(f, ##args)
-+#else
-+# define n_tty_trace(f, args...)
-+#endif
-+
- struct n_tty_data {
- 	unsigned int column;
- 	unsigned long overrun_time;
-@@ -1746,58 +1753,95 @@ static int copy_from_read_buf(struct tty_struct *tty,
- }
- 
- /**
-- *	canon_copy_to_user	-	copy read data in canonical mode
-+ *	canon_copy_from_read_buf	-	copy read data in canonical mode
-  *	@tty: terminal device
-  *	@b: user data
-  *	@nr: size of data
-  *
-  *	Helper function for n_tty_read.  It is only called when ICANON is on;
-- *	it copies characters one at a time from the read buffer to the user
-- *	space buffer.
-+ *	it copies one line of input up to and including the line-delimiting
-+ *	character into the user-space buffer.
-  *
-  *	Called under the atomic_read_lock mutex
-  */
- 
--static int canon_copy_to_user(struct tty_struct *tty,
--			      unsigned char __user **b,
--			      size_t *nr)
-+static int canon_copy_from_read_buf(struct tty_struct *tty,
-+				    unsigned char __user **b,
-+				    size_t *nr)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
- 	unsigned long flags;
--	int eol, c;
-+	size_t n, size, more, c;
-+	unsigned long eol;
-+	int ret, tail, found = 0;
- 
- 	/* N.B. avoid overrun if nr == 0 */
-+
- 	raw_spin_lock_irqsave(&ldata->read_lock, flags);
--	while (*nr && ldata->read_cnt) {
--
--		eol = test_and_clear_bit(ldata->read_tail, ldata->read_flags);
--		c = ldata->read_buf[ldata->read_tail];
--		ldata->read_tail = (ldata->read_tail+1) & (N_TTY_BUF_SIZE-1);
--		ldata->read_cnt--;
--		if (eol) {
--			/* this test should be redundant:
--			 * we shouldn't be reading data if
--			 * canon_data is 0
--			 */
--			if (--ldata->canon_data < 0)
--				ldata->canon_data = 0;
--		}
-+
-+	n = min_t(size_t, *nr, ldata->read_cnt);
-+	if (!n) {
- 		raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
-+		return 0;
-+	}
- 
--		if (!eol || (c != __DISABLED_CHAR)) {
--			if (tty_put_user(tty, c, *b))
--				return -EFAULT;
--			*b += 1;
--			*nr -= 1;
--		}
--		if (eol) {
--			tty_audit_push(tty);
--			return 0;
--		}
--		raw_spin_lock_irqsave(&ldata->read_lock, flags);
-+	tail = ldata->read_tail;
-+	size = min_t(size_t, tail + n, N_TTY_BUF_SIZE);
-+
-+	n_tty_trace("%s: nr:%zu tail:%d n:%zu size:%zu\n",
-+		    __func__, *nr, tail, n, size);
-+
-+	eol = find_next_bit(ldata->read_flags, size, tail);
-+	more = n - (size - tail);
-+	if (eol == N_TTY_BUF_SIZE && more) {
-+		/* scan wrapped without finding set bit */
-+		eol = find_next_bit(ldata->read_flags, more, 0);
-+		if (eol != more)
-+			found = 1;
-+	} else if (eol != size)
-+		found = 1;
-+
-+	size = N_TTY_BUF_SIZE - tail;
-+	n = (found + eol + size) & (N_TTY_BUF_SIZE - 1);
-+	c = n;
-+
-+	if (found && ldata->read_buf[eol] == __DISABLED_CHAR)
-+		n--;
-+
-+	n_tty_trace("%s: eol:%lu found:%d n:%zu c:%zu size:%zu more:%zu\n",
-+		    __func__, eol, found, n, c, size, more);
-+
-+	raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
-+
-+	if (n > size) {
-+		ret = copy_to_user(*b, &ldata->read_buf[tail], size);
-+		if (ret)
-+			return -EFAULT;
-+		ret = copy_to_user(*b + size, ldata->read_buf, n - size);
-+	} else
-+		ret = copy_to_user(*b, &ldata->read_buf[tail], n);
-+
-+	if (ret)
-+		return -EFAULT;
-+	*b += n;
-+	*nr -= n;
-+
-+	raw_spin_lock_irqsave(&ldata->read_lock, flags);
-+	ldata->read_tail = (ldata->read_tail + c) & (N_TTY_BUF_SIZE - 1);
-+	ldata->read_cnt -= c;
-+	if (found) {
-+		__clear_bit(eol, ldata->read_flags);
-+		/* this test should be redundant:
-+		 * we shouldn't be reading data if
-+		 * canon_data is 0
-+		 */
-+		if (--ldata->canon_data < 0)
-+			ldata->canon_data = 0;
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index ba49c0e..5a6c43d 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -537,9 +537,6 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 		return 0;
  	}
- 	raw_spin_unlock_irqrestore(&ldata->read_lock, flags);
  
-+	if (found)
-+		tty_audit_push(tty);
- 	return 0;
- }
+-	/* FIXME: why 'shutoff' input if the ldisc is locked? */
+-	tty->receive_room = 0;
+-
+ 	old_ldisc = tty->ldisc;
+ 	tty_lock(tty);
  
-@@ -1970,7 +2014,7 @@ do_it_again:
- 		}
- 
- 		if (ldata->icanon && !L_EXTPROC(tty)) {
--			retval = canon_copy_to_user(tty, &b, &nr);
-+			retval = canon_copy_from_read_buf(tty, &b, &nr);
- 			if (retval)
- 				break;
- 		} else {
 -- 
 1.8.1.2
 
