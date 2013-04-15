@@ -1,767 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934393Ab3DOR0B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 13:26:01 -0400
-Received: from mga03.intel.com ([143.182.124.21]:7519 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754495Ab3DORZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 13:25:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,476,1363158000"; 
-   d="scan'208";a="286409290"
-Subject: [PATCH v3] ioatdma: Adding support for 16 src PQ ops and super
- extended descriptors
-To: djbw@fb.com
-From: Dave Jiang <dave.jiang@intel.com>
-Cc: vinod.koul@intel.com, linux-kernel@vger.kernel.org
-Date: Mon, 15 Apr 2013 10:25:56 -0700
-Message-ID: <20130415172556.24569.3976.stgit@djiang5-linux2.ch.intel.com>
-User-Agent: StGit/0.16
+	id S1756005Ab3DOR1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 13:27:10 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:60520 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751679Ab3DOR1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 13:27:08 -0400
+Message-ID: <516C3868.40903@sgi.com>
+Date: Mon, 15 Apr 2013 12:27:04 -0500
+From: Nathan Zimmer <nzimmer@sgi.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: <sedat.dilek@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
+References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com> <CA+icZUUsAqJ3kyCZivYeTpY7n=EDMv1UcC2VNwQro4h7NHDWag@mail.gmail.com> <CA+icZUW+TB3q58bL+d=A355S4vtRhwMq8AV+tqjv6MgDtHRCaA@mail.gmail.com> <1923819.6Nb81T2TR8@vostro.rjw.lan> <CA+icZUXUGOjGUAFxgQk0780pcBB-YjiujDLXF+gJFegi+pd+dA@mail.gmail.com> <516C25AE.4050503@intel.com>
+In-Reply-To: <516C25AE.4050503@intel.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [128.162.233.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v3.3 introduced 16 sources PQ operations. This also introduced super extended
-descriptors to support the 16 srcs operations. This patch adds support for
-the 16 sources ops and in turn adds the super extended descriptors for those
-ops.
+On 04/15/2013 11:07 AM, Dirk Brandewie wrote:
+> On 04/13/2013 02:55 AM, Sedat Dilek wrote:
+>> On Sat, Apr 13, 2013 at 12:51 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> On Friday, April 12, 2013 11:08:37 PM Sedat Dilek wrote:
+>>>> On Fri, Apr 12, 2013 at 6:27 PM, Sedat Dilek 
+>>>> <sedat.dilek@gmail.com> wrote:
+>>>>> On Fri, Apr 12, 2013 at 5:45 PM, Sedat Dilek 
+>>>>> <sedat.dilek@gmail.com> wrote:
+>>>>>> On Fri, Apr 12, 2013 at 4:24 PM, Sedat Dilek 
+>>>>>> <sedat.dilek@gmail.com> wrote:
+>>>>>>> On Fri, Apr 12, 2013 at 10:23 AM, Viresh Kumar 
+>>>>>>> <viresh.kumar@linaro.org> wrote:
+>>>>>>>> On 10 April 2013 11:44, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>>>>>> I found this "[RFC PATCH] kbuild: Build linux-tools package 
+>>>>>>>>> with 'make
+>>>>>>>>> deb-pkg'" from February 2012.
+>>>>>>>>> Can't say what happened to it...
+>>>>>>>>
+>>>>>>>> Sedat,
+>>>>>>>>
+>>>>>>>> Sorry for being late. I am down with Fever and throat infection 
+>>>>>>>> since few days.
+>>>>>>>> Still struggling with it..
+>>>>>>>>
+>>>>>>>> There are few things i tried. Firstly the tag: next-20130326 is 
+>>>>>>>> bad as there are
+>>>>>>>> some bad commits in cpufreq core in it.
+>>>>>>>>
+>>>>>>>> I then tried latest linux-next/master on my Thinkpad (model 
+>>>>>>>> name        : Intel(R)
+>>>>>>>> Core(TM) i7-2640M CPU @ 2.80GHz) and couldn't boot it up. My 
+>>>>>>>> ubuntu
+>>>>>>>> just hanged.
+>>>>>>>>
+>>>>>>>> Then i tried Rafael's linux-next branch
+>>>>>>>>
+>>>>>>>> 079576f Merge branch 'pm-cpufreq-next' into linux-next
+>>>>>>>>
+>>>>>>>> And couldn't find any issues with it. I am easily able to 
+>>>>>>>> remove/add cpus at
+>>>>>>>> runtime..
+>>>>>>>>
+>>>>>>>> Can you give this branch a try?
+>>>>>>>>
+>>>>>>>
+>>>>>>> OK, you seem to be well again, nice to hear.
+>>>>>>>
+>>>>>>> I was doing the whole week spring-cleaning in the apartment of 
+>>>>>>> my parents.
+>>>>>>> Now, I have some minutes for a compilation run.
+>>>>>>>
+>>>>>>> I guess "cpufreq: Call __cpufreq_governor() with correct 
+>>>>>>> policy->cpus
+>>>>>>> mask" could be the correct fix, but will try the GIT branch you 
+>>>>>>> have
+>>>>>>> mentioned.
+>>>>>>>
+>>>>>>> - Sedat -
+>>>>>>>
+>>>>>>> [1] 
+>>>>>>> http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=e4969ebac83fdea78d89c779331396728a4e6199
+>>>>>>>
+>>>>>>
+>>>>>> Both BROKEN here, specific pm-next commitid and pulling
+>>>>>> pm.git#linux-next into next-20130411 (see attached files).
+>>>>>>
+>>>>>> Is "cpufreq: convert cpufreq_driver to using RCU" the root cause 
+>>>>>> of this all?
+>>>>>>
+>>>>>
+>>>>> [ CC Nathan ]
+>>>>>
+>>>>> NO, wrong assumption.
+>>>>>
+>>>>> 2013-04-12 18:04 Sedat Dilek        o [revert-cpufreq-rcu] Revert
+>>>>> "cpufreq: convert cpufreq_driver to using RCU"
+>>>>> 2013-04-12 18:04 Sedat Dilek        o Revert "cpufreq: Call
+>>>>> __cpufreq_governor() with correct policy->cpus mask"
+>>>>> 2013-04-11 23:24 Rafael J. Wysocki  M─┐ [pm-next-079576f] Merge 
+>>>>> branch
+>>>>> 'pm-cpufreq-next' into linux-next
+>>>>>
+>>>>> - Sedat -
+>>>>>
+>>>>>
+>>>>>> - Sedat -
+>>>>>>
+>>>>>> [1] 
+>>>>>> http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/commit/?h=linux-next&id=5800043b2488a1c4c6e859af860644d37419d58b
+>>>>>>
+>>>>>>>> -- 
+>>>>>>>> viresh
+>>>>
+>>>> [ TO Dirk (Author of Intel pstate driver) ]
+>>>>
+>>>> With CONFIG_X86_INTEL_PSTATE=n (unset) I do not see the call-trace!
+>>>>
+>>>> My kernel-config and dmesg are attached.
+>>>
+>>> You're seeing a trouble with a new driver, then, so that's not a 
+>>> regression.
+>>>
+>
+> This IS a regression.
+>
+> If the intel_pstate driver is being used __cpufreq_governor() should 
+> NOT be
+> called intel_pstate does not implement the target() callback.
+>
+> Nathan's commit 5800043b2 changed the fence around the call to
+> __cpufreq_governor() in __cpufreq_remove_dev() here is the relevant hunk.
+>
+> @@ -1007,9 +1068,12 @@ static int __cpufreq_remove_dev(struct device 
+> *dev, struct subsys_interface *sif
+>      unsigned int cpu = dev->id, ret, cpus;
+>      unsigned long flags;
+>      struct cpufreq_policy *data;
+> +    struct cpufreq_driver *driver;
+>      struct kobject *kobj;
+>      struct completion *cmp;
+>      struct device *cpu_dev;
+> +    bool has_target;
+> +    int (*exit)(struct cpufreq_policy *policy);
+>
+>      pr_debug("%s: unregistering CPU %u\n", __func__, cpu);
+>
+> @@ -1025,14 +1089,19 @@ static int __cpufreq_remove_dev(struct device 
+> *dev, struct subsys_interface *sif
+>          return -EINVAL;
+>      }
+>
+> -    if (cpufreq_driver->target)
+> +    rcu_read_lock();
+> +    driver = rcu_dereference(cpufreq_driver);
+> +    has_target = driver->target ? true : false;
+> +    exit = driver->exit;
+> +    if (has_target)
+>          __cpufreq_governor(data, CPUFREQ_GOV_STOP);
+>
+>  #ifdef CONFIG_HOTPLUG_CPU
+> -    if (!cpufreq_driver->setpolicy)
+> +    if (!driver->setpolicy)
+>          strncpy(per_cpu(cpufreq_cpu_governor, cpu),
+>              data->governor->name, CPUFREQ_NAME_LEN);
+>  #endif
+> +    rcu_read_unlock();
+>
+>      WARN_ON(lock_policy_rwsem_write(cpu));
+>      cpus = cpumask_weight(data->cpus);
+>
 
-5 SED pools are created depending on the descriptor sizes. An SED can be a 64
-bytes sized descriptor or larger and must be physically contiguous. A kmem
-cache pool is created for allocating the software descriptor that manages the
-hardware descriptor. The super extended descriptor will take place of extended
-descriptor under certain operations and be "attached" to the op descriptor
-during operation. This is a new feature for ioatdma v3.3.
+I am not clear at what is at issue.  Are you saying __cpufreq_governor 
+can change the value of cpufreq_driver->target?  I hadn't thought that 
+was allowed but if it is the code would need to be fixed.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
-Acked-by: Dan Williams <djbw@fb.com>
----
- drivers/dma/ioat/dma.h       |   17 ++
- drivers/dma/ioat/dma_v2.h    |    2 
- drivers/dma/ioat/dma_v3.c    |  394 ++++++++++++++++++++++++++++++++++++++++--
- drivers/dma/ioat/hw.h        |   43 ++++-
- drivers/dma/ioat/pci.c       |    3 
- drivers/dma/ioat/registers.h |    1 
- 6 files changed, 438 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
-index 976eba8..35d7402 100644
---- a/drivers/dma/ioat/dma.h
-+++ b/drivers/dma/ioat/dma.h
-@@ -81,6 +81,9 @@ struct ioatdma_device {
- 	void __iomem *reg_base;
- 	struct pci_pool *dma_pool;
- 	struct pci_pool *completion_pool;
-+#define MAX_SED_POOLS	5
-+	struct dma_pool *sed_hw_pool[MAX_SED_POOLS];
-+	struct kmem_cache *sed_pool;
- 	struct dma_device common;
- 	u8 version;
- 	struct msix_entry msix_entries[4];
-@@ -141,6 +144,20 @@ struct ioat_dma_chan {
- 	u16 active;
- };
- 
-+/**
-+ * struct ioat_sed_ent - wrapper around super extended hardware descriptor
-+ * @hw: hardware SED
-+ * @sed_dma: dma address for the SED
-+ * @list: list member
-+ * @parent: point to the dma descriptor that's the parent
-+ */
-+struct ioat_sed_ent {
-+	struct ioat_sed_raw_descriptor *hw;
-+	dma_addr_t dma;
-+	struct ioat_ring_ent *parent;
-+	unsigned int hw_pool;
-+};
-+
- static inline struct ioat_chan_common *to_chan_common(struct dma_chan *c)
- {
- 	return container_of(c, struct ioat_chan_common, common);
-diff --git a/drivers/dma/ioat/dma_v2.h b/drivers/dma/ioat/dma_v2.h
-index e100f64..29bf944 100644
---- a/drivers/dma/ioat/dma_v2.h
-+++ b/drivers/dma/ioat/dma_v2.h
-@@ -137,6 +137,7 @@ struct ioat_ring_ent {
- 	#ifdef DEBUG
- 	int id;
- 	#endif
-+	struct ioat_sed_ent *sed;
- };
- 
- static inline struct ioat_ring_ent *
-@@ -157,6 +158,7 @@ static inline void ioat2_set_chainaddr(struct ioat2_dma_chan *ioat, u64 addr)
- 
- int ioat2_dma_probe(struct ioatdma_device *dev, int dca);
- int ioat3_dma_probe(struct ioatdma_device *dev, int dca);
-+void ioat3_dma_remove(struct ioatdma_device *dev);
- struct dca_provider *ioat2_dca_init(struct pci_dev *pdev, void __iomem *iobase);
- struct dca_provider *ioat3_dca_init(struct pci_dev *pdev, void __iomem *iobase);
- int ioat2_check_space_lock(struct ioat2_dma_chan *ioat, int num_descs);
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index 6393115..71e113d 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -55,7 +55,7 @@
- /*
-  * Support routines for v3+ hardware
-  */
--
-+#include <linux/module.h>
- #include <linux/pci.h>
- #include <linux/gfp.h>
- #include <linux/dmaengine.h>
-@@ -70,6 +70,10 @@
- /* ioat hardware assumes at least two sources for raid operations */
- #define src_cnt_to_sw(x) ((x) + 2)
- #define src_cnt_to_hw(x) ((x) - 2)
-+#define ndest_to_sw(x) ((x) + 1)
-+#define ndest_to_hw(x) ((x) - 1)
-+#define src16_cnt_to_sw(x) ((x) + 9)
-+#define src16_cnt_to_hw(x) ((x) - 9)
- 
- /* provide a lookup table for setting the source address in the base or
-  * extended descriptor of an xor or pq descriptor
-@@ -77,7 +81,18 @@
- static const u8 xor_idx_to_desc = 0xe0;
- static const u8 xor_idx_to_field[] = { 1, 4, 5, 6, 7, 0, 1, 2 };
- static const u8 pq_idx_to_desc = 0xf8;
-+static const u8 pq16_idx_to_desc[] = { 0, 0, 1, 1, 1, 1, 1, 1, 1,
-+				       2, 2, 2, 2, 2, 2, 2 };
- static const u8 pq_idx_to_field[] = { 1, 4, 5, 0, 1, 2, 4, 5 };
-+static const u8 pq16_idx_to_field[] = { 1, 4, 1, 2, 3, 4, 5, 6, 7,
-+					0, 1, 2, 3, 4, 5, 6 };
-+
-+/*
-+ * technically sources 1 and 2 do not require SED, but the op will have
-+ * at least 9 descriptors so that's irrelevant.
-+ */
-+static const u8 pq16_idx_to_sed[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0,
-+				      1, 1, 1, 1, 1, 1, 1 };
- 
- static void ioat3_eh(struct ioat2_dma_chan *ioat);
- 
-@@ -103,6 +118,13 @@ static dma_addr_t pq_get_src(struct ioat_raw_descriptor *descs[2], int idx)
- 	return raw->field[pq_idx_to_field[idx]];
- }
- 
-+static dma_addr_t pq16_get_src(struct ioat_raw_descriptor *desc[3], int idx)
-+{
-+	struct ioat_raw_descriptor *raw = desc[pq16_idx_to_desc[idx]];
-+
-+	return raw->field[pq16_idx_to_field[idx]];
-+}
-+
- static void pq_set_src(struct ioat_raw_descriptor *descs[2],
- 		       dma_addr_t addr, u32 offset, u8 coef, int idx)
- {
-@@ -113,6 +135,12 @@ static void pq_set_src(struct ioat_raw_descriptor *descs[2],
- 	pq->coef[idx] = coef;
- }
- 
-+static int sed_get_pq16_pool_idx(int src_cnt)
-+{
-+
-+	return pq16_idx_to_sed[src_cnt];
-+}
-+
- static bool is_jf_ioat(struct pci_dev *pdev)
- {
- 	switch (pdev->device) {
-@@ -210,6 +238,52 @@ static bool is_bwd_ioat(struct pci_dev *pdev)
- 	}
- }
- 
-+static void pq16_set_src(struct ioat_raw_descriptor *desc[3],
-+			dma_addr_t addr, u32 offset, u8 coef, int idx)
-+{
-+	struct ioat_pq_descriptor *pq = (struct ioat_pq_descriptor *)desc[0];
-+	struct ioat_pq16a_descriptor *pq16 =
-+		(struct ioat_pq16a_descriptor *)desc[1];
-+	struct ioat_raw_descriptor *raw = desc[pq16_idx_to_desc[idx]];
-+
-+	raw->field[pq16_idx_to_field[idx]] = addr + offset;
-+
-+	if (idx < 8)
-+		pq->coef[idx] = coef;
-+	else
-+		pq16->coef[idx - 8] = coef;
-+}
-+
-+struct ioat_sed_ent *
-+ioat3_alloc_sed(struct ioatdma_device *device, unsigned int hw_pool)
-+{
-+	struct ioat_sed_ent *sed;
-+	gfp_t flags = __GFP_ZERO | GFP_ATOMIC;
-+
-+	sed = kmem_cache_alloc(device->sed_pool, flags);
-+	if (!sed)
-+		return NULL;
-+
-+	sed->hw_pool = hw_pool;
-+	sed->hw = dma_pool_alloc(device->sed_hw_pool[hw_pool],
-+				 flags, &sed->dma);
-+	if (!sed->hw) {
-+		kmem_cache_free(device->sed_pool, sed);
-+		return NULL;
-+	}
-+
-+	return sed;
-+}
-+
-+void ioat3_free_sed(struct ioatdma_device *device, struct ioat_sed_ent *sed)
-+{
-+	if (!sed)
-+		return;
-+
-+	dma_pool_free(device->sed_hw_pool[sed->hw_pool], sed->hw, sed->dma);
-+	kmem_cache_free(device->sed_pool, sed);
-+}
-+
- static void ioat3_dma_unmap(struct ioat2_dma_chan *ioat,
- 			    struct ioat_ring_ent *desc, int idx)
- {
-@@ -322,6 +396,54 @@ static void ioat3_dma_unmap(struct ioat2_dma_chan *ioat,
- 		}
- 		break;
- 	}
-+	case IOAT_OP_PQ_16S:
-+	case IOAT_OP_PQ_VAL_16S: {
-+		struct ioat_pq_descriptor *pq = desc->pq;
-+		int src_cnt = src16_cnt_to_sw(pq->ctl_f.src_cnt);
-+		struct ioat_raw_descriptor *descs[4];
-+		int i;
-+
-+		/* in the 'continue' case don't unmap the dests as sources */
-+		if (dmaf_p_disabled_continue(flags))
-+			src_cnt--;
-+		else if (dmaf_continue(flags))
-+			src_cnt -= 3;
-+
-+		if (!(flags & DMA_COMPL_SKIP_SRC_UNMAP)) {
-+			descs[0] = (struct ioat_raw_descriptor *)pq;
-+			descs[1] = (struct ioat_raw_descriptor *)(desc->sed->hw);
-+			descs[2] = (struct ioat_raw_descriptor *)(&desc->sed->hw->b[0]);
-+			for (i = 0; i < src_cnt; i++) {
-+				dma_addr_t src = pq16_get_src(descs, i);
-+
-+				ioat_unmap(pdev, src - offset, len,
-+					   PCI_DMA_TODEVICE, flags, 0);
-+			}
-+
-+			/* the dests are sources in pq validate operations */
-+			if (pq->ctl_f.op == IOAT_OP_XOR_VAL) {
-+				if (!(flags & DMA_PREP_PQ_DISABLE_P))
-+					ioat_unmap(pdev, pq->p_addr - offset,
-+						   len, PCI_DMA_TODEVICE,
-+						   flags, 0);
-+				if (!(flags & DMA_PREP_PQ_DISABLE_Q))
-+					ioat_unmap(pdev, pq->q_addr - offset,
-+						   len, PCI_DMA_TODEVICE,
-+						   flags, 0);
-+				break;
-+			}
-+		}
-+
-+		if (!(flags & DMA_COMPL_SKIP_DEST_UNMAP)) {
-+			if (!(flags & DMA_PREP_PQ_DISABLE_P))
-+				ioat_unmap(pdev, pq->p_addr - offset, len,
-+					   PCI_DMA_BIDIRECTIONAL, flags, 1);
-+			if (!(flags & DMA_PREP_PQ_DISABLE_Q))
-+				ioat_unmap(pdev, pq->q_addr - offset, len,
-+					   PCI_DMA_BIDIRECTIONAL, flags, 1);
-+		}
-+		break;
-+	}
- 	default:
- 		dev_err(&pdev->dev, "%s: unknown op type: %#x\n",
- 			__func__, desc->hw->ctl_f.op);
-@@ -386,6 +508,7 @@ static bool ioat3_cleanup_preamble(struct ioat_chan_common *chan,
- static void __cleanup(struct ioat2_dma_chan *ioat, dma_addr_t phys_complete)
- {
- 	struct ioat_chan_common *chan = &ioat->base;
-+	struct ioatdma_device *device = chan->device;
- 	struct ioat_ring_ent *desc;
- 	bool seen_current = false;
- 	int idx = ioat->tail, i;
-@@ -430,6 +553,12 @@ static void __cleanup(struct ioat2_dma_chan *ioat, dma_addr_t phys_complete)
- 			BUG_ON(i + 1 >= active);
- 			i++;
- 		}
-+
-+		/* cleanup super extended descriptors */
-+		if (desc->sed) {
-+			ioat3_free_sed(device, desc->sed);
-+			desc->sed = NULL;
-+		}
- 	}
- 	smp_mb(); /* finish all descriptor reads before incrementing tail */
- 	ioat->tail = idx + i;
-@@ -522,6 +651,7 @@ static void ioat3_eh(struct ioat2_dma_chan *ioat)
- 		}
- 		break;
- 	case IOAT_OP_PQ_VAL:
-+	case IOAT_OP_PQ_VAL_16S:
- 		if (chanerr & IOAT_CHANERR_XOR_P_OR_CRC_ERR) {
- 			*desc->result |= SUM_CHECK_P_RESULT;
- 			err_handled |= IOAT_CHANERR_XOR_P_OR_CRC_ERR;
-@@ -814,7 +944,8 @@ dump_pq_desc_dbg(struct ioat2_dma_chan *ioat, struct ioat_ring_ent *desc, struct
- 	int i;
- 
- 	dev_dbg(dev, "desc[%d]: (%#llx->%#llx) flags: %#x"
--		" sz: %#10.8x ctl: %#x (op: %#x int: %d compl: %d pq: '%s%s' src_cnt: %d)\n",
-+		" sz: %#10.8x ctl: %#x (op: %#x int: %d compl: %d pq: '%s%s'"
-+		" src_cnt: %d)\n",
- 		desc_id(desc), (unsigned long long) desc->txd.phys,
- 		(unsigned long long) (pq_ex ? pq_ex->next : pq->next),
- 		desc->txd.flags, pq->size, pq->ctl, pq->ctl_f.op, pq->ctl_f.int_en,
-@@ -829,6 +960,41 @@ dump_pq_desc_dbg(struct ioat2_dma_chan *ioat, struct ioat_ring_ent *desc, struct
- 	dev_dbg(dev, "\tNEXT: %#llx\n", pq->next);
- }
- 
-+static void dump_pq16_desc_dbg(struct ioat2_dma_chan *ioat,
-+			       struct ioat_ring_ent *desc)
-+{
-+	struct device *dev = to_dev(&ioat->base);
-+	struct ioat_pq_descriptor *pq = desc->pq;
-+	struct ioat_raw_descriptor *descs[] = { (void *)pq,
-+						(void *)pq,
-+						(void *)pq };
-+	int src_cnt = src16_cnt_to_sw(pq->ctl_f.src_cnt);
-+	int i;
-+
-+	if (desc->sed) {
-+		descs[1] = (void *)desc->sed->hw;
-+		descs[2] = (void *)desc->sed->hw + 64;
-+	}
-+
-+	dev_dbg(dev, "desc[%d]: (%#llx->%#llx) flags: %#x"
-+		" sz: %#x ctl: %#x (op: %#x int: %d compl: %d pq: '%s%s'"
-+		" src_cnt: %d)\n",
-+		desc_id(desc), (unsigned long long) desc->txd.phys,
-+		(unsigned long long) pq->next,
-+		desc->txd.flags, pq->size, pq->ctl,
-+		pq->ctl_f.op, pq->ctl_f.int_en,
-+		pq->ctl_f.compl_write,
-+		pq->ctl_f.p_disable ? "" : "p", pq->ctl_f.q_disable ? "" : "q",
-+		pq->ctl_f.src_cnt);
-+	for (i = 0; i < src_cnt; i++) {
-+		dev_dbg(dev, "\tsrc[%d]: %#llx coef: %#x\n", i,
-+			(unsigned long long) pq16_get_src(descs, i),
-+			pq->coef[i]);
-+	}
-+	dev_dbg(dev, "\tP: %#llx\n", pq->p_addr);
-+	dev_dbg(dev, "\tQ: %#llx\n", pq->q_addr);
-+}
-+
- static struct dma_async_tx_descriptor *
- __ioat3_prep_pq_lock(struct dma_chan *c, enum sum_check_flags *result,
- 		     const dma_addr_t *dst, const dma_addr_t *src,
-@@ -951,10 +1117,114 @@ __ioat3_prep_pq_lock(struct dma_chan *c, enum sum_check_flags *result,
- }
- 
- static struct dma_async_tx_descriptor *
-+__ioat3_prep_pq16_lock(struct dma_chan *c, enum sum_check_flags *result,
-+		       const dma_addr_t *dst, const dma_addr_t *src,
-+		       unsigned int src_cnt, const unsigned char *scf,
-+		       size_t len, unsigned long flags)
-+{
-+	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
-+	struct ioat_chan_common *chan = &ioat->base;
-+	struct ioatdma_device *device = chan->device;
-+	struct ioat_ring_ent *desc;
-+	size_t total_len = len;
-+	struct ioat_pq_descriptor *pq;
-+	u32 offset = 0;
-+	u8 op;
-+	int i, s, idx, num_descs;
-+
-+	/* this function only handles src_cnt 9 - 16 */
-+	BUG_ON(src_cnt < 9);
-+
-+	/* this function is only called with 9-16 sources */
-+	op = result ? IOAT_OP_PQ_VAL_16S : IOAT_OP_PQ_16S;
-+
-+	dev_dbg(to_dev(chan), "%s\n", __func__);
-+
-+	num_descs = ioat2_xferlen_to_descs(ioat, len);
-+
-+	/*
-+	 * 16 source pq is only available on cb3.3 and has no completion
-+	 * write hw bug.
-+	 */
-+	if (num_descs && ioat2_check_space_lock(ioat, num_descs) == 0)
-+		idx = ioat->head;
-+	else
-+		return NULL;
-+
-+	i = 0;
-+
-+	do {
-+		struct ioat_raw_descriptor *descs[4];
-+		size_t xfer_size = min_t(size_t, len, 1 << ioat->xfercap_log);
-+
-+		desc = ioat2_get_ring_ent(ioat, idx + i);
-+		pq = desc->pq;
-+
-+		descs[0] = (struct ioat_raw_descriptor *) pq;
-+
-+		desc->sed = ioat3_alloc_sed(device,
-+					    sed_get_pq16_pool_idx(src_cnt));
-+		if (!desc->sed) {
-+			dev_err(to_dev(chan),
-+				"%s: no free sed entries\n", __func__);
-+			return NULL;
-+		}
-+
-+		pq->sed_addr = desc->sed->dma;
-+		desc->sed->parent = desc;
-+
-+		descs[1] = (struct ioat_raw_descriptor *)desc->sed->hw;
-+		descs[2] = (void *)descs[1] + 64;
-+
-+		for (s = 0; s < src_cnt; s++)
-+			pq16_set_src(descs, src[s], offset, scf[s], s);
-+
-+		/* see the comment for dma_maxpq in include/linux/dmaengine.h */
-+		if (dmaf_p_disabled_continue(flags))
-+			pq16_set_src(descs, dst[1], offset, 1, s++);
-+		else if (dmaf_continue(flags)) {
-+			pq16_set_src(descs, dst[0], offset, 0, s++);
-+			pq16_set_src(descs, dst[1], offset, 1, s++);
-+			pq16_set_src(descs, dst[1], offset, 0, s++);
-+		}
-+
-+		pq->size = xfer_size;
-+		pq->p_addr = dst[0] + offset;
-+		pq->q_addr = dst[1] + offset;
-+		pq->ctl = 0;
-+		pq->ctl_f.op = op;
-+		pq->ctl_f.src_cnt = src16_cnt_to_hw(s);
-+		pq->ctl_f.p_disable = !!(flags & DMA_PREP_PQ_DISABLE_P);
-+		pq->ctl_f.q_disable = !!(flags & DMA_PREP_PQ_DISABLE_Q);
-+
-+		len -= xfer_size;
-+		offset += xfer_size;
-+	} while (++i < num_descs);
-+
-+	/* last pq descriptor carries the unmap parameters and fence bit */
-+	desc->txd.flags = flags;
-+	desc->len = total_len;
-+	if (result)
-+		desc->result = result;
-+	pq->ctl_f.fence = !!(flags & DMA_PREP_FENCE);
-+
-+	/* with cb3.3 we should be able to do completion w/o a null desc */
-+	pq->ctl_f.int_en = !!(flags & DMA_PREP_INTERRUPT);
-+	pq->ctl_f.compl_write = 1;
-+
-+	dump_pq16_desc_dbg(ioat, desc);
-+
-+	/* we leave the channel locked to ensure in order submission */
-+	return &desc->txd;
-+}
-+
-+static struct dma_async_tx_descriptor *
- ioat3_prep_pq(struct dma_chan *chan, dma_addr_t *dst, dma_addr_t *src,
- 	      unsigned int src_cnt, const unsigned char *scf, size_t len,
- 	      unsigned long flags)
- {
-+	struct dma_device *dma = chan->device;
-+
- 	/* specify valid address for disabled result */
- 	if (flags & DMA_PREP_PQ_DISABLE_P)
- 		dst[0] = dst[1];
-@@ -974,11 +1244,20 @@ ioat3_prep_pq(struct dma_chan *chan, dma_addr_t *dst, dma_addr_t *src,
- 		single_source_coef[0] = scf[0];
- 		single_source_coef[1] = 0;
- 
--		return __ioat3_prep_pq_lock(chan, NULL, dst, single_source, 2,
--					    single_source_coef, len, flags);
--	} else
--		return __ioat3_prep_pq_lock(chan, NULL, dst, src, src_cnt, scf,
--					    len, flags);
-+		return (src_cnt > 8) && (dma->max_pq > 8) ?
-+			__ioat3_prep_pq16_lock(chan, NULL, dst, single_source,
-+					       2, single_source_coef, len,
-+					       flags) :
-+			__ioat3_prep_pq_lock(chan, NULL, dst, single_source, 2,
-+					     single_source_coef, len, flags);
-+
-+	} else {
-+		return (src_cnt > 8) && (dma->max_pq > 8) ?
-+			__ioat3_prep_pq16_lock(chan, NULL, dst, src, src_cnt,
-+					       scf, len, flags) :
-+			__ioat3_prep_pq_lock(chan, NULL, dst, src, src_cnt,
-+					     scf, len, flags);
-+	}
- }
- 
- struct dma_async_tx_descriptor *
-@@ -986,6 +1265,8 @@ ioat3_prep_pq_val(struct dma_chan *chan, dma_addr_t *pq, dma_addr_t *src,
- 		  unsigned int src_cnt, const unsigned char *scf, size_t len,
- 		  enum sum_check_flags *pqres, unsigned long flags)
- {
-+	struct dma_device *dma = chan->device;
-+
- 	/* specify valid address for disabled result */
- 	if (flags & DMA_PREP_PQ_DISABLE_P)
- 		pq[0] = pq[1];
-@@ -997,14 +1278,18 @@ ioat3_prep_pq_val(struct dma_chan *chan, dma_addr_t *pq, dma_addr_t *src,
- 	 */
- 	*pqres = 0;
- 
--	return __ioat3_prep_pq_lock(chan, pqres, pq, src, src_cnt, scf, len,
--				    flags);
-+	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+		__ioat3_prep_pq16_lock(chan, pqres, pq, src, src_cnt, scf, len,
-+				       flags) :
-+		__ioat3_prep_pq_lock(chan, pqres, pq, src, src_cnt, scf, len,
-+				     flags);
- }
- 
- static struct dma_async_tx_descriptor *
- ioat3_prep_pqxor(struct dma_chan *chan, dma_addr_t dst, dma_addr_t *src,
- 		 unsigned int src_cnt, size_t len, unsigned long flags)
- {
-+	struct dma_device *dma = chan->device;
- 	unsigned char scf[src_cnt];
- 	dma_addr_t pq[2];
- 
-@@ -1013,8 +1298,11 @@ ioat3_prep_pqxor(struct dma_chan *chan, dma_addr_t dst, dma_addr_t *src,
- 	flags |= DMA_PREP_PQ_DISABLE_Q;
- 	pq[1] = dst; /* specify valid address for disabled result */
- 
--	return __ioat3_prep_pq_lock(chan, NULL, pq, src, src_cnt, scf, len,
--				    flags);
-+	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+		__ioat3_prep_pq16_lock(chan, NULL, pq, src, src_cnt, scf, len,
-+				       flags) :
-+		__ioat3_prep_pq_lock(chan, NULL, pq, src, src_cnt, scf, len,
-+				     flags);
- }
- 
- struct dma_async_tx_descriptor *
-@@ -1022,6 +1310,7 @@ ioat3_prep_pqxor_val(struct dma_chan *chan, dma_addr_t *src,
- 		     unsigned int src_cnt, size_t len,
- 		     enum sum_check_flags *result, unsigned long flags)
- {
-+	struct dma_device *dma = chan->device;
- 	unsigned char scf[src_cnt];
- 	dma_addr_t pq[2];
- 
-@@ -1035,8 +1324,12 @@ ioat3_prep_pqxor_val(struct dma_chan *chan, dma_addr_t *src,
- 	flags |= DMA_PREP_PQ_DISABLE_Q;
- 	pq[1] = pq[0]; /* specify valid address for disabled result */
- 
--	return __ioat3_prep_pq_lock(chan, result, pq, &src[1], src_cnt - 1, scf,
--				    len, flags);
-+
-+	return (src_cnt > 8) && (dma->max_pq > 8) ?
-+		__ioat3_prep_pq16_lock(chan, result, pq, &src[1], src_cnt - 1,
-+				       scf, len, flags) :
-+		__ioat3_prep_pq_lock(chan, result, pq, &src[1], src_cnt - 1,
-+				     scf, len, flags);
- }
- 
- static struct dma_async_tx_descriptor *
-@@ -1533,11 +1826,17 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
- 
- 	if (cap & IOAT_CAP_PQ) {
- 		is_raid_device = true;
--		dma_set_maxpq(dma, 8, 0);
--		if (is_xeon_cb32(pdev))
--			dma->pq_align = 6;
--		else
-+
-+		if (cap & IOAT_CAP_RAID16SS) {
-+			dma_set_maxpq(dma, 16, 0);
- 			dma->pq_align = 0;
-+		} else {
-+			dma_set_maxpq(dma, 8, 0);
-+			if (is_xeon_cb32(pdev))
-+				dma->pq_align = 6;
-+			else
-+				dma->pq_align = 0;
-+		}
- 
- 		dma_cap_set(DMA_PQ, dma->cap_mask);
- 		dma->device_prep_dma_pq = ioat3_prep_pq;
-@@ -1546,11 +1845,16 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
- 		dma->device_prep_dma_pq_val = ioat3_prep_pq_val;
- 
- 		if (!(cap & IOAT_CAP_XOR)) {
--			dma->max_xor = 8;
--			if (is_xeon_cb32(pdev))
--				dma->xor_align = 6;
--			else
-+			if (cap & IOAT_CAP_RAID16SS) {
-+				dma->max_xor = 16;
- 				dma->xor_align = 0;
-+			} else {
-+				dma->max_xor = 8;
-+				if (is_xeon_cb32(pdev))
-+					dma->xor_align = 6;
-+				else
-+					dma->xor_align = 0;
-+			}
- 
- 			dma_cap_set(DMA_XOR, dma->cap_mask);
- 			dma->device_prep_dma_xor = ioat3_prep_pqxor;
-@@ -1578,6 +1882,30 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
- 		dma->device_prep_dma_pq_val = NULL;
- 	}
- 
-+	/* starting with CB3.3 super extended descriptors are supported */
-+	if (cap & IOAT_CAP_RAID16SS) {
-+		char pool_name[14];
-+		int i;
-+
-+		/* allocate sw descriptor pool for SED */
-+		device->sed_pool = kmem_cache_create("ioat_sed",
-+				sizeof(struct ioat_sed_ent), 0, 0, NULL);
-+		if (!device->sed_pool)
-+			return -ENOMEM;
-+
-+		for (i = 0; i < MAX_SED_POOLS; i++) {
-+			snprintf(pool_name, 14, "ioat_hw%d_sed", i);
-+
-+			/* allocate SED DMA pool */
-+			device->sed_hw_pool[i] = dma_pool_create(pool_name,
-+					&pdev->dev,
-+					SED_SIZE * (i + 1), 64, 0);
-+			if (!device->sed_hw_pool[i])
-+				goto sed_pool_cleanup;
-+
-+		}
-+	}
-+
- 	err = ioat_probe(device);
- 	if (err)
- 		return err;
-@@ -1599,4 +1927,28 @@ int ioat3_dma_probe(struct ioatdma_device *device, int dca)
- 		device->dca = ioat3_dca_init(pdev, device->reg_base);
- 
- 	return 0;
-+
-+sed_pool_cleanup:
-+	if (device->sed_pool) {
-+		int i;
-+		kmem_cache_destroy(device->sed_pool);
-+
-+		for (i = 0; i < MAX_SED_POOLS; i++)
-+			if (device->sed_hw_pool[i])
-+				dma_pool_destroy(device->sed_hw_pool[i]);
-+	}
-+
-+	return -ENOMEM;
-+}
-+
-+void ioat3_dma_remove(struct ioatdma_device *device)
-+{
-+	if (device->sed_pool) {
-+		int i;
-+		kmem_cache_destroy(device->sed_pool);
-+
-+		for (i = 0; i < MAX_SED_POOLS; i++)
-+			if (device->sed_hw_pool[i])
-+				dma_pool_destroy(device->sed_hw_pool[i]);
-+	}
- }
-diff --git a/drivers/dma/ioat/hw.h b/drivers/dma/ioat/hw.h
-index ce431f5..d10570d 100644
---- a/drivers/dma/ioat/hw.h
-+++ b/drivers/dma/ioat/hw.h
-@@ -183,6 +183,8 @@ struct ioat_pq_descriptor {
- 			unsigned int rsvd:11;
- 			#define IOAT_OP_PQ 0x89
- 			#define IOAT_OP_PQ_VAL 0x8a
-+			#define IOAT_OP_PQ_16S 0xa0
-+			#define IOAT_OP_PQ_VAL_16S 0xa1
- 			unsigned int op:8;
- 		} ctl_f;
- 	};
-@@ -190,7 +192,10 @@ struct ioat_pq_descriptor {
- 	uint64_t	p_addr;
- 	uint64_t	next;
- 	uint64_t	src_addr2;
--	uint64_t	src_addr3;
-+	union {
-+		uint64_t	src_addr3;
-+		uint64_t	sed_addr;
-+	};
- 	uint8_t		coef[8];
- 	uint64_t	q_addr;
- };
-@@ -239,4 +244,40 @@ struct ioat_pq_update_descriptor {
- struct ioat_raw_descriptor {
- 	uint64_t	field[8];
- };
-+
-+struct ioat_pq16a_descriptor {
-+	uint8_t coef[8];
-+	uint64_t src_addr3;
-+	uint64_t src_addr4;
-+	uint64_t src_addr5;
-+	uint64_t src_addr6;
-+	uint64_t src_addr7;
-+	uint64_t src_addr8;
-+	uint64_t src_addr9;
-+};
-+
-+struct ioat_pq16b_descriptor {
-+	uint64_t src_addr10;
-+	uint64_t src_addr11;
-+	uint64_t src_addr12;
-+	uint64_t src_addr13;
-+	uint64_t src_addr14;
-+	uint64_t src_addr15;
-+	uint64_t src_addr16;
-+	uint64_t rsvd;
-+};
-+
-+union ioat_sed_pq_descriptor {
-+	struct ioat_pq16a_descriptor a;
-+	struct ioat_pq16b_descriptor b;
-+};
-+
-+#define SED_SIZE	64
-+
-+struct ioat_sed_raw_descriptor {
-+	uint64_t	a[8];
-+	uint64_t	b[8];
-+	uint64_t	c[8];
-+};
-+
- #endif
-diff --git a/drivers/dma/ioat/pci.c b/drivers/dma/ioat/pci.c
-index 1f63296..2c8d560 100644
---- a/drivers/dma/ioat/pci.c
-+++ b/drivers/dma/ioat/pci.c
-@@ -207,6 +207,9 @@ static void ioat_remove(struct pci_dev *pdev)
- 	if (!device)
- 		return;
- 
-+	if (device->version >= IOAT_VER_3_0)
-+		ioat3_dma_remove(device);
-+
- 	dev_err(&pdev->dev, "Removing dma and dca services\n");
- 	if (device->dca) {
- 		unregister_dca_provider(device->dca, &pdev->dev);
-diff --git a/drivers/dma/ioat/registers.h b/drivers/dma/ioat/registers.h
-index c1ad194..efdd47e 100644
---- a/drivers/dma/ioat/registers.h
-+++ b/drivers/dma/ioat/registers.h
-@@ -79,6 +79,7 @@
- #define IOAT_CAP_APIC				0x00000080
- #define IOAT_CAP_XOR				0x00000100
- #define IOAT_CAP_PQ				0x00000200
-+#define IOAT_CAP_RAID16SS			0x00020000
- 
- #define IOAT_CHANNEL_MMIO_SIZE			0x80	/* Each Channel MMIO space is this size */
- 
-
+Nate
