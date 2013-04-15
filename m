@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964858Ab3DOVZm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 17:25:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:32813 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964783Ab3DOVZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 17:25:41 -0400
-Message-ID: <516C702C.2030209@zytor.com>
-Date: Mon, 15 Apr 2013 14:25:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1756079Ab3DOVd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 17:33:56 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:17716 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab3DOVdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 17:33:38 -0400
+X-IronPort-AV: E=Sophos;i="4.87,479,1363158000"; 
+   d="scan'208";a="38538874"
+Message-ID: <516C7231.6060305@codeaurora.org>
+Date: Mon, 15 Apr 2013 14:33:37 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Eric Northup <digitaleric@google.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Kees Cook <keescook@chromium.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
-References: <1365797627-20874-1-git-send-email-keescook@chromium.org> <1365797627-20874-7-git-send-email-keescook@chromium.org> <CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com> <516A1D49.1050100@zytor.com> <CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
-In-Reply-To: <CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
+To: Rob Herring <robherring2@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 1/4] Documentation: Add memory mapped ARM architected
+ timer binding
+References: <1365812863-5367-1-git-send-email-sboyd@codeaurora.org> <1365812863-5367-2-git-send-email-sboyd@codeaurora.org> <516C6F12.5020208@gmail.com>
+In-Reply-To: <516C6F12.5020208@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 02:06 PM, Eric Northup wrote:
-> On Sat, Apr 13, 2013 at 8:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 04/13/2013 05:37 PM, Yinghai Lu wrote:
->>>
->>> so decompress code position is changed?
->>>
->>> You may push out bss and other data area of run-time kernel of limit
->>> that boot loader
->>> chose according to setup_header.init_size.
->>> aka that make those area overlap with ram hole or other area like
->>> boot command line or initrd....
->>>
->>
->> Is there a strong reason to randomize the physical address on 64 bits
->> (and if so, shouldn't we do it right?)
-> 
-> The reason to randomize the physical address is because of the kernel
-> direct mapping range -- a predictable-to-attackers physical address
-> implies a predictable-to-attackers virtual address.
-> 
-> It had seemed to me like changing the virtual base of the direct
-> mapping would be much more involved than physically relocating the
-> kernel, but better suggestions would be most welcome :-)
-> 
+On 04/15/13 14:20, Rob Herring wrote:
+> On Fri, Apr 12, 2013 at 7:27 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+>> @@ -26,3 +30,52 @@ Example:
+>>                              <1 10 0xf08>;
+>>                 clock-frequency = <100000000>;
+>>         };
+>> +
+>> +** Memory mapped timer node properties
+>> +
+>> +- compatible : Should at least contain "arm,armv7-timer-mem".
+> Everything about this timer is architecturally defined? If not, let's
+> use a more specific name.
 
-You seem to be missing something here...
+I'm not sure I'm following you, but everything described here is part of
+the ARM definition. What would be a more specific name?
 
-There are *two* mappings in 64-bit mode.  Physically, if you're going to
-randomize you might as well randomize over the entire range... except
-not too far down (on either 32 or 64 bit mode)... in particular, you
-don't want to drop below 16 MiB if you can avoid it.
+>
+>> +
+>> +- clock-frequency : The frequency of the main counter, in Hz. Optional.
+>> +
+>> +- reg : The control frame base address.
+>> +
+>> +Note that #address-cells, #size-cells, and ranges shall be present to ensure
+>> +the CPU can address a frame's registers.
+>> +
+>> +Frame:
+>> +
+>> +- frame-number: 0 to 7.
+> I'd really like to get rid of the frame numbers and sub-nodes. Is the
+> frame number significant to software?
 
-On 64 bits, there is no reason the virtual address has to be randomized
-the same way.
+We need the frame number to read and write registers in the control
+frame (the first base in the parent node). We currently use it to
+determine if a frame has support for the virtual timer by reading the
+CNTTIDR (a register with 4 bits per frame describing capabilities). If
+we wanted to control access to the second view of a frame we would also
+need to configure the CNTPL0ACRn register that pertains to the frame
+we're controlling. Without a frame number we wouldn't know which
+register to write.
 
-	-hpa
+>
+>> +- interrupts : Interrupt list for physical and virtual timers in that order.
+>> +  The virtual timer interrupt is optional.
+> Is that optional per frame?
 
+Yes the virtual and physical timer interrupt is per-frame and the
+virtual interrupt is optional.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
