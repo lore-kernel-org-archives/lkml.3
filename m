@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056Ab3DOOI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 10:08:27 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:63384 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab3DOOI0 (ORCPT
+	id S1752347Ab3DOOKY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 10:10:24 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:52619 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab3DOOKX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 10:08:26 -0400
+	Mon, 15 Apr 2013 10:10:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <87r4ibdh8f.fsf@linaro.org>
-References: <1363822467-6275-1-git-send-email-khilman@linaro.org>
-	<1363822467-6275-2-git-send-email-khilman@linaro.org>
-	<20130411171047.GB17129@somewhere.redhat.com>
-	<87r4ibdh8f.fsf@linaro.org>
-Date: Mon, 15 Apr 2013 16:08:24 +0200
-Message-ID: <CAFTL4hwroTC6HN7WvDRpn=6y-JkX4GeFzS1nro0w3L1CGNMrnA@mail.gmail.com>
-Subject: Re: [PATCH 1/3] cputime_nsecs: use math64.h for nsec resolution
- conversion helpers
+In-Reply-To: <CA+xJJ1-UPPrkRLuiFcQN6JotG+1G9WS1LftKk67x-AiZuDBf3Q@mail.gmail.com>
+References: <CA+xJJ1-UPPrkRLuiFcQN6JotG+1G9WS1LftKk67x-AiZuDBf3Q@mail.gmail.com>
+Date: Mon, 15 Apr 2013 16:10:21 +0200
+Message-ID: <CAFTL4hxNw9EJJ3ZvjYR55b6ZF2YQxMA2q80E+obkU21v6QfEow@mail.gmail.com>
+Subject: Re: Trouble with full nohz and lttng
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org
+To: Mats Liljegren <mats.liljegren@enea.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/15 Kevin Hilman <khilman@linaro.org>:
-> Frederic Weisbecker <fweisbec@gmail.com> writes:
+2013/4/15 Mats Liljegren <mats.liljegren@enea.com>:
+> When I use lttng, I keep getting ticks. Without lttng, no ticks. It's the
+> same application I run, the same way. The only difference is whether lttng
+> logging has been started or not.
 >
->> On Wed, Mar 20, 2013 at 04:34:25PM -0700, Kevin Hilman wrote:
->>> For the nsec resolution conversions to be useable on non 64-bit
->>> architectures, the helpers in <linux/math64.h> need to be used so the
->>> right arch-specific 64-bit math helpers can be used (e.g. do_div())
->>>
->>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->>> Signed-off-by: Kevin Hilman <khilman@linaro.org>
->>
->> Ok the patch is nice!
->>
->> I'm queuing it.
+> The trace says "sched" as reason for not disabled ticks. Using "top" I can't
+> see any extra process/thread being created while my application runs, my
+> application gets 99-101% of the CPU. There are a couple of kworker threads
+> (3), a migration thread and a ksoftirq thread on the same CPU as my
+> application, though "top" gives no indication that they do any execution.
 >
-> Thanks, did you queue PATCH 3/3 also to remove the 64-bit limitation
-> from VIRT_CPU_ACCOUNTING_GEN:  https://lkml.org/lkml/2013/3/20/656
+> Is this a known limitation of lttng, or is there something else going on
+> here?
 
-Not yet, for this one I need to deeply check we haven't forgotten
-anything concerning cputime_t operations in 32 bits archs.
+I have no idea. But the "sched" reason means there is more than one
+task in the runqueue at some point. It can be a kthread indeed. Or a
+user task that gets migrated / woken up in the CPU.
+
+You'll need to check the sched:sched_switch tracepoint.
