@@ -1,127 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935070Ab3DOGFT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 02:05:19 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57216 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932162Ab3DOGFO (ORCPT
+	id S1751458Ab3DOGMA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 02:12:00 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:53143 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751067Ab3DOGL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 02:05:14 -0400
-Date: Mon, 15 Apr 2013 08:04:44 +0200
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        arm@kernel.org, linux-omap <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Latest randconfig build errors
-Message-ID: <20130415060444.GA7746@avionic-0098.mockup.avionic-design.de>
-References: <20130304095136.GI17833@n2100.arm.linux.org.uk>
- <20130304184649.GO11806@atomide.com>
- <CAF6AEGv=3453KKS9-8YAgHrxMMbNvLMvt0pz-=qdG+zcd-Trrw@mail.gmail.com>
- <20130413214539.GA32613@avionic-0098.mockup.avionic-design.de>
- <CAF6AEGtbqT23bjniwmGP-PhcxRPk5Q9aDaWM-=vVgkVrvDbCaQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZPt4rx8FFjLCG7dd"
-Content-Disposition: inline
-In-Reply-To: <CAF6AEGtbqT23bjniwmGP-PhcxRPk5Q9aDaWM-=vVgkVrvDbCaQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:5JwGHkLHlCUYHTQTxIhBNiQXTbsJrD/i6GwO/i8jAhH
- vaj5K5dRHrN99vTAeESoZymDlYOAWNC7+M2h+CNn6pfzOogH9m
- jevyvt7K+RA0fg7HDGqRqb2FweAwwq8RD6vnh88OkQidt5Tieh
- f11xG+QvLjasF/Q0YUVUF+CSRCMWhUhaFJJjJtv1rZ6Zl9R+Lk
- 1fZkXGicpYmWMvr0uRRb8Tc7KZYyfl6jm/CWUEnXHORaxgGlyM
- dV2gMPE5jOTPEncELHzOaP+eHO6zCUk+nz1lcLwYaeuIY4yADR
- rdfteOgJyNyrGXXnYzmKz0u2s1wT+BtVqWYXlyPJ9aGdzf5wse
- 45LBWst4tV/QP6XGhj23T3Lgtof+MY43QvdkYLg4pbMKmfghSH
- w3GbI5FFjzpMBr6zPlAg10gd9Euq5jsf5omU3HCMBW0QkW3Wsj
- e7teX
+	Mon, 15 Apr 2013 02:11:59 -0400
+Message-ID: <1366006312.29519.67.camel@Wailaba2>
+Subject: Re: [PATCH] process cputimer is moving faster than its
+ corresponding clock
+From: Olivier Langlois <olivier@trillion01.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, tglx@linutronix.de, fweisbec@gmail.com,
+        schwidefsky@de.ibm.com, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 15 Apr 2013 02:11:52 -0400
+In-Reply-To: <1365782115.17140.68.camel@laptop>
+References: <1365184746.874.103.camel@Wailaba2>
+	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
+	 <1365763837.17140.52.camel@laptop> <1365782115.17140.68.camel@laptop>
+Organization: Trillion01 Inc
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ZPt4rx8FFjLCG7dd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2013-04-12 at 17:55 +0200, Peter Zijlstra wrote:
+> On Fri, 2013-04-12 at 12:50 +0200, Peter Zijlstra wrote:
+> 
+> > I'll try and dig through the rest of your email later.. sorry for
+> > being
+> > a tad slow etc.
+> 
+> 
+> So at thread_group_cputimer() we initialize the cputimer->cputime state
+> by using thread_group_cputime() which iterates all tasks of the process
+> and calls task_sched_runtime() upon them (which includes the current
+> delta).
+> 
+> Upon subsequent account_group_exec_runtime() calls (from all schedule
+> events and timer ticks) we add the current delta to cputimer->cputime.
+> 
+> However since we already added the first (or part thereof) delta to the
+> initial state, we account this double. Thus we can be up to
+> NR_CPUS*TICK_NSEC ahead.
 
-On Sun, Apr 14, 2013 at 12:29:46AM -0400, Rob Clark wrote:
-> On Sat, Apr 13, 2013 at 5:45 PM, Thierry Reding
-[...]
-> > I had been thinking about this on and off for a while, but I haven't
-> > come up with anything concrete. Ideally we could just have some kind of
-> > event that userspace would listen for, so that new outputs can be
-> > dynamically added and userspace informed about them. Last time I checked
-> > most of the helpers assumed that the complete output configuration is
-> > known when the DRM device is registered, so some major rework will be
-> > required to efficiently make use of such dynamicity.
->=20
-> I'm less worried about the kernel re-work.. more worried about the
-> fact that we have no way to know whether userspace knows to listen for
-> this new event.  So anything down this path could, I think, be
-> considered as breaking userspace.
+Peter, I am thrilled to see that we are starting to understand each
+other. So far, that is what I am saying!
 
-Yes, that's probably true. Although the typical use-case would be that
-the application would run on any of the detected outputs and if there is
-none to begin with it will just fail. If there already is one, it will
-try to use that instead and only fail to use a second one if it becomes
-available.
+There is one missing key concept to understand the issue. The initial
+value of the cputimer is not really that important (at least for
+relative timers). What is really important it is the pace that it will
+move. The thread group deltas represent the minimum size of the step
+that the cputimer will be incremented at any moment from now.
 
-> I think in the end, we need some way to have sort of "dummy"
-> connectors for output drivers which might or might not be probed, so
-> that from userspace perspective, non-present panels appear as displays
-> that are not plugged in.
+The timer expiration time computed must include the deltas or else it
+will be fire ahead of its time. This will hold true for any initial
+value given to the cputimer.
 
-I can imagine that quite a few userspace programs will be broken by this
-as well. For instance if you have an LVDS panel, I'm pretty sure people
-will just assume that it can't be in a disconnected state and therefore
-won't deal with that case.
+With that said, maybe this code snippet from my patch explaining the race
+condition effect choosen by the statement order makes more sense:
 
-=46rom a driver's point of view this isn't all that different from the
-case you're trying to solve now. You still need to find out which
-outputs can eventually become available. But instead of waiting until
-they do before registering the DRM device you'd have to create dummy
-outputs and keep checking whether the device is actually there each time
-somebody interacts with the output.
++	} else {
++		/*
++		 * Ideally, you would expect to get:
++		 *
++		 * 1. delta = x, times->sum_exec_runtime = y or
++		 * 2. delta = 0, times->sum_exec_runtime = y+x
++		 *
++		 * but because of the race condition between this function and
++		 * update_curr(), it is possible to get:
++		 *
++		 * 3. delta = 0, times->sum_exec_runtime = y by fetching the
++		 *    cputimer before delta or
++		 * 4. delta = x, times->sum_exec_runtime = y+x by inverting the
++		 *    sequence.
++		 *
++		 * Situation #3 is to be avoided or else it will make a timer being
++		 * fired sooner than requested.
++		 *
++		 * Calling group_delta_exec() is required to guaranty accurate result
++		 */
++		if (delta && *delta == CPUTIMER_NEED_DELTA)
++			*delta = group_delta_exec(tsk);
 
-But maybe this case is different. For Tegra the problem is that some
-outputs (such as HDMI) require other drivers to be loaded first because
-they provide resources (regulators, GPIOs, ...) that the output drivers
-require. All of the drivers use deferred probing to resolve this
-dependency and we can be reasonably sure that eventually probing of the
-output will succeed (and therefore the output will become available).
-Postponing the DRM registration until that point doesn't hurt. From what
-I understand your use-case is similar. You need to load drivers for
-different panels based on a runtime decision. So the only thing you need
-is to be able to postpone the DRM registration until the panel driver
-has been loaded, right?
 
-Thierry
+Setting the initial value of the cputimer to thread_group_cputime()
+minus deltas just ensure that its value will be exactly equal to the
+corresponding process clock which is nice for absolute timers.
 
---ZPt4rx8FFjLCG7dd
-Content-Type: application/pgp-signature
+> 
+> On every timer tick we evaluate the cputimer state using
+> cpu_timer_sample_group() which adds the current tasks delta. This can
+> thus be up to (NR_CPUS-1)*TICK_NSEC behind.
+> 
+> The combination of the timeline behind ahead and the sample being
+> behind make it a virtual guarantee we'll hit early by almost
+> 2*NR_CPUS*TICK_NSEC.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+The second part is not quite what I have been saying.
 
-iQIcBAEBAgAGBQJRa5h8AAoJEN0jrNd/PrOhVOMQAKcUGnsir9C6fpvrbof72Cn9
-azTQPTdBCszIDNqqvxkG9tnPX/6RX8gjufZfgfza51J+vSG1qiuhoKswq4mk5cry
-JgG8szHHyv7apoGsjyRApEkYjbi+5npVFEaVEuFTp218x1NG0uJFtMFqAAj/jaUo
-Yp7nb99YE2icPjVEkuZmJjwnQa+ReO+l+cRxVRseA3SIqXp5zhfvETsER/ev4d7E
-cMxvFhboewxAoPMjEYJYwZe8tNAiqZI+ojXE9M18DiBlHw6Ciqacy1SfvtdGfh6h
-kkc2li0qMAGAC08JjyTl9yqS/yA9N5gkPmkGOG5yP8Ms9H4lKMb8slGdGFSWqvMs
-+m85nDYLPDXjJgtQw2DeirGdSzVfaZ9tbJ1sKHN6KHQvzGP5iP0JreBS7mDE5WGr
-P02bKuZFThaNpP/w+tO1s6TARNPurc+KkdSpn+WmTiGvakrr0BiLj7ZBd50ANPP6
-jOU9vuRtCOXeHxmqrYIq/7cmil6AllcpzpkkyqHeXLNNO870Bh0gWpbgDLhUEvKs
-pctrsc/F75Z8up3+KErtzmeyr0sjqjZyC3Vvw0kTfW2T5pxKrqoP2dJDPrzRUn2S
-zN1vrbWXvURMe1DyXTKVN5cGqndV2WpDpFHmDOOZugYWGSZlCZgThlmf+5AGjzCl
-QcHNHhvSmfd068+xYXrV
-=VoP6
------END PGP SIGNATURE-----
+On every timer tick in the function check_process_timers() raw cputimer
+is evaluated and this looks fine to me find as it is staying on the
+conservative side.
 
---ZPt4rx8FFjLCG7dd--
+Please provide a quote from my e-mails that have led you to this
+understanding. I will try to rectify it.
+> 
+> This is what you've been saying right?
+> 
+> 
+> So how about we do not include the deltas into the initial sum, so that
+> we're up to NR_CPUS*TICK_NSEC behind. That way, with the sample up to
+> (NR_CPUS-1)*TICK_NSEC behind, we're in the order of TICK_NSEC late with
+> firing.
+> 
+> Hmm?
+
+For the reasons listed above, I think that with these proposed changes a
+timer could still fire too early. However, this is making the cputimer less
+far ahead to its corresponding process clock.
+
+How about if you let me rework my original patch?
+
+Stopping/restarting the cputimer is important for performance.
+What else is important to you?
+Some new function names to rework?
+I could get rid completely of the new function group_delta_exec() and use
+thread_group_cputime_nodelta().
+
+The other thing that makes the cputimer moving faster than the process clock,
+it is the last call to update_curr() from the last context switch performed
+after the call to release_task() for autoreaped tasks.
+
+Nobody commented on that so I am assuming that everyone understand that one. Is
+this correct?
+
+I am not totally satisfied with the solution that I am proposing in sched/fair.c
+I was hoping for improvement suggestions on that one.
+
+Greetings,
+Olivier
+
+
+
