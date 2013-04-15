@@ -1,83 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab3DONG6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 09:06:58 -0400
-Received: from david.siemens.de ([192.35.17.14]:20453 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533Ab3DONG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 09:06:57 -0400
-Message-ID: <516BFB6C.2000303@siemens.com>
-Date: Mon, 15 Apr 2013 15:06:52 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Paolo Bonzini <pbonzini@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gnatapov@redhat.com" <gnatapov@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2] kvm: nVMX: check vmcs12 for valid activity state
-References: <1366030827-5662-1-git-send-email-pbonzini@redhat.com>
-In-Reply-To: <1366030827-5662-1-git-send-email-pbonzini@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753114Ab3DONIv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 09:08:51 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:48837 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752889Ab3DONIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 09:08:48 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] Doc: dt: i2c: tegra: add dt binding for i2c-tegra
+To: Laxman Dewangan <ldewangan@nvidia.com>, swarren@wwwdotorg.org,
+        rob@landley.net, rob.herring@calxeda.com
+Cc: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Laxman Dewangan <ldewangan@nvidia.com>
+In-Reply-To: <1363599350-25187-1-git-send-email-ldewangan@nvidia.com>
+References: <1363599350-25187-1-git-send-email-ldewangan@nvidia.com>
+Date: Mon, 15 Apr 2013 14:08:44 +0100
+Message-Id: <20130415130844.C26CE3E0AA8@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-04-15 15:00, Paolo Bonzini wrote:
-> KVM does not use the activity state VMCS field, and does not support
-> it in nested VMX either (the corresponding bits in the misc VMX feature
-> MSR are zero).  Fail entry if the activity state is set to anything but
-> "active".
+On Mon, 18 Mar 2013 15:05:50 +0530, Laxman Dewangan <ldewangan@nvidia.com> wrote:
+> Add documentation for device tree binding of NVIDIA's Tegra i2c
+> controller driver.
 > 
-> Since the value will always be the same for L1 and L2, we do not need
-> to read and write the corresponding VMCS field on L1/L2 transitions,
-> either.
+> Describing all compatible values used for diffenent Tegra SoCs
+> in details in this documentation.
 > 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
-> 	v1->v2: remove read/write of vmcs12->guest_activity_state,
-> 	use GUEST_ACTIVITY_ACTIVE.
-> 
->  arch/x86/kvm/vmx.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index c75c25d..c252adf 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -7004,7 +7004,6 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
->  		vmcs12->vm_entry_instruction_len);
->  	vmcs_write32(GUEST_INTERRUPTIBILITY_INFO,
->  		vmcs12->guest_interruptibility_info);
-> -	vmcs_write32(GUEST_ACTIVITY_STATE, vmcs12->guest_activity_state);
->  	vmcs_write32(GUEST_SYSENTER_CS, vmcs12->guest_sysenter_cs);
->  	kvm_set_dr(vcpu, 7, vmcs12->guest_dr7);
->  	vmcs_writel(GUEST_RFLAGS, vmcs12->guest_rflags);
-> @@ -7223,6 +7222,11 @@ static int nested_vmx_run(struct kvm_vcpu *vcpu, bool launch)
->  		return 1;
->  	}
->  
-> +	if (vmcs12->guest_activity_state != GUEST_ACTIVITY_ACTIVE) {
-> +		nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
-> +		return 1;
-> +	}
-> +
->  	if ((vmcs12->cpu_based_vm_exec_control & CPU_BASED_USE_MSR_BITMAPS) &&
->  			!IS_ALIGNED(vmcs12->msr_bitmap, PAGE_SIZE)) {
->  		/*TODO: Also verify bits beyond physical address width are 0*/
-> @@ -7411,7 +7415,6 @@ static void prepare_vmcs12(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
->  	vmcs12->guest_gdtr_base = vmcs_readl(GUEST_GDTR_BASE);
->  	vmcs12->guest_idtr_base = vmcs_readl(GUEST_IDTR_BASE);
->  
-> -	vmcs12->guest_activity_state = vmcs_read32(GUEST_ACTIVITY_STATE);
->  	vmcs12->guest_interruptibility_info =
->  		vmcs_read32(GUEST_INTERRUPTIBILITY_INFO);
->  	vmcs12->guest_pending_dbg_exceptions =
-> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Looks fine by me
+
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+Should be merged with the driver series.
+
+g.
+
+> ---
+>  .../devicetree/bindings/i2c/nvidia,tegra20-i2c.txt |   99 ++++++++++++++++++++
+>  1 files changed, 99 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt b/Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt
+> new file mode 100644
+> index 0000000..e390ce8
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/i2c/nvidia,tegra20-i2c.txt
+> @@ -0,0 +1,99 @@
+> +NVIDIA Tegra20/Tegra30/Tegra114 I2C controller driver.
+> +
+> +Required properties:
+> +- compatible : should be:
+> +	"nvidia,tegra114-i2c"
+> +	"nvidia,tegra30-i2c"
+> +	"nvidia,tegra20-i2c"
+> +	"nvidia,tegra20-i2c-dvc"
+> +
+> + Details of compatible are as follows:
+> +  nvidia,tegra20-i2c-dvc: Tegra20 has specific i2c controller called as DVC I2C
+> +	controller. This only support master mode of I2C communication. Register
+> +	interface/offset and interrupts handling are different than generic I2C
+> +	controller. Driver of DVC I2C controller is only compatible with
+> +	"nvidia,tegra20-i2c-dvc".
+> +  nvidia,tegra20-i2c: Tegra20 has 4 generic I2C controller. This can support
+> +	master and slave mode of I2C communication. The i2c-tegra driver only
+> +	support master mode of I2C communication. Driver of I2C controller is
+> +	only compatible with "nvidia,tegra20-i2c".
+> +  nvidia,tegra30-i2c: Tegra30 has 5 generic I2C controller. This controller is
+> +	very much similar to Tegra20 I2C controller with additional feature:
+> +	Continue Transfer Support. This feature helps to implement M_NO_START
+> +	as per I2C core API transfer flags. Driver of I2C controller is
+> +	compatible with "nvidia,tegra30-i2c" to enable the continue transfer
+> +	support. This is also compatible with "nvidia,tegra20-i2c" without
+> +	continue transfer support.
+> +  nvidia,tegra114-i2c: Tegra114 has 5 generic I2C controller. This controller is
+> +	very much similar to Tegra30 I2C controller with some hardware
+> +	modification:
+> +	 - Tegra30/Tegra20 I2C controller has 2 clock source called div-clk and
+> +	   fast-clk. Tegra114 has only one clock source called as div-clk and
+> +	   hence clock mechanism is changed in I2C controller.
+> +	 - Tegra30/Tegra20 I2C controller has enabled per packet transfer by
+> +	   default and there is no way to disable it. Tegra114 has this
+> +	   interrupt disable by default and SW need to enable explicitly.
+> +	Due to above changes, Tegra114 I2C driver makes incompatible with
+> +	previous hardware driver. Hence, tegra114 I2C controller is compatible
+> +	with "nvidia,tegra114-i2c".
+> +
+> +
+> +- reg: Should contain I2C controller registers physical address and length.
+> +- interrupts: Should contain I2C controller interrupts.
+> +- address-cells: Address cells for I2C device address.
+> +- size-cells: Size of the I2C device address.
+> +- clocks: Clock Id as per
+> +		Documentation/devicetree/bindings/clock/tegra<chip-id>.txt
+> +	for I2C controller.
+> +- clock-names: Name of the clock:
+> +	Tegra20/Tegra30 I2C controller: "div-clk and "fast-clk".
+> +	Tegra114 I2C controller: "div-clk".
+> +
+> +
+> +Typical i2c node for Tegra20:
+> +	i2c@7000c000 {
+> +		compatible = "nvidia,tegra20-i2c";
+> +		reg = <0x7000c000 0x100>;
+> +		interrupts = <0 38 0x04>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		clocks = <&tegra_car 12>, <&tegra_car 124>;
+> +		clock-names = "div-clk", "fast-clk";
+> +		status = "disabled";
+> +	};
+> +
+> +Typical dvc-i2c node for Tegra20:
+> +	i2c@7000d000 {
+> +		compatible = "nvidia,tegra20-i2c-dvc";
+> +		reg = <0x7000d000 0x200>;
+> +		interrupts = <0 53 0x04>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		clocks = <&tegra_car 47>, <&tegra_car 124>;
+> +		clock-names = "div-clk", "fast-clk";
+> +		status = "disabled";
+> +	};
+> +
+> +Typical i2c node for Tegra30:
+> +	i2c@7000c000 {
+> +		compatible =  "nvidia,tegra30-i2c", "nvidia,tegra20-i2c";
+> +		reg = <0x7000c000 0x100>;
+> +		interrupts = <0 38 0x04>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		clocks = <&tegra_car 12>, <&tegra_car 182>;
+> +		clock-names = "div-clk", "fast-clk";
+> +		status = "disabled";
+> +	};
+> +
+> +Typical i2c node for Tegra114:
+> +	i2c@7000c000 {
+> +		compatible = "nvidia,tegra114-i2c";
+> +		reg = <0x7000c000 0x100>;
+> +		interrupts = <0 38 0x04>;
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +		status = "disabled";
+> +		clocks = <&tegra_car 12>;
+> +		clock-names = "div-clk";
+> +	};
+> -- 
+> 1.7.1.1
+> 
 
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SDP-DE
-Corporate Competence Center Embedded Linux
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
