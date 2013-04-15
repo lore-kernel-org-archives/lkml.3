@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab3DOLna (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 07:43:30 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:54698 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751471Ab3DOLn2 (ORCPT
+	id S1752265Ab3DOLnk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 07:43:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56252 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab3DOLni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 07:43:28 -0400
-Date: Mon, 15 Apr 2013 12:43:07 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Will Deacon <Will.Deacon@arm.com>
-Cc: "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arm64: Fix task tracing
-Message-ID: <20130415114307.GC29528@arm.com>
-References: <20130408153132.GQ17476@mudshark.cambridge.arm.com>
- <1365510814-21343-1-git-send-email-cov@codeaurora.org>
- <20130415101159.GA25095@localhost.cambridge.arm.com>
- <20130415104542.GE9827@mudshark.cambridge.arm.com>
- <20130415105840.GB29528@arm.com>
+	Mon, 15 Apr 2013 07:43:38 -0400
+Date: Mon, 15 Apr 2013 04:42:37 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-bec1b9e76353ecf05fac6a87f8e4102dfb618cd2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        david.daney@cavium.com, tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        david.daney@cavium.com, tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1366023109-12098-1-git-send-email-bp@alien8.de>
+References: <1366023109-12098-1-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/asm] extable: Flip the sorting message
+Git-Commit-ID: bec1b9e76353ecf05fac6a87f8e4102dfb618cd2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130415105840.GB29528@arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Mon, 15 Apr 2013 04:42:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 11:58:40AM +0100, Catalin Marinas wrote:
-> On Mon, Apr 15, 2013 at 11:45:42AM +0100, Will Deacon wrote:
-> > On Mon, Apr 15, 2013 at 11:11:59AM +0100, Catalin Marinas wrote:
-> > > On Tue, Apr 09, 2013 at 01:33:34PM +0100, Christopher Covington wrote:
-> > > > For accurate accounting pass contextidr_thread_switch the prev
-> > > > task pointer, since cpu_switch_to has at that point changed the
-> > > > the stack pointer.
-> > > > 
-> > > > Signed-off-by: Christopher Covington <cov@codeaurora.org>
-> > > > ---
-> > > >  arch/arm64/kernel/process.c | 2 +-
-> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > > 
-> > > > diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-> > > > index 0337cdb..a49b25a 100644
-> > > > --- a/arch/arm64/kernel/process.c
-> > > > +++ b/arch/arm64/kernel/process.c
-> > > > @@ -315,7 +315,7 @@ struct task_struct *__switch_to(struct task_struct *prev,
-> > > >  	/* the actual thread switch */
-> > > >  	last = cpu_switch_to(prev, next);
-> > > >  
-> > > > -	contextidr_thread_switch(next);
-> > > > +	contextidr_thread_switch(prev);
-> > > 
-> > > The original code was indeed wrong but using prev isn't any better. For
-> > > a newly created thread, prev is probably 0 (if it's in a register,
-> > > cpu_context has been zeroed by copy_thread()) or some random stack
-> > > value.
-> > 
-> > Really? If prev is NULL in context_switch(...), the scheduler will implode,
-> > and I can't see where else switch_to is called from.
-> > 
-> > Which code path are you thinking of?
-> 
-> copy_thread() zeros cpu_context which is used by cpu_switch_to() to load
-> the next saved registers. The switch_to() function sets prev to last as
-> returned by __switch_to(), so this is valid but in __switch_to() we
-> don't have a valid prev (nor next) after cpu_switch_to() for newly
-> created threads.
+Commit-ID:  bec1b9e76353ecf05fac6a87f8e4102dfb618cd2
+Gitweb:     http://git.kernel.org/tip/bec1b9e76353ecf05fac6a87f8e4102dfb618cd2
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Mon, 15 Apr 2013 12:51:49 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Mon, 15 Apr 2013 13:25:16 +0200
 
-Correction - newly created threads return to ret_from_fork rather than
-__switch_to(), which means that we miss the first
-contextidr_thread_switch() call for a new thread. I would vote for
-Christopher's original patch moving the call before cpu_switch_to(). The
-alternative is to define finish_arch_switch() and add the call there. If
-you are primarily tracing user space, it doesn't really matter whether
-the stack was switched or not when we set the contextidr. For kernel
-tracking, it could be a problem as we have the next task with the old
-stack. But the same could be said about the prev task with the new
-stack.
+extable: Flip the sorting message
 
--- 
-Catalin
+Now that we do sort the __extable at build time, we actually are
+interested only in the case where we still do need to sort it.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Cc: David Daney <david.daney@cavium.com>
+Link: http://lkml.kernel.org/r/1366023109-12098-1-git-send-email-bp@alien8.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/extable.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/extable.c b/kernel/extable.c
+index fe35a63..67460b9 100644
+--- a/kernel/extable.c
++++ b/kernel/extable.c
+@@ -41,10 +41,10 @@ u32 __initdata main_extable_sort_needed = 1;
+ /* Sort the kernel's built-in exception table */
+ void __init sort_main_extable(void)
+ {
+-	if (main_extable_sort_needed)
++	if (main_extable_sort_needed) {
++		pr_notice("Sorting __ex_table...\n");
+ 		sort_extable(__start___ex_table, __stop___ex_table);
+-	else
+-		pr_notice("__ex_table already sorted, skipping sort\n");
++	}
+ }
+ 
+ /* Given an address, look for it in the exception tables. */
