@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab3DOKEl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 06:04:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55182 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab3DOKEk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 06:04:40 -0400
-Date: Mon, 15 Apr 2013 12:04:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT pull] irq fixes for 3.9
-Message-ID: <alpine.LFD.2.02.1304151201340.21884@ionos>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1755252Ab3DOKFW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 06:05:22 -0400
+Received: from gwu.lbox.cz ([62.245.111.132]:38381 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752614Ab3DOKFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 06:05:20 -0400
+Date: Mon, 15 Apr 2013 12:05:12 +0200
+From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        linux-stable mlist <stable@kernel.org>,
+        Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Subject: Re: 3.0.60: general protection fault: 0000, Fixing recursive fault
+ but reboot is needed
+Message-ID: <20130415100512.GS28496@pcnci.linuxbox.cz>
+References: <20130415053336.GB1155@pcnci.linuxbox.cz>
+ <1366014586.4962.17.camel@marge.simpson.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DvifzEOEABd5jzbd"
+Content-Disposition: inline
+In-Reply-To: <1366014586.4962.17.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 9562250 records (last update: 20130415)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 9562250 records (last update: 20130415)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 9562250 records (last update: 20130415)
+X-Spam-Score: N/A (imported whitelist)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-please pull the latest irq-urgent-for-linus git tree from:
+--DvifzEOEABd5jzbd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git irq-urgent-for-linus
+Hi Mike,
 
-* Single bugfix for a wrong return value, which prevents the calling
-  function to invoke the software fallback.
+> Feeding that to scripts/decodecode
+thanks, didn't know about that!
 
-Thanks,
+=2E
+=2E
+=2E
+=2E
+>=20
+> That's here in dup_fd():
+>         for (i =3D open_files; i !=3D 0; i--) {
+>                 struct file *f =3D *old_fds++;
+>                 if (f) {
+>                         get_file(f);
+>=20
+> It's doing that get_file(), grabbing a reference to all open files in a
+> loop, but old_fds points off into lala land, so I'd say you must have
+> memory corruption, and open_files is garbage.  Seeing "One of our
+> servers..", operative word being "one", I'd tend to suspect heat or such
+> given the box exploded in this extremely heavily exercised spot.
 
-	tglx
+yes, that could be. I'll have this box checked, including memtest etc.
 
------------------->
-Abhijeet Dharmapurikar (1):
-      irqchip: gic: fix irq_trigger return
+thanks a lot for Your time!
+
+nik
 
 
- drivers/irqchip/irq-gic.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+>=20
+> -Mike
+>=20
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index a32e0d5..fc6aebf 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -236,7 +236,8 @@ static int gic_retrigger(struct irq_data *d)
- 	if (gic_arch_extn.irq_retrigger)
- 		return gic_arch_extn.irq_retrigger(d);
- 
--	return -ENXIO;
-+	/* the genirq layer expects 0 if we can't retrigger in hardware */
-+	return 0;
- }
- 
- #ifdef CONFIG_SMP
+--=20
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28.rijna 168, 709 00 Ostrava
+
+tel.:   +420 591 166 214
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
+
+--DvifzEOEABd5jzbd
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.14 (GNU/Linux)
+
+iEYEARECAAYFAlFr0NgACgkQ3xdJJrLygV7iMwCfYbzUBwX2OAeZdKIQiWIqDjBP
+u9MAnR7aK6Ol9o7MogkrJBripfalkej+
+=3NoV
+-----END PGP SIGNATURE-----
+
+--DvifzEOEABd5jzbd--
