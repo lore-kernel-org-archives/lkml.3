@@ -1,48 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935123Ab3DOHJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 03:09:53 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:35193 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab3DOHJv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 03:09:51 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@sisk.pl, shawn.guo@linaro.org
-Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Liviu.Dudau@arm.com,
-        charles.garcia-tobin@arm.com, arvind.chauhan@arm.com,
-        linaro-kernel@lists.linaro.org, patches@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: cpu0: Put cpu parent node after using it
-Date: Mon, 15 Apr 2013 12:39:37 +0530
-Message-Id: <377acb684be024176e1c64f7ca5b1937c3a23878.1366009701.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	id S935172Ab3DOHPy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 03:15:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:48100 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932124Ab3DOHPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 03:15:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,473,1363158000"; 
+   d="scan'208";a="227201882"
+Message-ID: <516BAA36.9030500@intel.com>
+Date: Mon, 15 Apr 2013 10:20:22 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Namjae Jeon <linkinjeon@gmail.com>
+CC: dwmw2@infradead.org, axboe@kernel.dk, shli@kernel.org,
+        Paul.Clements@steeleye.com, npiggin@kernel.dk, neilb@suse.de,
+        cjb@laptop.org, linux-mtd@lists.infradead.org,
+        nbd-general@lists.sourceforge.net, linux-raid@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Vivek Trivedi <t.vivek@samsung.com>
+Subject: Re: [PATCH 2/8] mmc: fix max_discard_sectors
+References: <1365860309-21261-1-git-send-email-linkinjeon@gmail.com>
+In-Reply-To: <1365860309-21261-1-git-send-email-linkinjeon@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parent node must be put after using it to balance its usage count. This was
-missing in cpufreq-cpu0 driver. Fix it.
+On 13/04/13 16:38, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+> 
+> https://lkml.org/lkml/2013/4/1/292
+> As per above discussion, there is possibility that request's __data_len
+> field may overflow when max_discard_sectors greater than UINT_MAX >> 9
+> 
+> If multiple discard requests get merged, merged discard request's
+> size exceeds 4GB, there is possibility that merged discard request's
+> __data_len field may overflow.
+> 
+> This patch fixes this issue.
+> 
+> Reported-by: Max Filippov <jcmvbkbc@gmail.com>
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Vivek Trivedi <t.vivek@samsung.com>
+> Tested-by: Max Filippov <jcmvbkbc@gmail.com>
+> ---
+>  drivers/mmc/card/queue.c |    2 +-
+>  drivers/mmc/core/core.c  |    4 ++--
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index 9447a0e..54726b7 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -166,7 +166,7 @@ static void mmc_queue_setup_discard(struct request_queue *q,
+>  		return;
+>  
+>  	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
+> -	q->limits.max_discard_sectors = max_discard;
+> +	blk_queue_max_discard_sectors(q, max_discard);
+>  	if (card->erased_byte == 0 && !mmc_can_discard(card))
+>  		q->limits.discard_zeroes_data = 1;
+>  	q->limits.discard_granularity = card->pref_erase << 9;
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index 7b435a3..6ee530c 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -2058,7 +2058,7 @@ static unsigned int mmc_do_calc_max_discard(struct mmc_card *card,
+>  	if (card->erase_shift)
+>  		max_qty = UINT_MAX >> card->erase_shift;
+>  	else if (mmc_card_sd(card))
+> -		max_qty = UINT_MAX;
+> +		max_qty = UINT_MAX >> 9;
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- drivers/cpufreq/cpufreq-cpu0.c | 1 +
- 1 file changed, 1 insertion(+)
+No.  This function calculates max discard for the card not the block layer.
+ Apply the block layer limitation at the block layer interface e.g.
+in mmc_queue_setup_discard()
 
-diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
-index 31282fc..3ab8294 100644
---- a/drivers/cpufreq/cpufreq-cpu0.c
-+++ b/drivers/cpufreq/cpufreq-cpu0.c
-@@ -257,6 +257,7 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
- 	}
- 
- 	of_node_put(np);
-+	of_node_put(parent);
- 	return 0;
- 
- out_free_table:
--- 
-1.7.12.rc2.18.g61b472e
+>  	else
+>  		max_qty = UINT_MAX / card->erase_size;
+>  
+> @@ -2100,7 +2100,7 @@ unsigned int mmc_calc_max_discard(struct mmc_card *card)
+>  	unsigned int max_discard, max_trim;
+>  
+>  	if (!host->max_discard_to)
+> -		return UINT_MAX;
+> +		return UINT_MAX >> 9;
+
+Ditto.
+
+>  
+>  	/*
+>  	 * Without erase_group_def set, MMC erase timeout depends on clock
+> 
 
