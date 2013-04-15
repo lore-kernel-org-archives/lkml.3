@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab3DOQHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:07:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50456 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754453Ab3DOQH2 (ORCPT
+	id S1755435Ab3DOQH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:07:57 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:64229 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688Ab3DOQH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:07:28 -0400
-Date: Mon, 15 Apr 2013 17:07:26 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Bengt =?iso-8859-1?Q?J=F6nsson?= <bengt.g.jonsson@stericsson.com>
-Cc: Axel Lin <axel.lin@ingics.com>, Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: ab8500: Fix get_mode for shared mode
- regulators
-Message-ID: <20130415160726.GF15837@opensource.wolfsonmicro.com>
-References: <1365424274.21989.2.camel@phoenix>
- <516BB444.7010508@stericsson.com>
- <CAFRkauDHn88Y8cAemTNVCXW6WUVqvFfhw1iY174nepNymiU8Nw@mail.gmail.com>
- <CAFRkauDhqwcHtJU_uBf8wMmKr8DohHZnU6DNPBnzZhTp9-eBfg@mail.gmail.com>
- <516BE5AE.3020703@stericsson.com>
- <CAFRkauBzvdGrYizNZXivrzCdQ0btUamFL2hLjLX4rzS6fWhsWA@mail.gmail.com>
- <516BF56A.5010401@stericsson.com>
- <CAFRkauDp7P5t6BrZ5d=shOCqc71-zHRV1X_8aHRioGLV+oFFMg@mail.gmail.com>
- <516C1323.9060302@stericsson.com>
+	Mon, 15 Apr 2013 12:07:56 -0400
+Date: Mon, 15 Apr 2013 09:07:47 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-input@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
+        Simon Glass <sjg@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: Export matrix_keypad_parse_of_params()
+Message-ID: <20130415160747.GA19223@core.coreip.homeip.net>
+References: <1366027608-17395-1-git-send-email-mmarek@suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/aVve/J9H4Wl5yVO"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <516C1323.9060302@stericsson.com>
-X-Cookie: Be careful!  Is it classified?
+In-Reply-To: <1366027608-17395-1-git-send-email-mmarek@suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Michal,
 
---/aVve/J9H4Wl5yVO
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Apr 15, 2013 at 02:06:48PM +0200, Michal Marek wrote:
+> Couple of input drivers depend on this symbol:
+> 
+> ERROR: "matrix_keypad_parse_of_params" [drivers/input/keyboard/tca8418_keypad.ko] undefined!
+> ERROR: "matrix_keypad_parse_of_params" [drivers/input/keyboard/cros_ec_keyb.ko] undefined!
+> 
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-On Mon, Apr 15, 2013 at 04:48:03PM +0200, Bengt J=F6nsson wrote:
+Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-> Reverting 500b4ac90d1103 makes sense, but first I want to mention
-> two things:
+This is coming through some other tree though so you 'll have to track
+it down.
 
-> 1. In some cases it is not even possible to know the actual current
-> state of a regulator because it is controlled by HW as well as SW.
-> We have several examples of this.
+Thanks.
 
-If we're getting diverging statuses here then we need to introduce a
-separate function to report the actual hardware state.  The get/set
-should be the request.
+> ---
+>  drivers/input/matrix-keymap.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
+> index 619b382..08b61f5 100644
+> --- a/drivers/input/matrix-keymap.c
+> +++ b/drivers/input/matrix-keymap.c
+> @@ -68,6 +68,7 @@ int matrix_keypad_parse_of_params(struct device *dev,
+>  
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(matrix_keypad_parse_of_params);
+>  
+>  static int matrix_keypad_parse_of_keymap(const char *propname,
+>  					 unsigned int rows, unsigned int cols,
+> -- 
+> 1.8.2.1
+> 
 
-> 2. regulator_enable/disable also checks the current status before
-> setting the regulator. Should these checks be removed as well?
-
-No, the enable state should reflect the state of the request from the
-AP.  regulator_get_status() should return the actual physical state.
-
---/aVve/J9H4Wl5yVO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRbCWvAAoJELSic+t+oim9MocP/23V36k5bz8HbqcvN12oLWLn
-Wkp39saVYD+CVXE01+VmBrDjL1dcXV/9TXFydxdIWb93iRW08VzT6F1xxeGd3v+G
-yBgT1zVM+0/GPbVDJpIzqkk9YTilf3vP0auljv2RckMWXWm1UeRMGLnFOmsidPze
-DERYJBoyFPAHUrHr9wgZW6RT2uaAjnmqIWZZgwYCgLF8kB6zU7mf3opS7kh0Akry
-d1HuRN3VEKhqxJYeZXqsvPI7bdf3Epjxmllr9UUWhAzjBFM/fbqep53Nimft3EBr
-9WEZsLtcq1GopEPvepZavBorh5UFEhT6hG0q4SWwQ2EfkNULO7+D4GINqVAyN/p9
-oKlI4meXpcRkEqouv8WBmAwIIILjz8fqdkLUue2q67iZmJ+ylHgiPaMLlhl7lHVS
-TcPnFGT5/KdkojWgI7vn+88vcuQTRJl162FDIOBTHJNQjbOIVshVHLZNUvKQ8tOV
-vkK5zc6FG9247OiQW9ZXNHgmSSo2PQKk64eACRk7AwQ8WEnr2GcS3t84LL2H30ml
-bHgcgSMT4rvFMSC67Au+oVHFmeuaD+f9noWZW8Zzhi63HHPj7CS5faHue0HguVqd
-DORcxKNwMB5aHhunaJoWrflhYMgS6G2phYblYVZdmV3N/2rhn83j2igIJNBWcvat
-03AfBjGg6kYsb5W3I0lS
-=2AYQ
------END PGP SIGNATURE-----
-
---/aVve/J9H4Wl5yVO--
+-- 
+Dmitry
