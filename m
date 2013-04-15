@@ -1,50 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934796Ab3DOTFu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 15:05:50 -0400
-Received: from masquerade.micron.com ([137.201.242.130]:22330 "EHLO
-	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934290Ab3DOTFt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 15:05:49 -0400
-Message-ID: <516C4F87.2050104@micron.com>
-Date: Tue, 16 Apr 2013 00:35:43 +0530
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S935039Ab3DOTNw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 15:13:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9819 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934987Ab3DOTNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 15:13:51 -0400
+Date: Mon, 15 Apr 2013 15:13:05 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 3.9-rc5: Encountedred INFO: rcu_sched self-detected stall on CPU
+ due to 09a9f1d27
+Message-ID: <20130415191304.GC30583@redhat.com>
+References: <20130412181348.GA2253@redhat.com>
+ <CANN689GKfxM3R96wgY8-+FftpVT76zMFcHdgKccNKnjHGfYq1Q@mail.gmail.com>
+ <20130415163552.GA31868@redhat.com>
+ <20130415173424.GB31868@redhat.com>
+ <20130415175929.GB30583@redhat.com>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Sam Bradshaw" <sbradshaw@micron.com>
-Subject: Re: [PATCH 2/2] mtip32xx: mtip32xx: Disable TRIM support
-References: <51685232.2040209@micron.com> <20130414082522.GE12244@kernel.dk>
-In-Reply-To: <20130414082522.GE12244@kernel.dk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19798.007
-X-TM-AS-Result: No-6.597800-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130415175929.GB30583@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/14/2013 1:55 PM, Jens Axboe wrote:
-
-> On Fri, Apr 12 2013, Asai Thambi S P wrote:
->>
->> Temporarily disabling TRIM support until TRIM related issues
->> are addressed in the firmware.
+On Mon, Apr 15, 2013 at 01:59:29PM -0400, Vivek Goyal wrote:
+> CCing akpm.
 > 
-> How serious is this? We do have released kernels out there with the
-> driver, you might want to consider a stable backport too.
+> Vivek
 > 
-> Anyway, applied for 3.10.
-> 
+> On Mon, Apr 15, 2013 at 01:34:24PM -0400, Vivek Goyal wrote:
+> > On Mon, Apr 15, 2013 at 12:35:52PM -0400, Vivek Goyal wrote:
+> > 
+> > [..]
+> > > > My first guess would be that mmap_sem is held during exec, so you
+> > > > can't have __mm_populate() try holding it recursively.
+> > > 
+> > > I think it is not mmap_sem as even with VM_LOCKED, we take mmap_sem
+> > > and things are fine. 
+> > > 
+> > > So things work till 3.8 and break in 3.8-rc1 (with both VM_LOCKED and
+> > > VM_POPULATE specifed). I will do git bisect and try to figure out which
+> > > is first commit which has the issue.
+> > 
+> > Ok, following seems to be first bad commit.
+> > 
+> > commit bebeb3d68b24bb4132d452c5707fe321208bcbcd
+> > Author: Michel Lespinasse <walken@google.com>
+> > Date:   Fri Feb 22 16:32:37 2013 -0800
+> > 
+> >     mm: introduce mm_populate() for populating new vmas
+> > 
 
-Added TRIM support in 3.9 merge window. If this trivial change could be
-pushed, it would be good. Otherwise, I can backport to stable 3.9 when released.
+Michel,
 
---
-regards,
-asai
+An interesting observation. After this commit looks like simple
+mmap(MAP_LOCKED) of a file was broken and it would hang and give RCU stall
+warning similar to my patch of locking /sbin/kexec.
+
+But in latest kernel mmap(MAP_LOCKED) does not hang. So looks like
+this problem got fixed in a patch after this first bad commit. But
+locking /sbin/kexec issue still remains.
+
+I used following test program to map a arbitray file.
+
+Thanks
+Vivek
+
+
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <keyutils.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <attr/xattr.h>
+#include <unistd.h>
+#include <sys/syscall.h>
+
+main(int argc, char *argv[])
+{
+	char *filename = argv[1];
+	int fd, ret;
+	void *file_addr, *data_addr;
+	struct stat stats;
+	ssize_t sig_sz;
+	void *sig;
+
+	if (argc != 2) {
+		fprintf(stderr, "Enter file name\n");	
+		exit(1);
+	}
+
+	fd = open(filename, O_RDONLY);
+	if (fd == -1) {
+		fprintf(stderr, "Open of file %s failed:%s\n", filename,
+					strerror(errno));
+		exit(1);
+	}
+
+	ret = fstat(fd, &stats);
+	if (ret == -1) {
+		fprintf(stderr, "fstat of file %s failed:%s\n", filename,
+				strerror(errno));
+		exit(1);
+	}
+
+	file_addr = mmap(NULL, stats.st_size, PROT_READ, MAP_PRIVATE | MAP_LOCKED, fd, 0);
+
+	if (file_addr == MAP_FAILED) {
+		fprintf(stderr, "mmap() failed:%s\n", strerror(errno));
+		exit(1);
+	}
+}
