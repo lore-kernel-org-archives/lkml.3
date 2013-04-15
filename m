@@ -1,127 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564Ab3DONY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 09:24:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45979 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab3DONY1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 09:24:27 -0400
-Message-ID: <516BFF83.8040800@ti.com>
-Date: Mon, 15 Apr 2013 09:24:19 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1751801Ab3DONZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 09:25:26 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44503 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751683Ab3DONZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 09:25:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,476,1363158000"; 
+   d="scan'208";a="295095629"
+Date: Mon, 15 Apr 2013 15:25:19 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: x0172184 <x0172184@ti.com>
+Cc: "BAJWA, MEHAR" <mehar.bajwa@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Navada Kanyana, Mukund" <navada@ti.com>,
+        "liam.r.girdwood@intel.com" <liam.r.girdwood@intel.com>
+Subject: Re: [PATCH: v2]:
+ Mfd-Initial-support-for-Texas-Instruments-AIC-family-Codecs
+Message-ID: <20130415132519.GI8798@zurbaran>
+References: <511DFF8A.1080801@ti.com>
+ <7506746A41B00D4598AF8BB18AB156933E9116F8@DBDE01.ent.ti.com>
+ <20130405155151.GG17363@zurbaran>
+ <516BEE8B.5010409@ti.com>
 MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <durgadoss.r@intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCHv3 3/3] staging: ti-soc-thermal: remove external heat while
- extrapolating hotspot
-References: <1365165150-11720-1-git-send-email-eduardo.valentin@ti.com>  <1365165150-11720-4-git-send-email-eduardo.valentin@ti.com> <1365990259.2803.4.camel@rzhang1-mobl4>
-In-Reply-To: <1365990259.2803.4.camel@rzhang1-mobl4>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <516BEE8B.5010409@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-04-2013 21:44, Zhang Rui wrote:
-> On Fri, 2013-04-05 at 08:32 -0400, Eduardo Valentin wrote:
->> For boards that provide a PCB sensor close to SoC junction
->> temperature, it is possible to remove the cumulative heat
->> reported by the SoC temperature sensor.
->>
->> This patch changes the extrapolation computation to consider
->> an external sensor in the extrapolation equations.
->>
->> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->
-> hmm, who should take this patch?
->
+On Mon, Apr 15, 2013 at 05:41:55PM +0530, x0172184 wrote:
+> On Friday 05 April 2013 09:21 PM, Samuel Ortiz wrote:
+> >Hi Mehar,
+> >
+> >On Sun, Feb 17, 2013 at 05:15:38AM +0000, BAJWA, MEHAR wrote:
+> >>Hi Samuel,
+> >>     I am re-sending the MFD support for AIC family of Audio CODECs
+> >>from Texas Instruments. The patch was tested on mfd-for-linus-3.8-1.
+> >>I would like to request that this be considered for inclusion in the kernel
+> >>at the next available window. Could you please let me know if you have
+> >>any comments/recommendations for this patch. We would like to work on it
+> >>and get it up-streamed.
+> >The patch looks good to me, but I'd like it to be splitted in several pieces.
+> >You can probably place the core, the irq, the spi and the i2c pieces in their
+> >own patches.
+> >
+> >Cheers,
+> >Samuel.
+> >
+> Hi Samuel,
+>     Thanks for your comments. As suggested by you, I am sending
+> individual patches as version 2.
+Please do not send them as attached patches, but inlined. One patch per
+email and threaded, please.
 
-I will send this one to Greg, maintainer of the staging tree.
+Cheers,
+Samuel. 
 
-BTW, Rui, do you think there is still time to send the TI driver out of 
-the drivers/staging/ti-soc-thermal to drivers/thermal/ti-soc-thermal for 
-3.10? If yes, I can send a series straight away.
-
-
-
-> thanks,
-> rui
->> ---
->>   drivers/staging/ti-soc-thermal/ti-thermal-common.c |   30 +++++++++++++------
->>   1 files changed, 20 insertions(+), 10 deletions(-)
->>
->> diff --git a/drivers/staging/ti-soc-thermal/ti-thermal-common.c b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
->> index 231c549..780368b 100644
->> --- a/drivers/staging/ti-soc-thermal/ti-thermal-common.c
->> +++ b/drivers/staging/ti-soc-thermal/ti-thermal-common.c
->> @@ -38,6 +38,7 @@
->>   /* common data structures */
->>   struct ti_thermal_data {
->>   	struct thermal_zone_device *ti_thermal;
->> +	struct thermal_zone_device *pcb_tz;
->>   	struct thermal_cooling_device *cool_dev;
->>   	struct ti_bandgap *bgp;
->>   	enum thermal_device_mode mode;
->> @@ -77,10 +78,12 @@ static inline int ti_thermal_hotspot_temperature(int t, int s, int c)
->>   static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
->>   				      unsigned long *temp)
->>   {
->> +	struct thermal_zone_device *pcb_tz = NULL;
->>   	struct ti_thermal_data *data = thermal->devdata;
->>   	struct ti_bandgap *bgp;
->>   	const struct ti_temp_sensor *s;
->> -	int ret, tmp, pcb_temp, slope, constant;
->> +	int ret, tmp, slope, constant;
->> +	unsigned long pcb_temp;
->>
->>   	if (!data)
->>   		return 0;
->> @@ -92,16 +95,22 @@ static inline int ti_thermal_get_temp(struct thermal_zone_device *thermal,
->>   	if (ret)
->>   		return ret;
->>
->> -	pcb_temp = 0;
->> -	/* TODO: Introduce pcb temperature lookup */
->> +	/* Default constants */
->> +	slope = s->slope;
->> +	constant = s->constant;
->> +
->> +	pcb_tz = data->pcb_tz;
->>   	/* In case pcb zone is available, use the extrapolation rule with it */
->> -	if (pcb_temp) {
->> -		tmp -= pcb_temp;
->> -		slope = s->slope_pcb;
->> -		constant = s->constant_pcb;
->> -	} else {
->> -		slope = s->slope;
->> -		constant = s->constant;
->> +	if (!IS_ERR_OR_NULL(pcb_tz)) {
->> +		ret = thermal_zone_get_temp(pcb_tz, &pcb_temp);
->> +		if (!ret) {
->> +			tmp -= pcb_temp; /* got a valid PCB temp */
->> +			slope = s->slope_pcb;
->> +			constant = s->constant_pcb;
->> +		} else {
->> +			dev_err(bgp->dev,
->> +				"Failed to read PCB state. Using defaults\n");
->> +		}
->>   	}
->>   	*temp = ti_thermal_hotspot_temperature(tmp, slope, constant);
->>
->> @@ -248,6 +257,7 @@ static struct ti_thermal_data
->>   	data->sensor_id = id;
->>   	data->bgp = bgp;
->>   	data->mode = THERMAL_DEVICE_ENABLED;
->> +	data->pcb_tz = thermal_zone_get_zone_by_name("pcb");
->>   	INIT_WORK(&data->thermal_wq, ti_thermal_work);
->>
->>   	return data;
->
->
->
->
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
