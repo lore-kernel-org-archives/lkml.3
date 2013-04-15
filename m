@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750904Ab3DOEAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 00:00:12 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:41673 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750715Ab3DOEAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 00:00:10 -0400
-Message-ID: <1365998409.1878.29.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] hfs/hfsplus: Convert dprint to hfs_dbg
-From: Joe Perches <joe@perches.com>
-To: htl10@users.sourceforge.net
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 14 Apr 2013 21:00:09 -0700
-In-Reply-To: <1365997619.11055.YahooMailClassic@web172306.mail.ir2.yahoo.com>
-References: <1365997619.11055.YahooMailClassic@web172306.mail.ir2.yahoo.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751143Ab3DOEBn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 00:01:43 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:36496 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab3DOEBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 00:01:42 -0400
+Date: Sun, 14 Apr 2013 21:01:44 -0700
+From: Olof Johansson <olof@lixom.net>
+To: David Brown <davidb@codeaurora.org>
+Cc: arm@kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] msm cleanup for 3.10
+Message-ID: <20130415040144.GE10949@quad.lixom.net>
+References: <8ya7gk7qsnp.fsf@huya.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8ya7gk7qsnp.fsf@huya.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-15 at 04:46 +0100, Hin-Tak Leung wrote:
-> > By converting this dprint() to pr_debug(), it would
-> > print out on a multiple lines, one for each read.
-> > 
-> > That's why it should use a mechanism like dbg_cont.
-> > 
-> > btw: there is no current pr_debug_cont mechanism.
+On Fri, Apr 12, 2013 at 03:40:42PM -0700, David Brown wrote:
+> The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
 > 
-> That's rubbish.
+>   Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/msm-cleanup-3.10
 
-Don't be silly.
+Hi,
 
-> dprint() are compiled in/out debug printing statements,
-> and are entirely suppressed in unmodified kernel source
+I've pulled in all 4 branches, see two comments on the individual pull requests
+though.
 
-Of course.
+Given the date stamps on the commits, it seems like you've been sitting on
+these for a while. Please try to send them in sooner in future release
+cycles, it is perfectly OK to send a newer pull request for the same
+branch with a few more patches on it later on (ideally with a new tag
+describing the new portions). That way we don't get all the code so
+late, and you run a lower risk of us being grumpy because several other
+maintainers have also been late and we're slammed with merges.
 
-> I am not saying what I have in private is correct
+The bulk of the material for the merge window really should be in arm-soc
+by -rc6, with minor updates thereafter.
 
-Then your original post wasn't useful either.
 
-> What I am saying is that the code snipplet I posted is functional:
-
-Lots of code is functional, I prefer functional
-and correct though.
-
-cheers, Joe
-
+-Olof
