@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934733Ab3DOTB5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 15:01:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46395 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933000Ab3DOTB4 (ORCPT
+	id S934796Ab3DOTFu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 15:05:50 -0400
+Received: from masquerade.micron.com ([137.201.242.130]:22330 "EHLO
+	masquerade.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934290Ab3DOTFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 15:01:56 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH] [media] uvcvideo: quirk PROBE_DEF for Dell Studio / OmniVision webcam
-Date: Mon, 15 Apr 2013 12:01:51 -0700
-Message-Id: <1366052511-27284-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 15 Apr 2013 15:05:49 -0400
+Message-ID: <516C4F87.2050104@micron.com>
+Date: Tue, 16 Apr 2013 00:35:43 +0530
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Sam Bradshaw" <sbradshaw@micron.com>
+Subject: Re: [PATCH 2/2] mtip32xx: mtip32xx: Disable TRIM support
+References: <51685232.2040209@micron.com> <20130414082522.GE12244@kernel.dk>
+In-Reply-To: <20130414082522.GE12244@kernel.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-19798.007
+X-TM-AS-Result: No-6.597800-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BugLink: https://bugs.launchpad.net/bugs/1168430
+On 4/14/2013 1:55 PM, Jens Axboe wrote:
 
-OminiVision webcam 0x05a9:0x264a (in Dell Studio Hybrid 140g) needs the
-same UVC_QUIRK_PROBE_DEF as other OmniVision model to be recognized
-consistently.
+> On Fri, Apr 12 2013, Asai Thambi S P wrote:
+>>
+>> Temporarily disabling TRIM support until TRIM related issues
+>> are addressed in the firmware.
+> 
+> How serious is this? We do have released kernels out there with the
+> driver, you might want to consider a stable backport too.
+> 
+> Anyway, applied for 3.10.
+> 
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/media/usb/uvc/uvc_driver.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+Added TRIM support in 3.9 merge window. If this trivial change could be
+pushed, it would be good. Otherwise, I can backport to stable 3.9 when released.
 
-diff --git a/drivers/media/usb/uvc/uvc_driver.c b/drivers/media/usb/uvc/uvc_driver.c
-index 5dbefa6..17bd48d 100644
---- a/drivers/media/usb/uvc/uvc_driver.c
-+++ b/drivers/media/usb/uvc/uvc_driver.c
-@@ -2163,6 +2163,15 @@ static struct usb_device_id uvc_ids[] = {
- 	  .bInterfaceSubClass	= 1,
- 	  .bInterfaceProtocol	= 0,
- 	  .driver_info 		= UVC_QUIRK_PROBE_DEF },
-+	/* Dell Studio Hybrid 140g (OmniVision webcam) */
-+	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
-+				| USB_DEVICE_ID_MATCH_INT_INFO,
-+	  .idVendor		= 0x05a9,
-+	  .idProduct		= 0x264a,
-+	  .bInterfaceClass	= USB_CLASS_VIDEO,
-+	  .bInterfaceSubClass	= 1,
-+	  .bInterfaceProtocol	= 0,
-+	  .driver_info		= UVC_QUIRK_PROBE_DEF },
- 	/* Apple Built-In iSight */
- 	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
- 				| USB_DEVICE_ID_MATCH_INT_INFO,
--- 
-1.7.10.4
-
+--
+regards,
+asai
