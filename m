@@ -1,102 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934773Ab3DONDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 09:03:35 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:15633 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751385Ab3DONDe (ORCPT
+	id S934816Ab3DONE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 09:04:29 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44972 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab3DONE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 09:03:34 -0400
-From: Oskar Andero <oskar.andero@sonymobile.com>
-To: <linux-kernel@vger.kernel.org>, <devel@driverdev.osuosl.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Brian Swetland <swetland@google.com>,
-        Radovan Lekanovic <radovan.lekanovic@sonymobile.com>,
-        Snild Dolkow <snild.dolkow@sonymobile.com>,
-        Oskar Andero <oskar.andero@sonymobile.com>
-Subject: [PATCH] lowmemorykiller: prevent multiple instances of low memory killer
-Date: Mon, 15 Apr 2013 15:03:29 +0200
-Message-ID: <1366031009-21958-1-git-send-email-oskar.andero@sonymobile.com>
-X-Mailer: git-send-email 1.8.1.5
+	Mon, 15 Apr 2013 09:04:28 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Grygorii Strashko <grygorii.strashko@ti.com>,
+        open list <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@linaro.org>, Tero Kristo <t-kristo@ti.com>,
+        Nishanth Menon <nm@ti.com>, linux-omap <linux-omap@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: [RFC v1 0/1] introduce regulator chain locking scheme
+Date: Mon, 15 Apr 2013 16:03:34 +0300
+Message-ID: <1366031015-17073-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Snild Dolkow <snild.dolkow@sonymobile.com>
+Hi Mark, Liam, All
 
-Running multiple instances of LMK is not useful since it will try to
-kill the same process.
+Our target is to reuse common DVFS framework proposed by Mike Turquette
+in http://lwn.net/Articles/540422/ and cpufreq-cpu0.c for all TI SoC and
+minimize creation of any TI specific APIs or modules.
+The common DVFS framework solution is based on assumption that Regulator,
+connected to DVFS FW or CPU0 CPUFreq, is able to change requested voltage for
+the corresponding Voltage domain (like CPU/MPU) by itself.
+But most of TI SoCs, which support DVFS, have more complex voltage supply
+schema as shown below:
 
-This patch adds a spinlock to prevent multiple instances of the LMK
-running at the same time. Uses spin_trylock and return on failure to
-avoid blocking.
+  |------------|  |------------|
+--| RegulatorY |--| CPU DVFS   |
+  |------------|  |------------|
+   \           \
+    \           \_____________________________
+     \                                        \
+     |-------------------|  |---------------|  |---------|
+   --| RegulatorX (PMIC) |--| Regulator AVS |--| ABB LDO |--
+     |-------------------|  |---------------|  |---------|
+		/|\				        |					
+         |______________________|
+         Voltage adjustment
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Brian Swetland <swetland@google.com>
-Reviewed-by: Radovan Lekanovic <radovan.lekanovic@sonymobile.com>
-Signed-off-by: Snild Dolkow <snild.dolkow@sonymobile.com>
-Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
----
- drivers/staging/android/lowmemorykiller.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+and they need to configure, at least, internal ABB LDO befor/after
+reconfiguring external voltage supplier in PMIC.
+(as maximum - Regulator AVS (Adaptive voltage scaling) is needed to be
+reconfigured after ABB LDO, and Regulator AVS may, finally, reconfigure external
+voltage supplier with voltage value which is different from initially requested by DVFS).
 
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-index 3b91b0f..0b19353 100644
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -38,6 +38,7 @@
- #include <linux/rcupdate.h>
- #include <linux/profile.h>
- #include <linux/notifier.h>
-+#include <linux/spinlock.h>
- 
- static uint32_t lowmem_debug_level = 2;
- static short lowmem_adj[6] = {
-@@ -57,6 +58,8 @@ static int lowmem_minfree_size = 4;
- 
- static unsigned long lowmem_deathpending_timeout;
- 
-+#define LMK_BUSY (-1)
-+
- #define lowmem_print(level, x...)			\
- 	do {						\
- 		if (lowmem_debug_level >= (level))	\
-@@ -65,6 +68,7 @@ static unsigned long lowmem_deathpending_timeout;
- 
- static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- {
-+	static DEFINE_SPINLOCK(lowmem_lock);
- 	struct task_struct *tsk;
- 	struct task_struct *selected = NULL;
- 	int rem = 0;
-@@ -104,6 +108,9 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 	}
- 	selected_oom_score_adj = min_score_adj;
- 
-+	if (spin_trylock(&lowmem_lock) == 0)
-+		return LMK_BUSY;
-+
- 	rcu_read_lock();
- 	for_each_process(tsk) {
- 		struct task_struct *p;
-@@ -120,6 +127,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 		    time_before_eq(jiffies, lowmem_deathpending_timeout)) {
- 			task_unlock(p);
- 			rcu_read_unlock();
-+			spin_unlock(&lowmem_lock);
- 			return 0;
- 		}
- 		oom_score_adj = p->signal->oom_score_adj;
-@@ -156,6 +164,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
- 		     sc->nr_to_scan, sc->gfp_mask, rem);
- 	rcu_read_unlock();
-+	spin_unlock(&lowmem_lock);
- 	return rem;
- }
- 
+for example (Vcur<Vreq):
+- DVFS requests voltage change
+- AVS converts Vreq to Vreq1 (say calibrated)
+- AVS reconfigure RegulatorX (PMIC) to voltage Vreq1
+- ABB LDO change type to FBB
+
+This Regulator chaining scema can fit to Regulator framework very well
+(from our point of view):
+- DVFS: abb->set_voltage(Vreq)
+- ABB: if (Vcur<Vreq)
+			AVS->set_voltage(Vreq)
+- AVS: PMIC->set_voltage(Vreq1)
+- ABB: if (Vcur<Vreq)
+			change type to FBB
+
+But there are some limitations:
+ - the whole Regulator chain need to be locked in case if any part of
+   it has been accessed from outside;
+ - child regulator should have access to set/get voltage methods of its 
+   parent (supplier).
+
+The proposed patches allow to remove these restrictions and they are inspired by
+http://lwn.net/Articles/540422/.
+
+Related dicussions:
+ - regulator: query on regulator re-entrance 
+   http://marc.info/?l=linux-omap&m=136513861315970&w=2
+ - clk: notifier handler for dynamic voltage scaling
+   https://lkml.org/lkml/2013/2/27/414
+
+Tested on K3.8 OMAP4 SDP/T2 (ABB+vcvp regulator) and
+OMAP5 sevm (ABB+smps123(i2c) regulator):
+- cpu freq & voltages was scaled.
+
+Could you please review and advise? Does anyone else interested in or have similar problems?
+
+Grygorii Strashko (1):
+  regulator: core: introduce regulator chain locking scheme
+
+ drivers/regulator/core.c         |  134 ++++++++++++++++++++++++--------------
+ include/linux/regulator/driver.h |    2 +
+ 2 files changed, 88 insertions(+), 48 deletions(-)
+
+Regards
+Grygorii Strashko
+
+Cc: linux-kernel@vger.kernel.org (open list)
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Tero Kristo <t-kristo@ti.com>
+Cc: Nishanth Menon <nm@ti.com>
+Cc: linux-omap <linux-omap@vger.kernel.org>
+Cc: linux-arm <linux-arm-kernel@lists.infradead.org>
 -- 
-1.8.1.5
+1.7.9.5
 
