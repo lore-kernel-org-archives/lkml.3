@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112Ab3DOP0w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:26:52 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45259 "EHLO
+	id S1755182Ab3DOP1H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:27:07 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45265 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249Ab3DOP0t (ORCPT
+	with ESMTP id S1755128Ab3DOP07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:26:49 -0400
+	Mon, 15 Apr 2013 11:26:59 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 09/16] tty: Make driver-side flip buffers lockless
-Date: Mon, 15 Apr 2013 11:26:00 -0400
-Message-Id: <1366039567-8620-10-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 01/16] tty: Compute flip buffer ptrs
+Date: Mon, 15 Apr 2013 11:25:52 -0400
+Message-Id: <1366039567-8620-2-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366039567-8620-1-git-send-email-peter@hurleysoftware.com>
 References: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
@@ -23,139 +23,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver-side flip buffer input is already single-threaded; 'publish'
-the .next link as the last operation on the tail buffer so the
-'consumer' sees the already-completed flip buffer.
+The char_buf_ptr and flag_buf_ptr values are trivially derived from
+the .data field offset; compute values as needed.
 
-The commit buffer index is already 'published' by driver-side functions.
+Fixes a long-standing type-mismatch with the char and flag ptrs.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_buffer.c | 31 ++++---------------------------
- 1 file changed, 4 insertions(+), 27 deletions(-)
+ drivers/tty/tty_buffer.c | 22 ++++++++++------------
+ include/linux/tty.h      | 12 ++++++++++--
+ include/linux/tty_flip.h |  4 ++--
+ 3 files changed, 22 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 5d5a564..685757c 100644
+index ff1b2e3..170674c 100644
 --- a/drivers/tty/tty_buffer.c
 +++ b/drivers/tty/tty_buffer.c
-@@ -62,8 +62,6 @@ static void tty_buffer_reset(struct tty_buffer *p, size_t size)
-  *
-  *	Remove all the buffers pending on a tty whether queued with data
-  *	or in the free ring. Must be called when the tty is no longer in use
-- *
-- *	Locking: none
-  */
- 
- void tty_buffer_free_all(struct tty_port *port)
-@@ -216,29 +214,26 @@ void tty_buffer_flush(struct tty_struct *tty)
-  *
-  *	Make at least size bytes of linear space available for the tty
-  *	buffer. If we fail return the size we managed to find.
-- *
-- *	Locking: Takes port->buf.lock
-  */
- int tty_buffer_request_room(struct tty_port *port, size_t size)
- {
- 	struct tty_bufhead *buf = &port->buf;
- 	struct tty_buffer *b, *n;
- 	int left;
--	unsigned long flags;
--	spin_lock_irqsave(&buf->lock, flags);
-+
- 	b = buf->tail;
- 	left = b->size - b->used;
- 
- 	if (left < size) {
- 		/* This is the slow path - looking for new buffers to use */
- 		if ((n = tty_buffer_alloc(port, size)) != NULL) {
--			b->next = n;
--			b->commit = b->used;
- 			buf->tail = n;
-+			b->commit = b->used;
-+			smp_mb();
-+			b->next = n;
- 		} else
- 			size = left;
+@@ -71,8 +71,6 @@ static struct tty_buffer *tty_buffer_alloc(struct tty_port *port, size_t size)
+ 	p->next = NULL;
+ 	p->commit = 0;
+ 	p->read = 0;
+-	p->char_buf_ptr = (char *)(p->data);
+-	p->flag_buf_ptr = (unsigned char *)p->char_buf_ptr + size;
+ 	port->buf.memory_used += size;
+ 	return p;
+ }
+@@ -265,8 +263,8 @@ int tty_insert_flip_string_fixed_flag(struct tty_port *port,
+ 		if (unlikely(space == 0)) {
+ 			break;
+ 		}
+-		memcpy(tb->char_buf_ptr + tb->used, chars, space);
+-		memset(tb->flag_buf_ptr + tb->used, flag, space);
++		memcpy(char_buf_ptr(tb, tb->used), chars, space);
++		memset(flag_buf_ptr(tb, tb->used), flag, space);
+ 		tb->used += space;
+ 		copied += space;
+ 		chars += space;
+@@ -303,8 +301,8 @@ int tty_insert_flip_string_flags(struct tty_port *port,
+ 		if (unlikely(space == 0)) {
+ 			break;
+ 		}
+-		memcpy(tb->char_buf_ptr + tb->used, chars, space);
+-		memcpy(tb->flag_buf_ptr + tb->used, flags, space);
++		memcpy(char_buf_ptr(tb, tb->used), chars, space);
++		memcpy(flag_buf_ptr(tb, tb->used), flags, space);
+ 		tb->used += space;
+ 		copied += space;
+ 		chars += space;
+@@ -364,8 +362,8 @@ int tty_prepare_flip_string(struct tty_port *port, unsigned char **chars,
+ 	int space = tty_buffer_request_room(port, size);
+ 	if (likely(space)) {
+ 		struct tty_buffer *tb = port->buf.tail;
+-		*chars = tb->char_buf_ptr + tb->used;
+-		memset(tb->flag_buf_ptr + tb->used, TTY_NORMAL, space);
++		*chars = char_buf_ptr(tb, tb->used);
++		memset(flag_buf_ptr(tb, tb->used), TTY_NORMAL, space);
+ 		tb->used += space;
  	}
--	spin_unlock_irqrestore(&buf->lock, flags);
- 	return size;
- }
- EXPORT_SYMBOL_GPL(tty_buffer_request_room);
-@@ -252,8 +247,6 @@ EXPORT_SYMBOL_GPL(tty_buffer_request_room);
-  *
-  *	Queue a series of bytes to the tty buffering. All the characters
-  *	passed are marked with the supplied flag. Returns the number added.
-- *
-- *	Locking: Called functions may take port->buf.lock
-  */
- 
- int tty_insert_flip_string_fixed_flag(struct tty_port *port,
-@@ -288,8 +281,6 @@ EXPORT_SYMBOL(tty_insert_flip_string_fixed_flag);
-  *	Queue a series of bytes to the tty buffering. For each character
-  *	the flags array indicates the status of the character. Returns the
-  *	number added.
-- *
-- *	Locking: Called functions may take port->buf.lock
-  */
- 
- int tty_insert_flip_string_flags(struct tty_port *port,
-@@ -324,19 +315,14 @@ EXPORT_SYMBOL(tty_insert_flip_string_flags);
-  *	processing by the line discipline.
-  *	Note that this function can only be used when the low_latency flag
-  *	is unset. Otherwise the workqueue won't be flushed.
-- *
-- *	Locking: Takes port->buf.lock
-  */
- 
- void tty_schedule_flip(struct tty_port *port)
+ 	return space;
+@@ -394,8 +392,8 @@ int tty_prepare_flip_string_flags(struct tty_port *port,
+ 	int space = tty_buffer_request_room(port, size);
+ 	if (likely(space)) {
+ 		struct tty_buffer *tb = port->buf.tail;
+-		*chars = tb->char_buf_ptr + tb->used;
+-		*flags = tb->flag_buf_ptr + tb->used;
++		*chars = char_buf_ptr(tb, tb->used);
++		*flags = flag_buf_ptr(tb, tb->used);
+ 		tb->used += space;
+ 	}
+ 	return space;
+@@ -407,8 +405,8 @@ static int
+ receive_buf(struct tty_struct *tty, struct tty_buffer *head, int count)
  {
- 	struct tty_bufhead *buf = &port->buf;
--	unsigned long flags;
- 	WARN_ON(port->low_latency);
+ 	struct tty_ldisc *disc = tty->ldisc;
+-	char 	      *p = head->char_buf_ptr + head->read;
+-	unsigned char *f = head->flag_buf_ptr + head->read;
++	unsigned char *p = char_buf_ptr(head, head->read);
++	char	      *f = flag_buf_ptr(head, head->read);
  
--	spin_lock_irqsave(&buf->lock, flags);
- 	buf->tail->commit = buf->tail->used;
--	spin_unlock_irqrestore(&buf->lock, flags);
- 	schedule_work(&buf->work);
- }
- EXPORT_SYMBOL(tty_schedule_flip);
-@@ -352,8 +338,6 @@ EXPORT_SYMBOL(tty_schedule_flip);
-  *	accounted for as ready for normal characters. This is used for drivers
-  *	that need their own block copy routines into the buffer. There is no
-  *	guarantee the buffer is a DMA target!
-- *
-- *	Locking: May call functions taking port->buf.lock
-  */
+ 	if (disc->ops->receive_buf2)
+ 		count = disc->ops->receive_buf2(tty, p, f, count);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index e56ab4c..c0ee322 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -31,8 +31,6 @@
  
- int tty_prepare_flip_string(struct tty_port *port, unsigned char **chars,
-@@ -382,8 +366,6 @@ EXPORT_SYMBOL_GPL(tty_prepare_flip_string);
-  *	accounted for as ready for characters. This is used for drivers
-  *	that need their own block copy routines into the buffer. There is no
-  *	guarantee the buffer is a DMA target!
-- *
-- *	Locking: May call functions taking port->buf.lock
-  */
+ struct tty_buffer {
+ 	struct tty_buffer *next;
+-	char *char_buf_ptr;
+-	unsigned char *flag_buf_ptr;
+ 	int used;
+ 	int size;
+ 	int commit;
+@@ -41,6 +39,16 @@ struct tty_buffer {
+ 	unsigned long data[0];
+ };
  
- int tty_prepare_flip_string_flags(struct tty_port *port,
-@@ -511,18 +493,13 @@ void tty_flush_to_ldisc(struct tty_struct *tty)
-  *
-  *	In the event of the queue being busy for flipping the work will be
-  *	held off and retried later.
-- *
-- *	Locking: tty buffer lock. Driver locks in low latency mode.
-  */
- 
- void tty_flip_buffer_push(struct tty_port *port)
++static inline unsigned char *char_buf_ptr(struct tty_buffer *b, int ofs)
++{
++	return ((unsigned char *)b->data) + ofs;
++}
++
++static inline char *flag_buf_ptr(struct tty_buffer *b, int ofs)
++{
++	return (char *)char_buf_ptr(b, ofs) + b->size;
++}
++
+ /*
+  * We default to dicing tty buffer allocations to this many characters
+  * in order to avoid multiple page allocations. We know the size of
+diff --git a/include/linux/tty_flip.h b/include/linux/tty_flip.h
+index e0f2526..ad03039 100644
+--- a/include/linux/tty_flip.h
++++ b/include/linux/tty_flip.h
+@@ -18,8 +18,8 @@ static inline int tty_insert_flip_char(struct tty_port *port,
  {
- 	struct tty_bufhead *buf = &port->buf;
--	unsigned long flags;
- 
--	spin_lock_irqsave(&buf->lock, flags);
- 	buf->tail->commit = buf->tail->used;
--	spin_unlock_irqrestore(&buf->lock, flags);
- 
- 	if (port->low_latency)
- 		flush_to_ldisc(&buf->work);
+ 	struct tty_buffer *tb = port->buf.tail;
+ 	if (tb && tb->used < tb->size) {
+-		tb->flag_buf_ptr[tb->used] = flag;
+-		tb->char_buf_ptr[tb->used++] = ch;
++		*flag_buf_ptr(tb, tb->used) = flag;
++		*char_buf_ptr(tb, tb->used++) = ch;
+ 		return 1;
+ 	}
+ 	return tty_insert_flip_string_flags(port, &ch, &flag, 1);
 -- 
 1.8.1.2
 
