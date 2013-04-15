@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934630Ab3DOPeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:34:17 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:46007 "EHLO
+	id S934491Ab3DOPdb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:33:31 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45990 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934526Ab3DOPdf (ORCPT
+	with ESMTP id S1755359Ab3DOPd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:33:35 -0400
+	Mon, 15 Apr 2013 11:33:28 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 07/20] n_tty: Factor signal char handling into separate fn
-Date: Mon, 15 Apr 2013 11:32:38 -0400
-Message-Id: <1366039971-8770-8-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 04/20] n_tty: Rename process_char_map to char_map
+Date: Mon, 15 Apr 2013 11:32:35 -0400
+Message-Id: <1366039971-8770-5-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
 References: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
@@ -23,85 +23,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the monolithic n_tty_receive_char() complexity; factor the
-handling of INTR_CHAR, QUIT_CHAR and SUSP_CHAR into
-n_tty_receive_signal_char().
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 52 ++++++++++++++++++++++++++++------------------------
- 1 file changed, 28 insertions(+), 24 deletions(-)
+ drivers/tty/n_tty.c | 43 ++++++++++++++++++++-----------------------
+ 1 file changed, 20 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index b379986..e8df595 100644
+index 8aac758..d6997de 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -1219,6 +1219,26 @@ static inline void n_tty_receive_parity_error(struct tty_struct *tty,
- 	wake_up_interruptible(&tty->read_wait);
- }
+@@ -92,7 +92,7 @@ struct n_tty_data {
+ 	size_t canon_head;
+ 	size_t echo_head;
+ 	size_t echo_commit;
+-	DECLARE_BITMAP(process_char_map, 256);
++	DECLARE_BITMAP(char_map, 256);
  
-+static void
-+n_tty_receive_signal_char(struct tty_struct *tty, int signal, unsigned char c)
-+{
-+	if (!L_NOFLSH(tty)) {
-+		/* flushing needs exclusive termios_rwsem */
-+		up_read(&tty->termios_rwsem);
-+		n_tty_flush_buffer(tty);
-+		tty_driver_flush_buffer(tty);
-+		down_read(&tty->termios_rwsem);
-+	}
-+	if (I_IXON(tty))
-+		start_tty(tty);
-+	if (L_ECHO(tty)) {
-+		echo_char(c, tty);
-+		commit_echoes(tty);
-+	}
-+	isig(signal, tty);
-+	return;
-+}
-+
- /**
-  *	n_tty_receive_char	-	perform processing
-  *	@tty: terminal device
-@@ -1314,30 +1334,14 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 	}
+ 	/* private to n_tty_receive_overrun (single-threaded) */
+ 	unsigned long overrun_time;
+@@ -1278,7 +1278,7 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
+ 	 * handle specially, do shortcut processing to speed things
+ 	 * up.
+ 	 */
+-	if (!test_bit(c, ldata->process_char_map) || ldata->lnext) {
++	if (!test_bit(c, ldata->char_map) || ldata->lnext) {
+ 		ldata->lnext = 0;
+ 		parmrk = (c == (unsigned char) '\377' && I_PARMRK(tty)) ? 1 : 0;
+ 		if (read_cnt(ldata) >= (N_TTY_BUF_SIZE - parmrk - 1)) {
+@@ -1623,41 +1623,38 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
+ 	    I_ICRNL(tty) || I_INLCR(tty) || L_ICANON(tty) ||
+ 	    I_IXON(tty) || L_ISIG(tty) || L_ECHO(tty) ||
+ 	    I_PARMRK(tty)) {
+-		bitmap_zero(ldata->process_char_map, 256);
++		bitmap_zero(ldata->char_map, 256);
  
- 	if (L_ISIG(tty)) {
--		int signal;
--		signal = SIGINT;
--		if (c == INTR_CHAR(tty))
--			goto send_signal;
--		signal = SIGQUIT;
--		if (c == QUIT_CHAR(tty))
--			goto send_signal;
--		signal = SIGTSTP;
--		if (c == SUSP_CHAR(tty)) {
--send_signal:
--			if (!L_NOFLSH(tty)) {
--				/* flushing needs exclusive termios_rwsem */
--				up_read(&tty->termios_rwsem);
--				n_tty_flush_buffer(tty);
--				tty_driver_flush_buffer(tty);
--				down_read(&tty->termios_rwsem);
--			}
--			if (I_IXON(tty))
--				start_tty(tty);
--			if (L_ECHO(tty)) {
--				echo_char(c, tty);
--				commit_echoes(tty);
--			}
--			isig(signal, tty);
-+		if (c == INTR_CHAR(tty)) {
-+			n_tty_receive_signal_char(tty, SIGINT, c);
-+			return;
-+		} else if (c == QUIT_CHAR(tty)) {
-+			n_tty_receive_signal_char(tty, SIGQUIT, c);
-+			return;
-+		} else if (c == SUSP_CHAR(tty)) {
-+			n_tty_receive_signal_char(tty, SIGTSTP, c);
- 			return;
+ 		if (I_IGNCR(tty) || I_ICRNL(tty))
+-			set_bit('\r', ldata->process_char_map);
++			set_bit('\r', ldata->char_map);
+ 		if (I_INLCR(tty))
+-			set_bit('\n', ldata->process_char_map);
++			set_bit('\n', ldata->char_map);
+ 
+ 		if (L_ICANON(tty)) {
+-			set_bit(ERASE_CHAR(tty), ldata->process_char_map);
+-			set_bit(KILL_CHAR(tty), ldata->process_char_map);
+-			set_bit(EOF_CHAR(tty), ldata->process_char_map);
+-			set_bit('\n', ldata->process_char_map);
+-			set_bit(EOL_CHAR(tty), ldata->process_char_map);
++			set_bit(ERASE_CHAR(tty), ldata->char_map);
++			set_bit(KILL_CHAR(tty), ldata->char_map);
++			set_bit(EOF_CHAR(tty), ldata->char_map);
++			set_bit('\n', ldata->char_map);
++			set_bit(EOL_CHAR(tty), ldata->char_map);
+ 			if (L_IEXTEN(tty)) {
+-				set_bit(WERASE_CHAR(tty),
+-					ldata->process_char_map);
+-				set_bit(LNEXT_CHAR(tty),
+-					ldata->process_char_map);
+-				set_bit(EOL2_CHAR(tty),
+-					ldata->process_char_map);
++				set_bit(WERASE_CHAR(tty), ldata->char_map);
++				set_bit(LNEXT_CHAR(tty), ldata->char_map);
++				set_bit(EOL2_CHAR(tty), ldata->char_map);
+ 				if (L_ECHO(tty))
+ 					set_bit(REPRINT_CHAR(tty),
+-						ldata->process_char_map);
++						ldata->char_map);
+ 			}
  		}
- 	}
+ 		if (I_IXON(tty)) {
+-			set_bit(START_CHAR(tty), ldata->process_char_map);
+-			set_bit(STOP_CHAR(tty), ldata->process_char_map);
++			set_bit(START_CHAR(tty), ldata->char_map);
++			set_bit(STOP_CHAR(tty), ldata->char_map);
+ 		}
+ 		if (L_ISIG(tty)) {
+-			set_bit(INTR_CHAR(tty), ldata->process_char_map);
+-			set_bit(QUIT_CHAR(tty), ldata->process_char_map);
+-			set_bit(SUSP_CHAR(tty), ldata->process_char_map);
++			set_bit(INTR_CHAR(tty), ldata->char_map);
++			set_bit(QUIT_CHAR(tty), ldata->char_map);
++			set_bit(SUSP_CHAR(tty), ldata->char_map);
+ 		}
+-		clear_bit(__DISABLED_CHAR, ldata->process_char_map);
++		clear_bit(__DISABLED_CHAR, ldata->char_map);
+ 		ldata->raw = 0;
+ 		ldata->real_raw = 0;
+ 	} else {
 -- 
 1.8.1.2
 
