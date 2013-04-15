@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab3DOOF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 10:05:29 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:54027 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752983Ab3DOOF0 (ORCPT
+	id S1753010Ab3DOOGd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 10:06:33 -0400
+Received: from endeavour.telenet.dn.ua ([195.39.211.45]:56052 "EHLO
+	endeavour.telenet.dn.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307Ab3DOOGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 10:05:26 -0400
+	Mon, 15 Apr 2013 10:06:32 -0400
+X-Greylist: delayed 519 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Apr 2013 10:06:31 EDT
+Message-ID: <516C075E.30105@telenet.dn.ua>
+Date: Mon, 15 Apr 2013 16:57:50 +0300
+From: "Vitaly V. Bursov" <vitalyb@telenet.dn.ua>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
-References: <20130415024231.351969241@linuxfoundation.org>
-Date: Mon, 15 Apr 2013 08:05:24 -0600
-Message-ID: <CAKocOOP1z7cowgFbJmM_88MdmMnmmMGdbx+HLJYDoD6iqCUqew@mail.gmail.com>
-Subject: Re: [ 00/27] 3.8.8-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: Bonding driver has bad load balancing for forwarded traffic, 3.7+
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 14, 2013 at 8:42 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.8.8 release.
-> There are 27 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Wed Apr 17 02:41:37 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.8.8-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
-Patches applied cleanly to 3.0.73, 3.4.40, and 3.8.7
+Hello,
 
-Compiled and booted on the following systems:
+I have a bonding device (mode=802.3ad xmit_hash_policy=layer2+3 miimon=300) and
+for kernels <3.7 forwarded IPv4 traffic distributed fine across multiple physical
+links. Ethernet cards are Intel 82576 with igb driver (various versions).
 
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
-(on the road, only one system and no cross compile tests this time)
+3.7 and 3.8 kernels tend to fully utilize only one link and leave the others almost idling.
 
-dmesgs for all releases look good. No regressions compared to the previous
-dmesgs for each of these releases.
+Replacing bond_xmit_hash_policy_* functions with older ones (3.6 kernel) looks like
+resolves the issue (but I haven't tested it thoroughly).
 
-cross compile tests - skipped
+So, I added
+         printk(KERN_INFO "hash_policy: protocol = %d, skb_network_header_len = %d, %d %d\n",
+             skb->protocol, skb_network_header_len(skb),
+             skb_headlen(skb), skb_network_offset(skb));
+to bond_xmit_hash_policy_l23() of bond_main.c
 
--- Shuah
+and got this:
+[   65.280831] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+[   65.280835] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+[   65.280839] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+[   65.280843] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+[   65.280847] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+[   65.280851] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+
+It's clear that the new check condition (skb_network_header_len(skb) >= sizeof(*iph))
+fails here and hash policy fallbacks to l2 balancing.
+
+I have no idea how to fix this besides removing this check completely, any
+help would be appreciated.
+
+-- 
+Thanks
+Vitaly
