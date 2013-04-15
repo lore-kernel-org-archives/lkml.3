@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab3DOPXu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:23:50 -0400
-Received: from smtp-out-028.synserver.de ([212.40.185.28]:1208 "EHLO
-	smtp-out-028.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3DOPXq (ORCPT
+	id S1754625Ab3DOP03 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:26:29 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45203 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab3DOP00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:23:46 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22330
-Message-ID: <516C1B4B.2070806@metafoo.de>
-Date: Mon, 15 Apr 2013 17:22:51 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Paolo Pisati <paolo.pisati@canonical.com>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] dma: of-dma: check OF pointer property before dereferencing
- it
-References: <1366015193-6627-1-git-send-email-paolo.pisati@canonical.com> <1366015193-6627-2-git-send-email-paolo.pisati@canonical.com>
-In-Reply-To: <1366015193-6627-2-git-send-email-paolo.pisati@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Apr 2013 11:26:26 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 00/16] lockless tty flip buffers
+Date: Mon, 15 Apr 2013 11:25:51 -0400
+Message-Id: <1366039567-8620-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
+References: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2013 10:39 AM, Paolo Pisati wrote:
-> Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
+This 2nd of 4 patchsets implements lockless receive from the tty driver.
+By lockless, I'm referring to the 'lock' spin lock formerly used to
+serialize access to the flip buffer list.
 
-That should already be fixed in the DMA tree. See commit 7362f04c28 ("DMA:
-OF: Check properties value before running be32_to_cpup() on it").
+Since the driver-side flip buffer usage is already single-threaded and
+line discipline receiving is already single-threaded, implementing
+a lockless flip buffer list was the primary hurdle. [The only 2 flip
+buffer consumers, flush_to_ldisc() and tty_buffer_flush() were already
+mutually exclusive and this exclusion remains although the mechanism
+is changed.]
 
-- Lars
+Since the flip buffer consumers, flush_to_ldisc() and tty_buffer_flush(),
+already leave the last-consumed flip buffer on the list, and since the
+existing flip buffer api is already divided into an add/commit interface,
+most of the requirement for a lockless algorithm was already
+in-place. The main differences are;
+1) the initial state of the flip buffer list points head and tail
+   to a 0-sized sentinel flip buffer. This eliminates head & tail NULL
+   testing and assigning the head ptr from the driver-side thread. This
+   sentinel is 'consumed' on the first iteration of ldisc receiving and
+   does not require special-case logic.
+2) the free list uses the atomic singly-linked llist interface. While
+   this guarantees safe concurrent usage by both producer and consumer,
+   it's not optimal. Both producer and consumer unnecessarily contend
+   over the free list head ptr; a better approach would be to maintain
+   an unconsumed buffer in the same way the flip buffer list works.
+   Light testing has shown this contention accounts for roughly 5% of
+   total cpu time in end-to-end copying.
+3) The mutual exclusion between consumers is reimplemented as a mutex;
+   this eliminates the need to drop the lock across the ldisc
+   receive_buf() method. This mutual exclusion is extended to a public
+   interface which the vt driver now uses to safely utilize the ldisc
+   receive_buf() interface when pasting a selection.
 
+Peter Hurley (16):
+  tty: Compute flip buffer ptrs
+  tty: Fix flip buffer free list
+  tty: Factor flip buffer initialization into helper function
+  tty: Merge tty_buffer_find() into tty_buffer_alloc()
+  tty: Use generic names for flip buffer list cursors
+  tty: Use lockless flip buffer free list
+  tty: Simplify flip buffer list with 0-sized sentinel
+  tty: Track flip buffer memory limit atomically
+  tty: Make driver-side flip buffers lockless
+  tty: Ensure single-threaded flip buffer consumer with mutex
+  tty: Only perform flip buffer flush from tty_buffer_flush()
+  tty: Avoid false-sharing flip buffer ptrs
+  tty: Use non-atomic state to signal flip buffer flush pending
+  tty: Merge __tty_flush_buffer() into lone call site
+  tty: Fix unsafe vt paste_selection()
+  tty: Remove private constant from global namespace
 
-> ---
->  drivers/dma/of-dma.c |    7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
-> index 69d04d2..9628298 100644
-> --- a/drivers/dma/of-dma.c
-> +++ b/drivers/dma/of-dma.c
-> @@ -91,6 +91,7 @@ int of_dma_controller_register(struct device_node *np,
->  				(struct of_phandle_args *, struct of_dma *),
->  				void *data)
->  {
-> +	void 	*parent;
->  	struct of_dma	*ofdma;
->  	int		nbcells;
->  
-> @@ -103,8 +104,10 @@ int of_dma_controller_register(struct device_node *np,
->  	if (!ofdma)
->  		return -ENOMEM;
->  
-> -	nbcells = be32_to_cpup(of_get_property(np, "#dma-cells", NULL));
-> -	if (!nbcells) {
-> +	parent = of_get_property(np, "#dma-cells", NULL);
-> +	if (parent)
-> +		nbcells = be32_to_cpup(parent);
-> +	if (!parent || !nbcells) {
->  		pr_err("%s: #dma-cells property is missing or invalid\n",
->  		       __func__);
->  		kfree(ofdma);
+ drivers/staging/dgrp/dgrp_tty.c |   2 +
+ drivers/tty/pty.c               |  10 +-
+ drivers/tty/tty_buffer.c        | 395 +++++++++++++++++++---------------------
+ drivers/tty/vt/selection.c      |   4 +-
+ include/linux/llist.h           |  23 +++
+ include/linux/tty.h             |  39 ++--
+ include/linux/tty_flip.h        |   8 +-
+ 7 files changed, 244 insertions(+), 237 deletions(-)
+
+-- 
+1.8.1.2
 
