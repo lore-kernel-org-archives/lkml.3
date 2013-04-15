@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932875Ab3DOD5e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 23:57:34 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:49813 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab3DOD5d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 23:57:33 -0400
-Date: Sun, 14 Apr 2013 20:57:20 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kay@vrfy.org, greg@kroah.com,
-        lennart@poettering.net, daniel@zonque.org
-Subject: Re: [PATCH 4/4] cgroup: implement task_cgroup_path_from_hierarchy()
-Message-ID: <20130415035720.GN3050@htj.dyndns.org>
-References: <1365964619-14762-1-git-send-email-tj@kernel.org>
- <1365964619-14762-5-git-send-email-tj@kernel.org>
- <516B7753.9060503@huawei.com>
- <20130415034613.GK3050@htj.dyndns.org>
- <516B78E5.6000109@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <516B78E5.6000109@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750904Ab3DOEAM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 00:00:12 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:41673 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750715Ab3DOEAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 00:00:10 -0400
+Message-ID: <1365998409.1878.29.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] hfs/hfsplus: Convert dprint to hfs_dbg
+From: Joe Perches <joe@perches.com>
+To: htl10@users.sourceforge.net
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 14 Apr 2013 21:00:09 -0700
+In-Reply-To: <1365997619.11055.YahooMailClassic@web172306.mail.ir2.yahoo.com>
+References: <1365997619.11055.YahooMailClassic@web172306.mail.ir2.yahoo.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Li.
+On Mon, 2013-04-15 at 04:46 +0100, Hin-Tak Leung wrote:
+> > By converting this dprint() to pr_debug(), it would
+> > print out on a multiple lines, one for each read.
+> > 
+> > That's why it should use a mechanism like dbg_cont.
+> > 
+> > btw: there is no current pr_debug_cont mechanism.
+> 
+> That's rubbish.
 
-On Mon, Apr 15, 2013 at 11:49:57AM +0800, Li Zefan wrote:
-> But if id is invalid, idr_find() will return NULL. As long as root is not NULL,
-> task_cgroup_from_root() will always return a valid cgroup.
+Don't be silly.
 
-I'm hopping across multiple devel branches quickly today and somewhat
-tipsy.  Sorry about the blabber.  :)
+> dprint() are compiled in/out debug printing statements,
+> and are entirely suppressed in unmodified kernel source
 
--- 
-tejun
+Of course.
+
+> I am not saying what I have in private is correct
+
+Then your original post wasn't useful either.
+
+> What I am saying is that the code snipplet I posted is functional:
+
+Lots of code is functional, I prefer functional
+and correct though.
+
+cheers, Joe
+
