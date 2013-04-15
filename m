@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab3DOQFO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:05:14 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:48251 "EHLO
+	id S1753962Ab3DOQCl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:02:41 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:48240 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752426Ab3DOQCm (ORCPT
+	with ESMTP id S1752426Ab3DOQCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:02:42 -0400
+	Mon, 15 Apr 2013 12:02:39 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 13/20] n_tty: Eliminate char tests from IXANY restart test
-Date: Mon, 15 Apr 2013 11:32:44 -0400
-Message-Id: <1366039971-8770-14-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 11/20] n_tty: Factor tty->closing receive_buf() into separate fn
+Date: Mon, 15 Apr 2013 11:32:42 -0400
+Message-Id: <1366039971-8770-12-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
 References: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
@@ -23,62 +23,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Relocate the IXANY restart tty test to code paths where the
-the received char is not START_CHAR, STOP_CHAR, INTR_CHAR,
-QUIT_CHAR or SUSP_CHAR.
+Convert to modal receive_buf() processing; factor receive char
+processing when tty->closing into n_tty_receive_buf_closing().
 
-Fixes the condition when ISIG if off and one of INTR_CHAR,
-QUIT_CHAR or SUSP_CHAR does not restart i/o.
+Note that EXTPROC when ISTRIP or IUCLC is set continues to be
+handled by n_tty_receive_char().
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ drivers/tty/n_tty.c | 50 +++++++++++++++++++++++++++++++++++++++-----------
+ 1 file changed, 39 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 8808833..33994e6 100644
+index 9b52bf9..81e2bb3 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -1269,13 +1269,6 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 		return;
+@@ -1276,17 +1276,6 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
+ 		process_echoes(tty);
  	}
  
--	if (tty->stopped && !tty->flow_stopped && I_IXON(tty) &&
--	    I_IXANY(tty) && c != START_CHAR(tty) && c != STOP_CHAR(tty) &&
--	    c != INTR_CHAR(tty) && c != QUIT_CHAR(tty) && c != SUSP_CHAR(tty)) {
--		start_tty(tty);
--		process_echoes(tty);
+-	if (tty->closing) {
+-		if (I_IXON(tty)) {
+-			if (c == START_CHAR(tty)) {
+-				start_tty(tty);
+-				process_echoes(tty);
+-			} else if (c == STOP_CHAR(tty))
+-				stop_tty(tty);
+-		}
+-		return;
 -	}
 -
  	/*
  	 * If the previous character was LNEXT, or we know that this
  	 * character is not one of the characters that we'll have to
-@@ -1284,6 +1277,13 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 	 */
- 	if (!test_bit(c, ldata->char_map) || ldata->lnext) {
- 		ldata->lnext = 0;
+@@ -1463,6 +1452,27 @@ handle_newline:
+ 	put_tty_queue(c, ldata);
+ }
+ 
++static inline void
++n_tty_receive_char_closing(struct tty_struct *tty, unsigned char c)
++{
++	if (I_ISTRIP(tty))
++		c &= 0x7f;
++	if (I_IUCLC(tty) && L_IEXTEN(tty))
++		c = tolower(c);
 +
-+		if (tty->stopped && !tty->flow_stopped && I_IXON(tty) &&
-+		    I_IXANY(tty)) {
++	if (I_IXON(tty)) {
++		if (c == STOP_CHAR(tty))
++			stop_tty(tty);
++		else if (c == START_CHAR(tty) ||
++			 (tty->stopped && !tty->flow_stopped && I_IXANY(tty) &&
++			  c != INTR_CHAR(tty) && c != QUIT_CHAR(tty) &&
++			  c != SUSP_CHAR(tty))) {
 +			start_tty(tty);
 +			process_echoes(tty);
 +		}
-+
- 		parmrk = (c == (unsigned char) '\377' && I_PARMRK(tty)) ? 1 : 0;
- 		if (read_cnt(ldata) >= (N_TTY_BUF_SIZE - parmrk - 1)) {
- 			/* beep if no space */
-@@ -1330,6 +1330,11 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- 		}
- 	}
- 
-+	if (tty->stopped && !tty->flow_stopped && I_IXON(tty) && I_IXANY(tty)) {
-+		start_tty(tty);
-+		process_echoes(tty);
 +	}
++}
 +
- 	if (c == '\r') {
- 		if (I_IGNCR(tty))
- 			return;
+ static void
+ n_tty_receive_char_flagged(struct tty_struct *tty, unsigned char c, char flag)
+ {
+@@ -1542,6 +1552,22 @@ n_tty_receive_buf_raw(struct tty_struct *tty, const unsigned char *cp,
+ 	}
+ }
+ 
++static void
++n_tty_receive_buf_closing(struct tty_struct *tty, const unsigned char *cp,
++			  char *fp, int count)
++{
++	char flag = TTY_NORMAL;
++
++	while (count--) {
++		if (fp)
++			flag = *fp++;
++		if (likely(flag == TTY_NORMAL))
++			n_tty_receive_char_closing(tty, *cp++);
++		else
++			n_tty_receive_char_flagged(tty, *cp++, flag);
++	}
++}
++
+ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 			  char *fp, int count)
+ {
+@@ -1552,6 +1578,8 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 		n_tty_receive_buf_real_raw(tty, cp, fp, count);
+ 	else if (ldata->raw || (L_EXTPROC(tty) && !preops))
+ 		n_tty_receive_buf_raw(tty, cp, fp, count);
++	else if (tty->closing && !L_EXTPROC(tty))
++		n_tty_receive_buf_closing(tty, cp, fp, count);
+ 	else {
+ 		char flag = TTY_NORMAL;
+ 
 -- 
 1.8.1.2
 
