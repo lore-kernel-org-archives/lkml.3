@@ -1,37 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab3DOAvC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 20:51:02 -0400
-Received: from dub0-omc1-s15.dub0.hotmail.com ([157.55.0.214]:33040 "EHLO
-	dub0-omc1-s15.dub0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752753Ab3DOAvA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 20:51:00 -0400
-X-Greylist: delayed 372 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Apr 2013 20:51:00 EDT
-X-EIP: [rvZLsrHoTbn6+HCKhBY+Iv1RcHaWE/U5]
-X-Originating-Email: [josenavasmolina@hotmail.com]
-Message-ID: <DUB114-W42B5E1E3DE755AB075F263BFCC0@phx.gbl>
-From: Jose Navas <josenavasmolina@hotmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Sleeping process from kernel space: not doing schedule?
-Date: Mon, 15 Apr 2013 00:44:47 +0000
-Importance: Normal
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1754157Ab3DOA4r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 20:56:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39582 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753865Ab3DOA4q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Apr 2013 20:56:46 -0400
+Date: Sun, 14 Apr 2013 19:56:31 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, vgoyal@redhat.com,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 1/4] cgroup: convert cgroupfs_root flag bits to masks and
+ add CGRP_ prefix
+Message-ID: <20130415005631.GB8408@sergelap>
+References: <1365808259-31073-1-git-send-email-tj@kernel.org>
+ <1365808259-31073-2-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-X-OriginalArrivalTime: 15 Apr 2013 00:44:47.0362 (UTC) FILETIME=[6DECE620:01CE3972]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365808259-31073-2-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Quoting Tejun Heo (tj@kernel.org):
+> There's no reason to be using bitops, which tends to be more
+> cumbersome, to handle root flags.  Convert them to masks.  Also, as
+> they'll be moved to include/linux/cgroup.h and it's generally a good
+> idea, add CGRP_ prefix.
+> 
+> Note that flags are assigned from (1 << 1).  The first bit will be
+> used by a flag which will be added soon.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-First of all, I am not subscribed to the mailing list and I'd like to get the answers directly to my email. Thank you!
+This *is* much nicer to read, thanks.
 
-I am working on a project where I am trying to detect the Out Of Memory machine state and collect some data from the machine. I've created a LKM that hacks the do_brk call and checks if there is enough memory to perform the call. I successfully detect the OOM state and my next step is sending a signal to a process in user space that writes info to a log file (this way, I avoid the necessity of opening files in kernel space). After sending the signal, the LKM puts the current process to sleep, using the function schedule_timeout_uninterruptible(). What I expect, is to see the process in user space running some time while the process is sleeping, but, instead, I see that the user process do not run until the sleeping process has finished...
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 
-I'm suspecting that it is not doing scheduling or something similar. I'm missing something? Is this the correct way of putting a process to sleep from kernel space?
-
-Thank you!!!
-
-Jose 		 	   		  
+> ---
+>  kernel/cgroup.c | 21 ++++++++++-----------
+>  1 file changed, 10 insertions(+), 11 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 678a22c..a372eaa 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -296,10 +296,10 @@ bool cgroup_is_descendant(struct cgroup *cgrp, struct cgroup *ancestor)
+>  }
+>  EXPORT_SYMBOL_GPL(cgroup_is_descendant);
+>  
+> -/* bits in struct cgroupfs_root flags field */
+> +/* cgroupfs_root->flags */
+>  enum {
+> -	ROOT_NOPREFIX,	/* mounted subsystems have no named prefix */
+> -	ROOT_XATTR,	/* supports extended attributes */
+> +	CGRP_ROOT_NOPREFIX	= (1 << 1), /* mounted subsystems have no named prefix */
+> +	CGRP_ROOT_XATTR		= (1 << 2), /* supports extended attributes */
+>  };
+>  
+>  static int cgroup_is_releasable(const struct cgroup *cgrp)
+> @@ -1137,9 +1137,9 @@ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
+>  	mutex_lock(&cgroup_root_mutex);
+>  	for_each_subsys(root, ss)
+>  		seq_printf(seq, ",%s", ss->name);
+> -	if (test_bit(ROOT_NOPREFIX, &root->flags))
+> +	if (root->flags & CGRP_ROOT_NOPREFIX)
+>  		seq_puts(seq, ",noprefix");
+> -	if (test_bit(ROOT_XATTR, &root->flags))
+> +	if (root->flags & CGRP_ROOT_XATTR)
+>  		seq_puts(seq, ",xattr");
+>  	if (strlen(root->release_agent_path))
+>  		seq_printf(seq, ",release_agent=%s", root->release_agent_path);
+> @@ -1202,7 +1202,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+>  			continue;
+>  		}
+>  		if (!strcmp(token, "noprefix")) {
+> -			set_bit(ROOT_NOPREFIX, &opts->flags);
+> +			opts->flags |= CGRP_ROOT_NOPREFIX;
+>  			continue;
+>  		}
+>  		if (!strcmp(token, "clone_children")) {
+> @@ -1210,7 +1210,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+>  			continue;
+>  		}
+>  		if (!strcmp(token, "xattr")) {
+> -			set_bit(ROOT_XATTR, &opts->flags);
+> +			opts->flags |= CGRP_ROOT_XATTR;
+>  			continue;
+>  		}
+>  		if (!strncmp(token, "release_agent=", 14)) {
+> @@ -1293,8 +1293,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+>  	 * with the old cpuset, so we allow noprefix only if mounting just
+>  	 * the cpuset subsystem.
+>  	 */
+> -	if (test_bit(ROOT_NOPREFIX, &opts->flags) &&
+> -	    (opts->subsys_mask & mask))
+> +	if ((opts->flags & CGRP_ROOT_NOPREFIX) && (opts->subsys_mask & mask))
+>  		return -EINVAL;
+>  
+>  
+> @@ -2523,7 +2522,7 @@ static struct simple_xattrs *__d_xattrs(struct dentry *dentry)
+>  static inline int xattr_enabled(struct dentry *dentry)
+>  {
+>  	struct cgroupfs_root *root = dentry->d_sb->s_fs_info;
+> -	return test_bit(ROOT_XATTR, &root->flags);
+> +	return root->flags & CGRP_ROOT_XATTR;
+>  }
+>  
+>  static bool is_valid_xattr(const char *name)
+> @@ -2695,7 +2694,7 @@ static int cgroup_add_file(struct cgroup *cgrp, struct cgroup_subsys *subsys,
+>  
+>  	simple_xattrs_init(&cft->xattrs);
+>  
+> -	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
+> +	if (subsys && !(cgrp->root->flags & CGRP_ROOT_NOPREFIX)) {
+>  		strcpy(name, subsys->name);
+>  		strcat(name, ".");
+>  	}
+> -- 
+> 1.8.1.4
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
