@@ -1,206 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab3DORUe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 13:20:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59069 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814Ab3DORUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 13:20:33 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130415171635.GI3672@sgi.com>
-References: <20130415171225.GC3658@sgi.com> <20130415171635.GI3672@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [Patch -v3 4/4] Make reboot_cpuid a kernel parameter.
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 15 Apr 2013 10:18:31 -0700
-To: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Russ Anderson <rja@sgi.com>
-CC: Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <71f0c948-cdea-4e8e-86a3-088d306388b9@email.android.com>
+	id S1755954Ab3DORVK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 13:21:10 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54741 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751682Ab3DORVJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 13:21:09 -0400
+Message-ID: <1366046457.6170.1.camel@dabdike>
+Subject: Re: [PATCH] scsi: pcmcia: nsp_cs: remove module init/exit function
+ prototypes
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com, yokota@netlab.is.tsukuba.ac.jp,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Mon, 15 Apr 2013 10:20:57 -0700
+In-Reply-To: <201304150942.37837.hsweeten@visionengravers.com>
+References: <201304150942.37837.hsweeten@visionengravers.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.6.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Um... doesn't this break anyone who currently depends on this?
+On Mon, 2013-04-15 at 09:42 -0700, H Hartley Sweeten wrote:
+> This driver now uses the module_pcmcia_driver() macro to supply the
+> init/exit code. The nsp_cs_{init,exit} prototypes should be removed.
 
-Robin Holt <holt@sgi.com> wrote:
+This reasoning is bogus.
 
->
->Moving the reboot=s<##> parameter for x86 to a kernel parameter
->proper.  I did not find any other arch that was specifying the
->reboot cpu.
->
->Signed-off-by: Robin Holt <holt@sgi.com>
->To: Ingo Molnar <mingo@redhat.com>
->To: Russ Anderson <rja@sgi.com>
->Cc: Shawn Guo <shawn.guo@linaro.org>
->Cc: Oleg Nesterov <oleg@redhat.com>
->Cc: Andrew Morton <akpm@linux-foundation.org>
->Cc: "H. Peter Anvin" <hpa@zytor.com>
->Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
->Cc: Linus Torvalds <torvalds@linux-foundation.org>
->Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
->Cc: Michel Lespinasse <walken@google.com>
->Cc: Oleg Nesterov <oleg@redhat.com>
->Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->Cc: Paul Mackerras <paulus@samba.org>
->Cc: Peter Zijlstra <peterz@infradead.org>
->Cc: Robin Holt <holt@sgi.com>
->Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
->Cc: Tejun Heo <tj@kernel.org>
->Cc: the arch/x86 maintainers <x86@kernel.org>
->Cc: Thomas Gleixner <tglx@linutronix.de>
->---
-> Documentation/kernel-parameters.txt |  2 ++
->arch/x86/kernel/reboot.c            | 44
->++++---------------------------------
-> kernel/reboot.c                     |  8 ++++++-
-> 3 files changed, 13 insertions(+), 41 deletions(-)
->
->diff --git a/Documentation/kernel-parameters.txt
->b/Documentation/kernel-parameters.txt
->index 4609e81..11ebb48 100644
->--- a/Documentation/kernel-parameters.txt
->+++ b/Documentation/kernel-parameters.txt
->@@ -2597,6 +2597,8 @@ bytes respectively. Such letter suffixes can also
->be entirely omitted.
-> 			Format: <reboot_mode>[,<reboot_mode2>[,...]]
-> 			See arch/*/kernel/reboot.c or arch/*/kernel/process.c
-> 
->+	reboot_cpuid=	[KNL] cpuid to use for reboot/halt, etc operations.
->+
-> 	relax_domain_level=
-> 			[KNL, SMP] Set scheduler's default relax_domain_level.
-> 			See Documentation/cgroups/cpusets.txt.
->diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
->index 76fa1e9..39af130 100644
->--- a/arch/x86/kernel/reboot.c
->+++ b/arch/x86/kernel/reboot.c
->@@ -49,10 +49,6 @@ int reboot_force;
->  */
-> static int reboot_default = 1;
-> 
->-#ifdef CONFIG_SMP
->-static int reboot_cpu = -1;
->-#endif
->-
-> /*
->  * This is set if we need to go through the 'emergency' path.
->  * When machine_emergency_restart() is called, we may be on
->@@ -64,11 +60,10 @@ static int reboot_emergency;
-> bool port_cf9_safe = false;
-> 
-> /*
->- * reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm |
->[c]old] | p[ci]
->+ * reboot=b[ios] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old] |
->p[ci]
->  * warm   Don't set the cold reboot flag
->  * cold   Set the cold reboot flag
->  * bios   Reboot by jumping through the BIOS
->- * smp    Reboot by executing reset on BSP or other CPU
->  * triple Force a triple fault (init)
->  * kbd    Use the keyboard controller. cold reset (default)
->  * acpi   Use the RESET_REG in the FADT
->@@ -95,21 +90,6 @@ static int __init reboot_setup(char *str)
-> 			reboot_mode = 0;
-> 			break;
-> 
->-#ifdef CONFIG_SMP
->-		case 's':
->-			if (isdigit(*(str+1))) {
->-				reboot_cpu = (int) (*(str+1) - '0');
->-				if (isdigit(*(str+2)))
->-					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
->-			}
->-			/*
->-			 * We will leave sorting out the final value
->-			 * when we are ready to reboot, since we might not
->-			 * have detected BSP APIC ID or smp_num_cpu
->-			 */
->-			break;
->-#endif /* CONFIG_SMP */
->-
-> 		case 'b':
-> 		case 'a':
-> 		case 'k':
->@@ -614,26 +594,10 @@ void native_machine_shutdown(void)
-> {
-> 	/* Stop the cpus and apics */
-> #ifdef CONFIG_SMP
->-
->-	/* The boot cpu is always logical cpu 0 */
->-	int reboot_cpu_id = 0;
->-
->-	/* See if there has been given a command line override */
->-	if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
->-		cpu_online(reboot_cpu))
->-		reboot_cpu_id = reboot_cpu;
->-
->-	/* Make certain the cpu I'm about to reboot on is online */
->-	if (!cpu_online(reboot_cpu_id))
->-		reboot_cpu_id = smp_processor_id();
->-
->-	/* Make certain I only run on the appropriate processor */
->-	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
->-
-> 	/*
->-	 * O.K Now that I'm on the appropriate processor, stop all of the
->-	 * others. Also disable the local irq to not receive the per-cpu
->-	 * timer interrupt which may trigger scheduler's load balance.
->+	 * Stop all of the others. Also disable the local irq to
->+	 * not receive the per-cpu timer interrupt which may trigger
->+	 * scheduler's load balance.
-> 	 */
-> 	local_irq_disable();
-> 	stop_other_cpus();
->diff --git a/kernel/reboot.c b/kernel/reboot.c
->index 187a0d8..9fbab07 100644
->--- a/kernel/reboot.c
->+++ b/kernel/reboot.c
->@@ -8,6 +8,7 @@
-> #include <linux/kexec.h>
-> #include <linux/kmod.h>
-> #include <linux/kmsg_dump.h>
->+#include <linux/moduleparam.h>
-> #include <linux/reboot.h>
-> #include <linux/syscalls.h>
-> #include <linux/syscore_ops.h>
->@@ -66,13 +67,18 @@ int unregister_reboot_notifier(struct
->notifier_block *nb)
-> }
-> EXPORT_SYMBOL(unregister_reboot_notifier);
-> 
->+int reboot_cpuid;
->+core_param(reboot_cpuid, reboot_cpuid, int, 0644);
->+
-> void migrate_to_reboot_cpu(void)
-> {
-> 	/* The boot cpu is always logical cpu 0 */
->-	int reboot_cpu_id = 0;
->+	int reboot_cpu_id = reboot_cpuid;
-> 
-> 	/* Make certain the cpu I'm about to reboot on is online */
-> 	if (!cpu_online(reboot_cpu_id))
->+		reboot_cpu_id = 0;
->+	if (!cpu_online(reboot_cpu_id))
-> 		reboot_cpu_id = smp_processor_id();
-> 
-> 	/* Prevent races with other tasks migrating this task. */
+Why the driver actually has all these static prototypes in its header
+file is entirely unclear to me, but singling these two out for the
+reason you state above is wrong (both the reason and picking only two of
+them).
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Hiroshi, you're the maintainer, what do you want to do ... since the
+driver is ancient, I'm happy to leave it untouched, or if you want to
+tidy it up, I see no reason to have any static prototypes in the header
+file.
+
+Thanks,
+
+James
+
+
+
+
