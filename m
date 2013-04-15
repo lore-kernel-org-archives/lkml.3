@@ -1,38 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab3DOVkS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 17:40:18 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:34268 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754493Ab3DOVkN (ORCPT
+	id S1756538Ab3DOVlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 17:41:45 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:39974 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755989Ab3DOVlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 17:40:13 -0400
+	Mon, 15 Apr 2013 17:41:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <cover.1366046390.git.sarah.a.sharp@linux.intel.com>
-References: <cover.1366046390.git.sarah.a.sharp@linux.intel.com>
-Date: Mon, 15 Apr 2013 14:40:11 -0700
-X-Google-Sender-Auth: Yz-AuxBm8aNc2mUySPEufepgIA4
-Message-ID: <CA+55aFy0CoUuf5MoiNVBTNq2nzpMhY_MTqm58Hy78v_EWgLb4Q@mail.gmail.com>
-Subject: Re: [RFC 0/7] Update REPORTING-BUGS
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Rob Landley <rob@landley.net>,
+In-Reply-To: <516C702C.2030209@zytor.com>
+References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
+	<1365797627-20874-7-git-send-email-keescook@chromium.org>
+	<CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com>
+	<516A1D49.1050100@zytor.com>
+	<CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
+	<516C702C.2030209@zytor.com>
+Date: Mon, 15 Apr 2013 14:41:43 -0700
+X-Google-Sender-Auth: luoy0thLXODfuHgt49yKKkuBsQk
+Message-ID: <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
+Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Eric Northup <digitaleric@google.com>, Yinghai Lu <yinghai@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 10:33 AM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
+On Mon, Apr 15, 2013 at 2:25 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/15/2013 02:06 PM, Eric Northup wrote:
+>> On Sat, Apr 13, 2013 at 8:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> On 04/13/2013 05:37 PM, Yinghai Lu wrote:
+>>>>
+>>>> so decompress code position is changed?
+>>>>
+>>>> You may push out bss and other data area of run-time kernel of limit
+>>>> that boot loader
+>>>> chose according to setup_header.init_size.
+>>>> aka that make those area overlap with ram hole or other area like
+>>>> boot command line or initrd....
+>>>>
+>>>
+>>> Is there a strong reason to randomize the physical address on 64 bits
+>>> (and if so, shouldn't we do it right?)
+>>
+>> The reason to randomize the physical address is because of the kernel
+>> direct mapping range -- a predictable-to-attackers physical address
+>> implies a predictable-to-attackers virtual address.
+>>
+>> It had seemed to me like changing the virtual base of the direct
+>> mapping would be much more involved than physically relocating the
+>> kernel, but better suggestions would be most welcome :-)
+>>
 >
-> Linus, please review patch 5.  I know you want to ensure regressions get
-> addressed quickly during the merge window, so I've suggested bug
-> reporters escalate reports to LKML and you if they feel maintainers
-> aren't being responsive.  Kernel devs know to do this, but other bug
-> reporters may not.
+> You seem to be missing something here...
+>
+> There are *two* mappings in 64-bit mode.  Physically, if you're going to
+> randomize you might as well randomize over the entire range... except
+> not too far down (on either 32 or 64 bit mode)... in particular, you
+> don't want to drop below 16 MiB if you can avoid it.
+>
+> On 64 bits, there is no reason the virtual address has to be randomized
+> the same way.
 
-Looks fine to me. You can change the "Cc:" to an "Acked-by:"
+Aren't we bound by the negative 2GB addressing due to -mcmodel=kernel?
 
-                LInus
+-Kees
+
+--
+Kees Cook
+Chrome OS Security
