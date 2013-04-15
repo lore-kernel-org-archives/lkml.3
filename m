@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab3DOBwR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 21:52:17 -0400
-Received: from mail-vb0-f65.google.com ([209.85.212.65]:34191 "EHLO
-	mail-vb0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603Ab3DOBwP (ORCPT
+	id S932361Ab3DOBzP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 21:55:15 -0400
+Received: from oproxy14-pub.unifiedlayer.com ([67.222.51.224]:60539 "HELO
+	oproxy14-pub.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753023Ab3DOBzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 21:52:15 -0400
-X-Greylist: delayed 4092 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Apr 2013 21:52:15 EDT
-MIME-Version: 1.0
-Date: Sun, 14 Apr 2013 17:44:02 -0700
-Message-ID: <CAJ3m7BpZkbGS6+Qhn_KMN1z0bA+8Czf3D6cbC1B8_0fdFjcPvA@mail.gmail.com>
-Subject: [PATCH mainline] btrfs: fix minor typo in comment
-From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
-To: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org
-Cc: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>, linux-kernel@vger.kernel.org,
-        trivial@kernel.org, torvalds@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 14 Apr 2013 21:55:14 -0400
+Message-ID: <1365990909.29519.6.camel@Wailaba2>
+Subject: Re: [PATCH] process cputimer is moving faster than its
+ corresponding clock
+From: Olivier Langlois <olivier@trillion01.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, tglx@linutronix.de, fweisbec@gmail.com,
+        schwidefsky@de.ibm.com, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 14 Apr 2013 21:55:09 -0400
+In-Reply-To: <1365758166.17140.35.camel@laptop>
+References: <1365184746.874.103.camel@Wailaba2>
+	 <1365593710.30071.52.camel@laptop> <1365608911.707.65.camel@Wailaba2>
+	 <1365758166.17140.35.camel@laptop>
+Organization: Trillion01 Inc
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the comment describing the sync_writers field of the btrfs_inode
-struct, "fsyncing" was misspelled "fsycing."
+On Fri, 2013-04-12 at 11:16 +0200, Peter Zijlstra wrote:
+> On Wed, 2013-04-10 at 11:48 -0400, Olivier Langlois wrote:
+> > Please explain how expensive it is. All I am seeing is a couple of
+> > additions.
+> 
+> Let me start with this, since your earlier argument also refers to
+> this.
+> 
+> So yes it does look simple and straight fwd, only one addition. However
+> its an atomic operation across all threads of the same process. Imagine
+> a single process with 512 threads, all running on a separate cpu.
+> 
+Peter,
 
-Signed-off-by: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
----
-diff --git a/fs/btrfs/btrfs_inode.h b/fs/btrfs/btrfs_inode.h
-index d9b97d4..08b286b 100644
---- a/fs/btrfs/btrfs_inode.h
-+++ b/fs/btrfs/btrfs_inode.h
-@@ -93,7 +93,7 @@ struct btrfs_inode {
+It now makes perfect sense. Thank you for your explanation. It is
+showing me an aspect that I did overlook.
 
-  unsigned long runtime_flags;
+Greetings,
 
-- /* Keep track of who's O_SYNC/fsycing currently */
-+ /* Keep track of who's O_SYNC/fsyncing currently */
-  atomic_t sync_writers;
 
-  /* full 64 bit generation number, struct vfs_inode doesn't have a big
