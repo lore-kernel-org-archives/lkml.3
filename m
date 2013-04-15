@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab3DOSQV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 14:16:21 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:39291 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756530Ab3DOSQU (ORCPT
+	id S1756816Ab3DOSRu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 14:17:50 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58965 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756082Ab3DOSRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 14:16:20 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Query regarding PTP_1588_CLOCK
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1366049778_1938P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 15 Apr 2013 14:16:18 -0400
-Message-ID: <38549.1366049778@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020205.516C43F3.0127,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Mon, 15 Apr 2013 14:17:49 -0400
+Date: Mon, 15 Apr 2013 19:17:40 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Maxim Patlasov <mpatlasov@parallels.com>, dev@parallels.com,
+        xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        bfoster@redhat.com, linux-kernel@vger.kernel.org, devel@openvz.org,
+        anand.avati@gmail.com
+Subject: Re: [PATCH 0/5] fuse: close file synchronously
+Message-ID: <20130415181739.GJ4068@ZenIV.linux.org.uk>
+References: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
+ <CAJfpegsD2iyP2=Z3zL-yb_TjjQxipOBKV7yqpdPPTH9oobQ=bA@mail.gmail.com>
+ <CAJfpegtvfunCV4cjezQuWji3PoJRpXXKWgH+y55tYMi0O+TdkQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJfpegtvfunCV4cjezQuWji3PoJRpXXKWgH+y55tYMi0O+TdkQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1366049778_1938P
-Content-Type: text/plain; charset=us-ascii
+On Mon, Apr 15, 2013 at 05:30:41PM +0200, Miklos Szeredi wrote:
+> On Mon, Apr 15, 2013 at 5:08 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > For example doing a readlink() on a magic symlink under /proc
+> > shouldn't result in a synchronous call to a fuse filesystem.  Making
+> > fput() synchronous may actually end up doing that (even if it's not
+> > very likely).
+> 
+> Thinking about this a bit more.  As it is it sounds wrong to rely on a
+> synchronous release, when in fact release is just not synchronous, as
+> indicated by the above example.  Maybe it's the proc code that's buggy
+> and shouldn't do get_file/fput because everyone is assuming release
+> being synchronous with close().  Don't know.
 
-In drivers/net/ethernet/intel/Kconfig, we see this:
+What the hell?  ->release() is not and has never been synchronous with close().
+There is any number of places where the final fput() might be called and no,
+this readlink example is irrelevant - things like munmap()/dup2()/close
+of a socket discarding a datagram with the last reference to struct file in
+it, et sodding cetera.
 
-config E1000E
-        tristate "Intel(R) PRO/1000 PCI-Express Gigabit Ethernet support"
-        depends on PCI && (!SPARC32 || BROKEN)
-        select CRC32
-        select PTP_1588_CLOCK
-        ---help---
+Hell, another thread might be in the middle of read(2) at the moment when you
+call close().  Result: the final fput() will be done when we are about to
+return from that read(2).
 
-Is there a reason for the PTP_1588_CLOCK select?  That ends up
-forcing the PTP and PPS stuff into the kernel as well - and I don't
-use any of it.
-
---==_Exmh_1366049778_1938P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iQIVAwUBUWxD8gdmEQWDXROgAQKq1xAAmLe0QfUekYMrFcWoneDF7abtrWp8lIfE
-iUvhwMO5jxsSsc0hI7MQCTbngJMZSnSjj+OkDBHSh46ExiJbcH4cqr0xuBQqPv/3
-jhu2ktAADpgcfOWrm8Tqq2F925yDBZuzNoVmoH+YFbNyglvVCWCVFM/YIcBSid2N
-BXDypWTMjObjAx1BjEUZupWa7SBBF4tNLeY9Fo078Dq/gCOVJ+lK55BEyUtIlN9L
-1dc8JMgwl/nkCxPB1BIBcTaK8xJ33DQ90AbPKc5xj/thqhGw565Z+LNomvN+h+jr
-zJh9IVgCTOJdfYxciDL18LKVaMkKFrykIXvjFH+Z5DBtlqm1ys+OLGNIgbFYFymg
-wpEzjgBempFyXE0SbjgCnt/4he0fUCO1yEgsFkAKjPev8u3osYu/irHSxvgsYAoV
-w/Il5p59tq0k/ZMii6iIgcR3ET4HWrWx/UKQPsrmXoDqIgDoXQzwFtdZTlDSjD/x
-0YF4opTIbcdNXZmuwkYeQkx8lo7FAaB1k3AZjU05g6DFUCt9f4YxldibkXGpNaX/
-LUZSPEYRfIlCZUTAw9OX8DSbsPYxhdXMv4WVAH2dXAMv848sYF1yHkvmmZOxNWq1
-W7Ny8wJXY4NIE9H/PdsDYZFW/qCbHOZiPPjNGPN3vefMr63jKAkA1AWozci7+vRK
-v80RboZWDuY=
-=lqFq
------END PGP SIGNATURE-----
-
---==_Exmh_1366049778_1938P--
-
+People, ->release() is *NOT* guaranteed to be anywhere near close(2).  Never
+had been.
