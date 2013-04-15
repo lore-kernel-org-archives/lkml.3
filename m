@@ -1,495 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab3DONEg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 09:04:36 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44978 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab3DONEc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 09:04:32 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: Liam Girdwood <liam.r.girdwood@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Grygorii Strashko <grygorii.strashko@ti.com>,
-        <linux-kernel@vger.kernel.org>, Mike Turquette <mturquette@linaro.org>,
-        Nishanth Menon <nm@ti.com>, Tero Kristo <t-kristo@ti.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: [RFC v1] regulator: core: introduce regulator chain locking scheme
-Date: Mon, 15 Apr 2013 16:03:35 +0300
-Message-ID: <1366031015-17073-2-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1366031015-17073-1-git-send-email-grygorii.strashko@ti.com>
-References: <1366031015-17073-1-git-send-email-grygorii.strashko@ti.com>
+	id S1751458Ab3DONGS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 09:06:18 -0400
+Received: from fieldses.org ([174.143.236.118]:45334 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750739Ab3DONGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 09:06:16 -0400
+Date: Mon, 15 Apr 2013 09:06:14 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nfsd4: Fix NULL dereference in legacy_recdir_name_error()
+Message-ID: <20130415130614.GA20479@fieldses.org>
+References: <s5hfvz71swh.wl%tiwai@suse.de>
+ <20130403182410.GC6044@fieldses.org>
+ <s5hr4icvutg.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hr4icvutg.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases the regulators may be organized in a chain like:
-  ->regA->regB->regC
-where regA is supplier for regB and regB is supplier for regC.
+On Mon, Apr 15, 2013 at 02:31:55PM +0200, Takashi Iwai wrote:
+> At Wed, 3 Apr 2013 14:24:10 -0400,
+> J. Bruce Fields wrote:
+> > 
+> > On Wed, Apr 03, 2013 at 06:27:26PM +0200, Takashi Iwai wrote:
+> > > The recent rewrite of NFSv4 recovery client tracking options per net
+> > > (commit 9a9c6478) introduced Oops when it faces an error for recdir
+> > > generation.
+> > 
+> > Thanks.  Looks like that could hit a lot of people actually, so I'll
+> > pass that along for 3.9 soon.--b.
+> 
+> Any chance for this to be merged in 3.9-final in time?
 
-Currently it would be possible to reconfigure regA and regC at same time
-form different contexts, because each regulator has it own mutex.
-But in some cases, the only the whole chain is allowed be reconfigured
-because of dependencies between regulators - to change regB
-configuration the regA need to be updated first.
+Apologies, I changed my mind: since the bug was already in 3.8, I
+decided maybe I was overestimating the scope of the problem.  And we're
+very close to 3.9 now--so I'd rather wait till the merge window.  Then
+it should be backported to 3.9.x fairly quickly.
 
-Hence, introduce regulator chain locking scheme to lock whole Regulator
-chain in case if any part of it has been accessed from outside.
+--b.
 
-To achieve this goal:
-- abstract regulator locking out into helper functions;
-- use the root Regulator (which has no supply defined, like regA) in chain to
-  protect the whole chain;
-- implement regulator chain locking scheme as proposed by Thomas Gleixner for CCF
-  re-entrance in https://lkml.org/lkml/2013/3/27/171 and in the similar way as
-  it is done for CCF by Mike Turquette in https://lkml.org/lkml/2013/3/28/512
-
-In addition, such locking scheme allows to have access to the supplier
-regulator API from inside child's (consumer) regulator API.
-
-Cc: linux-kernel@vger.kernel.org
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: Nishanth Menon <nm@ti.com>
-Cc: Tero Kristo <t-kristo@ti.com>
-Cc: linux-omap <linux-omap@vger.kernel.org>
-Cc: linux-arm <linux-arm-kernel@lists.infradead.org>
-
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
- drivers/regulator/core.c         |  134 ++++++++++++++++++++++++--------------
- include/linux/regulator/driver.h |    2 +
- 2 files changed, 88 insertions(+), 48 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index e3661c2..089cc63 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -110,6 +110,44 @@ static const char *rdev_get_name(struct regulator_dev *rdev)
- 		return "";
- }
- 
-+static void regulator_lock(struct regulator_dev *rdev)
-+{
-+	struct regulator_dev *locking_rdev = rdev;
-+
-+	while (locking_rdev->supply)
-+		locking_rdev = locking_rdev->supply->rdev;
-+
-+	if (!mutex_trylock(&locking_rdev->mutex)) {
-+		if (locking_rdev->lock_owner == current) {
-+			locking_rdev->lock_count++;
-+			return;
-+		}
-+		mutex_lock(&locking_rdev->mutex);
-+	}
-+
-+	WARN_ON_ONCE(locking_rdev->lock_owner != NULL);
-+	WARN_ON_ONCE(locking_rdev->lock_count != 0);
-+
-+	locking_rdev->lock_count = 1;
-+	locking_rdev->lock_owner = current;
-+	dev_dbg(&locking_rdev->dev, "Is locked. locking %s\n",
-+		rdev_get_name(rdev));
-+}
-+
-+static void regulator_unlock(struct regulator_dev *rdev)
-+{
-+	struct regulator_dev *locking_rdev = rdev;
-+
-+	while (locking_rdev->supply)
-+		locking_rdev = locking_rdev->supply->rdev;
-+
-+	if (--locking_rdev->lock_count)
-+		return;
-+
-+	locking_rdev->lock_owner = NULL;
-+	mutex_unlock(&locking_rdev->mutex);
-+}
-+
- /**
-  * of_get_regulator - get a regulator device node based on supply name
-  * @dev: Device pointer for the consumer (of regulator) device
-@@ -292,9 +330,9 @@ static ssize_t regulator_uV_show(struct device *dev,
- 	struct regulator_dev *rdev = dev_get_drvdata(dev);
- 	ssize_t ret;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 	ret = sprintf(buf, "%d\n", _regulator_get_voltage(rdev));
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 
- 	return ret;
- }
-@@ -357,9 +395,9 @@ static ssize_t regulator_state_show(struct device *dev,
- 	struct regulator_dev *rdev = dev_get_drvdata(dev);
- 	ssize_t ret;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 	ret = regulator_print_state(buf, _regulator_is_enabled(rdev));
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 
- 	return ret;
- }
-@@ -467,10 +505,10 @@ static ssize_t regulator_total_uA_show(struct device *dev,
- 	struct regulator *regulator;
- 	int uA = 0;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 	list_for_each_entry(regulator, &rdev->consumer_list, list)
- 		uA += regulator->uA_load;
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return sprintf(buf, "%d\n", uA);
- }
- static DEVICE_ATTR(requested_microamps, 0444, regulator_total_uA_show, NULL);
-@@ -1104,7 +1142,7 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
- 	if (regulator == NULL)
- 		return NULL;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 	regulator->rdev = rdev;
- 	list_add(&regulator->list, &rdev->consumer_list);
- 
-@@ -1156,12 +1194,12 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
- 	    _regulator_is_enabled(rdev))
- 		regulator->always_on = true;
- 
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return regulator;
- overflow_err:
- 	list_del(&regulator->list);
- 	kfree(regulator);
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return NULL;
- }
- 
-@@ -1558,9 +1596,9 @@ int regulator_enable(struct regulator *regulator)
- 			return ret;
- 	}
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 	ret = _regulator_enable(rdev);
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 
- 	if (ret != 0 && rdev->supply)
- 		regulator_disable(rdev->supply);
-@@ -1649,9 +1687,9 @@ int regulator_disable(struct regulator *regulator)
- 	if (regulator->always_on)
- 		return 0;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 	ret = _regulator_disable(rdev);
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 
- 	if (ret == 0 && rdev->supply)
- 		regulator_disable(rdev->supply);
-@@ -1695,10 +1733,10 @@ int regulator_force_disable(struct regulator *regulator)
- 	struct regulator_dev *rdev = regulator->rdev;
- 	int ret;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 	regulator->uA_load = 0;
- 	ret = _regulator_force_disable(regulator->rdev);
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 
- 	if (rdev->supply)
- 		while (rdev->open_count--)
-@@ -1714,7 +1752,7 @@ static void regulator_disable_work(struct work_struct *work)
- 						  disable_work.work);
- 	int count, i, ret;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 
- 	BUG_ON(!rdev->deferred_disables);
- 
-@@ -1727,7 +1765,7 @@ static void regulator_disable_work(struct work_struct *work)
- 			rdev_err(rdev, "Deferred disable failed: %d\n", ret);
- 	}
- 
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 
- 	if (rdev->supply) {
- 		for (i = 0; i < count; i++) {
-@@ -1763,9 +1801,9 @@ int regulator_disable_deferred(struct regulator *regulator, int ms)
- 	if (!ms)
- 		return regulator_disable(regulator);
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 	rdev->deferred_disables++;
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 
- 	ret = schedule_delayed_work(&rdev->disable_work,
- 				    msecs_to_jiffies(ms));
-@@ -1863,9 +1901,9 @@ int regulator_is_enabled(struct regulator *regulator)
- 	if (regulator->always_on)
- 		return 1;
- 
--	mutex_lock(&regulator->rdev->mutex);
-+	regulator_lock(regulator->rdev);
- 	ret = _regulator_is_enabled(regulator->rdev);
--	mutex_unlock(&regulator->rdev->mutex);
-+	regulator_unlock(regulator->rdev);
- 
- 	return ret;
- }
-@@ -1983,9 +2021,9 @@ int regulator_list_voltage(struct regulator *regulator, unsigned selector)
- 	if (!ops->list_voltage || selector >= rdev->desc->n_voltages)
- 		return -EINVAL;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 	ret = ops->list_voltage(rdev, selector);
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 
- 	if (ret > 0) {
- 		if (ret < rdev->constraints->min_uV)
-@@ -2309,7 +2347,7 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
- 	int ret = 0;
- 	int old_min_uV, old_max_uV;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 
- 	/* If we're setting the same range as last time the change
- 	 * should be a noop (some cpufreq implementations use the same
-@@ -2345,12 +2383,12 @@ int regulator_set_voltage(struct regulator *regulator, int min_uV, int max_uV)
- 		goto out2;
- 	
- out:
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return ret;
- out2:
- 	regulator->min_uV = old_min_uV;
- 	regulator->max_uV = old_max_uV;
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(regulator_set_voltage);
-@@ -2453,7 +2491,7 @@ int regulator_sync_voltage(struct regulator *regulator)
- 	struct regulator_dev *rdev = regulator->rdev;
- 	int ret, min_uV, max_uV;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 
- 	if (!rdev->desc->ops->set_voltage &&
- 	    !rdev->desc->ops->set_voltage_sel) {
-@@ -2482,7 +2520,7 @@ int regulator_sync_voltage(struct regulator *regulator)
- 	ret = _regulator_do_set_voltage(rdev, min_uV, max_uV);
- 
- out:
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(regulator_sync_voltage);
-@@ -2522,11 +2560,11 @@ int regulator_get_voltage(struct regulator *regulator)
- {
- 	int ret;
- 
--	mutex_lock(&regulator->rdev->mutex);
-+	regulator_lock(regulator->rdev);
- 
- 	ret = _regulator_get_voltage(regulator->rdev);
- 
--	mutex_unlock(&regulator->rdev->mutex);
-+	regulator_unlock(regulator->rdev);
- 
- 	return ret;
- }
-@@ -2554,7 +2592,7 @@ int regulator_set_current_limit(struct regulator *regulator,
- 	struct regulator_dev *rdev = regulator->rdev;
- 	int ret;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 
- 	/* sanity check */
- 	if (!rdev->desc->ops->set_current_limit) {
-@@ -2569,7 +2607,7 @@ int regulator_set_current_limit(struct regulator *regulator,
- 
- 	ret = rdev->desc->ops->set_current_limit(rdev, min_uA, max_uA);
- out:
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(regulator_set_current_limit);
-@@ -2578,7 +2616,7 @@ static int _regulator_get_current_limit(struct regulator_dev *rdev)
- {
- 	int ret;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 
- 	/* sanity check */
- 	if (!rdev->desc->ops->get_current_limit) {
-@@ -2588,7 +2626,7 @@ static int _regulator_get_current_limit(struct regulator_dev *rdev)
- 
- 	ret = rdev->desc->ops->get_current_limit(rdev);
- out:
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return ret;
- }
- 
-@@ -2624,7 +2662,7 @@ int regulator_set_mode(struct regulator *regulator, unsigned int mode)
- 	int ret;
- 	int regulator_curr_mode;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 
- 	/* sanity check */
- 	if (!rdev->desc->ops->set_mode) {
-@@ -2648,7 +2686,7 @@ int regulator_set_mode(struct regulator *regulator, unsigned int mode)
- 
- 	ret = rdev->desc->ops->set_mode(rdev, mode);
- out:
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(regulator_set_mode);
-@@ -2657,7 +2695,7 @@ static unsigned int _regulator_get_mode(struct regulator_dev *rdev)
- {
- 	int ret;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 
- 	/* sanity check */
- 	if (!rdev->desc->ops->get_mode) {
-@@ -2667,7 +2705,7 @@ static unsigned int _regulator_get_mode(struct regulator_dev *rdev)
- 
- 	ret = rdev->desc->ops->get_mode(rdev);
- out:
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return ret;
- }
- 
-@@ -2719,7 +2757,7 @@ int regulator_set_optimum_mode(struct regulator *regulator, int uA_load)
- 	if (rdev->supply)
- 		input_uV = regulator_get_voltage(rdev->supply);
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 
- 	/*
- 	 * first check to see if we can set modes at all, otherwise just
-@@ -2780,7 +2818,7 @@ int regulator_set_optimum_mode(struct regulator *regulator, int uA_load)
- 	}
- 	ret = mode;
- out:
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(regulator_set_optimum_mode);
-@@ -2849,7 +2887,7 @@ int regulator_allow_bypass(struct regulator *regulator, bool enable)
- 	    !(rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_BYPASS))
- 		return 0;
- 
--	mutex_lock(&rdev->mutex);
-+	regulator_lock(rdev);
- 
- 	if (enable && !regulator->bypass) {
- 		rdev->bypass_count++;
-@@ -2873,7 +2911,7 @@ int regulator_allow_bypass(struct regulator *regulator, bool enable)
- 	if (ret == 0)
- 		regulator->bypass = enable;
- 
--	mutex_unlock(&rdev->mutex);
-+	regulator_unlock(rdev);
- 
- 	return ret;
- }
-@@ -3588,9 +3626,9 @@ int regulator_suspend_prepare(suspend_state_t state)
- 	mutex_lock(&regulator_list_mutex);
- 	list_for_each_entry(rdev, &regulator_list, list) {
- 
--		mutex_lock(&rdev->mutex);
-+		regulator_lock(rdev);
- 		ret = suspend_prepare(rdev, state);
--		mutex_unlock(&rdev->mutex);
-+		regulator_unlock(rdev);
- 
- 		if (ret < 0) {
- 			rdev_err(rdev, "failed to prepare\n");
-@@ -3618,7 +3656,7 @@ int regulator_suspend_finish(void)
- 	list_for_each_entry(rdev, &regulator_list, list) {
- 		struct regulator_ops *ops = rdev->desc->ops;
- 
--		mutex_lock(&rdev->mutex);
-+		regulator_lock(rdev);
- 		if ((rdev->use_count > 0  || rdev->constraints->always_on) &&
- 				ops->enable) {
- 			error = ops->enable(rdev);
-@@ -3637,7 +3675,7 @@ int regulator_suspend_finish(void)
- 				ret = error;
- 		}
- unlock:
--		mutex_unlock(&rdev->mutex);
-+		regulator_unlock(rdev);
- 	}
- 	mutex_unlock(&regulator_list_mutex);
- 	return ret;
-@@ -3825,7 +3863,7 @@ static int __init regulator_init_complete(void)
- 		if (!ops->disable || (c && c->always_on))
- 			continue;
- 
--		mutex_lock(&rdev->mutex);
-+		regulator_lock(rdev);
- 
- 		if (rdev->use_count)
- 			goto unlock;
-@@ -3857,7 +3895,7 @@ static int __init regulator_init_complete(void)
- 		}
- 
- unlock:
--		mutex_unlock(&rdev->mutex);
-+		regulator_unlock(rdev);
- 	}
- 
- 	mutex_unlock(&regulator_list_mutex);
-diff --git a/include/linux/regulator/driver.h b/include/linux/regulator/driver.h
-index 7df93f5..6bfa2af 100644
---- a/include/linux/regulator/driver.h
-+++ b/include/linux/regulator/driver.h
-@@ -289,6 +289,8 @@ struct regulator_dev {
- 
- 	struct blocking_notifier_head notifier;
- 	struct mutex mutex; /* consumer lock */
-+	struct task_struct *lock_owner; /* consumer thread context */
-+	int lock_count; /* number of recursive locks taken */
- 	struct module *owner;
- 	struct device dev;
- 	struct regulation_constraints *constraints;
--- 
-1.7.9.5
-
+> 
+> 
+> thanks,
+> 
+> Takashi
+> 
+> > > 
+> > >   NFSD: unable to generate recoverydir name (-2).
+> > >   NFSD: disabling legacy clientid tracking. Reboot recovery will not function correctly!
+> > >   BUG: unable to handle kernel NULL pointer dereference at 00000000000007a8
+> > >   IP: [<ffffffffa060c6c7>] nfsd4_client_tracking_exit+0x17/0x70 [nfsd]
+> > >   PGD 0
+> > >   Oops: 0000 [#1] PREEMPT SMP
+> > >   Modules linked in: nfsd fuse nfsv3 nfs_acl nfsv4 auth_rpcgss nfs lockd sunrpc cpufreq_conservative cpufreq_userspace cpufreq_powersave snd_hda_codec_hdmi snd_hda_codec_realtek intel_powerclamp acpi_cpufreq mperf coretemp ghash_clmulni_intel aesni_intel kvm_intel snd_hda_intel ablk_helper snd_hda_codec snd_hwdep kvm snd_pcm cryptd lrw aes_x86_64 snd_timer xts gf128mul e1000e snd sr_mod iTCO_wdt microcode cdrom usb_storage dcdbas iTCO_vendor_support i2c_i801 cdc_acm sg ptp lpc_ich mei soundcore pps_core mfd_core snd_page_alloc pciehp pci_hotplug autofs4 btrfs raid6_pq zlib_deflate xor libcrc32c i915 crc32c_intel drm_kms_helper drm xhci_hcd i2c_algo_bit thermal button video processor thermal_sys scsi_dh_rdac scsi_dh_hp_sw scsi_dh_emc scsi_dh_alua scsi_dh
+> > >   CPU 1
+> > >   Pid: 19567, comm: nfsd Not tainted 3.9.0-rc5-test+ #3 Dell Inc. OptiPlex 9010/0M9KCM
+> > >   RIP: 0010:[<ffffffffa060c6c7>]  [<ffffffffa060c6c7>] nfsd4_client_tracking_exit+0x17/0x70 [nfsd]
+> > >   RSP: 0018:ffff880181099c28  EFLAGS: 00010202
+> > >   RAX: ffff8801810900c0 RBX: 0000000000000004 RCX: 0000000000000006
+> > >   RDX: 0000000000000007 RSI: 0000000000000046 RDI: 0000000000000000
+> > >   RBP: ffff880181099c38 R08: 000000000000000a R09: 000000000000039f
+> > >   R10: 0000000000000000 R11: 000000000000039e R12: 0000000000000000
+> > >   R13: ffffffff81a87280 R14: ffff88014c819220 R15: ffff88020b75d200
+> > >   FS:  0000000000000000(0000) GS:ffff88021e240000(0000) knlGS:0000000000000000
+> > >   CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > >   CR2: 00000000000007a8 CR3: 0000000001a0d000 CR4: 00000000001407e0
+> > >   DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> > >   DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> > >   Process nfsd (pid: 19567, threadinfo ffff880181098000, task ffff8801810900c0)
+> > >   Stack:
+> > >    00000000fffffffe ffff88020b75d200 ffff880181099c58 ffffffffa060c75c
+> > >    ffffffff81a87280 ffff880002ba7000 ffff880181099cc8 ffffffffa060cb37
+> > >    ffff880181099d20 ffff88014c819220 0000000000000001 ffff88020b75d200
+> > >   Call Trace:
+> > >    [<ffffffffa060c75c>] legacy_recdir_name_error+0x3c/0x40 [nfsd]
+> > >    [<ffffffffa060cb37>] nfsd4_create_clid_dir+0xe7/0x200 [nfsd]
+> > >    [<ffffffffa0600323>] ? nfs4_preprocess_seqid_op+0x63/0x160 [nfsd]
+> > >    [<ffffffffa060ccaf>] nfsd4_client_record_create+0x5f/0x80 [nfsd]
+> > >    [<ffffffffa0604eef>] nfsd4_open_confirm+0x12f/0x1b0 [nfsd]
+> > >    [<ffffffffa05f35cf>] nfsd4_proc_compound+0x55f/0x770 [nfsd]
+> > >    [<ffffffffa05e0ded>] nfsd_dispatch+0xdd/0x220 [nfsd]
+> > >    [<ffffffffa04e58b8>] svc_process_common+0x328/0x6d0 [sunrpc]
+> > >    [<ffffffffa04e5fbc>] svc_process+0x10c/0x160 [sunrpc]
+> > >    [<ffffffffa05e079f>] nfsd+0xbf/0x130 [nfsd]
+> > >    [<ffffffffa05e06e0>] ? nfsd_destroy+0x90/0x90 [nfsd]
+> > >    [<ffffffff8106a4cb>] kthread+0xbb/0xc0
+> > >    [<ffffffff8106a410>] ? kthread_create_on_node+0x130/0x130
+> > >    [<ffffffff815b373c>] ret_from_fork+0x7c/0xb0
+> > >    [<ffffffff8106a410>] ? kthread_create_on_node+0x130/0x130
+> > >   Code: e0 49 8b 84 24 48 01 00 00 e9 25 ff ff ff 66 0f 1f 44 00 00 55 48 89 e5 41 54 49 89 fc 53 8b 1d 44 b4 00 00 e8 bb a9 a5 e0 85 db <49> 8b 84 24 a8 07 00 00 74 43 3b 18 77 3f 83 eb 01 48 63 db 48
+> > >   RIP  [<ffffffffa060c6c7>] nfsd4_client_tracking_exit+0x17/0x70 [nfsd]
+> > >    RSP <ffff880181099c28>
+> > >   CR2: 00000000000007a8
+> > >   ---[ end trace 5dd4307598e98cef ]---
+> > > 
+> > > This patch fixes it by passing the proper net instance instead of
+> > > NULL.
+> > > 
+> > > Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> > > Cc: <stable@vger.kernel.org> [v3.8+]
+> > > ---
+> > >  fs/nfsd/nfs4recover.c | 11 +++++------
+> > >  1 file changed, 5 insertions(+), 6 deletions(-)
+> > > 
+> > > diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
+> > > index 899ca26..ae0d5c9 100644
+> > > --- a/fs/nfsd/nfs4recover.c
+> > > +++ b/fs/nfsd/nfs4recover.c
+> > > @@ -146,7 +146,7 @@ out_no_tfm:
+> > >   * then disable recovery tracking.
+> > >   */
+> > >  static void
+> > > -legacy_recdir_name_error(int error)
+> > > +legacy_recdir_name_error(struct net *net, int error)
+> > >  {
+> > >  	printk(KERN_ERR "NFSD: unable to generate recoverydir "
+> > >  			"name (%d).\n", error);
+> > > @@ -160,8 +160,7 @@ legacy_recdir_name_error(int error)
+> > >  		printk(KERN_ERR "NFSD: disabling legacy clientid tracking. "
+> > >  			"Reboot recovery will not function correctly!\n");
+> > >  
+> > > -		/* the argument is ignored by the legacy exit function */
+> > > -		nfsd4_client_tracking_exit(NULL);
+> > > +		nfsd4_client_tracking_exit(net);
+> > >  	}
+> > >  }
+> > >  
+> > > @@ -184,7 +183,7 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
+> > >  
+> > >  	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
+> > >  	if (status)
+> > > -		return legacy_recdir_name_error(status);
+> > > +		return legacy_recdir_name_error(clp->net, status);
+> > >  
+> > >  	status = nfs4_save_creds(&original_cred);
+> > >  	if (status < 0)
+> > > @@ -341,7 +340,7 @@ nfsd4_remove_clid_dir(struct nfs4_client *clp)
+> > >  
+> > >  	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
+> > >  	if (status)
+> > > -		return legacy_recdir_name_error(status);
+> > > +		return legacy_recdir_name_error(clp->net, status);
+> > >  
+> > >  	status = mnt_want_write_file(nn->rec_file);
+> > >  	if (status)
+> > > @@ -601,7 +600,7 @@ nfsd4_check_legacy_client(struct nfs4_client *clp)
+> > >  
+> > >  	status = nfs4_make_rec_clidname(dname, &clp->cl_name);
+> > >  	if (status) {
+> > > -		legacy_recdir_name_error(status);
+> > > +		legacy_recdir_name_error(clp->net, status);
+> > >  		return status;
+> > >  	}
+> > >  
+> > > -- 
+> > > 1.8.1.4
+> > > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
