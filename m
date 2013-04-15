@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab3DOVlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 17:41:45 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:39974 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989Ab3DOVlo (ORCPT
+	id S935126Ab3DOVo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 17:44:56 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:54681 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755898Ab3DOVoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 17:41:44 -0400
+	Mon, 15 Apr 2013 17:44:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <516C702C.2030209@zytor.com>
+In-Reply-To: <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
 References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
 	<1365797627-20874-7-git-send-email-keescook@chromium.org>
 	<CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com>
 	<516A1D49.1050100@zytor.com>
 	<CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
 	<516C702C.2030209@zytor.com>
-Date: Mon, 15 Apr 2013 14:41:43 -0700
-X-Google-Sender-Auth: luoy0thLXODfuHgt49yKKkuBsQk
-Message-ID: <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
+	<CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
+Date: Mon, 15 Apr 2013 14:44:53 -0700
+Message-ID: <CAG7+5M3rN-NzC5Mf-ox=W8Dror-cCJD4LhG61RtMV9xgpakFdw@mail.gmail.com>
 Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
-From: Kees Cook <keescook@chromium.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Eric Northup <digitaleric@google.com>, Yinghai Lu <yinghai@kernel.org>,
+From: Eric Northup <digitaleric@google.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "kernel-hardening@lists.openwall.com" 
 	<kernel-hardening@lists.openwall.com>,
@@ -37,46 +37,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 2:25 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/15/2013 02:06 PM, Eric Northup wrote:
->> On Sat, Apr 13, 2013 at 8:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 04/13/2013 05:37 PM, Yinghai Lu wrote:
+W/the relocation information, we can pick the virtual address to load
+at independent from the physical load address.
+
+On Mon, Apr 15, 2013 at 2:41 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Apr 15, 2013 at 2:25 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 04/15/2013 02:06 PM, Eric Northup wrote:
+>>> On Sat, Apr 13, 2013 at 8:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>>> On 04/13/2013 05:37 PM, Yinghai Lu wrote:
+>>>>>
+>>>>> so decompress code position is changed?
+>>>>>
+>>>>> You may push out bss and other data area of run-time kernel of limit
+>>>>> that boot loader
+>>>>> chose according to setup_header.init_size.
+>>>>> aka that make those area overlap with ram hole or other area like
+>>>>> boot command line or initrd....
+>>>>>
 >>>>
->>>> so decompress code position is changed?
->>>>
->>>> You may push out bss and other data area of run-time kernel of limit
->>>> that boot loader
->>>> chose according to setup_header.init_size.
->>>> aka that make those area overlap with ram hole or other area like
->>>> boot command line or initrd....
->>>>
+>>>> Is there a strong reason to randomize the physical address on 64 bits
+>>>> (and if so, shouldn't we do it right?)
 >>>
->>> Is there a strong reason to randomize the physical address on 64 bits
->>> (and if so, shouldn't we do it right?)
+>>> The reason to randomize the physical address is because of the kernel
+>>> direct mapping range -- a predictable-to-attackers physical address
+>>> implies a predictable-to-attackers virtual address.
+>>>
+>>> It had seemed to me like changing the virtual base of the direct
+>>> mapping would be much more involved than physically relocating the
+>>> kernel, but better suggestions would be most welcome :-)
+>>>
 >>
->> The reason to randomize the physical address is because of the kernel
->> direct mapping range -- a predictable-to-attackers physical address
->> implies a predictable-to-attackers virtual address.
+>> You seem to be missing something here...
 >>
->> It had seemed to me like changing the virtual base of the direct
->> mapping would be much more involved than physically relocating the
->> kernel, but better suggestions would be most welcome :-)
+>> There are *two* mappings in 64-bit mode.  Physically, if you're going to
+>> randomize you might as well randomize over the entire range... except
+>> not too far down (on either 32 or 64 bit mode)... in particular, you
+>> don't want to drop below 16 MiB if you can avoid it.
 >>
+>> On 64 bits, there is no reason the virtual address has to be randomized
+>> the same way.
 >
-> You seem to be missing something here...
+> Aren't we bound by the negative 2GB addressing due to -mcmodel=kernel?
 >
-> There are *two* mappings in 64-bit mode.  Physically, if you're going to
-> randomize you might as well randomize over the entire range... except
-> not too far down (on either 32 or 64 bit mode)... in particular, you
-> don't want to drop below 16 MiB if you can avoid it.
+> -Kees
 >
-> On 64 bits, there is no reason the virtual address has to be randomized
-> the same way.
-
-Aren't we bound by the negative 2GB addressing due to -mcmodel=kernel?
-
--Kees
-
---
-Kees Cook
-Chrome OS Security
+> --
+> Kees Cook
+> Chrome OS Security
