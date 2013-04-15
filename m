@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933715Ab3DOCoS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:44:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36527 "EHLO
+	id S934592Ab3DOCop (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:44:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36539 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934494Ab3DOCoJ (ORCPT
+	with ESMTP id S934471Ab3DOCoI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:44:09 -0400
+	Sun, 14 Apr 2013 22:44:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [ 23/27] ftrace: Move ftrace_filter_lseek out of CONFIG_DYNAMIC_FTRACE section
-Date: Sun, 14 Apr 2013 19:43:22 -0700
-Message-Id: <20130415024233.069872762@linuxfoundation.org>
+        Namhyung Kim <namhyung@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 21/27] tracing: Fix possible NULL pointer dereferences
+Date: Sun, 14 Apr 2013 19:43:20 -0700
+Message-Id: <20130415024232.926555500@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -27,92 +29,108 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit 7f49ef69db6bbf756c0abca7e9b65b32e999eec8 upstream.
+commit 6a76f8c0ab19f215af2a3442870eeb5f0e81998d upstream.
 
-As ftrace_filter_lseek is now used with ftrace_pid_fops, it needs to
-be moved out of the #ifdef CONFIG_DYNAMIC_FTRACE section as the
-ftrace_pid_fops is defined when DYNAMIC_FTRACE is not.
+Currently set_ftrace_pid and set_graph_function files use seq_lseek
+for their fops.  However seq_open() is called only for FMODE_READ in
+the fops->open() so that if an user tries to seek one of those file
+when she open it for writing, it sees NULL seq_file and then panic.
 
+It can be easily reproduced with following command:
+
+  $ cd /sys/kernel/debug/tracing
+  $ echo 1234 | sudo tee -a set_ftrace_pid
+
+In this example, GNU coreutils' tee opens the file with fopen(, "a")
+and then the fopen() internally calls lseek().
+
+Link: http://lkml.kernel.org/r/1365663302-2170-1-git-send-email-namhyung@kernel.org
+
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: stable@vger.kernel.org
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ftrace.h |    3 ++-
- kernel/trace/ftrace.c  |   28 ++++++++++++++--------------
- 2 files changed, 16 insertions(+), 15 deletions(-)
+ include/linux/ftrace.h     |    2 +-
+ kernel/trace/ftrace.c      |   10 +++++-----
+ kernel/trace/trace_stack.c |    2 +-
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
 --- a/include/linux/ftrace.h
 +++ b/include/linux/ftrace.h
-@@ -394,7 +394,6 @@ ssize_t ftrace_filter_write(struct file
+@@ -394,7 +394,7 @@ ssize_t ftrace_filter_write(struct file
  			    size_t cnt, loff_t *ppos);
  ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
  			     size_t cnt, loff_t *ppos);
--loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int whence);
+-loff_t ftrace_regex_lseek(struct file *file, loff_t offset, int whence);
++loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int whence);
  int ftrace_regex_release(struct inode *inode, struct file *file);
  
  void __init
-@@ -567,6 +566,8 @@ static inline int
- ftrace_regex_release(struct inode *inode, struct file *file) { return -ENODEV; }
- #endif /* CONFIG_DYNAMIC_FTRACE */
- 
-+loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int whence);
-+
- /* totally disable ftrace - can not re-enable after this */
- void ftrace_kill(void);
- 
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -1027,6 +1027,19 @@ static __init void ftrace_profile_debugf
- 
- static struct pid * const ftrace_swapper_pid = &init_struct_pid;
- 
-+loff_t
-+ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
-+{
-+	loff_t ret;
-+
-+	if (file->f_mode & FMODE_READ)
-+		ret = seq_lseek(file, offset, whence);
-+	else
-+		file->f_pos = ret = 1;
-+
-+	return ret;
-+}
-+
- #ifdef CONFIG_DYNAMIC_FTRACE
- 
- #ifndef CONFIG_FTRACE_MCOUNT_RECORD
-@@ -2589,7 +2602,7 @@ static void ftrace_filter_reset(struct f
-  * routine, you can use ftrace_filter_write() for the write
-  * routine if @flag has FTRACE_ITER_FILTER set, or
-  * ftrace_notrace_write() if @flag has FTRACE_ITER_NOTRACE set.
-- * ftrace_regex_lseek() should be used as the lseek routine, and
-+ * ftrace_filter_lseek() should be used as the lseek routine, and
-  * release must call ftrace_regex_release().
-  */
- int
-@@ -2673,19 +2686,6 @@ ftrace_notrace_open(struct inode *inode,
- 				 inode, file);
+@@ -2674,7 +2674,7 @@ ftrace_notrace_open(struct inode *inode,
  }
  
--loff_t
--ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
--{
--	loff_t ret;
--
--	if (file->f_mode & FMODE_READ)
--		ret = seq_lseek(file, offset, whence);
--	else
--		file->f_pos = ret = 1;
--
--	return ret;
--}
--
- static int ftrace_match(char *str, char *regex, int len, int type)
+ loff_t
+-ftrace_regex_lseek(struct file *file, loff_t offset, int whence)
++ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
  {
- 	int matched = 0;
+ 	loff_t ret;
+ 
+@@ -3548,7 +3548,7 @@ static const struct file_operations ftra
+ 	.open = ftrace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
+@@ -3556,7 +3556,7 @@ static const struct file_operations ftra
+ 	.open = ftrace_notrace_open,
+ 	.read = seq_read,
+ 	.write = ftrace_notrace_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
+@@ -3761,8 +3761,8 @@ static const struct file_operations ftra
+ 	.open		= ftrace_graph_open,
+ 	.read		= seq_read,
+ 	.write		= ftrace_graph_write,
++	.llseek		= ftrace_filter_lseek,
+ 	.release	= ftrace_graph_release,
+-	.llseek		= seq_lseek,
+ };
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+ 
+@@ -4420,7 +4420,7 @@ static const struct file_operations ftra
+ 	.open		= ftrace_pid_open,
+ 	.write		= ftrace_pid_write,
+ 	.read		= seq_read,
+-	.llseek		= seq_lseek,
++	.llseek		= ftrace_filter_lseek,
+ 	.release	= ftrace_pid_release,
+ };
+ 
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -322,7 +322,7 @@ static const struct file_operations stac
+ 	.open = stack_trace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
 
 
