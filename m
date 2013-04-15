@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934898Ab3DOX6H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 19:58:07 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50786 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933147Ab3DOX6E (ORCPT
+	id S934963Ab3DOX7U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 19:59:20 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:35302 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870Ab3DOX7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 19:58:04 -0400
-Date: Tue, 16 Apr 2013 09:57:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>, Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] mm: Soft-dirty bits for user memory changes
- tracking
-Message-Id: <20130416095753.d94fa7d74db6c4293ec7dea9@canb.auug.org.au>
-In-Reply-To: <20130415144619.645394d8ecdb180d7757a735@linux-foundation.org>
-References: <51669E5F.4000801@parallels.com>
-	<51669EB8.2020102@parallels.com>
-	<20130411142417.bb58d519b860d06ab84333c2@linux-foundation.org>
-	<5168089B.7060305@parallels.com>
-	<20130415144619.645394d8ecdb180d7757a735@linux-foundation.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__16_Apr_2013_09_57_53_+1000_DzV3xC3VcGJY8=O2"
+	Mon, 15 Apr 2013 19:59:19 -0400
+Message-ID: <516C9454.4060009@gmail.com>
+Date: Mon, 15 Apr 2013 18:59:16 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Colin Cross <ccross@android.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [RFC PATCH 1/3] pstore-ram: use write-combine mappings
+References: <1365563297-12480-1-git-send-email-robherring2@gmail.com> <CAMbhsRSvQPbzJ7Nt=OSSYE_A1e+eaUjO7XY+qRppJ5_gfWmW4A@mail.gmail.com> <51656992.60203@gmail.com> <CAMbhsRS1hnBRoomoiNijrXZB-938d2RSs1cu9EdSfmXD3xpSQg@mail.gmail.com>
+In-Reply-To: <CAMbhsRS1hnBRoomoiNijrXZB-938d2RSs1cu9EdSfmXD3xpSQg@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__16_Apr_2013_09_57_53_+1000_DzV3xC3VcGJY8=O2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/15/2013 05:21 PM, Colin Cross wrote:
+> On Wed, Apr 10, 2013 at 6:30 AM, Rob Herring <robherring2@gmail.com> wrote:
+>> On 04/09/2013 10:53 PM, Colin Cross wrote:
+>>> On Tue, Apr 9, 2013 at 8:08 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>>> From: Rob Herring <rob.herring@calxeda.com>
+>>>>
+>>>> Atomic operations are undefined behavior on ARM for device or strongly
+>>>> ordered memory types. So use write-combine variants for mappings. This
+>>>> corresponds to normal, non-cacheable memory on ARM. For many other
+>>>> architectures, this change should not change the mapping type.
+>>>
+>>> This is going to make ramconsole less reliable.  A debugging printk
+>>> followed by a __raw_writel that causes an immediate hard crash is
+>>> likely to lose the last updates, including the most useful message, in
+>>> the write buffers.
+>>
+>> It would have to be a write that hangs the bus. In my experience with
+>> AXI, the bus doesn't actually hang until you hit max outstanding
+>> transactions.
+> 
+> I've seen many cases where a single write to device memory in an
+> unclocked slave will completely and instantly hang all cpus, and the
+> next write will never happen.
+> 
+>> I think exclusive stores will limit the buffering, but that is probably
+>> not architecturally guaranteed.
+>>
+>> I could put a wb() in at the end of persistent_ram_write.
+>>
+>>> Also, isn't this patch unnecessary after patch 3 in this set?
+>>
+>> It is still needed in the main memory case to be architecturally correct
+>> to avoid multiple mappings of different memory types and exclusive
+>> accesses to device memory. At least on an A9, it doesn't really seem to
+>> matter. I could remove this for the ioremap case.
+> 
+> According to my reading of the latest ARM ARM (Issue C, section
+> A3.5.7), and Catalin's excellent explanation
+> (http://lists.linaro.org/pipermail/linaro-dev/2012-February/010239.html),
+> it is no longer considered unpredictable to have both cached and
+> non-cached mappings to the same memory, as long as you use proper
+> cache maintenance between accessing the two mappings.
+> 
+> In pstore_ram the cached mapping will never be accessed (and we don't
+> care about speculative accesses), so no cache maintenance is
+> necessary.  I don't see any need for this patch, and I see plenty of
+> possible problems.
 
-On Mon, 15 Apr 2013 14:46:19 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> Well, this is also a thing arch maintainers can do when they feel a
-> need to support the feature on their architecture.  To support them at
-> that time we should provide them with a) adequate information in an
-> easy-to-find place (eg, a nice comment at the site of the reference x86
-> implementation) and b) a userspace test app.
+Exclusive accesses still have further restrictions. From section 3.4.5:
 
-and c) a CONFIG symbol (maybe CONFIG_HAVE_MEM_SOFT_DIRTY, maybe in
-arch/Kconfig) that they can select to get this feature (so that this
-feature then depend on that CONFIG symbol instead of X86).  That way we
-don't have to go back and tidy this up when 15 or so architectures
-implement it.
+• It is IMPLEMENTATION DEFINED whether LDREX and STREX operations can be
+performed to a memory region
+   with the Device or Strongly-ordered memory attribute. Unless the
+implementation documentation explicitly
+  states that LDREX and STREX operations to a memory region with the
+Device or Strongly-ordered attribute are
+ permitted, the effect of such operations is UNPREDICTABLE.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Tue__16_Apr_2013_09_57_53_+1000_DzV3xC3VcGJY8=O2
-Content-Type: application/pgp-signature
+Given that it is implementation defined, I don't see how Linux can rely
+on that behavior.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRbJQBAAoJEECxmPOUX5FE0vcP/iSlzGF4U0CKadJ9YMkW9x7w
-Yi9cA4ra6t6NS+NTdhRVJZl5ZjzBMSjGj01UeGbVkSjYzGVKpFCtk7FMthYqo+ky
-1iCZVtsGymU7OeJpNho3s8K+q4G5DH+4kV6S00vGJdCZxANUlLqJ8ZEeHwrxSlMS
-YdcRcLdQsVE5bzBflBnNOv4Zye9+z1QiXo3n0nEdpZY1IcfgRqsE0f2nX3DrhLz5
-ZlxS+4LtXaDA7QGgk/SOxNGTAU9Q5dKDpCbcVAwheoyl+A+g7AEaCZKKMN1Fsouh
-xPUOwr6CM3brkmSBjXVFrZv263Tx1i1dScrzz4dmQQ3tWcRFbLvBQwc+me4A5EYA
-Ik6qYqkfqeEJ8EKRjQzA3FT3oWFuFQM4xbOQ9qDwJF/l9Z4jHVzLUuRkbqNcSvgN
-UBdgkV0QbIqFaFTvIYjgBpM0qBsKD3igLoS5zEo531k01ybKxxYfu2tm09nGfg9e
-AExjuB5/dTTmtQBy26SS2A458oSmCqhHNuuWkry38RubXtx1vFTjHnQbbo7HhLNY
-mQ84ocWmsR6WctLTNxpIXXVRmQ8mocLIxQlPgxgLw/ozeW+YW5CZeW359WfgUVBR
-qpcYrs3zPaIVp+MS2/pQ/eMMEeM+GVc/+pLjoJM6YkDA6y8/CVndSmYaiD7Nvl17
-V9LPhgi0ZQpx8S9wxNKJ
-=d5Gx
------END PGP SIGNATURE-----
-
---Signature=_Tue__16_Apr_2013_09_57_53_+1000_DzV3xC3VcGJY8=O2--
+Rob
