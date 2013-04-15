@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826Ab3DOQWL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:22:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50035 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752573Ab3DOQWJ (ORCPT
+	id S1754946Ab3DOQWo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:22:44 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:55407 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab3DOQWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:22:09 -0400
-Date: Mon, 15 Apr 2013 17:22:04 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: MyungJoo Ham <myungjoo.ham@smasung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: max8997: Test pdata by NULL checking instead
- of IS_ERR_OR_NULL
-Message-ID: <20130415162204.GI15837@opensource.wolfsonmicro.com>
-References: <1365861943.3814.3.camel@phoenix>
+	Mon, 15 Apr 2013 12:22:42 -0400
+Message-ID: <516C294D.6070700@wwwdotorg.org>
+Date: Mon, 15 Apr 2013 10:22:37 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LYw3s/afESlflPpp"
-Content-Disposition: inline
-In-Reply-To: <1365861943.3814.3.camel@phoenix>
-X-Cookie: Be careful!  Is it classified?
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nishanth Menon <nm@ti.com>
+CC: linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH V4 1/6] clk: OMAP: introduce device tree binding to kernel
+ clock data
+References: <1365807278-554-1-git-send-email-nm@ti.com> <1365807278-554-2-git-send-email-nm@ti.com>
+In-Reply-To: <1365807278-554-2-git-send-email-nm@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/12/2013 04:54 PM, Nishanth Menon wrote:
+> OMAP clock data is located in arch/arm/mach-omap2/cclockXYZ_data.c.
+> However, this presents an obstacle for using these clock nodes in
+> Device Tree definitions. This is especially true for board specific
+> clocks initially. The fixed clocks are currently found via clock
+> aliases table. There are many possible approaches to this problem as
+> discussed in the following thread:
+> http://marc.info/?t=136370325600009&r=1&w=2.
+> Highlights of the options:
+> a) device specific clk_add_alias:
+>    cons: driver handling required
+> b) using an generic clk node and indexing to reach the clock required.
+>    This is similar in approach taken by tegra and few other platforms.
+>    Example usage: clock = <&clk 5>;
+>    cons: potential to have mismatches in indexed table and associated
+>    dtb data. In addition, managing continued documentation in bindings
+>    as clock indexing increases. Even though readability angle could be
+>    improved by using preprocessing of DT using macros, indexed
+>    approach is inherently risky from cases like the following:
+>    clk indexes in kernel:
+>    1 - mpu_dpll
+>    2 - aux_clk1
+>    3 - core_clk
+>    DT entry for peripheral X uses <&clk 2> to reach aux_clk1. Now, let's
+>    say kernel updates indices to:
+>    1 - mpu_dpll
+>    2 - per_dpll
+>    3 - aux_clk1
+>    4 - core_clk
+>    using the old dtb(or dts missing an update), on new kernel which
+>    has updated indices will result in per_dpll now controlled for
+>    peripheral X without warning or any potential error detection.
+> 
+>    Even though we could claim this is user error, such errors are hard
+>    to track down and fix.
 
---LYw3s/afESlflPpp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The error in case (b) is that you shouldn't be changing the DT bindings
+after they've first been created. That would avoid the problem
+situation. The person using the old DTB with the new kernel didn't
+commit user error.
 
-On Sat, Apr 13, 2013 at 10:05:43PM +0800, Axel Lin wrote:
-> pdata is either a valid pointer or NULL, use NULL checking rather than
-> IS_ERR_OR_NULL macro.
+> An alternate approach introduced here is to introduce device tree
+> bindings corresponding to the clock nodes required in DT definition
+> for SoC which automatically maps back to the definitions in
+> cclockXYZ_data.c.
 
-Applied, thanks.
-
---LYw3s/afESlflPpp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRbCkTAAoJELSic+t+oim93J8P/RpArN9U2VQV36Wc/OWMZRej
-tzpldo6C9TODNAISD6QnyTkAwZNAoBkJz4nBRXCyox4b9dS46MWStQkbWNUlf6ij
-r7RzyPpQqaCbJvO3koJzHH1rVTqZ45iGsWr39bvNv34D0hx2ujAWwDCV7bcdPPAc
-+xM6skNZD6Bnpl8xl1Z4DSFaODWBYkpUmtRLCQNlUR6fPdR94J2aidEja8Rhuzgd
-do6QBW2QRiqP2+wYm9qLqBfD2Kn5LDZYhCzrbdh8yzx5+IN7RyHsFIH1C+DfDoPD
-J8pvgyPxsvgvMA+BkBaBKJVcnTWz2OuBhM0DkGz40AdNYnLJOyhxX3KuS0k7uhcm
-HvdjQUjDaJc/vFPXT3kH6p458NCxrVQ5BNYffI92LBIfoP+GRDRSCoMe9nwlME2S
-ho6TEyfOSdzw3d+wSf7ZGJtKjiEUHgYvLJM1adFop8dUcY1UHWVmblgB+S9WAvvr
-upP4N46wfh4sVI012xNc+2ZX8Jv1rBLGN6UBp0DWP1ebYgHHseWfzKJS5ZYgQCC2
-GJ5vUEsi94B76h06KMCYZBl6vzY8g660ISYMxLu7XuAiv7KcNVOqCxWl/YPLcVQ7
-8/NAsBdiObcpZcOR1NqMpf7V0KSV3ISK/krIYK8/+VUS7aKUeKc+hA/kHKmKqUPk
-frfcODa18lRD9awb5awr
-=oEe5
------END PGP SIGNATURE-----
-
---LYw3s/afESlflPpp--
+Well, I haven't read the patches, but isn't that exactly what the "2" is
+in <&clk 2>?
