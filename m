@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936108Ab3DPQgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:36:00 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:57319 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936026Ab3DPQf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:35:59 -0400
-Date: Tue, 16 Apr 2013 09:36:00 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
-        Simon Glass <sjg@chromium.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        grant.likely@secretlab.ca, yuvaraj.cd@gmail.com,
-        ben.dooks@codethink.co.uk, u.kleine-koenig@pengutronix.de,
-        broonie@opensource.wolfsonmicro.com, girish.shivananjappa@linaro.org,
-        bhushan.r@samsung.com, sreekumar.c@samsung.com,
-        prashanth.g@samsung.com, djkurtz@chromium.org, swarren@wwwdotorg.org,
-        linux@roeck-us.net, Russell King <linux@arm.linux.org.uk>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jingoo Han <jg1.han@samsung.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 3/3] ARM: dts: Add sbs-battery for exynos5250-snow
-Message-ID: <20130416163600.GC4918@quad.lixom.net>
-References: <1365543270-10736-1-git-send-email-dianders@chromium.org>
- <1366129742-16048-1-git-send-email-dianders@chromium.org>
- <1366129742-16048-3-git-send-email-dianders@chromium.org>
+	id S936132Ab3DPQg1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:36:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42063 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935909Ab3DPQgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 12:36:24 -0400
+Date: Mon, 15 Apr 2013 14:00:02 +0200
+From: Jan Kara <jack@suse.cz>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH 3/3] fsfreeze: use sb_start_write_killable instead of
+ sb_start_write
+Message-ID: <20130415120002.GD2299@quack.suse.cz>
+References: <5169359A.4090709@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366129742-16048-3-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5169359A.4090709@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 09:29:02AM -0700, Doug Anderson wrote:
-> Now that we have i2c-arbitrator in place on bus 4 we can add the
-> sbs-battery driver.  Future devices will be added onto bus 4 once
-> drivers are in good shape.
+On Sat 13-04-13 12:38:18, Marco Stornelli wrote:
+> Replace sb_start_write with sb_start_write_killable where
+> possible.
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
+
+								Honza
+
 > 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-
-Acked-by: Olof Johansson <olof@lixom.net>
-
-
--Olof
+> Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+> ---
+>  fs/open.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/open.c b/fs/open.c
+> index 8c74100..d621d76 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -182,7 +182,9 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
+>  	if (IS_APPEND(inode))
+>  		goto out_putf;
+>  
+> -	sb_start_write(inode->i_sb);
+> +	error = sb_start_write_killable(inode->i_sb);
+> +	if (error < 0)
+> +		return error;
+>  	error = locks_verify_truncate(inode, f.file, length);
+>  	if (!error)
+>  		error = security_path_truncate(&f.file->f_path);
+> @@ -273,7 +275,9 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
+>  	if (!file->f_op->fallocate)
+>  		return -EOPNOTSUPP;
+>  
+> -	sb_start_write(inode->i_sb);
+> +	ret = sb_start_write_killable(inode->i_sb);
+> +	if (ret < 0)
+> +		return ret;
+>  	ret = file->f_op->fallocate(file, mode, offset, len);
+>  	sb_end_write(inode->i_sb);
+>  	return ret;
+> -- 
+> 1.7.3.4
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
