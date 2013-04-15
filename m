@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab3DOOCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 10:02:45 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:41377 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911Ab3DOOCo (ORCPT
+	id S1752903Ab3DOODw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 10:03:52 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:56594 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911Ab3DOODv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 10:02:44 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH 1/3] cputime_nsecs: use math64.h for nsec resolution conversion helpers
-References: <1363822467-6275-1-git-send-email-khilman@linaro.org>
-	<1363822467-6275-2-git-send-email-khilman@linaro.org>
-	<20130411171047.GB17129@somewhere.redhat.com>
-Date: Mon, 15 Apr 2013 07:02:40 -0700
-In-Reply-To: <20130411171047.GB17129@somewhere.redhat.com> (Frederic
-	Weisbecker's message of "Thu, 11 Apr 2013 19:10:50 +0200")
-Message-ID: <87r4ibdh8f.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 15 Apr 2013 10:03:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130415020614.067692418@linuxfoundation.org>
+References: <20130415020614.067692418@linuxfoundation.org>
+Date: Mon, 15 Apr 2013 08:03:49 -0600
+Message-ID: <CAKocOONkHStiUyfthfV5v0gK3O_P6a1fwVOKcomrsgUyqSbhtg@mail.gmail.com>
+Subject: Re: [ 00/11] 3.0.74-stable review
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec@gmail.com> writes:
-
-> On Wed, Mar 20, 2013 at 04:34:25PM -0700, Kevin Hilman wrote:
->> For the nsec resolution conversions to be useable on non 64-bit
->> architectures, the helpers in <linux/math64.h> need to be used so the
->> right arch-specific 64-bit math helpers can be used (e.g. do_div())
->> 
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+On Sun, Apr 14, 2013 at 8:17 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> This is the start of the stable review cycle for the 3.0.74 release.
+> There are 11 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 >
-> Ok the patch is nice!
+> Responses should be made by Wed Apr 17 02:05:34 UTC 2013.
+> Anything received after that time might be too late.
 >
-> I'm queuing it.
+> The whole patch series can be found in one patch at:
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.74-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
 
-Thanks, did you queue PATCH 3/3 also to remove the 64-bit limitation
-from VIRT_CPU_ACCOUNTING_GEN:  https://lkml.org/lkml/2013/3/20/656
+Patches applied cleanly to 3.0.73, 3.4.40, and 3.8.7
 
-Kevin
+Compiled and booted on the following systems:
+
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+(on the road, only one system and no cross compile tests this time)
+
+dmesgs for all releases look good. No regressions compared to the previous
+dmesgs for each of these releases.
+
+cross compile tests - skipped
+
+-- Shuah
