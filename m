@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab3DOQEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:04:12 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42950 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752019Ab3DOQEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:04:10 -0400
-Date: Mon, 15 Apr 2013 11:04:08 -0500
-From: Robin Holt <holt@sgi.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Robin Holt <holt@sgi.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Michel Lespinasse <walken@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot
- to boot cpu.)
-Message-ID: <20130415160408.GA3658@sgi.com>
-References: <20130408165916.GA3672@sgi.com>
- <20130410111620.GB29752@gmail.com>
- <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
- <20130411053106.GA9042@drongo>
- <5166B05E.8010904@linux.vnet.ibm.com>
- <20130411134837.GE3672@sgi.com>
- <20130412053718.GC3887@gmail.com>
- <5167A52F.6020503@linux.vnet.ibm.com>
- <20130412093149.GT3658@sgi.com>
- <20130413163022.GA7500@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130413163022.GA7500@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755519Ab3DOQEa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:04:30 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:48259 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472Ab3DOQCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 12:02:44 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH 20/20] tty: Remove extra wakeup from pty write() path
+Date: Mon, 15 Apr 2013 11:32:51 -0400
+Message-Id: <1366039971-8770-21-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
+References: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
+ <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 13, 2013 at 06:30:22PM +0200, Oleg Nesterov wrote:
-> On 04/12, Robin Holt wrote:
-> >
-> > +void migrate_to_boot_cpu(void)
-> > +{
-> > +	/* The boot cpu is always logical cpu 0 */
-> > +	int reboot_cpu_id = 0;
-> > +
-> > +	/* Make certain the cpu I'm about to reboot on is online */
-> > +	if (!cpu_online(reboot_cpu_id))
-> > +		reboot_cpu_id = smp_processor_id();
-> > +
-> > +	/* Make certain I only run on the appropriate processor */
-> > +	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
-> 
-> This is only theoretical, but perhaps it makes sense to set
-> PF_THREAD_BOUND before set_cpus_allowed_ptr() ? To prevent the
-> race with another thread doing sched_setaffinity().
+Acquiring the write_wait queue spin lock now accounts for the largest
+slice of cpu time on the tty write path. Two factors contribute to
+this situation; a overly-pessimistic line discipline write loop which
+_always_ sets up a wait loop even if i/o will immediately succeed, and
+on ptys, a wakeup storm from reads and writes.
 
-I don't quite understand this comment.  We are migrating our own thread.
-How does setting PF_THREAD_BOUND have any effect?
+Writer wakeup does not need to be performed by the pty driver.
+Firstly, since the actual i/o is performed within the write, the
+line discipline write loop will continue while space remains in
+the flip buffers. Secondly, when space becomes avail in the
+line discipline receive buffer (and thus also in the flip buffers),
+the pty unthrottle re-wakes the writer (non-flow-controlled line
+disciplines unconditionally unthrottle the driver when data is
+received). Thus, existing in-kernel i/o is guaranteed to advance.
+Finally, writer wakeup occurs at the conclusion of the line discipline
+write (in tty_write_unlock()). This guarantees that any user-space write
+waiters are woken to continue additional i/o.
 
-Robin
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/pty.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index ca1472b..9c2f1bc 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -121,10 +121,8 @@ static int pty_write(struct tty_struct *tty, const unsigned char *buf, int c)
+ 		/* Stuff the data into the input queue of the other end */
+ 		c = tty_insert_flip_string(to->port, buf, c);
+ 		/* And shovel */
+-		if (c) {
++		if (c)
+ 			tty_flip_buffer_push(to->port);
+-			tty_wakeup(tty);
+-		}
+ 	}
+ 	return c;
+ }
+-- 
+1.8.1.2
+
