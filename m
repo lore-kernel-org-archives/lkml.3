@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935234Ab3DOIJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 04:09:26 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:34015 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932337Ab3DOIJY (ORCPT
+	id S935264Ab3DOIMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 04:12:24 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:65241 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933542Ab3DOIMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 04:09:24 -0400
-Date: Mon, 15 Apr 2013 09:09:18 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: ab8500: Fix get_mode for shared mode
- regulators
-Message-ID: <20130415080918.GA6512@gmail.com>
-References: <1365424274.21989.2.camel@phoenix>
- <CAFRkauBC3mo3GiVeFJ-yUJscybpHje_94rC6oXZ1O5mm8M=9tA@mail.gmail.com>
+	Mon, 15 Apr 2013 04:12:23 -0400
+X-IronPort-AV: E=Sophos;i="4.87,473,1363132800"; 
+   d="scan'208";a="3547628"
+Message-ID: <516BB673.9060308@citrix.com>
+Date: Mon, 15 Apr 2013 10:12:35 +0200
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFRkauBC3mo3GiVeFJ-yUJscybpHje_94rC6oXZ1O5mm8M=9tA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH v1 2/7] xen-blkback: use balloon pages for
+ all mappings
+References: <1364382643-3711-1-git-send-email-roger.pau@citrix.com> <1364382643-3711-3-git-send-email-roger.pau@citrix.com> <20130409144733.GA3158@phenom.dumpdata.com> <516BB4C6.8090101@citrix.com>
+In-Reply-To: <516BB4C6.8090101@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+>> Perhaps you could update the comment from saying 'map this grant' (which
+>> implies doing it NOW as opposed to have done it already), and say:
+>>
+>> /*
+>> .. continue using the grant non-persistently. Note that
+>> we mapped it in the earlier loop and the earlier if conditional
+>> sets pending_handle(pending_req, i) = map[j].handle.
+>> */
+>>
+>>
+>>
+>>>                       }
+>>> -                     pending_handle(pending_req, i) =
+>>> -                             persistent_gnts[i]->handle;
+>>> -
+>>> -                     if (ret)
+>>> -                             continue;
+>>> -             } else {
+>>> -                     pending_handle(pending_req, i) = map[j++].handle;
+>>> -                     bitmap_set(pending_req->unmap_seg, i, 1);
+>>> -
+>>> -                     if (ret)
+>>> -                             continue;
+>>> +                     persistent_gnt->gnt = map[j].ref;
+>>> +                     persistent_gnt->handle = map[j].handle;
+>>> +                     persistent_gnt->page = pages[i];
+>>
+>> Oh boy, that is a confusing. i and j. Keep loosing track which one is which.
+>> It lookis right.
+>>
+>>> +                     if (add_persistent_gnt(&blkif->persistent_gnts,
+>>> +                                            persistent_gnt)) {
+>>> +                             kfree(persistent_gnt);
+>>
+>> I would also say 'persisten_gnt = NULL' for extra measure of safety
 
-> Ping.
-> 
-> Hi Lee,
-> Can you review this patch.
-> I think this one is a bug fix.
+This loop was not completely right, I failed to set the unmap_seg bit if
+we tried to map the grant persistently and failed, we would just jump to
+next without doing:
 
-Bengt is the SME for all things ab*-regulator related.
-
-No one knows the driver better than him.
-
-Bengt, would you mind reviewing?
-
-> 2013/4/8 Axel Lin <axel.lin@ingics.com>:
-> > The special handling code for getting shared mode status is wrong
-> > because it needs to check info->shared_mode->lp_mode_req for
-> > both regulators that shared the same mode register.
-> >
-> > In set_mode(), current code ensures we won't set mode to REGULATOR_MODE_IDLE
-> > if only one of the regulator requests to set idle.
-> >
-> > In get_mode(), we can just remove the special handling code for shared mode.
-> > Read the register value always returns correct status no matter the regulator
-> > has shared mode register or not.
-> >
-> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> > ---
-> >  drivers/regulator/ab8500.c |    8 --------
-> >  1 file changed, 8 deletions(-)
-> >
-> > diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-> > index 9ebd131..acdffc5 100644
-> > --- a/drivers/regulator/ab8500.c
-> > +++ b/drivers/regulator/ab8500.c
-> > @@ -456,14 +456,6 @@ static unsigned int ab8500_regulator_get_mode(struct regulator_dev *rdev)
-> >                 return -EINVAL;
-> >         }
-> >
-> > -       /* Need special handling for shared mode */
-> > -       if (info->shared_mode) {
-> > -               if (info->shared_mode->lp_mode_req)
-> > -                       return REGULATOR_MODE_IDLE;
-> > -               else
-> > -                       return REGULATOR_MODE_NORMAL;
-> > -       }
-> > -
-> >         if (info->mode_mask) {
-> >                 /* Dedicated register for handling mode */
-> >                 ret = abx500_get_register_interruptible(info->dev,
-> >
-> >
-> >
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+bitmap_set(pending_req->unmap_seg, seg_idx, 1);
