@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933873Ab3DOCnv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:43:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36476 "EHLO
+	id S933326Ab3DOCno (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:43:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36466 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933371Ab3DOCns (ORCPT
+	with ESMTP id S1756981Ab3DOCnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:43:48 -0400
+	Sun, 14 Apr 2013 22:43:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eldad Zack <eldad@fogrefinery.com>, Daniel Mack <zonque@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 01/27] ALSA: usb-audio: fix endianness bug in snd_nativeinstruments_*
-Date: Sun, 14 Apr 2013 19:43:00 -0700
-Message-Id: <20130415024231.472910141@linuxfoundation.org>
+        Huacai Chen <chenhc@lemote.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 09/27] PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
+Date: Sun, 14 Apr 2013 19:43:08 -0700
+Message-Id: <20130415024232.048341734@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -27,74 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eldad Zack <eldad@fogrefinery.com>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 889d66848b12d891248b03abcb2a42047f8e172a upstream.
+commit 6f389a8f1dd22a24f3d9afc2812b30d639e94625 upstream.
 
-The usb_control_msg() function expects __u16 types and performs
-the endianness conversions by itself.
-However, in three places, a conversion is performed before it is
-handed over to usb_control_msg(), which leads to a double conversion
-(= no conversion):
-* snd_usb_nativeinstruments_boot_quirk()
-* snd_nativeinstruments_control_get()
-* snd_nativeinstruments_control_put()
+As commit 40dc166c (PM / Core: Introduce struct syscore_ops for core
+subsystems PM) say, syscore_ops operations should be carried with one
+CPU on-line and interrupts disabled. However, after commit f96972f2d
+(kernel/sys.c: call disable_nonboot_cpus() in kernel_restart()),
+syscore_shutdown() is called before disable_nonboot_cpus(), so break
+the rules. We have a MIPS machine with a 8259A PIC, and there is an
+external timer (HPET) linked at 8259A. Since 8259A has been shutdown
+too early (by syscore_shutdown()), disable_nonboot_cpus() runs without
+timer interrupt, so it hangs and reboot fails. This patch call
+syscore_shutdown() a little later (after disable_nonboot_cpus()) to
+avoid reboot failure, this is the same way as poweroff does.
 
-Caught by sparse:
+For consistency, add disable_nonboot_cpus() to kernel_halt().
 
-sound/usb/mixer_quirks.c:512:38: warning: incorrect type in argument 6 (different base types)
-sound/usb/mixer_quirks.c:512:38:    expected unsigned short [unsigned] [usertype] index
-sound/usb/mixer_quirks.c:512:38:    got restricted __le16 [usertype] <noident>
-sound/usb/mixer_quirks.c:543:35: warning: incorrect type in argument 5 (different base types)
-sound/usb/mixer_quirks.c:543:35:    expected unsigned short [unsigned] [usertype] value
-sound/usb/mixer_quirks.c:543:35:    got restricted __le16 [usertype] <noident>
-sound/usb/mixer_quirks.c:543:56: warning: incorrect type in argument 6 (different base types)
-sound/usb/mixer_quirks.c:543:56:    expected unsigned short [unsigned] [usertype] index
-sound/usb/mixer_quirks.c:543:56:    got restricted __le16 [usertype] <noident>
-sound/usb/quirks.c:502:35: warning: incorrect type in argument 5 (different base types)
-sound/usb/quirks.c:502:35:    expected unsigned short [unsigned] [usertype] value
-sound/usb/quirks.c:502:35:    got restricted __le16 [usertype] <noident>
-
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
-Acked-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer_quirks.c |    4 ++--
- sound/usb/quirks.c       |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/sys.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/usb/mixer_quirks.c
-+++ b/sound/usb/mixer_quirks.c
-@@ -509,7 +509,7 @@ static int snd_nativeinstruments_control
- 	else
- 		ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
- 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
--				  0, cpu_to_le16(wIndex),
-+				  0, wIndex,
- 				  &tmp, sizeof(tmp), 1000);
- 	up_read(&mixer->chip->shutdown_rwsem);
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -323,7 +323,6 @@ void kernel_restart_prepare(char *cmd)
+ 	system_state = SYSTEM_RESTART;
+ 	usermodehelper_disable();
+ 	device_shutdown();
+-	syscore_shutdown();
+ }
  
-@@ -540,7 +540,7 @@ static int snd_nativeinstruments_control
- 	else
- 		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
- 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
--				  cpu_to_le16(wValue), cpu_to_le16(wIndex),
-+				  wValue, wIndex,
- 				  NULL, 0, 1000);
- 	up_read(&mixer->chip->shutdown_rwsem);
- 
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -486,7 +486,7 @@ static int snd_usb_nativeinstruments_boo
+ /**
+@@ -369,6 +368,7 @@ void kernel_restart(char *cmd)
  {
- 	int ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
- 				  0xaf, USB_TYPE_VENDOR | USB_RECIP_DEVICE,
--				  cpu_to_le16(1), 0, NULL, 0, 1000);
-+				  1, 0, NULL, 0, 1000);
- 
- 	if (ret < 0)
- 		return ret;
+ 	kernel_restart_prepare(cmd);
+ 	disable_nonboot_cpus();
++	syscore_shutdown();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+ 	else
+@@ -394,6 +394,7 @@ static void kernel_shutdown_prepare(enum
+ void kernel_halt(void)
+ {
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
++	disable_nonboot_cpus();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "System halted.\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
 
 
