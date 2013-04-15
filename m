@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab3DOOLj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 10:11:39 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:56715 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab3DOOLi convert rfc822-to-8bit (ORCPT
+	id S1752803Ab3DOOOF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 10:14:05 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:16604 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab3DOOOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 10:11:38 -0400
+	Mon, 15 Apr 2013 10:14:03 -0400
+Date: Mon, 15 Apr 2013 17:13:59 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "Dolkow, Snild" <Snild.Dolkow@sonymobile.com>
+Cc: =?iso-8859-1?B?IkFuZGVy9iwgT3NrYXIi?= <Oskar.Andero@sonymobile.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Brian Swetland <swetland@google.com>
+Subject: Re: [PATCH] lowmemorykiller: prevent multiple instances of low
+ memory killer
+Message-ID: <20130415141358.GO6692@mwanda>
+References: <1366031009-21958-1-git-send-email-oskar.andero@sonymobile.com>
+ <20130415131815.GG6638@mwanda>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
 MIME-Version: 1.0
-X-Originating-IP: [1.173.65.30]
-In-Reply-To: <516BF56A.5010401@stericsson.com>
-References: <1365424274.21989.2.camel@phoenix>
-	<516BB444.7010508@stericsson.com>
-	<CAFRkauDHn88Y8cAemTNVCXW6WUVqvFfhw1iY174nepNymiU8Nw@mail.gmail.com>
-	<CAFRkauDhqwcHtJU_uBf8wMmKr8DohHZnU6DNPBnzZhTp9-eBfg@mail.gmail.com>
-	<516BE5AE.3020703@stericsson.com>
-	<CAFRkauBzvdGrYizNZXivrzCdQ0btUamFL2hLjLX4rzS6fWhsWA@mail.gmail.com>
-	<516BF56A.5010401@stericsson.com>
-Date: Mon, 15 Apr 2013 22:11:36 +0800
-Message-ID: <CAFRkauDp7P5t6BrZ5d=shOCqc71-zHRV1X_8aHRioGLV+oFFMg@mail.gmail.com>
-Subject: Re: [PATCH] regulator: ab8500: Fix get_mode for shared mode regulators
-From: Axel Lin <axel.lin@ingics.com>
-To: =?ISO-8859-1?Q?Bengt_J=F6nsson?= <bengt.g.jonsson@stericsson.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/15 Bengt Jönsson <bengt.g.jonsson@stericsson.com>:
-> On 04/15/2013 02:13 PM, Axel Lin wrote:
->>>
->>> I guess what you don't like with the current approach is that the driver
->>> returns REGULATOR_MODE_IDLE in some cases where the mode register is set
->>> to
->>> LP. But I think, with patch applied, the control may be wrong in some
->>> cases
->>> because the regulator framework will call get_mode and see that the mode
->>> is
->>> already correct and not call set_mode so lp_mode_req will not get
->>> updated. I
->>
->> I got your point now.
->>
->> My point is get_mode() should always return "correct" status by
->> reading register value.
->> And as you mentioned, regulator_set_mode() did check current mode and
->> won't call
->> set_mode callback if current mode is the same as the target mode.
->> And that is why this patch won't work.
->>
->> However, Make get_mode() return "incorrect" status to avoid above
->> issue looks wrong to me.
->>
->> Regards,
->> Axel
+On Mon, Apr 15, 2013 at 03:38:08PM +0200, Dolkow, Snild wrote:
+> >Where is lowmem_shrink called from?  I only see shrink called from the
+> >bcache sysfs handler __bch_cache_set().  The return value isn't checked
+> >there.
+> >
+> >Up to now this function has only returns positive numbers.
+> >
+> >There isn't a place which check LMK_BUSY so maybe it's best to just
+> >return zero?
+> 
+> Hey Dan,
+> 
+> lowmem_shrink is assigned to a shrinker struct
+> (include/linux/shrinker.h) and called in do_shrinker_shrink() in
+> mm/vmscan.c. That, in turn, is called and checked in a few places
+> in vmscan.c.
 >
-> I understand your point of view, but I think that the framework (as it is
-> currently implemented) expects to get the requested mode of the regulator in
-> this case, not the actual mode (in the shared mode register).The alternative
-> could be to change the framework in some way.
->
-> Any ideas? Otherwise I propose to keep the code and maybe add a comment.
+> >From the comments in shrinker.h: 
+> "It should return the number of objects which remain in the
+> cache. If it returns -1, it means it cannot do any scanning at
+> this time (eg. there is a risk of deadlock). The callback must not
+> return -1 if nr_to_scan is zero."
 
-It looks to me a simple fix is to just get rid of the check of old mode with
-new mode setting.
+Ah.  Good.  -1 is the right return.
 
-Something like reverse of commit 500b4ac90d1103
-"regulator: return set_mode is same mode is requested" would work.
+But really should be a #define in shrinker.h instead of in
+drivers/staging/android/.
 
-Regards,
-Axel
+regards,
+dan carpenter
+
