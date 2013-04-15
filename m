@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab3DOQJi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:09:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38439 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751304Ab3DOQJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:09:37 -0400
-Date: Mon, 15 Apr 2013 18:04:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] uprobes: ret-probes + misc
-Message-ID: <20130415160416.GA17826@redhat.com>
+	id S1755554Ab3DOQJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:09:54 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:56746 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751022Ab3DOQJx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 12:09:53 -0400
+Date: Mon, 15 Apr 2013 12:13:19 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>
+Subject: perf: forcing instructions event to run on Fixed Counter 0
+Message-ID: <alpine.DEB.2.02.1304151205140.17281@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+It turns out that perf_event for intel seems to use the INST_RETIRED.ALL
+event interchangably with the "Fixed Counter 0" event.
 
-Mostly uretprobes. "perf probe -x file sym%return" works like kretprobes.
-TODO: longjmp() is not supported, currently we assume that the probed
-function returns, this needs another series.
+It turns out they are not equivelent.  The Fixed Counter 0 event turns out 
+to be deterministic, while INST_RETIRED.ALL has a bug where it counts 
+extra events due to hardware interrupts.
 
-Also the powerpc fixes plus a couple of cleanups/optimizations in uprobes
-and trace_uprobes.
+Having a user-accessible deterministic instructions event would be really 
+useful.  So is there a way we can specify we want an event to run on Fixed 
+Counter 0?  I think there is code already that does this for Fixed Counter 
+2 for similar reasons.
 
+For an example of this happening in real life, take the 
+./retired_instr.all.x86_64 from my deterministic benchmark that
+I'll be presenting at the ISPASS conference next week.  
+  (can be found here git://github.com/deater/deterministic.git )
 
+If you run this benchmark with the same event listed 5 times on an Ivy
+Bridge machine you get these results, notice the last one is the "proper"
+deterministic result and thus the one that ran on Fixed Counter 0.
 
-Ananth N Mavinakayanahalli (3):
-      uprobes: Add trap variant helper
-      uprobes/powerpc: Teach uprobes to ignore gdb breakpoints
-      uprobes/powerpc: Remove additional trap instruction check
+$ perf stat -e instructions:u,instructions:u,instructions:u,instructions:u,instructions:u ./retired_instr.all.x86_64
+...
+ Performance counter stats for './retired_instr.all.x86_64':
 
-Anton Arapov (9):
-      uretprobes: Introduce uprobe_consumer->ret_handler()
-      uretprobes: Reserve the first slot in xol_vma for trampoline
-      uretprobes/x86: Hijack return address
-      uretprobes/powerpc: Hijack return address
-      uretprobes: Return probe entry, prepare_uretprobe()
-      uretprobes: Return probe exit, invoke handlers
-      uretprobes: Limit the depth of return probe nestedness
-      uretprobes: Remove -ENOSYS as return probes implemented
-      uretprobes: Documentation update
+       227,010,687 instructions:u            #    0.00  insns per cycle        
+       227,010,687 instructions:u            #    0.00  insns per cycle        
+       227,010,687 instructions:u            #    0.00  insns per cycle        
+       227,010,687 instructions:u            #    0.00  insns per cycle        
+       227,000,723 instructions:u            #    0.00  insns per cycle        
 
-Oleg Nesterov (18):
-      uprobes: Use file_inode()
-      uprobes: Turn copy_opcode() into copy_from_page()
-      uprobes: Change __copy_insn() to use copy_from_page()
-      uprobes: Kill the unnecesary filp != NULL check in __copy_insn()
-      uprobes: Introduce copy_to_page()
-      uprobes: Change write_opcode() to use copy_*page()
-      uprobes/tracing: Kill the pointless task_pt_regs() calls
-      uprobes/tracing: Kill the pointless seq_print_ip_sym() call
-      uprobes/tracing: Kill the pointless local_save_flags/preempt_count calls
-      uprobes/tracing: Generalize struct uprobe_trace_entry_head
-      uprobes/tracing: Introduce uprobe_{trace,perf}_print() helpers
-      uprobes/tracing: Introduce is_ret_probe() and uretprobe_dispatcher()
-      uprobes/tracing: Make uprobe_{trace,perf}_print() uretprobe-friendly
-      uprobes/tracing: Make register_uprobe_event() paths uretprobe-friendly
-      uprobes/tracing: Make seq_printf() code uretprobe-friendly
-      uprobes/tracing: Change create_trace_uprobe() to support uretprobes
-      uprobes/tracing: Don't pass addr=ip to perf_trace_buf_submit()
-      uprobes/perf: Avoid perf_trace_buf_prepare/submit if ->perf_events is empty
+       1.902648316 seconds time elapsed
 
- Documentation/trace/uprobetracer.txt |  114 ++++++++------
- arch/powerpc/include/asm/uprobes.h   |    1 +
- arch/powerpc/kernel/uprobes.c        |   29 +++-
- arch/x86/include/asm/uprobes.h       |    1 +
- arch/x86/kernel/uprobes.c            |   29 ++++
- include/linux/uprobes.h              |    8 +
- kernel/events/uprobes.c              |  300 ++++++++++++++++++++++++++++------
- kernel/trace/trace.h                 |    5 -
- kernel/trace/trace_uprobe.c          |  203 +++++++++++++++++-------
- 9 files changed, 526 insertions(+), 164 deletions(-)
+Thanks,
 
+Vince Weaver
+vincent.weaver@maine.edu
+http://www.eece.maine.edu/~vweaver/
