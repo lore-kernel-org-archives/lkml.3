@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab3DOQH5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:07:57 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:64229 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688Ab3DOQH4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:07:56 -0400
-Date: Mon, 15 Apr 2013 09:07:47 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-input@vger.kernel.org, Randy Dunlap <rdunlap@infradead.org>,
-        Simon Glass <sjg@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: Export matrix_keypad_parse_of_params()
-Message-ID: <20130415160747.GA19223@core.coreip.homeip.net>
-References: <1366027608-17395-1-git-send-email-mmarek@suse.cz>
+	id S1753942Ab3DOQJi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:09:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38439 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751304Ab3DOQJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 12:09:37 -0400
+Date: Mon, 15 Apr 2013 18:04:16 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] uprobes: ret-probes + misc
+Message-ID: <20130415160416.GA17826@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366027608-17395-1-git-send-email-mmarek@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+Ingo, please pull from
 
-On Mon, Apr 15, 2013 at 02:06:48PM +0200, Michal Marek wrote:
-> Couple of input drivers depend on this symbol:
-> 
-> ERROR: "matrix_keypad_parse_of_params" [drivers/input/keyboard/tca8418_keypad.ko] undefined!
-> ERROR: "matrix_keypad_parse_of_params" [drivers/input/keyboard/cros_ec_keyb.ko] undefined!
-> 
-> Reported-by: Randy Dunlap <rdunlap@infradead.org>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
+  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
 
-Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Mostly uretprobes. "perf probe -x file sym%return" works like kretprobes.
+TODO: longjmp() is not supported, currently we assume that the probed
+function returns, this needs another series.
 
-This is coming through some other tree though so you 'll have to track
-it down.
+Also the powerpc fixes plus a couple of cleanups/optimizations in uprobes
+and trace_uprobes.
 
-Thanks.
 
-> ---
->  drivers/input/matrix-keymap.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
-> index 619b382..08b61f5 100644
-> --- a/drivers/input/matrix-keymap.c
-> +++ b/drivers/input/matrix-keymap.c
-> @@ -68,6 +68,7 @@ int matrix_keypad_parse_of_params(struct device *dev,
->  
->  	return 0;
->  }
-> +EXPORT_SYMBOL_GPL(matrix_keypad_parse_of_params);
->  
->  static int matrix_keypad_parse_of_keymap(const char *propname,
->  					 unsigned int rows, unsigned int cols,
-> -- 
-> 1.8.2.1
-> 
 
--- 
-Dmitry
+Ananth N Mavinakayanahalli (3):
+      uprobes: Add trap variant helper
+      uprobes/powerpc: Teach uprobes to ignore gdb breakpoints
+      uprobes/powerpc: Remove additional trap instruction check
+
+Anton Arapov (9):
+      uretprobes: Introduce uprobe_consumer->ret_handler()
+      uretprobes: Reserve the first slot in xol_vma for trampoline
+      uretprobes/x86: Hijack return address
+      uretprobes/powerpc: Hijack return address
+      uretprobes: Return probe entry, prepare_uretprobe()
+      uretprobes: Return probe exit, invoke handlers
+      uretprobes: Limit the depth of return probe nestedness
+      uretprobes: Remove -ENOSYS as return probes implemented
+      uretprobes: Documentation update
+
+Oleg Nesterov (18):
+      uprobes: Use file_inode()
+      uprobes: Turn copy_opcode() into copy_from_page()
+      uprobes: Change __copy_insn() to use copy_from_page()
+      uprobes: Kill the unnecesary filp != NULL check in __copy_insn()
+      uprobes: Introduce copy_to_page()
+      uprobes: Change write_opcode() to use copy_*page()
+      uprobes/tracing: Kill the pointless task_pt_regs() calls
+      uprobes/tracing: Kill the pointless seq_print_ip_sym() call
+      uprobes/tracing: Kill the pointless local_save_flags/preempt_count calls
+      uprobes/tracing: Generalize struct uprobe_trace_entry_head
+      uprobes/tracing: Introduce uprobe_{trace,perf}_print() helpers
+      uprobes/tracing: Introduce is_ret_probe() and uretprobe_dispatcher()
+      uprobes/tracing: Make uprobe_{trace,perf}_print() uretprobe-friendly
+      uprobes/tracing: Make register_uprobe_event() paths uretprobe-friendly
+      uprobes/tracing: Make seq_printf() code uretprobe-friendly
+      uprobes/tracing: Change create_trace_uprobe() to support uretprobes
+      uprobes/tracing: Don't pass addr=ip to perf_trace_buf_submit()
+      uprobes/perf: Avoid perf_trace_buf_prepare/submit if ->perf_events is empty
+
+ Documentation/trace/uprobetracer.txt |  114 ++++++++------
+ arch/powerpc/include/asm/uprobes.h   |    1 +
+ arch/powerpc/kernel/uprobes.c        |   29 +++-
+ arch/x86/include/asm/uprobes.h       |    1 +
+ arch/x86/kernel/uprobes.c            |   29 ++++
+ include/linux/uprobes.h              |    8 +
+ kernel/events/uprobes.c              |  300 ++++++++++++++++++++++++++++------
+ kernel/trace/trace.h                 |    5 -
+ kernel/trace/trace_uprobe.c          |  203 +++++++++++++++++-------
+ 9 files changed, 526 insertions(+), 164 deletions(-)
+
