@@ -1,92 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab3DOMdq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 08:33:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43712 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754469Ab3DOMdo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 08:33:44 -0400
-Message-ID: <516BF380.9020004@ti.com>
-Date: Mon, 15 Apr 2013 18:03:04 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1754646Ab3DOMfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 08:35:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38199 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753556Ab3DOMfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 08:35:15 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <b-cousson@ti.com>
+CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH] ARM: dts: omap3-beagle-xm: Add USB Host support for Rev Ax/Bx
+Date: Mon, 15 Apr 2013 15:35:06 +0300
+Message-ID: <1366029306-1824-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <linux-usb@vger.kernel.org>, <mchehab@redhat.com>,
-        <linux-doc@vger.kernel.org>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <javier@dowhile0.org>, <cesarb@cesarb.net>,
-        <arnd@arndb.de>, <eballetbo@gmail.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <rob.herring@calxeda.com>,
-        <swarren@nvidia.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <b-cousson@ti.com>,
-        <gregkh@linuxfoundation.org>, <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>, <balbi@ti.com>,
-        <santosh.shilimkar@ti.com>, <rob@landley.net>,
-        <akpm@linux-foundation.org>, <davem@davemloft.net>, <KISHON@ti.com>
-Subject: Re: [PATCH v3 0/6] Generic PHY Framework
-References: <1363770725-13717-1-git-send-email-kishon@ti.com> <20130415102009.D358E3E0AA8@localhost> <516BD835.8060007@ti.com> <20130415122634.3A08A3E0AA8@localhost>
-In-Reply-To: <20130415122634.3A08A3E0AA8@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Provide RESET and Power regulators for the USB PHY,
+the USB Host port mode and the PHY device.
 
-On Monday 15 April 2013 05:56 PM, Grant Likely wrote:
-> On Mon, 15 Apr 2013 16:06:37 +0530, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->> Hi,
->>
->> On Monday 15 April 2013 03:50 PM, Grant Likely wrote:
->>> On Wed, 20 Mar 2013 14:41:59 +0530, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>>> Added a generic PHY framework that provides a set of APIs for the PHY drivers
->>>> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
->>>> the PHY with or without using phandle. To obtain a reference to the PHY
->>>> without using phandle, the platform specfic intialization code (say from board
->>>> file) should have already called phy_bind with the binding information. The
->>>> binding information consists of phy's device name, phy user device name and an
->>>> index. The index is used when the same phy user binds to mulitple phys.
->>>>
->>>> This framework will be of use only to devices that uses external PHY (PHY
->>>> functionality is not embedded within the controller).
->>>>
->>>> The intention of creating this framework is to bring the phy drivers spread
->>>> all over the Linux kernel to drivers/phy to increase code re-use and to
->>>> increase code maintainability.
->>>>
->>>> Comments to make PHY as bus wasn't done because PHY devices can be part of
->>>> other bus and making a same device attached to multiple bus leads to bad
->>>> design.
->>>>
->>>> Making omap-usb2 and twl4030 to use this framework is provided as a sample.
->>>>
->>>> This patch series is developed on 3.9-rc3. Once the patch series gets finalised
->>>> I'll resend omap-usb2 and twl4030 part based on Felipe's tree.
->>>>
->>>
->>> [...]
->>>
->>>>    drivers/Kconfig                                    |    2 +
->>>>    drivers/Makefile                                   |    2 +
->>>>    drivers/phy/Kconfig                                |   13 +
->>>>    drivers/phy/Makefile                               |    5 +
->>>>    drivers/phy/phy-core.c                             |  574 ++++++++++++++++++++
->>>
->>> This looks to be very specific for USB PHYs. Are you intending it to be
->>> used for other types of PHYs, like Ethernet PHYs? If not, then this
->>
->> Not really. This can be used by USB, SATA and Sylwester was planning to
->> use it for video PHY's.
->
-> So what are the common bits that are shared between those phys? Merely
-> matching phys to controllers? Besides that, each of those devices have
+Also provide pin multiplexer information for USB host
+pins.
 
-The same PIPE3 PHY IP is used for USB (usb3) and SATA in OMAP5. Even for 
-just matching PHYs to controllers you need a simple framework (like 
-this) or else we'll end up in creating such frameworks for lot of these 
-subsystems.
+This will not work for Rev Cx boards because of reversed logic
+for USB_POWER_Enable.
 
-Thanks
-Kishon
+CC: Benoît Cousson <b-cousson@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/boot/dts/omap3-beagle-xm.dts |   62 +++++++++++++++++++++++++++++++++
+ 1 files changed, 62 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+index 5a31964..d394c51 100644
+--- a/arch/arm/boot/dts/omap3-beagle-xm.dts
++++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+@@ -57,6 +57,60 @@
+ 		ti,mcbsp = <&mcbsp2>;
+ 		ti,codec = <&twl_audio>;
+ 	};
++
++	/* HS USB Port 2 RESET */
++	hsusb2_reset: hsusb2_reset_reg {
++		compatible = "regulator-fixed";
++		regulator-name = "hsusb2_reset";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&gpio5 19 0>;	/* gpio_147 */
++		startup-delay-us = <70000>;
++		enable-active-high;
++	};
++
++	/* HS USB Port 2 Power */
++	hsusb2_power: hsusb2_power_reg {
++		compatible = "regulator-fixed";
++		regulator-name = "hsusb2_vbus";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&twl_gpio 18 0>;	/* GPIO LEDA */
++		startup-delay-us = <70000>;
++		enable-active-high;	/* FIXME: active-low for Rev. C */
++	};
++
++	/* HS USB Host PHY on PORT 2 */
++	hsusb2_phy: hsusb2_phy {
++		compatible = "usb-nop-xceiv";
++		reset-supply = <&hsusb2_reset>;
++		vcc-supply = <&hsusb2_power>;
++	};
++
++};
++
++&omap3_pmx_core {
++	pinctrl-names = "default";
++	pinctrl-0 = <
++			&hsusbb2_pins
++	>;
++
++	hsusbb2_pins: pinmux_hsusbb2_pins {
++		pinctrl-single,pins = <
++			0x5c0 0x3  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_clk OUTPUT */
++			0x5c2 0x3  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_stp OUTPUT */
++			0x5c4 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dir INPUT | PULLDOWN */
++			0x5c6 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_nxt INPUT | PULLDOWN */
++			0x5c8 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat0 INPUT | PULLDOWN */
++			0x5cA 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat1 INPUT | PULLDOWN */
++			0x1a4 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat2 INPUT | PULLDOWN */
++			0x1a6 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat3 INPUT | PULLDOWN */
++			0x1a8 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat4 INPUT | PULLDOWN */
++			0x1aa 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat5 INPUT | PULLDOWN */
++			0x1ac 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat6 INPUT | PULLDOWN */
++			0x1ae 0x10b  /* USBB2_ULPITLL_CLK_MUXMODE.usbb1_ulpiphy_dat7 INPUT | PULLDOWN */
++		>;
++	};
+ };
+ 
+ &i2c1 {
+@@ -125,3 +179,11 @@
+ 	mode = <3>;
+ 	power = <50>;
+ };
++
++&usbhshost {
++	port2-mode = "ehci-phy";
++};
++
++&usbhsehci {
++	phys = <0 &hsusb2_phy>;
++};
+-- 
+1.7.4.1
+
