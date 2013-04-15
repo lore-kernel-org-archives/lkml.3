@@ -1,183 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab3DOSHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 14:07:47 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:63926 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756037Ab3DOSHp (ORCPT
+	id S1756432Ab3DOSJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 14:09:58 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:46053 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755123Ab3DOSJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 14:07:45 -0400
+	Mon, 15 Apr 2013 14:09:56 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUVbv-e8tY1+zZE+z0377yvrFUZvPkZ5qi9nHzfmEYNbTQ@mail.gmail.com>
-References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com>
-	<CA+icZUUsAqJ3kyCZivYeTpY7n=EDMv1UcC2VNwQro4h7NHDWag@mail.gmail.com>
-	<CA+icZUW+TB3q58bL+d=A355S4vtRhwMq8AV+tqjv6MgDtHRCaA@mail.gmail.com>
-	<1923819.6Nb81T2TR8@vostro.rjw.lan>
-	<CA+icZUXUGOjGUAFxgQk0780pcBB-YjiujDLXF+gJFegi+pd+dA@mail.gmail.com>
-	<516C25AE.4050503@intel.com>
-	<CAKohpo=OOPBYCD_K6RLw2YrJxhMokwrOww4QM2t2T4SnGObyQQ@mail.gmail.com>
-	<CA+icZUVk1_Dw5Kb8uWwk7xjrgx6jPOfP8BZdFXQ9bqgmdckHuQ@mail.gmail.com>
-	<CA+icZUVbv-e8tY1+zZE+z0377yvrFUZvPkZ5qi9nHzfmEYNbTQ@mail.gmail.com>
-Date: Mon, 15 Apr 2013 20:07:43 +0200
-Message-ID: <CA+icZUVbdeOVMFU0RePtpA+-fxFyk0JnePUg6MVP-ZkeicEGKw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Nathan Zimmer <nzimmer@sgi.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1366030138-71292-2-git-send-email-huawei.libin@huawei.com>
+References: <1366030138-71292-1-git-send-email-huawei.libin@huawei.com> <1366030138-71292-2-git-send-email-huawei.libin@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 15 Apr 2013 12:09:34 -0600
+Message-ID: <CAErSpo6zpqkVZA-tbb8zXd9=WQ71JUCNPwDzx=009=Kv8tHgGw@mail.gmail.com>
+Subject: Re: [PATCH 2/6] PCI: use vma_pages() to replace (vm_end - vm_start)
+ >> PAGE_SHIFT
+To: Libin <huawei.libin@huawei.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Airlie <airlied@linux.ie>, "Hans J. Koch" <hjk@hansjkoch.de>,
+        Petr Vandrovec <petr@vandrovec.name>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        Jiri Kosina <jkosina@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        linux-mm@kvack.org, Hanjun Guo <guohanjun@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 7:57 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Mon, Apr 15, 2013 at 7:51 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Mon, Apr 15, 2013 at 7:22 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->>> On 15 April 2013 21:37, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
->>>> If the intel_pstate driver is being used __cpufreq_governor() should NOT be
->>>> called intel_pstate does not implement the target() callback.
->>>>
->>>> Nathan's commit 5800043b2 changed the fence around the call to
->>>> __cpufreq_governor() in __cpufreq_remove_dev() here is the relevant hunk.
->>>
->>> No it isn't.
->>>
->>>> +       if (has_target)
->>>>                 __cpufreq_governor(data, CPUFREQ_GOV_STOP);
->>>
->>> As it has taken care of this limitation.
->>>
->>> BUT some of my earlier patches haven't. :(
->>> Here is the fix (Sedat please try this and give your tested-by, use the attached
->>> patch as gmail might break what i am copying in mail)..
->>>
->>> Sorry for being late in fixing this issue, i am still down with Tonsil infection
->>> and fever.. Today only i got some power to fix it after seeing Dirk's mail.
->>>
->>> Your tested-by may help me to recover quickly :)
->>>
->>
->> Hehe.
->> Me myself and I was today chez-mon-docteur... Let's see the results on Thursday.
->> Again, get well soon.
->>
->> Tested against...
->>
->>  "BROKEN" Linux-Next (next-20130411) with attached patchset (incl.
->> your cpufreq-next-fixes).
->>
->> Test-Case...
->>
->> CONFIG_X86_INTEL_PSTATE=y
->>
->> root# echo 0 > /sys/devices/system/cpu/cpu3/online
->>
->> Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
->>
->> ...did not test on-reboot-case.
->>
+On Mon, Apr 15, 2013 at 6:48 AM, Libin <huawei.libin@huawei.com> wrote:
+> (*->vm_end - *->vm_start) >> PAGE_SHIFT operation is implemented
+> as a inline funcion vma_pages() in linux/mm.h, so using it.
+>
+> Signed-off-by: Libin <huawei.libin@huawei.com>
 
-Reboot is also fine here.
+Applied to my pci/misc branch for v3.10, thanks!
 
->> ( Dirk promised to test as well... )
->>
+Bjorn
 
-Dirk confirmed your patch works for him.
-Good!
-
-- Sedat -
-
+> ---
+>  drivers/pci/pci-sysfs.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> Might be interesting as an extra-confirmation:
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index 9c6e9bb..5b4a9d9 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -897,7 +897,7 @@ int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
 >
-> root# echo 1 > /sys/devices/system/cpu/cpu3/online
+>         if (pci_resource_len(pdev, resno) == 0)
+>                 return 0;
+> -       nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+> +       nr = vma_pages(vma);
+>         start = vma->vm_pgoff;
+>         size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
+>         pci_start = (mmap_api == PCI_MMAP_PROCFS) ?
+> --
+> 1.8.2.1
 >
-> [ dmesg ]
 >
-> [  556.101961] smpboot: Booting Node 0 Processor 3 APIC 0x3
-> [  556.113158] Disabled fast string operations
-> [  556.116621] Intel pstate controlling: cpu 3
->
-> - Sedat -
->
->> - Sedat -
->>
->>> @Rafael: I will probably be down for one more week and so not doing any
->>> reviews for now... I do check important mails sent directly to me though.
->>>
->>> ------------x----------------------x------------------
->>>
->>> From: Viresh Kumar <viresh.kumar@linaro.org>
->>> Date: Mon, 15 Apr 2013 22:43:57 +0530
->>> Subject: [PATCH] cpufreq: Don't call __cpufreq_governor() for drivers without
->>>  target()
->>>
->>> Some cpufreq drivers implement their own governor and so don't need us to call
->>> generic governors interface via __cpufreq_governor(). Few recent commits haven't
->>> obeyed this law well and we saw some regressions.
->>>
->>> This patch tries to fix this issue.
->>>
->>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->>> ---
->>>  drivers/cpufreq/cpufreq.c | 18 +++++++++++++-----
->>>  1 file changed, 13 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
->>> index 3564947..a6f6595 100644
->>> --- a/drivers/cpufreq/cpufreq.c
->>> +++ b/drivers/cpufreq/cpufreq.c
->>> @@ -858,13 +858,18 @@ static int cpufreq_add_policy_cpu(unsigned int
->>> cpu, unsigned int sibling,
->>>                                   struct device *dev)
->>>  {
->>>         struct cpufreq_policy *policy;
->>> -       int ret = 0;
->>> +       int ret = 0, has_target = 0;
->>>         unsigned long flags;
->>>
->>>         policy = cpufreq_cpu_get(sibling);
->>>         WARN_ON(!policy);
->>>
->>> -       __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
->>> +       rcu_read_lock();
->>> +       has_target = !!rcu_dereference(cpufreq_driver)->target;
->>> +       rcu_read_unlock();
->>> +
->>> +       if (has_target)
->>> +               __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
->>>
->>>         lock_policy_rwsem_write(sibling);
->>>
->>> @@ -877,8 +882,10 @@ static int cpufreq_add_policy_cpu(unsigned int
->>> cpu, unsigned int sibling,
->>>
->>>         unlock_policy_rwsem_write(sibling);
->>>
->>> -       __cpufreq_governor(policy, CPUFREQ_GOV_START);
->>> -       __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
->>> +       if (has_target) {
->>> +               __cpufreq_governor(policy, CPUFREQ_GOV_START);
->>> +               __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
->>> +       }
->>>
->>>         ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
->>>         if (ret) {
->>> @@ -1146,7 +1153,8 @@ static int __cpufreq_remove_dev(struct device
->>> *dev, struct subsys_interface *sif
->>>
->>>         /* If cpu is last user of policy, free policy */
->>>         if (cpus == 1) {
->>> -               __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
->>> +               if (has_target)
->>> +                       __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
->>>
->>>                 lock_policy_rwsem_read(cpu);
->>>                 kobj = &data->kobj;
