@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab3DOCZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:25:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36123 "EHLO
+	id S1755266Ab3DOCZy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:25:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36117 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab3DOCZ5 (ORCPT
+	with ESMTP id S934085Ab3DOCZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:25:57 -0400
+	Sun, 14 Apr 2013 22:25:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hayes Wang <hayeswang@realtek.com>,
-        Francois Romieu <romieu@fr.zoreil.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 17/17] r8169: fix auto speed down issue
-Date: Sun, 14 Apr 2013 19:25:27 -0700
-Message-Id: <20130415022353.912756597@linuxfoundation.org>
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Josh Boyer <jwboyer@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@suse.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 14/17] x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare metal
+Date: Sun, 14 Apr 2013 19:25:24 -0700
+Message-Id: <20130415022353.686724505@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
 References: <20130415022352.616689034@linuxfoundation.org>
@@ -28,68 +29,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hayes Wang <hayeswang@realtek.com>
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 
-commit e2409d83434d77874b461b78af6a19cd6e6a1280 upstream.
+commit 511ba86e1d386f671084b5d0e6f110bb30b8eeb2 upstream.
 
-It would cause no link after suspending or shutdowning when the
-nic changes the speed to 10M and connects to a link partner which
-forces the speed to 100M.
+Invoking arch_flush_lazy_mmu_mode() results in calls to
+preempt_enable()/disable() which may have performance impact.
 
-Check the link partner ability to determine which speed to set.
+Since lazy MMU is not used on bare metal we can patch away
+arch_flush_lazy_mmu_mode() so that it is never called in such
+environment.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-Acked-by: Francois Romieu <romieu@fr.zoreil.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[ hpa: the previous patch "Fix vmalloc_fault oops during lazy MMU
+  updates" may cause a minor performance regression on
+  bare metal.  This patch resolves that performance regression.  It is
+  somewhat unclear to me if this is a good -stable candidate. ]
+
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+Link: http://lkml.kernel.org/r/1364045796-10720-2-git-send-email-konrad.wilk@oracle.com
+Tested-by: Josh Boyer <jwboyer@redhat.com>
+Tested-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/realtek/r8169.c |   28 +++++++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/paravirt.h       |    5 ++++-
+ arch/x86/include/asm/paravirt_types.h |    2 ++
+ arch/x86/kernel/paravirt.c            |   25 +++++++++++++------------
+ arch/x86/lguest/boot.c                |    1 +
+ arch/x86/xen/mmu.c                    |    1 +
+ 5 files changed, 21 insertions(+), 13 deletions(-)
 
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3483,6 +3483,30 @@ static void __devinit rtl_init_mdio_ops(
- 	}
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -741,7 +741,10 @@ static inline void arch_leave_lazy_mmu_m
+ 	PVOP_VCALL0(pv_mmu_ops.lazy_mode.leave);
  }
  
-+static void rtl_speed_down(struct rtl8169_private *tp)
+-void arch_flush_lazy_mmu_mode(void);
++static inline void arch_flush_lazy_mmu_mode(void)
 +{
-+	u32 adv;
-+	int lpa;
++	PVOP_VCALL0(pv_mmu_ops.lazy_mode.flush);
++}
+ 
+ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
+ 				phys_addr_t phys, pgprot_t flags)
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -91,6 +91,7 @@ struct pv_lazy_ops {
+ 	/* Set deferred update mode, used for batching operations. */
+ 	void (*enter)(void);
+ 	void (*leave)(void);
++	void (*flush)(void);
+ };
+ 
+ struct pv_time_ops {
+@@ -680,6 +681,7 @@ void paravirt_end_context_switch(struct
+ 
+ void paravirt_enter_lazy_mmu(void);
+ void paravirt_leave_lazy_mmu(void);
++void paravirt_flush_lazy_mmu(void);
+ 
+ void _paravirt_nop(void);
+ u32 _paravirt_ident_32(u32);
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -263,6 +263,18 @@ void paravirt_leave_lazy_mmu(void)
+ 	leave_lazy(PARAVIRT_LAZY_MMU);
+ }
+ 
++void paravirt_flush_lazy_mmu(void)
++{
++	preempt_disable();
 +
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	lpa = rtl_readphy(tp, MII_LPA);
++	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
++		arch_leave_lazy_mmu_mode();
++		arch_enter_lazy_mmu_mode();
++	}
 +
-+	if (lpa & (LPA_10HALF | LPA_10FULL))
-+		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full;
-+	else if (lpa & (LPA_100HALF | LPA_100FULL))
-+		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
-+		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full;
-+	else
-+		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
-+		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full |
-+		      (tp->mii.supports_gmii ?
-+		       ADVERTISED_1000baseT_Half |
-+		       ADVERTISED_1000baseT_Full : 0);
-+
-+	rtl8169_set_speed(tp->dev, AUTONEG_ENABLE, SPEED_1000, DUPLEX_FULL,
-+			  adv);
++	preempt_enable();
 +}
 +
- static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
+ void paravirt_start_context_switch(struct task_struct *prev)
  {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -3508,9 +3532,7 @@ static bool rtl_wol_pll_power_down(struc
- 	if (!(__rtl8169_get_wol(tp) & WAKE_ANY))
- 		return false;
+ 	BUG_ON(preemptible());
+@@ -292,18 +304,6 @@ enum paravirt_lazy_mode paravirt_get_laz
+ 	return percpu_read(paravirt_lazy_mode);
+ }
  
--	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_writephy(tp, MII_BMCR, 0x0000);
+-void arch_flush_lazy_mmu_mode(void)
+-{
+-	preempt_disable();
 -
-+	rtl_speed_down(tp);
- 	rtl_wol_suspend_quirk(tp);
+-	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
+-		arch_leave_lazy_mmu_mode();
+-		arch_enter_lazy_mmu_mode();
+-	}
+-
+-	preempt_enable();
+-}
+-
+ struct pv_info pv_info = {
+ 	.name = "bare hardware",
+ 	.paravirt_enabled = 0,
+@@ -477,6 +477,7 @@ struct pv_mmu_ops pv_mmu_ops = {
+ 	.lazy_mode = {
+ 		.enter = paravirt_nop,
+ 		.leave = paravirt_nop,
++		.flush = paravirt_nop,
+ 	},
  
- 	return true;
+ 	.set_fixmap = native_set_fixmap,
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1333,6 +1333,7 @@ __init void lguest_init(void)
+ 	pv_mmu_ops.read_cr3 = lguest_read_cr3;
+ 	pv_mmu_ops.lazy_mode.enter = paravirt_enter_lazy_mmu;
+ 	pv_mmu_ops.lazy_mode.leave = lguest_leave_lazy_mmu_mode;
++	pv_mmu_ops.lazy_mode.flush = paravirt_flush_lazy_mmu;
+ 	pv_mmu_ops.pte_update = lguest_pte_update;
+ 	pv_mmu_ops.pte_update_defer = lguest_pte_update;
+ 
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2076,6 +2076,7 @@ static const struct pv_mmu_ops xen_mmu_o
+ 	.lazy_mode = {
+ 		.enter = paravirt_enter_lazy_mmu,
+ 		.leave = xen_leave_lazy_mmu,
++		.flush = paravirt_flush_lazy_mmu,
+ 	},
+ 
+ 	.set_fixmap = xen_set_fixmap,
 
 
