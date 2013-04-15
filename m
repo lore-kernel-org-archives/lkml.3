@@ -1,80 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934343Ab3DOPdW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:33:22 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45968 "EHLO
+	id S1755682Ab3DOPdg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:33:36 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:46000 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933381Ab3DOPdS (ORCPT
+	with ESMTP id S934504Ab3DOPdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:33:18 -0400
+	Mon, 15 Apr 2013 11:33:32 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 00/20] streamline per-char receiving
-Date: Mon, 15 Apr 2013 11:32:31 -0400
-Message-Id: <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 06/20] n_tty: Factor 'real raw' receive_buf into standalone fn
+Date: Mon, 15 Apr 2013 11:32:37 -0400
+Message-Id: <1366039971-8770-7-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
 References: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
+ <1366039971-8770-1-git-send-email-peter@hurleysoftware.com>
 X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This 4th of 4 patchsets implements efficient per-char receiving
-in the N_TTY line discipline. As mentioned in the initial patchset,
-'lockless n_tty receive path', casual performance measurements show
-a 9~15x speedup in end-to-end copying.
+Convert to modal receive_buf() processing; factor real_raw
+receive_buf() into n_tty_receive_buf_real_raw().
 
-Most of this patchset factors out modal conditions from the per-char
-i/o path. For example, regardless of if ISTRIP is set or not, the modal
-condition, I_ISTRIP(tty), was tested on every char received, despite
-that ISTRIP can only be set by termios changes.
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/n_tty.c | 51 ++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 30 insertions(+), 21 deletions(-)
 
-The modes handled by separate code paths are:
-1) 'real raw' mode (which was already handled separately)
-2) raw mode
-3) EXTPROC when ISTRIP and IUCLC are not selected
-4) tty closing mode
-5) LNEXT mode
-6) ISTRIP or IUCLC or IPARMRK set
-7) everything else
-
-The code duplication is kept to a minimum by carefully factoring out
-shared slow paths (such as specially handled chars in canonical mode
-or receiving PARITY or OVERRUN flags); only the per-char loops themselves
-are duplicated.
-
-
-Peter Hurley (20):
-  n_tty: Fix EOF push handling
-  n_tty: Remove alias ptrs in __receive_buf()
-  n_tty: Move buffers into n_tty_data
-  n_tty: Rename process_char_map to char_map
-  n_tty: Simplify __receive_buf loop count
-  n_tty: Factor 'real raw' receive_buf into standalone fn
-  n_tty: Factor signal char handling into separate fn
-  n_tty: Factor flagged char handling into separate fn
-  n_tty: Factor raw mode receive_buf() into separate fn
-  n_tty: Special case EXTPROC receive_buf() as raw mode
-  n_tty: Factor tty->closing receive_buf() into separate fn
-  n_tty: Factor standard per-char i/o into separate fn
-  n_tty: Eliminate char tests from IXANY restart test
-  n_tty: Split n_tty_receive_char()
-  n_tty: Factor ISTRIP and IUCLC receive_buf into separate fn
-  n_tty: Factor PARMRK from normal per-char i/o
-  n_tty: Remove overflow tests from receive_buf() path
-  n_tty: Un-inline single-use functions
-  n_tty: Factor LNEXT processing from per-char i/o path
-  tty: Remove extra wakeup from pty write() path
-
- drivers/tty/n_tty.c  | 617 +++++++++++++++++++++++++++++++--------------------
- drivers/tty/pty.c    |   4 +-
- drivers/tty/tty_io.c |   1 -
- include/linux/tty.h  |   1 -
- 4 files changed, 381 insertions(+), 242 deletions(-)
-
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index b77d16f..b379986 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -242,7 +242,7 @@ static void n_tty_write_wakeup(struct tty_struct *tty)
+ 		kill_fasync(&tty->fasync, SIGIO, POLL_OUT);
+ }
+ 
+-static inline void n_tty_check_throttle(struct tty_struct *tty)
++static void n_tty_check_throttle(struct tty_struct *tty)
+ {
+ 	if (tty->driver->type == TTY_DRIVER_TYPE_PTY)
+ 		return;
+@@ -1481,6 +1481,28 @@ handle_newline:
+  *		publishes read_head and canon_head
+  */
+ 
++static void
++n_tty_receive_buf_real_raw(struct tty_struct *tty, const unsigned char *cp,
++			   char *fp, int count)
++{
++	struct n_tty_data *ldata = tty->disc_data;
++	size_t n, head;
++
++	head = ldata->read_head & (N_TTY_BUF_SIZE - 1);
++	n = N_TTY_BUF_SIZE - max(read_cnt(ldata), head);
++	n = min_t(size_t, count, n);
++	memcpy(read_buf_addr(ldata, head), cp, n);
++	ldata->read_head += n;
++	cp += n;
++	count -= n;
++
++	head = ldata->read_head & (N_TTY_BUF_SIZE - 1);
++	n = N_TTY_BUF_SIZE - max(read_cnt(ldata), head);
++	n = min_t(size_t, count, n);
++	memcpy(read_buf_addr(ldata, head), cp, n);
++	ldata->read_head += n;
++}
++
+ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 			  char *fp, int count)
+ {
+@@ -1488,23 +1510,9 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 	char	flags = TTY_NORMAL;
+ 	char	buf[64];
+ 
+-	if (ldata->real_raw) {
+-		size_t n, head;
+-
+-		head = ldata->read_head & (N_TTY_BUF_SIZE - 1);
+-		n = N_TTY_BUF_SIZE - max(read_cnt(ldata), head);
+-		n = min_t(size_t, count, n);
+-		memcpy(read_buf_addr(ldata, head), cp, n);
+-		ldata->read_head += n;
+-		cp += n;
+-		count -= n;
+-
+-		head = ldata->read_head & (N_TTY_BUF_SIZE - 1);
+-		n = N_TTY_BUF_SIZE - max(read_cnt(ldata), head);
+-		n = min_t(size_t, count, n);
+-		memcpy(read_buf_addr(ldata, head), cp, n);
+-		ldata->read_head += n;
+-	} else {
++	if (ldata->real_raw)
++		n_tty_receive_buf_real_raw(tty, cp, fp, count);
++	else {
+ 		while (count--) {
+ 			if (fp)
+ 				flags = *fp++;
+@@ -1540,8 +1548,6 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 		if (waitqueue_active(&tty->read_wait))
+ 			wake_up_interruptible(&tty->read_wait);
+ 	}
+-
+-	n_tty_check_throttle(tty);
+ }
+ 
+ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+@@ -1549,6 +1555,7 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ {
+ 	down_read(&tty->termios_rwsem);
+ 	__receive_buf(tty, cp, fp, count);
++	n_tty_check_throttle(tty);
+ 	up_read(&tty->termios_rwsem);
+ }
+ 
+@@ -1564,8 +1571,10 @@ static int n_tty_receive_buf2(struct tty_struct *tty, const unsigned char *cp,
+ 	if (!room)
+ 		ldata->no_room = 1;
+ 	count = min(count, room);
+-	if (count)
++	if (count) {
+ 		__receive_buf(tty, cp, fp, count);
++		n_tty_check_throttle(tty);
++	}
+ 
+ 	up_read(&tty->termios_rwsem);
+ 
 -- 
 1.8.1.2
 
