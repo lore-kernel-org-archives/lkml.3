@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952Ab3DOCrQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:47:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36499 "EHLO
+	id S1757139Ab3DOCrg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:47:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36491 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934073Ab3DOCny (ORCPT
+	with ESMTP id S933541Ab3DOCnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:43:54 -0400
+	Sun, 14 Apr 2013 22:43:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sachin Prabhu <sprabhu@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [ 15/27] cifs: Allow passwords which begin with a delimitor
-Date: Sun, 14 Apr 2013 19:43:14 -0700
-Message-Id: <20130415024232.494757969@linuxfoundation.org>
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 11/27] ipc: set msg back to -EAGAIN if copy wasnt performed
+Date: Sun, 14 Apr 2013 19:43:10 -0700
+Message-Id: <20130415024232.197618863@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415024231.351969241@linuxfoundation.org>
 References: <20130415024231.351969241@linuxfoundation.org>
@@ -27,52 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Prabhu <sprabhu@redhat.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit c369c9a4a7c82d33329d869cbaf93304cc7a0c40 upstream.
+commit 2dc958fa2fe6987e7ab106bd97029a09a82fcd8d upstream.
 
-Fixes a regression in cifs_parse_mount_options where a password
-which begins with a delimitor is parsed incorrectly as being a blank
-password.
+Make sure that msg pointer is set back to error value in case of
+MSG_COPY flag is set and desired message to copy wasn't found.  This
+garantees that msg is either a error pointer or a copy address.
 
-Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
-Acked-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Otherwise the last message in queue will be freed without unlinking from
+the queue (which leads to memory corruption) and the dummy allocated
+copy won't be released.
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/connect.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ ipc/msg.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1546,14 +1546,24 @@ cifs_parse_mount_options(const char *mou
- 			}
- 			break;
- 		case Opt_blank_pass:
--			vol->password = NULL;
--			break;
--		case Opt_pass:
- 			/* passwords have to be handled differently
- 			 * to allow the character used for deliminator
- 			 * to be passed within them
- 			 */
- 
-+			/*
-+			 * Check if this is a case where the  password
-+			 * starts with a delimiter
-+			 */
-+			tmp_end = strchr(data, '=');
-+			tmp_end++;
-+			if (!(tmp_end < end && tmp_end[1] == delim)) {
-+				/* No it is not. Set the password to NULL */
-+				vol->password = NULL;
-+				break;
-+			}
-+			/* Yes it is. Drop down to Opt_pass below.*/
-+		case Opt_pass:
- 			/* Obtain the value string */
- 			value = strchr(data, '=');
- 			value++;
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -872,6 +872,7 @@ long do_msgrcv(int msqid, void __user *b
+ 							goto out_unlock;
+ 						break;
+ 					}
++					msg = ERR_PTR(-EAGAIN);
+ 				} else
+ 					break;
+ 				msg_counter++;
 
 
