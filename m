@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745Ab3DOPKX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:10:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8526 "EHLO mx1.redhat.com"
+	id S1752509Ab3DOPLb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:11:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57173 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751022Ab3DOPKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:10:22 -0400
-Date: Mon, 15 Apr 2013 18:10:19 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jan.kiszka@siemens.com, kvm@vger.kernel.org
-Subject: Re: [PATCH v2] kvm: nVMX: check vmcs12 for valid activity state
-Message-ID: <20130415151019.GA10668@redhat.com>
-References: <1366030827-5662-1-git-send-email-pbonzini@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366030827-5662-1-git-send-email-pbonzini@redhat.com>
+	id S1751282Ab3DOPLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 11:11:30 -0400
+Message-ID: <1366038686.2918.101.camel@bling.home>
+Subject: Re: [PATCH -v2] PCI/VFIO: use pcie_flags_reg instead of access
+ PCI-E Capabilities Register
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>,
+        jiang.liu@huawei.com
+Date: Mon, 15 Apr 2013 09:11:26 -0600
+In-Reply-To: <1364867547-15300-1-git-send-email-wangyijing@huawei.com>
+References: <1364867547-15300-1-git-send-email-wangyijing@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 03:00:27PM +0200, Paolo Bonzini wrote:
-> KVM does not use the activity state VMCS field, and does not support
-> it in nested VMX either (the corresponding bits in the misc VMX feature
-> MSR are zero).  Fail entry if the activity state is set to anything but
-> "active".
+On Tue, 2013-04-02 at 09:52 +0800, Yijing Wang wrote:
+> Currently, we use pcie_flags_reg to cache PCI-E Capabilities Register,
+> because PCI-E Capabilities Register bits are almost read-only. This patch
+> use pcie_caps_reg() instead of another access PCI-E Capabilities Register.
 > 
-> Since the value will always be the same for L1 and L2, we do not need
-> to read and write the corresponding VMCS field on L1/L2 transitions,
-> either.
-> 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Perfect, thanks!
-
-Reviewed-by: Gleb Natapov <gleb@redhat.com>
-
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 > ---
-> 	v1->v2: remove read/write of vmcs12->guest_activity_state,
-> 	use GUEST_ACTIVITY_ACTIVE.
+>  drivers/vfio/pci/vfio_pci_config.c |    6 +-----
+>  1 files changed, 1 insertions(+), 5 deletions(-)
 > 
->  arch/x86/kvm/vmx.c | 7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index c75c25d..c252adf 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -7004,7 +7004,6 @@ static void prepare_vmcs02(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
->  		vmcs12->vm_entry_instruction_len);
->  	vmcs_write32(GUEST_INTERRUPTIBILITY_INFO,
->  		vmcs12->guest_interruptibility_info);
-> -	vmcs_write32(GUEST_ACTIVITY_STATE, vmcs12->guest_activity_state);
->  	vmcs_write32(GUEST_SYSENTER_CS, vmcs12->guest_sysenter_cs);
->  	kvm_set_dr(vcpu, 7, vmcs12->guest_dr7);
->  	vmcs_writel(GUEST_RFLAGS, vmcs12->guest_rflags);
-> @@ -7223,6 +7222,11 @@ static int nested_vmx_run(struct kvm_vcpu *vcpu, bool launch)
->  		return 1;
->  	}
+> diff --git a/drivers/vfio/pci/vfio_pci_config.c b/drivers/vfio/pci/vfio_pci_config.c
+> index aeb00fc..12a81f7 100644
+> --- a/drivers/vfio/pci/vfio_pci_config.c
+> +++ b/drivers/vfio/pci/vfio_pci_config.c
+> @@ -1017,13 +1017,9 @@ static int vfio_cap_len(struct vfio_pci_device *vdev, u8 cap, u8 pos)
+>  		return byte;
+>  	case PCI_CAP_ID_EXP:
+>  		/* length based on version */
+> -		ret = pci_read_config_word(pdev, pos + PCI_EXP_FLAGS, &word);
+> -		if (ret)
+> -			return pcibios_err_to_errno(ret);
+> -
+>  		vdev->extended_caps = true;
 >  
-> +	if (vmcs12->guest_activity_state != GUEST_ACTIVITY_ACTIVE) {
-> +		nested_vmx_failValid(vcpu, VMXERR_ENTRY_INVALID_CONTROL_FIELD);
-> +		return 1;
-> +	}
-> +
->  	if ((vmcs12->cpu_based_vm_exec_control & CPU_BASED_USE_MSR_BITMAPS) &&
->  			!IS_ALIGNED(vmcs12->msr_bitmap, PAGE_SIZE)) {
->  		/*TODO: Also verify bits beyond physical address width are 0*/
-> @@ -7411,7 +7415,6 @@ static void prepare_vmcs12(struct kvm_vcpu *vcpu, struct vmcs12 *vmcs12)
->  	vmcs12->guest_gdtr_base = vmcs_readl(GUEST_GDTR_BASE);
->  	vmcs12->guest_idtr_base = vmcs_readl(GUEST_IDTR_BASE);
->  
-> -	vmcs12->guest_activity_state = vmcs_read32(GUEST_ACTIVITY_STATE);
->  	vmcs12->guest_interruptibility_info =
->  		vmcs_read32(GUEST_INTERRUPTIBILITY_INFO);
->  	vmcs12->guest_pending_dbg_exceptions =
-> -- 
-> 1.8.1.4
+> -		if ((word & PCI_EXP_FLAGS_VERS) == 1)
+> +		if ((pcie_caps_reg(pdev) & PCI_EXP_FLAGS_VERS) == 1)
+>  			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V1;
+>  		else
+>  			return PCI_CAP_EXP_ENDPOINT_SIZEOF_V2;
 
---
-			Gleb.
+Applied.  Thanks!
+
+Alex
+
