@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554Ab3DOQJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:09:54 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:56746 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab3DOQJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:09:53 -0400
-Date: Mon, 15 Apr 2013 12:13:19 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: perf: forcing instructions event to run on Fixed Counter 0
-Message-ID: <alpine.DEB.2.02.1304151205140.17281@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755728Ab3DOQKI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:10:08 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:46861 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754513Ab3DOQKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 12:10:03 -0400
+Date: Mon, 15 Apr 2013 11:10:00 -0500
+From: Robin Holt <holt@sgi.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Robin Holt <holt@sgi.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Michel Lespinasse <walken@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Bulk CPU Hotplug (Was Re: [PATCH] Do not force shutdown/reboot
+ to boot cpu.)
+Message-ID: <20130415161000.GB3658@sgi.com>
+References: <20130410111620.GB29752@gmail.com>
+ <CA+55aFw8bRwMRm8cWtTGRvd1AEP-LR7pYL-pEoBkHqJUuJrjSg@mail.gmail.com>
+ <20130411053106.GA9042@drongo>
+ <5166B05E.8010904@linux.vnet.ibm.com>
+ <20130411134837.GE3672@sgi.com>
+ <20130412053718.GC3887@gmail.com>
+ <5167A52F.6020503@linux.vnet.ibm.com>
+ <20130412093149.GT3658@sgi.com>
+ <20130413163022.GA7500@redhat.com>
+ <20130415160408.GA3658@sgi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130415160408.GA3658@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 15, 2013 at 11:04:08AM -0500, Robin Holt wrote:
+> On Sat, Apr 13, 2013 at 06:30:22PM +0200, Oleg Nesterov wrote:
+> > On 04/12, Robin Holt wrote:
+> > >
+> > > +void migrate_to_boot_cpu(void)
+> > > +{
+> > > +	/* The boot cpu is always logical cpu 0 */
+> > > +	int reboot_cpu_id = 0;
+> > > +
+> > > +	/* Make certain the cpu I'm about to reboot on is online */
+> > > +	if (!cpu_online(reboot_cpu_id))
+> > > +		reboot_cpu_id = smp_processor_id();
+> > > +
+> > > +	/* Make certain I only run on the appropriate processor */
+> > > +	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
+> > 
+> > This is only theoretical, but perhaps it makes sense to set
+> > PF_THREAD_BOUND before set_cpus_allowed_ptr() ? To prevent the
+> > race with another thread doing sched_setaffinity().
+> 
+> I don't quite understand this comment.  We are migrating our own thread.
+> How does setting PF_THREAD_BOUND have any effect?
 
-It turns out that perf_event for intel seems to use the INST_RETIRED.ALL
-event interchangably with the "Fixed Counter 0" event.
+I should have taken a few more minutes.  I understand now.  Will
+do.
 
-It turns out they are not equivelent.  The Fixed Counter 0 event turns out 
-to be deterministic, while INST_RETIRED.ALL has a bug where it counts 
-extra events due to hardware interrupts.
-
-Having a user-accessible deterministic instructions event would be really 
-useful.  So is there a way we can specify we want an event to run on Fixed 
-Counter 0?  I think there is code already that does this for Fixed Counter 
-2 for similar reasons.
-
-For an example of this happening in real life, take the 
-./retired_instr.all.x86_64 from my deterministic benchmark that
-I'll be presenting at the ISPASS conference next week.  
-  (can be found here git://github.com/deater/deterministic.git )
-
-If you run this benchmark with the same event listed 5 times on an Ivy
-Bridge machine you get these results, notice the last one is the "proper"
-deterministic result and thus the one that ran on Fixed Counter 0.
-
-$ perf stat -e instructions:u,instructions:u,instructions:u,instructions:u,instructions:u ./retired_instr.all.x86_64
-...
- Performance counter stats for './retired_instr.all.x86_64':
-
-       227,010,687 instructions:u            #    0.00  insns per cycle        
-       227,010,687 instructions:u            #    0.00  insns per cycle        
-       227,010,687 instructions:u            #    0.00  insns per cycle        
-       227,010,687 instructions:u            #    0.00  insns per cycle        
-       227,000,723 instructions:u            #    0.00  insns per cycle        
-
-       1.902648316 seconds time elapsed
-
-Thanks,
-
-Vince Weaver
-vincent.weaver@maine.edu
-http://www.eece.maine.edu/~vweaver/
+Robin
