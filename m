@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab3DOQPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 12:15:55 -0400
-Received: from mail-da0-f47.google.com ([209.85.210.47]:59328 "EHLO
-	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab3DOQPx (ORCPT
+	id S1755887Ab3DOQSG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 12:18:06 -0400
+Received: from a9-62.smtp-out.amazonses.com ([54.240.9.62]:46083 "EHLO
+	a9-62.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755359Ab3DOQSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 12:15:53 -0400
-Date: Mon, 15 Apr 2013 09:15:40 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.9-rc7
-Message-ID: <20130415161540.GB19223@core.coreip.homeip.net>
+	Mon, 15 Apr 2013 12:18:04 -0400
+X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Apr 2013 12:18:04 EDT
+Date: Mon, 15 Apr 2013 16:11:43 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Ingo Molnar <mingo@kernel.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 4/4] nohz: New option to force all CPUs in full dynticks
+ range
+In-Reply-To: <20130415102750.GE18024@gmail.com>
+Message-ID: <0000013e0e7759a3-5b08a307-9a47-49de-b1cf-d00306df0f6d-000000@email.amazonses.com>
+References: <20130328074507.GC24433@gmail.com> <CAFTL4hzQfodVP4O+nir1XwQ2QkUUqrfr_dBpWL0635f0u4oRBA@mail.gmail.com> <20130330091037.GA31743@gmail.com> <0000013dea26b171-8095c339-dc81-4459-a3ad-a8d69c803448-000000@email.amazonses.com> <20130411151956.GF15699@somewhere>
+ <20130411153721.GA3742@linux.vnet.ibm.com> <20130411155349.GA16797@somewhere.redhat.com> <0000013df9f8d526-2783fba3-4dc9-44c6-8b02-2c321eb5b37b-000000@email.amazonses.com> <20130411170420.GA17129@somewhere.redhat.com>
+ <0000013dfef98b2d-ed5980b1-86ff-47de-8aa1-fd7fdd02f034-000000@email.amazonses.com> <20130415102750.GE18024@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Q68bSM7Ycu6FN28Q"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.04.15-54.240.9.62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 15 Apr 2013, Ingo Molnar wrote:
 
---Q68bSM7Ycu6FN28Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > Ok. But all these complicated things would go away if we had an option
+> > CONFIG_LOWLATENCY and then everything would just follow the best setup
+> > possible given the hardware. Would remove a lot of guesswork and a lot of
+> > knobs.
+>
+> In that sense CONFIG_NO_HZ_FULL is such a flag as well, which, like
+> CONFIG_PREEMPT_RT, tries to preconfigure the kernel correctly.
 
-Hi Linus,
+It is too specific. Switching off HZ is one in a set of measures that one
+woiuld take. F.e. the page allocator will want to do reclaim on the
+sacrificial processor, the vmstatistics would run their monitoring thread
+there etc etc.
 
-Please pull from:
+> But we have to be careful not to use a too highlevel flag for that. If the user
+> meant 'low latency' to mean 'low latency IRQ execution' - then enabling
+> CONFIG_NO_HZ_FULL might achieve the opposite, it adds overhead to the IRQ paths.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+Hmm.... Looks too specific for my taste. What the user wants is less OS
+noise (or maybe some other terms that describes that the user wants
+minimal disturbances for his code).
 
-to receive 2 small fixups to the Wacom driver.
+	CONFIG_OS_NOISE_REDUCTION
 
-Changelog:
----------
+?
 
-Jason Gerecke (2):
-      Input: wacom - fix "can not retrieve extra class descriptor" for 24HDT
-      Input: wacom - correct reported resolution for Intuos4 Wireless
-
-
-Diffstat:
---------
-
- drivers/input/tablet/wacom_wac.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---=20
-Dmitry
-
-
---Q68bSM7Ycu6FN28Q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRbCerAAoJEH70+W8r6ZYqveEQAJu/vhhKUiM5k70Q6wORprY6
-9ci6aBx3laV4tXItSaCwCDh6OC9O4pdHk2baUyMFwx2Bgd0jPYsmPQ5ihGZNBD2F
-qtNsZIezyklegM1aPvQoS+cd6PKmyqaPW2emA+XvPmhnaH/MZiGPR41ZIyT+uotI
-07uxzJFWiCdGHftwiJJ0KiFXp2+aWyOhw3EE/Np3IHCnzAXZRGOKnGu4jjjQH/m8
-UEQznKwwRjQPbyiqzpPJfwbGjMho4NMIrjCx5XuGtrWL76ODrFBk9taMx1cFh0CO
-YMkk5DTQ+xxP0hXtvLqRZymnFFbE5fVZV42p5cxfLAchjZssCcTCrPX/gOEyT29g
-NakIrhBc9Bu4joTLWqAfNqyCdSXkfD3NMfUMYhTFXa1p4NXDhIcevWxVEV0jUKqY
-6j5mdXoMTRB8576C3tk60esmHJSDipws8/gcULT4qG3G66yv++DGaAiG0+USJHVR
-a0lDKlffbYKJpfgqqE98GKDRsY8IR1a256assPB01Bb7PeIHbK2MbfvbotJfmT8/
-gulfHQ3lnA7s6HR3udJqDemNhjM48+XrhUi6BIamq11XRo3ipZON116Mck5DrhCl
-qkIJM3pYoV6VxiflNYVydh4prZyMdiBl6eDESnLnk3/xPhFxg++zD72QWWRrFPLW
-cg10iNrMS3fXB1P/pNvr
-=I/f6
------END PGP SIGNATURE-----
-
---Q68bSM7Ycu6FN28Q--
