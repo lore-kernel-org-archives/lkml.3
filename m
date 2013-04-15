@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab3DOC22 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Apr 2013 22:28:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36071 "EHLO
+	id S1755974Ab3DOC2o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Apr 2013 22:28:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36066 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964Ab3DOCZk (ORCPT
+	with ESMTP id S934002Ab3DOCZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Apr 2013 22:25:40 -0400
+	Sun, 14 Apr 2013 22:25:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Hannes Reinecke <hare@suse.de>
-Subject: [ 08/17] target: Fix incorrect fallthrough of ALUA Standby/Offline/Transition CDBs
-Date: Sun, 14 Apr 2013 19:25:18 -0700
-Message-Id: <20130415022353.246397123@linuxfoundation.org>
+        Sachin Prabhu <sprabhu@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [ 07/17] cifs: Allow passwords which begin with a delimitor
+Date: Sun, 14 Apr 2013 19:25:17 -0700
+Message-Id: <20130415022353.167061004@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.2.1.368.g99c2266
 In-Reply-To: <20130415022352.616689034@linuxfoundation.org>
 References: <20130415022352.616689034@linuxfoundation.org>
@@ -27,50 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Sachin Prabhu <sprabhu@redhat.com>
 
-commit 30f359a6f9da65a66de8cadf959f0f4a0d498bba upstream.
+commit c369c9a4a7c82d33329d869cbaf93304cc7a0c40 upstream.
 
-This patch fixes a bug where a handful of informational / control CDBs
-that should be allowed during ALUA access state Standby/Offline/Transition
-where incorrectly returning CHECK_CONDITION + ASCQ_04H_ALUA_TG_PT_*.
+Fixes a regression in cifs_parse_mount_options where a password
+which begins with a delimitor is parsed incorrectly as being a blank
+password.
 
-This includes INQUIRY + REPORT_LUNS, which would end up preventing LUN
-registration when LUN scanning occured during these ALUA access states.
-
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Cc: Hannes Reinecke <hare@suse.de>
+Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/target/target_core_alua.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/cifs/connect.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -392,6 +392,7 @@ static inline int core_alua_state_standb
- 	case REPORT_LUNS:
- 	case RECEIVE_DIAGNOSTIC:
- 	case SEND_DIAGNOSTIC:
-+		return 0;
- 	case MAINTENANCE_IN:
- 		switch (cdb[1]) {
- 		case MI_REPORT_TARGET_PGS:
-@@ -434,6 +435,7 @@ static inline int core_alua_state_unavai
- 	switch (cdb[0]) {
- 	case INQUIRY:
- 	case REPORT_LUNS:
-+		return 0;
- 	case MAINTENANCE_IN:
- 		switch (cdb[1]) {
- 		case MI_REPORT_TARGET_PGS:
-@@ -474,6 +476,7 @@ static inline int core_alua_state_transi
- 	switch (cdb[0]) {
- 	case INQUIRY:
- 	case REPORT_LUNS:
-+		return 0;
- 	case MAINTENANCE_IN:
- 		switch (cdb[1]) {
- 		case MI_REPORT_TARGET_PGS:
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -1576,14 +1576,24 @@ cifs_parse_mount_options(const char *mou
+ 			}
+ 			break;
+ 		case Opt_blank_pass:
+-			vol->password = NULL;
+-			break;
+-		case Opt_pass:
+ 			/* passwords have to be handled differently
+ 			 * to allow the character used for deliminator
+ 			 * to be passed within them
+ 			 */
+ 
++			/*
++			 * Check if this is a case where the  password
++			 * starts with a delimiter
++			 */
++			tmp_end = strchr(data, '=');
++			tmp_end++;
++			if (!(tmp_end < end && tmp_end[1] == delim)) {
++				/* No it is not. Set the password to NULL */
++				vol->password = NULL;
++				break;
++			}
++			/* Yes it is. Drop down to Opt_pass below.*/
++		case Opt_pass:
+ 			/* Obtain the value string */
+ 			value = strchr(data, '=');
+ 			value++;
 
 
