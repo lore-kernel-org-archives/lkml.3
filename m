@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab3DOP0j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:26:39 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45238 "EHLO
+	id S1755226Ab3DOP22 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:28:28 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45234 "EHLO
 	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab3DOP0h (ORCPT
+	with ESMTP id S1754802Ab3DOP0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:26:37 -0400
+	Mon, 15 Apr 2013 11:26:35 -0400
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 05/16] tty: Use generic names for flip buffer list cursors
-Date: Mon, 15 Apr 2013 11:25:56 -0400
-Message-Id: <1366039567-8620-6-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH 04/16] tty: Merge tty_buffer_find() into tty_buffer_alloc()
+Date: Mon, 15 Apr 2013 11:25:55 -0400
+Message-Id: <1366039567-8620-5-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366039567-8620-1-git-send-email-peter@hurleysoftware.com>
 References: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
@@ -23,56 +23,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+tty_buffer_find() implements a simple free list lookaside cache.
+Merge this functionality into tty_buffer_alloc() to reflect the
+more traditional alloc/free symmetry.
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/tty_buffer.c | 20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+ drivers/tty/tty_buffer.c | 50 +++++++++++++++++-------------------------------
+ 1 file changed, 18 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index a428fa2..0259a76 100644
+index 56d4602..a428fa2 100644
 --- a/drivers/tty/tty_buffer.c
 +++ b/drivers/tty/tty_buffer.c
-@@ -44,15 +44,15 @@ static void tty_buffer_reset(struct tty_buffer *p, size_t size)
- void tty_buffer_free_all(struct tty_port *port)
- {
- 	struct tty_bufhead *buf = &port->buf;
--	struct tty_buffer *thead;
-+	struct tty_buffer *p;
+@@ -64,6 +64,8 @@ void tty_buffer_free_all(struct tty_port *port)
+  *	@size: desired size (characters)
+  *
+  *	Allocate a new tty buffer to hold the desired number of characters.
++ *	We round our buffers off in 256 character chunks to get better
++ *	allocation behaviour.
+  *	Return NULL if out of memory or the allocation would exceed the
+  *	per device queue
+  *
+@@ -72,14 +74,29 @@ void tty_buffer_free_all(struct tty_port *port)
  
--	while ((thead = buf->head) != NULL) {
--		buf->head = thead->next;
--		kfree(thead);
-+	while ((p = buf->head) != NULL) {
-+		buf->head = p->next;
-+		kfree(p);
- 	}
--	while ((thead = buf->free) != NULL) {
--		buf->free = thead->next;
--		kfree(thead);
-+	while ((p = buf->free) != NULL) {
-+		buf->free = p->next;
-+		kfree(p);
- 	}
- 	buf->tail = NULL;
- 	buf->memory_used = 0;
-@@ -143,13 +143,13 @@ static void tty_buffer_free(struct tty_port *port, struct tty_buffer *b)
- static void __tty_buffer_flush(struct tty_port *port)
+ static struct tty_buffer *tty_buffer_alloc(struct tty_port *port, size_t size)
  {
- 	struct tty_bufhead *buf = &port->buf;
--	struct tty_buffer *thead;
-+	struct tty_buffer *next;
++	struct tty_buffer **tbh = &port->buf.free;
+ 	struct tty_buffer *p;
  
- 	if (unlikely(buf->head == NULL))
- 		return;
--	while ((thead = buf->head->next) != NULL) {
-+	while ((next = buf->head->next) != NULL) {
- 		tty_buffer_free(port, buf->head);
--		buf->head = thead;
-+		buf->head = next;
- 	}
- 	WARN_ON(buf->head != buf->tail);
- 	buf->head->read = buf->head->commit;
++	/* Round the buffer size out */
++	size = __ALIGN_MASK(size, TTYB_ALIGN_MASK);
++
++	if (size <= MIN_TTYB_SIZE) {
++		if (*tbh) {
++			p = *tbh;
++			*tbh = p->next;
++			goto found;
++		}
++	}
++
++	/* Should possibly check if this fails for the largest buffer we
++	   have queued and recycle that ? */
+ 	if (port->buf.memory_used + size > 65536)
+ 		return NULL;
+ 	p = kmalloc(sizeof(struct tty_buffer) + 2 * size, GFP_ATOMIC);
+ 	if (p == NULL)
+ 		return NULL;
+ 
++found:
+ 	tty_buffer_reset(p, size);
+ 	port->buf.memory_used += size;
+ 	return p;
+@@ -172,37 +189,6 @@ void tty_buffer_flush(struct tty_struct *tty)
+ }
+ 
+ /**
+- *	tty_buffer_find		-	find a free tty buffer
+- *	@tty: tty owning the buffer
+- *	@size: characters wanted
+- *
+- *	Locate an existing suitable tty buffer or if we are lacking one then
+- *	allocate a new one. We round our buffers off in 256 character chunks
+- *	to get better allocation behaviour.
+- *
+- *	Locking: Caller must hold tty->buf.lock
+- */
+-
+-static struct tty_buffer *tty_buffer_find(struct tty_port *port, size_t size)
+-{
+-	struct tty_buffer **tbh = &port->buf.free;
+-	if (size <= MIN_TTYB_SIZE) {
+-		if (*tbh) {
+-			struct tty_buffer *t = *tbh;
+-
+-			*tbh = t->next;
+-			tty_buffer_reset(t, t->size);
+-			port->buf.memory_used += t->size;
+-			return t;
+-		}
+-	}
+-	/* Round the buffer size out */
+-	size = __ALIGN_MASK(size, TTYB_ALIGN_MASK);
+-	return tty_buffer_alloc(port, size);
+-	/* Should possibly check if this fails for the largest buffer we
+-	   have queued and recycle that ? */
+-}
+-/**
+  *	tty_buffer_request_room		-	grow tty buffer if needed
+  *	@tty: tty structure
+  *	@size: size desired
+@@ -230,7 +216,7 @@ int tty_buffer_request_room(struct tty_port *port, size_t size)
+ 
+ 	if (left < size) {
+ 		/* This is the slow path - looking for new buffers to use */
+-		if ((n = tty_buffer_find(port, size)) != NULL) {
++		if ((n = tty_buffer_alloc(port, size)) != NULL) {
+ 			if (b != NULL) {
+ 				b->next = n;
+ 				b->commit = b->used;
 -- 
 1.8.1.2
 
