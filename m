@@ -1,136 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab3DOR1p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 13:27:45 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:54243 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756045Ab3DOR1n (ORCPT
+	id S1756226Ab3DOR2u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 13:28:50 -0400
+Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:48249
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754894Ab3DOR2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 13:27:43 -0400
-Date: Mon, 15 Apr 2013 10:26:18 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Paul Mackerras <paulus@samba.org>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH tip/core/rcu 6/7] rcu: Drive quiescent-state-forcing
- delay from HZ
-Message-ID: <20130415172618.GJ29861@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130412231846.GA20038@linux.vnet.ibm.com>
- <1365808754-20762-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1365808754-20762-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130412235401.GA8140@jtriplet-mobl1>
- <20130413063804.GV29861@linux.vnet.ibm.com>
- <20130415020354.GB3401@iris.ozlabs.ibm.com>
+	Mon, 15 Apr 2013 13:28:49 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzzz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0MLB4IT-01-56E-02
+X-M-MSG: 
+Date: Mon, 15 Apr 2013 12:28:03 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        <x86@kernel.org>, Stephane Eranian <eranian@google.com>,
+        Jiri Olsa <jolsa@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] perf: Add support for hardware breakpoint address
+ masks
+Message-ID: <20130415172803.GA18406@jshin-Toonie>
+References: <1365528113-5458-1-git-send-email-jacob.shin@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20130415020354.GB3401@iris.ozlabs.ibm.com>
+In-Reply-To: <1365528113-5458-1-git-send-email-jacob.shin@amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041517-3620-0000-0000-000002096B60
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 12:03:54PM +1000, Paul Mackerras wrote:
-> On Fri, Apr 12, 2013 at 11:38:04PM -0700, Paul E. McKenney wrote:
-> > On Fri, Apr 12, 2013 at 04:54:02PM -0700, Josh Triplett wrote:
-> > > On Fri, Apr 12, 2013 at 04:19:13PM -0700, Paul E. McKenney wrote:
-> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > 
-> > > > Systems with HZ=100 can have slow bootup times due to the default
-> > > > three-jiffy delays between quiescent-state forcing attempts.  This
-> > > > commit therefore auto-tunes the RCU_JIFFIES_TILL_FORCE_QS value based
-> > > > on the value of HZ.  However, this would break very large systems that
-> > > > require more time between quiescent-state forcing attempts.  This
-> > > > commit therefore also ups the default delay by one jiffy for each
-> > > > 256 CPUs that might be on the system (based off of nr_cpu_ids at
-> > > > runtime, -not- NR_CPUS at build time).
-> > > > 
-> > > > Reported-by: Paul Mackerras <paulus@au1.ibm.com>
-> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > Something seems very wrong if RCU regularly hits the fqs code during
-> > > boot; feels like there's some more straightforward solution we're
-> > > missing.  What causes these CPUs to fall under RCU's scrutiny during
-> > > boot yet not actually hit the RCU codepaths naturally?
-> > 
-> > The problem is that they are running HZ=100, so that RCU will often
-> > take 30-60 milliseconds per grace period.  At that point, you only
-> > need 16-30 grace periods to chew up a full second, so it is not all
-> > that hard to eat up the additional 8-12 seconds of boot time that
-> > they were seeing.  IIRC, UP boot was costing them 4 seconds.
+On Tue, Apr 09, 2013 at 12:21:48PM -0500, Jacob Shin wrote:
+> The following patchset adds address masks to existing perf hardware
+> breakpoint mechanism to allow trapping on an address range (currently
+> only single address) on supported architectures.
 > 
-> I added some instrumentation, which counted 202 calls to
-> synchronize_sched() during boot (Fedora 17 minimal install +
-> development tools) with a 3.8.0 kernel on a 4-cpu KVM virtual machine
-> on a POWER7.  Without this patch, those 202 calls take up a total of
-> 4.32 seconds; with it, they take up 3.6 seconds.  The kernel is
-> compiled with HZ=100 and NR_CPUS=1024, like the standard Fedora
-> kernel.
+> perf uapi is updated, x86 AMD implementation (for AMD Family 16h and
+> beyond) is provided, and perf tool has been extended to do:
+> 
+>   $ perf stat -e mem:0x1000:w:0xf a.out
+>                               ^^^
+>                               "don't care" bit mask
+> 
+>   which will count writes to [0x1000 ~ 0x1010)
 
-Going from 4.32 seconds down to 3.6 seconds is an improvement, but there
-is clearly room for more.  The following experimental not-for-inclusion
-patch might help get most of the remaining 3.6 seconds.  Could you please
-try it out?
+Ping .. Ingo?
 
-> I suspect a lot of the calls are in udevd and related processes.
-> Interestingly there were no calls to synchronize_rcu_bh or
-> synchronize_sched_expedited.
-
-The lack of synchronize_rcu_bh() suggests that networking is not
-involved in the slowdown.  The lack of synchronize_sched_expedited()
-is not surprising, unless you booted with rcupdate.rcu_expedited=1,
-but in that case I would expect a much greater reduction in boot time.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-rcu: Not for inclusion: Force expedited grace periods
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index a9610d1..55c5ef6 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -2420,7 +2420,7 @@ void synchronize_sched(void)
- 			   "Illegal synchronize_sched() in RCU-sched read-side critical section");
- 	if (rcu_blocking_is_gp())
- 		return;
--	if (rcu_expedited)
-+	if (1)
- 		synchronize_sched_expedited();
- 	else
- 		wait_rcu_gp(call_rcu_sched);
-@@ -2447,7 +2447,7 @@ void synchronize_rcu_bh(void)
- 			   "Illegal synchronize_rcu_bh() in RCU-bh read-side critical section");
- 	if (rcu_blocking_is_gp())
- 		return;
--	if (rcu_expedited)
-+	if (1)
- 		synchronize_rcu_bh_expedited();
- 	else
- 		wait_rcu_gp(call_rcu_bh);
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 46b93b0..190a199 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -711,7 +711,7 @@ void synchronize_rcu(void)
- 			   "Illegal synchronize_rcu() in RCU read-side critical section");
- 	if (!rcu_scheduler_active)
- 		return;
--	if (rcu_expedited)
-+	if (1)
- 		synchronize_rcu_expedited();
- 	else
- 		wait_rcu_gp(call_rcu);
+> 
+> Jacob Shin (2):
+>   perf: Add hardware breakpoint address mask
+>   perf, x86: AMD implementation for hardware breakpoint address mask
+> 
+> Suravee Suthikulpanit (3):
+>   perf tools: Add breakpoint address mask to the mem event parser
+>   perf tools: Add breakpoint address mask syntax to perf list and
+>     documentation
+>   perf tools: Add breakpoint address mask test case to
+>     tests/parse-events
+> 
+>  arch/Kconfig                             |    4 ++++
+>  arch/x86/Kconfig                         |    1 +
+>  arch/x86/include/asm/cpufeature.h        |    2 ++
+>  arch/x86/include/asm/debugreg.h          |    7 ++++++
+>  arch/x86/include/asm/hw_breakpoint.h     |    6 ++++++
+>  arch/x86/include/uapi/asm/msr-index.h    |    6 ++++++
+>  arch/x86/kernel/cpu/amd.c                |   19 +++++++++++++++++
+>  arch/x86/kernel/hw_breakpoint.c          |    5 +++++
+>  include/linux/hw_breakpoint.h            |    6 ++++++
+>  include/uapi/linux/perf_event.h          |    5 ++++-
+>  kernel/events/hw_breakpoint.c            |    3 +++
+>  tools/perf/Documentation/perf-record.txt |   14 ++++++++----
+>  tools/perf/tests/parse-events.c          |   34 ++++++++++++++++++++++++++++++
+>  tools/perf/util/parse-events.c           |    5 +++--
+>  tools/perf/util/parse-events.h           |    2 +-
+>  tools/perf/util/parse-events.y           |   14 ++++++++++--
+>  16 files changed, 123 insertions(+), 10 deletions(-)
+> 
+> -- 
+> 1.7.9.5
+> 
 
