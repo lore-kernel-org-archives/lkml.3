@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab3DOPac (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 11:30:32 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:45634 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab3DOPa3 (ORCPT
+	id S1755516Ab3DOPas (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 11:30:48 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38625 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754976Ab3DOPan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 11:30:29 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH 9/9] n_tty: Avoid false-sharing echo buffer indices
-Date: Mon, 15 Apr 2013 11:29:47 -0400
-Message-Id: <1366039787-8719-10-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
-References: <1366039567-8620-1-git-send-email-peter@hurleysoftware.com>
- <1366039787-8719-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	Mon, 15 Apr 2013 11:30:43 -0400
+MIME-Version: 1.0
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <CAJfpegsD2iyP2=Z3zL-yb_TjjQxipOBKV7yqpdPPTH9oobQ=bA@mail.gmail.com>
+References: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
+	<CAJfpegsD2iyP2=Z3zL-yb_TjjQxipOBKV7yqpdPPTH9oobQ=bA@mail.gmail.com>
+Date: Mon, 15 Apr 2013 17:30:41 +0200
+Message-ID: <CAJfpegtvfunCV4cjezQuWji3PoJRpXXKWgH+y55tYMi0O+TdkQ@mail.gmail.com>
+Subject: Re: [PATCH 0/5] fuse: close file synchronously
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
+        bfoster@redhat.com, linux-kernel@vger.kernel.org, devel@openvz.org,
+        anand.avati@gmail.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the head & commit indices from the tail index to avoid
-cache-line contention (so called 'false-sharing') between concurrent
-threads.
+On Mon, Apr 15, 2013 at 5:08 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> For example doing a readlink() on a magic symlink under /proc
+> shouldn't result in a synchronous call to a fuse filesystem.  Making
+> fput() synchronous may actually end up doing that (even if it's not
+> very likely).
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+Thinking about this a bit more.  As it is it sounds wrong to rely on a
+synchronous release, when in fact release is just not synchronous, as
+indicated by the above example.  Maybe it's the proc code that's buggy
+and shouldn't do get_file/fput because everyone is assuming release
+being synchronous with close().  Don't know.
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index eb20777..aa63cd3 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -90,6 +90,8 @@ struct n_tty_data {
- 	/* producer-published */
- 	size_t read_head;
- 	size_t canon_head;
-+	size_t echo_head;
-+	size_t echo_commit;
- 	DECLARE_BITMAP(process_char_map, 256);
- 
- 	/* private to n_tty_receive_overrun (single-threaded) */
-@@ -105,20 +107,17 @@ struct n_tty_data {
- 	/* shared by producer and consumer */
- 	char *read_buf;
- 	DECLARE_BITMAP(read_flags, N_TTY_BUF_SIZE);
-+	unsigned char *echo_buf;
- 
- 	int minimum_to_wake;
- 
- 	/* consumer-published */
- 	size_t read_tail;
- 
--	unsigned char *echo_buf;
--	size_t echo_head;
--	size_t echo_tail;
--	size_t echo_commit;
--
- 	/* protected by output lock */
- 	unsigned int column;
- 	unsigned int canon_column;
-+	size_t echo_tail;
- 
- 	struct mutex atomic_read_lock;
- 	struct mutex output_lock;
--- 
-1.8.1.2
+Let's approach it from the other direction:  what if you give back the
+write lease on the first flush?  It will probably work fine for 99% of
+cases, since no other writes are going to happen after the first
+flush.  For the remaining cases you'll just have to reacquire the
+lease when a write happens after the flush.  I guess performance-wise
+that will not be an issue, but I may be wrong.
 
+Thanks,
+Miklos
