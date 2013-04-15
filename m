@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab3DOHkR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 03:40:17 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:53056 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab3DOHkP (ORCPT
+	id S1754518Ab3DOHo1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 03:44:27 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41795 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852Ab3DOHo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 03:40:15 -0400
-Message-ID: <516BAECB.8060409@linux.vnet.ibm.com>
-Date: Mon, 15 Apr 2013 13:09:55 +0530
-From: aruna <aruna@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Mon, 15 Apr 2013 03:44:26 -0400
+Date: Mon, 15 Apr 2013 10:44:04 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org, akpm@linux-foundation.org
+Subject: [patch] mwave: info leak in mwave_ioctl()
+Message-ID: <20130415074404.GA20993@elgon.mountain>
 MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, jkenisto@linux.vnet.ibm.com,
-        mahesh@linux.vnet.ibm.com, anton@samba.org
-Subject: Re: [PATCH 1/8] Remove syslog prefix in uncompressed oops text
-References: <20130410071835.20150.56489.stgit@aruna-ThinkPad-T420> <20130410072100.20150.74661.stgit@aruna-ThinkPad-T420> <20130415072027.GA30156@concordia>
-In-Reply-To: <20130415072027.GA30156@concordia>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041507-5564-0000-0000-00000780E3BB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 15 April 2013 12:50 PM, Michael Ellerman wrote:
-> On Wed, Apr 10, 2013 at 12:51:00PM +0530, Aruna Balakrishnaiah wrote:
->> Removal of syslog prefix in the uncompressed oops text will
->> help in capturing more oops data.
-> Why does it help? Does this effect any existing tools?
->
-> cheers
->
+Smatch complains that on 64 bit systems, there is a hole in the
+MW_ABILITIES struct between ->component_count and ->component_list[].
+It leaks stack information from the mwave_ioctl() function.
 
-By setting the (2nd) syslog argument of kmsg_dump_get_buffer() to false,
-we omit <n> line prefixes and thereby capture more of the printk buffer.
+I've added a memset() to initialize the struct to zero.
 
-No this should not effect any existing tools.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-
-Regards,
-Aruna
-
+diff --git a/drivers/char/mwave/tp3780i.c b/drivers/char/mwave/tp3780i.c
+index c689697..04e6d6a 100644
+--- a/drivers/char/mwave/tp3780i.c
++++ b/drivers/char/mwave/tp3780i.c
+@@ -479,6 +479,7 @@ int tp3780I_QueryAbilities(THINKPAD_BD_DATA * pBDData, MW_ABILITIES * pAbilities
+ 	PRINTK_2(TRACE_TP3780I,
+ 		"tp3780i::tp3780I_QueryAbilities entry pBDData %p\n", pBDData);
+ 
++	memset(pAbilities, 0, sizeof(*pAbilities));
+ 	/* fill out standard constant fields */
+ 	pAbilities->instr_per_sec = pBDData->rDspSettings.uIps;
+ 	pAbilities->data_size = pBDData->rDspSettings.uDStoreSize;
