@@ -1,88 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965596Ab3DPXBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 19:01:05 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965565Ab3DPXBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 19:01:04 -0400
-From: Richard Weinberger <richard@nod.at>
-To: matt.fleming@intel.com
-Cc: cbouatmailru@gmail.com, ccross@android.com, keescook@chromium.org,
-        tony.luck@intel.com, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, matthew.garrett@nebula.com,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] x86,efi: Implement efi_no_storage_paranoia parameter
-Date: Wed, 17 Apr 2013 01:00:53 +0200
-Message-Id: <1366153253-28572-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.1.4
+	id S965603Ab3DPXFA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 19:05:00 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:46017 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965565Ab3DPXE7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 19:04:59 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH] [media] uvcvideo: quirk PROBE_DEF for Dell Studio / OmniVision webcam
+Date: Wed, 17 Apr 2013 01:05:05 +0200
+Message-ID: <3233904.U6nm1cedXx@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1366052511-27284-1-git-send-email-kamal@canonical.com>
+References: <1366052511-27284-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using this parameter one can disable the storage_size/2 check if
-he is really sure that the UEFI does sane gc and fulfills the spec.
+Hi Kamal,
 
-This parameter is useful if a devices uses more than 50% of the
-storage by default.
-The Intel DQSW67 desktop board is such a sucker for exmaple.
+On Monday 15 April 2013 12:01:51 Kamal Mostafa wrote:
+> BugLink: https://bugs.launchpad.net/bugs/1168430
+> 
+> OminiVision webcam 0x05a9:0x264a (in Dell Studio Hybrid 140g) needs the
+> same UVC_QUIRK_PROBE_DEF as other OmniVision model to be recognized
+> consistently.
+> 
+> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- Documentation/kernel-parameters.txt |  6 ++++++
- arch/x86/platform/efi/efi.c         | 15 ++++++++++++++-
- 2 files changed, 20 insertions(+), 1 deletion(-)
+Thank you for the patch.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4609e81..d1cc3a9 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -788,6 +788,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	edd=		[EDD]
- 			Format: {"off" | "on" | "skip[mbr]"}
- 
-+	efi_no_storage_paranoia [EFI; X86]
-+			Using this parameter you can use more than 50% of
-+			your efi variable storage. Use this parameter only if
-+			you are really sure that your UEFI does sane gc and
-+			fulfills the spec otherwise your board may brick.
-+
- 	eisa_irq_edge=	[PARISC,HW]
- 			See header of drivers/parisc/eisa.c.
- 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 4959e3f..07524e1 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -113,6 +113,16 @@ static int __init setup_add_efi_memmap(char *arg)
- }
- early_param("add_efi_memmap", setup_add_efi_memmap);
- 
-+static bool efi_no_storage_paranoia;
-+EXPORT_SYMBOL_GPL(efi_no_storage_paranoia);
-+
-+static int __init setup_storage_paranoia(char *arg)
-+{
-+	efi_no_storage_paranoia = true;
-+	return 0;
-+}
-+early_param("efi_no_storage_paranoia", setup_storage_paranoia);
-+
- 
- static efi_status_t virt_efi_get_time(efi_time_t *tm, efi_time_cap_t *tc)
- {
-@@ -1137,7 +1147,10 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
- 	 */
- 
- 	if (!storage_size || size > remaining_size ||
--	    (max_size && size > max_size) ||
-+	    (max_size && size > max_size))
-+		return EFI_OUT_OF_RESOURCES;
-+
-+	if (!efi_no_storage_paranoia &&
- 	    ((active_size + size + VAR_METADATA_SIZE > storage_size / 2) &&
- 	     (remaining_size - size < storage_size / 2)))
- 		return EFI_OUT_OF_RESOURCES;
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+I've taken the patch in my tree and will submit it upstream for v3.11.
+
+Could you please try to get the full 'lsusb -v -d 05a9:264a' output from the 
+bug reporter ?
+
+> ---
+>  drivers/media/usb/uvc/uvc_driver.c |    9 +++++++++
+>  1 file changed, 9 insertions(+)
+> 
+> diff --git a/drivers/media/usb/uvc/uvc_driver.c
+> b/drivers/media/usb/uvc/uvc_driver.c index 5dbefa6..17bd48d 100644
+> --- a/drivers/media/usb/uvc/uvc_driver.c
+> +++ b/drivers/media/usb/uvc/uvc_driver.c
+> @@ -2163,6 +2163,15 @@ static struct usb_device_id uvc_ids[] = {
+>  	  .bInterfaceSubClass	= 1,
+>  	  .bInterfaceProtocol	= 0,
+>  	  .driver_info 		= UVC_QUIRK_PROBE_DEF },
+> +	/* Dell Studio Hybrid 140g (OmniVision webcam) */
+> +	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
+> +				| USB_DEVICE_ID_MATCH_INT_INFO,
+> +	  .idVendor		= 0x05a9,
+> +	  .idProduct		= 0x264a,
+> +	  .bInterfaceClass	= USB_CLASS_VIDEO,
+> +	  .bInterfaceSubClass	= 1,
+> +	  .bInterfaceProtocol	= 0,
+> +	  .driver_info		= UVC_QUIRK_PROBE_DEF },
+>  	/* Apple Built-In iSight */
+>  	{ .match_flags		= USB_DEVICE_ID_MATCH_DEVICE
+> 
+>  				| USB_DEVICE_ID_MATCH_INT_INFO,
+
 -- 
-1.8.1.4
+Regards,
+
+Laurent Pinchart
 
