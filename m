@@ -1,29 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab3DPIHR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 04:07:17 -0400
-Received: from ip65-44-234-26.z234-44-65.customer.algx.net ([65.44.234.26]:35044
-	"EHLO ctgstlouis.officecentral.biz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751898Ab3DPIHP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 04:07:15 -0400
-X-Greylist: delayed 52574 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Apr 2013 04:07:15 EDT
-Content-Type: text/plain; charset=US-ASCII
+	id S1751801Ab3DPILI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 04:11:08 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:48219 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750815Ab3DPILE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 04:11:04 -0400
+Message-ID: <516D0790.7090902@iki.fi>
+Date: Tue, 16 Apr 2013 11:10:56 +0300
+From: Tomi Valkeinen <tomi.valkeinen@iki.fi>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: 100% Risk Free Deal
-To: Recipient <post@yahoo.com>
-From: post@yahoo.com
-Date: Mon, 15 Apr 2013 16:54:59 +0100
-Reply-To: private1000@qq.com
-Message-Id: <20130415155541.1940AA3182@mail.ctgstlouis.officecentral.biz>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+CC: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, Christoph Fritz <chf.fritz@googlemail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: Re: [PATCH] RTC: rtc-twl: Convert to module_platform_driver() and
+ relocate reg_map init
+References: <1366098262-20726-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1366098262-20726-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please consider this mail serious despite the fact that you did not expect it. I have a risk free business deal worth Sixty Million Dollars (USD) and need a trustworthy partner to share the deal, If you are interested contact me via my private email for more details. 
+Hi,
 
+On 2013-04-16 10:44, Peter Ujfalusi wrote:
+> Convert the driver to use module_platform_driver() to register the platform
+> driver and relocate the rtc_reg_map initialization to platform driver's
+> probe function.
+> In this way we can make sure that the twl-core has been already probed since
+> the core driver will create the device at the end of it's probe function.
+> 
+> Reported-by: Christoph Fritz <chf.fritz@googlemail.com>
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-God Bless You.
-CHIANG Lai Yuen JP
+I think there are two distinct things here. The actual fix for the
+regmap, and a module_platform_driver cleanup. I would suggest having
+them in separate patches.
+
+And even if these are combined, I think the patch subject and
+description should talk about fixing the regmap bug. Now it's rather
+unclear that an actual bug is being fixed.
+
+ Tomi
+
