@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756597Ab3DPMG3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 08:06:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40628 "EHLO mail.zytor.com"
+	id S1756707Ab3DPMGl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 08:06:41 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:50410 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752195Ab3DPMG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755121Ab3DPMG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Apr 2013 08:06:28 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130416100439.GM3672@sgi.com>
-References: <20130416095641.GL3658@sgi.com> <20130416100439.GM3672@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [Patch -v4 4/4] Make reboot_cpuid a kernel parameter. other cpus.
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 16 Apr 2013 05:05:45 -0700
-To: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Russ Anderson <rja@sgi.com>
-CC: Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
+Date: Tue, 16 Apr 2013 07:06:24 -0500
+From: Robin Holt <holt@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Michel Lespinasse <walken@google.com>,
@@ -30,177 +24,119 @@ CC: Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
         "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
         Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <fb8916e0-b41d-4f56-8cfd-3cf791fdc478@email.android.com>
+Subject: Re: [Patch -v4 1/4] Migrate shutdown/reboot to boot cpu.
+Message-ID: <20130416120624.GO3658@sgi.com>
+References: <20130416095827.GJ3672@sgi.com>
+ <20130416113256.GA10452@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130416113256.GA10452@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why not just support the existing syntax everywhere?
+On Tue, Apr 16, 2013 at 01:32:56PM +0200, Ingo Molnar wrote:
+> 
+> * Robin Holt <holt@sgi.com> wrote:
+> 
+> > We recently noticed that reboot of a 1024 cpu machine takes approx 16
+> > minutes of just stopping the cpus.  The slowdown was tracked to commit
+> > f96972f.
+> > 
+> > The current implementation does all the work of hot removing the cpus
+> > before halting the system.  We are switching to just migrating to the
+> > boot cpu and then continuing with shutdown/reboot.
+> > 
+> > This also has the effect of not breaking x86's command line parameter for
+> > specifying the reboot cpu.  Note, this code was shamelessly copied from
+> > arch/x86/kernel/reboot.c with bits removed pertaining to the reboot_cpu
+> > command line parameter.
+> > 
+> > Signed-off-by: Robin Holt <holt@sgi.com>
+> > Tested-by: Shawn Guo <shawn.guo@linaro.org>
+> > To: Ingo Molnar <mingo@redhat.com>
+> > To: Russ Anderson <rja@sgi.com>
+> > To: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+> > Cc: Michel Lespinasse <walken@google.com>
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > Cc: Paul Mackerras <paulus@samba.org>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Robin Holt <holt@sgi.com>
+> > Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+> > Cc: Tejun Heo <tj@kernel.org>
+> > Cc: the arch/x86 maintainers <x86@kernel.org>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: <stable@vger.kernel.org>
+> > 
+> > ---
+> > 
+> > Changes since -v1.
+> > - Set PF_THREAD_BOUND before migrating to eliminate potential race.
+> > - Modified kernel_power_off to also migrate instead of using
+> >   disable_nonboot_cpus().
+> > ---
+> >  kernel/sys.c | 22 +++++++++++++++++++---
+> >  1 file changed, 19 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/sys.c b/kernel/sys.c
+> > index 0da73cf..5ef7aa2 100644
+> > --- a/kernel/sys.c
+> > +++ b/kernel/sys.c
+> > @@ -357,6 +357,22 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+> >  }
+> >  EXPORT_SYMBOL(unregister_reboot_notifier);
+> >  
+> > +void migrate_to_reboot_cpu(void)
+> 
+> It appears to be file-scope, so should be static I guess?
 
-Robin Holt <holt@sgi.com> wrote:
+Done.
 
->Moving the reboot=s<##> parameter for x86 to a kernel parameter
->proper.  I did not find any other arch that was specifying the
->reboot cpu.
->
->I left a compatibility mode in there.  The new parameter always
->takes precedence.  I also fixed up the current code to support
->up to cpuid's up to the current max of 4096.
->
->Signed-off-by: Robin Holt <holt@sgi.com>
->To: Ingo Molnar <mingo@redhat.com>
->To: Russ Anderson <rja@sgi.com>
->Cc: Shawn Guo <shawn.guo@linaro.org>
->Cc: Oleg Nesterov <oleg@redhat.com>
->Cc: Andrew Morton <akpm@linux-foundation.org>
->Cc: "H. Peter Anvin" <hpa@zytor.com>
->Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
->Cc: Linus Torvalds <torvalds@linux-foundation.org>
->Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
->Cc: Michel Lespinasse <walken@google.com>
->Cc: Oleg Nesterov <oleg@redhat.com>
->Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
->Cc: Paul Mackerras <paulus@samba.org>
->Cc: Peter Zijlstra <peterz@infradead.org>
->Cc: Robin Holt <holt@sgi.com>
->Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
->Cc: Tejun Heo <tj@kernel.org>
->Cc: the arch/x86 maintainers <x86@kernel.org>
->Cc: Thomas Gleixner <tglx@linutronix.de>
->
->---
->
->Changes since -v3
->- Added a reboot=s#### compatibility mode for x86.
->
-> Documentation/kernel-parameters.txt |  2 ++
->arch/x86/kernel/reboot.c            | 39
->+++++++++++++------------------------
-> kernel/reboot.c                     |  8 +++++++-
-> 3 files changed, 22 insertions(+), 27 deletions(-)
->
->diff --git a/Documentation/kernel-parameters.txt
->b/Documentation/kernel-parameters.txt
->index 4609e81..11ebb48 100644
->--- a/Documentation/kernel-parameters.txt
->+++ b/Documentation/kernel-parameters.txt
->@@ -2597,6 +2597,8 @@ bytes respectively. Such letter suffixes can also
->be entirely omitted.
-> 			Format: <reboot_mode>[,<reboot_mode2>[,...]]
-> 			See arch/*/kernel/reboot.c or arch/*/kernel/process.c
+> > +{
+> > +	/* The boot cpu is always logical cpu 0 */
+> > +	int reboot_cpu_id = 0;
+> > +
+> > +	/* Make certain the cpu I'm about to reboot on is online */
+> > +	if (!cpu_online(reboot_cpu_id))
+> > +		reboot_cpu_id = smp_processor_id();
 > 
->+	reboot_cpuid=	[KNL] cpuid to use for reboot/halt, etc operations.
->+
-> 	relax_domain_level=
-> 			[KNL, SMP] Set scheduler's default relax_domain_level.
-> 			See Documentation/cgroups/cpusets.txt.
->diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
->index 76fa1e9..cdcf28f 100644
->--- a/arch/x86/kernel/reboot.c
->+++ b/arch/x86/kernel/reboot.c
->@@ -49,10 +49,6 @@ int reboot_force;
->  */
-> static int reboot_default = 1;
-> 
->-#ifdef CONFIG_SMP
->-static int reboot_cpu = -1;
->-#endif
->-
-> /*
->  * This is set if we need to go through the 'emergency' path.
->  * When machine_emergency_restart() is called, we may be on
->@@ -63,6 +59,8 @@ static int reboot_emergency;
->/* This is set by the PCI code if either type 1 or type 2 PCI is
->detected */
-> bool port_cf9_safe = false;
-> 
->+extern int reboot_cpuid;
->+
-> /*
->* reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old]
->| p[ci]
->  * warm   Don't set the cold reboot flag
->@@ -97,10 +95,14 @@ static int __init reboot_setup(char *str)
-> 
-> #ifdef CONFIG_SMP
-> 		case 's':
->-			if (isdigit(*(str+1))) {
->-				reboot_cpu = (int) (*(str+1) - '0');
->-				if (isdigit(*(str+2)))
->-					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
->+			if (reboot_cpuid < 0) {
->+				int coffset;
->+
->+				reboot_cpuid = 0;
->+				for (coffset = 1; isdigit(*(str + coffset)); coffset++) {
->+					reboot_cpuid *= 10;
->+					reboot_cpuid += (int)(*(str+2) - '0');
->+				}
-> 			}
-> 			/*
-> 			 * We will leave sorting out the final value
->@@ -615,25 +617,10 @@ void native_machine_shutdown(void)
-> 	/* Stop the cpus and apics */
-> #ifdef CONFIG_SMP
-> 
->-	/* The boot cpu is always logical cpu 0 */
->-	int reboot_cpu_id = 0;
->-
->-	/* See if there has been given a command line override */
->-	if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
->-		cpu_online(reboot_cpu))
->-		reboot_cpu_id = reboot_cpu;
->-
->-	/* Make certain the cpu I'm about to reboot on is online */
->-	if (!cpu_online(reboot_cpu_id))
->-		reboot_cpu_id = smp_processor_id();
->-
->-	/* Make certain I only run on the appropriate processor */
->-	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
->-
-> 	/*
->-	 * O.K Now that I'm on the appropriate processor, stop all of the
->-	 * others. Also disable the local irq to not receive the per-cpu
->-	 * timer interrupt which may trigger scheduler's load balance.
->+	 * Stop all of the others. Also disable the local irq to
->+	 * not receive the per-cpu timer interrupt which may trigger
->+	 * scheduler's load balance.
-> 	 */
-> 	local_irq_disable();
-> 	stop_other_cpus();
->diff --git a/kernel/reboot.c b/kernel/reboot.c
->index 8cfef20..b2ef798 100644
->--- a/kernel/reboot.c
->+++ b/kernel/reboot.c
->@@ -10,6 +10,7 @@
-> #include <linux/kexec.h>
-> #include <linux/kmod.h>
-> #include <linux/kmsg_dump.h>
->+#include <linux/moduleparam.h>
-> #include <linux/reboot.h>
-> #include <linux/suspend.h>
-> #include <linux/syscalls.h>
->@@ -69,13 +70,18 @@ int unregister_reboot_notifier(struct
->notifier_block *nb)
-> }
-> EXPORT_SYMBOL(unregister_reboot_notifier);
-> 
->+int reboot_cpuid = -1;
->+core_param(reboot_cpuid, reboot_cpuid, int, 0644);
->+
-> void migrate_to_reboot_cpu(void)
-> {
-> 	/* The boot cpu is always logical cpu 0 */
->-	int reboot_cpu_id = 0;
->+	int reboot_cpu_id = reboot_cpuid;
-> 
-> 	/* Make certain the cpu I'm about to reboot on is online */
-> 	if (!cpu_online(reboot_cpu_id))
->+		reboot_cpu_id = 0;
->+	if (!cpu_online(reboot_cpu_id))
-> 		reboot_cpu_id = smp_processor_id();
-> 
-> 	/* Prevent races with other tasks migrating this task. */
+> Shouldn't we pick the first online CPU instead, to make it deterministic?
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Done.
+
+		reboot_cpu_id = cpumask_first(cpu_online_mask);
+
+> Also, does this codepath prevent hotplug from going on in parallel?
+
+Not sure.  I have not considered hotplug.  I will look that over when I
+am in the office.
+
+> ( Plus, the smp_processor_id() is in a preemptible section AFAICS, so it will 
+>   throw a warning with preempt debug on. )
+> 
+> > +
+> > +	/* Prevent races with other tasks migrating this task. */
+> 
+> (I guess the colon can be dropped here, like in the other comments.)
+
+Done.
+
+> 
+> > +	current->flags |= PF_THREAD_BOUND;
+> > +
+> > +	/* Make certain I only run on the appropriate processor */
+> > +	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
+> > +}
+
+I will resubmit when I have the hotplug stuff understood and after giving
+the set some more time for comments.
+
+Robin
