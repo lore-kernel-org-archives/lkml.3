@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755960Ab3DPJOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:14:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38143 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751327Ab3DPJOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:14:51 -0400
-Date: Tue, 16 Apr 2013 06:12:43 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Antti Palosaari <crope@iki.fi>, Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        linux-media <linux-media@vger.kernel.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [PATCH -next] media:
-Message-ID: <20130416061243.22d06140@redhat.com>
-In-Reply-To: <alpine.DEB.2.02.1304152010180.3952@chino.kir.corp.google.com>
-References: <20130408174343.cc13eb1972470d20d38ecff1@canb.auug.org.au>
-	<51630297.2040803@infradead.org>
-	<516461FE.4020007@iki.fi>
-	<alpine.DEB.2.02.1304152010180.3952@chino.kir.corp.google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756232Ab3DPJPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:15:11 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:61543 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab3DPJPH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 05:15:07 -0400
+Date: Tue, 16 Apr 2013 11:15:03 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: libin <huawei.libin@huawei.com>
+Cc: Jonghwan Choi <jhbird.choi@gmail.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jiang.liu@huawei.com,
+        guohanjun@huawei.com, Peter Zijlstra <peterz@infradead.org>,
+        Jonghwan Choi <jhbird.choi@samsung.com>
+Subject: Re: [PATCH 3.8-stable] sched/debug: Fix sd->*_idx limit range
+ avoiding overflow
+Message-ID: <20130416091503.GD9569@gmail.com>
+References: <1366035328-4780-1-git-send-email-jhbird.choi@samsung.com>
+ <516CAF08.1090107@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <516CAF08.1090107@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 15 Apr 2013 20:10:49 -0700 (PDT)
-David Rientjes <rientjes@google.com> escreveu:
 
-> On Tue, 9 Apr 2013, Antti Palosaari wrote:
+* libin <huawei.libin@huawei.com> wrote:
+
+> On 2013/4/15 22:15, Jonghwan Choi wrote:
+> > From: libin <huawei.libin@huawei.com>
+> > 
+> > This patch looks like it should be in the 3.8-stable tree, should we apply
+> > it?
+> > 
 > 
-> > On 04/08/2013 08:47 PM, Randy Dunlap wrote:
-> > > From: Randy Dunlap <rdunlap@infradead.org>
-> > > 
-> > > Fix randconfig error when USB is not enabled:
-> > > 
-> > > ERROR: "usb_control_msg" [drivers/media/common/cypress_firmware.ko]
-> > > undefined!
-> > > 
-> > > Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> > > Cc: Antti Palosaari <crope@iki.fi>
-> > 
-> > Reviewed-by: Antti Palosaari <crope@iki.fi>
-> > 
-> > 
-> > > ---
-> > >   drivers/media/common/Kconfig |    1 +
-> > >   1 file changed, 1 insertion(+)
-> > > 
-> > > --- linux-next-20130408.orig/drivers/media/common/Kconfig
-> > > +++ linux-next-20130408/drivers/media/common/Kconfig
-> > > @@ -18,6 +18,7 @@ config VIDEO_TVEEPROM
-> > > 
-> > >   config CYPRESS_FIRMWARE
-> > >   	tristate "Cypress firmware helper routines"
-> > > +	depends on USB
-> > > 
-> > >   source "drivers/media/common/b2c2/Kconfig"
-> > >   source "drivers/media/common/saa7146/Kconfig"
-> > > 
-> 
-> Mauro, this problem persists in linux-next seven days later, any chance we 
-> can get this fix from Randy merged?
+> yes, I think this patch should be applied to the 3.8-stable tree. Thanks.
+> Libin
 
-AFAIKT, this got merged at -next already:
+Since this is a debug interface only accessible to root it's not strictly 
+necessary - but I have no objection to including it in -stable.
 
-commit 7c15b715ef301a7f8bb2dc8de335497ffde568a6
-Author:     Randy Dunlap <rdunlap@infradead.org>
-AuthorDate: Mon Apr 8 13:47:03 2013 -0300
-Commit:     Mauro Carvalho Chehab <mchehab@redhat.com>
-CommitDate: Sun Apr 14 20:04:08 2013 -0300
+Thanks,
 
-    [media] media: Fix randconfig error
-    
-    Fix randconfig error when USB is not enabled:
-    ERROR: "usb_control_msg" [drivers/media/common/cypress_firmware.ko] undefined!
-    
-    Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-    Reviewed-by: Antti Palosaari <crope@iki.fi>
-    Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-Regards,
-Mauro
+	Ingo
