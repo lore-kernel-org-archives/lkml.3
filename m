@@ -1,115 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753662Ab3DPGLT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 02:11:19 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:36993 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403Ab3DPGLR (ORCPT
+	id S1754096Ab3DPGS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 02:18:58 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56169 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab3DPGS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 02:11:17 -0400
-Date: Tue, 16 Apr 2013 15:11:13 +0900
-From: Simon Horman <horms@verge.net.au>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        viro@ZenIV.linux.org.uk, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 19/26] sh: Don't use create_proc_read_entry() [RFC]
-Message-ID: <20130416061113.GA27462@verge.net.au>
-References: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
- <20130411133009.32763.71122.stgit@warthog.procyon.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130411133009.32763.71122.stgit@warthog.procyon.org.uk>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Apr 2013 02:18:57 -0400
+X-AuditID: 9c930197-b7b50ae00000018c-11-516ced4ece0c
+From: Chanho Min <chanho.min@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Nadia Yvette Chambers <nyc@holomorphy.com>,
+        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Chanho Min <chanho.min@lge.com>
+Subject: [PATCH v3] bitmap: speed up bitmap_find_free_region
+Date: Tue, 16 Apr 2013 15:18:37 +0900
+Message-Id: <1366093117-8228-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 02:30:09PM +0100, David Howells wrote:
-> Don't use create_proc_read_entry() as that is deprecated, but rather use
-> proc_create_data() and seq_file instead.
+In bitmap_find_free_region, If we skip the all-ones words and find bits
+in a not-all-ones word, we can improve performance of it.
 
-Paul, do you want me to handle this?
+For example, If bitmap_find_free_region() is called with order=0, First,
+It scans bitmap array by the increment of long type, then find 1 free bit
+within 1 long type value. In 32 bits system and 1024 bits size, in the worst
+case, We need 1024 for-loops to find 1 free bit. But, If this is applied,
+it takes 64 for-loops. Instead, It will be needed additional if-comparison
+of every word and It can take time slightly as 'Test case 3'. But, In many
+cases, It will speed up significantly.
 
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Paul Mundt <lethal@linux-sh.org>
-> cc: linux-sh@vger.kernel.org
-> ---
-> 
->  arch/sh/drivers/dma/dma-api.c |   28 +++++++++++++++++++---------
->  1 file changed, 19 insertions(+), 9 deletions(-)
-> 
-> diff --git a/arch/sh/drivers/dma/dma-api.c b/arch/sh/drivers/dma/dma-api.c
-> index f46848f..851e510 100644
-> --- a/arch/sh/drivers/dma/dma-api.c
-> +++ b/arch/sh/drivers/dma/dma-api.c
-> @@ -13,6 +13,7 @@
->  #include <linux/module.h>
->  #include <linux/spinlock.h>
->  #include <linux/proc_fs.h>
-> +#include <linux/seq_file.h>
->  #include <linux/list.h>
->  #include <linux/platform_device.h>
->  #include <linux/mm.h>
-> @@ -308,11 +309,9 @@ int dma_extend(unsigned int chan, unsigned long op, void *param)
->  }
->  EXPORT_SYMBOL(dma_extend);
->  
-> -static int dma_read_proc(char *buf, char **start, off_t off,
-> -			 int len, int *eof, void *data)
-> +static int dma_proc_show(struct seq_file *m, void *v)
->  {
-> -	struct dma_info *info;
-> -	char *p = buf;
-> +	struct dma_info *info = v;
->  
->  	if (list_empty(&registered_dmac_list))
->  		return 0;
-> @@ -332,14 +331,26 @@ static int dma_read_proc(char *buf, char **start, off_t off,
->  			if (!(channel->flags & DMA_CONFIGURED))
->  				continue;
->  
-> -			p += sprintf(p, "%2d: %14s    %s\n", i,
-> -				     info->name, channel->dev_id);
-> +			seq_printf(m, "%2d: %14s    %s\n", i,
-> +				   info->name, channel->dev_id);
->  		}
->  	}
->  
-> -	return p - buf;
-> +	return 0;
-> +}
-> +
-> +static int dma_proc_open(struct inode *inode, struct file *file)
-> +{
-> +	return single_open(file, dma_proc_show, NULL);
->  }
->  
-> +static const struct file_operations dma_proc_fops = {
-> +	.open		= dma_proc_open,
-> +	.read		= seq_read,
-> +	.llseek		= seq_lseek,
-> +	.release	= seq_release,
-> +};
-> +
->  int register_dmac(struct dma_info *info)
->  {
->  	unsigned int total_channels, i;
-> @@ -412,8 +423,7 @@ EXPORT_SYMBOL(unregister_dmac);
->  static int __init dma_api_init(void)
->  {
->  	printk(KERN_NOTICE "DMA: Registering DMA API.\n");
-> -	return create_proc_read_entry("dma", 0, 0, dma_read_proc, 0)
-> -		    ? 0 : -ENOMEM;
-> +	return proc_create("dma", 0, NULL, &dma_proc_fops) ? 0 : -ENOMEM;
->  }
->  subsys_initcall(dma_api_init);
->  
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sh" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Test cases bellows show the time taken to execute bitmap_find_free_region()
+before and after patch.
+
+Test condition : ARMv7 1GHZ 32 bits system, 1024 bits size, gcc 4.6.2
+
+Test case 1: order is 0. all bits are one except that last one bit is zero.
+ before patch: 29727 ns
+ after patch: 2349 ns
+
+Test case 2: order is 1. all bits are one except that last 2 contiguous bits
+are zero.
+ before patch: 15475 ns
+ after patch: 2225 ns
+
+Test case 3: order is 1. all words are not-all-ones and don't have 2 contiguous
+bits except that last 2 contiguous are zero.
+ before patch: 15475 ns
+ after patch: 16131 ns
+
+Changes compared to v1:
+ - Modified unnecessarily complicated code.
+ - Fixed the buggy code if `bits' is not an multiple of BITS_PER_LONG.
+
+Changes compared to v2:
+ - Removed bitmap_find_free_one and merged it to bitmap_find_free_region.
+
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+---
+ lib/bitmap.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
+
+diff --git a/lib/bitmap.c b/lib/bitmap.c
+index 06f7e4f..95e8efc 100644
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -1114,14 +1114,21 @@ done:
+  */
+ int bitmap_find_free_region(unsigned long *bitmap, int bits, int order)
+ {
+-	int pos, end;		/* scans bitmap by regions of size order */
+-
+-	for (pos = 0 ; (end = pos + (1 << order)) <= bits; pos = end) {
+-		if (!__reg_op(bitmap, pos, order, REG_OP_ISFREE))
+-			continue;
+-		__reg_op(bitmap, pos, order, REG_OP_ALLOC);
+-		return pos;
+-	}
++	int pos, end, nbit, i;	/* scans bitmap by regions of size order */
++	int nlongs = BITS_TO_LONGS(bits);
++
++	for (i = 0; i < nlongs; i++)
++		if (bitmap[i] != ~0UL) {
++			pos = i * BITS_PER_LONG;
++			nbit = min(bits, pos + BITS_PER_LONG);
++			for (; (end = pos + (1 << order)) <= nbit; pos = end) {
++				if (!__reg_op(bitmap, pos, order,
++					REG_OP_ISFREE))
++					continue;
++				__reg_op(bitmap, pos, order, REG_OP_ALLOC);
++				return pos;
++			}
++		}
+ 	return -ENOMEM;
+ }
+ EXPORT_SYMBOL(bitmap_find_free_region);
+-- 
+1.7.9.5
+
