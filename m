@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965156Ab3DPRng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 13:43:36 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:48952 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965097Ab3DPRnc (ORCPT
+	id S965172Ab3DPRns (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 13:43:48 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:58862 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965131Ab3DPRne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 13:43:32 -0400
+	Tue, 16 Apr 2013 13:43:34 -0400
 From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 To: linux-kbuild@vger.kernel.org
 Cc: Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
         "Yann E. MORIN" <yann.morin.1998@free.fr>,
-        Peter Korsgaard <jacmet@uclibc.org>
-Subject: [PATCH 3/4] kconfig: implement KCONFIG_PROBABILITY for randconfig
-Date: Tue, 16 Apr 2013 19:43:12 +0200
-Message-Id: <1366134193-22030-4-git-send-email-yann.morin.1998@free.fr>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Arnaud Lacombe <lacombar@gmail.com>
+Subject: [PATCH 4/4] kconfig: do randomise choice entries in presence of KCONFIG_ALLCONFIG
+Date: Tue, 16 Apr 2013 19:43:13 +0200
+Message-Id: <1366134193-22030-5-git-send-email-yann.morin.1998@free.fr>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1366134193-22030-1-git-send-email-yann.morin.1998@free.fr>
 References: <1366134193-22030-1-git-send-email-yann.morin.1998@free.fr>
@@ -22,88 +23,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a KCONFIG_PROBABILITY environment variable to tweak the
-probability between 0 (all options off) and 100 (all options on).
+Currently, randconfig does randomise choice entries, unless KCONFIG_ALLCONFIG
+is specified.
 
-[Patch originally written by Peter for Buildroot, see:    ]
-[http://git.buildroot.org/buildroot/commit/?id=3435c1afb5 ]
+For example, given those two files (Thomas' test-case):
 
-Signed-off-by: Peter Korsgaard <jacmet@uclibc.org>
-[yann.morin.1998@free.fr: add to Documentation/]
+    ---8<--- Config.test.in
+    config OPTIONA
+        bool "Option A"
+
+    choice
+        prompt "This is a choice"
+
+    config CHOICE_OPTIONA
+        bool "Choice Option A"
+
+    config CHOICE_OPTIONB
+        bool "Choice Option B"
+
+    endchoice
+
+    config OPTIONB
+        bool "Option B"
+    ---8<--- Config.test.in
+
+    ---8<--- config.defaults
+    CONFIG_OPTIONA=y
+    ---8<--- config.defaults
+
+And running:
+    ./scripts/kconfig/conf --randconfig Config.test.in
+
+does properly randomise the two choice symbols (and the two booleans).
+
+However, running:
+    KCONFIG_ALLCONFIG=config.defaults \
+    ./scripts/kconfig/conf --randconfig Config.test.in
+
+does *not* reandomise the two choice entries, and only CHOICE_OPTIONA
+will ever be selected. (OPTIONA will always be set (expected), and
+OPTIONB will be be properly randomised (expected).)
+
+This patch defers setting that a choice has a value until a symbol for
+that choice is indeed set, so that choices are properly randomised when
+KCONFIG_ALLCONFIG is set, but not if a symbol for that choice is set.
+
+Also, as a side-efect, this patch fixes the following case:
+
+    ---8<---
+    choice
+    config OPTION_A
+        bool "Option A"
+    config OPTION_B
+        bool "Option B"
+    config OPTION_C
+        bool "Option C"
+    endchoice
+    ---8<---
+
+which could previously generate such .config files:
+
+    ---8<---                            ---8<---
+    CONFIG_OPTION_A=y                   CONFIG_OPTION_A=y
+    CONFIG_OPTION_B=y                   # CONFIG_OPTION_B is not set
+    # CONFIG_OPTION_C is not set        CONFIG_OPTION_C=y
+    ---8<---                            ---8<---
+
+Ie., the first entry in a choice is always set, plus zero or one of
+the other options may be set.
+
+This patch ensures that only one option may be set for a choice.
+
+Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 Signed-off-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
----
- Documentation/kbuild/kconfig.txt |   17 +++++++++++++++++
- scripts/kconfig/confdata.c       |   22 +++++++++++++++++++---
- 2 files changed, 36 insertions(+), 3 deletions(-)
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Cc: Arnaud Lacombe <lacombar@gmail.com>
 
-diff --git a/Documentation/kbuild/kconfig.txt b/Documentation/kbuild/kconfig.txt
-index dbf746b..1817128 100644
---- a/Documentation/kbuild/kconfig.txt
-+++ b/Documentation/kbuild/kconfig.txt
-@@ -98,6 +98,23 @@ You can set this to the integer value used to seed the RNG, if you want
- to somehow debug the behaviour of the kconfig parser/frontends.
- If not set, the current time will be used.
- 
-+KCONFIG_PROBABILITY
-+--------------------------------------------------
-+If this variable is set and contains an integer in the range [0,100],
-+then its value is used as a probability each variable is set. If the
-+variable is a tristate, there is then a further 50% chance it is set
-+to either 'M' or 'Y'. If KCONFIG_PROBABILITY is not set, then the
-+default is 50. Examples (rounded figures):
-+	KCONFIG_PROBABILITY=33
-+		boolean     :     no : 67%                yes: 33%
-+		tristrate   :     no : 67%    mod: 16%    yes: 16%
-+	KCONFIG_PROBABILITY=50
-+		boolean     :     no : 50%                yes: 50%
-+		tristate    :     no : 50%    mod: 25%    yes: 25%
-+	KCONFIG_PROBABILITY=67
-+		boolean     :     no : 33%                yes: 67%
-+		tristrate   :     no : 33%    mod: 33%    yes: 33%
-+
- ______________________________________________________________________
- Environment variables for 'silentoldconfig'
- 
+---
+Changes v2 -> v3
+  - ensure only one symbol is set in a choice
+
+Changes v1 -> v2:
+  - further postpone setting that a choice has a value until
+    one is indeed set
+  - do not print symbols that are part of an invisible choice
+---
+ scripts/kconfig/confdata.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
 diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index 13ddf11..8d8d853 100644
+index 8d8d853..5487279 100644
 --- a/scripts/kconfig/confdata.c
 +++ b/scripts/kconfig/confdata.c
-@@ -1106,7 +1106,16 @@ static void set_all_choice_values(struct symbol *csym)
- void conf_set_all_new_symbols(enum conf_def_mode mode)
- {
- 	struct symbol *sym, *csym;
--	int i, cnt;
-+	int i, cnt, prob = 50;
-+
-+	if (mode == def_random) {
-+		char *endp, *env = getenv("KCONFIG_PROBABILITY");
-+		if (env && *env) {
-+			int tmp = (int)strtol(env, &endp, 10);
-+			if (*endp == '\0' && tmp >= 0 && tmp <= 100)
-+				prob = tmp;
-+		}
-+	}
- 
+@@ -288,8 +288,6 @@ load:
  	for_all_symbols(i, sym) {
- 		if (sym_has_value(sym))
-@@ -1125,8 +1134,15 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
- 				sym->def[S_DEF_USER].tri = no;
+ 		sym->flags |= SYMBOL_CHANGED;
+ 		sym->flags &= ~(def_flags|SYMBOL_VALID);
+-		if (sym_is_choice(sym))
+-			sym->flags |= def_flags;
+ 		switch (sym->type) {
+ 		case S_INT:
+ 		case S_HEX:
+@@ -379,13 +377,13 @@ setsym:
+ 			case mod:
+ 				if (cs->def[def].tri == yes) {
+ 					conf_warning("%s creates inconsistent choice state", sym->name);
+-					cs->flags &= ~def_flags;
+ 				}
  				break;
- 			case def_random:
--				cnt = sym_get_type(sym) == S_TRISTATE ? 3 : 2;
--				sym->def[S_DEF_USER].tri = (tristate)(rand() % cnt);
-+				cnt = (rand() % 100) - (100 - prob);
-+				if (cnt < 0)
-+					sym->def[S_DEF_USER].tri = no;
-+				else
-+					if ((sym_get_type(sym) == S_TRISTATE)
-+					    && (cnt > prob/2))
-+						sym->def[S_DEF_USER].tri = mod;
-+					else
-+						sym->def[S_DEF_USER].tri = yes;
+ 			case yes:
+ 				if (cs->def[def].tri != no)
+ 					conf_warning("override: %s changes choice state", sym->name);
+ 				cs->def[def].val = sym;
++				cs->flags |= def_flags;
  				break;
- 			default:
- 				continue;
+ 			}
+ 			cs->def[def].tri = EXPR_OR(cs->def[def].tri, sym->def[def].tri);
+@@ -791,6 +789,8 @@ int conf_write(const char *name)
+ 			sym_calc_value(sym);
+ 			if (!(sym->flags & SYMBOL_WRITE))
+ 				goto next;
++			if (sym_is_choice_value(sym) && !menu_is_visible(menu->parent))
++				goto next;
+ 			sym->flags &= ~SYMBOL_WRITE;
+ 
+ 			conf_write_symbol(out, sym, &kconfig_printer_cb, NULL);
+@@ -1077,6 +1077,7 @@ static void randomize_choice_values(struct symbol *csym)
+ 		else {
+ 			sym->def[S_DEF_USER].tri = no;
+ 		}
++		sym->flags &= ~(SYMBOL_VALID);
+ 	}
+ 	csym->flags |= SYMBOL_DEF_USER;
+ 	/* clear VALID to get value calculated */
 -- 
 1.7.2.5
 
