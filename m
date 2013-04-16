@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756079Ab3DPMTe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 08:19:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab3DPMTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 08:19:33 -0400
-Message-ID: <516D41C5.9080009@redhat.com>
-Date: Tue, 16 Apr 2013 14:19:17 +0200
-From: Florian Weimer <fweimer@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S933490Ab3DPMVt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 08:21:49 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:47426 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab3DPMVs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 08:21:48 -0400
 MIME-Version: 1.0
-To: oss-security@lists.openwall.com
-CC: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [oss-security] Summary of security bugs (now fixed) in user namespaces
-References: <CALCETrX6Rcv1uMfPdG=K6THusgx-CAjHRkUpMwruBNaZGDvb8Q@mail.gmail.com>
-In-Reply-To: <CALCETrX6Rcv1uMfPdG=K6THusgx-CAjHRkUpMwruBNaZGDvb8Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130411185632.GA7569@redhat.com>
+References: <20130411185632.GA7569@redhat.com>
+Date: Tue, 16 Apr 2013 08:21:47 -0400
+Message-ID: <CA+5PVA5h79QWXqaBi3WdgnqE1eoxTkejBoF7t=6r1X=oyZAOKA@mail.gmail.com>
+Subject: Re: print out hardware name & modules list when we encounter bad page tables.
+From: Josh Boyer <jwboyer@gmail.com>
+To: Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux-MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2013 07:16 PM, Andy Lutomirski wrote:
-> I previously reported these bugs privatley.  I'm summarizing them for
-> the historical record.  These bugs were never exploitable on a
-> default-configured released kernel, but some 3.8 versions are
-> vulnerable depending on configuration.
+On Thu, Apr 11, 2013 at 2:56 PM, Dave Jones <davej@redhat.com> wrote:
+> Given we have been seeing a lot of reports of page table corruption
+> for a while now, perhaps if we print out the hardware name, and list
+> of modules loaded, we might see some patterns emerging.
+>
+> Signed-off-by: Dave Jones <davej@redhat.com>
+>
+> diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/include/asm-generic/bug.h linux-dj/include/asm-generic/bug.h
+> --- linux/include/asm-generic/bug.h     2013-01-04 18:57:12.604282214 -0500
+> +++ linux-dj/include/asm-generic/bug.h  2013-02-28 20:04:37.649304147 -0500
+> @@ -55,6 +55,8 @@ struct bug_entry {
+>  #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while(0)
+>  #endif
+>
+> +void print_hardware_dmi_name(void);
+> +
+>  /*
+>   * WARN(), WARN_ON(), WARN_ON_ONCE, and so on can be used to report
+>   * significant issues that need prompt attention if they should ever
+> diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/kernel/panic.c linux-dj/kernel/panic.c
+> --- linux/kernel/panic.c        2013-02-26 14:41:18.544116674 -0500
+> +++ linux-dj/kernel/panic.c     2013-02-28 20:04:37.666304115 -0500
+> @@ -397,16 +397,22 @@ struct slowpath_args {
+>         va_list args;
+>  };
+>
+> -static void warn_slowpath_common(const char *file, int line, void *caller,
+> -                                unsigned taint, struct slowpath_args *args)
+> +void print_hardware_dmi_name(void)
+>  {
 
-Looking at this list, is there some way to restrict this new 
-functionality to, say, membership in a certain group?  At present, most 
-system users (daemons) do not need this functionality, so it would make 
-sense to restrict access to it.
+This fails to build on arches that define __WARN_TAINT.  Just move the
+new function definition above the WANT_WARN_ON_SLOWPATH define and it
+should be fine.
 
-Or is the expectation that we disable CONFIG_USER_NS until things 
-stabilize further?
-
--- 
-Florian Weimer / Red Hat Product Security Team
+josh
