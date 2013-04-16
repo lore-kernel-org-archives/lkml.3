@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965526Ab3DPVxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 17:53:39 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S965563Ab3DPVyZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 17:54:25 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:45308
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965470Ab3DPVxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 17:53:38 -0400
-From: Richard Weinberger <richard@nod.at>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, user-mode-linux-devel@lists.sourceforge.net,
-        Richard Weinberger <richard@nod.at>
-Subject: [PATCH] um: Use generic idle loop
-Date: Tue, 16 Apr 2013 23:53:29 +0200
-Message-Id: <1366149209-24787-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.8.1.4
+	id S965448Ab3DPVyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 17:54:23 -0400
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: [PATCH net] hyperv: Fix a compiler warning in netvsc_send()
+Date: Tue, 16 Apr 2013 15:25:50 -0700
+Message-Id: <1366151150-14859-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- arch/um/Kconfig.common   |  1 +
- arch/um/kernel/process.c | 27 ++++-----------------------
- 2 files changed, 5 insertions(+), 23 deletions(-)
+Fixed: warning: cast from pointer to integer of different size
 
-diff --git a/arch/um/Kconfig.common b/arch/um/Kconfig.common
-index bceee66..5783406 100644
---- a/arch/um/Kconfig.common
-+++ b/arch/um/Kconfig.common
-@@ -12,6 +12,7 @@ config UML
- 	select GENERIC_CPU_DEVICES
- 	select GENERIC_IO
- 	select GENERIC_CLOCKEVENTS
-+	select GENERIC_IDLE_LOOP
- 	select TTY # Needed for line.c
+The Hyper-V hosts always use 64 bit request id. The guests can have 32 or 64
+bit pointers which equal to the ulong type size. So we cast it to ulong type.
+And, assigning 32bit integer to 64 bit variable works fine.
+
+The VMBus returns the same id in the completion packet. But the value has no
+effect on the host side.
+
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/net/hyperv/netvsc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
+index f5f0f09..2b04804 100644
+--- a/drivers/net/hyperv/netvsc.c
++++ b/drivers/net/hyperv/netvsc.c
+@@ -522,7 +522,7 @@ int netvsc_send(struct hv_device *device,
+ 	sendMessage.msg.v1_msg.send_rndis_pkt.send_buf_section_size = 0;
  
- config MMU
-diff --git a/arch/um/kernel/process.c b/arch/um/kernel/process.c
-index b462b13..bbcef52 100644
---- a/arch/um/kernel/process.c
-+++ b/arch/um/kernel/process.c
-@@ -210,33 +210,14 @@ void initial_thread_cb(void (*proc)(void *), void *arg)
- 	kmalloc_ok = save_kmalloc_ok;
- }
+ 	if (packet->completion.send.send_completion)
+-		req_id = (u64)packet;
++		req_id = (ulong)packet;
+ 	else
+ 		req_id = 0;
  
--void default_idle(void)
-+void arch_cpu_idle(void)
- {
- 	unsigned long long nsecs;
- 
--	while (1) {
--		/* endless idle loop with no priority at all */
--
--		/*
--		 * although we are an idle CPU, we do not want to
--		 * get into the scheduler unnecessarily.
--		 */
--		if (need_resched())
--			schedule();
--
--		tick_nohz_idle_enter();
--		rcu_idle_enter();
--		nsecs = disable_timer();
--		idle_sleep(nsecs);
--		rcu_idle_exit();
--		tick_nohz_idle_exit();
--	}
--}
--
--void cpu_idle(void)
--{
- 	cpu_tasks[current_thread_info()->cpu].pid = os_getpid();
--	default_idle();
-+	nsecs = disable_timer();
-+	idle_sleep(nsecs);
-+	local_irq_enable();
- }
- 
- int __cant_sleep(void) {
 -- 
-1.8.1.4
+1.7.4.1
 
