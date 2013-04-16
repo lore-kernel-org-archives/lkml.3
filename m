@@ -1,82 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab3DPLbr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 07:31:47 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:52304 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708Ab3DPLbp (ORCPT
+	id S932987Ab3DPLdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 07:33:04 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:45974 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751820Ab3DPLdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 07:31:45 -0400
-Date: Tue, 16 Apr 2013 13:31:40 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Andrew Murray <Andrew.Murray@arm.com>,
-        Rob Herring <rob.herring@calxeda.com>, siva.kallam@samsung.com,
-        linux-pci@vger.kernel.org,
-        Thierry Reding <thierry.reding@avionic-design.de>, Liviu.Dudau@arm.com,
-        Grant Likely <grant.likely@secretlab.ca>,
+	Tue, 16 Apr 2013 07:33:02 -0400
+Date: Tue, 16 Apr 2013 13:32:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Paul Mackerras <paulus@samba.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Michal Simek <monstr@monstr.eu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        suren.reddy@samsung.com
-Subject: Re: [PATCH v6 0/3] of/pci: Provide common support for PCI DT
- parsing
-Message-ID: <20130416133140.7de24c89@skate>
-In-Reply-To: <20130416112951.GZ28693@titan.lakedaemon.net>
-References: <1365693969-23907-1-git-send-email-Andrew.Murray@arm.com>
-	<20130415175641.GM28693@titan.lakedaemon.net>
-	<CACRpkdbSd8pRG5pUS0ymqXDSp=ZhoQa2ctVuRA0cCmUcX5qFAA@mail.gmail.com>
-	<1366096361.24994.49.camel@pasglop>
-	<20130416112951.GZ28693@titan.lakedaemon.net>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Peter Zijlstra <peterz@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Patch -v4 1/4] Migrate shutdown/reboot to boot cpu.
+Message-ID: <20130416113256.GA10452@gmail.com>
+References: <20130416095827.GJ3672@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130416095827.GJ3672@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Jason Cooper,
 
-On Tue, 16 Apr 2013 07:29:51 -0400, Jason Cooper wrote:
+* Robin Holt <holt@sgi.com> wrote:
 
-> > Do not send this series upstream (or even in -next) until it has been at
-> > least build-tested and acked by the affected architectures. AFAIK it
-> > breaks microblaze build (simple missing #include) and isn't yet tested
-> > on powerpc (I'm on vacation, maybe somebody else on linuxppc-dev can do
-> > it though).
+> We recently noticed that reboot of a 1024 cpu machine takes approx 16
+> minutes of just stopping the cpus.  The slowdown was tracked to commit
+> f96972f.
 > 
-> I added the missing include reference by Michal Simek for the branch at
-> mvebu/drivers.
+> The current implementation does all the work of hot removing the cpus
+> before halting the system.  We are switching to just migrating to the
+> boot cpu and then continuing with shutdown/reboot.
+> 
+> This also has the effect of not breaking x86's command line parameter for
+> specifying the reboot cpu.  Note, this code was shamelessly copied from
+> arch/x86/kernel/reboot.c with bits removed pertaining to the reboot_cpu
+> command line parameter.
+> 
+> Signed-off-by: Robin Holt <holt@sgi.com>
+> Tested-by: Shawn Guo <shawn.guo@linaro.org>
+> To: Ingo Molnar <mingo@redhat.com>
+> To: Russ Anderson <rja@sgi.com>
+> To: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+> Cc: Michel Lespinasse <walken@google.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Robin Holt <holt@sgi.com>
+> Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: the arch/x86 maintainers <x86@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: <stable@vger.kernel.org>
+> 
+> ---
+> 
+> Changes since -v1.
+> - Set PF_THREAD_BOUND before migrating to eliminate potential race.
+> - Modified kernel_power_off to also migrate instead of using
+>   disable_nonboot_cpus().
+> ---
+>  kernel/sys.c | 22 +++++++++++++++++++---
+>  1 file changed, 19 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index 0da73cf..5ef7aa2 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -357,6 +357,22 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+>  }
+>  EXPORT_SYMBOL(unregister_reboot_notifier);
+>  
+> +void migrate_to_reboot_cpu(void)
 
-Some other build issues were reported on x86 during the night (thanks
-to automated build tests), and Andrew Murray has just sent a new
-version v7 of the patch set addressing those issues, as well as the
-missing include.
+It appears to be file-scope, so should be static I guess?
 
-Also, please note that Andrew's patch set contains three patches, but
-the Marvell PCIe driver only requires PATCH 1/3 and PATCH 2/3.
+> +{
+> +	/* The boot cpu is always logical cpu 0 */
+> +	int reboot_cpu_id = 0;
+> +
+> +	/* Make certain the cpu I'm about to reboot on is online */
+> +	if (!cpu_online(reboot_cpu_id))
+> +		reboot_cpu_id = smp_processor_id();
 
-Best regards,
+Shouldn't we pick the first online CPU instead, to make it deterministic?
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Also, does this codepath prevent hotplug from going on in parallel?
+
+( Plus, the smp_processor_id() is in a preemptible section AFAICS, so it will 
+  throw a warning with preempt debug on. )
+
+> +
+> +	/* Prevent races with other tasks migrating this task. */
+
+(I guess the colon can be dropped here, like in the other comments.)
+
+> +	current->flags |= PF_THREAD_BOUND;
+> +
+> +	/* Make certain I only run on the appropriate processor */
+> +	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
+> +}
+
+Thanks,
+
+	Ingo
