@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965398Ab3DPVHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 17:07:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55750 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965376Ab3DPVHh (ORCPT
+	id S965391Ab3DPVQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 17:16:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55941 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965219Ab3DPVQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 17:07:37 -0400
-Date: Tue, 16 Apr 2013 16:07:25 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: Rami Rosen <ramirose@gmail.com>, tj@kernel.org, lizefan@huawei.com,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, serge.hallyn@canonical.com
-Subject: Re: [PATCH] devcg: remove parent_cgroup.
-Message-ID: <20130416210725.GA21536@sergelap>
-References: <1366143895-21535-1-git-send-email-ramirose@gmail.com>
- <20130416203700.GP24899@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130416203700.GP24899@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Apr 2013 17:16:12 -0400
+Date: Tue, 16 Apr 2013 14:16:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: gregkh@linuxfoundation.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, yinghai@kernel.org, wency@cn.fujitsu.com,
+        mgorman@suse.de, tj@kernel.org, liwanp@linux.vnet.ibm.com,
+        linux-mm@kvack.org, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] mem-hotplug: Put kernel_physical_mapping_remove()
+ declaration in CONFIG_MEMORY_HOTREMOVE.
+Message-Id: <20130416141610.0da7b7dad5927d9c84fb4943@linux-foundation.org>
+In-Reply-To: <1366019207-27818-3-git-send-email-tangchen@cn.fujitsu.com>
+References: <1366019207-27818-1-git-send-email-tangchen@cn.fujitsu.com>
+	<1366019207-27818-3-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aristeu Rozanski (aris@redhat.com):
-> On Tue, Apr 16, 2013 at 11:24:55PM +0300, Rami Rosen wrote:
-> > In devcgroup_css_alloc(), there is no longer need for parent_cgroup.
-> > bd2953ebbb("devcg: propagate local changes down the hierarchy") made
-> > the variable parent_cgroup redundant. This patch removes parent_cgroup
-> > from devcgroup_css_alloc().
-> > 
-> > Signed-off-by: Rami Rosen <ramirose@gmail.com>
-> > ---
-> >  security/device_cgroup.c | 2 --
-> >  1 file changed, 2 deletions(-)
-> > 
-> > diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-> > index 994aecc..dd0dc57 100644
-> > --- a/security/device_cgroup.c
-> > +++ b/security/device_cgroup.c
-> > @@ -236,7 +236,6 @@ static void devcgroup_offline(struct cgroup *cgroup)
-> >  static struct cgroup_subsys_state *devcgroup_css_alloc(struct cgroup *cgroup)
-> >  {
-> >  	struct dev_cgroup *dev_cgroup;
-> > -	struct cgroup *parent_cgroup;
-> >  
-> >  	dev_cgroup = kzalloc(sizeof(*dev_cgroup), GFP_KERNEL);
-> >  	if (!dev_cgroup)
-> > @@ -244,7 +243,6 @@ static struct cgroup_subsys_state *devcgroup_css_alloc(struct cgroup *cgroup)
-> >  	INIT_LIST_HEAD(&dev_cgroup->exceptions);
-> >  	INIT_LIST_HEAD(&dev_cgroup->propagate_pending);
-> >  	dev_cgroup->behavior = DEVCG_DEFAULT_NONE;
-> > -	parent_cgroup = cgroup->parent;
-> >  
-> >  	return &dev_cgroup->css;
-> >  }
-> 
-> oops
-> 
-> ACK
+On Mon, 15 Apr 2013 17:46:46 +0800 Tang Chen <tangchen@cn.fujitsu.com> wrote:
 
-Not seeing the patches this is based on in Linus' tree yet, but given
-the context above I don't see how it could not be right :)
+> kernel_physical_mapping_remove() is only called by arch_remove_memory() in
+> init_64.c, which is enclosed in CONFIG_MEMORY_HOTREMOVE. So when we don't
+> configure CONFIG_MEMORY_HOTREMOVE, the compiler will give a warning:
+> 
+> 	warning: ___kernel_physical_mapping_remove___ defined but not used
+> 
+> So put kernel_physical_mapping_remove() in CONFIG_MEMORY_HOTREMOVE.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> ---
+>  arch/x86/mm/init_64.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 474e28f..dafdeb2 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -1019,6 +1019,7 @@ void __ref vmemmap_free(struct page *memmap, unsigned long nr_pages)
+>  	remove_pagetable(start, end, false);
+>  }
+>  
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>  static void __meminit
+>  kernel_physical_mapping_remove(unsigned long start, unsigned long end)
+>  {
+> @@ -1028,7 +1029,6 @@ kernel_physical_mapping_remove(unsigned long start, unsigned long end)
+>  	remove_pagetable(start, end, true);
+>  }
+>  
+> -#ifdef CONFIG_MEMORY_HOTREMOVE
+>  int __ref arch_remove_memory(u64 start, u64 size)
+>  {
+>  	unsigned long start_pfn = start >> PAGE_SHIFT;
 
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Thanks.  I already have this one queued in
+http://ozlabs.org/~akpm/mmots/broken-out/arch-x86-mm-init_64c-fix-build-warning-when-config_memory_hotremove=n.patch,
+within my "send it to the x86 maintainers" section.
 
