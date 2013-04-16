@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab3DPQkB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:40:01 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:44109 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932673Ab3DPQj7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:39:59 -0400
-Message-ID: <516D7EDB.6090201@intel.com>
-Date: Tue, 16 Apr 2013 17:39:55 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S935783Ab3DPQmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:42:14 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:53169 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933069Ab3DPQmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 12:42:13 -0400
+Date: Tue, 16 Apr 2013 09:40:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: fweisbec@gmail.com, rostedt@goodmis.org, bp@alien8.de,
+        arjan@linux.intel.com, khilman@linaro.org, cl@linux.com,
+        peterz@infradead.org, tglx@linutronix.de, olivier.baetz@novasparks.com,
+        rdunlap@infradead.org, zhong@linux.vnet.ibm.com, paulus@samba.org
+Subject: PATCH documentation 0/2] OS-jitter documentation
+Message-ID: <20130416164036.GA27246@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-To: Sergey Vlasov <vsu@altlinux.ru>
-CC: Matthew Garrett <matthew.garrett@nebula.com>, linux-efi@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] efi: Export efi_query_variable_store() for efivars.ko
-References: <1366056587-24414-4-git-send-email-matthew.garrett@nebula.com> <1366122669-20898-1-git-send-email-vsu@altlinux.ru> <1366122669-20898-2-git-send-email-vsu@altlinux.ru>
-In-Reply-To: <1366122669-20898-2-git-send-email-vsu@altlinux.ru>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041616-7182-0000-0000-00000643ACC1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/04/13 15:31, Sergey Vlasov wrote:
-> Fixes build with CONFIG_EFI_VARS=m which was broken after the commit
-> "x86, efivars: firmware bug workarounds should be in platform code".
-> 
-> Signed-off-by: Sergey Vlasov <vsu@altlinux.ru>
-> ---
->  arch/x86/platform/efi/efi.c | 1 +
->  1 file changed, 1 insertion(+)
+Hello!
 
-Applied, thanks!
+This is v3 of the OS-jitter-reduction documentation.
+
+Changes from v2 (https://lkml.org/lkml/2013/4/11/337 and
+https://lkml.org/lkml/2013/4/11/338):
+
+o	Updated both patches based on review feedback.
+
+Changes from v1 (https://lkml.org/lkml/2013/3/18/462):
+
+o	Updated the nohz1 patch based on feedback from Frederic Weisbecker,
+	Steven Rostedt, Borislav Petkov, Arjan van de Ven, Kevin Hilman,
+	and Christoph Lameter.
+
+o	Added a second file describing how to reduce OS jitter from
+	per-CPU kthreads.  This is quite rough, but is hopefully a
+	good starting point.
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/Documentation/kernel-per-CPU-kthreads.txt |  186 ++++++++++++++++++++
+ b/Documentation/timers/NO_HZ.txt            |  255 ++++++++++++++++++++++++++++
+ 2 files changed, 441 insertions(+)
 
