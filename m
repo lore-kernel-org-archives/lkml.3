@@ -1,97 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab3DPGwQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 02:52:16 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:38568 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754120Ab3DPGwO (ORCPT
+	id S1754896Ab3DPGyn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 02:54:43 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:19141
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752936Ab3DPGym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 02:52:14 -0400
-From: Chao Xie <chao.xie@marvell.com>
-To: <thierry.reding@avionic-design.de>, <linux-kernel@vger.kernel.org>,
-        <xiechao.mail@gmail.com>
-CC: Chao Xie <chao.xie@marvell.com>
-Subject: [PATCH 3/3] pwm: pxa: add device tree support
-Date: Tue, 16 Apr 2013 02:51:55 -0400
-Message-ID: <1366095115-21864-4-git-send-email-chao.xie@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1366095115-21864-1-git-send-email-chao.xie@marvell.com>
-References: <1366095115-21864-1-git-send-email-chao.xie@marvell.com>
+	Tue, 16 Apr 2013 02:54:42 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zzc89bh542I1432I4015Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839h8e2h8e3h941hd25hf0ah1269h1288h12a5h12a9h12bdh12e1h137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
+From: Tang Yuantian-B29983 <B29983@freescale.com>
+To: Tang Yuantian-B29983 <B29983@freescale.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: RE: [PATCH v2] of/base: release the node correctly in
+ of_parse_phandle_with_args()
+Thread-Topic: [PATCH v2] of/base: release the node correctly in
+ of_parse_phandle_with_args()
+Thread-Index: AQHONaImIE34onvqCEuo3S6bpDZbgJjYcqPA
+Date: Tue, 16 Apr 2013 06:54:40 +0000
+Message-ID: <D07C73A334FF604B95B3CBD2A545D07B0B144FD3@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1365564999-24427-1-git-send-email-Yuantian.Tang@freescale.com>
+In-Reply-To: <1365564999-24427-1-git-send-email-Yuantian.Tang@freescale.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.208.128]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3G6slrD000913
 
-Add the deice tree support for pwm-pxa.
+Hi Grant.likely,
 
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- drivers/pwm/pwm-pxa.c |   31 ++++++++++++++++++++++++++++++-
- 1 files changed, 30 insertions(+), 1 deletions(-)
+I really preciate if you can spend some times to review this patch.
 
-diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
-index eafca4a..345aa83 100644
---- a/drivers/pwm/pwm-pxa.c
-+++ b/drivers/pwm/pwm-pxa.c
-@@ -18,6 +18,8 @@
- #include <linux/err.h>
- #include <linux/clk.h>
- #include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/pwm.h>
- 
- #include <asm/div64.h>
-@@ -135,12 +137,34 @@ static struct pwm_ops pxa_pwm_ops = {
- 	.owner = THIS_MODULE,
- };
- 
-+static struct of_device_id pxa_pwm_of_match[] = {
-+	{
-+		.compatible = "mrvl,pxa25x-pwm",
-+		.data = (void *)0
-+	}, {
-+		.compatible = "mrvl,pxa27x-pwm",
-+		.data = (void *)HAS_SECONDARY_PWM
-+	}, {
-+		.compatible = "mrvl,pxa168-pwm",
-+		.data = (void *)0
-+	}, {
-+		.compatible = "mrvl,pxa910-pwm",
-+		.data = (void *)0
-+	},
-+	{}
-+};
-+
-+MODULE_DEVICE_TABLE(of, pxa_pwm_of_match);
-+
- static int pwm_probe(struct platform_device *pdev)
- {
- 	const struct platform_device_id *id = platform_get_device_id(pdev);
-+	const struct of_device_id *of_id =
-+			of_match_device(pxa_pwm_of_match, &pdev->dev);
- 	struct pxa_pwm_chip *pwm;
- 	struct resource *r;
- 	int ret = 0;
-+	unsigned int npwm;
- 
- 	pwm = devm_kzalloc(&pdev->dev, sizeof(*pwm), GFP_KERNEL);
- 	if (pwm == NULL) {
-@@ -157,7 +181,12 @@ static int pwm_probe(struct platform_device *pdev)
- 	pwm->chip.dev = &pdev->dev;
- 	pwm->chip.ops = &pxa_pwm_ops;
- 	pwm->chip.base = -1;
--	pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
-+	if (of_id)
-+		npwm = (unsigned int)(of_id->data);
-+	else
-+		npwm = id->driver_data;
-+
-+	pwm->chip.npwm = (npwm & HAS_SECONDARY_PWM) ? 2 : 1;
- 
- 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (r == NULL) {
--- 
-1.7.4.1
+Thanks,
+Yuantian
 
+> -----Original Message-----
+> From: Tang Yuantian-B29983
+> Sent: 2013Äê4ÔÂ10ÈÕ 11:37
+> To: grant.likely@secretlab.ca
+> Cc: rob.herring@calxeda.com; devicetree-discuss@lists.ozlabs.org; linux-
+> kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; Tang Yuantian-
+> B29983; Tang Yuantian-B29983
+> Subject: [PATCH v2] of/base: release the node correctly in
+> of_parse_phandle_with_args()
+> 
+> From: Tang Yuantian <yuantian.tang@freescale.com>
+> 
+> Call of_node_put() only when the out_args is NULL on success, or the
+> node's reference count will not be correct because the caller will call
+> of_node_put() again.
+> 
+> Signed-off-by: Tang Yuantian <Yuantian.Tang@freescale.com>
+> ---
+> v2:
+> 	- modified the title and description. the 1st patch title is:
+> 	  of: remove the unnecessary of_node_put for
+> of_parse_phandle_with_args()
+> 	  the 1st patch is not good enough.
+> 
+>  drivers/of/base.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c index 321d3ef..ee94f64
+> 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -1158,6 +1158,7 @@ static int __of_parse_phandle_with_args(const
+> struct device_node *np,
+>  			if (!phandle)
+>  				goto err;
+> 
+> +			/* Found it! return success */
+>  			if (out_args) {
+>  				int i;
+>  				if (WARN_ON(count > MAX_PHANDLE_ARGS)) @@ -
+> 1166,11 +1167,10 @@ static int __of_parse_phandle_with_args(const struct
+> device_node *np,
+>  				out_args->args_count = count;
+>  				for (i = 0; i < count; i++)
+>  					out_args->args[i] = be32_to_cpup(list++);
+> +			} else if (node) {
+> +				of_node_put(node);
+>  			}
+> 
+> -			/* Found it! return success */
+> -			if (node)
+> -				of_node_put(node);
+>  			return 0;
+>  		}
+> 
+> --
+> 1.8.0
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
