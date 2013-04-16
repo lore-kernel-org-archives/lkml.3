@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab3DPEqC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 00:46:02 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46290 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab3DPEqA convert rfc822-to-8bit (ORCPT
+	id S1753378Ab3DPFB4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 01:01:56 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:50185 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab3DPFBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 00:46:00 -0400
-Content-Type: text/plain; charset="utf-8"
+	Tue, 16 Apr 2013 01:01:55 -0400
+Message-ID: <516CDAF5.3020909@linux.vnet.ibm.com>
+Date: Tue, 16 Apr 2013 13:00:37 +0800
+From: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20130416105513.913219ac889b1db952876197@canb.auug.org.au>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Stephen Warren <swarren@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Dom Cobley <popcornmix@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rabeeh Khoury <rabeeh@solid-run.com>, Daniel Mack <zonque@gmail.com>,
-        Jean-Francois Moine <moinejf@free.fr>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Michal Bachraty <michal.bachraty@streamunlimited.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1366009214-32234-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130416105513.913219ac889b1db952876197@canb.auug.org.au>
-Message-ID: <20130416044514.19887.93969@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH] clk: si5351: make clk-si5351 depend on CONFIG_OF
-Date: Mon, 15 Apr 2013 21:45:14 -0700
+To: acme@redhat.com
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: [PATCH] perf tool: fix the perf --version bug
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041604-3568-0000-0000-000003700A19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Stephen Rothwell (2013-04-15 17:55:13)
-> Hi Sebastian,
-> 
-> On Mon, 15 Apr 2013 09:00:14 +0200 Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
-> >
-> > Calling clk-si5351 driver non-OF ready was too early. This patch
-> > makes clk-si5351 depend on CONFIG_OF again, until things get sorted out.
-> > 
-> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > Reported-by: Stephen Rottweil <sfr@canb.auug.org.au>
-> 
-> My name is spelt "Rothwell" (as in the Cc: line below) :-(
-> 
+ From 4d629cfb265beece1aae2e3fdf603e36a321f785 Mon Sep 17 00:00:00 2001
+From: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+Date: Mon, 15 Apr 2013 23:17:15 -0400
+Subject: [PATCH] perf tool: fix the perf --version bug
 
-It's fixed in the merged version.
+The perf --version can't print the right version
+information when reset it to an earlier commit.
 
-Regards,
-Mike
+For example, at present the version is:
+# ./perf --version
+perf version 3.9.rc6.gf8378f
 
-> > ---
-> > Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+then, I reset it to an earlier version, say v3.8-rc7
+# git reset --hard v3.8-rc7
+# make
+
+However, the ./perf --version prints a wrong result:
+# ./perf --version
+perf version 3.9.rc6.g836dc9
+
+Using 'git describe' instead of 'git tag' can fix this problem.
+
+Signed-off-by: Runzhen Wang <runzhen@linux.vnet.ibm.com>
+---
+  tools/perf/util/PERF-VERSION-GEN |    3 +--
+  1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/PERF-VERSION-GEN 
+b/tools/perf/util/PERF-VERSION-GEN
+index 055fef3..ec3dd86 100755
+--- a/tools/perf/util/PERF-VERSION-GEN
++++ b/tools/perf/util/PERF-VERSION-GEN
+@@ -14,9 +14,8 @@ LF='
+  # otherwise try to get the version from the kernel Makefile
+  #
+  if test -d ../../.git -o -f ../../.git &&
+-    VN=$(git tag 2>/dev/null | tail -1 | grep -E "v[0-9].[0-9]*")
++    VN=$(git describe --match 'v[0-9].[0-9]*' --abbrev=4 HEAD 2>/dev/null)
+  then
+-    VN=$(echo $VN"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD))
+      VN=$(echo "$VN" | sed -e 's/-/./g');
+  else
+      VN=$(MAKEFLAGS= make -sC ../.. kernelversion)
+-- 
+1.7.10.1
+
