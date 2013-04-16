@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936062Ab3DPP77 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:59:59 -0400
-Received: from mail-vb0-f45.google.com ([209.85.212.45]:34830 "EHLO
-	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933965Ab3DPP75 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:59:57 -0400
+	id S936070Ab3DPQCQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:02:16 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:28263 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935550Ab3DPQCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 12:02:13 -0400
+Message-ID: <516D7600.4080002@imgtec.com>
+Date: Tue, 16 Apr 2013 17:02:08 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <CAJfpegtJW+k6gLZ+jxJKp3Zj0UhCst3WD7N_xrybD59_0o7h5Q@mail.gmail.com>
-References: <1366058481-21033-1-git-send-email-ccross@android.com>
-	<CAMbhsRT08Li=P0GnbW-XdwyDSFtOfbr2MiTLeh-DduMOx-g=zw@mail.gmail.com>
-	<CAJfpegtJW+k6gLZ+jxJKp3Zj0UhCst3WD7N_xrybD59_0o7h5Q@mail.gmail.com>
-Date: Tue, 16 Apr 2013 08:59:56 -0700
-X-Google-Sender-Auth: X81-ahnvw9z-6FERQ6NNItKsws0
-Message-ID: <CA+55aFzUFMOAfxBpsGLYW3R5NA+f+LWCcKoGdizh_PAhQiXDvg@mail.gmail.com>
-Subject: Re: [PATCH] fuse: use kernel headers when __KERNEL__ is set
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Colin Cross <ccross@android.com>, lkml <linux-kernel@vger.kernel.org>,
-        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
-Content-Type: text/plain; charset=UTF-8
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
+        Stephen Warren <swarren@nvidia.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        <linux-kbuild@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH] Kbuild: Avoid DTB rebuilds if source files are untouched
+References: <1364973141-16354-1-git-send-email-vgupta@synopsys.com> <515BD6B8.1020607@synopsys.com> <515C5652.8070705@wwwdotorg.org> <515D0FFB.4030803@synopsys.com> <515DBA0E.6000604@wwwdotorg.org> <51642158.3070205@synopsys.com> <5167BA67.5080403@synopsys.com> <5168822C.6040303@wwwdotorg.org> <516D7405.3060202@imgtec.com>
+In-Reply-To: <516D7405.3060202@imgtec.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_04_16_17_02_09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 7:21 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->
-> And I still disagree.  Why should userspace use the linux internal
-> header when there's a perfectly good standard header that it can use?
+On 16/04/13 16:53, James Hogan wrote:
+> On 12/04/13 22:52, Stephen Warren wrote:
+>> +.SECONDARY: $(obj)/$(builtindtb-y).dtb.S
+> 
+> Note, this may not work if you're using CONFIG_ARC_BUILTIN_DTB_NAME,
+> since it'll have quotes around it, so you may instead need:
+> .SECONDARY: $(obj)/$(patsubst "%",%,$(builtindtb-y)).dtb.S
+> 
+> (at least that's what's required for the metag equivalent)
+> 
+>> +
+>>  dtbs:  $(addprefix  $(obj)/, $(builtindtb-y).dtb)
+> 
+> You might find the same thing here too.
 
-If it's called UAPI, it damn well is *meant* for user-space inclusion.
-Look at the file-name.
+Also, I think you probably now want *.dtb.S added to clean-files,
+otherwise they won't get removed by make clean.
 
-And since the bug comment says "This file defines the kernel interface
-of FUSE" *AND* it very clearly has explicit code to support user-space
-includes with special user-space-only type defines, then your email is
-obviously just pure crap, and I don't understand how you can write
-that sentence with a straight face.
+Cheers
+James
 
-The *whole* point of the UAPI includes is two-fold:
-
- - to make it easier for user-space libraries to get at the kernel
-definitions. Not everybody wants to use glibc for various reasons, and
-where do you want people to *get* these declarations from?
-
- - to make kernel people more AWARE of when they are changing stuff
-that affects user-space.
-
-Now, the uapi model not perfect, but there are damn good reasons to at
-least *strive* for both of those things, so I really don't understand
-your comment there.
-
-                Linus
