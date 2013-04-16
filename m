@@ -1,114 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab3DPLSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 07:18:40 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:42393 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab3DPLSj (ORCPT
+	id S1754216Ab3DPLT1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 07:19:27 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:51593 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751668Ab3DPLTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 07:18:39 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Prabhakar lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v2] media: davinci: vpif: align the buffers size to page page size boundary
-Date: Tue, 16 Apr 2013 13:18:43 +0200
-Message-ID: <2933946.BRNjyJUSVm@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <1366109670-28030-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1366109670-28030-1-git-send-email-prabhakar.csengg@gmail.com>
+	Tue, 16 Apr 2013 07:19:25 -0400
+Message-ID: <516D333D.4040703@huawei.com>
+Date: Tue, 16 Apr 2013 19:17:17 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <bsingharora@gmail.com>, <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, <jpoimboe@redhat.com>,
+        <berrange@redhat.com>, <lpoetter@redhat.com>,
+        <workman-devel@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: cgroup: status-quo and userland efforts
+References: <20130406012159.GA17159@mtj.dyndns.org>
+In-Reply-To: <20130406012159.GA17159@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
-
-(CC'ing Marek)
-
-On Tuesday 16 April 2013 16:24:30 Prabhakar lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On 2013/4/6 9:21, Tejun Heo wrote:
+> Hello, guys.
 > 
-> with recent commit with id 068a0df76023926af958a336a78bef60468d2033
-> which adds add length check for mmap, the application were failing to
-> mmap the buffers.
+>  Status-quo
+>  ==========
 > 
-> This patch aligns the the buffer size to page size boundary for both
-> capture and display driver so the it pass the check.
+> It's been about a year since I wrote up a summary on cgroup status quo
+> and future plans.  We're not there yet but much closer than we were
+> before.  At least the locking and object life-time management aren't
+> crazy anymore and most controllers now support proper hierarchy
+> although not all of them agree on how to treat inheritance.
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  Changes for v2:
->  1: Fixed a typo in commit message.
+> IIRC, the yet-to-be-converted ones are blk-throttle and perf.  cpu
+> needs to be updated so that it at least supports a similar mechanism
+> as cfq-iosched for configuring ratio between tasks on an internal
+> cgroup and its children.  Also, we really should update how cpuset
+> handles a cgroup becoming empty (no cpus or memory node left due to
+> hot-unplug).  It currently transfers all its tasks to the nearest
+> ancestor with executing resources, which is an irreversible process
+> which would affect all other co-mounted controllers.  We probably want
+> it to just take on the masks of the ancestor until its own executing
+> resources become online again, and the new behavior should be gated
+> behind a switch (Li, can you please look into this?).
 > 
->  drivers/media/platform/davinci/vpif_capture.c |    1 +
->  drivers/media/platform/davinci/vpif_display.c |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/media/platform/davinci/vpif_capture.c
-> b/drivers/media/platform/davinci/vpif_capture.c index 5f98df1..25981d6
-> 100644
-> --- a/drivers/media/platform/davinci/vpif_capture.c
-> +++ b/drivers/media/platform/davinci/vpif_capture.c
-> @@ -183,6 +183,7 @@ static int vpif_buffer_queue_setup(struct vb2_queue *vq,
-> *nbuffers = config_params.min_numbuffers;
-> 
->  	*nplanes = 1;
-> +	size = PAGE_ALIGN(size);
 
-I wonder if that's the best fix.
-
-The queue_setup operation is supposed to return the size required by the 
-driver for each plane. Depending on the hardware requirements, that size might 
-not be a multiple of the page size.
-
-As we can't mmap() a fraction of a page, the allocated plane size needs to be 
-rounded up to the next page boundary to allow mmap() support. The dma-contig 
-and dma-sg allocators already do so in their alloc operation, but the vmalloc 
-allocator doesn't.
-
-The recent "media: vb2: add length check for mmap" patch verifies that the 
-mmap() size requested by userspace doesn't exceed the buffer size. As the 
-mmap() size is rounded up to the next page boundary the check will fail for 
-buffer sizes that are not multiple of the page size.
-
-Your fix will not result in overallocation (as the allocator already rounds 
-the size up), but will prevent the driver from importing a buffer large enough 
-for the hardware but not rounded up to the page size.
-
-A better fix might be to round up the buffer size in the buffer size check at 
-mmap() time, and fix the vmalloc allocator to round up the size. That the 
-allocator, not drivers, is responsible for buffer size alignment should be 
-documented in videobuf2-core.h.
-
->  	sizes[0] = size;
->  	alloc_ctxs[0] = common->alloc_ctx;
-> 
-> diff --git a/drivers/media/platform/davinci/vpif_display.c
-> b/drivers/media/platform/davinci/vpif_display.c index 1b3fb5c..3414715
-> 100644
-> --- a/drivers/media/platform/davinci/vpif_display.c
-> +++ b/drivers/media/platform/davinci/vpif_display.c
-> @@ -162,6 +162,7 @@ static int vpif_buffer_queue_setup(struct vb2_queue *vq,
-> *nbuffers = config_params.min_numbuffers;
-> 
->  	*nplanes = 1;
-> +	size = PAGE_ALIGN(size);
->  	sizes[0] = size;
->  	alloc_ctxs[0] = common->alloc_ctx;
->  	return 0;
-
--- 
-Regards,
-
-Laurent Pinchart
+Sure, I'll be working on sane hierarchy behavior for cpuset.
 
