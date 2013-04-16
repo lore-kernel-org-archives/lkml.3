@@ -1,88 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab3DPHA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 03:00:28 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46776 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab3DPHA0 (ORCPT
+	id S1756490Ab3DPHDi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 03:03:38 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:40524 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756405Ab3DPHDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 03:00:26 -0400
-Date: Tue, 16 Apr 2013 17:00:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bastian Hecht <hechtb@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: linux-next: manual merge of the arm-soc tree with the input tree
-Message-Id: <20130416170010.9c2bf713b12fa89e663aea2d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__16_Apr_2013_17_00_10_+1000_=ZTUyzRljqvyc4LN"
+	Tue, 16 Apr 2013 03:03:36 -0400
+Message-ID: <516CF235.4060103@linux.vnet.ibm.com>
+Date: Tue, 16 Apr 2013 14:39:49 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi.kivity@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Robin Holt <holt@sgi.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: [PATCH] mm: mmu_notifier: re-fix freed page still mapped in secondary
+ MMU
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041606-9264-0000-0000-000003888E67
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__16_Apr_2013_17_00_10_+1000_=ZTUyzRljqvyc4LN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The commit 751efd8610d3 (mmu_notifier_unregister NULL Pointer deref
+and multiple ->release()) breaks the fix:
+    3ad3d901bbcfb15a5e4690e55350db0899095a68
+    (mm: mmu_notifier: fix freed page still mapped in secondary MMU)
 
-Hi all,
+This patch reverts the commit and simply fix the bug spotted
+by that patch
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-shmobile/board-armadillo800eva.c between commit
-cbaf7f808081 ("ARM - shmobile: Armadillo800EVA: Move st1232 reset pin
-handling") from the input tree and commits ead10fed8b4b ("ARM: shmobile:
-armadillo: Replace GPIO_PORTx enum with GPIO port numbers") and
-0b7d78202260 ("ARM: shmobile: r8a7740: Migrate from INTC to GIC") from
-the arm-soc tree.
+This bug is spotted by commit 751efd8610d3:
+======
+There is a race condition between mmu_notifier_unregister() and
+__mmu_notifier_release().
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Assume two tasks, one calling mmu_notifier_unregister() as a result of a
+filp_close() ->flush() callout (task A), and the other calling
+mmu_notifier_release() from an mmput() (task B).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+                    A                               B
+t1                                              srcu_read_lock()
+t2              if (!hlist_unhashed())
+t3                                              srcu_read_unlock()
+t4              srcu_read_lock()
+t5                                              hlist_del_init_rcu()
+t6                                              synchronize_srcu()
+t7              srcu_read_unlock()
+t8              hlist_del_rcu()  <--- NULL pointer deref.
+======
 
-diff --cc arch/arm/mach-shmobile/board-armadillo800eva.c
-index 881e5c0,81db74a..0000000
---- a/arch/arm/mach-shmobile/board-armadillo800eva.c
-+++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
-@@@ -890,8 -1000,7 +1009,8 @@@ static struct st1232_pdata st1232_i2c0_
-  static struct i2c_board_info i2c0_devices[] =3D {
-  	{
-  		I2C_BOARD_INFO("st1232-ts", 0x55),
-- 		.irq =3D evt2irq(0x0340),
-+ 		.irq =3D irq_pin(10),
- +		.platform_data =3D &st1232_i2c0_pdata,
-  	},
-  	{
-  		I2C_BOARD_INFO("wm8978", 0x1a),
+This can be fixed by using hlist_del_init_rcu instead of hlist_del_rcu.
 
---Signature=_Tue__16_Apr_2013_17_00_10_+1000_=ZTUyzRljqvyc4LN
-Content-Type: application/pgp-signature
+The another issue spotted in the commit is
+"multiple ->release() callouts", we needn't care it too much because
+it is really rare (e.g, can not happen on kvm since mmu-notify is unregistered
+after exit_mmap()) and the later call of multiple ->release should be
+fast since all the pages have already been released by the first call.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ mm/mmu_notifier.c |   81 +++++++++++++++++++++++++++--------------------------
+ 1 files changed, 41 insertions(+), 40 deletions(-)
 
-iQIcBAEBCAAGBQJRbPb6AAoJEECxmPOUX5FEB44P/0h9GXU0l4dLlUawrWDu5oNS
-L+ohlZEdK3PgRphHsLSOj3CNabmOIQNQM9StvRfU834E5z6XPW5UqrflM8rf4GWl
-bFH+flufJIj73YVLD46LDlYzpf6bg6B6oI8MRFuO/X+iNE7DBQy3dkExBD716Afb
-FC4i1CeIvCx9cakxM7U/3nJK3tkgsy+nxcftvSXJ6Q8hV72yyWm2EH6kYfLCjs3b
-c/pbUr0tj4RUUVUJ2dK75GOR0+S0XanTcsm8XI4BRdLDFZEVFTQ2QBLHQiliuL3t
-OCAffEctxyiP3nGiNJUfTkkkpm2/IaAi2KsHLTweUYsct+osiqRl8UZlfXcfed2m
-LT0Dui9qN+8/B29nn1J1RloDsntOR2U4PI8VtiAp8omOrydYUYdmt/7OE2CBCty5
-Wq58C3tM70m4x0+AW2t/rloQZe4AUoay6AICGYEtlMLJwlR7HQ4LHtRvE9LBV9oT
-A1m4Jv8oqwwgU9U7sv+LKwf5IA+OkjmOpAOGNnXUcJY4REuCrC9GyZoROLVUp+RH
-vbaEJW4ONAbssGhxs4j7Ax32WVnJbV/IuWOK9jJXEa2fCro7OWAW2C+kAQw/4QbI
-d4GwPd5+3FzNztDTr/H5+xsUKmqcszsY+gjv5M0qFFF+j2O5JDQsCpM5E1GSOq9f
-KAEwir9Q5RiJvZEXoR0j
-=4MBm
------END PGP SIGNATURE-----
+diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+index be04122..606777a 100644
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -40,48 +40,45 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ 	int id;
 
---Signature=_Tue__16_Apr_2013_17_00_10_+1000_=ZTUyzRljqvyc4LN--
+ 	/*
+-	 * srcu_read_lock() here will block synchronize_srcu() in
+-	 * mmu_notifier_unregister() until all registered
+-	 * ->release() callouts this function makes have
+-	 * returned.
++	 * SRCU here will block mmu_notifier_unregister until
++	 * ->release returns.
+ 	 */
+ 	id = srcu_read_lock(&srcu);
++	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist)
++		/*
++		 * if ->release runs before mmu_notifier_unregister it
++		 * must be handled as it's the only way for the driver
++		 * to flush all existing sptes and stop the driver
++		 * from establishing any more sptes before all the
++		 * pages in the mm are freed.
++		 */
++		if (mn->ops->release)
++			mn->ops->release(mn, mm);
++	srcu_read_unlock(&srcu, id);
++
+ 	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
+ 		mn = hlist_entry(mm->mmu_notifier_mm->list.first,
+ 				 struct mmu_notifier,
+ 				 hlist);
+-
+ 		/*
+-		 * Unlink.  This will prevent mmu_notifier_unregister()
+-		 * from also making the ->release() callout.
++		 * We arrived before mmu_notifier_unregister so
++		 * mmu_notifier_unregister will do nothing other than
++		 * to wait ->release to finish and
++		 * mmu_notifier_unregister to return.
+ 		 */
+ 		hlist_del_init_rcu(&mn->hlist);
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
+-
+-		/*
+-		 * Clear sptes. (see 'release' description in mmu_notifier.h)
+-		 */
+-		if (mn->ops->release)
+-			mn->ops->release(mn, mm);
+-
+-		spin_lock(&mm->mmu_notifier_mm->lock);
+ 	}
+ 	spin_unlock(&mm->mmu_notifier_mm->lock);
+
+ 	/*
+-	 * All callouts to ->release() which we have done are complete.
+-	 * Allow synchronize_srcu() in mmu_notifier_unregister() to complete
+-	 */
+-	srcu_read_unlock(&srcu, id);
+-
+-	/*
+-	 * mmu_notifier_unregister() may have unlinked a notifier and may
+-	 * still be calling out to it.	Additionally, other notifiers
+-	 * may have been active via vmtruncate() et. al. Block here
+-	 * to ensure that all notifier callouts for this mm have been
+-	 * completed and the sptes are really cleaned up before returning
+-	 * to exit_mmap().
++	 * synchronize_srcu here prevents mmu_notifier_release to
++	 * return to exit_mmap (which would proceed freeing all pages
++	 * in the mm) until the ->release method returns, if it was
++	 * invoked by mmu_notifier_unregister.
++	 *
++	 * The mmu_notifier_mm can't go away from under us because one
++	 * mm_count is hold by exit_mmap.
+ 	 */
+ 	synchronize_srcu(&srcu);
+ }
+@@ -292,31 +289,35 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ {
+ 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
+
+-	spin_lock(&mm->mmu_notifier_mm->lock);
+ 	if (!hlist_unhashed(&mn->hlist)) {
++		/*
++		 * SRCU here will force exit_mmap to wait ->release to finish
++		 * before freeing the pages.
++		 */
+ 		int id;
+
++		id = srcu_read_lock(&srcu);
+ 		/*
+-		 * Ensure we synchronize up with __mmu_notifier_release().
++		 * exit_mmap will block in mmu_notifier_release to
++		 * guarantee ->release is called before freeing the
++		 * pages.
+ 		 */
+-		id = srcu_read_lock(&srcu);
+-
+-		hlist_del_rcu(&mn->hlist);
+-		spin_unlock(&mm->mmu_notifier_mm->lock);
+-
+ 		if (mn->ops->release)
+ 			mn->ops->release(mn, mm);
++		srcu_read_unlock(&srcu, id);
+
++		spin_lock(&mm->mmu_notifier_mm->lock);
+ 		/*
+-		 * Allow __mmu_notifier_release() to complete.
++		 * Can not use list_del_rcu() since __mmu_notifier_release
++		 * can delete it before we hold the lock.
+ 		 */
+-		srcu_read_unlock(&srcu, id);
+-	} else
++		hlist_del_init_rcu(&mn->hlist);
+ 		spin_unlock(&mm->mmu_notifier_mm->lock);
++	}
+
+ 	/*
+-	 * Wait for any running method to finish, including ->release() if it
+-	 * was run by __mmu_notifier_release() instead of us.
++	 * Wait any running method to finish, of course including
++	 * ->release if it was run by mmu_notifier_relase instead of us.
+ 	 */
+ 	synchronize_srcu(&srcu);
+
+-- 
+1.7.7.6
+
