@@ -1,102 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935193Ab3DPAiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 20:38:04 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:41745 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933533Ab3DPAiC (ORCPT
+	id S935120Ab3DPAnF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 20:43:05 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45491 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934813Ab3DPAnD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 20:38:02 -0400
-Message-ID: <1366072679.4459.113.camel@edumazet-glaptop>
-Subject: Re: Bonding driver has bad load balancing for forwarded traffic,
- 3.7+
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Vitaly V. Bursov" <vitalyb@telenet.dn.ua>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Date: Mon, 15 Apr 2013 17:37:59 -0700
-In-Reply-To: <516C075E.30105@telenet.dn.ua>
-References: <516C075E.30105@telenet.dn.ua>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 15 Apr 2013 20:43:03 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <516BA63B.5090707@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20130415150402.fd83866829f3108f45b7c126@canb.auug.org.au>
+ <516BA63B.5090707@gmail.com>
+Message-ID: <20130416004236.6507.63400@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: linux-next: build failure after merge of the clk tree
+Date: Mon, 15 Apr 2013 17:42:36 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-15 at 16:57 +0300, Vitaly V. Bursov wrote:
-> Hello,
+Quoting Sebastian Hesselbarth (2013-04-15 00:03:23)
+> On 04/15/2013 07:04 AM, Stephen Rothwell wrote:
+> > After merging the clk tree, today's linux-next build (x86_64 allmodconfig)
+> > failed like this:
+> >
+> > ERROR: "of_clk_add_provider" [drivers/clk/clk-si5351.ko] undefined!
+> > ERROR: "of_clk_src_onecell_get" [drivers/clk/clk-si5351.ko] undefined!
 > 
-> I have a bonding device (mode=802.3ad xmit_hash_policy=layer2+3 miimon=300) and
-> for kernels <3.7 forwarded IPv4 traffic distributed fine across multiple physical
-> links. Ethernet cards are Intel 82576 with igb driver (various versions).
+> Stephen,
 > 
-> 3.7 and 3.8 kernels tend to fully utilize only one link and leave the others almost idling.
+> I must have missed the both above when allowing clk-si5351 to be built
+> for !OF. I sent a patch to make clk-si5351 depend on CONFIG_OF until
+> we sort it out.
 > 
-> Replacing bond_xmit_hash_policy_* functions with older ones (3.6 kernel) looks like
-> resolves the issue (but I haven't tested it thoroughly).
+> > ERROR: "__clk_get_flags" [drivers/clk/clk-si5351.ko] undefined!
 > 
-> So, I added
->          printk(KERN_INFO "hash_policy: protocol = %d, skb_network_header_len = %d, %d %d\n",
->              skb->protocol, skb_network_header_len(skb),
->              skb_headlen(skb), skb_network_offset(skb));
-> to bond_xmit_hash_policy_l23() of bond_main.c
-> 
-> and got this:
-> [   65.280831] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-> [   65.280835] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-> [   65.280839] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-> [   65.280843] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-> [   65.280847] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-> [   65.280851] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
-> 
-> It's clear that the new check condition (skb_network_header_len(skb) >= sizeof(*iph))
-> fails here and hash policy fallbacks to l2 balancing.
-> 
-> I have no idea how to fix this besides removing this check completely, any
-> help would be appreciated.
+> I sent a patch to export the above function but Mike must have missed
+> it. I resent it on list.
 > 
 
-Thanks for your report.
+Sorry about missing that export.
 
-CC netdev
+I've taken both of your fixes into clk-next.
 
-I guess that for forwarding setup, we don't set skb->transport_header
+Regards,
+Mike
 
-Please try following fix :
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 07401a3..356d2f9 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -3286,20 +3286,22 @@ static int bond_xmit_hash_policy_l2(struct sk_buff *skb, int count)
-  */
- static int bond_xmit_hash_policy_l23(struct sk_buff *skb, int count)
- {
--	struct ethhdr *data = (struct ethhdr *)skb->data;
--	struct iphdr *iph;
--	struct ipv6hdr *ipv6h;
-+	const struct ethhdr *data;
-+	const struct iphdr *iph;
-+	const struct ipv6hdr *ipv6h;
- 	u32 v6hash;
--	__be32 *s, *d;
-+	const __be32 *s, *d;
- 
- 	if (skb->protocol == htons(ETH_P_IP) &&
--	    skb_network_header_len(skb) >= sizeof(*iph)) {
-+	    pskb_network_may_pull(skb, sizeof(*iph))) {
- 		iph = ip_hdr(skb);
-+		data = (struct ethhdr *)skb->data;
- 		return ((ntohl(iph->saddr ^ iph->daddr) & 0xffff) ^
- 			(data->h_dest[5] ^ data->h_source[5])) % count;
- 	} else if (skb->protocol == htons(ETH_P_IPV6) &&
--		   skb_network_header_len(skb) >= sizeof(*ipv6h)) {
-+		   pskb_network_may_pull(skb, sizeof(*ipv6h))) {
- 		ipv6h = ipv6_hdr(skb);
-+		data = (struct ethhdr *)skb->data;
- 		s = &ipv6h->saddr.s6_addr32[0];
- 		d = &ipv6h->daddr.s6_addr32[0];
- 		v6hash = (s[1] ^ d[1]) ^ (s[2] ^ d[2]) ^ (s[3] ^ d[3]);
-
-
+> Sebastian
+> 
+> > Caused by commit 9abd5f0555df ("clk: add si5351 i2c common clock
+> > driver").  It probbaly need to depend on CONFIG_OF.
+> >
+> > I have used the clk tree from next-20130412 for today.
