@@ -1,63 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935800Ab3DPKZB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 06:25:01 -0400
-Received: from 8bytes.org ([85.214.48.195]:45348 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935779Ab3DPKY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 06:24:59 -0400
-Date: Tue, 16 Apr 2013 12:24:54 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <arekm@maven.pl>
-Subject: Re: [PATCH v9] irq: add quirk for broken interrupt remapping on 55XX
- chipsets
-Message-ID: <20130416102454.GS6858@8bytes.org>
-References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
- <1366065677-3431-1-git-send-email-nhorman@tuxdriver.com>
+	id S935832Ab3DPK0M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 06:26:12 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:12029 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935813Ab3DPK0K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 06:26:10 -0400
+X-Spam-Score: -100.8
+Message-ID: <516D2718.2010205@asianux.com>
+Date: Tue, 16 Apr 2013 18:25:28 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366065677-3431-1-git-send-email-nhorman@tuxdriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Apr 16 12:24:57 2013
-X-DSPAM-Confidence: 0.9996
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 516d26f923678072915870
+To: Eric Paris <eparis@redhat.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel: auditfilter: looping issue, memory leak if has
+ 2 or more AUDIT_FILTERKEYs
+References: <51653645.90401@asianux.com> <51653C7A.6030405@asianux.com> <2119919725.12278128.1365628773876.JavaMail.root@redhat.com> <516637BB.90606@asianux.com> <5167D6FC.3070504@asianux.com>
+In-Reply-To: <5167D6FC.3070504@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 06:41:17PM -0400, Neil Horman wrote:
-> +#ifdef CONFIG_IRQ_REMAP
-> +static void __init intel_remapping_check(int num, int slot, int func)
-> +{
-> +	u8 revision;
-> +
-> +	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
-> +
-> +	/*
-> +	 * Revision 0x13 of this chipset supports irq remapping
-> +	 * but has an erratum that breaks its behavior, flag it as such
-> +	 */
-> +	if (revision == 0x13)
-> +		irq_remap_broken = 1;
-> +
-> +}
-> +#else
+On 2013年04月12日 17:42, Chen Gang wrote:
+> On 2013年04月11日 12:10, Chen Gang wrote:
+>> On 2013年04月11日 05:19, Eric Paris wrote:
+>>> ----- Original Message -----
+>>>
+>>>>>   b. has an new issue for AUDIT_DIR:
+>>>>>        after AUDIT_DIR succeed, it will set rule->tree.
+>>>>>        next, the other case fail, then will call audit_free_rule.
+>>>>>        but audit_free_rule will not free rule->tree.
+>>> Definitely a couple of leaks here...
+>>>
+>>> I'm seeing leaks on size 8, 64, and 128.
+>>>
+>>> Al, what do you think?  Should I be calling audit_put_tree() in the error case if entry->tree != NULL?  The audit trees are some of the most complex code in the kernel I think.
+>>>
+>>>
 
-Any reason why you don't check this in the Intel IOMMU init code? You
-would safe the ifdefs and you don't have to include
-irq-remapping-internal header files somewhere else in the tree.
+  I am just testing about it with:
+
+---
+while(1)
+    auditctl -a exit,always -w /etc -F auid=-1
+---
+
+  under fedora 17, we need modify the auditctl source code:
+    a. let -w /etc can pass auditctl checking.
+    b. let loop infinitely in a process (if process quit, will free mem)
+    c. need fix a bug for auditctl (under Fedora 17)
+         audit_open may open 2 times.
+         when loop infinitely, it will cause resource handle leak.
+
+  I have checked (by insert printf in kernel/auditfilter.c):
+    after modify the auditct, the work flow is just what we want to be.
+      (will alloc watch, alloc tree, then failure occurs)
 
 
-	Joerg
+  I guess, we need 2-3 days to get a test result.
 
 
+  welcome any suggestions and completions.
+
+  thanks.
+
+
+
+> 
+>   it seems, your way is the only executable way (if not change code much).
+>   what my original idea is incorrect.
+> 
+>     we need add related code at failure process area in audit_data_to_entry.
+>     and another functions need not add these code (should not add).
+>     'watch' also need be processed, since audit_to_watch let ref count = 2.
+>       (it just like the function audit_del_rule has done)
+> 
+>   please help check thanks.
+> 
+>   :-)
+> 
+> 
+> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+> index 81f63f9..f5327ce 100644
+> --- a/kernel/auditfilter.c
+> +++ b/kernel/auditfilter.c
+> @@ -594,6 +594,10 @@ exit_nofree:
+>  	return entry;
+>  
+>  exit_free:
+> +	if (entry->rule.watch)
+> +		audit_put_watch(entry->rule.watch); /* matches initial get */
+> +	if (entry->rule.tree)
+> +		audit_put_tree(entry->rule.tree); /* that's the temporary one */
+>  	audit_free_rule(entry);
+>  	return ERR_PTR(err);
+>  }
+> 
+> 
+> 
+>>
+>>   can we add it in audit_free_rule ?
+>>
+>>   maybe like this:
+>>
+>> @@ -75,6 +75,8 @@ static inline void audit_free_rule(struct audit_entry *e)
+>>  	/* some rules don't have associated watches */
+>>  	if (erule->watch)
+>>  		audit_put_watch(erule->watch);
+>> +	if (erule->tree)
+>> +		audit_put_tree(erule->tree);
+>>  	if (erule->fields)
+>>  		for (i = 0; i < erule->field_count; i++) {
+>>  			struct audit_field *f = &erule->fields[i];
+>>
+>>
+>>   thanks.
+>>
+>>   :-)
+>>
+> 
+> 
+
+
+-- 
+Chen Gang
+
+Asianux Corporation
