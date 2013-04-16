@@ -1,57 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab3DPPAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:00:13 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:36878 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754361Ab3DPPAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:00:11 -0400
-Date: Tue, 16 Apr 2013 10:59:53 -0400
-From: Josh Boyer <jwboyer@gmail.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: Stephan von Krawczynski <skraw@ithnet.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: No serial since kernel 3.8
-Message-ID: <20130416145953.GA8184@zod.gha.chartermi.net>
-References: <20130416162047.2f9b83fe.skraw@ithnet.com>
- <CAFLxGvykqMUHrmdZnzPXW7i3-ubcF6jv2fLYF3sYPkCtJDJZuA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvykqMUHrmdZnzPXW7i3-ubcF6jv2fLYF3sYPkCtJDJZuA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757217Ab3DPPEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:04:11 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:29046 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756604Ab3DPPEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 11:04:09 -0400
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: linux-i2c@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: [PATCH v7] i2c-designware: make SDA hold time configurable
+Date: Tue, 16 Apr 2013 17:03:55 +0200
+Message-Id: <1366124635-15196-1-git-send-email-christian.ruppert@abilis.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20130218132843.GA2439@intel.com>
+References: <20130218132843.GA2439@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 04:55:25PM +0200, richard -rw- weinberger wrote:
->On Tue, Apr 16, 2013 at 4:20 PM, Stephan von Krawczynski
-><skraw@ithnet.com> wrote:
->> Hello,
->>
->> can some kind soul please explain how I can get my serial port back under
->> kernel 3.8.X. Earlier kernels showed:
->>
->> Jan 10 13:57:18 mybox kernel: [    0.712829] serial8250: ttyS0 at I/O 0x3f8
->> (irq = 4) is a 16550A
->>
->> But 3.8.4:
->>
->> Mar 26 10:39:14 admin kernel: [    0.603647] serial 00:0a: disabled
->>
->> Only kernel is replaced, no change in distro
->> Is there some kernel boot parameter needed now?
->> I tried 3.4.X and it works, even 3.7.X works...
->
->So, 3.8.3 worked and 3.8.4 introduced a regression?
->If so please confirm.
->
->CC'ing gregkh, just in case...
+Looks like this was eaten by the spam filter last time so i'm resending
+it to the lists only:
+This patch makes the SDA hold time configurable through device tree.
 
-We had a report of this in Fedora that was fixed with 3.8.7.  An upstream
-change had been brought back to the 3.8.x series, and it was subsequently
-reverted.  3.8.7 picked up the revert.
+Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+---
+ .../devicetree/bindings/i2c/i2c-designware.txt     |   14 ++++++++++++++
+ drivers/i2c/busses/i2c-designware-core.c           |    5 +++++
+ drivers/i2c/busses/i2c-designware-core.h           |    1 +
+ drivers/i2c/busses/i2c-designware-platdrv.c        |    9 +++++++++
+ 4 files changed, 29 insertions(+), 0 deletions(-)
 
-josh
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-designware.txt b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+index e42a2ee..21fabe7 100644
+--- a/Documentation/devicetree/bindings/i2c/i2c-designware.txt
++++ b/Documentation/devicetree/bindings/i2c/i2c-designware.txt
+@@ -10,6 +10,9 @@ Recommended properties :
+ 
+  - clock-frequency : desired I2C bus clock frequency in Hz.
+ 
++Optional properties :
++ - sda-hold-time : should contain the SDA hold time in nanoseconds.
++
+ Example :
+ 
+ 	i2c@f0000 {
+@@ -20,3 +23,14 @@ Example :
+ 		interrupts = <11>;
+ 		clock-frequency = <400000>;
+ 	};
++
++	i2c@1120000 {
++		#address-cells = <1>;
++		#size-cells = <0>;
++		compatible = "snps,designware-i2c";
++		reg = <0x1120000 0x1000>;
++		interrupt-parent = <&ictl>;
++		interrupts = <12 1>;
++		clock-frequency = <400000>;
++		sda-hold-time = <300>;
++	};
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 94fd818..ba40e14 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -67,6 +67,7 @@
+ #define DW_IC_STATUS		0x70
+ #define DW_IC_TXFLR		0x74
+ #define DW_IC_RXFLR		0x78
++#define DW_IC_SDA_HOLD		0x7c
+ #define DW_IC_TX_ABRT_SOURCE	0x80
+ #define DW_IC_COMP_PARAM_1	0xf4
+ #define DW_IC_COMP_TYPE		0xfc
+@@ -310,6 +311,10 @@ int i2c_dw_init(struct dw_i2c_dev *dev)
+ 	dw_writel(dev, lcnt, DW_IC_FS_SCL_LCNT);
+ 	dev_dbg(dev->dev, "Fast-mode HCNT:LCNT = %d:%d\n", hcnt, lcnt);
+ 
++	/* Configure SDA Hold Time if required */
++	if (dev->sda_hold_time)
++		dw_writel(dev, dev->sda_hold_time, DW_IC_SDA_HOLD);
++
+ 	/* Configure Tx/Rx FIFO threshold levels */
+ 	dw_writel(dev, dev->tx_fifo_depth - 1, DW_IC_TX_TL);
+ 	dw_writel(dev, 0, DW_IC_RX_TL);
+diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
+index 9c1840e..33dfec3 100644
+--- a/drivers/i2c/busses/i2c-designware-core.h
++++ b/drivers/i2c/busses/i2c-designware-core.h
+@@ -88,6 +88,7 @@ struct dw_i2c_dev {
+ 	u32			master_cfg;
+ 	unsigned int		tx_fifo_depth;
+ 	unsigned int		rx_fifo_depth;
++	u32			sda_hold_time;
+ };
+ 
+ #define ACCESS_SWAP		0x00000001
+diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+index 0ceb6e1..0a6e29b 100644
+--- a/drivers/i2c/busses/i2c-designware-platdrv.c
++++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+@@ -34,6 +34,7 @@
+ #include <linux/sched.h>
+ #include <linux/err.h>
+ #include <linux/interrupt.h>
++#include <linux/of.h>
+ #include <linux/of_i2c.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm.h>
+@@ -136,6 +137,14 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 	}
+ 	clk_prepare_enable(dev->clk);
+ 
++	if (pdev->dev.of_node) {
++		u32 ht;
++		u32 ic_clk = dev->get_clk_rate_khz(dev);
++
++		of_property_read_u32(pdev->dev.of_node, "sda-hold-time", &ht);
++		dev->sda_hold_time = ((u64)ic_clk * ht + 500000) / 1000000;
++	}
++
+ 	dev->functionality =
+ 		I2C_FUNC_I2C |
+ 		I2C_FUNC_10BIT_ADDR |
+-- 
+1.7.1
+
