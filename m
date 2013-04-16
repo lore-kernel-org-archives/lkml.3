@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936232Ab3DPUJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 16:09:39 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44607 "EHLO
+	id S936216Ab3DPUJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 16:09:38 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:44614 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936178Ab3DPUJW (ORCPT
+	with ESMTP id S936181Ab3DPUJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 16:09:22 -0400
+	Tue, 16 Apr 2013 16:09:23 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: stefano.stabellini@eu.citrix.com, linux-kernel@vger.kernel.org,
         xen-devel@lists.xensource.com
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org
-Subject: [PATCH 3/9] xen/time: Fix kasprintf splat when allocating timer%d IRQ line.
-Date: Tue, 16 Apr 2013 16:09:01 -0400
-Message-Id: <1366142947-18655-4-git-send-email-konrad.wilk@oracle.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 5/9] xen/time: Add default value of -1 for IRQ and check for that.
+Date: Tue, 16 Apr 2013 16:09:03 -0400
+Message-Id: <1366142947-18655-6-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com>
 References: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we online the CPU, we get this splat:
+If the timer interrupt has been de-init or is just now being
+initialized, the default value of -1 should be preset as
+interrupt line. Check for that and if something is odd
+WARN us.
 
-smpboot: Booting Node 0 Processor 1 APIC 0x2
-installing Xen timer for CPU 1
-BUG: sleeping function called from invalid context at /home/konrad/ssd/konrad/linux/mm/slab.c:3179
-in_atomic(): 1, irqs_disabled(): 0, pid: 0, name: swapper/1
-Pid: 0, comm: swapper/1 Not tainted 3.9.0-rc6upstream-00001-g3884fad #1
-Call Trace:
- [<ffffffff810c1fea>] __might_sleep+0xda/0x100
- [<ffffffff81194617>] __kmalloc_track_caller+0x1e7/0x2c0
- [<ffffffff81303758>] ? kasprintf+0x38/0x40
- [<ffffffff813036eb>] kvasprintf+0x5b/0x90
- [<ffffffff81303758>] kasprintf+0x38/0x40
- [<ffffffff81044510>] xen_setup_timer+0x30/0xb0
- [<ffffffff810445af>] xen_hvm_setup_cpu_clockevents+0x1f/0x30
- [<ffffffff81666d0a>] start_secondary+0x19c/0x1a8
-
-The solution to that is use kasprintf in the CPU hotplug path
-that 'online's the CPU. That is, do it in in xen_hvm_cpu_notify,
-and remove the call to in xen_hvm_setup_cpu_clockevents.
-
-Unfortunatly the later is not a good idea as the bootup path
-does not use xen_hvm_cpu_notify so we would end up never allocating
-timer%d interrupt lines when booting. As such add the check for
-atomic() to continue.
-
-CC: stable@vger.kernel.org
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/enlighten.c | 5 ++++-
- arch/x86/xen/time.c      | 6 +++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ arch/x86/xen/time.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 47d3243..ddbd54a 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1641,8 +1641,11 @@ static int __cpuinit xen_hvm_cpu_notify(struct notifier_block *self,
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 		xen_vcpu_setup(cpu);
--		if (xen_have_vector_callback)
-+		if (xen_have_vector_callback) {
- 			xen_init_lock_cpu(cpu);
-+			if (xen_feature(XENFEAT_hvm_safe_pvclock))
-+				xen_setup_timer(cpu);
-+		}
- 		break;
- 	default:
- 		break;
 diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 0296a95..054cc01 100644
+index 054cc01..3d88bfd 100644
 --- a/arch/x86/xen/time.c
 +++ b/arch/x86/xen/time.c
-@@ -497,7 +497,11 @@ static void xen_hvm_setup_cpu_clockevents(void)
+@@ -377,7 +377,7 @@ static const struct clock_event_device xen_vcpuop_clockevent = {
+ 
+ static const struct clock_event_device *xen_clockevent =
+ 	&xen_timerop_clockevent;
+-static DEFINE_PER_CPU(struct clock_event_device, xen_clock_events);
++static DEFINE_PER_CPU(struct clock_event_device, xen_clock_events) = { .irq = -1 };
+ 
+ static irqreturn_t xen_timer_interrupt(int irq, void *dev_id)
  {
- 	int cpu = smp_processor_id();
- 	xen_setup_runstate_info(cpu);
--	xen_setup_timer(cpu);
-+	/*
-+	 * xen_setup_timer(cpu) - snprintf is bad in atomic context. Hence
-+	 * doing it xen_hvm_cpu_notify (which gets called by smp_init during
-+	 * early bootup and also during CPU hotplug events).
-+	 */
- 	xen_setup_cpu_clockevents();
+@@ -401,6 +401,9 @@ void xen_setup_timer(int cpu)
+ 	struct clock_event_device *evt;
+ 	int irq;
+ 
++	evt = &per_cpu(xen_clock_events, cpu);
++	WARN(evt->irq >= 0, "IRQ%d for CPU%d is already allocated\n", evt->irq, cpu);
++
+ 	printk(KERN_INFO "installing Xen timer for CPU %d\n", cpu);
+ 
+ 	name = kasprintf(GFP_KERNEL, "timer%d", cpu);
+@@ -413,7 +416,6 @@ void xen_setup_timer(int cpu)
+ 				      IRQF_FORCE_RESUME,
+ 				      name, NULL);
+ 
+-	evt = &per_cpu(xen_clock_events, cpu);
+ 	memcpy(evt, xen_clockevent, sizeof(*evt));
+ 
+ 	evt->cpumask = cpumask_of(cpu);
+@@ -426,6 +428,7 @@ void xen_teardown_timer(int cpu)
+ 	BUG_ON(cpu == 0);
+ 	evt = &per_cpu(xen_clock_events, cpu);
+ 	unbind_from_irqhandler(evt->irq, NULL);
++	evt->irq = -1;
  }
  
+ void xen_setup_cpu_clockevents(void)
 -- 
 1.8.1.4
 
