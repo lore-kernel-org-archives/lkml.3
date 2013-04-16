@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756676Ab3DPHWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 03:22:43 -0400
-Received: from ozlabs.org ([203.10.76.45]:52055 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755097Ab3DPHWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 03:22:41 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Paul Mundt <lethal@linux-sh.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] kill ptrace_{get,put}_breakpoints()
-In-reply-to: <20130414160501.GA7612@redhat.com>
-References: <20130414160501.GA7612@redhat.com>
-Comments: In-reply-to Oleg Nesterov <oleg@redhat.com>
-   message dated "Sun, 14 Apr 2013 18:05:01 +0200."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Tue, 16 Apr 2013 17:22:38 +1000
-Message-ID: <3883.1366096958@ale.ozlabs.ibm.com>
+	id S1756718Ab3DPHYT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 03:24:19 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:61996 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755097Ab3DPHYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 03:24:17 -0400
+Message-ID: <1366097041.4583.13.camel@marge.simpson.net>
+Subject: Re: Very poor latency when using hard drive (raid1)
+From: Mike Galbraith <bitbucket@online.de>
+To: lkml@tigusoft.pl
+Cc: linux-kernel@vger.kernel.org
+Date: Tue, 16 Apr 2013 09:24:01 +0200
+In-Reply-To: <kkis9q$g09$1@ger.gmane.org>
+References: <kkgj31$jc6$1@ger.gmane.org> <kkis9q$g09$1@ger.gmane.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:vW75oxudd1g1TfcTAo1UVXAIycxu9GJCOzpovOo3XLJ
+ IxQESiqgBHZ5oJTpbGv4m1DLZy3Wfgs7uzqEhf/5Z/EHT3WoWI
+ orHoGk8JbKkOk+hydSlEwhEEv5zMbXLMYPguDiI8vPDqDUtnZ7
+ TuVt1eMamP8/ulC0FaMhtTSETJ697WM2+uN6xtMkWY/SxjOdun
+ Qa+NXnBS2nUw/h9JG0WA/XN8v2bPTEAijjut//iEC+DYro2Hrp
+ 2wv8T1Z8F0N1G1m9Asp36iEZ24eMcoaDnr45WNJlRhcnQPFJKd
+ AFE4xs7g6jd6TDWZxIDJZT2qFh5xTM1DeTYbgtx0h/SsoZGMav
+ Q1ILyQ/bctHj6UIKmaAkevo9O/TYYfDVrs9BbgRVQ+9lHAuau0
+ lX2gtMu49dcfA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg,
-
-> Kill ptrace_{get,put}_breakpoints and task_struct->ptrace_bp_refcnt,
-> 9899d11f "ptrace: ensure arch_ptrace/ptrace_request can never race
-> with SIGKILL" made this all unneeded.
+On Tue, 2013-04-16 at 08:49 +0200, lkml@tigusoft.pl wrote: 
+> On 15/04/13 11:59, lkml@tigusoft.pl wrote:
+> > There are 2 hard drives (normal, magnetic) in software raid 1
+> > on 3.2.41 kernel.
+> > 
+> > When I write into them e.g. using dd from /dev/zero to a local file
+> > (ext4 on default settings), running 2 dd at once (writing two files) it
+> > starves all other programs that try to use the disk.
+> > 
+> > Running ls on any directory on same disk (same fs btw), takes over half
+> > minute to execute, same for any other disk touching action.
+> > 
+> > Did anyone seen such problem, where too look, what to test?
+> > 
+> > What could solve it (other then ionice on applications that I expect to
+> > use hard drive)?
 > 
-> Benjamin, Paul, arch_dup_task_struct()->flush_ptrace_hw_breakpoint(src)
-> on powerpc looks "obviously wrong". Don't we need
+> I got reply (by e-mail) suggesting to use XFS.
+> Thanks, possible for other/next server.
 > 
-> 	- flush_ptrace_hw_breakpoint(src);
-> 	+ dst->thread->ptrace_bps[0] = NULL;
+> But I fell this should work correctly as well on ext4.
 
-Do you mean the following?
+It should not starve readers that badly, something is wrong.
 
+You can try setting low_latency for the devices if you're using CFQ
+ioscheduler.  For my box, that would be..
 
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index 59dd545..559804e 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -911,7 +911,7 @@ int arch_dup_task_struct(struct task_struct *dst, struct tas
-        flush_vsx_to_thread(src);
-        flush_spe_to_thread(src);
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
--       flush_ptrace_hw_breakpoint(src);
-+       dst->thread.ptrace_bps[0] = NULL;
- #endif /* CONFIG_HAVE_HW_BREAKPOINT */
- 
-        *dst = *src;
+echo 1 > /sys/devices/pci0000:00/0000:00:1f.2/ata2/host0/target0:0:0/0:0:0:0/block/sda/queue/iosched/low_latency
 
+Or, you can try a different scheduler.  cat (blabla)/sda/queue/scheduler
+to see which choices are available, and echo your choice back to the
+file to select it.
 
+-Mike
 
-If I add that, I can crash the kernel by forking a process with a
-hw_breakpoint attached:
-
-
-Unable to handle kernel paging request for data at address 0x00100108
-Faulting instruction address: 0xc00000000014d5e4
-cpu 0x0: Vector: 300 (Data Access) at [c00000007e5836a0]
-    pc: c00000000014d5e4: .toggle_bp_slot+0x74/0x1c0
-    lr: c00000000014dc14: .release_bp_slot+0x44/0x70
-    sp: c00000007e583920
-   msr: 9000000000009032
-   dar: 100108
- dsisr: 42000000
-  current = 0xc00000007e560000
-  paca    = 0xc00000000fe00000	 softe: 0	 irq_happened: 0x08
-    pid   = 1, comm = init
-enter ? for help
-[c00000007e5839d0] c00000000014dc14 .release_bp_slot+0x44/0x70
-[c00000007e583a50] c000000000144bbc .free_event+0x6c/0x1e0
-[c00000007e583ad0] c000000000144dc4 .perf_event_release_kernel+0x94/0x110
-[c00000007e583b60] c00000000014cf08 .unregister_hw_breakpoint+0x18/0x30
-[c00000007e583bd0] c00000000000e5f8 .ptrace_set_debugreg+0x158/0x230
-[c00000007e583cd0] c00000000000eb4c .arch_ptrace+0x43c/0x7b0
-[c00000007e583d90] c00000000008cbf8 .SyS_ptrace+0x98/0x170
-[c00000007e583e30] c000000000009d54 syscall_exit+0x0/0x98
---- Exception: c01 (System Call) at 000000001001d1d4
-SP (3fffdf7459f0) is in userspace
-
-The crash seems to happen some time after the fork.  Might be when the
-new processes exits or get another ptrace call on it (I'm not sure which
-one sorry).
-
-Without your suggestion it doesn't crash this case (ie. mainline passes).
-
-As for the rest of your series, it passes my tests on powerpc, so I'm
-good with it.  
-
-Acked-by: Michael Neuling <mikey@neuling.org>
-
-Mikey
