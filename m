@@ -1,71 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935125Ab3DPAXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 20:23:11 -0400
-Received: from mga03.intel.com ([143.182.124.21]:40555 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753874Ab3DPAXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 20:23:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,479,1363158000"; 
-   d="scan'208";a="227548343"
-Message-ID: <516C99BB.30309@intel.com>
-Date: Tue, 16 Apr 2013 08:22:19 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S935170Ab3DPAfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 20:35:33 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50633 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933639Ab3DPAfc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 20:35:32 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <516C9CB3.40709@jp.fujitsu.com>
+Date: Tue, 16 Apr 2013 09:34:59 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Len Brown <lenb@kernel.org>, mingo@redhat.com, peterz@infradead.org,
-        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
-        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
-        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
-        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
-        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
-        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
-        mgorman@suse.de, riel@redhat.com,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [patch v7 0/21] sched: power aware scheduling
-References: <1365040862-8390-1-git-send-email-alex.shi@intel.com> <516724F5.20504@kernel.org> <5167C9FA.8050406@intel.com> <20130412162348.GE2368@pd.tnic> <516A0652.8040505@intel.com> <20130414155925.GC20547@pd.tnic> <516B9859.70004@intel.com> <516B9B57.3030902@intel.com> <20130415095203.GA26524@pd.tnic> <516C059E.20800@intel.com> <20130415231206.GE12144@pd.tnic>
-In-Reply-To: <20130415231206.GE12144@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <rientjes@google.com>, <linuxram@us.ibm.com>
+Subject: Re: [Bug fix PATCH] resource: Reusing a resource structure allocated
+ by bootmem
+References: <516B62C0.70504@jp.fujitsu.com> <1366056094.3824.22.camel@misato.fc.hp.com>
+In-Reply-To: <1366056094.3824.22.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2013 07:12 AM, Borislav Petkov wrote:
-> On Mon, Apr 15, 2013 at 09:50:22PM +0800, Alex Shi wrote:
->> For fairness and total threads consideration, powersaving cost quit
->> similar energy on kbuild benchmark, and even better.
+Hi Toshi,
+
+2013/04/16 5:01, Toshi Kani wrote:
+> On Mon, 2013-04-15 at 11:15 +0900, Yasuaki Ishimatsu wrote:
+>> When hot removing memory presented at boot time, following messages are shown:
+>
+> :
+>
+>> The reason why the messages are shown is to release a resource structure,
+>> allocated by bootmem, by kfree(). So when we release a resource structure,
+>> we should check whether it is allocated by bootmem or not.
 >>
->> 	    17348.850		    27400.458		   15973.776
->> 	    13737.493		    18487.248		   12167.816
-> 
-> Yeah, but those lines don't look good - powersaving needs more energy
-> than performance.
-> 
-> And what is even crazier is that fixed 1.2 GHz case. I'd guess in
-> the normal case those cores are at triple the freq. - i.e. somewhere
-> around 3-4 GHz. And yet, 1.2 GHz eats almost *double* the power than
-> performance and powersaving.
+>> But even if we know a resource structure is allocated by bootmem, we cannot
+>> release it since SLxB cannot treat it. So for reusing a resource structure,
+>> this patch remembers it by using bootmem_resource as follows:
+>>
+>> When releasing a resource structure by free_resource(), free_resource() checks
+>> whether the resource structure is allocated by bootmem or not. If it is
+>> allocated by bootmem, free_resource() adds it to bootmem_resource. If it is
+>> not allocated by bootmem, free_resource() release it by kfree().
+>>
+>> And when getting a new resource structure by get_resource(), get_resource()
+>> checks whether bootmem_resource has released resource structures or not. If
+>> there is a released resource structure, get_resource() returns it. If there is
+>> not a releaed resource structure, get_resource() returns new resource structure
+>> allocated by kzalloc().
+>
+> Thanks for fixing this existing issue that also needed to be addressed.
+> I am not able to test this particular case in my test env, so I did not
+> notice it.
+>
 
-yes, the max freq is 2.7 GHZ, plus boost.
-> 
-> So for the x=8 and maybe even the x=16 case we're basically better off
-> with performance.
-> 
-> Or could it be that the power measurements are not really that accurate
-> and those numbers above are not really correct?
+> Can you update this patch to base off of the patch below?  Otherwise, it
+> won't apply cleanly.
+> https://lkml.org/lkml/2013/4/11/694
 
-testing has a little variation, but the power data is quite accurate. I
-may change to packing tasks per cpu capacity than current cpu weight.
-that should has better power efficient value.
+O.K. I'll update it.
 
-> 
-> Hmm.
-> 
+>
+> More comments below.
+>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> ---
+>> This patch is baseg on following Toshi's works:
+>> Support memory hot-delete to boot memory
+>>    https://lkml.org/lkml/2013/4/10/469
+>>
+>>   kernel/resource.c |   72 +++++++++++++++++++++++++++++++++++++++++++---------
+>>   1 files changed, 59 insertions(+), 13 deletions(-)
+>>
+>> diff --git a/kernel/resource.c b/kernel/resource.c
+>> index 16bfd39..152e9aa 100644
+>> --- a/kernel/resource.c
+>> +++ b/kernel/resource.c
+>> @@ -21,6 +21,7 @@
+>>   #include <linux/seq_file.h>
+>>   #include <linux/device.h>
+>>   #include <linux/pfn.h>
+>> +#include <linux/mm.h>
+>>   #include <asm/io.h>
+>>
+>>
+>> @@ -50,6 +51,16 @@ struct resource_constraint {
+>>
+>>   static DEFINE_RWLOCK(resource_lock);
+>>
+>> +/*
+>> + * For memory hotplug, there is no way to free resource entries allocated
+>> + * by boot mem after the system is up. So for reusing the resource entry
+>> + * we need to remember the resource.
+>> + */
+>> +struct resource bootmem_resource = {
+>> +	.sibling = NULL,
+>> +};
+>> +static DEFINE_SPINLOCK(bootmem_resource_lock);
+>> +
+>>   static void *r_next(struct seq_file *m, void *v, loff_t *pos)
+>>   {
+>>   	struct resource *p = v;
+>> @@ -151,6 +162,42 @@ __initcall(ioresources_init);
+>>
+>>   #endif /* CONFIG_PROC_FS */
+>>
+>> +static void __free_resource(struct resource *res)
+>> +{
+>> +	struct resource *next_res = bootmem_resource.sibling;
+>> +
+>> +	bootmem_resource.sibling = res;
+>> +	res->sibling = next_res;
+>> +}
+>> +
+>> +static void free_resource(struct resource *res)
+>> +{
+>
+
+> You need to add the following if-statement here.  Otherwise it hits a
+> page fault when res is NULL.  This case happens when a resource entry
+> splits into two entries.
+>
+> 	if (!res)
+> 		return;
+
+I'll update it.
+
+>
+>> +	if (PageReserved(virt_to_page(res))) {
+>> +		spin_lock(&bootmem_resource_lock);
+>> +		__free_resource(res);
+>
+
+> How about simply updating the link here, instead of having it done in
+> __free_resource()?  I think it makes it more consistent with
+> get_resource().
+>
+> 		res->sibling = bootmem_resource.sibling;
+> 		bootmem_resource.sibling = res;
+
+I'll update it.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+> Thanks,
+> -Toshi
+>
+>> +		spin_unlock(&bootmem_resource_lock);
+>> +	} else {
+>> +		kfree(res);
+>> +	}
+>> +}
+>
+>
+>
 
 
--- 
-Thanks Alex
