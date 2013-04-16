@@ -1,24 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab3DPHOv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 03:14:51 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55166 "EHLO gate.crashing.org"
+	id S1756616Ab3DPHS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 03:18:59 -0400
+Received: from gate.crashing.org ([63.228.1.57]:33444 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab3DPHOu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 03:14:50 -0400
-Message-ID: <1366096475.24994.50.camel@pasglop>
-Subject: Re: [PATCH 4/8] Read/Write oops nvram partition via pstore
+	id S1755318Ab3DPHS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 03:18:57 -0400
+Message-ID: <1366096361.24994.49.camel@pasglop>
+Subject: Re: [PATCH v6 0/3] of/pci: Provide common support for PCI DT parsing
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-Cc: Michael Ellerman <michael@ellerman.id.au>, linuxppc-dev@ozlabs.org,
-        paulus@samba.org, linux-kernel@vger.kernel.org,
-        jkenisto@linux.vnet.ibm.com, mahesh@linux.vnet.ibm.com,
-        anton@samba.org
-Date: Tue, 16 Apr 2013 09:14:35 +0200
-In-Reply-To: <516CEDB4.9090005@linux.vnet.ibm.com>
-References: <20130410071835.20150.56489.stgit@aruna-ThinkPad-T420>
-	 <20130410072303.20150.61382.stgit@aruna-ThinkPad-T420>
-	 <20130415075555.GE30156@concordia> <516CEDB4.9090005@linux.vnet.ibm.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Murray <Andrew.Murray@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>, siva.kallam@samsung.com,
+        linux-pci@vger.kernel.org,
+        Thierry Reding <thierry.reding@avionic-design.de>, Liviu.Dudau@arm.com,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Paul Mackerras <paulus@samba.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Michal Simek <monstr@monstr.eu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        suren.reddy@samsung.com
+Date: Tue, 16 Apr 2013 09:12:41 +0200
+In-Reply-To: <CACRpkdbSd8pRG5pUS0ymqXDSp=ZhoQa2ctVuRA0cCmUcX5qFAA@mail.gmail.com>
+References: <1365693969-23907-1-git-send-email-Andrew.Murray@arm.com>
+	 <20130415175641.GM28693@titan.lakedaemon.net>
+	 <CACRpkdbSd8pRG5pUS0ymqXDSp=ZhoQa2ctVuRA0cCmUcX5qFAA@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.2-0ubuntu0.1 
 Mime-Version: 1.0
@@ -27,14 +45,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-16 at 11:50 +0530, Aruna Balakrishnaiah wrote:
+On Mon, 2013-04-15 at 20:29 +0200, Linus Walleij wrote:
+> > As agreed with Rob Herring, series applied to mvebu/drivers to
+> support
+> > mvebu pcie driver.
 > 
-> Sure. I will have one #ifdef for declarations and one for function
-> definitions.
+> Will this hit ARM SoC soon-ish so I can base a pull request for the
+> Integrator on this stuff as well?
 
-Declarations generally don't need #ifdef's
+Do not send this series upstream (or even in -next) until it has been at
+least build-tested and acked by the affected architectures. AFAIK it
+breaks microblaze build (simple missing #include) and isn't yet tested
+on powerpc (I'm on vacation, maybe somebody else on linuxppc-dev can do
+it though).
 
-Cheers,
 Ben.
- 
+
 
