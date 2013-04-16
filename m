@@ -1,183 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab3DPNwK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 09:52:10 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:37997 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757580Ab3DPNwH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 09:52:07 -0400
-Message-ID: <516D56DA.7000102@linux.vnet.ibm.com>
-Date: Tue, 16 Apr 2013 19:19:14 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	id S1757738Ab3DPNw1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 09:52:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35517 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755927Ab3DPNwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 09:52:24 -0400
+Date: Tue, 16 Apr 2013 15:49:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Paul Mundt <lethal@linux-sh.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] kill ptrace_{get,put}_breakpoints()
+Message-ID: <20130416134913.GC9189@redhat.com>
+References: <20130414160501.GA7612@redhat.com> <3883.1366096958@ale.ozlabs.ibm.com>
 MIME-Version: 1.0
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-CC: akpm@linux-foundation.org, mgorman@suse.de, matthew.garrett@nebula.com,
-        dave@sr71.net, rientjes@google.com, riel@redhat.com,
-        arjan@linux.intel.com, srinivas.pandruvada@linux.intel.com,
-        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
-        gargankita@gmail.com, paulmck@linux.vnet.ibm.com,
-        amit.kachhap@linaro.org, svaidy@linux.vnet.ibm.com,
-        andi@firstfloor.org, wujianguo@huawei.com, kmpark@infradead.org,
-        thomas.abraham@linaro.org, santosh.shilimkar@ti.com,
-        linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 14/15] mm: Add alloc-free handshake to trigger
- memory region compaction
-References: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com> <20130409214853.4500.63619.stgit@srivatsabhat.in.ibm.com> <5165F508.4020207@linux.vnet.ibm.com>
-In-Reply-To: <5165F508.4020207@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041613-5564-0000-0000-0000078662DB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3883.1366096958@ale.ozlabs.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Cody,
-
-Thank you for your review comments and sorry for the delay in replying!
-
-On 04/11/2013 04:56 AM, Cody P Schafer wrote:
-> On 04/09/2013 02:48 PM, Srivatsa S. Bhat wrote:
->> We need a way to decide when to trigger the worker threads to perform
->> region evacuation/compaction. So the strategy used is as follows:
->>
->> Alloc path of page allocator:
->> ----------------------------
->>
->> This accurately tracks the allocations and detects the first allocation
->> in a new region and notes down that region number. Performing compaction
->> rightaway is not going to be helpful because we need free pages in the
->> lower regions to be able to do that. And the page allocator allocated in
->> this region precisely because there was no memory available in lower
->> regions.
->> So the alloc path just notes down the freshly used region's id.
->>
->> Free path of page allocator:
->> ---------------------------
->>
->> When we enter this path, we know that some memory is being freed. Here we
->> check if the alloc path had noted down any region for compaction. If so,
->> we trigger the worker function that tries to compact that memory.
->>
->> Also, we avoid any locking/synchronization overhead over this worker
->> function in the alloc/free path, by attaching appropriate semantics to
->> the
->> available status flags etc, such that we won't need any special locking
->> around them.
->>
-> 
-> Can you explain why avoiding locking works in this case?
-> 
-
-Sure, see below. BTW, the whole idea behind doing this is to avoid additional
-overhead as much as possible, since these are quite hot paths in the kernel.
-
-> It appears the lack of locking is only on the worker side, and the
-> mem_power_ctrl is implicitly protected by zone->lock on the alloc & free
-> side.
-> 
-
-That's right. What I meant to say is that I don't introduce any *extra*
-locking overhead in the alloc/free path, just to synchronize the updates to
-mem_power_ctrl. On the alloc/free side, as you rightly noted, I piggyback
-on the zone->lock to get the synchronization right.
-
-On the worker side, I don't need any locking, due to the following reasons:
-
-a. Only 1 worker (at max) is active at any given time.
-
-   The free path of the page allocator (which queues the worker) never
-   queues more than 1 worker at a time. If a worker is still busy doing a
-   previously queued work, the free path just ignores new hints from the
-   alloc path about region evacuation. So essentially no 2 workers run at
-   the same time. So the worker need not worry about being re-entrant.
-
-b. The ->work_status field in the mem_power_ctrl structure is never written
-   to by 2 different tasks at the same time.
- 
-   The free path always avoids updates to the ->work_status field in presence
-   of an active worker. That is, until the ->work_status is set to
-   MEM_PWR_WORK_COMPLETE by the worker, the free path won't write to it.
-
-   So the ->work_status field can be written to by the worker and read by
-   the free path at the same time - which is fine, because in that case,
-   if the free path read the old value, it will just assume that the worker
-   is still active and ignores the alloc path's hint, which is harmless.
-   Similar is the case about why the alloc path can read the ->work_status
-   without locking out the worker : if it reads the old value, it doesn't
-   set any new hints in ->region, which is again fine.
-
-c. The ->region field in the mem_power_ctrl structure is also never written
-   to by 2 different tasks at the same time. This goes by extending the logic
-   in 'b'.
-
-Yes, this scheme could mean that sometimes we might lose a few opportunities to
-perform region evacuation, but that is OK, because that's the price we pay
-in order to avoid hurting performance too much. Besides, there's a more
-important reason why its actually critical that we aren't too aggressive
-and jump at every opportunity to do compaction; see below.
-
-> In the previous patch I see smp_mb(), but no explanation is provided for
-> why they are needed. Are they related to/necessary for this lack of
-> locking?
-> 
-
-Hmm, looking at that again, I don't think it is needed. I'll remove it in
-the next version.
-
-> What happens when a region is passed over for compaction because the
-> worker is already compacting another region? Can this occur?
-
-Yes it can occur. But since we try to allocate pages in increasing order of
-regions, if this situation does occur, there is a very good chance that we
-won't benefit from compacting both regions, see below.
-
-> Will the
-> compaction re-trigger appropriately?
-> 
-
-No, there is no re-trigger and that's by design. A particular region being
-suitable for compaction is only a transient/temporary condition; it might
-not persist forever. So it might not be worth trying over and over.
-So if the worker was busy compacting some other region when the alloc path
-hinted a new region for compaction, we simply ignore it because, there is
-no guarantee that that situation (the new region being suitable for compaction)
-would continue to hold good when the worker finishes its current job.
-
-Part of it is actually true even for *any* work that the worker performs:
-by the time it gets into action, the region might not be suitable for
-compaction any more, perhaps because more pages have been allocated from that
-region in the meantime, making evacuation costlier. So, that part is handled
-by re-evaluating the situation by looking at the region statistics in the
-worker, before actually performing the compaction.
-
-The harder problem to solve is: how to avoid having workers clash or otherwise
-undo the efforts of each other. That is, say we tried to compact 2 regions
-say A and B, one soon after the other. Then it is a little hard to guarantee
-that we didn't do the stupid mistake of first moving pages of A to B via
-compaction and then again compacting B and moving the pages elsewhere.
-I still need to think of ways to explicitly avoid this from happening. But on
-a first approximation, as mentioned above, if the alloc path saw fresh
-allocations on 2 different regions within a short period of time, its probably
-best to avoid taking *both* hints into consideration and instead act on only
-one of them. That's why this patch doesn't bother re-triggering compaction
-at a later time, if the worker was already busy working on another region.
-
-> I recommend combining this patch and the previous patch to make the
-> interface more clear, or make functions that explicitly handle the
-> interface for accessing mem_power_ctrl.
+On 04/16, Michael Neuling wrote:
 >
+> > Benjamin, Paul, arch_dup_task_struct()->flush_ptrace_hw_breakpoint(src)
+> > on powerpc looks "obviously wrong". Don't we need
+> >
+> > 	- flush_ptrace_hw_breakpoint(src);
+> > 	+ dst->thread->ptrace_bps[0] = NULL;
+>
+> Do you mean the following?
+>
+>
+> diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+> index 59dd545..559804e 100644
+> --- a/arch/powerpc/kernel/process.c
+> +++ b/arch/powerpc/kernel/process.c
+> @@ -911,7 +911,7 @@ int arch_dup_task_struct(struct task_struct *dst, struct tas
+>         flush_vsx_to_thread(src);
+>         flush_spe_to_thread(src);
+>  #ifdef CONFIG_HAVE_HW_BREAKPOINT
+> -       flush_ptrace_hw_breakpoint(src);
+> +       dst->thread.ptrace_bps[0] = NULL;
+>  #endif /* CONFIG_HAVE_HW_BREAKPOINT */
 
-Sure, I'll think more on how to make it clearer.
+Almost.
 
-Thanks a lot!
+This is what I think we should do, but it is pointless to do this
+in arch_dup_task_struct(), setup_thread_stack() will copy ptrace_bps[]
+from parent later.
+
+> Unable to handle kernel paging request for data at address 0x00100108
+> Faulting instruction address: 0xc00000000014d5e4
+> cpu 0x0: Vector: 300 (Data Access) at [c00000007e5836a0]
+>     pc: c00000000014d5e4: .toggle_bp_slot+0x74/0x1c0
+>     lr: c00000000014dc14: .release_bp_slot+0x44/0x70
+>     sp: c00000007e583920
+>    msr: 9000000000009032
+>    dar: 100108
+>  dsisr: 42000000
+>   current = 0xc00000007e560000
+>   paca    = 0xc00000000fe00000	 softe: 0	 irq_happened: 0x08
+>     pid   = 1, comm = init
+> enter ? for help
+> [c00000007e5839d0] c00000000014dc14 .release_bp_slot+0x44/0x70
+> [c00000007e583a50] c000000000144bbc .free_event+0x6c/0x1e0
+> [c00000007e583ad0] c000000000144dc4 .perf_event_release_kernel+0x94/0x110
+> [c00000007e583b60] c00000000014cf08 .unregister_hw_breakpoint+0x18/0x30
+> [c00000007e583bd0] c00000000000e5f8 .ptrace_set_debugreg+0x158/0x230
+> [c00000007e583cd0] c00000000000eb4c .arch_ptrace+0x43c/0x7b0
+> [c00000007e583d90] c00000000008cbf8 .SyS_ptrace+0x98/0x170
+> [c00000007e583e30] c000000000009d54 syscall_exit+0x0/0x98
+> --- Exception: c01 (System Call) at 000000001001d1d4
+> SP (3fffdf7459f0) is in userspace
+>
+> The crash seems to happen some time after the fork.  Might be when the
+> new processes exits or get another ptrace call on it (I'm not sure which
+> one sorry).
+
+Yes, probably because both parent and child have the same ->ptrace_bps[]
+pointers.
+
+> Without your suggestion it doesn't crash this case (ie. mainline passes).
+
+This is clear. flush_ptrace_hw_breakpoint() nullifies ->ptrace_bps[], so
+setup_thread_stack() copies NULL.
+
+But, unless I missed something, this is wrong. Why should the parent lose
+its bps after fork?
+
+IOW, I think we need something like the patch below, but I do not have
+a powerpc machine for the testing.
+
+> Acked-by: Michael Neuling <mikey@neuling.org>
+
+Thanks!
+
+Oleg.
+
+[PATCH] ptrace/powerpc: dont flush_ptrace_hw_breakpoint() on fork()
+
+arch_dup_task_struct() does flush_ptrace_hw_breakpoint(src), this
+is not what we want. We should clear child->thread.ptrace_bps[]
+copied by dup_task_struct().
+
+--- x/arch/powerpc/kernel/process.c
++++ x/arch/powerpc/kernel/process.c
+@@ -910,10 +910,6 @@ int arch_dup_task_struct(struct task_str
+ 	flush_altivec_to_thread(src);
+ 	flush_vsx_to_thread(src);
+ 	flush_spe_to_thread(src);
+-#ifdef CONFIG_HAVE_HW_BREAKPOINT
+-	flush_ptrace_hw_breakpoint(src);
+-#endif /* CONFIG_HAVE_HW_BREAKPOINT */
+-
+ 	*dst = *src;
+ 	return 0;
+ }
+@@ -984,6 +980,10 @@ int copy_thread(unsigned long clone_flag
+ 	p->thread.ksp_limit = (unsigned long)task_stack_page(p) +
+ 				_ALIGN_UP(sizeof(struct thread_info), 16);
  
-Regards,
-Srivatsa S. Bhat
++#ifdef CONFIG_HAVE_HW_BREAKPOINT
++	p->thread.ptrace_bps[0] = NULL;
++#endif
++
+ #ifdef CONFIG_PPC_STD_MMU_64
+ 	if (mmu_has_feature(MMU_FTR_SLB)) {
+ 		unsigned long sp_vsid;
 
