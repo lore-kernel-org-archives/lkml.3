@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933490Ab3DPMVt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 08:21:49 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:47426 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753708Ab3DPMVs (ORCPT
+	id S1756278Ab3DPMZe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 08:25:34 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:47941 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755268Ab3DPMZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 08:21:48 -0400
+	Tue, 16 Apr 2013 08:25:33 -0400
+Message-ID: <516D432C.1030904@stericsson.com>
+Date: Tue, 16 Apr 2013 14:25:16 +0200
+From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130411185632.GA7569@redhat.com>
-References: <20130411185632.GA7569@redhat.com>
-Date: Tue, 16 Apr 2013 08:21:47 -0400
-Message-ID: <CA+5PVA5h79QWXqaBi3WdgnqE1eoxTkejBoF7t=6r1X=oyZAOKA@mail.gmail.com>
-Subject: Re: print out hardware name & modules list when we encounter bad page tables.
-From: Josh Boyer <jwboyer@gmail.com>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFT][PATCH 2/3] regulator: ab8500-ext: Don't update info->update_val
+ if set_mode() fails
+References: <1365598464.24689.1.camel@phoenix> <1365598520.24689.2.camel@phoenix>
+In-Reply-To: <1365598520.24689.2.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 2:56 PM, Dave Jones <davej@redhat.com> wrote:
-> Given we have been seeing a lot of reports of page table corruption
-> for a while now, perhaps if we print out the hardware name, and list
-> of modules loaded, we might see some patterns emerging.
+On 04/10/2013 02:55 PM, Axel Lin wrote:
+> This ensures info->update_val status is still correct if set_mode() call fails.
+> Otherwise, get_mode() may return wrong status if a set_mode() call fails.
 >
-> Signed-off-by: Dave Jones <davej@redhat.com>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>   drivers/regulator/ab8500-ext.c |   19 ++++++++++++-------
+>   1 file changed, 12 insertions(+), 7 deletions(-)
 >
-> diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/include/asm-generic/bug.h linux-dj/include/asm-generic/bug.h
-> --- linux/include/asm-generic/bug.h     2013-01-04 18:57:12.604282214 -0500
-> +++ linux-dj/include/asm-generic/bug.h  2013-02-28 20:04:37.649304147 -0500
-> @@ -55,6 +55,8 @@ struct bug_entry {
->  #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while(0)
->  #endif
->
-> +void print_hardware_dmi_name(void);
+> diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+> index f0a1bbf..1efe702 100644
+> --- a/drivers/regulator/ab8500-ext.c
+> +++ b/drivers/regulator/ab8500-ext.c
+> @@ -181,6 +181,7 @@ static int ab8500_ext_regulator_set_mode(struct regulator_dev *rdev,
+>   {
+>   	int ret = 0;
+>   	struct ab8500_ext_regulator_info *info = rdev_get_drvdata(rdev);
+> +	u8 regval;
+>   
+>   	if (info == NULL) {
+>   		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+> @@ -189,14 +190,14 @@ static int ab8500_ext_regulator_set_mode(struct regulator_dev *rdev,
+>   
+>   	switch (mode) {
+>   	case REGULATOR_MODE_NORMAL:
+> -		info->update_val = info->update_val_hp;
+> +		regval = info->update_val_hp;
+>   		break;
+>   	case REGULATOR_MODE_IDLE:
+>   		/* Always on with high power mode if info->cfg->hwreq is set */
+>   		if (info->cfg && info->cfg->hwreq)
+>   			return -EINVAL;
+>   
+> -		info->update_val = info->update_val_lp;
+> +		regval = info->update_val_lp;
+>   		break;
+>   
+>   	default:
+> @@ -204,12 +205,14 @@ static int ab8500_ext_regulator_set_mode(struct regulator_dev *rdev,
+>   	}
+>   
+>   	if (ab8500_ext_regulator_is_enabled(rdev)) {
+> -		u8 regval;
+> -
+> -		ret = enable(info, &regval);
+> -		if (ret < 0)
+> +		ret = abx500_mask_and_set_register_interruptible(info->dev,
+> +					info->update_bank, info->update_reg,
+> +					info->update_mask, regval);
+> +		if (ret < 0) {
+>   			dev_err(rdev_get_dev(rdev),
+>   				"Could not set regulator mode.\n");
+> +			return ret;
+> +		}
+>   
+>   		dev_dbg(rdev_get_dev(rdev),
+>   			"%s-set_mode (bank, reg, mask, value): "
+> @@ -218,7 +221,9 @@ static int ab8500_ext_regulator_set_mode(struct regulator_dev *rdev,
+>   			info->update_mask, regval);
+>   	}
+>   
+> -	return ret;
+> +	info->update_val = regval;
 > +
->  /*
->   * WARN(), WARN_ON(), WARN_ON_ONCE, and so on can be used to report
->   * significant issues that need prompt attention if they should ever
-> diff -durpN '--exclude-from=/home/davej/.exclude' /home/davej/src/kernel/git-trees/linux/kernel/panic.c linux-dj/kernel/panic.c
-> --- linux/kernel/panic.c        2013-02-26 14:41:18.544116674 -0500
-> +++ linux-dj/kernel/panic.c     2013-02-28 20:04:37.666304115 -0500
-> @@ -397,16 +397,22 @@ struct slowpath_args {
->         va_list args;
->  };
->
-> -static void warn_slowpath_common(const char *file, int line, void *caller,
-> -                                unsigned taint, struct slowpath_args *args)
-> +void print_hardware_dmi_name(void)
->  {
+> +	return 0;
+>   }
+>   
+>   static unsigned int ab8500_ext_regulator_get_mode(struct regulator_dev *rdev)
+This patch is needed to fix the error path but it partly depends on the 
+previous patch so I would like to get that one sorted out before ack-ing 
+this patch.
 
-This fails to build on arches that define __WARN_TAINT.  Just move the
-new function definition above the WANT_WARN_ON_SLOWPATH define and it
-should be fine.
+Regards,
 
-josh
+Bengt
