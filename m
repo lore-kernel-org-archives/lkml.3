@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936120Ab3DPUAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 16:00:39 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:38963 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935189Ab3DPUAi (ORCPT
+	id S936172Ab3DPUJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 16:09:20 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22389 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936062Ab3DPUJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 16:00:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAJfpegt53MRwiMgZTW2DogMWAR54vrPMG=D5Yqs_vpfccPi_5Q@mail.gmail.com>
-References: <1366058481-21033-1-git-send-email-ccross@android.com>
-	<CAMbhsRT08Li=P0GnbW-XdwyDSFtOfbr2MiTLeh-DduMOx-g=zw@mail.gmail.com>
-	<CAJfpegtJW+k6gLZ+jxJKp3Zj0UhCst3WD7N_xrybD59_0o7h5Q@mail.gmail.com>
-	<CA+55aFzUFMOAfxBpsGLYW3R5NA+f+LWCcKoGdizh_PAhQiXDvg@mail.gmail.com>
-	<CAJfpegtJrkii6LRxfoywyXsVtnBAgO4ZzBZOPd71BMz7evhPcQ@mail.gmail.com>
-	<CA+55aFzA66RHjB2KsdCCbEf2NNBnO=-o_rAJ-xZ3sqY1mHoCRA@mail.gmail.com>
-	<CAMbhsRSsd_zRApscGK5cUqR=ykuvEWA-DCMAXC1raWPtcuk4Dw@mail.gmail.com>
-	<CAJfpegt53MRwiMgZTW2DogMWAR54vrPMG=D5Yqs_vpfccPi_5Q@mail.gmail.com>
-Date: Tue, 16 Apr 2013 13:00:37 -0700
-X-Google-Sender-Auth: PPBgEPuMn_mhZ3s-jvyL7jhtJ6c
-Message-ID: <CAMbhsRR7iWabAgMqJ8g6FJK+SMAf_s0Rrz+wHiODzoB6joAzCw@mail.gmail.com>
-Subject: Re: [PATCH] fuse: use kernel headers when __KERNEL__ is set
-From: Colin Cross <ccross@android.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Apr 2013 16:09:17 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: stefano.stabellini@eu.citrix.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, stable@vger.kernel.org
+Subject: [PATCH 2/9] xen/smp/spinlock: Fix leakage of the spinlock interrupt line for every CPU online/offline
+Date: Tue, 16 Apr 2013 16:09:00 -0400
+Message-Id: <1366142947-18655-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com>
+References: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 12:11 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Tue, Apr 16, 2013 at 8:29 PM, Colin Cross <ccross@android.com> wrote:
->> Dropping __linux__ causes a make headers_check warning, which the
->> kbuild test robot reported this morning:
->> usr/include/linux/fuse.h:99: found __[us]{8,16,32,64} type without
->> #include <linux/types.h>
->> Using my patch without modification does not cause that warning.
->>
->> linux/types.h defines the types that are used to communicate between
->> the kernel and userspace.  Redefining those in each header makes no
->> sense, and will probably cause redefined types warnings if you compile
->> a userspace file that includes fuse.h and another uapi header that
->> properly includes linux/types.h.
->
-> <linux/types.h> is linux specific while the fuse API is cross
-> platform.  So the userspace header obviously has to use some cross
-> platform type definitions.  Making the type definitions depend on
-> __linux__ is probably just as unreliable in userspace as it is in the
-> kernel, so why complicate things with that?
+While we don't use the spinlock interrupt line (see for details
+commit f10cd522c5fbfec9ae3cc01967868c9c2401ed23 -
+xen: disable PV spinlocks on HVM) - we should still do the proper
+init / deinit sequence. We did not do that correctly and for the
+CPU init for PVHVM guest we would allocate an interrupt line - but
+failed to deallocate the old interrupt line.
 
-I'm not sure what you mean by __linux__ being unreliable, it is set by
-any toolchain that is compield with linux as its target.  It should be
-very reliable in userspace, its only unreliable in the kernel because
-the kernel doesn't rely on any specific os target in the toolchain, it
-is self contained.
+This resulted in leakage of an irq_desc but more importantly this splat
+as we online an offlined CPU:
 
-With your change, compiling a program that includes linux/fuse.h and
-linux/icmp.h against the headers installed by make headers_installed
-results in some strange preprocessor results.  The lines in
-int-ll64.h, which is what normally defines the userspace types, are:
-typedef __signed__ char __s8;
-typedef unsigned char __u8;
+genirq: Flags mismatch irq 71. 0002cc20 (spinlock1) vs. 0002cc20 (spinlock1)
+Pid: 2542, comm: init.late Not tainted 3.9.0-rc6upstream #1
+Call Trace:
+ [<ffffffff811156de>] __setup_irq+0x23e/0x4a0
+ [<ffffffff81194191>] ? kmem_cache_alloc_trace+0x221/0x250
+ [<ffffffff811161bb>] request_threaded_irq+0xfb/0x160
+ [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
+ [<ffffffff813a8423>] bind_ipi_to_irqhandler+0xa3/0x160
+ [<ffffffff81303758>] ? kasprintf+0x38/0x40
+ [<ffffffff8104c6f0>] ? xen_spin_trylock+0x20/0x20
+ [<ffffffff810cad35>] ? update_max_interval+0x15/0x40
+ [<ffffffff816605db>] xen_init_lock_cpu+0x3c/0x78
+ [<ffffffff81660029>] xen_hvm_cpu_notify+0x29/0x33
+ [<ffffffff81676bdd>] notifier_call_chain+0x4d/0x70
+ [<ffffffff810bb2a9>] __raw_notifier_call_chain+0x9/0x10
+ [<ffffffff8109402b>] __cpu_notify+0x1b/0x30
+ [<ffffffff8166834a>] _cpu_up+0xa0/0x14b
+ [<ffffffff816684ce>] cpu_up+0xd9/0xec
+ [<ffffffff8165f754>] store_online+0x94/0xd0
+ [<ffffffff8141d15b>] dev_attr_store+0x1b/0x20
+ [<ffffffff81218f44>] sysfs_write_file+0xf4/0x170
+ [<ffffffff811a2864>] vfs_write+0xb4/0x130
+ [<ffffffff811a302a>] sys_write+0x5a/0xa0
+ [<ffffffff8167ada9>] system_call_fastpath+0x16/0x1b
+cpu 1 spinlock event irq -16
+smpboot: Booting Node 0 Processor 1 APIC 0x2
 
-typedef __signed__ short __s16;
-typedef unsigned short __u16;
+And if one looks at the /proc/interrupts right after
+offlining (CPU1):
 
-typedef __signed__ int __s32;
-typedef unsigned int __u32;
+  70:          0          0  xen-percpu-ipi       spinlock0
+  71:          0          0  xen-percpu-ipi       spinlock1
+  77:          0          0  xen-percpu-ipi       spinlock2
 
-After preprocessing with your fuse.h included before icmp.h (which
-includes linux/types.h, which eventually includes
-asm-generic/int-ll64.h):
-typedef __signed__ char __s8;
-typedef unsigned char __u8;
+There is the oddity of the 'spinlock1' still being present.
 
-typedef __signed__ short __s16;
-typedef unsigned short uint16_t;
+CC: stable@vger.kernel.org
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/xen/smp.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-typedef __signed__ int int32_t;
-typedef unsigned int uint32_t;
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index f80e69c..22c800a 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -662,6 +662,7 @@ static void xen_hvm_cpu_die(unsigned int cpu)
+ 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
++	xen_uninit_lock_cpu(cpu);
+ 	xen_teardown_timer(cpu);
+ 	native_cpu_die(cpu);
+ }
+-- 
+1.8.1.4
 
-The first three lines are the kernel headers providing typedefs for
-the types that are not used in fuse.h, and therefore not covered by
-the #define hacks there.  The last three lines are a problem: now you
-have redefined the stdint types to match the kernel's types, better
-hope they match the host's stdint definitions or you'll get redefined
-type warnings.
-
-Every other uapi header includes linux/types.h to get its type
-definitions, and fuse.h should do the same when compiling for
-userspace targeting linux or when compiling the kernel.
