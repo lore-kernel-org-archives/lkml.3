@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378Ab3DPFB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 01:01:56 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:50185 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab3DPFBz (ORCPT
+	id S1752143Ab3DPFKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 01:10:23 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:55125 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab3DPFKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 01:01:55 -0400
-Message-ID: <516CDAF5.3020909@linux.vnet.ibm.com>
-Date: Tue, 16 Apr 2013 13:00:37 +0800
+	Tue, 16 Apr 2013 01:10:21 -0400
+Message-ID: <516CDAD8.9060709@linux.vnet.ibm.com>
+Date: Tue, 16 Apr 2013 13:00:08 +0800
 From: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
 To: acme@redhat.com
-CC: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org
 Subject: [PATCH] perf tool: fix the perf --version bug
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041604-3568-0000-0000-000003700A19
+x-cbid: 13041605-5140-0000-0000-00000309E17A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
