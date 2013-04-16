@@ -1,48 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab3DPJ2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:28:19 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:62083 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850Ab3DPJ2R (ORCPT
+	id S1756711Ab3DPJaF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:30:05 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:33767 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755634Ab3DPJaD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:28:17 -0400
-From: Girish K S <girishks2000@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org
-Subject: [PATCH V2] ahci: sata: add support for exynos5440 sata
-Date: Tue, 16 Apr 2013 14:58:02 +0530
-Message-Id: <1366104482-14240-1-git-send-email-ks.giri@samsung.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 16 Apr 2013 05:30:03 -0400
+Date: Tue, 16 Apr 2013 11:29:58 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Patch -v3 4/4] Make reboot_cpuid a kernel parameter.
+Message-ID: <20130416092958.GG9569@gmail.com>
+References: <20130415171225.GC3658@sgi.com>
+ <20130415171635.GI3672@sgi.com>
+ <71f0c948-cdea-4e8e-86a3-088d306388b9@email.android.com>
+ <20130415173324.GD3658@sgi.com>
+ <0d5a866d-3d40-4592-bb9d-d938fb3312e2@email.android.com>
+ <20130415182258.GE3658@sgi.com>
+ <20130416090109.GB8438@gmail.com>
+ <20130416092429.GI3658@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130416092429.GI3658@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the compatible string of the exynos5440 sata controller
-compliant with the ahci 1.3 and sata 3.0 specification.
 
-Signed-off-by: Girish K S <ks.giri@samsung.com>
+* Robin Holt <holt@sgi.com> wrote:
 
-changes in v2:
-		changed the compatible string by adding the actual IP
-owners name instead of the SoC vendor name.
+> On Tue, Apr 16, 2013 at 11:01:09AM +0200, Ingo Molnar wrote:
+> > 
+> > * Robin Holt <holt@sgi.com> wrote:
+> > 
+> > > On Mon, Apr 15, 2013 at 10:47:49AM -0700, H. Peter Anvin wrote:
+> > > > We usually don't break working user setups as a matter if policy.  Only if it can't be avoided.
+> > > > 
+> > > > Robin Holt <holt@sgi.com> wrote:
+> > > > 
+> > > > >On Mon, Apr 15, 2013 at 10:18:31AM -0700, H. Peter Anvin wrote:
+> > > > >> Um... doesn't this break anyone who currently depends on this?
+> > > > >
+> > > > >Yes.  That is also why I kept this separate and not tagged for
+> > > > >stable. They would need to start using the more general kernel
+> > > > >parameter
+> > > > >to get the same functionality.  Should I have done it differently?
+> > > 
+> > > How about:
+> > > Author: Robin Holt <holt@sgi.com>
+> > > Date:   Mon Apr 15 11:39:33 2013 -0500
+> > > 
+> > >     Make reboot_cpuid a kernel parameter.
+> > >     
+> > >     Moving the reboot=s<##> parameter for x86 to a kernel parameter
+> > >     proper.  I did not find any other arch that was specifying the
+> > >     reboot cpu.
+> > >     
+> > >     I left a compatibility mode in there.  The new parameter always
+> > >     takes precedence.  I also fixed up the current code to support
+> > >     up to cpuid's up to the current max of 4096.
+> > 
+> > Looks pretty nice and clean to me, as the old boot parameter still keeps working.
+> > 
+> > Mind sending an updated series that includes all the fixes and the Tested-by from 
+> > Shawn Guo?
+> 
+> Will do.  I am still going through the comments from Joe Perches to the
+> third patch. [...]
 
----
- drivers/ata/ahci_platform.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Those fixes looked sensible to me.
 
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 7a8a284..c06f021 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -327,6 +327,7 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
- 
- static const struct of_device_id ahci_of_match[] = {
- 	{ .compatible = "snps,spear-ahci", },
-+	{ .compatible = "snps,exynos5440-ahci", },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, ahci_of_match);
--- 
-1.7.5.4
+> [...]  Already have added the Tested-by to just the first patch. Otherwise, I am 
+> ready to send -v4.
 
+Cool, thanks.
+
+Assuming there are no objections from others, this looks like v3.10 material, as 
+we are right before the final v3.9 release and this touches core kernel code 
+(which is risky in such a late stage). It all needs a few days of testing as well, 
+since it affects the reboot path of pretty much every Linux box in existence that 
+runs the updated kernel.
+
+Would you like to see this fix backported? If yes then your simpler v1 patch to 
+kernel/sys.c from a few days ago should probably be put into the series as patch
+#1, partially reverted by patch #2 et al.
+
+Then patch #1 can be sent to -stable in a compact form, not the whole series. The 
+end result of the series would not change.
+
+Thanks,
+
+	Ingo
