@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935897Ab3DPQKN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:10:13 -0400
-Received: from mail-a03.ithnet.com ([217.64.83.98]:55338 "HELO ithnet.com"
+	id S1757349Ab3DPQOi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:14:38 -0400
+Received: from mail-a03.ithnet.com ([217.64.83.98]:55542 "HELO ithnet.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S935469Ab3DPQKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:10:11 -0400
+	id S1753773Ab3DPQOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 12:14:37 -0400
 X-Sender-Authentication: SMTP AUTH verified <skraw>
-Date: Tue, 16 Apr 2013 18:10:06 +0200
+Date: Tue, 16 Apr 2013 18:14:32 +0200
 From: Stephan von Krawczynski <skraw@ithnet.com>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>
 Subject: Re: No serial since kernel 3.8
-Message-Id: <20130416181006.6be492a8.skraw@ithnet.com>
-In-Reply-To: <CAFLxGvykqMUHrmdZnzPXW7i3-ubcF6jv2fLYF3sYPkCtJDJZuA@mail.gmail.com>
+Message-Id: <20130416181432.a28e0465.skraw@ithnet.com>
+In-Reply-To: <20130416145953.GA8184@zod.gha.chartermi.net>
 References: <20130416162047.2f9b83fe.skraw@ithnet.com>
 	<CAFLxGvykqMUHrmdZnzPXW7i3-ubcF6jv2fLYF3sYPkCtJDJZuA@mail.gmail.com>
+	<20130416145953.GA8184@zod.gha.chartermi.net>
 Organization: ith Kommunikationstechnik GmbH
 X-Mailer: Sylpheed 3.1.2 (GTK+ 2.24.10; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
@@ -25,34 +28,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013 16:55:25 +0200
-richard -rw- weinberger <richard.weinberger@gmail.com> wrote:
+On Tue, 16 Apr 2013 10:59:53 -0400
+Josh Boyer <jwboyer@gmail.com> wrote:
 
-> On Tue, Apr 16, 2013 at 4:20 PM, Stephan von Krawczynski
-> <skraw@ithnet.com> wrote:
-> > Hello,
+> On Tue, Apr 16, 2013 at 04:55:25PM +0200, richard -rw- weinberger wrote:
+> >On Tue, Apr 16, 2013 at 4:20 PM, Stephan von Krawczynski
+> ><skraw@ithnet.com> wrote:
+> >> Hello,
+> >>
+> >> can some kind soul please explain how I can get my serial port back under
+> >> kernel 3.8.X. Earlier kernels showed:
+> >>
+> >> Jan 10 13:57:18 mybox kernel: [    0.712829] serial8250: ttyS0 at I/O 0x3f8
+> >> (irq = 4) is a 16550A
+> >>
+> >> But 3.8.4:
+> >>
+> >> Mar 26 10:39:14 admin kernel: [    0.603647] serial 00:0a: disabled
+> >>
+> >> Only kernel is replaced, no change in distro
+> >> Is there some kernel boot parameter needed now?
+> >> I tried 3.4.X and it works, even 3.7.X works...
 > >
-> > can some kind soul please explain how I can get my serial port back under
-> > kernel 3.8.X. Earlier kernels showed:
+> >So, 3.8.3 worked and 3.8.4 introduced a regression?
+> >If so please confirm.
 > >
-> > Jan 10 13:57:18 mybox kernel: [    0.712829] serial8250: ttyS0 at I/O 0x3f8
-> > (irq = 4) is a 16550A
-> >
-> > But 3.8.4:
-> >
-> > Mar 26 10:39:14 admin kernel: [    0.603647] serial 00:0a: disabled
-> >
-> > Only kernel is replaced, no change in distro
-> > Is there some kernel boot parameter needed now?
-> > I tried 3.4.X and it works, even 3.7.X works...
+> >CC'ing gregkh, just in case...
 > 
-> So, 3.8.3 worked and 3.8.4 introduced a regression?
-> If so please confirm.
+> We had a report of this in Fedora that was fixed with 3.8.7.  An upstream
+> change had been brought back to the 3.8.x series, and it was subsequently
+> reverted.  3.8.7 picked up the revert.
 > 
-> CC'ing gregkh, just in case...
+> josh
 
-No, neither 3.8.4 nor 3.8.3 worked. The last working version I know for sure is 3.7.6
-FYI: I don't load serial as a module
+3.8.7 does not work either. I just checked it. I tried shared and not shared IRQ:
+
+Apr 16 17:47:05 mybox kernel: [    0.604826] Serial: 8250/16550 driver, 8 ports, IRQ sharing disabled
+
+and another test:
+
+Apr 16 18:07:08 mybox kernel: [    0.601203] Serial: 8250/16550 driver, 8 ports, IRQ sharing enabled
+
+I must say that 3.8.7 does not even tell the "serial 00:0a: disabled" any more.
+This is no special board, it is a pretty mainstream asus xeon board with onboard serial.
+Loading 3.4.24 (just an example) makes the port work immediately.
+Anything else I can test?
+
 -- 
 Regards,
 Stephan
+
