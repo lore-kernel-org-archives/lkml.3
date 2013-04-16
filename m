@@ -1,53 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab3DPNsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 09:48:05 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:39862 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364Ab3DPNsE (ORCPT
+	id S1757425Ab3DPNtW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 09:49:22 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50474 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756275Ab3DPNtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 09:48:04 -0400
+	Tue, 16 Apr 2013 09:49:20 -0400
+Date: Tue, 16 Apr 2013 14:48:56 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Colin Cross <ccross@android.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [RFC PATCH 1/3] pstore-ram: use write-combine mappings
+Message-ID: <20130416134856.GB30292@arm.com>
+References: <1365563297-12480-1-git-send-email-robherring2@gmail.com>
+ <CAMbhsRSvQPbzJ7Nt=OSSYE_A1e+eaUjO7XY+qRppJ5_gfWmW4A@mail.gmail.com>
+ <51656992.60203@gmail.com>
+ <CAMbhsRS1hnBRoomoiNijrXZB-938d2RSs1cu9EdSfmXD3xpSQg@mail.gmail.com>
+ <516C9454.4060009@gmail.com>
+ <CAMbhsRRT7tOBHppvjJEW5wRtVaUhwxr8=YQY=Sy0VAFeBg1JmQ@mail.gmail.com>
+ <20130416084418.GA30756@mudshark.cambridge.arm.com>
+ <516D4AF3.5060205@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdaKajsFc=WGg1OAvBajs5ziCeXbk=-cnMV6EmB3L8rxPg@mail.gmail.com>
-References: <CA+G9fYuq3eJp6pfSPXjdPqY7DAW6LF1Q5uDA02GOS65_voo6Bw@mail.gmail.com>
-	<CACRpkdaKajsFc=WGg1OAvBajs5ziCeXbk=-cnMV6EmB3L8rxPg@mail.gmail.com>
-Date: Tue, 16 Apr 2013 19:18:01 +0530
-Message-ID: <CA+G9fYvL4nM4f7EsryRocwnoftbz1SbTGoFvhdbOAFi029DvKQ@mail.gmail.com>
-Subject: Re: [Linaro-QA-Service] [linux-next] Snowball build broken
-From: Naresh Kamboju <naresh.kamboju@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <516D4AF3.5060205@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 April 2013 04:07, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Apr 11, 2013 at 8:28 PM, Naresh Kamboju
-> <naresh.kamboju@linaro.org> wrote:
->
->> One of those ARM targets is Snowball. Snowball build broken log can be found
->> here
->>
->> Build Error:
->>
->> 04:48:08   CC      drivers/mfd/ab8500-debugfs.o
->> 04:48:09
->> /mnt/ci_build/workspace/linux-next/hwpack/snowball/label/precise_hwpack_cloud/drivers/mfd/ab8500-debugfs.c:95:23:
->> fatal error: mach/irqs.h: No such file or directory
->> 04:48:09 compilation terminated.
->> 04:48:09 make[3]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
->> 04:48:09 make[2]: *** [drivers/mfd] Error 2
->> 04:48:09 make[1]: *** [drivers] Error 2
->
-> Hey it works. Didn't see this before I fixed it tho :-)
-> http://marc.info/?l=linux-kernel&m=136567139910888&w=2
-This commit not yet been merged in to linux-next  "next-20130416".
-Due to this reason still snowball build fails at above error.
+On Tue, Apr 16, 2013 at 01:58:27PM +0100, Rob Herring wrote:
+> On 04/16/2013 03:44 AM, Will Deacon wrote:
+> > On Tue, Apr 16, 2013 at 01:43:09AM +0100, Colin Cross wrote:
+> >> On Mon, Apr 15, 2013 at 4:59 PM, Rob Herring <robherring2@gmail.com> wrote:
+> >>> Exclusive accesses still have further restrictions. From section 3.4.5:
+> >>>
+> >>> • It is IMPLEMENTATION DEFINED whether LDREX and STREX operations can be
+> >>> performed to a memory region
+> >>>    with the Device or Strongly-ordered memory attribute. Unless the
+> >>> implementation documentation explicitly
+> >>>   states that LDREX and STREX operations to a memory region with the
+> >>> Device or Strongly-ordered attribute are
+> >>>  permitted, the effect of such operations is UNPREDICTABLE.
+> >>>
+> >>>
+> >>> Given that it is implementation defined, I don't see how Linux can rely
+> >>> on that behavior.
+> >>
+> >> I see, the problem is that while noncached and writecombined appear to
+> >> be similar mappings, noncached is mapped in PRRR to strongly-ordered,
+> >> while writecombined is mapped to unbufferable normal memory.
+> >>
+> >> I think adding a wmb() to persistent_ram_write is going to be
+> >> expensive on cpus with outer caches like the L2X0, where wmb() will
+> >> result in a spinlock.  Is there a real SoC where this doesn't work?
+> > 
+> > A real SoC where exclusives don't work to memory not mapped as normal? Take
+> > your pick...
+> 
+> This patch doesn't actually fix problems for me. Exclusives to DDR work
+> for any memory type for me as the DDR controller has an exclusive
+> monitor. It takes write-thru cache mapping to get internal RAM to work.
 
-Best regards
-Naresh Kamboju
->
-> Yours,
-> Linus Walleij
+I can't find any reference in the ARM ARM but I think you would need
+cacheable memory for the exclusives to work. A9 for example uses the
+cacheline exclusiveness to emulate the global monitor.
+
+-- 
+Catalin
