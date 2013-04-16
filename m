@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965262Ab3DPS3w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 14:29:52 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:54804 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753948Ab3DPS3t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 14:29:49 -0400
+	id S965258Ab3DPSao (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 14:30:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65048 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965209Ab3DPS1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 14:27:03 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH 16/28] zoran: Don't print proc_dir_entry data in debug [RFC]
+To: linux-kernel@vger.kernel.org
+From: David Howells <dhowells@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, mjpeg-users@lists.sourceforge.net,
+        viro@zeniv.linux.org.uk, linux-media@vger.kernel.org
+Date: Tue, 16 Apr 2013 19:26:54 +0100
+Message-ID: <20130416182654.27773.74830.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
+References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFzA66RHjB2KsdCCbEf2NNBnO=-o_rAJ-xZ3sqY1mHoCRA@mail.gmail.com>
-References: <1366058481-21033-1-git-send-email-ccross@android.com>
-	<CAMbhsRT08Li=P0GnbW-XdwyDSFtOfbr2MiTLeh-DduMOx-g=zw@mail.gmail.com>
-	<CAJfpegtJW+k6gLZ+jxJKp3Zj0UhCst3WD7N_xrybD59_0o7h5Q@mail.gmail.com>
-	<CA+55aFzUFMOAfxBpsGLYW3R5NA+f+LWCcKoGdizh_PAhQiXDvg@mail.gmail.com>
-	<CAJfpegtJrkii6LRxfoywyXsVtnBAgO4ZzBZOPd71BMz7evhPcQ@mail.gmail.com>
-	<CA+55aFzA66RHjB2KsdCCbEf2NNBnO=-o_rAJ-xZ3sqY1mHoCRA@mail.gmail.com>
-Date: Tue, 16 Apr 2013 11:29:48 -0700
-X-Google-Sender-Auth: PTZzSv2ddJyZcBNwaIYGmk_ulfA
-Message-ID: <CAMbhsRSsd_zRApscGK5cUqR=ykuvEWA-DCMAXC1raWPtcuk4Dw@mail.gmail.com>
-Subject: Re: [PATCH] fuse: use kernel headers when __KERNEL__ is set
-From: Colin Cross <ccross@android.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, lkml <linux-kernel@vger.kernel.org>,
-        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 11:21 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->> What I meant is IF <linux/fuse.h> is included by userspace (it sure is
->> meant to be included and *is* included by libfuse and other stuff)
->> THEN using <stdint.h> instead of <linux/types.h> is fine regardless of
->> whether __linux__ is defined or not.
->
-> That's probably true. But the patch in question adds the __KERNEL__
-> test, and *that* seems required.
->
-> If you think that we should instead drop the __linux__ test, than yes,
-> that part sounds fine. I thought that by "linux internal header" you
-> meant the fuse.h file, but you seem to mean the indirectly included
-> <inux/types.h>. That's fine.
->
->                 Linus
+Don't print proc_dir_entry data in debug as we're soon to have no direct
+access to the contents of the PDE.  Print what was put in there instead.
 
-Dropping __linux__ causes a make headers_check warning, which the
-kbuild test robot reported this morning:
-usr/include/linux/fuse.h:99: found __[us]{8,16,32,64} type without
-#include <linux/types.h>
-Using my patch without modification does not cause that warning.
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: mjpeg-users@lists.sourceforge.net
+cc: linux-media@vger.kernel.org
+---
 
-linux/types.h defines the types that are used to communicate between
-the kernel and userspace.  Redefining those in each header makes no
-sense, and will probably cause redefined types warnings if you compile
-a userspace file that includes fuse.h and another uapi header that
-properly includes linux/types.h.
+ drivers/media/pci/zoran/zoran_procfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/pci/zoran/zoran_procfs.c b/drivers/media/pci/zoran/zoran_procfs.c
+index 07a104d..f7ceee0 100644
+--- a/drivers/media/pci/zoran/zoran_procfs.c
++++ b/drivers/media/pci/zoran/zoran_procfs.c
+@@ -201,7 +201,7 @@ zoran_proc_init (struct zoran *zr)
+ 		dprintk(2,
+ 			KERN_INFO
+ 			"%s: procfs entry /proc/%s allocated. data=%p\n",
+-			ZR_DEVNAME(zr), name, zr->zoran_proc->data);
++			ZR_DEVNAME(zr), name, zr);
+ 	} else {
+ 		dprintk(1, KERN_ERR "%s: Unable to initialise /proc/%s\n",
+ 			ZR_DEVNAME(zr), name);
+
