@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934491Ab3DPJ4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:56:45 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:41140 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753749Ab3DPJ4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:56:44 -0400
-Date: Tue, 16 Apr 2013 04:56:41 -0500
-From: Robin Holt <holt@sgi.com>
-To: Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, Robin Holt <holt@sgi.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [Patch -v4 0/4] Shutdown from reboot_cpuid without stopping other
- cpus.
-Message-ID: <20130416095641.GL3658@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S935032Ab3DPJ5M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:57:12 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:43014 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934696Ab3DPJ5K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 05:57:10 -0400
+Subject: Re: Cannot add new efi boot entry
+From: joeyli <jlee@suse.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: matthew.garrett@nebula.com, matt.fleming@intel.com, cbouatmailru@gmail.com,
+        ccross@android.com, keescook@chromium.org,
+        Tony Luck <tony.luck@intel.com>, linux-efi@vger.kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+In-Reply-To: <516B1ED3.9040900@suse.cz>
+References: <516B1ED3.9040900@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Apr 2013 17:56:08 +0800
+Message-ID: <1366106168.23707.9.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We recently noticed that reboot of a 1024 cpu machine takes approx 16
-minutes of just stopping the cpus.  The slowdown was tracked to commit
-f96972f.
+Hi Jiri, 
 
-The current implementation does all the work of hot removing the cpus
-before halting the system.  We are switching to just migrating to the
-reboot_cpuid and then continuing with shutdown/reboot.
+於 日，2013-04-14 於 23:25 +0200，Jiri Slaby 提到：
+> Hi,
+> 
+> after update to 3.8, every update of the kernel ends up in an unbootable
+> machine. It is due to the following commit:
+> commit 68d929862e29a8b52a7f2f2f86a0600423b093cd
+> Author: Matthew Garrett <matthew.garrett@nebula.com>
+> Date:   Sat Mar 2 19:40:17 2013 -0500
+> 
+>     efi: be more paranoid about available space when creating variables
+> 
+> efibootmgr which tries to add an entry and silently fails when writing
+> to /sys/firmware/efi/vars/new_var with -ENOSPC.
+> 
+> There are many entries in there:
+> # efibootmgr
+> BootCurrent: 000D
+> Timeout: 0 seconds
+> BootOrder:
+> 0018,0000,0001,0002,0003,0007,0008,0009,000A,000B,000C,000D,000E,000F,0010,0011,0012
+> Boot0000  Setup
+> Boot0001  Boot Menu
+> Boot0002  Diagnostic Splash Screen
+> Boot0003  Lenovo Diagnostics
+> Boot0004  Startup Interrupt Menu
+> Boot0005  ME Configuration Menu
+> Boot0006  Rescue and Recovery
+> Boot0007* USB CD
+> Boot0008* USB FDD
+> Boot0009* ATAPI CD0
+> Boot000A* ATA HDD0
+> Boot000B* ATA HDD1
+> Boot000C* ATA HDD2
+> Boot000D* USB HDD
+> Boot000E* PCI LAN
+> Boot000F* ATAPI CD1
+> Boot0010  Other CD
+> Boot0011* ATA HDD3
+> Boot0012  Other HDD
+> Boot0013* IDER BOOT CDROM
+> Boot0014* IDER BOOT Floppy
+> Boot0015* ATA HDD
+> Boot0016* ATAPI CD:
+> Boot0017* PCI LAN
+> Boot0018* Linux
+> 
+> 
+> Remaining size is about 20k, added entry size is hundreds bytes, store
+> size is 64k.
+> 
+> Obviously lowering the limitation from 1/2 to 1/4 fixes the problem for
+> me because it always worked on my setup to store a new entry...
+> 
+> Any ideas how to overcome that? It would be better to blacklist bad
+> machines rather than whitelist good ones, right?
+> 
+> thanks,
 
-The patch set is broken into four parts.  The first is planned for
-the stable release.  The others move the halt/shutdown/reboot related
-functions to their own kernel/reboot.c file and then introduce the kernel
-boot parameter.
+I think I just got the same situation on my side with Acer machine. I am
+trying Matthew's new patchset hope can avoid this situation:
+
+https://lkml.org/lkml/2013/4/15/473
 
 
-Changes since -v3.
-- Added a tested-by for the original reporter.
-- Fix compile failure found by Joe Perches.
-- Integrated comments by Joe Perches.
+Thanks a  lot!
+Joey Lee
+
+
+
