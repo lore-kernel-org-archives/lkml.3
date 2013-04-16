@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965655Ab3DPXZQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 19:25:16 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44470 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965610Ab3DPXZN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 19:25:13 -0400
-Date: Wed, 17 Apr 2013 09:24:59 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Linux MM <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/5] mem-soft-dirty: Reshuffle CONFIG_ options to be
- more Arch-friendly
-Message-Id: <20130417092459.a574ebb81a734973ff7081f9@canb.auug.org.au>
-In-Reply-To: <516DABC8.1040606@parallels.com>
-References: <51669E5F.4000801@parallels.com>
-	<516DABC8.1040606@parallels.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__17_Apr_2013_09_24_59_+1000_3u_Bxfn+37=1Py.I"
+	id S965728Ab3DPXZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 19:25:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7748 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965610Ab3DPXZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 19:25:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,488,1363158000"; 
+   d="scan'208";a="295949548"
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Keith Busch <keith.busch@intel.com>,
+        Erdinc Ozturk <erdinc.ozturk@intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: [PATCH 0/4] Patchset to use PCLMULQDQ to accelerate CRC-T10DIF checksum computation 
+Date: Tue, 16 Apr 2013 09:20:47 -0700
+Message-Id: <cover.1366120266.git.tim.c.chen@linux.intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__17_Apr_2013_09_24_59_+1000_3u_Bxfn+37=1Py.I
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Herbert,
 
-Hi Pavel,
+Currently the CRC-T10DIF checksum is computed using a generic table lookup
+algorithm.  By switching the checksum to PCLMULQDQ based computation,
+we can speedup the computation by 8x for checksumming 512 bytes and
+even more for larger buffer size.  This will improve performance of SCSI
+drivers turning on the CRC-T10IDF checksum.  In our SSD based experiments,
+we have seen in disk throughput by 3.5x with T10DIF.
 
-On Tue, 16 Apr 2013 23:51:36 +0400 Pavel Emelyanov <xemul@parallels.com> wr=
-ote:
->
-> As Stephen Rothwell pointed out, config options, that depend on
-> architecture support, are better to be wrapped into a select +
-> depends on scheme.
->=20
-> Do this for CONFIG_MEM_SOFT_DIRTY, as it currently works only
-> for X86.
->=20
-> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+This patchset provide the x86_64 routine using PCLMULQDQ instruction
+and switch the crc_t10dif library function to use the faster PCLMULQDQ
+based routine when available.
 
-Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Will appreciate if you can consider merging this for the 3.10 kernel.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Tim
 
---Signature=_Wed__17_Apr_2013_09_24_59_+1000_3u_Bxfn+37=1Py.I
-Content-Type: application/pgp-signature
+Tim Chen (4):
+  Wrap crc_t10dif function all to use crypto transform framework
+  Accelerated CRC T10 DIF computation with PCLMULQDQ instruction
+  Glue code to cast accelerated CRCT10DIF assembly as a crypto
+    transform
+  Simple correctness and speed test for CRCT10DIF hash
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ arch/x86/crypto/Makefile                |   2 +
+ arch/x86/crypto/crct10dif-pcl-asm_64.S  | 659 ++++++++++++++++++++++++++++++++
+ arch/x86/crypto/crct10dif-pclmul_glue.c | 153 ++++++++
+ crypto/Kconfig                          |  21 +
+ crypto/tcrypt.c                         |   8 +
+ crypto/testmgr.c                        |  10 +
+ crypto/testmgr.h                        |  24 ++
+ include/linux/crc-t10dif.h              |  10 +
+ lib/crc-t10dif.c                        |  96 +++++
+ 9 files changed, 983 insertions(+)
+ create mode 100644 arch/x86/crypto/crct10dif-pcl-asm_64.S
+ create mode 100644 arch/x86/crypto/crct10dif-pclmul_glue.c
 
-iQIcBAEBCAAGBQJRbd3LAAoJEECxmPOUX5FEPV0P/jUT5wL3rPRxphjllQCmkem1
-wXZNWrurjURGK3mAC/ChCBaRyUgqyqR+CnuQaKb9YLSDpGohVaLfhLjDlN+ElRuZ
-a+XCdZg1NBCQOayNGaL2nt3AepiI+vlbs/QmodkOMz/uT/xzIOQl3F4XoIW2Nvh4
-s1tu5By9awUhH5F5p4dFiOjsFl2yv2X/O4y+6uZkcwk3e6h9Dzp58WY465SdYSIo
-E/heCwqwCFai7plmzbFmEyWnpHL0VN6Y/S9WoRo2YEWk2D2+PdLdCChv/fgJxCw3
-QtD7rHpUSNGY3ZOr9a8IiNd6dPQj+T72xkGC+oaDcf5u8YvOryC2R2RQCyHmZUTs
-5aOOJkdUdtXufECGp5T1dR9Ii4pOB8q7SAsz9oGmzXTyBqXGF7FjuaK4rej2ZMcg
-U9FfRDVFsWz+QrTQlMR7IfGCvMsoORyp7JcvUai9bzbLfSexkxwCnaqbbeAD/C8H
-vuCKcfHTXDu3Zp/HzN6W1AFVxbx5DH+32te5izZhruKIhJPxAoCVjzM1k4FEa+H7
-+2JyucLISZiSXqSU7QoGzvu8cK5kXXEjt06ccCzJ7ns9W9qMHfl7yjYdTAL89MP6
-gz8rEVD1gbFgUxqI9/r4GmW8isgXOcckhE275zjyV6yCJ8FOdQGPqod5GiwTHrep
-M/MOVZCd3bknOmRUzXWk
-=cYpe
------END PGP SIGNATURE-----
+-- 
+1.7.11.7
 
---Signature=_Wed__17_Apr_2013_09_24_59_+1000_3u_Bxfn+37=1Py.I--
