@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757281Ab3DPPLa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:11:30 -0400
-Received: from www.sr71.net ([198.145.64.142]:60381 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755629Ab3DPPL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:11:29 -0400
-Message-ID: <516D6A1E.4060201@sr71.net>
-Date: Tue, 16 Apr 2013 08:11:26 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3, RFC 09/34] thp: represent file thp pages in meminfo
- and friends
-References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com> <1365163198-29726-10-git-send-email-kirill.shutemov@linux.intel.com> <51631CC0.5010908@sr71.net> <20130416144917.8FEAEE0085@blue.fi.intel.com>
-In-Reply-To: <20130416144917.8FEAEE0085@blue.fi.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757266Ab3DPPNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:13:23 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:6927 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab3DPPNW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 11:13:22 -0400
+Message-ID: <1366124458.3824.30.camel@misato.fc.hp.com>
+Subject: Re: [Bug fix PATCH v2] Reusing a resource structure allocated by
+ bootmem
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, rientjes@google.com, linuxram@us.ibm.com
+Date: Tue, 16 Apr 2013 09:00:58 -0600
+In-Reply-To: <516CA4F1.9060603@jp.fujitsu.com>
+References: <516CA4F1.9060603@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2013 07:49 AM, Kirill A. Shutemov wrote:
-> Dave Hansen wrote:
->> On 04/05/2013 04:59 AM, Kirill A. Shutemov wrote:
->>> The patch adds new zone stat to count file transparent huge pages and
->>> adjust related places.
->>>
->>> For now we don't count mapped or dirty file thp pages separately.
->>
->> I can understand tracking NR_FILE_TRANSPARENT_HUGEPAGES itself.  But,
->> why not also account for them in NR_FILE_PAGES?  That way, you don't
->> have to special-case each of the cases below:
+On Tue, 2013-04-16 at 10:10 +0900, Yasuaki Ishimatsu wrote:
+> When hot removing memory presented at boot time, following messages are shown:
+
+ :
+
+> The reason why the messages are shown is to release a resource structure,
+> allocated by bootmem, by kfree(). So when we release a resource structure,
+> we should check whether it is allocated by bootmem or not.
 > 
-> Good point.
-> To be consistent I'll also convert NR_ANON_TRANSPARENT_HUGEPAGES to be
-> accounted in NR_ANON_PAGES.
+> But even if we know a resource structure is allocated by bootmem, we cannot
+> release it since SLxB cannot treat it. So for reusing a resource structure,
+> this patch remembers it by using bootmem_resource as follows:
+> 
+> When releasing a resource structure by free_resource(), free_resource() checks
+> whether the resource structure is allocated by bootmem or not. If it is
+> allocated by bootmem, free_resource() adds it to bootmem_resource. If it is
+> not allocated by bootmem, free_resource() release it by kfree().
+> 
+> And when getting a new resource structure by get_resource(), get_resource()
+> checks whether bootmem_resource has released resource structures or not. If
+> there is a released resource structure, get_resource() returns it. If there is
+> not a releaed resource structure, get_resource() returns new resource structure
+> allocated by kzalloc().
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> ---
+> v2:
+> Based on following Toshi's works:
+>   Support memory hot-delete to boot memory
+>     https://lkml.org/lkml/2013/4/10/469
+>   resource: Update config option of release_mem_region_adjustable()
+>     https://lkml.org/lkml/2013/4/11/694
+> Added a NULL check into free_resource()
+> Remove __free_resource()
 
-Hmm...  I didn't realize we did that for the anonymous version.  But,
-looking at the meminfo code:
+Thanks for the update.  Looks good.  Can you also address Rui's comment?
 
-> #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->                 K(global_page_state(NR_ANON_PAGES)
->                   + global_page_state(NR_ANON_TRANSPARENT_HUGEPAGES) *
->                   HPAGE_PMD_NR),
-> #else
->                 K(global_page_state(NR_ANON_PAGES)),
-> #endif
+-Toshi
 
-That #ifdef and a couple others like it would just go away if we did
-this.  It would be a nice cleanup.
+
