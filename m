@@ -1,41 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965342Ab3DPUmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 16:42:20 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49863 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965099Ab3DPUmS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 16:42:18 -0400
-Date: Tue, 16 Apr 2013 16:42:15 -0400 (EDT)
-Message-Id: <20130416.164215.1481542365151784733.davem@davemloft.net>
-To: joe@perches.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] neighbour: Convert NEIGH_PRINTK to neigh_dbg
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <6d196be46acd99bd65d0f0d5abb842b8b0bf0d04.1366074978.git.joe@perches.com>
-References: <6d196be46acd99bd65d0f0d5abb842b8b0bf0d04.1366074978.git.joe@perches.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Tue, 16 Apr 2013 13:42:17 -0700 (PDT)
+	id S965364Ab3DPUqo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 16:46:44 -0400
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.89]:22415 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964981Ab3DPUqn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 16:46:43 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Joe Perches <joe@perches.com>
+CC: David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: [PATCH net] hyperv: Fix a compiler warning in netvsc_send()
+Thread-Topic: [PATCH net] hyperv: Fix a compiler warning in netvsc_send()
+Thread-Index: AQHOOtDW1pnjd9tR6kuWeKoviY/WAZjZrCqA//+LioCAAH7yAP//kVtAgAB6WYD//4u9YA==
+Date: Tue, 16 Apr 2013 20:45:12 +0000
+Message-ID: <b7c7793f69d845e38825899a1500d47e@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1366139031-12518-1-git-send-email-haiyangz@microsoft.com>
+	 <20130416.151141.1928940532005718606.davem@davemloft.net>
+	 <57e8f99081a94575a57cae5e93705c22@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+	 <20130416.154912.896506198616355113.davem@davemloft.net>
+	 <b5d9b49f46ab434eb38a24e34f0b984b@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <1366144265.28609.10.camel@joe-AO722>
+In-Reply-To: <1366144265.28609.10.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Forefront-Antispam-Report: CIP:131.107.1.27;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(51704004)(189002)(164054002)(13464002)(199002)(377424002)(24454001)(20776003)(51856001)(76482001)(56776001)(59766001)(56816002)(81342001)(47976001)(33646001)(47776003)(6806003)(4396001)(74502001)(44976003)(66066001)(65816001)(50466001)(31966008)(5343655001)(80022001)(16406001)(63696002)(77982001)(46102001)(54316002)(49866001)(79102001)(74662001)(46406003)(69226001)(47736001)(50986001)(81542001)(47446002)(54356001)(23726002)(53806001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUSR01MB601;H:hybrid.exchange.microsoft.com;RD:mail7.exchange.microsoft.com;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 0818724663
+X-OriginatorOrg: DuplicateDomain-7923a859-03c9-4312-a77c-440aa45aaf52.microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Mon, 15 Apr 2013 18:17:19 -0700
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Tuesday, April 16, 2013 4:31 PM
+> To: Haiyang Zhang
+> Cc: David Miller; netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net] hyperv: Fix a compiler warning in netvsc_send()
+> 
+> On Tue, 2013-04-16 at 20:18 +0000, Haiyang Zhang wrote:
+> > > From: David Miller [mailto:davem@davemloft.net] It works fine, but
+> > > it's unclean.
+> > > Keep the req_id type as "u64", because that's what it is, a 64-bit request
+> ID.
+> > I will make this update and submit a new patch, with the added comments.
+> 
+> Do you mean you'll use this to avoid compiler warnings?
+> 
+> 	req_id = (u64)(unsigned long)packet;
 
-> Update debugging messages to a more current style.
-> 
-> Emit these debugging messages at KERN_DEBUG instead
-> of KERN_DEFAULT.
-> 
-> Add and use neigh_dbg(level, fmt, ...) macro
-> Add dynamic_debug capability via pr_debug
-> Convert embedded function names to "%s: ", __func__
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+I will use:
+req_id = (ulong)packet;
 
-Applied.
+Assigning 32 bit integer to 64 bit variable is fine.
+
+Thanks,
+- Haiyang
