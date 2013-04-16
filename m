@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab3DPN1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 09:27:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41465 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753749Ab3DPN1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 09:27:39 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20130416130854.GA20961@gmail.com>
-References: <CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com> <516A1D49.1050100@zytor.com> <CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com> <516C702C.2030209@zytor.com> <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com> <516C751B.4020505@zytor.com> <CAE9FiQW5X80bxOURTkhnELuV_AzYXBHEudxN1eUg_1jehrcfww@mail.gmail.com> <516CB937.2000305@zytor.com> <CAE9FiQU97FHKpKQjZJq+Nfz18eM2n0-V2n4B6m=ozjkycP+Rng@mail.gmail.com> <7f907e0b-c397-460f-a8ec-ce84b119ce84@email.android.com> <20130416130854.GA20961@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 16 Apr 2013 06:27:06 -0700
-To: Ingo Molnar <mingo@kernel.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Kees Cook <keescook@chromium.org>,
-        Eric Northup <digitaleric@google.com>,
+	id S1756120Ab3DPN2P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 09:28:15 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34966 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755584Ab3DPN2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 09:28:14 -0400
+Date: Tue, 16 Apr 2013 15:28:07 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tony Luck <tony.luck@gmail.com>
+cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Message-ID: <13e14f5c-d221-4f2f-84e3-6c2dea48cdaa@email.android.com>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>, magnus.damm@gmail.com
+Subject: Re: [tip:smp/hotplug] idle: Implement generic idle function
+In-Reply-To: <CA+8MBbLqTVSGpgCKFH79xDvW2brP6Gen7GiSRYW6EY8iDZE3yQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.02.1304161527120.21884@ionos>
+References: <20130321215233.646635455@linutronix.de> <tip-d166991234347215dc23fc9dc15a63a83a1a54e1@git.kernel.org> <CA+8MBbLqTVSGpgCKFH79xDvW2brP6Gen7GiSRYW6EY8iDZE3yQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well... G**** is it's own problem (doing actively broken thinks for political reasons), but the real issue mostly is that there are a lot of them simply because there are a lot of ways one may want to load the kernel.
+On Mon, 15 Apr 2013, Tony Luck wrote:
 
-This is why things like decompression and the BIOS and EFI stubs are part of the kernel and not the bootloader.  In this case moving the randomization into the decompressor send like the right thing to do - C code, and no additional copy.
+> Built next-20130415 and got this on ia64 early in boot:
+> 
+> WARNING: at kernel/cpu/idle.c:94 cpu_idle_loop+0x360/0x380()
 
-Ingo Molnar <mingo@kernel.org> wrote:
+Hmm, is safe_halt() returning with interrupts disabled? If yes, it
+lacks a local_irq_enable().
 
->
->* H. Peter Anvin <hpa@zytor.com> wrote:
->
->> No.  Fixing one bootloader is almost impossible.  Fixing them all is
->a 
->> Sisiphyean task.
->
->It's a self inflicted wound really: if only we had a reference
->bootloader in the 
->kernel tree, which we could fix. The effort that went into fixing
->various 
->bootloader interactions would have been enough to write two new
->bootloaders from 
->scratch.
->
->Thanks,
->
->	Ingo
+Thanks,
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+	tglx
