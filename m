@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab3DPJMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:12:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51283 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751105Ab3DPJMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:12:43 -0400
-Message-ID: <516D1609.6020500@suse.cz>
-Date: Tue, 16 Apr 2013 11:12:41 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1755690Ab3DPJNH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:13:07 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:54151 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755354Ab3DPJNE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 05:13:04 -0400
+Date: Tue, 16 Apr 2013 11:12:59 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-arch@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 0/3 v2] mutex: Improve mutex performance by doing less
+ atomic-ops & better spinning
+Message-ID: <20130416091259.GC9569@gmail.com>
+References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Benjamin Poirier <bpoirier@suse.de>, Wang YanQing <udknight@gmail.com>,
-        Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] menuconfig: Fix memory leak introduced by jump keys
- feature
-References: <1366035231-24370-1-git-send-email-bpoirier@suse.de> <20130415215432.GB12519@free.fr> <516D0A1B.1010704@suse.cz>
-In-Reply-To: <516D0A1B.1010704@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.4.2013 10:21, Michal Marek wrote:
-> On 15.4.2013 23:54, Yann E. MORIN wrote:
->> So, unless Michal really wants to pull this one and push it to Linus
->> before he cuts v3.9 final, I'll merge this later in my -for-next branch.
-> 
-> That's fine with me.
 
-BTW, in you are going to rebase the commit, it would be good idea to add
-Cc: <stable@vger.kernel.org> to the changelog.
+* Waiman Long <Waiman.Long@hp.com> wrote:
+
+> [...]
+> 
+> Patches 2 improves the mutex spinning process by reducing contention among the 
+> spinners when competing for the mutex. This is done by using a MCS lock to put 
+> the spinners in a queue so that only the first spinner will try to acquire the 
+> mutex when it is available. This patch showed significant performance 
+> improvement of +30% on the AIM7 fserver and new_fserver workload.
+
+Ok, that's really nice - and this approach has no arbitrary limits/tunings in it.
+
+Do you have a performance comparison to your first series (patches 1+2+3 IIRC) - 
+how does this new series with MCS locking compare to the best previous result from 
+that old series? Do we now achieve that level of performance?
 
 Thanks,
-Michal
+
+	Ingo
