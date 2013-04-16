@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab3DPQOi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:14:38 -0400
-Received: from mail-a03.ithnet.com ([217.64.83.98]:55542 "HELO ithnet.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753773Ab3DPQOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:14:37 -0400
-X-Sender-Authentication: SMTP AUTH verified <skraw>
-Date: Tue, 16 Apr 2013 18:14:32 +0200
-From: Stephan von Krawczynski <skraw@ithnet.com>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: No serial since kernel 3.8
-Message-Id: <20130416181432.a28e0465.skraw@ithnet.com>
-In-Reply-To: <20130416145953.GA8184@zod.gha.chartermi.net>
-References: <20130416162047.2f9b83fe.skraw@ithnet.com>
-	<CAFLxGvykqMUHrmdZnzPXW7i3-ubcF6jv2fLYF3sYPkCtJDJZuA@mail.gmail.com>
-	<20130416145953.GA8184@zod.gha.chartermi.net>
-Organization: ith Kommunikationstechnik GmbH
-X-Mailer: Sylpheed 3.1.2 (GTK+ 2.24.10; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757559Ab3DPQS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:18:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49401 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754430Ab3DPQS4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 12:18:56 -0400
+Date: Tue, 16 Apr 2013 18:18:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] x86: Add a Kconfig shortcut for a kvm-bootable kernel
+Message-ID: <20130416161852.GH5332@pd.tnic>
+References: <20130412181956.GA13099@pd.tnic>
+ <516A7760.7030907@kernel.org>
+ <20130414110320.GB20547@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130414110320.GB20547@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013 10:59:53 -0400
-Josh Boyer <jwboyer@gmail.com> wrote:
-
-> On Tue, Apr 16, 2013 at 04:55:25PM +0200, richard -rw- weinberger wrote:
-> >On Tue, Apr 16, 2013 at 4:20 PM, Stephan von Krawczynski
-> ><skraw@ithnet.com> wrote:
-> >> Hello,
-> >>
-> >> can some kind soul please explain how I can get my serial port back under
-> >> kernel 3.8.X. Earlier kernels showed:
-> >>
-> >> Jan 10 13:57:18 mybox kernel: [    0.712829] serial8250: ttyS0 at I/O 0x3f8
-> >> (irq = 4) is a 16550A
-> >>
-> >> But 3.8.4:
-> >>
-> >> Mar 26 10:39:14 admin kernel: [    0.603647] serial 00:0a: disabled
-> >>
-> >> Only kernel is replaced, no change in distro
-> >> Is there some kernel boot parameter needed now?
-> >> I tried 3.4.X and it works, even 3.7.X works...
-> >
-> >So, 3.8.3 worked and 3.8.4 introduced a regression?
-> >If so please confirm.
-> >
-> >CC'ing gregkh, just in case...
+On Sun, Apr 14, 2013 at 01:03:20PM +0200, Borislav Petkov wrote:
+> On Sun, Apr 14, 2013 at 12:31:12PM +0300, Pekka Enberg wrote:
+> > I obviously support having something like this in mainline. I wonder
+> > though if we could just call this "default standalone KVM guest
+> > config" instead of emphasizing testing angle.
 > 
-> We had a report of this in Fedora that was fixed with 3.8.7.  An upstream
-> change had been brought back to the 3.8.x series, and it was subsequently
-> reverted.  3.8.7 picked up the revert.
+> /me nods agreeingly...
 > 
-> josh
+> And it should be unter HYPERVISOR_GUEST where the rest of this stuff
+> resides. Good point.
 
-3.8.7 does not work either. I just checked it. I tried shared and not shared IRQ:
+Sanity check question:
 
-Apr 16 17:47:05 mybox kernel: [    0.604826] Serial: 8250/16550 driver, 8 ports, IRQ sharing disabled
+Why not add the select stuff, i.e. this:
 
-and another test:
+	select NET
+	select NETDEVICES
+	select PCI
+	select BLOCK
+	select BLK_DEV
+	select NETWORK_FILESYSTEMS
+	select INET
+	select EXPERIMENTAL
+	select TTY
+	select SERIAL_8250
+	select SERIAL_8250_CONSOLE
+	select IP_PNP
+	select IP_PNP_DHCP
+	select BINFMT_ELF
+	select PCI_MSI
+	select HAVE_ARCH_KGDB
+	select DEBUG_KERNEL
+	select KGDB
+	select KGDB_SERIAL_CONSOLE
+	select VIRTUALIZATION
+	select VIRTIO
+	select VIRTIO_RING
+	select VIRTIO_PCI
+	select VIRTIO_BLK
+	select VIRTIO_CONSOLE
+	select VIRTIO_NET
+	select 9P_FS
+	select NET_9P
+	select NET_9P_VIRTIO
 
-Apr 16 18:07:08 mybox kernel: [    0.601203] Serial: 8250/16550 driver, 8 ports, IRQ sharing enabled
+to the option below which we already have. It is in the same sense a KVM
+guest support deal.
 
-I must say that 3.8.7 does not even tell the "serial 00:0a: disabled" any more.
-This is no special board, it is a pretty mainstream asus xeon board with onboard serial.
-Loading 3.4.24 (just an example) makes the port work immediately.
-Anything else I can test?
+Hmm.
+
+KVM people, any objections?
+
+config KVM_GUEST
+        bool "KVM Guest support (including kvmclock)"
+        depends on PARAVIRT
+        select PARAVIRT_CLOCK
+        default y
+        ---help---
+          This option enables various optimizations for running under the KVM
+          hypervisor. It includes a paravirtualized clock, so that instead
+          of relying on a PIT (or probably other) emulation by the
+          underlying device model, the host provides the guest with
+          timing infrastructure such as time of day, and system time
 
 -- 
-Regards,
-Stephan
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
