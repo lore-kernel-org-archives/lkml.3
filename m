@@ -1,231 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935620Ab3DPDpU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 23:45:20 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2795 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935382Ab3DPDpS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 23:45:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,482,1363158000"; 
-   d="scan'208";a="295451161"
-From: "Pan, Zhenjie" <zhenjie.pan@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] NMI: fix NMI period is not correct when cpu frequency
- changes issue.
-Thread-Topic: [PATCH] NMI: fix NMI period is not correct when cpu frequency
- changes issue.
-Thread-Index: AQHOOjFYNj/PzdwSq0qqlrbCbmclRZjYK16Q
-Date: Tue, 16 Apr 2013 03:45:15 +0000
-Message-ID: <F98D4B5C3D86834DB612ABF854C98B7FB5D662@SHSMSX101.ccr.corp.intel.com>
-References: <F98D4B5C3D86834DB612ABF854C98B7FB54822@SHSMSX101.ccr.corp.intel.com>
- <20130415163049.08498e3a8726f0bd6f4d6ebe@linux-foundation.org>
-In-Reply-To: <20130415163049.08498e3a8726f0bd6f4d6ebe@linux-foundation.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S935644Ab3DPDyY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 23:54:24 -0400
+Received: from mx7.zte.com.cn ([202.103.147.169]:55176 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S935382Ab3DPDyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 23:54:23 -0400
+X-Greylist: delayed 962 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Apr 2013 23:54:22 EDT
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH] futex: bugfix for futex-key conflict when futex use hugepage
 MIME-Version: 1.0
+X-Mailer: Lotus Notes Release 6.5.4 March 27, 2005
+Message-ID: <OF000BBE68.EBB4E92E-ON48257B4F.0010C2E7-48257B4F.0013FB89@zte.com.cn>
+From: zhang.yi20@zte.com.cn
+Date: Tue, 16 Apr 2013 11:37:45 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-04-16 11:37:35,
+	Serialize complete at 2013-04-16 11:37:35
+Content-Type: text/plain; charset="US-ASCII"
+X-MAIL: mse02.zte.com.cn r3G3bnu0027682
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your detail comments, Andrew.
-Please see my comments below.
+Hello,
 
-> -----Original Message-----
-> From: Andrew Morton [mailto:akpm@linux-foundation.org]
-> Sent: Tuesday, April 16, 2013 7:31 AM
-> To: Pan, Zhenjie
-> Cc: a.p.zijlstra@chello.nl; paulus@samba.org; mingo@redhat.com;
-> acme@ghostprotocols.net; dzickus@redhat.com; tglx@linutronix.de; Liu,
-> Chuansheng; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] NMI: fix NMI period is not correct when cpu frequency
-> changes issue.
-> 
-> On Mon, 1 Apr 2013 03:47:42 +0000 "Pan, Zhenjie" <zhenjie.pan@intel.com>
-> wrote:
-> 
-> > Watchdog use performance monitor of cpu clock cycle to generate NMI to
-> detect hard lockup.
-> > But when cpu's frequency changes, the event period will also change.
-> > It's not as expected as the configuration.
-> > For example, set the NMI event handler period is 10 seconds when the cpu
-> is 2.0GHz.
-> > If the cpu changes to 800MHz, the period will be 10*(2000/800)=25 seconds.
-> > So it may make hard lockup detect not work if the watchdog timeout is not
-> long enough.
-> > Now, set a notifier to listen to the cpu frequency change.
-> > And dynamic re-config the NMI event to make the event period correct.
-> >
-> > Signed-off-by: Pan Zhenjie <zhenjie.pan@intel.com>
-> >
-> > diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> > index 1d795df..717fdac 100644
-> > --- a/include/linux/perf_event.h
-> > +++ b/include/linux/perf_event.h
-> > @@ -564,7 +564,8 @@ extern void perf_pmu_migrate_context(struct pmu
-> *pmu,
-> >  				int src_cpu, int dst_cpu);
-> >  extern u64 perf_event_read_value(struct perf_event *event,
-> >  				 u64 *enabled, u64 *running);
-> > -
-> > +extern void perf_dynamic_adjust_period(struct perf_event *event,
-> > +						u64 sample_period);
-> >
-> >  struct perf_sample_data {
-> >  	u64				type;
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c index
-> > 59412d0..96596d1 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -37,6 +37,7 @@
-> >  #include <linux/ftrace_event.h>
-> >  #include <linux/hw_breakpoint.h>
-> >  #include <linux/mm_types.h>
-> > +#include <linux/math64.h>
-> >
-> >  #include "internal.h"
-> >
-> > @@ -2428,6 +2429,42 @@ static void perf_adjust_period(struct perf_event
-> *event, u64 nsec, u64 count, bo
-> >  	}
-> >  }
-> >
-> > +static int perf_percpu_dynamic_adjust_period(void *info) {
-> > +	struct perf_event *event = (struct perf_event *)info;
-> 
-> The cast of void * is unneeded and is somewhat undesirable, as it might
-> suppress valid warnings if the type of `info' is later changed.
+The futex-keys of processes share futex determined by page-offset, 
+mapping-host, and 
+mapping-index of the user space address. 
+User appications using hugepage for futex may lead to futex-key conflict. 
+Assume there 
+are two or more futexes in diffrent normal pages of the hugepage, and each 
+futex has 
+the same offset in its normal page, causing all the futexes have the same 
+futex-key. 
+In that case, futex may not work well. 
 
-I'll fix it.
+This patch adds the normal page index in the compound page into the offset 
+of futex-key. 
 
-> 
-> > +	s64 left;
-> > +	u64 old_period = event->hw.sample_period;
-> > +	u64 new_period = event->attr.sample_period;
-> > +	u64 shift = 0;
-> > +
-> > +	/* precision is enough */
-> > +	while (old_period > 0xF && new_period > 0xF) {
-> > +		old_period >>= 1;
-> > +		new_period >>= 1;
-> > +		shift++;
-> > +	}
-> > +
-> > +	event->pmu->stop(event, PERF_EF_UPDATE);
-> > +
-> > +	left = local64_read(&event->hw.period_left);
-> > +	left = (s64)div64_u64(left * (event->attr.sample_period >> shift),
-> > +		(event->hw.sample_period >> shift));
-> > +	local64_set(&event->hw.period_left, left);
-> > +
-> > +	event->hw.sample_period = event->attr.sample_period;
-> > +
-> > +	event->pmu->start(event, PERF_EF_RELOAD);
-> > +
-> > +	return 0;
-> > +}
-> >
-> > ...
-> >
-> > --- a/kernel/watchdog.c
-> > +++ b/kernel/watchdog.c
-> > @@ -28,6 +28,7 @@
-> >  #include <asm/irq_regs.h>
-> >  #include <linux/kvm_para.h>
-> >  #include <linux/perf_event.h>
-> > +#include <linux/cpufreq.h>
-> >
-> >  int watchdog_enabled = 1;
-> >  int __read_mostly watchdog_thresh = 10; @@ -470,6 +471,31 @@ static
-> > void watchdog_nmi_disable(unsigned int cpu)
-> >  	}
-> >  	return;
-> >  }
-> > +
-> > +static int watchdog_cpufreq_transition(struct notifier_block *nb,
-> > +					unsigned long val, void *data)
-> > +{
-> > +	struct perf_event *event;
-> > +	struct cpufreq_freqs *freq = data;
-> > +
-> > +	if (val == CPUFREQ_POSTCHANGE) {
-> > +		event = per_cpu(watchdog_ev, freq->cpu);
-> > +		perf_dynamic_adjust_period(event,
-> > +				(u64)freq->new * 1000 * watchdog_thresh);
-> 
-> I think this will break the build if CONFIG_PERF_EVENTS=n and
-> CONFIG_LOCKUP_DETECTOR=y.  I was able to create such a config for
-> powerpc.  If I'm reading it correctly, CONFIG_PERF_EVENTS cannot be
-> disabled on x86_64?  If so, what the heck?
+Steps to reproduce the bug: 
+1. The 1st thread map a file of hugetlbfs, and use the return address as 
+the 1st mutex's 
+address, and use the return address with PAGE_SIZE added as the 2nd 
+mutex's address; 
+2. The 1st thread initialize the two mutexes with pshared attribute, and 
+lock the two mutexes. 
+3. The 1st thread create the 2nd thread, and the 2nd thread block on the 
+1st mutex. 
+4. The 1st thread create the 3rd thread, and the 3rd thread block on the 
+2nd mutex. 
+5. The 1st thread unlock the 2nd mutex, the 3rd thread can not take the 
+2nd mutex, and 
+may block forever. 
 
-These two functions I added are in CONFIG_HARDLOCKUP_DETECTOR.
-And HARDLOCKUP_DETECTOR depends on PERF_EVENTS.
+Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
+Reviewed-by: Liu Dong <liu.dong3@zte.com.cn>
+Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
+Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
+Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
 
-config HARDLOCKUP_DETECTOR
-    def_bool y
-    depends on LOCKUP_DETECTOR && !HAVE_NMI_WATCHDOG
-    depends on PERF_EVENTS && HAVE_PERF_EVENTS_NMI
+diff -uprN orig/linux-3.9-rc7/include/linux/mm.h 
+new/linux-3.9-rc7/include/linux/mm.h
+--- orig/linux-3.9-rc7/include/linux/mm.h       2013-04-15 
+00:45:16.000000000 +0000
++++ new/linux-3.9-rc7/include/linux/mm.h        2013-04-16 
+11:21:59.573458000 +0000
+@@ -502,6 +502,20 @@ static inline void set_compound_order(st
+        page[1].lru.prev = (void *)order;
+ }
+ 
++static inline void set_page_compound_index(struct page *page, int index)
++{
++       if (PageHead(page))
++               return;
++       page->index = index;
++}
++
++static inline int get_page_compound_index(struct page *page)
++{
++       if (PageHead(page))
++               return 0;
++       return page->index;
++}
++
+ #ifdef CONFIG_MMU
+ /*
+  * Do pte_mkwrite, but only if the vma says VM_WRITE.  We do this when
+diff -uprN orig/linux-3.9-rc7/kernel/futex.c 
+new/linux-3.9-rc7/kernel/futex.c
+--- orig/linux-3.9-rc7/kernel/futex.c   2013-04-15 00:45:16.000000000 
++0000
++++ new/linux-3.9-rc7/kernel/futex.c    2013-04-16 11:13:30.069887000 
++0000
+@@ -239,7 +239,7 @@ get_futex_key(u32 __user *uaddr, int fsh
+        unsigned long address = (unsigned long)uaddr;
+        struct mm_struct *mm = current->mm;
+        struct page *page, *page_head;
+-       int err, ro = 0;
++       int err, ro = 0, comp_idx = 0;
+ 
+        /*
+         * The futex address must be "naturally" aligned.
+@@ -299,6 +299,7 @@ again:
+                         * freed from under us.
+                         */
+                        if (page != page_head) {
++                               comp_idx = get_page_compound_index(page);
+                                get_page(page_head);
+                                put_page(page);
+                        }
+@@ -311,6 +312,7 @@ again:
+ #else
+        page_head = compound_head(page);
+        if (page != page_head) {
++               comp_idx = get_page_compound_index(page);
+                get_page(page_head);
+                put_page(page);
+        }
+@@ -363,7 +365,8 @@ again:
+                key->private.mm = mm;
+                key->private.address = address;
+        } else {
+-               key->both.offset |= FUT_OFF_INODE; /* inode-based key */
++               key->both.offset |= (comp_idx << PAGE_SHIFT)
++                                   | FUT_OFF_INODE; /* inode-based key */
+                key->shared.inode = page_head->mapping->host;
+                key->shared.pgoff = page_head->index;
+        }
+diff -uprN orig/linux-3.9-rc7/mm/hugetlb.c new/linux-3.9-rc7/mm/hugetlb.c
+--- orig/linux-3.9-rc7/mm/hugetlb.c     2013-04-15 00:45:16.000000000 
++0000
++++ new/linux-3.9-rc7/mm/hugetlb.c      2013-04-16 10:23:02.658531000 
++0000
+@@ -667,6 +667,7 @@ static void prep_compound_gigantic_page(
+        for (i = 1; i < nr_pages; i++, p = mem_map_next(p, page, i)) {
+                __SetPageTail(p);
+                set_page_count(p, 0);
++               set_page_compound_index(p, i);
+                p->first_page = page;
+        }
+ }
+diff -uprN orig/linux-3.9-rc7/mm/page_alloc.c 
+new/linux-3.9-rc7/mm/page_alloc.c
+--- orig/linux-3.9-rc7/mm/page_alloc.c  2013-04-15 00:45:16.000000000 
++0000
++++ new/linux-3.9-rc7/mm/page_alloc.c   2013-04-16 10:23:16.452393000 
++0000
+@@ -361,6 +361,7 @@ void prep_compound_page(struct page *pag
+                struct page *p = page + i;
+                __SetPageTail(p);
+                set_page_count(p, 0);
++               set_page_compound_index(p, i);
+                p->first_page = page;
+        }
+ }
 
-So it should not have this risk.
 
-> 
-> > +	}
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static int __init watchdog_cpufreq(void) {
-> > +	static struct notifier_block watchdog_nb;
-> > +	watchdog_nb.notifier_call = watchdog_cpufreq_transition;
-> > +	cpufreq_register_notifier(&watchdog_nb,
-> > +CPUFREQ_TRANSITION_NOTIFIER);
-> > +
-> > +	return 0;
-> > +}
-> > +late_initcall(watchdog_cpufreq);
-> 
-> Overall the patch looks desirable, but it increases the kernel size by several
-> hundred bytes when CONFIG_CPU_FREQ=n.  It should produce no code in
-> this case!  Take a look at the magic in register_hotcpu_notifier(), the way in
-> which it causes all the code to be removed by the compiler in the
-> CONFIG_HOTPLUG_CPU=n case.  That trick can be used here.
-
-I have checked if CONFIG_CPU_FREQ=n, cpufreq_register_notifier() will be a blank function.
-So I think it will not increases the kernel size.
-
-> 
-> Also, your patch is a bit buggy - it left watchdog_nb.priority uninitialized.
-> Easily fixed with
-> 
-> 
-> 	static struct notifier_block watchdog_nb = {
-> 		.notifier_call = watchdog_cpufreq_transition,
-> 		.priority = ??,
-> 	};
-> 
-> and that will result in less code generation as well.
-
-I'll fix it.
-
-> 
-> Finally, Don's (good) questions about this patch remain unanswered - please
-> do attend to that.
-
-I've answered it in the reply mail to Don.
-
-Thanks
-Pan Zhenjie
