@@ -1,108 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936048Ab3DPQwD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:52:03 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:56147 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935928Ab3DPQwA (ORCPT
+	id S936065Ab3DPQ56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:57:58 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36049 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935693Ab3DPQ55 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:52:00 -0400
+	Tue, 16 Apr 2013 12:57:57 -0400
+From: "B, Ravi" <ravibabu@ti.com>
+To: "Bilovol, Ruslan" <ruslan.bilovol@ti.com>, "Balbi, Felipe" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded
+ systems
+Thread-Topic: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded
+ systems
+Thread-Index: AQHOOrj9vvmkWKgZJUSEVp2nIwd7q5jZD1Sw
+Date: Tue, 16 Apr 2013 16:57:52 +0000
+Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EAAC0E5@DBDE01.ent.ti.com>
+References: <1366126904-31605-1-git-send-email-ruslan.bilovol@ti.com>
+In-Reply-To: <1366126904-31605-1-git-send-email-ruslan.bilovol@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-X-Originating-IP: [114.40.17.142]
-In-Reply-To: <1365509706.3801.1.camel@phoenix>
-References: <1365509706.3801.1.camel@phoenix>
-Date: Wed, 17 Apr 2013 00:51:59 +0800
-Message-ID: <CAFRkauCX_0FqpHse=ic2BFkasrdL6+_hhNrNhyMboG8f-Q=EXw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] regulator: ab8500: Don't update info->update_val if
- write to register fails
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bengt,
+> -----Original Message-----
+> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-
+> owner@vger.kernel.org] On Behalf Of Bilovol, Ruslan
+> Sent: Tuesday, April 16, 2013 9:12 PM
+> To: Balbi, Felipe; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded
+> systems
+> 
+> From musb point of view, the Address Assignment sequence during
+> device enumeration is next:
+>  - first ep0 interrupt:
+> 	* read the address from USB_REQ_SET_ADDRESS request
+> 	* set up CSR0L.DataEnd bit (that is ACK
+> 	  signalization for the host)
+>  - second ep0 interrupt:
+> 	* indicates that the request completed successfully
+> 	* set up musb device address
+> 	  Now musb device should answer to this address
+> 
+> From the host perspective, if peripheral device acquires
+> SET_ADDRESS request, it now may be accessed only using that address.
+> However, on heavy loaded systems, time between first and
+> second musb ep0 interrupts may be too long and musb controller
+> misses requests between. 
 
-This serial also needs your review.
+What is meant by heavily loaded system? Is the device is heavily loaded during enumeration stage? Why second ep0 interrupt is too long? whether interrupt occurrence to interrupt service is taking too long? 
 
-Thanks,
-Axel
+As result, device enumeration may be
+> unsuccessful. This can be checked on USB3.0 Host and
+> using USB3.0 test suite (from usb.org) running ch9 tests
+> for USB2.0 devices.
 
-2013/4/9 Axel Lin <axel.lin@ingics.com>:
-> This patch ensures info->update_val is consistent with current register value.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+You mean the usb2.0 musb controller (in device mode) connected to USB3.0 host? 
+
+> Usually 'Addressed state/TD9.1: Device Descriptor Test' will fail
+> 
+> The fix consists in checking CSR0L.DataEnd state and assigning
+> the device address in the first ep0 interrupt handling, so
+> delay is as minimal as possible
+> 
+> Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
 > ---
->  drivers/regulator/ab8500.c |   20 +++++++++++---------
->  1 file changed, 11 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-> index acdffc5..1866dbf 100644
-> --- a/drivers/regulator/ab8500.c
-> +++ b/drivers/regulator/ab8500.c
-> @@ -392,9 +392,8 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
->                         val = info->mode_val_idle;
->                         break;
->                 default:
-> -                       if (info->shared_mode)
-> -                               mutex_unlock(&shared_mode_mutex);
-> -                       return -EINVAL;
-> +                       ret = -EINVAL;
-> +                       goto out_unlock;
->                 }
->
->                 bank = info->mode_bank;
-> @@ -405,17 +404,14 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
->
->                 switch (mode) {
->                 case REGULATOR_MODE_NORMAL:
-> -                       info->update_val = info->update_val_normal;
->                         val = info->update_val_normal;
->                         break;
->                 case REGULATOR_MODE_IDLE:
-> -                       info->update_val = info->update_val_idle;
->                         val = info->update_val_idle;
->                         break;
->                 default:
-> -                       if (info->shared_mode)
-> -                               mutex_unlock(&shared_mode_mutex);
-> -                       return -EINVAL;
-> +                       ret = -EINVAL;
-> +                       goto out_unlock;
->                 }
->
->                 bank = info->update_bank;
-> @@ -426,9 +422,11 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
->         if (dmr || ab8500_regulator_is_enabled(rdev)) {
->                 ret = abx500_mask_and_set_register_interruptible(info->dev,
->                         bank, reg, mask, val);
-> -               if (ret < 0)
-> +               if (ret < 0) {
->                         dev_err(rdev_get_dev(rdev),
->                                 "couldn't set regulator mode\n");
-> +                       goto out_unlock;
-> +               }
->
->                 dev_vdbg(rdev_get_dev(rdev),
->                         "%s-set_mode (bank, reg, mask, value): "
-> @@ -437,6 +435,10 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
->                         mask, val);
->         }
->
-> +       if (!dmr)
-> +               info->update_val = val;
+>  drivers/usb/musb/musb_gadget_ep0.c |   31 +++++++++++++++++++++++++++++++
+>  1 file changed, 31 insertions(+)
+> 
+> diff --git a/drivers/usb/musb/musb_gadget_ep0.c
+> b/drivers/usb/musb/musb_gadget_ep0.c
+> index c9c1ac4..59bc5a5 100644
+> --- a/drivers/usb/musb/musb_gadget_ep0.c
+> +++ b/drivers/usb/musb/musb_gadget_ep0.c
+> @@ -885,6 +885,37 @@ stall:
+>  finish:
+>  				musb_writew(regs, MUSB_CSR0,
+>  						musb->ackpend);
 > +
-> +out_unlock:
->         if (info->shared_mode)
->                 mutex_unlock(&shared_mode_mutex);
->
-> --
-> 1.7.10.4
->
->
->
+> +				/*
+> +				 * If we are at end of SET_ADDRESS sequence,
+> +				 * update the address immediately if possible,
+> +				 * otherwise we may miss packets between
+> +				 * sending ACK from musb side and musb's next
+> +				 * interrupt handler firing (in which we update
+> +				 * the address). At least this fixes next
+> +				 * USB2.0 ch9 test of USB30CV utility:
+> +				 * "Addressed state - Device Descriptor test"
+> +				 */
+> +				if (musb->set_address && (musb->ackpend &
+> +							MUSB_CSR0_P_DATAEND) &&
+> +						(musb->ep0_state ==
+> +						MUSB_EP0_STAGE_STATUSIN)) {
+> +					u16 ack_delay = 500;
+> +
+> +					while ((musb_readw(regs, MUSB_CSR0) &
+> +							MUSB_CSR0_P_DATAEND) &&
+> +							--ack_delay) {
+> +						cpu_relax();
+> +						udelay(1);
+> +					}
+> +
+> +					if (ack_delay) {
+> +						musb->set_address = false;
+> +						musb_writeb(mbase, MUSB_FADDR,
+> +								musb->address);
+> +					}
+> +				}
+> +
+>  				musb->ackpend = 0;
+>  			}
+>  		}
+
+--
+Ravi B
