@@ -1,127 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965300Ab3DPScU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 14:32:20 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:53573 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965167Ab3DPScR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 14:32:17 -0400
+	id S965293Ab3DPScu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 14:32:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41712 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965154Ab3DPS0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 14:26:44 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH 12/28] rtl8192u: Don't need to save device proc dir PDE [RFC]
+To: linux-kernel@vger.kernel.org
+From: David Howells <dhowells@redhat.com>
+Cc: devel@driverdev.osuosl.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Jerry Chuang <jerry-chuang@realtek.com>,
+        linux-wireless@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org
+Date: Tue, 16 Apr 2013 19:26:39 +0100
+Message-ID: <20130416182639.27773.60503.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
+References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <2880576.TkeK8oBDas@vostro.rjw.lan>
-References: <48795235.crcTAaJqPb@vostro.rjw.lan> <CAE9FiQVEWy2MVfVmv4oL9D24OcF83dQv+OcFd5K6v8ZHeGumJA@mail.gmail.com>
- <CAErSpo7vUWSoav+rJgGK15xA7f0W+a0_16tZLFGCz5HO-HVZ2g@mail.gmail.com> <2880576.TkeK8oBDas@vostro.rjw.lan>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 16 Apr 2013 12:31:55 -0600
-Message-ID: <CAErSpo69sjvPRX5kXcb4kN14HxVBXMVWnG-nGDVaFZd2pUY3YQ@mail.gmail.com>
-Subject: Re: [PATCH] PCI / PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        "Benenati, Chris J" <chris.j.benenati@intel.com>,
-        Ajaykumar Hotchandani <ajaykumar.hotchandani@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 12:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, April 15, 2013 02:18:18 PM Bjorn Helgaas wrote:
->> On Fri, Apr 12, 2013 at 11:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> > On Fri, Apr 12, 2013 at 4:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >>
->> >> Commit b51306c (PCI: Set device power state to PCI_D0 for device
->> >> without native PM support) modified pci_platform_power_transition()
->> >> by adding code causing dev->current_state for devices that don't
->> >> support native PCI PM but are power-manageable by the platform to be
->> >> changed to PCI_D0 regardless of the value returned by the preceding
->> >> platform_pci_set_power_state().  In particular, that also is done
->> >> if the platform_pci_set_power_state() has been successful, which
->> >> causes the correct power state of the device set by
->> >> pci_update_current_state() in that case to be overwritten by PCI_D0.
->> >>
->> >> Fix that mistake by making the fallback to PCI_D0 only happen if
->> >> the platform_pci_set_power_state() has returned an error.
->> >>
->> >> Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
->> >> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >> Cc: <stable@vger.kernel.org>
->>
->> I folded in Yinghai's simplification and added a URL to Chris's report
->> and applied to my pci/rafael-pm branch:
->> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/rafael-pm
->>
->> If it still looks good to you, Rafael, I'll merge it to next for v3.10.
->
-> Well, the simplification adds an extra check for error into both code paths,
-> so I'm not sure if it's really worth it (that's why I didn't do it originally
-> in the first place), but I suppose that's not a big deal.  It looks good as far
-> as the correctness is concerned anyway.
->
->> I don't know what the user-visible effect of this is, and it's been
->> around for a long time, but if you think this should go in v3.9
->> instead, let me know.
->
-> I think v3.9+stable should be sufficient.
+Don't need to save the PDE of a directory created under /proc/net/rtl8192/ as
+we can use proc subtree deletion to get rid of it and all its children.
 
-It sounds like you meant to say "v3.10+stable should be sufficient".
-Is that right, or do you want me to push this to Linus before v3.9 is
-released?
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Jerry Chuang <jerry-chuang@realtek.com>
+cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+cc: linux-wireless@vger.kernel.org
+cc: devel@driverdev.osuosl.org
+---
 
->> >> ---
->> >>  drivers/pci/pci.c |    3 +--
->> >>  1 file changed, 1 insertion(+), 2 deletions(-)
->> >>
->> >> Index: linux-pm/drivers/pci/pci.c
->> >> ===================================================================
->> >> --- linux-pm.orig/drivers/pci/pci.c
->> >> +++ linux-pm/drivers/pci/pci.c
->> >> @@ -646,8 +646,7 @@ static int pci_platform_power_transition
->> >>                 error = platform_pci_set_power_state(dev, state);
->> >>                 if (!error)
->> >>                         pci_update_current_state(dev, state);
->> >> -               /* Fall back to PCI_D0 if native PM is not supported */
->> >> -               if (!dev->pm_cap)
->> >> +               else if (!dev->pm_cap) /* Fall back to PCI_D0 */
->> >>                         dev->current_state = PCI_D0;
->> >>         } else {
->> >>                 error = -ENODEV;
->> >>
->> >
->> > Acked-by: Yinghai Lu <yinghai@kernel.org>
->> >
->> > also could simplify it further.
->> >
->> > ---
->> >  drivers/pci/pci.c |   12 ++++--------
->> >  1 file changed, 4 insertions(+), 8 deletions(-)
->> >
->> > Index: linux-2.6/drivers/pci/pci.c
->> > ===================================================================
->> > --- linux-2.6.orig/drivers/pci/pci.c
->> > +++ linux-2.6/drivers/pci/pci.c
->> > @@ -646,15 +646,11 @@ static int pci_platform_power_transition
->> >          error = platform_pci_set_power_state(dev, state);
->> >          if (!error)
->> >              pci_update_current_state(dev, state);
->> > -        /* Fall back to PCI_D0 if native PM is not supported */
->> > -        if (!dev->pm_cap)
->> > -            dev->current_state = PCI_D0;
->> > -    } else {
->> > +    } else
->> >          error = -ENODEV;
->> > -        /* Fall back to PCI_D0 if native PM is not supported */
->> > -        if (!dev->pm_cap)
->> > -            dev->current_state = PCI_D0;
->> > -    }
->> > +
->> > +    if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
->> > +        dev->current_state = PCI_D0;
->> >
->> >      return error;
->> >  }
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+ drivers/staging/rtl8192u/r8192U.h      |    1 -
+ drivers/staging/rtl8192u/r8192U_core.c |   18 ++++++------------
+ 2 files changed, 6 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/staging/rtl8192u/r8192U.h b/drivers/staging/rtl8192u/r8192U.h
+index e538e02..bedeb33 100644
+--- a/drivers/staging/rtl8192u/r8192U.h
++++ b/drivers/staging/rtl8192u/r8192U.h
+@@ -946,7 +946,6 @@ typedef struct r8192_priv {
+ 	/*stats*/
+ 	struct Stats stats;
+ 	struct iw_statistics wstats;
+-	struct proc_dir_entry *dir_dev;
+ 
+ 	/*RX stuff*/
+ //	u32 *rxring;
+diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+index d81d7d5..27ba2a3 100644
+--- a/drivers/staging/rtl8192u/r8192U_core.c
++++ b/drivers/staging/rtl8192u/r8192U_core.c
+@@ -669,20 +669,19 @@ static const struct rtl8192_proc_file rtl8192_proc_files[] = {
+ void rtl8192_proc_init_one(struct net_device *dev)
+ {
+ 	const struct rtl8192_proc_file *f;
+-	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
++	struct proc_dir_entry *dir;
+ 
+ 	if (rtl8192_proc) {
+-		priv->dir_dev = proc_mkdir_data(dev->name, 0, rtl8192_proc, dev);
+-		if (!priv->dir_dev) {
++		dir = proc_mkdir_data(dev->name, 0, rtl8192_proc, dev);
++		if (!dir) {
+ 			RT_TRACE(COMP_ERR, "Unable to initialize /proc/net/rtl8192/%s\n",
+ 				 dev->name);
+ 			return;
+ 		}
+ 
+ 		for (f = rtl8192_proc_files; f->name[0]; f++) {
+-			if (!proc_create_data(f->name, S_IFREG | S_IRUGO,
+-					      priv->dir_dev,
+-					      rtl8192_proc_fops, f->show)) {
++			if (!proc_create_data(f->name, S_IFREG | S_IRUGO, dir,
++					      &rtl8192_proc_fops, f->show)) {
+ 				RT_TRACE(COMP_ERR, "Unable to initialize "
+ 					 "/proc/net/rtl8192/%s/%s\n",
+ 					 dev->name, f->name);
+@@ -694,12 +693,7 @@ void rtl8192_proc_init_one(struct net_device *dev)
+ 
+ void rtl8192_proc_remove_one(struct net_device *dev)
+ {
+-	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
+-
+-	if (priv->dir_dev) {
+-		remove_proc_subtree(dev->name, rtl8192_proc);
+-		priv->dir_dev = NULL;
+-	}
++	remove_proc_subtree(dev->name, rtl8192_proc);
+ }
+ 
+ /****************************************************************************
+
