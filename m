@@ -1,139 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757738Ab3DPNw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 09:52:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755927Ab3DPNwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 09:52:24 -0400
-Date: Tue, 16 Apr 2013 15:49:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Paul Mundt <lethal@linux-sh.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] kill ptrace_{get,put}_breakpoints()
-Message-ID: <20130416134913.GC9189@redhat.com>
-References: <20130414160501.GA7612@redhat.com> <3883.1366096958@ale.ozlabs.ibm.com>
+	id S1757796Ab3DPNw7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 09:52:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41898 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab3DPNw5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 09:52:57 -0400
+Date: Tue, 16 Apr 2013 06:51:57 -0700
+From: tip-bot for Borislav Petkov <tipbot@zytor.com>
+Message-ID: <tip-55a36b65ee7107d6bb557c96fd202c4e90164542@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, bp@suse.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, bp@suse.de
+In-Reply-To: <1365436666-9837-3-git-send-email-bp@alien8.de>
+References: <1365436666-9837-3-git-send-email-bp@alien8.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86: Fold-in trivial check_config function
+Git-Commit-ID: 55a36b65ee7107d6bb557c96fd202c4e90164542
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <3883.1366096958@ale.ozlabs.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 16 Apr 2013 06:52:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16, Michael Neuling wrote:
->
-> > Benjamin, Paul, arch_dup_task_struct()->flush_ptrace_hw_breakpoint(src)
-> > on powerpc looks "obviously wrong". Don't we need
-> >
-> > 	- flush_ptrace_hw_breakpoint(src);
-> > 	+ dst->thread->ptrace_bps[0] = NULL;
->
-> Do you mean the following?
->
->
-> diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-> index 59dd545..559804e 100644
-> --- a/arch/powerpc/kernel/process.c
-> +++ b/arch/powerpc/kernel/process.c
-> @@ -911,7 +911,7 @@ int arch_dup_task_struct(struct task_struct *dst, struct tas
->         flush_vsx_to_thread(src);
->         flush_spe_to_thread(src);
->  #ifdef CONFIG_HAVE_HW_BREAKPOINT
-> -       flush_ptrace_hw_breakpoint(src);
-> +       dst->thread.ptrace_bps[0] = NULL;
->  #endif /* CONFIG_HAVE_HW_BREAKPOINT */
+Commit-ID:  55a36b65ee7107d6bb557c96fd202c4e90164542
+Gitweb:     http://git.kernel.org/tip/55a36b65ee7107d6bb557c96fd202c4e90164542
+Author:     Borislav Petkov <bp@suse.de>
+AuthorDate: Mon, 8 Apr 2013 17:57:44 +0200
+Committer:  Borislav Petkov <bp@suse.de>
+CommitDate: Tue, 16 Apr 2013 11:50:50 +0200
 
-Almost.
+x86: Fold-in trivial check_config function
 
-This is what I think we should do, but it is pointless to do this
-in arch_dup_task_struct(), setup_thread_stack() will copy ptrace_bps[]
-from parent later.
+Fold it into its single call site. No functionality change.
 
-> Unable to handle kernel paging request for data at address 0x00100108
-> Faulting instruction address: 0xc00000000014d5e4
-> cpu 0x0: Vector: 300 (Data Access) at [c00000007e5836a0]
->     pc: c00000000014d5e4: .toggle_bp_slot+0x74/0x1c0
->     lr: c00000000014dc14: .release_bp_slot+0x44/0x70
->     sp: c00000007e583920
->    msr: 9000000000009032
->    dar: 100108
->  dsisr: 42000000
->   current = 0xc00000007e560000
->   paca    = 0xc00000000fe00000	 softe: 0	 irq_happened: 0x08
->     pid   = 1, comm = init
-> enter ? for help
-> [c00000007e5839d0] c00000000014dc14 .release_bp_slot+0x44/0x70
-> [c00000007e583a50] c000000000144bbc .free_event+0x6c/0x1e0
-> [c00000007e583ad0] c000000000144dc4 .perf_event_release_kernel+0x94/0x110
-> [c00000007e583b60] c00000000014cf08 .unregister_hw_breakpoint+0x18/0x30
-> [c00000007e583bd0] c00000000000e5f8 .ptrace_set_debugreg+0x158/0x230
-> [c00000007e583cd0] c00000000000eb4c .arch_ptrace+0x43c/0x7b0
-> [c00000007e583d90] c00000000008cbf8 .SyS_ptrace+0x98/0x170
-> [c00000007e583e30] c000000000009d54 syscall_exit+0x0/0x98
-> --- Exception: c01 (System Call) at 000000001001d1d4
-> SP (3fffdf7459f0) is in userspace
->
-> The crash seems to happen some time after the fork.  Might be when the
-> new processes exits or get another ptrace call on it (I'm not sure which
-> one sorry).
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1365436666-9837-3-git-send-email-bp@alien8.de
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/cpu/bugs.c | 27 +++++++++++----------------
+ 1 file changed, 11 insertions(+), 16 deletions(-)
 
-Yes, probably because both parent and child have the same ->ptrace_bps[]
-pointers.
-
-> Without your suggestion it doesn't crash this case (ie. mainline passes).
-
-This is clear. flush_ptrace_hw_breakpoint() nullifies ->ptrace_bps[], so
-setup_thread_stack() copies NULL.
-
-But, unless I missed something, this is wrong. Why should the parent lose
-its bps after fork?
-
-IOW, I think we need something like the patch below, but I do not have
-a powerpc machine for the testing.
-
-> Acked-by: Michael Neuling <mikey@neuling.org>
-
-Thanks!
-
-Oleg.
-
-[PATCH] ptrace/powerpc: dont flush_ptrace_hw_breakpoint() on fork()
-
-arch_dup_task_struct() does flush_ptrace_hw_breakpoint(src), this
-is not what we want. We should clear child->thread.ptrace_bps[]
-copied by dup_task_struct().
-
---- x/arch/powerpc/kernel/process.c
-+++ x/arch/powerpc/kernel/process.c
-@@ -910,10 +910,6 @@ int arch_dup_task_struct(struct task_str
- 	flush_altivec_to_thread(src);
- 	flush_vsx_to_thread(src);
- 	flush_spe_to_thread(src);
--#ifdef CONFIG_HAVE_HW_BREAKPOINT
--	flush_ptrace_hw_breakpoint(src);
--#endif /* CONFIG_HAVE_HW_BREAKPOINT */
--
- 	*dst = *src;
- 	return 0;
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index c59635e..4112be9 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -81,21 +81,6 @@ static void __init check_fpu(void)
+ 	}
  }
-@@ -984,6 +980,10 @@ int copy_thread(unsigned long clone_flag
- 	p->thread.ksp_limit = (unsigned long)task_stack_page(p) +
- 				_ALIGN_UP(sizeof(struct thread_info), 16);
  
-+#ifdef CONFIG_HAVE_HW_BREAKPOINT
-+	p->thread.ptrace_bps[0] = NULL;
-+#endif
+-/*
+- * Check whether we are able to run this kernel safely on SMP.
+- *
+- * - i386 is no longer supported.
+- * - In order to run on anything without a TSC, we need to be
+- *   compiled for a i486.
+- */
+-
+-static void __init check_config(void)
+-{
+-	if (boot_cpu_data.x86 < 4)
+-		panic("Kernel requires i486+ for 'invlpg' and other features");
+-}
+-
+-
+ void __init check_bugs(void)
+ {
+ 	identify_boot_cpu();
+@@ -103,7 +88,17 @@ void __init check_bugs(void)
+ 	pr_info("CPU: ");
+ 	print_cpu_info(&boot_cpu_data);
+ #endif
+-	check_config();
 +
- #ifdef CONFIG_PPC_STD_MMU_64
- 	if (mmu_has_feature(MMU_FTR_SLB)) {
- 		unsigned long sp_vsid;
-
++	/*
++	 * Check whether we are able to run this kernel safely on SMP.
++	 *
++	 * - i386 is no longer supported.
++	 * - In order to run on anything without a TSC, we need to be
++	 *   compiled for a i486.
++	 */
++	if (boot_cpu_data.x86 < 4)
++		panic("Kernel requires i486+ for 'invlpg' and other features");
++
+ 	init_utsname()->machine[1] =
+ 		'0' + (boot_cpu_data.x86 > 6 ? 6 : boot_cpu_data.x86);
+ 	alternative_instructions();
