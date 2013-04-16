@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965183Ab3DPS0q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 14:26:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53240 "EHLO mx1.redhat.com"
+	id S965199Ab3DPS04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 14:26:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16362 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965050Ab3DPS0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 14:26:39 -0400
+	id S965003Ab3DPS0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 14:26:53 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 10/28] proc: Add proc_mkdir_data() [RFC]
+Subject: [PATCH 15/28] reiserfs: Don't access the proc_dir_entry in r_open(),
+ r_start() r_show() [RFC]
 To: linux-kernel@vger.kernel.org
 From: David Howells <dhowells@redhat.com>
-Cc: Neela Syam Kolli <megaraidlinux@lsi.com>, devel@driverdev.osuosl.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>, linux-scsi@vger.kernel.org,
-        Jerry Chuang <jerry-chuang@realtek.com>,
-        linux-wireless@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org
-Date: Tue, 16 Apr 2013 19:26:30 +0100
-Message-ID: <20130416182630.27773.83021.stgit@warthog.procyon.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        reiserfs-devel@vger.kernel.org
+Date: Tue, 16 Apr 2013 19:26:51 +0100
+Message-ID: <20130416182651.27773.77972.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
 References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
@@ -30,191 +28,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add proc_mkdir_data() to allow procfs directories to be created that are
-annotated at the time of creation with private data rather than doing this
-post-creation.  This means no access is then required to the proc_dir_entry
-struct to set this.
+Don't access the proc_dir_entry in ReiserFS's r_open(), r_start() r_show()
+procfs interface functions.
+
+ReiserFS stores the ->show() method pointer in PDE->data and the super_block
+pointer in PDE->parent->data.  This isn't changing.
+
+Currently, ReiserFS passes the PDE pointer into seq_file::private from
+r_open() so that r_start() and r_show() can then access it.  Instead, use
+seq_open_private() to allocate a two-pointer struct that's passed through
+seq_file::private and put the ->show() method and the sb pointers in there.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Neela Syam Kolli <megaraidlinux@lsi.com>
-cc: Jerry Chuang <jerry-chuang@realtek.com>
-cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-cc: linux-scsi@vger.kernel.org
-cc: devel@driverdev.osuosl.org
-cc: linux-wireless@vger.kernel.org
+cc: reiserfs-devel@vger.kernel.org
 ---
 
- drivers/message/i2o/i2o_proc.c         |    8 ++------
- drivers/scsi/megaraid.c                |    4 ++--
- drivers/staging/rtl8192u/r8192U_core.c |    3 +--
- fs/proc/generic.c                      |   30 ++++++++++++------------------
- include/linux/proc_fs.h                |   11 ++++++++---
- 5 files changed, 25 insertions(+), 31 deletions(-)
+ fs/reiserfs/procfs.c |   32 +++++++++++++++++++-------------
+ 1 file changed, 19 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/message/i2o/i2o_proc.c b/drivers/message/i2o/i2o_proc.c
-index 70a840f..b7d87cd 100644
---- a/drivers/message/i2o/i2o_proc.c
-+++ b/drivers/message/i2o/i2o_proc.c
-@@ -1913,14 +1913,12 @@ static void i2o_proc_device_add(struct proc_dir_entry *dir,
- 
- 	osm_debug("adding device /proc/i2o/%s/%s\n", dev->iop->name, buff);
- 
--	devdir = proc_mkdir(buff, dir);
-+	devdir = proc_mkdir_data(buff, 0, dir, dev);
- 	if (!devdir) {
- 		osm_warn("Could not allocate procdir!\n");
- 		return;
- 	}
- 
--	devdir->data = dev;
--
- 	i2o_proc_create_entries(devdir, generic_dev_entries, dev);
- 
- 	/* Inform core that we want updates about this device's status */
-@@ -1954,12 +1952,10 @@ static int i2o_proc_iop_add(struct proc_dir_entry *dir,
- 
- 	osm_debug("adding IOP /proc/i2o/%s\n", c->name);
- 
--	iopdir = proc_mkdir(c->name, dir);
-+	iopdir = proc_mkdir_data(c->name, 0, dir, c);
- 	if (!iopdir)
- 		return -1;
- 
--	iopdir->data = c;
--
- 	i2o_proc_create_entries(iopdir, i2o_proc_generic_iop_entries, c);
- 
- 	list_for_each_entry(dev, &c->devices, list)
-diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
-index a1c90bd..ef3384d 100644
---- a/drivers/scsi/megaraid.c
-+++ b/drivers/scsi/megaraid.c
-@@ -2818,12 +2818,12 @@ mega_create_proc_entry(int index, struct proc_dir_entry *parent)
- 
- 	sprintf(string, "hba%d", adapter->host->host_no);
- 
--	dir = adapter->controller_proc_dir_entry = proc_mkdir(string, parent);
-+	dir = adapter->controller_proc_dir_entry =
-+		proc_mkdir_data(string, 0, parent, adapter);
- 	if(!dir) {
- 		printk(KERN_WARNING "\nmegaraid: proc_mkdir failed\n");
- 		return;
- 	}
--	dir->data = adapter;
- 
- 	for (f = mega_proc_files; f->name; f++) {
- 		de = proc_create_data(f->name, S_IRUSR, dir, &mega_proc_fops,
-diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index 433c3df..d81d7d5 100644
---- a/drivers/staging/rtl8192u/r8192U_core.c
-+++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -672,13 +672,12 @@ void rtl8192_proc_init_one(struct net_device *dev)
- 	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
- 
- 	if (rtl8192_proc) {
--		priv->dir_dev = proc_mkdir(dev->name, rtl8192_proc);
-+		priv->dir_dev = proc_mkdir_data(dev->name, 0, rtl8192_proc, dev);
- 		if (!priv->dir_dev) {
- 			RT_TRACE(COMP_ERR, "Unable to initialize /proc/net/rtl8192/%s\n",
- 				 dev->name);
- 			return;
- 		}
--		priv->dir_dev->data = dev;
- 
- 		for (f = rtl8192_proc_files; f->name[0]; f++) {
- 			if (!proc_create_data(f->name, S_IFREG | S_IRUGO,
-diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-index 5f6f6c3..4074da5 100644
---- a/fs/proc/generic.c
-+++ b/fs/proc/generic.c
-@@ -428,13 +428,17 @@ struct proc_dir_entry *proc_symlink(const char *name,
+diff --git a/fs/reiserfs/procfs.c b/fs/reiserfs/procfs.c
+index 274adea..33532f7 100644
+--- a/fs/reiserfs/procfs.c
++++ b/fs/reiserfs/procfs.c
+@@ -394,20 +394,24 @@ static int set_sb(struct super_block *sb, void *data)
+ 	return -ENOENT;
  }
- EXPORT_SYMBOL(proc_symlink);
  
--struct proc_dir_entry *proc_mkdir_mode(const char *name, umode_t mode,
--		struct proc_dir_entry *parent)
-+struct proc_dir_entry *proc_mkdir_data(const char *name, umode_t mode,
-+		struct proc_dir_entry *parent, void *data)
- {
- 	struct proc_dir_entry *ent;
- 
-+	if (mode == 0)
-+		mode = S_IRUGO | S_IXUGO;
++struct reiserfs_seq_private {
++	struct super_block *sb;
++	int (*show) (struct seq_file *, struct super_block *);
++};
 +
- 	ent = __proc_create(&parent, name, S_IFDIR | mode, 2);
- 	if (ent) {
-+		ent->data = data;
- 		if (proc_register(parent, ent) < 0) {
- 			kfree(ent);
- 			ent = NULL;
-@@ -442,29 +446,19 @@ struct proc_dir_entry *proc_mkdir_mode(const char *name, umode_t mode,
+ static void *r_start(struct seq_file *m, loff_t * pos)
+ {
+-	struct proc_dir_entry *de = m->private;
+-	struct super_block *s = de->parent->data;
++	struct reiserfs_seq_private *priv = m->private;
+ 	loff_t l = *pos;
+ 
+ 	if (l)
+ 		return NULL;
+ 
+-	if (IS_ERR(sget(&reiserfs_fs_type, test_sb, set_sb, 0, s)))
++	if (IS_ERR(sget(&reiserfs_fs_type, test_sb, set_sb, 0, priv->sb)))
+ 		return NULL;
+ 
+-	up_write(&s->s_umount);
+-	return s;
++	up_write(&priv->sb->s_umount);
++	return priv->sb;
+ }
+ 
+ static void *r_next(struct seq_file *m, void *v, loff_t * pos)
+@@ -426,9 +430,8 @@ static void r_stop(struct seq_file *m, void *v)
+ 
+ static int r_show(struct seq_file *m, void *v)
+ {
+-	struct proc_dir_entry *de = m->private;
+-	int (*show) (struct seq_file *, struct super_block *) = de->data;
+-	return show(m, v);
++	struct reiserfs_seq_private *priv = m->private;
++	return priv->show(m, v);
+ }
+ 
+ static const struct seq_operations r_ops = {
+@@ -440,11 +443,15 @@ static const struct seq_operations r_ops = {
+ 
+ static int r_open(struct inode *inode, struct file *file)
+ {
+-	int ret = seq_open(file, &r_ops);
++	struct reiserfs_seq_private *priv;
++	int ret = seq_open_private(file, &r_ops,
++				   sizeof(struct reiserfs_seq_private));
+ 
+ 	if (!ret) {
+ 		struct seq_file *m = file->private_data;
+-		m->private = PDE(inode);
++		priv = m->private;
++		priv->sb = proc_get_parent_data(inode);
++		priv->show = PDE_DATA(inode);
  	}
- 	return ent;
+ 	return ret;
  }
--EXPORT_SYMBOL(proc_mkdir_mode);
-+EXPORT_SYMBOL_GPL(proc_mkdir_data);
+@@ -453,7 +460,7 @@ static const struct file_operations r_file_operations = {
+ 	.open = r_open,
+ 	.read = seq_read,
+ 	.llseek = seq_lseek,
+-	.release = seq_release,
++	.release = seq_release_private,
+ 	.owner = THIS_MODULE,
+ };
  
--struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
--		struct proc_dir_entry *parent)
-+struct proc_dir_entry *proc_mkdir_mode(const char *name, umode_t mode,
-+				       struct proc_dir_entry *parent)
- {
--	struct proc_dir_entry *ent;
--
--	ent = __proc_create(&parent, name, S_IFDIR | S_IRUGO | S_IXUGO, 2);
--	if (ent) {
--		ent->data = net;
--		if (proc_register(parent, ent) < 0) {
--			kfree(ent);
--			ent = NULL;
--		}
--	}
--	return ent;
-+	return proc_mkdir_data(name, mode, parent, NULL);
- }
--EXPORT_SYMBOL_GPL(proc_net_mkdir);
-+EXPORT_SYMBOL(proc_mkdir_mode);
+@@ -479,9 +486,8 @@ int reiserfs_proc_info_init(struct super_block *sb)
+ 		*s = '!';
  
- struct proc_dir_entry *proc_mkdir(const char *name,
- 		struct proc_dir_entry *parent)
- {
--	return proc_mkdir_mode(name, S_IRUGO | S_IXUGO, parent);
-+	return proc_mkdir_data(name, 0, parent, NULL);
- }
- EXPORT_SYMBOL(proc_mkdir);
- 
-diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index 80d9e24..e5d8f69 100644
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -73,6 +73,8 @@ extern int remove_proc_subtree(const char *name, struct proc_dir_entry *parent);
- extern struct proc_dir_entry *proc_symlink(const char *,
- 		struct proc_dir_entry *, const char *);
- extern struct proc_dir_entry *proc_mkdir(const char *,struct proc_dir_entry *);
-+extern struct proc_dir_entry *proc_mkdir_data(const char *, umode_t,
-+					      struct proc_dir_entry *, void *);
- extern struct proc_dir_entry *proc_mkdir_mode(const char *name, umode_t mode,
- 			struct proc_dir_entry *parent);
- 
-@@ -82,9 +84,6 @@ static inline struct proc_dir_entry *proc_create(const char *name, umode_t mode,
- 	return proc_create_data(name, mode, parent, proc_fops, NULL);
- }
-  
--extern struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
--	struct proc_dir_entry *parent);
--
- extern void proc_set_size(struct proc_dir_entry *, loff_t);
- extern void proc_set_user(struct proc_dir_entry *, kuid_t, kgid_t);
- #else
-@@ -153,4 +152,10 @@ static inline void *PDE_DATA(const struct inode *inode)
- 	return PROC_I(inode)->pde->data;
- }
- 
-+static inline struct proc_dir_entry *proc_net_mkdir(
-+	struct net *net, const char *name, struct proc_dir_entry *parent)
-+{
-+	return proc_mkdir_data(name, 0, parent, net);
-+}
-+
- #endif /* _LINUX_PROC_FS_H */
+ 	spin_lock_init(&__PINFO(sb).lock);
+-	REISERFS_SB(sb)->procdir = proc_mkdir(b, proc_info_root);
++	REISERFS_SB(sb)->procdir = proc_mkdir_data(b, 0, proc_info_root, sb);
+ 	if (REISERFS_SB(sb)->procdir) {
+-		REISERFS_SB(sb)->procdir->data = sb;
+ 		add_file(sb, "version", show_version);
+ 		add_file(sb, "super", show_super);
+ 		add_file(sb, "per-level", show_per_level);
 
