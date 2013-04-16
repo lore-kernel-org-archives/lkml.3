@@ -1,44 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935726Ab3DPPfR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:35:17 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42051 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S934696Ab3DPPfP (ORCPT
+	id S964990Ab3DPPl7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:41:59 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:44961 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935563Ab3DPPl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:35:15 -0400
-Date: Tue, 16 Apr 2013 11:35:15 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: projekt-wlan@fem.tu-ilmenau.de
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
- Freescale P1020
-In-Reply-To: <ee76d61e1b4c516ddb933fa533c3443c@fami-braun.de>
-Message-ID: <Pine.LNX.4.44L0.1304161134120.1391-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 16 Apr 2013 11:41:58 -0400
+From: Ruslan Bilovol <ruslan.bilovol@ti.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded systems
+Date: Tue, 16 Apr 2013 18:41:44 +0300
+Message-Id: <1366126904-31605-1-git-send-email-ruslan.bilovol@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Apr 2013, Michael Braun wrote:
+>From musb point of view, the Address Assignment sequence during
+device enumeration is next:
+ - first ep0 interrupt:
+	* read the address from USB_REQ_SET_ADDRESS request
+	* set up CSR0L.DataEnd bit (that is ACK
+	  signalization for the host)
+ - second ep0 interrupt:
+	* indicates that the request completed successfully
+	* set up musb device address
+	  Now musb device should answer to this address
 
-> Hi,
-> 
-> I'm running OpenWRT Kernel 3.8.3 (which already has 
-> f66dea709cd9309b2ee9f715697818001fb518de and 
-> 5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN (QorlQ, 
-> PPC) device.
-> Before updating the kernel from 3.3.0, USB host support was working 
-> fine. Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and 
-> the lsusb output is empty, so USB host support is not working. When I 
-> apply the following patch, USB host support starts working again, so I 
-> guess 3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
+>From the host perspective, if peripheral device acquires
+SET_ADDRESS request, it now may be accessed only using that address.
+However, on heavy loaded systems, time between first and
+second musb ep0 interrupts may be too long and musb controller
+misses requests between. As result, device enumeration may be
+unsuccessful. This can be checked on USB3.0 Host and
+using USB3.0 test suite (from usb.org) running ch9 tests
+for USB2.0 devices.
+Usually 'Addressed state/TD9.1: Device Descriptor Test' will fail
 
-Why didn't you CC: the author of that commit?  Isn't he the person most 
-likely to be able to fix it?
+The fix consists in checking CSR0L.DataEnd state and assigning
+the device address in the first ep0 interrupt handling, so
+delay is as minimal as possible
 
-Alan Stern
+Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
+---
+ drivers/usb/musb/musb_gadget_ep0.c |   31 +++++++++++++++++++++++++++++++
+ 1 file changed, 31 insertions(+)
+
+diff --git a/drivers/usb/musb/musb_gadget_ep0.c b/drivers/usb/musb/musb_gadget_ep0.c
+index c9c1ac4..59bc5a5 100644
+--- a/drivers/usb/musb/musb_gadget_ep0.c
++++ b/drivers/usb/musb/musb_gadget_ep0.c
+@@ -885,6 +885,37 @@ stall:
+ finish:
+ 				musb_writew(regs, MUSB_CSR0,
+ 						musb->ackpend);
++
++				/*
++				 * If we are at end of SET_ADDRESS sequence,
++				 * update the address immediately if possible,
++				 * otherwise we may miss packets between
++				 * sending ACK from musb side and musb's next
++				 * interrupt handler firing (in which we update
++				 * the address). At least this fixes next
++				 * USB2.0 ch9 test of USB30CV utility:
++				 * "Addressed state - Device Descriptor test"
++				 */
++				if (musb->set_address && (musb->ackpend &
++							MUSB_CSR0_P_DATAEND) &&
++						(musb->ep0_state ==
++						MUSB_EP0_STAGE_STATUSIN)) {
++					u16 ack_delay = 500;
++
++					while ((musb_readw(regs, MUSB_CSR0) &
++							MUSB_CSR0_P_DATAEND) &&
++							--ack_delay) {
++						cpu_relax();
++						udelay(1);
++					}
++
++					if (ack_delay) {
++						musb->set_address = false;
++						musb_writeb(mbase, MUSB_FADDR,
++								musb->address);
++					}
++				}
++
+ 				musb->ackpend = 0;
+ 			}
+ 		}
+-- 
+1.7.9.5
 
