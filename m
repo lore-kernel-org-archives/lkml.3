@@ -1,35 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab3DPNVf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 09:21:35 -0400
-Received: from mail.riopreto.sp.gov.br ([200.168.242.10]:56507 "EHLO
-	mail.riopreto.sp.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754989Ab3DPNVe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 09:21:34 -0400
-Content-Type: text/plain; charset=US-ASCII
+	id S1755377Ab3DPN1k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 09:27:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41465 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753749Ab3DPN1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 09:27:39 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130416130854.GA20961@gmail.com>
+References: <CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com> <516A1D49.1050100@zytor.com> <CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com> <516C702C.2030209@zytor.com> <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com> <516C751B.4020505@zytor.com> <CAE9FiQW5X80bxOURTkhnELuV_AzYXBHEudxN1eUg_1jehrcfww@mail.gmail.com> <516CB937.2000305@zytor.com> <CAE9FiQU97FHKpKQjZJq+Nfz18eM2n0-V2n4B6m=ozjkycP+Rng@mail.gmail.com> <7f907e0b-c397-460f-a8ec-ce84b119ce84@email.android.com> <20130416130854.GA20961@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: Confirm your email Account
-To: Recipients <info@web.net>
-From: "WEBMASTER" <info@web.net>
-Date: Tue, 16 Apr 2013 14:16:56 +0100
-Reply-To: links_web@07168.cn
-Message-Id: <20130416131704.A4A5998F20@mail.riopreto.sp.gov.br>
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 16 Apr 2013 06:27:06 -0700
+To: Ingo Molnar <mingo@kernel.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Kees Cook <keescook@chromium.org>,
+        Eric Northup <digitaleric@google.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Message-ID: <13e14f5c-d221-4f2f-84e3-6c2dea48cdaa@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your email address has exceeded 2GB that is established by our webmaster,
-you are currently runing at 2.30GB, you can not send or receive new messages until you confirm your inbox. Complete the form below to verify your account.
+Well... G**** is it's own problem (doing actively broken thinks for political reasons), but the real issue mostly is that there are a lot of them simply because there are a lot of ways one may want to load the kernel.
 
-Complete the requested form below and send e-mail to the following:
+This is why things like decompression and the BIOS and EFI stubs are part of the kernel and not the bootloader.  In this case moving the randomization into the decompressor send like the right thing to do - C code, and no additional copy.
 
-(1) E-mail:
-(2) User Name:
-(3) Password:
-(4) Confirm Password:
+Ingo Molnar <mingo@kernel.org> wrote:
 
-thank you
-system administrator
+>
+>* H. Peter Anvin <hpa@zytor.com> wrote:
+>
+>> No.  Fixing one bootloader is almost impossible.  Fixing them all is
+>a 
+>> Sisiphyean task.
+>
+>It's a self inflicted wound really: if only we had a reference
+>bootloader in the 
+>kernel tree, which we could fix. The effort that went into fixing
+>various 
+>bootloader interactions would have been enough to write two new
+>bootloaders from 
+>scratch.
+>
+>Thanks,
+>
+>	Ingo
+
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
