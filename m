@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965282Ab3DPS1b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 14:27:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20761 "EHLO mx1.redhat.com"
+	id S965315Ab3DPS1m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 14:27:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18131 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965003Ab3DPS12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 14:27:28 -0400
+	id S965003Ab3DPS1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 14:27:39 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 23/28] ppc: Clean up scanlog [RFC]
+Subject: [PATCH 25/28] proc: Supply an accessor to get the process ID
+ associated with some proc files [RFC]
 To: linux-kernel@vger.kernel.org
 From: David Howells <dhowells@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
-        viro@zeniv.linux.org.uk
-Date: Tue, 16 Apr 2013 19:27:22 +0100
-Message-ID: <20130416182722.27773.32105.stgit@warthog.procyon.org.uk>
+Cc: containers@lists.linux-foundation.org, Tejun Heo <tj@kernel.org>,
+        Li Zefan <lizefan@huawei.com>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
+Date: Tue, 16 Apr 2013 19:27:30 +0100
+Message-ID: <20130416182730.27773.88726.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
 References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
@@ -29,106 +29,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up the pseries scanlog driver's use of procfs:
-
- (1) Don't need to save the proc_dir_entry pointer as we have the filename to
-     remove with.
-
- (2) Save the scan log buffer pointer in a static variable (there is only one
-     of it) and don't save it in the PDE (which doesn't have a destructor).
+Supply an accessor to get the process ID associated with some proc files and
+directories (get_proc_pid()).
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: Paul Mackerras <paulus@samba.org>
-cc: linuxppc-dev@lists.ozlabs.org
+cc: Tejun Heo <tj@kernel.org>
+cc: Li Zefan <lizefan@huawei.com>
+cc: containers@lists.linux-foundation.org
+cc: cgroups@vger.kernel.org
 ---
 
- arch/powerpc/platforms/pseries/scanlog.c |   29 +++++++++++------------------
- 1 file changed, 11 insertions(+), 18 deletions(-)
+ fs/proc/base.c          |    5 +++++
+ include/linux/proc_fs.h |    2 ++
+ kernel/cgroup.c         |    3 +--
+ kernel/cpuset.c         |    3 +--
+ 4 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/platforms/pseries/scanlog.c b/arch/powerpc/platforms/pseries/scanlog.c
-index cc220d2..b502ab6 100644
---- a/arch/powerpc/platforms/pseries/scanlog.c
-+++ b/arch/powerpc/platforms/pseries/scanlog.c
-@@ -41,12 +41,12 @@
- 
- 
- static unsigned int ibm_scan_log_dump;			/* RTAS token */
--static struct proc_dir_entry *proc_ppc64_scan_log_dump;	/* The proc file */
-+static unsigned int *scanlog_buffer;			/* The data buffer */
- 
- static ssize_t scanlog_read(struct file *file, char __user *buf,
- 			    size_t count, loff_t *ppos)
- {
--	unsigned int *data = PDE_DATA(file_inode(file));
-+	unsigned int *data = scanlog_buffer;
- 	int status;
- 	unsigned long len, off;
- 	unsigned int wait_time;
-@@ -134,7 +134,7 @@ static ssize_t scanlog_write(struct file * file, const char __user * buf,
- 
- static int scanlog_open(struct inode * inode, struct file * file)
- {
--	unsigned int *data = PDE_DATA(file_inode(file));
-+	unsigned int *data = scanlog_buffer;
- 
- 	if (data[0] != 0) {
- 		/* This imperfect test stops a second copy of the
-@@ -150,10 +150,9 @@ static int scanlog_open(struct inode * inode, struct file * file)
- 
- static int scanlog_release(struct inode * inode, struct file * file)
- {
--	unsigned int *data = PDE_DATA(file_inode(file));
-+	unsigned int *data = scanlog_buffer;
- 
- 	data[0] = 0;
--
- 	return 0;
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index f2637c9..9ea16c8 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -157,6 +157,11 @@ static unsigned int pid_entry_count_dirs(const struct pid_entry *entries,
+ 	return count;
  }
  
-@@ -169,7 +168,6 @@ const struct file_operations scanlog_fops = {
- static int __init scanlog_init(void)
++struct pid *get_proc_pid(const struct inode *inode)
++{
++	return PROC_I(inode)->pid;
++}
++
+ static int get_task_root(struct task_struct *task, struct path *root)
  {
- 	struct proc_dir_entry *ent;
--	void *data;
- 	int err = -ENOMEM;
+ 	int result = -ENOENT;
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 718e966..7abc72a 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -88,6 +88,7 @@ extern void proc_set_size(struct proc_dir_entry *, loff_t);
+ extern void proc_set_user(struct proc_dir_entry *, kuid_t, kgid_t);
+ extern void *proc_get_parent_data(const struct inode *);
+ extern const char *get_proc_name(const struct proc_dir_entry *);
++extern struct pid *get_proc_pid(const struct inode *);
+ #else
  
- 	ibm_scan_log_dump = rtas_token("ibm,scan-log-dump");
-@@ -177,29 +175,24 @@ static int __init scanlog_init(void)
- 		return -ENODEV;
+ static inline void proc_flush_task(struct task_struct *task)
+@@ -113,6 +114,7 @@ static inline struct proc_dir_entry *proc_mkdir_mode(const char *name,
+ 	umode_t mode, struct proc_dir_entry *parent) { return NULL; }
+ static inline void proc_set_size(struct proc_dir_entry *de, loff_t size) {}
+ static inline void proc_set_user(struct proc_dir_entry *de, kuid_t uid, kgid_t gid) {}
++static inline struct pid *get_proc_pid(const struct inode *inode) { return NULL; }
  
- 	/* Ideally we could allocate a buffer < 4G */
--	data = kzalloc(RTAS_DATA_BUF_SIZE, GFP_KERNEL);
--	if (!data)
-+	scanlog_buffer = kzalloc(RTAS_DATA_BUF_SIZE, GFP_KERNEL);
-+	if (!scanlog_buffer)
- 		goto err;
+ #endif /* CONFIG_PROC_FS */
  
--	ent = proc_create_data("powerpc/rtas/scan-log-dump", S_IRUSR, NULL,
--			       &scanlog_fops, data);
-+	ent = proc_create("powerpc/rtas/scan-log-dump", S_IRUSR, NULL,
-+			  &scanlog_fops);
- 	if (!ent)
- 		goto err;
--
--	proc_ppc64_scan_log_dump = ent;
--
- 	return 0;
- err:
--	kfree(data);
-+	kfree(scanlog_buffer);
- 	return err;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index a32f943..021548a 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4823,8 +4823,7 @@ out:
+ 
+ static int cgroup_open(struct inode *inode, struct file *file)
+ {
+-	struct pid *pid = PROC_I(inode)->pid;
+-	return single_open(file, proc_cgroup_show, pid);
++	return single_open(file, proc_cgroup_show, get_proc_pid(inode));
  }
  
- static void __exit scanlog_cleanup(void)
+ const struct file_operations proc_cgroup_operations = {
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 4f9dfe4..0ec6edd 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -2703,8 +2703,7 @@ out:
+ 
+ static int cpuset_open(struct inode *inode, struct file *file)
  {
--	if (proc_ppc64_scan_log_dump) {
--		kfree(proc_ppc64_scan_log_dump->data);
--		remove_proc_entry("scan-log-dump", proc_ppc64_scan_log_dump->parent);
--	}
-+	remove_proc_entry("powerpc/rtas/scan-log-dump", NULL);
-+	kfree(scanlog_buffer);
+-	struct pid *pid = PROC_I(inode)->pid;
+-	return single_open(file, proc_cpuset_show, pid);
++	return single_open(file, proc_cpuset_show, get_proc_pid(inode));
  }
  
- module_init(scanlog_init);
+ const struct file_operations proc_cpuset_operations = {
 
