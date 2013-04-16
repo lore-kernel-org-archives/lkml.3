@@ -1,43 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964947Ab3DPO1c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 10:27:32 -0400
-Received: from mail-a03.ithnet.com ([217.64.83.98]:51822 "HELO ithnet.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S933715Ab3DPO1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 10:27:31 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Apr 2013 10:27:31 EDT
-X-Sender-Authentication: SMTP AUTH verified <skraw>
-Date: Tue, 16 Apr 2013 16:20:47 +0200
-From: Stephan von Krawczynski <skraw@ithnet.com>
-To: linux-kernel@vger.kernel.org
-Subject: No serial since kernel 3.8
-Message-Id: <20130416162047.2f9b83fe.skraw@ithnet.com>
-Organization: ith Kommunikationstechnik GmbH
-X-Mailer: Sylpheed 3.1.2 (GTK+ 2.24.10; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S964975Ab3DPO2l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 10:28:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8356 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933715Ab3DPO2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 10:28:40 -0400
+Date: Tue, 16 Apr 2013 16:25:56 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matthieu CASTET <matthieu.castet@parrot.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] binfmt_elf: fix return value in case of interpreter
+	load failure
+Message-ID: <20130416142556.GA11333@redhat.com>
+References: <1365688389-29908-1-git-send-email-matthieu.castet@parrot.com> <20130411150401.8bf008e05f5dd2239277e2c1@linux-foundation.org> <51681F0E.1040900@parrot.com> <20130415145324.d63be917d438b3f4ec37f845@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130415145324.d63be917d438b3f4ec37f845@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 04/15, Andrew Morton wrote:
+>
+> On Fri, 12 Apr 2013 16:49:50 +0200 Matthieu CASTET <matthieu.castet@parrot.com> wrote:
+>
+> > The only valid remaining part of my patch is to return SIGKILL when
+> > load_elf_interp fail (IS_ERR((void *)elf_entry) is true) (for example load
+> > address of linker is bad) instead of SIGSEGV. This will follow what is done when
+> > loading binary.
+> >
+> > But is it even worth doing?
+>
+> SIGSEGV can be caught
 
-can some kind soul please explain how I can get my serial port back under
-kernel 3.8.X. Earlier kernels showed:
+Actually it can't be, flush_signal_handlers() was already called.
+SIGSEGV can be blocked/ignored after that, but please note that
+force_sig_info(SIGSEGV) will unblock and set SIG_DFL if necessary.
 
-Jan 10 13:57:18 mybox kernel: [    0.712829] serial8250: ttyS0 at I/O 0x3f8
-(irq = 4) is a 16550A
+In short, force_sig() will actuallu kill the task in any case.
 
-But 3.8.4:
+But: afaics send_sig(SIGSEGV) above load_elf_interp() is wrong,
+we should either use SIGKILL (which can't be ignored/blocked) or
+force_sig.
 
-Mar 26 10:39:14 admin kernel: [    0.603647] serial 00:0a: disabled
+> that would be a user-visible change.
 
-Only kernel is replaced, no change in distro
-Is there some kernel boot parameter needed now?
-I tried 3.4.X and it works, even 3.7.X works...
+Yes. waitpid(&status) can notice the difference.
 
--- 
-Regards,
-Stephan
+> I just
+> don't know what the implications of such a change would be :(
+
+Mee too... Looks harmless but still.
+
+OTOH, I do not know why/when we should use SIGKILL or SIGSEGV in
+this code.
+
+Oleg.
+
