@@ -1,31 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964969Ab3DPPeC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:34:02 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:35798 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934696Ab3DPPeA (ORCPT
+	id S935726Ab3DPPfR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:35:17 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42051 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934696Ab3DPPfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:34:00 -0400
-Date: Tue, 16 Apr 2013 11:33:55 -0400 (EDT)
-Subject: Re: bcache/dmcache/enhanceio bake-off
-Message-ID: <6dhy2cxu5ltjhm3k9oox7igm.1366126432572@email.android.com>
-To: Joe Thornber <thornber@redhat.com>, Mike Snitzer <snitzer@redhat.com>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        device-mapper development <dm-devel@redhat.com>,
-        Kent Overstreet <koverstreet@google.com>,
-        Amit Kale <akale@stec-inc.com>, ejt@redhat.com
+	Tue, 16 Apr 2013 11:35:15 -0400
+Date: Tue, 16 Apr 2013 11:35:15 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: projekt-wlan@fem.tu-ilmenau.de
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+ Freescale P1020
+In-Reply-To: <ee76d61e1b4c516ddb933fa533c3443c@fami-braun.de>
+Message-ID: <Pine.LNX.4.44L0.1304161134120.1391-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Mailer: Zimbra 8.0.3_GA_5664 (MobileSync - Android/0.3)
-From: Mike Snitzer <msnitzer@redhat.com>
-Thread-Topic: bcache/dmcache/enhanceio bake-off
-Thread-Index: MroC375iyUW2yVPFo0kssLU7uocm+g==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3GFY6Is003601
 
-You misunderstood me.  I was just making sure Darrick knew about this other migration change because without it the specific commit you pointed to for mq won't get the performance improvement.  So I was just trying to make sure if Darrick or others cherry picked they didn't miss out.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Mon, 15 Apr 2013, Michael Braun wrote:
+
+> Hi,
+> 
+> I'm running OpenWRT Kernel 3.8.3 (which already has 
+> f66dea709cd9309b2ee9f715697818001fb518de and 
+> 5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN (QorlQ, 
+> PPC) device.
+> Before updating the kernel from 3.3.0, USB host support was working 
+> fine. Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and 
+> the lsusb output is empty, so USB host support is not working. When I 
+> apply the following patch, USB host support starts working again, so I 
+> guess 3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
+
+Why didn't you CC: the author of that commit?  Isn't he the person most 
+likely to be able to fix it?
+
+Alan Stern
+
