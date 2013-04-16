@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934477Ab3DPJJG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:09:06 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:62721 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933899Ab3DPJJE (ORCPT
+	id S934781Ab3DPJKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:10:20 -0400
+Received: from mail-da0-f44.google.com ([209.85.210.44]:38976 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933899Ab3DPJKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:09:04 -0400
-MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <20130415181739.GJ4068@ZenIV.linux.org.uk>
-References: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
-	<CAJfpegsD2iyP2=Z3zL-yb_TjjQxipOBKV7yqpdPPTH9oobQ=bA@mail.gmail.com>
-	<CAJfpegtvfunCV4cjezQuWji3PoJRpXXKWgH+y55tYMi0O+TdkQ@mail.gmail.com>
-	<20130415181739.GJ4068@ZenIV.linux.org.uk>
-Date: Tue, 16 Apr 2013 11:09:02 +0200
-Message-ID: <CAJfpegsv7nuXHCFw823dncbBbwQF1eVqv8benbPxGNt+NDgRrg@mail.gmail.com>
-Subject: Re: [PATCH 0/5] fuse: close file synchronously
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Maxim Patlasov <mpatlasov@parallels.com>, dev@parallels.com,
-        xemul@parallels.com, fuse-devel@lists.sourceforge.net,
-        bfoster@redhat.com, linux-kernel@vger.kernel.org, devel@openvz.org,
-        anand.avati@gmail.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 16 Apr 2013 05:10:18 -0400
+From: Girish K S <girishks2000@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org
+Subject: [PATCH] ahci: sata: add support for exynos5440 sata
+Date: Tue, 16 Apr 2013 14:40:04 +0530
+Message-Id: <1366103404-14105-1-git-send-email-ks.giri@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 8:17 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Apr 15, 2013 at 05:30:41PM +0200, Miklos Szeredi wrote:
->> On Mon, Apr 15, 2013 at 5:08 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> > For example doing a readlink() on a magic symlink under /proc
->> > shouldn't result in a synchronous call to a fuse filesystem.  Making
->> > fput() synchronous may actually end up doing that (even if it's not
->> > very likely).
->>
->> Thinking about this a bit more.  As it is it sounds wrong to rely on a
->> synchronous release, when in fact release is just not synchronous, as
->> indicated by the above example.  Maybe it's the proc code that's buggy
->> and shouldn't do get_file/fput because everyone is assuming release
->> being synchronous with close().  Don't know.
->
-> What the hell?  ->release() is not and has never been synchronous with close().
-> There is any number of places where the final fput() might be called and no,
-> this readlink example is irrelevant - things like munmap()/dup2()/close
-> of a socket discarding a datagram with the last reference to struct file in
-> it, et sodding cetera.
->
-> Hell, another thread might be in the middle of read(2) at the moment when you
-> call close().  Result: the final fput() will be done when we are about to
-> return from that read(2).
+This patch adds the compatible string of the exynos5440 sata controller
+compliant with the ahci 1.3 and sata 3.0 specification.
 
-Apparently we do make some pains to make ->release() return before the
-syscall that triggered it returns.  Why is that then?
+Signed-off-by: Girish K S <ks.giri@samsung.com>
+---
+ drivers/ata/ahci_platform.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-I think the difference between proc symlink and all the rest is that
-everything the app does to the file descriptor is its own business.
-If it just does single threaded open, read/write, close (which is what
-the vast majority of apps do) then close *is* going to be synchronous
-with release.  At least most of the time.
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 7a8a284..c06f021 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -327,6 +327,7 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
+ 
+ static const struct of_device_id ahci_of_match[] = {
+ 	{ .compatible = "snps,spear-ahci", },
++	{ .compatible = "samsung,exynos5440-ahci", },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, ahci_of_match);
+-- 
+1.6.6.rc2
 
-Thanks,
-Miklos
