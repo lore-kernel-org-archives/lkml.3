@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab3DPLZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 07:25:56 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:57650 "EHLO relay.sgi.com"
+	id S1754153Ab3DPL0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 07:26:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56949 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751542Ab3DPLZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 07:25:55 -0400
-Date: Tue, 16 Apr 2013 06:25:53 -0500
-From: Robin Holt <holt@sgi.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Avi Kivity <avi.kivity@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: mmu_notifier: re-fix freed page still mapped in
- secondary MMU
-Message-ID: <20130416112553.GM3658@sgi.com>
-References: <516CF235.4060103@linux.vnet.ibm.com>
- <20130416093131.GJ3658@sgi.com>
- <516D275C.8040406@linux.vnet.ibm.com>
+	id S1753716Ab3DPL0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 07:26:03 -0400
+Date: Tue, 16 Apr 2013 13:25:54 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: schwab@linux-m68k.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild fix for v3.9
+Message-ID: <20130416112554.GA18585@sepie.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <516D275C.8040406@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 06:26:36PM +0800, Xiao Guangrong wrote:
-> On 04/16/2013 05:31 PM, Robin Holt wrote:
-> > On Tue, Apr 16, 2013 at 02:39:49PM +0800, Xiao Guangrong wrote:
-> >> The commit 751efd8610d3 (mmu_notifier_unregister NULL Pointer deref
-> >> and multiple ->release()) breaks the fix:
-> >>     3ad3d901bbcfb15a5e4690e55350db0899095a68
-> >>     (mm: mmu_notifier: fix freed page still mapped in secondary MMU)
-> > 
-> > Can you describe how the page is still mapped?  I thought I had all
-> > cases covered.  Whichever call hits first, I thought we had one callout
-> > to the registered notifiers.  Are you saying we need multiple callouts?
-> 
-> No.
-> 
-> You patch did this:
-> 
->                 hlist_del_init_rcu(&mn->hlist);    1 <======
-> +               spin_unlock(&mm->mmu_notifier_mm->lock);
-> +
-> +               /*
-> +                * Clear sptes. (see 'release' description in mmu_notifier.h)
-> +                */
-> +               if (mn->ops->release)
-> +                       mn->ops->release(mn, mm);    2 <======
-> +
-> +               spin_lock(&mm->mmu_notifier_mm->lock);
-> 
-> At point 1, you delete the notify, but the page is still on LRU. Other
-> cpu can reclaim the page but without call ->invalid_page().
-> 
-> At point 2, you call ->release(), the secondary MMU make page Accessed/Dirty
-> but that page has already been on the free-list of page-alloctor.
+Hi Linus,
 
-That expectation on srcu _REALLY_ needs to be documented better.
-Maybe I missed it in the comments, but there is an expectation beyond
-the synchronize_srcu().  This code has been extremely poorly described
-and I think it is time we fix that up.
-
-I do see that in comments for mmu_notifier_unregister, there is an
-expectation upon already having all the spte's removed prior to making
-this call.  I think that is also a stale comment as it mentions a lock
-which I am not sure ever really existed.
-
-> > Also, shouldn't you be asking for a revert commit and then supply a
-> > subsequent commit for the real fix?  I thought that was the process for
-> > doing a revert.
-> 
-> Can not do that pure reversion since your patch moved hlist_for_each_entry_rcu
-> which has been modified now.
-> 
-> Should i do pure-eversion + hlist_for_each_entry_rcu update first?
-
-Let's not go off without considering this first.
-
-It looks like what we really need to do is ensure there is a method
-for ensuring that the mmu_notifier remains on the list while callouts
-invalidate_page() callouts are being made and also a means of ensuring
-that only one ->release() callout is made.
-
-First, is it the case that when kvm calls mmu_notifier_unregister(),
-it has already cleared the spte's?  (what does spte stand for anyway)?
-If so, then we really need to close the hole in __mmu_notifier_release().
-I think we would need to modify code in both _unregister and _release,
-but the issue is really _release.
-
-
-I need to get ready and drive into work.  If you want to float something
-out there, that is fine.  Otherwise, I will try to work something up
-when I get to the office.
+please pull this fix for a missing dependency when generating
+scripts/mod/devicetable-offsets.h. This dependency got introduced in
+v3.9-rc1.
 
 Thanks,
-Robin
+Michal
+
+The following changes since commit 6dbe51c251a327e012439c4772097a13df43c5b8:
+
+  Linux 3.9-rc1 (2013-03-03 15:11:05 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git rc-fixes
+
+for you to fetch changes up to a54292f58fc16e3d09aecea16de3e58a898dde97:
+
+  kbuild: generate generic headers before recursing into scripts (2013-04-10 09:55:34 +0200)
+
+----------------------------------------------------------------
+Andreas Schwab (1):
+      kbuild: generate generic headers before recursing into scripts
+
+ Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
