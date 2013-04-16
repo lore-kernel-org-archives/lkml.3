@@ -1,100 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756541Ab3DPMFb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 08:05:31 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:6350 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754792Ab3DPMF3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 08:05:29 -0400
-Message-ID: <516D3E81.6060307@hp.com>
-Date: Tue, 16 Apr 2013 08:05:21 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+	id S1756597Ab3DPMG3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 08:06:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40628 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752195Ab3DPMG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 08:06:28 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130416100439.GM3672@sgi.com>
+References: <20130416095641.GL3658@sgi.com> <20130416100439.GM3672@sgi.com>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [Patch -v4 4/4] Make reboot_cpuid a kernel parameter. other cpus.
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 16 Apr 2013 05:05:45 -0700
+To: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Russ Anderson <rja@sgi.com>
+CC: Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 2/3] mutex: Queue mutex spinners with MCS lock to reduce
- cacheline contention
-References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>  <1366036679-9702-3-git-send-email-Waiman.Long@hp.com> <1366086275.22463.25.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1366086275.22463.25.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <fb8916e0-b41d-4f56-8cfd-3cf791fdc478@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2013 12:24 AM, Davidlohr Bueso wrote:
-> On Mon, 2013-04-15 at 10:37 -0400, Waiman Long wrote:
-> [...]
->> +typedef struct mspin_node {
->> +	struct mspin_node *next;
->> +	int		   locked;	/* 1 if lock acquired */
->> +} mspin_node_t;
->> +
->> +typedef mspin_node_t	*mspin_lock_t;
-> I think we could do without the typedefs, specially mspin_lock_t.
-Yes, we can do without the typedefs.
+Why not just support the existing syntax everywhere?
 
->> +
->> +#define	MLOCK(mutex)	((mspin_lock_t *)&((mutex)->spin_mlock))
->> +
->> +static noinline void mspin_lock(mspin_lock_t *lock,  mspin_node_t *node)
->> +{
->> +	mspin_node_t *prev;
->> +
->> +	/* Init node */
->> +	node->locked = 0;
->> +	node->next   = NULL;
->> +
->> +	prev = xchg(lock, node);
->> +	if (likely(prev == NULL)) {
->> +		/* Lock acquired */
->> +		node->locked = 1;
->> +		return;
->> +	}
->> +	ACCESS_ONCE(prev->next) = node;
->> +	smp_wmb();
->> +	/* Wait until the lock holder passes the lock down */
->> +	while (!ACCESS_ONCE(node->locked))
->> +		arch_mutex_cpu_relax();
->> +}
->> +
->> +static void mspin_unlock(mspin_lock_t *lock,  mspin_node_t *node)
->> +{
->> +	mspin_node_t *next = ACCESS_ONCE(node->next);
->> +
->> +	if (likely(!next)) {
->> +		/*
->> +		 * Release the lock by setting it to NULL
->> +		 */
->> +		if (cmpxchg(lock, node, NULL) == node)
->> +			return;
->> +		/* Wait until the next pointer is set */
->> +		while (!(next = ACCESS_ONCE(node->next)))
->> +			arch_mutex_cpu_relax();
->> +	}
->> +	barrier();
->> +	ACCESS_ONCE(next->locked) = 1;
->> +	smp_wmb();
-> Do we really need the compiler barrier call? The CPUs can reorder
-> anyway. I assume the smp_wbm() call makes sure no there's no funny
-> business before the next lock is acquired, might be worth commenting.
+Robin Holt <holt@sgi.com> wrote:
 
-The smp_wmb() calls are to make sure that the writes are committed to 
-memory rather than staying in the cache only. They are safety measures. 
-The barrier() call probably is not needed because of the next pointer 
-data dependency, but it doesn't have an actual cost either as it doesn't 
-translate to any instruction.
+>Moving the reboot=s<##> parameter for x86 to a kernel parameter
+>proper.  I did not find any other arch that was specifying the
+>reboot cpu.
+>
+>I left a compatibility mode in there.  The new parameter always
+>takes precedence.  I also fixed up the current code to support
+>up to cpuid's up to the current max of 4096.
+>
+>Signed-off-by: Robin Holt <holt@sgi.com>
+>To: Ingo Molnar <mingo@redhat.com>
+>To: Russ Anderson <rja@sgi.com>
+>Cc: Shawn Guo <shawn.guo@linaro.org>
+>Cc: Oleg Nesterov <oleg@redhat.com>
+>Cc: Andrew Morton <akpm@linux-foundation.org>
+>Cc: "H. Peter Anvin" <hpa@zytor.com>
+>Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+>Cc: Linus Torvalds <torvalds@linux-foundation.org>
+>Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+>Cc: Michel Lespinasse <walken@google.com>
+>Cc: Oleg Nesterov <oleg@redhat.com>
+>Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>Cc: Paul Mackerras <paulus@samba.org>
+>Cc: Peter Zijlstra <peterz@infradead.org>
+>Cc: Robin Holt <holt@sgi.com>
+>Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+>Cc: Tejun Heo <tj@kernel.org>
+>Cc: the arch/x86 maintainers <x86@kernel.org>
+>Cc: Thomas Gleixner <tglx@linutronix.de>
+>
+>---
+>
+>Changes since -v3
+>- Added a reboot=s#### compatibility mode for x86.
+>
+> Documentation/kernel-parameters.txt |  2 ++
+>arch/x86/kernel/reboot.c            | 39
+>+++++++++++++------------------------
+> kernel/reboot.c                     |  8 +++++++-
+> 3 files changed, 22 insertions(+), 27 deletions(-)
+>
+>diff --git a/Documentation/kernel-parameters.txt
+>b/Documentation/kernel-parameters.txt
+>index 4609e81..11ebb48 100644
+>--- a/Documentation/kernel-parameters.txt
+>+++ b/Documentation/kernel-parameters.txt
+>@@ -2597,6 +2597,8 @@ bytes respectively. Such letter suffixes can also
+>be entirely omitted.
+> 			Format: <reboot_mode>[,<reboot_mode2>[,...]]
+> 			See arch/*/kernel/reboot.c or arch/*/kernel/process.c
+> 
+>+	reboot_cpuid=	[KNL] cpuid to use for reboot/halt, etc operations.
+>+
+> 	relax_domain_level=
+> 			[KNL, SMP] Set scheduler's default relax_domain_level.
+> 			See Documentation/cgroups/cpusets.txt.
+>diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+>index 76fa1e9..cdcf28f 100644
+>--- a/arch/x86/kernel/reboot.c
+>+++ b/arch/x86/kernel/reboot.c
+>@@ -49,10 +49,6 @@ int reboot_force;
+>  */
+> static int reboot_default = 1;
+> 
+>-#ifdef CONFIG_SMP
+>-static int reboot_cpu = -1;
+>-#endif
+>-
+> /*
+>  * This is set if we need to go through the 'emergency' path.
+>  * When machine_emergency_restart() is called, we may be on
+>@@ -63,6 +59,8 @@ static int reboot_emergency;
+>/* This is set by the PCI code if either type 1 or type 2 PCI is
+>detected */
+> bool port_cf9_safe = false;
+> 
+>+extern int reboot_cpuid;
+>+
+> /*
+>* reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old]
+>| p[ci]
+>  * warm   Don't set the cold reboot flag
+>@@ -97,10 +95,14 @@ static int __init reboot_setup(char *str)
+> 
+> #ifdef CONFIG_SMP
+> 		case 's':
+>-			if (isdigit(*(str+1))) {
+>-				reboot_cpu = (int) (*(str+1) - '0');
+>-				if (isdigit(*(str+2)))
+>-					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
+>+			if (reboot_cpuid < 0) {
+>+				int coffset;
+>+
+>+				reboot_cpuid = 0;
+>+				for (coffset = 1; isdigit(*(str + coffset)); coffset++) {
+>+					reboot_cpuid *= 10;
+>+					reboot_cpuid += (int)(*(str+2) - '0');
+>+				}
+> 			}
+> 			/*
+> 			 * We will leave sorting out the final value
+>@@ -615,25 +617,10 @@ void native_machine_shutdown(void)
+> 	/* Stop the cpus and apics */
+> #ifdef CONFIG_SMP
+> 
+>-	/* The boot cpu is always logical cpu 0 */
+>-	int reboot_cpu_id = 0;
+>-
+>-	/* See if there has been given a command line override */
+>-	if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
+>-		cpu_online(reboot_cpu))
+>-		reboot_cpu_id = reboot_cpu;
+>-
+>-	/* Make certain the cpu I'm about to reboot on is online */
+>-	if (!cpu_online(reboot_cpu_id))
+>-		reboot_cpu_id = smp_processor_id();
+>-
+>-	/* Make certain I only run on the appropriate processor */
+>-	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
+>-
+> 	/*
+>-	 * O.K Now that I'm on the appropriate processor, stop all of the
+>-	 * others. Also disable the local irq to not receive the per-cpu
+>-	 * timer interrupt which may trigger scheduler's load balance.
+>+	 * Stop all of the others. Also disable the local irq to
+>+	 * not receive the per-cpu timer interrupt which may trigger
+>+	 * scheduler's load balance.
+> 	 */
+> 	local_irq_disable();
+> 	stop_other_cpus();
+>diff --git a/kernel/reboot.c b/kernel/reboot.c
+>index 8cfef20..b2ef798 100644
+>--- a/kernel/reboot.c
+>+++ b/kernel/reboot.c
+>@@ -10,6 +10,7 @@
+> #include <linux/kexec.h>
+> #include <linux/kmod.h>
+> #include <linux/kmsg_dump.h>
+>+#include <linux/moduleparam.h>
+> #include <linux/reboot.h>
+> #include <linux/suspend.h>
+> #include <linux/syscalls.h>
+>@@ -69,13 +70,18 @@ int unregister_reboot_notifier(struct
+>notifier_block *nb)
+> }
+> EXPORT_SYMBOL(unregister_reboot_notifier);
+> 
+>+int reboot_cpuid = -1;
+>+core_param(reboot_cpuid, reboot_cpuid, int, 0644);
+>+
+> void migrate_to_reboot_cpu(void)
+> {
+> 	/* The boot cpu is always logical cpu 0 */
+>-	int reboot_cpu_id = 0;
+>+	int reboot_cpu_id = reboot_cpuid;
+> 
+> 	/* Make certain the cpu I'm about to reboot on is online */
+> 	if (!cpu_online(reboot_cpu_id))
+>+		reboot_cpu_id = 0;
+>+	if (!cpu_online(reboot_cpu_id))
+> 		reboot_cpu_id = smp_processor_id();
+> 
+> 	/* Prevent races with other tasks migrating this task. */
 
-Regards,
-Longman
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
