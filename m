@@ -1,106 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935224Ab3DPAnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 20:43:16 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:32911 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934813Ab3DPAnL convert rfc822-to-8bit (ORCPT
+	id S935277Ab3DPAoN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 20:44:13 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55372 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934544Ab3DPAoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 20:43:11 -0400
+	Mon, 15 Apr 2013 20:44:11 -0400
+Date: Mon, 15 Apr 2013 20:43:52 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <arekm@maven.pl>
+Subject: Re: [PATCH v9] irq: add quirk for broken interrupt remapping on 55XX
+ chipsets
+Message-ID: <20130416004352.GA10615@neilslaptop.think-freely.org>
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+ <1366065677-3431-1-git-send-email-nhorman@tuxdriver.com>
+ <CAE9FiQU_4ix-mc3aL6nrZD6fexm_52jV-=W-But=eTfx6=U0uA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <516C9454.4060009@gmail.com>
-References: <1365563297-12480-1-git-send-email-robherring2@gmail.com>
-	<CAMbhsRSvQPbzJ7Nt=OSSYE_A1e+eaUjO7XY+qRppJ5_gfWmW4A@mail.gmail.com>
-	<51656992.60203@gmail.com>
-	<CAMbhsRS1hnBRoomoiNijrXZB-938d2RSs1cu9EdSfmXD3xpSQg@mail.gmail.com>
-	<516C9454.4060009@gmail.com>
-Date: Mon, 15 Apr 2013 17:43:09 -0700
-X-Google-Sender-Auth: bMDEI8wzUQrnbkqw9XYEA7Y6fPk
-Message-ID: <CAMbhsRRT7tOBHppvjJEW5wRtVaUhwxr8=YQY=Sy0VAFeBg1JmQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 1/3] pstore-ram: use write-combine mappings
-From: Colin Cross <ccross@android.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQU_4ix-mc3aL6nrZD6fexm_52jV-=W-But=eTfx6=U0uA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 4:59 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On 04/15/2013 05:21 PM, Colin Cross wrote:
->> On Wed, Apr 10, 2013 at 6:30 AM, Rob Herring <robherring2@gmail.com> wrote:
->>> On 04/09/2013 10:53 PM, Colin Cross wrote:
->>>> On Tue, Apr 9, 2013 at 8:08 PM, Rob Herring <robherring2@gmail.com> wrote:
->>>>> From: Rob Herring <rob.herring@calxeda.com>
->>>>>
->>>>> Atomic operations are undefined behavior on ARM for device or strongly
->>>>> ordered memory types. So use write-combine variants for mappings. This
->>>>> corresponds to normal, non-cacheable memory on ARM. For many other
->>>>> architectures, this change should not change the mapping type.
->>>>
->>>> This is going to make ramconsole less reliable.  A debugging printk
->>>> followed by a __raw_writel that causes an immediate hard crash is
->>>> likely to lose the last updates, including the most useful message, in
->>>> the write buffers.
->>>
->>> It would have to be a write that hangs the bus. In my experience with
->>> AXI, the bus doesn't actually hang until you hit max outstanding
->>> transactions.
->>
->> I've seen many cases where a single write to device memory in an
->> unclocked slave will completely and instantly hang all cpus, and the
->> next write will never happen.
->>
->>> I think exclusive stores will limit the buffering, but that is probably
->>> not architecturally guaranteed.
->>>
->>> I could put a wb() in at the end of persistent_ram_write.
->>>
->>>> Also, isn't this patch unnecessary after patch 3 in this set?
->>>
->>> It is still needed in the main memory case to be architecturally correct
->>> to avoid multiple mappings of different memory types and exclusive
->>> accesses to device memory. At least on an A9, it doesn't really seem to
->>> matter. I could remove this for the ioremap case.
->>
->> According to my reading of the latest ARM ARM (Issue C, section
->> A3.5.7), and Catalin's excellent explanation
->> (http://lists.linaro.org/pipermail/linaro-dev/2012-February/010239.html),
->> it is no longer considered unpredictable to have both cached and
->> non-cached mappings to the same memory, as long as you use proper
->> cache maintenance between accessing the two mappings.
->>
->> In pstore_ram the cached mapping will never be accessed (and we don't
->> care about speculative accesses), so no cache maintenance is
->> necessary.  I don't see any need for this patch, and I see plenty of
->> possible problems.
->
-> Exclusive accesses still have further restrictions. From section 3.4.5:
->
-> • It is IMPLEMENTATION DEFINED whether LDREX and STREX operations can be
-> performed to a memory region
->    with the Device or Strongly-ordered memory attribute. Unless the
-> implementation documentation explicitly
->   states that LDREX and STREX operations to a memory region with the
-> Device or Strongly-ordered attribute are
->  permitted, the effect of such operations is UNPREDICTABLE.
->
->
-> Given that it is implementation defined, I don't see how Linux can rely
-> on that behavior.
+On Mon, Apr 15, 2013 at 04:02:56PM -0700, Yinghai Lu wrote:
+> On Mon, Apr 15, 2013 at 3:41 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
+> > A few years back intel published a spec update:
+> > http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+> >
+><snip>
+> > diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+> > index 3755ef4..ef4ac6c 100644
+> > --- a/arch/x86/kernel/early-quirks.c
+> > +++ b/arch/x86/kernel/early-quirks.c
+> > @@ -18,6 +18,7 @@
+> >  #include <asm/apic.h>
+> >  #include <asm/iommu.h>
+> >  #include <asm/gart.h>
+> > +#include "../drivers/iommu/irq_remapping.h"
+> 
+> looks ugly.
+> 
+Yes, but I think its acceptible given that it makes sense to me to define the
+irq_remap_broken flag in the common driver code.  We can certainly move the
+header around, but I'd much rather do that in a separate patch.
 
-I see, the problem is that while noncached and writecombined appear to
-be similar mappings, noncached is mapped in PRRR to strongly-ordered,
-while writecombined is mapped to unbufferable normal memory.
+> >
+> >  static void __init fix_hypertransport_config(int num, int slot, int func)
+> >  {
+> > @@ -192,6 +193,27 @@ static void __init ati_bugs_contd(int num, int slot, int func)
+> >  }
+> >  #endif
+> >
+> > +#ifdef CONFIG_IRQ_REMAP
+> > +static void __init intel_remapping_check(int num, int slot, int func)
+> > +{
+> > +       u8 revision;
+> > +
+> > +       revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
+> > +
+> > +       /*
+> > +        * Revision 0x13 of this chipset supports irq remapping
+> > +        * but has an erratum that breaks its behavior, flag it as such
+> > +        */
+> > +       if (revision == 0x13)
+> > +               irq_remap_broken = 1;
+> 
+> change to more specific like:
+> 
+> intel_55xx_rev13_found?
+> 
+No.  This was discussed previously, and the consensus was that we
+can use a generic name, should other chips have simmilarly broken functionality.
 
-I think adding a wmb() to persistent_ram_write is going to be
-expensive on cpus with outer caches like the L2X0, where wmb() will
-result in a spinlock.  Is there a real SoC where this doesn't work?
+><snip>
+> >
+> >  int disable_irq_remap;
+> > +int irq_remap_broken;
+> >  int disable_sourceid_checking;
+> >  int no_x2apic_optout;
+> >
+> > diff --git a/drivers/iommu/irq_remapping.h b/drivers/iommu/irq_remapping.h
+> > index ecb6376..90c4dae 100644
+> > --- a/drivers/iommu/irq_remapping.h
+> > +++ b/drivers/iommu/irq_remapping.h
+> > @@ -32,6 +32,7 @@ struct pci_dev;
+> >  struct msi_msg;
+> >
+> >  extern int disable_irq_remap;
+> > +extern int irq_remap_broken;
+> >  extern int disable_sourceid_checking;
+> >  extern int no_x2apic_optout;
+> >  extern int irq_remapping_enabled;
+> > @@ -89,6 +90,7 @@ extern struct irq_remap_ops amd_iommu_irq_ops;
+> >
+> >  #define irq_remapping_enabled 0
+> >  #define disable_irq_remap     1
+> > +#define irq_remap_broken      0
+> 
+> this one is needed
+> 
+Um, yes?  I think you mean to say its not needed, since all the users of this
+check are only in code thats compiled conditionally with CONFIG_IRQ_REMAP.
+You're correct, but I like to have it there for completness, should that change
+in the future.
+
+Neil
+
