@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935971Ab3DPOrT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 10:47:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:62796 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935614Ab3DPOrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 10:47:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,486,1363158000"; 
-   d="scan'208";a="319066113"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <51631CC0.5010908@sr71.net>
-References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1365163198-29726-10-git-send-email-kirill.shutemov@linux.intel.com>
- <51631CC0.5010908@sr71.net>
-Subject: Re: [PATCHv3, RFC 09/34] thp: represent file thp pages in meminfo and
- friends
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130416144917.8FEAEE0085@blue.fi.intel.com>
-Date: Tue, 16 Apr 2013 17:49:17 +0300 (EEST)
+	id S1753456Ab3DPOz2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 10:55:28 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:36688 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841Ab3DPOz0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 10:55:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130416162047.2f9b83fe.skraw@ithnet.com>
+References: <20130416162047.2f9b83fe.skraw@ithnet.com>
+Date: Tue, 16 Apr 2013 16:55:25 +0200
+Message-ID: <CAFLxGvykqMUHrmdZnzPXW7i3-ubcF6jv2fLYF3sYPkCtJDJZuA@mail.gmail.com>
+Subject: Re: No serial since kernel 3.8
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Stephan von Krawczynski <skraw@ithnet.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
-> On 04/05/2013 04:59 AM, Kirill A. Shutemov wrote:
-> > The patch adds new zone stat to count file transparent huge pages and
-> > adjust related places.
-> > 
-> > For now we don't count mapped or dirty file thp pages separately.
-> 
-> I can understand tracking NR_FILE_TRANSPARENT_HUGEPAGES itself.  But,
-> why not also account for them in NR_FILE_PAGES?  That way, you don't
-> have to special-case each of the cases below:
+On Tue, Apr 16, 2013 at 4:20 PM, Stephan von Krawczynski
+<skraw@ithnet.com> wrote:
+> Hello,
+>
+> can some kind soul please explain how I can get my serial port back under
+> kernel 3.8.X. Earlier kernels showed:
+>
+> Jan 10 13:57:18 mybox kernel: [    0.712829] serial8250: ttyS0 at I/O 0x3f8
+> (irq = 4) is a 16550A
+>
+> But 3.8.4:
+>
+> Mar 26 10:39:14 admin kernel: [    0.603647] serial 00:0a: disabled
+>
+> Only kernel is replaced, no change in distro
+> Is there some kernel boot parameter needed now?
+> I tried 3.4.X and it works, even 3.7.X works...
 
-Good point.
-To be consistent I'll also convert NR_ANON_TRANSPARENT_HUGEPAGES to be
-accounted in NR_ANON_PAGES.
+So, 3.8.3 worked and 3.8.4 introduced a regression?
+If so please confirm.
 
--- 
- Kirill A. Shutemov
+CC'ing gregkh, just in case...
+
+--
+Thanks,
+//richard
