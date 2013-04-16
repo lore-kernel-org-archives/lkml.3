@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935880Ab3DPOl7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 10:41:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29733 "EHLO mx1.redhat.com"
+	id S935915Ab3DPOql (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 10:46:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37711 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935469Ab3DPOl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 10:41:57 -0400
-Message-ID: <516D5956.2090409@redhat.com>
-Date: Tue, 16 Apr 2013 10:59:50 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	id S935614Ab3DPOqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 10:46:40 -0400
+Date: Tue, 16 Apr 2013 16:42:26 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 1/6] signal x86: Propage RF EFLAGS bit throught the
+	signal restore call
+Message-ID: <20130416144226.GA12848@redhat.com>
+References: <1362940871-24486-1-git-send-email-jolsa@redhat.com> <1362940871-24486-2-git-send-email-jolsa@redhat.com> <20130416010524.GH17561@somewhere.redhat.com>
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Andrey Smirnov <andrew.smirnov@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the mfd tree with the v4l-dvb tree
-References: <20130410134813.b1bff6027f64f14d75d43927@canb.auug.org.au> <20130410064253.GA4874@zurbaran> <20130410064828.6c946ad8@redhat.com> <20130416135137.GA31283@zurbaran>
-In-Reply-To: <20130416135137.GA31283@zurbaran>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130416010524.GH17561@somewhere.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 16-04-2013 10:51, Samuel Ortiz escreveu:
-> Hi Mauro,
+On 04/16, Frederic Weisbecker wrote:
 >
-> On Wed, Apr 10, 2013 at 06:48:28AM -0300, Mauro Carvalho Chehab wrote:
->> Em Wed, 10 Apr 2013 08:42:53 +0200
->> Samuel Ortiz <sameo@linux.intel.com> escreveu:
->>
->>> Hi Stephen,
->>>
->>> On Wed, Apr 10, 2013 at 01:48:13PM +1000, Stephen Rothwell wrote:
->>>> Hi Samuel,
->>>>
->>>> Today's linux-next merge of the mfd tree got a conflict in
->>>> drivers/mfd/Kconfig between commit 3f8ec5df11aa ("[media] mfd: Add header
->>>> files and Kbuild plumbing for SI476x MFD core") from the v4l-dvb tree and
->>>> commit ab85b120e692 ("mfd: Kconfig alphabetical re-ordering") from the
->>>> mfd tree.
->>> I'm surprised the v4l-dvb tree is carrying this patchset because I haven't
->>> ACKed it.
->>
->> Sorry. Not sure why I understood that you gave your ack. Perhaps I miss-read
->> one of the comments of that thread.
-> I haven't heard back from Andrey yet. If I don't get anything from him on
-> Wednesday, would you mind reverting this patchset ? I have not ACKed it
-> because it breaks bisectability, and it conflicts with mfd-next.
+> On Sun, Mar 10, 2013 at 07:41:06PM +0100, Jiri Olsa wrote:
+> > Adding RF EFLAGS bit to be restored on return from signal from
+> > the original register context before the signal was entered.
+> >
+> > This will prevent the RF flag to disappear when returning
+> > from exception due to the signal handler being executed.
+>
+> So that happens if, say, we get a breakpoint exception and then we
+> run a signal handler before returning to the ip that triggered the
+> breakpoint?
 
-Sure. Just ping me and I'll revert it.
+Afaics these changes (1 and 2) should fix the bug.
 
->
-> Andrey, any plans to adress my comments from last week ?
->
-> Cheers,
-> Samuel.
->
+Suppose that the first insn in the signal handler should trigger
+another bp, we should clear X86_EFLAGS_RF (2/6).
 
-Regards,
-Mauro
+Otoh, we should restore it when we return to the original insn
+which triggered the trap to avoid another trap.
+
+But. it seems that we have yet another problem? Suppose that
+the signal handler does siglongjmp() and jumps to yet another
+insn which should trigger the trap?
+
+Oleg.
+
