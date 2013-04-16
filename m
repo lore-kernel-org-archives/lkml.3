@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965469Ab3DPWOM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 18:14:12 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:38971 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965255Ab3DPWOK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 18:14:10 -0400
+	id S965518Ab3DPWWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 18:22:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48984 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965353Ab3DPWWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 18:22:24 -0400
+Message-ID: <516DCEF3.6030803@zytor.com>
+Date: Tue, 16 Apr 2013 15:21:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-In-Reply-To: <30949.1366150057@warthog.procyon.org.uk>
-References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
- <20130416182601.27773.46395.stgit@warthog.procyon.org.uk> <CAHGf_=r+qoL8_J+z8Y1uPt_NK1Ef4cLuapAvVd-7qF8+_oSjJw@mail.gmail.com>
- <30949.1366150057@warthog.procyon.org.uk>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Tue, 16 Apr 2013 15:13:49 -0700
-Message-ID: <CAHGf_=p7iKG0hqzanTb6u3-RUFsOZ3wJVYfLYhqH9nF6RkxGow@mail.gmail.com>
-Subject: Re: [PATCH 03/28] proc: Split kcore bits from linux/procfs.h into
- linux/kcore.h [RFC]
-To: David Howells <dhowells@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-mips <linux-mips@linux-mips.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, x86@kernel.org,
-        sparclinux@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Subject: Re: [PATCH 4/6] x86: relocs: build separate 32/64-bit tools
+References: <1365797627-20874-1-git-send-email-keescook@chromium.org> <1365797627-20874-5-git-send-email-keescook@chromium.org>
+In-Reply-To: <1365797627-20874-5-git-send-email-keescook@chromium.org>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 3:07 PM, David Howells <dhowells@redhat.com> wrote:
->
-> KOSAKI Motohiro <kosaki.motohiro@gmail.com> wrote:
->
->> I have no seen any issue in this change. but why? Is there any
->> motivation rather than cleanup?
->
-> Stopping stuff mucking about with the internals of procfs incorrectly
-> (sometimes because the internals of procfs have changed, but the drivers
-> haven't).
+On 04/12/2013 01:13 PM, Kees Cook wrote:
+> Since the ELF structures and access macros change size based on 32 vs
+> 64 bits, build a separate 32-bit relocs tool (for handling realmode
+> and 32-bit relocations), and a 64-bit relocs tool (for handling 64-bit
+> kernel relocations).
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> --
+> This is ugly with the "cp". Is there some other cleaner way to trigger
+> two builds with different defines from the same source file?
 
-OK, thank you for explanation.
+There definitely is.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Have simple wrapper files which do:
+
+/* relocs_32.c */
+#define ELF_BITS 32
+#include "relocs.c"
+
+/* relocs_64.c */
+#define ELF_BITS 64
+#include "relocs.c"
+
+	-hpa
+
+
