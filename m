@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934877Ab3DPAHV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 20:07:21 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:60878 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753874Ab3DPAHT (ORCPT
+	id S935080Ab3DPANv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 20:13:51 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:46595 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934152Ab3DPANt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 20:07:19 -0400
-Date: Tue, 16 Apr 2013 10:07:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: "Tivy, Robert" <rtivy@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: adding rpmsg.git to linux next
-Message-Id: <20130416100715.cd726b96944237ef975ebe7d@canb.auug.org.au>
-In-Reply-To: <CAK=WgbY=4rosYr2g3fYYk6WrqXjN7f=5Dk5+D-h3cWrOtVmNag@mail.gmail.com>
-References: <CAK=WgbY=4rosYr2g3fYYk6WrqXjN7f=5Dk5+D-h3cWrOtVmNag@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__16_Apr_2013_10_07_15_+1000_qumq2kZEKiI0nh3B"
+	Mon, 15 Apr 2013 20:13:49 -0400
+From: D M German <dmg@uvic.ca>
+To: Greg KH <greg@kroah.com>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: helping with tracking commits across repos
+Organization: University of Victoria
+References: <87r4ifxzwu.fsf@mn.cs.uvic.ca> <20130412203146.GA31283@kroah.com>
+	<87r4ibpiq9.fsf@mn.cs.uvic.ca> <20130415230923.GA2417@kroah.com>
+Reply-To: dmg@uvic.ca
+Date: Mon, 15 Apr 2013 17:13:45 -0700
+In-Reply-To: <20130415230923.GA2417@kroah.com> (Greg KH's message of "Mon, 15
+	Apr 2013 16:09:23 -0700")
+Message-ID: <87mwsznxhi.fsf@mn.cs.uvic.ca>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__16_Apr_2013_10_07_15_+1000_qumq2kZEKiI0nh3B
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Ohad,
 
-On Mon, 15 Apr 2013 09:28:17 +0300 Ohad Ben-Cohen <ohad@wizery.com> wrote:
->
-> Could you please add:
->=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/ohad/rpmsg.git#for-next
->=20
-> to linux-next to include new stuff coming from Rob?
+ Greg KH twisted the bytes to say:
 
-Well, you could tell me something about it.  Like what is in it and how
-it will be merged up to Linus.  Does this have anything to do with the
-remoteproc tree I already include?  Who is the official maintainer (there
-is no mention of drivers/rpmsg in the MAINTAINERS file).
+ >> http://o.cs.uvic.ca:20810/perl/next.pl
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+ Greg> Yes, that's a great thing.  Maybe the ability to see the subject: line
+ Greg> of the commit somewhere easier than having to click through to the patch
+ Greg> would be nice, so we can just glance at the report and say, "Look at all
+ Greg> of the btrfs patches that showed up out of nowhere, what happened?"
 
---Signature=_Tue__16_Apr_2013_10_07_15_+1000_qumq2kZEKiI0nh3B
-Content-Type: application/pgp-signature
+ Greg> Oh, and if you could do it for a specific kernel release, not a date
+ Greg> range, that would be nice (i.e. report for 3.9-rc1, 3.8-rc1, 3.7-rc1,
+ Greg> etc.)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+What would be the simplest approach to getting the date? I suspect that
+it can be done by doing some command line magic in Linus git repo.
 
-iQIcBAEBCAAGBQJRbJYzAAoJEECxmPOUX5FEnf4P/A+lnN80cb/n+rxJdbK5SttF
-w9wHcfonMUIbs6+QfCAap6/Q/d3hmRcROXQyl/7QDY5WDSw+drk2dDFdU/WhMdX/
-WEmz2pU6z8zH2ctC1+JQhs0UeMus7wcn1bC5GHjZrsuPM8rSoyarr1AMfWhsavmr
-9VT339uEWpxEdemFWqYrtk1fBzHM8wyFIujCnWD/jb0EIWjbvbsXyQieiRpq9cqY
-9JEV7EaW1e3zwy33Y9UiZ9bRTFmQvstQ8t8klr6AZLT1lyaDA0ky9w4i4fqvrp3Z
-3HrLCqHV7mUwOAUlAfgmrHq+Y8lDA5hzp8NT9HFVBom9vXCIxS+9iHXdIdzhPJ/6
-Ur2Igep5u4xKfACBr+vuFbYxySr42uyvb9MyohEozh5+y56ULB4ryXYHB8f7Qr/m
-+3pEcqDykPd9cfUtUp6iR4MlCIIurgqHzZ6KWYi4GE+JbEWBuh+y2/BMY/gt7W+d
-PD40n4kVpC5q1RsKRS7rDua7n4ATJ25tK6Duze6c6H5eThB5nPsgtzw8uApT/NmN
-E/n+JoLT+H/XAA+rTDf0xTyw0dtXd8q0Z4cqEX/+Q3xnvny0Xuzw9mMwV3+vgmXY
-W4VEm+pqYnCut73SjUCYUwaotrKinFeGYYSn7I8TiDDN5SFx7zJUxZ0BGi7huCiR
-87FAO0k9jlQycquMZA+p
-=NaRd
------END PGP SIGNATURE-----
+ >> is this what you had in mind? obviously Linus commits appear in his repo
+ >> before Next, so I could drop him from the report.
 
---Signature=_Tue__16_Apr_2013_10_07_15_+1000_qumq2kZEKiI0nh3B--
+ Greg> That's just a tiny number so it's probably not needed.
+
+ >> I have also added the commit that merges each commit, which is probably
+ >> useful too. If it is empty either we haven't update the data or it
+ >> was done straight into linus repo (as in 3e2e0d2c222bdf5bafd722dec1618fa6073ef372).
+
+I's not difficult to do. I'll take care of it.
+
+--dmg
+
+
+--
+Daniel M. German                  "Trying is the first step
+   Homer Simpson ->                towards failure."
+http://turingmachine.org/
+http://silvernegative.com/
+dmg (at) uvic (dot) ca
+replace (at) with @ and (dot) with .
+
+ 
