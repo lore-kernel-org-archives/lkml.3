@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458Ab3DPJpH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:45:07 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:64826 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab3DPJpF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:45:05 -0400
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Simon Glass <sjg@chromium.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        grant.likely@secretlab.ca, yuvaraj.cd@gmail.com,
-        ben.dooks@codethink.co.uk, u.kleine-koenig@pengutronix.de,
-        broonie@opensource.wolfsonmicro.com, girish.shivananjappa@linaro.org,
-        bhushan.r@samsung.com, sreekumar.c@samsung.com,
-        prashanth.g@samsung.com, olof@lixom.net, djkurtz@chromium.org,
-        swarren@wwwdotorg.org, linux@roeck-us.net,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
-        Stephen Warren <swarren@nvidia.com>, Jean Delvare <khali@linux-fr.org>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v5 1/3] i2c: mux: Add i2c-arb-gpio-challenge 'mux' driver
-References: <1363192583-26363-1-git-send-email-dianders@chromium.org>
-	<1365543270-10736-1-git-send-email-dianders@chromium.org>
-	<20130416093633.GC16978@the-dreams.de>
-Date: Tue, 16 Apr 2013 11:44:56 +0200
-In-Reply-To: <20130416093633.GC16978@the-dreams.de> (Wolfram Sang's message of
-	"Tue, 16 Apr 2013 11:36:33 +0200")
-Message-ID: <87wqs2kdwn.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	id S1757341Ab3DPJs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:48:56 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:50158 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751881Ab3DPJsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 05:48:55 -0400
+Date: Tue, 16 Apr 2013 11:48:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH] x86, FPU: Fix FPU initialization
+Message-ID: <20130416094852.GA5332@pd.tnic>
+References: <20130412053234.GB3887@gmail.com>
+ <f3a4fce2-090e-4a08-b05c-0281a95e8943@email.android.com>
+ <20130412094724.GA2368@pd.tnic>
+ <20130412112628.GB2368@pd.tnic>
+ <20130415100858.GB18024@gmail.com>
+ <20130415101734.GB26524@pd.tnic>
+ <20130415101825.GD18024@gmail.com>
+ <20130415155415.GB12144@pd.tnic>
+ <20130415220406.GD12144@pd.tnic>
+ <20130416092528.GF9569@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130416092528.GF9569@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Wolfram" == Wolfram Sang <wsa@the-dreams.de> writes:
+On Tue, Apr 16, 2013 at 11:25:28AM +0200, Ingo Molnar wrote:
+> I've got limited extra capacity right now - but if Peter rebases
+> tip:x86/cpu or you send a pullable update of tip:x86/cpu I can stick
+> it into -tip testing and yell if it goes wrong.
+>
 
-Hi,
+Ok, I'll do that in a second.
 
- >> +- their-claim-gpios: The GPIOs that the other sides use the claim the bus.
- >> +  Note that some implementations may only support a single other master.
+Btw, another heads-up: you know how I'm regularly testing
+Linus+tip/master - well, I started seeing some strange lockups on my
+workstation with -rc7 + tip from two days ago. And the box wouldn't
+resume properly, the last line it would print is:
 
- Wolfram> Stronger? "Currently, only one other master is supported"?
+"Disabling non-boot CPUs ..."
 
-Also there's a typo: s/use the claim/use to claim/
+and then hang. I've backed-out tip/master and it seems to work so it has
+to be some interaction caused by something in tip. I haven't been able
+to put my finger on it though but I'll watch it and try to trigger it on
+my other boxes.
+
+Thanks.
 
 -- 
-Bye, Peter Korsgaard
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
