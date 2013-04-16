@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517Ab3DPJSo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:18:44 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:15456 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755984Ab3DPJSn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:18:43 -0400
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        "Mark Brown (broonie@opensource.wolfsonmicro.com)" 
-	<broonie@opensource.wolfsonmicro.com>
-Subject: RE: [NEW DRIVER V4 0/7] DA9058 PMIC - please comment on this new
- driver
-Thread-Topic: [NEW DRIVER V4 0/7] DA9058 PMIC - please comment on this new
- driver
-Thread-Index: AQHON38JlZ8CqfSx5U6QnznQ+FhcK5jS0W+AgAW1MsA=
-Date: Tue, 16 Apr 2013 09:18:41 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB514191E2DC@NB-EX-MBX02.diasemi.com>
-References: <201304121307.r3CD7tDi011782@latitude>
- <1854273.arIzJJ3lWV@dtor-d630.eng.vmware.com>
-In-Reply-To: <1854273.arIzJJ3lWV@dtor-d630.eng.vmware.com>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.109]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755416Ab3DPJYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:24:33 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:40663 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754132Ab3DPJYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 05:24:31 -0400
+Date: Tue, 16 Apr 2013 04:24:29 -0500
+From: Robin Holt <holt@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Patch -v3 4/4] Make reboot_cpuid a kernel parameter.
+Message-ID: <20130416092429.GI3658@sgi.com>
+References: <20130415171225.GC3658@sgi.com>
+ <20130415171635.GI3672@sgi.com>
+ <71f0c948-cdea-4e8e-86a3-088d306388b9@email.android.com>
+ <20130415173324.GD3658@sgi.com>
+ <0d5a866d-3d40-4592-bb9d-d938fb3312e2@email.android.com>
+ <20130415182258.GE3658@sgi.com>
+ <20130416090109.GB8438@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130416090109.GB8438@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: 12 April 2013 19:07
-> To: Opensource [Anthony Olech]
-> Cc: LKML; Alessandro Zummo
-> Subject: Re: [NEW DRIVER V4 0/7] DA9058 PMIC - please comment on this new driver
-> On Friday, April 12, 2013 02:05:29 PM Anthony Olech wrote:
-> > This is submission attempt number 4 to have this driver included in
-> > the linux kernel source tree. This is the driver for the Dialog DA9058.
-> > The DA9058 is a low power Power Management Integrated Circuit with
-> > extra functionality. It is a Multi Function Device controlled only
-> > from an I2C bus whose components can raise an interrupt request on a single IRQ line.
-> > The driver for the DA9058 consists of a core (i2c) device driver that
-> > instantiates the individual component device drivers for:
-> > adc - 5 ADC channels
-> > gpio - 2 available pins
-> > onkey - 1 device
+On Tue, Apr 16, 2013 at 11:01:09AM +0200, Ingo Molnar wrote:
 > 
-> > This is almost exact copy of da9052_onkey, can they be merged together?
->
-> Dmitry
+> * Robin Holt <holt@sgi.com> wrote:
+> 
+> > On Mon, Apr 15, 2013 at 10:47:49AM -0700, H. Peter Anvin wrote:
+> > > We usually don't break working user setups as a matter if policy.  Only if it can't be avoided.
+> > > 
+> > > Robin Holt <holt@sgi.com> wrote:
+> > > 
+> > > >On Mon, Apr 15, 2013 at 10:18:31AM -0700, H. Peter Anvin wrote:
+> > > >> Um... doesn't this break anyone who currently depends on this?
+> > > >
+> > > >Yes.  That is also why I kept this separate and not tagged for
+> > > >stable. They would need to start using the more general kernel
+> > > >parameter
+> > > >to get the same functionality.  Should I have done it differently?
+> > 
+> > How about:
+> > Author: Robin Holt <holt@sgi.com>
+> > Date:   Mon Apr 15 11:39:33 2013 -0500
+> > 
+> >     Make reboot_cpuid a kernel parameter.
+> >     
+> >     Moving the reboot=s<##> parameter for x86 to a kernel parameter
+> >     proper.  I did not find any other arch that was specifying the
+> >     reboot cpu.
+> >     
+> >     I left a compatibility mode in there.  The new parameter always
+> >     takes precedence.  I also fixed up the current code to support
+> >     up to cpuid's up to the current max of 4096.
+> 
+> Looks pretty nice and clean to me, as the old boot parameter still keeps working.
+> 
+> Mind sending an updated series that includes all the fixes and the Tested-by from 
+> Shawn Guo?
 
-Hi Dmitry,
+Will do.  I am still going through the comments from Joe Perches to the
+third patch.  Already have added the Tested-by to just the first patch.
+Otherwise, I am ready to send -v4.
 
-it does look like the ONKEY component driver of the Dialog DA9058 PMIC is
-functionally similar to other onkey drivers. Specifically those drivers that have
-to poll for ONKEY de-assertion.
-
-The reason why they are separate is that they are probed with different data
-structures and they use a different wrapper to access the "regmap" API.
-However, that is not a blocking issue, but it would mean re-writing the core
-MFD component of all the affected drivers. Maybe the way forward is:
-
-Is it possible to provide some "core" ONKEY API or functionality to handle the
-commonality in a similar fashion to the regulator core as done by Mark Brown?
-
-Tony Olech
+Robin
