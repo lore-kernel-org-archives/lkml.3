@@ -1,200 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab3DPHDi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 03:03:38 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:40524 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756405Ab3DPHDg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 03:03:36 -0400
-Message-ID: <516CF235.4060103@linux.vnet.ibm.com>
-Date: Tue, 16 Apr 2013 14:39:49 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756569Ab3DPHL3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 03:11:29 -0400
+Received: from mta1a-out-u1.mail.zscaler.net ([216.218.133.244]:65147 "EHLO
+	mta1a-out-u1.mail.zscaler.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755032Ab3DPHL2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 03:11:28 -0400
+X-Greylist: delayed 881 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Apr 2013 03:11:28 EDT
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Avi Kivity <avi.kivity@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Robin Holt <holt@sgi.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: [PATCH] mm: mmu_notifier: re-fix freed page still mapped in secondary
- MMU
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041606-9264-0000-0000-000003888E67
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Subject: GOOD DAY. DO YOU NEED A LOAN? [Contact Us Via Email Address: swiftloansewrvices.org@live.com]
+Date: Tue, 16 Apr 2013 08:56:00 +0200
+Message-ID: <1D062EF7A67CE0499A8A0EDB354B00DE01E10491@car-o-letter.car-o-liner.se>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: GOOD DAY. DO YOU NEED A LOAN? [Contact Us Via Email Address: swiftloansewrvices.org@live.com]
+Thread-Index: Ac46b3KLV059SFevSWqwhGaLzK6kmg==
+From: "admin" <admin@car-o-liner.se>
+X-Zscaler: score=99 iprep=0 v=2.0 cv=dZ03Kwre c=0 sm=2 p=HHnoDO0jb3UA:10 a=_-D
+ nSBUKe1AA:10 a=8nJEP1OIZ-IA:10 a=z6gsHLkEAAAA:8 a=iLNU1ar6AAAA:8 a=pLSHIJ0vAA
+ AA:8 a=W2splL9tAAAA:8 a=6AVskHJzAAAA:8 a=xNOvlVJDAAAA:8 a=GDW5svbFAAAA:8 a=NI
+ d_GJISAAAA:8 a=84BadPHTAAAA:8 a=VVlED5B4AAAA:8 a=ALxiPom7AAAA:8 a=hnGMOUBTAAA
+ A:8 a=BrDiTsk0AAAA:8 a=xRfjoxBpAAAA:8 a=VhDX_o1UAAAA:8 a=knbL95QgAAAA:8 a=3vU
+ Si0VXAAAA:8 a=fa0wtfoHAAAA:8 a=Kg8pHLxTAAAA:8 a=hBly2ji7AAAA:8 a=1a0l2ndbAAAA
+ :8 a=Zk3OmFfbAAAA:8 a=8sGjQ_SZAAAA:8 a=FmX3VfpdAAAA:8 a=roetM_ZUAAAA:8 a=0-gW
+ 1elpAAAA:8 a=gWSpsRLsAAAA:8 a=jQOgFn-ZAAAA:8 a=nDigxtSzAAAA:8 a=c6WIxyFyAAAA:
+ 8 a=xvhTYyVHAAAA:8 a=779Z68ewAAAA:8 a=N54-gffFAAAA:8 a=630GCdsLAAAA:8 a=wAl_Q
+ AxMAAAA:8 a=SMpJGurRAAAA:8 a=WwK7XqLTAAAA:8 a=xOHeykOAAAAA:8 a=RqOAJGx8AAAA:8
+  a=dR78T3LhAAAA:8 a=5Up8faWwAAAA:8 a=a_U1oVfrAAAA:8 a=et-D41cDAAAA:8 a=J7X1eD
+ ZWAAAA:8 a=BHUaCnvMAAAA:8 a=37rDS-QxAAAA:8 a=Q6xZjDf0AAAA:8 a=lwDGWbeVAAAA:8 
+ a=ldzYh_kjAAAA:8 a=VwQbUJbxAAAA:8 a=OMftfIE9AAAA:8 a=nfYv4Kn8AAAA:8 a=MALyVgj
+ XAAAA:8 a=CcWqzlbqAAAA:8 a=Et4fnLzEAAAA:8 a=ayC55r
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit 751efd8610d3 (mmu_notifier_unregister NULL Pointer deref
-and multiple ->release()) breaks the fix:
-    3ad3d901bbcfb15a5e4690e55350db0899095a68
-    (mm: mmu_notifier: fix freed page still mapped in secondary MMU)
-
-This patch reverts the commit and simply fix the bug spotted
-by that patch
-
-This bug is spotted by commit 751efd8610d3:
-======
-There is a race condition between mmu_notifier_unregister() and
-__mmu_notifier_release().
-
-Assume two tasks, one calling mmu_notifier_unregister() as a result of a
-filp_close() ->flush() callout (task A), and the other calling
-mmu_notifier_release() from an mmput() (task B).
-
-                    A                               B
-t1                                              srcu_read_lock()
-t2              if (!hlist_unhashed())
-t3                                              srcu_read_unlock()
-t4              srcu_read_lock()
-t5                                              hlist_del_init_rcu()
-t6                                              synchronize_srcu()
-t7              srcu_read_unlock()
-t8              hlist_del_rcu()  <--- NULL pointer deref.
-======
-
-This can be fixed by using hlist_del_init_rcu instead of hlist_del_rcu.
-
-The another issue spotted in the commit is
-"multiple ->release() callouts", we needn't care it too much because
-it is really rare (e.g, can not happen on kvm since mmu-notify is unregistered
-after exit_mmap()) and the later call of multiple ->release should be
-fast since all the pages have already been released by the first call.
-
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- mm/mmu_notifier.c |   81 +++++++++++++++++++++++++++--------------------------
- 1 files changed, 41 insertions(+), 40 deletions(-)
-
-diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
-index be04122..606777a 100644
---- a/mm/mmu_notifier.c
-+++ b/mm/mmu_notifier.c
-@@ -40,48 +40,45 @@ void __mmu_notifier_release(struct mm_struct *mm)
- 	int id;
-
- 	/*
--	 * srcu_read_lock() here will block synchronize_srcu() in
--	 * mmu_notifier_unregister() until all registered
--	 * ->release() callouts this function makes have
--	 * returned.
-+	 * SRCU here will block mmu_notifier_unregister until
-+	 * ->release returns.
- 	 */
- 	id = srcu_read_lock(&srcu);
-+	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist)
-+		/*
-+		 * if ->release runs before mmu_notifier_unregister it
-+		 * must be handled as it's the only way for the driver
-+		 * to flush all existing sptes and stop the driver
-+		 * from establishing any more sptes before all the
-+		 * pages in the mm are freed.
-+		 */
-+		if (mn->ops->release)
-+			mn->ops->release(mn, mm);
-+	srcu_read_unlock(&srcu, id);
-+
- 	spin_lock(&mm->mmu_notifier_mm->lock);
- 	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
- 		mn = hlist_entry(mm->mmu_notifier_mm->list.first,
- 				 struct mmu_notifier,
- 				 hlist);
--
- 		/*
--		 * Unlink.  This will prevent mmu_notifier_unregister()
--		 * from also making the ->release() callout.
-+		 * We arrived before mmu_notifier_unregister so
-+		 * mmu_notifier_unregister will do nothing other than
-+		 * to wait ->release to finish and
-+		 * mmu_notifier_unregister to return.
- 		 */
- 		hlist_del_init_rcu(&mn->hlist);
--		spin_unlock(&mm->mmu_notifier_mm->lock);
--
--		/*
--		 * Clear sptes. (see 'release' description in mmu_notifier.h)
--		 */
--		if (mn->ops->release)
--			mn->ops->release(mn, mm);
--
--		spin_lock(&mm->mmu_notifier_mm->lock);
- 	}
- 	spin_unlock(&mm->mmu_notifier_mm->lock);
-
- 	/*
--	 * All callouts to ->release() which we have done are complete.
--	 * Allow synchronize_srcu() in mmu_notifier_unregister() to complete
--	 */
--	srcu_read_unlock(&srcu, id);
--
--	/*
--	 * mmu_notifier_unregister() may have unlinked a notifier and may
--	 * still be calling out to it.	Additionally, other notifiers
--	 * may have been active via vmtruncate() et. al. Block here
--	 * to ensure that all notifier callouts for this mm have been
--	 * completed and the sptes are really cleaned up before returning
--	 * to exit_mmap().
-+	 * synchronize_srcu here prevents mmu_notifier_release to
-+	 * return to exit_mmap (which would proceed freeing all pages
-+	 * in the mm) until the ->release method returns, if it was
-+	 * invoked by mmu_notifier_unregister.
-+	 *
-+	 * The mmu_notifier_mm can't go away from under us because one
-+	 * mm_count is hold by exit_mmap.
- 	 */
- 	synchronize_srcu(&srcu);
- }
-@@ -292,31 +289,35 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
- {
- 	BUG_ON(atomic_read(&mm->mm_count) <= 0);
-
--	spin_lock(&mm->mmu_notifier_mm->lock);
- 	if (!hlist_unhashed(&mn->hlist)) {
-+		/*
-+		 * SRCU here will force exit_mmap to wait ->release to finish
-+		 * before freeing the pages.
-+		 */
- 		int id;
-
-+		id = srcu_read_lock(&srcu);
- 		/*
--		 * Ensure we synchronize up with __mmu_notifier_release().
-+		 * exit_mmap will block in mmu_notifier_release to
-+		 * guarantee ->release is called before freeing the
-+		 * pages.
- 		 */
--		id = srcu_read_lock(&srcu);
--
--		hlist_del_rcu(&mn->hlist);
--		spin_unlock(&mm->mmu_notifier_mm->lock);
--
- 		if (mn->ops->release)
- 			mn->ops->release(mn, mm);
-+		srcu_read_unlock(&srcu, id);
-
-+		spin_lock(&mm->mmu_notifier_mm->lock);
- 		/*
--		 * Allow __mmu_notifier_release() to complete.
-+		 * Can not use list_del_rcu() since __mmu_notifier_release
-+		 * can delete it before we hold the lock.
- 		 */
--		srcu_read_unlock(&srcu, id);
--	} else
-+		hlist_del_init_rcu(&mn->hlist);
- 		spin_unlock(&mm->mmu_notifier_mm->lock);
-+	}
-
- 	/*
--	 * Wait for any running method to finish, including ->release() if it
--	 * was run by __mmu_notifier_release() instead of us.
-+	 * Wait any running method to finish, of course including
-+	 * ->release if it was run by mmu_notifier_relase instead of us.
- 	 */
- 	synchronize_srcu(&srcu);
-
--- 
-1.7.7.6
-
+Hi,
+ 
+Please pardon me for disturbing your valued time.
+ 
+This is a Finance Lending Organization; we are specialized in funding and offering of Loans to interested individuals and companies who are seeking financial assistance and business growth or business expansion fund. We offer Loans with a dependable guarantee to all our qualified applicants.
+ 
+Our Loan interest rates are very low and affordable and with a negotiable duration. We also provide funding for business partnership and real estate development and we offer small and large amount of Loans to all our qualified clients.
+ 
+For more information inquiries and application, please Contact our representative via e-mail: swiftloansewrvices.org@live.com
+ 
+Kindly ignore this message if you are not interested.
+ 
+Regards,
+Mr. Walker Phil.
+Swift Loan Org.
+295, Elm Road Kingston Upon Thames Surrey KT2 6HX,
+United Kingdom.
+Mobile No: +44 703-596-0310
