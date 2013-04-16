@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab3DPGS6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 02:18:58 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:56169 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab3DPGS5 (ORCPT
+	id S1753503Ab3DPGT3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 02:19:29 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:47405 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753028Ab3DPGT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 02:18:57 -0400
-X-AuditID: 9c930197-b7b50ae00000018c-11-516ced4ece0c
-From: Chanho Min <chanho.min@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Nadia Yvette Chambers <nyc@holomorphy.com>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Chanho Min <chanho.min@lge.com>
-Subject: [PATCH v3] bitmap: speed up bitmap_find_free_region
-Date: Tue, 16 Apr 2013 15:18:37 +0900
-Message-Id: <1366093117-8228-1-git-send-email-chanho.min@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 16 Apr 2013 02:19:27 -0400
+Date: Tue, 16 Apr 2013 09:19:04 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Oskar.Andero@sonymobile.com,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Brian Swetland <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dolkow, Snild" <Snild.Dolkow@sonymobile.com>,
+        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>
+Subject: Re: [PATCH] lowmemorykiller: prevent multiple instances of low
+ memory killer
+Message-ID: <20130416061904.GH6638@mwanda>
+References: <1366031009-21958-1-git-send-email-oskar.andero@sonymobile.com>
+ <20130415131815.GG6638@mwanda>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
+ <20130415141358.GO6692@mwanda>
+ <20130415150356.GA22161@caracas.corpusers.net>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC84@seldmbx01.corpusers.net>
+ <20130415194947.GA26557@kroah.com>
+ <alpine.DEB.2.02.1304151608040.13614@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1304151608040.13614@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In bitmap_find_free_region, If we skip the all-ones words and find bits
-in a not-all-ones word, we can improve performance of it.
+On Mon, Apr 15, 2013 at 04:11:18PM -0700, David Rientjes wrote:
+> On Mon, 15 Apr 2013, Greg Kroah-Hartman wrote:
+> 
+> > > The positive numbers are used to return information on the remaining
+> > > cache size (again, see the comment I pasted above). We could use
+> > > -EBUSY, but we'd have to change vmscan.c, which checks specifically
+> > > for -1. I can't see a technical reason why -EBUSY couldn't have been
+> > > chosen instead, but there's also no real reason to change it now.
+> > 
+> > If it's not the correct thing to do, sure we can change it, just send a
+> > patch.  It makes way more sense than some random -1 return value to me.
+> > 
+> > Care to send a series of patches fixing this up properly?
+> > 
+> 
+> The comment in shrinker.h is misleading, not the source code.
+> do_shrinker_shrink() will fail for anything negative and 0.
 
-For example, If bitmap_find_free_region() is called with order=0, First,
-It scans bitmap array by the increment of long type, then find 1 free bit
-within 1 long type value. In 32 bits system and 1024 bits size, in the worst
-case, We need 1024 for-loops to find 1 free bit. But, If this is applied,
-it takes 64 for-loops. Instead, It will be needed additional if-comparison
-of every word and It can take time slightly as 'Test case 3'. But, In many
-cases, It will speed up significantly.
+The comment is correct.  The only acceptable negative return is -1.
+Look at the second time do_shrinker_shrink() is called from
+shrink_slab().
 
-Test cases bellows show the time taken to execute bitmap_find_free_region()
-before and after patch.
+   283                  while (total_scan >= batch_size) {
+   284                          int nr_before;
+   285  
+   286                          nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+   287                          shrink_ret = do_shrinker_shrink(shrinker, shrink,
+   288                                                          batch_size);
+   289                          if (shrink_ret == -1)
+   290                                  break;
+   291                          if (shrink_ret < nr_before)
+   292                                  ret += nr_before - shrink_ret;
+   293                          count_vm_events(SLABS_SCANNED, batch_size);
 
-Test condition : ARMv7 1GHZ 32 bits system, 1024 bits size, gcc 4.6.2
-
-Test case 1: order is 0. all bits are one except that last one bit is zero.
- before patch: 29727 ns
- after patch: 2349 ns
-
-Test case 2: order is 1. all bits are one except that last 2 contiguous bits
-are zero.
- before patch: 15475 ns
- after patch: 2225 ns
-
-Test case 3: order is 1. all words are not-all-ones and don't have 2 contiguous
-bits except that last 2 contiguous are zero.
- before patch: 15475 ns
- after patch: 16131 ns
-
-Changes compared to v1:
- - Modified unnecessarily complicated code.
- - Fixed the buggy code if `bits' is not an multiple of BITS_PER_LONG.
-
-Changes compared to v2:
- - Removed bitmap_find_free_one and merged it to bitmap_find_free_region.
-
-Signed-off-by: Chanho Min <chanho.min@lge.com>
----
- lib/bitmap.c |   23 +++++++++++++++--------
- 1 file changed, 15 insertions(+), 8 deletions(-)
-
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index 06f7e4f..95e8efc 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -1114,14 +1114,21 @@ done:
-  */
- int bitmap_find_free_region(unsigned long *bitmap, int bits, int order)
- {
--	int pos, end;		/* scans bitmap by regions of size order */
--
--	for (pos = 0 ; (end = pos + (1 << order)) <= bits; pos = end) {
--		if (!__reg_op(bitmap, pos, order, REG_OP_ISFREE))
--			continue;
--		__reg_op(bitmap, pos, order, REG_OP_ALLOC);
--		return pos;
--	}
-+	int pos, end, nbit, i;	/* scans bitmap by regions of size order */
-+	int nlongs = BITS_TO_LONGS(bits);
-+
-+	for (i = 0; i < nlongs; i++)
-+		if (bitmap[i] != ~0UL) {
-+			pos = i * BITS_PER_LONG;
-+			nbit = min(bits, pos + BITS_PER_LONG);
-+			for (; (end = pos + (1 << order)) <= nbit; pos = end) {
-+				if (!__reg_op(bitmap, pos, order,
-+					REG_OP_ISFREE))
-+					continue;
-+				__reg_op(bitmap, pos, order, REG_OP_ALLOC);
-+				return pos;
-+			}
-+		}
- 	return -ENOMEM;
- }
- EXPORT_SYMBOL(bitmap_find_free_region);
--- 
-1.7.9.5
-
+regards,
+dan carpenter
