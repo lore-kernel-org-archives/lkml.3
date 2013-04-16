@@ -1,75 +1,403 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965615Ab3DPXRO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 19:17:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56005 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965585Ab3DPXRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 19:17:13 -0400
-Date: Wed, 17 Apr 2013 01:16:35 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Richard Weinberger <richard@nod.at>
-Cc: matt.fleming@intel.com, cbouatmailru@gmail.com, ccross@android.com,
-        keescook@chromium.org, tony.luck@intel.com, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, matthew.garrett@nebula.com
-Subject: Re: [PATCH] x86,efi: Implement efi_no_storage_paranoia parameter
-In-Reply-To: <1366153253-28572-1-git-send-email-richard@nod.at>
-Message-ID: <alpine.LRH.2.00.1304170116060.8789@twin.jikos.cz>
-References: <1366153253-28572-1-git-send-email-richard@nod.at>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S965640Ab3DPXRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 19:17:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49340 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965618Ab3DPXR1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 19:17:27 -0400
+Date: Tue, 16 Apr 2013 16:17:12 -0700
+From: tip-bot for Kees Cook <tipbot@zytor.com>
+Message-ID: <tip-bf11655cf2ecdcfaacbc8324da4a3edfe276ba9d@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        keescook@chromium.org, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1365797627-20874-2-git-send-email-keescook@chromium.org>
+References: <1365797627-20874-2-git-send-email-keescook@chromium.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/kaslr] x86, relocs: Generalize ELF structure names
+Git-Commit-ID: bf11655cf2ecdcfaacbc8324da4a3edfe276ba9d
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 16 Apr 2013 16:17:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Apr 2013, Richard Weinberger wrote:
+Commit-ID:  bf11655cf2ecdcfaacbc8324da4a3edfe276ba9d
+Gitweb:     http://git.kernel.org/tip/bf11655cf2ecdcfaacbc8324da4a3edfe276ba9d
+Author:     Kees Cook <keescook@chromium.org>
+AuthorDate: Fri, 12 Apr 2013 13:13:42 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 16 Apr 2013 15:19:06 -0700
 
-> Using this parameter one can disable the storage_size/2 check if
-> he is really sure that the UEFI does sane gc and fulfills the spec.
-> 
-> This parameter is useful if a devices uses more than 50% of the
-> storage by default.
-> The Intel DQSW67 desktop board is such a sucker for exmaple.
-> 
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> ---
->  Documentation/kernel-parameters.txt |  6 ++++++
->  arch/x86/platform/efi/efi.c         | 15 ++++++++++++++-
->  2 files changed, 20 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 4609e81..d1cc3a9 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -788,6 +788,12 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  	edd=		[EDD]
->  			Format: {"off" | "on" | "skip[mbr]"}
->  
-> +	efi_no_storage_paranoia [EFI; X86]
-> +			Using this parameter you can use more than 50% of
-> +			your efi variable storage. Use this parameter only if
-> +			you are really sure that your UEFI does sane gc and
-> +			fulfills the spec otherwise your board may brick.
-> +
->  	eisa_irq_edge=	[PARISC,HW]
->  			See header of drivers/parisc/eisa.c.
->  
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index 4959e3f..07524e1 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -113,6 +113,16 @@ static int __init setup_add_efi_memmap(char *arg)
->  }
->  early_param("add_efi_memmap", setup_add_efi_memmap);
->  
-> +static bool efi_no_storage_paranoia;
-> +EXPORT_SYMBOL_GPL(efi_no_storage_paranoia);
+x86, relocs: Generalize ELF structure names
 
-Is there any particular reason to export this symbol?
+In preparation for making the reloc tool operate on 64-bit relocations,
+generalize the structure names for easy recompilation via #defines.
 
--- 
-Jiri Kosina
-SUSE Labs
+Based on work by Neill Clift and Michael Davidson.
 
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: http://lkml.kernel.org/r/1365797627-20874-2-git-send-email-keescook@chromium.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/tools/relocs.c | 170 ++++++++++++++++++++++++++++--------------------
+ 1 file changed, 99 insertions(+), 71 deletions(-)
+
+diff --git a/arch/x86/tools/relocs.c b/arch/x86/tools/relocs.c
+index 79d67bd..fd28ef7 100644
+--- a/arch/x86/tools/relocs.c
++++ b/arch/x86/tools/relocs.c
+@@ -12,20 +12,42 @@
+ #include <regex.h>
+ #include <tools/le_byteshift.h>
+ 
++#define ElfW(type)		_ElfW(ELF_BITS, type)
++#define _ElfW(bits, type)	__ElfW(bits, type)
++#define __ElfW(bits, type)	Elf##bits##_##type
++
++#define ELF_BITS		32
++#define ELF_MACHINE		EM_386
++#define ELF_MACHINE_NAME	"i386"
++#define SHT_REL_TYPE		SHT_REL
++
++#define ELF_CLASS		ELFCLASS32
++#define ELF_R_SYM(val)		ELF32_R_SYM(val)
++#define ELF_R_TYPE(val)		ELF32_R_TYPE(val)
++#define ELF_ST_TYPE(o)		ELF32_ST_TYPE(o)
++#define ELF_ST_BIND(o)		ELF32_ST_BIND(o)
++#define ELF_ST_VISIBILITY(o)	ELF32_ST_VISIBILITY(o)
++
++#define Elf_Rel			ElfW(Rel)
++#define Elf_Ehdr		ElfW(Ehdr)
++#define Elf_Phdr		ElfW(Phdr)
++#define Elf_Shdr		ElfW(Shdr)
++#define Elf_Sym			ElfW(Sym)
++
+ static void die(char *fmt, ...);
+ 
+ #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+-static Elf32_Ehdr ehdr;
++static Elf_Ehdr ehdr;
+ static unsigned long reloc_count, reloc_idx;
+ static unsigned long *relocs;
+ static unsigned long reloc16_count, reloc16_idx;
+ static unsigned long *relocs16;
+ 
+ struct section {
+-	Elf32_Shdr     shdr;
++	Elf_Shdr       shdr;
+ 	struct section *link;
+-	Elf32_Sym      *symtab;
+-	Elf32_Rel      *reltab;
++	Elf_Sym        *symtab;
++	Elf_Rel        *reltab;
+ 	char           *strtab;
+ };
+ static struct section *secs;
+@@ -240,7 +262,7 @@ static const char *sec_name(unsigned shndx)
+ 	return name;
+ }
+ 
+-static const char *sym_name(const char *sym_strtab, Elf32_Sym *sym)
++static const char *sym_name(const char *sym_strtab, Elf_Sym *sym)
+ {
+ 	const char *name;
+ 	name = "<noname>";
+@@ -274,6 +296,12 @@ static uint32_t elf32_to_cpu(uint32_t val)
+ 	return le32_to_cpu(val);
+ }
+ 
++#define elf_half_to_cpu(x)	elf16_to_cpu(x)
++#define elf_word_to_cpu(x)	elf32_to_cpu(x)
++#define elf_addr_to_cpu(x)	elf32_to_cpu(x)
++#define elf_off_to_cpu(x)	elf32_to_cpu(x)
++#define elf_xword_to_cpu(x)	elf32_to_cpu(x)
++
+ static void read_ehdr(FILE *fp)
+ {
+ 	if (fread(&ehdr, sizeof(ehdr), 1, fp) != 1) {
+@@ -283,8 +311,8 @@ static void read_ehdr(FILE *fp)
+ 	if (memcmp(ehdr.e_ident, ELFMAG, SELFMAG) != 0) {
+ 		die("No ELF magic\n");
+ 	}
+-	if (ehdr.e_ident[EI_CLASS] != ELFCLASS32) {
+-		die("Not a 32 bit executable\n");
++	if (ehdr.e_ident[EI_CLASS] != ELF_CLASS) {
++		die("Not a %d bit executable\n", ELF_BITS);
+ 	}
+ 	if (ehdr.e_ident[EI_DATA] != ELFDATA2LSB) {
+ 		die("Not a LSB ELF executable\n");
+@@ -293,36 +321,36 @@ static void read_ehdr(FILE *fp)
+ 		die("Unknown ELF version\n");
+ 	}
+ 	/* Convert the fields to native endian */
+-	ehdr.e_type      = elf16_to_cpu(ehdr.e_type);
+-	ehdr.e_machine   = elf16_to_cpu(ehdr.e_machine);
+-	ehdr.e_version   = elf32_to_cpu(ehdr.e_version);
+-	ehdr.e_entry     = elf32_to_cpu(ehdr.e_entry);
+-	ehdr.e_phoff     = elf32_to_cpu(ehdr.e_phoff);
+-	ehdr.e_shoff     = elf32_to_cpu(ehdr.e_shoff);
+-	ehdr.e_flags     = elf32_to_cpu(ehdr.e_flags);
+-	ehdr.e_ehsize    = elf16_to_cpu(ehdr.e_ehsize);
+-	ehdr.e_phentsize = elf16_to_cpu(ehdr.e_phentsize);
+-	ehdr.e_phnum     = elf16_to_cpu(ehdr.e_phnum);
+-	ehdr.e_shentsize = elf16_to_cpu(ehdr.e_shentsize);
+-	ehdr.e_shnum     = elf16_to_cpu(ehdr.e_shnum);
+-	ehdr.e_shstrndx  = elf16_to_cpu(ehdr.e_shstrndx);
++	ehdr.e_type      = elf_half_to_cpu(ehdr.e_type);
++	ehdr.e_machine   = elf_half_to_cpu(ehdr.e_machine);
++	ehdr.e_version   = elf_word_to_cpu(ehdr.e_version);
++	ehdr.e_entry     = elf_addr_to_cpu(ehdr.e_entry);
++	ehdr.e_phoff     = elf_off_to_cpu(ehdr.e_phoff);
++	ehdr.e_shoff     = elf_off_to_cpu(ehdr.e_shoff);
++	ehdr.e_flags     = elf_word_to_cpu(ehdr.e_flags);
++	ehdr.e_ehsize    = elf_half_to_cpu(ehdr.e_ehsize);
++	ehdr.e_phentsize = elf_half_to_cpu(ehdr.e_phentsize);
++	ehdr.e_phnum     = elf_half_to_cpu(ehdr.e_phnum);
++	ehdr.e_shentsize = elf_half_to_cpu(ehdr.e_shentsize);
++	ehdr.e_shnum     = elf_half_to_cpu(ehdr.e_shnum);
++	ehdr.e_shstrndx  = elf_half_to_cpu(ehdr.e_shstrndx);
+ 
+ 	if ((ehdr.e_type != ET_EXEC) && (ehdr.e_type != ET_DYN)) {
+ 		die("Unsupported ELF header type\n");
+ 	}
+-	if (ehdr.e_machine != EM_386) {
+-		die("Not for x86\n");
++	if (ehdr.e_machine != ELF_MACHINE) {
++		die("Not for %s\n", ELF_MACHINE_NAME);
+ 	}
+ 	if (ehdr.e_version != EV_CURRENT) {
+ 		die("Unknown ELF version\n");
+ 	}
+-	if (ehdr.e_ehsize != sizeof(Elf32_Ehdr)) {
++	if (ehdr.e_ehsize != sizeof(Elf_Ehdr)) {
+ 		die("Bad Elf header size\n");
+ 	}
+-	if (ehdr.e_phentsize != sizeof(Elf32_Phdr)) {
++	if (ehdr.e_phentsize != sizeof(Elf_Phdr)) {
+ 		die("Bad program header entry\n");
+ 	}
+-	if (ehdr.e_shentsize != sizeof(Elf32_Shdr)) {
++	if (ehdr.e_shentsize != sizeof(Elf_Shdr)) {
+ 		die("Bad section header entry\n");
+ 	}
+ 	if (ehdr.e_shstrndx >= ehdr.e_shnum) {
+@@ -333,7 +361,7 @@ static void read_ehdr(FILE *fp)
+ static void read_shdrs(FILE *fp)
+ {
+ 	int i;
+-	Elf32_Shdr shdr;
++	Elf_Shdr shdr;
+ 
+ 	secs = calloc(ehdr.e_shnum, sizeof(struct section));
+ 	if (!secs) {
+@@ -349,16 +377,16 @@ static void read_shdrs(FILE *fp)
+ 		if (fread(&shdr, sizeof shdr, 1, fp) != 1)
+ 			die("Cannot read ELF section headers %d/%d: %s\n",
+ 			    i, ehdr.e_shnum, strerror(errno));
+-		sec->shdr.sh_name      = elf32_to_cpu(shdr.sh_name);
+-		sec->shdr.sh_type      = elf32_to_cpu(shdr.sh_type);
+-		sec->shdr.sh_flags     = elf32_to_cpu(shdr.sh_flags);
+-		sec->shdr.sh_addr      = elf32_to_cpu(shdr.sh_addr);
+-		sec->shdr.sh_offset    = elf32_to_cpu(shdr.sh_offset);
+-		sec->shdr.sh_size      = elf32_to_cpu(shdr.sh_size);
+-		sec->shdr.sh_link      = elf32_to_cpu(shdr.sh_link);
+-		sec->shdr.sh_info      = elf32_to_cpu(shdr.sh_info);
+-		sec->shdr.sh_addralign = elf32_to_cpu(shdr.sh_addralign);
+-		sec->shdr.sh_entsize   = elf32_to_cpu(shdr.sh_entsize);
++		sec->shdr.sh_name      = elf_word_to_cpu(shdr.sh_name);
++		sec->shdr.sh_type      = elf_word_to_cpu(shdr.sh_type);
++		sec->shdr.sh_flags     = elf_xword_to_cpu(shdr.sh_flags);
++		sec->shdr.sh_addr      = elf_addr_to_cpu(shdr.sh_addr);
++		sec->shdr.sh_offset    = elf_off_to_cpu(shdr.sh_offset);
++		sec->shdr.sh_size      = elf_xword_to_cpu(shdr.sh_size);
++		sec->shdr.sh_link      = elf_word_to_cpu(shdr.sh_link);
++		sec->shdr.sh_info      = elf_word_to_cpu(shdr.sh_info);
++		sec->shdr.sh_addralign = elf_xword_to_cpu(shdr.sh_addralign);
++		sec->shdr.sh_entsize   = elf_xword_to_cpu(shdr.sh_entsize);
+ 		if (sec->shdr.sh_link < ehdr.e_shnum)
+ 			sec->link = &secs[sec->shdr.sh_link];
+ 	}
+@@ -412,12 +440,12 @@ static void read_symtabs(FILE *fp)
+ 			die("Cannot read symbol table: %s\n",
+ 				strerror(errno));
+ 		}
+-		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf32_Sym); j++) {
+-			Elf32_Sym *sym = &sec->symtab[j];
+-			sym->st_name  = elf32_to_cpu(sym->st_name);
+-			sym->st_value = elf32_to_cpu(sym->st_value);
+-			sym->st_size  = elf32_to_cpu(sym->st_size);
+-			sym->st_shndx = elf16_to_cpu(sym->st_shndx);
++		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf_Sym); j++) {
++			Elf_Sym *sym = &sec->symtab[j];
++			sym->st_name  = elf_word_to_cpu(sym->st_name);
++			sym->st_value = elf_addr_to_cpu(sym->st_value);
++			sym->st_size  = elf_xword_to_cpu(sym->st_size);
++			sym->st_shndx = elf_half_to_cpu(sym->st_shndx);
+ 		}
+ 	}
+ }
+@@ -428,7 +456,7 @@ static void read_relocs(FILE *fp)
+ 	int i,j;
+ 	for (i = 0; i < ehdr.e_shnum; i++) {
+ 		struct section *sec = &secs[i];
+-		if (sec->shdr.sh_type != SHT_REL) {
++		if (sec->shdr.sh_type != SHT_REL_TYPE) {
+ 			continue;
+ 		}
+ 		sec->reltab = malloc(sec->shdr.sh_size);
+@@ -445,10 +473,10 @@ static void read_relocs(FILE *fp)
+ 			die("Cannot read symbol table: %s\n",
+ 				strerror(errno));
+ 		}
+-		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf32_Rel); j++) {
+-			Elf32_Rel *rel = &sec->reltab[j];
+-			rel->r_offset = elf32_to_cpu(rel->r_offset);
+-			rel->r_info   = elf32_to_cpu(rel->r_info);
++		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf_Rel); j++) {
++			Elf_Rel *rel = &sec->reltab[j];
++			rel->r_offset = elf_addr_to_cpu(rel->r_offset);
++			rel->r_info   = elf_xword_to_cpu(rel->r_info);
+ 		}
+ 	}
+ }
+@@ -468,8 +496,8 @@ static void print_absolute_symbols(void)
+ 			continue;
+ 		}
+ 		sym_strtab = sec->link->strtab;
+-		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf32_Sym); j++) {
+-			Elf32_Sym *sym;
++		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf_Sym); j++) {
++			Elf_Sym *sym;
+ 			const char *name;
+ 			sym = &sec->symtab[j];
+ 			name = sym_name(sym_strtab, sym);
+@@ -478,9 +506,9 @@ static void print_absolute_symbols(void)
+ 			}
+ 			printf("%5d %08x %5d %10s %10s %12s %s\n",
+ 				j, sym->st_value, sym->st_size,
+-				sym_type(ELF32_ST_TYPE(sym->st_info)),
+-				sym_bind(ELF32_ST_BIND(sym->st_info)),
+-				sym_visibility(ELF32_ST_VISIBILITY(sym->st_other)),
++				sym_type(ELF_ST_TYPE(sym->st_info)),
++				sym_bind(ELF_ST_BIND(sym->st_info)),
++				sym_visibility(ELF_ST_VISIBILITY(sym->st_other)),
+ 				name);
+ 		}
+ 	}
+@@ -495,9 +523,9 @@ static void print_absolute_relocs(void)
+ 		struct section *sec = &secs[i];
+ 		struct section *sec_applies, *sec_symtab;
+ 		char *sym_strtab;
+-		Elf32_Sym *sh_symtab;
++		Elf_Sym *sh_symtab;
+ 		int j;
+-		if (sec->shdr.sh_type != SHT_REL) {
++		if (sec->shdr.sh_type != SHT_REL_TYPE) {
+ 			continue;
+ 		}
+ 		sec_symtab  = sec->link;
+@@ -507,12 +535,12 @@ static void print_absolute_relocs(void)
+ 		}
+ 		sh_symtab  = sec_symtab->symtab;
+ 		sym_strtab = sec_symtab->link->strtab;
+-		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf32_Rel); j++) {
+-			Elf32_Rel *rel;
+-			Elf32_Sym *sym;
++		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf_Rel); j++) {
++			Elf_Rel *rel;
++			Elf_Sym *sym;
+ 			const char *name;
+ 			rel = &sec->reltab[j];
+-			sym = &sh_symtab[ELF32_R_SYM(rel->r_info)];
++			sym = &sh_symtab[ELF_R_SYM(rel->r_info)];
+ 			name = sym_name(sym_strtab, sym);
+ 			if (sym->st_shndx != SHN_ABS) {
+ 				continue;
+@@ -545,7 +573,7 @@ static void print_absolute_relocs(void)
+ 			printf("%08x %08x %10s %08x  %s\n",
+ 				rel->r_offset,
+ 				rel->r_info,
+-				rel_type(ELF32_R_TYPE(rel->r_info)),
++				rel_type(ELF_R_TYPE(rel->r_info)),
+ 				sym->st_value,
+ 				name);
+ 		}
+@@ -555,19 +583,19 @@ static void print_absolute_relocs(void)
+ 		printf("\n");
+ }
+ 
+-static void walk_relocs(void (*visit)(Elf32_Rel *rel, Elf32_Sym *sym),
++static void walk_relocs(void (*visit)(Elf_Rel *rel, Elf_Sym *sym),
+ 			int use_real_mode)
+ {
+ 	int i;
+ 	/* Walk through the relocations */
+ 	for (i = 0; i < ehdr.e_shnum; i++) {
+ 		char *sym_strtab;
+-		Elf32_Sym *sh_symtab;
++		Elf_Sym *sh_symtab;
+ 		struct section *sec_applies, *sec_symtab;
+ 		int j;
+ 		struct section *sec = &secs[i];
+ 
+-		if (sec->shdr.sh_type != SHT_REL) {
++		if (sec->shdr.sh_type != SHT_REL_TYPE) {
+ 			continue;
+ 		}
+ 		sec_symtab  = sec->link;
+@@ -577,16 +605,16 @@ static void walk_relocs(void (*visit)(Elf32_Rel *rel, Elf32_Sym *sym),
+ 		}
+ 		sh_symtab = sec_symtab->symtab;
+ 		sym_strtab = sec_symtab->link->strtab;
+-		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf32_Rel); j++) {
+-			Elf32_Rel *rel;
+-			Elf32_Sym *sym;
++		for (j = 0; j < sec->shdr.sh_size/sizeof(Elf_Rel); j++) {
++			Elf_Rel *rel;
++			Elf_Sym *sym;
+ 			unsigned r_type;
+ 			const char *symname;
+ 			int shn_abs;
+ 
+ 			rel = &sec->reltab[j];
+-			sym = &sh_symtab[ELF32_R_SYM(rel->r_info)];
+-			r_type = ELF32_R_TYPE(rel->r_info);
++			sym = &sh_symtab[ELF_R_SYM(rel->r_info)];
++			r_type = ELF_R_TYPE(rel->r_info);
+ 
+ 			shn_abs = sym->st_shndx == SHN_ABS;
+ 
+@@ -647,18 +675,18 @@ static void walk_relocs(void (*visit)(Elf32_Rel *rel, Elf32_Sym *sym),
+ 	}
+ }
+ 
+-static void count_reloc(Elf32_Rel *rel, Elf32_Sym *sym)
++static void count_reloc(Elf_Rel *rel, Elf_Sym *sym)
+ {
+-	if (ELF32_R_TYPE(rel->r_info) == R_386_16)
++	if (ELF_R_TYPE(rel->r_info) == R_386_16)
+ 		reloc16_count++;
+ 	else
+ 		reloc_count++;
+ }
+ 
+-static void collect_reloc(Elf32_Rel *rel, Elf32_Sym *sym)
++static void collect_reloc(Elf_Rel *rel, Elf_Sym *sym)
+ {
+ 	/* Remember the address that needs to be adjusted. */
+-	if (ELF32_R_TYPE(rel->r_info) == R_386_16)
++	if (ELF_R_TYPE(rel->r_info) == R_386_16)
+ 		relocs16[reloc16_idx++] = rel->r_offset;
+ 	else
+ 		relocs[reloc_idx++] = rel->r_offset;
