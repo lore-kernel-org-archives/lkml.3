@@ -1,58 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965310Ab3DPScF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 14:32:05 -0400
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:49434
-	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965000Ab3DPScA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 14:32:00 -0400
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: [PATCH net] hyperv: Fix a compiler warning in netvsc_send()
-Date: Tue, 16 Apr 2013 12:03:51 -0700
-Message-Id: <1366139031-12518-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S965300Ab3DPScU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 14:32:20 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:53573 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965167Ab3DPScR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 14:32:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <2880576.TkeK8oBDas@vostro.rjw.lan>
+References: <48795235.crcTAaJqPb@vostro.rjw.lan> <CAE9FiQVEWy2MVfVmv4oL9D24OcF83dQv+OcFd5K6v8ZHeGumJA@mail.gmail.com>
+ <CAErSpo7vUWSoav+rJgGK15xA7f0W+a0_16tZLFGCz5HO-HVZ2g@mail.gmail.com> <2880576.TkeK8oBDas@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 16 Apr 2013 12:31:55 -0600
+Message-ID: <CAErSpo69sjvPRX5kXcb4kN14HxVBXMVWnG-nGDVaFZd2pUY3YQ@mail.gmail.com>
+Subject: Re: [PATCH] PCI / PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        "Benenati, Chris J" <chris.j.benenati@intel.com>,
+        Ajaykumar Hotchandani <ajaykumar.hotchandani@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed: warning: cast from pointer to integer of different size
+On Tue, Apr 16, 2013 at 12:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, April 15, 2013 02:18:18 PM Bjorn Helgaas wrote:
+>> On Fri, Apr 12, 2013 at 11:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> > On Fri, Apr 12, 2013 at 4:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> >> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> >>
+>> >> Commit b51306c (PCI: Set device power state to PCI_D0 for device
+>> >> without native PM support) modified pci_platform_power_transition()
+>> >> by adding code causing dev->current_state for devices that don't
+>> >> support native PCI PM but are power-manageable by the platform to be
+>> >> changed to PCI_D0 regardless of the value returned by the preceding
+>> >> platform_pci_set_power_state().  In particular, that also is done
+>> >> if the platform_pci_set_power_state() has been successful, which
+>> >> causes the correct power state of the device set by
+>> >> pci_update_current_state() in that case to be overwritten by PCI_D0.
+>> >>
+>> >> Fix that mistake by making the fallback to PCI_D0 only happen if
+>> >> the platform_pci_set_power_state() has returned an error.
+>> >>
+>> >> Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
+>> >> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> >> Cc: <stable@vger.kernel.org>
+>>
+>> I folded in Yinghai's simplification and added a URL to Chris's report
+>> and applied to my pci/rafael-pm branch:
+>> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/rafael-pm
+>>
+>> If it still looks good to you, Rafael, I'll merge it to next for v3.10.
+>
+> Well, the simplification adds an extra check for error into both code paths,
+> so I'm not sure if it's really worth it (that's why I didn't do it originally
+> in the first place), but I suppose that's not a big deal.  It looks good as far
+> as the correctness is concerned anyway.
+>
+>> I don't know what the user-visible effect of this is, and it's been
+>> around for a long time, but if you think this should go in v3.9
+>> instead, let me know.
+>
+> I think v3.9+stable should be sufficient.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+It sounds like you meant to say "v3.10+stable should be sufficient".
+Is that right, or do you want me to push this to Linus before v3.9 is
+released?
 
----
- drivers/net/hyperv/netvsc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index f5f0f09..8c03033 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -500,7 +500,7 @@ int netvsc_send(struct hv_device *device,
- 	int ret = 0;
- 	struct nvsp_message sendMessage;
- 	struct net_device *ndev;
--	u64 req_id;
-+	ulong req_id;
- 
- 	net_device = get_outbound_net_device(device);
- 	if (!net_device)
-@@ -522,7 +522,7 @@ int netvsc_send(struct hv_device *device,
- 	sendMessage.msg.v1_msg.send_rndis_pkt.send_buf_section_size = 0;
- 
- 	if (packet->completion.send.send_completion)
--		req_id = (u64)packet;
-+		req_id = (ulong)packet;
- 	else
- 		req_id = 0;
- 
--- 
-1.7.4.1
-
+>> >> ---
+>> >>  drivers/pci/pci.c |    3 +--
+>> >>  1 file changed, 1 insertion(+), 2 deletions(-)
+>> >>
+>> >> Index: linux-pm/drivers/pci/pci.c
+>> >> ===================================================================
+>> >> --- linux-pm.orig/drivers/pci/pci.c
+>> >> +++ linux-pm/drivers/pci/pci.c
+>> >> @@ -646,8 +646,7 @@ static int pci_platform_power_transition
+>> >>                 error = platform_pci_set_power_state(dev, state);
+>> >>                 if (!error)
+>> >>                         pci_update_current_state(dev, state);
+>> >> -               /* Fall back to PCI_D0 if native PM is not supported */
+>> >> -               if (!dev->pm_cap)
+>> >> +               else if (!dev->pm_cap) /* Fall back to PCI_D0 */
+>> >>                         dev->current_state = PCI_D0;
+>> >>         } else {
+>> >>                 error = -ENODEV;
+>> >>
+>> >
+>> > Acked-by: Yinghai Lu <yinghai@kernel.org>
+>> >
+>> > also could simplify it further.
+>> >
+>> > ---
+>> >  drivers/pci/pci.c |   12 ++++--------
+>> >  1 file changed, 4 insertions(+), 8 deletions(-)
+>> >
+>> > Index: linux-2.6/drivers/pci/pci.c
+>> > ===================================================================
+>> > --- linux-2.6.orig/drivers/pci/pci.c
+>> > +++ linux-2.6/drivers/pci/pci.c
+>> > @@ -646,15 +646,11 @@ static int pci_platform_power_transition
+>> >          error = platform_pci_set_power_state(dev, state);
+>> >          if (!error)
+>> >              pci_update_current_state(dev, state);
+>> > -        /* Fall back to PCI_D0 if native PM is not supported */
+>> > -        if (!dev->pm_cap)
+>> > -            dev->current_state = PCI_D0;
+>> > -    } else {
+>> > +    } else
+>> >          error = -ENODEV;
+>> > -        /* Fall back to PCI_D0 if native PM is not supported */
+>> > -        if (!dev->pm_cap)
+>> > -            dev->current_state = PCI_D0;
+>> > -    }
+>> > +
+>> > +    if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
+>> > +        dev->current_state = PCI_D0;
+>> >
+>> >      return error;
+>> >  }
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
