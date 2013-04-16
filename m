@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935935Ab3DPKvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 06:51:48 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:35777 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934702Ab3DPKvq (ORCPT
+	id S1755283Ab3DPKy6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 06:54:58 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:45871 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab3DPKy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 06:51:46 -0400
+	Tue, 16 Apr 2013 06:54:57 -0400
 From: Prabhakar lad <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
@@ -15,9 +15,9 @@ Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH] media: davinci: vpif: allign the buffers size to page page size boundary
-Date: Tue, 16 Apr 2013 16:21:33 +0530
-Message-Id: <1366109493-27874-1-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v2] media: davinci: vpif: align the buffers size to page page size boundary
+Date: Tue, 16 Apr 2013 16:24:30 +0530
+Message-Id: <1366109670-28030-1-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,6 +37,9 @@ Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Cc: Hans Verkuil <hans.verkuil@cisco.com>
 Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
+ Changes for v2: 
+ 1: Fixed a typo in commit message.
+
  drivers/media/platform/davinci/vpif_capture.c |    1 +
  drivers/media/platform/davinci/vpif_display.c |    1 +
  2 files changed, 2 insertions(+), 0 deletions(-)
