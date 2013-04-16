@@ -1,176 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757191Ab3DPNpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 09:45:31 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44427 "EHLO arroyo.ext.ti.com"
+	id S1757219Ab3DPNpk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 09:45:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:13743 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756694Ab3DPNpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 09:45:30 -0400
-From: Mehar Bajwa <mehar.bajwa@ti.com>
-To: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>
-CC: <liam.r.girdwood@intel.com>, <navada@ti.com>,
-        Mehar Bajwa <mehar.bajwa@ti.com>
-Subject: [PATCH V2 4/4] mfd: SPI interface with AIC platform
-Date: Tue, 16 Apr 2013 19:15:23 +0530
-Message-ID: <1366119923-9828-1-git-send-email-mehar.bajwa@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1366119899-9789-1-git-send-email-mehar.bajwa@ti.com>
-References: <1366119899-9789-1-git-send-email-mehar.bajwa@ti.com>
+	id S1757264Ab3DPNpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 09:45:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,485,1363158000"; 
+   d="scan'208";a="286888965"
+Date: Tue, 16 Apr 2013 18:45:19 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: torvalds@linux-foundation.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] dmaengine: at_hdmac: fix race condition in
+ atc_advance_work()
+Message-ID: <20130416131519.GL12436@intel.com>
+References: <1366112974-32043-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366112974-32043-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Texas Instruments TLV320AIC family of audio SoC
-core functionality controlled via SPI. This driver
-provides common support for accessing the device.
-
-Signed-off-by: Mehar Bajwa <mehar.bajwa@ti.com>
----
- drivers/mfd/Kconfig         |   11 +++++
- drivers/mfd/Makefile        |    1 +
- drivers/mfd/tlv320aic-spi.c |   97 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 109 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/tlv320aic-spi.c
-
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 40eb328..b1d6269 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -81,6 +81,17 @@ config MFD_AIC_I2C
- 	  core functionality controlled via I2C. This driver provides common
- 	  support for accessing the device, additional drivers must be enabled
- 	  in order to use the functionality of the device.
-+
-+config MFD_AIC_SPI
-+	bool "AIC SPI Interface"
-+	select REGMAP_SPI
-+	depends on MFD_AIC
-+	depends on SPI_MASTER
-+	help
-+	  Support for the Texas Instruments TLV320AIC family of audio SoC
-+	  core functionality controlled via SPI.  This driver provides common
-+	  support for accessing the device, additional drivers must be enabled
-+	  in order to use the functionality of the device.
- endmenu
- 
- config MFD_SM501
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 1e2c96a..dfdcfa2 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -9,6 +9,7 @@ obj-$(CONFIG_MFD_88PM805)	+= 88pm805.o 88pm80x.o
- obj-$(CONFIG_MFD_AIC)		+= tlv320aic-core.o
- obj-$(CONFIG_MFD_AIC_IRQ)	+= tlv320aic-irq.o
- obj-$(CONFIG_MFD_AIC_I2C)	+= tlv320aic-i2c.o
-+obj-$(CONFIG_MFD_AIC_SPI)	+= tlv320aic-spi.o
- obj-$(CONFIG_MFD_SM501)		+= sm501.o
- obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
- 
-diff --git a/drivers/mfd/tlv320aic-spi.c b/drivers/mfd/tlv320aic-spi.c
-new file mode 100644
-index 0000000..2faeb40
---- /dev/null
-+++ b/drivers/mfd/tlv320aic-spi.c
-@@ -0,0 +1,97 @@
-+/*
-+ * tlv320aic-spi.c  -- driver for TLV320AIC
-+ *
-+ * Author:      Mukund Navada <navada@ti.com>
-+ *		Mehar Bajwa <mehar.bajwa@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-+ * 02110-1301 USA
-+ *
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/module.h>
-+#include <linux/pm_runtime.h>
-+#include <linux/regmap.h>
-+#include <linux/regulator/consumer.h>
-+#include <linux/slab.h>
-+#include <linux/spi/spi.h>
-+
-+#include <linux/mfd/tlv320aic-core.h>
-+
-+struct regmap_config aic_spi_regmap = {
-+	.reg_bits = 7,
-+	.val_bits = 8,
-+	.cache_type = REGCACHE_NONE,
-+	.read_flag_mask = 0x1,
-+	.pad_bits = 1,
-+};
-+
-+static int tlv320aic_spi_probe(struct spi_device *spi)
-+{
-+	const struct spi_device_id *id = spi_get_device_id(spi);
-+	struct aic *aic;
-+	const struct regmap_config *regmap_config;
-+	int ret;
-+
-+	regmap_config = &aic_spi_regmap;
-+
-+	aic = devm_kzalloc(&spi->dev, sizeof(struct aic), GFP_KERNEL);
-+	if (aic == NULL)
-+		return -ENOMEM;
-+
-+	aic->regmap = devm_regmap_init_spi(spi, regmap_config);
-+	if (IS_ERR(aic->regmap)) {
-+		ret = PTR_ERR(aic->regmap);
-+		dev_err(&spi->dev, "Failed to allocate register map: %d\n",
-+			ret);
-+		return ret;
-+	}
-+
-+	aic->type = id->driver_data;
-+	aic->dev = &spi->dev;
-+	aic->irq = spi->irq;
-+
-+	return aic_device_init(aic);
-+}
-+
-+static int tlv320aic_spi_remove(struct spi_device *spi)
-+{
-+	struct aic *aic = dev_get_drvdata(&spi->dev);
-+	aic_device_exit(aic);
-+	return 0;
-+}
-+
-+static const struct spi_device_id aic_spi_ids[] = {
-+	{"tlv320aic3262", TLV320AIC3262},
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(spi, aic_spi_ids);
-+
-+static struct spi_driver tlv320aic_spi_driver = {
-+	.driver = {
-+		.name	= "tlv320aic",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= tlv320aic_spi_probe,
-+	.remove		= tlv320aic_spi_remove,
-+	.id_table	= aic_spi_ids,
-+};
-+
-+module_spi_driver(tlv320aic_spi_driver);
-+
-+MODULE_DESCRIPTION("TLV320AIC SPI bus interface");
-+MODULE_AUTHOR("Mukund Navada <navada@ti.com>");
-+MODULE_AUTHOR("Mehar Bajwa <mehar.bajwa@ti.com>");
-+MODULE_LICENSE("GPL");
--- 
-1.7.0.4
-
+On Tue, Apr 16, 2013 at 01:49:34PM +0200, Nicolas Ferre wrote:
+> From: Ludovic Desroches <ludovic.desroches@atmel.com>
+> 
+> The BUG_ON() directive is triggered probably due to a latency modification
+> following inclusion of c10d736 (softirq: reduce latencies).
+> This condition has not been met before 3.9-rc1 and doesn't trigger without
+> this patch.
+> 
+> We now make sure that DMA channel is idle before calling atc_complete_all()
+> which makes the BUG_ON() "protection" useless.
+> 
+> Signed-off-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+> ---
+> Linus,
+> 
+> We have identified a race condition on the Atmel ARM-based AT91 DMA controller
+> driver that leads to hitting a BUG_ON() directive.
+> This error, only triggered after the inclusion of a patch that reduces the
+> softirq latency, is affecting several AT91 SoCs and can be seen
+> as a regression by people using the dmaengine driver (on NAND flash
+> accesses for instance).
+> 
+> I know that it is late in the development cycle but can you please consider
+> including it in your tree before 3.9-final?
+> 
+> This patch can also go through dmaengine tree (Vinod Koul) but I do not know if
+> there is enough time remaining.
+> 
+> Thanks a lot, best regards,
+> 
+> Nicolas Ferre
+> 
+> 
+>  drivers/dma/at_hdmac.c | 9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
+> index 6e13f26..88cfc61 100644
+> --- a/drivers/dma/at_hdmac.c
+> +++ b/drivers/dma/at_hdmac.c
+> @@ -310,8 +310,6 @@ static void atc_complete_all(struct at_dma_chan *atchan)
+>  
+>  	dev_vdbg(chan2dev(&atchan->chan_common), "complete all\n");
+>  
+> -	BUG_ON(atc_chan_is_enabled(atchan));
+> -
+>  	/*
+>  	 * Submit queued descriptors ASAP, i.e. before we go through
+>  	 * the completed ones.
+> @@ -368,6 +366,9 @@ static void atc_advance_work(struct at_dma_chan *atchan)
+>  {
+>  	dev_vdbg(chan2dev(&atchan->chan_common), "advance_work\n");
+>  
+> +	if (atc_chan_is_enabled(atchan))
+> +		return;
+> +
+>  	if (list_empty(&atchan->active_list) ||
+>  	    list_is_singular(&atchan->active_list)) {
+>  		atc_complete_all(atchan);
+> @@ -1078,9 +1079,7 @@ static void atc_issue_pending(struct dma_chan *chan)
+>  		return;
+>  
+>  	spin_lock_irqsave(&atchan->lock, flags);
+> -	if (!atc_chan_is_enabled(atchan)) {
+> -		atc_advance_work(atchan);
+> -	}
+> +	atc_advance_work(atchan);
+>  	spin_unlock_irqrestore(&atchan->lock, flags);
+>  }
+>  
+> -- 
+> 1.8.0
+> 
