@@ -1,49 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935987Ab3DPQo5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:44:57 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:64709 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935863Ab3DPQoy (ORCPT
+	id S936013Ab3DPQpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:45:20 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:39771 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935226Ab3DPQpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:44:54 -0400
-X-Originating-IP: 108.223.40.66
-Date: Tue, 16 Apr 2013 09:45:12 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
-        Simon Glass <sjg@chromium.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        grant.likely@secretlab.ca, yuvaraj.cd@gmail.com,
-        ben.dooks@codethink.co.uk, u.kleine-koenig@pengutronix.de,
-        broonie@opensource.wolfsonmicro.com, girish.shivananjappa@linaro.org,
-        bhushan.r@samsung.com, sreekumar.c@samsung.com,
-        prashanth.g@samsung.com, olof@lixom.net, djkurtz@chromium.org,
-        swarren@wwwdotorg.org, Rob Herring <rob.herring@calxeda.com>,
-        Rob Landley <rob@landley.net>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Stephen Warren <swarren@nvidia.com>, Jean Delvare <khali@linux-fr.org>,
-        Peter Korsgaard <peter.korsgaard@barco.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v6 1/3] i2c: mux: Add i2c-arb-gpio-challenge 'mux' driver
-Message-ID: <20130416164512.GB27488@roeck-us.net>
-References: <1365543270-10736-1-git-send-email-dianders@chromium.org>
- <1366129742-16048-1-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366129742-16048-1-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Apr 2013 12:45:17 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, sbw@mit.edu,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Kevin Hilman <khilman@linaro.org>, Christoph Lameter <cl@linux.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Olivier Baetz <olivier.baetz@novasparks.com>
+Subject: [PATCH documentation 1/2] nohz_full: Add documentation.
+Date: Tue, 16 Apr 2013 09:41:29 -0700
+Message-Id: <1366130490-27584-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20130416164036.GA27246@linux.vnet.ibm.com>
+References: <20130416164036.GA27246@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041616-4834-0000-0000-000005CC1211
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 09:29:00AM -0700, Doug Anderson wrote:
-> The i2c-arb-gpio-challenge driver implements an I2C arbitration scheme
-> where masters need to claim the bus with a GPIO before they can start
-> a transcation.  This should generally only be used when standard I2C
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-I am having fun with spelling today :)
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Olivier Baetz <olivier.baetz@novasparks.com>
+Reviewed-by: Randy Dunlap <rdunlap@infradead.org>
+Reviewed-by: Borislav Petkov <bp@suse.de>
+---
+ Documentation/timers/NO_HZ.txt | 255 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 255 insertions(+)
+ create mode 100644 Documentation/timers/NO_HZ.txt
 
-s/transcation/transaction/
+diff --git a/Documentation/timers/NO_HZ.txt b/Documentation/timers/NO_HZ.txt
+new file mode 100644
+index 0000000..e3dd9af
+--- /dev/null
++++ b/Documentation/timers/NO_HZ.txt
+@@ -0,0 +1,255 @@
++		NO_HZ: Reducing Scheduling-Clock Ticks
++
++
++This document describes Kconfig options and boot parameters that can
++reduce the number of scheduling-clock interrupts, thereby improving energy
++efficiency and reducing OS jitter.  Reducing OS jitter is important for
++some types of computationally intensive high-performance computing (HPC)
++applications and for real-time applications.
++
++There are two main contexts in which the number of scheduling-clock
++interrupts can be reduced compared to the old-school approach of sending
++a scheduling-clock interrupt to all CPUs every jiffy whether they need
++it or not (CONFIG_HZ_PERIODIC=y or CONFIG_NO_HZ=n for older kernels):
++
++1.	Idle CPUs (CONFIG_NO_HZ_IDLE=y or CONFIG_NO_HZ=y for older kernels).
++
++2.	CPUs having only one runnable task (CONFIG_NO_HZ_FULL=y).
++
++These two cases are described in the following two sections, followed
++by a third section on RCU-specific considerations and a fourth and final
++section listing known issues.
++
++
++IDLE CPUs
++
++If a CPU is idle, there is little point in sending it a scheduling-clock
++interrupt.  After all, the primary purpose of a scheduling-clock interrupt
++is to force a busy CPU to shift its attention among multiple duties,
++and an idle CPU has no duties to shift its attention among.
++
++The CONFIG_NO_HZ_IDLE=y Kconfig option causes the kernel to avoid sending
++scheduling-clock interrupts to idle CPUs, which is critically important
++both to battery-powered devices and to highly virtualized mainframes.
++A battery-powered device running a CONFIG_HZ_PERIODIC=y kernel would
++drain its battery very quickly, easily 2-3 times as fast as would the
++same device running a CONFIG_NO_HZ_IDLE=y kernel.  A mainframe running
++1,500 OS instances might find that half of its CPU time was consumed by
++unnecessary scheduling-clock interrupts.  In these situations, there
++is strong motivation to avoid sending scheduling-clock interrupts to
++idle CPUs.  That said, dyntick-idle mode is not free:
++
++1.	It increases the number of instructions executed on the path
++	to and from the idle loop.
++
++2.	On many architectures, dyntick-idle mode also increases the
++	number of expensive clock-reprogramming operations.
++
++Therefore, systems with aggressive real-time response constraints often
++run CONFIG_HZ_PERIODIC=y kernels (or CONFIG_NO_HZ=n for older kernels)
++in order to avoid degrading from-idle transition latencies.
++
++An idle CPU that is not receiving scheduling-clock interrupts is said to
++be "dyntick-idle", "in dyntick-idle mode", "in nohz mode", or "running
++tickless".  The remainder of this document will use "dyntick-idle mode".
++
++There is also a boot parameter "nohz=" that can be used to disable
++dyntick-idle mode in CONFIG_NO_HZ_IDLE=y kernels by specifying "nohz=off".
++By default, CONFIG_NO_HZ_IDLE=y kernels boot with "nohz=on", enabling
++dyntick-idle mode.
++
++
++CPUs WITH ONLY ONE RUNNABLE TASK
++
++If a CPU has only one runnable task, there is little point in sending it
++a scheduling-clock interrupt because there is no other task to switch to.
++
++The CONFIG_NO_HZ_FULL=y Kconfig option causes the kernel to avoid
++sending scheduling-clock interrupts to CPUs with a single runnable task,
++and such CPUs are said to be "adaptive-ticks CPUs".  This is important
++for applications with aggressive real-time response constraints because
++it allows them to improve their worst-case response times by the maximum
++duration of a scheduling-clock interrupt.  It is also important for
++computationally intensive short-iteration workloads:  If any CPU is
++delayed during a given iteration, all the other CPUs will be forced to
++wait idle while the delayed CPU finishes.  Thus, the delay is multiplied
++by one less than the number of CPUs.  In these situations, there is
++again strong motivation to avoid sending scheduling-clock interrupts.
++
++By default, no CPU will be an adaptive-ticks CPU.  The "nohz_full="
++boot parameter specifies the adaptive-ticks CPUs.  For example,
++"nohz_full=1,6-8" says that CPUs 1, 6, 7, and 8 are to be adaptive-ticks
++CPUs.  Note that you are prohibited from marking all of the CPUs as
++adaptive-tick CPUs:  At least one non-adaptive-tick CPU must remain
++online to handle timekeeping tasks in order to ensure that system calls
++like gettimeofday() returns accurate values on adaptive-tick CPUs.
++(This is not an issue for CONFIG_NO_HZ_IDLE=y because there are no
++running user processes to observe slight drifts in clock rate.)
++
++Normally, a CPU remains in adaptive-ticks mode as long as possible.
++In particular, transitioning to kernel mode does not automatically change
++the mode.  Instead, the CPU will exit adaptive-ticks mode only if needed,
++for example, if that CPU enqueues an RCU callback.
++
++Just as with dyntick-idle mode, the benefits of adaptive-tick mode do
++not come for free:
++
++1.	CONFIG_NO_HZ_FULL selects CONFIG_NO_HZ_COMMON, so you cannot run
++	adaptive ticks without also running dyntick idle.  This dependency
++	extends down into the implementation, so that all of the costs
++	of CONFIG_NO_HZ_IDLE are also incurred by CONFIG_NO_HZ_FULL.
++
++2.	The user/kernel transitions are slightly more expensive due
++	to the need to inform kernel subsystems (such as RCU) about
++	the change in mode.
++
++3.	POSIX CPU timers on adaptive-tick CPUs may miss their deadlines
++	(perhaps indefinitely) because they currently rely on
++	scheduling-tick interrupts.  This will likely be fixed in
++	one of two ways: (1) Prevent CPUs with POSIX CPU timers from
++	entering adaptive-tick mode, or (2) Use hrtimers or other
++	adaptive-ticks-immune mechanism to cause the POSIX CPU timer to
++	fire properly.
++
++4.	If there are more perf events pending than the hardware can
++	accommodate, they are normally round-robined so as to collect
++	all of them over time.  Adaptive-tick mode may prevent this
++	round-robining from happening.  This will likely be fixed by
++	preventing CPUs with large numbers of perf events pending from
++	entering adaptive-tick mode.
++
++5.	Scheduler statistics for adaptive-tick CPUs may be computed
++	slightly differently than those for non-adaptive-tick CPUs.
++	This might in turn perturb load-balancing of real-time tasks.
++
++6.	The LB_BIAS scheduler feature is disabled by adaptive ticks.
++
++Although improvements are expected over time, adaptive ticks is quite
++useful for many types of real-time and compute-intensive applications.
++However, the drawbacks listed above mean that adaptive ticks should not
++(yet) be enabled by default.
++
++
++RCU IMPLICATIONS
++
++There are situations in which idle CPUs cannot be permitted to
++enter either dyntick-idle mode or adaptive-tick mode, the most
++common being when that CPU has RCU callbacks pending.
++
++The CONFIG_RCU_FAST_NO_HZ=y Kconfig option may be used to cause such CPUs
++to enter dyntick-idle mode or adaptive-tick mode anyway.  In this case,
++a timer will awaken these CPUs every four jiffies in order to ensure
++that the RCU callbacks are processed in a timely fashion.
++
++Another approach is to offload RCU callback processing to "rcuo" kthreads
++using the CONFIG_RCU_NOCB_CPU=y Kconfig option.  The specific CPUs to
++offload may be selected via several methods:
++
++1.	One of three mutually exclusive Kconfig options specify a
++	build-time default for the CPUs to offload:
++
++	a.	The CONFIG_RCU_NOCB_CPU_NONE=y Kconfig option results in
++		no CPUs being offloaded.
++
++	b.	The CONFIG_RCU_NOCB_CPU_ZERO=y Kconfig option causes
++		CPU 0 to be offloaded.
++
++	c.	The CONFIG_RCU_NOCB_CPU_ALL=y Kconfig option causes all
++		CPUs to be offloaded.  Note that the callbacks will be
++		offloaded to "rcuo" kthreads, and that those kthreads
++		will in fact run on some CPU.  However, this approach
++		gives fine-grained control on exactly which CPUs the
++		callbacks run on, along with their scheduling priority
++		(including the default of SCHED_OTHER), and it further
++		allows this control to be varied dynamically at runtime.
++
++2.	The "rcu_nocbs=" kernel boot parameter, which takes a comma-separated
++	list of CPUs and CPU ranges, for example, "1,3-5" selects CPUs 1,
++	3, 4, and 5.  The specified CPUs will be offloaded in addition to
++	any CPUs specified as offloaded by CONFIG_RCU_NOCB_CPU_ZERO=y or
++	CONFIG_RCU_NOCB_CPU_ALL=y.  This means that the "rcu_nocbs=" boot
++	parameter has no effect for kernels built with RCU_NOCB_CPU_ALL=y.
++
++The offloaded CPUs will never queue RCU callbacks, and therefore RCU
++never prevents offloaded CPUs from entering either dyntick-idle mode
++or adaptive-tick mode.  That said, note that it is up to userspace to
++pin the "rcuo" kthreads to specific CPUs if desired.  Otherwise, the
++scheduler will decide where to run them, which might or might not be
++where you want them to run.
++
++
++KNOWN ISSUES
++
++o	Dyntick-idle slows transitions to and from idle slightly.
++	In practice, this has not been a problem except for the most
++	aggressive real-time workloads, which have the option of disabling
++	dyntick-idle mode, an option that most of them take.  However,
++	some workloads will no doubt want to use adaptive ticks to
++	eliminate scheduling-clock interrupt latencies.  Here are some
++	options for these workloads:
++
++	a.	Use PMQOS from userspace to inform the kernel of your
++		latency requirements (preferred).
++
++	b.	On x86 systems, use the "idle=mwait" boot parameter.
++
++	c.	On x86 systems, use the "intel_idle.max_cstate=" to limit
++	`	the maximum C-state depth.
++
++	d.	On x86 systems, use the "idle=poll" boot parameter.
++		However, please note that use of this parameter can cause
++		your CPU to overheat, which may cause thermal throttling
++		to degrade your latencies -- and that this degradation can
++		be even worse than that of dyntick-idle.  Furthermore,
++		this parameter effectively disables Turbo Mode on Intel
++		CPUs, which can significantly reduce maximum performance.
++
++o	Adaptive-ticks slows user/kernel transitions slightly.
++	This is not expected to be a problem for computationally intensive
++	workloads, which have few such transitions.  Careful benchmarking
++	will be required to determine whether or not other workloads
++	are significantly affected by this effect.
++
++o	Adaptive-ticks does not do anything unless there is only one
++	runnable task for a given CPU, even though there are a number
++	of other situations where the scheduling-clock tick is not
++	needed.  To give but one example, consider a CPU that has one
++	runnable high-priority SCHED_FIFO task and an arbitrary number
++	of low-priority SCHED_OTHER tasks.  In this case, the CPU is
++	required to run the SCHED_FIFO task until it either blocks or
++	some other higher-priority task awakens on (or is assigned to)
++	this CPU, so there is no point in sending a scheduling-clock
++	interrupt to this CPU.	However, the current implementation
++	nevertheless sends scheduling-clock interrupts to CPUs having a
++	single runnable SCHED_FIFO task and multiple runnable SCHED_OTHER
++	tasks, even though these interrupts are unnecessary.
++
++	Better handling of these sorts of situations is future work.
++
++o	A reboot is required to reconfigure both adaptive idle and RCU
++	callback offloading.  Runtime reconfiguration could be provided
++	if needed, however, due to the complexity of reconfiguring RCU at
++	runtime, there would need to be an earthshakingly good reason.
++	Especially given that you have the straightforward option of
++	simply offloading RCU callbacks from all CPUs and pinning them
++	where you want them whenever you want them pinned.
++
++o	Additional configuration is required to deal with other sources
++	of OS jitter, including interrupts and system-utility tasks
++	and processes.  This configuration normally involves binding
++	interrupts and tasks to particular CPUs.
++
++o	Some sources of OS jitter can currently be eliminated only by
++	constraining the workload.  For example, the only way to eliminate
++	OS jitter due to global TLB shootdowns is to avoid the unmapping
++	operations (such as kernel module unload operations) that
++	result in these shootdowns.  For another example, page faults
++	and TLB misses can be reduced (and in some cases eliminated) by
++	using huge pages and by constraining the amount of memory used
++	by the application.  Pre-faulting the working set can also be
++	helpful, especially when combined with the mlock() and mlockall()
++	system calls.
++
++o	Unless all CPUs are idle, at least one CPU must keep the
++	scheduling-clock interrupt going in order to support accurate
++	timekeeping.
+-- 
+1.8.1.5
+
