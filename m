@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935027Ab3DPAV2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 20:21:28 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39267 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933533Ab3DPAV0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 20:21:26 -0400
-Date: Mon, 15 Apr 2013 17:21:23 -0700
-From: Michel Lespinasse <walken@google.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 3.9-rc5: Encountedred INFO: rcu_sched self-detected stall on CPU
- due to 09a9f1d27
-Message-ID: <20130416002123.GA29465@google.com>
-References: <20130412181348.GA2253@redhat.com>
- <CANN689GKfxM3R96wgY8-+FftpVT76zMFcHdgKccNKnjHGfYq1Q@mail.gmail.com>
- <20130415163552.GA31868@redhat.com>
- <20130415173424.GB31868@redhat.com>
- <20130415175929.GB30583@redhat.com>
- <20130415191304.GC30583@redhat.com>
- <alpine.LNX.2.00.1304151425540.1030@eggly.anvils>
+	id S935125Ab3DPAXL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 20:23:11 -0400
+Received: from mga03.intel.com ([143.182.124.21]:40555 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753874Ab3DPAXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 20:23:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,479,1363158000"; 
+   d="scan'208";a="227548343"
+Message-ID: <516C99BB.30309@intel.com>
+Date: Tue, 16 Apr 2013 08:22:19 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1304151425540.1030@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>
+CC: Len Brown <lenb@kernel.org>, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [patch v7 0/21] sched: power aware scheduling
+References: <1365040862-8390-1-git-send-email-alex.shi@intel.com> <516724F5.20504@kernel.org> <5167C9FA.8050406@intel.com> <20130412162348.GE2368@pd.tnic> <516A0652.8040505@intel.com> <20130414155925.GC20547@pd.tnic> <516B9859.70004@intel.com> <516B9B57.3030902@intel.com> <20130415095203.GA26524@pd.tnic> <516C059E.20800@intel.com> <20130415231206.GE12144@pd.tnic>
+In-Reply-To: <20130415231206.GE12144@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 2:47 PM, Hugh Dickins <hughd@google.com> wrote:
-> --- 3.9-rc7/mm/mlock.c  2013-04-01 09:08:05.736012852 -0700
-> +++ linux/mm/mlock.c    2013-04-15 14:20:24.454773245 -0700
-> @@ -397,8 +397,7 @@ int __mm_populate(unsigned long start, u
->         long ret = 0;
->
->         VM_BUG_ON(start & ~PAGE_MASK);
-> -       VM_BUG_ON(len != PAGE_ALIGN(len));
-> -       end = start + len;
-> +       end = start + PAGE_ALIGN(len);
->
->         for (nstart = start; nstart < end; nstart = nend) {
->                 /*
+On 04/16/2013 07:12 AM, Borislav Petkov wrote:
+> On Mon, Apr 15, 2013 at 09:50:22PM +0800, Alex Shi wrote:
+>> For fairness and total threads consideration, powersaving cost quit
+>> similar energy on kbuild benchmark, and even better.
+>>
+>> 	    17348.850		    27400.458		   15973.776
+>> 	    13737.493		    18487.248		   12167.816
+> 
+> Yeah, but those lines don't look good - powersaving needs more energy
+> than performance.
+> 
+> And what is even crazier is that fixed 1.2 GHz case. I'd guess in
+> the normal case those cores are at triple the freq. - i.e. somewhere
+> around 3-4 GHz. And yet, 1.2 GHz eats almost *double* the power than
+> performance and powersaving.
 
-Yes, there was originally an issue with page alignment in mmap as well, which was fixed by making sure mmap now passes the page aligned length to mm_populate().
+yes, the max freq is 2.7 GHZ, plus boost.
+> 
+> So for the x=8 and maybe even the x=16 case we're basically better off
+> with performance.
+> 
+> Or could it be that the power measurements are not really that accurate
+> and those numbers above are not really correct?
 
-sys_brk() passes the length as the difference of two page aligned addresses, so it's fine. But vm_brk() doesn't - it calls do_brk() which page aligns the length, but then vm_brk passes the unaligned length to mm_populate().
+testing has a little variation, but the power data is quite accurate. I
+may change to packing tasks per cpu capacity than current cpu weight.
+that should has better power efficient value.
 
-What do you think of the following ? len is already a PAGE_SIZE multiple when called from sys_brk()...
+> 
+> Hmm.
+> 
 
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 0db0de1c2fbe..6af8b0d1c7db 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2557,10 +2557,6 @@ static unsigned long do_brk(unsigned long addr, unsigned long len)
- 	pgoff_t pgoff = addr >> PAGE_SHIFT;
- 	int error;
- 
--	len = PAGE_ALIGN(len);
--	if (!len)
--		return addr;
--
- 	flags = VM_DATA_DEFAULT_FLAGS | VM_ACCOUNT | mm->def_flags;
- 
- 	error = get_unmapped_area(NULL, addr, len, 0, MAP_FIXED);
-@@ -2643,6 +2639,10 @@ unsigned long vm_brk(unsigned long addr, unsigned long len)
- 	unsigned long ret;
- 	bool populate;
- 
-+	len = PAGE_ALIGN(len);
-+	if (!len)
-+		return addr;
-+
- 	down_write(&mm->mmap_sem);
- 	ret = do_brk(addr, len);
- 	populate = ((mm->def_flags & VM_LOCKED) != 0);
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Thanks Alex
