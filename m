@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935498Ab3DPC4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 22:56:23 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:64741 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935212Ab3DPC4W (ORCPT
+	id S935490Ab3DPDCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 23:02:30 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:40477 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935212Ab3DPDC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 22:56:22 -0400
+	Mon, 15 Apr 2013 23:02:28 -0400
 MIME-Version: 1.0
-In-Reply-To: <516CB937.2000305@zytor.com>
-References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
-	<1365797627-20874-7-git-send-email-keescook@chromium.org>
-	<CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com>
-	<516A1D49.1050100@zytor.com>
-	<CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com>
-	<516C702C.2030209@zytor.com>
-	<CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com>
-	<516C751B.4020505@zytor.com>
-	<CAE9FiQW5X80bxOURTkhnELuV_AzYXBHEudxN1eUg_1jehrcfww@mail.gmail.com>
-	<516CB937.2000305@zytor.com>
-Date: Mon, 15 Apr 2013 19:56:21 -0700
-X-Google-Sender-Auth: 9hKztu9vpIBCK15VeaVYExzSke4
-Message-ID: <CAE9FiQU97FHKpKQjZJq+Nfz18eM2n0-V2n4B6m=ozjkycP+Rng@mail.gmail.com>
-Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <keescook@chromium.org>, Eric Northup <digitaleric@google.com>,
+In-Reply-To: <20130415171429.GF3672@sgi.com>
+References: <20130415171225.GC3658@sgi.com>
+	<20130415171429.GF3672@sgi.com>
+Date: Tue, 16 Apr 2013 11:02:27 +0800
+Message-ID: <CAAQ0ZWTTd4s4dNCzF-rhyaav6wXZRiUcHRTkJhpQgP5AnUH17g@mail.gmail.com>
+Subject: Re: [Patch -v3 1/4] Migrate shutdown/reboot to boot cpu.
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Robin Holt <holt@sgi.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+        Michel Lespinasse <walken@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, "the arch/x86 maintainers" <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 7:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/15/2013 03:00 PM, Yinghai Lu wrote:
->>
->> looks you are trying redo the work for bootloader to pick loaded phys addr.
->>
+On Mon, Apr 15, 2013 at 12:14:29PM -0500, Robin Holt wrote:
+> We recently noticed that reboot of a 1024 cpu machine takes approx 16
+> minutes of just stopping the cpus.  The slowdown was tracked to commit
+> f96972f.
 >
-> Well, that is exactly what they are doing.  On top of that they also
-> need to randomize the 64-bit virtual mapping.
+> The current implementation does all the work of hot removing the cpus
+> before halting the system.  We are switching to just migrating to the
+> boot cpu and then continuing with shutdown/reboot.
 >
-> I wonder if we need a bootloader bit to inhibit kaslr in addition to the
-> command line...
+> This also has the effect of not breaking x86's command line parameter for
+> specifying the reboot cpu.  Note, this code was shamelessly copied from
+> arch/x86/kernel/reboot.c with bits removed pertaining to the reboot_cpu
+> command line parameter.
+>
+> Signed-off-by: Robin Holt <holt@sgi.com>
+> To: Shawn Guo <shawn.guo@linaro.org>
 
-so let the bootloader to parse kaslr and pick ramdom address,
-and kernel arch/x86/boot/compressed/head_64.S to pick random virtual address?
+It works on my hardware - i.MX6 Quad.
 
-Yinghai
+Tested-by: Shawn Guo <shawn.guo@linaro.org>
