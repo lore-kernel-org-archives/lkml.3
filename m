@@ -1,75 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab3DPNgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 09:36:07 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:34486 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754826Ab3DPNgE (ORCPT
+	id S1756983Ab3DPNgQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 09:36:16 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52486 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754826Ab3DPNgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 09:36:04 -0400
-Date: Tue, 16 Apr 2013 09:35:56 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <arekm@maven.pl>
-Subject: Re: [PATCH v9] irq: add quirk for broken interrupt remapping on 55XX
- chipsets
-Message-ID: <20130416133555.GB9241@hmsreliant.think-freely.org>
-References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
- <1366065677-3431-1-git-send-email-nhorman@tuxdriver.com>
- <20130416102454.GS6858@8bytes.org>
+	Tue, 16 Apr 2013 09:36:12 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 16 Apr 2013 06:36:25 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+Message-ID: <20130416133625.GB30206@roeck-us.net>
+References: <201304121310.r3CDAJHh011814@latitude>
+ <20130412133221.GA11293@roeck-us.net>
+ <24DF37198A1E704D9811D8F72B87EB514191E103@NB-EX-MBX02.diasemi.com>
+ <20130415163532.GA24272@roeck-us.net>
+ <24DF37198A1E704D9811D8F72B87EB514191E14C@NB-EX-MBX02.diasemi.com>
+ <20130415174602.GA18800@roeck-us.net>
+ <24DF37198A1E704D9811D8F72B87EB514191E2C3@NB-EX-MBX02.diasemi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130416102454.GS6858@8bytes.org>
+In-Reply-To: <24DF37198A1E704D9811D8F72B87EB514191E2C3@NB-EX-MBX02.diasemi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 12:24:54PM +0200, Joerg Roedel wrote:
-> On Mon, Apr 15, 2013 at 06:41:17PM -0400, Neil Horman wrote:
-> > +#ifdef CONFIG_IRQ_REMAP
-> > +static void __init intel_remapping_check(int num, int slot, int func)
-> > +{
-> > +	u8 revision;
-> > +
-> > +	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
-> > +
-> > +	/*
-> > +	 * Revision 0x13 of this chipset supports irq remapping
-> > +	 * but has an erratum that breaks its behavior, flag it as such
-> > +	 */
-> > +	if (revision == 0x13)
-> > +		irq_remap_broken = 1;
-> > +
-> > +}
-> > +#else
+On Tue, Apr 16, 2013 at 09:17:27AM +0000, Opensource [Anthony Olech] wrote:
+> > -----Original Message-----
+> > From: Guenter Roeck [mailto:linux@roeck-us.net]
+> > Sent: 15 April 2013 18:46
+> > To: Opensource [Anthony Olech]
+> > Cc: LKML
+> > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+> > 
+> > On Mon, Apr 15, 2013 at 05:29:13PM +0000, Opensource [Anthony Olech]
+> > wrote:
+> > > > -----Original Message-----
+> > > > From: Guenter Roeck [mailto:linux@roeck-us.net]
+> > > > Sent: 15 April 2013 17:36
+> > > > To: Opensource [Anthony Olech]
+> > > > Cc: LKML
+> > > > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+> > > >
+> > > > On Mon, Apr 15, 2013 at 03:00:58PM +0000, Opensource [Anthony Olech]
+> > > > wrote:
+> > > > >
+> > > > >
+> > > > > > -----Original Message-----
+> > > > > > From: Guenter Roeck [mailto:linux@roeck-us.net]
+> > > > > > Sent: 12 April 2013 14:32
+> > > > > > To: Opensource [Anthony Olech]
+> > > > > > Cc: Mark Brown; Liam Girdwood; Jean Delvare; Randy Dunlap; LKML;
+> > > > > > David Dajun Chen
+> > > > > > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+> > > > > >
+> > > > > > On Fri, Apr 12, 2013 at 02:05:28PM +0100, Anthony Olech wrote:
+> > > > > > > This is the REGULATOR component driver of the Dialog DA9058 PMIC.
+> > > > > > > This driver is just one component of the whole DA9058 PMIC driver.
+> > > > > > > It depends on the CORE component driver of the DA9058 MFD.
+> > > > > > >
+> > > > > > > There are 6 warnings from scripts/checkpatch.pl, but since it
+> > > > > > > seems to be complaining about variable names such as min_uV
+> > > > > > > are in CamelCase, when it is obvious that they are not in
+> > > > > > > CamelCase I have
+> > > > ignored them.
+> > > > > > >
+> > > > > > ??? min_uV _is_ CamelCase ???
+> > > > > >
+> > > > > > Ok, maybe it is camelcasE, but you are splitting hairs here.
+> > > > >
+> > > > > it is not me splitting hairs, it is scripts/checkpatch.pl
+> > > > >
+> > > > Maybe you did not understand what I meant. Per your logic,
+> > > >
+> > > > 	MicroVolt is CamelCase
+> > > > 	uVolt is ???
+> > > > 	uV is not CamelCase
+> > > >
+> > > > By abbreviating CamelCase to camelCase to cC you make it, in your
+> > > > opinion, acceptable.
+> > > >
+> > > > If you want to declare CamelCase variables, just do it, but don't
+> > > > claim that they are not really CamelCase.
+> > > >
+> > > > Guenter
+> > >
+> > > I always thought that camel case meant "changing from lower case to
+> > > upper case the first letter of each word and then joining the
+> > > capitalized words together", so by that definition uV or mW are not camel
+> > case because "v" and "w" are not words!
 > 
-> Any reason why you don't check this in the Intel IOMMU init code? You
-> would safe the ifdefs and you don't have to include
-> irq-remapping-internal header files somewhere else in the tree.
+> The definition of CamelCase From Wikipedia, the free encyclopedia is:
 > 
+> "CamelCase (camel case) is a term which refers to the practice of writing
+> compound words where the first letter of an identifier is lowercase and the
+> first letter of each subsequent concatenated word is capitalized."
 > 
-> 	Joerg
-> 
-> 
-> 
-Actually, hold on that last note, the intel iommu init code doesn't seem to
-create any direct relationship between the set of iommu's and the pci_dev's that
-implement them.  In the intel_irq_remapping_supported path I can loop over each
-dmar_dhrd_unit, and interrogate each of the devices on its **devices list to see
-if the device/vendor and revision ids match, but looking at the dhrd parsing
-code, I'm not sure the iommu pci_dev is always going to be on that list.  That
-seems like its going to be pretty ugly in and of itself.  Do you have a
-suggested way to identify the pci_dev of the device we need in that path without
-having to simply iterate over every device in that scope?
+Maybe the rule should read "don't mix lowercase and uppercase letters in
+variable names and defines" to prevent variable names such as cAmelcAse or
+cameLcasE, which would be permitted with your logic :).
 
-Neil
+> > > Either way it seems that the algorithm in scripts/checkpatch.pl is wrong! and
+> > that was my point.
+> >
+> > Guess we'll have to agree to disagree here, as I happen to think that
+> > checkpatch is perfectly right.
+> > Guenter
+> 
+> Hi Guenter,
+> 
+> I am quite happy to accept the algorithm in scripts/checkpatch.pl as the
+> arbiter for correctly formed linux kernel variable names.
+> 
+> On that basis "old_mV", "new_uA" etc are incorrectly formed variable names.
+> Could you possibly suggest legal alternatives to "mA", "uV", "kW" ??
+> 
+I just changed it to lowercase in the ntc_thermistor driver. What you use is
+really your call as long as it does not mix uppercase and lowercase letters.
 
+Guenter
