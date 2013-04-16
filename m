@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965331Ab3DPS1s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 14:27:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63438 "EHLO mx1.redhat.com"
+	id S965347Ab3DPS1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 14:27:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47367 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965003Ab3DPS1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 14:27:44 -0400
+	id S965003Ab3DPS1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 14:27:49 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 28/28] proc: Move non-public stuff from linux/proc_fs.h to
- fs/proc/internal.h [RFC]
+Subject: [PATCH 26/28] proc: Supply a function to remove a proc entry by PDE
+ [RFC]
 To: linux-kernel@vger.kernel.org
 From: David Howells <dhowells@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk
-Date: Tue, 16 Apr 2013 19:27:42 +0100
-Message-ID: <20130416182741.27773.66337.stgit@warthog.procyon.org.uk>
+Cc: alsa-devel@alsa-project.org, linux-pci@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        openipmi-developer@lists.sourceforge.net
+Date: Tue, 16 Apr 2013 19:27:34 +0100
+Message-ID: <20130416182734.27773.47452.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
 References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
@@ -27,596 +31,391 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move non-public declarations and definitions from linux/proc_fs.h to
-fs/proc/internal.h.
+Supply a function (proc_remove()) to remove a proc entry (and any subtree
+rooted there) by proc_dir_entry pointer rather than by name and (optionally)
+root dir entry pointer.  This allows us to eliminate all remaining pde->name
+accesses outside of procfs.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
+cc: linux-acpi@vger.kernel.org
+cc: openipmi-developer@lists.sourceforge.net
+cc: devicetree-discuss@lists.ozlabs.org
+cc: linux-pci@vger.kernel.org
+cc: netdev@vger.kernel.org
+cc: netfilter-devel@vger.kernel.org
+cc: alsa-devel@alsa-project.org
 ---
 
- fs/proc/internal.h      |  307 ++++++++++++++++++++++++++++++-----------------
- fs/proc/kcore.c         |    1 
- include/linux/proc_fs.h |  151 ++++++-----------------
- 3 files changed, 236 insertions(+), 223 deletions(-)
+ drivers/acpi/sbs.c                  |   21 ++++-----------------
+ drivers/char/ipmi/ipmi_msghandler.c |    2 +-
+ drivers/misc/sgi-gru/gruprocfs.c    |    2 +-
+ drivers/of/base.c                   |   11 +----------
+ drivers/pci/proc.c                  |   12 +++---------
+ fs/proc/generic.c                   |    7 +++++++
+ fs/proc/vmcore.c                    |    2 +-
+ include/linux/proc_fs.h             |    2 ++
+ kernel/irq/proc.c                   |    6 +-----
+ net/8021q/vlanproc.c                |    9 ++-------
+ net/core/pktgen.c                   |    6 ++----
+ net/ipv4/netfilter/ipt_CLUSTERIP.c  |    4 ++--
+ net/ipv6/proc.c                     |    3 +--
+ net/netfilter/xt_hashlimit.c        |    4 ++--
+ sound/core/info.c                   |   19 +++++--------------
+ 15 files changed, 35 insertions(+), 75 deletions(-)
 
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 86a2406..04255b6 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -1,4 +1,4 @@
--/* internal.h: internal procfs definitions
-+/* Internal procfs definitions
-  *
-  * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
-  * Written by David Howells (dhowells@redhat.com)
-@@ -9,81 +9,66 @@
-  * 2 of the License, or (at your option) any later version.
-  */
- 
--#include <linux/sched.h>
- #include <linux/proc_fs.h>
-+#include <linux/proc_ns.h>
-+#include <linux/spinlock.h>
-+#include <linux/atomic.h>
- #include <linux/binfmts.h>
--struct  ctl_table_header;
--struct  mempolicy;
- 
--extern struct proc_dir_entry proc_root;
--extern void proc_self_init(void);
--#ifdef CONFIG_PROC_SYSCTL
--extern int proc_sys_init(void);
--extern void sysctl_head_put(struct ctl_table_header *head);
--#else
--static inline void proc_sys_init(void) { }
--static inline void sysctl_head_put(struct ctl_table_header *head) { }
--#endif
--#ifdef CONFIG_NET
--extern int proc_net_init(void);
--#else
--static inline int proc_net_init(void) { return 0; }
--#endif
-+struct ctl_table_header;
-+struct mempolicy;
- 
--struct vmalloc_info {
--	unsigned long	used;
--	unsigned long	largest_chunk;
-+/*
-+ * This is not completely implemented yet. The idea is to
-+ * create an in-memory tree (like the actual /proc filesystem
-+ * tree) of these proc_dir_entries, so that we can dynamically
-+ * add new files to /proc.
-+ *
-+ * The "next" pointer creates a linked list of one /proc directory,
-+ * while parent/subdir create the directory structure (every
-+ * /proc file has a parent, but "subdir" is NULL for all
-+ * non-directory entries).
-+ */
-+struct proc_dir_entry {
-+	unsigned int low_ino;
-+	umode_t mode;
-+	nlink_t nlink;
-+	kuid_t uid;
-+	kgid_t gid;
-+	loff_t size;
-+	const struct inode_operations *proc_iops;
-+	const struct file_operations *proc_fops;
-+	struct proc_dir_entry *next, *parent, *subdir;
-+	void *data;
-+	atomic_t count;		/* use count */
-+	atomic_t in_use;	/* number of callers into module in progress; */
-+			/* negative -> it's going away RSN */
-+	struct completion *pde_unload_completion;
-+	struct list_head pde_openers;	/* who did ->open, but not ->release */
-+	spinlock_t pde_unload_lock; /* proc_fops checks and pde_users bumps */
-+	u8 namelen;
-+	char name[];
- };
- 
--#ifdef CONFIG_MMU
--#define VMALLOC_TOTAL (VMALLOC_END - VMALLOC_START)
--extern void get_vmalloc_info(struct vmalloc_info *vmi);
--#else
--
--#define VMALLOC_TOTAL 0UL
--#define get_vmalloc_info(vmi)			\
--do {						\
--	(vmi)->used = 0;			\
--	(vmi)->largest_chunk = 0;		\
--} while(0)
--#endif
--
--extern int proc_tid_stat(struct seq_file *m, struct pid_namespace *ns,
--				struct pid *pid, struct task_struct *task);
--extern int proc_tgid_stat(struct seq_file *m, struct pid_namespace *ns,
--				struct pid *pid, struct task_struct *task);
--extern int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
--				struct pid *pid, struct task_struct *task);
--extern int proc_pid_statm(struct seq_file *m, struct pid_namespace *ns,
--				struct pid *pid, struct task_struct *task);
--extern loff_t mem_lseek(struct file *file, loff_t offset, int orig);
--
--extern const struct file_operations proc_tid_children_operations;
--extern const struct file_operations proc_pid_maps_operations;
--extern const struct file_operations proc_tid_maps_operations;
--extern const struct file_operations proc_pid_numa_maps_operations;
--extern const struct file_operations proc_tid_numa_maps_operations;
--extern const struct file_operations proc_pid_smaps_operations;
--extern const struct file_operations proc_tid_smaps_operations;
--extern const struct file_operations proc_clear_refs_operations;
--extern const struct file_operations proc_pagemap_operations;
--extern const struct file_operations proc_net_operations;
--extern const struct inode_operations proc_net_inode_operations;
--extern const struct inode_operations proc_pid_link_inode_operations;
-+union proc_op {
-+	int (*proc_get_link)(struct dentry *, struct path *);
-+	int (*proc_read)(struct task_struct *task, char *page);
-+	int (*proc_show)(struct seq_file *m,
-+		struct pid_namespace *ns, struct pid *pid,
-+		struct task_struct *task);
-+};
- 
--struct proc_maps_private {
-+struct proc_inode {
- 	struct pid *pid;
--	struct task_struct *task;
--#ifdef CONFIG_MMU
--	struct vm_area_struct *tail_vma;
--#endif
--#ifdef CONFIG_NUMA
--	struct mempolicy *task_mempolicy;
--#endif
-+	int fd;
-+	union proc_op op;
-+	struct proc_dir_entry *pde;
-+	struct ctl_table_header *sysctl;
-+	struct ctl_table *sysctl_entry;
-+	struct proc_ns ns;
-+	struct inode vfs_inode;
- };
- 
--void proc_init_inodecache(void);
--
- /*
-  * General functions
-  */
-@@ -150,79 +135,142 @@ out:
+diff --git a/drivers/acpi/sbs.c b/drivers/acpi/sbs.c
+index a296e08..b6241ee 100644
+--- a/drivers/acpi/sbs.c
++++ b/drivers/acpi/sbs.c
+@@ -521,19 +521,6 @@ acpi_sbs_add_fs(struct proc_dir_entry **dir,
+ 	return 0;
  }
  
- /*
-- * base.c
-+ * Offset of the first process in the /proc root directory..
-  */
--extern int pid_delete_dentry(const struct dentry *);
-+#define FIRST_PROCESS_ENTRY 256
+-static void
+-acpi_sbs_remove_fs(struct proc_dir_entry **dir,
+-			   struct proc_dir_entry *parent_dir)
+-{
+-	if (*dir) {
+-		remove_proc_entry(ACPI_SBS_FILE_INFO, *dir);
+-		remove_proc_entry(ACPI_SBS_FILE_STATE, *dir);
+-		remove_proc_entry(ACPI_SBS_FILE_ALARM, *dir);
+-		remove_proc_entry((*dir)->name, parent_dir);
+-		*dir = NULL;
+-	}
+-}
+-
+ /* Smart Battery Interface */
+ static struct proc_dir_entry *acpi_battery_dir = NULL;
  
--struct dentry *proc_lookup_de(struct proc_dir_entry *de, struct inode *ino,
--		struct dentry *dentry);
--int proc_readdir_de(struct proc_dir_entry *de, struct file *filp, void *dirent,
--		filldir_t filldir);
-+/* Worst case buffer size needed for holding an integer. */
-+#define PROC_NUMBUF 13
- 
--struct pde_opener {
--	struct file *file;
--	struct list_head lh;
--	int closing;
--	struct completion *c;
--};
-+/*
-+ * array.c
-+ */
-+extern const struct file_operations proc_tid_children_operations;
-+
-+extern int proc_tid_stat(struct seq_file *, struct pid_namespace *,
-+			 struct pid *, struct task_struct *);
-+extern int proc_tgid_stat(struct seq_file *, struct pid_namespace *,
-+			  struct pid *, struct task_struct *);
-+extern int proc_pid_status(struct seq_file *, struct pid_namespace *,
-+			   struct pid *, struct task_struct *);
-+extern int proc_pid_statm(struct seq_file *, struct pid_namespace *,
-+			  struct pid *, struct task_struct *);
-+
-+/*
-+ * base.c
-+ */
-+extern const struct dentry_operations pid_dentry_operations;
-+extern int pid_getattr(struct vfsmount *, struct dentry *, struct kstat *);
-+extern int proc_setattr(struct dentry *, struct iattr *);
-+extern struct inode *proc_pid_make_inode(struct super_block *, struct task_struct *);
-+extern int pid_revalidate(struct dentry *, unsigned int);
-+extern int pid_delete_dentry(const struct dentry *);
-+extern int proc_pid_readdir(struct file *, void *, filldir_t);
-+extern struct dentry *proc_pid_lookup(struct inode *, struct dentry *, unsigned int);
-+extern loff_t mem_lseek(struct file *, loff_t, int);
- 
--void proc_entry_rundown(struct proc_dir_entry *);
-+/* Lookups */
-+typedef struct dentry *instantiate_t(struct inode *, struct dentry *,
-+				     struct task_struct *, const void *);
-+extern int proc_fill_cache(struct file *, void *, filldir_t, const char *, int,
-+			   instantiate_t, struct task_struct *, const void *);
- 
-+/*
-+ * generic.c
-+ */
- extern spinlock_t proc_subdir_lock;
- 
--struct dentry *proc_pid_lookup(struct inode *dir, struct dentry * dentry, unsigned int);
--int proc_pid_readdir(struct file * filp, void * dirent, filldir_t filldir);
--unsigned long task_vsize(struct mm_struct *);
--unsigned long task_statm(struct mm_struct *,
--	unsigned long *, unsigned long *, unsigned long *, unsigned long *);
--void task_mem(struct seq_file *, struct mm_struct *);
-+extern struct dentry *proc_lookup(struct inode *, struct dentry *, unsigned int);
-+extern struct dentry *proc_lookup_de(struct proc_dir_entry *, struct inode *,
-+				     struct dentry *);
-+extern int proc_readdir(struct file *, void *, filldir_t);
-+extern int proc_readdir_de(struct proc_dir_entry *, struct file *, void *, filldir_t);
- 
- static inline struct proc_dir_entry *pde_get(struct proc_dir_entry *pde)
- {
- 	atomic_inc(&pde->count);
- 	return pde;
- }
--void pde_put(struct proc_dir_entry *pde);
-+extern void pde_put(struct proc_dir_entry *);
-+
-+/*
-+ * inode.c
-+ */
-+struct pde_opener {
-+	struct file *file;
-+	struct list_head lh;
-+	int closing;
-+	struct completion *c;
-+};
- 
--int proc_fill_super(struct super_block *);
--struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
--int proc_remount(struct super_block *sb, int *flags, char *data);
-+extern const struct inode_operations proc_pid_link_inode_operations;
-+
-+extern void proc_init_inodecache(void);
-+extern struct inode *proc_get_inode(struct super_block *, struct proc_dir_entry *);
-+extern int proc_fill_super(struct super_block *);
-+extern void proc_entry_rundown(struct proc_dir_entry *);
- 
- /*
-- * These are generic /proc routines that use the internal
-- * "struct proc_dir_entry" tree to traverse the filesystem.
-- *
-- * The /proc root directory has extended versions to take care
-- * of the /proc/<pid> subdirectories.
-+ * mmu.c
-  */
--int proc_readdir(struct file *, void *, filldir_t);
--struct dentry *proc_lookup(struct inode *, struct dentry *, unsigned int);
-+struct vmalloc_info {
-+	unsigned long	used;
-+	unsigned long	largest_chunk;
-+};
- 
-+#ifdef CONFIG_MMU
-+#define VMALLOC_TOTAL (VMALLOC_END - VMALLOC_START)
-+extern void get_vmalloc_info(struct vmalloc_info *);
- 
-+#else
-+#define VMALLOC_TOTAL 0UL
-+static inline void get_vmalloc_info(struct vmalloc_info *vmi)
-+{
-+	vmi->used = 0;
-+	vmi->largest_chunk = 0;
-+}
-+#endif
- 
--/* Lookups */
--typedef struct dentry *instantiate_t(struct inode *, struct dentry *,
--				struct task_struct *, const void *);
--int proc_fill_cache(struct file *filp, void *dirent, filldir_t filldir,
--	const char *name, int len,
--	instantiate_t instantiate, struct task_struct *task, const void *ptr);
--int pid_revalidate(struct dentry *dentry, unsigned int flags);
--struct inode *proc_pid_make_inode(struct super_block * sb, struct task_struct *task);
--extern const struct dentry_operations pid_dentry_operations;
--int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat);
--int proc_setattr(struct dentry *dentry, struct iattr *attr);
-+/*
-+ * proc_devtree.c
-+ */
-+#ifdef CONFIG_PROC_DEVICETREE
-+extern void proc_device_tree_init(void);
-+#endif
- 
-+/*
-+ * proc_namespaces.c
-+ */
- extern const struct inode_operations proc_ns_dir_inode_operations;
- extern const struct file_operations proc_ns_dir_operations;
- 
-+/*
-+ * proc_net.c
-+ */
-+extern const struct file_operations proc_net_operations;
-+extern const struct inode_operations proc_net_inode_operations;
-+
-+#ifdef CONFIG_NET
-+extern int proc_net_init(void);
-+#else
-+static inline int proc_net_init(void) { return 0; }
-+#endif
-+
-+/*
-+ * proc_self.c
-+ */
- extern int proc_setup_self(struct super_block *);
- 
- /*
-- * proc_devtree.c
-+ * proc_sysctl.c
-  */
--#ifdef CONFIG_PROC_DEVICETREE
--extern void proc_device_tree_init(void);
--#endif /* CONFIG_PROC_DEVICETREE */
-+#ifdef CONFIG_PROC_SYSCTL
-+extern int proc_sys_init(void);
-+extern void sysctl_head_put(struct ctl_table_header *);
-+#else
-+static inline void proc_sys_init(void) { }
-+static inline void sysctl_head_put(struct ctl_table_header *head) { }
-+#endif
- 
- /*
-  * proc_tty.c
-@@ -232,3 +280,40 @@ extern void proc_tty_init(void);
- #else
- static inline void proc_tty_init(void) {}
+@@ -836,8 +823,8 @@ static void acpi_battery_remove(struct acpi_sbs *sbs, int id)
+ 		power_supply_unregister(&battery->bat);
+ 	}
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+-	if (battery->proc_entry)
+-		acpi_sbs_remove_fs(&battery->proc_entry, acpi_battery_dir);
++	proc_remove(battery->proc_entry);
++	battery->proc_entry = NULL;
  #endif
-+
-+/*
-+ * root.c
-+ */
-+extern struct proc_dir_entry proc_root;
-+
-+extern void proc_self_init(void);
-+extern int proc_remount(struct super_block *, int *, char *);
-+
-+/*
-+ * task_[no]mmu.c
-+ */
-+struct proc_maps_private {
-+	struct pid *pid;
-+	struct task_struct *task;
-+#ifdef CONFIG_MMU
-+	struct vm_area_struct *tail_vma;
-+#endif
-+#ifdef CONFIG_NUMA
-+	struct mempolicy *task_mempolicy;
-+#endif
-+};
-+
-+extern const struct file_operations proc_pid_maps_operations;
-+extern const struct file_operations proc_tid_maps_operations;
-+extern const struct file_operations proc_pid_numa_maps_operations;
-+extern const struct file_operations proc_tid_numa_maps_operations;
-+extern const struct file_operations proc_pid_smaps_operations;
-+extern const struct file_operations proc_tid_smaps_operations;
-+extern const struct file_operations proc_clear_refs_operations;
-+extern const struct file_operations proc_pagemap_operations;
-+
-+extern unsigned long task_vsize(struct mm_struct *);
-+extern unsigned long task_statm(struct mm_struct *,
-+				unsigned long *, unsigned long *,
-+				unsigned long *, unsigned long *);
-+extern void task_mem(struct seq_file *, struct mm_struct *);
-diff --git a/fs/proc/kcore.c b/fs/proc/kcore.c
-index 8e6ce83..13cf87c 100644
---- a/fs/proc/kcore.c
-+++ b/fs/proc/kcore.c
-@@ -28,6 +28,7 @@
- #include <linux/ioport.h>
- #include <linux/memory.h>
- #include <asm/sections.h>
-+#include "internal.h"
+ }
  
- #define CORE_STR "CORE"
+@@ -873,8 +860,8 @@ static void acpi_charger_remove(struct acpi_sbs *sbs)
+ 	if (sbs->charger.dev)
+ 		power_supply_unregister(&sbs->charger);
+ #ifdef CONFIG_ACPI_PROCFS_POWER
+-	if (sbs->charger_entry)
+-		acpi_sbs_remove_fs(&sbs->charger_entry, acpi_ac_dir);
++	proc_remove(sbs->charger_entry);
++	sbs->charger_entry = NULL;
+ #endif
+ }
  
-diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-index 96ede28..05740da 100644
---- a/include/linux/proc_fs.h
-+++ b/include/linux/proc_fs.h
-@@ -1,149 +1,69 @@
--#ifndef _LINUX_PROC_FS_H
--#define _LINUX_PROC_FS_H
--
--#include <linux/slab.h>
--#include <linux/fs.h>
--#include <linux/spinlock.h>
--#include <linux/magic.h>
--#include <linux/atomic.h>
--#include <linux/proc_ns.h>
--
--struct net;
--struct completion;
--struct mm_struct;
--
- /*
-  * The proc filesystem constants/structures
-  */
-+#ifndef _LINUX_PROC_FS_H
-+#define _LINUX_PROC_FS_H
- 
--/*
-- * Offset of the first process in the /proc root directory..
-- */
--#define FIRST_PROCESS_ENTRY 256
--
--/* Worst case buffer size needed for holding an integer. */
--#define PROC_NUMBUF 13
--
--/*
-- * This is not completely implemented yet. The idea is to
-- * create an in-memory tree (like the actual /proc filesystem
-- * tree) of these proc_dir_entries, so that we can dynamically
-- * add new files to /proc.
-- *
-- * The "next" pointer creates a linked list of one /proc directory,
-- * while parent/subdir create the directory structure (every
-- * /proc file has a parent, but "subdir" is NULL for all
-- * non-directory entries).
-- */
-+#include <linux/types.h>
-+#include <linux/fs.h>
- 
--struct proc_dir_entry {
--	unsigned int low_ino;
--	umode_t mode;
--	nlink_t nlink;
--	kuid_t uid;
--	kgid_t gid;
--	loff_t size;
--	const struct inode_operations *proc_iops;
--	const struct file_operations *proc_fops;
--	struct proc_dir_entry *next, *parent, *subdir;
--	void *data;
--	atomic_t count;		/* use count */
--	atomic_t in_use;	/* number of callers into module in progress; */
--			/* negative -> it's going away RSN */
--	struct completion *pde_unload_completion;
--	struct list_head pde_openers;	/* who did ->open, but not ->release */
--	spinlock_t pde_unload_lock; /* proc_fops checks and pde_users bumps */
--	u8 namelen;
--	char name[];
--};
-+struct proc_dir_entry;
+diff --git a/drivers/char/ipmi/ipmi_msghandler.c b/drivers/char/ipmi/ipmi_msghandler.c
+index 1420bbb..4d439d2 100644
+--- a/drivers/char/ipmi/ipmi_msghandler.c
++++ b/drivers/char/ipmi/ipmi_msghandler.c
+@@ -4541,7 +4541,7 @@ static void __exit cleanup_ipmi(void)
+ 	del_timer_sync(&ipmi_timer);
  
  #ifdef CONFIG_PROC_FS
+-	remove_proc_entry(proc_ipmi_root->name, NULL);
++	proc_remove(proc_ipmi_root);
+ #endif /* CONFIG_PROC_FS */
  
- extern void proc_root_init(void);
--
--void proc_flush_task(struct task_struct *task);
--
--struct proc_dir_entry *proc_create_data(const char *name, umode_t mode,
--				struct proc_dir_entry *parent,
--				const struct file_operations *proc_fops,
--				void *data);
--extern void proc_remove(struct proc_dir_entry *);
--extern void remove_proc_entry(const char *name, struct proc_dir_entry *parent);
--extern int remove_proc_subtree(const char *name, struct proc_dir_entry *parent);
-+extern void proc_flush_task(struct task_struct *);
- 
- extern struct proc_dir_entry *proc_symlink(const char *,
- 		struct proc_dir_entry *, const char *);
--extern struct proc_dir_entry *proc_mkdir(const char *,struct proc_dir_entry *);
-+extern struct proc_dir_entry *proc_mkdir(const char *, struct proc_dir_entry *);
- extern struct proc_dir_entry *proc_mkdir_data(const char *, umode_t,
- 					      struct proc_dir_entry *, void *);
--extern struct proc_dir_entry *proc_mkdir_mode(const char *name, umode_t mode,
--			struct proc_dir_entry *parent);
--
--static inline struct proc_dir_entry *proc_create(const char *name, umode_t mode,
--	struct proc_dir_entry *parent, const struct file_operations *proc_fops)
--{
--	return proc_create_data(name, mode, parent, proc_fops, NULL);
--}
-+extern struct proc_dir_entry *proc_mkdir_mode(const char *, umode_t,
-+					      struct proc_dir_entry *);
-  
-+extern struct proc_dir_entry *proc_create_data(const char *, umode_t,
-+					       struct proc_dir_entry *,
-+					       const struct file_operations *,
-+					       void *);
-+
- extern void proc_set_size(struct proc_dir_entry *, loff_t);
- extern void proc_set_user(struct proc_dir_entry *, kuid_t, kgid_t);
- extern void *PDE_DATA(const struct inode *);
--extern void *proc_get_parent_data(const struct inode *);
--extern const char *get_proc_name(const struct proc_dir_entry *);
- extern struct pid *get_proc_pid(const struct inode *);
--#else
--
--static inline void proc_flush_task(struct task_struct *task)
--{
--}
-+extern const char *get_proc_name(const struct proc_dir_entry *);
-+extern void *proc_get_parent_data(const struct inode *);
- 
--#define proc_create(name, mode, parent, fops)  ({ (void)(mode), NULL; })
-+extern void proc_remove(struct proc_dir_entry *);
-+extern void remove_proc_entry(const char *, struct proc_dir_entry *);
-+extern int remove_proc_subtree(const char *, struct proc_dir_entry *);
- 
--static inline struct proc_dir_entry *proc_create_data(const char *name,
--	umode_t mode, struct proc_dir_entry *parent,
--	const struct file_operations *proc_fops, void *data)
--{
--	return NULL;
--}
--static inline void proc_remove(struct proc_dir_entry *de) {}
--#define remove_proc_entry(name, parent) do {} while (0)
--#define remove_proc_subtree(name, parent) do {} while (0)
-+#else /* CONFIG_PROC_FS */
- 
- static inline struct proc_dir_entry *proc_symlink(const char *name,
--		struct proc_dir_entry *parent,const char *dest) {return NULL;}
-+		struct proc_dir_entry *parent,const char *dest) { return NULL;}
- static inline struct proc_dir_entry *proc_mkdir(const char *name,
- 	struct proc_dir_entry *parent) {return NULL;}
- static inline struct proc_dir_entry *proc_mkdir_mode(const char *name,
- 	umode_t mode, struct proc_dir_entry *parent) { return NULL; }
-+
- static inline void proc_set_size(struct proc_dir_entry *de, loff_t size) {}
- static inline void proc_set_user(struct proc_dir_entry *de, kuid_t uid, kgid_t gid) {}
- static inline void *PDE_DATA(const struct inode *inode) { return NULL; }
- static inline struct pid *get_proc_pid(const struct inode *inode) { return NULL; }
-+extern const char *get_proc_name(const struct proc_dir_entry *de) { return ""; }
-+extern void *proc_get_parent_data(const struct inode *) { return NULL; }
- 
--#endif /* CONFIG_PROC_FS */
-+static inline struct proc_dir_entry *proc_create_data(const char *name,
-+	umode_t mode, struct proc_dir_entry *parent,
-+	const struct file_operations *proc_fops, void *data) { return NULL; }
-+static inline void proc_set_size(struct proc_dir_entry *de, loff_t size) {}
- 
-+static inline void proc_remove(struct proc_dir_entry *de) {}
-+static inline void remove_proc_entry(const char *name, struct proc_dir_entry *parent) {}
-+static inline int remove_proc_subtree(const char *name, struct proc_dir_entry *parent) { return 0; }
- 
--union proc_op {
--	int (*proc_get_link)(struct dentry *, struct path *);
--	int (*proc_read)(struct task_struct *task, char *page);
--	int (*proc_show)(struct seq_file *m,
--		struct pid_namespace *ns, struct pid *pid,
--		struct task_struct *task);
--};
--
--struct ctl_table_header;
--struct ctl_table;
--
--struct proc_inode {
--	struct pid *pid;
--	int fd;
--	union proc_op op;
--	struct proc_dir_entry *pde;
--	struct ctl_table_header *sysctl;
--	struct ctl_table *sysctl_entry;
--	struct proc_ns ns;
--	struct inode vfs_inode;
--};
-+#endif /* CONFIG_PROC_FS */
- 
- static inline struct proc_dir_entry *proc_net_mkdir(
- 	struct net *net, const char *name, struct proc_dir_entry *parent)
-@@ -151,4 +71,11 @@ static inline struct proc_dir_entry *proc_net_mkdir(
- 	return proc_mkdir_data(name, 0, parent, net);
+ 	driver_unregister(&ipmidriver.driver);
+diff --git a/drivers/misc/sgi-gru/gruprocfs.c b/drivers/misc/sgi-gru/gruprocfs.c
+index 950dbe9..797d796 100644
+--- a/drivers/misc/sgi-gru/gruprocfs.c
++++ b/drivers/misc/sgi-gru/gruprocfs.c
+@@ -355,7 +355,7 @@ static void delete_proc_files(void)
+ 		for (p = proc_files; p->name; p++)
+ 			if (p->entry)
+ 				remove_proc_entry(p->name, proc_gru);
+-		remove_proc_entry("gru", proc_gru->parent);
++		proc_remove(proc_gru);
+ 	}
  }
  
-+static inline struct proc_dir_entry *proc_create(
-+	const char *name, umode_t mode, struct proc_dir_entry *parent,
-+	const struct file_operations *proc_fops)
-+{
-+	return proc_create_data(name, mode, parent, proc_fops, NULL);
-+}
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 321d3ef..9c70436 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -1452,16 +1452,7 @@ int of_attach_node(struct device_node *np)
+ #ifdef CONFIG_PROC_DEVICETREE
+ static void of_remove_proc_dt_entry(struct device_node *dn)
+ {
+-	struct device_node *parent = dn->parent;
+-	struct property *prop = dn->properties;
+-
+-	while (prop) {
+-		remove_proc_entry(prop->name, dn->pde);
+-		prop = prop->next;
+-	}
+-
+-	if (dn->pde)
+-		remove_proc_entry(dn->pde->name, parent->pde);
++	proc_remove(dn->pde);
+ }
+ #else
+ static void of_remove_proc_dt_entry(struct device_node *dn)
+diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
+index 7cde7c1..0812608 100644
+--- a/drivers/pci/proc.c
++++ b/drivers/pci/proc.c
+@@ -427,20 +427,14 @@ int pci_proc_attach_device(struct pci_dev *dev)
+ 
+ int pci_proc_detach_device(struct pci_dev *dev)
+ {
+-	struct proc_dir_entry *e;
+-
+-	if ((e = dev->procent)) {
+-		remove_proc_entry(e->name, dev->bus->procdir);
+-		dev->procent = NULL;
+-	}
++	proc_remove(dev->procent);
++	dev->procent = NULL;
+ 	return 0;
+ }
+ 
+ int pci_proc_detach_bus(struct pci_bus* bus)
+ {
+-	struct proc_dir_entry *de = bus->procdir;
+-	if (de)
+-		remove_proc_entry(de->name, proc_bus_pci_dir);
++	proc_remove(bus->procdir);
+ 	return 0;
+ }
+ 
+diff --git a/fs/proc/generic.c b/fs/proc/generic.c
+index 2c6d6be..4b48033 100644
+--- a/fs/proc/generic.c
++++ b/fs/proc/generic.c
+@@ -630,3 +630,10 @@ const char *get_proc_name(const struct proc_dir_entry *de)
+ 	return de->name;
+ }
+ EXPORT_SYMBOL_GPL(get_proc_name);
 +
- #endif /* _LINUX_PROC_FS_H */
++void proc_remove(struct proc_dir_entry *de)
++{
++	if (de)
++		remove_proc_subtree(de->name, de->parent);
++}
++EXPORT_SYMBOL(proc_remove);
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 38edddc..17f7e08 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -699,7 +699,7 @@ void vmcore_cleanup(void)
+ 	struct list_head *pos, *next;
+ 
+ 	if (proc_vmcore) {
+-		remove_proc_entry(proc_vmcore->name, proc_vmcore->parent);
++		proc_remove(proc_vmcore);
+ 		proc_vmcore = NULL;
+ 	}
+ 
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 7abc72a..b8949b1 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -67,6 +67,7 @@ struct proc_dir_entry *proc_create_data(const char *name, umode_t mode,
+ 				struct proc_dir_entry *parent,
+ 				const struct file_operations *proc_fops,
+ 				void *data);
++extern void proc_remove(struct proc_dir_entry *);
+ extern void remove_proc_entry(const char *name, struct proc_dir_entry *parent);
+ extern int remove_proc_subtree(const char *name, struct proc_dir_entry *parent);
+ 
+@@ -103,6 +104,7 @@ static inline struct proc_dir_entry *proc_create_data(const char *name,
+ {
+ 	return NULL;
+ }
++static inline void proc_remove(struct proc_dir_entry *de) {}
+ #define remove_proc_entry(name, parent) do {} while (0)
+ #define remove_proc_subtree(name, parent) do {} while (0)
+ 
+diff --git a/kernel/irq/proc.c b/kernel/irq/proc.c
+index d59ae37..19ed5c4 100644
+--- a/kernel/irq/proc.c
++++ b/kernel/irq/proc.c
+@@ -366,11 +366,7 @@ void unregister_irq_proc(unsigned int irq, struct irq_desc *desc)
+ 
+ void unregister_handler_proc(unsigned int irq, struct irqaction *action)
+ {
+-	if (action->dir) {
+-		struct irq_desc *desc = irq_to_desc(irq);
+-
+-		remove_proc_entry(action->dir->name, desc->dir);
+-	}
++	proc_remove(action->dir);
+ }
+ 
+ static void register_default_affinity_proc(void)
+diff --git a/net/8021q/vlanproc.c b/net/8021q/vlanproc.c
+index 959ddbb..1d0e8921 100644
+--- a/net/8021q/vlanproc.c
++++ b/net/8021q/vlanproc.c
+@@ -184,14 +184,9 @@ int vlan_proc_add_dev(struct net_device *vlandev)
+  */
+ int vlan_proc_rem_dev(struct net_device *vlandev)
+ {
+-	struct vlan_net *vn = net_generic(dev_net(vlandev), vlan_net_id);
+-
+ 	/** NOTE:  This will consume the memory pointed to by dent, it seems. */
+-	if (vlan_dev_priv(vlandev)->dent) {
+-		remove_proc_entry(vlan_dev_priv(vlandev)->dent->name,
+-				  vn->proc_vlan_dir);
+-		vlan_dev_priv(vlandev)->dent = NULL;
+-	}
++	proc_remove(vlan_dev_priv(vlandev)->dent);
++	vlan_dev_priv(vlandev)->dent = NULL;
+ 	return 0;
+ }
+ 
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index f6af4fe..6c41e97 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -1904,7 +1904,7 @@ static void pktgen_change_name(const struct pktgen_net *pn, struct net_device *d
+ 			if (pkt_dev->odev != dev)
+ 				continue;
+ 
+-			remove_proc_entry(pkt_dev->entry->name, pn->proc_dir);
++			proc_remove(pkt_dev->entry);
+ 
+ 			pkt_dev->entry = proc_create_data(dev->name, 0600,
+ 							  pn->proc_dir,
+@@ -3576,8 +3576,6 @@ static void _rem_dev_from_if_list(struct pktgen_thread *t,
+ static int pktgen_remove_device(struct pktgen_thread *t,
+ 				struct pktgen_dev *pkt_dev)
+ {
+-	struct pktgen_net *pn = t->net;
+-
+ 	pr_debug("remove_device pkt_dev=%p\n", pkt_dev);
+ 
+ 	if (pkt_dev->running) {
+@@ -3597,7 +3595,7 @@ static int pktgen_remove_device(struct pktgen_thread *t,
+ 	_rem_dev_from_if_list(t, pkt_dev);
+ 
+ 	if (pkt_dev->entry)
+-		remove_proc_entry(pkt_dev->entry->name, pn->proc_dir);
++		proc_remove(pkt_dev->entry);
+ 
+ #ifdef CONFIG_XFRM
+ 	free_SAs(pkt_dev);
+diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+index e4738fe..0b732ef 100644
+--- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
++++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+@@ -105,7 +105,7 @@ clusterip_config_entry_put(struct clusterip_config *c)
+ 		 * functions are also incrementing the refcount on their own,
+ 		 * so it's safe to remove the entry even if it's in use. */
+ #ifdef CONFIG_PROC_FS
+-		remove_proc_entry(c->pde->name, c->pde->parent);
++		proc_remove(c->pde);
+ #endif
+ 		return;
+ 	}
+@@ -736,7 +736,7 @@ static void __exit clusterip_tg_exit(void)
+ {
+ 	pr_info("ClusterIP Version %s unloading\n", CLUSTERIP_VERSION);
+ #ifdef CONFIG_PROC_FS
+-	remove_proc_entry(clusterip_procdir->name, clusterip_procdir->parent);
++	proc_remove(clusterip_procdir);
+ #endif
+ 	nf_unregister_hook(&cip_arp_ops);
+ 	xt_unregister_target(&clusterip_tg_reg);
+diff --git a/net/ipv6/proc.c b/net/ipv6/proc.c
+index 7ea6e18..537d9ee 100644
+--- a/net/ipv6/proc.c
++++ b/net/ipv6/proc.c
+@@ -287,8 +287,7 @@ int snmp6_unregister_dev(struct inet6_dev *idev)
+ 		return -ENOENT;
+ 	if (!idev->stats.proc_dir_entry)
+ 		return -EINVAL;
+-	remove_proc_entry(idev->stats.proc_dir_entry->name,
+-			  net->mib.proc_net_devsnmp6);
++	proc_remove(idev->stats.proc_dir_entry);
+ 	idev->stats.proc_dir_entry = NULL;
+ 	return 0;
+ }
+diff --git a/net/netfilter/xt_hashlimit.c b/net/netfilter/xt_hashlimit.c
+index d2fd53b..40002ef 100644
+--- a/net/netfilter/xt_hashlimit.c
++++ b/net/netfilter/xt_hashlimit.c
+@@ -330,7 +330,7 @@ static void htable_destroy(struct xt_hashlimit_htable *hinfo)
+ 		parent = hashlimit_net->ip6t_hashlimit;
+ 
+ 	if(parent != NULL)
+-		remove_proc_entry(hinfo->pde->name, parent);
++		proc_remove(hinfo->pde);
+ 
+ 	htable_selective_cleanup(hinfo, select_all);
+ 	vfree(hinfo);
+@@ -887,7 +887,7 @@ static void __net_exit hashlimit_proc_net_exit(struct net *net)
+ 		pde = hashlimit_net->ip6t_hashlimit;
+ 
+ 	hlist_for_each_entry(hinfo, &hashlimit_net->htables, node)
+-		remove_proc_entry(hinfo->pde->name, pde);
++		proc_remove(hinfo->pde);
+ 
+ 	hashlimit_net->ipt_hashlimit = NULL;
+ 	hashlimit_net->ip6t_hashlimit = NULL;
+diff --git a/sound/core/info.c b/sound/core/info.c
+index c7f41c3..3c9bd6b 100644
+--- a/sound/core/info.c
++++ b/sound/core/info.c
+@@ -153,13 +153,6 @@ EXPORT_SYMBOL(snd_seq_root);
+ struct snd_info_entry *snd_oss_root;
+ #endif
+ 
+-static void snd_remove_proc_entry(struct proc_dir_entry *parent,
+-				  struct proc_dir_entry *de)
+-{
+-	if (de)
+-		remove_proc_entry(de->name, parent);
+-}
+-
+ static loff_t snd_info_entry_llseek(struct file *file, loff_t offset, int orig)
+ {
+ 	struct snd_info_private_data *data;
+@@ -580,7 +573,7 @@ int __exit snd_info_done(void)
+ #ifdef CONFIG_SND_OSSEMUL
+ 		snd_info_free_entry(snd_oss_root);
+ #endif
+-		snd_remove_proc_entry(NULL, snd_proc_root);
++		proc_remove(snd_proc_root);
+ 	}
+ 	return 0;
+ }
+@@ -642,7 +635,7 @@ void snd_info_card_id_change(struct snd_card *card)
+ {
+ 	mutex_lock(&info_mutex);
+ 	if (card->proc_root_link) {
+-		snd_remove_proc_entry(snd_proc_root, card->proc_root_link);
++		proc_remove(card->proc_root_link);
+ 		card->proc_root_link = NULL;
+ 	}
+ 	if (strcmp(card->id, card->proc_root->name))
+@@ -661,10 +654,8 @@ void snd_info_card_disconnect(struct snd_card *card)
+ 	if (!card)
+ 		return;
+ 	mutex_lock(&info_mutex);
+-	if (card->proc_root_link) {
+-		snd_remove_proc_entry(snd_proc_root, card->proc_root_link);
+-		card->proc_root_link = NULL;
+-	}
++	proc_remove(card->proc_root_link);
++	card->proc_root_link = NULL;
+ 	if (card->proc_root)
+ 		snd_info_disconnect(card->proc_root);
+ 	mutex_unlock(&info_mutex);
+@@ -856,7 +847,7 @@ static void snd_info_disconnect(struct snd_info_entry *entry)
+ 	list_del_init(&entry->list);
+ 	root = entry->parent == NULL ? snd_proc_root : entry->parent->p;
+ 	snd_BUG_ON(!root);
+-	snd_remove_proc_entry(root, entry->p);
++	proc_remove(entry->p);
+ 	entry->p = NULL;
+ }
+ 
 
