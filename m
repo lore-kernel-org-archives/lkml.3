@@ -1,36 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab3DPHjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 03:39:17 -0400
-Received: from mx7.zte.com.cn ([202.103.147.169]:45456 "EHLO zte.com.cn"
+	id S1756910Ab3DPHnx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 03:43:53 -0400
+Received: from mx7.zte.com.cn ([202.103.147.169]:41648 "EHLO zte.com.cn"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753982Ab3DPHjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 03:39:16 -0400
+	id S1754034Ab3DPHnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 03:43:52 -0400
 To: linux-mtd@lists.infradead.org
 Cc: richard.weinberger@gmail.com, linux-kernel@vger.kernel.org,
         liu.dong3@zte.com.cn, cui.yunfeng@zte.com.cn, wang.bo116@zte.com.cn
-Subject: 
+Subject: [PATCH] UBI: fix memory leak when use fastmap
 MIME-Version: 1.0
-X-KeepSent: 4A055B7D:2DBB5049-48257B4F:002965EA;
+X-KeepSent: 5B457772:5235C9A1-48257B4F:002A2C13;
  type=4; name=$KeepSent
 X-Mailer: Lotus Notes Release 6.5.6 March 06, 2007
-Message-ID: <OF4A055B7D.2DBB5049-ON48257B4F.002965EA-48257B4F.002A02DB@zte.com.cn>
+Message-ID: <OF5B457772.5235C9A1-ON48257B4F.002A2C13-48257B4F.002A691B@zte.com.cn>
 From: wang.bo116@zte.com.cn
-Date: Tue, 16 Apr 2013 15:38:46 +0800
+Date: Tue, 16 Apr 2013 15:43:07 +0800
 X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-04-16 15:38:35,
-	Serialize complete at 2013-04-16 15:38:35
+ 2013-04-16 15:42:57,
+	Serialize complete at 2013-04-16 15:42:57
 Content-Type: text/plain; charset="US-ASCII"
-X-MAIL: mse02.zte.com.cn r3G7cnoM003290
+X-MAIL: mse02.zte.com.cn r3G7hAwu014177
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UBI: fix memory leak when use fastmap
-
-Sorry, there is something wrong with the previous patch's format, try to 
-submit it again.
-
+Hello,
+    Sorry, there is something wrong with the previous patch's format, try 
+to submit it again.
 When use ubi fastmap, there is a memory leak which will make destroy_ai() 
 fail to free the slab.
 The following patch base on linux-3.9-rc6 fix this problem.
