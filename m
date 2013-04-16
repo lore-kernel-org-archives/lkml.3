@@ -1,212 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab3DPJbe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:31:34 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:45679 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750964Ab3DPJbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:31:32 -0400
-Date: Tue, 16 Apr 2013 04:31:31 -0500
-From: Robin Holt <holt@sgi.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Avi Kivity <avi.kivity@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Robin Holt <holt@sgi.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: mmu_notifier: re-fix freed page still mapped in
- secondary MMU
-Message-ID: <20130416093131.GJ3658@sgi.com>
-References: <516CF235.4060103@linux.vnet.ibm.com>
+	id S1756959Ab3DPJcx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:32:53 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:19970 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753556Ab3DPJcw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 05:32:52 -0400
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Mark Brown <broonie@kernel.org>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: RE: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+Thread-Topic: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+Thread-Index: AQHON39CtDkBnJtRskO6UighSEzvVZjSgwcAgAYWaxA=
+Date: Tue, 16 Apr 2013 09:32:49 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB514191E2F8@NB-EX-MBX02.diasemi.com>
+References: <201304121310.r3CDAJHh011814@latitude>
+ <20130412132651.GB12534@opensource.wolfsonmicro.com>
+In-Reply-To: <20130412132651.GB12534@opensource.wolfsonmicro.com>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.109]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <516CF235.4060103@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 02:39:49PM +0800, Xiao Guangrong wrote:
-> The commit 751efd8610d3 (mmu_notifier_unregister NULL Pointer deref
-> and multiple ->release()) breaks the fix:
->     3ad3d901bbcfb15a5e4690e55350db0899095a68
->     (mm: mmu_notifier: fix freed page still mapped in secondary MMU)
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@kernel.org]
+> Sent: 12 April 2013 14:27
+> To: Opensource [Anthony Olech]
+> Cc: Liam Girdwood; Guenter Roeck; Jean Delvare; Randy Dunlap; LKML; David
+> Dajun Chen
+> Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+> On Fri, Apr 12, 2013 at 02:05:28PM +0100, Anthony Olech wrote:
+> This looks good, I assume there's some dependencies on the MFD or other
+> earlier patches so I won't apply it, let me know if there aren't any and I will
 
-Can you describe how the page is still mapped?  I thought I had all
-cases covered.  Whichever call hits first, I thought we had one callout
-to the registered notifiers.  Are you saying we need multiple callouts?
+I will resubmit later after re-testing, fixing the 3 points you raised in this driver.
 
-Also, shouldn't you be asking for a revert commit and then supply a
-subsequent commit for the real fix?  I thought that was the process for
-doing a revert.
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Please use subject lines reflecting the subsystem.
 
-Thanks,
-Robin Holt
+I assume you mean "regulator" for drivers in "drivers/regulator",
+"misc" for drivers in "drivers/input/misc" etc etc ??
 
+> > +static int da9058_buck_ramp_voltage(struct regulator_dev *rdev,
+> > +					unsigned int old_selector,
+> > +					unsigned int new_selector)
+> > +{
+> > +	struct da9058_regulator *regulator = rdev_get_drvdata(rdev);
+> > +	struct da9058 *da9058 = regulator->da9058;
+> > +	int ret;
+> > +
+> > +	if (regulator->ramp_register == 0)
+> > +		return -EINVAL;
+> > +
+> > +	if (regulator->ramp_enable_mask == 0)
+> > +		return -EINVAL;
+> > +
+> > +	ret = da9058_set_bits(da9058, regulator->ramp_register,
+> > +					regulator->ramp_enable_mask);
+> > +
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	return 2200; /* micro Seconds needed to ramp to new voltage*/ }
 > 
-> This patch reverts the commit and simply fix the bug spotted
-> by that patch
+> Hrm, this really should be implementable with a generic regmap operation...
+
+Yes, I did not notice that the generic regmap operation "reulator_set_voltage_sel_regmap()"
+supports a trigger/go. I will change to using it.
+ 
+> > +	rdev = regulator_register(&reg->desc, &config);
+> > +
+> > +	if (IS_ERR(rdev)) {
+> > +		dev_err(&pdev->dev, "failed to register %s\n",
+> > +			rpdata->regulator_name);
+> > +		ret = PTR_ERR(rdev);
+> > +		goto failed_to_register;
+> > +	}
 > 
-> This bug is spotted by commit 751efd8610d3:
-> ======
-> There is a race condition between mmu_notifier_unregister() and
-> __mmu_notifier_release().
-> 
-> Assume two tasks, one calling mmu_notifier_unregister() as a result of a
-> filp_close() ->flush() callout (task A), and the other calling
-> mmu_notifier_release() from an mmput() (task B).
-> 
->                     A                               B
-> t1                                              srcu_read_lock()
-> t2              if (!hlist_unhashed())
-> t3                                              srcu_read_unlock()
-> t4              srcu_read_lock()
-> t5                                              hlist_del_init_rcu()
-> t6                                              synchronize_srcu()
-> t7              srcu_read_unlock()
-> t8              hlist_del_rcu()  <--- NULL pointer deref.
-> ======
-> 
-> This can be fixed by using hlist_del_init_rcu instead of hlist_del_rcu.
-> 
-> The another issue spotted in the commit is
-> "multiple ->release() callouts", we needn't care it too much because
-> it is really rare (e.g, can not happen on kvm since mmu-notify is unregistered
-> after exit_mmap()) and the later call of multiple ->release should be
-> fast since all the pages have already been released by the first call.
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  mm/mmu_notifier.c |   81 +++++++++++++++++++++++++++--------------------------
->  1 files changed, 41 insertions(+), 40 deletions(-)
-> 
-> diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
-> index be04122..606777a 100644
-> --- a/mm/mmu_notifier.c
-> +++ b/mm/mmu_notifier.c
-> @@ -40,48 +40,45 @@ void __mmu_notifier_release(struct mm_struct *mm)
->  	int id;
-> 
->  	/*
-> -	 * srcu_read_lock() here will block synchronize_srcu() in
-> -	 * mmu_notifier_unregister() until all registered
-> -	 * ->release() callouts this function makes have
-> -	 * returned.
-> +	 * SRCU here will block mmu_notifier_unregister until
-> +	 * ->release returns.
->  	 */
->  	id = srcu_read_lock(&srcu);
-> +	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist)
-> +		/*
-> +		 * if ->release runs before mmu_notifier_unregister it
-> +		 * must be handled as it's the only way for the driver
-> +		 * to flush all existing sptes and stop the driver
-> +		 * from establishing any more sptes before all the
-> +		 * pages in the mm are freed.
-> +		 */
-> +		if (mn->ops->release)
-> +			mn->ops->release(mn, mm);
-> +	srcu_read_unlock(&srcu, id);
-> +
->  	spin_lock(&mm->mmu_notifier_mm->lock);
->  	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
->  		mn = hlist_entry(mm->mmu_notifier_mm->list.first,
->  				 struct mmu_notifier,
->  				 hlist);
-> -
->  		/*
-> -		 * Unlink.  This will prevent mmu_notifier_unregister()
-> -		 * from also making the ->release() callout.
-> +		 * We arrived before mmu_notifier_unregister so
-> +		 * mmu_notifier_unregister will do nothing other than
-> +		 * to wait ->release to finish and
-> +		 * mmu_notifier_unregister to return.
->  		 */
->  		hlist_del_init_rcu(&mn->hlist);
-> -		spin_unlock(&mm->mmu_notifier_mm->lock);
-> -
-> -		/*
-> -		 * Clear sptes. (see 'release' description in mmu_notifier.h)
-> -		 */
-> -		if (mn->ops->release)
-> -			mn->ops->release(mn, mm);
-> -
-> -		spin_lock(&mm->mmu_notifier_mm->lock);
->  	}
->  	spin_unlock(&mm->mmu_notifier_mm->lock);
-> 
->  	/*
-> -	 * All callouts to ->release() which we have done are complete.
-> -	 * Allow synchronize_srcu() in mmu_notifier_unregister() to complete
-> -	 */
-> -	srcu_read_unlock(&srcu, id);
-> -
-> -	/*
-> -	 * mmu_notifier_unregister() may have unlinked a notifier and may
-> -	 * still be calling out to it.	Additionally, other notifiers
-> -	 * may have been active via vmtruncate() et. al. Block here
-> -	 * to ensure that all notifier callouts for this mm have been
-> -	 * completed and the sptes are really cleaned up before returning
-> -	 * to exit_mmap().
-> +	 * synchronize_srcu here prevents mmu_notifier_release to
-> +	 * return to exit_mmap (which would proceed freeing all pages
-> +	 * in the mm) until the ->release method returns, if it was
-> +	 * invoked by mmu_notifier_unregister.
-> +	 *
-> +	 * The mmu_notifier_mm can't go away from under us because one
-> +	 * mm_count is hold by exit_mmap.
->  	 */
->  	synchronize_srcu(&srcu);
->  }
-> @@ -292,31 +289,35 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
->  {
->  	BUG_ON(atomic_read(&mm->mm_count) <= 0);
-> 
-> -	spin_lock(&mm->mmu_notifier_mm->lock);
->  	if (!hlist_unhashed(&mn->hlist)) {
-> +		/*
-> +		 * SRCU here will force exit_mmap to wait ->release to finish
-> +		 * before freeing the pages.
-> +		 */
->  		int id;
-> 
-> +		id = srcu_read_lock(&srcu);
->  		/*
-> -		 * Ensure we synchronize up with __mmu_notifier_release().
-> +		 * exit_mmap will block in mmu_notifier_release to
-> +		 * guarantee ->release is called before freeing the
-> +		 * pages.
->  		 */
-> -		id = srcu_read_lock(&srcu);
-> -
-> -		hlist_del_rcu(&mn->hlist);
-> -		spin_unlock(&mm->mmu_notifier_mm->lock);
-> -
->  		if (mn->ops->release)
->  			mn->ops->release(mn, mm);
-> +		srcu_read_unlock(&srcu, id);
-> 
-> +		spin_lock(&mm->mmu_notifier_mm->lock);
->  		/*
-> -		 * Allow __mmu_notifier_release() to complete.
-> +		 * Can not use list_del_rcu() since __mmu_notifier_release
-> +		 * can delete it before we hold the lock.
->  		 */
-> -		srcu_read_unlock(&srcu, id);
-> -	} else
-> +		hlist_del_init_rcu(&mn->hlist);
->  		spin_unlock(&mm->mmu_notifier_mm->lock);
-> +	}
-> 
->  	/*
-> -	 * Wait for any running method to finish, including ->release() if it
-> -	 * was run by __mmu_notifier_release() instead of us.
-> +	 * Wait any running method to finish, of course including
-> +	 * ->release if it was run by mmu_notifier_relase instead of us.
->  	 */
->  	synchronize_srcu(&srcu);
-> 
-> -- 
-> 1.7.7.6
+> In general it's a bit better style to print out the return value to help with
+> diagnosis but it's no big deal.
+
+Yes, I will include the value of "ret" in the dev_err message
+
+Tony Olech
