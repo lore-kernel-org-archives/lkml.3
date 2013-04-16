@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3DPIqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 04:46:36 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:46972 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942Ab3DPIqc (ORCPT
+	id S1755996Ab3DPIr1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 04:47:27 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46319 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751570Ab3DPIrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 04:46:32 -0400
+	Tue, 16 Apr 2013 04:47:24 -0400
+Date: Tue, 16 Apr 2013 09:46:24 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Paul Mundt <lethal@linux-sh.org>, Prasad <prasad@linux.vnet.ibm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] ptrace/arm: Revert "hw_breakpoints: Fix racy access
+ to ptrace breakpoints"
+Message-ID: <20130416084624.GB30756@mudshark.cambridge.arm.com>
+References: <20130414160501.GA7612@redhat.com>
+ <20130414160534.GA7650@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFTL4hxNw9EJJ3ZvjYR55b6ZF2YQxMA2q80E+obkU21v6QfEow@mail.gmail.com>
-References: <CA+xJJ1-UPPrkRLuiFcQN6JotG+1G9WS1LftKk67x-AiZuDBf3Q@mail.gmail.com>
-	<CAFTL4hxNw9EJJ3ZvjYR55b6ZF2YQxMA2q80E+obkU21v6QfEow@mail.gmail.com>
-Date: Tue, 16 Apr 2013 10:46:31 +0200
-Message-ID: <CA+xJJ19ZtGnunNt03eVgVvLiNsKbzPuGn=FhtyD28P6XhcJFgQ@mail.gmail.com>
-Subject: Re: Trouble with full nohz and lttng
-From: Mats Liljegren <liljegren.mats2@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130414160534.GA7650@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 4:10 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 2013/4/15 Mats Liljegren <mats.liljegren@enea.com>:
->> When I use lttng, I keep getting ticks. Without lttng, no ticks. It's the
->> same application I run, the same way. The only difference is whether lttng
->> logging has been started or not.
->>
->> The trace says "sched" as reason for not disabled ticks. Using "top" I can't
->> see any extra process/thread being created while my application runs, my
->> application gets 99-101% of the CPU. There are a couple of kworker threads
->> (3), a migration thread and a ksoftirq thread on the same CPU as my
->> application, though "top" gives no indication that they do any execution.
->>
->> Is this a known limitation of lttng, or is there something else going on
->> here?
->
-> I have no idea. But the "sched" reason means there is more than one
-> task in the runqueue at some point. It can be a kthread indeed. Or a
-> user task that gets migrated / woken up in the CPU.
->
-> You'll need to check the sched:sched_switch tracepoint.
+On Sun, Apr 14, 2013 at 05:05:34PM +0100, Oleg Nesterov wrote:
+> This reverts commit bf0b8f4b55e591ba417c2dbaff42769e1fc773b0.
+> 
+> The patch was fine but we can no longer race with SIGKILL after
+> 9899d11f "ptrace: ensure arch_ptrace/ptrace_request can never race
+> with SIGKILL", the __TASK_TRACED tracee can't be woken up and
+> ->ptrace_bps[] can't go away.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Will Deacon <will.deacon@arm.com>
+> ---
+>  arch/arm/kernel/ptrace.c |    8 --------
+>  1 files changed, 0 insertions(+), 8 deletions(-)
 
-It is ksoftirqd/1 and kworker/1:1 that are run every now and then, and
-I'm unable to move them out of the CPU in question. So apparently
-lttng causes more work in either these threads which then prohibits
-full nohz mode for me.
+Looks fine to me. Seems as though I missed arch/arm64/, so nothing to change
+there.
 
-Not sure what to do about this though...
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
-/Mats
+Will
