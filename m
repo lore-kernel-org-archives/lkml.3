@@ -1,44 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935056Ab3DPSVG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 14:21:06 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:56934 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab3DPSVE (ORCPT
+	id S964915Ab3DPSVg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 14:21:36 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:44301 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab3DPSVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 14:21:04 -0400
+	Tue, 16 Apr 2013 14:21:34 -0400
+Date: Tue, 16 Apr 2013 11:20:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        Peter Zijlstra <peterz@infradead.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [PATCH 2/3] kernel/SRCU: provide a static initializer
+Message-ID: <20130416182020.GZ29861@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1363702606-31586-1-git-send-email-bigeasy@linutronix.de>
+ <1363702606-31586-2-git-send-email-bigeasy@linutronix.de>
+ <515E7B79.2020707@cn.fujitsu.com>
+ <516295E7.70200@linutronix.de>
+ <51636A64.5050002@cn.fujitsu.com>
+ <20130411170450.GA27081@linutronix.de>
+ <516777DB.2080109@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJfpegtJrkii6LRxfoywyXsVtnBAgO4ZzBZOPd71BMz7evhPcQ@mail.gmail.com>
-References: <1366058481-21033-1-git-send-email-ccross@android.com>
-	<CAMbhsRT08Li=P0GnbW-XdwyDSFtOfbr2MiTLeh-DduMOx-g=zw@mail.gmail.com>
-	<CAJfpegtJW+k6gLZ+jxJKp3Zj0UhCst3WD7N_xrybD59_0o7h5Q@mail.gmail.com>
-	<CA+55aFzUFMOAfxBpsGLYW3R5NA+f+LWCcKoGdizh_PAhQiXDvg@mail.gmail.com>
-	<CAJfpegtJrkii6LRxfoywyXsVtnBAgO4ZzBZOPd71BMz7evhPcQ@mail.gmail.com>
-Date: Tue, 16 Apr 2013 11:21:02 -0700
-X-Google-Sender-Auth: 5wbBlQAgMJXC6XRA88WcRnLs-H4
-Message-ID: <CA+55aFzA66RHjB2KsdCCbEf2NNBnO=-o_rAJ-xZ3sqY1mHoCRA@mail.gmail.com>
-Subject: Re: [PATCH] fuse: use kernel headers when __KERNEL__ is set
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Colin Cross <ccross@android.com>, lkml <linux-kernel@vger.kernel.org>,
-        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <516777DB.2080109@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041618-2398-0000-0000-000013586877
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What I meant is IF <linux/fuse.h> is included by userspace (it sure is
-> meant to be included and *is* included by libfuse and other stuff)
-> THEN using <stdint.h> instead of <linux/types.h> is fine regardless of
-> whether __linux__ is defined or not.
+On Fri, Apr 12, 2013 at 10:56:27AM +0800, Lai Jiangshan wrote:
+> On 04/12/2013 01:04 AM, Sebastian Andrzej Siewior wrote:
+> > * Lai Jiangshan | 2013-04-09 09:09:56 [+0800]:
+> > 
+> >> If the percpu array can be defined in __SRCU_STRUCT_INIT(),
+> >> I'm happy to expose it. but it is not currently.
+> > 
+> > I have no idea how to achieve this.
+> > 
+> >> Why crypto can't use boot time initialization?
+> > 
+> > It would require something like this:
+> > --- linux-stable.orig/crypto/Kconfig
+> > +++ linux-stable/crypto/Kconfig
+> > @@ -13,7 +13,7 @@ source "crypto/async_tx/Kconfig"
+> >  # Cryptographic API Configuration
+> >  #
+> >  menuconfig CRYPTO
+> > -       tristate "Cryptographic API"
+> > +       bool "Cryptographic API"
+> >         help
+> >           This option provides the core Cryptographic API.
+> 
+> Why convert to "bool"?
+> srcu_init_notifier_head() can be called in module-load-time.
+> 
+> > 
+> > --- linux-stable.orig/crypto/api.c
+> > +++ linux-stable/crypto/api.c
+> > @@ -34,6 +34,13 @@ EXPORT_SYMBOL_GPL(crypto_alg_sem);
+> >  struct srcu_notifier_head crypto_chain;
+> >  EXPORT_SYMBOL_GPL(crypto_chain);
+> > 
+> > +static int __init crypto_api_init(void)
+> > +{
+> > +       srcu_init_notifier_head(&crypto_chain);
+> > +       return 0;
+> > +}
+> > +core_initcall(crypto_api_init);
+> > +
+> >  static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
+> >  {
+> >         atomic_inc(&alg->cra_refcnt);
+> 
+> And again, why crypto can't use boot time nor module-load-time initialization?
 
-That's probably true. But the patch in question adds the __KERNEL__
-test, and *that* seems required.
+Hello, Lai,
 
-If you think that we should instead drop the __linux__ test, than yes,
-that part sounds fine. I thought that by "linux internal header" you
-meant the fuse.h file, but you seem to mean the indirectly included
-<inux/types.h>. That's fine.
+I believe that Sebastian's point is that compile-time initialization
+would be easier to use and would reduce the amount of code that must
+be written, reviewed, and executed.
 
-                Linus
+							Thanx, Paul
+
+> > and there is no need for this.
+> > 
+> >>> Do you have any idea how I could get it done without this? Do you want
+> >>> to move/merge header files?
+> >>
+> >> if crypto has to use static initialization, I will find out some way
+> >> or use your patch.
+> > 
+> > The crypto would like this:
+> > 
+> > Subject: crypto: Convert crypto notifier chain to SRCU
+> > From: Peter Zijlstra <peterz@infradead.org>
+> > Date: Fri, 05 Oct 2012 09:03:24 +0100
+> > 
+> > The crypto notifier deadlocks on RT. Though this can be a real deadlock
+> > on mainline as well due to fifo fair rwsems.
+> > 
+> > The involved parties here are:
+> > 
+> > [   82.172678] swapper/0       S 0000000000000001     0     1      0 0x00000000
+> > [   82.172682]  ffff88042f18fcf0 0000000000000046 ffff88042f18fc80 ffffffff81491238
+> > [   82.172685]  0000000000011cc0 0000000000011cc0 ffff88042f18c040 ffff88042f18ffd8
+> > [   82.172688]  0000000000011cc0 0000000000011cc0 ffff88042f18ffd8 0000000000011cc0
+> > [   82.172689] Call Trace:
+> > [   82.172697]  [<ffffffff81491238>] ? _raw_spin_unlock_irqrestore+0x6c/0x7a
+> > [   82.172701]  [<ffffffff8148fd3f>] schedule+0x64/0x66
+> > [   82.172704]  [<ffffffff8148ec6b>] schedule_timeout+0x27/0xd0
+> > [   82.172708]  [<ffffffff81043c0c>] ? unpin_current_cpu+0x1a/0x6c
+> > [   82.172713]  [<ffffffff8106e491>] ? migrate_enable+0x12f/0x141
+> > [   82.172716]  [<ffffffff8148fbbd>] wait_for_common+0xbb/0x11f
+> > [   82.172719]  [<ffffffff810709f2>] ? try_to_wake_up+0x182/0x182
+> > [   82.172722]  [<ffffffff8148fc96>] wait_for_completion_interruptible+0x1d/0x2e
+> > [   82.172726]  [<ffffffff811debfd>] crypto_wait_for_test+0x49/0x6b
+> > [   82.172728]  [<ffffffff811ded32>] crypto_register_alg+0x53/0x5a
+> > [   82.172730]  [<ffffffff811ded6c>] crypto_register_algs+0x33/0x72
+> > [   82.172734]  [<ffffffff81ad7686>] ? aes_init+0x12/0x12
+> > [   82.172737]  [<ffffffff81ad76ea>] aesni_init+0x64/0x66
+> > [   82.172741]  [<ffffffff81000318>] do_one_initcall+0x7f/0x13b
+> > [   82.172744]  [<ffffffff81ac4d34>] kernel_init+0x199/0x22c
+> > [   82.172747]  [<ffffffff81ac44ef>] ? loglevel+0x31/0x31
+> > [   82.172752]  [<ffffffff814987c4>] kernel_thread_helper+0x4/0x10
+> > [   82.172755]  [<ffffffff81491574>] ? retint_restore_args+0x13/0x13
+> > [   82.172759]  [<ffffffff81ac4b9b>] ? start_kernel+0x3ca/0x3ca
+> > [   82.172761]  [<ffffffff814987c0>] ? gs_change+0x13/0x13
+> > 
+> > [   82.174186] cryptomgr_test  S 0000000000000001     0    41      2 0x00000000
+> > [   82.174189]  ffff88042c971980 0000000000000046 ffffffff81d74830 0000000000000292
+> > [   82.174192]  0000000000011cc0 0000000000011cc0 ffff88042c96eb80 ffff88042c971fd8
+> > [   82.174195]  0000000000011cc0 0000000000011cc0 ffff88042c971fd8 0000000000011cc0
+> > [   82.174195] Call Trace:
+> > [   82.174198]  [<ffffffff8148fd3f>] schedule+0x64/0x66
+> > [   82.174201]  [<ffffffff8148ec6b>] schedule_timeout+0x27/0xd0
+> > [   82.174204]  [<ffffffff81043c0c>] ? unpin_current_cpu+0x1a/0x6c
+> > [   82.174206]  [<ffffffff8106e491>] ? migrate_enable+0x12f/0x141
+> > [   82.174209]  [<ffffffff8148fbbd>] wait_for_common+0xbb/0x11f
+> > [   82.174212]  [<ffffffff810709f2>] ? try_to_wake_up+0x182/0x182
+> > [   82.174215]  [<ffffffff8148fc96>] wait_for_completion_interruptible+0x1d/0x2e
+> > [   82.174218]  [<ffffffff811e4883>] cryptomgr_notify+0x280/0x385
+> > [   82.174221]  [<ffffffff814943de>] notifier_call_chain+0x6b/0x98
+> > [   82.174224]  [<ffffffff8108a11c>] ? rt_down_read+0x10/0x12
+> > [   82.174227]  [<ffffffff810677cd>] __blocking_notifier_call_chain+0x70/0x8d
+> > [   82.174230]  [<ffffffff810677fe>] blocking_notifier_call_chain+0x14/0x16
+> > [   82.174234]  [<ffffffff811dd272>] crypto_probing_notify+0x24/0x50
+> > [   82.174236]  [<ffffffff811dd7a1>] crypto_alg_mod_lookup+0x3e/0x74
+> > [   82.174238]  [<ffffffff811dd949>] crypto_alloc_base+0x36/0x8f
+> > [   82.174241]  [<ffffffff811e9408>] cryptd_alloc_ablkcipher+0x6e/0xb5
+> > [   82.174243]  [<ffffffff811dd591>] ? kzalloc.clone.5+0xe/0x10
+> > [   82.174246]  [<ffffffff8103085d>] ablk_init_common+0x1d/0x38
+> > [   82.174249]  [<ffffffff8103852a>] ablk_ecb_init+0x15/0x17
+> > [   82.174251]  [<ffffffff811dd8c6>] __crypto_alloc_tfm+0xc7/0x114
+> > [   82.174254]  [<ffffffff811e0caa>] ? crypto_lookup_skcipher+0x1f/0xe4
+> > [   82.174256]  [<ffffffff811e0dcf>] crypto_alloc_ablkcipher+0x60/0xa5
+> > [   82.174258]  [<ffffffff811e5bde>] alg_test_skcipher+0x24/0x9b
+> > [   82.174261]  [<ffffffff8106d96d>] ? finish_task_switch+0x3f/0xfa
+> > [   82.174263]  [<ffffffff811e6b8e>] alg_test+0x16f/0x1d7
+> > [   82.174267]  [<ffffffff811e45ac>] ? cryptomgr_probe+0xac/0xac
+> > [   82.174269]  [<ffffffff811e45d8>] cryptomgr_test+0x2c/0x47
+> > [   82.174272]  [<ffffffff81061161>] kthread+0x7e/0x86
+> > [   82.174275]  [<ffffffff8106d9dd>] ? finish_task_switch+0xaf/0xfa
+> > [   82.174278]  [<ffffffff814987c4>] kernel_thread_helper+0x4/0x10
+> > [   82.174281]  [<ffffffff81491574>] ? retint_restore_args+0x13/0x13
+> > [   82.174284]  [<ffffffff810610e3>] ? __init_kthread_worker+0x8c/0x8c
+> > [   82.174287]  [<ffffffff814987c0>] ? gs_change+0x13/0x13
+> > 
+> > [   82.174329] cryptomgr_probe D 0000000000000002     0    47      2 0x00000000
+> > [   82.174332]  ffff88042c991b70 0000000000000046 ffff88042c991bb0 0000000000000006
+> > [   82.174335]  0000000000011cc0 0000000000011cc0 ffff88042c98ed00 ffff88042c991fd8
+> > [   82.174338]  0000000000011cc0 0000000000011cc0 ffff88042c991fd8 0000000000011cc0
+> > [   82.174338] Call Trace:
+> > [   82.174342]  [<ffffffff8148fd3f>] schedule+0x64/0x66
+> > [   82.174344]  [<ffffffff814901ad>] __rt_mutex_slowlock+0x85/0xbe
+> > [   82.174347]  [<ffffffff814902d2>] rt_mutex_slowlock+0xec/0x159
+> > [   82.174351]  [<ffffffff81089c4d>] rt_mutex_fastlock.clone.8+0x29/0x2f
+> > [   82.174353]  [<ffffffff81490372>] rt_mutex_lock+0x33/0x37
+> > [   82.174356]  [<ffffffff8108a0f2>] __rt_down_read+0x50/0x5a
+> > [   82.174358]  [<ffffffff8108a11c>] ? rt_down_read+0x10/0x12
+> > [   82.174360]  [<ffffffff8108a11c>] rt_down_read+0x10/0x12
+> > [   82.174363]  [<ffffffff810677b5>] __blocking_notifier_call_chain+0x58/0x8d
+> > [   82.174366]  [<ffffffff810677fe>] blocking_notifier_call_chain+0x14/0x16
+> > [   82.174369]  [<ffffffff811dd272>] crypto_probing_notify+0x24/0x50
+> > [   82.174372]  [<ffffffff811debd6>] crypto_wait_for_test+0x22/0x6b
+> > [   82.174374]  [<ffffffff811decd3>] crypto_register_instance+0xb4/0xc0
+> > [   82.174377]  [<ffffffff811e9b76>] cryptd_create+0x378/0x3b6
+> > [   82.174379]  [<ffffffff811de512>] ? __crypto_lookup_template+0x5b/0x63
+> > [   82.174382]  [<ffffffff811e4545>] cryptomgr_probe+0x45/0xac
+> > [   82.174385]  [<ffffffff811e4500>] ? crypto_alloc_pcomp+0x1b/0x1b
+> > [   82.174388]  [<ffffffff81061161>] kthread+0x7e/0x86
+> > [   82.174391]  [<ffffffff8106d9dd>] ? finish_task_switch+0xaf/0xfa
+> > [   82.174394]  [<ffffffff814987c4>] kernel_thread_helper+0x4/0x10
+> > [   82.174398]  [<ffffffff81491574>] ? retint_restore_args+0x13/0x13
+> > [   82.174401]  [<ffffffff810610e3>] ? __init_kthread_worker+0x8c/0x8c
+> > [   82.174403]  [<ffffffff814987c0>] ? gs_change+0x13/0x13
+> > 
+> > cryptomgr_test spawns the cryptomgr_probe thread from the notifier
+> > call. The probe thread fires the same notifier as the test thread and
+> > deadlocks on the rwsem on RT.
+> > 
+> > Now this is a potential deadlock in mainline as well, because we have
+> > fifo fair rwsems. If another thread blocks with a down_write() on the
+> > notifier chain before the probe thread issues the down_read() it will
+> > block the probe thread and the whole party is dead locked.
+> > 
+> > Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> > Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> > ---
+> >  crypto/algapi.c   |    4 ++--
+> >  crypto/api.c      |    6 +++---
+> >  crypto/internal.h |    4 ++--
+> >  3 files changed, 7 insertions(+), 7 deletions(-)
+> > 
+> > --- a/crypto/algapi.c
+> > +++ b/crypto/algapi.c
+> > @@ -683,13 +683,13 @@ EXPORT_SYMBOL_GPL(crypto_spawn_tfm2);
+> >  
+> >  int crypto_register_notifier(struct notifier_block *nb)
+> >  {
+> > -	return blocking_notifier_chain_register(&crypto_chain, nb);
+> > +	return srcu_notifier_chain_register(&crypto_chain, nb);
+> >  }
+> >  EXPORT_SYMBOL_GPL(crypto_register_notifier);
+> >  
+> >  int crypto_unregister_notifier(struct notifier_block *nb)
+> >  {
+> > -	return blocking_notifier_chain_unregister(&crypto_chain, nb);
+> > +	return srcu_notifier_chain_unregister(&crypto_chain, nb);
+> >  }
+> >  EXPORT_SYMBOL_GPL(crypto_unregister_notifier);
+> >  
+> > --- a/crypto/api.c
+> > +++ b/crypto/api.c
+> > @@ -31,7 +31,7 @@ EXPORT_SYMBOL_GPL(crypto_alg_list);
+> >  DECLARE_RWSEM(crypto_alg_sem);
+> >  EXPORT_SYMBOL_GPL(crypto_alg_sem);
+> >  
+> > -BLOCKING_NOTIFIER_HEAD(crypto_chain);
+> > +SRCU_NOTIFIER_HEAD(crypto_chain);
+> >  EXPORT_SYMBOL_GPL(crypto_chain);
+> >  
+> >  static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
+> > @@ -237,10 +237,10 @@ int crypto_probing_notify(unsigned long
+> >  {
+> >  	int ok;
+> >  
+> > -	ok = blocking_notifier_call_chain(&crypto_chain, val, v);
+> > +	ok = srcu_notifier_call_chain(&crypto_chain, val, v);
+> >  	if (ok == NOTIFY_DONE) {
+> >  		request_module("cryptomgr");
+> > -		ok = blocking_notifier_call_chain(&crypto_chain, val, v);
+> > +		ok = srcu_notifier_call_chain(&crypto_chain, val, v);
+> >  	}
+> >  
+> >  	return ok;
+> > --- a/crypto/internal.h
+> > +++ b/crypto/internal.h
+> > @@ -48,7 +48,7 @@ struct crypto_larval {
+> >  
+> >  extern struct list_head crypto_alg_list;
+> >  extern struct rw_semaphore crypto_alg_sem;
+> > -extern struct blocking_notifier_head crypto_chain;
+> > +extern struct srcu_notifier_head crypto_chain;
+> >  
+> >  #ifdef CONFIG_PROC_FS
+> >  void __init crypto_init_proc(void);
+> > @@ -136,7 +136,7 @@ static inline int crypto_is_moribund(str
+> >  
+> >  static inline void crypto_notify(unsigned long val, void *v)
+> >  {
+> > -	blocking_notifier_call_chain(&crypto_chain, val, v);
+> > +	srcu_notifier_call_chain(&crypto_chain, val, v);
+> >  }
+> >  
+> >  #endif	/* _CRYPTO_INTERNAL_H */
+> > 
+> >> Thanks,
+> >> Lai
+> > 
+> > Sebastian
+> > 
+> 
+
