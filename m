@@ -1,84 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964919Ab3DPOBH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 10:01:07 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:60710 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935114Ab3DPOBF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 10:01:05 -0400
-Date: Tue, 16 Apr 2013 09:01:01 -0500
-From: Robin Holt <holt@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Patch -v4 1/4] Migrate shutdown/reboot to boot cpu.
-Message-ID: <20130416140101.GS3658@sgi.com>
-References: <20130416095827.GJ3672@sgi.com>
- <20130416113256.GA10452@gmail.com>
- <20130416120624.GO3658@sgi.com>
+	id S934899Ab3DPOHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 10:07:23 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:36748 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131Ab3DPOHW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 10:07:22 -0400
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Guenter Roeck <linux@roeck-us.net>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+Thread-Topic: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+Thread-Index: AQHON39CtDkBnJtRskO6UighSEzvVZjShI+AgATexgCAAAtnAIAAHWjg///2SgCAARBtIIAAPCqAgAAYMvA=
+Date: Tue, 16 Apr 2013 14:07:19 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB514191E422@NB-EX-MBX02.diasemi.com>
+References: <201304121310.r3CDAJHh011814@latitude>
+ <20130412133221.GA11293@roeck-us.net>
+ <24DF37198A1E704D9811D8F72B87EB514191E103@NB-EX-MBX02.diasemi.com>
+ <20130415163532.GA24272@roeck-us.net>
+ <24DF37198A1E704D9811D8F72B87EB514191E14C@NB-EX-MBX02.diasemi.com>
+ <20130415174602.GA18800@roeck-us.net>
+ <24DF37198A1E704D9811D8F72B87EB514191E2C3@NB-EX-MBX02.diasemi.com>
+ <20130416133625.GB30206@roeck-us.net>
+In-Reply-To: <20130416133625.GB30206@roeck-us.net>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.109]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130416120624.GO3658@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > +{
-> > > +	/* The boot cpu is always logical cpu 0 */
-> > > +	int reboot_cpu_id = 0;
-> > > +
-> > > +	/* Make certain the cpu I'm about to reboot on is online */
-> > > +	if (!cpu_online(reboot_cpu_id))
-> > > +		reboot_cpu_id = smp_processor_id();
-> > 
-> > Shouldn't we pick the first online CPU instead, to make it deterministic?
+> -----Original Message-----
+> From: Guenter Roeck [mailto:linux@roeck-us.net]
+> Sent: 16 April 2013 14:36
+> To: Opensource [Anthony Olech]
+> Cc: LKML
+> Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
 > 
-> Done.
+> On Tue, Apr 16, 2013 at 09:17:27AM +0000, Opensource [Anthony Olech]
+> wrote:
+> > > -----Original Message-----
+> > > From: Guenter Roeck [mailto:linux@roeck-us.net]
+> > > Sent: 15 April 2013 18:46
+> > > To: Opensource [Anthony Olech]
+> > > Cc: LKML
+> > > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+> > >
+> > > On Mon, Apr 15, 2013 at 05:29:13PM +0000, Opensource [Anthony Olech]
+> > > wrote:
+> > > > > -----Original Message-----
+> > > > > From: Guenter Roeck [mailto:linux@roeck-us.net]
+> > > > > Sent: 15 April 2013 17:36
+> > > > > To: Opensource [Anthony Olech]
+> > > > > Cc: LKML
+> > > > > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+> > > > >
+> > > > > On Mon, Apr 15, 2013 at 03:00:58PM +0000, Opensource [Anthony
+> > > > > Olech]
+> > > > > wrote:
+> > > > > >
+> > > > > >
+> > > > > > > -----Original Message-----
+> > > > > > > From: Guenter Roeck [mailto:linux@roeck-us.net]
+> > > > > > > Sent: 12 April 2013 14:32
+> > > > > > > To: Opensource [Anthony Olech]
+> > > > > > > Cc: Mark Brown; Liam Girdwood; Jean Delvare; Randy Dunlap;
+> > > > > > > LKML; David Dajun Chen
+> > > > > > > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+> > > > > > >
+> > > > > > > On Fri, Apr 12, 2013 at 02:05:28PM +0100, Anthony Olech wrote:
+> > > > > > > > This is the REGULATOR component driver of the Dialog DA9058
+> PMIC.
+> > > > > > > > This driver is just one component of the whole DA9058 PMIC
+> driver.
+> > > > > > > > It depends on the CORE component driver of the DA9058 MFD.
+> > > > > > > >
+> > > > > > > > There are 6 warnings from scripts/checkpatch.pl, but since
+> > > > > > > > it seems to be complaining about variable names such as
+> > > > > > > > min_uV are in CamelCase, when it is obvious that they are
+> > > > > > > > not in CamelCase I have
+> > > > > ignored them.
+> > > > > > > >
+> > > > > > > ??? min_uV _is_ CamelCase ???
+> > > > > > >
+> > > > > > > Ok, maybe it is camelcasE, but you are splitting hairs here.
+> > > > > >
+> > > > > > it is not me splitting hairs, it is scripts/checkpatch.pl
+> > > > > >
+> > > > > Maybe you did not understand what I meant. Per your logic,
+> > > > >
+> > > > > 	MicroVolt is CamelCase
+> > > > > 	uVolt is ???
+> > > > > 	uV is not CamelCase
+> > > > >
+> > > > > By abbreviating CamelCase to camelCase to cC you make it, in
+> > > > > your opinion, acceptable.
+> > > > >
+> > > > > If you want to declare CamelCase variables, just do it, but
+> > > > > don't claim that they are not really CamelCase.
+> > > > >
+> > > > > Guenter
+> > > >
+> > > > I always thought that camel case meant "changing from lower case
+> > > > to upper case the first letter of each word and then joining the
+> > > > capitalized words together", so by that definition uV or mW are
+> > > > not camel
+> > > case because "v" and "w" are not words!
+> >
+> > The definition of CamelCase From Wikipedia, the free encyclopedia is:
+> >
+> > "CamelCase (camel case) is a term which refers to the practice of
+> > writing compound words where the first letter of an identifier is
+> > lowercase and the first letter of each subsequent concatenated word is
+> capitalized."
+> >
+> Maybe the rule should read "don't mix lowercase and uppercase letters in
+> variable names and defines" to prevent variable names such as cAmelcAse or
+> cameLcasE, which would be permitted with your logic :).
+
+It is really good to have a definition that anyone can work with!
+ 
+> > > > Either way it seems that the algorithm in scripts/checkpatch.pl is
+> > > > wrong! and
+> > > that was my point.
+> > >
+> > > Guess we'll have to agree to disagree here, as I happen to think
+> > > that checkpatch is perfectly right.
+> > > Guenter
+> >
+> > Hi Guenter,
+> >
+> > I am quite happy to accept the algorithm in scripts/checkpatch.pl as
+> > the arbiter for correctly formed linux kernel variable names.
+> >
+> > On that basis "old_mV", "new_uA" etc are incorrectly formed variable names.
+> > Could you possibly suggest legal alternatives to "mA", "uV", "kW" ??
+> >
+> I just changed it to lowercase in the ntc_thermistor driver. What you use is
+> really your call as long as it does not mix uppercase and lowercase letters.
 > 
-> 		reboot_cpu_id = cpumask_first(cpu_online_mask);
-> 
-> > Also, does this codepath prevent hotplug from going on in parallel?
-> 
-> Not sure.  I have not considered hotplug.  I will look that over when I
-> am in the office.
+> Guenter
 
-OK.  I have been mulling this over for a bit and I don't think I
-understand what you are asking.
+many thanks, I will do the same.
 
-I would expect that if an architecture depends upon a certain cpu for
-shutdown/reboot/halt/suspend/hibernate and that support has been compiled
-in, then the arch should be preventing that cpu from being removed.
-I do not know how that would work and think that is far beyond the scope
-of the initial problem I have been trying to solve.  If that is your
-question, I certainly do not know how to address it.  I get the feeling
-this is off your mark due to the "parallel" wording above.
+Tony Olech
 
-The other question I think you might be asking is something about the
-shutdown/reboot/halt task trying to migrate to a cpu which is in the
-process of being off-lined.  I believe the code will "work" in that
-we will have selected a cpu to migrate to, that migration may fail,
-in which case our task remains on the current cpu, may succeed and the
-cpu is immediately offlined, in which case the hotplug code should move
-us to another cpu, or we complete the shutdown before the hotplug code
-gets a chance to run, in which case it is irrelevant.
-
-Have I addressed your concern?  Are you asking me to look into a method
-for preventing the arch from hot removing the shutdown/reboot cpu?
-
-Thanks,
-Robin
