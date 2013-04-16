@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab3DPIr1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 04:47:27 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46319 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751570Ab3DPIrY (ORCPT
+	id S1756155Ab3DPItP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 04:49:15 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:47319 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957Ab3DPItM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 04:47:24 -0400
-Date: Tue, 16 Apr 2013 09:46:24 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Paul Mundt <lethal@linux-sh.org>, Prasad <prasad@linux.vnet.ibm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] ptrace/arm: Revert "hw_breakpoints: Fix racy access
- to ptrace breakpoints"
-Message-ID: <20130416084624.GB30756@mudshark.cambridge.arm.com>
-References: <20130414160501.GA7612@redhat.com>
- <20130414160534.GA7650@redhat.com>
+	Tue, 16 Apr 2013 04:49:12 -0400
+Date: Tue, 16 Apr 2013 10:49:09 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: David Rientjes <rientjes@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [build error] perf/urgent broken due to
+ INTEL_UEVENT_PEBS_LDLAT_EXTRA_REG
+Message-ID: <20130416084909.GA8404@gmail.com>
+References: <alpine.DEB.2.02.1304152002150.3952@chino.kir.corp.google.com>
+ <20130416075212.GA6565@gmail.com>
+ <CABPqkBSzyswo+bWoESsXufi-OBw820m6iQ3ztE12H5XXRtFiDw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130414160534.GA7650@redhat.com>
+In-Reply-To: <CABPqkBSzyswo+bWoESsXufi-OBw820m6iQ3ztE12H5XXRtFiDw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 14, 2013 at 05:05:34PM +0100, Oleg Nesterov wrote:
-> This reverts commit bf0b8f4b55e591ba417c2dbaff42769e1fc773b0.
-> 
-> The patch was fine but we can no longer race with SIGKILL after
-> 9899d11f "ptrace: ensure arch_ptrace/ptrace_request can never race
-> with SIGKILL", the __TASK_TRACED tracee can't be woken up and
-> ->ptrace_bps[] can't go away.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Will Deacon <will.deacon@arm.com>
-> ---
->  arch/arm/kernel/ptrace.c |    8 --------
->  1 files changed, 0 insertions(+), 8 deletions(-)
 
-Looks fine to me. Seems as though I missed arch/arm64/, so nothing to change
-there.
+* Stephane Eranian <eranian@google.com> wrote:
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+> On Tue, Apr 16, 2013 at 9:52 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * David Rientjes <rientjes@google.com> wrote:
+> >
+> >> Commit 3de4ad210387 ("perf/x86: Fix offcore_rsp valid mask for SNB/IVB") in
+> >> perf/urgent breaks the build:
+> >
+> > Hm, that's was me resolving the conflicts incorrectly.
+> >
+> > Stephane, mind sending a tested version of the patch against current -git that can
+> > be applied to v3.9 and can be backported?
+> >
+>
+> To make backport clean, I need to generate a patch against a kernel git tree 
+> which does not have the PEBS-LL (LDLAT) support. tip.git already has PEBS-LL, so 
+> I need to use another tree.
 
-Will
+You can just use the tip:perf/urgent branch for that, it does not have the LDLAT 
+patches. But using Linus's tree is fine as a base too.
+
+Thanks,
+
+	Ingo
