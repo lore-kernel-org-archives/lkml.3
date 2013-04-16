@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935490Ab3DPDCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 23:02:30 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:40477 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935212Ab3DPDC2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 23:02:28 -0400
+	id S935517Ab3DPDDW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 23:03:22 -0400
+Received: from mx5.zte.com.cn ([63.217.80.70]:55545 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S935212Ab3DPDDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 23:03:21 -0400
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH] futex: bugfix for robust futex deadlock when waking only one thread
+ in handle_futex_death
 MIME-Version: 1.0
-In-Reply-To: <20130415171429.GF3672@sgi.com>
-References: <20130415171225.GC3658@sgi.com>
-	<20130415171429.GF3672@sgi.com>
-Date: Tue, 16 Apr 2013 11:02:27 +0800
-Message-ID: <CAAQ0ZWTTd4s4dNCzF-rhyaav6wXZRiUcHRTkJhpQgP5AnUH17g@mail.gmail.com>
-Subject: Re: [Patch -v3 1/4] Migrate shutdown/reboot to boot cpu.
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, "the arch/x86 maintainers" <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Lotus Notes Release 6.5.4 March 27, 2005
+Message-ID: <OF9EFE848A.BEC7D34A-ON48257B4F.00105687-48257B4F.0010C79B@zte.com.cn>
+From: zhang.yi20@zte.com.cn
+Date: Tue, 16 Apr 2013 11:02:46 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-04-16 11:02:45,
+	Serialize complete at 2013-04-16 11:02:45
+Content-Type: text/plain; charset="GB2312"
+X-MAIL: mse01.zte.com.cn r3G330Gx083078
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3G33PBk000317
 
-On Mon, Apr 15, 2013 at 12:14:29PM -0500, Robin Holt wrote:
-> We recently noticed that reboot of a 1024 cpu machine takes approx 16
-> minutes of just stopping the cpus.  The slowdown was tracked to commit
-> f96972f.
->
-> The current implementation does all the work of hot removing the cpus
-> before halting the system.  We are switching to just migrating to the
-> boot cpu and then continuing with shutdown/reboot.
->
-> This also has the effect of not breaking x86's command line parameter for
-> specifying the reboot cpu.  Note, this code was shamelessly copied from
-> arch/x86/kernel/reboot.c with bits removed pertaining to the reboot_cpu
-> command line parameter.
->
-> Signed-off-by: Robin Holt <holt@sgi.com>
-> To: Shawn Guo <shawn.guo@linaro.org>
+From: Zhang Yi <zhang.yi20@zte.com.cn>
 
-It works on my hardware - i.MX6 Quad.
+Hello,
 
-Tested-by: Shawn Guo <shawn.guo@linaro.org>
+The function handle_futex_death just wakes one thread, which may be not 
+enough when the owner process is dead. Think about this scene£º
+1. A robust futex is shared for two processes, each process has multi 
+threads try to get the lock. 
+2. One of the threads gets the lock, and the others are waiting and sorted 
+
+in order of priority.
+3. The process to which the lock owner thread belongs is dying£¬and 
+handle_futex_death is called to wake the first waiter 
+4. When the first waiter belongs to the same process£¬it has no chance to 
+return to the userspace to get the lock and will not call 
+handle_futex_death any 
+more£¬and then the rest threads of the other process will never be waked, 
+and 
+will block forever.
+
+This patch wakes all the waiters when lock owner is in group-exit, letting 
+
+all the waiters return to userspace and try to get the lock again.
+
+
+Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
+Reviewed-by: Liu Dong <liu.dong3@zte.com.cn>
+Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
+Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
+Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
+
+
+--- orig/linux-3.9-rc7/kernel/futex.c   2013-04-15 00:45:16.000000000 
++0000
++++ new/linux-3.9-rc7/kernel/futex.c    2013-04-16 10:17:46.264597000 
++0000
+@@ -2545,8 +2545,11 @@ retry:
+                 * Wake robust non-PI futexes here. The wakeup of
+                 * PI futexes happens in exit_pi_state():
+                 */
+-               if (!pi && (uval & FUTEX_WAITERS))
+-                       futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
++               if (!pi && (uval & FUTEX_WAITERS)) {
++                       int nr = signal_group_exit(current->signal)
++                                           ? INT_MAX : 1;
++                       futex_wake(uaddr, 1, nr, FUTEX_BITSET_MATCH_ANY);
++               }
+        }
+        return 0;
+ }
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
