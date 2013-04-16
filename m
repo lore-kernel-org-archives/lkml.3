@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965560Ab3DPWhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 18:37:11 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:39417 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965426Ab3DPWhJ (ORCPT
+	id S965567Ab3DPWig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 18:38:36 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:37061 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965524Ab3DPWif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 18:37:09 -0400
-X-Greylist: delayed 965 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Apr 2013 18:37:08 EDT
-Date: Wed, 17 Apr 2013 00:20:37 +0200
-From: Harald Welte <laforge@netfilter.org>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        Jan Engelhardt <jengelh@medozas.de>
-Subject: Re: [PATCH 24/28] proc: Supply an accessor to get the name in a
- proc_dir_entry struct [RFC]
-Message-ID: <20130416222037.GR5785@prithivi.gnumonks.org>
-References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
- <20130416182725.27773.42175.stgit@warthog.procyon.org.uk>
+	Tue, 16 Apr 2013 18:38:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130416182725.27773.42175.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <516DCEF3.6030803@zytor.com>
+References: <1365797627-20874-1-git-send-email-keescook@chromium.org>
+	<1365797627-20874-5-git-send-email-keescook@chromium.org>
+	<516DCEF3.6030803@zytor.com>
+Date: Tue, 16 Apr 2013 15:38:34 -0700
+X-Google-Sender-Auth: gLHlOroM1ObFz8kjiUrt9Bui8zM
+Message-ID: <CAGXu5jJ8Gbuj6=ebzu7Wwx2MRD-7qKg-cmhPz_gN6nWCpg-rFg@mail.gmail.com>
+Subject: Re: [PATCH 4/6] x86: relocs: build separate 32/64-bit tools
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Eric Northup <digitaleric@google.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Tue, Apr 16, 2013 at 3:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/12/2013 01:13 PM, Kees Cook wrote:
+>> Since the ELF structures and access macros change size based on 32 vs
+>> 64 bits, build a separate 32-bit relocs tool (for handling realmode
+>> and 32-bit relocations), and a 64-bit relocs tool (for handling 64-bit
+>> kernel relocations).
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> --
+>> This is ugly with the "cp". Is there some other cleaner way to trigger
+>> two builds with different defines from the same source file?
+>
+> There definitely is.
+>
+> Have simple wrapper files which do:
+>
+> /* relocs_32.c */
+> #define ELF_BITS 32
+> #include "relocs.c"
+>
+> /* relocs_64.c */
+> #define ELF_BITS 64
+> #include "relocs.c"
 
-On Tue, Apr 16, 2013 at 07:27:25PM +0100, David Howells wrote:
-> This is only needed by the xt_hashlimit netfilter module as that appears to
-> use the name in the pde to save a label in the xt_hashlimit_htable struct -
-> which will be a problem if CONFIG_PROC_FS=n.
+That's what I did in my first pass, but it seemed even worse to me. I
+will go back to this.
 
-I don't know the larger context of this patch (and am not follwing
-filesystem related work in general), but at least from the xt_hashlimit
-point of view this of course looks fine.  We can always wrap direct
-accesses to structure members behind an API call.
+Thanks!
 
-For consistency reasons 'proc_get_name()' might be a better name than
-get_proc_name(), but that's probably a matter of taste.
+-Kees
 
-Pleaes note that I'm only the original author but not the active
-maintainer of the xt_hashlimit (formerly ipt_hashlimit) code.
-
-Regards,
-	Harald
--- 
-- Harald Welte <laforge@netfilter.org>                 http://netfilter.org/
-============================================================================
-  "Fragmentation is like classful addressing -- an interesting early
-   architectural error that shows how much experimentation was going
-   on while IP was being designed."                    -- Paul Vixie
+--
+Kees Cook
+Chrome OS Security
