@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab3DPKT6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 06:19:58 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:48698 "EHLO
+	id S935589Ab3DPKT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 06:19:57 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:48699 "EHLO
 	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754503Ab3DPKTy (ORCPT
+	by vger.kernel.org with ESMTP id S1752770Ab3DPKTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Apr 2013 06:19:54 -0400
 From: Andrew Murray <Andrew.Murray@arm.com>
@@ -20,98 +20,106 @@ Cc: rob.herring@calxeda.com, jgunthorpe@obsidianresearch.com,
         thomas.petazzoni@free-electrons.com, thierry.reding@avionic-design.de,
         thomas.abraham@linaro.org, arnd@arndb.de, linus.walleij@linaro.org,
         Andrew Murray <Andrew.Murray@arm.com>
-Subject: [PATCH v7 3/3] of/pci: mips: convert to common of_pci_range_parser
-Date: Tue, 16 Apr 2013 11:18:28 +0100
-Message-Id: <1366107508-12672-4-git-send-email-Andrew.Murray@arm.com>
+Subject: [PATCH v7 0/3] of/pci: Provide common support for PCI DT parsing
+Date: Tue, 16 Apr 2013 11:18:25 +0100
+Message-Id: <1366107508-12672-1-git-send-email-Andrew.Murray@arm.com>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1366107508-12672-1-git-send-email-Andrew.Murray@arm.com>
-References: <1366107508-12672-1-git-send-email-Andrew.Murray@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the pci_load_of_ranges function to use the new common
-of_pci_range_parser.
+This patchset factors out duplicated code associated with parsing PCI
+DT "ranges" properties across the architectures and introduces a
+"ranges" parser. This parser "of_pci_range_parser" can be used directly
+by ARM host bridge drivers enabling them to obtain ranges from device
+trees.
 
-Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
-Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-Reviewed-by: Rob Herring <rob.herring@calxeda.com>
----
- arch/mips/pci/pci.c |   50 ++++++++++++++++----------------------------------
- 1 files changed, 16 insertions(+), 34 deletions(-)
+I've included the Reviewed-by and Tested-by's received from v5/v6 in this
+patchset, earlier versions of this patchset (v3) have been tested-by:
 
-diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
-index 0872f12..bee49a4 100644
---- a/arch/mips/pci/pci.c
-+++ b/arch/mips/pci/pci.c
-@@ -122,51 +122,33 @@ static void pcibios_scanbus(struct pci_controller *hose)
- #ifdef CONFIG_OF
- void pci_load_of_ranges(struct pci_controller *hose, struct device_node *node)
- {
--	const __be32 *ranges;
--	int rlen;
--	int pna = of_n_addr_cells(node);
--	int np = pna + 5;
-+	struct of_pci_range_range range;
-+	struct of_pci_range_parser parser;
-+	u32 res_type;
- 
- 	pr_info("PCI host bridge %s ranges:\n", node->full_name);
--	ranges = of_get_property(node, "ranges", &rlen);
--	if (ranges == NULL)
--		return;
- 	hose->of_node = node;
- 
--	while ((rlen -= np * 4) >= 0) {
--		u32 pci_space;
-+	if (of_pci_range_parser(&parser, node))
-+		return;
-+
-+	for_each_of_pci_range(&parser, &range) {
- 		struct resource *res = NULL;
--		u64 addr, size;
--
--		pci_space = be32_to_cpup(&ranges[0]);
--		addr = of_translate_address(node, ranges + 3);
--		size = of_read_number(ranges + pna + 3, 2);
--		ranges += np;
--		switch ((pci_space >> 24) & 0x3) {
--		case 1:		/* PCI IO space */
-+
-+		res_type = range.flags & IORESOURCE_TYPE_BITS;
-+		if (res_type == IORESOURCE_IO) {
- 			pr_info("  IO 0x%016llx..0x%016llx\n",
--					addr, addr + size - 1);
-+				range.addr, range.addr + range.size - 1);
- 			hose->io_map_base =
--				(unsigned long)ioremap(addr, size);
-+				(unsigned long)ioremap(range.addr, range.size);
- 			res = hose->io_resource;
--			res->flags = IORESOURCE_IO;
--			break;
--		case 2:		/* PCI Memory space */
--		case 3:		/* PCI 64 bits Memory space */
-+		} else if (res_type == IORESOURCE_MEM) {
- 			pr_info(" MEM 0x%016llx..0x%016llx\n",
--					addr, addr + size - 1);
-+				range.addr, range.addr + range.size - 1);
- 			res = hose->mem_resource;
--			res->flags = IORESOURCE_MEM;
--			break;
--		}
--		if (res != NULL) {
--			res->start = addr;
--			res->name = node->full_name;
--			res->end = res->start + size - 1;
--			res->parent = NULL;
--			res->sibling = NULL;
--			res->child = NULL;
- 		}
-+		if (res != NULL)
-+			of_pci_range_to_resource(&range, node, res);
- 	}
- }
- #endif
--- 
-1.7.0.4
+Thierry Reding <thierry.reding@avionic-design.de>
+Jingoo Han <jg1.han@samsung.com>
 
+I've tested that this patchset builds and runs on ARM and that it builds on
+PowerPC and x86_64.
+
+Compared to the v6 sent by Andrew Murray, the following changes have
+been made in response to build errors/warnings:
+
+ * Inclusion of linux/of_address.h in of_pci.c as suggested by Michal
+   Simek to prevent compilation failures on Microblaze (and others) and his
+   ack.
+
+ * Use of externs, static inlines and a typo in linux/of_address.h in response
+   to linker errors (multiple defination) on x86_64 as spotted by a kbuild test
+   robot on (jcooper/linux.git mvebu/drivers)
+
+ * Add EXPORT_SYMBOL_GPL to of_pci_range_parser function to be consistent
+   with of_pci_process_ranges function
+
+Compared to the v5 sent by Andrew Murray, the following changes have
+been made:
+
+ * Use of CONFIG_64BIT instead of CONFIG_[a32bitarch] as suggested by
+   Rob Herring in drivers/of/of_pci.c
+
+ * Added forward declaration of struct pci_controller in linux/of_pci.h
+   to prevent compiler warning as suggested by Thomas Petazzoni
+
+ * Improved error checking (!range check), removal of unnecessary be32_to_cpup
+   call, improved formatting of struct of_pci_range_parser layout and
+   replacement of macro with a static inline. All suggested by Rob Herring.
+
+Compared to the v4 (incorrectly labelled v3) sent by Andrew Murray,
+the following changes have been made:
+
+ * Split the patch as suggested by Rob Herring
+
+Compared to the v3 sent by Andrew Murray, the following changes have
+been made:
+
+ * Unify and move duplicate pci_process_bridge_OF_ranges functions to
+   drivers/of/of_pci.c as suggested by Rob Herring
+
+ * Fix potential build errors with Microblaze/MIPS
+
+Compared to "[PATCH v5 01/17] of/pci: Provide support for parsing PCI DT
+ranges property", the following changes have been made:
+
+ * Correct use of IORESOURCE_* as suggested by Russell King
+
+ * Improved interface and naming as suggested by Thierry Reding
+
+Compared to the v2 sent by Andrew Murray, Thomas Petazzoni did:
+
+ * Add a memset() on the struct of_pci_range_iter when starting the
+   for loop in for_each_pci_range(). Otherwise, with an uninitialized
+   of_pci_range_iter, of_pci_process_ranges() may crash.
+
+ * Add parenthesis around 'res', 'np' and 'iter' in the
+   for_each_of_pci_range macro definitions. Otherwise, passing
+   something like &foobar as 'res' didn't work.
+
+ * Rebased on top of 3.9-rc2, which required fixing a few conflicts in
+   the Microblaze code.
+
+v2:
+  This follows on from suggestions made by Grant Likely
+  (marc.info/?l=linux-kernel&m=136079602806328)
+
+Andrew Murray (3):
+  of/pci: Unify pci_process_bridge_OF_ranges from Microblaze and
+    PowerPC
+  of/pci: Provide support for parsing PCI DT ranges property
+  of/pci: mips: convert to common of_pci_range_parser
+
+ arch/microblaze/include/asm/pci-bridge.h |    5 +-
+ arch/microblaze/pci/pci-common.c         |  192 ------------------------------
+ arch/mips/pci/pci.c                      |   50 +++------
+ arch/powerpc/include/asm/pci-bridge.h    |    5 +-
+ arch/powerpc/kernel/pci-common.c         |  192 ------------------------------
+ drivers/of/address.c                     |   67 +++++++++++
+ drivers/of/of_pci.c                      |  169 ++++++++++++++++++++++++++
+ include/linux/of_address.h               |   46 +++++++
+ include/linux/of_pci.h                   |    4 +
+ 9 files changed, 304 insertions(+), 426 deletions(-)
