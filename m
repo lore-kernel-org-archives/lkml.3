@@ -1,81 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935448Ab3DPBxd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 21:53:33 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:60732 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935157Ab3DPBxb (ORCPT
+	id S935461Ab3DPB6h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 21:58:37 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:48738 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935328Ab3DPB6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 21:53:31 -0400
-Message-ID: <516CAF08.1090107@huawei.com>
-Date: Tue, 16 Apr 2013 09:53:12 +0800
-From: libin <huawei.libin@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Mon, 15 Apr 2013 21:58:36 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Neil Zhang <zhangwm@marvell.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chao Xie <cxie4@marvell.com>
+Date: Mon, 15 Apr 2013 18:55:17 -0700
+Subject: RE: [PATCH 1/4] ARM: mmp: add wakeup function for ICU
+Thread-Topic: [PATCH 1/4] ARM: mmp: add wakeup function for ICU
+Thread-Index: Ac44RXSr4nVOm12VRSqF9yw/U3xmIQBhEgBAAB7j92A=
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE2D0FB04F2B@SC-VEXCH4.marvell.com>
+References: <1365651463-11502-1-git-send-email-zhangwm@marvell.com>
+	<1365651463-11502-2-git-send-email-zhangwm@marvell.com>
+ <CAN1soZwFJybMUZgxZJyXcDdKXbpQxaVntyZd8oGnQivLF=ZNNA@mail.gmail.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Jonghwan Choi <jhbird.choi@gmail.com>
-CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <jiang.liu@huawei.com>, <guohanjun@huawei.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH 3.8-stable] sched/debug: Fix sd->*_idx limit range avoiding
- overflow
-References: <1366035328-4780-1-git-send-email-jhbird.choi@samsung.com>
-In-Reply-To: <1366035328-4780-1-git-send-email-jhbird.choi@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.57]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3G1wwdL032448
 
-On 2013/4/15 22:15, Jonghwan Choi wrote:
-> From: libin <huawei.libin@huawei.com>
-> 
-> This patch looks like it should be in the 3.8-stable tree, should we apply
-> it?
-> 
+Haojian,
 
-yes, I think this patch should be applied to the 3.8-stable tree. Thanks.
-Libin
+> -----Original Message-----
+> From: Neil Zhang
+> Sent: 2013Äê4ÔÂ15ÈÕ 19:10
+> To: 'Haojian Zhuang'
+> Cc: Grant Likely; linux-arm-kernel@lists.infradead.org;
+> linux-kernel@vger.kernel.org; Chao Xie
+> Subject: RE: [PATCH 1/4] ARM: mmp: add wakeup function for ICU
+> 
+> 
+> 
+> 
+> 
+> > -----Original Message-----
+> > From: Haojian Zhuang [mailto:haojian.zhuang@gmail.com]
+> > Sent: 2013Äê4ÔÂ13ÈÕ 20:50
+> > To: Neil Zhang
+> > Cc: Grant Likely; linux-arm-kernel@lists.infradead.org;
+> > linux-kernel@vger.kernel.org; Chao Xie
+> > Subject: Re: [PATCH 1/4] ARM: mmp: add wakeup function for ICU
+> >
+> > On Thu, Apr 11, 2013 at 11:37 AM, Neil Zhang <zhangwm@marvell.com>
+> > wrote:
+> > > From: Chao Xie <chao.xie@marvell.com>
+> > >
+> > > PXA988 will use GIC as its interrupt controller, and ICU is used as
+> > > wakeup logic. When AP subsystem is powered off, GIC will lose its
+> > > context, the PMU will need ICU to wakeup the AP subsystem.
+> > > When ICU works as wakeup logic, there is no need to know
+> > > intc-nr-irqs, change the corresponding code.
+> > >
+> > > Signed-off-by: Chao Xie <chao.xie@marvell.com>
+> > > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > > ---
+> > >  .../devicetree/bindings/arm/mrvl/intc.txt          |    9 ++++
+> > >  arch/arm/mach-mmp/irq.c                            |   51
+> > ++++++++++++++++----
+> > >  2 files changed, 50 insertions(+), 10 deletions(-)
+> > >
+> > > diff --git a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> > > b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> > > index 8b53273..58c0e74 100644
+> > > --- a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> > > +++ b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> > > @@ -15,6 +15,8 @@ Required properties:
+> > >  - interrupt-controller : Identifies the node as an interrupt controller.
+> > >  - #interrupt-cells : Specifies the number of cells needed to encode an
+> > >    interrupt source.
+> > > +- mrvl,intc-wakeup : Specifies the address and value for global
+> > > +mask in the
+> > > +  interrupt controller.
+> > >  - mrvl,intc-nr-irqs : Specifies the number of interrupts in the interrupt
+> > >    controller.
+> > >  - mrvl,clr-mfp-irq : Specifies the interrupt that needs to clear
+> > > MFP edge @@ -39,6 +41,13 @@ Example:
+> > >                 mrvl,intc-nr-irqs = <2>;
+> > >         };
+> > >
+> > > +       intc: interrupt-controller@d4282000 {
+> > > +               compatible = "mrvl,mmp-intc";
+> > > +               reg = <0xd4282000 0x1000>;
+> > > +               mrvl,intc-wakeup = <0x114 0x3
+> > > +                                   0x144 0x3>;
+> > > +       };
+> > > +
+> > >  * Marvell Orion Interrupt controller
+> > >
+> > >  Required properties
+> > > diff --git a/arch/arm/mach-mmp/irq.c b/arch/arm/mach-mmp/irq.c
+> index
+> > > 3c71246..b8df948 100644
+> > > --- a/arch/arm/mach-mmp/irq.c
+> > > +++ b/arch/arm/mach-mmp/irq.c
+> > > @@ -16,6 +16,7 @@
+> > >  #include <linux/init.h>
+> > >  #include <linux/irq.h>
+> > >  #include <linux/irqdomain.h>
+> > > +#include <linux/irqchip/arm-gic.h>
+> > >  #include <linux/io.h>
+> > >  #include <linux/ioport.h>
+> > >  #include <linux/of_address.h>
+> > > @@ -57,6 +58,7 @@ struct mmp_intc_conf {  void __iomem
+> > *mmp_icu_base;
+> > > static struct icu_chip_data icu_data[MAX_ICU_NR];  static int
+> > > max_icu_nr;
+> > > +static bool mmp_icu_wakeup;
+> > >
+> > >  extern void mmp2_clear_pmic_int(void);
+> > >
+> > > @@ -91,8 +93,11 @@ static void icu_mask_irq(struct irq_data *d)
+> > >         int hwirq;
+> > >         u32 r;
+> > >
+> > > -       hwirq = d->irq - data->virq_base;
+> > > -       if (data == &icu_data[0]) {
+> > > +       if (mmp_icu_wakeup)
+> > > +               hwirq = d->hwirq;
+> > > +       else
+> > > +               hwirq = d->irq - data->virq_base;
+> > > +       if (data == &icu_data[0] || mmp_icu_wakeup) {
+> > >                 r = readl_relaxed(mmp_icu_base + (hwirq << 2));
+> > >                 r &= ~data->conf_mask;
+> > >                 r |= data->conf_disable; @@ -110,8 +115,11 @@
+> > static
+> > > void icu_unmask_irq(struct irq_data *d)
+> > >         int hwirq;
+> > >         u32 r;
+> > >
+> > > -       hwirq = d->irq - data->virq_base;
+> > > -       if (data == &icu_data[0]) {
+> > > +       if (mmp_icu_wakeup)
+> > > +               hwirq = d->hwirq;
+> > > +       else
+> > > +               hwirq = d->irq - data->virq_base;
+> > > +       if (data == &icu_data[0] || mmp_icu_wakeup) {
+> > >                 r = readl_relaxed(mmp_icu_base + (hwirq << 2));
+> > >                 r &= ~data->conf_mask;
+> > >                 r |= data->conf_enable; @@ -415,6 +423,8 @@
+> void
+> > > __init mmp_dt_irq_init(void)
+> > >         const struct of_device_id *of_id;
+> > >         struct mmp_intc_conf *conf;
+> > >         int nr_irqs, irq_base, ret, irq;
+> > > +       const __be32 *wakeup_reg;
+> > > +       int size, i;
+> > >
+> > >         node = of_find_matching_node(NULL, intc_ids);
+> > >         if (!node) {
+> > > @@ -424,18 +434,39 @@ void __init mmp_dt_irq_init(void)
+> > >         of_id = of_match_node(intc_ids, node);
+> > >         conf = of_id->data;
+> > >
+> > > -       ret = of_property_read_u32(node, "mrvl,intc-nr-irqs",
+> &nr_irqs);
+> > > -       if (ret) {
+> > > -               pr_err("Not found mrvl,intc-nr-irqs property\n");
+> > > -               return;
+> > > -       }
+> > > -
+> > >         mmp_icu_base = of_iomap(node, 0);
+> > >         if (!mmp_icu_base) {
+> > >                 pr_err("Failed to get interrupt controller register\n");
+> > >                 return;
+> > >         }
+> > >
+> > > +       /* ICU is only used as wake up logic. */
+> > > +       wakeup_reg = of_get_property(node, "mrvl,intc-wakeup",
+> &size);
+> > > +       if (wakeup_reg) {
+> > > +               mmp_icu_wakeup = 1;
+> > > +               size /= sizeof(*wakeup_reg);
+> > > +               i = 0;
+> > > +               /* disable the global irq/fiq in icu for all cores. */
+> > > +               while (i < size) {
+> > > +                       unsigned offset, val;
+> > > +
+> > > +                       offset = be32_to_cpup(wakeup_reg + i++);
+> > > +                       val = be32_to_cpup(wakeup_reg + i++);
+> > > +                       writel_relaxed(val, mmp_icu_base +
+> offset);
+> > > +               }
+> > > +
+> > > +               gic_arch_extn.irq_mask = icu_mask_irq;
+> > > +               gic_arch_extn.irq_unmask = icu_unmask_irq;
+> > > +
+> > > +               return;
+> > > +       }
+> >
+> > Since it's totally different from original ICU irq initialization, I
+> > suggest to create a new entry to handle this kind of wakeup event. And
+> > we could create a new mask/unmask function.
+> 
+> Ok, I'll update it.
+Are you OK if use icu_mask_irq_wakeup / icu_unmask_irq_wakeup for the new functions.
+> 
+> >
+> > > +
+> > > +       ret = of_property_read_u32(node, "mrvl,intc-nr-irqs",
+> &nr_irqs);
+> > > +       if (ret) {
+> > > +               pr_err("Not found mrvl,intc-nr-irqs property\n");
+> > > +               return;
+> > > +       }
+> > > +
+> > >         irq_base = irq_alloc_descs(-1, 0, nr_irqs - NR_IRQS_LEGACY,
+> 0);
+> > >         if (irq_base < 0) {
+> > >                 pr_err("Failed to allocate IRQ numbers\n");
+> > > --
+> > > 1.7.4.1
+> > >
+> 
+> Best Regards,
+> Neil Zhang
 
-> ------------------
-> 
-> From: "libin <huawei.libin@huawei.com>"
-> 
-> commit fd9b86d37a600488dbd80fe60cca46b822bff1cd upstream
-> 
-> Commit 201c373e8e ("sched/debug: Limit sd->*_idx range on
-> sysctl") was an incomplete bug fix.
-> 
-> This patch fixes sd->*_idx limit range to [0 ~ CPU_LOAD_IDX_MAX-1]
-> avoiding array overflow caused by setting sd->*_idx to CPU_LOAD_IDX_MAX
-> on sysctl.
-> 
-> Signed-off-by: Libin <huawei.libin@huawei.com>
-> Cc: <jiang.liu@huawei.com>
-> Cc: <guohanjun@huawei.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Link: http://lkml.kernel.org/r/51626610.2040607@huawei.com
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
-> ---
->  kernel/sched/core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 26058d0..112a32a 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4948,7 +4948,7 @@ static void sd_free_ctl_entry(struct ctl_table **tablep)
->  }
->  
->  static int min_load_idx = 0;
-> -static int max_load_idx = CPU_LOAD_IDX_MAX;
-> +static int max_load_idx = CPU_LOAD_IDX_MAX-1;
->  
->  static void
->  set_table_entry(struct ctl_table *entry,
-> 
-
-
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
