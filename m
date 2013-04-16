@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936046Ab3DPP6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:58:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54712 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752876Ab3DPP6y (ORCPT
+	id S936062Ab3DPP77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:59:59 -0400
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:34830 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933965Ab3DPP75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:58:54 -0400
-Date: Tue, 16 Apr 2013 16:58:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Girish K S <girishks2000@gmail.com>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
-        t.figa@samsung.com
-Subject: Re: [PATCH V3 RESEND 3/5] spi: s3c64xx: Added provision for non-gpio
- i/o's
-Message-ID: <20130416155850.GL26958@opensource.wolfsonmicro.com>
-References: <1366015230-18243-1-git-send-email-ks.giri@samsung.com>
- <1366015230-18243-2-git-send-email-ks.giri@samsung.com>
+	Tue, 16 Apr 2013 11:59:57 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CqfQkoYPE/jGoa5Q"
-Content-Disposition: inline
-In-Reply-To: <1366015230-18243-2-git-send-email-ks.giri@samsung.com>
-X-Cookie: Keep it short for pithy sake.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAJfpegtJW+k6gLZ+jxJKp3Zj0UhCst3WD7N_xrybD59_0o7h5Q@mail.gmail.com>
+References: <1366058481-21033-1-git-send-email-ccross@android.com>
+	<CAMbhsRT08Li=P0GnbW-XdwyDSFtOfbr2MiTLeh-DduMOx-g=zw@mail.gmail.com>
+	<CAJfpegtJW+k6gLZ+jxJKp3Zj0UhCst3WD7N_xrybD59_0o7h5Q@mail.gmail.com>
+Date: Tue, 16 Apr 2013 08:59:56 -0700
+X-Google-Sender-Auth: X81-ahnvw9z-6FERQ6NNItKsws0
+Message-ID: <CA+55aFzUFMOAfxBpsGLYW3R5NA+f+LWCcKoGdizh_PAhQiXDvg@mail.gmail.com>
+Subject: Re: [PATCH] fuse: use kernel headers when __KERNEL__ is set
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Colin Cross <ccross@android.com>, lkml <linux-kernel@vger.kernel.org>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 16, 2013 at 7:21 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+> And I still disagree.  Why should userspace use the linux internal
+> header when there's a perfectly good standard header that it can use?
 
---CqfQkoYPE/jGoa5Q
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If it's called UAPI, it damn well is *meant* for user-space inclusion.
+Look at the file-name.
 
-On Mon, Apr 15, 2013 at 02:10:28PM +0530, Girish K S wrote:
-> From: Girish K S <girishks2000@gmail.com>
->=20
-> Currently the drivers supports only the GPIO based i/o pins.
-> But there are Exynos SoC's that use the same controller with
-> dedicated i/o pins.
->=20
-> This patch  provides provision to support gpio/dedicated pins.
-> The decision is made by parsing the "gpios" property in the spi
-> node.
+And since the bug comment says "This file defines the kernel interface
+of FUSE" *AND* it very clearly has explicit code to support user-space
+includes with special user-space-only type defines, then your email is
+obviously just pure crap, and I don't understand how you can write
+that sentence with a straight face.
 
-This has some conflicts with my SPI -next branch, I think it's all due
-to Arnd's changes to support multi-platform boot on Exynos but there may
-be some other stuff.  Can you please rebase against
+The *whole* point of the UAPI includes is two-fold:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/misc.git spi-next
+ - to make it easier for user-space libraries to get at the kernel
+definitions. Not everybody wants to use glibc for various reasons, and
+where do you want people to *get* these declarations from?
 
-and make sure everything is OK?
+ - to make kernel people more AWARE of when they are changing stuff
+that affects user-space.
 
---CqfQkoYPE/jGoa5Q
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Now, the uapi model not perfect, but there are damn good reasons to at
+least *strive* for both of those things, so I really don't understand
+your comment there.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRbXUtAAoJELSic+t+oim9z2MP/im1kdsXWk0dkOLHQpGyDUmc
-TOOGBXgde6KvXnhh+gnGulE81+KxJv/RnfkwRcJbcLnHU5SkYXH/1m+sGydLomU/
-l4QgMGYydd1MP7dbUfhrzb06h5wumClYZAuOtj1rsJqaJM6lulhToHf/RLfAur7u
-cw0Rx8wHlM5FWeXjGnWbP2wbysNX9cj7KV9BIHZDA+Y7mZZ2XaEGuf5AWXVtvJSU
-5FhPEncYIetWu4bSsY8AvcBxZYTLMzoaPK9if4coOOMhNXnDmubEmHMp+eeQCMyp
-RqkAOPJ1GCTXYjGIQGZl3TvODuuEvnD9pLK/MhBnzl7GOTAfHcCkuuFTIjD0npPi
-47rjYbj3z2Gf5joFuznBeg/VwmG/Q+zI4DfmAn38yDr8Q042G1N1KqBaqsaQTyVN
-j/FcPbn2up88rRGDorx4NV42WN42ezwECEC23YRcsDQMRKdO+42NTXs38fHo0EvZ
-LQeZSkfPYiz+/vJVB4CPbMsDcm6L6RBpsYOvbjVjY38Go8TYrN+HMYb1pImBgdA4
-kY2HdugXj53d7ZxJBAah6VORauwGerH9JhMgIroODKhAcTs35XWkAhfZVMQLj4/L
-XwkaLMI6f5OiZM24YrM+cldMIiFSLmY02pBERQy/0t6DY57pUdLs3ujIG0XXbpSE
-95YaZVebtvvvBAKOIeRe
-=aOhu
------END PGP SIGNATURE-----
-
---CqfQkoYPE/jGoa5Q--
+                Linus
