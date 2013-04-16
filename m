@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935774Ab3DPKYN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 06:24:13 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:39728 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab3DPKYI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S935749Ab3DPKYL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 06:24:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54635 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753190Ab3DPKYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Apr 2013 06:24:08 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [REPOST PATCH] spi: s3c64xx: let device core setup the default pin configuration
-To: Doug Anderson <dianders@chromium.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, heiko@sntech.de,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net,
-        linux-arm-kernel@lists.infradead.org,
-        Doug Anderson <dianders@chromium.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Ben Dooks <ben-linux@fluff.org>, Mark Brown <broonie@kernel.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1366083777-9118-1-git-send-email-dianders@chromium.org>
-References: <1362570130-14084-1-git-send-email-thomas.abraham@linaro.org> <1366083777-9118-1-git-send-email-dianders@chromium.org>
-Date: Tue, 16 Apr 2013 11:24:02 +0100
-Message-Id: <20130416102402.DF3493E14C0@localhost>
+Date: Tue, 16 Apr 2013 12:24:05 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Len Brown <lenb@kernel.org>, mingo@redhat.com, peterz@infradead.org,
+        tglx@linutronix.de, akpm@linux-foundation.org, arjan@linux.intel.com,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        gregkh@linuxfoundation.org, preeti@linux.vnet.ibm.com,
+        viresh.kumar@linaro.org, linux-kernel@vger.kernel.org,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, jkosina@suse.cz,
+        clark.williams@gmail.com, tony.luck@intel.com, keescook@chromium.org,
+        mgorman@suse.de, riel@redhat.com,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [patch v7 0/21] sched: power aware scheduling
+Message-ID: <20130416102405.GD5332@pd.tnic>
+References: <5167C9FA.8050406@intel.com>
+ <20130412162348.GE2368@pd.tnic>
+ <516A0652.8040505@intel.com>
+ <20130414155925.GC20547@pd.tnic>
+ <516B9859.70004@intel.com>
+ <516B9B57.3030902@intel.com>
+ <20130415095203.GA26524@pd.tnic>
+ <516C059E.20800@intel.com>
+ <20130415231206.GE12144@pd.tnic>
+ <516C99BB.30309@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <516C99BB.30309@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Apr 2013 20:42:57 -0700, Doug Anderson <dianders@chromium.org> wrote:
-> From: Thomas Abraham <thomas.abraham@linaro.org>
-> 
-> With device core now able to setup the default pin configuration,
-> the pin configuration code based on the deprecated Samsung specific
-> gpio bindings is removed.
-> 
-> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Reviewed-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Doug Anderson <dianders@chromium.org>
+On Tue, Apr 16, 2013 at 08:22:19AM +0800, Alex Shi wrote:
+> testing has a little variation, but the power data is quite accurate.
+> I may change to packing tasks per cpu capacity than current cpu
+> weight. that should has better power efficient value.
 
-Applied, thanks.
+Yeah, this probably needs careful measuring - and by "this" I mean how
+to place N tasks where N is less than number of cores in the system.
 
-g.
+I can imagine trying to migrate them all together on a single physical
+socket (maybe even overcommitting it) so that you can flush the caches
+of the cores on the other sockets and so that you can power down the
+other sockets and avoid coherent traffic from waking them up, to be one
+strategy. My supposition here is that maybe putting the whole unused
+sockets in a deep sleep state could save a lot of power.
 
+Or not, who knows. Only empirical measurements should show us what
+actually happens.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
