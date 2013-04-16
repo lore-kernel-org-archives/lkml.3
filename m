@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965141Ab3DPS0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 14:26:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57260 "EHLO mx1.redhat.com"
+	id S964959Ab3DPS02 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 14:26:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58558 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965056Ab3DPS0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 14:26:40 -0400
+	id S935984Ab3DPS0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 14:26:25 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 11/28] rtl8187se: Use a dir under /proc/net/r8180/ [RFC]
+Subject: [PATCH 07/28] proc: Split the namespace stuff out into
+ linux/proc_ns.h [RFC]
 To: linux-kernel@vger.kernel.org
 From: David Howells <dhowells@redhat.com>
-Cc: devel@driverdev.osuosl.org, linux-wireless@vger.kernel.org,
-        YAMANE Toshiaki <yamanetoshi@gmail.com>,
-        Maxim Mikityanskiy <maxtram95@gmail.com>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org
-Date: Tue, 16 Apr 2013 19:26:35 +0100
-Message-ID: <20130416182635.27773.93633.stgit@warthog.procyon.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, netdev@vger.kernel.org,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>, viro@zeniv.linux.org.uk,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Date: Tue, 16 Apr 2013 19:26:20 +0100
+Message-ID: <20130416182620.27773.7766.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
 References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
@@ -29,83 +29,510 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a dir under /proc/net/r8180/ named for the device and create that
-device's files under there.  This means that there won't be a problem for
-multiple devices in the system (if such is possible) and it means we don't
-need to save the 'device directory' PDE any more as we can just do a proc
-subtree removal.
+Split the proc namespace stuff out into linux/proc_ns.h.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Maxim Mikityanskiy <maxtram95@gmail.com>
-cc: YAMANE Toshiaki <yamanetoshi@gmail.com>
-cc: linux-wireless@vger.kernel.org
-cc: devel@driverdev.osuosl.org
+cc: netdev@vger.kernel.org
+cc: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+cc: Eric W. Biederman <ebiederm@xmission.com>
 ---
 
- drivers/staging/rtl8187se/r8180.h      |    1 -
- drivers/staging/rtl8187se/r8180_core.c |   26 ++++++++------------------
- 2 files changed, 8 insertions(+), 19 deletions(-)
+ fs/namespace.c           |    6 ++--
+ fs/proc/inode.c          |    8 ++---
+ fs/proc/namespaces.c     |   17 +++++++----
+ include/linux/proc_fs.h  |   68 +-----------------------------------------
+ include/linux/proc_ns.h  |   74 ++++++++++++++++++++++++++++++++++++++++++++++
+ init/version.c           |    2 +
+ ipc/msgutil.c            |    2 +
+ ipc/namespace.c          |    2 +
+ kernel/nsproxy.c         |    6 ++--
+ kernel/pid.c             |    1 +
+ kernel/pid_namespace.c   |    2 +
+ kernel/user.c            |    2 +
+ kernel/user_namespace.c  |    2 +
+ kernel/utsname.c         |    2 +
+ net/core/net_namespace.c |    7 ++--
+ 15 files changed, 109 insertions(+), 92 deletions(-)
+ create mode 100644 include/linux/proc_ns.h
 
-diff --git a/drivers/staging/rtl8187se/r8180.h b/drivers/staging/rtl8187se/r8180.h
-index 70ea414..edacc80 100644
---- a/drivers/staging/rtl8187se/r8180.h
-+++ b/drivers/staging/rtl8187se/r8180.h
-@@ -372,7 +372,6 @@ typedef struct r8180_priv
- 	struct Stats stats;
- 	struct _link_detect_t link_detect;  //YJ,add,080828
- 	struct iw_statistics wstats;
--	struct proc_dir_entry *dir_dev;
+diff --git a/fs/namespace.c b/fs/namespace.c
+index ed0708f..0f0cf93 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -21,7 +21,7 @@
+ #include <linux/fs_struct.h>	/* get_fs_root et.al. */
+ #include <linux/fsnotify.h>	/* fsnotify_vfsmount_delete */
+ #include <linux/uaccess.h>
+-#include <linux/proc_fs.h>
++#include <linux/proc_ns.h>
+ #include "pnode.h"
+ #include "internal.h"
  
- 	/*RX stuff*/
- 	u32 *rxring;
-diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
-index 448da77..ab469ce 100644
---- a/drivers/staging/rtl8187se/r8180_core.c
-+++ b/drivers/staging/rtl8187se/r8180_core.c
-@@ -288,14 +288,7 @@ void rtl8180_proc_module_remove(void)
+@@ -1350,13 +1350,13 @@ static bool mnt_ns_loop(struct path *path)
+ 	 * mount namespace loop?
+ 	 */
+ 	struct inode *inode = path->dentry->d_inode;
+-	struct proc_inode *ei;
++	struct proc_ns *ei;
+ 	struct mnt_namespace *mnt_ns;
  
- void rtl8180_proc_remove_one(struct net_device *dev)
+ 	if (!proc_ns_inode(inode))
+ 		return false;
+ 
+-	ei = PROC_I(inode);
++	ei = get_proc_ns(inode);
+ 	if (ei->ns_ops != &mntns_operations)
+ 		return false;
+ 
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index bd2f764..073aea6 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -51,8 +51,8 @@ static void proc_evict_inode(struct inode *inode)
+ 		sysctl_head_put(head);
+ 	}
+ 	/* Release any associated namespace */
+-	ns_ops = PROC_I(inode)->ns_ops;
+-	ns = PROC_I(inode)->ns;
++	ns_ops = PROC_I(inode)->ns.ns_ops;
++	ns = PROC_I(inode)->ns.ns;
+ 	if (ns_ops && ns)
+ 		ns_ops->put(ns);
+ }
+@@ -73,8 +73,8 @@ static struct inode *proc_alloc_inode(struct super_block *sb)
+ 	ei->pde = NULL;
+ 	ei->sysctl = NULL;
+ 	ei->sysctl_entry = NULL;
+-	ei->ns = NULL;
+-	ei->ns_ops = NULL;
++	ei->ns.ns = NULL;
++	ei->ns.ns_ops = NULL;
+ 	inode = &ei->vfs_inode;
+ 	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME;
+ 	return inode;
+diff --git a/fs/proc/namespaces.c b/fs/proc/namespaces.c
+index 66b51c0..54bdc67 100644
+--- a/fs/proc/namespaces.c
++++ b/fs/proc/namespaces.c
+@@ -51,7 +51,7 @@ static int ns_delete_dentry(const struct dentry *dentry)
+ static char *ns_dname(struct dentry *dentry, char *buffer, int buflen)
  {
--	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
--	if (priv->dir_dev) {
--		remove_proc_entry("stats-hw", priv->dir_dev);
--		remove_proc_entry("stats-tx", priv->dir_dev);
--		remove_proc_entry("stats-rx", priv->dir_dev);
--		remove_proc_entry("registers", priv->dir_dev);
--		priv->dir_dev = NULL;
--	}
-+	remove_proc_subtree(dev->name, rtl8180_proc);
+ 	struct inode *inode = dentry->d_inode;
+-	const struct proc_ns_operations *ns_ops = PROC_I(inode)->ns_ops;
++	const struct proc_ns_operations *ns_ops = PROC_I(inode)->ns.ns_ops;
+ 
+ 	return dynamic_dname(dentry, buffer, buflen, "%s:[%lu]",
+ 		ns_ops->name, inode->i_ino);
+@@ -95,8 +95,8 @@ static struct dentry *proc_ns_get_dentry(struct super_block *sb,
+ 		inode->i_op = &ns_inode_operations;
+ 		inode->i_mode = S_IFREG | S_IRUGO;
+ 		inode->i_fop = &ns_file_operations;
+-		ei->ns_ops = ns_ops;
+-		ei->ns = ns;
++		ei->ns.ns_ops = ns_ops;
++		ei->ns.ns = ns;
+ 		unlock_new_inode(inode);
+ 	} else {
+ 		ns_ops->put(ns);
+@@ -128,7 +128,7 @@ static void *proc_ns_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+ 		goto out_put_task;
+ 
+-	ns_path.dentry = proc_ns_get_dentry(sb, task, ei->ns_ops);
++	ns_path.dentry = proc_ns_get_dentry(sb, task, ei->ns.ns_ops);
+ 	if (IS_ERR(ns_path.dentry)) {
+ 		error = ERR_CAST(ns_path.dentry);
+ 		goto out_put_task;
+@@ -148,7 +148,7 @@ static int proc_ns_readlink(struct dentry *dentry, char __user *buffer, int bufl
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 	struct proc_inode *ei = PROC_I(inode);
+-	const struct proc_ns_operations *ns_ops = ei->ns_ops;
++	const struct proc_ns_operations *ns_ops = ei->ns.ns_ops;
+ 	struct task_struct *task;
+ 	void *ns;
+ 	char name[50];
+@@ -202,7 +202,7 @@ static struct dentry *proc_ns_instantiate(struct inode *dir,
+ 	ei = PROC_I(inode);
+ 	inode->i_mode = S_IFLNK|S_IRWXUGO;
+ 	inode->i_op = &proc_ns_link_inode_operations;
+-	ei->ns_ops = ns_ops;
++	ei->ns.ns_ops = ns_ops;
+ 
+ 	d_set_d_op(dentry, &pid_dentry_operations);
+ 	d_add(dentry, inode);
+@@ -337,6 +337,11 @@ out_invalid:
+ 	return ERR_PTR(-EINVAL);
  }
  
- /*
-@@ -335,22 +328,19 @@ static const struct rtl8180_proc_file rtl8180_proc_files[] = {
- void rtl8180_proc_init_one(struct net_device *dev)
++struct proc_ns *get_proc_ns(struct inode *inode)
++{
++	return &PROC_I(inode)->ns;
++}
++
+ bool proc_ns_inode(struct inode *inode)
  {
- 	const struct rtl8180_proc_file *f;
--	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
-+	struct proc_dir_entry *dir;
+ 	return inode->i_fop == &ns_file_operations;
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 28a4d7e..8f7d8f2 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -6,6 +6,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/magic.h>
+ #include <linux/atomic.h>
++#include <linux/proc_ns.h>
  
--	priv->dir_dev = rtl8180_proc;
--	if (!priv->dir_dev) {
--		DMESGE("Unable to initialize /proc/net/r8180/%s\n",
--		      dev->name);
-+	dir = proc_mkdir_data(dev->name, 0, rtl8180_proc, dev);
-+	if (!dir) {
-+		DMESGE("Unable to initialize /proc/net/r8180/%s\n", dev->name);
- 		return;
- 	}
--	priv->dir_dev->data = dev;
+ struct net;
+ struct completion;
+@@ -24,18 +25,6 @@ struct mm_struct;
+ #define PROC_NUMBUF 13
  
- 	for (f = rtl8180_proc_files; f->name[0]; f++) {
--		if (!proc_create_data(f->name, S_IFREG | S_IRUGO,
--				      priv->dir_dev,
-+		if (!proc_create_data(f->name, S_IFREG | S_IRUGO, dir,
- 				      &rtl8180_proc_fops, f->show)) {
--			DMESGE("Unable to initialize /proc/net/r8180/%s\n",
--			       f->name);
-+			DMESGE("Unable to initialize /proc/net/r8180/%s/%s\n",
-+			       dev->name, f->name);
- 			return;
- 		}
- 	}
+ /*
+- * We always define these enumerators
+- */
+-
+-enum {
+-	PROC_ROOT_INO		= 1,
+-	PROC_IPC_INIT_INO	= 0xEFFFFFFFU,
+-	PROC_UTS_INIT_INO	= 0xEFFFFFFEU,
+-	PROC_USER_INIT_INO	= 0xEFFFFFFDU,
+-	PROC_PID_INIT_INO	= 0xEFFFFFFCU,
+-};
+-
+-/*
+  * This is not completely implemented yet. The idea is to
+  * create an in-memory tree (like the actual /proc filesystem
+  * tree) of these proc_dir_entries, so that we can dynamically
+@@ -81,10 +70,6 @@ struct proc_dir_entry *proc_create_data(const char *name, umode_t mode,
+ extern void remove_proc_entry(const char *name, struct proc_dir_entry *parent);
+ extern int remove_proc_subtree(const char *name, struct proc_dir_entry *parent);
+ 
+-struct pid_namespace;
+-
+-extern int pid_ns_prepare_proc(struct pid_namespace *ns);
+-extern void pid_ns_release_proc(struct pid_namespace *ns);
+ 
+ /*
+  * proc_tty.c
+@@ -132,12 +117,6 @@ extern struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
+ 
+ extern void proc_set_size(struct proc_dir_entry *, loff_t);
+ extern void proc_set_user(struct proc_dir_entry *, kuid_t, kgid_t);
+-
+-extern struct file *proc_ns_fget(int fd);
+-extern bool proc_ns_inode(struct inode *inode);
+-
+-extern int proc_alloc_inum(unsigned int *pino);
+-extern void proc_free_inum(unsigned int inum);
+ #else
+ 
+ static inline void proc_flush_task(struct task_struct *task)
+@@ -168,50 +147,8 @@ struct tty_driver;
+ static inline void proc_tty_register_driver(struct tty_driver *driver) {};
+ static inline void proc_tty_unregister_driver(struct tty_driver *driver) {};
+ 
+-static inline int pid_ns_prepare_proc(struct pid_namespace *ns)
+-{
+-	return 0;
+-}
+-
+-static inline void pid_ns_release_proc(struct pid_namespace *ns)
+-{
+-}
+-
+-static inline struct file *proc_ns_fget(int fd)
+-{
+-	return ERR_PTR(-EINVAL);
+-}
+-
+-static inline bool proc_ns_inode(struct inode *inode)
+-{
+-	return false;
+-}
+-
+-static inline int proc_alloc_inum(unsigned int *inum)
+-{
+-	*inum = 1;
+-	return 0;
+-}
+-static inline void proc_free_inum(unsigned int inum)
+-{
+-}
+ #endif /* CONFIG_PROC_FS */
+ 
+-struct nsproxy;
+-struct proc_ns_operations {
+-	const char *name;
+-	int type;
+-	void *(*get)(struct task_struct *task);
+-	void (*put)(void *ns);
+-	int (*install)(struct nsproxy *nsproxy, void *ns);
+-	unsigned int (*inum)(void *ns);
+-};
+-extern const struct proc_ns_operations netns_operations;
+-extern const struct proc_ns_operations utsns_operations;
+-extern const struct proc_ns_operations ipcns_operations;
+-extern const struct proc_ns_operations pidns_operations;
+-extern const struct proc_ns_operations userns_operations;
+-extern const struct proc_ns_operations mntns_operations;
+ 
+ union proc_op {
+ 	int (*proc_get_link)(struct dentry *, struct path *);
+@@ -231,8 +168,7 @@ struct proc_inode {
+ 	struct proc_dir_entry *pde;
+ 	struct ctl_table_header *sysctl;
+ 	struct ctl_table *sysctl_entry;
+-	void *ns;
+-	const struct proc_ns_operations *ns_ops;
++	struct proc_ns ns;
+ 	struct inode vfs_inode;
+ };
+ 
+diff --git a/include/linux/proc_ns.h b/include/linux/proc_ns.h
+new file mode 100644
+index 0000000..34a1e10
+--- /dev/null
++++ b/include/linux/proc_ns.h
+@@ -0,0 +1,74 @@
++/*
++ * procfs namespace bits
++ */
++#ifndef _LINUX_PROC_NS_H
++#define _LINUX_PROC_NS_H
++
++struct pid_namespace;
++struct nsproxy;
++
++struct proc_ns_operations {
++	const char *name;
++	int type;
++	void *(*get)(struct task_struct *task);
++	void (*put)(void *ns);
++	int (*install)(struct nsproxy *nsproxy, void *ns);
++	unsigned int (*inum)(void *ns);
++};
++
++struct proc_ns {
++	void *ns;
++	const struct proc_ns_operations *ns_ops;
++};
++
++extern const struct proc_ns_operations netns_operations;
++extern const struct proc_ns_operations utsns_operations;
++extern const struct proc_ns_operations ipcns_operations;
++extern const struct proc_ns_operations pidns_operations;
++extern const struct proc_ns_operations userns_operations;
++extern const struct proc_ns_operations mntns_operations;
++
++/*
++ * We always define these enumerators
++ */
++enum {
++	PROC_ROOT_INO		= 1,
++	PROC_IPC_INIT_INO	= 0xEFFFFFFFU,
++	PROC_UTS_INIT_INO	= 0xEFFFFFFEU,
++	PROC_USER_INIT_INO	= 0xEFFFFFFDU,
++	PROC_PID_INIT_INO	= 0xEFFFFFFCU,
++};
++
++#ifdef CONFIG_PROC_FS
++
++extern int pid_ns_prepare_proc(struct pid_namespace *ns);
++extern void pid_ns_release_proc(struct pid_namespace *ns);
++extern struct file *proc_ns_fget(int fd);
++extern struct proc_ns *get_proc_ns(struct inode *);
++extern int proc_alloc_inum(unsigned int *pino);
++extern void proc_free_inum(unsigned int inum);
++extern bool proc_ns_inode(struct inode *inode);
++
++#else /* CONFIG_PROC_FS */
++
++static inline int pid_ns_prepare_proc(struct pid_namespace *ns) { return 0; }
++static inline void pid_ns_release_proc(struct pid_namespace *ns) {}
++
++static inline struct file *proc_ns_fget(int fd)
++{
++	return ERR_PTR(-EINVAL);
++}
++
++static inline struct proc_ns *get_proc_ns(struct inode *inode) { return NULL; }
++
++static inline int proc_alloc_inum(unsigned int *inum)
++{
++	*inum = 1;
++	return 0;
++}
++static inline void proc_free_inum(unsigned int inum) {}
++static inline bool proc_ns_inode(struct inode *inode) { return false; }
++
++#endif /* CONFIG_PROC_FS */
++
++#endif /* _LINUX_PROC_NS_H */
+diff --git a/init/version.c b/init/version.c
+index 58170f1..1a4718e 100644
+--- a/init/version.c
++++ b/init/version.c
+@@ -12,7 +12,7 @@
+ #include <linux/utsname.h>
+ #include <generated/utsrelease.h>
+ #include <linux/version.h>
+-#include <linux/proc_fs.h>
++#include <linux/proc_ns.h>
+ 
+ #ifndef CONFIG_KALLSYMS
+ #define version(a) Version_ ## a
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index 5df8e4b..8f02017 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -16,7 +16,7 @@
+ #include <linux/msg.h>
+ #include <linux/ipc_namespace.h>
+ #include <linux/utsname.h>
+-#include <linux/proc_fs.h>
++#include <linux/proc_ns.h>
+ #include <asm/uaccess.h>
+ 
+ #include "util.h"
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index 7c1fa45..7ee61bf 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -12,7 +12,7 @@
+ #include <linux/fs.h>
+ #include <linux/mount.h>
+ #include <linux/user_namespace.h>
+-#include <linux/proc_fs.h>
++#include <linux/proc_ns.h>
+ 
+ #include "util.h"
+ 
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index afc0456..364ceab 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -22,7 +22,7 @@
+ #include <linux/pid_namespace.h>
+ #include <net/net_namespace.h>
+ #include <linux/ipc_namespace.h>
+-#include <linux/proc_fs.h>
++#include <linux/proc_ns.h>
+ #include <linux/file.h>
+ #include <linux/syscalls.h>
+ 
+@@ -241,7 +241,7 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+ 	const struct proc_ns_operations *ops;
+ 	struct task_struct *tsk = current;
+ 	struct nsproxy *new_nsproxy;
+-	struct proc_inode *ei;
++	struct proc_ns *ei;
+ 	struct file *file;
+ 	int err;
+ 
+@@ -250,7 +250,7 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+ 		return PTR_ERR(file);
+ 
+ 	err = -EINVAL;
+-	ei = PROC_I(file_inode(file));
++	ei = get_proc_ns(file_inode(file));
+ 	ops = ei->ns_ops;
+ 	if (nstype && (ops->type != nstype))
+ 		goto out;
+diff --git a/kernel/pid.c b/kernel/pid.c
+index 047dc62..686255e 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -36,6 +36,7 @@
+ #include <linux/pid_namespace.h>
+ #include <linux/init_task.h>
+ #include <linux/syscalls.h>
++#include <linux/proc_ns.h>
+ #include <linux/proc_fs.h>
+ 
+ #define pid_hashfn(nr, ns)	\
+diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+index c1c3dc1..4af28a8 100644
+--- a/kernel/pid_namespace.c
++++ b/kernel/pid_namespace.c
+@@ -15,7 +15,7 @@
+ #include <linux/err.h>
+ #include <linux/acct.h>
+ #include <linux/slab.h>
+-#include <linux/proc_fs.h>
++#include <linux/proc_ns.h>
+ #include <linux/reboot.h>
+ #include <linux/export.h>
+ 
+diff --git a/kernel/user.c b/kernel/user.c
+index e81978e..5bbb919 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -16,7 +16,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/export.h>
+ #include <linux/user_namespace.h>
+-#include <linux/proc_fs.h>
++#include <linux/proc_ns.h>
+ 
+ /*
+  * userns count is 1 for root user, 1 for init_uts_ns,
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index b14f4d3..51855f5 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -9,7 +9,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/slab.h>
+ #include <linux/user_namespace.h>
+-#include <linux/proc_fs.h>
++#include <linux/proc_ns.h>
+ #include <linux/highuid.h>
+ #include <linux/cred.h>
+ #include <linux/securebits.h>
+diff --git a/kernel/utsname.c b/kernel/utsname.c
+index a47fc5d..2fc8576 100644
+--- a/kernel/utsname.c
++++ b/kernel/utsname.c
+@@ -15,7 +15,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/user_namespace.h>
+-#include <linux/proc_fs.h>
++#include <linux/proc_ns.h>
+ 
+ static struct uts_namespace *create_uts_ns(void)
+ {
+diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
+index 80e271d..f9765203 100644
+--- a/net/core/net_namespace.c
++++ b/net/core/net_namespace.c
+@@ -10,7 +10,8 @@
+ #include <linux/idr.h>
+ #include <linux/rculist.h>
+ #include <linux/nsproxy.h>
+-#include <linux/proc_fs.h>
++#include <linux/fs.h>
++#include <linux/proc_ns.h>
+ #include <linux/file.h>
+ #include <linux/export.h>
+ #include <linux/user_namespace.h>
+@@ -336,7 +337,7 @@ EXPORT_SYMBOL_GPL(__put_net);
+ 
+ struct net *get_net_ns_by_fd(int fd)
+ {
+-	struct proc_inode *ei;
++	struct proc_ns *ei;
+ 	struct file *file;
+ 	struct net *net;
+ 
+@@ -344,7 +345,7 @@ struct net *get_net_ns_by_fd(int fd)
+ 	if (IS_ERR(file))
+ 		return ERR_CAST(file);
+ 
+-	ei = PROC_I(file_inode(file));
++	ei = get_proc_ns(file_inode(file));
+ 	if (ei->ns_ops == &netns_operations)
+ 		net = get_net(ei->ns);
+ 	else
 
