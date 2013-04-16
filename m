@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935798Ab3DPQdR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:33:17 -0400
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:36518 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753110Ab3DPQdP (ORCPT
+	id S936023Ab3DPQfA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:35:00 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:52916 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754430Ab3DPQe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:33:15 -0400
-X-Sasl-enc: /Pm6Ml7WeNUXvHFjUsf/YLX1eq4VsWnX+0xxZUK0JZZg 1366129994
-Date: Mon, 15 Apr 2013 21:40:49 -0700
-From: Greg KH <greg@kroah.com>
-To: D M German <dmg@uvic.ca>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: helping with tracking commits across repos
-Message-ID: <20130416044049.GA6162@kroah.com>
-References: <87r4ifxzwu.fsf@mn.cs.uvic.ca>
- <20130412203146.GA31283@kroah.com>
- <87r4ibpiq9.fsf@mn.cs.uvic.ca>
- <20130415230923.GA2417@kroah.com>
- <87mwsznxhi.fsf@mn.cs.uvic.ca>
+	Tue, 16 Apr 2013 12:34:58 -0400
+Date: Tue, 16 Apr 2013 09:34:58 -0700
+From: Olof Johansson <olof@lixom.net>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>,
+        Simon Glass <sjg@chromium.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        grant.likely@secretlab.ca, yuvaraj.cd@gmail.com,
+        ben.dooks@codethink.co.uk, u.kleine-koenig@pengutronix.de,
+        broonie@opensource.wolfsonmicro.com, girish.shivananjappa@linaro.org,
+        bhushan.r@samsung.com, sreekumar.c@samsung.com,
+        prashanth.g@samsung.com, djkurtz@chromium.org, swarren@wwwdotorg.org,
+        linux@roeck-us.net, Rob Herring <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Stephen Warren <swarren@nvidia.com>, Jean Delvare <khali@linux-fr.org>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v6 1/3] i2c: mux: Add i2c-arb-gpio-challenge 'mux' driver
+Message-ID: <20130416163458.GA4918@quad.lixom.net>
+References: <1365543270-10736-1-git-send-email-dianders@chromium.org>
+ <1366129742-16048-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87mwsznxhi.fsf@mn.cs.uvic.ca>
+In-Reply-To: <1366129742-16048-1-git-send-email-dianders@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 05:13:45PM -0700, D M German wrote:
+Overdue, should have added a few iterations ago: :)
+
+On Tue, Apr 16, 2013 at 09:29:00AM -0700, Doug Anderson wrote:
+> The i2c-arb-gpio-challenge driver implements an I2C arbitration scheme
+> where masters need to claim the bus with a GPIO before they can start
+> a transcation.  This should generally only be used when standard I2C
+> multimaster isn't appropriate for some reason (errata/bugs).
 > 
+> This driver is based on code that Simon Glass added to the i2c-s3c2410
+> driver in the Chrome OS kernel 3.4 tree.  The current incarnation as a
+> mux driver is as suggested by Grant Likely.  See
+> <https://patchwork.kernel.org/patch/1877311/> for some history.
 > 
->  Greg KH twisted the bytes to say:
-> 
->  >> http://o.cs.uvic.ca:20810/perl/next.pl
-> 
->  Greg> Yes, that's a great thing.  Maybe the ability to see the subject: line
->  Greg> of the commit somewhere easier than having to click through to the patch
->  Greg> would be nice, so we can just glance at the report and say, "Look at all
->  Greg> of the btrfs patches that showed up out of nowhere, what happened?"
-> 
->  Greg> Oh, and if you could do it for a specific kernel release, not a date
->  Greg> range, that would be nice (i.e. report for 3.9-rc1, 3.8-rc1, 3.7-rc1,
->  Greg> etc.)
-> 
-> What would be the simplest approach to getting the date? I suspect that
-> it can be done by doing some command line magic in Linus git repo.
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Signed-off-by: Simon Glass <sjg@chromium.org>
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
-You want to look at the commits from the last major release (i.e. 3.8)
-to the -rc1 release, (i.e. 3.9-rc1).  You can't look at the dates,
-that's not going to reflect when the patch landed in Linus's branch.
+Acked-by: Olof Johansson <olof@lixom.net>
 
-So a simple:
-	git rev-list --no-merges v3.8..v3.9-rc1
-will give you the commits needed.
-
-As for storage issues, look at the -s option to 'git clone'.  If you
-read the man page, it talks about the .git/objects/info/alternates file
-you can use to save on diskspace.
-
-Use Linus's repo as a full clone, and then all other git repo you pull
-from, should have the alternates file pointing to Linus's tree.  That
-way, only the commits that are not in Linus's tree will be in the
-directory, the shared ones will not be duplicated.
-
-You can do this today on your existing repos by creating the alternates
-file, and then doing 'git gc' on the repo to clean out the duplicates.
-That should save you a _lot_ of storage space.
-
-And you should also be keeping only --bare repos, no need for the
-checked out trees on your disks, you don't need them, right?
-
-Hope this helps,
-
-greg k-h
