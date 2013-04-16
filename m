@@ -1,61 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab3DPL7I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 07:59:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40310 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753965Ab3DPL7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 07:59:04 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAE9FiQU97FHKpKQjZJq+Nfz18eM2n0-V2n4B6m=ozjkycP+Rng@mail.gmail.com>
-References: <1365797627-20874-1-git-send-email-keescook@chromium.org> <1365797627-20874-7-git-send-email-keescook@chromium.org> <CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com> <516A1D49.1050100@zytor.com> <CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com> <516C702C.2030209@zytor.com> <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com> <516C751B.4020505@zytor.com> <CAE9FiQW5X80bxOURTkhnELuV_AzYXBHEudxN1eUg_1jehrcfww@mail.gmail.com> <516CB937.2000305@zytor.com> <CAE9FiQU97FHKpKQjZJq+Nfz18eM2n0-V2n4B6m=ozjkycP+Rng@mail.gmail.com>
+	id S1756541Ab3DPMFb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 08:05:31 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:6350 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754792Ab3DPMF3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 08:05:29 -0400
+Message-ID: <516D3E81.6060307@hp.com>
+Date: Tue, 16 Apr 2013 08:05:21 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 15 Apr 2013 20:02:00 -0700
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Kees Cook <keescook@chromium.org>, Eric Northup <digitaleric@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "kernel-hardening@lists.openwall.com" 
-	<kernel-hardening@lists.openwall.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Message-ID: <7f907e0b-c397-460f-a8ec-ce84b119ce84@email.android.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-arch@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 2/3] mutex: Queue mutex spinners with MCS lock to reduce
+ cacheline contention
+References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>  <1366036679-9702-3-git-send-email-Waiman.Long@hp.com> <1366086275.22463.25.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1366086275.22463.25.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No.  Fixing one bootloader is almost impossible.  Fixing them all is a Sisiphyean task.
+On 04/16/2013 12:24 AM, Davidlohr Bueso wrote:
+> On Mon, 2013-04-15 at 10:37 -0400, Waiman Long wrote:
+> [...]
+>> +typedef struct mspin_node {
+>> +	struct mspin_node *next;
+>> +	int		   locked;	/* 1 if lock acquired */
+>> +} mspin_node_t;
+>> +
+>> +typedef mspin_node_t	*mspin_lock_t;
+> I think we could do without the typedefs, specially mspin_lock_t.
+Yes, we can do without the typedefs.
 
-Yinghai Lu <yinghai@kernel.org> wrote:
+>> +
+>> +#define	MLOCK(mutex)	((mspin_lock_t *)&((mutex)->spin_mlock))
+>> +
+>> +static noinline void mspin_lock(mspin_lock_t *lock,  mspin_node_t *node)
+>> +{
+>> +	mspin_node_t *prev;
+>> +
+>> +	/* Init node */
+>> +	node->locked = 0;
+>> +	node->next   = NULL;
+>> +
+>> +	prev = xchg(lock, node);
+>> +	if (likely(prev == NULL)) {
+>> +		/* Lock acquired */
+>> +		node->locked = 1;
+>> +		return;
+>> +	}
+>> +	ACCESS_ONCE(prev->next) = node;
+>> +	smp_wmb();
+>> +	/* Wait until the lock holder passes the lock down */
+>> +	while (!ACCESS_ONCE(node->locked))
+>> +		arch_mutex_cpu_relax();
+>> +}
+>> +
+>> +static void mspin_unlock(mspin_lock_t *lock,  mspin_node_t *node)
+>> +{
+>> +	mspin_node_t *next = ACCESS_ONCE(node->next);
+>> +
+>> +	if (likely(!next)) {
+>> +		/*
+>> +		 * Release the lock by setting it to NULL
+>> +		 */
+>> +		if (cmpxchg(lock, node, NULL) == node)
+>> +			return;
+>> +		/* Wait until the next pointer is set */
+>> +		while (!(next = ACCESS_ONCE(node->next)))
+>> +			arch_mutex_cpu_relax();
+>> +	}
+>> +	barrier();
+>> +	ACCESS_ONCE(next->locked) = 1;
+>> +	smp_wmb();
+> Do we really need the compiler barrier call? The CPUs can reorder
+> anyway. I assume the smp_wbm() call makes sure no there's no funny
+> business before the next lock is acquired, might be worth commenting.
 
->On Mon, Apr 15, 2013 at 7:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 04/15/2013 03:00 PM, Yinghai Lu wrote:
->>>
->>> looks you are trying redo the work for bootloader to pick loaded
->phys addr.
->>>
->>
->> Well, that is exactly what they are doing.  On top of that they also
->> need to randomize the 64-bit virtual mapping.
->>
->> I wonder if we need a bootloader bit to inhibit kaslr in addition to
->the
->> command line...
->
->so let the bootloader to parse kaslr and pick ramdom address,
->and kernel arch/x86/boot/compressed/head_64.S to pick random virtual
->address?
->
->Yinghai
+The smp_wmb() calls are to make sure that the writes are committed to 
+memory rather than staying in the cache only. They are safety measures. 
+The barrier() call probably is not needed because of the next pointer 
+data dependency, but it doesn't have an actual cost either as it doesn't 
+translate to any instruction.
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Regards,
+Longman
