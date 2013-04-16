@@ -1,139 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935953Ab3DPOqu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 10:46:50 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:52729 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935614Ab3DPOqp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 10:46:45 -0400
-Message-ID: <1366123590.14735.1.camel@phoenix>
-Subject: [PATCH v2] regulator: ab8500: Fix set voltage for AB8540_LDO_AUX3
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Tue, 16 Apr 2013 22:46:30 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S935971Ab3DPOrT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 10:47:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:62796 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935614Ab3DPOrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 10:47:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,486,1363158000"; 
+   d="scan'208";a="319066113"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <51631CC0.5010908@sr71.net>
+References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1365163198-29726-10-git-send-email-kirill.shutemov@linux.intel.com>
+ <51631CC0.5010908@sr71.net>
+Subject: Re: [PATCHv3, RFC 09/34] thp: represent file thp pages in meminfo and
+ friends
 Content-Transfer-Encoding: 7bit
+Message-Id: <20130416144917.8FEAEE0085@blue.fi.intel.com>
+Date: Tue, 16 Apr 2013 17:49:17 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When setting voltage for AB8540_LDO_AUX3, current code only updates one of
-info->voltage_reg and info->expand_register registers which is wrong.
-To ensure we set to correct voltage, it always needs to clear or set
-expand_register.voltage_mask bit of expand_register.
+Dave Hansen wrote:
+> On 04/05/2013 04:59 AM, Kirill A. Shutemov wrote:
+> > The patch adds new zone stat to count file transparent huge pages and
+> > adjust related places.
+> > 
+> > For now we don't count mapped or dirty file thp pages separately.
+> 
+> I can understand tracking NR_FILE_TRANSPARENT_HUGEPAGES itself.  But,
+> why not also account for them in NR_FILE_PAGES?  That way, you don't
+> have to special-case each of the cases below:
 
-The function of the expand register bit is the following (from the user manual):
-0: VAUX3 output voltage is determined by Vaux3Sel bit settings in register
-   VldoCVaux3Sel
-1: VAUX3 output voltage is set to 3.05V regardless of Vaux3Sel settings in
-   register VldoCVaux3Sel (VldoCVaux3Sel is the register at 0x0421)
+Good point.
+To be consistent I'll also convert NR_ANON_TRANSPARENT_HUGEPAGES to be
+accounted in NR_ANON_PAGES.
 
-So when going to 3.05V, set the expand register bit.
-When leaving 3.05V for another voltage, set the target voltage before clearing
-the expand register bit.
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/ab8500.c |   69 ++++++++++++++++++++++++++++++++------------
- 1 file changed, 51 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 0a62ef9..84e064b 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -612,32 +612,65 @@ static int ab8540_aux3_regulator_set_voltage_sel(struct regulator_dev *rdev,
- 		return -EINVAL;
- 	}
- 
-+	/* Set the expand register bit for 3.05V.
-+	   Once expand register bit is set, VAUX3 output voltage is set to 3.05V
-+	   regardless of Vaux3Sel settings in register VldoCVaux3Sel.
-+	 */
- 	if (selector >= info->expand_register.voltage_limit) {
--		/* Vaux3 bit4 has different layout */
--		regval = (u8)selector << info->expand_register.voltage_shift;
--		ret = abx500_mask_and_set_register_interruptible(info->dev,
--					info->expand_register.voltage_bank,
--					info->expand_register.voltage_reg,
--					info->expand_register.voltage_mask,
--					regval);
--	} else {
--		/* set the registers for the request */
--		regval = (u8)selector << info->voltage_shift;
- 		ret = abx500_mask_and_set_register_interruptible(info->dev,
--				info->voltage_bank, info->voltage_reg,
--				info->voltage_mask, regval);
-+				info->expand_register.voltage_bank,
-+				info->expand_register.voltage_reg,
-+				info->expand_register.voltage_mask,
-+				info->expand_register.voltage_mask);
-+		if (ret < 0) {
-+			dev_err(rdev_get_dev(rdev),
-+				"couldn't set expand voltage reg for regulator\n");
-+			return ret;
-+		}
-+
-+		dev_vdbg(rdev_get_dev(rdev),
-+			 "%s-set_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-+			 info->desc.name, info->expand_register.voltage_bank,
-+			 info->expand_register.voltage_reg,
-+			 info->expand_register.voltage_mask,
-+			 info->expand_register.voltage_mask);
-+
-+		return 0;
- 	}
--	if (ret < 0)
-+
-+	/* Set target voltage before clearing the expand register bit */
-+	regval = (u8)selector << info->voltage_shift;
-+	ret = abx500_mask_and_set_register_interruptible(info->dev,
-+			info->voltage_bank, info->voltage_reg,
-+			info->voltage_mask, regval);
-+	if (ret < 0) {
- 		dev_err(rdev_get_dev(rdev),
- 			"couldn't set voltage reg for regulator\n");
-+		return ret;
-+	}
- 
- 	dev_vdbg(rdev_get_dev(rdev),
--			"%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
--			" 0x%x\n",
--			info->desc.name, info->voltage_bank, info->voltage_reg,
--			info->voltage_mask, regval);
-+		 "%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-+		 info->desc.name, info->voltage_bank, info->voltage_reg,
-+		 info->voltage_mask, regval);
- 
--	return ret;
-+	ret = abx500_mask_and_set_register_interruptible(info->dev,
-+			info->expand_register.voltage_bank,
-+			info->expand_register.voltage_reg,
-+			info->expand_register.voltage_mask, 0);
-+	if (ret < 0) {
-+		dev_err(rdev_get_dev(rdev),
-+			"couldn't clear expand voltage reg for regulator\n");
-+		return ret;
-+	}
-+
-+	dev_vdbg(rdev_get_dev(rdev),
-+		 "%s-set_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-+		 info->desc.name, info->expand_register.voltage_bank,
-+		 info->expand_register.voltage_reg,
-+		 info->expand_register.voltage_mask, 0);
-+
-+	return 0;
- }
- 
- static struct regulator_ops ab8500_regulator_volt_mode_ops = {
 -- 
-1.7.10.4
-
-
-
+ Kirill A. Shutemov
