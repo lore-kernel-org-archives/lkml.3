@@ -1,52 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab3DPK4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 06:56:33 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:53919 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab3DPK4b (ORCPT
+	id S1756360Ab3DPK6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 06:58:10 -0400
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:44704 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752138Ab3DPK6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 06:56:31 -0400
+	Tue, 16 Apr 2013 06:58:08 -0400
+Message-ID: <516D2EB7.8010608@stericsson.com>
+Date: Tue, 16 Apr 2013 12:57:59 +0200
+From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1366109670-28030-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1366109670-28030-1-git-send-email-prabhakar.csengg@gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Tue, 16 Apr 2013 16:26:10 +0530
-Message-ID: <CA+V-a8tbVc4bsO0GE4vsmHfwpF4Q5z9Lzkya50VQpaKCOev02w@mail.gmail.com>
-Subject: Re: [PATCH v2] media: davinci: vpif: align the buffers size to page
- page size boundary
-To: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        LMML <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFT 1/2] regulator: ab8500: Fix set voltage for AB8540_LDO_AUX3
+References: <1365576052.4283.2.camel@phoenix>
+In-Reply-To: <1365576052.4283.2.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On 04/10/2013 08:40 AM, Axel Lin wrote:
+> When setting voltage for AB8540_LDO_AUX3, current code only updates one of
+> info->voltage_reg and info->expand_register registers which is wrong.
+> To ensure we set to correct voltage, it always needs to clear or set
+> expand_register.voltage_mask bit of expand_register.
+The original code is wrong. It is not possible to leave 3.05 V once set.
 
-On Tue, Apr 16, 2013 at 4:24 PM, Prabhakar lad
-<prabhakar.csengg@gmail.com> wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+The function of the expand register bit is the following (from the user 
+manual):
+0: VAUX3 output voltage is determined by Vaux3Sel bit settings in 
+register VldoCVaux3Sel
+1: VAUX3 output voltage is set to 3.05 V regardless of Vaux3Sel settings 
+in register VldoCVaux3Sel
+(VldoCVaux3Sel is the register at 0x0421)
+
+So when going to 3.05 V I would like to set the bit as you are doing. 
+But when leaving 3.05 V for another voltage I would prefer setting the 
+target voltage before clearing the expand register bit.
 >
-> with recent commit with id 068a0df76023926af958a336a78bef60468d2033
-> which adds add length check for mmap, the application were failing to
-> mmap the buffers.
->
-> This patch aligns the the buffer size to page size boundary for both
-> capture and display driver so the it pass the check.
->
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 > ---
+>   drivers/regulator/ab8500.c |   55 ++++++++++++++++++++++++++++----------------
+>   1 file changed, 35 insertions(+), 20 deletions(-)
+>
+> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+> index 9ebd131..222a63e 100644
+> --- a/drivers/regulator/ab8500.c
+> +++ b/drivers/regulator/ab8500.c
+> @@ -605,39 +605,54 @@ static int ab8540_aux3_regulator_set_voltage_sel(struct regulator_dev *rdev,
+>   {
+>   	int ret;
+>   	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+> -	u8 regval;
+> +	u8 regval, regval_expand;
+>   
+>   	if (info == NULL) {
+>   		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+>   		return -EINVAL;
+>   	}
+>   
+> -	if (selector >= info->expand_register.voltage_limit) {
+> -		/* Vaux3 bit4 has different layout */
+> -		regval = (u8)selector << info->expand_register.voltage_shift;
+> -		ret = abx500_mask_and_set_register_interruptible(info->dev,
+> -					info->expand_register.voltage_bank,
+> -					info->expand_register.voltage_reg,
+> -					info->expand_register.voltage_mask,
+> -					regval);
+> -	} else {
+> -		/* set the registers for the request */
+> -		regval = (u8)selector << info->voltage_shift;
+> -		ret = abx500_mask_and_set_register_interruptible(info->dev,
+> +	if (selector >= info->expand_register.voltage_limit)
+> +		regval_expand = info->expand_register.voltage_mask;
+> +	else
+> +		regval_expand = 0;
+> +
+> +	ret = abx500_mask_and_set_register_interruptible(info->dev,
+> +				info->expand_register.voltage_bank,
+> +				info->expand_register.voltage_reg,
+> +				info->expand_register.voltage_mask,
+> +				regval_expand);
+> +	if (ret < 0) {
+> +		dev_err(rdev_get_dev(rdev),
+> +			"couldn't set expand voltage reg for regulator\n");
+> +		return ret;
+> +	}
+> +
+> +	dev_vdbg(rdev_get_dev(rdev),
+> +		 "%s-set_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
+> +		 info->desc.name, info->expand_register.voltage_bank,
+> +		 info->expand_register.voltage_reg,
+> +		 info->expand_register.voltage_mask, regval_expand);
+> +
+> +	if (selector >= info->expand_register.voltage_limit)
+> +		return 0;
+> +
+> +	regval = (u8)selector << info->voltage_shift;
+> +	ret = abx500_mask_and_set_register_interruptible(info->dev,
+>   				info->voltage_bank, info->voltage_reg,
+>   				info->voltage_mask, regval);
+> -	}
+> -	if (ret < 0)
+> +	if (ret < 0) {
+>   		dev_err(rdev_get_dev(rdev),
+>   			"couldn't set voltage reg for regulator\n");
+> +		return ret;
+> +	}
+>   
+>   	dev_vdbg(rdev_get_dev(rdev),
+> -			"%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
+> -			" 0x%x\n",
+> -			info->desc.name, info->voltage_bank, info->voltage_reg,
+> -			info->voltage_mask, regval);
+> +		 "%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
+> +		 info->desc.name, info->voltage_bank, info->voltage_reg,
+> +		 info->voltage_mask, regval);
+>   
+> -	return ret;
+> +	return 0;
+>   }
+>   
+>   static struct regulator_ops ab8500_regulator_volt_mode_ops = {
 
-Can you take this patch for v3.10 ?
-
-Regards,
---Prabhakar
