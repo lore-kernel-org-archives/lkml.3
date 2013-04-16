@@ -1,83 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935517Ab3DPDDW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 23:03:22 -0400
-Received: from mx5.zte.com.cn ([63.217.80.70]:55545 "EHLO zte.com.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S935212Ab3DPDDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 23:03:21 -0400
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH] futex: bugfix for robust futex deadlock when waking only one thread
- in handle_futex_death
-MIME-Version: 1.0
-X-Mailer: Lotus Notes Release 6.5.4 March 27, 2005
-Message-ID: <OF9EFE848A.BEC7D34A-ON48257B4F.00105687-48257B4F.0010C79B@zte.com.cn>
-From: zhang.yi20@zte.com.cn
-Date: Tue, 16 Apr 2013 11:02:46 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-04-16 11:02:45,
-	Serialize complete at 2013-04-16 11:02:45
-Content-Type: text/plain; charset="GB2312"
-X-MAIL: mse01.zte.com.cn r3G330Gx083078
+	id S964830Ab3DPDDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 23:03:31 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:64406 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935212Ab3DPDD1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 23:03:27 -0400
+Message-ID: <1366081404.4459.127.camel@edumazet-glaptop>
+Subject: Re: Bonding driver has bad load balancing for forwarded traffic,
+ 3.7+
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Vitaly V. Bursov" <vitalyb@telenet.dn.ua>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        Jay Vosburgh <fubar@us.ibm.com>, John Eaglesham <linux@8192.net>
+Date: Mon, 15 Apr 2013 20:03:24 -0700
+In-Reply-To: <1366072679.4459.113.camel@edumazet-glaptop>
+References: <516C075E.30105@telenet.dn.ua>
+	 <1366072679.4459.113.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3G33PBk000317
 
-From: Zhang Yi <zhang.yi20@zte.com.cn>
+From: Eric Dumazet <edumazet@google.com>
 
-Hello,
+On Mon, 2013-04-15 at 17:37 -0700, Eric Dumazet wrote:
+> On Mon, 2013-04-15 at 16:57 +0300, Vitaly V. Bursov wrote:
+> > Hello,
+> > 
+> > I have a bonding device (mode=802.3ad xmit_hash_policy=layer2+3 miimon=300) and
+> > for kernels <3.7 forwarded IPv4 traffic distributed fine across multiple physical
+> > links. Ethernet cards are Intel 82576 with igb driver (various versions).
+> > 
+> > 3.7 and 3.8 kernels tend to fully utilize only one link and leave the others almost idling.
+> > 
+> > Replacing bond_xmit_hash_policy_* functions with older ones (3.6 kernel) looks like
+> > resolves the issue (but I haven't tested it thoroughly).
+> > 
+> > So, I added
+> >          printk(KERN_INFO "hash_policy: protocol = %d, skb_network_header_len = %d, %d %d\n",
+> >              skb->protocol, skb_network_header_len(skb),
+> >              skb_headlen(skb), skb_network_offset(skb));
+> > to bond_xmit_hash_policy_l23() of bond_main.c
+> > 
+> > and got this:
+> > [   65.280831] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+> > [   65.280835] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+> > [   65.280839] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+> > [   65.280843] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+> > [   65.280847] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+> > [   65.280851] hash_policy: protocol = 8, skb_network_header_len = 0, 74 14
+> > 
+> > It's clear that the new check condition (skb_network_header_len(skb) >= sizeof(*iph))
+> > fails here and hash policy fallbacks to l2 balancing.
+> > 
+> > I have no idea how to fix this besides removing this check completely, any
+> > help would be appreciated.
+> > 
+> 
+> Thanks for your report.
+> 
+> CC netdev
+> 
+> I guess that for forwarding setup, we don't set skb->transport_header
+> 
+> Please try following fix :
 
-The function handle_futex_death just wakes one thread, which may be not 
-enough when the owner process is dead. Think about this scene£º
-1. A robust futex is shared for two processes, each process has multi 
-threads try to get the lock. 
-2. One of the threads gets the lock, and the others are waiting and sorted 
+Here is a more complete patch, please test it.
 
-in order of priority.
-3. The process to which the lock owner thread belongs is dying£¬and 
-handle_futex_death is called to wake the first waiter 
-4. When the first waiter belongs to the same process£¬it has no chance to 
-return to the userspace to get the lock and will not call 
-handle_futex_death any 
-more£¬and then the rest threads of the other process will never be waked, 
-and 
-will block forever.
+Thanks !
 
-This patch wakes all the waiters when lock owner is in group-exit, letting 
+[PATCH] bonding: fix l23 and l34 load balancing in forwarding path
 
-all the waiters return to userspace and try to get the lock again.
+Since commit 6b923cb7188d46 (bonding: support for IPv6 transmit hashing)
+bonding doesn't properly hash traffic in forwarding setups.
+
+Vitaly V. Bursov diagnosed that skb_network_header_len() returned 0 in
+this case.
+
+More generally, the transport header might not be in the skb head.
+
+Use pskb_may_pull() & skb_header_pointer() to get it right, and use
+proto_ports_offset() in bond_xmit_hash_policy_l34() to get support for
+more protocols than TCP and UDP.
+
+Reported-by: Vitaly V. Bursov <vitalyb@telenet.dn.ua>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Jay Vosburgh <fubar@us.ibm.com>
+Cc: Andy Gospodarek <andy@greyhouse.net>
+Cc: John Eaglesham <linux@8192.net>
+---
+ drivers/net/bonding/bond_main.c |   55 ++++++++++++++++--------------
+ 1 file changed, 30 insertions(+), 25 deletions(-)
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 07401a3..d9ff09a 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -3286,20 +3286,22 @@ static int bond_xmit_hash_policy_l2(struct sk_buff *skb, int count)
+  */
+ static int bond_xmit_hash_policy_l23(struct sk_buff *skb, int count)
+ {
+-	struct ethhdr *data = (struct ethhdr *)skb->data;
+-	struct iphdr *iph;
+-	struct ipv6hdr *ipv6h;
++	const struct ethhdr *data;
++	const struct iphdr *iph;
++	const struct ipv6hdr *ipv6h;
+ 	u32 v6hash;
+-	__be32 *s, *d;
++	const __be32 *s, *d;
+ 
+ 	if (skb->protocol == htons(ETH_P_IP) &&
+-	    skb_network_header_len(skb) >= sizeof(*iph)) {
++	    pskb_network_may_pull(skb, sizeof(*iph))) {
+ 		iph = ip_hdr(skb);
++		data = (struct ethhdr *)skb->data;
+ 		return ((ntohl(iph->saddr ^ iph->daddr) & 0xffff) ^
+ 			(data->h_dest[5] ^ data->h_source[5])) % count;
+ 	} else if (skb->protocol == htons(ETH_P_IPV6) &&
+-		   skb_network_header_len(skb) >= sizeof(*ipv6h)) {
++		   pskb_network_may_pull(skb, sizeof(*ipv6h))) {
+ 		ipv6h = ipv6_hdr(skb);
++		data = (struct ethhdr *)skb->data;
+ 		s = &ipv6h->saddr.s6_addr32[0];
+ 		d = &ipv6h->daddr.s6_addr32[0];
+ 		v6hash = (s[1] ^ d[1]) ^ (s[2] ^ d[2]) ^ (s[3] ^ d[3]);
+@@ -3318,33 +3320,36 @@ static int bond_xmit_hash_policy_l23(struct sk_buff *skb, int count)
+ static int bond_xmit_hash_policy_l34(struct sk_buff *skb, int count)
+ {
+ 	u32 layer4_xor = 0;
+-	struct iphdr *iph;
+-	struct ipv6hdr *ipv6h;
+-	__be32 *s, *d;
+-	__be16 *layer4hdr;
++	const struct iphdr *iph;
++	const struct ipv6hdr *ipv6h;
++	const __be32 *s, *d;
++	const __be16 *l4 = NULL;
++	__be16 _l4[2];
++	int noff = skb_network_offset(skb);
++	int poff;
+ 
+ 	if (skb->protocol == htons(ETH_P_IP) &&
+-	    skb_network_header_len(skb) >= sizeof(*iph)) {
++	    pskb_may_pull(skb, noff + sizeof(*iph))) {
+ 		iph = ip_hdr(skb);
+-		if (!ip_is_fragment(iph) &&
+-		    (iph->protocol == IPPROTO_TCP ||
+-		     iph->protocol == IPPROTO_UDP) &&
+-		    (skb_headlen(skb) - skb_network_offset(skb) >=
+-		     iph->ihl * sizeof(u32) + sizeof(*layer4hdr) * 2)) {
+-			layer4hdr = (__be16 *)((u32 *)iph + iph->ihl);
+-			layer4_xor = ntohs(*layer4hdr ^ *(layer4hdr + 1));
++		poff = proto_ports_offset(iph->protocol);
++
++		if (!ip_is_fragment(iph) && poff >= 0) {
++			l4 = skb_header_pointer(skb, noff + (iph->ihl << 2) + poff,
++						sizeof(_l4), &_l4);						
++			if (l4)
++				layer4_xor = ntohs(l4[0] ^ l4[1]);
+ 		}
+ 		return (layer4_xor ^
+ 			((ntohl(iph->saddr ^ iph->daddr)) & 0xffff)) % count;
+ 	} else if (skb->protocol == htons(ETH_P_IPV6) &&
+-		   skb_network_header_len(skb) >= sizeof(*ipv6h)) {
++		   pskb_may_pull(skb, noff + sizeof(*ipv6h))) {
+ 		ipv6h = ipv6_hdr(skb);
+-		if ((ipv6h->nexthdr == IPPROTO_TCP ||
+-		     ipv6h->nexthdr == IPPROTO_UDP) &&
+-		    (skb_headlen(skb) - skb_network_offset(skb) >=
+-		     sizeof(*ipv6h) + sizeof(*layer4hdr) * 2)) {
+-			layer4hdr = (__be16 *)(ipv6h + 1);
+-			layer4_xor = ntohs(*layer4hdr ^ *(layer4hdr + 1));
++		poff = proto_ports_offset(ipv6h->nexthdr);
++		if (poff >= 0) {
++			l4 = skb_header_pointer(skb, noff + sizeof(*ipv6h) + poff,
++						sizeof(_l4), &_l4);
++			if (l4)
++				layer4_xor = ntohs(l4[0] ^ l4[1]);
+ 		}
+ 		s = &ipv6h->saddr.s6_addr32[0];
+ 		d = &ipv6h->daddr.s6_addr32[0];
 
 
-Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
-Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
-Reviewed-by: Liu Dong <liu.dong3@zte.com.cn>
-Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
-Reviewed-by: Lu Zhongjun <lu.zhongjun@zte.com.cn>
-Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
-
-
---- orig/linux-3.9-rc7/kernel/futex.c   2013-04-15 00:45:16.000000000 
-+0000
-+++ new/linux-3.9-rc7/kernel/futex.c    2013-04-16 10:17:46.264597000 
-+0000
-@@ -2545,8 +2545,11 @@ retry:
-                 * Wake robust non-PI futexes here. The wakeup of
-                 * PI futexes happens in exit_pi_state():
-                 */
--               if (!pi && (uval & FUTEX_WAITERS))
--                       futex_wake(uaddr, 1, 1, FUTEX_BITSET_MATCH_ANY);
-+               if (!pi && (uval & FUTEX_WAITERS)) {
-+                       int nr = signal_group_exit(current->signal)
-+                                           ? INT_MAX : 1;
-+                       futex_wake(uaddr, 1, nr, FUTEX_BITSET_MATCH_ANY);
-+               }
-        }
-        return 0;
- }
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
