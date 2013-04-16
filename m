@@ -1,28 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab3DPJRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:17:34 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:63864 "EHLO
+	id S1756517Ab3DPJSo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:18:44 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:15456 "EHLO
 	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753712Ab3DPJRc convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755984Ab3DPJSn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:17:32 -0400
+	Tue, 16 Apr 2013 05:18:43 -0400
 From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Guenter Roeck <linux@roeck-us.net>,
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: RE: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
-Thread-Topic: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
-Thread-Index: AQHON39CtDkBnJtRskO6UighSEzvVZjShI+AgATexgCAAAtnAIAAHWjg///2SgCAARBtIA==
-Date: Tue, 16 Apr 2013 09:17:27 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB514191E2C3@NB-EX-MBX02.diasemi.com>
-References: <201304121310.r3CDAJHh011814@latitude>
- <20130412133221.GA11293@roeck-us.net>
- <24DF37198A1E704D9811D8F72B87EB514191E103@NB-EX-MBX02.diasemi.com>
- <20130415163532.GA24272@roeck-us.net>
- <24DF37198A1E704D9811D8F72B87EB514191E14C@NB-EX-MBX02.diasemi.com>
- <20130415174602.GA18800@roeck-us.net>
-In-Reply-To: <20130415174602.GA18800@roeck-us.net>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        "Mark Brown (broonie@opensource.wolfsonmicro.com)" 
+	<broonie@opensource.wolfsonmicro.com>
+Subject: RE: [NEW DRIVER V4 0/7] DA9058 PMIC - please comment on this new
+ driver
+Thread-Topic: [NEW DRIVER V4 0/7] DA9058 PMIC - please comment on this new
+ driver
+Thread-Index: AQHON38JlZ8CqfSx5U6QnznQ+FhcK5jS0W+AgAW1MsA=
+Date: Tue, 16 Apr 2013 09:18:41 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB514191E2DC@NB-EX-MBX02.diasemi.com>
+References: <201304121307.r3CD7tDi011782@latitude>
+ <1854273.arIzJJ3lWV@dtor-d630.eng.vmware.com>
+In-Reply-To: <1854273.arIzJJ3lWV@dtor-d630.eng.vmware.com>
 Accept-Language: en-GB, de-DE, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -36,90 +37,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 > -----Original Message-----
-> From: Guenter Roeck [mailto:linux@roeck-us.net]
-> Sent: 15 April 2013 18:46
+> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
+> Sent: 12 April 2013 19:07
 > To: Opensource [Anthony Olech]
-> Cc: LKML
-> Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+> Cc: LKML; Alessandro Zummo
+> Subject: Re: [NEW DRIVER V4 0/7] DA9058 PMIC - please comment on this new driver
+> On Friday, April 12, 2013 02:05:29 PM Anthony Olech wrote:
+> > This is submission attempt number 4 to have this driver included in
+> > the linux kernel source tree. This is the driver for the Dialog DA9058.
+> > The DA9058 is a low power Power Management Integrated Circuit with
+> > extra functionality. It is a Multi Function Device controlled only
+> > from an I2C bus whose components can raise an interrupt request on a single IRQ line.
+> > The driver for the DA9058 consists of a core (i2c) device driver that
+> > instantiates the individual component device drivers for:
+> > adc - 5 ADC channels
+> > gpio - 2 available pins
+> > onkey - 1 device
 > 
-> On Mon, Apr 15, 2013 at 05:29:13PM +0000, Opensource [Anthony Olech]
-> wrote:
-> > > -----Original Message-----
-> > > From: Guenter Roeck [mailto:linux@roeck-us.net]
-> > > Sent: 15 April 2013 17:36
-> > > To: Opensource [Anthony Olech]
-> > > Cc: LKML
-> > > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
-> > >
-> > > On Mon, Apr 15, 2013 at 03:00:58PM +0000, Opensource [Anthony Olech]
-> > > wrote:
-> > > >
-> > > >
-> > > > > -----Original Message-----
-> > > > > From: Guenter Roeck [mailto:linux@roeck-us.net]
-> > > > > Sent: 12 April 2013 14:32
-> > > > > To: Opensource [Anthony Olech]
-> > > > > Cc: Mark Brown; Liam Girdwood; Jean Delvare; Randy Dunlap; LKML;
-> > > > > David Dajun Chen
-> > > > > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
-> > > > >
-> > > > > On Fri, Apr 12, 2013 at 02:05:28PM +0100, Anthony Olech wrote:
-> > > > > > This is the REGULATOR component driver of the Dialog DA9058 PMIC.
-> > > > > > This driver is just one component of the whole DA9058 PMIC driver.
-> > > > > > It depends on the CORE component driver of the DA9058 MFD.
-> > > > > >
-> > > > > > There are 6 warnings from scripts/checkpatch.pl, but since it
-> > > > > > seems to be complaining about variable names such as min_uV
-> > > > > > are in CamelCase, when it is obvious that they are not in
-> > > > > > CamelCase I have
-> > > ignored them.
-> > > > > >
-> > > > > ??? min_uV _is_ CamelCase ???
-> > > > >
-> > > > > Ok, maybe it is camelcasE, but you are splitting hairs here.
-> > > >
-> > > > it is not me splitting hairs, it is scripts/checkpatch.pl
-> > > >
-> > > Maybe you did not understand what I meant. Per your logic,
-> > >
-> > > 	MicroVolt is CamelCase
-> > > 	uVolt is ???
-> > > 	uV is not CamelCase
-> > >
-> > > By abbreviating CamelCase to camelCase to cC you make it, in your
-> > > opinion, acceptable.
-> > >
-> > > If you want to declare CamelCase variables, just do it, but don't
-> > > claim that they are not really CamelCase.
-> > >
-> > > Guenter
-> >
-> > I always thought that camel case meant "changing from lower case to
-> > upper case the first letter of each word and then joining the
-> > capitalized words together", so by that definition uV or mW are not camel
-> case because "v" and "w" are not words!
-
-The definition of CamelCase From Wikipedia, the free encyclopedia is:
-
-"CamelCase (camel case) is a term which refers to the practice of writing
-compound words where the first letter of an identifier is lowercase and the
-first letter of each subsequent concatenated word is capitalized."
-
-> > Either way it seems that the algorithm in scripts/checkpatch.pl is wrong! and
-> that was my point.
+> > This is almost exact copy of da9052_onkey, can they be merged together?
 >
-> Guess we'll have to agree to disagree here, as I happen to think that
-> checkpatch is perfectly right.
-> Guenter
+> Dmitry
 
-Hi Guenter,
+Hi Dmitry,
 
-I am quite happy to accept the algorithm in scripts/checkpatch.pl as the
-arbiter for correctly formed linux kernel variable names.
+it does look like the ONKEY component driver of the Dialog DA9058 PMIC is
+functionally similar to other onkey drivers. Specifically those drivers that have
+to poll for ONKEY de-assertion.
 
-On that basis "old_mV", "new_uA" etc are incorrectly formed variable names.
-Could you possibly suggest legal alternatives to "mA", "uV", "kW" ??
+The reason why they are separate is that they are probed with different data
+structures and they use a different wrapper to access the "regmap" API.
+However, that is not a blocking issue, but it would mean re-writing the core
+MFD component of all the affected drivers. Maybe the way forward is:
+
+Is it possible to provide some "core" ONKEY API or functionality to handle the
+commonality in a similar fashion to the regulator core as done by Mark Brown?
 
 Tony Olech
-
-
