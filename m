@@ -1,131 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964966Ab3DPQub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:50:31 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39048 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933069Ab3DPQua (ORCPT
+	id S936003Ab3DPQvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:51:55 -0400
+Received: from mail-da0-f46.google.com ([209.85.210.46]:35531 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935928Ab3DPQvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:50:30 -0400
-Message-ID: <1366131020.7842.1.camel@phoenix>
-Subject: [PATCH v3] regulator: ab8500: Fix set voltage for AB8540_LDO_AUX3
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 17 Apr 2013 00:50:20 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Apr 2013 12:51:52 -0400
+Date: Tue, 16 Apr 2013 09:51:43 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Juergen E. Fischer" <fischer@norbit.de>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/02] drivers/scsi: use module_pcmcia_driver() in pcmcia
+ drivers
+Message-ID: <20130416165143.GA3950@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When setting voltage for AB8540_LDO_AUX3, current code only updates one of
-info->voltage_reg and info->expand_register registers which is wrong.
-To ensure we set to correct voltage, it always needs to clear or set
-expand_register.voltage_mask bit of expand_register.
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-The function of the expand register bit is the following (from the user manual):
-0: VAUX3 output voltage is determined by Vaux3Sel bit settings in register
-   VldoCVaux3Sel
-1: VAUX3 output voltage is set to 3.05V regardless of Vaux3Sel settings in
-   register VldoCVaux3Sel (VldoCVaux3Sel is the register at 0x0421)
+Use the new module_pcmcia_driver() macro to remove the boilerplate
+module init/exit code in the pcmcia drivers.
 
-So when going to 3.05V, set the expand register bit.
-When leaving 3.05V for another voltage, set the target voltage before clearing
-the expand register bit.
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
-v3: Just coding style change (compare to v2), to make the code smaller.
 
-Axel
- drivers/regulator/ab8500.c |   53 +++++++++++++++++++++++++++-----------------
- 1 file changed, 33 insertions(+), 20 deletions(-)
+Note, this needs the module_pcmcia_driver() macro, which is in my
+char-misc-next branch and will be showing up in 3.10-rc1 - gregkh
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index 0a62ef9..979c8ea 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -605,39 +605,52 @@ static int ab8540_aux3_regulator_set_voltage_sel(struct regulator_dev *rdev,
- {
- 	int ret;
- 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
--	u8 regval;
-+	u8 regval, regval_expand;
+
+ drivers/scsi/pcmcia/aha152x_stub.c | 14 +-------------
+ drivers/scsi/pcmcia/fdomain_stub.c | 14 +-------------
+ drivers/scsi/pcmcia/nsp_cs.c       | 17 +----------------
+ drivers/scsi/pcmcia/qlogic_stub.c  | 13 +------------
+ drivers/scsi/pcmcia/sym53c500_cs.c | 16 +---------------
+ 5 files changed, 5 insertions(+), 69 deletions(-)
+
+diff --git a/drivers/scsi/pcmcia/aha152x_stub.c b/drivers/scsi/pcmcia/aha152x_stub.c
+index 7d1609f..df82a34 100644
+--- a/drivers/scsi/pcmcia/aha152x_stub.c
++++ b/drivers/scsi/pcmcia/aha152x_stub.c
+@@ -220,16 +220,4 @@ static struct pcmcia_driver aha152x_cs_driver = {
+ 	.id_table       = aha152x_ids,
+ 	.resume		= aha152x_resume,
+ };
+-
+-static int __init init_aha152x_cs(void)
+-{
+-	return pcmcia_register_driver(&aha152x_cs_driver);
+-}
+-
+-static void __exit exit_aha152x_cs(void)
+-{
+-	pcmcia_unregister_driver(&aha152x_cs_driver);
+-}
+-
+-module_init(init_aha152x_cs);
+-module_exit(exit_aha152x_cs);
++module_pcmcia_driver(aha152x_cs_driver);
+diff --git a/drivers/scsi/pcmcia/fdomain_stub.c b/drivers/scsi/pcmcia/fdomain_stub.c
+index 714b248..ba84769 100644
+--- a/drivers/scsi/pcmcia/fdomain_stub.c
++++ b/drivers/scsi/pcmcia/fdomain_stub.c
+@@ -194,16 +194,4 @@ static struct pcmcia_driver fdomain_cs_driver = {
+ 	.id_table       = fdomain_ids,
+ 	.resume		= fdomain_resume,
+ };
+-
+-static int __init init_fdomain_cs(void)
+-{
+-	return pcmcia_register_driver(&fdomain_cs_driver);
+-}
+-
+-static void __exit exit_fdomain_cs(void)
+-{
+-	pcmcia_unregister_driver(&fdomain_cs_driver);
+-}
+-
+-module_init(init_fdomain_cs);
+-module_exit(exit_fdomain_cs);
++module_pcmcia_driver(fdomain_cs_driver);
+diff --git a/drivers/scsi/pcmcia/nsp_cs.c b/drivers/scsi/pcmcia/nsp_cs.c
+index b61a753..76ca00c 100644
+--- a/drivers/scsi/pcmcia/nsp_cs.c
++++ b/drivers/scsi/pcmcia/nsp_cs.c
+@@ -1773,19 +1773,4 @@ static struct pcmcia_driver nsp_driver = {
+ 	.suspend	= nsp_cs_suspend,
+ 	.resume		= nsp_cs_resume,
+ };
+-
+-static int __init nsp_cs_init(void)
+-{
+-	return pcmcia_register_driver(&nsp_driver);
+-}
+-
+-static void __exit nsp_cs_exit(void)
+-{
+-	pcmcia_unregister_driver(&nsp_driver);
+-}
+-
+-
+-module_init(nsp_cs_init)
+-module_exit(nsp_cs_exit)
+-
+-/* end */
++module_pcmcia_driver(nsp_driver);
+diff --git a/drivers/scsi/pcmcia/qlogic_stub.c b/drivers/scsi/pcmcia/qlogic_stub.c
+index bcaf89f..8d4fdc2 100644
+--- a/drivers/scsi/pcmcia/qlogic_stub.c
++++ b/drivers/scsi/pcmcia/qlogic_stub.c
+@@ -300,19 +300,8 @@ static struct pcmcia_driver qlogic_cs_driver = {
+ 	.id_table       = qlogic_ids,
+ 	.resume		= qlogic_resume,
+ };
+-
+-static int __init init_qlogic_cs(void)
+-{
+-	return pcmcia_register_driver(&qlogic_cs_driver);
+-}
+-
+-static void __exit exit_qlogic_cs(void)
+-{
+-	pcmcia_unregister_driver(&qlogic_cs_driver);
+-}
++module_pcmcia_driver(qlogic_cs_driver);
  
- 	if (info == NULL) {
- 		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
- 		return -EINVAL;
- 	}
- 
--	if (selector >= info->expand_register.voltage_limit) {
--		/* Vaux3 bit4 has different layout */
--		regval = (u8)selector << info->expand_register.voltage_shift;
--		ret = abx500_mask_and_set_register_interruptible(info->dev,
--					info->expand_register.voltage_bank,
--					info->expand_register.voltage_reg,
--					info->expand_register.voltage_mask,
--					regval);
--	} else {
--		/* set the registers for the request */
-+	if (selector < info->expand_register.voltage_limit) {
- 		regval = (u8)selector << info->voltage_shift;
- 		ret = abx500_mask_and_set_register_interruptible(info->dev,
--				info->voltage_bank, info->voltage_reg,
--				info->voltage_mask, regval);
-+					info->voltage_bank, info->voltage_reg,
-+					info->voltage_mask, regval);
-+		if (ret < 0) {
-+			dev_err(rdev_get_dev(rdev),
-+				"couldn't set voltage reg for regulator\n");
-+			return ret;
-+		}
-+
-+		dev_vdbg(rdev_get_dev(rdev),
-+			 "%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-+			 info->desc.name, info->voltage_bank, info->voltage_reg,
-+			 info->voltage_mask, regval);
-+
-+		regval_expand = 0;
-+	} else {
-+		regval_expand = info->expand_register.voltage_mask;
- 	}
--	if (ret < 0)
-+
-+	ret = abx500_mask_and_set_register_interruptible(info->dev,
-+				info->expand_register.voltage_bank,
-+				info->expand_register.voltage_reg,
-+				info->expand_register.voltage_mask,
-+				regval_expand);
-+	if (ret < 0) {
- 		dev_err(rdev_get_dev(rdev),
--			"couldn't set voltage reg for regulator\n");
-+			"couldn't set expand voltage reg for regulator\n");
-+		return ret;
-+	}
- 
- 	dev_vdbg(rdev_get_dev(rdev),
--			"%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
--			" 0x%x\n",
--			info->desc.name, info->voltage_bank, info->voltage_reg,
--			info->voltage_mask, regval);
-+		 "%s-set_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-+		 info->desc.name, info->expand_register.voltage_bank,
-+		 info->expand_register.voltage_reg,
-+		 info->expand_register.voltage_mask, regval_expand);
- 
--	return ret;
-+	return 0;
- }
- 
- static struct regulator_ops ab8500_regulator_volt_mode_ops = {
+ MODULE_AUTHOR("Tom Zerucha, Michael Griffith");
+ MODULE_DESCRIPTION("Driver for the PCMCIA Qlogic FAS SCSI controllers");
+ MODULE_LICENSE("GPL");
+-module_init(init_qlogic_cs);
+-module_exit(exit_qlogic_cs);
+diff --git a/drivers/scsi/pcmcia/sym53c500_cs.c b/drivers/scsi/pcmcia/sym53c500_cs.c
+index f5b5273..55b0b2b 100644
+--- a/drivers/scsi/pcmcia/sym53c500_cs.c
++++ b/drivers/scsi/pcmcia/sym53c500_cs.c
+@@ -881,18 +881,4 @@ static struct pcmcia_driver sym53c500_cs_driver = {
+ 	.id_table       = sym53c500_ids,
+ 	.resume		= sym53c500_resume,
+ };
+-
+-static int __init
+-init_sym53c500_cs(void)
+-{
+-	return pcmcia_register_driver(&sym53c500_cs_driver);
+-}
+-
+-static void __exit
+-exit_sym53c500_cs(void)
+-{
+-	pcmcia_unregister_driver(&sym53c500_cs_driver);
+-}
+-
+-module_init(init_sym53c500_cs);
+-module_exit(exit_sym53c500_cs);
++module_pcmcia_driver(sym53c500_cs_driver);
 -- 
-1.7.10.4
-
-
+1.8.2.1.368.g99c2266
 
