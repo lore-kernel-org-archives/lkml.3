@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965208Ab3DPUcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 16:32:18 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:49880 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965099Ab3DPUcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 16:32:17 -0400
-Message-ID: <516DB548.7010703@gmail.com>
-Date: Tue, 16 Apr 2013 13:32:08 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S965228Ab3DPUhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 16:37:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58923 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965164Ab3DPUhM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 16:37:12 -0400
+Date: Tue, 16 Apr 2013 16:37:00 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: Rami Rosen <ramirose@gmail.com>
+Cc: tj@kernel.org, lizefan@huawei.com, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        serge.hallyn@canonical.com
+Subject: Re: [PATCH] devcg: remove parent_cgroup.
+Message-ID: <20130416203700.GP24899@redhat.com>
+References: <1366143895-21535-1-git-send-email-ramirose@gmail.com>
 MIME-Version: 1.0
-To: Michael Witten <mfwitten@gmail.com>
-CC: Pekka Enberg <penberg@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PROBLEM] perf requires python-devel to compile
-References: <CAOJsxLHv17Ys3M7P5q25imkUxQW6LE_vABxh1N3Tt7Mv6Ho4iw@mail.gmail.com>            <87mwszb4s6.fsf@sejong.aot.lge.com>            <516CD300.6070201@gmail.com> <cd2c2e9aae554739b6bcd93513078f80-mfwitten@gmail.com>
-In-Reply-To: <cd2c2e9aae554739b6bcd93513078f80-mfwitten@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366143895-21535-1-git-send-email-ramirose@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/16/13 10:08 AM, Michael Witten wrote:
-> You should probably disable python support more directly:
->
->    make NO_LIBPYTHON=1
+On Tue, Apr 16, 2013 at 11:24:55PM +0300, Rami Rosen wrote:
+> In devcgroup_css_alloc(), there is no longer need for parent_cgroup.
+> bd2953ebbb("devcg: propagate local changes down the hierarchy") made
+> the variable parent_cgroup redundant. This patch removes parent_cgroup
+> from devcgroup_css_alloc().
+> 
+> Signed-off-by: Rami Rosen <ramirose@gmail.com>
+> ---
+>  security/device_cgroup.c | 2 --
+>  1 file changed, 2 deletions(-)
+> 
+> diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+> index 994aecc..dd0dc57 100644
+> --- a/security/device_cgroup.c
+> +++ b/security/device_cgroup.c
+> @@ -236,7 +236,6 @@ static void devcgroup_offline(struct cgroup *cgroup)
+>  static struct cgroup_subsys_state *devcgroup_css_alloc(struct cgroup *cgroup)
+>  {
+>  	struct dev_cgroup *dev_cgroup;
+> -	struct cgroup *parent_cgroup;
+>  
+>  	dev_cgroup = kzalloc(sizeof(*dev_cgroup), GFP_KERNEL);
+>  	if (!dev_cgroup)
+> @@ -244,7 +243,6 @@ static struct cgroup_subsys_state *devcgroup_css_alloc(struct cgroup *cgroup)
+>  	INIT_LIST_HEAD(&dev_cgroup->exceptions);
+>  	INIT_LIST_HEAD(&dev_cgroup->propagate_pending);
+>  	dev_cgroup->behavior = DEVCG_DEFAULT_NONE;
+> -	parent_cgroup = cgroup->parent;
+>  
+>  	return &dev_cgroup->css;
+>  }
 
-sure, but I should not have to do anything. The intent of the existing 
-auto-probing code is to figure out what is installed and build a binary 
-with those capabilities. In this case not having python installed causes 
-it to blow up.
+oops
 
->
-> That being said, this issue was introduced with the following commit:
->
->    31160d7feab786c991780d7f0ce2755a469e0e5e
->
-> namely due to:
->
->    ... Also fix an issue where _get_attempt was called with only
->    one argument. This prevented the error message from printing
->    the name of the variable that can be used to fix the problem.
->
-> specifically:
->
->    -$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2)))
->    +$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2),$(1)))
->
-> The "missing" argument was in fact missing on purpose; it's a signal
-> that the error message should be skipped, because the failure was due
-> to the default value, not the user-supplied value.
->
-> That being said, I think there's room for improvement; for instance,
-> the error handling should perhaps not belong there. I will look into
-> it presently.
+ACK
 
-Thanks for the pointer. I'll take a look when I get some time.
+-- 
+Aristeu
 
-David
