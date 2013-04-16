@@ -1,127 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936065Ab3DPQ56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:57:58 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36049 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935693Ab3DPQ55 convert rfc822-to-8bit (ORCPT
+	id S936091Ab3DPRAz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 13:00:55 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:64435 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935982Ab3DPRAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:57:57 -0400
-From: "B, Ravi" <ravibabu@ti.com>
-To: "Bilovol, Ruslan" <ruslan.bilovol@ti.com>, "Balbi, Felipe" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded
- systems
-Thread-Topic: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded
- systems
-Thread-Index: AQHOOrj9vvmkWKgZJUSEVp2nIwd7q5jZD1Sw
-Date: Tue, 16 Apr 2013 16:57:52 +0000
-Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EAAC0E5@DBDE01.ent.ti.com>
-References: <1366126904-31605-1-git-send-email-ruslan.bilovol@ti.com>
-In-Reply-To: <1366126904-31605-1-git-send-email-ruslan.bilovol@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 16 Apr 2013 13:00:52 -0400
+Date: Tue, 16 Apr 2013 10:00:44 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Juergen E. Fischer" <fischer@norbit.de>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 02/02] scsi: pcmcia: nsp_cs: remove module init/exit function
+ prototypes
+Message-ID: <20130416170044.GB3950@kroah.com>
+References: <20130416165143.GA3950@kroah.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130416165143.GA3950@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-
-> owner@vger.kernel.org] On Behalf Of Bilovol, Ruslan
-> Sent: Tuesday, April 16, 2013 9:12 PM
-> To: Balbi, Felipe; gregkh@linuxfoundation.org; linux-usb@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded
-> systems
-> 
-> From musb point of view, the Address Assignment sequence during
-> device enumeration is next:
->  - first ep0 interrupt:
-> 	* read the address from USB_REQ_SET_ADDRESS request
-> 	* set up CSR0L.DataEnd bit (that is ACK
-> 	  signalization for the host)
->  - second ep0 interrupt:
-> 	* indicates that the request completed successfully
-> 	* set up musb device address
-> 	  Now musb device should answer to this address
-> 
-> From the host perspective, if peripheral device acquires
-> SET_ADDRESS request, it now may be accessed only using that address.
-> However, on heavy loaded systems, time between first and
-> second musb ep0 interrupts may be too long and musb controller
-> misses requests between. 
+From: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-What is meant by heavily loaded system? Is the device is heavily loaded during enumeration stage? Why second ep0 interrupt is too long? whether interrupt occurrence to interrupt service is taking too long? 
+This driver now uses the module_pcmcia_driver() macro to supply the
+init/exit code. The nsp_cs_{init,exit} prototypes should be removed.
 
-As result, device enumeration may be
-> unsuccessful. This can be checked on USB3.0 Host and
-> using USB3.0 test suite (from usb.org) running ch9 tests
-> for USB2.0 devices.
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: YOKOTA Hiroshi <yokota@netlab.is.tsukuba.ac.jp>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/scsi/pcmcia/nsp_cs.h | 4 ----
+ 1 file changed, 4 deletions(-)
 
-You mean the usb2.0 musb controller (in device mode) connected to USB3.0 host? 
+diff --git a/drivers/scsi/pcmcia/nsp_cs.h b/drivers/scsi/pcmcia/nsp_cs.h
+index 7fc9a9d..4d4b4f5 100644
+--- a/drivers/scsi/pcmcia/nsp_cs.h
++++ b/drivers/scsi/pcmcia/nsp_cs.h
+@@ -331,10 +331,6 @@ static struct Scsi_Host *nsp_detect(struct scsi_host_template *sht);
+ /* Interrupt handler */
+ //static irqreturn_t nspintr(int irq, void *dev_id);
+ 
+-/* Module entry point*/
+-static int  __init nsp_cs_init(void);
+-static void __exit nsp_cs_exit(void);
+-
+ /* Debug */
+ #ifdef NSP_DEBUG
+ static void show_command (struct scsi_cmnd *SCpnt);
+-- 
+1.8.2.1.368.g99c2266
 
-> Usually 'Addressed state/TD9.1: Device Descriptor Test' will fail
-> 
-> The fix consists in checking CSR0L.DataEnd state and assigning
-> the device address in the first ep0 interrupt handling, so
-> delay is as minimal as possible
-> 
-> Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
-> ---
->  drivers/usb/musb/musb_gadget_ep0.c |   31 +++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
-> 
-> diff --git a/drivers/usb/musb/musb_gadget_ep0.c
-> b/drivers/usb/musb/musb_gadget_ep0.c
-> index c9c1ac4..59bc5a5 100644
-> --- a/drivers/usb/musb/musb_gadget_ep0.c
-> +++ b/drivers/usb/musb/musb_gadget_ep0.c
-> @@ -885,6 +885,37 @@ stall:
->  finish:
->  				musb_writew(regs, MUSB_CSR0,
->  						musb->ackpend);
-> +
-> +				/*
-> +				 * If we are at end of SET_ADDRESS sequence,
-> +				 * update the address immediately if possible,
-> +				 * otherwise we may miss packets between
-> +				 * sending ACK from musb side and musb's next
-> +				 * interrupt handler firing (in which we update
-> +				 * the address). At least this fixes next
-> +				 * USB2.0 ch9 test of USB30CV utility:
-> +				 * "Addressed state - Device Descriptor test"
-> +				 */
-> +				if (musb->set_address && (musb->ackpend &
-> +							MUSB_CSR0_P_DATAEND) &&
-> +						(musb->ep0_state ==
-> +						MUSB_EP0_STAGE_STATUSIN)) {
-> +					u16 ack_delay = 500;
-> +
-> +					while ((musb_readw(regs, MUSB_CSR0) &
-> +							MUSB_CSR0_P_DATAEND) &&
-> +							--ack_delay) {
-> +						cpu_relax();
-> +						udelay(1);
-> +					}
-> +
-> +					if (ack_delay) {
-> +						musb->set_address = false;
-> +						musb_writeb(mbase, MUSB_FADDR,
-> +								musb->address);
-> +					}
-> +				}
-> +
->  				musb->ackpend = 0;
->  			}
->  		}
-
---
-Ravi B
