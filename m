@@ -1,38 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab3DPKLI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 06:11:08 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:46653 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab3DPKLG (ORCPT
+	id S1755345Ab3DPKPT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 06:15:19 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:35596 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752915Ab3DPKPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 06:11:06 -0400
-Message-ID: <516D23B5.4070209@intel.com>
-Date: Tue, 16 Apr 2013 11:11:01 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
+	Tue, 16 Apr 2013 06:15:17 -0400
+Message-ID: <516D24AB.8040604@console-pimps.org>
+Date: Tue, 16 Apr 2013 11:15:07 +0100
+From: Matt Fleming <matt@console-pimps.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: joeyli <jlee@suse.com>
-CC: Jiri Slaby <jslaby@suse.cz>, matthew.garrett@nebula.com,
-        cbouatmailru@gmail.com, ccross@android.com, keescook@chromium.org,
-        Tony Luck <tony.luck@intel.com>, linux-efi@vger.kernel.org,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: Cannot add new efi boot entry
-References: <516B1ED3.9040900@suse.cz> <1366106168.23707.9.camel@linux-s257.site>
-In-Reply-To: <1366106168.23707.9.camel@linux-s257.site>
-Content-Type: text/plain; charset=UTF-8
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fix UEFI variable paranoia
+References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com> <1366056587-24414-1-git-send-email-matthew.garrett@nebula.com>
+In-Reply-To: <1366056587-24414-1-git-send-email-matthew.garrett@nebula.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/04/13 10:56, joeyli wrote:
-> I think I just got the same situation on my side with Acer machine. I am
-> trying Matthew's new patchset hope can avoid this situation:
-> 
-> https://lkml.org/lkml/2013/4/15/473
+On 15/04/13 21:09, Matthew Garrett wrote:
+> Identical to V5, except with the UCS2 helper functions included this time.
 
-Please do let us know whether the patches work for you.
+Thanks these looks good to me. I've applied all three patches to the
+'urgent' branch.
 
+-- 
+Matt Fleming, Intel Open Source Technology Center
