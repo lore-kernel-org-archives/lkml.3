@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab3DPMK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 08:10:58 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:46362 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab3DPMK4 (ORCPT
+	id S1757179Ab3DPMNV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 08:13:21 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44488 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757120Ab3DPMNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 08:10:56 -0400
-Message-ID: <516D3FCD.9060703@hp.com>
-Date: Tue, 16 Apr 2013 08:10:53 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
+	Tue, 16 Apr 2013 08:13:20 -0400
+Date: Tue, 16 Apr 2013 13:12:55 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Girish KS <girishks2000@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, spi-devel-general@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        grant.likely@secretlab.ca, t.figa@samsung.com
+Subject: Re: [PATCH V4 2/5] spi: s3c64xx: added support for polling mode
+Message-ID: <20130416121255.GA15878@sirena.org.uk>
+References: <1366015230-18243-1-git-send-email-ks.giri@samsung.com>
+ <20130416112035.GD26958@opensource.wolfsonmicro.com>
+ <CAKrE-Kd4Vis0-V_n8zEzqJVBbEYvTiYS8hY_7s7AnUqaK2tFCQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 optional 3/3] mutex: back out architecture specific
- check for negative mutex count
-References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com> <1366036679-9702-4-git-send-email-Waiman.Long@hp.com> <20130416100505.GD31156@mudshark.cambridge.arm.com>
-In-Reply-To: <20130416100505.GD31156@mudshark.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKrE-Kd4Vis0-V_n8zEzqJVBbEYvTiYS8hY_7s7AnUqaK2tFCQ@mail.gmail.com>
+X-Cookie: When in doubt, follow your heart.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2013 06:05 AM, Will Deacon wrote:
-> On Mon, Apr 15, 2013 at 03:37:59PM +0100, Waiman Long wrote:
->> If it is confirmed that all the supported architectures can allow a
->> negative mutex count without incorrect behavior, we can then back
->> out the architecture specific change and allow the mutex count to
->> go to any negative number. That should further reduce contention for
->> non-x86 architecture.
->>
->> If this is not the case, this patch should be dropped.
-> A good starting point might be to look at the asm-generic mutex
-> implementations, which clears up the majority of architectures. A cursory
-> glance at mutex-dec.h suggests that it's OK to me...
+On Tue, Apr 16, 2013 at 04:58:47PM +0530, Girish KS wrote:
+> On Tue, Apr 16, 2013 at 4:50 PM, Mark Brown <broonie@kernel.org> wrote:
 
-I think the generic version is fine with negative mutex count. However, 
-it is the architecture specific versions (we have 22 of them as of 3.8) 
-that I am worry about. I just don't have enough know-how and test 
-machines to verify that.
+> > I'm missing patch 1 of this series.
 
-Regards,
-Longman
+> its already  merged to stable tree after your review
+
+The patch numbering should reflect what you're posting.  If you're only
+sending four patches they should be numbered 1-4, otherwise it looks
+like there's something missing.  The goal with the numbers is to help
+people get the patches in the right order, the name should be enough to
+associate with other versions of the same patch.
