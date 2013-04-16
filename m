@@ -1,220 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935828Ab3DPTie (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 15:38:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41075 "EHLO mx1.redhat.com"
+	id S935798Ab3DPTlx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 15:41:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8018 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935158Ab3DPTid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 15:38:33 -0400
-Date: Tue, 16 Apr 2013 15:38:23 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-audit@redhat.com, Eric Paris <eparis@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] [BZ905179] audit: omit check for uid and gid validity in
- audit rules and data
-Message-ID: <20130416193823.GH6530@madcap2.tricolour.ca>
-References: <1363807097-13073-1-git-send-email-rgb@redhat.com>
- <20130408164622.284f48c65341396aa8dbd220@linux-foundation.org>
- <87ip3w59gr.fsf@xmission.com>
+	id S935589Ab3DPTlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 15:41:51 -0400
+Date: Tue, 16 Apr 2013 15:41:23 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Tejun Heo <tj@kernel.org>
+cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
+        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
+        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@infradead.org>,
+        Christian Schmidt <schmidt@digadd.de>,
+        "Alasdair G. Kergon" <agk@redhat.com>
+Subject: Re: [PATCH v2] make dm and dm-crypt forward cgroup context (was:
+ dm-crypt parallelization patches)
+In-Reply-To: <20130416172418.GB2874@mtj.dyndns.org>
+Message-ID: <Pine.LNX.4.64.1304161506580.24453@file.rdu.redhat.com>
+References: <Pine.LNX.4.64.1304091710150.24735@file.rdu.redhat.com>
+ <20130410192427.GA14911@redhat.com> <Pine.LNX.4.64.1304101938280.24258@file.rdu.redhat.com>
+ <20130410235009.GI17641@mtj.dyndns.org> <Pine.LNX.4.64.1304111544050.32536@file.rdu.redhat.com>
+ <20130411195203.GA11956@mtj.dyndns.org> <20130411200005.GB11956@mtj.dyndns.org>
+ <Pine.LNX.4.64.1304121340350.3359@file.rdu.redhat.com>
+ <20130412182941.GF11956@mtj.dyndns.org> <Pine.LNX.4.64.1304150827480.1859@file.rdu.redhat.com>
+ <20130416172418.GB2874@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ip3w59gr.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 09, 2013 at 02:39:32AM -0700, Eric W. Biederman wrote:
-> Andrew Morton <akpm@linux-foundation.org> writes:
-> > On Wed, 20 Mar 2013 15:18:17 -0400 Richard Guy Briggs <rgb@redhat.com> wrote:
-> >> audit rule additions containing "-F auid!=4294967295" were failing with EINVAL.
-> 
-> The only case where this appears to make the least little bit of sense
-> is if the goal of the test is to test to see if an audit logloginuid
-> has been set at all.  In which case depending on a test against
-> 4294967295 is bogus because you are depending on an intimate internal
-> kernel implementation detail.
-> 
-> How about something like my untested patch below that add an explicit
-> operation to test if loginuid has been set?
-
-Sorry for the delay in testing this, I had another urgent bug and a
-belligerent test box...
-
-I like this approach better than mine now that I understand it.  I've
-tested the patch below without any changes.  It works as expected with
-my previous test case.  I don't know if a Signed-off-by: is appropriate
-for me in this case, but I'll throw in a:
-
-Tested-by: Richard Guy Briggs <rbriggs@redhat.com>
-
-and recommend a:
-
-Reported-By: Steve Grubb <sbrubb@redhat.com>
 
 
-> Eric
-> 
-> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> Date: Tue, 9 Apr 2013 02:22:10 -0700
-> Subject: [PATCH] audit: Make testing for a valid loginuid explicit.
-> 
-> audit rule additions containing "-F auid!=4294967295" were failing
-> with EINVAL.
-> 
-> Apparently some userland audit rule sets want to know if loginuid uid
-> has been set and are using a test for auid != 4294967295 to determine
-> that.
-> 
-> In practice that is a horrible way to ask if a value has been set,
-> because it relies on subtle implementation details and will break
-> every time the uid implementation in the kernel changes.
-> 
-> So add a clean way to test if the audit loginuid has been set, and
-> silently convert the old idiom to the cleaner and more comprehensible
-> new idiom.
-> 
-> Reported-By: Richard Guy Briggs <rgb@redhat.com> wrote:
-> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> ---
->  include/linux/audit.h      |    5 +++++
->  include/uapi/linux/audit.h |    1 +
->  kernel/auditfilter.c       |   29 +++++++++++++++++++++++++++++
->  kernel/auditsc.c           |    5 ++++-
->  4 files changed, 39 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/audit.h b/include/linux/audit.h
-> index a9fefe2..8a1ddde 100644
-> --- a/include/linux/audit.h
-> +++ b/include/linux/audit.h
-> @@ -390,6 +390,11 @@ static inline void audit_ptrace(struct task_struct *t)
->  #define audit_signals 0
->  #endif /* CONFIG_AUDITSYSCALL */
->  
-> +static inline bool audit_loginuid_set(struct task_struct *tsk)
-> +{
-> +	return uid_valid(audit_get_loginuid(tsk));
-> +}
-> +
->  #ifdef CONFIG_AUDIT
->  /* These are defined in audit.c */
->  				/* Public API */
-> diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-> index 9f096f1..9554a19 100644
-> --- a/include/uapi/linux/audit.h
-> +++ b/include/uapi/linux/audit.h
-> @@ -246,6 +246,7 @@
->  #define AUDIT_OBJ_TYPE	21
->  #define AUDIT_OBJ_LEV_LOW	22
->  #define AUDIT_OBJ_LEV_HIGH	23
-> +#define AUDIT_LOGINUID_SET	24
->  
->  				/* These are ONLY useful when checking
->  				 * at syscall exit time (AUDIT_AT_EXIT). */
-> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-> index 540f986..6381d17 100644
-> --- a/kernel/auditfilter.c
-> +++ b/kernel/auditfilter.c
-> @@ -349,6 +349,12 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
->  		if (f->op == Audit_bad)
->  			goto exit_free;
->  
-> +		/* Support legacy tests for a valid loginuid */
-> +		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
-> +			f->type = AUDIT_LOGINUID_SET;
-> +			f->val = 0;
-> +		}
-> +
->  		switch(f->type) {
->  		default:
->  			goto exit_free;
-> @@ -377,6 +383,12 @@ static struct audit_entry *audit_rule_to_entry(struct audit_rule *rule)
->  			if (!gid_valid(f->gid))
->  				goto exit_free;
->  			break;
-> +		case AUDIT_LOGINUID_SET:
-> +			if ((f->op != Audit_not_equal) && (f->op != Audit_equal))
-> +				goto exit_free;
-> +			if ((f->val != 0) && (f->val != 1))
-> +				goto exit_free;
-> +			break;
->  		case AUDIT_PID:
->  		case AUDIT_PERS:
->  		case AUDIT_MSGTYPE:
-> @@ -459,6 +471,13 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
->  		f->gid = INVALID_GID;
->  		f->lsm_str = NULL;
->  		f->lsm_rule = NULL;
-> +
-> +		/* Support legacy tests for a valid loginuid */
-> +		if ((f->type == AUDIT_LOGINUID) && (f->val == 4294967295)) {
-> +			f->type = AUDIT_LOGINUID_SET;
-> +			f->val = 0;
-> +		}
-> +
->  		switch(f->type) {
->  		case AUDIT_UID:
->  		case AUDIT_EUID:
-> @@ -487,6 +506,12 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
->  			if (!gid_valid(f->gid))
->  				goto exit_free;
->  			break;
-> +		case AUDIT_LOGINUID_SET:
-> +			if ((f->op != Audit_not_equal) && (f->op != Audit_equal))
-> +				goto exit_free;
-> +			if ((f->val != 0) && (f->val != 1))
-> +				goto exit_free;
-> +			break;
->  		case AUDIT_PID:
->  		case AUDIT_PERS:
->  		case AUDIT_MSGTYPE:
-> @@ -1380,6 +1405,10 @@ static int audit_filter_user_rules(struct audit_krule *rule,
->  			result = audit_uid_comparator(audit_get_loginuid(current),
->  						  f->op, f->uid);
->  			break;
-> +		case AUDIT_LOGINUID_SET:
-> +			result = audit_comparator(audit_loginuid_set(current),
-> +						  f->op, f->val);
-> +			break;
->  		case AUDIT_SUBJ_USER:
->  		case AUDIT_SUBJ_ROLE:
->  		case AUDIT_SUBJ_TYPE:
-> diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-> index 3a11d34..27d0a50 100644
-> --- a/kernel/auditsc.c
-> +++ b/kernel/auditsc.c
-> @@ -750,6 +750,9 @@ static int audit_filter_rules(struct task_struct *tsk,
->  			if (ctx)
->  				result = audit_uid_comparator(tsk->loginuid, f->op, f->uid);
->  			break;
-> +		case AUDIT_LOGINUID_SET:
-> +			result = audit_comparator(audit_loginuid_set(tsk), f->op, f->val);
-> +			break;
->  		case AUDIT_SUBJ_USER:
->  		case AUDIT_SUBJ_ROLE:
->  		case AUDIT_SUBJ_TYPE:
-> @@ -2317,7 +2320,7 @@ int audit_set_loginuid(kuid_t loginuid)
->  	unsigned int sessionid;
->  
->  #ifdef CONFIG_AUDIT_LOGINUID_IMMUTABLE
-> -	if (uid_valid(task->loginuid))
-> +	if (audit_loginuid_set(task))
->  		return -EPERM;
->  #else /* CONFIG_AUDIT_LOGINUID_IMMUTABLE */
->  	if (!capable(CAP_AUDIT_CONTROL))
-> -- 
-> 1.7.5.4
-> 
+On Tue, 16 Apr 2013, Tejun Heo wrote:
 
-- RGB
+> Hey,
+> 
+> On Mon, Apr 15, 2013 at 09:02:06AM -0400, Mikulas Patocka wrote:
+> > The patch is not bug-prone, because we already must make sure that the 
+> > cloned bio has shorter lifetime than the master bio - so the patch doesn't 
+> > introduce any new possibilities to make bugs.
+> 
+> The whole world isn't composed of only your code.  As I said
+> repeatedly, you're introducing an API which is misleading and can
+> easily cause subtle bugs which are very difficult to reproduce.
+> 
+> Imagine it being used to tag a metatdata or checksum update bio being
+> sent down while processing another bio and used to "clone" the context
+> of the original bio.  It'll work most of the time even if the original
+> bio gets completed first but it'll break when it gets really unlucky -
+> e.g. racing with other operations which can put the base css ref, and
+> it'll be hellish to reproduce and everyone would have to pay for your
+> silly hack.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer
-AMER ENG Base Operating Systems
-Remote, Canada, Ottawa
-Voice: 1.647.777.2635
-Internal: (81) 32635
+That's why the comment at the function says: "it is assumed that the 
+lifestime of the new bio is shorter than the lifetime of the original bio. 
+If the new bio can outlive the old bio, the caller must increment the 
+reference counts." - do you think that it is so bad that someone will use 
+the function without reading the comment?
+
+Anyway, the situation that you describe could only happen in dm-bufio or 
+dm-kcopyd files, so it's easy to control and increment the reference 
+counts there. There are no other places in device mapper where we create 
+bios that live longer than original one.
+
+Mikulas
