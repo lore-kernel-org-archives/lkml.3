@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab3DPJNH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:13:07 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:54151 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755354Ab3DPJNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:13:04 -0400
-Date: Tue, 16 Apr 2013 11:12:59 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 0/3 v2] mutex: Improve mutex performance by doing less
- atomic-ops & better spinning
-Message-ID: <20130416091259.GC9569@gmail.com>
-References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>
+	id S1755885Ab3DPJNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:13:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36152 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751327Ab3DPJNU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 05:13:20 -0400
+Date: Tue, 16 Apr 2013 12:13:00 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Girish K S <girishks2000@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-ide@vger.kernel.org>
+Subject: Re: [PATCH] ahci: sata: add support for exynos5440 sata
+Message-ID: <20130416091300.GD25040@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1366103404-14105-1-git-send-email-ks.giri@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M38YqGLZlgb6RLPS"
 Content-Disposition: inline
-In-Reply-To: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1366103404-14105-1-git-send-email-ks.giri@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--M38YqGLZlgb6RLPS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-* Waiman Long <Waiman.Long@hp.com> wrote:
+Hi,
 
-> [...]
-> 
-> Patches 2 improves the mutex spinning process by reducing contention among the 
-> spinners when competing for the mutex. This is done by using a MCS lock to put 
-> the spinners in a queue so that only the first spinner will try to acquire the 
-> mutex when it is available. This patch showed significant performance 
-> improvement of +30% on the AIM7 fserver and new_fserver workload.
+On Tue, Apr 16, 2013 at 02:40:04PM +0530, Girish K S wrote:
+> This patch adds the compatible string of the exynos5440 sata controller
+> compliant with the ahci 1.3 and sata 3.0 specification.
+>=20
+> Signed-off-by: Girish K S <ks.giri@samsung.com>
+> ---
+>  drivers/ata/ahci_platform.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+> index 7a8a284..c06f021 100644
+> --- a/drivers/ata/ahci_platform.c
+> +++ b/drivers/ata/ahci_platform.c
+> @@ -327,6 +327,7 @@ static SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, a=
+hci_resume);
+> =20
+>  static const struct of_device_id ahci_of_match[] =3D {
+>  	{ .compatible =3D "snps,spear-ahci", },
+> +	{ .compatible =3D "samsung,exynos5440-ahci", },
 
-Ok, that's really nice - and this approach has no arbitrary limits/tunings in it.
+is this an IP designed by samsung or something you licensed from e.g
+snps ? If the latter you should add:
 
-Do you have a performance comparison to your first series (patches 1+2+3 IIRC) - 
-how does this new series with MCS locking compare to the best previous result from 
-that old series? Do we now achieve that level of performance?
+"snps,ahci"
 
-Thanks,
+instead. Right ?
 
-	Ingo
+--=20
+balbi
+
+--M38YqGLZlgb6RLPS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRbRYcAAoJEIaOsuA1yqREJNkP/1aBM28gY+rjyFnbY0zJn+Y4
+TAFi9mRzNBGjdxfyot8arDVSB19tJ5sKUT8gejACJrGwnwMU3B5m//AemFdr6uKE
+EVIMInmgkYPZ4n/yTB7WtKsAL/ktG+6Z0bTx/TI+khXhtAD7Vt4VCN6k3zVWqzlG
+U8D8RJHvjICiUP3UehKWR+k2pRMTYLH26X+NLqoIAfma936iYUxTeFAAB6c9CDxS
+3PkdSF1AK2Ix/Z8ofDmexO3NqUpPDeVGRzQrUW/mtNKXTG6pJWUfW4ss5sF2OFGP
+WLv8aZg5N4oNw4/Mgt6zvxnjWAQ9WAR/FhgpwgwrGspMidOsPhlE2DPldVg3uGw2
+5uayCOG8xGwWB1SA4M2nEsTLU8mnQ1oACEBX45WuILxQmgds5e9s0vy4wrgcATHB
+RedOGFnWjlCimA794HhBrwKsSELZ2sisNwEmF4m4rk9kFQr1Cl1uCCKNezEoGiP3
+WUqeZrEz6g+DJQx/aBJ94DMou0ScVp00uQO0Y0vcJvB8Cl8bLk9frqLpY/Q1+9nV
+MN+lYB1hLdQivr6LJzM567TddEXYG4cR/55pblonPE4XRJBiBWOoBCvN0z3Y5yq7
+crJKW+IdOe349YYY+2S+r4B8JkenUmW6r/O/gJxlfJxK+Tn2CHrW58ccvLzOKTrm
+cmfM+Er9Ylt2Z1m3Bpmk
+=DXl0
+-----END PGP SIGNATURE-----
+
+--M38YqGLZlgb6RLPS--
