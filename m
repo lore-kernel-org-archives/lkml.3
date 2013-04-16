@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965050Ab3DPRLD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 13:11:03 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:38070 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964856Ab3DPRLB (ORCPT
+	id S965061Ab3DPRLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 13:11:43 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58705 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964856Ab3DPRLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 13:11:01 -0400
-Date: Tue, 16 Apr 2013 10:10:56 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        bsingharora@gmail.com, dhaval.giani@gmail.com,
-        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe@redhat.com,
-        berrange@redhat.com, lpoetter@redhat.com, workman-devel@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: cgroup: status-quo and userland efforts
-Message-ID: <20130416171056.GA2874@mtj.dyndns.org>
-References: <20130406012159.GA17159@mtj.dyndns.org>
- <516D333D.4040703@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <516D333D.4040703@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Apr 2013 13:11:42 -0400
+Subject: Re: [PROBLEM] perf requires python-devel to compile
+From: Michael Witten <mfwitten@gmail.com>
+Date: Tue, 16 Apr 2013 17:08:33 -0000
+To: David Ahern <dsahern@gmail.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Message-ID: <cd2c2e9aae554739b6bcd93513078f80-mfwitten@gmail.com>
+In-Reply-To: <516CD300.6070201@gmail.com>
+References: <CAOJsxLHv17Ys3M7P5q25imkUxQW6LE_vABxh1N3Tt7Mv6Ho4iw@mail.gmail.com>
+            <87mwszb4s6.fsf@sejong.aot.lge.com>
+            <516CD300.6070201@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Li.
+On Mon, 15 Apr 2013 21:26:40 -0700, David Ahern wrote:
 
-On Tue, Apr 16, 2013 at 07:17:17PM +0800, Li Zefan wrote:
-...
-> > hot-unplug).  It currently transfers all its tasks to the nearest
-> > ancestor with executing resources, which is an irreversible process
-> > which would affect all other co-mounted controllers.  We probably want
-> > it to just take on the masks of the ancestor until its own executing
-> > resources become online again, and the new behavior should be gated
-> > behind a switch (Li, can you please look into this?).
-> > 
-> 
-> Sure, I'll be working on sane hierarchy behavior for cpuset.
+> On 4/15/13 7:14 PM, Namhyung Kim wrote:
+>>> Makefile:755: The path '/usr/bin/python-config' is not executable.
+>>> Makefile:755: *** Please set 'PYTHON_CONFIG' appropriately.  Stop.
+>>>
+>>> The problem is that I didn't have python-devel package installed and
+>>> get-executable-or-default decides to error out instead of letting the
+>>> Makefile disable Python support.
+>>
+>> Right.  I think the get-executable-or-default should not error out in
+>> this case but just emit a warning and keep building.
+>>
+>> Does following patch fix your problem?
+>>
+>> -----------8<-------------8<-------------
+>> diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
+>> index 8ef3bd30a549..3b8036f8aca4 100644
+>> --- a/tools/perf/config/utilities.mak
+>> +++ b/tools/perf/config/utilities.mak
+>> @@ -177,7 +177,7 @@ $(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2),$(1)))
+>>   endef
+>>   _ge_attempt = $(if $(get-executable),$(get-executable),$(_gea_warn)$(call _gea_err,$(2)))
+>>   _gea_warn = $(warning The path '$(1)' is not executable.)
+>> -_gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
+>> +_gea_err  = $(if $(1),$(warning Please set '$(1)' appropriately))
+>
+> In this case you don't want a warning, you just want python support 
+> disabled and move on. I've been getting around this in a minimal install 
+> of F18 in a VM using PYTHON_CONFIG=/bin/false; haven't had time to 
+> search for the proper solution.
 
-Great, it'd be great if you can share how it's gonna be done once the
-basic design gets settled before full implementation.
+You should probably disable python support more directly:
 
-Thanks a lot!
+  make NO_LIBPYTHON=1
 
--- 
-tejun
+That being said, this issue was introduced with the following commit:
+
+  31160d7feab786c991780d7f0ce2755a469e0e5e
+
+namely due to:
+
+  ... Also fix an issue where _get_attempt was called with only
+  one argument. This prevented the error message from printing
+  the name of the variable that can be used to fix the problem.
+
+specifically:
+
+  -$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2)))
+  +$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2),$(1)))
+
+The "missing" argument was in fact missing on purpose; it's a signal
+that the error message should be skipped, because the failure was due
+to the default value, not the user-supplied value.
+
+That being said, I think there's room for improvement; for instance,
+the error handling should perhaps not belong there. I will look into
+it presently.
+
+Sincerely,
+Michael Witten
