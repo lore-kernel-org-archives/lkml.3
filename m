@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935628Ab3DPOTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 10:19:25 -0400
-Received: from n26.netmark.pl ([94.124.9.61]:37045 "EHLO n26.netmark.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932863Ab3DPOTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 10:19:24 -0400
-X-Greylist: delayed 2970 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Apr 2013 10:19:24 EDT
-Date: Tue, 16 Apr 2013 15:29:51 +0200
-From: Marcin Szewczyk <Marcin.Szewczyk@wodny.org>
-To: linux-kernel@vger.kernel.org
-Subject: How to override GMA500 resolution set by BIOS?
-Message-ID: <20130416132950.GL3824@magazyn-ziarno.chello.pl>
+	id S935682Ab3DPOVb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 10:21:31 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:35299 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935534Ab3DPOVa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 10:21:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - n26.netmark.pl
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - wodny.org
-X-Get-Message-Sender-Via: n26.netmark.pl: authenticated_id: wodny/from_h
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <CAMbhsRT08Li=P0GnbW-XdwyDSFtOfbr2MiTLeh-DduMOx-g=zw@mail.gmail.com>
+References: <1366058481-21033-1-git-send-email-ccross@android.com>
+	<CAMbhsRT08Li=P0GnbW-XdwyDSFtOfbr2MiTLeh-DduMOx-g=zw@mail.gmail.com>
+Date: Tue, 16 Apr 2013 16:21:28 +0200
+Message-ID: <CAJfpegtJW+k6gLZ+jxJKp3Zj0UhCst3WD7N_xrybD59_0o7h5Q@mail.gmail.com>
+Subject: Re: [PATCH] fuse: use kernel headers when __KERNEL__ is set
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Colin Cross <ccross@android.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Apr 15, 2013 at 11:47 PM, Colin Cross <ccross@android.com> wrote:
+> On Mon, Apr 15, 2013 at 1:41 PM, Colin Cross <ccross@android.com> wrote:
+>> Commit 7e98d53086d18c877cb44e9065219335184024de (Synchronize fuse
+>> header with one used in library) added #ifdef __linux__ around
+>> defines if it is not set.  The kernel build is self-contained and
+>> can be built on non-Linux toolchains.  After the mentioned commit
+>> builds on non-Linux toolchains will try to include stdint.h and
+>> fail due to -nostdinc, and then fail with a bunch of undefined
+>> type errors.
+>>
+>> Change the #ifdef to check for __linux__ or __KERNEL__ so that
+>> it uses the kernel typedefs if __KERNEL__ is set.
+>>
+>> Signed-off-by: Colin Cross <ccross@android.com>
+>> ---
+>> I think this should go in v3.9, without it bare-metal toolchains
+>> that don't define __linux__ will fail to compile the kernel, and
+>> cross-compiles from non-linux hosts will probably also fail.
+>
+> Miklos, I see Arve sent an equivalent patch to you a month ago
+> (https://lkml.org/lkml/2013/3/11/620), and I agree with his response
+> to your question (checking for __linux__ and __KERNEL__ is better than
+> just checking for __KERNEL__ if you want this header to be used in
+> userspace builds on linux targets).
 
-I've got a problem with GMA500 on my EVOC EC2-1711. The graphics
-adapter's resolution is set by selecting an option in BIOS but I would
-like to override it. Can kernel or Xorg do this?
+And I still disagree.  Why should userspace use the linux internal
+header when there's a perfectly good standard header that it can use?
 
-There are two modes "almost" right for an 800x600 16bit LVDS screen I
-have.  The first one is 800x600 but in 24bit LVDS mode, so colors are
-mangled. The second one is 800x480 16bit -- colors are right, but the
-screen cuts the image at line 480.
+Patch committed and pushed to for-next and for-linus.  I'll push to
+Linus tomorrow.
 
-I've tried video=, overwriting modes via patched 915resolution, vga= and
-Xorg modesetting driver. Nothing works.
-
-Does anyone know if it's possible to override the mode?
-
--- 
-Marcin Szewczyk                       http://wodny.org
-mailto:Marcin.Szewczyk@wodny.borg  <- remove b / usuń b
-xmpp:wodny@ubuntu.pl                  xmpp:wodny@jabster.pl
+Thanks,
+Miklos
