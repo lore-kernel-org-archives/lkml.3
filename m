@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935379Ab3DPCaa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Apr 2013 22:30:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40845 "EHLO mx1.redhat.com"
+	id S935411Ab3DPCbr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Apr 2013 22:31:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34740 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935163Ab3DPCaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Apr 2013 22:30:22 -0400
-Date: Mon, 15 Apr 2013 21:54:39 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: gleb@redhat.com, linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 0/6] KVM: MMU: fast invalid all mmio sptes
-Message-ID: <20130416005439.GC1962@amt.cnet>
-References: <1364810209-25954-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	id S935111Ab3DPCbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Apr 2013 22:31:46 -0400
+Message-ID: <516CB7EE.8070702@zytor.com>
+Date: Mon, 15 Apr 2013 19:31:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1364810209-25954-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kees Cook <keescook@chromium.org>
+CC: Eric Northup <digitaleric@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "kernel-hardening@lists.openwall.com" 
+	<kernel-hardening@lists.openwall.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
+Subject: Re: [PATCH 6/6] x86: kaslr: relocate base offset at boot
+References: <1365797627-20874-1-git-send-email-keescook@chromium.org> <1365797627-20874-7-git-send-email-keescook@chromium.org> <CAE9FiQXGjJCDAo41jxpy9bZJ2svKy8YY-zX7O4YDZPhKo7M43g@mail.gmail.com> <516A1D49.1050100@zytor.com> <CAG7+5M12cAavi9XBYoe39X=JtpWUu4wxjaAfOZP+=1qaKz7C+A@mail.gmail.com> <516C702C.2030209@zytor.com> <CAGXu5jJkA0y+5-or4vxUHE5GyNODSoefrYJO7scM1Jh56FoUuA@mail.gmail.com> <516C751B.4020505@zytor.com> <CAGXu5jJvGx=5YV3mw6DTO75HwO_Yn_vbTN2GkkZr-CiqJqw=_g@mail.gmail.com>
+In-Reply-To: <CAGXu5jJvGx=5YV3mw6DTO75HwO_Yn_vbTN2GkkZr-CiqJqw=_g@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 01, 2013 at 05:56:43PM +0800, Xiao Guangrong wrote:
-> Changelog in v2:
->   - rename kvm_mmu_invalid_mmio_spte to kvm_mmu_invalid_mmio_sptes
->   - use kvm->memslots->generation as kvm global generation-number
->   - fix comment and codestyle
->   - init kvm generation close to mmio wrap-around value
->   - keep kvm_mmu_zap_mmio_sptes
+On 04/15/2013 02:59 PM, Kees Cook wrote:
+>>
+>> The *physical* mapping, where it lands in RAM, is completely
+>> independent, and if you're going to randomize the latter, there is no
+>> reason it has to match the former.  Instead, randomize it freely.
 > 
-> The current way is holding hot mmu-lock and walking all shadow pages, this
-> is not scale. This patchset tries to introduce a very simple and scale way
-> to fast invalid all mmio sptes - it need not walk any shadow pages and hold
-> any locks.
+> Ah, gotcha. I don't see much benefit in doing this as it would make
+> the 32-bit and 64-bit logic pretty different without much real-world
+> gain, IMO.
 > 
-> The idea is simple:
-> KVM maintains a global mmio invalid generation-number which is stored in
-> kvm->memslots.generation and every mmio spte stores the current global
-> generation-number into his available bits when it is created
-> 
-> When KVM need zap all mmio sptes, it just simply increase the global
-> generation-number. When guests do mmio access, KVM intercepts a MMIO #PF
-> then it walks the shadow page table and get the mmio spte. If the
-> generation-number on the spte does not equal the global generation-number,
-> it will go to the normal #PF handler to update the mmio spte
-> 
-> Since 19 bits are used to store generation-number on mmio spte, we zap all
-> mmio sptes when the number is round
 
-Hi Xiao,
+You *have* to make them different anyway.  Otherwise you aren't really
+doing anything useful on x86-64.
 
-Is it still necessary with generation numbers at 'struct shadow_page'
-level (which covers the slot deletion case).
+Seriously, do it right if anything.
 
-That is, once kvm_mmu_zap_all is fixed to increase generation count and
-nuke roots, can't that be used instead with similar effectiveness for
-SLOT_CREATE/SLOT_MOVE cases?
+I also am starting to think that this really would be done better being
+integrated with the decompressor code, since that code already ends up
+moving the code around... no reason to do this again.
 
-> Xiao Guangrong (6):
->   KVM: MMU: retain more available bits on mmio spte
->   KVM: MMU: store generation-number into mmio spte
->   KVM: MMU: make return value of mmio page fault handler more readable
->   KVM: MMU: fast invalid all mmio sptes
->   KVM: MMU: add tracepoint for check_mmio_spte
->   KVM: MMU: init kvm generation close to mmio wrap-around value
+>> That is different from the i386 kernel which runs at its
+>> physical-mapping address.
+>>
+>> Incidentally, for performance reasons please avoid locating the kernel
+>> below CONFIG_PHYSICAL_ADDRESS if possible.
 > 
->  arch/x86/include/asm/kvm_host.h |    3 +-
->  arch/x86/kvm/mmu.c              |  134 +++++++++++++++++++++++++++++++--------
->  arch/x86/kvm/mmu.h              |   17 +++++
->  arch/x86/kvm/mmutrace.h         |   34 +++++++++-
->  arch/x86/kvm/paging_tmpl.h      |   10 ++-
->  arch/x86/kvm/vmx.c              |   12 +++-
->  arch/x86/kvm/x86.c              |   11 +++-
->  virt/kvm/kvm_main.c             |    6 ++
->  8 files changed, 186 insertions(+), 41 deletions(-)
+> You mean CONFIG_PHYSICAL_START? This is already done in aslr.S via
+> LOAD_PHYSICAL_ADDR which is calculated from the
+> CONFIG_PHYSICAL_ALIGN-masked CONFIG_PHYSICAL_START.
 > 
-> -- 
-> 1.7.7.6
+>> Also make sure your code works with more than 128 e820 entries.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> There should be no problem here; we're using edi to count them.
+
+More than 128 entries are fed via a different protocol.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
