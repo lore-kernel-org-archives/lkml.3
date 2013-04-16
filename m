@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289Ab3DPM6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 08:58:19 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:50766 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756189Ab3DPM5B (ORCPT
+	id S1756656Ab3DPM66 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 08:58:58 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:38415 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519Ab3DPM65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 08:57:01 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Cc: michael@ellerman.id.au, mikey@neuling.org
-Subject: [PATCH 0/5] powerpc, perf: BHRB based branch stack enablement on POWER8
-Date: Tue, 16 Apr 2013 18:26:35 +0530
-Message-Id: <1366117000-10979-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041612-8256-0000-0000-00000717D8CA
+	Tue, 16 Apr 2013 08:58:57 -0400
+Message-ID: <516D4AF3.5060205@gmail.com>
+Date: Tue, 16 Apr 2013 07:58:27 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: Colin Cross <ccross@android.com>, lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [RFC PATCH 1/3] pstore-ram: use write-combine mappings
+References: <1365563297-12480-1-git-send-email-robherring2@gmail.com> <CAMbhsRSvQPbzJ7Nt=OSSYE_A1e+eaUjO7XY+qRppJ5_gfWmW4A@mail.gmail.com> <51656992.60203@gmail.com> <CAMbhsRS1hnBRoomoiNijrXZB-938d2RSs1cu9EdSfmXD3xpSQg@mail.gmail.com> <516C9454.4060009@gmail.com> <CAMbhsRRT7tOBHppvjJEW5wRtVaUhwxr8=YQY=Sy0VAFeBg1JmQ@mail.gmail.com> <20130416084418.GA30756@mudshark.cambridge.arm.com>
+In-Reply-To: <20130416084418.GA30756@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-		Branch History Rolling Buffer (BHRB) is a new PMU feaure in IBM
-POWER8 processor which records the branch instructions inside the execution
-pipeline. This patchset enables the basic functionality of the feature through
-generic perf branch stack sampling framework.
+On 04/16/2013 03:44 AM, Will Deacon wrote:
+> On Tue, Apr 16, 2013 at 01:43:09AM +0100, Colin Cross wrote:
+>> On Mon, Apr 15, 2013 at 4:59 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>> Exclusive accesses still have further restrictions. From section 3.4.5:
+>>>
+>>> • It is IMPLEMENTATION DEFINED whether LDREX and STREX operations can be
+>>> performed to a memory region
+>>>    with the Device or Strongly-ordered memory attribute. Unless the
+>>> implementation documentation explicitly
+>>>   states that LDREX and STREX operations to a memory region with the
+>>> Device or Strongly-ordered attribute are
+>>>  permitted, the effect of such operations is UNPREDICTABLE.
+>>>
+>>>
+>>> Given that it is implementation defined, I don't see how Linux can rely
+>>> on that behavior.
+>>
+>> I see, the problem is that while noncached and writecombined appear to
+>> be similar mappings, noncached is mapped in PRRR to strongly-ordered,
+>> while writecombined is mapped to unbufferable normal memory.
+>>
+>> I think adding a wmb() to persistent_ram_write is going to be
+>> expensive on cpus with outer caches like the L2X0, where wmb() will
+>> result in a spinlock.  Is there a real SoC where this doesn't work?
+> 
+> A real SoC where exclusives don't work to memory not mapped as normal? Take
+> your pick...
 
-Sample output
--------------
-$./perf record -b top
-$./perf report
+This patch doesn't actually fix problems for me. Exclusives to DDR work
+for any memory type for me as the DDR controller has an exclusive
+monitor. It takes write-thru cache mapping to get internal RAM to work.
 
-Overhead  Command  Source Shared Object                           Source Symbol  Target Shared Object                        Target Symbol
-# ........  .......  ....................  ......................................  ....................  ...................................
-#
-
-     7.82%      top  libc-2.11.2.so        [k] _IO_vfscanf                         libc-2.11.2.so        [k] _IO_vfscanf                    
-     6.17%      top  libc-2.11.2.so        [k] _IO_vfscanf                         [unknown]             [k] 00000000                       
-     2.37%      top  [unknown]             [k] 0xf7aafb30                          [unknown]             [k] 00000000                       
-     1.80%      top  [unknown]             [k] 0x0fe07978                          libc-2.11.2.so        [k] _IO_vfscanf                    
-     1.60%      top  libc-2.11.2.so        [k] _IO_vfscanf                         [kernel.kallsyms]     [k] .do_task_stat                  
-     1.20%      top  [kernel.kallsyms]     [k] .do_task_stat                       [kernel.kallsyms]     [k] .do_task_stat                  
-     1.02%      top  libc-2.11.2.so        [k] vfprintf                            libc-2.11.2.so        [k] vfprintf                       
-     0.92%      top  top                   [k] _init                               [unknown]             [k] 0x0fe037f4                     
-
-Anshuman Khandual (5):
-  powerpc, perf: Add new BHRB related instructions on POWER8
-  powerpc, perf: Add basic assembly code to read BHRB entries on POWER8
-  powerpc, perf: Add new BHRB related generic functions, data and flags
-  powerpc, perf: Define BHRB generic functions, data and flags for POWER8
-  powerpc, perf: Enable branch stack sampling framework support with BHRB
-
- arch/powerpc/include/asm/perf_event_server.h |  6 ++
- arch/powerpc/include/asm/ppc-opcode.h        |  7 ++
- arch/powerpc/perf/Makefile                   |  2 +-
- arch/powerpc/perf/bhrb.S                     | 34 ++++++++++
- arch/powerpc/perf/core-book3s.c              | 96 +++++++++++++++++++++++++++-
- arch/powerpc/perf/perf_event_bhrb.c          | 75 ++++++++++++++++++++++
- arch/powerpc/perf/power8-pmu.c               | 57 ++++++++++++++++-
- 7 files changed, 272 insertions(+), 5 deletions(-)
- create mode 100644 arch/powerpc/perf/bhrb.S
- create mode 100644 arch/powerpc/perf/perf_event_bhrb.c
-
--- 
-1.7.11.7
+Rob
 
