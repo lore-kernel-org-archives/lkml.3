@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965728Ab3DPXZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 19:25:36 -0400
+	id S965714Ab3DPXZe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 19:25:34 -0400
 Received: from mga09.intel.com ([134.134.136.24]:7748 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965610Ab3DPXZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 19:25:23 -0400
+	id S965660Ab3DPXZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 19:25:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,488,1363158000"; 
-   d="scan'208";a="295949548"
+   d="scan'208";a="295949562"
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Herbert Xu <herbert@gondor.hengli.com.au>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -26,51 +26,118 @@ Cc: Tim Chen <tim.c.chen@linux.intel.com>,
         Jussi Kivilinna <jussi.kivilinna@iki.fi>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: [PATCH 0/4] Patchset to use PCLMULQDQ to accelerate CRC-T10DIF checksum computation 
-Date: Tue, 16 Apr 2013 09:20:47 -0700
-Message-Id: <cover.1366120266.git.tim.c.chen@linux.intel.com>
+Subject: [PATCH 4/4] Simple correctness and speed test for CRCT10DIF hash
+Date: Tue, 16 Apr 2013 09:20:51 -0700
+Message-Id: <de2e172b3c5b5d2ce77978be56aaa8b84272f5d6.1366120266.git.tim.c.chen@linux.intel.com>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <cover.1366120266.git.tim.c.chen@linux.intel.com>
+References: <cover.1366120266.git.tim.c.chen@linux.intel.com>
+In-Reply-To: <cover.1366120266.git.tim.c.chen@linux.intel.com>
+References: <cover.1366120266.git.tim.c.chen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Herbert,
+These are simple tests to do sanity check of CRC T10 DIF hash.  The
+correctness of the transform can be checked with the command
+	modprobe tcrypt mode=47
+The speed of the transform can be evaluated with the command
+	modprobe tcrypt mode=320
 
-Currently the CRC-T10DIF checksum is computed using a generic table lookup
-algorithm.  By switching the checksum to PCLMULQDQ based computation,
-we can speedup the computation by 8x for checksumming 512 bytes and
-even more for larger buffer size.  This will improve performance of SCSI
-drivers turning on the CRC-T10IDF checksum.  In our SSD based experiments,
-we have seen in disk throughput by 3.5x with T10DIF.
+Set the cpu frequency to constant and turn turbo off when running the
+speed test so the frequency governor will not tweak the frequency and
+affects the measurements.
 
-This patchset provide the x86_64 routine using PCLMULQDQ instruction
-and switch the crc_t10dif library function to use the faster PCLMULQDQ
-based routine when available.
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+Tested-by: Keith Busch <keith.busch@intel.com>
+---
+ crypto/tcrypt.c  |  8 ++++++++
+ crypto/testmgr.c | 10 ++++++++++
+ crypto/testmgr.h | 24 ++++++++++++++++++++++++
+ 3 files changed, 42 insertions(+)
 
-Will appreciate if you can consider merging this for the 3.10 kernel.
-
-Tim
-
-Tim Chen (4):
-  Wrap crc_t10dif function all to use crypto transform framework
-  Accelerated CRC T10 DIF computation with PCLMULQDQ instruction
-  Glue code to cast accelerated CRCT10DIF assembly as a crypto
-    transform
-  Simple correctness and speed test for CRCT10DIF hash
-
- arch/x86/crypto/Makefile                |   2 +
- arch/x86/crypto/crct10dif-pcl-asm_64.S  | 659 ++++++++++++++++++++++++++++++++
- arch/x86/crypto/crct10dif-pclmul_glue.c | 153 ++++++++
- crypto/Kconfig                          |  21 +
- crypto/tcrypt.c                         |   8 +
- crypto/testmgr.c                        |  10 +
- crypto/testmgr.h                        |  24 ++
- include/linux/crc-t10dif.h              |  10 +
- lib/crc-t10dif.c                        |  96 +++++
- 9 files changed, 983 insertions(+)
- create mode 100644 arch/x86/crypto/crct10dif-pcl-asm_64.S
- create mode 100644 arch/x86/crypto/crct10dif-pclmul_glue.c
-
+diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
+index 24ea7df..5e95722 100644
+--- a/crypto/tcrypt.c
++++ b/crypto/tcrypt.c
+@@ -1174,6 +1174,10 @@ static int do_test(int m)
+ 		ret += tcrypt_test("ghash");
+ 		break;
+ 
++	case 47:
++		ret += tcrypt_test("crct10dif");
++		break;
++
+ 	case 100:
+ 		ret += tcrypt_test("hmac(md5)");
+ 		break;
+@@ -1498,6 +1502,10 @@ static int do_test(int m)
+ 		test_hash_speed("crc32c", sec, generic_hash_speed_template);
+ 		if (mode > 300 && mode < 400) break;
+ 
++	case 320:
++		test_hash_speed("crct10dif", sec, generic_hash_speed_template);
++		if (mode > 300 && mode < 400) break;
++
+ 	case 399:
+ 		break;
+ 
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index 3807084..b165316 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -1944,6 +1944,16 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 			}
+ 		}
+ 	}, {
++		.alg = "crct10dif",
++		.test = alg_test_hash,
++		.fips_allowed = 1,
++		.suite = {
++			.hash = {
++				.vecs = crct10dif_tv_template,
++				.count = CRCT10DIF_TEST_VECTORS
++			}
++		}
++	}, {
+ 		.alg = "cryptd(__driver-cbc-aes-aesni)",
+ 		.test = alg_test_null,
+ 		.fips_allowed = 1,
+diff --git a/crypto/testmgr.h b/crypto/testmgr.h
+index d503660..6262b74 100644
+--- a/crypto/testmgr.h
++++ b/crypto/testmgr.h
+@@ -450,6 +450,30 @@ static struct hash_testvec rmd320_tv_template[] = {
+ 	}
+ };
+ 
++#define CRCT10DIF_TEST_VECTORS	2
++static struct hash_testvec crct10dif_tv_template[] = {
++	{
++		.plaintext = "abc",
++		.psize  = 3,
++#ifdef __LITTLE_ENDIAN
++		.digest = "\x3b\x44",
++#else
++		.digest = "\x44\x3b",
++#endif
++	}, {
++		.plaintext =
++		"abcddddddddddddddddddddddddddddddddddddddddddddddddddddd",
++		.psize  = 56,
++#ifdef __LITTLE_ENDIAN
++		.digest = "\xe3\x9c",
++#else
++		.digest = "\x9c\xe3",
++#endif
++		.np     = 2,
++		.tap    = { 28, 28 }
++	}
++};
++
+ /*
+  * SHA1 test vectors  from from FIPS PUB 180-1
+  * Long vector from CAVS 5.0
 -- 
 1.7.11.7
 
