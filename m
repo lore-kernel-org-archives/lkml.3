@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab3DPLT1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 07:19:27 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:51593 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab3DPLTZ (ORCPT
+	id S1752903Ab3DPLUj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 07:20:39 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37687 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751493Ab3DPLUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 07:19:25 -0400
-Message-ID: <516D333D.4040703@huawei.com>
-Date: Tue, 16 Apr 2013 19:17:17 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 16 Apr 2013 07:20:38 -0400
+Date: Tue, 16 Apr 2013 12:20:35 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Girish K S <girishks2000@gmail.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        t.figa@samsung.com
+Subject: Re: [PATCH V4 2/5] spi: s3c64xx: added support for polling mode
+Message-ID: <20130416112035.GD26958@opensource.wolfsonmicro.com>
+References: <1366015230-18243-1-git-send-email-ks.giri@samsung.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <bsingharora@gmail.com>, <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, <jpoimboe@redhat.com>,
-        <berrange@redhat.com>, <lpoetter@redhat.com>,
-        <workman-devel@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup: status-quo and userland efforts
-References: <20130406012159.GA17159@mtj.dyndns.org>
-In-Reply-To: <20130406012159.GA17159@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M38YqGLZlgb6RLPS"
+Content-Disposition: inline
+In-Reply-To: <1366015230-18243-1-git-send-email-ks.giri@samsung.com>
+X-Cookie: Keep it short for pithy sake.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/6 9:21, Tejun Heo wrote:
-> Hello, guys.
-> 
->  Status-quo
->  ==========
-> 
-> It's been about a year since I wrote up a summary on cgroup status quo
-> and future plans.  We're not there yet but much closer than we were
-> before.  At least the locking and object life-time management aren't
-> crazy anymore and most controllers now support proper hierarchy
-> although not all of them agree on how to treat inheritance.
-> 
-> IIRC, the yet-to-be-converted ones are blk-throttle and perf.  cpu
-> needs to be updated so that it at least supports a similar mechanism
-> as cfq-iosched for configuring ratio between tasks on an internal
-> cgroup and its children.  Also, we really should update how cpuset
-> handles a cgroup becoming empty (no cpus or memory node left due to
-> hot-unplug).  It currently transfers all its tasks to the nearest
-> ancestor with executing resources, which is an irreversible process
-> which would affect all other co-mounted controllers.  We probably want
-> it to just take on the masks of the ancestor until its own executing
-> resources become online again, and the new behavior should be gated
-> behind a switch (Li, can you please look into this?).
-> 
 
-Sure, I'll be working on sane hierarchy behavior for cpuset.
+--M38YqGLZlgb6RLPS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+On Mon, Apr 15, 2013 at 02:10:27PM +0530, Girish K S wrote:
+> From: Girish K S <girishks2000@gmail.com>
+>=20
+> The 64xx spi driver supports partial polling mode.
+> Only the last chunk of the transfer length is transferred
+> or recieved in polling mode.
+
+I'm missing patch 1 of this series.
+
+--M38YqGLZlgb6RLPS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRbTP7AAoJELSic+t+oim9XdQP/0wNHV+zaNIIN8vYWcemetKu
+Rseu23iwbu2Aqm+6VhZZk2D4LKyllO4jsm7Cr7lnxEPVTd20gJWG4AggsdEpxzEd
+v+FLUHaUMbeVmpjDByIjd1XfqtTWdgHmuVv6SzJJ/LpDTMfH9gOMmD4CNpjiYLEj
+5Z6r0ZNjyKmN0NCp3cfjDCN5oyNBz8/w4teHtiBJYAt6HpZywez+Cryy+yQEklAC
+IUhjkkKMdtJIrWXCPfou7wZiTUCoE3YWtNKN0Io4qfF+UK3ycJCm5Tl0ZQYsUpWQ
+QCQwTmOmW9gLvLg7fQu2VxkKsyRipbQN4ciCMaOoge0fzBvnoHzFmk9ZvvCola2/
+bOM6rGTr0n802negxUk0QXiMYHvoOLEBRkd9hRst46VxxL5lwZ4yaE5poFy6/FO5
+YbmiVvuUmsoi7EYdSA6hlX0t0DfV3/t9jeqgzoUchB+iiLng2fX4HjOw+JG7mI2A
+grNA0h/JFtlZOIsx4FNA7E/ofo/SSCyGXP+SIRDbCI9bL8uf648ZoTzEN8I6fRfW
+8crFmijwlLgzqZl6Fgji4YUv0S57qVC/zij2L1nc5pfSuswVEeGSjTHQmiZYPD/n
+bq7pfT6Vd+1ysQ/f++SJ09MesyCxfHQhIr6tP8Ir7Ou07MhRNThLq9IZOxUTHxV4
+tHR2XYaSLDbyiuODrRop
+=zpfK
+-----END PGP SIGNATURE-----
+
+--M38YqGLZlgb6RLPS--
