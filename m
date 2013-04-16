@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935529Ab3DPKBs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 06:01:48 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:52508 "EHLO relay.sgi.com"
+	id S964849Ab3DPKEn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 06:04:43 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:46434 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S935469Ab3DPKBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 06:01:47 -0400
-Date: Tue, 16 Apr 2013 05:01:46 -0500
+	id S1751505Ab3DPKEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 06:04:41 -0400
+Date: Tue, 16 Apr 2013 05:04:39 -0500
 From: Robin Holt <holt@sgi.com>
 To: Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
-        Joe Perches <joe@perches.com>
+        "H. Peter Anvin" <hpa@zytor.com>
 Cc: Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Joe Perches <joe@perches.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Michel Lespinasse <walken@google.com>,
@@ -22,8 +22,8 @@ Cc: Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
         "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
         Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [Patch -v4 3/4] checkpatch.pl the new kernel/reboot.c file.
-Message-ID: <20130416100146.GL3672@sgi.com>
+Subject: [Patch -v4 4/4] Make reboot_cpuid a kernel parameter. other cpus.
+Message-ID: <20130416100439.GM3672@sgi.com>
 References: <20130416095641.GL3658@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,9 +34,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Moving the reboot=s<##> parameter for x86 to a kernel parameter
+proper.  I did not find any other arch that was specifying the
+reboot cpu.
 
-I did allow the remaining 81 character line behind.  It did not seem
-like it was worth changing.  Otherwise, it now passes checkpatch.pl.
+I left a compatibility mode in there.  The new parameter always
+takes precedence.  I also fixed up the current code to support
+up to cpuid's up to the current max of 4096.
 
 Signed-off-by: Robin Holt <holt@sgi.com>
 To: Ingo Molnar <mingo@redhat.com>
@@ -58,108 +62,134 @@ Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
 Cc: Tejun Heo <tj@kernel.org>
 Cc: the arch/x86 maintainers <x86@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Joe Perches <joe@perches.com>
 
 ---
 
-Changes since -v3:
-- Integrated feedback from Joe Perches.
+Changes since -v3
+- Added a reboot=s#### compatibility mode for x86.
 
- kernel/reboot.c | 28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+ Documentation/kernel-parameters.txt |  2 ++
+ arch/x86/kernel/reboot.c            | 39 +++++++++++++------------------------
+ kernel/reboot.c                     |  8 +++++++-
+ 3 files changed, 22 insertions(+), 27 deletions(-)
 
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 4609e81..11ebb48 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2597,6 +2597,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Format: <reboot_mode>[,<reboot_mode2>[,...]]
+ 			See arch/*/kernel/reboot.c or arch/*/kernel/process.c
+ 
++	reboot_cpuid=	[KNL] cpuid to use for reboot/halt, etc operations.
++
+ 	relax_domain_level=
+ 			[KNL, SMP] Set scheduler's default relax_domain_level.
+ 			See Documentation/cgroups/cpusets.txt.
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 76fa1e9..cdcf28f 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -49,10 +49,6 @@ int reboot_force;
+  */
+ static int reboot_default = 1;
+ 
+-#ifdef CONFIG_SMP
+-static int reboot_cpu = -1;
+-#endif
+-
+ /*
+  * This is set if we need to go through the 'emergency' path.
+  * When machine_emergency_restart() is called, we may be on
+@@ -63,6 +59,8 @@ static int reboot_emergency;
+ /* This is set by the PCI code if either type 1 or type 2 PCI is detected */
+ bool port_cf9_safe = false;
+ 
++extern int reboot_cpuid;
++
+ /*
+  * reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old] | p[ci]
+  * warm   Don't set the cold reboot flag
+@@ -97,10 +95,14 @@ static int __init reboot_setup(char *str)
+ 
+ #ifdef CONFIG_SMP
+ 		case 's':
+-			if (isdigit(*(str+1))) {
+-				reboot_cpu = (int) (*(str+1) - '0');
+-				if (isdigit(*(str+2)))
+-					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
++			if (reboot_cpuid < 0) {
++				int coffset;
++
++				reboot_cpuid = 0;
++				for (coffset = 1; isdigit(*(str + coffset)); coffset++) {
++					reboot_cpuid *= 10;
++					reboot_cpuid += (int)(*(str+2) - '0');
++				}
+ 			}
+ 			/*
+ 			 * We will leave sorting out the final value
+@@ -615,25 +617,10 @@ void native_machine_shutdown(void)
+ 	/* Stop the cpus and apics */
+ #ifdef CONFIG_SMP
+ 
+-	/* The boot cpu is always logical cpu 0 */
+-	int reboot_cpu_id = 0;
+-
+-	/* See if there has been given a command line override */
+-	if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
+-		cpu_online(reboot_cpu))
+-		reboot_cpu_id = reboot_cpu;
+-
+-	/* Make certain the cpu I'm about to reboot on is online */
+-	if (!cpu_online(reboot_cpu_id))
+-		reboot_cpu_id = smp_processor_id();
+-
+-	/* Make certain I only run on the appropriate processor */
+-	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
+-
+ 	/*
+-	 * O.K Now that I'm on the appropriate processor, stop all of the
+-	 * others. Also disable the local irq to not receive the per-cpu
+-	 * timer interrupt which may trigger scheduler's load balance.
++	 * Stop all of the others. Also disable the local irq to
++	 * not receive the per-cpu timer interrupt which may trigger
++	 * scheduler's load balance.
+ 	 */
+ 	local_irq_disable();
+ 	stop_other_cpus();
 diff --git a/kernel/reboot.c b/kernel/reboot.c
-index 907ab48..8cfef20 100644
+index 8cfef20..b2ef798 100644
 --- a/kernel/reboot.c
 +++ b/kernel/reboot.c
-@@ -1,9 +1,11 @@
- /*
-- *  linux/kernel/sys.c
-+ *  linux/kernel/reboot.c
-  *
-  *  Copyright (C) 2013  Linus Torvalds
-  */
- 
-+#define pr_fmt(fmt)	"reboot: " fmt
-+
- #include <linux/export.h>
+@@ -10,6 +10,7 @@
  #include <linux/kexec.h>
  #include <linux/kmod.h>
-@@ -97,9 +99,9 @@ void kernel_restart(char *cmd)
- 	migrate_to_reboot_cpu();
- 	syscore_shutdown();
- 	if (!cmd)
--		printk(KERN_EMERG "Restarting system.\n");
-+		pr_emerg("Restarting system\n");
- 	else
--		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
-+		pr_emerg("Restarting system with command '%s'\n", cmd);
- 	kmsg_dump(KMSG_DUMP_RESTART);
- 	machine_restart(cmd);
+ #include <linux/kmsg_dump.h>
++#include <linux/moduleparam.h>
+ #include <linux/reboot.h>
+ #include <linux/suspend.h>
+ #include <linux/syscalls.h>
+@@ -69,13 +70,18 @@ int unregister_reboot_notifier(struct notifier_block *nb)
  }
-@@ -108,7 +110,7 @@ EXPORT_SYMBOL_GPL(kernel_restart);
- static void kernel_shutdown_prepare(enum system_states state)
+ EXPORT_SYMBOL(unregister_reboot_notifier);
+ 
++int reboot_cpuid = -1;
++core_param(reboot_cpuid, reboot_cpuid, int, 0644);
++
+ void migrate_to_reboot_cpu(void)
  {
- 	blocking_notifier_call_chain(&reboot_notifier_list,
--		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
-+		(state == SYSTEM_HALT) ? SYS_HALT : SYS_POWER_OFF, NULL);
- 	system_state = state;
- 	usermodehelper_disable();
- 	device_shutdown();
-@@ -123,11 +125,10 @@ void kernel_halt(void)
- 	kernel_shutdown_prepare(SYSTEM_HALT);
- 	migrate_to_reboot_cpu();
- 	syscore_shutdown();
--	printk(KERN_EMERG "System halted.\n");
-+	pr_emerg("System halted\n");
- 	kmsg_dump(KMSG_DUMP_HALT);
- 	machine_halt();
- }
--
- EXPORT_SYMBOL_GPL(kernel_halt);
+ 	/* The boot cpu is always logical cpu 0 */
+-	int reboot_cpu_id = 0;
++	int reboot_cpu_id = reboot_cpuid;
  
- /**
-@@ -142,7 +143,7 @@ void kernel_power_off(void)
- 		pm_power_off_prepare();
- 	migrate_to_reboot_cpu();
- 	syscore_shutdown();
--	printk(KERN_EMERG "Power down.\n");
-+	pr_emerg("Power down\n");
- 	kmsg_dump(KMSG_DUMP_POWEROFF);
- 	machine_power_off();
- }
-@@ -171,10 +172,10 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+ 	/* Make certain the cpu I'm about to reboot on is online */
+ 	if (!cpu_online(reboot_cpu_id))
++		reboot_cpu_id = 0;
++	if (!cpu_online(reboot_cpu_id))
+ 		reboot_cpu_id = smp_processor_id();
  
- 	/* For safety, we require "magic" arguments. */
- 	if (magic1 != LINUX_REBOOT_MAGIC1 ||
--	    (magic2 != LINUX_REBOOT_MAGIC2 &&
--	                magic2 != LINUX_REBOOT_MAGIC2A &&
-+			(magic2 != LINUX_REBOOT_MAGIC2 &&
-+			magic2 != LINUX_REBOOT_MAGIC2A &&
- 			magic2 != LINUX_REBOOT_MAGIC2B &&
--	                magic2 != LINUX_REBOOT_MAGIC2C))
-+			magic2 != LINUX_REBOOT_MAGIC2C))
- 		return -EINVAL;
- 
- 	/*
-@@ -283,14 +284,13 @@ static int __orderly_poweroff(bool force)
- 		ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
- 		argv_free(argv);
- 	} else {
--		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
--					 __func__, poweroff_cmd);
-+		pr_warn("%s failed to allocate memory for \"%s\"\n",
-+						__func__, poweroff_cmd);
- 		ret = -ENOMEM;
- 	}
- 
- 	if (ret && force) {
--		printk(KERN_WARNING "Failed to start orderly shutdown: "
--					"forcing the issue\n");
-+		pr_warn("Failed to start orderly shutdown: forcing the issue\n");
- 		/*
- 		 * I guess this should try to kick off some daemon to sync and
- 		 * poweroff asap.  Or not even bother syncing if we're doing an
+ 	/* Prevent races with other tasks migrating this task. */
 -- 
 1.8.1.2
 
