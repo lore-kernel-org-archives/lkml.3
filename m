@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964975Ab3DPO2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 10:28:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8356 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933715Ab3DPO2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 10:28:40 -0400
-Date: Tue, 16 Apr 2013 16:25:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Matthieu CASTET <matthieu.castet@parrot.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] binfmt_elf: fix return value in case of interpreter
-	load failure
-Message-ID: <20130416142556.GA11333@redhat.com>
-References: <1365688389-29908-1-git-send-email-matthieu.castet@parrot.com> <20130411150401.8bf008e05f5dd2239277e2c1@linux-foundation.org> <51681F0E.1040900@parrot.com> <20130415145324.d63be917d438b3f4ec37f845@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130415145324.d63be917d438b3f4ec37f845@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S935751Ab3DPObR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 10:31:17 -0400
+Received: from vint.altlinux.org ([194.107.17.35]:52003 "EHLO
+	vint.altlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934716Ab3DPObP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 10:31:15 -0400
+From: Sergey Vlasov <vsu@altlinux.ru>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Sergey Vlasov <vsu@altlinux.ru>
+Subject: [PATCH 1/2] x86/Kconfig: Make EFI select UCS2_STRING
+Date: Tue, 16 Apr 2013 18:31:08 +0400
+Message-Id: <1366122669-20898-1-git-send-email-vsu@altlinux.ru>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <1366056587-24414-4-git-send-email-matthew.garrett@nebula.com>
+References: <1366056587-24414-4-git-send-email-matthew.garrett@nebula.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15, Andrew Morton wrote:
->
-> On Fri, 12 Apr 2013 16:49:50 +0200 Matthieu CASTET <matthieu.castet@parrot.com> wrote:
->
-> > The only valid remaining part of my patch is to return SIGKILL when
-> > load_elf_interp fail (IS_ERR((void *)elf_entry) is true) (for example load
-> > address of linker is bad) instead of SIGSEGV. This will follow what is done when
-> > loading binary.
-> >
-> > But is it even worth doing?
->
-> SIGSEGV can be caught
+The commit "efi: Distinguish between "remaining space" and actually used
+space" added usage of ucs2_*() functions to arch/x86/platform/efi/efi.c,
+but the only thing which selected UCS2_STRING was EFI_VARS, which is
+technically optional and can be built as a module.
 
-Actually it can't be, flush_signal_handlers() was already called.
-SIGSEGV can be blocked/ignored after that, but please note that
-force_sig_info(SIGSEGV) will unblock and set SIG_DFL if necessary.
+Signed-off-by: Sergey Vlasov <vsu@altlinux.ru>
+---
+ arch/x86/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-In short, force_sig() will actuallu kill the task in any case.
-
-But: afaics send_sig(SIGSEGV) above load_elf_interp() is wrong,
-we should either use SIGKILL (which can't be ignored/blocked) or
-force_sig.
-
-> that would be a user-visible change.
-
-Yes. waitpid(&status) can notice the difference.
-
-> I just
-> don't know what the implications of such a change would be :(
-
-Mee too... Looks harmless but still.
-
-OTOH, I do not know why/when we should use SIGKILL or SIGSEGV in
-this code.
-
-Oleg.
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index a4f24f5..01af853 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1549,6 +1549,7 @@ config X86_SMAP
+ config EFI
+ 	bool "EFI runtime service support"
+ 	depends on ACPI
++	select UCS2_STRING
+ 	---help---
+ 	  This enables the kernel to use EFI runtime services that are
+ 	  available (such as the EFI variable services).
+-- 
+1.8.1.1
 
