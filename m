@@ -1,279 +1,423 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934849Ab3DPKTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 06:19:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39070 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754299Ab3DPKTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 06:19:13 -0400
-Message-ID: <516D255F.40604@ti.com>
-Date: Tue, 16 Apr 2013 15:48:07 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <akpm@linux-foundation.org>, <rob@landley.net>, <davem@davemloft.net>,
-        <cesarb@cesarb.net>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <tony@atomide.com>, <rob.herring@calxeda.com>, <b-cousson@ti.com>,
-        <linux@arm.linux.org.uk>, <eballetbo@gmail.com>, <javier@dowhile0.org>,
-        <mchehab@redhat.com>, <santosh.shilimkar@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <swarren@nvidia.com>,
-        <linux-doc@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 1/6] drivers: phy: add generic PHY framework
-References: <1363770725-13717-1-git-send-email-kishon@ti.com> <1363770725-13717-2-git-send-email-kishon@ti.com> <20130415113416.7C3943E0AA8@localhost> <516BF1E2.3020104@ti.com> <20130415195030.9F7E93E0AA8@localhost>
-In-Reply-To: <20130415195030.9F7E93E0AA8@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755849Ab3DPKT7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 06:19:59 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:48721 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755378Ab3DPKTz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 06:19:55 -0400
+From: Andrew Murray <Andrew.Murray@arm.com>
+To: linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org
+Cc: rob.herring@calxeda.com, jgunthorpe@obsidianresearch.com,
+        linux@arm.linux.org.uk, siva.kallam@samsung.com,
+        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        jg1.han@samsung.com, Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        bhelgaas@google.com, suren.reddy@samsung.com,
+        linux-arm-kernel@lists.infradead.org, monstr@monstr.eu,
+        benh@kernel.crashing.org, paulus@samba.org, grant.likely@secretlab.ca,
+        thomas.petazzoni@free-electrons.com, thierry.reding@avionic-design.de,
+        thomas.abraham@linaro.org, arnd@arndb.de, linus.walleij@linaro.org,
+        Andrew Murray <Andrew.Murray@arm.com>
+Subject: [PATCH v7 2/3] of/pci: Provide support for parsing PCI DT ranges property
+Date: Tue, 16 Apr 2013 11:18:27 +0100
+Message-Id: <1366107508-12672-3-git-send-email-Andrew.Murray@arm.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1366107508-12672-1-git-send-email-Andrew.Murray@arm.com>
+References: <1366107508-12672-1-git-send-email-Andrew.Murray@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch factors out common implementation patterns to reduce overall kernel
+code and provide a means for host bridge drivers to directly obtain struct
+resources from the DT's ranges property without relying on architecture specific
+DT handling. This will make it easier to write archiecture independent host bridge
+drivers and mitigate against further duplication of DT parsing code.
 
-On Tuesday 16 April 2013 01:20 AM, Grant Likely wrote:
-> On Mon, 15 Apr 2013 17:56:10 +0530, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->> Hi,
->>
->> On Monday 15 April 2013 05:04 PM, Grant Likely wrote:
->>> On Wed, 20 Mar 2013 14:42:00 +0530, Kishon Vijay Abraham I <kishon@ti.com> wrote:
->>>> The PHY framework provides a set of APIs for the PHY drivers to
->>>> create/destroy a PHY and APIs for the PHY users to obtain a reference to the
->>>> PHY with or without using phandle. To obtain a reference to the PHY without
->>>> using phandle, the platform specfic intialization code (say from board file)
->>>> should have already called phy_bind with the binding information. The binding
->>>> information consists of phy's device name, phy user device name and an index.
->>>> The index is used when the same phy user binds to mulitple phys.
->>>>
->>>> PHY drivers should create the PHY by passing phy_descriptor that has
->>>> describes the PHY (label, type etc..) and ops like init, exit, suspend, resume,
->>>> poweron, shutdown.
->>>>
->>>> The documentation for the generic PHY framework is added in
->>>> Documentation/phy.txt and the documentation for the sysfs entry is added
->>>> in Documentation/ABI/testing/sysfs-class-phy.
->>>>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>
->>> Hi Kishon,
->>>
->>> For review purposes, I'll skip most of the implementation and focus on
->>> the data structures. I think you need to take another look at the
->>> approach your using. The kernel already provides a lot of support for
->>> implementing devices and binding them to drivers that you should be
->>> able to use...
->>>
->>>
->>> [...]
->>>> +/**
->>>> + * struct phy - represent the phy device
->>>> + * @dev: phy device
->>>> + * @label: label given to phy
->>>> + * @type: specifies the phy type
->>>> + * @of_node: device node of the phy
->>>> + * @ops: function pointers for performing phy operations
->>>> + */
->>>> +struct phy {
->>>> +	struct device		dev;
->>>> +	const char		*label;
->>>> +	int			type;
->>>> +	struct bus_type		*bus;
->>>> +	struct device_node	*of_node;
->>>> +	struct phy_ops		*ops;
->>>> +};
->>>
->>> Alright, so the core of the functionality is this 'struct phy' which
->>> tracks all the instances of PHY devices. As I understand it each
->>> physical phy will have a 'struct phy' instance tracking it. That makes
->>> sense.
->>>
->>> struct phy embeds a struct device. Also good. The linux driver model
->>> knows all about devices and how to handle them. However, most of the
->>> rest of this structure looks to be reinventing stuff the driver model
->>> already does.
->>>
->>> 'label' seems unnecessary. struct device embeds a struct kobject, which
->>> means it has a name and shows up in sysfs. Is there a reason that the
->>> device name cannot be used directly?
->>
->> hmm.. the label name is supposed to be a simpler name than device name.
->> Say for instance "omap-usb2.1.auto" device name can simply be
->> "omap-usb2-phy". Further the device name while using dt will have
->> register address in it. However it's used only for displaying the label
->> in sysfs entry (/sys/class/phy/<phy>/label).
->
-> I wouldn't go mucking with names in that way. Stick with one name and
-> drop the separate label. Otherwise you introduce addtional sources of
-> confusion.
+This patch can be used in the following way:
 
-hmm.. ok.
->
->>>
->>> 'type' I just don't understand. I don't see any users of it in this
->>> patch. I only see where it is set.
->>
->> yeah. Was planning to remove this in my next version (btw the latest is
->> version 5).
->>>
->>> 'bus' absolutely should not be here. The bus type should be set in the
->>> struct device by this subsystem when the device gets registered. There
->>> is no reason to have a pointer to it here.
->>
->> right. I had removed it in version 5 of this patch series.
->>>
->>> 'of_node' is already in struct device
->>
->> I wasn't sure if we can manually assign the of_node of one device to
->> of_node of an another device. Here the of_node comes from _phy provider_.
->
-> There is no problem with multiple devices referencing the same node. The
-> only time it may cause problems is when two devices of the same bus type
-> are referencing the same of_node. In that situation the device will get
-> probed more than once. You're not in that situation.
+	struct of_pci_range_parser parser;
+	struct of_pci_range range;
 
-right. Will re-use of_node.
->
->>> Finally, it really doesn't look right for a device object to have an
->>> 'ops' structure. The whole point of the driver model is that a struct
->>> device doesn't encapsulate any behaviour. A device gets registers to a
->>> bus type, and then the driver core will associate a struct device_driver
->>
->> We have decided not to implement the PHY layer as a separate bus layer.
->> The PHY provider can be part of any other bus. Making the PHY layer as a
->> bus will make the PHY provider to be part of multiple buses which will
->> lead to bad design. All we are trying to do here is keep the pool of PHY
->> devices under PHY class in this layer and help any controller that wants
->> to use the PHY to get it.
->
-> If you're using a class, then you already have your list of registered
-> phy devices! :-) No need to create another global list that you need to
-> manage.
+	if (of_pci_range_parser(&parser, np))
+		; //no ranges property
 
-right. We already use _class_dev_iter_ for finding the phy device.
-.
-.
-+static struct phy *of_phy_lookup(struct device *dev, struct device_node 
-*node)
+	for_each_of_pci_range(&parser, &range) {
+
+		/*
+			directly access properties of the address range, e.g.:
+			range.pci_space, range.pci_addr, range.cpu_addr,
+			range.size, range.flags
+
+			alternatively obtain a struct resource, e.g.:
+			struct resource res;
+			of_pci_range_to_resource(&range, np, &res);
+		*/
+	}
+
+Additionally the implementation takes care of adjacent ranges and merges them
+into a single range (as was the case with powerpc and microblaze).
+
+Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
+Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Reviewed-by: Rob Herring <rob.herring@calxeda.com>
+Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/of/address.c       |   67 ++++++++++++++++++++++++++
+ drivers/of/of_pci.c        |  113 ++++++++++++++++----------------------------
+ include/linux/of_address.h |   46 ++++++++++++++++++
+ 3 files changed, 154 insertions(+), 72 deletions(-)
+
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 04da786..6eec70c 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -227,6 +227,73 @@ int of_pci_address_to_resource(struct device_node *dev, int bar,
+ 	return __of_address_to_resource(dev, addrp, size, flags, NULL, r);
+ }
+ EXPORT_SYMBOL_GPL(of_pci_address_to_resource);
++
++int of_pci_range_parser(struct of_pci_range_parser *parser,
++			struct device_node *node)
 +{
-+	struct phy *phy;
-+	struct class_dev_iter iter;
++	const int na = 3, ns = 2;
++	int rlen;
 +
-+	class_dev_iter_init(&iter, phy_class, NULL, NULL);
-+	while ((dev = class_dev_iter_next(&iter))) {
-+		phy = container_of(dev, struct phy, dev);
-+		if (node != phy->of_node)
-+			continue;
++	parser->node = node;
++	parser->pna = of_n_addr_cells(node);
++	parser->np = parser->pna + na + ns;
 +
-+		class_dev_iter_exit(&iter);
-+		return phy;
++	parser->range = of_get_property(node, "ranges", &rlen);
++	if (parser->range == NULL)
++		return -ENOENT;
++
++	parser->end = parser->range + rlen / sizeof(__be32);
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(of_pci_range_parser);
++
++struct of_pci_range *of_pci_process_ranges(struct of_pci_range_parser *parser,
++						struct of_pci_range *range)
++{
++	const int na = 3, ns = 2;
++
++	if (!range)
++		return NULL;
++
++	if (!parser->range || parser->range + parser->np > parser->end)
++		return NULL;
++
++	range->pci_space = parser->range[0];
++	range->flags = of_bus_pci_get_flags(parser->range);
++	range->pci_addr = of_read_number(parser->range + 1, ns);
++	range->cpu_addr = of_translate_address(parser->node,
++				parser->range + na);
++	range->size = of_read_number(parser->range + parser->pna + na, ns);
++
++	parser->range += parser->np;
++
++	/* Now consume following elements while they are contiguous */
++	while (parser->range + parser->np <= parser->end) {
++		u32 flags, pci_space;
++		u64 pci_addr, cpu_addr, size;
++
++		pci_space = be32_to_cpup(parser->range);
++		flags = of_bus_pci_get_flags(parser->range);
++		pci_addr = of_read_number(parser->range + 1, ns);
++		cpu_addr = of_translate_address(parser->node,
++				parser->range + na);
++		size = of_read_number(parser->range + parser->pna + na, ns);
++
++		if (flags != range->flags)
++			break;
++		if (pci_addr != range->pci_addr + range->size ||
++		    cpu_addr != range->cpu_addr + range->size)
++			break;
++
++		range->size += size;
++		parser->range += parser->np;
 +	}
 +
-+	class_dev_iter_exit(&iter);
-+	return ERR_PTR(-EPROBE_DEFER);
++	return range;
 +}
-.
-.
++EXPORT_SYMBOL_GPL(of_pci_process_ranges);
++
+ #endif /* CONFIG_PCI */
+ 
+ /*
+diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+index 1626172..e5ab604 100644
+--- a/drivers/of/of_pci.c
++++ b/drivers/of/of_pci.c
+@@ -2,6 +2,7 @@
+ #include <linux/export.h>
+ #include <linux/of.h>
+ #include <linux/of_pci.h>
++#include <linux/of_address.h>
+ #include <asm/prom.h>
+ 
+ #if defined(CONFIG_PPC32) || defined(CONFIG_PPC64) || defined(CONFIG_MICROBLAZE)
+@@ -82,67 +83,43 @@ EXPORT_SYMBOL_GPL(of_pci_find_child_device);
+ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 				  struct device_node *dev, int primary)
+ {
+-	const u32 *ranges;
+-	int rlen;
+-	int pna = of_n_addr_cells(dev);
+-	int np = pna + 5;
+ 	int memno = 0, isa_hole = -1;
+-	u32 pci_space;
+-	unsigned long long pci_addr, cpu_addr, pci_next, cpu_next, size;
+ 	unsigned long long isa_mb = 0;
+ 	struct resource *res;
++	struct of_pci_range range;
++	struct of_pci_range_parser parser;
++	u32 res_type;
+ 
+ 	pr_info("PCI host bridge %s %s ranges:\n",
+ 	       dev->full_name, primary ? "(primary)" : "");
+ 
+-	/* Get ranges property */
+-	ranges = of_get_property(dev, "ranges", &rlen);
+-	if (ranges == NULL)
++	/* Check for ranges property */
++	if (of_pci_range_parser(&parser, dev))
+ 		return;
+ 
+-	/* Parse it */
+ 	pr_debug("Parsing ranges property...\n");
+-	while ((rlen -= np * 4) >= 0) {
++	for_each_of_pci_range(&parser, &range) {
+ 		/* Read next ranges element */
+-		pci_space = ranges[0];
+-		pci_addr = of_read_number(ranges + 1, 2);
+-		cpu_addr = of_translate_address(dev, ranges + 3);
+-		size = of_read_number(ranges + pna + 3, 2);
+-
+-		pr_debug("pci_space: 0x%08x pci_addr:0x%016llx ",
+-				pci_space, pci_addr);
+-		pr_debug("cpu_addr:0x%016llx size:0x%016llx\n",
+-					cpu_addr, size);
+-
+-		ranges += np;
++		pr_debug("pci_space: 0x%08x pci_addr: 0x%016llx ",
++				range.pci_space, range.pci_addr);
++		pr_debug("cpu_addr: 0x%016llx size: 0x%016llx\n",
++				range.cpu_addr, range.size);
+ 
+ 		/* If we failed translation or got a zero-sized region
+ 		 * (some FW try to feed us with non sensical zero sized regions
+ 		 * such as power3 which look like some kind of attempt
+ 		 * at exposing the VGA memory hole)
+ 		 */
+-		if (cpu_addr == OF_BAD_ADDR || size == 0)
++		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
+ 			continue;
+ 
+-		/* Now consume following elements while they are contiguous */
+-		for (; rlen >= np * sizeof(u32);
+-		     ranges += np, rlen -= np * 4) {
+-			if (ranges[0] != pci_space)
+-				break;
+-			pci_next = of_read_number(ranges + 1, 2);
+-			cpu_next = of_translate_address(dev, ranges + 3);
+-			if (pci_next != pci_addr + size ||
+-			    cpu_next != cpu_addr + size)
+-				break;
+-			size += of_read_number(ranges + pna + 3, 2);
+-		}
+-
+ 		/* Act based on address space type */
+ 		res = NULL;
+-		switch ((pci_space >> 24) & 0x3) {
+-		case 1:		/* PCI IO space */
++		res_type = range.flags & IORESOURCE_TYPE_BITS;
++		if (res_type == IORESOURCE_IO) {
+ 			pr_info("  IO 0x%016llx..0x%016llx -> 0x%016llx\n",
+-			       cpu_addr, cpu_addr + size - 1, pci_addr);
++				range.cpu_addr, range.cpu_addr + range.size - 1,
++				range.pci_addr);
+ 
+ 			/* We support only one IO range */
+ 			if (hose->pci_io_size) {
+@@ -151,11 +128,12 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			}
+ #if (!IS_ENABLED(CONFIG_64BIT))
+ 			/* On 32 bits, limit I/O space to 16MB */
+-			if (size > 0x01000000)
+-				size = 0x01000000;
++			if (range.size > 0x01000000)
++				range.size = 0x01000000;
+ 
+ 			/* 32 bits needs to map IOs here */
+-			hose->io_base_virt = ioremap(cpu_addr, size);
++			hose->io_base_virt = ioremap(range.cpu_addr,
++						range.size);
+ 
+ 			/* Expect trouble if pci_addr is not 0 */
+ 			if (primary)
+@@ -165,19 +143,18 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			/* pci_io_size and io_base_phys always represent IO
+ 			 * space starting at 0 so we factor in pci_addr
+ 			 */
+-			hose->pci_io_size = pci_addr + size;
+-			hose->io_base_phys = cpu_addr - pci_addr;
++			hose->pci_io_size = range.pci_addr + range.size;
++			hose->io_base_phys = range.cpu_addr - range.pci_addr;
+ 
+ 			/* Build resource */
+ 			res = &hose->io_resource;
+-			res->flags = IORESOURCE_IO;
+-			res->start = pci_addr;
+-			break;
+-		case 2:		/* PCI Memory space */
+-		case 3:		/* PCI 64 bits Memory space */
++			range.cpu_addr = range.pci_addr;
++		} else if (res_type == IORESOURCE_MEM) {
+ 			pr_info(" MEM 0x%016llx..0x%016llx -> 0x%016llx %s\n",
+-			       cpu_addr, cpu_addr + size - 1, pci_addr,
+-			       (pci_space & 0x40000000) ? "Prefetch" : "");
++				range.cpu_addr, range.cpu_addr + range.size - 1,
++				range.pci_addr,
++				(range.pci_space & 0x40000000) ?
++				"Prefetch" : "");
+ 
+ 			/* We support only 3 memory ranges */
+ 			if (memno >= 3) {
+@@ -185,13 +162,13 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 				continue;
+ 			}
+ 			/* Handles ISA memory hole space here */
+-			if (pci_addr == 0) {
+-				isa_mb = cpu_addr;
++			if (range.pci_addr == 0) {
++				isa_mb = range.cpu_addr;
+ 				isa_hole = memno;
+ 				if (primary || isa_mem_base == 0)
+-					isa_mem_base = cpu_addr;
+-				hose->isa_mem_phys = cpu_addr;
+-				hose->isa_mem_size = size;
++					isa_mem_base = range.cpu_addr;
++				hose->isa_mem_phys = range.cpu_addr;
++				hose->isa_mem_size = range.size;
+ 			}
+ 
+ 			/* We get the PCI/Mem offset from the first range or
+@@ -199,30 +176,22 @@ void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+ 			 * hole. If they don't match, bugger.
+ 			 */
+ 			if (memno == 0 ||
+-			    (isa_hole >= 0 && pci_addr != 0 &&
++			(isa_hole >= 0 && range.pci_addr != 0 &&
+ 			     hose->pci_mem_offset == isa_mb))
+-				hose->pci_mem_offset = cpu_addr - pci_addr;
+-			else if (pci_addr != 0 &&
+-				 hose->pci_mem_offset != cpu_addr - pci_addr) {
++				hose->pci_mem_offset = range.cpu_addr -
++							range.pci_addr;
++			else if (range.pci_addr != 0 &&
++				hose->pci_mem_offset != range.cpu_addr -
++							range.pci_addr) {
+ 				pr_info(" \\--> Skipped (offset mismatch) !\n");
+ 				continue;
+ 			}
+ 
+ 			/* Build resource */
+ 			res = &hose->mem_resources[memno++];
+-			res->flags = IORESOURCE_MEM;
+-			if (pci_space & 0x40000000)
+-				res->flags |= IORESOURCE_PREFETCH;
+-			res->start = cpu_addr;
+-			break;
+-		}
+-		if (res != NULL) {
+-			res->name = dev->full_name;
+-			res->end = res->start + size - 1;
+-			res->parent = NULL;
+-			res->sibling = NULL;
+-			res->child = NULL;
+ 		}
++		if (res != NULL)
++			of_pci_range_to_resource(&range, dev, res);
+ 	}
+ 
+ 	/* If there's an ISA hole and the pci_mem_offset is -not- matching
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 0506eb5..1cfb779 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -4,6 +4,36 @@
+ #include <linux/errno.h>
+ #include <linux/of.h>
+ 
++struct of_pci_range_parser {
++	struct device_node *node;
++	const __be32 *range;
++	const __be32 *end;
++	int np;
++	int pna;
++};
++
++struct of_pci_range {
++	u32 pci_space;
++	u64 pci_addr;
++	u64 cpu_addr;
++	u64 size;
++	u32 flags;
++};
++
++#define for_each_of_pci_range(parser, range) \
++	for (; of_pci_process_ranges(parser, range);)
++
++static inline void of_pci_range_to_resource(struct of_pci_range *range,
++					    struct device_node *np,
++					    struct resource *res)
++{
++	res->flags = range->flags;
++	res->start = range->cpu_addr;
++	res->end = range->cpu_addr + range->size - 1;
++	res->parent = res->child = res->sibling = NULL;
++	res->name = np->full_name;
++}
++
+ #ifdef CONFIG_OF_ADDRESS
+ extern u64 of_translate_address(struct device_node *np, const __be32 *addr);
+ extern bool of_can_translate_address(struct device_node *dev);
+@@ -27,6 +57,10 @@ static inline unsigned long pci_address_to_pio(phys_addr_t addr) { return -1; }
+ #define pci_address_to_pio pci_address_to_pio
+ #endif
+ 
++extern int of_pci_range_parser(struct of_pci_range_parser *parser,
++			struct device_node *node);
++extern struct of_pci_range *of_pci_process_ranges(struct of_pci_range_parser *parser,
++						struct of_pci_range *range);
+ #else /* CONFIG_OF_ADDRESS */
+ #ifndef of_address_to_resource
+ static inline int of_address_to_resource(struct device_node *dev, int index,
+@@ -53,6 +87,18 @@ static inline const __be32 *of_get_address(struct device_node *dev, int index,
+ {
+ 	return NULL;
+ }
++
++static inline int of_pci_range_parser(struct of_pci_range_parser *parser,
++			struct device_node *node)
++{
++	return -1;
++}
++
++static inline struct of_pci_range *of_pci_process_ranges(struct of_pci_range_parser *parser,
++						struct of_pci_range *range)
++{
++	return NULL;
++}
+ #endif /* CONFIG_OF_ADDRESS */
+ 
+ 
+-- 
+1.7.0.4
 
-however we can't get rid of the other list (phy_bind_list) where we 
-maintain the phy binding information. It's used for the non-dt boot case.
->
-> You really need to be careful here though. By lumping all the phy types
-> into a single pot your glossing over the fact that different subsystems
-> have phys that behave differently. It is just fine to have a framework
-> that works in lots of places, it's actively encouraged, but by putting
-> the struct device into struct phy, you're taping into a large amount of
-> assumptions that the linux kernel makes about what devices are. For
-> instance, it is generally assumed that a class contains a bunch of the
-> same devices; but in this framework it is explicitly not true.
->
-> I would also imagine that each of the subsystems will want to wrap the
-> struct phy with subsystem specific additions so it will be important to
-> ensure the correct type of device is always returned.
-
-right. Probably this framework right now tries to implement the 
-simplest/default case which wouldn't need subsystem specific additions. 
-But yes, we might need to add subsystem specific additions in the future.
->
-> You'd be better off providing a set of utility functions that work for
-> all the types of phys, but have a separate instance for each one. For
-> example, you could have a separate class for each phy type, but all of
-> them use the same utility function.
->
->>> to a device that it is able to drive, and the struct device_driver is
->>> supposed to contain any ops structure used to control the device.
->>>
->>>> +
->>>> +/**
->>>> + * struct phy_bind - represent the binding for the phy
->>>> + * @dev_name: the device name of the device that will bind to the phy
->>>> + * @phy_dev_name: the device name of the phy
->>>> + * @index: used if a single controller uses multiple phys
->>>> + * @auto_bind: tells if the binding is done explicitly from board file or not
->>>> + * @phy: reference to the phy
->>>> + * @list: to maintain a linked list of the binding information
->>>> + */
->>>> +struct phy_bind {
->>>> +	const char	*dev_name;
->>>> +	const char	*phy_dev_name;
->>>> +	int		index;
->>>> +	int		auto_bind:1;
->>>> +	struct phy	*phy;
->>>> +	struct list_head list;
->>>> +};
->>>
->>> How are PHYs attached to the system. Would the PHY be a direct child of
->>> the host controller device, or would a PHY hang off another bus (like
->>> i2c) for control? (this is how Ethernet phys work; they hang off the
->>> MDIO bus, but may be attached to any Ethernet controller).
->>
->> This layer does not have any restriction on how the PHY is attached to
->> the system. For all the sample cases (USB OTG controller in OMAP
->> platforms) that follows this patch, the PHY is attached to the platform
->> bus and the PHY provider is a platform driver. All this framework does
->> is maintain a list of PHY's added in the system and helps the controller
->> to find the appropriate PHY.
->
-> Okay, that's what I thought. A lot of systems end up looking this way.
-> So I would assume that for an i2c-controlled phy, and i2c driver would
-> bind against the device, and the probe hook would create and register a
-> phy device. That would make the sysfs tree look something like:
->
-> /sys/devices/.../i2c@80000000/usbphy@2/phy0
->
-> where, i2c@80000000 is the i2c master, usbphy@2 is what the phy's driver
-> binds against, and phy0 is created and registered by the driver of
-> usbphy@2 at probe time. Correct?
-
-correct.
->
->> We are currently not looking at having Ethernet use this layer because
->> it itself has a comprehensive PHY layer and merging it with this will
->> take some effort. However other subsystems like USB, SATA, video etc..
->> can make use of this.
->>>
->>> Since there is at most a 1:N relationship between host controllers and
->>> PHYs, there shouldn't be any need for a separate structure to describe
->>> binding. Put the inding data into the struct phy itself. Each host
->>> controller can have a list of phys that it is bound to.
->>
->> No. Having the host controller to have a list of phys wont be a good
->> idea IMHO. The host controller is just an IP and the PHY to which it
->> will be connected can vary from board to board, platform to platform. So
->> ideally this binding should come from platform initialization code/dt data.
->
-> That is not what I mean. I mean the host controller instance should
-> contain a list of all the PHYs that are attached to it. There should not
-
-Doesn't sound correct IMO. The host controller instance need not know 
-anything about the PHY instances that is connected to it. Think of it 
-similar to regulator, the controller wouldn't know which regulator it is 
-connected to, all it has to know is it just has a regulator connected to 
-it. It's up-to the regulator framework to give the controller the 
-correct regulator. It's similar here. It makes sense for me to keep a 
-list in the PHY framework in order for it to return the correct PHY (but 
-note that this list is not needed for dt boot).
-
-Thanks
-Kishon
