@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab3DPPQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:16:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57034 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131Ab3DPPQB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:16:01 -0400
-Message-ID: <516D6B05.50202@infradead.org>
-Date: Tue, 16 Apr 2013 08:15:17 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [NEW DRIVER V4 3/7] DA9058 ONKEY driver
-References: <201304121318.r3CDILZS013210@latitude> <5168681A.20405@infradead.org> <24DF37198A1E704D9811D8F72B87EB514191E38B@NB-EX-MBX02.diasemi.com>
-In-Reply-To: <24DF37198A1E704D9811D8F72B87EB514191E38B@NB-EX-MBX02.diasemi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755944Ab3DPPTY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:19:24 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42804 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752396Ab3DPPTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 11:19:23 -0400
+Message-ID: <1366125562.18313.9.camel@joe-AO722>
+Subject: Re: [PATCH] MAINTAINERS: Update Grant's email address and
+ maintainership
+From: Joe Perches <joe@perches.com>
+To: grant.likely@linaro.org
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Date: Tue, 16 Apr 2013 08:19:22 -0700
+In-Reply-To: <1366109016-27442-1-git-send-email-grant.likely@linaro.org>
+References: <1366109016-27442-1-git-send-email-grant.likely@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/13 03:33, Opensource [Anthony Olech] wrote:
->> -----Original Message-----
->> From: Randy Dunlap [mailto:rdunlap@infradead.org]
->> Sent: 12 April 2013 21:02
->> To: Opensource [Anthony Olech]
->> Cc: Dmitry Torokhov; Mark Brown; Samuel Ortiz; Ashish Jangam; Eric
->> Andersson; Andrew Jones; linux-input@vger.kernel.org; LKML; David Dajun Chen
->> Subject: Re: [NEW DRIVER V4 3/7] DA9058 ONKEY driver
->>
->> On 04/12/13 06:05, Anthony Olech wrote:
->>> This is the ONKEY component driver of the Dialog DA9058 PMIC.
->>> This driver is just one component of the whole DA9058 PMIC driver.
->>> It depends on the CORE component driver of the DA9058 MFD.
->>>
->>> Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
->>> Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
->>> ---
->>>  drivers/input/misc/Kconfig        |   10 +++
->>>  drivers/input/misc/Makefile       |    1 +
->>>  drivers/input/misc/da9058_onkey.c |  177
->>> +++++++++++++++++++++++++++++++++++++
->>>  3 files changed, 188 insertions(+)
->>>  create mode 100644 drivers/input/misc/da9058_onkey.c
->>>
->>> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
->>> index 259ef31..bd07b38 100644
->>> --- a/drivers/input/misc/Kconfig
->>> +++ b/drivers/input/misc/Kconfig
->>> @@ -93,6 +93,16 @@ config INPUT_BMA150
->>>  	  To compile this driver as a module, choose M here: the
->>>  	  module will be called bma150.
->>>
->>> +config INPUT_DA9058_ONKEY
->>> +	tristate "DA9058 ONKEY support"
->>> +	depends on MFD_DA9058
->>> +	help
->>> +	  Support the ONKEY of DA9058 PMICs as an input device
->>> +	  reporting power button status.
->>
->> What possible values can a power button status have?
->> Must be more than my KISS guess:
->> 	this software is running => ON
->> 	software not running     => OFF
->> eh?
-> 
-> Pressing the button briefly and pressing and holding the button will have
-> different effects in a mobile device. The press and hold on phones normally
-> switches them into a sleep state. So the "power button status" is the fact
-> that the ONKEY is still being held down.
-> 
-> Does that answer your question? or have I missed your point??
+On Tue, 2013-04-16 at 11:43 +0100, grant.likely@linaro.org wrote:
+> From: Grant Likely <grant.likely@secretlab.ca>
+> It has also been many years
+> since I've touched any of the Xilinx related code so mark those items as
+> unmaintained.
 
-Yes, that answers my question.  I get it.
+Hi Grant.
 
-> 
-> [...]
->>> +	onkey->irq = platform_get_irq(pdev, 0);
->>> +	if (onkey->irq < 0) {
->>> +		dev_err(&pdev->dev, "can not get ONKEY IRQ error=%d\n",
->>
->> 		                     cannot
-> 
-> The Washington State University language site says:
-> 
-> "These two spellings [cannot/can not] are largely interchangeable, but by far
-> the most common is 'cannot' and you should probably use it except when you
-> want to be emphatic: 'No, you can not wash the dog in the Maytag.'"
-> 
-> Since I was not trying to be particularly emphatic, I will change to using 'cannot'
-> as per your suggestion.
+Please use "Orphan" as described in MAINTAINERS instead.
+get_maintainers.pl doesn't understand "Unmaintained".
 
-thanks.
+> diff --git a/MAINTAINERS b/MAINTAINERS
+[]
+> @@ -4806,11 +4806,8 @@ F:	arch/powerpc/platforms/40x/
+[]
+>  LINUX FOR POWERPC EMBEDDED XILINX VIRTEX
+> -M:	Grant Likely <grant.likely@secretlab.ca>
+> -W:	http://wiki.secretlab.ca/index.php/Linux_on_Xilinx_Virtex
+>  L:	linuxppc-dev@lists.ozlabs.org
+> -T:	git git://git.secretlab.ca/git/linux-2.6.git
+> -S:	Maintained
+> +S:	Unmaintained
+[]
+> @@ -8942,9 +8938,7 @@ S:	Maintained
+[]
+>  XILINX SYSTEMACE DRIVER
+> -M:	Grant Likely <grant.likely@secretlab.ca>
+> -W:	http://www.secretlab.ca/
+> -S:	Maintained
+> +S:	Unmaintained
 
 
--- 
-~Randy
