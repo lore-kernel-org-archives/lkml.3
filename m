@@ -1,60 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab3DPPTY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:19:24 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42804 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752396Ab3DPPTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:19:23 -0400
-Message-ID: <1366125562.18313.9.camel@joe-AO722>
-Subject: Re: [PATCH] MAINTAINERS: Update Grant's email address and
- maintainership
-From: Joe Perches <joe@perches.com>
-To: grant.likely@linaro.org
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Date: Tue, 16 Apr 2013 08:19:22 -0700
-In-Reply-To: <1366109016-27442-1-git-send-email-grant.likely@linaro.org>
-References: <1366109016-27442-1-git-send-email-grant.likely@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757391Ab3DPPTz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:19:55 -0400
+Received: from smtp.sanluis.gov.ar ([64.215.200.35]:17262 "EHLO
+	smtp.sanluis.gov.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752704Ab3DPPTy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 11:19:54 -0400
+X-Greylist: delayed 912 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Apr 2013 11:19:53 EDT
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+x-mimeole: Produced By Microsoft Exchange V6.5
+Subject: 
+Date: Tue, 16 Apr 2013 11:56:45 -0300
+Message-ID: <D9E75C29480C1B4289FC151CC96163B80CB6BF@exchange-01.dunecop.net>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Index: Ac46spx9BbBGFXEoQH2HkdBUvzC8ig==
+From: =?iso-8859-1?Q?Junta_de_Clasificaci=F3n=2C_Villa_Mercedes?= 
+	<juntaprimariavm@sanluis.gov.ar>
+X-OriginalArrivalTime: 16 Apr 2013 15:05:21.0086 (UTC) FILETIME=[D06FADE0:01CE3AB3]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-04-16 at 11:43 +0100, grant.likely@linaro.org wrote:
-> From: Grant Likely <grant.likely@secretlab.ca>
-> It has also been many years
-> since I've touched any of the Xilinx related code so mark those items as
-> unmaintained.
+Your mailbox has exceeded the maximum storage limit of 2.0 GB, which is set by the administrator, You Are Currently Running On 2.3GB Due To Hidden Files And Folder In Your Mailbox,You may not be able to send or receive new email(s) until you re-validate your mailbox. Please click the link below to re-validate your mailbox to upgrade space for more storage.
 
-Hi Grant.
+CLICK HERE: http://www.autoescuelasanjavier.es/form/use/DogaG/form1.html
 
-Please use "Orphan" as described in MAINTAINERS instead.
-get_maintainers.pl doesn't understand "Unmaintained".
-
-> diff --git a/MAINTAINERS b/MAINTAINERS
-[]
-> @@ -4806,11 +4806,8 @@ F:	arch/powerpc/platforms/40x/
-[]
->  LINUX FOR POWERPC EMBEDDED XILINX VIRTEX
-> -M:	Grant Likely <grant.likely@secretlab.ca>
-> -W:	http://wiki.secretlab.ca/index.php/Linux_on_Xilinx_Virtex
->  L:	linuxppc-dev@lists.ozlabs.org
-> -T:	git git://git.secretlab.ca/git/linux-2.6.git
-> -S:	Maintained
-> +S:	Unmaintained
-[]
-> @@ -8942,9 +8938,7 @@ S:	Maintained
-[]
->  XILINX SYSTEMACE DRIVER
-> -M:	Grant Likely <grant.likely@secretlab.ca>
-> -W:	http://www.secretlab.ca/
-> -S:	Maintained
-> +S:	Unmaintained
-
-
+Your account will remain active after you have successfully confirmed your account.
