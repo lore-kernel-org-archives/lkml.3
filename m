@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab3DPXwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 19:52:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:59137 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893Ab3DPXwR (ORCPT
+	id S1752200Ab3DPX6A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 19:58:00 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:36266 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab3DPX57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 19:52:17 -0400
-Date: Wed, 17 Apr 2013 09:52:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: grant.likely@linaro.org
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] MAINTAINERS: Update Grant's email address and
- maintainership
-Message-Id: <20130417095207.24b24f31e2166d20c07f01fa@canb.auug.org.au>
-In-Reply-To: <1366109016-27442-1-git-send-email-grant.likely@linaro.org>
-References: <1366109016-27442-1-git-send-email-grant.likely@linaro.org>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__17_Apr_2013_09_52_07_+1000_aMXv247gVw0b7u40"
+	Tue, 16 Apr 2013 19:57:59 -0400
+Date: Tue, 16 Apr 2013 16:57:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kent Yoder <shpedoikal@gmail.com>
+Cc: Duncan Laurie <dlaurie@chromium.org>, Dirk Hohndel <dirk@hohndel.org>,
+        Kent Yoder <key@linux.vnet.ibm.com>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] TPM: Retry SaveState command in suspend path
+Message-ID: <20130416235751.GA9531@kroah.com>
+References: <1363557399-11822-1-git-send-email-dlaurie@chromium.org>
+ <CAM0nabGd1kPJaEOUNS9A1GOYP757F2SezgqYjK1p3N4AvX0PsA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM0nabGd1kPJaEOUNS9A1GOYP757F2SezgqYjK1p3N4AvX0PsA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__17_Apr_2013_09_52_07_+1000_aMXv247gVw0b7u40
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 19, 2013 at 10:00:02AM -0500, Kent Yoder wrote:
+> Hi Duncan,
+> 
+> On Sun, Mar 17, 2013 at 4:56 PM, Duncan Laurie <dlaurie@chromium.org> wrote:
+> > If the TPM has already been sent a SaveState command before the driver
+> > is loaded it may have problems sending that same command again later.
+> >
+> > This issue is seen with the Chromebook Pixel due to a firmware bug in
+> > the legacy mode boot path which is sending the SaveState command
+> > before booting the kernel.  More information is available at
+> > http://crbug.com/203524
+> >
+> > This change introduces a retry of the SaveState command in the suspend
+> > path in order to work around this issue.  A future firmware update
+> > should fix this but this is also a trivial workaround in the driver
+> > that has no effect on systems that do not show this problem.
+> 
+>   I'm not convinced that this needs to be upstream.  The simplest
+> route would seem to be to carry this out of tree until your firmware
+> is fixed.
 
-Hi Grant,
+Really?  We have machines that we are using right now that need this fix
+in order to work properly.
 
-On Tue, 16 Apr 2013 11:43:36 +0100 grant.likely@linaro.org wrote:
->
-> From: Grant Likely <grant.likely@secretlab.ca>
->=20
-> I've taken a full time position with Linaro and so I'll be using my
-> Linaro email address from this point on. It has also been many years
-> since I've touched any of the Xilinx related code so mark those items as
-> unmaintained.
->=20
-> In addition, Mark Brown is taking the lead on SPI maintainership now, so
-> I've reversed the order of our names for that entry.
+The kernel handles buggy firmware/bioses all the time, we need to work
+properly on all hardware, we can't count on a firmware update ever
+getting pushed out publically, and for those of us using this hardware,
+we want it to work.
 
-Does this have any implications for linux-next included trees or their
-contacts?
+So, please accept this patch,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+thanks,
 
---Signature=_Wed__17_Apr_2013_09_52_07_+1000_aMXv247gVw0b7u40
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRbeQnAAoJEECxmPOUX5FEU3QP/jabvCNSN+w3VYAho0anFkh/
-z/PUxKvEDXrTjcDDWFjrj7NY+/3u/FNOzLxz6j3oV5QB+/Exhplo8SH2+rj8isJP
-+kqkDTb72g4HD+ie+fbc8nnNJdx7pzGw1uJjaYx4Z7y7Ps8HG1mxlV7StiyURJH6
-Fa9lo8Lv4GvEqGMF1lG1s5SUagAJpGhDey3xqDDxbEndCVQWGc/DH/+MK8hhljMl
-diimE9kd3Cr0/bnjEWBukwbVkCLbbHAh19PEMpPoOtq1N5PL0CvBZTHDEaUcumM5
-zDqfK59vo+NrlBmt6xT0pO6sK6bfR+zpde2q2Oi4UM3QzEqIhLM/oaH6tG04hsWq
-sWYlkvGHLFLb2oqljCC7ftsEmVwv+ce4lcwcTf15LRi0yoZe2sNn5CqnOqPw8LiZ
-nVOBnnIQlNFEq9SzMiSITSz1uNEV+XAv543No8PZopOGhriLReqKbWeAsxiAXLqR
-YA/JtY+B6tBOYyd43CYquIV5vu1/EqXeVljp0fIdhhp6lfKPLxFxx+RlbZqu9Uxs
-gF2+iC2zmisOwPYJFYa5RI6+KSMluAC2HLovBuJnXZY0iKlVP7kFJ3xLvZPZVywj
-RpC/sSlqdKONWQu7P3JDIKH8KqRG/yvKjxkfRGKEsaJj5/i72dR4LNQqBffDEEeV
-IvCcdsAd+BifXPzSRV4h
-=7X+m
------END PGP SIGNATURE-----
-
---Signature=_Wed__17_Apr_2013_09_52_07_+1000_aMXv247gVw0b7u40--
+greg l-h
