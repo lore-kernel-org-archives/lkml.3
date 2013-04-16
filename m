@@ -1,181 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910Ab3DPHnx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 03:43:53 -0400
-Received: from mx7.zte.com.cn ([202.103.147.169]:41648 "EHLO zte.com.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754034Ab3DPHnw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 03:43:52 -0400
-To: linux-mtd@lists.infradead.org
-Cc: richard.weinberger@gmail.com, linux-kernel@vger.kernel.org,
-        liu.dong3@zte.com.cn, cui.yunfeng@zte.com.cn, wang.bo116@zte.com.cn
-Subject: [PATCH] UBI: fix memory leak when use fastmap
+	id S1756921Ab3DPHov (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 03:44:51 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60305 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751665Ab3DPHot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 03:44:49 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Alessandro Zummo <a.zummo@towertech.it>, Tony Lindgren <tony@atomide.com>
+CC: <rtc-linux@googlegroups.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>,
+        Christoph Fritz <chf.fritz@googlemail.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH] RTC: rtc-twl: Convert to module_platform_driver() and relocate reg_map init
+Date: Tue, 16 Apr 2013 09:44:22 +0200
+Message-ID: <1366098262-20726-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.1.5
 MIME-Version: 1.0
-X-KeepSent: 5B457772:5235C9A1-48257B4F:002A2C13;
- type=4; name=$KeepSent
-X-Mailer: Lotus Notes Release 6.5.6 March 06, 2007
-Message-ID: <OF5B457772.5235C9A1-ON48257B4F.002A2C13-48257B4F.002A691B@zte.com.cn>
-From: wang.bo116@zte.com.cn
-Date: Tue, 16 Apr 2013 15:43:07 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-04-16 15:42:57,
-	Serialize complete at 2013-04-16 15:42:57
-Content-Type: text/plain; charset="US-ASCII"
-X-MAIL: mse02.zte.com.cn r3G7hAwu014177
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-    Sorry, there is something wrong with the previous patch's format, try 
-to submit it again.
-When use ubi fastmap, there is a memory leak which will make destroy_ai() 
-fail to free the slab.
-The following patch base on linux-3.9-rc6 fix this problem.
+Convert the driver to use module_platform_driver() to register the platform
+driver and relocate the rtc_reg_map initialization to platform driver's
+probe function.
+In this way we can make sure that the twl-core has been already probed since
+the core driver will create the device at the end of it's probe function.
 
+Reported-by: Christoph Fritz <chf.fritz@googlemail.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+Hi Tony, Alessandro, Christoph,
 
-diff -uprN old_ubi/attach.c new_ubi/attach.c
---- old_ubi/attach.c    2013-04-08 03:49:54.000000000 +0000
-+++ new_ubi/attach.c    2013-04-16 03:22:47.343750000 +0000
-@@ -1212,6 +1212,30 @@ static void destroy_ai(struct ubi_attach
-        kfree(ai);
- }
+I think this patch is the correct solution for the issue Christoph reported:
+http://www.spinics.net/lists/linux-omap/msg89980.html
+
+We can make sure that the twl-core has been already probed and initialized when
+the RTC driver tries to pick the correct register map.
+
+Regards,
+Peter
+
+ drivers/rtc/rtc-twl.c | 23 +++++++----------------
+ 1 file changed, 7 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+index 8bc6c80..22b2fd6 100644
+--- a/drivers/rtc/rtc-twl.c
++++ b/drivers/rtc/rtc-twl.c
+@@ -469,6 +469,12 @@ static int twl_rtc_probe(struct platform_device *pdev)
+ 	if (irq <= 0)
+ 		goto out1;
  
-+static struct ubi_attach_info *alloc_ai(const char *slab_name)
-+{
-+       struct ubi_attach_info *ai;
++	/* Initialize the register map */
++	if (twl_class_is_4030())
++		rtc_reg_map = (u8 *)twl4030_rtc_reg_map;
++	else
++		rtc_reg_map = (u8 *)twl6030_rtc_reg_map;
 +
-+       ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
-+       if (!ai)
-+               return ai;
-+
-+       INIT_LIST_HEAD(&ai->corr);
-+       INIT_LIST_HEAD(&ai->free);
-+       INIT_LIST_HEAD(&ai->erase);
-+       INIT_LIST_HEAD(&ai->alien);
-+       ai->volumes = RB_ROOT;
-+       ai->aeb_slab_cache = kmem_cache_create(slab_name,
-+                                          sizeof(struct ubi_ainf_peb),
-+                                              0, 0, NULL);
-+       if (!ai->aeb_slab_cache) {
-+               kfree(ai);
-+               ai = NULL;
-+       }
-+
-+       return ai;
-+}
-+
- /**
-  * scan_all - scan entire MTD device.
-  * @ubi: UBI device description object
-@@ -1315,8 +1339,13 @@ static int scan_fast(struct ubi_device *
-        int err, pnum, fm_anchor = -1;
-        unsigned long long max_sqnum = 0;
+ 	ret = twl_rtc_read_u8(&rd_reg, REG_RTC_STATUS_REG);
+ 	if (ret < 0)
+ 		goto out1;
+@@ -612,22 +618,7 @@ static struct platform_driver twl4030rtc_driver = {
+ 	},
+ };
  
-+       struct ubi_attach_info *fm_temp_ai = NULL;
-        err = -ENOMEM;
- 
-+       fm_temp_ai = alloc_ai("ubi_scan_fastmap_slab_cache");
-+       if (!fm_temp_ai)
-+               goto out;
-+
-        ech = kzalloc(ubi->ec_hdr_alsize, GFP_KERNEL);
-        if (!ech)
-                goto out;
-@@ -1331,7 +1360,7 @@ static int scan_fast(struct ubi_device *
-                cond_resched();
- 
-                dbg_gen("process PEB %d", pnum);
--               err = scan_peb(ubi, ai, pnum, &vol_id, &sqnum);
-+               err = scan_peb(ubi, fm_temp_ai, pnum, &vol_id, &sqnum);
-                if (err < 0)
-                        goto out_vidh;
- 
-@@ -1343,6 +1372,7 @@ static int scan_fast(struct ubi_device *
- 
-        ubi_free_vid_hdr(ubi, vidh);
-        kfree(ech);
-+       destroy_ai(fm_temp_ai);
- 
-        if (fm_anchor < 0)
-                return UBI_NO_FASTMAP;
-@@ -1351,6 +1381,7 @@ static int scan_fast(struct ubi_device *
- 
- out_vidh:
-        ubi_free_vid_hdr(ubi, vidh);
-+       destroy_ai(fm_temp_ai);
- out_ech:
-        kfree(ech);
- out:
-@@ -1359,29 +1390,6 @@ out:
- 
- #endif
- 
--static struct ubi_attach_info *alloc_ai(const char *slab_name)
+-static int __init twl_rtc_init(void)
 -{
--       struct ubi_attach_info *ai;
+-	if (twl_class_is_4030())
+-		rtc_reg_map = (u8 *) twl4030_rtc_reg_map;
+-	else
+-		rtc_reg_map = (u8 *) twl6030_rtc_reg_map;
 -
--       ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
--       if (!ai)
--               return ai;
--
--       INIT_LIST_HEAD(&ai->corr);
--       INIT_LIST_HEAD(&ai->free);
--       INIT_LIST_HEAD(&ai->erase);
--       INIT_LIST_HEAD(&ai->alien);
--       ai->volumes = RB_ROOT;
--       ai->aeb_slab_cache = kmem_cache_create(slab_name,
--                                          sizeof(struct ubi_ainf_peb),
--                                              0, 0, NULL);
--       if (!ai->aeb_slab_cache) {
--               kfree(ai);
--               ai = NULL;
--       }
--
--       return ai;
+-	return platform_driver_register(&twl4030rtc_driver);
 -}
- 
- /**
-  * ubi_attach - attach an MTD device.
-@@ -1419,7 +1427,7 @@ int ubi_attach(struct ubi_device *ubi, i
-                                        return -ENOMEM;
-                        }
- 
--                       err = scan_all(ubi, ai, UBI_FM_MAX_START);
-+                       err = scan_all(ubi, ai, 0);
-                }
-        }
- #else
- 
- 
-diff -uprN old_ubi/fastmap.c new_ubi/fastmap.c
---- old_ubi/fastmap.c   2013-04-08 03:49:54.000000000 +0000
-+++ new_ubi/fastmap.c   2013-04-16 03:22:17.468750000 +0000
-@@ -552,21 +552,8 @@ static int ubi_attach_fastmap(struct ubi
-        INIT_LIST_HEAD(&used);
-        INIT_LIST_HEAD(&free);
-        INIT_LIST_HEAD(&eba_orphans);
--       INIT_LIST_HEAD(&ai->corr);
--       INIT_LIST_HEAD(&ai->free);
--       INIT_LIST_HEAD(&ai->erase);
--       INIT_LIST_HEAD(&ai->alien);
--       ai->volumes = RB_ROOT;
-        ai->min_ec = UBI_MAX_ERASECOUNTER;
- 
--       ai->aeb_slab_cache = kmem_cache_create("ubi_ainf_peb_slab",
--                                          sizeof(struct ubi_ainf_peb),
--                                              0, 0, NULL);
--       if (!ai->aeb_slab_cache) {
--               ret = -ENOMEM;
--               goto fail;
--       }
+-module_init(twl_rtc_init);
 -
-        fmsb = (struct ubi_fm_sb *)(fm_raw);
-        ai->max_sqnum = fmsb->sqnum;
-        fm_pos += sizeof(struct ubi_fm_sb);
-
+-static void __exit twl_rtc_exit(void)
+-{
+-	platform_driver_unregister(&twl4030rtc_driver);
+-}
+-module_exit(twl_rtc_exit);
++module_platform_driver(twl4030rtc_driver);
  
+ MODULE_AUTHOR("Texas Instruments, MontaVista Software");
+ MODULE_LICENSE("GPL");
+-- 
+1.8.1.5
 
-Signed-off-by: Wang bo <wang.bo116@zte.com.cn>
-Tested-by: Wang bo <wang.bo116@zte.com.cn>
-Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
