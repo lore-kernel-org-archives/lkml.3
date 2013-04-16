@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936128Ab3DPRYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 13:24:41 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:36474 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936025Ab3DPRYb (ORCPT
+	id S965090Ab3DPR0P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 13:26:15 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:38548 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965045Ab3DPR0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 13:24:31 -0400
-Date: Tue, 16 Apr 2013 10:24:27 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Mike Snitzer <snitzer@redhat.com>, Milan Broz <gmazyland@gmail.com>,
-        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
-        dm-crypt@saout.de, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>,
-        Christian Schmidt <schmidt@digadd.de>,
-        "Alasdair G. Kergon" <agk@redhat.com>
-Subject: Re: [PATCH v2] make dm and dm-crypt forward cgroup context (was:
- dm-crypt parallelization patches)
-Message-ID: <20130416172418.GB2874@mtj.dyndns.org>
-References: <Pine.LNX.4.64.1304091710150.24735@file.rdu.redhat.com>
- <20130410192427.GA14911@redhat.com>
- <Pine.LNX.4.64.1304101938280.24258@file.rdu.redhat.com>
- <20130410235009.GI17641@mtj.dyndns.org>
- <Pine.LNX.4.64.1304111544050.32536@file.rdu.redhat.com>
- <20130411195203.GA11956@mtj.dyndns.org>
- <20130411200005.GB11956@mtj.dyndns.org>
- <Pine.LNX.4.64.1304121340350.3359@file.rdu.redhat.com>
- <20130412182941.GF11956@mtj.dyndns.org>
- <Pine.LNX.4.64.1304150827480.1859@file.rdu.redhat.com>
+	Tue, 16 Apr 2013 13:26:13 -0400
+Date: Tue, 16 Apr 2013 13:25:58 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <arekm@maven.pl>
+Subject: Re: [PATCH v9] irq: add quirk for broken interrupt remapping on 55XX
+ chipsets
+Message-ID: <20130416172558.GD9241@hmsreliant.think-freely.org>
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+ <1366065677-3431-1-git-send-email-nhorman@tuxdriver.com>
+ <20130416102454.GS6858@8bytes.org>
+ <20130416133555.GB9241@hmsreliant.think-freely.org>
+ <20130416163705.GT6858@8bytes.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1304150827480.1859@file.rdu.redhat.com>
+In-Reply-To: <20130416163705.GT6858@8bytes.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
-
-On Mon, Apr 15, 2013 at 09:02:06AM -0400, Mikulas Patocka wrote:
-> The patch is not bug-prone, because we already must make sure that the 
-> cloned bio has shorter lifetime than the master bio - so the patch doesn't 
-> introduce any new possibilities to make bugs.
-
-The whole world isn't composed of only your code.  As I said
-repeatedly, you're introducing an API which is misleading and can
-easily cause subtle bugs which are very difficult to reproduce.
-
-Imagine it being used to tag a metatdata or checksum update bio being
-sent down while processing another bio and used to "clone" the context
-of the original bio.  It'll work most of the time even if the original
-bio gets completed first but it'll break when it gets really unlucky -
-e.g. racing with other operations which can put the base css ref, and
-it'll be hellish to reproduce and everyone would have to pay for your
-silly hack.
-
-> > Do the two really look the same to you?  The page refs are much more
-> > expensive, mostly contained in and the main focus of dm.  ioc/css refs
-> > aren't that expensive to begin with, css refcnting is widely scattered
+On Tue, Apr 16, 2013 at 06:37:05PM +0200, Joerg Roedel wrote:
+> On Tue, Apr 16, 2013 at 09:35:56AM -0400, Neil Horman wrote:
+> > Actually, hold on that last note, the intel iommu init code doesn't seem to
+> > create any direct relationship between the set of iommu's and the pci_dev's that
+> > implement them.  In the intel_irq_remapping_supported path I can loop over each
+> > dmar_dhrd_unit, and interrogate each of the devices on its **devices list to see
+> > if the device/vendor and revision ids match, but looking at the dhrd parsing
+> > code, I'm not sure the iommu pci_dev is always going to be on that list.  That
+> > seems like its going to be pretty ugly in and of itself.  Do you have a
+> > suggested way to identify the pci_dev of the device we need in that path without
+> > having to simply iterate over every device in that scope?
 > 
-> ioc is per-task, so it is likely to be cached (but there are processors 
-> that have slow atomic operations even on cached data - on Pentium 4 it 
-> takes about 100 cycles). But css is shared between tasks and produces the 
-> cache ping-pong effect.
+> Hmkay, looks like this is a non-trivial problem. Here is what I suggest:
+> Keep the early-quirk as in your current patch. But add a function to
+> drivers/iommu/irq_remapping.c to disable irq-remapping and export that
+> function via the header-file arch/x86/include/asm/irq_remapping.h. Use
+> that function in the quirk instead of setting the disable-flag directly.
+> This way you don't have to include any private header file from iommu
+> code.
+> 
+Ok, that seems reasonable. I'll have a new patch in a day or so.
 
-For $DIETY's sake, how many times do I have to tell you to use per-cpu
-reference count?  Why do I have to repeat the same story over and over
-again?  What part of "make the reference count per-cpu" don't you get?
-It's not a complicated message.
+Thanks!
+Neil
 
-At this point, I can't even understand why or what the hell you're
-arguing.  There's a clearly better way to do it and you're just
-repeating yourself like a broken record that your hack in itself isn't
-broken.
-
-So, if you wanna continue that way for whatever reason, you have my
-firm nack and I'm outta this thread.
-
-Bye bye.
-
--- 
-tejun
