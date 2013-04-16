@@ -1,237 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab3DPGro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 02:47:44 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:53975 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab3DPGrm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 02:47:42 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] of_mdio: Remove flags argument from of_phy_connect
-To: Ben Collins <ben.c@servergy.com>, linux-kernel@vger.kernel.org
-Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org
-In-Reply-To: <E1UJ1fR-0004hv-8a@swissweb.swissdisk.com>
-References: <E1UJ1fR-0004hv-8a@swissweb.swissdisk.com>
-Date: Tue, 16 Apr 2013 07:47:38 +0100
-Message-Id: <20130416064738.3C38D3E14C0@localhost>
+	id S1754330Ab3DPGsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 02:48:20 -0400
+Received: from mx7.zte.com.cn ([202.103.147.169]:51811 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753567Ab3DPGsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 02:48:19 -0400
+X-Greylist: delayed 982 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Apr 2013 02:48:19 EDT
+To: richard.weinberger@gmail.com, Artem.Bityutskiy@nokia.com
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org,
+        liu.dong3@zte.com.cn, cui.yunfeng@zte.com.cn
+Subject: [PATCH] UBI: fix memory leak when use fastmap
+MIME-Version: 1.0
+X-KeepSent: 977C9455:A4106C5F-48257B4F:0022FF01;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 6.5.6 March 06, 2007
+Message-ID: <OF977C9455.A4106C5F-ON48257B4F.0022FF01-48257B4F.0023D416@zte.com.cn>
+From: wang.bo116@zte.com.cn
+Date: Tue, 16 Apr 2013 14:31:14 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-04-16 14:31:07,
+	Serialize complete at 2013-04-16 14:31:07
+Content-Type: text/plain; charset="US-ASCII"
+X-MAIL: mse02.zte.com.cn r3G6VKF4046649
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 18 Mar 2013 19:49:04 -0400, Ben Collins <ben.c@servergy.com> wrote:
-> of_phy_connect() only required a flags argument in order to pass it down to
-> to phy_connect(). Since that argument was removed, it is of no use in this
-> function either (confirmed by checking all callers in kernel tree as well).
-> 
-> Signed-off-by: Ben Collins <ben.c@servergy.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: devicetree-discuss@lists.ozlabs.org
+UBI: fix memory leak when use fastmap
 
-Acked-by: Grant Likely <grant.likely@secrettlab.ca>
+When use ubi fastmap, there is a memory leak which will make destroy_ai() 
+called in ubi_attach fail.
+The following patch base on linux-3.9-rc6 fix this problem.
 
-This would be best merged through David Millers networking tree.
 
-g.
+diff -uprN old_ubi/attach.c new_ubi/attach.c
+--- old_ubi/attach.c    2013-04-08 03:49:54.000000000 +0000
++++ new_ubi/attach.c    2013-04-16 03:22:47.343750000 +0000
+@@ -1212,6 +1212,30 @@ static void destroy_ai(struct ubi_attach
+        kfree(ai);
+ }
+ 
++static struct ubi_attach_info *alloc_ai(const char *slab_name)
++{
++       struct ubi_attach_info *ai;
++
++       ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
++       if (!ai)
++               return ai;
++
++       INIT_LIST_HEAD(&ai->corr);
++       INIT_LIST_HEAD(&ai->free);
++       INIT_LIST_HEAD(&ai->erase);
++       INIT_LIST_HEAD(&ai->alien);
++       ai->volumes = RB_ROOT;
++       ai->aeb_slab_cache = kmem_cache_create(slab_name,
++                                              sizeof(struct 
+ubi_ainf_peb),
++                                              0, 0, NULL);
++       if (!ai->aeb_slab_cache) {
++               kfree(ai);
++               ai = NULL;
++       }
++
++       return ai;
++}
++
+ /**
+  * scan_all - scan entire MTD device.
+  * @ubi: UBI device description object
+@@ -1315,8 +1339,13 @@ static int scan_fast(struct ubi_device *
+        int err, pnum, fm_anchor = -1;
+        unsigned long long max_sqnum = 0;
+ 
++       struct ubi_attach_info *fastmap_temp_ai = NULL;
+        err = -ENOMEM;
+ 
++       fastmap_temp_ai = alloc_ai("ubi_scan_fastmap_slab_cache");
++       if (!fastmap_temp_ai)
++               goto out;
++
+        ech = kzalloc(ubi->ec_hdr_alsize, GFP_KERNEL);
+        if (!ech)
+                goto out;
+@@ -1331,7 +1360,7 @@ static int scan_fast(struct ubi_device *
+                cond_resched();
+ 
+                dbg_gen("process PEB %d", pnum);
+-               err = scan_peb(ubi, ai, pnum, &vol_id, &sqnum);
++               err = scan_peb(ubi, fastmap_temp_ai, pnum, &vol_id, 
+&sqnum);
+                if (err < 0)
+                        goto out_vidh;
+ 
+@@ -1343,6 +1372,7 @@ static int scan_fast(struct ubi_device *
+ 
+        ubi_free_vid_hdr(ubi, vidh);
+        kfree(ech);
++       destroy_ai(fastmap_temp_ai);
+ 
+        if (fm_anchor < 0)
+                return UBI_NO_FASTMAP;
+@@ -1351,6 +1381,7 @@ static int scan_fast(struct ubi_device *
+ 
+ out_vidh:
+        ubi_free_vid_hdr(ubi, vidh);
++       destroy_ai(fastmap_temp_ai);
+ out_ech:
+        kfree(ech);
+ out:
+@@ -1359,29 +1390,6 @@ out:
+ 
+ #endif
+ 
+-static struct ubi_attach_info *alloc_ai(const char *slab_name)
+-{
+-       struct ubi_attach_info *ai;
+-
+-       ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
+-       if (!ai)
+-               return ai;
+-
+-       INIT_LIST_HEAD(&ai->corr);
+-       INIT_LIST_HEAD(&ai->free);
+-       INIT_LIST_HEAD(&ai->erase);
+-       INIT_LIST_HEAD(&ai->alien);
+-       ai->volumes = RB_ROOT;
+-       ai->aeb_slab_cache = kmem_cache_create(slab_name,
+-                                              sizeof(struct 
+ubi_ainf_peb),
+-                                              0, 0, NULL);
+-       if (!ai->aeb_slab_cache) {
+-               kfree(ai);
+-               ai = NULL;
+-       }
+-
+-       return ai;
+-}
+ 
+ /**
+  * ubi_attach - attach an MTD device.
+@@ -1419,7 +1427,7 @@ int ubi_attach(struct ubi_device *ubi, i
+                                        return -ENOMEM;
+                        }
+ 
+-                       err = scan_all(ubi, ai, UBI_FM_MAX_START);
++                       err = scan_all(ubi, ai, 0);
+                }
+        }
+ #else
+ 
+ 
+diff -uprN old_ubi/fastmap.c new_ubi/fastmap.c
+--- old_ubi/fastmap.c   2013-04-08 03:49:54.000000000 +0000
++++ new_ubi/fastmap.c   2013-04-16 03:22:17.468750000 +0000
+@@ -552,21 +552,8 @@ static int ubi_attach_fastmap(struct ubi
+        INIT_LIST_HEAD(&used);
+        INIT_LIST_HEAD(&free);
+        INIT_LIST_HEAD(&eba_orphans);
+-       INIT_LIST_HEAD(&ai->corr);
+-       INIT_LIST_HEAD(&ai->free);
+-       INIT_LIST_HEAD(&ai->erase);
+-       INIT_LIST_HEAD(&ai->alien);
+-       ai->volumes = RB_ROOT;
+        ai->min_ec = UBI_MAX_ERASECOUNTER;
+ 
+-       ai->aeb_slab_cache = kmem_cache_create("ubi_ainf_peb_slab",
+-                                              sizeof(struct 
+ubi_ainf_peb),
+-                                              0, 0, NULL);
+-       if (!ai->aeb_slab_cache) {
+-               ret = -ENOMEM;
+-               goto fail;
+-       }
+-
+        fmsb = (struct ubi_fm_sb *)(fm_raw);
+        ai->max_sqnum = fmsb->sqnum;
+        fm_pos += sizeof(struct ubi_fm_sb);
 
->  drivers/net/ethernet/freescale/fec_mpc52xx.c          | 2 +-
->  drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c | 2 +-
->  drivers/net/ethernet/freescale/gianfar.c              | 2 +-
->  drivers/net/ethernet/freescale/ucc_geth.c             | 2 +-
->  drivers/net/ethernet/marvell/mvneta.c                 | 2 +-
->  drivers/net/ethernet/octeon/octeon_mgmt.c             | 2 +-
->  drivers/net/ethernet/pasemi/pasemi_mac.c              | 2 +-
->  drivers/net/ethernet/xilinx/ll_temac_main.c           | 2 +-
->  drivers/net/ethernet/xilinx/xilinx_axienet_main.c     | 2 +-
->  drivers/net/ethernet/xilinx/xilinx_emaclite.c         | 2 +-
->  drivers/of/of_mdio.c                                  | 2 +-
->  drivers/staging/octeon/ethernet-mdio.c                | 2 +-
->  include/linux/of_mdio.h                               | 4 ++--
->  13 files changed, 14 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/freescale/fec_mpc52xx.c b/drivers/net/ethernet/freescale/fec_mpc52xx.c
-> index 77943a6..ea01dcd 100644
-> --- a/drivers/net/ethernet/freescale/fec_mpc52xx.c
-> +++ b/drivers/net/ethernet/freescale/fec_mpc52xx.c
-> @@ -217,7 +217,7 @@ static int mpc52xx_fec_open(struct net_device *dev)
->  
->  	if (priv->phy_node) {
->  		priv->phydev = of_phy_connect(priv->ndev, priv->phy_node,
-> -					      mpc52xx_fec_adjust_link, 0, 0);
-> +					      mpc52xx_fec_adjust_link, 0);
->  		if (!priv->phydev) {
->  			dev_err(&dev->dev, "of_phy_connect failed\n");
->  			return -ENODEV;
-> diff --git a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-> index 46df288..5523fc0 100644
-> --- a/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-> +++ b/drivers/net/ethernet/freescale/fs_enet/fs_enet-main.c
-> @@ -799,7 +799,7 @@ static int fs_init_phy(struct net_device *dev)
->  	iface = fep->fpi->use_rmii ?
->  		PHY_INTERFACE_MODE_RMII : PHY_INTERFACE_MODE_MII;
->  
-> -	phydev = of_phy_connect(dev, fep->fpi->phy_node, &fs_adjust_link, 0,
-> +	phydev = of_phy_connect(dev, fep->fpi->phy_node, &fs_adjust_link,
->  				iface);
->  	if (!phydev) {
->  		phydev = of_phy_connect_fixed_link(dev, &fs_adjust_link,
-> diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
-> index d2c5441..383d302 100644
-> --- a/drivers/net/ethernet/freescale/gianfar.c
-> +++ b/drivers/net/ethernet/freescale/gianfar.c
-> @@ -1467,7 +1467,7 @@ static int init_phy(struct net_device *dev)
->  
->  	interface = gfar_get_interface(dev);
->  
-> -	priv->phydev = of_phy_connect(dev, priv->phy_node, &adjust_link, 0,
-> +	priv->phydev = of_phy_connect(dev, priv->phy_node, &adjust_link,
->  				      interface);
->  	if (!priv->phydev)
->  		priv->phydev = of_phy_connect_fixed_link(dev, &adjust_link,
-> diff --git a/drivers/net/ethernet/freescale/ucc_geth.c b/drivers/net/ethernet/freescale/ucc_geth.c
-> index 0a70bb5..fb9a573 100644
-> --- a/drivers/net/ethernet/freescale/ucc_geth.c
-> +++ b/drivers/net/ethernet/freescale/ucc_geth.c
-> @@ -1745,7 +1745,7 @@ static int init_phy(struct net_device *dev)
->  	priv->oldspeed = 0;
->  	priv->oldduplex = -1;
->  
-> -	phydev = of_phy_connect(dev, ug_info->phy_node, &adjust_link, 0,
-> +	phydev = of_phy_connect(dev, ug_info->phy_node, &adjust_link,
->  				priv->phy_interface);
->  	if (!phydev)
->  		phydev = of_phy_connect_fixed_link(dev, &adjust_link,
-> diff --git a/drivers/net/ethernet/marvell/mvneta.c b/drivers/net/ethernet/marvell/mvneta.c
-> index cd345b8..dcb865e8 100644
-> --- a/drivers/net/ethernet/marvell/mvneta.c
-> +++ b/drivers/net/ethernet/marvell/mvneta.c
-> @@ -2344,7 +2344,7 @@ static int mvneta_mdio_probe(struct mvneta_port *pp)
->  {
->  	struct phy_device *phy_dev;
->  
-> -	phy_dev = of_phy_connect(pp->dev, pp->phy_node, mvneta_adjust_link, 0,
-> +	phy_dev = of_phy_connect(pp->dev, pp->phy_node, mvneta_adjust_link,
->  				 pp->phy_interface);
->  	if (!phy_dev) {
->  		netdev_err(pp->dev, "could not find the PHY\n");
-> diff --git a/drivers/net/ethernet/octeon/octeon_mgmt.c b/drivers/net/ethernet/octeon/octeon_mgmt.c
-> index 921729f..c2d281e 100644
-> --- a/drivers/net/ethernet/octeon/octeon_mgmt.c
-> +++ b/drivers/net/ethernet/octeon/octeon_mgmt.c
-> @@ -970,7 +970,7 @@ static int octeon_mgmt_init_phy(struct net_device *netdev)
->  	}
->  
->  	p->phydev = of_phy_connect(netdev, p->phy_np,
-> -				   octeon_mgmt_adjust_link, 0,
-> +				   octeon_mgmt_adjust_link,
->  				   PHY_INTERFACE_MODE_MII);
->  
->  	if (!p->phydev)
-> diff --git a/drivers/net/ethernet/pasemi/pasemi_mac.c b/drivers/net/ethernet/pasemi/pasemi_mac.c
-> index b1cfbb7..aad29d1 100644
-> --- a/drivers/net/ethernet/pasemi/pasemi_mac.c
-> +++ b/drivers/net/ethernet/pasemi/pasemi_mac.c
-> @@ -1100,7 +1100,7 @@ static int pasemi_mac_phy_init(struct net_device *dev)
->  	mac->speed = 0;
->  	mac->duplex = -1;
->  
-> -	phydev = of_phy_connect(dev, phy_dn, &pasemi_adjust_link, 0,
-> +	phydev = of_phy_connect(dev, phy_dn, &pasemi_adjust_link,
->  				PHY_INTERFACE_MODE_SGMII);
->  
->  	if (!phydev) {
-> diff --git a/drivers/net/ethernet/xilinx/ll_temac_main.c b/drivers/net/ethernet/xilinx/ll_temac_main.c
-> index 9fc2ada..4c5e0a9 100644
-> --- a/drivers/net/ethernet/xilinx/ll_temac_main.c
-> +++ b/drivers/net/ethernet/xilinx/ll_temac_main.c
-> @@ -857,7 +857,7 @@ static int temac_open(struct net_device *ndev)
->  
->  	if (lp->phy_node) {
->  		lp->phy_dev = of_phy_connect(lp->ndev, lp->phy_node,
-> -					     temac_adjust_link, 0, 0);
-> +					     temac_adjust_link, 0);
->  		if (!lp->phy_dev) {
->  			dev_err(lp->dev, "of_phy_connect() failed\n");
->  			return -ENODEV;
-> diff --git a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-> index 278c9db..7f2afdd 100644
-> --- a/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-> +++ b/drivers/net/ethernet/xilinx/xilinx_axienet_main.c
-> @@ -935,7 +935,7 @@ static int axienet_open(struct net_device *ndev)
->  
->  	if (lp->phy_node) {
->  		lp->phy_dev = of_phy_connect(lp->ndev, lp->phy_node,
-> -					     axienet_adjust_link, 0,
-> +					     axienet_adjust_link,
->  					     PHY_INTERFACE_MODE_GMII);
->  		if (!lp->phy_dev) {
->  			dev_err(lp->dev, "of_phy_connect() failed\n");
-> diff --git a/drivers/net/ethernet/xilinx/xilinx_emaclite.c b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> index 919b983..bccb064 100644
-> --- a/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> +++ b/drivers/net/ethernet/xilinx/xilinx_emaclite.c
-> @@ -931,7 +931,7 @@ static int xemaclite_open(struct net_device *dev)
->  		u32 bmcr;
->  
->  		lp->phy_dev = of_phy_connect(lp->ndev, lp->phy_node,
-> -					     xemaclite_adjust_link, 0,
-> +					     xemaclite_adjust_link,
->  					     PHY_INTERFACE_MODE_MII);
->  		if (!lp->phy_dev) {
->  			dev_err(&lp->ndev->dev, "of_phy_connect() failed\n");
-> diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-> index e3a8b22..199b7f2 100644
-> --- a/drivers/of/of_mdio.c
-> +++ b/drivers/of/of_mdio.c
-> @@ -149,7 +149,7 @@ EXPORT_SYMBOL(of_phy_find_device);
->   */
->  struct phy_device *of_phy_connect(struct net_device *dev,
->  				  struct device_node *phy_np,
-> -				  void (*hndlr)(struct net_device *), u32 flags,
-> +				  void (*hndlr)(struct net_device *),
->  				  phy_interface_t iface)
->  {
->  	struct phy_device *phy = of_phy_find_device(phy_np);
-> diff --git a/drivers/staging/octeon/ethernet-mdio.c b/drivers/staging/octeon/ethernet-mdio.c
-> index 83b1030..37897e3 100644
-> --- a/drivers/staging/octeon/ethernet-mdio.c
-> +++ b/drivers/staging/octeon/ethernet-mdio.c
-> @@ -171,7 +171,7 @@ int cvm_oct_phy_setup_device(struct net_device *dev)
->  	if (!phy_node)
->  		return 0;
->  
-> -	priv->phydev = of_phy_connect(dev, phy_node, cvm_oct_adjust_link, 0,
-> +	priv->phydev = of_phy_connect(dev, phy_node, cvm_oct_adjust_link,
->  				      PHY_INTERFACE_MODE_GMII);
->  
->  	if (priv->phydev == NULL)
-> diff --git a/include/linux/of_mdio.h b/include/linux/of_mdio.h
-> index 8163107..cdc62c9 100644
-> --- a/include/linux/of_mdio.h
-> +++ b/include/linux/of_mdio.h
-> @@ -18,7 +18,7 @@ extern struct phy_device *of_phy_find_device(struct device_node *phy_np);
->  extern struct phy_device *of_phy_connect(struct net_device *dev,
->  					 struct device_node *phy_np,
->  					 void (*hndlr)(struct net_device *),
-> -					 u32 flags, phy_interface_t iface);
-> +					 phy_interface_t iface);
->  extern struct phy_device *of_phy_connect_fixed_link(struct net_device *dev,
->  					 void (*hndlr)(struct net_device *),
->  					 phy_interface_t iface);
-> @@ -39,7 +39,7 @@ static inline struct phy_device *of_phy_find_device(struct device_node *phy_np)
->  static inline struct phy_device *of_phy_connect(struct net_device *dev,
->  						struct device_node *phy_np,
->  						void (*hndlr)(struct net_device *),
-> -						u32 flags, phy_interface_t iface)
-> +						phy_interface_t iface)
->  {
->  	return NULL;
->  }
-> -- 
-> 1.8.1.2
-> 
+ 
 
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
+Signed-off-by: Wang bo <wang.bo116@zte.com.cn>
+Tested-by: Wang bo <wang.bo116@zte.com.cn>
+Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
