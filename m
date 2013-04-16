@@ -1,176 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab3DPGdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 02:33:13 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:57398 "EHLO
+	id S1754701Ab3DPGdY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 02:33:24 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:57501 "EHLO
 	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829Ab3DPGdI (ORCPT
+	with ESMTP id S1753829Ab3DPGdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 02:33:08 -0400
+	Tue, 16 Apr 2013 02:33:19 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: mtosatti@redhat.com
 Cc: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
         kvm@vger.kernel.org, Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH v3 02/15] KVM: fold kvm_arch_create_memslot into kvm_arch_prepare_memory_region
-Date: Tue, 16 Apr 2013 14:32:40 +0800
-Message-Id: <1366093973-2617-3-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH v3 05/15] KVM: MMU: allow per-rmap operations
+Date: Tue, 16 Apr 2013 14:32:43 +0800
+Message-Id: <1366093973-2617-6-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041606-5564-0000-0000-00000784CF8A
+x-cbid: 13041606-5564-0000-0000-00000784CFF5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It removes a arch-specified interface and also removes unnecessary
-empty functions on some architectures
+Introduce rmap_operations to allow rmap having different operations,
+then, we are able to handle invalid rmap specially
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/arm/kvm/arm.c         |    5 -----
- arch/ia64/kvm/kvm-ia64.c   |    5 -----
- arch/powerpc/kvm/powerpc.c |    8 ++++++--
- arch/s390/kvm/kvm-s390.c   |    5 -----
- arch/x86/kvm/x86.c         |    7 ++++++-
- include/linux/kvm_host.h   |    1 -
- virt/kvm/kvm_main.c        |    8 ++------
- 7 files changed, 14 insertions(+), 25 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/kvm/mmu.c              |   31 ++++++++++++++++++++++++-------
+ arch/x86/kvm/mmu.h              |   16 ++++++++++++++++
+ arch/x86/kvm/x86.c              |    1 +
+ 4 files changed, 42 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
-index e4ad0bb..c76e63e 100644
---- a/arch/arm/kvm/arm.c
-+++ b/arch/arm/kvm/arm.c
-@@ -159,11 +159,6 @@ void kvm_arch_free_memslot(struct kvm_memory_slot *free,
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 4e1f7cb..5fd6ed1 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -511,6 +511,7 @@ struct kvm_lpage_info {
+ };
+ 
+ struct kvm_arch_memory_slot {
++	struct rmap_operations *ops;
+ 	unsigned long *rmap[KVM_NR_PAGE_SIZES];
+ 	struct kvm_lpage_info *lpage_info[KVM_NR_PAGE_SIZES - 1];
+ };
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 514f5b1..99ad2a4 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1055,13 +1055,13 @@ static int slot_rmap_add(struct kvm_memory_slot *slot,
+ 			 struct kvm_vcpu *vcpu, unsigned long *rmapp,
+ 			 u64 *spte)
  {
+-	return pte_list_add(vcpu, spte, rmapp);
++	return slot->arch.ops->rmap_add(vcpu, spte, rmapp);
  }
  
--int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
--{
--	return 0;
--}
--
+ static void slot_rmap_remove(struct kvm_memory_slot *slot,
+ 			     unsigned long *rmapp, u64 *spte)
+ {
+-	pte_list_remove(spte, rmapp);
++	slot->arch.ops->rmap_remove(spte, rmapp);
+ }
+ 
+ static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+@@ -1238,7 +1238,7 @@ static bool slot_rmap_write_protect(struct kvm_memory_slot *slot,
+ 				    struct kvm *kvm, unsigned long *rmapp,
+ 				    bool pt_protect)
+ {
+-	return __rmap_write_protect(kvm, rmapp, pt_protect);
++	return slot->arch.ops->rmap_write_protect(kvm, rmapp, pt_protect);
+ }
+ 
  /**
-  * kvm_arch_destroy_vm - destroy the VM data structure
-  * @kvm:	pointer to the KVM struct
-diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
-index 7a54455..fcfb03b 100644
---- a/arch/ia64/kvm/kvm-ia64.c
-+++ b/arch/ia64/kvm/kvm-ia64.c
-@@ -1553,11 +1553,6 @@ void kvm_arch_free_memslot(struct kvm_memory_slot *free,
+@@ -1306,7 +1306,7 @@ static int kvm_unmap_rmapp(struct kvm *kvm, unsigned long *rmapp)
+ static int slot_rmap_unmap(struct kvm *kvm, unsigned long *rmapp,
+ 			   struct kvm_memory_slot *slot, unsigned long data)
  {
+-	return kvm_unmap_rmapp(kvm, rmapp);
++	return slot->arch.ops->rmap_unmap(kvm, rmapp);
  }
  
--int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
--{
--	return 0;
--}
--
- int kvm_arch_prepare_memory_region(struct kvm *kvm,
- 		struct kvm_memory_slot *memslot,
- 		struct kvm_userspace_memory_region *mem,
-diff --git a/arch/powerpc/kvm/powerpc.c b/arch/powerpc/kvm/powerpc.c
-index 16b4595..aab8039 100644
---- a/arch/powerpc/kvm/powerpc.c
-+++ b/arch/powerpc/kvm/powerpc.c
-@@ -405,9 +405,9 @@ void kvm_arch_free_memslot(struct kvm_memory_slot *free,
- 	kvmppc_core_free_memslot(free, dont);
+ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+@@ -1353,7 +1353,7 @@ static int kvm_set_pte_rmapp(struct kvm *kvm, unsigned long *rmapp,
+ static int slot_rmap_set_pte(struct kvm *kvm, unsigned long *rmapp,
+ 			     struct kvm_memory_slot *slot, unsigned long data)
+ {
+-	return kvm_set_pte_rmapp(kvm, rmapp, (pte_t *)data);
++	return slot->arch.ops->rmap_set_pte(kvm, rmapp, (pte_t *)data);
  }
  
--int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
-+static int kvm_arch_create_memslot(struct kvm_memory_slot *slot)
+ static int kvm_handle_hva_range(struct kvm *kvm,
+@@ -1470,7 +1470,7 @@ out:
+ static int slot_rmap_age(struct kvm *kvm, unsigned long *rmapp,
+ 			 struct kvm_memory_slot *slot, unsigned long data)
  {
--	return kvmppc_core_create_memslot(slot, npages);
-+	return kvmppc_core_create_memslot(slot, slot->npages);
+-	int young = kvm_age_rmapp(kvm, rmapp);
++	int young = slot->arch.ops->rmap_age(kvm, rmapp);
+ 
+ 	/* @data has hva passed to kvm_age_hva(). */
+ 	trace_kvm_age_page(data, slot, young);
+@@ -1508,7 +1508,7 @@ static int slot_rmap_test_age(struct kvm *kvm, unsigned long *rmapp,
+ 			      struct kvm_memory_slot *slot,
+ 			      unsigned long data)
+ {
+-	return kvm_test_age_rmapp(kvm, rmapp);
++	return slot->arch.ops->rmap_test_age(kvm, rmapp);
  }
  
- int kvm_arch_prepare_memory_region(struct kvm *kvm,
-@@ -415,6 +415,10 @@ int kvm_arch_prepare_memory_region(struct kvm *kvm,
- 				   struct kvm_userspace_memory_region *mem,
- 				   enum kvm_mr_change change)
- {
-+	if (change == KVM_MR_CREATE)
-+		if (kvm_arch_create_memslot(memslot))
-+			return -ENOMEM;
+ #define RMAP_RECYCLE_THRESHOLD 1000
+@@ -1537,6 +1537,23 @@ int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
+ 	return kvm_handle_hva(kvm, hva, 0, slot_rmap_test_age);
+ }
+ 
++static struct rmap_operations normal_rmap_ops = {
++	.rmap_add = pte_list_add,
++	.rmap_remove = pte_list_remove,
 +
- 	return kvmppc_core_prepare_memory_region(kvm, memslot, mem);
- }
- 
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index 33161b4..7bfd6f6 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -967,11 +967,6 @@ void kvm_arch_free_memslot(struct kvm_memory_slot *free,
++	.rmap_write_protect = __rmap_write_protect,
++
++	.rmap_set_pte = kvm_set_pte_rmapp,
++	.rmap_age = kvm_age_rmapp,
++	.rmap_test_age = kvm_test_age_rmapp,
++	.rmap_unmap = kvm_unmap_rmapp
++};
++
++void init_memslot_rmap_ops(struct kvm_memory_slot *slot)
++{
++	slot->arch.ops = &normal_rmap_ops;
++}
++
+ #ifdef MMU_DEBUG
+ static int is_empty_shadow_page(u64 *spt)
  {
+diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+index ffd40d1..bb2b22e 100644
+--- a/arch/x86/kvm/mmu.h
++++ b/arch/x86/kvm/mmu.h
+@@ -114,4 +114,20 @@ static inline bool permission_fault(struct kvm_mmu *mmu, unsigned pte_access,
+ 	return (mmu->permissions[pfec >> 1] >> pte_access) & 1;
  }
  
--int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
--{
--	return 0;
--}
--
- /* Section: memory related */
- int kvm_arch_prepare_memory_region(struct kvm *kvm,
- 				   struct kvm_memory_slot *memslot,
++struct rmap_operations {
++	int (*rmap_add)(struct kvm_vcpu *vcpu, u64 *spte,
++			unsigned long *rmap);
++	void (*rmap_remove)(u64 *spte, unsigned long *rmap);
++
++	bool (*rmap_write_protect)(struct kvm *kvm, unsigned long *rmap,
++				   bool pt_protect);
++
++	int (*rmap_set_pte)(struct kvm *kvm, unsigned long *rmap,
++			    pte_t *ptep);
++	int (*rmap_age)(struct kvm *kvm, unsigned long *rmap);
++	int (*rmap_test_age)(struct kvm *kvm, unsigned long *rmap);
++	int (*rmap_unmap)(struct kvm *kvm, unsigned long *rmapp);
++};
++
++void init_memslot_rmap_ops(struct kvm_memory_slot *slot);
+ #endif
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index b0be7ec..447789c 100644
+index 839e666..bec83cd 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -6875,8 +6875,9 @@ void kvm_arch_free_memslot(struct kvm_memory_slot *free,
+@@ -6919,6 +6919,7 @@ static int kvm_arch_create_memslot(struct kvm_memory_slot *slot)
+ 		}
  	}
- }
  
--int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
-+static int kvm_arch_create_memslot(struct kvm_memory_slot *slot)
- {
-+	unsigned long npages = slot->npages;
- 	int i;
++	init_memslot_rmap_ops(slot);
+ 	return 0;
  
- 	for (i = 0; i < KVM_NR_PAGE_SIZES; ++i) {
-@@ -6938,6 +6939,10 @@ int kvm_arch_prepare_memory_region(struct kvm *kvm,
- 				struct kvm_userspace_memory_region *mem,
- 				enum kvm_mr_change change)
- {
-+	if (change == KVM_MR_CREATE)
-+		if (kvm_arch_create_memslot(memslot))
-+			return -ENOMEM;
-+
- 	/*
- 	 * Only private memory slots need to be mapped here since
- 	 * KVM_SET_MEMORY_REGION ioctl is no longer supported.
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 1c0be23..f39ec18 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -493,7 +493,6 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 			    struct kvm_userspace_memory_region *mem);
- void kvm_arch_free_memslot(struct kvm_memory_slot *free,
- 			   struct kvm_memory_slot *dont);
--int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages);
- int kvm_arch_prepare_memory_region(struct kvm *kvm,
- 				struct kvm_memory_slot *memslot,
- 				struct kvm_userspace_memory_region *mem,
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index d21694a..acc9f30 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -825,13 +825,9 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 	if (!(new.flags & KVM_MEM_LOG_DIRTY_PAGES))
- 		new.dirty_bitmap = NULL;
- 
--	r = -ENOMEM;
--	if (change == KVM_MR_CREATE) {
--		new.userspace_addr = mem->userspace_addr;
-+	new.userspace_addr = mem->userspace_addr;
- 
--		if (kvm_arch_create_memslot(&new, npages))
--			goto out_free;
--	}
-+	r = -ENOMEM;
- 
- 	/* Allocate page dirty bitmap if needed */
- 	if ((new.flags & KVM_MEM_LOG_DIRTY_PAGES) && !new.dirty_bitmap) {
+ out_free:
 -- 
 1.7.7.6
 
