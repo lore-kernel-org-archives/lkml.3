@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964827Ab3DPPa7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:30:59 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42032 "HELO
+	id S1757581Ab3DPPcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:32:22 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42045 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757599Ab3DPPa6 (ORCPT
+	with SMTP id S1753773Ab3DPPcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:30:58 -0400
-Date: Tue, 16 Apr 2013 11:30:56 -0400 (EDT)
+	Tue, 16 Apr 2013 11:32:20 -0400
+Date: Tue, 16 Apr 2013 11:32:19 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
 To: Roger Quadros <rogerq@ti.com>
 cc: gregkh@linuxfoundation.org, <balbi@ti.com>, <holler@ahsoftware.de>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] USB: ehci-omap: Don't select any PHY driver
-In-Reply-To: <1366026636-29198-1-git-send-email-rogerq@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1304161130380.1391-100000@iolanthe.rowland.org>
+Subject: Re: [PATCH 2/2] USB: ehci-omap: Improve PHY error handling
+In-Reply-To: <1366026636-29198-2-git-send-email-rogerq@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1304161130590.1391-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,43 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 15 Apr 2013, Roger Quadros wrote:
 
-> Don't select NOP_USB_XCEIV. Instead, board config
-> must select USB_PHY and the appropriate PHY driver.
+> As the USB PHY layer never returns NULL we don't need
+> to check for that condition.
 > 
-> Also add a hint in Kconfig so that users enabling
-> this driver manually enable the right PHY drivers as well.
-> 
-> Gets rid of the below warnings when USB_EHCI_HCD_OMAP
-> is enabled.
-> 
-> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet direct dependencies (USB_SUPPORT && USB_PHY)
-> warning: (USB_EHCI_HCD_OMAP) selects NOP_USB_XCEIV which has unmet direct dependencies (USB_SUPPORT && USB_PHY)
+> If we fail to get the PHY device it could be due
+> to missing USB PHY drivers. Give this hint to the user
+> in the error message.
 > 
 > CC: Alan Stern <stern@rowland.harvard.edu>
 > Signed-off-by: Roger Quadros <rogerq@ti.com>
 > ---
->  drivers/usb/host/Kconfig |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+>  drivers/usb/host/ehci-omap.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> index c0be25c..c558472 100644
-> --- a/drivers/usb/host/Kconfig
-> +++ b/drivers/usb/host/Kconfig
-> @@ -150,11 +150,13 @@ config USB_EHCI_MXC
->  config USB_EHCI_HCD_OMAP
->  	tristate "EHCI support for OMAP3 and later chips"
->  	depends on ARCH_OMAP
-> -	select NOP_USB_XCEIV
->  	default y
->  	---help---
->  	  Enables support for the on-chip EHCI controller on
->  	  OMAP3 and later chips.
-> +	  If your system uses a PHY on the USB port, you will need to
-> +	  enable USB_PHY and the appropriate PHY driver as well. Most
-> +	  boards need the NOP_USB_XCEIV PHY driver.
+> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+> index 5de3e43..2e34ddd 100644
+> --- a/drivers/usb/host/ehci-omap.c
+> +++ b/drivers/usb/host/ehci-omap.c
+> @@ -175,13 +175,13 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+>  			phy = devm_usb_get_phy_by_phandle(dev, "phys", i);
+>  		else
+>  			phy = devm_usb_get_phy_dev(dev, i);
+> -		if (IS_ERR(phy) || !phy) {
+> +		if (IS_ERR(phy)) {
+>  			/* Don't bail out if PHY is not absolutely necessary */
+>  			if (pdata->port_mode[i] != OMAP_EHCI_PORT_MODE_PHY)
+>  				continue;
 >  
->  config USB_EHCI_HCD_ORION
->  	tristate  "Support for Marvell EBU on-chip EHCI USB controller"
+> -			ret = IS_ERR(phy) ? PTR_ERR(phy) : -ENODEV;
+> -			dev_err(dev, "Can't get PHY device for port %d: %d\n",
+> +			ret = PTR_ERR(phy);
+> +			dev_err(dev, "Can't get PHY device for port %d: %d. Is USB_PHY driver enabled?\n",
+>  					i, ret);
+>  			goto err_phy;
+>  		}
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Getting rid of the !phy test is good.  But I'm doubtful about the 
+change to the error message.  Are you going to make a similar change to 
+every platform driver?  There doesn't seem to be any reason to do this 
+for ehci-omap but not the others.
+
+Alan Stern
 
