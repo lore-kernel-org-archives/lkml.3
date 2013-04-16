@@ -1,116 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab3DPLQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 07:16:31 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:28606 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753823Ab3DPLQ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 07:16:29 -0400
-Subject: [PATCH] nfsd: enable UMH client tracker in container
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, devel@openvz.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, jlayton@redhat.com
-Date: Tue, 16 Apr 2013 15:17:44 +0400
-Message-ID: <20130416111344.14621.56912.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1754109Ab3DPLSk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 07:18:40 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:42393 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab3DPLSj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 07:18:39 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v2] media: davinci: vpif: align the buffers size to page page size boundary
+Date: Tue, 16 Apr 2013 13:18:43 +0200
+Message-ID: <2933946.BRNjyJUSVm@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <1366109670-28030-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1366109670-28030-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for UserModeHelper tracker in a container.
-The reason for this is that the only containerised tracker ("nfsdcld") is
-going to be removed in 3.10 kernel, thus at least one more tracker have to be
-containerised to replace the deprecated one.
-UMH tracker looks more preferable comparing to legacy since it's the latest
-one.
-To make UMH tracker work in a container, we have to make sure, that it
-executes right binary (i.e., this binary have to be taken from the container
-environment).
-But, UMH is a kernel thread, which works in global root environment by design
-(kernel thread's root is inherited from kthreadd, which in turn inherited it's
-root from global init). So, the root have to be swapped to the container's
-one before binary execution.
+Hi Prabhakar,
 
-This patch passes "init" callback and private "data" to UMH interface, which
-are used to swap root for spawned kernel thread.
+(CC'ing Marek)
 
-Note: container's root can be stored on stack, because UMH calls are
-synchronous.
+On Tuesday 16 April 2013 16:24:30 Prabhakar lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> with recent commit with id 068a0df76023926af958a336a78bef60468d2033
+> which adds add length check for mmap, the application were failing to
+> mmap the buffers.
+> 
+> This patch aligns the the buffer size to page size boundary for both
+> capture and display driver so the it pass the check.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> ---
+>  Changes for v2:
+>  1: Fixed a typo in commit message.
+> 
+>  drivers/media/platform/davinci/vpif_capture.c |    1 +
+>  drivers/media/platform/davinci/vpif_display.c |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/media/platform/davinci/vpif_capture.c
+> b/drivers/media/platform/davinci/vpif_capture.c index 5f98df1..25981d6
+> 100644
+> --- a/drivers/media/platform/davinci/vpif_capture.c
+> +++ b/drivers/media/platform/davinci/vpif_capture.c
+> @@ -183,6 +183,7 @@ static int vpif_buffer_queue_setup(struct vb2_queue *vq,
+> *nbuffers = config_params.min_numbuffers;
+> 
+>  	*nplanes = 1;
+> +	size = PAGE_ALIGN(size);
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- fs/nfsd/nfs4recover.c |   29 ++++++++++++++++++++++-------
- 1 files changed, 22 insertions(+), 7 deletions(-)
+I wonder if that's the best fix.
 
-diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-index 899ca26..15f8de6 100644
---- a/fs/nfsd/nfs4recover.c
-+++ b/fs/nfsd/nfs4recover.c
-@@ -38,6 +38,7 @@
- #include <linux/crypto.h>
- #include <linux/sched.h>
- #include <linux/fs.h>
-+#include <linux/fs_struct.h>
- #include <linux/module.h>
- #include <net/net_namespace.h>
- #include <linux/sunrpc/rpc_pipe_fs.h>
-@@ -1122,12 +1123,28 @@ nfsd4_cltrack_legacy_recdir(const struct xdr_netobj *name)
- 	return result;
- }
- 
-+static int nfsd_swap_root(struct subprocess_info *info, struct cred *new)
-+{
-+	struct path *root = info->data;
-+	struct fs_struct *fs = current->fs;
-+	struct path current_root;
-+
-+	spin_lock(&fs->lock);
-+	current_root = fs->root;
-+	fs->root = *root;
-+	spin_unlock(&fs->lock);
-+	if (current_root.dentry)
-+		path_put(&current_root);
-+	return 0;
-+}
-+
- static int
- nfsd4_umh_cltrack_upcall(char *cmd, char *arg, char *legacy)
- {
- 	char *envp[2];
- 	char *argv[4];
- 	int ret;
-+	struct path root;
- 
- 	if (unlikely(!cltrack_prog[0])) {
- 		dprintk("%s: cltrack_prog is disabled\n", __func__);
-@@ -1146,7 +1163,11 @@ nfsd4_umh_cltrack_upcall(char *cmd, char *arg, char *legacy)
- 	argv[2] = arg;
- 	argv[3] = NULL;
- 
--	ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
-+	get_fs_root(current->fs, &root);
-+
-+	ret = call_usermodehelper_fns(argv[0], argv, envp, UMH_WAIT_PROC,
-+				       nfsd_swap_root, NULL, &root);
-+
- 	/*
- 	 * Disable the upcall mechanism if we're getting an ENOENT or EACCES
- 	 * error. The admin can re-enable it on the fly by using sysfs
-@@ -1185,12 +1206,6 @@ bin_to_hex_dup(const unsigned char *src, int srclen)
- static int
- nfsd4_umh_cltrack_init(struct net __attribute__((unused)) *net)
- {
--	/* XXX: The usermode helper s not working in container yet. */
--	if (net != &init_net) {
--		WARN(1, KERN_ERR "NFSD: attempt to initialize umh client "
--			"tracking in a container!\n");
--		return -EINVAL;
--	}
- 	return nfsd4_umh_cltrack_upcall("init", NULL, NULL);
- }
- 
+The queue_setup operation is supposed to return the size required by the 
+driver for each plane. Depending on the hardware requirements, that size might 
+not be a multiple of the page size.
+
+As we can't mmap() a fraction of a page, the allocated plane size needs to be 
+rounded up to the next page boundary to allow mmap() support. The dma-contig 
+and dma-sg allocators already do so in their alloc operation, but the vmalloc 
+allocator doesn't.
+
+The recent "media: vb2: add length check for mmap" patch verifies that the 
+mmap() size requested by userspace doesn't exceed the buffer size. As the 
+mmap() size is rounded up to the next page boundary the check will fail for 
+buffer sizes that are not multiple of the page size.
+
+Your fix will not result in overallocation (as the allocator already rounds 
+the size up), but will prevent the driver from importing a buffer large enough 
+for the hardware but not rounded up to the page size.
+
+A better fix might be to round up the buffer size in the buffer size check at 
+mmap() time, and fix the vmalloc allocator to round up the size. That the 
+allocator, not drivers, is responsible for buffer size alignment should be 
+documented in videobuf2-core.h.
+
+>  	sizes[0] = size;
+>  	alloc_ctxs[0] = common->alloc_ctx;
+> 
+> diff --git a/drivers/media/platform/davinci/vpif_display.c
+> b/drivers/media/platform/davinci/vpif_display.c index 1b3fb5c..3414715
+> 100644
+> --- a/drivers/media/platform/davinci/vpif_display.c
+> +++ b/drivers/media/platform/davinci/vpif_display.c
+> @@ -162,6 +162,7 @@ static int vpif_buffer_queue_setup(struct vb2_queue *vq,
+> *nbuffers = config_params.min_numbuffers;
+> 
+>  	*nplanes = 1;
+> +	size = PAGE_ALIGN(size);
+>  	sizes[0] = size;
+>  	alloc_ctxs[0] = common->alloc_ctx;
+>  	return 0;
+
+-- 
+Regards,
+
+Laurent Pinchart
 
