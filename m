@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964990Ab3DPPl7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:41:59 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:44961 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935563Ab3DPPl6 (ORCPT
+	id S965025Ab3DPPmY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:42:24 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:36041 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965002Ab3DPPmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:41:58 -0400
-From: Ruslan Bilovol <ruslan.bilovol@ti.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded systems
-Date: Tue, 16 Apr 2013 18:41:44 +0300
-Message-Id: <1366126904-31605-1-git-send-email-ruslan.bilovol@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 16 Apr 2013 11:42:22 -0400
+Message-ID: <516D7156.3050807@wwwdotorg.org>
+Date: Tue, 16 Apr 2013 09:42:14 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Simon Glass <sjg@chromium.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        grant.likely@secretlab.ca, yuvaraj.cd@gmail.com,
+        ben.dooks@codethink.co.uk, u.kleine-koenig@pengutronix.de,
+        broonie@opensource.wolfsonmicro.com, girish.shivananjappa@linaro.org,
+        bhushan.r@samsung.com, sreekumar.c@samsung.com,
+        prashanth.g@samsung.com, olof@lixom.net, djkurtz@chromium.org,
+        linux@roeck-us.net, Rob Herring <rob.herring@calxeda.com>,
+        Rob Landley <rob@landley.net>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Stephen Warren <swarren@nvidia.com>, Jean Delvare <khali@linux-fr.org>,
+        Peter Korsgaard <peter.korsgaard@barco.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v5 1/3] i2c: mux: Add i2c-arb-gpio-challenge 'mux' driver
+References: <1363192583-26363-1-git-send-email-dianders@chromium.org> <1365543270-10736-1-git-send-email-dianders@chromium.org> <20130416093633.GC16978@the-dreams.de>
+In-Reply-To: <20130416093633.GC16978@the-dreams.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From musb point of view, the Address Assignment sequence during
-device enumeration is next:
- - first ep0 interrupt:
-	* read the address from USB_REQ_SET_ADDRESS request
-	* set up CSR0L.DataEnd bit (that is ACK
-	  signalization for the host)
- - second ep0 interrupt:
-	* indicates that the request completed successfully
-	* set up musb device address
-	  Now musb device should answer to this address
+On 04/16/2013 03:36 AM, Wolfram Sang wrote:
+> Doug,
+> 
+> On Tue, Apr 09, 2013 at 02:34:28PM -0700, Doug Anderson wrote:
+>> The i2c-arb-gpio-challenge driver implements an I2C arbitration scheme
+>> where masters need to claim the bus with a GPIO before they can start
+>> a transcation.  This should generally only be used when standard I2C
+>> multimaster isn't appropriate for some reason (errata/bugs).
+>>
+>> This driver is based on code that Simon Glass added to the i2c-s3c2410
+>> driver in the Chrome OS kernel 3.4 tree.  The current incarnation as a
+>> mux driver is as suggested by Grant Likely.  See
+>> <https://patchwork.kernel.org/patch/1877311/> for some history.
 
->From the host perspective, if peripheral device acquires
-SET_ADDRESS request, it now may be accessed only using that address.
-However, on heavy loaded systems, time between first and
-second musb ep0 interrupts may be too long and musb controller
-misses requests between. As result, device enumeration may be
-unsuccessful. This can be checked on USB3.0 Host and
-using USB3.0 test suite (from usb.org) running ch9 tests
-for USB2.0 devices.
-Usually 'Addressed state/TD9.1: Device Descriptor Test' will fail
+>> diff --git a/Documentation/devicetree/bindings/i2c/i2c-arb-gpio-challenge.txt b/Documentation/devicetree/bindings/i2c/i2c-arb-gpio-challenge.txt
 
-The fix consists in checking CSR0L.DataEnd state and assigning
-the device address in the first ep0 interrupt handling, so
-delay is as minimal as possible
+>> +GPIO-based I2C Arbitration
+>> +==========================
+>> +This uses GPIO lines to arbitrate who is the master of an I2C bus in a
+>> +multimaster situation.
+> 
+> "uses GPIO lines and a challange & response mechanism" or something like
+> that. There might be other GPIO based arbitrations in the future (though
+> I hope there won't).
 
-Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
----
- drivers/usb/musb/musb_gadget_ep0.c |   31 +++++++++++++++++++++++++++++++
- 1 file changed, 31 insertions(+)
+The existing text appears clearer to me; this document should spell out
+the exact details of the protocol in later paragraphs, so there's no
+need to try and spell it out here.
 
-diff --git a/drivers/usb/musb/musb_gadget_ep0.c b/drivers/usb/musb/musb_gadget_ep0.c
-index c9c1ac4..59bc5a5 100644
---- a/drivers/usb/musb/musb_gadget_ep0.c
-+++ b/drivers/usb/musb/musb_gadget_ep0.c
-@@ -885,6 +885,37 @@ stall:
- finish:
- 				musb_writew(regs, MUSB_CSR0,
- 						musb->ackpend);
-+
-+				/*
-+				 * If we are at end of SET_ADDRESS sequence,
-+				 * update the address immediately if possible,
-+				 * otherwise we may miss packets between
-+				 * sending ACK from musb side and musb's next
-+				 * interrupt handler firing (in which we update
-+				 * the address). At least this fixes next
-+				 * USB2.0 ch9 test of USB30CV utility:
-+				 * "Addressed state - Device Descriptor test"
-+				 */
-+				if (musb->set_address && (musb->ackpend &
-+							MUSB_CSR0_P_DATAEND) &&
-+						(musb->ep0_state ==
-+						MUSB_EP0_STAGE_STATUSIN)) {
-+					u16 ack_delay = 500;
-+
-+					while ((musb_readw(regs, MUSB_CSR0) &
-+							MUSB_CSR0_P_DATAEND) &&
-+							--ack_delay) {
-+						cpu_relax();
-+						udelay(1);
-+					}
-+
-+					if (ack_delay) {
-+						musb->set_address = false;
-+						musb_writeb(mbase, MUSB_FADDR,
-+								musb->address);
-+					}
-+				}
-+
- 				musb->ackpend = 0;
- 			}
- 		}
--- 
-1.7.9.5
+>> +- their-claim-gpios: The GPIOs that the other sides use the claim the bus.
+>> +  Note that some implementations may only support a single other master.
+> 
+> Stronger? "Currently, only one other master is supported"?
 
+The DT binding documentation, which should be OS-/driver-agnostic,
+should describe the binding, not the implementation. The limitation that
+Linux imposes is OS-specific and hence should not be mentioned here as
+an absolute, or perhaps even at all.
