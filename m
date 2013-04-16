@@ -1,48 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab3DPMGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 08:06:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59019 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754261Ab3DPMGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 08:06:50 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [media] em28xx: Put remaining .vidioc_g_chip_info instance under ADV_DEBUG
-Date: Tue, 16 Apr 2013 14:06:30 +0200
-Message-Id: <1366113990-19801-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.8.2.1
+	id S1756872Ab3DPMI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 08:08:28 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:42040 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754832Ab3DPMI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 08:08:27 -0400
+Message-ID: <516D3F2F.8080905@stericsson.com>
+Date: Tue, 16 Apr 2013 14:08:15 +0200
+From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFT][PATCH 1/3] regulator: ab8500-ext: Don't allow set idle
+ mode if info->cfg->hwreq is set
+References: <1365598464.24689.1.camel@phoenix>
+In-Reply-To: <1365598464.24689.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit cd634f1 ("[media] v4l2: put VIDIOC_DBG_G_CHIP_NAME under
-ADV_DEBUG") missed the initializer of radio_ioctl_ops:
+On 04/10/2013 02:54 PM, Axel Lin wrote:
+> The regulator always on with high power mode if info->cfg->hwreq is set.
+>
+> If we allow set idle mode when info->cfg->hwreq is set, get_mode() returns
+> REGULATOR_MODE_IDLE but the regulator actually is in REGULATOR_MODE_NORMAL mode.
+> This patch avoid inconsistent status return by get_mode().
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>z
+> ---
+>   drivers/regulator/ab8500-ext.c |    4 ++++
+>   1 file changed, 4 insertions(+)
+>
+> diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+> index 9aee21c..f0a1bbf 100644
+> --- a/drivers/regulator/ab8500-ext.c
+> +++ b/drivers/regulator/ab8500-ext.c
+> @@ -192,6 +192,10 @@ static int ab8500_ext_regulator_set_mode(struct regulator_dev *rdev,
+>   		info->update_val = info->update_val_hp;
+>   		break;
+>   	case REGULATOR_MODE_IDLE:
+> +		/* Always on with high power mode if info->cfg->hwreq is set */
+> +		if (info->cfg && info->cfg->hwreq)
+> +			return -EINVAL;
+> +
+>   		info->update_val = info->update_val_lp;
+>   		break;
+>   
+I prefer to have info->update_val updated to reflect requested mode (in 
+get_mode) instead of returning -EINVAL. This is how I interpret Mark's 
+comment on the other patch ([PATCH] regulator: ab8500: Fix get_mode for 
+shared mode regulators).Otherwise, the patch should work fine.
 
-drivers/media/usb/em28xx/em28xx-video.c:1830:2: error: unknown field 'vidioc_g_chip_info' specified in initializer
-drivers/media/usb/em28xx/em28xx-video.c:1830:26: error: 'vidioc_g_chip_info' undeclared here (not in a function)
+Regards,
 
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- drivers/media/usb/em28xx/em28xx-video.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/media/usb/em28xx/em28xx-video.c b/drivers/media/usb/em28xx/em28xx-video.c
-index c27c1f6..32d60e5 100644
---- a/drivers/media/usb/em28xx/em28xx-video.c
-+++ b/drivers/media/usb/em28xx/em28xx-video.c
-@@ -1827,8 +1827,8 @@ static const struct v4l2_ioctl_ops radio_ioctl_ops = {
- 	.vidioc_subscribe_event = v4l2_ctrl_subscribe_event,
- 	.vidioc_unsubscribe_event = v4l2_event_unsubscribe,
- 	.vidioc_g_chip_ident  = vidioc_g_chip_ident,
--	.vidioc_g_chip_info   = vidioc_g_chip_info,
- #ifdef CONFIG_VIDEO_ADV_DEBUG
-+	.vidioc_g_chip_info   = vidioc_g_chip_info,
- 	.vidioc_g_register    = vidioc_g_register,
- 	.vidioc_s_register    = vidioc_s_register,
- #endif
--- 
-1.8.2.1
-
+Bengt
