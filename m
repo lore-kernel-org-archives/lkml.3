@@ -1,58 +1,409 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965518Ab3DPWWZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 18:22:25 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48984 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965353Ab3DPWWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 18:22:24 -0400
-Message-ID: <516DCEF3.6030803@zytor.com>
-Date: Tue, 16 Apr 2013 15:21:39 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S965512Ab3DPW1b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 18:27:31 -0400
+Received: from mail-da0-f47.google.com ([209.85.210.47]:46804 "EHLO
+	mail-da0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965426Ab3DPW13 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 18:27:29 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Eric Northup <digitaleric@google.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@chromium.org>
-Subject: Re: [PATCH 4/6] x86: relocs: build separate 32/64-bit tools
-References: <1365797627-20874-1-git-send-email-keescook@chromium.org> <1365797627-20874-5-git-send-email-keescook@chromium.org>
-In-Reply-To: <1365797627-20874-5-git-send-email-keescook@chromium.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Tang Yuantian-B29983 <B29983@freescale.com>,
+        Tang Yuantian-B29983 <B29983@freescale.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <D07C73A334FF604B95B3CBD2A545D07B0B144FEF@039-SN2MPN1-013.039d.mgd.msft.net>
+Cc: "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "viresh.kumar@linaro.org" <viresh.kumar@linaro.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "ulf.hansson@linaro.org" <ulf.hansson@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Li Yang-R58472 <r58472@freescale.com>
+References: <1365497187-8305-1-git-send-email-Yuantian.Tang@freescale.com>
+ <D07C73A334FF604B95B3CBD2A545D07B0B144FEF@039-SN2MPN1-013.039d.mgd.msft.net>
+Message-ID: <20130416222721.19887.3395@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: RE: [PATCH v3] clk: add PowerPC corenet clock driver support
+Date: Tue, 16 Apr 2013 15:27:21 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 01:13 PM, Kees Cook wrote:
-> Since the ELF structures and access macros change size based on 32 vs
-> 64 bits, build a separate 32-bit relocs tool (for handling realmode
-> and 32-bit relocations), and a 64-bit relocs tool (for handling 64-bit
-> kernel relocations).
+Quoting Tang Yuantian-B29983 (2013-04-15 23:59:34)
+> Hi Mike,
 > 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> --
-> This is ugly with the "cp". Is there some other cleaner way to trigger
-> two builds with different defines from the same source file?
+> I really appreciate if you can spend some times to review this patch.
+> 
 
-There definitely is.
+Yauntian,
 
-Have simple wrapper files which do:
+Thanks for submitting this patch.  I have frozen the changes I plan to
+submit for 3.10, with the exception of any last-minute fixes.  I'll take
+a closer look at this after the merge window.
 
-/* relocs_32.c */
-#define ELF_BITS 32
-#include "relocs.c"
+Regards,
+Mike
 
-/* relocs_64.c */
-#define ELF_BITS 64
-#include "relocs.c"
-
-	-hpa
-
-
+> Thanks,
+> Yuantian
+> 
+> 
+> > -----Original Message-----
+> > From: Tang Yuantian-B29983
+> > Sent: 2013年4月9日 16:46
+> > To: mturquette@linaro.org
+> > Cc: linus.walleij@linaro.org; viresh.kumar@linaro.org;
+> > shawn.guo@linaro.org; ulf.hansson@linaro.org; linux-
+> > kernel@vger.kernel.org; devicetree-discuss@lists.ozlabs.org; linuxppc-
+> > dev@lists.ozlabs.org; linux-doc@vger.kernel.org; Tang Yuantian-B29983;
+> > Tang Yuantian-B29983; Li Yang-R58472
+> > Subject: [PATCH v3] clk: add PowerPC corenet clock driver support
+> > 
+> > From: Tang Yuantian <yuantian.tang@freescale.com>
+> > 
+> > This adds the clock driver for Freescale PowerPC corenet series SoCs
+> > using common clock infrastructure.
+> > 
+> > Signed-off-by: Tang Yuantian <Yuantian.Tang@freescale.com>
+> > Signed-off-by: Li Yang <leoli@freescale.com>
+> > ---
+> > v3:
+> >       - remove the module author and description
+> > v2:
+> >       - add the document for device tree clock bindings
+> > 
+> >  arch/powerpc/platforms/Kconfig.cputype |   1 +
+> >  drivers/clk/Kconfig                    |   7 +
+> >  drivers/clk/Makefile                   |   1 +
+> >  drivers/clk/clk-ppc-corenet.c          | 280
+> > +++++++++++++++++++++++++++++++++
+> >  4 files changed, 289 insertions(+)
+> >  create mode 100644 drivers/clk/clk-ppc-corenet.c
+> > 
+> > diff --git a/arch/powerpc/platforms/Kconfig.cputype
+> > b/arch/powerpc/platforms/Kconfig.cputype
+> > index 18e3b76..cf065b8 100644
+> > --- a/arch/powerpc/platforms/Kconfig.cputype
+> > +++ b/arch/powerpc/platforms/Kconfig.cputype
+> > @@ -158,6 +158,7 @@ config E500
+> >  config PPC_E500MC
+> >       bool "e500mc Support"
+> >       select PPC_FPU
+> > +     select COMMON_CLK
+> >       depends on E500
+> >       help
+> >         This must be enabled for running on e500mc (and derivatives diff
+> > --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig index a47e6ee..6e2fd9c
+> > 100644
+> > --- a/drivers/clk/Kconfig
+> > +++ b/drivers/clk/Kconfig
+> > @@ -63,6 +63,13 @@ config CLK_TWL6040
+> >         McPDM. McPDM module is using the external bit clock on the McPDM
+> > bus
+> >         as functional clock.
+> > 
+> > +config CLK_PPC_CORENET
+> > +     bool "Clock driver for PowerPC corenet platforms"
+> > +     depends on PPC_E500MC && OF
+> > +     ---help---
+> > +       This adds the clock driver support for Freescale PowerPC corenet
+> > +       platforms using common clock framework.
+> > +
+> >  endmenu
+> > 
+> >  source "drivers/clk/mvebu/Kconfig"
+> > diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile index
+> > 300d477..6720319 100644
+> > --- a/drivers/clk/Makefile
+> > +++ b/drivers/clk/Makefile
+> > @@ -34,3 +34,4 @@ obj-$(CONFIG_X86)           += x86/
+> >  obj-$(CONFIG_COMMON_CLK_WM831X) += clk-wm831x.o
+> >  obj-$(CONFIG_COMMON_CLK_MAX77686) += clk-max77686.o
+> >  obj-$(CONFIG_CLK_TWL6040)    += clk-twl6040.o
+> > +obj-$(CONFIG_CLK_PPC_CORENET)        += clk-ppc-corenet.o
+> > diff --git a/drivers/clk/clk-ppc-corenet.c b/drivers/clk/clk-ppc-
+> > corenet.c new file mode 100644 index 0000000..a2d483f
+> > --- /dev/null
+> > +++ b/drivers/clk/clk-ppc-corenet.c
+> > @@ -0,0 +1,280 @@
+> > +/*
+> > + * Copyright 2013 Freescale Semiconductor, Inc.
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + *
+> > + * clock driver for Freescale PowerPC corenet SoCs.
+> > + */
+> > +#include <linux/clk-provider.h>
+> > +#include <linux/io.h>
+> > +#include <linux/kernel.h>
+> > +#include <linux/module.h>
+> > +#include <linux/of_platform.h>
+> > +#include <linux/of.h>
+> > +#include <linux/slab.h>
+> > +
+> > +struct cmux_clk {
+> > +     struct clk_hw hw;
+> > +     void __iomem *reg;
+> > +     u32 flags;
+> > +};
+> > +
+> > +#define PLL_KILL                     BIT(31)
+> > +#define      CLKSEL_SHIFT            27
+> > +#define CLKSEL_ADJUST                BIT(0)
+> > +#define to_cmux_clk(p)               container_of(p, struct cmux_clk, hw)
+> > +
+> > +static void __iomem *base;
+> > +static unsigned int clocks_per_pll;
+> > +
+> > +static int cmux_set_parent(struct clk_hw *hw, u8 idx) {
+> > +     struct cmux_clk *clk = to_cmux_clk(hw);
+> > +     u32 clksel;
+> > +
+> > +     clksel = ((idx / clocks_per_pll) << 2) + idx % clocks_per_pll;
+> > +     if (clk->flags & CLKSEL_ADJUST)
+> > +             clksel += 8;
+> > +     clksel = (clksel & 0xf) << CLKSEL_SHIFT;
+> > +     iowrite32be(clksel, clk->reg);
+> > +
+> > +     return 0;
+> > +}
+> > +
+> > +static u8 cmux_get_parent(struct clk_hw *hw) {
+> > +     struct cmux_clk *clk = to_cmux_clk(hw);
+> > +     u32 clksel;
+> > +
+> > +     clksel = ioread32be(clk->reg);
+> > +     clksel = (clksel >> CLKSEL_SHIFT) & 0xf;
+> > +     if (clk->flags & CLKSEL_ADJUST)
+> > +             clksel -= 8;
+> > +     clksel = (clksel >> 2) * clocks_per_pll + clksel % 4;
+> > +
+> > +     return clksel;
+> > +}
+> > +
+> > +const struct clk_ops cmux_ops = {
+> > +     .get_parent = cmux_get_parent,
+> > +     .set_parent = cmux_set_parent,
+> > +};
+> > +
+> > +static void __init core_mux_init(struct device_node *np) {
+> > +     struct clk *clk;
+> > +     struct clk_init_data init;
+> > +     struct cmux_clk *cmux_clk;
+> > +     struct device_node *node;
+> > +     int rc, count, i;
+> > +     u32     offset;
+> > +     const char *clk_name;
+> > +     const char **parent_names;
+> > +
+> > +     rc = of_property_read_u32(np, "reg", &offset);
+> > +     if (rc) {
+> > +             pr_err("%s: could not get reg property\n", np->name);
+> > +             return;
+> > +     }
+> > +
+> > +     /* get the input clock source count */
+> > +     count = of_property_count_strings(np, "clock-names");
+> > +     if (count < 0) {
+> > +             pr_err("%s: get clock count error\n", np->name);
+> > +             return;
+> > +     }
+> > +     parent_names = kzalloc((sizeof(char *) * count), GFP_KERNEL);
+> > +     if (!parent_names) {
+> > +             pr_err("%s: could not allocate parent_names\n", __func__);
+> > +             return;
+> > +     }
+> > +
+> > +     for (i = 0; i < count; i++)
+> > +             parent_names[i] = of_clk_get_parent_name(np, i);
+> > +
+> > +     cmux_clk = kzalloc(sizeof(struct cmux_clk), GFP_KERNEL);
+> > +     if (!cmux_clk) {
+> > +             pr_err("%s: could not allocate cmux_clk\n", __func__);
+> > +             goto err_name;
+> > +     }
+> > +     cmux_clk->reg = base + offset;
+> > +
+> > +     node = of_find_compatible_node(NULL, NULL, "fsl,p4080-clockgen");
+> > +     if (node && (offset >= 0x80))
+> > +             cmux_clk->flags = CLKSEL_ADJUST;
+> > +
+> > +     rc = of_property_read_string_index(np, "clock-output-names",
+> > +                     0, &clk_name);
+> > +     if (rc) {
+> > +             pr_err("%s: read clock names error\n", np->name);
+> > +             goto err_clk;
+> > +     }
+> > +
+> > +     init.name = clk_name;
+> > +     init.ops = &cmux_ops;
+> > +     init.parent_names = parent_names;
+> > +     init.num_parents = count;
+> > +     init.flags = 0;
+> > +     cmux_clk->hw.init = &init;
+> > +
+> > +     clk = clk_register(NULL, &cmux_clk->hw);
+> > +     if (IS_ERR(clk)) {
+> > +             pr_err("%s: could not register clock\n", clk_name);
+> > +             goto err_clk;
+> > +     }
+> > +
+> > +     rc = of_clk_add_provider(np, of_clk_src_simple_get, clk);
+> > +     if (rc) {
+> > +             pr_err("Could not register clock provider for node:%s\n",
+> > +                      np->name);
+> > +             goto err_clk;
+> > +     }
+> > +     goto err_name;
+> > +
+> > +err_clk:
+> > +     kfree(cmux_clk);
+> > +err_name:
+> > +     /* free *_names because they are reallocated when registered */
+> > +     kfree(parent_names);
+> > +}
+> > +
+> > +static void __init core_pll_init(struct device_node *np) {
+> > +     u32 offset, mult;
+> > +     int i, rc, count;
+> > +     const char *clk_name, *parent_name;
+> > +     struct clk_onecell_data *onecell_data;
+> > +     struct clk      **subclks;
+> > +
+> > +     rc = of_property_read_u32(np, "reg", &offset);
+> > +     if (rc) {
+> > +             pr_err("%s: could not get reg property\n", np->name);
+> > +             return;
+> > +     }
+> > +
+> > +     /* get the multiple of PLL */
+> > +     mult = ioread32be(base + offset);
+> > +
+> > +     /* check if this PLL is disabled */
+> > +     if (mult & PLL_KILL) {
+> > +             pr_debug("PLL:%s is disabled\n", np->name);
+> > +             return;
+> > +     }
+> > +     mult = (mult >> 1) & 0x3f;
+> > +
+> > +     parent_name = of_clk_get_parent_name(np, 0);
+> > +     if (!parent_name) {
+> > +             pr_err("PLL: %s must have a parent\n", np->name);
+> > +             return;
+> > +     }
+> > +
+> > +     count = of_property_count_strings(np, "clock-output-names");
+> > +     if (count < 0 || count > 4) {
+> > +             pr_err("%s: clock is not supported\n", np->name);
+> > +             return;
+> > +     }
+> > +
+> > +     /* output clock number per PLL */
+> > +     clocks_per_pll = count;
+> > +
+> > +     subclks = kzalloc(sizeof(struct clk *) * count, GFP_KERNEL);
+> > +     if (!subclks) {
+> > +             pr_err("%s: could not allocate subclks\n", __func__);
+> > +             return;
+> > +     }
+> > +
+> > +     onecell_data = kzalloc(sizeof(struct clk_onecell_data), GFP_KERNEL);
+> > +     if (!onecell_data) {
+> > +             pr_err("%s: could not allocate onecell_data\n", __func__);
+> > +             goto err_clks;
+> > +     }
+> > +
+> > +     for (i = 0; i < count; i++) {
+> > +             rc = of_property_read_string_index(np, "clock-output-names",
+> > +                             i, &clk_name);
+> > +             if (rc) {
+> > +                     pr_err("%s: could not get clock names\n", np->name);
+> > +                     goto err_cell;
+> > +             }
+> > +
+> > +             /*
+> > +              * when count == 4, there are 4 output clocks:
+> > +              * /1, /2, /3, /4 respectively
+> > +              * when count < 4, there are at least 2 output clocks:
+> > +              * /1, /2, (/4, if count == 3) respectively.
+> > +              */
+> > +             if (count == 4)
+> > +                     subclks[i] = clk_register_fixed_factor(NULL, clk_name,
+> > +                                     parent_name, 0, mult, 1 + i);
+> > +             else
+> > +
+> > +                     subclks[i] = clk_register_fixed_factor(NULL, clk_name,
+> > +                                     parent_name, 0, mult, 1 << i);
+> > +
+> > +             if (IS_ERR(subclks[i])) {
+> > +                     pr_err("%s: could not register clock\n", clk_name);
+> > +                     goto err_cell;
+> > +             }
+> > +     }
+> > +
+> > +     onecell_data->clks = subclks;
+> > +     onecell_data->clk_num = count;
+> > +
+> > +     rc = of_clk_add_provider(np, of_clk_src_onecell_get, onecell_data);
+> > +     if (rc) {
+> > +             pr_err("Could not register clk provider for node:%s\n",
+> > +                      np->name);
+> > +             goto err_cell;
+> > +     }
+> > +
+> > +     return;
+> > +err_cell:
+> > +     kfree(onecell_data);
+> > +err_clks:
+> > +     kfree(subclks);
+> > +}
+> > +
+> > +static const struct of_device_id clk_match[] __initconst = {
+> > +     { .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
+> > +     { .compatible = "fsl,core-pll-clock", .data = core_pll_init, },
+> > +     { .compatible = "fsl,core-mux-clock", .data = core_mux_init, },
+> > +     {}
+> > +};
+> > +
+> > +static int __init ppc_corenet_clk_probe(struct platform_device *pdev) {
+> > +     struct device_node *np;
+> > +
+> > +     np = pdev->dev.of_node;
+> > +     base = of_iomap(np, 0);
+> > +     if (!base) {
+> > +             dev_err(&pdev->dev, "iomap error\n");
+> > +             return -ENOMEM;
+> > +     }
+> > +     of_clk_init(clk_match);
+> > +
+> > +     return 0;
+> > +}
+> > +
+> > +static const struct of_device_id ppc_clk_ids[] __initconst = {
+> > +     { .compatible = "fsl,qoriq-clockgen-1.0", },
+> > +     { .compatible = "fsl,qoriq-clockgen-2", },
+> > +     {}
+> > +};
+> > +
+> > +static struct platform_driver ppc_corenet_clk_driver = {
+> > +     .driver = {
+> > +             .name = "ppc_corenet_clock",
+> > +             .owner = THIS_MODULE,
+> > +             .of_match_table = ppc_clk_ids,
+> > +     },
+> > +     .probe = ppc_corenet_clk_probe,
+> > +};
+> > +
+> > +static int __init ppc_corenet_clk_init(void) {
+> > +     return platform_driver_register(&ppc_corenet_clk_driver);
+> > +}
+> > +subsys_initcall(ppc_corenet_clk_init);
+> > --
+> > 1.8.0
