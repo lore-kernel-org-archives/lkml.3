@@ -1,67 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934832Ab3DPMik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 08:38:40 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64045 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934444Ab3DPMii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 08:38:38 -0400
-Message-ID: <1366115870.4784.23.camel@marge.simpson.net>
-Subject: Re: [PATCH -mm -next] ipc,sem: untangle RCU locking with
- find_alloc_undo
-From: Mike Galbraith <bitbucket@online.de>
-To: Rik van Riel <riel@surriel.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, hhuang@redhat.com, jason.low2@hp.com,
-        walken@google.com, lwoodman@redhat.com, chegu_vinod@hp.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Tue, 16 Apr 2013 14:37:50 +0200
-In-Reply-To: <515ECFD0.4090202@surriel.com>
-References: <1363809337-29718-1-git-send-email-riel@surriel.com>
-	 <5151DBD3.6080201@oracle.com>
-	 <1364320297.5146.7.camel@buesod1.americas.hpqcorp.net>
-	 <5151E3D2.1070103@oracle.com>
-	 <20130326160059.7b466a8d@annuminas.surriel.com>
-	 <1365136697.4579.12.camel@marge.simpson.net> <515ECFD0.4090202@surriel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:nUOpyzVcWAfA2bWQlVkFcTEKH9wXdHFSPOtgBawziOx
- bhfBu4UTnUgQABC9Ay3Iwk6GGFtXBfUGzgSrlhvXZk7y4T0xYE
- sk3Br+XMRBbfSn07Y7khAiJbjknWCMol/XigwRNQe99MztEbFQ
- ISbJTwmMbOjGESbGYJhUD7K3cBYJdYMdvZioMDiJQS2j6IhyoD
- GJk3iESncyQNjm0ACuEE0N/Sw57S07wzsnGR3LXp8If7F+Fhdq
- mP8QPIuoLOQTL/eCexeUkqwJM+UfaB1QKs/q117UWMny9gv4mv
- 5BNjEUoOLhYvlJqmrh83npVmRDdQXEAUvs5N+7ww5IEXjqTnVo
- iZeeFvBKo7dFhI9oR5uIr7JccOmdKqpCdLKwB/e3lDkTHzfvGJ
- gguM2F03AR+CQ==
+	id S1754937Ab3DPMoP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 08:44:15 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:55049 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753224Ab3DPMoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 08:44:14 -0400
+Date: Tue, 16 Apr 2013 07:44:12 -0500
+From: Robin Holt <holt@sgi.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Patch -v4 4/4] Make reboot_cpuid a kernel parameter. other
+ cpus.
+Message-ID: <20130416124411.GP3658@sgi.com>
+References: <20130416095641.GL3658@sgi.com>
+ <20130416100439.GM3672@sgi.com>
+ <fb8916e0-b41d-4f56-8cfd-3cf791fdc478@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <fb8916e0-b41d-4f56-8cfd-3cf791fdc478@email.android.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-05 at 09:21 -0400, Rik van Riel wrote: 
-> On 04/05/2013 12:38 AM, Mike Galbraith wrote:
-> > On Tue, 2013-03-26 at 16:00 -0400, Rik van Riel wrote:
+On Tue, Apr 16, 2013 at 05:05:45AM -0700, H. Peter Anvin wrote:
+> Why not just support the existing syntax everywhere?
+
+I have not given it much consideration, but IIRC, the other arches that
+were using reboot= were only looking for an 'h' or something like that.
+
+I will consider making the syntax parse reboot=s#### when I get to
+the office.
+
+Robin
 > 
-> >> The ipc semaphore code has a nasty RCU locking tangle, with both
-> >> find_alloc_undo and semtimedop taking the rcu_read_lock(). The
-> >> code can be cleaned up somewhat by only taking the rcu_read_lock
-> >> once.
-> >>
-> >> There are no other callers to find_alloc_undo.
-> >>
-> >> This should also solve the trinity issue reported by Sasha Levin.
+> Robin Holt <holt@sgi.com> wrote:
+> 
+> >Moving the reboot=s<##> parameter for x86 to a kernel parameter
+> >proper.  I did not find any other arch that was specifying the
+> >reboot cpu.
 > >
-> > I take it this is on top of the patchlet Sasha submitted?
+> >I left a compatibility mode in there.  The new parameter always
+> >takes precedence.  I also fixed up the current code to support
+> >up to cpuid's up to the current max of 4096.
+> >
+> >Signed-off-by: Robin Holt <holt@sgi.com>
+> >To: Ingo Molnar <mingo@redhat.com>
+> >To: Russ Anderson <rja@sgi.com>
+> >Cc: Shawn Guo <shawn.guo@linaro.org>
+> >Cc: Oleg Nesterov <oleg@redhat.com>
+> >Cc: Andrew Morton <akpm@linux-foundation.org>
+> >Cc: "H. Peter Anvin" <hpa@zytor.com>
+> >Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> >Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> >Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+> >Cc: Michel Lespinasse <walken@google.com>
+> >Cc: Oleg Nesterov <oleg@redhat.com>
+> >Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> >Cc: Paul Mackerras <paulus@samba.org>
+> >Cc: Peter Zijlstra <peterz@infradead.org>
+> >Cc: Robin Holt <holt@sgi.com>
+> >Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+> >Cc: Tejun Heo <tj@kernel.org>
+> >Cc: the arch/x86 maintainers <x86@kernel.org>
+> >Cc: Thomas Gleixner <tglx@linutronix.de>
+> >
+> >---
+> >
+> >Changes since -v3
+> >- Added a reboot=s#### compatibility mode for x86.
+> >
+> > Documentation/kernel-parameters.txt |  2 ++
+> >arch/x86/kernel/reboot.c            | 39
+> >+++++++++++++------------------------
+> > kernel/reboot.c                     |  8 +++++++-
+> > 3 files changed, 22 insertions(+), 27 deletions(-)
+> >
+> >diff --git a/Documentation/kernel-parameters.txt
+> >b/Documentation/kernel-parameters.txt
+> >index 4609e81..11ebb48 100644
+> >--- a/Documentation/kernel-parameters.txt
+> >+++ b/Documentation/kernel-parameters.txt
+> >@@ -2597,6 +2597,8 @@ bytes respectively. Such letter suffixes can also
+> >be entirely omitted.
+> > 			Format: <reboot_mode>[,<reboot_mode2>[,...]]
+> > 			See arch/*/kernel/reboot.c or arch/*/kernel/process.c
+> > 
+> >+	reboot_cpuid=	[KNL] cpuid to use for reboot/halt, etc operations.
+> >+
+> > 	relax_domain_level=
+> > 			[KNL, SMP] Set scheduler's default relax_domain_level.
+> > 			See Documentation/cgroups/cpusets.txt.
+> >diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+> >index 76fa1e9..cdcf28f 100644
+> >--- a/arch/x86/kernel/reboot.c
+> >+++ b/arch/x86/kernel/reboot.c
+> >@@ -49,10 +49,6 @@ int reboot_force;
+> >  */
+> > static int reboot_default = 1;
+> > 
+> >-#ifdef CONFIG_SMP
+> >-static int reboot_cpu = -1;
+> >-#endif
+> >-
+> > /*
+> >  * This is set if we need to go through the 'emergency' path.
+> >  * When machine_emergency_restart() is called, we may be on
+> >@@ -63,6 +59,8 @@ static int reboot_emergency;
+> >/* This is set by the PCI code if either type 1 or type 2 PCI is
+> >detected */
+> > bool port_cf9_safe = false;
+> > 
+> >+extern int reboot_cpuid;
+> >+
+> > /*
+> >* reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old]
+> >| p[ci]
+> >  * warm   Don't set the cold reboot flag
+> >@@ -97,10 +95,14 @@ static int __init reboot_setup(char *str)
+> > 
+> > #ifdef CONFIG_SMP
+> > 		case 's':
+> >-			if (isdigit(*(str+1))) {
+> >-				reboot_cpu = (int) (*(str+1) - '0');
+> >-				if (isdigit(*(str+2)))
+> >-					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
+> >+			if (reboot_cpuid < 0) {
+> >+				int coffset;
+> >+
+> >+				reboot_cpuid = 0;
+> >+				for (coffset = 1; isdigit(*(str + coffset)); coffset++) {
+> >+					reboot_cpuid *= 10;
+> >+					reboot_cpuid += (int)(*(str+2) - '0');
+> >+				}
+> > 			}
+> > 			/*
+> > 			 * We will leave sorting out the final value
+> >@@ -615,25 +617,10 @@ void native_machine_shutdown(void)
+> > 	/* Stop the cpus and apics */
+> > #ifdef CONFIG_SMP
+> > 
+> >-	/* The boot cpu is always logical cpu 0 */
+> >-	int reboot_cpu_id = 0;
+> >-
+> >-	/* See if there has been given a command line override */
+> >-	if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
+> >-		cpu_online(reboot_cpu))
+> >-		reboot_cpu_id = reboot_cpu;
+> >-
+> >-	/* Make certain the cpu I'm about to reboot on is online */
+> >-	if (!cpu_online(reboot_cpu_id))
+> >-		reboot_cpu_id = smp_processor_id();
+> >-
+> >-	/* Make certain I only run on the appropriate processor */
+> >-	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
+> >-
+> > 	/*
+> >-	 * O.K Now that I'm on the appropriate processor, stop all of the
+> >-	 * others. Also disable the local irq to not receive the per-cpu
+> >-	 * timer interrupt which may trigger scheduler's load balance.
+> >+	 * Stop all of the others. Also disable the local irq to
+> >+	 * not receive the per-cpu timer interrupt which may trigger
+> >+	 * scheduler's load balance.
+> > 	 */
+> > 	local_irq_disable();
+> > 	stop_other_cpus();
+> >diff --git a/kernel/reboot.c b/kernel/reboot.c
+> >index 8cfef20..b2ef798 100644
+> >--- a/kernel/reboot.c
+> >+++ b/kernel/reboot.c
+> >@@ -10,6 +10,7 @@
+> > #include <linux/kexec.h>
+> > #include <linux/kmod.h>
+> > #include <linux/kmsg_dump.h>
+> >+#include <linux/moduleparam.h>
+> > #include <linux/reboot.h>
+> > #include <linux/suspend.h>
+> > #include <linux/syscalls.h>
+> >@@ -69,13 +70,18 @@ int unregister_reboot_notifier(struct
+> >notifier_block *nb)
+> > }
+> > EXPORT_SYMBOL(unregister_reboot_notifier);
+> > 
+> >+int reboot_cpuid = -1;
+> >+core_param(reboot_cpuid, reboot_cpuid, int, 0644);
+> >+
+> > void migrate_to_reboot_cpu(void)
+> > {
+> > 	/* The boot cpu is always logical cpu 0 */
+> >-	int reboot_cpu_id = 0;
+> >+	int reboot_cpu_id = reboot_cpuid;
+> > 
+> > 	/* Make certain the cpu I'm about to reboot on is online */
+> > 	if (!cpu_online(reboot_cpu_id))
+> >+		reboot_cpu_id = 0;
+> >+	if (!cpu_online(reboot_cpu_id))
+> > 		reboot_cpu_id = smp_processor_id();
+> > 
+> > 	/* Prevent races with other tasks migrating this task. */
 > 
-> Indeed, and all the other fixes that got submitted :)
-
-I plugged it into my 64 core rt box and beat on it again, no stalls or
-any other troubles noted.
-
--Mike
-
+> -- 
+> Sent from my mobile phone. Please excuse brevity and lack of formatting.
