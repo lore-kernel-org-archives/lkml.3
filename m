@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935828Ab3DPPxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:53:50 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:28162 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933788Ab3DPPxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:53:48 -0400
-Message-ID: <516D7405.3060202@imgtec.com>
-Date: Tue, 16 Apr 2013 16:53:41 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-        Stephen Warren <swarren@nvidia.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        <linux-kbuild@vger.kernel.org>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH] Kbuild: Avoid DTB rebuilds if source files are untouched
-References: <1364973141-16354-1-git-send-email-vgupta@synopsys.com> <515BD6B8.1020607@synopsys.com> <515C5652.8070705@wwwdotorg.org> <515D0FFB.4030803@synopsys.com> <515DBA0E.6000604@wwwdotorg.org> <51642158.3070205@synopsys.com> <5167BA67.5080403@synopsys.com> <5168822C.6040303@wwwdotorg.org>
-In-Reply-To: <5168822C.6040303@wwwdotorg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_04_16_16_53_42
+	id S935893Ab3DPPyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:54:37 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:50668 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933788Ab3DPPyg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 11:54:36 -0400
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Cc: michael@ellerman.id.au, mikey@neuling.org
+Subject: [PATCH V2 0/5] powerpc, perf: BHRB based branch stack enablement on POWER8
+Date: Tue, 16 Apr 2013 21:24:05 +0530
+Message-Id: <1366127650-1952-1-git-send-email-khandual@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041615-9264-0000-0000-000003894EC1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/13 22:52, Stephen Warren wrote:
-> +.SECONDARY: $(obj)/$(builtindtb-y).dtb.S
+                Branch History Rolling Buffer (BHRB) is a new PMU feaure in IBM
+POWER8 processor which records the branch instructions inside the execution
+pipeline. This patchset enables the basic functionality of the feature through
+generic perf branch stack sampling framework.
 
-Note, this may not work if you're using CONFIG_ARC_BUILTIN_DTB_NAME,
-since it'll have quotes around it, so you may instead need:
-.SECONDARY: $(obj)/$(patsubst "%",%,$(builtindtb-y)).dtb.S
+Sample output
+-------------
+$./perf record -b top
+$./perf report
 
-(at least that's what's required for the metag equivalent)
+Overhead  Command  Source Shared Object                           Source Symbol  Target Shared Object                        Target Symbol
+# ........  .......  ....................  ......................................  ....................  ...................................
+#
 
-> +
->  dtbs:  $(addprefix  $(obj)/, $(builtindtb-y).dtb)
+     7.82%      top  libc-2.11.2.so        [k] _IO_vfscanf                         libc-2.11.2.so        [k] _IO_vfscanf
+     6.17%      top  libc-2.11.2.so        [k] _IO_vfscanf                         [unknown]             [k] 00000000
+     2.37%      top  [unknown]             [k] 0xf7aafb30                          [unknown]             [k] 00000000
+     1.80%      top  [unknown]             [k] 0x0fe07978                          libc-2.11.2.so        [k] _IO_vfscanf
+     1.60%      top  libc-2.11.2.so        [k] _IO_vfscanf                         [kernel.kallsyms]     [k] .do_task_stat
+     1.20%      top  [kernel.kallsyms]     [k] .do_task_stat                       [kernel.kallsyms]     [k] .do_task_stat
+     1.02%      top  libc-2.11.2.so        [k] vfprintf                            libc-2.11.2.so        [k] vfprintf
+     0.92%      top  top                   [k] _init                               [unknown]             [k] 0x0fe037f4
 
-You might find the same thing here too.
+Changes in V2
+--------------
+- Added copyright messages to the newly created files
+- Modified couple of commit messages
 
-Cheers
-James
+Anshuman Khandual (5):
+  powerpc, perf: Add new BHRB related instructions on POWER8
+  powerpc, perf: Add basic assembly code to read BHRB entries on POWER8
+  powerpc, perf: Add new BHRB related generic functions, data and flags
+  powerpc, perf: Define BHRB generic functions, data and flags for POWER8
+  powerpc, perf: Enable branch stack sampling framework support with BHRB
+
+ arch/powerpc/include/asm/perf_event_server.h |  6 ++
+ arch/powerpc/include/asm/ppc-opcode.h        |  7 ++
+ arch/powerpc/perf/Makefile                   |  2 +-
+ arch/powerpc/perf/bhrb.S                     | 44 +++++++++++++
+ arch/powerpc/perf/core-book3s.c              | 96 +++++++++++++++++++++++++++-
+ arch/powerpc/perf/perf_event_bhrb.c          | 85 ++++++++++++++++++++++++
+ arch/powerpc/perf/power8-pmu.c               | 57 ++++++++++++++++-
+ 7 files changed, 292 insertions(+), 5 deletions(-)
+ create mode 100644 arch/powerpc/perf/bhrb.S
+ create mode 100644 arch/powerpc/perf/perf_event_bhrb.c
+
+-- 
+1.7.11.7
 
