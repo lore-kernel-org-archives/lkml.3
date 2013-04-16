@@ -1,47 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab3DPOzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 10:55:52 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:50358 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754056Ab3DPOzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 10:55:50 -0400
+	id S1756065Ab3DPO7s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 10:59:48 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:17188 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752347Ab3DPO7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 10:59:44 -0400
+Message-ID: <516D674C.80504@imgtec.com>
+Date: Tue, 16 Apr 2013 15:59:24 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <001601ce3a85$16087f00$42197d00$%jun@samsung.com>
-References: <1365698338-27503-1-git-send-email-dianders@chromium.org>
-	<001701ce39d2$c0dbf8c0$4293ea40$%jun@samsung.com>
-	<CAD=FV=XqmLRjQPwWCZfw0Nfu_uK16SOP=OgJcrbziWs4e__h7A@mail.gmail.com>
-	<001601ce3a85$16087f00$42197d00$%jun@samsung.com>
-Date: Tue, 16 Apr 2013 07:55:48 -0700
-X-Google-Sender-Auth: yhZ3ZibLwxnDJIsbVL77Sas4Xco
-Message-ID: <CAD=FV=U_n7sma6NMbQ=FySEV7nocubCmBSYEJ_R-q=dtuFLaFA@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: exynos: Turn SDIO interrupts on
-From: Doug Anderson <dianders@chromium.org>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: Chris Ball <cjb@laptop.org>, Thomas Abraham <thomas.abraham@linaro.org>,
-        Bing Zhao <bzhao@marvell.com>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <akpm@linux-foundation.org>, <mingo@redhat.com>, <x86@kernel.org>,
+        <rth@twiddle.net>, <linux@arm.linux.org.uk>, <msalter@redhat.com>,
+        <starvik@axis.com>, <dhowells@redhat.com>, <tony.luck@intel.com>,
+        <benh@kernel.crashing.org>, <takata@linux-m32r.org>,
+        <geert@linux-m68k.org>, <monstr@monstr.eu>, <ralf@linux-mips.org>,
+        <jonas@southpole.se>, <rkuo@codeaurora.org>, <schwidefsky@de.ibm.com>,
+        <liqin.chen@sunplusct.com>, <davem@davemloft.net>,
+        <lethal@linux-sh.org>, <vgupta@synopsys.com>, <chris@zankel.net>,
+        <cmetcalf@tilera.com>, <ysato@users.sourceforge.jp>,
+        <gxt@mprc.pku.edu.cn>, <jdike@addtoit.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        <linux-s390@vger.kernel.org>, Mike Frysinger <vapier@gentoo.org>,
+        <uclinux-dist-devel@blackfin.uclinux.org>
+Subject: Re: [PATCH 3/5] dump_stack: consolidate dump_stack() implementations
+ and unify their behaviors
+References: <1364610428-2074-1-git-send-email-tj@kernel.org> <1364610428-2074-4-git-send-email-tj@kernel.org>
+In-Reply-To: <1364610428-2074-4-git-send-email-tj@kernel.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_04_16_15_59_26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seungwon,
+On 30/03/13 02:27, Tejun Heo wrote:
+> Both dump_stack() and show_stack() are currently implemented by each
+> architecture.  show_stack(NULL, NULL) dumps the backtrace for the
+> current task as does dump_stack().  On some archs, dump_stack() prints
+> extra information - pid, utsname and so on - in addition to the
+> backtrace while the two are identical on other archs.
+> 
+> The usages in arch-independent code of the two functions indicate
+> show_stack(NULL, NULL) should print out bare backtrace while
+> dump_stack() is used for debugging purposes when something went wrong,
+> so it does make sense to print additional information on the task
+> which triggered dump_stack().
+> 
+> There's no reason to require archs to implement two separate but
+> mostly identical functions.  It leads to unnecessary subtle
+> differences among archs and makes it very tedius to add generic debug
+> information.
+> 
+> This patch expands the dummy fallback dump_stack() implementation in
+> lib/dump_stack.c such that it prints out debug information (taken from
+> x86) and invokes show_stack(NULL, NULL) and drops arch-specific
+> dump_stack() implementations in all archs except blackfin and s390.
+> Blackfin's dump_stack() does something wonky that I don't understand
+> and s390 prints its own debug information which includes fields which
+> aren't accessible from arch-indepdent code.
+> 
+> Debug information can be printed separately by calling
+> dump_stack_print_info() so that arch-specific dump_stack()
+> implementation can still emit the same debug information.  This is
+> used in blackfin.
+> 
+> This patch brings the following behavior changes.
+> 
+> * On some archs, an extra level in backtrace for show_stack() could be
+>   printed.  This is because the top frame was determined in
+>   dump_stack() on those archs while generic dump_stack() can't do that
+>   reliably.  It can be compensated by inlining dump_stack() but not
+>   sure whether that'd be necessary.
+> 
+> * Most archs didn't use to print debug info on dump_stack().  They do
+>   now.
+> 
+> An example WARN dump follows.
+> 
+>  WARNING: at /work/os/work/kernel/workqueue.c:4840 init_workqueues+0x35/0x505()
+>  Hardware name: empty
+>  Modules linked in:
+>  Pid: 1, comm: swapper/0 Not tainted 3.9.0-rc1-work+ #17
+>   0000000000000009 ffff88007c861e08 ffffffff81c61545 ffff88007c861e48
+>   ffffffff8108f50f ffffffff82228240 0000000000000040 ffffffff8234a03c
+>   0000000000000000 0000000000000000 0000000000000000 ffff88007c861e58
+>  Call Trace:
+>   [<ffffffff81c61545>] dump_stack+0x19/0x1b
+>   [<ffffffff8108f50f>] warn_slowpath_common+0x7f/0xc0
+>   [<ffffffff8108f56a>] warn_slowpath_null+0x1a/0x20
+>   [<ffffffff8234a071>] init_workqueues+0x35/0x505
+>   ...
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc: linux-s390@vger.kernel.org
+> Cc: Mike Frysinger <vapier@gentoo.org>
+> Cc: uclinux-dist-devel@blackfin.uclinux.org
 
-On Tue, Apr 16, 2013 at 2:30 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
-> If needed for specific channel, it can be got from dts as property.
-> if (of_find_property(np, "cap-sdio-irq", NULL))
->         pdata->caps |= MMC_CAP_SDIO_IRQ;
+For metag:
+Acked-by: James Hogan <james.hogan@imgtec.com>
 
-Oh!  I missed that these new properties had gone in.  That is a much
-better way to do it.  Let's abandon this patch and I'll post up a
-device tree change that turns interrupts for the right ports on the
-exynos5250-snow and we can call it done.
-
-Thanks for the review and for pointing me to the new properties!
-
--Doug
