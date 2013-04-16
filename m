@@ -1,92 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965164Ab3DPSEL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 14:04:11 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:34491 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936039Ab3DPSEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 14:04:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.jf.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-kernel@vger.kernel.org,
-        spear-devel <spear-devel@list.st.com>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] dmaengine: add ACPI DMA helpers and use them in dw_dmac
-Date: Tue, 16 Apr 2013 20:11:57 +0200
-Message-ID: <1525811.597RVDyDxu@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1366114487.7932.29.camel@smile>
-References: <1365505547-10552-1-git-send-email-andriy.shevchenko@linux.intel.com> <20130415163618.GF12436@intel.com> <1366114487.7932.29.camel@smile>
+	id S933798Ab3DPSIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 14:08:38 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:43378 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751493Ab3DPSIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 14:08:37 -0400
+Date: Tue, 16 Apr 2013 13:08:35 -0500
+From: Robin Holt <holt@sgi.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi.kivity@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: mmu_notifier: re-fix freed page still mapped in
+ secondary MMU
+Message-ID: <20130416180835.GY3658@sgi.com>
+References: <516CF235.4060103@linux.vnet.ibm.com>
+ <20130416093131.GJ3658@sgi.com>
+ <516D275C.8040406@linux.vnet.ibm.com>
+ <20130416112553.GM3658@sgi.com>
+ <20130416114322.GN3658@sgi.com>
+ <516D4D08.9020602@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <516D4D08.9020602@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 16, 2013 03:14:47 PM Andy Shevchenko wrote:
-> On Mon, 2013-04-15 at 22:06 +0530, Vinod Koul wrote: 
-> > On Tue, Apr 09, 2013 at 02:05:42PM +0300, Andy Shevchenko wrote:
-> > > There is a patch series which introduces ACPI DMA helpers in similar way like
-> > > we have for DeviceTree.
-> > > 
-> > > In addition it applies this to the first user, namely dw_dmac driver.
-> > Applied w/o 3 & 5.2 they failed, can you pls rebase and resend
+On Tue, Apr 16, 2013 at 09:07:20PM +0800, Xiao Guangrong wrote:
+> On 04/16/2013 07:43 PM, Robin Holt wrote:
+> > Argh.  Taking a step back helped clear my head.
 > > 
+> > For the -stable releases, I agree we should just go with your
+> > revert-plus-hlist_del_init_rcu patch.  I will give it a test
+> > when I am in the office.
 > 
-> Actually those two (at least 5/5) can't be applied on top of slave-dma.
-> The patches requires slave-dma and linux-pm together. I heard it's
-> usually achieved by creating a specific branch in one subsystem
-> (linux-pm in our case) for another.
+> Okay. Wait for your test report. Thank you in advance.
 > 
-> Rafael, what could we do here?
-
-I suppose Vinod can pull from my acpi-lpss (which is guaranteed not to be
-rebased at this point) and apply the series on top of that.
-
-Thanks,
-Rafael
-
-
-> > > Since v1:
-> > >  - address one Vinod's comment
-> > >  - replace 5/6 & 6/6 by 5/5 from Rafael
-> > >  - tested on Intel Lynxpoint system
-> > > 
-> > > Andy Shevchenko (4):
-> > >   dma: acpi-dma: introduce ACPI DMA helpers
-> > >   dmaengine: call acpi_dma_request_slave_channel as well
-> > >   dma: acpi-dma: parse CSRT to extract additional resources
-> > >   dw_dmac: add ACPI support
-> > > 
-> > > Rafael J. Wysocki (1):
-> > >   ACPI / LPSS: add support of shared clock
-> > > 
-> > >  Documentation/acpi/enumeration.txt     |  77 ++++++
-> > >  drivers/acpi/Makefile                  |   1 -
-> > >  drivers/acpi/acpi_lpss.c               |  26 +-
-> > >  drivers/acpi/csrt.c                    | 159 ------------
-> > >  drivers/acpi/internal.h                |   1 -
-> > >  drivers/acpi/scan.c                    |   1 -
-> > >  drivers/clk/x86/clk-lpt.c              |  15 +-
-> > >  drivers/dma/Kconfig                    |   4 +
-> > >  drivers/dma/Makefile                   |   1 +
-> > >  drivers/dma/acpi-dma.c                 | 445 +++++++++++++++++++++++++++++++++
-> > >  drivers/dma/dmaengine.c                |   6 +
-> > >  drivers/dma/dw_dmac.c                  |  68 +++--
-> > >  drivers/dma/dw_dmac_regs.h             |   1 -
-> > >  include/linux/acpi_dma.h               | 120 +++++++++
-> > >  include/linux/platform_data/clk-lpss.h |   5 +
-> > >  15 files changed, 741 insertions(+), 189 deletions(-)
-> > >  delete mode 100644 drivers/acpi/csrt.c
-> > >  create mode 100644 drivers/dma/acpi-dma.c
-> > >  create mode 100644 include/linux/acpi_dma.h
-> > > 
+> > 
+> > For the v3.10 release, we should work on making this more
+> > correct and completely documented.
 > 
+> Better document is always welcomed.
 > 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Double call ->release is not bad, like i mentioned it in the changelog:
+> 
+> it is really rare (e.g, can not happen on kvm since mmu-notify is unregistered
+> after exit_mmap()) and the later call of multiple ->release should be
+> fast since all the pages have already been released by the first call.
+> 
+> But, of course, it's great if you have a _light_ way to avoid this.
+
+Getting my test environment set back up took longer than I would have liked.
+
+Your patch passed.  I got no NULL-pointer derefs.
+
+How would you feel about adding the following to your patch?
+
+diff --git a/include/linux/mmu_notifier.h b/include/linux/mmu_notifier.h
+index deca874..ff2fd5f 100644
+--- a/include/linux/mmu_notifier.h
++++ b/include/linux/mmu_notifier.h
+@@ -157,6 +157,7 @@ struct mmu_notifier_ops {
+ struct mmu_notifier {
+ 	struct hlist_node hlist;
+ 	const struct mmu_notifier_ops *ops;
++	int released;
+ };
+ 
+ static inline int mm_has_notifiers(struct mm_struct *mm)
+diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
+index 606777a..949704b 100644
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -44,7 +44,8 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ 	 * ->release returns.
+ 	 */
+ 	id = srcu_read_lock(&srcu);
+-	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist)
++	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist) {
++		int released;
+ 		/*
+ 		 * if ->release runs before mmu_notifier_unregister it
+ 		 * must be handled as it's the only way for the driver
+@@ -52,8 +53,10 @@ void __mmu_notifier_release(struct mm_struct *mm)
+ 		 * from establishing any more sptes before all the
+ 		 * pages in the mm are freed.
+ 		 */
+-		if (mn->ops->release)
++		released = xchg(&mn->released, 1);
++		if (mn->ops->release && !released)
+ 			mn->ops->release(mn, mm);
++	}
+ 	srcu_read_unlock(&srcu, id);
+ 
+ 	spin_lock(&mm->mmu_notifier_mm->lock);
+@@ -214,6 +217,7 @@ static int do_mmu_notifier_register(struct mmu_notifier *mn,
+ 		mm->mmu_notifier_mm = mmu_notifier_mm;
+ 		mmu_notifier_mm = NULL;
+ 	}
++	mn->released = 0;
+ 	atomic_inc(&mm->mm_count);
+ 
+ 	/*
+@@ -295,6 +299,7 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ 		 * before freeing the pages.
+ 		 */
+ 		int id;
++		int released;
+ 
+ 		id = srcu_read_lock(&srcu);
+ 		/*
+@@ -302,7 +307,8 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
+ 		 * guarantee ->release is called before freeing the
+ 		 * pages.
+ 		 */
+-		if (mn->ops->release)
++		released = xchg(&mn->released, 1);
++		if (mn->ops->release && !released)
+ 			mn->ops->release(mn, mm);
+ 		srcu_read_unlock(&srcu, id);
+ 
