@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965479Ab3DPVh6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 17:37:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5458 "EHLO mx1.redhat.com"
+	id S965498Ab3DPVkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 17:40:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23437 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965344Ab3DPVhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 17:37:55 -0400
-Message-ID: <516DC4A7.8020402@redhat.com>
-Date: Tue, 16 Apr 2013 18:37:43 -0300
+	id S965426Ab3DPVkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 17:40:22 -0400
+Message-ID: <516DC52B.7090705@redhat.com>
+Date: Tue, 16 Apr 2013 18:39:55 -0300
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
 To: David Howells <dhowells@redhat.com>
-CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-pci@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 04/28] proc: Supply PDE attribute setting accessor functions
- [RFC]
-References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk> <20130416182606.27773.55054.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20130416182606.27773.55054.stgit@warthog.procyon.org.uk>
+CC: linux-kernel@vger.kernel.org, Neela Syam Kolli <megaraidlinux@lsi.com>,
+        devel@driverdev.osuosl.org, linux-scsi@vger.kernel.org,
+        Jerry Chuang <jerry-chuang@realtek.com>,
+        linux-wireless@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 10/28] proc: Add proc_mkdir_data() [RFC]
+References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk> <20130416182630.27773.83021.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20130416182630.27773.83021.stgit@warthog.procyon.org.uk>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,309 +27,197 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Em 16-04-2013 15:26, David Howells escreveu:
-> Supply accessor functions to set attributes in proc_dir_entry structs.
->
-> The following are supplied: proc_set_size() and proc_set_user().
+> Add proc_mkdir_data() to allow procfs directories to be created that are
+> annotated at the time of creation with private data rather than doing this
+> post-creation.  This means no access is then required to the proc_dir_entry
+> struct to set this.
 >
 > Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: linuxppc-dev@lists.ozlabs.org
-> cc: linux-media@vger.kernel.org
-> cc: netdev@vger.kernel.org
+> cc: Neela Syam Kolli <megaraidlinux@lsi.com>
+> cc: Jerry Chuang <jerry-chuang@realtek.com>
+> cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> cc: linux-scsi@vger.kernel.org
+> cc: devel@driverdev.osuosl.org
 > cc: linux-wireless@vger.kernel.org
-> cc: linux-pci@vger.kernel.org
-> cc: netfilter-devel@vger.kernel.org
-> cc: alsa-devel@alsa-project.org
 > ---
 >
->   arch/powerpc/kernel/proc_powerpc.c        |    2 +-
->   arch/powerpc/platforms/pseries/reconfig.c |    2 +-
->   drivers/media/pci/ttpci/av7110_ir.c       |    2 +-
+>   drivers/message/i2o/i2o_proc.c         |    8 ++------
+>   drivers/scsi/megaraid.c                |    4 ++--
+>   drivers/staging/rtl8192u/r8192U_core.c |    3 +--
 
-Weird that av7110 IR uses /proc... Well, this is an old, obsolete driver for
-hardware that is not sold anymore for a long time... So, be it.
+For the three patches that touch rtl8192u (patches 10, 12 and 14):
 
 Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
->   drivers/net/irda/vlsi_ir.c                |    2 +-
->   drivers/net/wireless/airo.c               |   34 +++++++++--------------------
->   drivers/pci/proc.c                        |    2 +-
->   fs/proc/generic.c                         |   13 +++++++++++
->   include/linux/proc_fs.h                   |    5 ++++
->   kernel/configs.c                          |    2 +-
->   kernel/profile.c                          |    2 +-
->   net/netfilter/xt_recent.c                 |    3 +--
->   sound/core/info.c                         |    2 +-
->   12 files changed, 38 insertions(+), 33 deletions(-)
+>   fs/proc/generic.c                      |   30 ++++++++++++------------------
+>   include/linux/proc_fs.h                |   11 ++++++++---
+>   5 files changed, 25 insertions(+), 31 deletions(-)
 >
-> diff --git a/arch/powerpc/kernel/proc_powerpc.c b/arch/powerpc/kernel/proc_powerpc.c
-> index 41d8ee9..feb8580 100644
-> --- a/arch/powerpc/kernel/proc_powerpc.c
-> +++ b/arch/powerpc/kernel/proc_powerpc.c
-> @@ -83,7 +83,7 @@ static int __init proc_ppc64_init(void)
->   			       &page_map_fops, vdso_data);
->   	if (!pde)
->   		return 1;
-> -	pde->size = PAGE_SIZE;
-> +	proc_set_size(pde, PAGE_SIZE);
+> diff --git a/drivers/message/i2o/i2o_proc.c b/drivers/message/i2o/i2o_proc.c
+> index 70a840f..b7d87cd 100644
+> --- a/drivers/message/i2o/i2o_proc.c
+> +++ b/drivers/message/i2o/i2o_proc.c
+> @@ -1913,14 +1913,12 @@ static void i2o_proc_device_add(struct proc_dir_entry *dir,
 >
->   	return 0;
->   }
-> diff --git a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
-> index d6491bd..f93cdf5 100644
-> --- a/arch/powerpc/platforms/pseries/reconfig.c
-> +++ b/arch/powerpc/platforms/pseries/reconfig.c
-> @@ -452,7 +452,7 @@ static int proc_ppc64_create_ofdt(void)
+>   	osm_debug("adding device /proc/i2o/%s/%s\n", dev->iop->name, buff);
 >
->   	ent = proc_create("powerpc/ofdt", S_IWUSR, NULL, &ofdt_fops);
->   	if (ent)
-> -		ent->size = 0;
-> +		proc_set_size(ent, 0);
->
->   	return 0;
->   }
-> diff --git a/drivers/media/pci/ttpci/av7110_ir.c b/drivers/media/pci/ttpci/av7110_ir.c
-> index eb82286..0e763a7 100644
-> --- a/drivers/media/pci/ttpci/av7110_ir.c
-> +++ b/drivers/media/pci/ttpci/av7110_ir.c
-> @@ -375,7 +375,7 @@ int av7110_ir_init(struct av7110 *av7110)
->   	if (av_cnt == 1) {
->   		e = proc_create("av7110_ir", S_IWUSR, NULL, &av7110_ir_proc_fops);
->   		if (e)
-> -			e->size = 4 + 256 * sizeof(u16);
-> +			proc_set_size(e, 4 + 256 * sizeof(u16));
+> -	devdir = proc_mkdir(buff, dir);
+> +	devdir = proc_mkdir_data(buff, 0, dir, dev);
+>   	if (!devdir) {
+>   		osm_warn("Could not allocate procdir!\n");
+>   		return;
 >   	}
 >
->   	tasklet_init(&av7110->ir.ir_tasklet, av7110_emit_key, (unsigned long) &av7110->ir);
-> diff --git a/drivers/net/irda/vlsi_ir.c b/drivers/net/irda/vlsi_ir.c
-> index e22cd4e..5f47584 100644
-> --- a/drivers/net/irda/vlsi_ir.c
-> +++ b/drivers/net/irda/vlsi_ir.c
-> @@ -1678,7 +1678,7 @@ vlsi_irda_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->   			IRDA_WARNING("%s: failed to create proc entry\n",
->   				     __func__);
->   		} else {
-> -			ent->size = 0;
-> +			proc_set_size(ent, 0);
->   		}
->   		idev->proc_entry = ent;
->   	}
-> diff --git a/drivers/net/wireless/airo.c b/drivers/net/wireless/airo.c
-> index 66e398d..21d0233 100644
-> --- a/drivers/net/wireless/airo.c
-> +++ b/drivers/net/wireless/airo.c
-> @@ -4507,73 +4507,63 @@ static int setup_proc_entry( struct net_device *dev,
->   					    airo_entry);
->   	if (!apriv->proc_entry)
->   		goto fail;
-> -	apriv->proc_entry->uid = proc_kuid;
-> -	apriv->proc_entry->gid = proc_kgid;
-> +	proc_set_user(apriv->proc_entry, proc_kuid, proc_kgid);
->
->   	/* Setup the StatsDelta */
->   	entry = proc_create_data("StatsDelta", S_IRUGO & proc_perm,
->   				 apriv->proc_entry, &proc_statsdelta_ops, dev);
->   	if (!entry)
->   		goto fail_stats_delta;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
->
->   	/* Setup the Stats */
->   	entry = proc_create_data("Stats", S_IRUGO & proc_perm,
->   				 apriv->proc_entry, &proc_stats_ops, dev);
->   	if (!entry)
->   		goto fail_stats;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
->
->   	/* Setup the Status */
->   	entry = proc_create_data("Status", S_IRUGO & proc_perm,
->   				 apriv->proc_entry, &proc_status_ops, dev);
->   	if (!entry)
->   		goto fail_status;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
->
->   	/* Setup the Config */
->   	entry = proc_create_data("Config", proc_perm,
->   				 apriv->proc_entry, &proc_config_ops, dev);
->   	if (!entry)
->   		goto fail_config;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
->
->   	/* Setup the SSID */
->   	entry = proc_create_data("SSID", proc_perm,
->   				 apriv->proc_entry, &proc_SSID_ops, dev);
->   	if (!entry)
->   		goto fail_ssid;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
->
->   	/* Setup the APList */
->   	entry = proc_create_data("APList", proc_perm,
->   				 apriv->proc_entry, &proc_APList_ops, dev);
->   	if (!entry)
->   		goto fail_aplist;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
->
->   	/* Setup the BSSList */
->   	entry = proc_create_data("BSSList", proc_perm,
->   				 apriv->proc_entry, &proc_BSSList_ops, dev);
->   	if (!entry)
->   		goto fail_bsslist;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
->
->   	/* Setup the WepKey */
->   	entry = proc_create_data("WepKey", proc_perm,
->   				 apriv->proc_entry, &proc_wepkey_ops, dev);
->   	if (!entry)
->   		goto fail_wepkey;
-> -	entry->uid = proc_kuid;
-> -	entry->gid = proc_kgid;
+> -	devdir->data = dev;
 > -
-> +	proc_set_user(entry, proc_kuid, proc_kgid);
->   	return 0;
+>   	i2o_proc_create_entries(devdir, generic_dev_entries, dev);
 >
->   fail_wepkey:
-> @@ -5695,10 +5685,8 @@ static int __init airo_init_module( void )
+>   	/* Inform core that we want updates about this device's status */
+> @@ -1954,12 +1952,10 @@ static int i2o_proc_iop_add(struct proc_dir_entry *dir,
 >
->   	airo_entry = proc_mkdir_mode("driver/aironet", airo_perm, NULL);
+>   	osm_debug("adding IOP /proc/i2o/%s\n", c->name);
 >
-> -	if (airo_entry) {
-> -		airo_entry->uid = proc_kuid;
-> -		airo_entry->gid = proc_kgid;
-> -	}
-> +	if (airo_entry)
-> +		proc_set_user(airo_entry, proc_kuid, proc_kgid);
+> -	iopdir = proc_mkdir(c->name, dir);
+> +	iopdir = proc_mkdir_data(c->name, 0, dir, c);
+>   	if (!iopdir)
+>   		return -1;
 >
->   	for (i = 0; i < 4 && io[i] && irq[i]; i++) {
->   		airo_print_info("", "Trying to configure ISA adapter at irq=%d "
-> diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
-> index 12e4fb5..7cde7c1 100644
-> --- a/drivers/pci/proc.c
-> +++ b/drivers/pci/proc.c
-> @@ -419,7 +419,7 @@ int pci_proc_attach_device(struct pci_dev *dev)
->   			     &proc_bus_pci_operations, dev);
->   	if (!e)
->   		return -ENOMEM;
-> -	e->size = dev->cfg_size;
-> +	proc_set_size(e, dev->cfg_size);
->   	dev->procent = e;
+> -	iopdir->data = c;
+> -
+>   	i2o_proc_create_entries(iopdir, i2o_proc_generic_iop_entries, c);
 >
->   	return 0;
+>   	list_for_each_entry(dev, &c->devices, list)
+> diff --git a/drivers/scsi/megaraid.c b/drivers/scsi/megaraid.c
+> index a1c90bd..ef3384d 100644
+> --- a/drivers/scsi/megaraid.c
+> +++ b/drivers/scsi/megaraid.c
+> @@ -2818,12 +2818,12 @@ mega_create_proc_entry(int index, struct proc_dir_entry *parent)
+>
+>   	sprintf(string, "hba%d", adapter->host->host_no);
+>
+> -	dir = adapter->controller_proc_dir_entry = proc_mkdir(string, parent);
+> +	dir = adapter->controller_proc_dir_entry =
+> +		proc_mkdir_data(string, 0, parent, adapter);
+>   	if(!dir) {
+>   		printk(KERN_WARNING "\nmegaraid: proc_mkdir failed\n");
+>   		return;
+>   	}
+> -	dir->data = adapter;
+>
+>   	for (f = mega_proc_files; f->name; f++) {
+>   		de = proc_create_data(f->name, S_IRUSR, dir, &mega_proc_fops,
+> diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
+> index 433c3df..d81d7d5 100644
+> --- a/drivers/staging/rtl8192u/r8192U_core.c
+> +++ b/drivers/staging/rtl8192u/r8192U_core.c
+> @@ -672,13 +672,12 @@ void rtl8192_proc_init_one(struct net_device *dev)
+>   	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
+>
+>   	if (rtl8192_proc) {
+> -		priv->dir_dev = proc_mkdir(dev->name, rtl8192_proc);
+> +		priv->dir_dev = proc_mkdir_data(dev->name, 0, rtl8192_proc, dev);
+>   		if (!priv->dir_dev) {
+>   			RT_TRACE(COMP_ERR, "Unable to initialize /proc/net/rtl8192/%s\n",
+>   				 dev->name);
+>   			return;
+>   		}
+> -		priv->dir_dev->data = dev;
+>
+>   		for (f = rtl8192_proc_files; f->name[0]; f++) {
+>   			if (!proc_create_data(f->name, S_IFREG | S_IRUGO,
 > diff --git a/fs/proc/generic.c b/fs/proc/generic.c
-> index 1c07cad..5f6f6c3 100644
+> index 5f6f6c3..4074da5 100644
 > --- a/fs/proc/generic.c
 > +++ b/fs/proc/generic.c
-> @@ -498,6 +498,19 @@ out:
->   	return NULL;
+> @@ -428,13 +428,17 @@ struct proc_dir_entry *proc_symlink(const char *name,
 >   }
->   EXPORT_SYMBOL(proc_create_data);
-> +
-> +void proc_set_size(struct proc_dir_entry *de, loff_t size)
-> +{
-> +	de->size = size;
-> +}
-> +EXPORT_SYMBOL(proc_set_size);
-> +
-> +void proc_set_user(struct proc_dir_entry *de, kuid_t uid, kgid_t gid)
-> +{
-> +	de->uid = uid;
-> +	de->gid = gid;
-> +}
-> +EXPORT_SYMBOL(proc_set_user);
+>   EXPORT_SYMBOL(proc_symlink);
 >
->   static void free_proc_entry(struct proc_dir_entry *de)
+> -struct proc_dir_entry *proc_mkdir_mode(const char *name, umode_t mode,
+> -		struct proc_dir_entry *parent)
+> +struct proc_dir_entry *proc_mkdir_data(const char *name, umode_t mode,
+> +		struct proc_dir_entry *parent, void *data)
 >   {
+>   	struct proc_dir_entry *ent;
+>
+> +	if (mode == 0)
+> +		mode = S_IRUGO | S_IXUGO;
+> +
+>   	ent = __proc_create(&parent, name, S_IFDIR | mode, 2);
+>   	if (ent) {
+> +		ent->data = data;
+>   		if (proc_register(parent, ent) < 0) {
+>   			kfree(ent);
+>   			ent = NULL;
+> @@ -442,29 +446,19 @@ struct proc_dir_entry *proc_mkdir_mode(const char *name, umode_t mode,
+>   	}
+>   	return ent;
+>   }
+> -EXPORT_SYMBOL(proc_mkdir_mode);
+> +EXPORT_SYMBOL_GPL(proc_mkdir_data);
+>
+> -struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
+> -		struct proc_dir_entry *parent)
+> +struct proc_dir_entry *proc_mkdir_mode(const char *name, umode_t mode,
+> +				       struct proc_dir_entry *parent)
+>   {
+> -	struct proc_dir_entry *ent;
+> -
+> -	ent = __proc_create(&parent, name, S_IFDIR | S_IRUGO | S_IXUGO, 2);
+> -	if (ent) {
+> -		ent->data = net;
+> -		if (proc_register(parent, ent) < 0) {
+> -			kfree(ent);
+> -			ent = NULL;
+> -		}
+> -	}
+> -	return ent;
+> +	return proc_mkdir_data(name, mode, parent, NULL);
+>   }
+> -EXPORT_SYMBOL_GPL(proc_net_mkdir);
+> +EXPORT_SYMBOL(proc_mkdir_mode);
+>
+>   struct proc_dir_entry *proc_mkdir(const char *name,
+>   		struct proc_dir_entry *parent)
+>   {
+> -	return proc_mkdir_mode(name, S_IRUGO | S_IXUGO, parent);
+> +	return proc_mkdir_data(name, 0, parent, NULL);
+>   }
+>   EXPORT_SYMBOL(proc_mkdir);
+>
 > diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
-> index 805edac..28a4d7e 100644
+> index 80d9e24..e5d8f69 100644
 > --- a/include/linux/proc_fs.h
 > +++ b/include/linux/proc_fs.h
-> @@ -130,6 +130,9 @@ static inline struct proc_dir_entry *proc_create(const char *name, umode_t mode,
->   extern struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
->   	struct proc_dir_entry *parent);
+> @@ -73,6 +73,8 @@ extern int remove_proc_subtree(const char *name, struct proc_dir_entry *parent);
+>   extern struct proc_dir_entry *proc_symlink(const char *,
+>   		struct proc_dir_entry *, const char *);
+>   extern struct proc_dir_entry *proc_mkdir(const char *,struct proc_dir_entry *);
+> +extern struct proc_dir_entry *proc_mkdir_data(const char *, umode_t,
+> +					      struct proc_dir_entry *, void *);
+>   extern struct proc_dir_entry *proc_mkdir_mode(const char *name, umode_t mode,
+>   			struct proc_dir_entry *parent);
 >
-> +extern void proc_set_size(struct proc_dir_entry *, loff_t);
-> +extern void proc_set_user(struct proc_dir_entry *, kuid_t, kgid_t);
+> @@ -82,9 +84,6 @@ static inline struct proc_dir_entry *proc_create(const char *name, umode_t mode,
+>   	return proc_create_data(name, mode, parent, proc_fops, NULL);
+>   }
+>
+> -extern struct proc_dir_entry *proc_net_mkdir(struct net *net, const char *name,
+> -	struct proc_dir_entry *parent);
+> -
+>   extern void proc_set_size(struct proc_dir_entry *, loff_t);
+>   extern void proc_set_user(struct proc_dir_entry *, kuid_t, kgid_t);
+>   #else
+> @@ -153,4 +152,10 @@ static inline void *PDE_DATA(const struct inode *inode)
+>   	return PROC_I(inode)->pde->data;
+>   }
+>
+> +static inline struct proc_dir_entry *proc_net_mkdir(
+> +	struct net *net, const char *name, struct proc_dir_entry *parent)
+> +{
+> +	return proc_mkdir_data(name, 0, parent, net);
+> +}
 > +
->   extern struct file *proc_ns_fget(int fd);
->   extern bool proc_ns_inode(struct inode *inode);
->
-> @@ -158,6 +161,8 @@ static inline struct proc_dir_entry *proc_mkdir(const char *name,
->   	struct proc_dir_entry *parent) {return NULL;}
->   static inline struct proc_dir_entry *proc_mkdir_mode(const char *name,
->   	umode_t mode, struct proc_dir_entry *parent) { return NULL; }
-> +static inline void proc_set_size(struct proc_dir_entry *de, loff_t size) {}
-> +static inline void proc_set_user(struct proc_dir_entry *de, kuid_t uid, kgid_t gid) {}
->
->   struct tty_driver;
->   static inline void proc_tty_register_driver(struct tty_driver *driver) {};
-> diff --git a/kernel/configs.c b/kernel/configs.c
-> index 42e8fa0..c18b1f1 100644
-> --- a/kernel/configs.c
-> +++ b/kernel/configs.c
-> @@ -79,7 +79,7 @@ static int __init ikconfig_init(void)
->   	if (!entry)
->   		return -ENOMEM;
->
-> -	entry->size = kernel_config_data_size;
-> +	proc_set_size(entry, kernel_config_data_size);
->
->   	return 0;
->   }
-> diff --git a/kernel/profile.c b/kernel/profile.c
-> index 524ce5e..0bf4007 100644
-> --- a/kernel/profile.c
-> +++ b/kernel/profile.c
-> @@ -600,7 +600,7 @@ int __ref create_proc_profile(void) /* false positive from hotcpu_notifier */
->   			    NULL, &proc_profile_operations);
->   	if (!entry)
->   		return 0;
-> -	entry->size = (1+prof_len) * sizeof(atomic_t);
-> +	proc_set_size(entry, (1 + prof_len) * sizeof(atomic_t));
->   	hotcpu_notifier(profile_cpu_callback, 0);
->   	return 0;
->   }
-> diff --git a/net/netfilter/xt_recent.c b/net/netfilter/xt_recent.c
-> index 3db2d38..1e657cf 100644
-> --- a/net/netfilter/xt_recent.c
-> +++ b/net/netfilter/xt_recent.c
-> @@ -401,8 +401,7 @@ static int recent_mt_check(const struct xt_mtchk_param *par,
->   		ret = -ENOMEM;
->   		goto out;
->   	}
-> -	pde->uid = uid;
-> -	pde->gid = gid;
-> +	proc_set_user(pde, uid, gid);
->   #endif
->   	spin_lock_bh(&recent_lock);
->   	list_add_tail(&t->list, &recent_net->tables);
-> diff --git a/sound/core/info.c b/sound/core/info.c
-> index 3aa8864..c7f41c3 100644
-> --- a/sound/core/info.c
-> +++ b/sound/core/info.c
-> @@ -970,7 +970,7 @@ int snd_info_register(struct snd_info_entry * entry)
->   			mutex_unlock(&info_mutex);
->   			return -ENOMEM;
->   		}
-> -		p->size = entry->size;
-> +		proc_set_size(p, entry->size);
->   	}
->   	entry->p = p;
->   	if (entry->parent)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   #endif /* _LINUX_PROC_FS_H */
 >
 
