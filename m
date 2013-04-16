@@ -1,149 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964915Ab3DPKiw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 06:38:52 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:10267 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab3DPKiu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 06:38:50 -0400
-X-Spam-Score: -100.8
-Message-ID: <516D2A11.2080502@asianux.com>
-Date: Tue, 16 Apr 2013 18:38:09 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S935869Ab3DPKjV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 06:39:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64148 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756428Ab3DPKjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 06:39:19 -0400
+Date: Tue, 16 Apr 2013 12:40:07 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:sched/core] sched: Lower chances of cputime scaling overflow
+Message-ID: <20130416104007.GA620@redhat.com>
+References: <tip-d9a3c9823a2e6a543eb7807fb3d15d8233817ec5@git.kernel.org>
+ <20130326140147.GB2029@redhat.com>
+ <1365687946.8824.3.camel@laptop>
+ <CA+55aFway4C89fTewKvED4RvFLaNdM-BVtkJ2YChsvracLKiyA@mail.gmail.com>
+ <1365753356.17140.18.camel@laptop>
+ <20130413144934.GA11556@redhat.com>
+ <CA+55aFwMeAe6Mb9EPeT4Ke0W36z-XUK3BZvbOt+dMzdbJ3F1Ew@mail.gmail.com>
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel: auditfilter: looping issue, memory leak if has
- 2 or more AUDIT_FILTERKEYs
-References: <51653645.90401@asianux.com> <51653C7A.6030405@asianux.com> <2119919725.12278128.1365628773876.JavaMail.root@redhat.com> <516637BB.90606@asianux.com> <5167D6FC.3070504@asianux.com> <516D2718.2010205@asianux.com>
-In-Reply-To: <516D2718.2010205@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwMeAe6Mb9EPeT4Ke0W36z-XUK3BZvbOt+dMzdbJ3F1Ew@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013年04月16日 18:25, Chen Gang wrote:
-> On 2013年04月12日 17:42, Chen Gang wrote:
->> On 2013年04月11日 12:10, Chen Gang wrote:
->>> On 2013年04月11日 05:19, Eric Paris wrote:
->>>> ----- Original Message -----
->>>>
->>>>>>   b. has an new issue for AUDIT_DIR:
->>>>>>        after AUDIT_DIR succeed, it will set rule->tree.
->>>>>>        next, the other case fail, then will call audit_free_rule.
->>>>>>        but audit_free_rule will not free rule->tree.
->>>> Definitely a couple of leaks here...
->>>>
->>>> I'm seeing leaks on size 8, 64, and 128.
->>>>
->>>> Al, what do you think?  Should I be calling audit_put_tree() in the error case if entry->tree != NULL?  The audit trees are some of the most complex code in the kernel I think.
->>>>
->>>>
+On Sat, Apr 13, 2013 at 11:44:54AM -0700, Linus Torvalds wrote:
+> PS. This is the "Make sure 'total' fits in 32 bits first" version. Not
+> really tested, but it's just changing the order of operations a bit.
+> 
+>     /* We know one of the values has a bit set in the high 32 bits */
+>     for (;;) {
+>         /* Make sure "rtime" is the bigger of stime/rtime */
+>         if (stime > rtime) {
+>             u64 tmp = rtime; rtime = stime; stime = tmp;
+>         }
+> 
+>         /* Make sure 'total' fits in 32 bits */
+>         if (total >> 32)
+>                 goto drop_precision;
+> 
+>         /* Does rtime (and thus stime) fit in 32 bits? */
+>         if (!(rtime >> 32))
+>                 break;
+> 
+>         /* Can we just balance rtime/stime rather than dropping bits? */
+>         if (stime >> 31)
+>             goto drop_precision;
+> 
+>         /* We can grow stime and shrink rtime and try to make them both fit */
+>         stime <<= 1;
+>         rtime >>= 1;
+>         continue;
+> 
+> drop_precision:
+>         /* We drop from rtime, it has more bits than stime */
+>         rtime >>= 1;
+>         total >>= 1;
+>     }
 
-  oh, also need buffering optarg of auditctl under fedora 17.
-  or "-F auid=-1" will be truncated to "-F auid".
-  it is ok if not looping again. but in our case, we need loop again.
+It also also pass 0.1% relative error on my tests. Decreasing error
+threshold to 0.02% failed. I didn't check other values or measure how
+frequent 0.02% fail on each version, I assume this one is better :-)
 
-  to see memory usage, I think:
-    in top, really used memory = 'used' - 'cached'
-    it is enough for us.
+So regarding relative error this algorithm is fine, there is no
+multiplication overflow error which make scaled numbers bogus. Then
+I looked on this algorithm regarding context how it is used ...
 
-  welcome any suggestions or completions.
+Raw stime/rtime/total values will increase in jiffies resolution,
+so do scaled_stime if we do not drop precision. For bigger numbers,
+since we drop precision, scaled_stime will grow in chunks. How big
+the chunk depend on how overall big numbers are and stime/total ratio.
+For example: stime = 0.5*total, 128 threads, after 1 year of CPU
+execution chunk will be 1024 jiffies.
 
-  thanks.
+We use scaled stime value this way:
 
+	if (total)
+		stime = scale_stime(stime, rtime, total);
+	else
+		stime = rtime;
 
-> 
->   I am just testing about it with:
-> 
-> ---
-> while(1)
->     auditctl -a exit,always -w /etc -F auid=-1
-> ---
-> 
->   under fedora 17, we need modify the auditctl source code:
->     a. let -w /etc can pass auditctl checking.
->     b. let loop infinitely in a process (if process quit, will free mem)
->     c. need fix a bug for auditctl (under Fedora 17)
->          audit_open may open 2 times.
->          when loop infinitely, it will cause resource handle leak.
-> 
->   I have checked (by insert printf in kernel/auditfilter.c):
->     after modify the auditct, the work flow is just what we want to be.
->       (will alloc watch, alloc tree, then failure occurs)
-> 
-> 
->   I guess, we need 2-3 days to get a test result.
-> 
-> 
->   welcome any suggestions and completions.
-> 
->   thanks.
-> 
-> 
-> 
->>
->>   it seems, your way is the only executable way (if not change code much).
->>   what my original idea is incorrect.
->>
->>     we need add related code at failure process area in audit_data_to_entry.
->>     and another functions need not add these code (should not add).
->>     'watch' also need be processed, since audit_to_watch let ref count = 2.
->>       (it just like the function audit_del_rule has done)
->>
->>   please help check thanks.
->>
->>   :-)
->>
->>
->> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
->> index 81f63f9..f5327ce 100644
->> --- a/kernel/auditfilter.c
->> +++ b/kernel/auditfilter.c
->> @@ -594,6 +594,10 @@ exit_nofree:
->>  	return entry;
->>  
->>  exit_free:
->> +	if (entry->rule.watch)
->> +		audit_put_watch(entry->rule.watch); /* matches initial get */
->> +	if (entry->rule.tree)
->> +		audit_put_tree(entry->rule.tree); /* that's the temporary one */
->>  	audit_free_rule(entry);
->>  	return ERR_PTR(err);
->>  }
->>
->>
->>
->>>
->>>   can we add it in audit_free_rule ?
->>>
->>>   maybe like this:
->>>
->>> @@ -75,6 +75,8 @@ static inline void audit_free_rule(struct audit_entry *e)
->>>  	/* some rules don't have associated watches */
->>>  	if (erule->watch)
->>>  		audit_put_watch(erule->watch);
->>> +	if (erule->tree)
->>> +		audit_put_tree(erule->tree);
->>>  	if (erule->fields)
->>>  		for (i = 0; i < erule->field_count; i++) {
->>>  			struct audit_field *f = &erule->fields[i];
->>>
->>>
->>>   thanks.
->>>
->>>   :-)
->>>
->>
->>
-> 
-> 
+	/*
+	 * If the tick based count grows faster than the scheduler one,
+	 * the result of the scaling may go backward.
+	 * Let's enforce monotonicity.
+	 */
+	prev->stime = max(prev->stime, stime);
+	prev->utime = max(prev->utime, rtime - prev->stime);
 
+	*ut = prev->utime;
+	*st = prev->stime;
 
--- 
-Chen Gang
+Since rtime increase, but scaled stime not, stime will be accounted
+as prev->utime. Then after chunk jiffies, stime will grow and we will
+get it accounted in prev->stime. As result we will account more cpu
+time than actually process do. This error will accumulate depending
+how frequently cputime_adjust(process) will be called.
+ 
+As solution for this we could just stop accounting if prev->stime +
+prev->utime are already bigger than rtime. For example:
 
-Asianux Corporation
+ 	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
+ 
++	/*
++	 * Update userspace visible utime/stime values only if actual execution
++	 * time is bigger than already exported. Note that can happen, that we 
++	 * provided bigger values due to scaling inaccuracy on big numbers.
++	 */
++	if (prev->stime + prev->utime >= rtime)
++		goto out;
++
+ 	if (total)
+ 		stime = scale_stime(stime, rtime, total);
+ 	else
+@@ -573,6 +581,7 @@ static void cputime_adjust(struct task_cputime *curr,
+ 	prev->stime = max(prev->stime, stime);
+ 	prev->utime = max(prev->utime, rtime - prev->stime);
+ 
++out:
+ 	*ut = prev->utime;
+ 	*st = prev->stime;
+ }
+ 
+This should help with erroneously accounting more CPU time than process
+actually use. As disadvantage userspace will see CPU time increase in
+chunks, but I think this is better than see values much bigger than
+correct ones (and for 99.9% user cases it does not matter).
+
+Stanislaw
+ 
