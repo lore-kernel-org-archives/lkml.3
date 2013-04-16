@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644Ab3DPFYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 01:24:17 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:27340 "EHLO
+	id S1753548Ab3DPFYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 01:24:16 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:27339 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861Ab3DPFYK (ORCPT
+	with ESMTP id S1752857Ab3DPFYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Apr 2013 01:24:10 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,164 +13,179 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
 Cc: WANG Chao <chaowang@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v6 2/4] x86, kdump: Retore crashkernel= to allocate under 896M
-Date: Mon, 15 Apr 2013 22:23:47 -0700
-Message-Id: <1366089828-19692-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v6 1/4] x86, kdump: Set crashkernel_low automatically
+Date: Mon, 15 Apr 2013 22:23:45 -0700
+Message-Id: <1366089828-19692-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1366089828-19692-1-git-send-email-yinghai@kernel.org>
 References: <1366089828-19692-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek found old kexec-tools does not work new kernel anymore.
+Chao said that kdump does does work well on his system on 3.8
+without extra parameter, even iommu does not work with kdump.
+And now have to append crashkernel_low=Y in first kernel to make
+kdump work.
 
-So change back crashkernel= back to old behavoir, and add crashkernel_high=
-to let user decide if buffer could be above 4G, and also new kexec-tools will
-be needed.
+We have now modified crashkernel=X to allocate memory beyong 4G (if
+available) and do not allocate low range for crashkernel if the user
+does not specify that with crashkernel_low=Y.  This causes regression
+if iommu is not enabled.  Without iommu, swiotlb needs to be setup in
+first 4G and there is no low memory available to second kernel.
 
--v2: let crashkernel=X override crashkernel_high=
-    update description about _high will be ignored by crashkernel=X
--v3: update description about kernel-parameters.txt according to Vivek.
+Set crashkernel_low automatically if the user does not specify that.
 
+For system that does support IOMMU with kdump properly, user could
+specify crashkernel_low=0 to save that 72M low ram.
+
+-v3: add swiotlb_size() according to Konrad.
+-v4: add comments what 8M is for according to hpa.
+     also update more crashkernel_low= in kernel-parameters.txt
+-v5: update changelog according to Vivek.
+-v6: Change description about swiotlb referring according to HATAYAMA.
+
+Reported-by: WANG Chao <chaowang@redhat.com>
+Tested-by: WANG Chao <chaowang@redhat.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
 ---
- Documentation/kernel-parameters.txt |   13 +++++++++++--
- arch/x86/kernel/setup.c             |   24 +++++++++++++++++++-----
- include/linux/kexec.h               |    2 ++
- kernel/kexec.c                      |    9 +++++++++
- 4 files changed, 41 insertions(+), 7 deletions(-)
+ Documentation/kernel-parameters.txt |   14 +++++++++++---
+ arch/x86/kernel/setup.c             |   21 ++++++++++++++++++---
+ include/linux/swiotlb.h             |    1 +
+ lib/swiotlb.c                       |   19 +++++++++++++++----
+ 4 files changed, 45 insertions(+), 10 deletions(-)
 
-Index: linux-2.6/Documentation/kernel-parameters.txt
-===================================================================
---- linux-2.6.orig/Documentation/kernel-parameters.txt
-+++ linux-2.6/Documentation/kernel-parameters.txt
-@@ -603,9 +603,16 @@ bytes respectively. Such letter suffixes
- 			a memory unit (amount[KMG]). See also
- 			Documentation/kdump/kdump.txt for an example.
- 
-+	crashkernel_high=size[KMG]
-+			[KNL, x86_64] range could be above 4G. Allow kernel
-+			to allocate physical memory region from top, so could
-+			be above 4G if system have more than 4G ram installed.
-+			Otherwise memory region will be allocated below 4G, if
-+			available.
-+			It will be ignored if crashkernel=X is specified.
- 	crashkernel_low=size[KMG]
--			[KNL, x86_64] range under 4G. When crashkernel= is
--			passed, kernel allocate physical memory region
-+			[KNL, x86_64] range under 4G. When crashkernel_high= is
-+			passed, kernel could allocate physical memory region
- 			above 4G, that cause second kernel crash on system
- 			that require some amount of low memory, e.g. swiotlb
- 			requires at least 64M+32K low memory.  Kernel would
-@@ -613,6 +620,8 @@ bytes respectively. Such letter suffixes
- 			This one let user to specify own low range under 4G
- 			for second kernel instead.
- 			0: to disable low allocation.
-+			It will be ignored when crashkernel_high=X is not used
-+			or memory reserved is below 4G.
- 
- 	cs89x0_dma=	[HW,NET]
- 			Format: <dma>
 Index: linux-2.6/arch/x86/kernel/setup.c
 ===================================================================
 --- linux-2.6.orig/arch/x86/kernel/setup.c
 +++ linux-2.6/arch/x86/kernel/setup.c
-@@ -505,11 +505,14 @@ static void __init memblock_x86_reserve_
- /*
-  * Keep the crash kernel below this limit.  On 32 bits earlier kernels
-  * would limit the kernel to the low 512 MiB due to mapping restrictions.
-+ * On 64bit, old kexec-tools need to under 896MiB.
-  */
- #ifdef CONFIG_X86_32
--# define CRASH_KERNEL_ADDR_MAX	(512 << 20)
-+# define CRASH_KERNEL_ADDR_LOW_MAX	(512 << 20)
-+# define CRASH_KERNEL_ADDR_HIGH_MAX	(512 << 20)
- #else
--# define CRASH_KERNEL_ADDR_MAX	MAXMEM
-+# define CRASH_KERNEL_ADDR_LOW_MAX	(896UL<<20)
-+# define CRASH_KERNEL_ADDR_HIGH_MAX	MAXMEM
- #endif
- 
- static void __init reserve_crashkernel_low(void)
-@@ -523,6 +526,7 @@ static void __init reserve_crashkernel_l
+@@ -519,19 +519,34 @@ static void __init reserve_crashkernel_l
+ 	unsigned long long low_base = 0, low_size = 0;
+ 	unsigned long total_low_mem;
+ 	unsigned long long base;
++	bool auto_set = false;
  	int ret;
  
  	total_low_mem = memblock_mem_size(1UL<<(32-PAGE_SHIFT));
-+	/* crashkernel_low=YM */
  	ret = parse_crashkernel_low(boot_command_line, total_low_mem,
  						&low_size, &base);
- 	if (ret != 0) {
-@@ -567,14 +571,22 @@ static void __init reserve_crashkernel(v
- 	const unsigned long long alignment = 16<<20;	/* 16M */
- 	unsigned long long total_mem;
- 	unsigned long long crash_size, crash_base;
-+	bool high = false;
- 	int ret;
- 
- 	total_mem = memblock_phys_mem_size();
- 
-+	/* crashkernel=XM */
- 	ret = parse_crashkernel(boot_command_line, total_mem,
- 			&crash_size, &crash_base);
--	if (ret != 0 || crash_size <= 0)
+-	if (ret != 0 || low_size <= 0)
 -		return;
-+	if (ret != 0 || crash_size <= 0) {
-+		/* crashkernel_high=XM */
-+		ret = parse_crashkernel_high(boot_command_line, total_mem,
-+				&crash_size, &crash_base);
-+		if (ret != 0 || crash_size <= 0)
++	if (ret != 0) {
++		/*
++		 * two parts from lib/swiotlb.c:
++		 *	swiotlb size: user specified with swiotlb= or default.
++		 *	swiotlb overflow buffer: now is hardcoded to 32k.
++		 *		We round it to 8M for other buffers that
++		 *		may need to stay low too.
++		 */
++		low_size = swiotlb_size_or_default() + (8UL<<20);
++		auto_set = true;
++	} else {
++		/* passed with crashkernel_low=0 ? */
++		if (!low_size)
 +			return;
-+		high = true;
 +	}
  
- 	/* 0 means: find the address automatically */
- 	if (crash_base <= 0) {
-@@ -582,7 +594,9 @@ static void __init reserve_crashkernel(v
- 		 *  kexec want bzImage is below CRASH_KERNEL_ADDR_MAX
- 		 */
- 		crash_base = memblock_find_in_range(alignment,
--			       CRASH_KERNEL_ADDR_MAX, crash_size, alignment);
-+					high ? CRASH_KERNEL_ADDR_HIGH_MAX :
-+					       CRASH_KERNEL_ADDR_LOW_MAX,
-+					crash_size, alignment);
+ 	low_base = memblock_find_in_range(low_size, (1ULL<<32),
+ 					low_size, alignment);
  
- 		if (!crash_base) {
- 			pr_info("crashkernel reservation failed - No suitable area found.\n");
-Index: linux-2.6/include/linux/kexec.h
-===================================================================
---- linux-2.6.orig/include/linux/kexec.h
-+++ linux-2.6/include/linux/kexec.h
-@@ -200,6 +200,8 @@ extern size_t vmcoreinfo_max_size;
+ 	if (!low_base) {
+-		pr_info("crashkernel low reservation failed - No suitable area found.\n");
++		if (!auto_set)
++			pr_info("crashkernel low reservation failed - No suitable area found.\n");
  
- int __init parse_crashkernel(char *cmdline, unsigned long long system_ram,
- 		unsigned long long *crash_size, unsigned long long *crash_base);
-+int parse_crashkernel_high(char *cmdline, unsigned long long system_ram,
-+		unsigned long long *crash_size, unsigned long long *crash_base);
- int parse_crashkernel_low(char *cmdline, unsigned long long system_ram,
- 		unsigned long long *crash_size, unsigned long long *crash_base);
- int crash_shrink_memory(unsigned long new_size);
-Index: linux-2.6/kernel/kexec.c
+ 		return;
+ 	}
+Index: linux-2.6/include/linux/swiotlb.h
 ===================================================================
---- linux-2.6.orig/kernel/kexec.c
-+++ linux-2.6/kernel/kexec.c
-@@ -1422,6 +1422,15 @@ int __init parse_crashkernel(char *cmdli
- 					"crashkernel=");
+--- linux-2.6.orig/include/linux/swiotlb.h
++++ linux-2.6/include/linux/swiotlb.h
+@@ -25,6 +25,7 @@ extern int swiotlb_force;
+ extern void swiotlb_init(int verbose);
+ int swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+ extern unsigned long swiotlb_nr_tbl(void);
++unsigned long swiotlb_size_or_default(void);
+ extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
+ 
+ /*
+Index: linux-2.6/lib/swiotlb.c
+===================================================================
+--- linux-2.6.orig/lib/swiotlb.c
++++ linux-2.6/lib/swiotlb.c
+@@ -105,9 +105,9 @@ setup_io_tlb_npages(char *str)
+ 	if (!strcmp(str, "force"))
+ 		swiotlb_force = 1;
+ 
+-	return 1;
++	return 0;
  }
+-__setup("swiotlb=", setup_io_tlb_npages);
++early_param("swiotlb", setup_io_tlb_npages);
+ /* make io_tlb_overflow tunable too? */
  
-+int __init parse_crashkernel_high(char *cmdline,
-+			     unsigned long long system_ram,
-+			     unsigned long long *crash_size,
-+			     unsigned long long *crash_base)
+ unsigned long swiotlb_nr_tbl(void)
+@@ -115,6 +115,18 @@ unsigned long swiotlb_nr_tbl(void)
+ 	return io_tlb_nslabs;
+ }
+ EXPORT_SYMBOL_GPL(swiotlb_nr_tbl);
++
++/* default to 64MB */
++#define IO_TLB_DEFAULT_SIZE (64UL<<20)
++unsigned long swiotlb_size_or_default(void)
 +{
-+	return __parse_crashkernel(cmdline, system_ram, crash_size, crash_base,
-+					"crashkernel_high=");
++	unsigned long size;
++
++	size = io_tlb_nslabs << IO_TLB_SHIFT;
++
++	return size ? size : (IO_TLB_DEFAULT_SIZE);
 +}
 +
- int __init parse_crashkernel_low(char *cmdline,
- 			     unsigned long long system_ram,
- 			     unsigned long long *crash_size,
+ /* Note that this doesn't work with highmem page */
+ static dma_addr_t swiotlb_virt_to_bus(struct device *hwdev,
+ 				      volatile void *address)
+@@ -188,8 +200,7 @@ int __init swiotlb_init_with_tbl(char *t
+ void  __init
+ swiotlb_init(int verbose)
+ {
+-	/* default to 64MB */
+-	size_t default_size = 64UL<<20;
++	size_t default_size = IO_TLB_DEFAULT_SIZE;
+ 	unsigned char *vstart;
+ 	unsigned long bytes;
+ 
+Index: linux-2.6/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-2.6.orig/Documentation/kernel-parameters.txt
++++ linux-2.6/Documentation/kernel-parameters.txt
+@@ -596,9 +596,6 @@ bytes respectively. Such letter suffixes
+ 			is selected automatically. Check
+ 			Documentation/kdump/kdump.txt for further details.
+ 
+-	crashkernel_low=size[KMG]
+-			[KNL, x86] parts under 4G.
+-
+ 	crashkernel=range1:size1[,range2:size2,...][@offset]
+ 			[KNL] Same as above, but depends on the memory
+ 			in the running system. The syntax of range is
+@@ -606,6 +603,17 @@ bytes respectively. Such letter suffixes
+ 			a memory unit (amount[KMG]). See also
+ 			Documentation/kdump/kdump.txt for an example.
+ 
++	crashkernel_low=size[KMG]
++			[KNL, x86_64] range under 4G. When crashkernel= is
++			passed, kernel allocate physical memory region
++			above 4G, that cause second kernel crash on system
++			that require some amount of low memory, e.g. swiotlb
++			requires at least 64M+32K low memory.  Kernel would
++			try to allocate 72M below 4G automatically.
++			This one let user to specify own low range under 4G
++			for second kernel instead.
++			0: to disable low allocation.
++
+ 	cs89x0_dma=	[HW,NET]
+ 			Format: <dma>
+ 
