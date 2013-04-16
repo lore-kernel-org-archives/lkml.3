@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab3DPEYn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 00:24:43 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:1744 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab3DPEYl (ORCPT
+	id S1751821Ab3DPE0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 00:26:48 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56495 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab3DPE0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 00:24:41 -0400
-Message-ID: <1366086275.22463.25.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v2 2/3] mutex: Queue mutex spinners with MCS lock to
- reduce cacheline contention
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Date: Mon, 15 Apr 2013 21:24:35 -0700
-In-Reply-To: <1366036679-9702-3-git-send-email-Waiman.Long@hp.com>
-References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>
-	 <1366036679-9702-3-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Tue, 16 Apr 2013 00:26:47 -0400
+Message-ID: <516CD300.6070201@gmail.com>
+Date: Mon, 15 Apr 2013 21:26:40 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Pekka Enberg <penberg@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Michael Witten <mfwitten@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PROBLEM] perf requires python-devel to compile
+References: <CAOJsxLHv17Ys3M7P5q25imkUxQW6LE_vABxh1N3Tt7Mv6Ho4iw@mail.gmail.com> <87mwszb4s6.fsf@sejong.aot.lge.com>
+In-Reply-To: <87mwszb4s6.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-15 at 10:37 -0400, Waiman Long wrote:
-[...]
-> +typedef struct mspin_node {
-> +	struct mspin_node *next;
-> +	int		   locked;	/* 1 if lock acquired */
-> +} mspin_node_t;
-> +
-> +typedef mspin_node_t	*mspin_lock_t;
+On 4/15/13 7:14 PM, Namhyung Kim wrote:
+>> Makefile:755: The path '/usr/bin/python-config' is not executable.
+>> Makefile:755: *** Please set 'PYTHON_CONFIG' appropriately.  Stop.
+>>
+>> The problem is that I didn't have python-devel package installed and
+>> get-executable-or-default decides to error out instead of letting the
+>> Makefile disable Python support.
+>
+> Right.  I think the get-executable-or-default should not error out in
+> this case but just emit a warning and keep building.
+>
+> Does following patch fix your problem?
+>
+> -----------8<-------------8<-------------
+> diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
+> index 8ef3bd30a549..3b8036f8aca4 100644
+> --- a/tools/perf/config/utilities.mak
+> +++ b/tools/perf/config/utilities.mak
+> @@ -177,7 +177,7 @@ $(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2),$(1)))
+>   endef
+>   _ge_attempt = $(if $(get-executable),$(get-executable),$(_gea_warn)$(call _gea_err,$(2)))
+>   _gea_warn = $(warning The path '$(1)' is not executable.)
+> -_gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
+> +_gea_err  = $(if $(1),$(warning Please set '$(1)' appropriately))
 
-I think we could do without the typedefs, specially mspin_lock_t.
+In this case you don't want a warning, you just want python support 
+disabled and move on. I've been getting around this in a minimal install 
+of F18 in a VM using PYTHON_CONFIG=/bin/false; haven't had time to 
+search for the proper solution.
 
-> +
-> +#define	MLOCK(mutex)	((mspin_lock_t *)&((mutex)->spin_mlock))
-> +
-> +static noinline void mspin_lock(mspin_lock_t *lock,  mspin_node_t *node)
-> +{
-> +	mspin_node_t *prev;
-> +
-> +	/* Init node */
-> +	node->locked = 0;
-> +	node->next   = NULL;
-> +
-> +	prev = xchg(lock, node);
-> +	if (likely(prev == NULL)) {
-> +		/* Lock acquired */
-> +		node->locked = 1;
-> +		return;
-> +	}
-> +	ACCESS_ONCE(prev->next) = node;
-> +	smp_wmb();
-> +	/* Wait until the lock holder passes the lock down */
-> +	while (!ACCESS_ONCE(node->locked))
-> +		arch_mutex_cpu_relax();
-> +}
-> +
-> +static void mspin_unlock(mspin_lock_t *lock,  mspin_node_t *node)
-> +{
-> +	mspin_node_t *next = ACCESS_ONCE(node->next);
-> +
-> +	if (likely(!next)) {
-> +		/*
-> +		 * Release the lock by setting it to NULL
-> +		 */
-> +		if (cmpxchg(lock, node, NULL) == node)
-> +			return;
-> +		/* Wait until the next pointer is set */
-> +		while (!(next = ACCESS_ONCE(node->next)))
-> +			arch_mutex_cpu_relax();
-> +	}
-> +	barrier();
-> +	ACCESS_ONCE(next->locked) = 1;
-> +	smp_wmb();
+David
 
-Do we really need the compiler barrier call? The CPUs can reorder
-anyway. I assume the smp_wbm() call makes sure no there's no funny
-business before the next lock is acquired, might be worth commenting.
-
-Thanks,
-Davidlohr
 
