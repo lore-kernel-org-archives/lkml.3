@@ -1,55 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755381Ab3DPLla (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 07:41:30 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:47723 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab3DPLl2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 07:41:28 -0400
-Message-ID: <516D38A6.9040306@cogentembedded.com>
-Date: Tue, 16 Apr 2013 15:40:22 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1755522Ab3DPLnZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 07:43:25 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:47985 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752195Ab3DPLnX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 07:43:23 -0400
+Date: Tue, 16 Apr 2013 06:43:22 -0500
+From: Robin Holt <holt@sgi.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi.kivity@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: mmu_notifier: re-fix freed page still mapped in
+ secondary MMU
+Message-ID: <20130416114322.GN3658@sgi.com>
+References: <516CF235.4060103@linux.vnet.ibm.com>
+ <20130416093131.GJ3658@sgi.com>
+ <516D275C.8040406@linux.vnet.ibm.com>
+ <20130416112553.GM3658@sgi.com>
 MIME-Version: 1.0
-To: Prabhakar lad <prabhakar.csengg@gmail.com>
-CC: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH] media: davinci: vpbe: align the buffers size to page
- page size boundary
-References: <1366110601-18424-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1366110601-18424-1-git-send-email-prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130416112553.GM3658@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16-04-2013 15:10, Prabhakar lad wrote:
+Argh.  Taking a step back helped clear my head.
 
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+For the -stable releases, I agree we should just go with your
+revert-plus-hlist_del_init_rcu patch.  I will give it a test
+when I am in the office.
 
-> with recent commit with id 068a0df76023926af958a336a78bef60468d2033
+For the v3.10 release, we should work on making this more
+correct and completely documented.
 
-   Please also specify the summary line of that commit in parens (or however 
-you like).
+Robin
 
-> which adds add length check for mmap, the application were failing to
-> mmap the buffers.
-
-> This patch aligns the the buffer size to page size boundary for both
-> capture and display driver so the it pass the check.
-
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-WBR, Sergei
-
-
+On Tue, Apr 16, 2013 at 06:25:53AM -0500, Robin Holt wrote:
+> On Tue, Apr 16, 2013 at 06:26:36PM +0800, Xiao Guangrong wrote:
+> > On 04/16/2013 05:31 PM, Robin Holt wrote:
+> > > On Tue, Apr 16, 2013 at 02:39:49PM +0800, Xiao Guangrong wrote:
+> > >> The commit 751efd8610d3 (mmu_notifier_unregister NULL Pointer deref
+> > >> and multiple ->release()) breaks the fix:
+> > >>     3ad3d901bbcfb15a5e4690e55350db0899095a68
+> > >>     (mm: mmu_notifier: fix freed page still mapped in secondary MMU)
+> > > 
+> > > Can you describe how the page is still mapped?  I thought I had all
+> > > cases covered.  Whichever call hits first, I thought we had one callout
+> > > to the registered notifiers.  Are you saying we need multiple callouts?
+> > 
+> > No.
+> > 
+> > You patch did this:
+> > 
+> >                 hlist_del_init_rcu(&mn->hlist);    1 <======
+> > +               spin_unlock(&mm->mmu_notifier_mm->lock);
+> > +
+> > +               /*
+> > +                * Clear sptes. (see 'release' description in mmu_notifier.h)
+> > +                */
+> > +               if (mn->ops->release)
+> > +                       mn->ops->release(mn, mm);    2 <======
+> > +
+> > +               spin_lock(&mm->mmu_notifier_mm->lock);
+> > 
+> > At point 1, you delete the notify, but the page is still on LRU. Other
+> > cpu can reclaim the page but without call ->invalid_page().
+> > 
+> > At point 2, you call ->release(), the secondary MMU make page Accessed/Dirty
+> > but that page has already been on the free-list of page-alloctor.
+> 
+> That expectation on srcu _REALLY_ needs to be documented better.
+> Maybe I missed it in the comments, but there is an expectation beyond
+> the synchronize_srcu().  This code has been extremely poorly described
+> and I think it is time we fix that up.
+> 
+> I do see that in comments for mmu_notifier_unregister, there is an
+> expectation upon already having all the spte's removed prior to making
+> this call.  I think that is also a stale comment as it mentions a lock
+> which I am not sure ever really existed.
+> 
+> > > Also, shouldn't you be asking for a revert commit and then supply a
+> > > subsequent commit for the real fix?  I thought that was the process for
+> > > doing a revert.
+> > 
+> > Can not do that pure reversion since your patch moved hlist_for_each_entry_rcu
+> > which has been modified now.
+> > 
+> > Should i do pure-eversion + hlist_for_each_entry_rcu update first?
+> 
+> Let's not go off without considering this first.
+> 
+> It looks like what we really need to do is ensure there is a method
+> for ensuring that the mmu_notifier remains on the list while callouts
+> invalidate_page() callouts are being made and also a means of ensuring
+> that only one ->release() callout is made.
+> 
+> First, is it the case that when kvm calls mmu_notifier_unregister(),
+> it has already cleared the spte's?  (what does spte stand for anyway)?
+> If so, then we really need to close the hole in __mmu_notifier_release().
+> I think we would need to modify code in both _unregister and _release,
+> but the issue is really _release.
+> 
+> 
+> I need to get ready and drive into work.  If you want to float something
+> out there, that is fine.  Otherwise, I will try to work something up
+> when I get to the office.
+> 
+> Thanks,
+> Robin
