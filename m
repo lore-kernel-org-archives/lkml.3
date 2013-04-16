@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab3DPLYH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 07:24:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32827 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752346Ab3DPLYF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 07:24:05 -0400
-Date: Tue, 16 Apr 2013 12:24:01 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFT 2/2] regulator: ab8500: Optimize
- ab8540_aux3_regulator_get_voltage_sel
-Message-ID: <20130416112401.GF26958@opensource.wolfsonmicro.com>
-References: <1365576052.4283.2.camel@phoenix>
- <1365576380.4283.5.camel@phoenix>
+	id S1753516Ab3DPLZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 07:25:56 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:57650 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751542Ab3DPLZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 07:25:55 -0400
+Date: Tue, 16 Apr 2013 06:25:53 -0500
+From: Robin Holt <holt@sgi.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi.kivity@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: mmu_notifier: re-fix freed page still mapped in
+ secondary MMU
+Message-ID: <20130416112553.GM3658@sgi.com>
+References: <516CF235.4060103@linux.vnet.ibm.com>
+ <20130416093131.GJ3658@sgi.com>
+ <516D275C.8040406@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/aVve/J9H4Wl5yVO"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365576380.4283.5.camel@phoenix>
-X-Cookie: Keep it short for pithy sake.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <516D275C.8040406@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 16, 2013 at 06:26:36PM +0800, Xiao Guangrong wrote:
+> On 04/16/2013 05:31 PM, Robin Holt wrote:
+> > On Tue, Apr 16, 2013 at 02:39:49PM +0800, Xiao Guangrong wrote:
+> >> The commit 751efd8610d3 (mmu_notifier_unregister NULL Pointer deref
+> >> and multiple ->release()) breaks the fix:
+> >>     3ad3d901bbcfb15a5e4690e55350db0899095a68
+> >>     (mm: mmu_notifier: fix freed page still mapped in secondary MMU)
+> > 
+> > Can you describe how the page is still mapped?  I thought I had all
+> > cases covered.  Whichever call hits first, I thought we had one callout
+> > to the registered notifiers.  Are you saying we need multiple callouts?
+> 
+> No.
+> 
+> You patch did this:
+> 
+>                 hlist_del_init_rcu(&mn->hlist);    1 <======
+> +               spin_unlock(&mm->mmu_notifier_mm->lock);
+> +
+> +               /*
+> +                * Clear sptes. (see 'release' description in mmu_notifier.h)
+> +                */
+> +               if (mn->ops->release)
+> +                       mn->ops->release(mn, mm);    2 <======
+> +
+> +               spin_lock(&mm->mmu_notifier_mm->lock);
+> 
+> At point 1, you delete the notify, but the page is still on LRU. Other
+> cpu can reclaim the page but without call ->invalid_page().
+> 
+> At point 2, you call ->release(), the secondary MMU make page Accessed/Dirty
+> but that page has already been on the free-list of page-alloctor.
 
---/aVve/J9H4Wl5yVO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+That expectation on srcu _REALLY_ needs to be documented better.
+Maybe I missed it in the comments, but there is an expectation beyond
+the synchronize_srcu().  This code has been extremely poorly described
+and I think it is time we fix that up.
 
-On Wed, Apr 10, 2013 at 02:46:20PM +0800, Axel Lin wrote:
-> We can save a register read operation in some case if read
-> expand_register first.
-> If info->expand_register.voltage_mask bit is set, no need to read
-> voltage_reg.
+I do see that in comments for mmu_notifier_unregister, there is an
+expectation upon already having all the spte's removed prior to making
+this call.  I think that is also a stale comment as it mentions a lock
+which I am not sure ever really existed.
 
-Applied, thanks.
+> > Also, shouldn't you be asking for a revert commit and then supply a
+> > subsequent commit for the real fix?  I thought that was the process for
+> > doing a revert.
+> 
+> Can not do that pure reversion since your patch moved hlist_for_each_entry_rcu
+> which has been modified now.
+> 
+> Should i do pure-eversion + hlist_for_each_entry_rcu update first?
 
---/aVve/J9H4Wl5yVO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Let's not go off without considering this first.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+It looks like what we really need to do is ensure there is a method
+for ensuring that the mmu_notifier remains on the list while callouts
+invalidate_page() callouts are being made and also a means of ensuring
+that only one ->release() callout is made.
 
-iQIcBAEBAgAGBQJRbTTKAAoJELSic+t+oim9O80P/384Dav3RRZdon+6XIF1JCtP
-lBE71mjjj+Mqo3pj4Zf7y+FoOBKJ7t9EeaDyxiBygTAZR7a0oxhElodFVJVsw1Da
-7mjR8JO0U0eBanSWh3ZNDuHFWSsLMZ51fob1mfxNG6jKh80dopqmfGKlPNrTWq8A
-+3nJC+GWwLnss+Phh4EKL05Yh9inevcyJ06lsHeIwP5VC8gBzgUwuPl421dRMlB6
-VI4dC+UAGod7p1g+jopsiSDUDyuYvp1QJqMJhitZrjpaIf3S9oFiV3Rlt2NXNSkV
-sHVL2Pp5xLHQL6QY2vweCN4JZgMrbt4Fkncvx/HYTg9XNOhYPeecyAmpbKfnI5b/
-EVuABxDdFeaJcZwIc7E9UJLDY+hQGUP779K/71GG1IV5DcTn5/TvrIPYEH2PL75i
-SXuVHt7yh8VIKuTd5dLxycQPPBRXqRJkF1ESlJ8EWCvxhO0GJ4WqA2YTo2A0+KGt
-3FApxdMUcOj/oMFIESJe5ZP4a8K1urSoaFG87Sqe+xEHl6aLUL2NeoqSuCFzIkfl
-5TPf5k7b5iMKzKfjsV05cIFPo1I797n7OUCEDeHaxmrqFI+7nQqa2WsQaRAzvLDp
-XGrsMTfvoK1XIqU0la3Rvad1jHUajdpZY94vxekrppaDj9YwDcJo90mnBOq6O8f0
-I6ammm8MbOUS5EpdVwlB
-=cVpQ
------END PGP SIGNATURE-----
+First, is it the case that when kvm calls mmu_notifier_unregister(),
+it has already cleared the spte's?  (what does spte stand for anyway)?
+If so, then we really need to close the hole in __mmu_notifier_release().
+I think we would need to modify code in both _unregister and _release,
+but the issue is really _release.
 
---/aVve/J9H4Wl5yVO--
+
+I need to get ready and drive into work.  If you want to float something
+out there, that is fine.  Otherwise, I will try to work something up
+when I get to the office.
+
+Thanks,
+Robin
