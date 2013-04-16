@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872Ab3DPMI2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 08:08:28 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:42040 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754832Ab3DPMI1 (ORCPT
+	id S1757013Ab3DPMK6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 08:10:58 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:46362 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755221Ab3DPMK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 08:08:27 -0400
-Message-ID: <516D3F2F.8080905@stericsson.com>
-Date: Tue, 16 Apr 2013 14:08:15 +0200
-From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 16 Apr 2013 08:10:56 -0400
+Message-ID: <516D3FCD.9060703@hp.com>
+Date: Tue, 16 Apr 2013 08:10:53 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120601 Thunderbird/10.0.5
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFT][PATCH 1/3] regulator: ab8500-ext: Don't allow set idle
- mode if info->cfg->hwreq is set
-References: <1365598464.24689.1.camel@phoenix>
-In-Reply-To: <1365598464.24689.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Will Deacon <will.deacon@arm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 optional 3/3] mutex: back out architecture specific
+ check for negative mutex count
+References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com> <1366036679-9702-4-git-send-email-Waiman.Long@hp.com> <20130416100505.GD31156@mudshark.cambridge.arm.com>
+In-Reply-To: <20130416100505.GD31156@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 02:54 PM, Axel Lin wrote:
-> The regulator always on with high power mode if info->cfg->hwreq is set.
->
-> If we allow set idle mode when info->cfg->hwreq is set, get_mode() returns
-> REGULATOR_MODE_IDLE but the regulator actually is in REGULATOR_MODE_NORMAL mode.
-> This patch avoid inconsistent status return by get_mode().
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>z
-> ---
->   drivers/regulator/ab8500-ext.c |    4 ++++
->   1 file changed, 4 insertions(+)
->
-> diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
-> index 9aee21c..f0a1bbf 100644
-> --- a/drivers/regulator/ab8500-ext.c
-> +++ b/drivers/regulator/ab8500-ext.c
-> @@ -192,6 +192,10 @@ static int ab8500_ext_regulator_set_mode(struct regulator_dev *rdev,
->   		info->update_val = info->update_val_hp;
->   		break;
->   	case REGULATOR_MODE_IDLE:
-> +		/* Always on with high power mode if info->cfg->hwreq is set */
-> +		if (info->cfg && info->cfg->hwreq)
-> +			return -EINVAL;
-> +
->   		info->update_val = info->update_val_lp;
->   		break;
->   
-I prefer to have info->update_val updated to reflect requested mode (in 
-get_mode) instead of returning -EINVAL. This is how I interpret Mark's 
-comment on the other patch ([PATCH] regulator: ab8500: Fix get_mode for 
-shared mode regulators).Otherwise, the patch should work fine.
+On 04/16/2013 06:05 AM, Will Deacon wrote:
+> On Mon, Apr 15, 2013 at 03:37:59PM +0100, Waiman Long wrote:
+>> If it is confirmed that all the supported architectures can allow a
+>> negative mutex count without incorrect behavior, we can then back
+>> out the architecture specific change and allow the mutex count to
+>> go to any negative number. That should further reduce contention for
+>> non-x86 architecture.
+>>
+>> If this is not the case, this patch should be dropped.
+> A good starting point might be to look at the asm-generic mutex
+> implementations, which clears up the majority of architectures. A cursory
+> glance at mutex-dec.h suggests that it's OK to me...
+
+I think the generic version is fine with negative mutex count. However, 
+it is the architecture specific versions (we have 22 of them as of 3.8) 
+that I am worry about. I just don't have enough know-how and test 
+machines to verify that.
 
 Regards,
-
-Bengt
+Longman
