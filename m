@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab3DPIqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 04:46:20 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:63960 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754025Ab3DPIqR (ORCPT
+	id S1756126Ab3DPIqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 04:46:36 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:46972 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753942Ab3DPIqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 04:46:17 -0400
-Date: Tue, 16 Apr 2013 10:46:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL] nohz: More Kconfig and Rcu improvements
-Message-ID: <20130416084613.GA7480@gmail.com>
-References: <1366060220-20271-1-git-send-email-fweisbec@gmail.com>
+	Tue, 16 Apr 2013 04:46:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366060220-20271-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFTL4hxNw9EJJ3ZvjYR55b6ZF2YQxMA2q80E+obkU21v6QfEow@mail.gmail.com>
+References: <CA+xJJ1-UPPrkRLuiFcQN6JotG+1G9WS1LftKk67x-AiZuDBf3Q@mail.gmail.com>
+	<CAFTL4hxNw9EJJ3ZvjYR55b6ZF2YQxMA2q80E+obkU21v6QfEow@mail.gmail.com>
+Date: Tue, 16 Apr 2013 10:46:31 +0200
+Message-ID: <CA+xJJ19ZtGnunNt03eVgVvLiNsKbzPuGn=FhtyD28P6XhcJFgQ@mail.gmail.com>
+Subject: Re: Trouble with full nohz and lttng
+From: Mats Liljegren <liljegren.mats2@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 15, 2013 at 4:10 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 2013/4/15 Mats Liljegren <mats.liljegren@enea.com>:
+>> When I use lttng, I keep getting ticks. Without lttng, no ticks. It's the
+>> same application I run, the same way. The only difference is whether lttng
+>> logging has been started or not.
+>>
+>> The trace says "sched" as reason for not disabled ticks. Using "top" I can't
+>> see any extra process/thread being created while my application runs, my
+>> application gets 99-101% of the CPU. There are a couple of kworker threads
+>> (3), a migration thread and a ksoftirq thread on the same CPU as my
+>> application, though "top" gives no indication that they do any execution.
+>>
+>> Is this a known limitation of lttng, or is there something else going on
+>> here?
+>
+> I have no idea. But the "sched" reason means there is more than one
+> task in the runqueue at some point. It can be a kthread indeed. Or a
+> user task that gets migrated / woken up in the CPU.
+>
+> You'll need to check the sched:sched_switch tracepoint.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+It is ksoftirqd/1 and kworker/1:1 that are run every now and then, and
+I'm unable to move them out of the CPU in question. So apparently
+lttng causes more work in either these threads which then prohibits
+full nohz mode for me.
 
-> Ingo,
-> 
-> Please pull the latest timers/nohz branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	timers/nohz
-> 
-> HEAD: 65d798f0f9339ae2c4ebe9480e3260b33382a584
-> 
-> This fixes some of the issues you've reported. There is still the
-> dependency on CONFIG_VIRT_CPU_ACCOUNTING_GEN to fix, probably in
-> the Kconfig side. Stay tuned.
-> 
-> Thanks.
-> 
-> ---
-> Frederic Weisbecker (4):
->   nohz: Fix old dynticks idle Kconfig backward compatibility
->   nohz: Switch from "extended nohz" to "full nohz" based naming
->   nohz: Align periodic tick Kconfig with other choices' naming
->     convention
->   nohz: Improve a bit the full dynticks Kconfig documentation
-> 
-> Paul E. McKenney (1):
->   rcu: Kick adaptive-ticks CPUs that are holding up RCU grace periods
-> 
->  Documentation/kernel-parameters.txt |    4 +-
->  include/linux/tick.h                |    6 ++--
->  kernel/rcutree.c                    |   10 ++++++
->  kernel/rcutree.h                    |    1 +
->  kernel/rcutree_plugin.h             |   18 +++++++++++
->  kernel/sched/core.c                 |    6 ++--
->  kernel/time/Kconfig                 |   26 ++++++++++------
->  kernel/time/tick-broadcast.c        |    2 +-
->  kernel/time/tick-common.c           |    2 +-
->  kernel/time/tick-sched.c            |   54 +++++++++++++++++-----------------
->  10 files changed, 82 insertions(+), 47 deletions(-)
+Not sure what to do about this though...
 
-Pulled, thanks Frederic!
-
-	Ingo
+/Mats
