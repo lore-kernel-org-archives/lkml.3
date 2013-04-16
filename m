@@ -1,126 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987Ab3DPLdE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 07:33:04 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:45974 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab3DPLdC (ORCPT
+	id S934237Ab3DPLd4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 07:33:56 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39510 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933289Ab3DPLdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 07:33:02 -0400
-Date: Tue, 16 Apr 2013 13:32:56 +0200
+	Tue, 16 Apr 2013 07:33:55 -0400
+Date: Tue, 16 Apr 2013 13:33:50 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Patch -v4 1/4] Migrate shutdown/reboot to boot cpu.
-Message-ID: <20130416113256.GA10452@gmail.com>
-References: <20130416095827.GJ3672@sgi.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH] x86, FPU: Fix FPU initialization
+Message-ID: <20130416113350.GB10452@gmail.com>
+References: <f3a4fce2-090e-4a08-b05c-0281a95e8943@email.android.com>
+ <20130412094724.GA2368@pd.tnic>
+ <20130412112628.GB2368@pd.tnic>
+ <20130415100858.GB18024@gmail.com>
+ <20130415101734.GB26524@pd.tnic>
+ <20130415101825.GD18024@gmail.com>
+ <20130415155415.GB12144@pd.tnic>
+ <20130415220406.GD12144@pd.tnic>
+ <20130416092528.GF9569@gmail.com>
+ <20130416094852.GA5332@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130416095827.GJ3672@sgi.com>
+In-Reply-To: <20130416094852.GA5332@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Robin Holt <holt@sgi.com> wrote:
+* Borislav Petkov <bp@alien8.de> wrote:
 
-> We recently noticed that reboot of a 1024 cpu machine takes approx 16
-> minutes of just stopping the cpus.  The slowdown was tracked to commit
-> f96972f.
+> On Tue, Apr 16, 2013 at 11:25:28AM +0200, Ingo Molnar wrote:
+> > I've got limited extra capacity right now - but if Peter rebases
+> > tip:x86/cpu or you send a pullable update of tip:x86/cpu I can stick
+> > it into -tip testing and yell if it goes wrong.
+> >
 > 
-> The current implementation does all the work of hot removing the cpus
-> before halting the system.  We are switching to just migrating to the
-> boot cpu and then continuing with shutdown/reboot.
+> Ok, I'll do that in a second.
 > 
-> This also has the effect of not breaking x86's command line parameter for
-> specifying the reboot cpu.  Note, this code was shamelessly copied from
-> arch/x86/kernel/reboot.c with bits removed pertaining to the reboot_cpu
-> command line parameter.
+> Btw, another heads-up: you know how I'm regularly testing
+> Linus+tip/master - well, I started seeing some strange lockups on my
+> workstation with -rc7 + tip from two days ago. And the box wouldn't
+> resume properly, the last line it would print is:
 > 
-> Signed-off-by: Robin Holt <holt@sgi.com>
-> Tested-by: Shawn Guo <shawn.guo@linaro.org>
-> To: Ingo Molnar <mingo@redhat.com>
-> To: Russ Anderson <rja@sgi.com>
-> To: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-> Cc: Michel Lespinasse <walken@google.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Robin Holt <holt@sgi.com>
-> Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: the arch/x86 maintainers <x86@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: <stable@vger.kernel.org>
+> "Disabling non-boot CPUs ..."
 > 
-> ---
-> 
-> Changes since -v1.
-> - Set PF_THREAD_BOUND before migrating to eliminate potential race.
-> - Modified kernel_power_off to also migrate instead of using
->   disable_nonboot_cpus().
-> ---
->  kernel/sys.c | 22 +++++++++++++++++++---
->  1 file changed, 19 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 0da73cf..5ef7aa2 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -357,6 +357,22 @@ int unregister_reboot_notifier(struct notifier_block *nb)
->  }
->  EXPORT_SYMBOL(unregister_reboot_notifier);
->  
-> +void migrate_to_reboot_cpu(void)
+> and then hang. I've backed-out tip/master and it seems to work so it has
+> to be some interaction caused by something in tip. I haven't been able
+> to put my finger on it though but I'll watch it and try to trigger it on
+> my other boxes.
 
-It appears to be file-scope, so should be static I guess?
+Would be nice to pin that down ...
 
-> +{
-> +	/* The boot cpu is always logical cpu 0 */
-> +	int reboot_cpu_id = 0;
-> +
-> +	/* Make certain the cpu I'm about to reboot on is online */
-> +	if (!cpu_online(reboot_cpu_id))
-> +		reboot_cpu_id = smp_processor_id();
-
-Shouldn't we pick the first online CPU instead, to make it deterministic?
-
-Also, does this codepath prevent hotplug from going on in parallel?
-
-( Plus, the smp_processor_id() is in a preemptible section AFAICS, so it will 
-  throw a warning with preempt debug on. )
-
-> +
-> +	/* Prevent races with other tasks migrating this task. */
-
-(I guess the colon can be dropped here, like in the other comments.)
-
-> +	current->flags |= PF_THREAD_BOUND;
-> +
-> +	/* Make certain I only run on the appropriate processor */
-> +	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
-> +}
+You are the first one to report this.
 
 Thanks,
 
