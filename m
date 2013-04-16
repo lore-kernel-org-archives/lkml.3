@@ -1,133 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab3DPK6K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 06:58:10 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:44704 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752138Ab3DPK6I (ORCPT
+	id S1756691Ab3DPK7z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 06:59:55 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:7504 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756467Ab3DPK7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 06:58:08 -0400
-Message-ID: <516D2EB7.8010608@stericsson.com>
-Date: Tue, 16 Apr 2013 12:57:59 +0200
-From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 16 Apr 2013 06:59:54 -0400
+From: Oskar Andero <oskar.andero@sonymobile.com>
+Date: Tue, 16 Apr 2013 12:59:51 +0200
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: David Rientjes <rientjes@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Brian Swetland <swetland@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dolkow, Snild" <Snild.Dolkow@sonymobile.com>,
+        "Lekanovic, Radovan" <Radovan.Lekanovic@sonymobile.com>
+Subject: Re: [PATCH] lowmemorykiller: prevent multiple instances of low
+ memory killer
+Message-ID: <20130416105950.GB22161@caracas.corpusers.net>
+References: <1366031009-21958-1-git-send-email-oskar.andero@sonymobile.com>
+ <20130415131815.GG6638@mwanda>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC83@seldmbx01.corpusers.net>
+ <20130415141358.GO6692@mwanda>
+ <20130415150356.GA22161@caracas.corpusers.net>
+ <D949F1A1ED65354FA281790D817657A4A4BF33CC84@seldmbx01.corpusers.net>
+ <20130415194947.GA26557@kroah.com>
+ <alpine.DEB.2.02.1304151608040.13614@chino.kir.corp.google.com>
+ <20130416061904.GH6638@mwanda>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFT 1/2] regulator: ab8500: Fix set voltage for AB8540_LDO_AUX3
-References: <1365576052.4283.2.camel@phoenix>
-In-Reply-To: <1365576052.4283.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130416061904.GH6638@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2013 08:40 AM, Axel Lin wrote:
-> When setting voltage for AB8540_LDO_AUX3, current code only updates one of
-> info->voltage_reg and info->expand_register registers which is wrong.
-> To ensure we set to correct voltage, it always needs to clear or set
-> expand_register.voltage_mask bit of expand_register.
-The original code is wrong. It is not possible to leave 3.05 V once set.
+On 08:19 Tue 16 Apr     , Dan Carpenter wrote:
+> On Mon, Apr 15, 2013 at 04:11:18PM -0700, David Rientjes wrote:
+> > On Mon, 15 Apr 2013, Greg Kroah-Hartman wrote:
+> > 
+> > > > The positive numbers are used to return information on the remaining
+> > > > cache size (again, see the comment I pasted above). We could use
+> > > > -EBUSY, but we'd have to change vmscan.c, which checks specifically
+> > > > for -1. I can't see a technical reason why -EBUSY couldn't have been
+> > > > chosen instead, but there's also no real reason to change it now.
+> > > 
+> > > If it's not the correct thing to do, sure we can change it, just send a
+> > > patch.  It makes way more sense than some random -1 return value to me.
+> > > 
+> > > Care to send a series of patches fixing this up properly?
+> > > 
+> > 
+> > The comment in shrinker.h is misleading, not the source code.
+> > do_shrinker_shrink() will fail for anything negative and 0.
+> 
+> The comment is correct.  The only acceptable negative return is -1.
+> Look at the second time do_shrinker_shrink() is called from
+> shrink_slab().
+> 
+>    283                  while (total_scan >= batch_size) {
+>    284                          int nr_before;
+>    285  
+>    286                          nr_before = do_shrinker_shrink(shrinker, shrink, 0);
+>    287                          shrink_ret = do_shrinker_shrink(shrinker, shrink,
+>    288                                                          batch_size);
+>    289                          if (shrink_ret == -1)
+>    290                                  break;
+>    291                          if (shrink_ret < nr_before)
+>    292                                  ret += nr_before - shrink_ret;
+>    293                          count_vm_events(SLABS_SCANNED, batch_size);
 
-The function of the expand register bit is the following (from the user 
-manual):
-0: VAUX3 output voltage is determined by Vaux3Sel bit settings in 
-register VldoCVaux3Sel
-1: VAUX3 output voltage is set to 3.05 V regardless of Vaux3Sel settings 
-in register VldoCVaux3Sel
-(VldoCVaux3Sel is the register at 0x0421)
+Yes, the comment is correct with what is implemented in the code, but
+that doesn't mean the code is right. IMHO, relaying on magical numbers is highly
+questionable coding style.
 
-So when going to 3.05 V I would like to set the bit as you are doing. 
-But when leaving 3.05 V for another voltage I would prefer setting the 
-target voltage before clearing the expand register bit.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->   drivers/regulator/ab8500.c |   55 ++++++++++++++++++++++++++++----------------
->   1 file changed, 35 insertions(+), 20 deletions(-)
->
-> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-> index 9ebd131..222a63e 100644
-> --- a/drivers/regulator/ab8500.c
-> +++ b/drivers/regulator/ab8500.c
-> @@ -605,39 +605,54 @@ static int ab8540_aux3_regulator_set_voltage_sel(struct regulator_dev *rdev,
->   {
->   	int ret;
->   	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
-> -	u8 regval;
-> +	u8 regval, regval_expand;
->   
->   	if (info == NULL) {
->   		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
->   		return -EINVAL;
->   	}
->   
-> -	if (selector >= info->expand_register.voltage_limit) {
-> -		/* Vaux3 bit4 has different layout */
-> -		regval = (u8)selector << info->expand_register.voltage_shift;
-> -		ret = abx500_mask_and_set_register_interruptible(info->dev,
-> -					info->expand_register.voltage_bank,
-> -					info->expand_register.voltage_reg,
-> -					info->expand_register.voltage_mask,
-> -					regval);
-> -	} else {
-> -		/* set the registers for the request */
-> -		regval = (u8)selector << info->voltage_shift;
-> -		ret = abx500_mask_and_set_register_interruptible(info->dev,
-> +	if (selector >= info->expand_register.voltage_limit)
-> +		regval_expand = info->expand_register.voltage_mask;
-> +	else
-> +		regval_expand = 0;
-> +
-> +	ret = abx500_mask_and_set_register_interruptible(info->dev,
-> +				info->expand_register.voltage_bank,
-> +				info->expand_register.voltage_reg,
-> +				info->expand_register.voltage_mask,
-> +				regval_expand);
-> +	if (ret < 0) {
-> +		dev_err(rdev_get_dev(rdev),
-> +			"couldn't set expand voltage reg for regulator\n");
-> +		return ret;
-> +	}
-> +
-> +	dev_vdbg(rdev_get_dev(rdev),
-> +		 "%s-set_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-> +		 info->desc.name, info->expand_register.voltage_bank,
-> +		 info->expand_register.voltage_reg,
-> +		 info->expand_register.voltage_mask, regval_expand);
-> +
-> +	if (selector >= info->expand_register.voltage_limit)
-> +		return 0;
-> +
-> +	regval = (u8)selector << info->voltage_shift;
-> +	ret = abx500_mask_and_set_register_interruptible(info->dev,
->   				info->voltage_bank, info->voltage_reg,
->   				info->voltage_mask, regval);
-> -	}
-> -	if (ret < 0)
-> +	if (ret < 0) {
->   		dev_err(rdev_get_dev(rdev),
->   			"couldn't set voltage reg for regulator\n");
-> +		return ret;
-> +	}
->   
->   	dev_vdbg(rdev_get_dev(rdev),
-> -			"%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
-> -			" 0x%x\n",
-> -			info->desc.name, info->voltage_bank, info->voltage_reg,
-> -			info->voltage_mask, regval);
-> +		 "%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
-> +		 info->desc.name, info->voltage_bank, info->voltage_reg,
-> +		 info->voltage_mask, regval);
->   
-> -	return ret;
-> +	return 0;
->   }
->   
->   static struct regulator_ops ab8500_regulator_volt_mode_ops = {
+If there are no objections I will prepare a patch-set and let's discuss it from there.
 
+-Oskar
