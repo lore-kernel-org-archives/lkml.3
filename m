@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965537Ab3DPVmO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 17:42:14 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:47589 "EHLO
+	id S965522Ab3DPVmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 17:42:11 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:47583 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965427Ab3DPVmM (ORCPT
+	by vger.kernel.org with ESMTP id S965427Ab3DPVmI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 17:42:12 -0400
+	Tue, 16 Apr 2013 17:42:08 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-efi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
         Matt Fleming <matt.fleming@intel.com>, Tom Gundersen <teg@jklm.no>
-Subject: [PATCH v2 2/6] efivars: Keep a private global pointer to efivars
-Date: Tue, 16 Apr 2013 22:41:56 +0100
-Message-Id: <1366148520-29954-3-git-send-email-matt@console-pimps.org>
+Subject: [PATCH v2 1/6] efi: move utf16 string functions to efi.h
+Date: Tue, 16 Apr 2013 22:41:55 +0100
+Message-Id: <1366148520-29954-2-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366148520-29954-1-git-send-email-matt@console-pimps.org>
 References: <1366148520-29954-1-git-send-email-matt@console-pimps.org>
@@ -23,329 +23,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-Some machines have an EFI variable interface that does not conform to
-the UEFI specification, e.g. CONFIG_GOOGLE_SMI. Add the necessary code
-so that it's only possible to use one implementation of EFI variable
-operations at runtime. This allows us to keep a single (file-scope)
-global pointer 'struct efivars', which simplifies access. This will
-hopefully dissuade developers from accessing the generic operations
-struct directly in the future, as was done in the efivarfs and pstore
-code, thereby allowing future code to work with both the generic efivar
-ops and the google SMI ops.
+There are currently two implementations of the utf16 string functions.
+Somewhat confusingly, they've got different names.
 
-This may seem like a step backwards in terms of modularity, but we don't
-need to track more than one 'struct efivars' at one time. There is no
-synchronisation done between multiple EFI variable operations, and
-according to Mike no one is using both the generic EFI var ops and
-CONFIG_GOOGLE_SMI simultaneously, though a single kernel build _does_
-need to able to support both. It also helps to clearly highlight which
-functions form the core of the efivars interface - those that require
-access to __efivars.
+Centralise the functions in efi.h.
 
 Cc: Tom Gundersen <teg@jklm.no>
-Acked-by: Mike Waychison <mikew@google.com>
+Reviewed-by: Mike Waychison <mikew@google.com>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
-
-v2 - dropped CONFIG_EFI_VARS_GENERIC_OPS as requested by Mike.
-
- drivers/firmware/efivars.c |   80 +++++++++++++++++++++++++-------------------
- 1 file changed, 46 insertions(+), 34 deletions(-)
+ drivers/firmware/efivars.c     |   17 -----------------
+ drivers/firmware/google/gsmi.c |   19 ++++---------------
+ include/linux/efi.h            |   17 +++++++++++++++++
+ 3 files changed, 21 insertions(+), 32 deletions(-)
 
 diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 34c8783..eab4ec4 100644
+index 7acafb8..34c8783 100644
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -125,7 +125,6 @@ struct efi_variable {
- } __attribute__((packed));
+@@ -172,23 +172,6 @@ static void efivar_update_sysfs_entries(struct work_struct *);
+ static DECLARE_WORK(efivar_work, efivar_update_sysfs_entries);
+ static bool efivar_wq_enabled = true;
  
- struct efivar_entry {
--	struct efivars *efivars;
- 	struct efi_variable var;
- 	struct list_head list;
- 	struct kobject kobj;
-@@ -137,8 +136,8 @@ struct efivar_attribute {
- 	ssize_t (*store)(struct efivar_entry *entry, const char *buf, size_t count);
- };
- 
--static struct efivars __efivars;
--static struct efivar_operations ops;
-+/* Private pointer to registered efivars */
-+static struct efivars *__efivars;
- 
- #define PSTORE_EFI_ATTRIBUTES \
- 	(EFI_VARIABLE_NON_VOLATILE | \
-@@ -479,7 +478,7 @@ efivar_attr_read(struct efivar_entry *entry, char *buf)
- 	if (!entry || !buf)
- 		return -EINVAL;
- 
--	status = get_var_data(entry->efivars, var);
-+	status = get_var_data(__efivars, var);
- 	if (status != EFI_SUCCESS)
- 		return -EIO;
- 
-@@ -513,7 +512,7 @@ efivar_size_read(struct efivar_entry *entry, char *buf)
- 	if (!entry || !buf)
- 		return -EINVAL;
- 
--	status = get_var_data(entry->efivars, var);
-+	status = get_var_data(__efivars, var);
- 	if (status != EFI_SUCCESS)
- 		return -EIO;
- 
-@@ -530,7 +529,7 @@ efivar_data_read(struct efivar_entry *entry, char *buf)
- 	if (!entry || !buf)
- 		return -EINVAL;
- 
--	status = get_var_data(entry->efivars, var);
-+	status = get_var_data(__efivars, var);
- 	if (status != EFI_SUCCESS)
- 		return -EIO;
- 
-@@ -545,7 +544,7 @@ static ssize_t
- efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
- {
- 	struct efi_variable *new_var, *var = &entry->var;
--	struct efivars *efivars = entry->efivars;
-+	struct efivars *efivars = __efivars;
- 	efi_status_t status = EFI_NOT_FOUND;
- 
- 	if (count != sizeof(struct efi_variable))
-@@ -606,7 +605,7 @@ efivar_show_raw(struct efivar_entry *entry, char *buf)
- 	if (!entry || !buf)
- 		return 0;
- 
--	status = get_var_data(entry->efivars, var);
-+	status = get_var_data(__efivars, var);
- 	if (status != EFI_SUCCESS)
- 		return -EIO;
- 
-@@ -728,7 +727,7 @@ static ssize_t efivarfs_file_write(struct file *file,
- 		const char __user *userbuf, size_t count, loff_t *ppos)
- {
- 	struct efivar_entry *var = file->private_data;
--	struct efivars *efivars;
-+	struct efivars *efivars = __efivars;
- 	efi_status_t status;
- 	void *data;
- 	u32 attributes;
-@@ -746,8 +745,6 @@ static ssize_t efivarfs_file_write(struct file *file,
- 	if (attributes & ~(EFI_VARIABLE_MASK))
- 		return -EINVAL;
- 
--	efivars = var->efivars;
+-/* Return the number of unicode characters in data */
+-static unsigned long
+-utf16_strnlen(efi_char16_t *s, size_t maxlength)
+-{
+-	unsigned long length = 0;
 -
- 	/*
- 	 * Ensure that the user can't allocate arbitrarily large
- 	 * amounts of memory. Pick a default size of 64K if
-@@ -855,7 +852,7 @@ static ssize_t efivarfs_file_read(struct file *file, char __user *userbuf,
- 		size_t count, loff_t *ppos)
- {
- 	struct efivar_entry *var = file->private_data;
--	struct efivars *efivars = var->efivars;
-+	struct efivars *efivars = __efivars;
- 	efi_status_t status;
- 	unsigned long datasize = 0;
- 	u32 attributes;
-@@ -1009,7 +1006,7 @@ static int efivarfs_create(struct inode *dir, struct dentry *dentry,
- 			  umode_t mode, bool excl)
- {
- 	struct inode *inode;
--	struct efivars *efivars = &__efivars;
-+	struct efivars *efivars = __efivars;
- 	struct efivar_entry *var;
- 	int namelen, i = 0, err = 0;
- 
-@@ -1038,7 +1035,6 @@ static int efivarfs_create(struct inode *dir, struct dentry *dentry,
- 	var->var.VariableName[i] = '\0';
- 
- 	inode->i_private = var;
--	var->efivars = efivars;
- 	var->kobj.kset = efivars->kset;
- 
- 	err = kobject_init_and_add(&var->kobj, &efivar_ktype, NULL, "%s",
-@@ -1063,7 +1059,7 @@ out:
- static int efivarfs_unlink(struct inode *dir, struct dentry *dentry)
- {
- 	struct efivar_entry *var = dentry->d_inode->i_private;
--	struct efivars *efivars = var->efivars;
-+	struct efivars *efivars = __efivars;
- 	efi_status_t status;
- 
- 	spin_lock_irq(&efivars->lock);
-@@ -1175,7 +1171,7 @@ static int efivarfs_fill_super(struct super_block *sb, void *data, int silent)
- 	struct inode *inode = NULL;
- 	struct dentry *root;
- 	struct efivar_entry *entry, *n;
--	struct efivars *efivars = &__efivars;
-+	struct efivars *efivars = __efivars;
- 	char *name;
- 	int err = -ENOMEM;
- 
-@@ -1302,7 +1298,7 @@ static const struct inode_operations efivarfs_dir_inode_operations = {
- 
- static int efi_pstore_open(struct pstore_info *psi)
- {
--	struct efivars *efivars = psi->data;
-+	struct efivars *efivars = __efivars;
- 
- 	spin_lock_irq(&efivars->lock);
- 	efivars->walk_entry = list_first_entry(&efivars->list,
-@@ -1312,7 +1308,7 @@ static int efi_pstore_open(struct pstore_info *psi)
- 
- static int efi_pstore_close(struct pstore_info *psi)
- {
--	struct efivars *efivars = psi->data;
-+	struct efivars *efivars = __efivars;
- 
- 	spin_unlock_irq(&efivars->lock);
- 	return 0;
-@@ -1323,7 +1319,7 @@ static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
- 			       char **buf, struct pstore_info *psi)
- {
- 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
--	struct efivars *efivars = psi->data;
-+	struct efivars *efivars = __efivars;
- 	char name[DUMP_NAME_LEN];
- 	int i;
- 	int cnt;
-@@ -1386,7 +1382,7 @@ static int efi_pstore_write(enum pstore_type_id type,
- 	char name[DUMP_NAME_LEN];
- 	efi_char16_t efi_name[DUMP_NAME_LEN];
- 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
--	struct efivars *efivars = psi->data;
-+	struct efivars *efivars = __efivars;
- 	int i, ret = 0;
- 	efi_status_t status = EFI_NOT_FOUND;
- 	unsigned long flags;
-@@ -1443,7 +1439,7 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id, int count,
- 	char name_old[DUMP_NAME_LEN];
- 	efi_char16_t efi_name_old[DUMP_NAME_LEN];
- 	efi_guid_t vendor = LINUX_EFI_CRASH_GUID;
--	struct efivars *efivars = psi->data;
-+	struct efivars *efivars = __efivars;
- 	struct efivar_entry *entry, *found = NULL;
- 	int i;
- 
-@@ -1535,7 +1531,7 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 			     char *buf, loff_t pos, size_t count)
- {
- 	struct efi_variable *new_var = (struct efi_variable *)buf;
--	struct efivars *efivars = bin_attr->private;
-+	struct efivars *efivars = __efivars;
- 	struct efivar_entry *search_efivar, *n;
- 	unsigned long strsize1, strsize2;
- 	efi_status_t status = EFI_NOT_FOUND;
-@@ -1612,7 +1608,7 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
- 			     char *buf, loff_t pos, size_t count)
- {
- 	struct efi_variable *del_var = (struct efi_variable *)buf;
--	struct efivars *efivars = bin_attr->private;
-+	struct efivars *efivars = __efivars;
- 	struct efivar_entry *search_efivar, *n;
- 	unsigned long strsize1, strsize2;
- 	efi_status_t status = EFI_NOT_FOUND;
-@@ -1670,7 +1666,7 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
- static bool variable_is_present(efi_char16_t *variable_name, efi_guid_t *vendor)
- {
- 	struct efivar_entry *entry, *n;
--	struct efivars *efivars = &__efivars;
-+	struct efivars *efivars = __efivars;
- 	unsigned long strsize1, strsize2;
- 	bool found = false;
- 
-@@ -1716,7 +1712,7 @@ static unsigned long var_name_strnsize(efi_char16_t *variable_name,
- 
- static void efivar_update_sysfs_entries(struct work_struct *work)
- {
--	struct efivars *efivars = &__efivars;
-+	struct efivars *efivars = __efivars;
- 	efi_guid_t vendor;
- 	efi_char16_t *variable_name;
- 	unsigned long variable_name_size = 1024;
-@@ -1843,7 +1839,6 @@ efivar_create_sysfs_entry(struct efivars *efivars,
- 		return 1;
- 	}
- 
--	new_efivar->efivars = efivars;
- 	memcpy(new_efivar->var.VariableName, variable_name,
- 		variable_name_size);
- 	memcpy(&(new_efivar->var.VendorGuid), vendor_guid, sizeof(efi_guid_t));
-@@ -1942,6 +1937,8 @@ void unregister_efivars(struct efivars *efivars)
- {
- 	struct efivar_entry *entry, *n;
- 
-+	__efivars = NULL;
-+
- 	list_for_each_entry_safe(entry, n, &efivars->list, list) {
- 		spin_lock_irq(&efivars->lock);
- 		list_del(&entry->list);
-@@ -1998,6 +1995,8 @@ int register_efivars(struct efivars *efivars,
- 	unsigned long variable_name_size = 1024;
- 	int error = 0;
- 
-+	__efivars = efivars;
-+
- 	variable_name = kzalloc(variable_name_size, GFP_KERNEL);
- 	if (!variable_name) {
- 		printk(KERN_ERR "efivars: Memory allocation failed.\n");
-@@ -2085,6 +2084,24 @@ out:
- }
- EXPORT_SYMBOL_GPL(register_efivars);
- 
-+static struct efivars generic_efivars;
-+static struct efivar_operations generic_ops;
-+
-+static int generic_ops_register(void)
-+{
-+	generic_ops.get_variable = efi.get_variable;
-+	generic_ops.set_variable = efi.set_variable;
-+	generic_ops.get_next_variable = efi.get_next_variable;
-+	generic_ops.query_variable_info = efi.query_variable_info;
-+
-+	return register_efivars(&generic_efivars, &generic_ops, efi_kobj);
-+}
-+
-+static void generic_ops_unregister(void)
-+{
-+	unregister_efivars(&generic_efivars);
-+}
-+
+-	while (*s++ != 0 && length < maxlength)
+-		length++;
+-	return length;
+-}
+-
+-static inline unsigned long
+-utf16_strlen(efi_char16_t *s)
+-{
+-	return utf16_strnlen(s, ~0UL);
+-}
+-
  /*
-  * For now we register the efi subsystem with the firmware subsystem
-  * and the vars subsystem with the efi subsystem.  In the future, it
-@@ -2111,12 +2128,7 @@ efivars_init(void)
- 		return -ENOMEM;
- 	}
- 
--	ops.get_variable = efi.get_variable;
--	ops.set_variable = efi.set_variable;
--	ops.get_next_variable = efi.get_next_variable;
--	ops.query_variable_info = efi.query_variable_info;
--
--	error = register_efivars(&__efivars, &ops, efi_kobj);
-+	error = generic_ops_register();
- 	if (error)
- 		goto err_put;
- 
-@@ -2132,7 +2144,7 @@ efivars_init(void)
- 	return 0;
- 
- err_unregister:
--	unregister_efivars(&__efivars);
-+	generic_ops_unregister();
- err_put:
- 	kobject_put(efi_kobj);
- 	return error;
-@@ -2144,7 +2156,7 @@ efivars_exit(void)
- 	cancel_work_sync(&efivar_work);
- 
- 	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
--		unregister_efivars(&__efivars);
-+		generic_ops_unregister();
- 		kobject_put(efi_kobj);
- 	}
+  * Return the number of bytes is the length of this string
+  * Note: this is NOT the same as the number of unicode characters
+diff --git a/drivers/firmware/google/gsmi.c b/drivers/firmware/google/gsmi.c
+index 91ddf0f..c409a75 100644
+--- a/drivers/firmware/google/gsmi.c
++++ b/drivers/firmware/google/gsmi.c
+@@ -288,17 +288,6 @@ static int gsmi_exec(u8 func, u8 sub)
+ 	return rc;
  }
+ 
+-/* Return the number of unicode characters in data */
+-static size_t
+-utf16_strlen(efi_char16_t *data, unsigned long maxlength)
+-{
+-	unsigned long length = 0;
+-
+-	while (*data++ != 0 && length < maxlength)
+-		length++;
+-	return length;
+-}
+-
+ static efi_status_t gsmi_get_variable(efi_char16_t *name,
+ 				      efi_guid_t *vendor, u32 *attr,
+ 				      unsigned long *data_size,
+@@ -311,7 +300,7 @@ static efi_status_t gsmi_get_variable(efi_char16_t *name,
+ 	};
+ 	efi_status_t ret = EFI_SUCCESS;
+ 	unsigned long flags;
+-	size_t name_len = utf16_strlen(name, GSMI_BUF_SIZE / 2);
++	size_t name_len = utf16_strnlen(name, GSMI_BUF_SIZE / 2);
+ 	int rc;
+ 
+ 	if (name_len >= GSMI_BUF_SIZE / 2)
+@@ -380,7 +369,7 @@ static efi_status_t gsmi_get_next_variable(unsigned long *name_size,
+ 		return EFI_BAD_BUFFER_SIZE;
+ 
+ 	/* Let's make sure the thing is at least null-terminated */
+-	if (utf16_strlen(name, GSMI_BUF_SIZE / 2) == GSMI_BUF_SIZE / 2)
++	if (utf16_strnlen(name, GSMI_BUF_SIZE / 2) == GSMI_BUF_SIZE / 2)
+ 		return EFI_INVALID_PARAMETER;
+ 
+ 	spin_lock_irqsave(&gsmi_dev.lock, flags);
+@@ -408,7 +397,7 @@ static efi_status_t gsmi_get_next_variable(unsigned long *name_size,
+ 
+ 		/* Copy the name back */
+ 		memcpy(name, gsmi_dev.name_buf->start, GSMI_BUF_SIZE);
+-		*name_size = utf16_strlen(name, GSMI_BUF_SIZE / 2) * 2;
++		*name_size = utf16_strnlen(name, GSMI_BUF_SIZE / 2) * 2;
+ 
+ 		/* copy guid to return buffer */
+ 		memcpy(vendor, &param.guid, sizeof(param.guid));
+@@ -434,7 +423,7 @@ static efi_status_t gsmi_set_variable(efi_char16_t *name,
+ 			      EFI_VARIABLE_BOOTSERVICE_ACCESS |
+ 			      EFI_VARIABLE_RUNTIME_ACCESS,
+ 	};
+-	size_t name_len = utf16_strlen(name, GSMI_BUF_SIZE / 2);
++	size_t name_len = utf16_strnlen(name, GSMI_BUF_SIZE / 2);
+ 	efi_status_t ret = EFI_SUCCESS;
+ 	int rc;
+ 	unsigned long flags;
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index 9bf2f1f..d1d782a 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -719,6 +719,23 @@ static inline void memrange_efi_to_native(u64 *addr, u64 *npages)
+ 	*addr &= PAGE_MASK;
+ }
+ 
++/* Return the number of unicode characters in data */
++static inline unsigned long
++utf16_strnlen(efi_char16_t *s, size_t maxlength)
++{
++	unsigned long length = 0;
++
++	while (*s++ != 0 && length < maxlength)
++		length++;
++	return length;
++}
++
++static inline unsigned long
++utf16_strlen(efi_char16_t *s)
++{
++	return utf16_strnlen(s, ~0UL);
++}
++
+ #if defined(CONFIG_EFI_VARS) || defined(CONFIG_EFI_VARS_MODULE)
+ /*
+  * EFI Variable support.
 -- 
 1.7.10.4
 
