@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965563Ab3DPVyZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 17:54:25 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:45308
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	id S965571Ab3DPV6j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 17:58:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:33608 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965448Ab3DPVyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 17:54:23 -0400
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: [PATCH net] hyperv: Fix a compiler warning in netvsc_send()
-Date: Tue, 16 Apr 2013 15:25:50 -0700
-Message-Id: <1366151150-14859-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S965331Ab3DPV6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 17:58:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,487,1363158000"; 
+   d="scan'208";a="295912270"
+Date: Tue, 16 Apr 2013 14:58:23 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC 0/7] Update REPORTING-BUGS
+Message-ID: <20130416215823.GA18587@xanatos>
+References: <cover.1366046390.git.sarah.a.sharp@linux.intel.com>
+ <20130416014742.GB11005@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130416014742.GB11005@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed: warning: cast from pointer to integer of different size
+Thanks Ted!
 
-The Hyper-V hosts always use 64 bit request id. The guests can have 32 or 64
-bit pointers which equal to the ulong type size. So we cast it to ulong type.
-And, assigning 32bit integer to 64 bit variable works fine.
-
-The VMBus returns the same id in the completion packet. But the value has no
-effect on the host side.
-
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/netvsc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index f5f0f09..2b04804 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -522,7 +522,7 @@ int netvsc_send(struct hv_device *device,
- 	sendMessage.msg.v1_msg.send_rndis_pkt.send_buf_section_size = 0;
- 
- 	if (packet->completion.send.send_completion)
--		req_id = (u64)packet;
-+		req_id = (ulong)packet;
- 	else
- 		req_id = 0;
- 
--- 
-1.7.4.1
-
+On Mon, Apr 15, 2013 at 09:47:42PM -0400, Theodore Ts'o wrote:
+> Sarah,
+> 
+> Thanks so much for improving the REPORTING-BUGS file.  With your
+> changes it looks way better!
+> 
+> 
+> 				- Ted
