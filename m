@@ -1,69 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757581Ab3DPPcW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:32:22 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42045 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753773Ab3DPPcU (ORCPT
+	id S1757682Ab3DPPdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:33:10 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:49143 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755194Ab3DPPdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:32:20 -0400
-Date: Tue, 16 Apr 2013 11:32:19 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <rogerq@ti.com>
-cc: gregkh@linuxfoundation.org, <balbi@ti.com>, <holler@ahsoftware.de>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] USB: ehci-omap: Improve PHY error handling
-In-Reply-To: <1366026636-29198-2-git-send-email-rogerq@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1304161130590.1391-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 16 Apr 2013 11:33:09 -0400
+Message-ID: <1366126380.14735.4.camel@phoenix>
+Subject: [PATCH v2 2/2] regulator: ab8500-ext: Remove enable() and disable()
+ functions
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Tue, 16 Apr 2013 23:33:00 +0800
+In-Reply-To: <1366126152.14735.2.camel@phoenix>
+References: <1366126152.14735.2.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Apr 2013, Roger Quadros wrote:
+Both enable() and disable() functions have only one caller, thus remove them.
 
-> As the USB PHY layer never returns NULL we don't need
-> to check for that condition.
-> 
-> If we fail to get the PHY device it could be due
-> to missing USB PHY drivers. Give this hint to the user
-> in the error message.
-> 
-> CC: Alan Stern <stern@rowland.harvard.edu>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> ---
->  drivers/usb/host/ehci-omap.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
-> index 5de3e43..2e34ddd 100644
-> --- a/drivers/usb/host/ehci-omap.c
-> +++ b/drivers/usb/host/ehci-omap.c
-> @@ -175,13 +175,13 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
->  			phy = devm_usb_get_phy_by_phandle(dev, "phys", i);
->  		else
->  			phy = devm_usb_get_phy_dev(dev, i);
-> -		if (IS_ERR(phy) || !phy) {
-> +		if (IS_ERR(phy)) {
->  			/* Don't bail out if PHY is not absolutely necessary */
->  			if (pdata->port_mode[i] != OMAP_EHCI_PORT_MODE_PHY)
->  				continue;
->  
-> -			ret = IS_ERR(phy) ? PTR_ERR(phy) : -ENODEV;
-> -			dev_err(dev, "Can't get PHY device for port %d: %d\n",
-> +			ret = PTR_ERR(phy);
-> +			dev_err(dev, "Can't get PHY device for port %d: %d. Is USB_PHY driver enabled?\n",
->  					i, ret);
->  			goto err_phy;
->  		}
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/ab8500-ext.c |   64 +++++++++++++++-------------------------
+ 1 file changed, 23 insertions(+), 41 deletions(-)
 
-Getting rid of the !phy test is good.  But I'm doubtful about the 
-change to the error message.  Are you going to make a similar change to 
-every platform driver?  There doesn't seem to be any reason to do this 
-for ehci-omap but not the others.
+diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+index 03faf9c..b4d4547 100644
+--- a/drivers/regulator/ab8500-ext.c
++++ b/drivers/regulator/ab8500-ext.c
+@@ -54,32 +54,44 @@ struct ab8500_ext_regulator_info {
+ 	u8 update_val_hw;
+ };
+ 
+-static int enable(struct ab8500_ext_regulator_info *info, u8 *regval)
++static int ab8500_ext_regulator_enable(struct regulator_dev *rdev)
+ {
+ 	int ret;
++	struct ab8500_ext_regulator_info *info = rdev_get_drvdata(rdev);
++	u8 regval;
+ 
+-	*regval = info->update_val;
++	if (info == NULL) {
++		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
++		return -EINVAL;
++	}
+ 
+ 	/*
+ 	 * To satisfy both HW high power request and SW request, the regulator
+ 	 * must be on in high power.
+ 	 */
+ 	if (info->cfg && info->cfg->hwreq)
+-		*regval = info->update_val_hp;
++		regval = info->update_val_hp;
++	else
++		regval = info->update_val;
+ 
+ 	ret = abx500_mask_and_set_register_interruptible(info->dev,
+ 		info->update_bank, info->update_reg,
+-		info->update_mask, *regval);
++		info->update_mask, regval);
+ 	if (ret < 0) {
+ 		dev_err(rdev_get_dev(info->rdev),
+ 			"couldn't set enable bits for regulator\n");
+ 		return ret;
+ 	}
+ 
+-	return ret;
++	dev_dbg(rdev_get_dev(rdev),
++		"%s-enable (bank, reg, mask, value): 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
++		info->desc.name, info->update_bank, info->update_reg,
++		info->update_mask, regval);
++
++	return 0;
+ }
+ 
+-static int ab8500_ext_regulator_enable(struct regulator_dev *rdev)
++static int ab8500_ext_regulator_disable(struct regulator_dev *rdev)
+ {
+ 	int ret;
+ 	struct ab8500_ext_regulator_info *info = rdev_get_drvdata(rdev);
+@@ -90,59 +102,29 @@ static int ab8500_ext_regulator_enable(struct regulator_dev *rdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	ret = enable(info, &regval);
+-
+-	dev_dbg(rdev_get_dev(rdev), "%s-enable (bank, reg, mask, value):"
+-		" 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
+-		info->desc.name, info->update_bank, info->update_reg,
+-		info->update_mask, regval);
+-
+-	return ret;
+-}
+-
+-static int disable(struct ab8500_ext_regulator_info *info, u8 *regval)
+-{
+-	int ret;
+-
+-	*regval = 0x0;
+-
+ 	/*
+ 	 * Set the regulator in HW request mode if configured
+ 	 */
+ 	if (info->cfg && info->cfg->hwreq)
+-		*regval = info->update_val_hw;
++		regval = info->update_val_hw;
++	else
++		regval = 0;
+ 
+ 	ret = abx500_mask_and_set_register_interruptible(info->dev,
+ 		info->update_bank, info->update_reg,
+-		info->update_mask, *regval);
++		info->update_mask, regval);
+ 	if (ret < 0) {
+ 		dev_err(rdev_get_dev(info->rdev),
+ 			"couldn't set disable bits for regulator\n");
+ 		return ret;
+ 	}
+ 
+-	return ret;
+-}
+-
+-static int ab8500_ext_regulator_disable(struct regulator_dev *rdev)
+-{
+-	int ret;
+-	struct ab8500_ext_regulator_info *info = rdev_get_drvdata(rdev);
+-	u8 regval;
+-
+-	if (info == NULL) {
+-		dev_err(rdev_get_dev(rdev), "regulator info null pointer\n");
+-		return -EINVAL;
+-	}
+-
+-	ret = disable(info, &regval);
+-
+ 	dev_dbg(rdev_get_dev(rdev), "%s-disable (bank, reg, mask, value):"
+ 		" 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
+ 		info->desc.name, info->update_bank, info->update_reg,
+ 		info->update_mask, regval);
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ static int ab8500_ext_regulator_is_enabled(struct regulator_dev *rdev)
+-- 
+1.7.10.4
 
-Alan Stern
+
 
