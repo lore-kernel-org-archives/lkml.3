@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965016Ab3DPS4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 14:56:14 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:42095 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934781Ab3DPS4N (ORCPT
+	id S935427Ab3DPTLM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 15:11:12 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:48573 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935158Ab3DPTLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 14:56:13 -0400
-Date: Tue, 16 Apr 2013 20:56:11 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>,
-        linux-sh@vger.kernel.org
-Subject: Re: Build regressions/improvements in v3.9-rc7
-In-Reply-To: <alpine.DEB.2.00.1304162052210.2338@ayla.of.borg>
-Message-ID: <alpine.DEB.2.00.1304162052420.2358@ayla.of.borg>
-References: <alpine.DEB.2.00.1304162052210.2338@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 16 Apr 2013 15:11:11 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <CAMbhsRSsd_zRApscGK5cUqR=ykuvEWA-DCMAXC1raWPtcuk4Dw@mail.gmail.com>
+References: <1366058481-21033-1-git-send-email-ccross@android.com>
+	<CAMbhsRT08Li=P0GnbW-XdwyDSFtOfbr2MiTLeh-DduMOx-g=zw@mail.gmail.com>
+	<CAJfpegtJW+k6gLZ+jxJKp3Zj0UhCst3WD7N_xrybD59_0o7h5Q@mail.gmail.com>
+	<CA+55aFzUFMOAfxBpsGLYW3R5NA+f+LWCcKoGdizh_PAhQiXDvg@mail.gmail.com>
+	<CAJfpegtJrkii6LRxfoywyXsVtnBAgO4ZzBZOPd71BMz7evhPcQ@mail.gmail.com>
+	<CA+55aFzA66RHjB2KsdCCbEf2NNBnO=-o_rAJ-xZ3sqY1mHoCRA@mail.gmail.com>
+	<CAMbhsRSsd_zRApscGK5cUqR=ykuvEWA-DCMAXC1raWPtcuk4Dw@mail.gmail.com>
+Date: Tue, 16 Apr 2013 21:11:10 +0200
+Message-ID: <CAJfpegt53MRwiMgZTW2DogMWAR54vrPMG=D5Yqs_vpfccPi_5Q@mail.gmail.com>
+Subject: Re: [PATCH] fuse: use kernel headers when __KERNEL__ is set
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Colin Cross <ccross@android.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "open list:FUSE: FILESYSTEM..." <fuse-devel@lists.sourceforge.net>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.9-rc7 to v3.9-rc6[3], the summaries are:
->   - build errors: +8/-10
+On Tue, Apr 16, 2013 at 8:29 PM, Colin Cross <ccross@android.com> wrote:
+> Dropping __linux__ causes a make headers_check warning, which the
+> kbuild test robot reported this morning:
+> usr/include/linux/fuse.h:99: found __[us]{8,16,32,64} type without
+> #include <linux/types.h>
+> Using my patch without modification does not cause that warning.
+>
+> linux/types.h defines the types that are used to communicate between
+> the kernel and userspace.  Redefining those in each header makes no
+> sense, and will probably cause redefined types warnings if you compile
+> a userspace file that includes fuse.h and another uapi header that
+> properly includes linux/types.h.
 
-  + drivers/pcmcia/electra_cf.c: error: implicit declaration of function '__ioremap_at' [-Werror=implicit-function-declaration]:  => 225:2
-  + drivers/pcmcia/electra_cf.c: error: implicit declaration of function '__iounmap_at' [-Werror=implicit-function-declaration]:  => 316:3
-  + drivers/pcmcia/electra_cf.c: error: implicit declaration of function 'in_le32' [-Werror=implicit-function-declaration]:  => 70:2
-  + drivers/pcmcia/electra_cf.c: error: implicit declaration of function 'ioremap' [-Werror=implicit-function-declaration]:  => 213:2  + drivers/pcmcia/electra_cf.c: error: implicit declaration of function 'iounmap' [-Werror=implicit-function-declaration]:  => 318:3
-  + drivers/pcmcia/electra_cf.c: error: implicit declaration of function 'out_le32' [-Werror=implicit-function-declaration]:  => 147:2
+<linux/types.h> is linux specific while the fuse API is cross
+platform.  So the userspace header obviously has to use some cross
+platform type definitions.  Making the type definitions depend on
+__linux__ is probably just as unreliable in userspace as it is in the
+kernel, so why complicate things with that?
 
-powerpc-randconfig
-
->   - build warnings: +164/-34
-
-And my eye fell on this one:
-
-  + include/math-emu/double.h: warning: "__LITTLE_ENDIAN" is not defined [-Wundef]:  => 59:5
-  + include/math-emu/single.h: warning: "__LITTLE_ENDIAN" is not defined [-Wundef]:  => 50:5
-
-sh-randconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6094/ (all 118 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6063/ (all 118 configs)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Thanks,
+Miklos
