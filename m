@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab3DPJYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:24:33 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:40663 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754132Ab3DPJYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:24:31 -0400
-Date: Tue, 16 Apr 2013 04:24:29 -0500
-From: Robin Holt <holt@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Patch -v3 4/4] Make reboot_cpuid a kernel parameter.
-Message-ID: <20130416092429.GI3658@sgi.com>
-References: <20130415171225.GC3658@sgi.com>
- <20130415171635.GI3672@sgi.com>
- <71f0c948-cdea-4e8e-86a3-088d306388b9@email.android.com>
- <20130415173324.GD3658@sgi.com>
- <0d5a866d-3d40-4592-bb9d-d938fb3312e2@email.android.com>
- <20130415182258.GE3658@sgi.com>
- <20130416090109.GB8438@gmail.com>
+	id S1752951Ab3DPJZd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:25:33 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:59173 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864Ab3DPJZc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 05:25:32 -0400
+Date: Tue, 16 Apr 2013 11:25:28 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+Subject: Re: [PATCH] x86, FPU: Fix FPU initialization
+Message-ID: <20130416092528.GF9569@gmail.com>
+References: <20130411202328.GA15955@pd.tnic>
+ <20130412053234.GB3887@gmail.com>
+ <f3a4fce2-090e-4a08-b05c-0281a95e8943@email.android.com>
+ <20130412094724.GA2368@pd.tnic>
+ <20130412112628.GB2368@pd.tnic>
+ <20130415100858.GB18024@gmail.com>
+ <20130415101734.GB26524@pd.tnic>
+ <20130415101825.GD18024@gmail.com>
+ <20130415155415.GB12144@pd.tnic>
+ <20130415220406.GD12144@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130416090109.GB8438@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130415220406.GD12144@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 11:01:09AM +0200, Ingo Molnar wrote:
-> 
-> * Robin Holt <holt@sgi.com> wrote:
-> 
-> > On Mon, Apr 15, 2013 at 10:47:49AM -0700, H. Peter Anvin wrote:
-> > > We usually don't break working user setups as a matter if policy.  Only if it can't be avoided.
-> > > 
-> > > Robin Holt <holt@sgi.com> wrote:
-> > > 
-> > > >On Mon, Apr 15, 2013 at 10:18:31AM -0700, H. Peter Anvin wrote:
-> > > >> Um... doesn't this break anyone who currently depends on this?
-> > > >
-> > > >Yes.  That is also why I kept this separate and not tagged for
-> > > >stable. They would need to start using the more general kernel
-> > > >parameter
-> > > >to get the same functionality.  Should I have done it differently?
-> > 
-> > How about:
-> > Author: Robin Holt <holt@sgi.com>
-> > Date:   Mon Apr 15 11:39:33 2013 -0500
-> > 
-> >     Make reboot_cpuid a kernel parameter.
-> >     
-> >     Moving the reboot=s<##> parameter for x86 to a kernel parameter
-> >     proper.  I did not find any other arch that was specifying the
-> >     reboot cpu.
-> >     
-> >     I left a compatibility mode in there.  The new parameter always
-> >     takes precedence.  I also fixed up the current code to support
-> >     up to cpuid's up to the current max of 4096.
-> 
-> Looks pretty nice and clean to me, as the old boot parameter still keeps working.
-> 
-> Mind sending an updated series that includes all the fixes and the Tested-by from 
-> Shawn Guo?
 
-Will do.  I am still going through the comments from Joe Perches to the
-third patch.  Already have added the Tested-by to just the first patch.
-Otherwise, I am ready to send -v4.
+* Borislav Petkov <bp@alien8.de> wrote:
 
-Robin
+> On Mon, Apr 15, 2013 at 05:54:15PM +0200, Borislav Petkov wrote:
+> > On Mon, Apr 15, 2013 at 12:18:25PM +0200, Ingo Molnar wrote:
+> > > It was tip:master with x86/cpu merged in freshly.
+> > 
+> > Ok, some more observations. I can trigger some oops similar yours (I
+> > haven't caught mine yet over serial or such) with latest tip/master +
+> > tip:x86/cpu.
+> 
+> Ok, here's the deal - it looks like a corruption which causes a couple
+> of different backtraces with different functions in the call trace. I've
+> bisected tip:x86/cpu and the evildoers are:
+
+Correct, 'late effects of memory corruption' was my first impression too, from the 
+crash pattern.
+
+> 
+> commit 3019653a57585602690fd38679326e9337f7ed7f
+> Author: Borislav Petkov <bp@suse.de>
+> Date:   Wed Apr 10 21:37:03 2013 +0200
+> 
+>     x86/fpu: Fix FPU initialization
+> 
+> commit c70293d0e3fef6b989cd8268027d410cf06ce384
+> Author: H. Peter Anvin <hpa@zytor.com>
+> Date:   Mon Apr 8 17:57:43 2013 +0200
+> 
+>     x86: Get rid of ->hard_math and all the FPU asm fu
+> 
+> 
+> I'll venture a guess and say that if you revert those, your .config
+> would boot on your K8 too.
+> 
+> So, I'd propose we take those 2 out for more careful inspection and
+> fixing and the rest of tip:x86/cpu can go upstream in the upcoming merge
+> window. IMHO of course.
+
+I've got limited extra capacity right now - but if Peter rebases tip:x86/cpu or 
+you send a pullable update of tip:x86/cpu I can stick it into -tip testing and 
+yell if it goes wrong.
+
+Thanks,
+
+	Ingo
