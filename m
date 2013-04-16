@@ -1,106 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964809Ab3DPPFJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 11:05:09 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:21797 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935469Ab3DPPFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 11:05:04 -0400
-Message-ID: <516D689D.90709@imgtec.com>
-Date: Tue, 16 Apr 2013 16:05:01 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756935Ab3DPPGN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 11:06:13 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64567 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab3DPPGL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 11:06:11 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/zokz6lJWJc0G02lHodharM8/EtD22ldg=
+Date: Tue, 16 Apr 2013 11:05:37 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Andrew Murray <Andrew.Murray@arm.com>
+Cc: linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        siva.kallam@samsung.com, linux-pci@vger.kernel.org,
+        linus.walleij@linaro.org, thierry.reding@avionic-design.de,
+        Liviu.Dudau@arm.com, grant.likely@secretlab.ca, paulus@samba.org,
+        linux-samsung-soc@vger.kernel.org, linux@arm.linux.org.uk,
+        jg1.han@samsung.com, jgunthorpe@obsidianresearch.com,
+        thomas.abraham@linaro.org, benh@kernel.crashing.org, arnd@arndb.de,
+        devicetree-discuss@lists.ozlabs.org, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, bhelgaas@google.com,
+        linux-arm-kernel@lists.infradead.org,
+        thomas.petazzoni@free-electrons.com, monstr@monstr.eu,
+        linux-kernel@vger.kernel.org, suren.reddy@samsung.com
+Subject: Re: [PATCH v7 0/3] of/pci: Provide common support for PCI DT
+ parsing
+Message-ID: <20130416150537.GC28693@titan.lakedaemon.net>
+References: <1366107508-12672-1-git-send-email-Andrew.Murray@arm.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <akpm@linux-foundation.org>, <mingo@redhat.com>, <x86@kernel.org>,
-        <rth@twiddle.net>, <linux@arm.linux.org.uk>, <msalter@redhat.com>,
-        <starvik@axis.com>, <dhowells@redhat.com>, <tony.luck@intel.com>,
-        <benh@kernel.crashing.org>, <takata@linux-m32r.org>,
-        <geert@linux-m68k.org>, <monstr@monstr.eu>, <ralf@linux-mips.org>,
-        <jonas@southpole.se>, <rkuo@codeaurora.org>, <schwidefsky@de.ibm.com>,
-        <liqin.chen@sunplusct.com>, <davem@davemloft.net>,
-        <lethal@linux-sh.org>, <vgupta@synopsys.com>, <chris@zankel.net>,
-        <cmetcalf@tilera.com>, <ysato@users.sourceforge.jp>,
-        <gxt@mprc.pku.edu.cn>, <jdike@addtoit.com>
-Subject: Re: [PATCH v2 5/5] dump_stack: unify debug information printed by
- show_regs()
-References: <1364610428-2074-1-git-send-email-tj@kernel.org> <1364610428-2074-6-git-send-email-tj@kernel.org> <20130330032445.GA28468@htj.dyndns.org>
-In-Reply-To: <20130330032445.GA28468@htj.dyndns.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_04_16_16_05_02
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366107508-12672-1-git-send-email-Andrew.Murray@arm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/03/13 03:24, Tejun Heo wrote:
-> show_regs() is inherently arch-dependent but it does make sense to
-> print generic debug information and some archs already do albeit in
-> slightly different forms.  This patch introduces a generic function to
-> print debug information from show_regs() so that different archs print
-> out the same information and it's much easier to modify what's
-> printed.
+On Tue, Apr 16, 2013 at 11:18:25AM +0100, Andrew Murray wrote:
+> This patchset factors out duplicated code associated with parsing PCI
+> DT "ranges" properties across the architectures and introduces a
+> "ranges" parser. This parser "of_pci_range_parser" can be used directly
+> by ARM host bridge drivers enabling them to obtain ranges from device
+> trees.
 > 
-> show_regs_print_current() prints out the same debug info as
-> dump_stack() does plus CPU, task and thread_info pointers.
+> I've included the Reviewed-by and Tested-by's received from v5/v6 in this
+> patchset, earlier versions of this patchset (v3) have been tested-by:
 > 
-> * Archs which didn't print debug info now do.
+> Thierry Reding <thierry.reding@avionic-design.de>
+> Jingoo Han <jg1.han@samsung.com>
 > 
->   alpha, arc, blackfin, c6x, cris, frv, h8300, hexagon, ia64, m32r,
->   metag, microblaze, mn10300, openrisc, parisc, score, sh64, sparc,
->   um, xtensa
-> 
-> * Already prints debug info.  Replaced with show_regs_print_current().
->   The printed information is superset of what used to be there.
-> 
->   arm, arm64, avr32, mips, powerpc, sh32, tile, unicore32, x86
-> 
-> * The printed debug information includes arch-specific bits.  Left
->   alone.
-> 
->   s390
-> 
-> Note that now all archs print the debug info before actual register
-> dumps.
-> 
-> An example BUG() dump follows.
-> 
->  kernel BUG at /work/os/work/kernel/workqueue.c:4841!
->  invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->  Modules linked in:
->  Pid: 1, comm: swapper/0 Tainted: G        W    3.9.0-rc1-work+ #20 empty empty/S3992
->  CPU:0 task: ffff88007c85e040 ti: ffff88007c860000 task.ti: ffff88007c860000
->  RIP: 0010:[<ffffffff8234a042>]  [<ffffffff8234a042>] init_workqueues+0x15/0x17
->  RSP: 0000:ffff88007c861ec8  EFLAGS: 00010296
->  RAX: 0000000000000024 RBX: ffffffff82446608 RCX: 0000000000000001
->  RDX: 0000000000000046 RSI: 0000000000000000 RDI: 0000000000000009
->  RBP: ffff88007c861ec8 R08: 0000000000000000 R09: 0000000000000000
->  R10: 0000000000000001 R11: 0000000000000000 R12: ffffffff8234a02d
->  R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
->  FS:  0000000000000000(0000) GS:ffff88007dc00000(0000) knlGS:0000000000000000
->  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->  CR2: ffff88015f7ff000 CR3: 00000000021f1000 CR4: 00000000000007f0
->  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->  Stack:
->   ffff88007c861ef8 ffffffff81000312 ffffffff82446608 ffff88007c85e650
->   0000000000000003 0000000000000000 ffff88007c861f38 ffffffff82335e5d
->   ffff88007c862080 ffffffff8223d8c0 ffff88007c862080 ffffffff81c47730
->  Call Trace:
->   [<ffffffff81000312>] do_one_initcall+0x122/0x170
->   [<ffffffff82335e5d>] kernel_init_freeable+0x9b/0x1c8
->   ...
-> 
-> v2: Typo fix in x86-32.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+> I've tested that this patchset builds and runs on ARM and that it builds on
+> PowerPC and x86_64.
 
-For metag:
-Acked-by: James Hogan <james.hogan@imgtec.com>
+Series replaces v6 in mvebu/drivers
 
-Cheers
-James
+thx,
 
+Jason.
+
+> 
+> Compared to the v6 sent by Andrew Murray, the following changes have
+> been made in response to build errors/warnings:
+> 
+>  * Inclusion of linux/of_address.h in of_pci.c as suggested by Michal
+>    Simek to prevent compilation failures on Microblaze (and others) and his
+>    ack.
+> 
+>  * Use of externs, static inlines and a typo in linux/of_address.h in response
+>    to linker errors (multiple defination) on x86_64 as spotted by a kbuild test
+>    robot on (jcooper/linux.git mvebu/drivers)
+> 
+>  * Add EXPORT_SYMBOL_GPL to of_pci_range_parser function to be consistent
+>    with of_pci_process_ranges function
