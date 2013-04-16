@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935924Ab3DPQ1y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 12:27:54 -0400
-Received: from [216.32.180.30] ([216.32.180.30]:54289 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S935469Ab3DPQ1w (ORCPT
+	id S936009Ab3DPQ3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 12:29:22 -0400
+Received: from mail-gg0-f201.google.com ([209.85.161.201]:40160 "EHLO
+	mail-gg0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935783Ab3DPQ3U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 12:27:52 -0400
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT001.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: PS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahz8dhz8275dhz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Kyle Evans <kvans32@gmail.com>
-CC: =?utf-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: Re: BUG: Fn keys not working on EliteBook 8460p after
- fabf85e3ca15d5b94058f391dac8df870cdd427a
-Thread-Topic: BUG: Fn keys not working on EliteBook 8460p after
- fabf85e3ca15d5b94058f391dac8df870cdd427a
-Thread-Index: AQHON+adNavXer7tn0G8FZnibr/8P5jTXnMAgAC464CAAD66gIAAFbyAgASio4A=
-Date: Tue, 16 Apr 2013 16:26:26 +0000
-Message-ID: <1366129583.13667.11.camel@x230.lan>
-References: <201304130331.18301@pali> <1365816906.13667.6.camel@x230.lan>
-	  <51695169.6090306@gmail.com> <1365870087.13667.7.camel@x230.lan>
-	 <51699843.7060905@gmail.com>
-In-Reply-To: <51699843.7060905@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <D48C6E92C2441246A6B1978FE4EF183A@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	Tue, 16 Apr 2013 12:29:20 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Wolfram Sang <wsa@the-dreams.de>, Kukjin Kim <kgene.kim@samsung.com>
+Cc: Simon Glass <sjg@chromium.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        grant.likely@secretlab.ca, yuvaraj.cd@gmail.com,
+        ben.dooks@codethink.co.uk, u.kleine-koenig@pengutronix.de,
+        broonie@opensource.wolfsonmicro.com, girish.shivananjappa@linaro.org,
+        bhushan.r@samsung.com, sreekumar.c@samsung.com,
+        prashanth.g@samsung.com, olof@lixom.net, djkurtz@chromium.org,
+        swarren@wwwdotorg.org, linux@roeck-us.net,
+        Doug Anderson <dianders@chromium.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Jingoo Han <jg1.han@samsung.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v6 3/3] ARM: dts: Add sbs-battery for exynos5250-snow
+Date: Tue, 16 Apr 2013 09:29:02 -0700
+Message-Id: <1366129742-16048-3-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.1.3
+In-Reply-To: <1366129742-16048-1-git-send-email-dianders@chromium.org>
+References: <1365543270-10736-1-git-send-email-dianders@chromium.org>
+ <1366129742-16048-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3GGRvAd003890
 
-Can you try this patch?
+Now that we have i2c-arbitrator in place on bus 4 we can add the
+sbs-battery driver.  Future devices will be added onto bus 4 once
+drivers are in good shape.
 
-diff --git a/drivers/platform/x86/hp-wmi.c
-b/drivers/platform/x86/hp-wmi.c
-index 45cacf7..91cc5df 100644
---- a/drivers/platform/x86/hp-wmi.c
-+++ b/drivers/platform/x86/hp-wmi.c
-@@ -53,6 +53,7 @@
-MODULE_ALIAS("wmi:5FB7F034-2C63-45e9-BE91-3D44E2C707E4");
- #define HPWMI_ALS_QUERY 0x3
- #define HPWMI_HARDWARE_QUERY 0x4
- #define HPWMI_WIRELESS_QUERY 0x5
-+#define HPWMI_BIOS_QUERY 0x8
- #define HPWMI_HOTKEY_QUERY 0xc
- #define HPWMI_WIRELESS2_QUERY 0x1b
- 
-@@ -284,6 +285,18 @@ static int hp_wmi_tablet_state(void)
- 	return (state & 0x4) ? 1 : 0;
- }
- 
-+static int hp_wmi_enable_hotkeys()
-+{
-+	int ret;
-+	int query = 1;
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v6: None
+Changes in v5: None
+Changes in v4: None
+Changes in v3: None
+Changes in v2: None
+
+ arch/arm/boot/dts/exynos5250-snow.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+index fa85f58..c115143 100644
+--- a/arch/arm/boot/dts/exynos5250-snow.dts
++++ b/arch/arm/boot/dts/exynos5250-snow.dts
+@@ -66,6 +66,12 @@
+ 			reg = <0>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
 +
-+	ret = hp_wmi_perform_query(HPWMI_BIOS_QUERY, 1, &query, sizeof(query),
-+				   0);
-+	if (ret)
-+		return -EINVAL;
-+	return 0;
-+}
-+
- static int hp_wmi_set_block(void *data, bool blocked)
- {
- 	enum hp_wmi_radio r = (enum hp_wmi_radio) data;
-@@ -925,9 +938,7 @@ static int __init hp_wmi_init(void)
- 		err = hp_wmi_input_setup();
- 		if (err)
- 			return err;
--		
--		//Enable magic for hotkeys that run on the SMBus
--		ec_write(0xe6,0x6e);
-+		hp_wmi_enable_hotkeys();
- 	}
++			battery: sbs-battery@b {
++				compatible = "sbs,sbs-battery";
++				reg = <0xb>;
++				sbs,poll-retry-count = <1>;
++			};
+ 		};
+ 	};
  
- 	if (bios_capable) {
-
-
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+1.8.1.3
+
