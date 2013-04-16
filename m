@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936241Ab3DPUKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 16:10:20 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:22404 "EHLO
+	id S936207Ab3DPUKS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 16:10:18 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:22405 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936146Ab3DPUJT (ORCPT
+	with ESMTP id S936149Ab3DPUJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Apr 2013 16:09:19 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: stefano.stabellini@eu.citrix.com, linux-kernel@vger.kernel.org,
         xen-devel@lists.xensource.com
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 6/9] xen/spinlock:  Check against default value of -1 for IRQ line.
-Date: Tue, 16 Apr 2013 16:09:04 -0400
-Message-Id: <1366142947-18655-7-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 8/9] xen/smp/pvhvm: Don't initialize IRQ_WORKER as we are using the native one.
+Date: Tue, 16 Apr 2013 16:09:06 -0400
+Message-Id: <1366142947-18655-9-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com>
 References: <1366142947-18655-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The default (uninitialized) value of the IRQ line is -1.
-Check if we already have allocated an spinlock interrupt line
-and if somebody is trying to do it again. Also set it to -1
-when we offline the CPU.
+There is no need to use the PV version of the IRQ_WORKER mechanism
+as under PVHVM we are using the native version. The native
+version is using the SMP API.
+
+They just sit around unused:
+
+  69:          0          0  xen-percpu-ipi       irqwork0
+  83:          0          0  xen-percpu-ipi       irqwork1
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/xen/spinlock.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/xen/smp.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index f7a080e..47ae032 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -364,6 +364,9 @@ void __cpuinit xen_init_lock_cpu(int cpu)
- 	int irq;
- 	const char *name;
+diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+index 22c800a..415694c 100644
+--- a/arch/x86/xen/smp.c
++++ b/arch/x86/xen/smp.c
+@@ -144,6 +144,13 @@ static int xen_smp_intr_init(unsigned int cpu)
+ 		goto fail;
+ 	per_cpu(xen_callfuncsingle_irq, cpu) = rc;
  
-+	WARN(per_cpu(lock_kicker_irq, cpu) > 0, "spinlock on CPU%d exists on IRQ%d!\n",
-+	     cpu, per_cpu(lock_kicker_irq, cpu));
++	/*
++	 * The IRQ worker on PVHVM goes through the native path and uses the
++	 * IPI mechanism.
++	 */
++	if (xen_hvm_domain())
++		return 0;
 +
- 	name = kasprintf(GFP_KERNEL, "spinlock%d", cpu);
- 	irq = bind_ipi_to_irqhandler(XEN_SPIN_UNLOCK_VECTOR,
- 				     cpu,
-@@ -383,6 +386,7 @@ void __cpuinit xen_init_lock_cpu(int cpu)
- void xen_uninit_lock_cpu(int cpu)
- {
- 	unbind_from_irqhandler(per_cpu(lock_kicker_irq, cpu), NULL);
-+	per_cpu(lock_kicker_irq, cpu) = -1;
- }
+ 	callfunc_name = kasprintf(GFP_KERNEL, "irqwork%d", cpu);
+ 	rc = bind_ipi_to_irqhandler(XEN_IRQ_WORK_VECTOR,
+ 				    cpu,
+@@ -167,6 +174,9 @@ static int xen_smp_intr_init(unsigned int cpu)
+ 	if (per_cpu(xen_callfuncsingle_irq, cpu) >= 0)
+ 		unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu),
+ 				       NULL);
++	if (xen_hvm_domain())
++		return rc;
++
+ 	if (per_cpu(xen_irq_work, cpu) >= 0)
+ 		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
  
- void __init xen_init_spinlocks(void)
+@@ -661,7 +671,8 @@ static void xen_hvm_cpu_die(unsigned int cpu)
+ 	unbind_from_irqhandler(per_cpu(xen_callfunc_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_debug_irq, cpu), NULL);
+ 	unbind_from_irqhandler(per_cpu(xen_callfuncsingle_irq, cpu), NULL);
+-	unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
++	if (!xen_hvm_domain())
++		unbind_from_irqhandler(per_cpu(xen_irq_work, cpu), NULL);
+ 	xen_uninit_lock_cpu(cpu);
+ 	xen_teardown_timer(cpu);
+ 	native_cpu_die(cpu);
 -- 
 1.8.1.4
 
