@@ -1,49 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab3DPJPL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 05:15:11 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:61543 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327Ab3DPJPH (ORCPT
+	id S1756388Ab3DPJRe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 05:17:34 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:63864 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712Ab3DPJRc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 05:15:07 -0400
-Date: Tue, 16 Apr 2013 11:15:03 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: libin <huawei.libin@huawei.com>
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>, stable@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jiang.liu@huawei.com,
-        guohanjun@huawei.com, Peter Zijlstra <peterz@infradead.org>,
-        Jonghwan Choi <jhbird.choi@samsung.com>
-Subject: Re: [PATCH 3.8-stable] sched/debug: Fix sd->*_idx limit range
- avoiding overflow
-Message-ID: <20130416091503.GD9569@gmail.com>
-References: <1366035328-4780-1-git-send-email-jhbird.choi@samsung.com>
- <516CAF08.1090107@huawei.com>
+	Tue, 16 Apr 2013 05:17:32 -0400
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Guenter Roeck <linux@roeck-us.net>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: RE: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+Thread-Topic: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+Thread-Index: AQHON39CtDkBnJtRskO6UighSEzvVZjShI+AgATexgCAAAtnAIAAHWjg///2SgCAARBtIA==
+Date: Tue, 16 Apr 2013 09:17:27 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB514191E2C3@NB-EX-MBX02.diasemi.com>
+References: <201304121310.r3CDAJHh011814@latitude>
+ <20130412133221.GA11293@roeck-us.net>
+ <24DF37198A1E704D9811D8F72B87EB514191E103@NB-EX-MBX02.diasemi.com>
+ <20130415163532.GA24272@roeck-us.net>
+ <24DF37198A1E704D9811D8F72B87EB514191E14C@NB-EX-MBX02.diasemi.com>
+ <20130415174602.GA18800@roeck-us.net>
+In-Reply-To: <20130415174602.GA18800@roeck-us.net>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.109]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <516CAF08.1090107@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* libin <huawei.libin@huawei.com> wrote:
-
-> On 2013/4/15 22:15, Jonghwan Choi wrote:
-> > From: libin <huawei.libin@huawei.com>
-> > 
-> > This patch looks like it should be in the 3.8-stable tree, should we apply
-> > it?
-> > 
+> -----Original Message-----
+> From: Guenter Roeck [mailto:linux@roeck-us.net]
+> Sent: 15 April 2013 18:46
+> To: Opensource [Anthony Olech]
+> Cc: LKML
+> Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
 > 
-> yes, I think this patch should be applied to the 3.8-stable tree. Thanks.
-> Libin
+> On Mon, Apr 15, 2013 at 05:29:13PM +0000, Opensource [Anthony Olech]
+> wrote:
+> > > -----Original Message-----
+> > > From: Guenter Roeck [mailto:linux@roeck-us.net]
+> > > Sent: 15 April 2013 17:36
+> > > To: Opensource [Anthony Olech]
+> > > Cc: LKML
+> > > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+> > >
+> > > On Mon, Apr 15, 2013 at 03:00:58PM +0000, Opensource [Anthony Olech]
+> > > wrote:
+> > > >
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: Guenter Roeck [mailto:linux@roeck-us.net]
+> > > > > Sent: 12 April 2013 14:32
+> > > > > To: Opensource [Anthony Olech]
+> > > > > Cc: Mark Brown; Liam Girdwood; Jean Delvare; Randy Dunlap; LKML;
+> > > > > David Dajun Chen
+> > > > > Subject: Re: [NEW DRIVER V4 7/7] DA9058 REGULATOR driver
+> > > > >
+> > > > > On Fri, Apr 12, 2013 at 02:05:28PM +0100, Anthony Olech wrote:
+> > > > > > This is the REGULATOR component driver of the Dialog DA9058 PMIC.
+> > > > > > This driver is just one component of the whole DA9058 PMIC driver.
+> > > > > > It depends on the CORE component driver of the DA9058 MFD.
+> > > > > >
+> > > > > > There are 6 warnings from scripts/checkpatch.pl, but since it
+> > > > > > seems to be complaining about variable names such as min_uV
+> > > > > > are in CamelCase, when it is obvious that they are not in
+> > > > > > CamelCase I have
+> > > ignored them.
+> > > > > >
+> > > > > ??? min_uV _is_ CamelCase ???
+> > > > >
+> > > > > Ok, maybe it is camelcasE, but you are splitting hairs here.
+> > > >
+> > > > it is not me splitting hairs, it is scripts/checkpatch.pl
+> > > >
+> > > Maybe you did not understand what I meant. Per your logic,
+> > >
+> > > 	MicroVolt is CamelCase
+> > > 	uVolt is ???
+> > > 	uV is not CamelCase
+> > >
+> > > By abbreviating CamelCase to camelCase to cC you make it, in your
+> > > opinion, acceptable.
+> > >
+> > > If you want to declare CamelCase variables, just do it, but don't
+> > > claim that they are not really CamelCase.
+> > >
+> > > Guenter
+> >
+> > I always thought that camel case meant "changing from lower case to
+> > upper case the first letter of each word and then joining the
+> > capitalized words together", so by that definition uV or mW are not camel
+> case because "v" and "w" are not words!
 
-Since this is a debug interface only accessible to root it's not strictly 
-necessary - but I have no objection to including it in -stable.
+The definition of CamelCase From Wikipedia, the free encyclopedia is:
 
-Thanks,
+"CamelCase (camel case) is a term which refers to the practice of writing
+compound words where the first letter of an identifier is lowercase and the
+first letter of each subsequent concatenated word is capitalized."
 
-	Ingo
+> > Either way it seems that the algorithm in scripts/checkpatch.pl is wrong! and
+> that was my point.
+>
+> Guess we'll have to agree to disagree here, as I happen to think that
+> checkpatch is perfectly right.
+> Guenter
+
+Hi Guenter,
+
+I am quite happy to accept the algorithm in scripts/checkpatch.pl as the
+arbiter for correctly formed linux kernel variable names.
+
+On that basis "old_mV", "new_uA" etc are incorrectly formed variable names.
+Could you possibly suggest legal alternatives to "mA", "uV", "kW" ??
+
+Tony Olech
+
+
