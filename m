@@ -1,147 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab3DPHhe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 03:37:34 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:43127 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063Ab3DPHhc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 03:37:32 -0400
+	id S1755902Ab3DPHjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 03:39:17 -0400
+Received: from mx7.zte.com.cn ([202.103.147.169]:45456 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753982Ab3DPHjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 03:39:16 -0400
+To: linux-mtd@lists.infradead.org
+Cc: richard.weinberger@gmail.com, linux-kernel@vger.kernel.org,
+        liu.dong3@zte.com.cn, cui.yunfeng@zte.com.cn, wang.bo116@zte.com.cn
+Subject: 
 MIME-Version: 1.0
-X-Originating-IP: [121.7.167.96]
-Date: Tue, 16 Apr 2013 15:37:31 +0800
-Message-ID: <CAMVG2sskpWgL4JLKZZs8YXqNoLt4gB-UgeeMPnb8bTDKyUeRng@mail.gmail.com>
-Subject: 3.9-rc6 ext4: free_rb_tree_fname oops
-From: Daniel J Blueman <daniel@quora.org>
-To: Linux Kernel <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-KeepSent: 4A055B7D:2DBB5049-48257B4F:002965EA;
+ type=4; name=$KeepSent
+X-Mailer: Lotus Notes Release 6.5.6 March 06, 2007
+Message-ID: <OF4A055B7D.2DBB5049-ON48257B4F.002965EA-48257B4F.002A02DB@zte.com.cn>
+From: wang.bo116@zte.com.cn
+Date: Tue, 16 Apr 2013 15:38:46 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-04-16 15:38:35,
+	Serialize complete at 2013-04-16 15:38:35
+Content-Type: text/plain; charset="US-ASCII"
+X-MAIL: mse02.zte.com.cn r3G7cnoM003290
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using e4defrag on a ext4 filesystem created a month ago, I ran
-into this fatal page fault [1]
- while running e4defrag on 3.9-rc6 (Ubuntu mainline).
+UBI: fix memory leak when use fastmap
 
-e2fsdump output is at http://quora.org/2012/e2fsdump.txt ; let me know
-if you need any more info.
+Sorry, there is something wrong with the previous patch's format, try to 
+submit it again.
 
-Thanks,
-  Daniel
+When use ubi fastmap, there is a memory leak which will make destroy_ai() 
+fail to free the slab.
+The following patch base on linux-3.9-rc6 fix this problem.
 
---- [1]
 
-general protection fault: 0000 [#1] SMP
-Modules linked in: btrfs raid6_pq zlib_deflate xor ufs qnx4 hfsplus
-hfs minix ntfs msdos jfs xfs libcrc32c reiserfs ext2 8021q garp
-parport_pc ppdev rfcomm bnep nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
-fscache snd_hda_codec_hdmi snd_hda_codec_realtek coretemp kvm_intel
-kvm snd_hda_intel snd_hda_codec snd_hwdep ghash_clmulni_intel arc4
-bridge iwldvm joydev i915 cryptd snd_pcm mac80211 stp llc
-snd_page_alloc drm_kms_helper drm snd_seq_midi snd_seq_midi_event
-snd_rawmidi snd_seq psmouse snd_seq_device btusb ir_sony_decoder
-ir_rc5_decoder ir_lirc_codec lirc_dev ir_sanyo_decoder
-ir_mce_kbd_decoder ir_jvc_decoder serio_raw ir_rc6_decoder iwlwifi
-ir_nec_decoder snd_timer i2c_algo_bit rc_rc6_mce microcode nuvoton_cir
-snd rc_core bluetooth soundcore mac_hid cfg80211 mei lpc_ich video lp
-parport hid_generic usbhid hid r8169 ahci libahci
-CPU 0
-Pid: 18139, comm: e4defrag Not tainted 3.9.0-030900rc6-generic
-#201304080035 ZOTAC XXXXXX/XXXXXX
-RIP: 0010:[<ffffffff81238188>] [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
-RSP: 0018:ffff8801134a9e28 EFLAGS: 00010202
-RAX: 0036b44b00008001 RBX: ffff880080e09018 RCX: 0000000180400028
-RDX: 0036b44b00008001 RSI: 0000000000000001 RDI: ffff88013b001700
-RBP: ffff8801134a9e48 R08: 0000000000000000 R09: ffffea0000dbe380
-R10: ffffffff812381bc R11: 0000000000000206 R12: 0000000000000000
-R13: ffff880036f8ec80 R14: ffff880036f8ebc8 R15: ffff8800ade074c0
-FS: 00007fd1923d7740(0000) GS:ffff88013fa00000(0000) knlGS:0000000000000000
-CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00000000013974d8 CR3: 00000001352f2000 CR4: 00000000000407f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process e4defrag (pid: 18139, threadinfo ffff8801134a8000, task
-ffff880138d9c5f0)
-Stack:
- ffff880036f8ec80 0000000040000010 ffff880021a2f900 ffff8800ade074c0
- ffff8801134a9e68 ffffffff81238f36 0000000040000010 ffff88013890f000
- ffff8801134a9e78 ffffffff81238f6a ffff8801134a9ec8 ffffffff8119f57a
-Call Trace:
- [<ffffffff81238f36>] ext4_htree_free_dir_info+0x16/0x30
- [<ffffffff81238f6a>] ext4_release_dir+0x1a/0x20
- [<ffffffff8119f57a>] __fput+0xba/0x240
- [<ffffffff8119f70e>] ____fput+0xe/0x10
- [<ffffffff8107ca58>] task_work_run+0xc8/0xf0
- [<ffffffff81014d7a>] do_notify_resume+0xaa/0xc0
- [<ffffffff8170d0da>] int_signal+0x12/0x17
-Code: 90 90 90 66 66 66 66 90 55 48 89 e5 41 56 41 55 49 89 fd 41 54
-53 48 8b 1f 48 85 db 74 67 48 8b 43 10 eb 11 0f 1f 80 00 00 00 00 <48>
-8b 50 10 48 89 c3 48 89 d0 48 85 c0 75 f1 48 8b 43 08 48 85
-RIP [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
- RSP <ffff8801134a9e28>
----[ end trace 02741f61e6b3c24b ]---
-general protection fault: 0000 [#2] SMP
-Modules linked in: btrfs raid6_pq zlib_deflate xor ufs qnx4 hfsplus
-hfs minix ntfs msdos jfs xfs libcrc32c reiserfs ext2 8021q garp
-parport_pc ppdev rfcomm bnep nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
-fscache snd_hda_codec_hdmi snd_hda_codec_realtek coretemp kvm_intel
-kvm snd_hda_intel snd_hda_codec snd_hwdep ghash_clmulni_intel arc4
-bridge iwldvm joydev i915 cryptd snd_pcm mac80211 stp llc
-snd_page_alloc drm_kms_helper drm snd_seq_midi snd_seq_midi_event
-snd_rawmidi snd_seq psmouse snd_seq_device btusb ir_sony_decoder
-ir_rc5_decoder ir_lirc_codec lirc_dev ir_sanyo_decoder
-ir_mce_kbd_decoder ir_jvc_decoder serio_raw ir_rc6_decoder iwlwifi
-ir_nec_decoder snd_timer i2c_algo_bit rc_rc6_mce microcode nuvoton_cir
-snd rc_core bluetooth soundcore mac_hid cfg80211 mei lpc_ich video lp
-parport hid_generic usbhid hid r8169 ahci libahci
-CPU 0
-Pid: 18139, comm: e4defrag Tainted: G   D   3.9.0-030900rc6-generic
-#201304080035 ZOTAC XXXXXX/XXXXXX
-RIP: 0010:[<ffffffff81238188>] [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
-RSP: 0018:ffff8801134a9b78 EFLAGS: 00010202
-RAX: 0036b44b00008001 RBX: ffff880080e09018 RCX: 0000000000000001
-RDX: 0036b44b00008001 RSI: ffff88013890fb00 RDI: ffff880036f8ef80
-RBP: ffff8801134a9b98 R08: 0000000000000000 R09: 0000000000000000
-R10: ffff88013890fb10 R11: 0000000000000000 R12: 0000000040000010
-R13: ffff880036f8ef80 R14: ffff8800ade07108 R15: ffff8800ade07108
-FS: 0000000000000000(0000) GS:ffff88013fa00000(0000) knlGS:0000000000000000
-CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007f718650aed4 CR3: 0000000001c0d000 CR4: 00000000000407f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process e4defrag (pid: 18139, threadinfo ffff8801134a8000, task
-ffff880138d9c5f0)
-Stack:
- ffff880036f8ef80 0000000040000010 ffff880021a2fb40 ffff8800ade07108
- ffff8801134a9bb8 ffffffff81238f36 0000000040000010 ffff88013890fb00
- ffff8801134a9bc8 ffffffff81238f6a ffff8801134a9c18 ffffffff8119f57a
-Call Trace:
- [<ffffffff81238f36>] ext4_htree_free_dir_info+0x16/0x30
- [<ffffffff81238f6a>] ext4_release_dir+0x1a/0x20
- [<ffffffff8119f57a>] __fput+0xba/0x240
- [<ffffffff8119f70e>] ____fput+0xe/0x10
- [<ffffffff8107ca58>] task_work_run+0xc8/0xf0
- [<ffffffff81060876>] do_exit+0x196/0x480
- [<ffffffff81705329>] oops_end+0xb9/0x100
- [<ffffffff81017d88>] die+0x58/0x90
- [<ffffffff81704d9c>] do_general_protection+0xdc/0x160
- [<ffffffff81704728>] general_protection+0x28/0x30
- [<ffffffff812381bc>] ? free_rb_tree_fname+0x5c/0xb0
- [<ffffffff81238188>] ? free_rb_tree_fname+0x28/0xb0
- [<ffffffff812381bc>] ? free_rb_tree_fname+0x5c/0xb0
- [<ffffffff81238f36>] ext4_htree_free_dir_info+0x16/0x30
- [<ffffffff81238f6a>] ext4_release_dir+0x1a/0x20
- [<ffffffff8119f57a>] __fput+0xba/0x240
- [<ffffffff8119f70e>] ____fput+0xe/0x10
- [<ffffffff8107ca58>] task_work_run+0xc8/0xf0
- [<ffffffff81014d7a>] do_notify_resume+0xaa/0xc0
- [<ffffffff8170d0da>] int_signal+0x12/0x17
-Code: 90 90 90 66 66 66 66 90 55 48 89 e5 41 56 41 55 49 89 fd 41 54
-53 48 8b 1f 48 85 db 74 67 48 8b 43 10 eb 11 0f 1f 80 00 00 00 00 <48>
-8b 50 10 48 89 c3 48 89 d0 48 85 c0 75 f1 48 8b 43 08 48 85
-RIP [<ffffffff81238188>] free_rb_tree_fname+0x28/0xb0
- RSP <ffff8801134a9b78>
----[ end trace 02741f61e6b3c24c ]---
-Fixing recursive fault but reboot is needed!
---
-Daniel J Blueman
+diff -uprN old_ubi/attach.c new_ubi/attach.c
+--- old_ubi/attach.c    2013-04-08 03:49:54.000000000 +0000
++++ new_ubi/attach.c    2013-04-16 03:22:47.343750000 +0000
+@@ -1212,6 +1212,30 @@ static void destroy_ai(struct ubi_attach
+        kfree(ai);
+ }
+ 
++static struct ubi_attach_info *alloc_ai(const char *slab_name)
++{
++       struct ubi_attach_info *ai;
++
++       ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
++       if (!ai)
++               return ai;
++
++       INIT_LIST_HEAD(&ai->corr);
++       INIT_LIST_HEAD(&ai->free);
++       INIT_LIST_HEAD(&ai->erase);
++       INIT_LIST_HEAD(&ai->alien);
++       ai->volumes = RB_ROOT;
++       ai->aeb_slab_cache = kmem_cache_create(slab_name,
++                                          sizeof(struct ubi_ainf_peb),
++                                              0, 0, NULL);
++       if (!ai->aeb_slab_cache) {
++               kfree(ai);
++               ai = NULL;
++       }
++
++       return ai;
++}
++
+ /**
+  * scan_all - scan entire MTD device.
+  * @ubi: UBI device description object
+@@ -1315,8 +1339,13 @@ static int scan_fast(struct ubi_device *
+        int err, pnum, fm_anchor = -1;
+        unsigned long long max_sqnum = 0;
+ 
++       struct ubi_attach_info *fm_temp_ai = NULL;
+        err = -ENOMEM;
+ 
++       fm_temp_ai = alloc_ai("ubi_scan_fastmap_slab_cache");
++       if (!fm_temp_ai)
++               goto out;
++
+        ech = kzalloc(ubi->ec_hdr_alsize, GFP_KERNEL);
+        if (!ech)
+                goto out;
+@@ -1331,7 +1360,7 @@ static int scan_fast(struct ubi_device *
+                cond_resched();
+ 
+                dbg_gen("process PEB %d", pnum);
+-               err = scan_peb(ubi, ai, pnum, &vol_id, &sqnum);
++               err = scan_peb(ubi, fm_temp_ai, pnum, &vol_id, &sqnum);
+                if (err < 0)
+                        goto out_vidh;
+ 
+@@ -1343,6 +1372,7 @@ static int scan_fast(struct ubi_device *
+ 
+        ubi_free_vid_hdr(ubi, vidh);
+        kfree(ech);
++       destroy_ai(fm_temp_ai);
+ 
+        if (fm_anchor < 0)
+                return UBI_NO_FASTMAP;
+@@ -1351,6 +1381,7 @@ static int scan_fast(struct ubi_device *
+ 
+ out_vidh:
+        ubi_free_vid_hdr(ubi, vidh);
++       destroy_ai(fm_temp_ai);
+ out_ech:
+        kfree(ech);
+ out:
+@@ -1359,29 +1390,6 @@ out:
+ 
+ #endif
+ 
+-static struct ubi_attach_info *alloc_ai(const char *slab_name)
+-{
+-       struct ubi_attach_info *ai;
+-
+-       ai = kzalloc(sizeof(struct ubi_attach_info), GFP_KERNEL);
+-       if (!ai)
+-               return ai;
+-
+-       INIT_LIST_HEAD(&ai->corr);
+-       INIT_LIST_HEAD(&ai->free);
+-       INIT_LIST_HEAD(&ai->erase);
+-       INIT_LIST_HEAD(&ai->alien);
+-       ai->volumes = RB_ROOT;
+-       ai->aeb_slab_cache = kmem_cache_create(slab_name,
+-                                          sizeof(struct ubi_ainf_peb),
+-                                              0, 0, NULL);
+-       if (!ai->aeb_slab_cache) {
+-               kfree(ai);
+-               ai = NULL;
+-       }
+-
+-       return ai;
+-}
+ 
+ /**
+  * ubi_attach - attach an MTD device.
+@@ -1419,7 +1427,7 @@ int ubi_attach(struct ubi_device *ubi, i
+                                        return -ENOMEM;
+                        }
+ 
+-                       err = scan_all(ubi, ai, UBI_FM_MAX_START);
++                       err = scan_all(ubi, ai, 0);
+                }
+        }
+ #else
+ 
+ 
+diff -uprN old_ubi/fastmap.c new_ubi/fastmap.c
+--- old_ubi/fastmap.c   2013-04-08 03:49:54.000000000 +0000
++++ new_ubi/fastmap.c   2013-04-16 03:22:17.468750000 +0000
+@@ -552,21 +552,8 @@ static int ubi_attach_fastmap(struct ubi
+        INIT_LIST_HEAD(&used);
+        INIT_LIST_HEAD(&free);
+        INIT_LIST_HEAD(&eba_orphans);
+-       INIT_LIST_HEAD(&ai->corr);
+-       INIT_LIST_HEAD(&ai->free);
+-       INIT_LIST_HEAD(&ai->erase);
+-       INIT_LIST_HEAD(&ai->alien);
+-       ai->volumes = RB_ROOT;
+        ai->min_ec = UBI_MAX_ERASECOUNTER;
+ 
+-       ai->aeb_slab_cache = kmem_cache_create("ubi_ainf_peb_slab",
+-                                          sizeof(struct ubi_ainf_peb),
+-                                              0, 0, NULL);
+-       if (!ai->aeb_slab_cache) {
+-               ret = -ENOMEM;
+-               goto fail;
+-       }
+-
+        fmsb = (struct ubi_fm_sb *)(fm_raw);
+        ai->max_sqnum = fmsb->sqnum;
+        fm_pos += sizeof(struct ubi_fm_sb);
+
+ 
+
+Signed-off-by: Wang bo <wang.bo116@zte.com.cn>
+Tested-by: Wang bo <wang.bo116@zte.com.cn>
+Reviewed-by: Cui Yunfeng <cui.yunfeng@zte.com.cn>
