@@ -1,136 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965741Ab3DQDxF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 23:53:05 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:53082 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965725Ab3DQDxD (ORCPT
+	id S965753Ab3DQD7m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 23:59:42 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52665 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965730Ab3DQD7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 23:53:03 -0400
-Subject: [PATCH] perf tools: Revert regression in configuration of Python support
-Date: Wed, 17 Apr 2013 02:23:16 -0000
-From: Michael Witten <mfwitten@gmail.com>
+	Tue, 16 Apr 2013 23:59:41 -0400
+X-AuditID: 9c930179-b7bd8ae000004629-fa-516e1e2b68d6
+From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@redhat.com>, Al Cooper <alcooperx@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Message-ID: <39a0c238e038432d898d4673f5cf9df6-mfwitten@gmail.com>
-In-Reply-To: <516dba78.8695320a.583d.0722@mx.google.com>
-References: <CAOJsxLHv17Ys3M7P5q25imkUxQW6LE_vABxh1N3Tt7Mv6Ho4iw@mail.gmail.com>
-            <87mwszb4s6.fsf@sejong.aot.lge.com>
-            <516CD300.6070201@gmail.com>
-            <cd2c2e9aae554739b6bcd93513078f80-mfwitten@gmail.com>
-            <516DB548.7010703@gmail.com>
-            <516dba78.8695320a.583d.0722@mx.google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH v2 05/10] perf util: Parse header_page to get proper long size
+Date: Wed, 17 Apr 2013 12:59:21 +0900
+Message-Id: <1366171161-5353-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1366002698-10728-6-git-send-email-namhyung@kernel.org>
+References: <1366002698-10728-6-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013 20:41:59 -0000, Michael Witten wrote:
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-> On Tue, 16 Apr 2013 13:32:08 -0700, David Ahern wrote:
->
->> On 4/16/13 10:08 AM, Michael Witten wrote:
->>> You should probably disable python support more directly:
->>>
->>>    make NO_LIBPYTHON=1
->> 
->> sure, but I should not have to do anything. The intent of the existing 
->> auto-probing code is to figure out what is installed and build a binary 
->> with those capabilities. In this case not having python installed causes 
->> it to blow up.
->
-> That's certainly how it behaved up until the regression.
->
-> To make matters worse, the NO_LIBPYTHON variable is checked only *after* 
-> probing for an executable `python'; in the case that no python is installed
-> at all, the workaround is to double up on your current trick:
->
->   make PYTHON=false PYTHON_CONFIG=false
+The header_page file describes the format of the ring buffer page
+which is used by ftrace (not perf).  And size of "commit" field (I
+guess it's older name was 'size') represents the real size of long
+type used for kernel.  So update the pevent's long size.
 
-I'm probably going to submit a small patch series to improve this
-configuration code in general, but there's no reason to wait for
-me to do this.
-
-Thus, I think the simplest thing to do right away is just to revert
-the one-line change that led to the regression, thereby restoring
-the old behavior which has hitherto worked well enough.
-
-The following patch applies to at least the following commit:
-
-  bb33db7a076f4719dc68c235e187dd4bfb16b621
-
-To apply this patch, save this email to:
-
-  /path/to/email
-
-and then run:
-
-  git am --scissors /path/to/email
-
-Sincerely,
-Michael Witten
-
-8<-----------8<-----------8<-----------8<-----------8<-----------8<-----------
-Among other things, the following:
-
-  commit 31160d7feab786c991780d7f0ce2755a469e0e5e
-  Date:   Tue Jan 8 16:22:36 2013 -0500
-  perf tools: Fix GNU make v3.80 compatibility issue
-
-attempts to aid the user by tapping into an existing error message,
-as described in the commit message:
-
-  ... Also fix an issue where _get_attempt was called with only
-  one argument. This prevented the error message from printing
-  the name of the variable that can be used to fix the problem.
-
-or more precisely:
-
-  -$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2)))
-  +$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2),$(1)))
-
-However, The "missing" argument was in fact missing on purpose; it's
-absence is a signal that the error message should be skipped, because
-the failure would be due to the default value, not any user-supplied
-value.  This can be seen in how `_ge_attempt' uses `gea_err' (in the
-config/utilities.mak file):
-
-  _ge_attempt = $(if $(get-executable),$(get-executable),$(_gea_warn)$(call _gea_err,$(2)))
-  _gea_warn = $(warning The path '$(1)' is not executable.)
-  _gea_err  = $(if $(1),$(error Please set '$(1)' appropriately))
-
-That is, because the argument is no longer missing, the value `$(1)'
-(associated with `_gea_err') always evaluates to true, thus always
-triggering the error condition that is meant to be reserved for
-only the case when a user explicitly supplies an invalid value.
-
-Concretely, the result is a regression in the Makefile's configuration
-of python support; rather than gracefully disable support when the
-relevant executables cannot be found according to default values, the
-build process halts in error as though the user explicitly supplied
-the values.
-
-This new commit simply reverts the offending one-line change.
-
-Reported-by: Pekka Enberg <penberg@kernel.org>
-Link: http://lkml.kernel.org/r/CAOJsxLHv17Ys3M7P5q25imkUxQW6LE_vABxh1N3Tt7Mv6Ho4iw@mail.gmail.com
-Signed-off-by: Michael Witten <mfwitten@gmail.com>
-
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/config/utilities.mak | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It should read into header_page not buf.
 
-diff --git a/tools/perf/config/utilities.mak b/tools/perf/config/utilities.mak
-index 8ef3bd3..3e89719 100644
---- a/tools/perf/config/utilities.mak
-+++ b/tools/perf/config/utilities.mak
-@@ -173,7 +173,7 @@ _ge-abspath = $(if $(is-executable),$(1))
- # Usage: absolute-executable-path-or-empty = $(call get-executable-or-default,variable,default)
- #
- define get-executable-or-default
--$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2),$(1)))
-+$(if $($(1)),$(call _ge_attempt,$($(1)),$(1)),$(call _ge_attempt,$(2)))
- endef
- _ge_attempt = $(if $(get-executable),$(get-executable),$(_gea_warn)$(call _gea_err,$(2)))
- _gea_warn = $(warning The path '$(1)' is not executable.)
+ tools/perf/util/trace-event-read.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
+index fa45fca2a2d3..f2112270c663 100644
+--- a/tools/perf/util/trace-event-read.c
++++ b/tools/perf/util/trace-event-read.c
+@@ -212,6 +212,7 @@ static int read_ftrace_printk(struct pevent *pevent)
+ static int read_header_files(struct pevent *pevent)
+ {
+ 	unsigned long long size;
++	char *header_page;
+ 	char buf[BUFSIZ];
+ 	int ret = 0;
+ 
+@@ -224,7 +225,26 @@ static int read_header_files(struct pevent *pevent)
+ 	}
+ 
+ 	size = read8(pevent);
+-	skip(size);
++
++	header_page = malloc(size);
++	if (header_page == NULL)
++		return -1;
++
++	if (do_read(header_page, size) < 0) {
++		pr_debug("did not read header page");
++		free(header_page);
++		return -1;
++	}
++
++	if (!pevent_parse_header_page(pevent, header_page, size,
++				      pevent_get_long_size(pevent))) {
++		/*
++		 * The commit field in the page is of type long,
++		 * use that instead, since it represents the kernel.
++		 */
++		pevent_set_long_size(pevent, pevent->header_page_size_size);
++	}
++	free(header_page);
+ 
+ 	if (do_read(buf, 13) < 0)
+ 		return -1;
+-- 
+1.7.11.7
+
