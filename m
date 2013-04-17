@@ -1,87 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab3DQQiz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 12:38:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34707 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab3DQQiy (ORCPT
+	id S1756351Ab3DQQjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 12:39:09 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:18239 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755917Ab3DQQjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 12:38:54 -0400
-Message-ID: <1366216723.20385.7.camel@fourier>
-Subject: Re: [PATCH] [media] uvcvideo: quirk PROBE_DEF for Dell Studio /
- OmniVision webcam
-From: Kamal Mostafa <kamal@canonical.com>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Date: Wed, 17 Apr 2013 09:38:43 -0700
-In-Reply-To: <3233904.U6nm1cedXx@avalon>
-References: <1366052511-27284-1-git-send-email-kamal@canonical.com>
-	 <3233904.U6nm1cedXx@avalon>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-ncPWVMVYS8hTjMf40P38"
-X-Mailer: Evolution 3.6.2-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 17 Apr 2013 12:39:07 -0400
+Message-Id: <201304171638.r3HGc3Qv023842@latitude>
+From: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Date: Wed, 17 Apr 2013 17:33:37 +0100
+Subject: [NEW DRIVER V5 7/7] drivers/regulator: DA9058 REGULATOR driver
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@ti.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: David Dajun Chen <david.chen@diasemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch is relative to linux next-20130417
 
---=-ncPWVMVYS8hTjMf40P38
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This is the REGULATOR component driver of the Dialog DA9058 PMIC.
+This driver is just one component of the whole DA9058 PMIC driver.
+It depends on the CORE component driver of the DA9058 MFD.
 
-On Wed, 2013-04-17 at 01:05 +0200, Laurent Pinchart wrote:
-> Hi Kamal,
->=20
-> On Monday 15 April 2013 12:01:51 Kamal Mostafa wrote:
-> > BugLink: https://bugs.launchpad.net/bugs/1168430
-> >=20
-> > OminiVision webcam 0x05a9:0x264a (in Dell Studio Hybrid 140g) needs the
-> > same UVC_QUIRK_PROBE_DEF as other OmniVision model to be recognized
-> > consistently.
-> >=20
-> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
->=20
-> Thank you for the patch.
->=20
-> Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->=20
-> I've taken the patch in my tree and will submit it upstream for v3.11.
->=20
-> Could you please try to get the full 'lsusb -v -d 05a9:264a' output from =
-the=20
-> bug reporter ?
+Changes relative to V4 of this patch:
+- rebased to latest tagged linux-next - previously relative to mainline
+drivers/regulator/da9058-regulator.c
+- use generic regulator_set_voltage_time_sel for triggered BUCKs
+- print erroneous ret value in dev_err
+- changed all names with uV to uv just to confuse and upset all physicists
 
+Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+---
+ drivers/regulator/Kconfig            |   11 ++
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/da9058-regulator.c |  210 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 222 insertions(+)
+ create mode 100644 drivers/regulator/da9058-regulator.c
 
-Thanks Laurent.  The requested lsusb dump is now available at
-https://launchpadlibrarian.net/137633994/lsusb-omnivision-264a.txt
-
- -Kamal
-
-
---=-ncPWVMVYS8hTjMf40P38
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABCAAGBQJRbtATAAoJEHqwmdxYrXhZmJwP/30mqpAVerfg7aOFfdTRz2jr
-mtWLbrvqC53ng5O/brKwrcfvf/UuNrFPFDOVl27wdQO+o5E6UOC0nKsNGon5P8aS
-gFSTHmtSAdo69DqW2ncvb1L3qeJHJOww/706ozfdhpLniL6lLOyKtTrHqsTsjQde
-3WbQk9ZQD73jvMf4w9ATutFKCJeOV4DEQtW/vpJ3ZXvO2pZfRbkCLVUtiJFAbd5J
-YnKMEUZWI/7bBHRB+/W/GYeV4ILMAm43J4xvTPWxhfXeduZAVMA6eGPbY/WjmWA2
-wN6nlN7ZWx8WXXe93Yu/PW9UmVBGxNyLvySrU18MNs2rNzuDIkczMBBvoRQmHN0p
-j0SD4lm+WLKgF9TMyv4w+lf70kVPouY3KCGsathqDBlUOXc7yR6yPniKXbOnO3jw
-q2CRh6kYktwy1j4HHub1WVq7OHNWIaANIOgBFq0w/x6sxF4kIuzFk14/kfriokFs
-uuSU5L1QC/OgbTMCBSAeLGRU0zmKyUL45ZZeyhCv1sAqvWLjAOBGnD4spsHSrE/Y
-SHnJrkJA7grS2d57OmRojohaU5zAmP/Yk0kn954fjsZ9qrpRjQ/M0O/BnK20XtPY
-cM/89cgkKYr2dCvA3gfD5ad+CsHrOtkur/mtkqF4LQq47MaJ8LXfOhzCGZTHXs12
-ckJ+4IIfGrcdCu4MtVcY
-=WUn6
------END PGP SIGNATURE-----
-
---=-ncPWVMVYS8hTjMf40P38--
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 8bb2644..0e36ef6 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -64,6 +64,17 @@ config REGULATOR_USERSPACE_CONSUMER
+ 
+ 	  If unsure, say no.
+ 
++config REGULATOR_DA9058
++	tristate "Support regulators on Dialog Semiconductor DA9058 PMIC"
++	depends on MFD_DA9058
++	help
++	  Say y here to support the BUCKs and LDOs regulators found on
++	  Dialog Semiconductor DA9058 PMIC.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called da9058-regulator.
++
++
+ config REGULATOR_GPIO
+ 	tristate "GPIO regulator support"
+ 	depends on GPIOLIB
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 47a34ff..d3a1dc4 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
+ obj-$(CONFIG_REGULATOR_FAN53555) += fan53555.o
+ obj-$(CONFIG_REGULATOR_GPIO) += gpio-regulator.o
+ obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
++obj-$(CONFIG_REGULATOR_DA9058) += da9058-regulator.o
+ obj-$(CONFIG_REGULATOR_LP3971) += lp3971.o
+ obj-$(CONFIG_REGULATOR_LP3972) += lp3972.o
+ obj-$(CONFIG_REGULATOR_LP872X) += lp872x.o
+diff --git a/drivers/regulator/da9058-regulator.c b/drivers/regulator/da9058-regulator.c
+new file mode 100644
+index 0000000..fcd2f8a
+--- /dev/null
++++ b/drivers/regulator/da9058-regulator.c
+@@ -0,0 +1,210 @@
++/*
++ *  Copyright (C) 2012 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/driver.h>
++#include <linux/regmap.h>
++#include <linux/mfd/core.h>
++
++#include <linux/mfd/da9058/version.h>
++#include <linux/mfd/da9058/registers.h>
++#include <linux/mfd/da9058/core.h>
++#include <linux/mfd/da9058/regulator.h>
++
++struct da9058_regulator {
++	struct da9058 *da9058;
++	int ramp_register;
++	int ramp_enable_mask;
++	struct platform_device *pdev;
++	struct regulator_dev *reg_dev;
++	struct regulator_desc desc;
++	struct regulator_init_data init;
++};
++
++static struct regulator_ops da9058_buck_regulator_ops = {
++	.map_voltage = regulator_map_voltage_linear,
++	.list_voltage = regulator_list_voltage_linear,
++	.set_voltage_time_sel = regulator_set_voltage_time_sel,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++};
++
++static struct regulator_ops da9058_ldo_regulator_ops = {
++	.map_voltage = regulator_map_voltage_linear,
++	.list_voltage = regulator_list_voltage_linear,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++};
++
++static int da9058_regulator_probe(struct platform_device *pdev)
++{
++	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
++	const struct mfd_cell *cell = mfd_get_cell(pdev);
++	struct da9058_regulator_pdata *rpdata;
++	struct da9058_regulator *reg;
++	struct regulator_dev *rdev;
++	struct regulator_config config = { };
++	int ret;
++	unsigned int val;
++
++	if (cell == NULL) {
++		ret = -ENODEV;
++		goto exit;
++	}
++
++	rpdata = cell->platform_data;
++
++	if (rpdata == NULL) {
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	if (rpdata->control_register == 0) {
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	if (rpdata->control_enable_mask == 0) {
++		ret = -EINVAL;
++		goto exit;
++	}
++
++	reg = devm_kzalloc(&pdev->dev, sizeof(struct da9058_regulator),
++				GFP_KERNEL);
++	if (!reg) {
++		ret = -ENOMEM;
++		goto exit;
++	}
++
++	platform_set_drvdata(pdev, reg);
++
++	reg->da9058 = da9058;
++	reg->pdev = pdev;
++	reg->ramp_register = rpdata->ramp_register;
++	reg->ramp_enable_mask = rpdata->ramp_enable_mask;
++
++	reg->desc.name = rpdata->regulator_name;
++	reg->desc.id = rpdata->regulator_id;
++	reg->desc.type = REGULATOR_VOLTAGE;
++	reg->desc.n_voltages = 1;
++
++	if (rpdata->control_voltage_step > 0)
++		reg->desc.n_voltages += (rpdata->max_uv - rpdata->min_uv) /
++					rpdata->control_voltage_step;
++
++	reg->desc.owner = THIS_MODULE;
++	reg->desc.enable_reg = rpdata->control_register;
++	reg->desc.enable_mask = rpdata->control_enable_mask;
++
++	reg->desc.vsel_reg = rpdata->control_register;
++	reg->desc.vsel_mask = rpdata->control_step_mask;
++
++	reg->desc.min_uv = rpdata->min_uv;
++	reg->desc.uv_step = rpdata->control_voltage_step;
++
++	if (reg->ramp_register) {
++		reg->desc.apply_reg = rpdata->ramp_register;
++		reg->desc.apply_bit = rpdata->ramp_enable_mask;
++		reg->desc.ramp_delay = 1000;
++		reg->desc.ops = &da9058_buck_regulator_ops;
++	} else {
++		reg->desc.ops = &da9058_ldo_regulator_ops;
++	}
++
++	reg->init.constraints.name = rpdata->regulator_name;
++	reg->init.constraints.min_uv = rpdata->min_uv;
++	reg->init.constraints.max_uv = rpdata->max_uv;
++	reg->init.constraints.valid_ops_mask = rpdata->valid_ops_mask;
++	reg->init.constraints.valid_modes_mask = rpdata->valid_modes_mask;
++	reg->init.constraints.boot_on = rpdata->boot_on;
++	reg->init.constraints.always_on = rpdata->always_on;
++	reg->init.num_consumer_supplies = rpdata->num_consumer_supplies;
++	reg->init.consumer_supplies = rpdata->consumer_supplies;
++
++	config.dev = pdev->dev.parent;
++	config.init_data = &reg->init;
++	config.driver_data = reg;
++	config.regmap = da9058->regmap;
++
++	rdev = regulator_register(&reg->desc, &config);
++
++	if (IS_ERR(rdev)) {
++		ret = PTR_ERR(rdev);
++		dev_err(&pdev->dev, "failed %d to register %s\n",
++			ret, rpdata->regulator_name);
++		goto failed_to_register;
++	}
++	reg->reg_dev = rdev;
++
++	/* before we do anything check the lock bit */
++	ret = da9058_reg_read(da9058, DA9058_SUPPLY_REG, &val);
++	if (ret)
++		goto unlock_failed;
++
++	if (val & DA9058_SUPPLY_VLOCK)
++		ret = da9058_clear_bits(da9058, DA9058_SUPPLY_REG,
++					DA9058_SUPPLY_VLOCK);
++	if (ret)
++		goto unlock_failed;
++
++	goto exit;
++
++unlock_failed:
++	regulator_unregister(rdev);
++failed_to_register:
++	platform_set_drvdata(pdev, NULL);
++exit:
++	return ret;
++}
++
++static int da9058_regulator_remove(struct platform_device *pdev)
++{
++	struct regulator_dev *rdev = platform_get_drvdata(pdev);
++
++	regulator_unregister(rdev);
++
++	return 0;
++}
++
++static struct platform_driver da9058_regulator_driver = {
++	.probe = da9058_regulator_probe,
++	.remove = da9058_regulator_remove,
++	.driver = {
++		.name = "da9058-regulator",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init da9058_regulator_init(void)
++{
++	return platform_driver_register(&da9058_regulator_driver);
++}
++
++subsys_initcall(da9058_regulator_init);
++
++static void __exit da9058_regulator_exit(void)
++{
++	platform_driver_unregister(&da9058_regulator_driver);
++}
++
++module_exit(da9058_regulator_exit);
++
++MODULE_DESCRIPTION("Dialog DA9058 PMIC voltage and current regulator");
++MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:da9058-regulator");
+-- 
+end-of-patch for NEW DRIVER V5
 
