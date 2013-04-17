@@ -1,166 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab3DQTWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 15:22:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59400 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755079Ab3DQTWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 15:22:44 -0400
-Message-ID: <516EF67B.3030306@ti.com>
-Date: Wed, 17 Apr 2013 15:22:35 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Zhang Rui <rui.zhang@intel.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND 06/11] thermal: use EXPORT_SYMBOL_GPL
-References: <1365437258-31412-1-git-send-email-eduardo.valentin@ti.com>  <1365437258-31412-7-git-send-email-eduardo.valentin@ti.com> <1366212046.2091.57.camel@rzhang1-mobl4>
-In-Reply-To: <1366212046.2091.57.camel@rzhang1-mobl4>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757639Ab3DQTXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 15:23:41 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:29491 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753155Ab3DQTXj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 15:23:39 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-arch@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: [PATCH v4 0/4]  mutex: Improve mutex performance by doing less atomic-ops & better spinning
+Date: Wed, 17 Apr 2013 15:23:10 -0400
+Message-Id: <1366226594-5506-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17-04-2013 11:20, Zhang Rui wrote:
-> On Mon, 2013-04-08 at 12:07 -0400, Eduardo Valentin wrote:
->> Restrict usage of GPL modules.
->>
->> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->
-> NACK for
-> thermal_zone_trend_get/thermal_instance_get/thermal_cdev_update, for the
-> reasons stated earlier.
+v3->v4
+ - Merge patch 4 into patch 2
+ - Move patch 5 forward to become patch 1
 
-I am not sure I get your point above on this patch. This one is about 
-using EXPORT_SYMBOL_GPL. Why not using it?
+v2->v3
+  - Add patch 4 to remove new typedefs introduced in patch 2.
+  - Add patch 5 to remove SCHED_FEAT_OWNER_SPIN and move the mutex
+    spinning code to mutex.c.
 
-> ACK for the others.
+v1->v2
+ - Remove the 2 mutex spinner patches and replaced it by another one
+   to improve the mutex spinning process.
+ - Remove changes made to kernel/mutex.h & localize changes in
+   kernel/mutex.c.
+ - Add an optional patch to remove architecture specific check in patch
+   1.
 
-ok..
+This patch set is a collection of 4 different mutex related patches
+aimed at improving mutex performance especially for system with large
+number of CPUs. This is achieved by doing less atomic operations and
+better mutex spinning (when the CONFIG_MUTEX_SPIN_ON_OWNER is on).
 
->
-> thanks,
-> rui
->> ---
->>   drivers/thermal/thermal_sys.c |   24 ++++++++++++------------
->>   1 files changed, 12 insertions(+), 12 deletions(-)
->>
->> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
->> index 242c82a..602596e 100644
->> --- a/drivers/thermal/thermal_sys.c
->> +++ b/drivers/thermal/thermal_sys.c
->> @@ -168,7 +168,7 @@ int thermal_zone_trend_get(struct thermal_zone_device *tz, int trip)
->>
->>   	return trend;
->>   }
->> -EXPORT_SYMBOL(thermal_zone_trend_get);
->> +EXPORT_SYMBOL_GPL(thermal_zone_trend_get);
->>
->>   struct thermal_instance *thermal_instance_get(struct thermal_zone_device *tz,
->>   			struct thermal_cooling_device *cdev, int trip)
->> @@ -191,7 +191,7 @@ struct thermal_instance *thermal_instance_get(struct thermal_zone_device *tz,
->>
->>   	return target_instance;
->>   }
->> -EXPORT_SYMBOL(thermal_instance_get);
->> +EXPORT_SYMBOL_GPL(thermal_instance_get);
->>
->>   static void print_bind_err_msg(struct thermal_zone_device *tz,
->>   			struct thermal_cooling_device *cdev, int ret)
->> @@ -434,7 +434,7 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
->>   	for (count = 0; count < tz->trips; count++)
->>   		handle_thermal_trip(tz, count);
->>   }
->> -EXPORT_SYMBOL(thermal_zone_device_update);
->> +EXPORT_SYMBOL_GPL(thermal_zone_device_update);
->>
->>   static void thermal_zone_device_check(struct work_struct *work)
->>   {
->> @@ -1197,7 +1197,7 @@ free_mem:
->>   	kfree(dev);
->>   	return result;
->>   }
->> -EXPORT_SYMBOL(thermal_zone_bind_cooling_device);
->> +EXPORT_SYMBOL_GPL(thermal_zone_bind_cooling_device);
->>
->>   /**
->>    * thermal_zone_unbind_cooling_device - unbind a cooling device from a thermal zone
->> @@ -1237,7 +1237,7 @@ unbind:
->>   	kfree(pos);
->>   	return 0;
->>   }
->> -EXPORT_SYMBOL(thermal_zone_unbind_cooling_device);
->> +EXPORT_SYMBOL_GPL(thermal_zone_unbind_cooling_device);
->>
->>   static void thermal_release(struct device *dev)
->>   {
->> @@ -1334,7 +1334,7 @@ unregister:
->>   	device_unregister(&cdev->device);
->>   	return ERR_PTR(result);
->>   }
->> -EXPORT_SYMBOL(thermal_cooling_device_register);
->> +EXPORT_SYMBOL_GPL(thermal_cooling_device_register);
->>
->>   /**
->>    * thermal_cooling_device_unregister - removes the registered thermal cooling device
->> @@ -1394,7 +1394,7 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
->>   	device_unregister(&cdev->device);
->>   	return;
->>   }
->> -EXPORT_SYMBOL(thermal_cooling_device_unregister);
->> +EXPORT_SYMBOL_GPL(thermal_cooling_device_unregister);
->>
->>   void thermal_cdev_update(struct thermal_cooling_device *cdev)
->>   {
->> @@ -1417,7 +1417,7 @@ void thermal_cdev_update(struct thermal_cooling_device *cdev)
->>   	cdev->ops->set_cur_state(cdev, target);
->>   	cdev->updated = true;
->>   }
->> -EXPORT_SYMBOL(thermal_cdev_update);
->> +EXPORT_SYMBOL_GPL(thermal_cdev_update);
->>
->>   /**
->>    * thermal_notify_framework - Sensor drivers use this API to notify framework
->> @@ -1435,7 +1435,7 @@ void thermal_notify_framework(struct thermal_zone_device *tz, int trip)
->>   {
->>   	handle_thermal_trip(tz, trip);
->>   }
->> -EXPORT_SYMBOL(thermal_notify_framework);
->> +EXPORT_SYMBOL_GPL(thermal_notify_framework);
->>
->>   /**
->>    * create_trip_attrs - create attributes for trip points
->> @@ -1687,7 +1687,7 @@ unregister:
->>   	device_unregister(&tz->device);
->>   	return ERR_PTR(result);
->>   }
->> -EXPORT_SYMBOL(thermal_zone_device_register);
->> +EXPORT_SYMBOL_GPL(thermal_zone_device_register);
->>
->>   /**
->>    * thermal_device_unregister - removes the registered thermal zone device
->> @@ -1754,7 +1754,7 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
->>   	device_unregister(&tz->device);
->>   	return;
->>   }
->> -EXPORT_SYMBOL(thermal_zone_device_unregister);
->> +EXPORT_SYMBOL_GPL(thermal_zone_device_unregister);
->>
->>   #ifdef CONFIG_NET
->>   static struct genl_family thermal_event_genl_family = {
->> @@ -1832,7 +1832,7 @@ int thermal_generate_netlink_event(struct thermal_zone_device *tz,
->>
->>   	return result;
->>   }
->> -EXPORT_SYMBOL(thermal_generate_netlink_event);
->> +EXPORT_SYMBOL_GPL(thermal_generate_netlink_event);
->>
->>   static int genetlink_init(void)
->>   {
->
->
->
->
+Patch 1 removes SCHED_FEAT_OWNER_SPIN which was just an earlier hack
+for testing purpose. It also moves the mutex spinning code back to
+mutex.c.
+
+Patch 2 reduces the number of atomic operations executed. It can
+produce dramatic performance improvement in the AIM7 benchmark with
+large number of CPUs. For example, there was a more than 3X improvement
+in the high_systime workload with a 3.7.10 kernel on an 8-socket
+x86-64 system with 80 cores. The 3.8 kernels, on the other hand,
+are not mutex limited for that workload anymore. So the performance
+improvement is only about 1% for the high_systime workload.
+
+Patch 3 improves the mutex spinning process by reducing contention
+among the spinners when competing for the mutex. This is done by
+using a MCS lock to put the spinners in a queue so that only the
+first spinner will try to acquire the mutex when it is available. This
+patch showed significant performance improvement of +30% on the AIM7
+fserver and new_fserver workload.
+
+Compared with patches 2&3 in v1, the new patch 3 consistently provided
+better performance improvement at high user load (1100-2000) for the
+fserver and new_fserver AIM7 workloads. The old patches had around 10%
+and less improvement at high user load while the new patch produced
+30% better performance for the same workloads.
+
+Patch 4 is an optional one for backing out architecture specific
+check in patch 2, if so desired.
+
+Waiman Long (4):
+  mutex: Move mutex spinning code from sched/core.c back to mutex.c
+  mutex: Make more scalable by doing less atomic operations
+  mutex: Queue mutex spinners with MCS lock to reduce cacheline
+    contention
+  mutex: back out architecture specific check for negative mutex count
+
+ include/linux/mutex.h   |    3 +
+ include/linux/sched.h   |    1 -
+ kernel/mutex.c          |  151 +++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/sched/core.c     |   45 --------------
+ kernel/sched/features.h |    7 --
+ 5 files changed, 150 insertions(+), 57 deletions(-)
 
