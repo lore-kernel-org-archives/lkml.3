@@ -1,223 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935253Ab3DQXjJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 19:39:09 -0400
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:37901 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab3DQXjG (ORCPT
+	id S934912Ab3DQXtt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 19:49:49 -0400
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:51538 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753342Ab3DQXtq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 19:39:06 -0400
-Message-ID: <516F3292.3040804@gmail.com>
-Date: Thu, 18 Apr 2013 07:38:58 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 17 Apr 2013 19:49:46 -0400
+Date: Wed, 17 Apr 2013 18:49:40 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [RFC 5/7] Docs: Expectations for bug reporters and maintainers
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <20130417182328.GA7690@xanatos> (from
+	sarah.a.sharp@linux.intel.com on Wed Apr 17 13:23:28 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1366242580.18069.116@driftwood>
 MIME-Version: 1.0
-To: Robin Holt <holt@sgi.com>
-CC: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Avi Kivity <avi.kivity@gmail.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>
-Subject: Re: [PATCH] mm: mmu_notifier: re-fix freed page still mapped in secondary
- MMU
-References: <516CF235.4060103@linux.vnet.ibm.com> <20130416093131.GJ3658@sgi.com>
-In-Reply-To: <20130416093131.GJ3658@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robin,
-On 04/16/2013 05:31 PM, Robin Holt wrote:
-> On Tue, Apr 16, 2013 at 02:39:49PM +0800, Xiao Guangrong wrote:
->> The commit 751efd8610d3 (mmu_notifier_unregister NULL Pointer deref
->> and multiple ->release()) breaks the fix:
->>      3ad3d901bbcfb15a5e4690e55350db0899095a68
->>      (mm: mmu_notifier: fix freed page still mapped in secondary MMU)
-> Can you describe how the page is still mapped?  I thought I had all
-> cases covered.  Whichever call hits first, I thought we had one callout
-> to the registered notifiers.  Are you saying we need multiple callouts?
->
-> Also, shouldn't you be asking for a revert commit and then supply a
-> subsequent commit for the real fix?  I thought that was the process for
-> doing a revert.
+On 04/17/2013 01:23:28 PM, Sarah Sharp wrote:
+> On Tue, Apr 16, 2013 at 09:15:06PM -0500, Rob Landley wrote:
+> > On 04/15/2013 12:33:34 PM, Sarah Sharp wrote:
+> > >Outline how often it's polite to ping kernel maintainers about
+> > >bugs, and
+> > >suggest that kernel maintainers should respond to bugs in 1 to 5
+> > >business days.
+> >
+> > Is there anything in here about the four-level nature of modern
+> > maintainership?
+> >
+> > Patches go from the developer, to the maintainer, to one of Linus's
+> > lieutenants, to Linus himself. If you submit a patch to a maintainer
+> > they owe you a response. The lieutenant (subsystem maintainer) owes
+> > that maintainer a response, and Linus (the project's architect) owes
+> > the lieutenant a response.
+> 
+> Do we want to go into this much detail in a document meant for
+> frustrated bug reporters?  Or perhaps we should create a separate
+> document about the kernel maintainer hierarchy and reference it here?
 
-mmu_notifier is used for sync normal pte and spte, correct?
+My point was that you have to contact the right person to semi-reliably  
+get a response, but you're right. That's more about getting patches in  
+than getting problems reproduced and diagnosed.
 
->
-> Thanks,
-> Robin Holt
->
->> This patch reverts the commit and simply fix the bug spotted
->> by that patch
->>
->> This bug is spotted by commit 751efd8610d3:
->> ======
->> There is a race condition between mmu_notifier_unregister() and
->> __mmu_notifier_release().
->>
->> Assume two tasks, one calling mmu_notifier_unregister() as a result of a
->> filp_close() ->flush() callout (task A), and the other calling
->> mmu_notifier_release() from an mmput() (task B).
->>
->>                      A                               B
->> t1                                              srcu_read_lock()
->> t2              if (!hlist_unhashed())
->> t3                                              srcu_read_unlock()
->> t4              srcu_read_lock()
->> t5                                              hlist_del_init_rcu()
->> t6                                              synchronize_srcu()
->> t7              srcu_read_unlock()
->> t8              hlist_del_rcu()  <--- NULL pointer deref.
->> ======
->>
->> This can be fixed by using hlist_del_init_rcu instead of hlist_del_rcu.
->>
->> The another issue spotted in the commit is
->> "multiple ->release() callouts", we needn't care it too much because
->> it is really rare (e.g, can not happen on kvm since mmu-notify is unregistered
->> after exit_mmap()) and the later call of multiple ->release should be
->> fast since all the pages have already been released by the first call.
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>   mm/mmu_notifier.c |   81 +++++++++++++++++++++++++++--------------------------
->>   1 files changed, 41 insertions(+), 40 deletions(-)
->>
->> diff --git a/mm/mmu_notifier.c b/mm/mmu_notifier.c
->> index be04122..606777a 100644
->> --- a/mm/mmu_notifier.c
->> +++ b/mm/mmu_notifier.c
->> @@ -40,48 +40,45 @@ void __mmu_notifier_release(struct mm_struct *mm)
->>   	int id;
->>
->>   	/*
->> -	 * srcu_read_lock() here will block synchronize_srcu() in
->> -	 * mmu_notifier_unregister() until all registered
->> -	 * ->release() callouts this function makes have
->> -	 * returned.
->> +	 * SRCU here will block mmu_notifier_unregister until
->> +	 * ->release returns.
->>   	 */
->>   	id = srcu_read_lock(&srcu);
->> +	hlist_for_each_entry_rcu(mn, &mm->mmu_notifier_mm->list, hlist)
->> +		/*
->> +		 * if ->release runs before mmu_notifier_unregister it
->> +		 * must be handled as it's the only way for the driver
->> +		 * to flush all existing sptes and stop the driver
->> +		 * from establishing any more sptes before all the
->> +		 * pages in the mm are freed.
->> +		 */
->> +		if (mn->ops->release)
->> +			mn->ops->release(mn, mm);
->> +	srcu_read_unlock(&srcu, id);
->> +
->>   	spin_lock(&mm->mmu_notifier_mm->lock);
->>   	while (unlikely(!hlist_empty(&mm->mmu_notifier_mm->list))) {
->>   		mn = hlist_entry(mm->mmu_notifier_mm->list.first,
->>   				 struct mmu_notifier,
->>   				 hlist);
->> -
->>   		/*
->> -		 * Unlink.  This will prevent mmu_notifier_unregister()
->> -		 * from also making the ->release() callout.
->> +		 * We arrived before mmu_notifier_unregister so
->> +		 * mmu_notifier_unregister will do nothing other than
->> +		 * to wait ->release to finish and
->> +		 * mmu_notifier_unregister to return.
->>   		 */
->>   		hlist_del_init_rcu(&mn->hlist);
->> -		spin_unlock(&mm->mmu_notifier_mm->lock);
->> -
->> -		/*
->> -		 * Clear sptes. (see 'release' description in mmu_notifier.h)
->> -		 */
->> -		if (mn->ops->release)
->> -			mn->ops->release(mn, mm);
->> -
->> -		spin_lock(&mm->mmu_notifier_mm->lock);
->>   	}
->>   	spin_unlock(&mm->mmu_notifier_mm->lock);
->>
->>   	/*
->> -	 * All callouts to ->release() which we have done are complete.
->> -	 * Allow synchronize_srcu() in mmu_notifier_unregister() to complete
->> -	 */
->> -	srcu_read_unlock(&srcu, id);
->> -
->> -	/*
->> -	 * mmu_notifier_unregister() may have unlinked a notifier and may
->> -	 * still be calling out to it.	Additionally, other notifiers
->> -	 * may have been active via vmtruncate() et. al. Block here
->> -	 * to ensure that all notifier callouts for this mm have been
->> -	 * completed and the sptes are really cleaned up before returning
->> -	 * to exit_mmap().
->> +	 * synchronize_srcu here prevents mmu_notifier_release to
->> +	 * return to exit_mmap (which would proceed freeing all pages
->> +	 * in the mm) until the ->release method returns, if it was
->> +	 * invoked by mmu_notifier_unregister.
->> +	 *
->> +	 * The mmu_notifier_mm can't go away from under us because one
->> +	 * mm_count is hold by exit_mmap.
->>   	 */
->>   	synchronize_srcu(&srcu);
->>   }
->> @@ -292,31 +289,35 @@ void mmu_notifier_unregister(struct mmu_notifier *mn, struct mm_struct *mm)
->>   {
->>   	BUG_ON(atomic_read(&mm->mm_count) <= 0);
->>
->> -	spin_lock(&mm->mmu_notifier_mm->lock);
->>   	if (!hlist_unhashed(&mn->hlist)) {
->> +		/*
->> +		 * SRCU here will force exit_mmap to wait ->release to finish
->> +		 * before freeing the pages.
->> +		 */
->>   		int id;
->>
->> +		id = srcu_read_lock(&srcu);
->>   		/*
->> -		 * Ensure we synchronize up with __mmu_notifier_release().
->> +		 * exit_mmap will block in mmu_notifier_release to
->> +		 * guarantee ->release is called before freeing the
->> +		 * pages.
->>   		 */
->> -		id = srcu_read_lock(&srcu);
->> -
->> -		hlist_del_rcu(&mn->hlist);
->> -		spin_unlock(&mm->mmu_notifier_mm->lock);
->> -
->>   		if (mn->ops->release)
->>   			mn->ops->release(mn, mm);
->> +		srcu_read_unlock(&srcu, id);
->>
->> +		spin_lock(&mm->mmu_notifier_mm->lock);
->>   		/*
->> -		 * Allow __mmu_notifier_release() to complete.
->> +		 * Can not use list_del_rcu() since __mmu_notifier_release
->> +		 * can delete it before we hold the lock.
->>   		 */
->> -		srcu_read_unlock(&srcu, id);
->> -	} else
->> +		hlist_del_init_rcu(&mn->hlist);
->>   		spin_unlock(&mm->mmu_notifier_mm->lock);
->> +	}
->>
->>   	/*
->> -	 * Wait for any running method to finish, including ->release() if it
->> -	 * was run by __mmu_notifier_release() instead of us.
->> +	 * Wait any running method to finish, of course including
->> +	 * ->release if it was run by mmu_notifier_relase instead of us.
->>   	 */
->>   	synchronize_srcu(&srcu);
->>
->> -- 
->> 1.7.7.6
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Also, please note that I'm writing this from the perspective of a  
+> driver
+> maintainer.  I'm not sure if we've met face to face. :)
 
+Pretty sure we haven't. (You helped me debug a weird usb3 issue once  
+via email.)
+
+> > Linus does not owe you, personally, a response. Neither do the
+> > subsystem maintainers if you approach them directly with something
+> > that should have gone through one of the hundreds of domain-specific
+> > maintainers out of the Maintainers file. So the point of going to
+> > the right people in sequence and getting their review and
+> > signed-off-by lines is to ensure you don't sit there listening to
+> > crickets chirping while your patch is ignored. (If you approach
+> > Linus directly you may randomly _get_ a response, but there's no
+> > guarantee, and usually you won't because he's really busy.)
+> 
+> This file is about bug reporting, not submitting patches.  I rewrote
+...
+> TLDR version: Yes, it would be nice if bug reporters could go up the
+> hierarchy, but they don't have an easy way to know which subsystem
+> maintainers to contact.  Perhaps a new line in MAINTAINERS for the
+> subsystem maintainer would be helpful?
+
+Eh, this has gone undocumented for a full decade and nobody but me's  
+cared. It seemed related at the time (general interacting with the  
+kernel developers), but I guess not.
+
+Rob
