@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757756Ab3DQFt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 01:49:56 -0400
-Received: from mail-gh0-f180.google.com ([209.85.160.180]:64580 "EHLO
-	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757179Ab3DQFtw (ORCPT
+	id S1757830Ab3DQGDL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 02:03:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:54768 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754227Ab3DQGDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 01:49:52 -0400
-Message-ID: <516E37FA.4020000@gmail.com>
-Date: Wed, 17 Apr 2013 13:49:46 +0800
-From: Simon Jeons <simon.jeons@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
-CC: Ric Mason <ric.masonn@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
- memory error on dirty cache selectable
-References: <51662D5B.3050001@hitachi.com> <516633BB.40307@gmail.com> <5166B1DF.8070504@hitachi.com> <5166B3FE.4000002@gmail.com> <51680F97.3020407@hitachi.com>
-In-Reply-To: <51680F97.3020407@hitachi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Apr 2013 02:03:09 -0400
+Date: Wed, 17 Apr 2013 16:02:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Simon Horman <horms@verge.net.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
+Subject: linux-next: manual merge of the renesas tree with the gen-gpio tree
+Message-Id: <20130417160256.3bb8bc1e26fe4e9dc47fe5f1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__17_Apr_2013_16_02_56_+1000_Dq7XpV1SvUfknija"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mitsuhiro,
-On 04/12/2013 09:43 PM, Mitsuhiro Tanino wrote:
-> (2013/04/11 22:00), Ric Mason wrote:
->> Hi Mitsuhiro,
->> On 04/11/2013 08:51 PM, Mitsuhiro Tanino wrote:
->>> (2013/04/11 12:53), Simon Jeons wrote:
->>>> One question against mce instead of the patchset. ;-)
->>>>
->>>> When check memory is bad? Before memory access? Is there a process scan it period?
->>> Hi Simon-san,
->>>
->>> Yes, there is a process to scan memory periodically.
->>>
->>> At Intel Nehalem-EX and CPUs after Nehalem-EX generation, MCA recovery
->>> is supported. MCA recovery provides error detection and isolation
->>> features to work together with OS.
->>> One of the MCA Recovery features is Memory Scrubbing. It periodically
->>> checks memory in the background of OS.
->> Memory Scrubbing is a kernel thread? Where is the codes of memory scrubbing?
-> Hi Ric,
->
-> No. One of the MCA Recovery features is Memory Scrubbing.
+--Signature=_Wed__17_Apr_2013_16_02_56_+1000_Dq7XpV1SvUfknija
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Memory Scrubbing is a process in CPU?
+Hi Simon,
 
-> And Memory Scrubbing is a hardware feature of Intel CPU.
->
-> OS has a hwpoison feature which is included at mm/memory-failure.c.
-> A main function is memory_failure().
->
-> If Memory Scrubbing finds a memory error, MCA recovery notifies SRAO error
-> into OS and OS handles the SRAO error using hwpoison function.
->
->
->>> If Memory Scrubbing find an uncorrectable error on a memory before
->>> OS accesses the memory bit, MCA recovery notifies SRAO error into OS
->> It maybe can't find memory error timely since it is sleeping when memory error occur, can this case happened?
-> Memory Scrubbing seems to be operated periodically but I don't have
-> information about how oftern it is executed.
+Today's linux-next merge of the renesas tree got a conflict in
+drivers/pinctrl/sh-pfc/Kconfig between commit 76ec9d18b897 ("Convert
+selectors of GENERIC_GPIO to GPIOLIB") from the gen-gpio tree and commit
+809e5fce84f4 ("sh-pfc: Remove dependency on GPIOLIB") from the renesas
+tree.
 
-If Memory Scurbbing doesn't catch memory error timely, who will send 
-SRAR into OS?
+I fixed it up (using the latter) and can carry the fix as necessary (no
+action is required).
 
->
-> Regards,
-> Mitsuhiro Tanino
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__17_Apr_2013_16_02_56_+1000_Dq7XpV1SvUfknija
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRbjsQAAoJEECxmPOUX5FEQzsP/39EOaL22DgZpdgxyyI4TYT3
+hgJ4/lvYL5LkYWMx2OOk8zczN3ttjum8v2haUEho9b1Oya8zwmfFeqzNf1FEEtUt
+bpHN2SgeNaa3ljKCLZ9VQOkm1lvAgGNxUpCvaamgU4+dwKqBYEGN8PFv0PhikOk6
+4biQSmGIVXzNwy731pbqe3xUoUnXavXQvFgZ04PloQZ1vZKLPnjwxpbT8/EfLK6M
+zVFIpD/PI9lr/fJvM56XOp2Pu0XmEe1w+0wQkrrYXhAQ0H+UYpRi0NX5tm1SJiLf
+K5jIy3ycs5izJhJLZIf1L4/TNM3F9QVUSTbUwkISMH2cGWTZE8fi4Fhpju50tgQ8
+jyns0WAvD6Nhg/yFHaPAu3fTpcczobbXdeTK+IqHjPM7suboE3m5Pk0i1d7w7MpH
+gMdyJvOz5ByNtwhXsOxiDZ1Qmapko0DTsq1GW4Pm/bi0viOlfSr93B0RHKNzvAIt
+HCLCCWWG3o6fK50eenOp2jf820NPksXcKeNgaBJwlDV4aofZE0Hu1gYy9JXXPELt
+weLE+umdNDA1h265yMeAnfgl+AfRTXLTF6cBqPtQ5P7XQKsaMuW4L1kE6hVtbIRw
+uCrHYak5hPcehYEFfyqCD1B3femB2DcF+37GPSgXzgnboKKzo1RqoKphN4Yf3ocK
+mFCJ6DG9Jloal+FXrG/8
+=fXQ3
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__17_Apr_2013_16_02_56_+1000_Dq7XpV1SvUfknija--
