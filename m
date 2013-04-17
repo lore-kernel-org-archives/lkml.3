@@ -1,58 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab3DQSmw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 14:42:52 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:59462 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab3DQSmu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 14:42:50 -0400
-Message-ID: <1366224294.9379.32.camel@haakon3.risingtidesystems.com>
-Subject: Re: linux-next: Tree for Apr 17 (infiniband/rdma)
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Or Gerlitz <or.gerlitz@gmail.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org,
-        target-devel <target-devel@vger.kernel.org>
-Date: Wed, 17 Apr 2013 11:44:54 -0700
-In-Reply-To: <CAJZOPZJHJ0qKJo=HyEiJq1rRPXg+8bNh+8U_2WhX6FKbE2Km7A@mail.gmail.com>
-References: <20130417170450.5dd6e5f450de4d5bf197d997@canb.auug.org.au>
-	 <516EE4BD.3000200@infradead.org>
-	 <CAJZOPZJHJ0qKJo=HyEiJq1rRPXg+8bNh+8U_2WhX6FKbE2Km7A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S966398Ab3DQSnd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 14:43:33 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:46412 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757569Ab3DQSn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 14:43:29 -0400
+From: Robin Holt <holt@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Russ Anderson <rja@sgi.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: [PATCH -v5 1/5] CPU hotplug: Provide a generic helper to disable/enable CPU hotplug
+Date: Wed, 17 Apr 2013 13:43:14 -0500
+Message-Id: <1366224198-49485-2-git-send-email-holt@sgi.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1366224198-49485-1-git-send-email-holt@sgi.com>
+References: <1366224198-49485-1-git-send-email-holt@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-17 at 21:15 +0300, Or Gerlitz wrote:
-> On Wed, Apr 17, 2013 at 9:06 PM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> > On 04/17/13 00:04, Stephen Rothwell wrote:
-> >> Changes since 20130416:
-> 
-> > on x86_64:
-> > drivers/built-in.o: In function `isert_free_np':
-> > ib_isert.c:(.text+0x6e8a77): undefined reference to `rdma_destroy_id'
-> [...]
-> 
-> Nic,
-> 
-> Yep, you need to add
-> 
-> depends on INET &&  INFINIBAND_ADDR_TRANS
-> 
-> 
-> to the isert Kconfig entry
-> 
-> 
-> This will make sure to get the rdma_cm to be configured and builts
-> whenever isert is
-> 
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-Thanks Roland & Or, fixing this up now.
+There are instances in the kernel where we would like to disable
+CPU hotplug (from sysfs) during some important operation. Today
+the freezer code depends on this and the code to do it was kinda
+tailor-made for that.
 
---nab
+Restructure the code and make it generic enough to be useful for
+other usecases too.
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Robin Holt <holt@sgi.com>
+---
+ include/linux/cpu.h |  2 ++
+ kernel/cpu.c        | 27 +++++++++------------------
+ 2 files changed, 11 insertions(+), 18 deletions(-)
+
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index ce7a074..73282d4 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -141,6 +141,8 @@ static inline void unregister_cpu_notifier(struct notifier_block *nb)
+ }
+ #endif
+ 
++extern void cpu_hotplug_disable(void);
++extern void cpu_hotplug_enable(void);
+ int cpu_up(unsigned int cpu);
+ void notify_cpu_starting(unsigned int cpu);
+ extern void cpu_maps_update_begin(void);
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index b5e4ab2..28769f5 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -541,29 +541,20 @@ static int __init alloc_frozen_cpus(void)
+ core_initcall(alloc_frozen_cpus);
+ 
+ /*
+- * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
+- * hotplug when tasks are about to be frozen. Also, don't allow the freezer
+- * to continue until any currently running CPU hotplug operation gets
+- * completed.
+- * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
+- * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
+- * CPU hotplug path and released only after it is complete. Thus, we
+- * (and hence the freezer) will block here until any currently running CPU
+- * hotplug operation gets completed.
++ * Wait for currently running CPU hotplug operations to complete (if any) and
++ * disable future CPU hotplug (from sysfs). The 'cpu_add_remove_lock' protects
++ * the 'cpu_hotplug_disabled' flag. The same lock is also acquired by the
++ * hotplug path before performing hotplug operations. So acquiring that lock
++ * guarantees mutual exclusion from any currently running hotplug operations.
+  */
+-void cpu_hotplug_disable_before_freeze(void)
++void cpu_hotplug_disable(void)
+ {
+ 	cpu_maps_update_begin();
+ 	cpu_hotplug_disabled = 1;
+ 	cpu_maps_update_done();
+ }
+ 
+-
+-/*
+- * When tasks have been thawed, re-enable regular CPU hotplug (which had been
+- * disabled while beginning to freeze tasks).
+- */
+-void cpu_hotplug_enable_after_thaw(void)
++void cpu_hotplug_enable(void)
+ {
+ 	cpu_maps_update_begin();
+ 	cpu_hotplug_disabled = 0;
+@@ -589,12 +580,12 @@ cpu_hotplug_pm_callback(struct notifier_block *nb,
+ 
+ 	case PM_SUSPEND_PREPARE:
+ 	case PM_HIBERNATION_PREPARE:
+-		cpu_hotplug_disable_before_freeze();
++		cpu_hotplug_disable();
+ 		break;
+ 
+ 	case PM_POST_SUSPEND:
+ 	case PM_POST_HIBERNATION:
+-		cpu_hotplug_enable_after_thaw();
++		cpu_hotplug_enable();
+ 		break;
+ 
+ 	default:
+-- 
+1.8.1.2
 
