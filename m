@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966206Ab3DQRV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:21:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58276 "EHLO arroyo.ext.ti.com"
+	id S966176Ab3DQRWQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:22:16 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41812 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965546Ab3DQRVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:21:55 -0400
+	id S965546Ab3DQRWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 13:22:13 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 To: <amit.kachhap@linaro.org>
 CC: Eduardo Valentin <eduardo.valentin@ti.com>,
         Zhang Rui <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH 25/30] thermal: cpu_cooling: remove not needed curl brackets
-Date: Wed, 17 Apr 2013 13:12:18 -0400
-Message-ID: <1366218743-20841-26-git-send-email-eduardo.valentin@ti.com>
+Subject: [PATCH 26/30] thermal: cpu_cooling: remove unused symbols
+Date: Wed, 17 Apr 2013 13:12:19 -0400
+Message-ID: <1366218743-20841-27-git-send-email-eduardo.valentin@ti.com>
 X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
 In-Reply-To: <1366218743-20841-1-git-send-email-eduardo.valentin@ti.com>
 References: <1366218743-20841-1-git-send-email-eduardo.valentin@ti.com>
@@ -23,32 +23,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just for style purposes, remove extra curl brackets.
+The list is needed so far. Thus removing it.
 
 Cc: Zhang Rui <rui.zhang@intel.com>
 Cc: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
 ---
- drivers/thermal/cpu_cooling.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/thermal/cpu_cooling.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
 diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index b1f9a4d..3709274 100644
+index 3709274..825231f 100644
 --- a/drivers/thermal/cpu_cooling.c
 +++ b/drivers/thermal/cpu_cooling.c
-@@ -505,10 +505,9 @@ void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
- 	cpufreq_dev_count--;
+@@ -38,11 +38,9 @@
+  * @cpufreq_val: integer value representing the absolute value of the clipped
+  *	frequency.
+  * @allowed_cpus: all the cpus involved for this cpufreq_cooling_device.
+- * @node: list_head to link all cpufreq_cooling_device together.
+  *
+  * This structure is required for keeping information of each
+- * cpufreq_cooling_device registered as a list whose head is represented by
+- * cooling_cpufreq_list. In order to prevent corruption of this list a
++ * cpufreq_cooling_device registered. In order to prevent corruption of this a
+  * mutex lock cooling_cpufreq_lock is used.
+  */
+ struct cpufreq_cooling_device {
+@@ -51,9 +49,7 @@ struct cpufreq_cooling_device {
+ 	unsigned int cpufreq_state;
+ 	unsigned int cpufreq_val;
+ 	struct cpumask allowed_cpus;
+-	struct list_head node;
+ };
+-static LIST_HEAD(cooling_cpufreq_list);
+ static DEFINE_IDR(cpufreq_idr);
+ static DEFINE_MUTEX(cooling_cpufreq_lock);
  
- 	/* Unregister the notifier for the last cpufreq cooling device */
--	if (cpufreq_dev_count == 0) {
-+	if (cpufreq_dev_count == 0)
- 		cpufreq_unregister_notifier(&thermal_cpufreq_notifier_block,
- 					    CPUFREQ_POLICY_NOTIFIER);
--	}
- 	mutex_unlock(&cooling_cpufreq_lock);
- 
- 	thermal_cooling_device_unregister(cpufreq_dev->cool_dev);
 -- 
 1.8.2.1.342.gfa7285d
 
