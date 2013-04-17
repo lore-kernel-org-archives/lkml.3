@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965875Ab3DQR1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:27:07 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:35318 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965493Ab3DQR1E (ORCPT
+	id S936238Ab3DQR2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:28:00 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:16785 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934393Ab3DQR17 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:27:04 -0400
-Date: Wed, 17 Apr 2013 13:27:02 -0400 (EDT)
-Message-Id: <20130417.132702.1585825670796781999.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: tomi.valkeinen@ti.com, linux-kernel@vger.kernel.org, clemens@ladisch.de,
-        arnd@arndb.de, tiwai@suse.de, mchehab@redhat.com, ralf@linux-mips.org
-Subject: Re: Device driver memory 'mmap()' function helper cleanup
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFw2f3cnJOSr2Xz78sRACk1k6xLog-3HpqtCsgNtA4=Fdw@mail.gmail.com>
-References: <CA+55aFwt82h7hk1YiCeoG2-GGpgLvyW8t_hZRHxyhDQw=_Luzw@mail.gmail.com>
-	<20130417.131156.13653463501819067.davem@davemloft.net>
-	<CA+55aFw2f3cnJOSr2Xz78sRACk1k6xLog-3HpqtCsgNtA4=Fdw@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 17 Apr 2013 10:27:04 -0700 (PDT)
+	Wed, 17 Apr 2013 13:27:59 -0400
+Date: Wed, 17 Apr 2013 13:27:47 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>,
+        martin.peterson@oracle.com, axboe@kernel.dk
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [PATCH v1 7/7] xen-block: implement indirect descriptors
+Message-ID: <20130417172747.GA25736@phenom.dumpdata.com>
+References: <1364382643-3711-1-git-send-email-roger.pau@citrix.com>
+ <1364382643-3711-8-git-send-email-roger.pau@citrix.com>
+ <20130409184923.GA4978@phenom.dumpdata.com>
+ <516C3264.3050409@citrix.com>
+ <20130417142554.GG21378@phenom.dumpdata.com>
+ <516ED633.3040205@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <516ED633.3040205@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 17 Apr 2013 10:20:43 -0700
-
-> On Wed, Apr 17, 2013 at 10:11 AM, David Miller <davem@davemloft.net> wrote:
->>
->> Yeah, the only thing special we do on sparc is interpret the PFN
->> specially.  We munge it into the real physical address and then
->> pass it all down to remap_pfn_range() to do the real work.
+On Wed, Apr 17, 2013 at 07:04:51PM +0200, Roger Pau Monné wrote:
+> On 17/04/13 16:25, Konrad Rzeszutek Wilk wrote:
+> >>> Perhaps the xen-blkfront part of the patch should be just split out to make
+> >>> this easier?
+> >>>
+> >>> Perhaps what we really should have is just the 'max' value of megabytes
+> >>> we want to handle on the ring.
+> >>>
+> >>> As right now 32 ring requests * 32 segments = 4MB.  But if the user wants
+> >>> to se the max: 32 * 4096 = so 512MB (right? each request would handle now 16MB
+> >>> and since we have 32 of them = 512MB).
+> >>
+> >> I've just set that to something that brings a performance benefit
+> >> without having to map an insane number of persistent grants in blkback.
+> >>
+> >> Yes, the values are correct, but the device request queue (rq) is only
+> >> able to provide read requests with 64 segments or write requests with
+> >> 128 segments. I haven't been able to get larger requests, even when
+> >> setting this to 512 or higer.
+> > 
+> > What are you using to drive the requests? 'fio'?
 > 
-> So the main thing I want to check is that *if* it's given a regular
-> RAM physical address, it still works?
-> 
-> Some drivers basically allocate DMA memory and then pass on the
-> resulting physical address to this. Others pass in the PCI BAR
-> addresses etc. And some try to use "remap_pfn_range()", and others try
-> to use "io_remap_pfn_range()", and quite frankly, from what I can tell
-> we can just always use the "io_" version because it ends up being a
-> proper superset.
-> 
-> I'm pretty sure it works fine the way I read it, but I'm just verifying..
+> Yes, I've tried fio with several "bs=" values, but it doesn't seem to
+> change the size of the underlying requests. Have you been able to get
+> bigger requests?
 
-All we do is take the top 4 bits and shift them down into the
-resulting physical address.
-
-For normal RAM these bits will be clear, so it should all work out.
-
-Passing PCI BARs into these routines is illegal, we have proper
-abstractions for mmap()'ing PCI resources via pci_mmap_page_range()
-et al.
-
-So, any code doing that needs to be fixed.
+Martin, Jens,
+Any way to drive more than 128 segments?
