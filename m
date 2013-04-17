@@ -1,338 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966317Ab3DQNaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 09:30:06 -0400
-Received: from mail-da0-f53.google.com ([209.85.210.53]:59998 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966196Ab3DQNaE (ORCPT
+	id S966332Ab3DQNcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 09:32:25 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:57066 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966219Ab3DQNcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 09:30:04 -0400
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: myungjoo.ham@samsung.com, rjw@sisk.pl, Kevin Hilman <khilman@linaro.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Subject: [PATCH V3] PM / devfreq: tie suspend/resume to runtime-pm
-Date: Wed, 17 Apr 2013 18:58:21 +0530
-Message-Id: <1366205301-4249-1-git-send-email-rajagopal.venkat@linaro.org>
+	Wed, 17 Apr 2013 09:32:23 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Lee Jones <lee.jones@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH] mmc: mmci: Allow MMCI to request channels with information acquired from DT
+Date: Wed, 17 Apr 2013 14:32:14 +0100
+Message-Id: <1366205534-25079-1-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devfreq core runtime suspend/resume of a device is explicitly
-handled by devfreq driver using devfreq_suspend_device() and
-devfreq_resume_device() apis typically called from runtime
-suspend/resume callbacks. This patch aims to take away this
-from devfreq drivers and handle it from runtime-pm core. So
-that devfreq core runtime suspend/resume of a device is
-automatically done with runtime pm suspend/resume. The devfreq
-drivers shouldn't be concerned on when to suspend/resume the
-devfreq.
+Currently, if DMA information isn't passed from platform data, then DMA
+will not be used. This patch allows DMA information obtained though Device
+Tree to be used as well.
 
-This patch is targeted to handle devfreq core load monitoring
-runtime suspend/resume only. Not the actual hardware itself.
-All the resources like clocks and regulators must still be
-handled by device driver using runtime-pm. The sequence of
-devfreq and device runtime suspend/resume is,
-
-pm_runtime_suspend(dev) will first suspend device devfreq
-(if available) before device is suspended to ensure devfreq load
-monitoring is stopped and no device resources like clocks are
-accessed while device suspend is in progress.
-
-pm_runtime_resume(dev) will resume device devfreq(if available)
-after device is resumed to ensure device resources like clocks
-are ready for use.
-
-As devfreq runtime suspend/resume is done automatically from runtime
-core, this patch removes the existing devfreq_suspend_device() and
-devfreq_resume_device() apis.
-
-Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-----
-
-Changes from V2:
-  Updated change log to clarify patch deals with runtime suspend/resume
-
-Changes from v1:
-  Improved change log and code comments
-  Added NULL check for devfreq runtime-pm callbacks
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/base/power/runtime.c |   21 ++++++++++++-
- drivers/devfreq/devfreq.c    |   69 +++++++++++++++++++++++++++++++++++++++---
- include/linux/devfreq.h      |   18 +++--------
- include/linux/pm.h           |    2 ++
- 4 files changed, 91 insertions(+), 19 deletions(-)
+ drivers/mmc/host/mmci.c |   43 +++++++++++++++++++++++++++++++------------
+ 1 file changed, 31 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index 3148b10..2438abc 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -11,6 +11,7 @@
- #include <linux/export.h>
- #include <linux/pm_runtime.h>
- #include <trace/events/rpm.h>
-+#include <linux/devfreq.h>
- #include "power.h"
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index 372e921..42e8fec 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -298,15 +298,32 @@ static void mmci_init_sg(struct mmci_host *host, struct mmc_data *data)
+  * no custom DMA interfaces are supported.
+  */
+ #ifdef CONFIG_DMA_ENGINE
+-static void mmci_dma_setup(struct mmci_host *host)
++static void mmci_dma_setup(struct amba_device *dev,
++			   struct mmci_host *host)
+ {
++	struct device_node *np = dev->dev.of_node;
+ 	struct mmci_platform_data *plat = host->plat;
+ 	const char *rxname, *txname;
+ 	dma_cap_mask_t mask;
++	const char *chan_name;
++	int count, i;
++	bool do_tx = false, do_rx = false;
  
- static int rpm_resume(struct device *dev, int rpmflags);
-@@ -406,6 +407,14 @@ static int rpm_suspend(struct device *dev, int rpmflags)
- 
- 	__update_runtime_status(dev, RPM_SUSPENDING);
- 
-+	/*
-+	 * Try suspending devfreq before device is runtime suspended.
-+	 * It wouldn't make sense to continue devfreq load monitoring
-+	 * when device is runtime suspended.
-+	 */
-+	if (dev->power.devfreq && dev->power.devfreq->runtime_suspend)
-+		dev->power.devfreq->runtime_suspend(dev);
-+
- 	if (dev->pm_domain)
- 		callback = dev->pm_domain->ops.runtime_suspend;
- 	else if (dev->type && dev->type->pm)
-@@ -421,8 +430,12 @@ static int rpm_suspend(struct device *dev, int rpmflags)
- 		callback = dev->driver->pm->runtime_suspend;
- 
- 	retval = rpm_callback(callback, dev);
--	if (retval)
-+	if (retval) {
-+		/* Resume back devfreq on device suspend failure */
-+		if (dev->power.devfreq && dev->power.devfreq->runtime_resume)
-+			dev->power.devfreq->runtime_resume(dev);
- 		goto fail;
-+	}
- 
-  no_callback:
- 	__update_runtime_status(dev, RPM_SUSPENDED);
-@@ -661,6 +674,12 @@ static int rpm_resume(struct device *dev, int rpmflags)
- 		__update_runtime_status(dev, RPM_ACTIVE);
- 		if (parent)
- 			atomic_inc(&parent->power.child_count);
-+		/*
-+		 * Resume devfreq after runtime resume sequence to ensure
-+		 * device resources are available for devfreq load monitoring.
-+		 */
-+		if (dev->power.devfreq && dev->power.devfreq->runtime_resume)
-+			dev->power.devfreq->runtime_resume(dev);
+ 	if (!plat || !plat->dma_filter) {
+-		dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
+-		return;
++		if (np) {
++			count = of_property_count_strings(np, "dma-names");
++			for (i = 0; i < count; i++) {
++				of_property_read_string_index(np, "dma-names",
++							      i, &chan_name);
++				if (strcmp(chan_name, "tx"))
++					do_tx = true;
++				else if (strcmp(chan_name, "rx"))
++					do_rx = true;
++			}
++		} else {
++			dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
++			return;
++		}
  	}
- 	wake_up_all(&dev->power.wait_queue);
  
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index 44c4079..b8dab0d 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -25,6 +25,7 @@
- #include <linux/list.h>
- #include <linux/printk.h>
- #include <linux/hrtimer.h>
-+#include <linux/pm_runtime.h>
- #include "governor.h"
+ 	/* initialize pre request cookie */
+@@ -321,19 +338,21 @@ static void mmci_dma_setup(struct mmci_host *host)
+ 	 * attempt to use it bidirectionally, however if it is
+ 	 * is specified but cannot be located, DMA will be disabled.
+ 	 */
+-	if (plat->dma_rx_param) {
+-		host->dma_rx_channel = dma_request_channel(mask,
+-							   plat->dma_filter,
+-							   plat->dma_rx_param);
++	if (plat->dma_rx_param || do_rx) {
++		host->dma_rx_channel = dma_request_slave_channel_compat(mask,
++					(plat) ? plat->dma_filter : NULL,
++					(plat) ? plat->dma_rx_param : NULL,
++					&dev->dev, "rx");
+ 		/* E.g if no DMA hardware is present */
+ 		if (!host->dma_rx_channel)
+ 			dev_err(mmc_dev(host->mmc), "no RX DMA channel\n");
+ 	}
  
- static struct class *devfreq_class;
-@@ -42,6 +43,9 @@ static LIST_HEAD(devfreq_governor_list);
- static LIST_HEAD(devfreq_list);
- static DEFINE_MUTEX(devfreq_list_lock);
+-	if (plat->dma_tx_param) {
+-		host->dma_tx_channel = dma_request_channel(mask,
+-							   plat->dma_filter,
+-							   plat->dma_tx_param);
++	if (plat->dma_tx_param || do_tx) {
++		host->dma_tx_channel = dma_request_slave_channel_compat(mask,
++					(plat) ? plat->dma_filter : NULL,
++					(plat) ? plat->dma_tx_param : NULL,
++					&dev->dev, "tx");
+ 		if (!host->dma_tx_channel)
+ 			dev_warn(mmc_dev(host->mmc), "no TX DMA channel\n");
+ 	} else {
+@@ -1538,7 +1557,7 @@ static int mmci_probe(struct amba_device *dev,
+ 		 amba_rev(dev), (unsigned long long)dev->res.start,
+ 		 dev->irq[0], dev->irq[1]);
  
-+static void devfreq_runtime_suspend(struct device *dev);
-+static void devfreq_runtime_resume(struct device *dev);
-+
- /**
-  * find_device_devfreq() - find devfreq struct using device pointer
-  * @dev:	device pointer used to lookup device devfreq.
-@@ -387,6 +391,8 @@ static int devfreq_notifier_call(struct notifier_block *nb, unsigned long type,
-  */
- static void _remove_devfreq(struct devfreq *devfreq, bool skip)
- {
-+	unsigned long flags;
-+
- 	mutex_lock(&devfreq_list_lock);
- 	if (IS_ERR(find_device_devfreq(devfreq->dev.parent))) {
- 		mutex_unlock(&devfreq_list_lock);
-@@ -400,6 +406,10 @@ static void _remove_devfreq(struct devfreq *devfreq, bool skip)
- 		devfreq->governor->event_handler(devfreq,
- 						 DEVFREQ_GOV_STOP, NULL);
+-	mmci_dma_setup(host);
++	mmci_dma_setup(dev, host);
  
-+	spin_lock_irqsave(&devfreq->dev.parent->power.lock, flags);
-+	devfreq->dev.parent->power.devfreq = NULL;
-+	spin_unlock_irqrestore(&devfreq->dev.parent->power.lock, flags);
-+
- 	if (devfreq->profile->exit)
- 		devfreq->profile->exit(devfreq->dev.parent);
- 
-@@ -442,6 +452,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
- {
- 	struct devfreq *devfreq;
- 	struct devfreq_governor *governor;
-+	unsigned long flags;
- 	int err = 0;
- 
- 	if (!dev || !profile || !governor_name) {
-@@ -476,6 +487,12 @@ struct devfreq *devfreq_add_device(struct device *dev,
- 	devfreq->previous_freq = profile->initial_freq;
- 	devfreq->data = data;
- 	devfreq->nb.notifier_call = devfreq_notifier_call;
-+	devfreq->runtime_suspend = devfreq_runtime_suspend;
-+	devfreq->runtime_resume = devfreq_runtime_resume;
-+	spin_lock_irqsave(&dev->power.lock, flags);
-+	dev->power.devfreq = devfreq;
-+	spin_unlock_irqrestore(&dev->power.lock, flags);
-+
- 
- 	devfreq->trans_table =	devm_kzalloc(dev, sizeof(unsigned int) *
- 						devfreq->profile->max_state *
-@@ -549,7 +566,7 @@ EXPORT_SYMBOL(devfreq_remove_device);
-  * (e.g., runtime_suspend, suspend) of the device driver that
-  * holds the devfreq.
-  */
--int devfreq_suspend_device(struct devfreq *devfreq)
-+static int devfreq_suspend_device(struct devfreq *devfreq)
- {
- 	if (!devfreq)
- 		return -EINVAL;
-@@ -560,7 +577,6 @@ int devfreq_suspend_device(struct devfreq *devfreq)
- 	return devfreq->governor->event_handler(devfreq,
- 				DEVFREQ_GOV_SUSPEND, NULL);
- }
--EXPORT_SYMBOL(devfreq_suspend_device);
- 
- /**
-  * devfreq_resume_device() - Resume devfreq of a device.
-@@ -570,7 +586,7 @@ EXPORT_SYMBOL(devfreq_suspend_device);
-  * (e.g., runtime_resume, resume) of the device driver that
-  * holds the devfreq.
-  */
--int devfreq_resume_device(struct devfreq *devfreq)
-+static int devfreq_resume_device(struct devfreq *devfreq)
- {
- 	if (!devfreq)
- 		return -EINVAL;
-@@ -581,7 +597,52 @@ int devfreq_resume_device(struct devfreq *devfreq)
- 	return devfreq->governor->event_handler(devfreq,
- 				DEVFREQ_GOV_RESUME, NULL);
- }
--EXPORT_SYMBOL(devfreq_resume_device);
-+
-+/**
-+ * devfreq_runtime_suspend() - Suspend devfreq of a device.
-+ * @dev: the device associated with devfreq
-+ *
-+ * This function is intended to be called by the runtime-pm
-+ * core when the device associated with devfreq is
-+ * runtime suspended.
-+ */
-+static void devfreq_runtime_suspend(struct device *dev)
-+{
-+	struct devfreq *devfreq;
-+	int err;
-+
-+	mutex_lock(&devfreq_list_lock);
-+	devfreq = find_device_devfreq(dev);
-+	mutex_unlock(&devfreq_list_lock);
-+
-+	err = devfreq_suspend_device(devfreq);
-+	if (err)
-+		dev_err(dev, "devfreq runtime suspend failed with (%d) error\n",
-+			err);
-+}
-+
-+/**
-+ * devfreq_runtime_resume() - Resume devfreq of a device.
-+ * @dev: the device associated with devfreq
-+ *
-+ * This function is intended to be called by the runtime-pm
-+ * core when the device associated with devfreq is
-+ * runtime resumed.
-+ */
-+static void devfreq_runtime_resume(struct device *dev)
-+{
-+	struct devfreq *devfreq;
-+	int err;
-+
-+	mutex_lock(&devfreq_list_lock);
-+	devfreq = find_device_devfreq(dev);
-+	mutex_unlock(&devfreq_list_lock);
-+
-+	err = devfreq_resume_device(devfreq);
-+	if (err)
-+		dev_err(dev, "devfreq runtime resume failed with (%d) error\n",
-+			err);
-+}
- 
- /**
-  * devfreq_add_governor() - Add devfreq governor
-diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-index 5f1ab92..669368b 100644
---- a/include/linux/devfreq.h
-+++ b/include/linux/devfreq.h
-@@ -140,6 +140,8 @@ struct devfreq_governor {
-  * @trans_table:	Statistics of devfreq transitions
-  * @time_in_state:	Statistics of devfreq states
-  * @last_stat_updated:	The last time stat updated
-+ * @runtime_suspend:	func to runtime suspend devfreq from runtime core
-+ * @runtime_resume:	func to runtime resume devfreq from runtime core
-  *
-  * This structure stores the devfreq information for a give device.
-  *
-@@ -173,6 +175,8 @@ struct devfreq {
- 	unsigned int *trans_table;
- 	unsigned long *time_in_state;
- 	unsigned long last_stat_updated;
-+	void (*runtime_suspend)(struct device *dev);
-+	void (*runtime_resume)(struct device *dev);
- };
- 
- #if defined(CONFIG_PM_DEVFREQ)
-@@ -182,10 +186,6 @@ extern struct devfreq *devfreq_add_device(struct device *dev,
- 				  void *data);
- extern int devfreq_remove_device(struct devfreq *devfreq);
- 
--/* Supposed to be called by PM_SLEEP/PM_RUNTIME callbacks */
--extern int devfreq_suspend_device(struct devfreq *devfreq);
--extern int devfreq_resume_device(struct devfreq *devfreq);
--
- /* Helper functions for devfreq user device driver with OPP. */
- extern struct opp *devfreq_recommended_opp(struct device *dev,
- 					   unsigned long *freq, u32 flags);
-@@ -228,16 +228,6 @@ static inline int devfreq_remove_device(struct devfreq *devfreq)
- 	return 0;
- }
- 
--static inline int devfreq_suspend_device(struct devfreq *devfreq)
--{
--	return 0;
--}
--
--static inline int devfreq_resume_device(struct devfreq *devfreq)
--{
--	return 0;
--}
--
- static inline struct opp *devfreq_recommended_opp(struct device *dev,
- 					   unsigned long *freq, u32 flags)
- {
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index 03d7bb1..734449c 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -40,6 +40,7 @@ extern void (*pm_power_off_prepare)(void);
-  */
- 
- struct device;
-+struct devfreq;
- 
- #ifdef CONFIG_PM
- extern const char power_group_name[];		/* = "power" */
-@@ -549,6 +550,7 @@ struct dev_pm_info {
- #endif
- 	struct pm_subsys_data	*subsys_data;  /* Owned by the subsystem. */
- 	struct dev_pm_qos	*qos;
-+	struct devfreq		*devfreq;  /* device devfreq */
- };
- 
- extern void update_pm_runtime_accounting(struct device *dev);
+ 	pm_runtime_set_autosuspend_delay(&dev->dev, 50);
+ 	pm_runtime_use_autosuspend(&dev->dev);
 -- 
 1.7.10.4
 
