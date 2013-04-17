@@ -1,115 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966379Ab3DQNnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 09:43:45 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:33735 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966116Ab3DQNnn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 09:43:43 -0400
-Message-ID: <1366206219.3305.5.camel@phoenix>
-Subject: [RFT][PATCH 2/2] regulator: tps80031: Convert tps80031_dcdc_ops to
- [get|set]_voltage_sel_regmap
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 17 Apr 2013 21:43:39 +0800
-In-Reply-To: <1366206143.3305.4.camel@phoenix>
-References: <1366206143.3305.4.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S966374Ab3DQNsI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 09:48:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55370 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966116Ab3DQNsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 09:48:05 -0400
+Date: Wed, 17 Apr 2013 15:48:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+Subject: Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
+Message-ID: <20130417124852.GD6801@redhat.com>
+References: <1359940910-32114-1-git-send-email-kys@microsoft.com>
+ <1359940959-32168-1-git-send-email-kys@microsoft.com>
+ <1359940959-32168-2-git-send-email-kys@microsoft.com>
+ <20130417070616.GA4487@redhat.com>
+ <423ae84de75f4b3587eb2d1a365cbd95@SN2PR03MB061.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <423ae84de75f4b3587eb2d1a365cbd95@SN2PR03MB061.namprd03.prod.outlook.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps80031-regulator.c |   39 +++++---------------------------
- 1 file changed, 6 insertions(+), 33 deletions(-)
+On Wed, Apr 17, 2013 at 01:20:58PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Michael S. Tsirkin [mailto:mst@redhat.com]
+> > Sent: Wednesday, April 17, 2013 3:06 AM
+> > To: KY Srinivasan
+> > Cc: x86@kernel.org; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > jasowang@redhat.com; tglx@linutronix.de; hpa@zytor.com;
+> > JBeulich@suse.com; bp@alien8.de
+> > Subject: Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
+> > 
+> > On Sun, Feb 03, 2013 at 05:22:38PM -0800, K. Y. Srinivasan wrote:
+> > > Xen emulates Hyper-V to host enlightened Windows. Looks like this
+> > > emulation may be turned on by default even for Linux guests. Check and
+> > > fail Hyper-V detection if we are on Xen.
+> > >
+> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > 
+> > I'm very curious what's the specific bug that is fixed here?
+> > I went over the original discussion in
+> > https://patchwork.kernel.org/patch/2064331/
+> > and that's still not clear to me. Is there a configuration
+> > that is broken without this patch but starts working with
+> > this patch?
+> > 
+> > It seems that one might want to use hyper-v emulation e.g. to test
+> > hyper-v code without using windows, so the functionality
+> > that this patch disables is not completely useless,
+> > so there should be a good reason for disabling it.
+> > 
+> > Could you enlighten me please? :)
+> 
+> Michael,
+> 
+> If I recall correctly, the issue here was that Xen was enabling
+> Hyper-V emulation un-conditionally even for Linux guests.
 
-diff --git a/drivers/regulator/tps80031-regulator.c b/drivers/regulator/tps80031-regulator.c
-index 6430789..6511d0b 100644
---- a/drivers/regulator/tps80031-regulator.c
-+++ b/drivers/regulator/tps80031-regulator.c
-@@ -282,37 +282,6 @@ static int tps80031_ldo_map_voltage(struct regulator_dev *rdev,
- 	return regulator_map_voltage_linear(rdev, min_uV, max_uV);
- }
- 
--static int tps80031_ldo_set_voltage_sel(struct regulator_dev *rdev,
--		unsigned sel)
--{
--	struct tps80031_regulator *ri = rdev_get_drvdata(rdev);
--	struct device *parent = to_tps80031_dev(rdev);
--	int ret;
--
--	ret = tps80031_write(parent, ri->rinfo->volt_id,
--			ri->rinfo->volt_reg, sel);
--	if (ret < 0)
--		dev_err(ri->dev, "Error in writing reg 0x%02x, e = %d\n",
--			ri->rinfo->volt_reg, ret);
--	return ret;
--}
--
--static int tps80031_ldo_get_voltage_sel(struct regulator_dev *rdev)
--{
--	struct tps80031_regulator *ri = rdev_get_drvdata(rdev);
--	struct device *parent = to_tps80031_dev(rdev);
--	uint8_t vsel;
--	int ret;
--
--	ret = tps80031_read(parent, ri->rinfo->volt_id,
--				ri->rinfo->volt_reg, &vsel);
--	if (ret < 0) {
--		dev_err(ri->dev, "Error in writing the Voltage register\n");
--		return ret;
--	}
--	return vsel & rdev->desc->vsel_mask;
--}
--
- static int tps80031_vbus_is_enabled(struct regulator_dev *rdev)
- {
- 	struct tps80031_regulator *ri = rdev_get_drvdata(rdev);
-@@ -421,8 +390,8 @@ static struct regulator_ops tps80031_dcdc_ops = {
- static struct regulator_ops tps80031_ldo_ops = {
- 	.list_voltage		= tps80031_ldo_list_voltage,
- 	.map_voltage		= tps80031_ldo_map_voltage,
--	.set_voltage_sel	= tps80031_ldo_set_voltage_sel,
--	.get_voltage_sel	= tps80031_ldo_get_voltage_sel,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
- 	.enable			= tps80031_reg_enable,
- 	.disable		= tps80031_reg_disable,
- 	.is_enabled		= tps80031_reg_is_enabled,
-@@ -489,6 +458,7 @@ static struct regulator_ops tps80031_ext_reg_ops = {
- 		.uV_step = 100000,				\
- 		.linear_min_sel = 1,				\
- 		.n_voltages = 25,				\
-+		.vsel_reg = TPS80031_##_id##_CFG_VOLTAGE,	\
- 		.vsel_mask = LDO_VSEL_MASK,			\
- 		.enable_time = 500,				\
- 	},							\
-@@ -710,6 +680,7 @@ static int tps80031_regulator_probe(struct platform_device *pdev)
- 	struct tps80031_regulator *pmic;
- 	struct regulator_dev *rdev;
- 	struct regulator_config config = { };
-+	struct tps80031 *tps80031_mfd = dev_get_drvdata(pdev->dev.parent);
- 	int ret;
- 	int num;
- 
-@@ -737,6 +708,8 @@ static int tps80031_regulator_probe(struct platform_device *pdev)
- 		config.dev = &pdev->dev;
- 		config.init_data = NULL;
- 		config.driver_data = ri;
-+		config.regmap = tps80031_mfd->regmap[ri->rinfo->volt_id];
-+
- 		if (tps_pdata) {
- 			config.init_data = tps_pdata->reg_init_data;
- 			ri->config_flags = tps_pdata->config_flags;
--- 
-1.7.10.4
+Okay so basically some Xen specific strangeness.
 
+> Clearly,
+> this was not the intention to begin with. This check was added to
+> ensure that while hosting Linux we would not un-intentionally enable
+> Hyper-V emulation in Xen.
 
+What if you want to intentionally enable Hyper-V emulation in Xen?
+There's no way to do this now, right?
 
+> Not all Hyper-V features are tagged with a
+> CPUID feature bit and so it was agreed that it would be better to
+> disable Hyper-V emulation when hosting Linux on Xen.
+> 
+> Regards,
+> 
+> K. Y
+
+I was just asking whether there are any specific examples of a bug
+or is this change done just in case?
+
+> > 
+> > > ---
+> > >  arch/x86/kernel/cpu/mshyperv.c |    7 +++++++
+> > >  1 files changed, 7 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/arch/x86/kernel/cpu/mshyperv.c
+> > b/arch/x86/kernel/cpu/mshyperv.c
+> > > index 646d192..4dab317 100644
+> > > --- a/arch/x86/kernel/cpu/mshyperv.c
+> > > +++ b/arch/x86/kernel/cpu/mshyperv.c
+> > > @@ -30,6 +30,13 @@ static bool __init ms_hyperv_platform(void)
+> > >  	if (!boot_cpu_has(X86_FEATURE_HYPERVISOR))
+> > >  		return false;
+> > >
+> > > +	/*
+> > > +	 * Xen emulates Hyper-V to support enlightened Windows.
+> > > +	 * Check to see first if we are on a Xen Hypervisor.
+> > > +	 */
+> > > +	if (xen_cpuid_base())
+> > > +		return false;
+> > > +
+> > >  	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS,
+> > >  	      &eax, &hyp_signature[0], &hyp_signature[1], &hyp_signature[2]);
+> > >
+> > > --
+> > > 1.7.4.1
+> > >
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
