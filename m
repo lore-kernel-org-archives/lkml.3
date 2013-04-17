@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966232Ab3DQLga (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 07:36:30 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36902 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966018Ab3DQLfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S966149Ab3DQLfI (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 17 Apr 2013 07:35:08 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51439 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965979Ab3DQLfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 07:35:04 -0400
 From: Sourav Poddar <sourav.poddar@ti.com>
 To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
         <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
 CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: [PATCH 0/6] Serial Omap fixes and cleanups
-Date: Wed, 17 Apr 2013 17:04:21 +0530
-Message-ID: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>
+Subject: [PATCH 5/6] arm: dts: am33xx: Remove "ti,no_idle_on_suspend" property.
+Date: Wed, 17 Apr 2013 17:04:26 +0530
+Message-ID: <1366198467-6757-6-git-send-email-sourav.poddar@ti.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>
+References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The "ti,no_idle_on_suspend" property was required to keep ocmcram 
+clocks running during idle.
 
-This patch series contains fixes and cleanups around the issue that 
-the console UART should not idled on suspend while using "no_console_suspend"
-in bootargs.
+But the commit below[1], added in v3.6 should prevent the
+any automaic clock gating for devices without drivers bound.  Since
+there is no driver for the OCM RAM block, we are not affected by
+the automatic idle on suspend anyways.
+[1]:
+commit 72bb6f9b51c82c820ddef892455a85b115460904
+Author: Kevin Hilman <khilman@ti.com>
+Date:   Tue Jul 10 15:29:04 2012 -0700
 
-The approach thought of is to modify the serial core/serial driver to bypass
-runtime PM if the UART in contention is a console and we are using "no_console_suspend"
-in our bootargs.
+    ARM: OMAP: omap_device: don't attempt late suspend if no driver bound
 
-While fixing the above issue, there are other cleanups also done as part of
-this series which are no longer required. This cleanups mainly include getting
-rid of using "omap_device_disable_idle_on_suspend" api for both dt and non dt case 
-as the serial driver will be self sufficient to handle the "no_idle_on_suspend" issue.
-Serial was the only one making use of "omap_device_disable_idle_on_suspend"
+    Currently, the omap_device PM domain layer uses the late suspend and
+    early resume callbacks to ensure devices are in their low power
+    states.
 
-Test info (except drivers: serial: mpc52xx_uart: Remove "uart_console" defintion):
-Omap4430sdp:
-- Tested wakeup from UART after suspend for dt and non dt case.
-Omap5430evm:
-- Tested wakeup from UART after suspend for dt case.
+    However, this is attempted even in cases where a driver probe has
+    failed.  If a driver's ->probe() method fails, the driver is likely in
+    a state where it is not expecting its runtime PM callbacks to be
+    called, yet currently the omap_device PM domain code attempts to call
+    the drivers callbacks.
 
+    To fix, use the omap_device driver_status field to check whether a
+    driver is bound to the omap_device before attempting to trigger driver
+    callbacks.
 
-There were discussions about how to handle "no_idle_on_suspend" issue and all the
-discussions are as follows:
-[v3]: https://lkml.org/lkml/2013/4/5/239
-[v2]: https://lkml.org/lkml/2013/4/2/350
-[v1]: https://lkml.org/lkml/2013/3/18/199
-      https://lkml.org/lkml/2013/3/18/295
-Due to the amount of change in approach and other cleanups coming around it, I am posting
-this as a new series.
-
-This patches are based on 3.9-rc3 custom tree which has 
-Santosh Shilimkar serial patch[1]
-[1]: http://permalink.gmane.org/gmane.linux.ports.arm.omap/95828
-
+Cc: Benoit Cousson <b-cousson@ti.com>
 Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Cc: Felipe Balbi <balbi@ti.com>
 Cc: Rajendra nayak <rnayak@ti.com>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+---
+ arch/arm/boot/dts/am33xx.dtsi |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Sourav Poddar (6):
-  drivers: tty: serial: Move "uart_console" def to core header file.
-  drivers: serial: mpc52xx_uart: Remove "uart_console" defintion
-  driver: serial: omap: add prepare/complete callback for
-    "no_console_suspend" case
-  arm: mach-omap2: remove "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check
-  arm: dts: am33xx: Remove "ti,no_idle_on_suspend" property.
-  arm: mach-omap2: Remove "no_console_suspend"
-
- arch/arm/boot/dts/am33xx.dtsi     |    1 -
- arch/arm/mach-omap2/omap_device.c |   10 +---------
- arch/arm/mach-omap2/serial.c      |    7 -------
- drivers/tty/serial/mpc52xx_uart.c |   10 ----------
- drivers/tty/serial/omap-serial.c  |   20 ++++++++++++++++++++
- drivers/tty/serial/serial_core.c  |    6 ------
- include/linux/serial_core.h       |    6 ++++++
- 7 files changed, 27 insertions(+), 33 deletions(-)
+diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+index 74a8125..49a050e 100644
+--- a/arch/arm/boot/dts/am33xx.dtsi
++++ b/arch/arm/boot/dts/am33xx.dtsi
+@@ -394,7 +394,6 @@
+ 			compatible = "ti,am3352-ocmcram";
+ 			reg = <0x40300000 0x10000>;
+ 			ti,hwmods = "ocmcram";
+-			ti,no_idle_on_suspend;
+ 		};
+ 
+ 		wkup_m3: wkup_m3@44d00000 {
+-- 
+1.7.1
 
