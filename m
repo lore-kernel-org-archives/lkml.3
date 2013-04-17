@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965998Ab3DQJPJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 05:15:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965887Ab3DQJPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 05:15:06 -0400
-Date: Wed, 17 Apr 2013 06:14:53 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Andrey Smirnov <andrew.smirnov@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the mfd tree with the v4l-dvb tree
-Message-ID: <20130417061453.7c6e09ec@redhat.com>
-In-Reply-To: <20130416192359.GN8798@zurbaran>
-References: <20130410134813.b1bff6027f64f14d75d43927@canb.auug.org.au>
-	<20130410064253.GA4874@zurbaran>
-	<20130410064828.6c946ad8@redhat.com>
-	<20130416135137.GA31283@zurbaran>
-	<CAHQ1cqEAQDRV4st4P+3NzVTiSDXW2+JwYE4DJOEHwyzyDGTwiw@mail.gmail.com>
-	<20130416192359.GN8798@zurbaran>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S966029Ab3DQJP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 05:15:59 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61797 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965887Ab3DQJP6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 05:15:58 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Device driver memory 'mmap()' function helper cleanup
+Date: Wed, 17 Apr 2013 11:15:51 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+References: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
+In-Reply-To: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304171115.51509.arnd@arndb.de>
+X-Provags-ID: V02:K0:m9qc/5vNCmWKOLdXEv22NRLQq7zhWkm78WF+2vbwZpf
+ kR+A0q71GuhV0VTtNPuB7Q/66PU+bavEbkVFZ/dfESaMFONFs1
+ 0KOhxm4L7QrBZDuAuYdzgrDmd1CsKEqIjc5KZp1UPIUyZJvkQj
+ 4imyNDmkpQen8Sd2OmhZdRMwaZCTdh5YzVEUvFkRxNbRgnHP4f
+ 0VGft+nRa9GAzNu/Zp4oGM28oWIX2A3dbVsOFkl8MQ2EIdduRh
+ NLjXT9Eq3tIrI8CnUr0AByErqszQ/1SrerrE5yEDZfDL6yQHew
+ +kh+5vCmAoQU17G1yfhucFtGmLpVOWlCWjdJzg7PucTdol3zTD
+ OGBgPhQKIwqJxCck38eo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 16 Apr 2013 21:23:59 +0200
-Samuel Ortiz <sameo@linux.intel.com> escreveu:
-
-> On Tue, Apr 16, 2013 at 09:25:45AM -0700, Andrey Smirnov wrote:
-> > On Tue, Apr 16, 2013 at 6:51 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> > > Hi Mauro,
-> > >
-> > > On Wed, Apr 10, 2013 at 06:48:28AM -0300, Mauro Carvalho Chehab wrote:
-> > >> Em Wed, 10 Apr 2013 08:42:53 +0200
-> > >> Samuel Ortiz <sameo@linux.intel.com> escreveu:
-> > >>
-> > >> > Hi Stephen,
-> > >> >
-> > >> > On Wed, Apr 10, 2013 at 01:48:13PM +1000, Stephen Rothwell wrote:
-> > >> > > Hi Samuel,
-> > >> > >
-> > >> > > Today's linux-next merge of the mfd tree got a conflict in
-> > >> > > drivers/mfd/Kconfig between commit 3f8ec5df11aa ("[media] mfd: Add header
-> > >> > > files and Kbuild plumbing for SI476x MFD core") from the v4l-dvb tree and
-> > >> > > commit ab85b120e692 ("mfd: Kconfig alphabetical re-ordering") from the
-> > >> > > mfd tree.
-> > >> > I'm surprised the v4l-dvb tree is carrying this patchset because I haven't
-> > >> > ACKed it.
-> > >>
-> > >> Sorry. Not sure why I understood that you gave your ack. Perhaps I miss-read
-> > >> one of the comments of that thread.
-> > > I haven't heard back from Andrey yet. If I don't get anything from him on
-> > > Wednesday, would you mind reverting this patchset ? I have not ACKed it
-> > > because it breaks bisectability, and it conflicts with mfd-next.
-> > >
-> > > Andrey, any plans to adress my comments from last week ?
-> > 
-> > I have a new version of a patchset that addresses your comments and
-> > incorporates a couple of other patches with bugfixes. Unfortunately I
-> > haven't had a chance to run it on the test HW I have. I'll try to do
-> > and post the patches this week, but I am not sure if I'll have time to
-> > do it before Wednesday.
-> Linus will most likely tag 3.9 on Sunday or so, I won't take any patches after
-> that (And probably no patches after Friday...)
+On Wednesday 17 April 2013, Linus Torvalds wrote:
+> Anyway, I'm attaching the untested patch to several drivers. Guys,
+> mind taking a look? The point here is to simplify the interface,
+> avoiding bugs, but also:
 > 
->  
-> > As far as I understand all the MFD patches will go through the "mfd"
-> > tree which doesn't have any version of the SI476X related patches and
-> > I don't have to worry about making incremental patches. This, however,
-> > is not the case for "media_tree" this patch here
-> > http://git.linuxtv.org/media_tree.git/commit/30bac9110455402fa8888740c6819dd3daa2666f
-> > would be affected and I think that making the need changes
-> > incrementally as a separate patch would break the bisectability also.
-> > Right now what I have is a new version of said patch produced by
-> > editing the history(rebase and squash). Would that work for you,
-> > Mauro, or do you want an incremental patch on top of the original one?
-> If you manage to send the patches on time, here is what I propose: I create a
-> stable branch with all your mfd patches and merge it on my master branch.
-> Mauro can then also merge it and then apply the rest of your patchset (which
-> is all v4l and media related, iirc). Before doing so, Mauro would have to
-> revert the last patchset from you, that's currently sitting in his tree.
+>  5 files changed, 21 insertions(+), 87 deletions(-)
+> 
+> it needs current -git for the new helper function.
+> 
+> NOTE! The driver subsystem .mmap functions seem to almost universally do
+> 
+>     if (io_remap_pfn_range(..))
+>         return -EAGAIN;
+>     return 0;
 
-Ok, reverted both changesets 3f8ec5df11aa and 30bac9110455402f:
+I took a look at the hpet_mmap function, which still contains this check:
 
-http://git.linuxtv.org/media_tree.git/commit/82cd0b278fddc1c0bc7e187ff82fd0e273520233
-http://git.linuxtv.org/media_tree.git/commit/33a31edd4a4b7d26b962b32decfd8ea2377eaa0d
+        if (((vma->vm_end - vma->vm_start) != PAGE_SIZE) || vma->vm_pgoff)
+                return -EINVAL;
 
-By reverting first 30bac9110455402f, I avoided breaking git bisect.
+As far as I can tell, this check is implied by the new code in
+vm_iomap_memory as the len argument passed here is PAGE_SIZE, so you
+can remove another three lines in hpet_mmap.
 
-Regards,
-Mauro
+	Arnd
