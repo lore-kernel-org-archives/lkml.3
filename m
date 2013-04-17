@@ -1,67 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966678Ab3DQTTv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 15:19:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56963 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966643Ab3DQTTr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 15:19:47 -0400
-Date: Wed, 17 Apr 2013 20:19:45 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Steven Toth <stoth@kernellabs.com>,
-        Michael Krufky <mkrufky@kernellabs.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Subject: Re: [NEW DRIVER V5 1/7] drivers/mfd: DA9058 MFD core driver
-Message-ID: <20130417191944.GB19873@opensource.wolfsonmicro.com>
-References: <201304171650.r3HGo6YZ023894@latitude>
+	id S936377Ab3DQTVC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 15:21:02 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59333 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936043Ab3DQTVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 15:21:01 -0400
+Message-ID: <516EF613.4040205@ti.com>
+Date: Wed, 17 Apr 2013 15:20:51 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201304171650.r3HGo6YZ023894@latitude>
-X-Cookie: If you can read this, you're too close.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Zhang Rui <rui.zhang@intel.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 05/11] thermal: rename get_tz_trend to thermal_zone_trend_get
+References: <1365437258-31412-1-git-send-email-eduardo.valentin@ti.com>  <1365437258-31412-6-git-send-email-eduardo.valentin@ti.com> <1366211423.2091.53.camel@rzhang1-mobl4>
+In-Reply-To: <1366211423.2091.53.camel@rzhang1-mobl4>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 05:33:33PM +0100, Anthony Olech wrote:
+On 17-04-2013 11:10, Zhang Rui wrote:
+> On Mon, 2013-04-08 at 12:07 -0400, Eduardo Valentin wrote:
+>> To follow the prefix names used by the thermal exported functions,
+>> this patch renames get_tz_trend to thermal_zone_trend_get.
+>>
+>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>
+> NACK.
+>
+> get_tz_trend will not be exported as API any more.
 
-> +static struct regulator_consumer_supply platform_vddarm_consumers[] = {
-> +	{.supply = "vcc",}
-> +};
-> +
+Same comment as in patch 04. How about keeping this patch, but updating 
+the commit description? I dont see why not keep one single nameing 
+pattern in the file. it makes reading the code more pleasant.
 
-This looks very system specific and should be done by the system
-integration for the board not the MFD.
+>
+> thanks,
+> rui
+>> ---
+>>   Documentation/thermal/sysfs-api.txt |    2 +-
+>>   drivers/thermal/step_wise.c         |    2 +-
+>>   drivers/thermal/thermal_sys.c       |    4 ++--
+>>   include/linux/thermal.h             |    2 +-
+>>   4 files changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
+>> index 059b3bf..a9abb84 100644
+>> --- a/Documentation/thermal/sysfs-api.txt
+>> +++ b/Documentation/thermal/sysfs-api.txt
+>> @@ -351,7 +351,7 @@ crosses any of the configured thresholds.
+>>
+>>   5. Export Symbol APIs:
+>>
+>> -5.1: get_tz_trend:
+>> +5.1: thermal_zone_trend_get:
+>>   This function returns the trend of a thermal zone, i.e the rate of change
+>>   of temperature of the thermal zone. Ideally, the thermal sensor drivers
+>>   are supposed to implement the callback. If they don't, the thermal
+>> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+>> index 407cde3..a640e2b 100644
+>> --- a/drivers/thermal/step_wise.c
+>> +++ b/drivers/thermal/step_wise.c
+>> @@ -116,7 +116,7 @@ static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
+>>   		tz->ops->get_trip_type(tz, trip, &trip_type);
+>>   	}
+>>
+>> -	trend = get_tz_trend(tz, trip);
+>> +	trend = thermal_zone_trend_get(tz, trip);
+>>
+>>   	if (tz->temperature >= trip_temp)
+>>   		throttle = true;
+>> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+>> index 44e89c0..242c82a 100644
+>> --- a/drivers/thermal/thermal_sys.c
+>> +++ b/drivers/thermal/thermal_sys.c
+>> @@ -153,7 +153,7 @@ static void release_idr(struct idr *idr, struct mutex *lock, int id)
+>>   		mutex_unlock(lock);
+>>   }
+>>
+>> -int get_tz_trend(struct thermal_zone_device *tz, int trip)
+>> +int thermal_zone_trend_get(struct thermal_zone_device *tz, int trip)
+>>   {
+>>   	enum thermal_trend trend;
+>>
+>> @@ -168,7 +168,7 @@ int get_tz_trend(struct thermal_zone_device *tz, int trip)
+>>
+>>   	return trend;
+>>   }
+>> -EXPORT_SYMBOL(get_tz_trend);
+>> +EXPORT_SYMBOL(thermal_zone_trend_get);
+>>
+>>   struct thermal_instance *thermal_instance_get(struct thermal_zone_device *tz,
+>>   			struct thermal_cooling_device *cdev, int trip)
+>> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+>> index e2a49e1..542a39c 100644
+>> --- a/include/linux/thermal.h
+>> +++ b/include/linux/thermal.h
+>> @@ -238,7 +238,7 @@ struct thermal_cooling_device *thermal_cooling_device_register(char *, void *,
+>>   		const struct thermal_cooling_device_ops *);
+>>   void thermal_cooling_device_unregister(struct thermal_cooling_device *);
+>>
+>> -int get_tz_trend(struct thermal_zone_device *, int);
+>> +int thermal_zone_trend_get(struct thermal_zone_device *, int);
+>>   struct thermal_instance *thermal_instance_get(struct thermal_zone_device *,
+>>   		struct thermal_cooling_device *, int);
+>>   void thermal_cdev_update(struct thermal_cooling_device *);
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-> +static struct da9058_regulator_pdata buck1_pdata = {
-> +	.regulator_name = "DA9058_BUCK1",
-> +	.regulator_id = DA9058_BUCK_1,
-> +	.min_uv = DA9058_BUCK12_VOLT_LOWER * 1000,
-> +	.max_uv = DA9058_BUCK12_VOLT_UPPER * 1000,
-> +	.control_voltage_step = DA9058_BUCK_VOLT_STEP * 1000,
-> +	.control_register = DA9058_BUCK1_REG,
-> +	.control_step_mask = DA9058_MAX_VSEL,
-> +	.control_enable_mask = DA9058_BUCK_LDO_EN,
-> +	.ramp_register = DA9058_SUPPLY_REG,
-> +	.ramp_enable_mask = DA9058_SUPPLY_VBUCK1GO,
-> +	.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE | REGULATOR_CHANGE_MODE |
-> +				REGULATOR_CHANGE_STATUS,
-> +	.valid_modes_mask = REGULATOR_MODE_NORMAL,
-> +	.boot_on = 1,
-> +	.num_consumer_supplies = ARRAY_SIZE(platform_vddarm_consumers),
-> +	.consumer_supplies = platform_vddarm_consumers,
-> +};
-
-The regulators might be used for some totally different purpose on
-another system, and the configuration may be different even if the
-purpose is the same.  The above also doesn't make much sense, you allow
-changing modes but only support one mode.
-
-You need to split out the regulator_init_data and let the board set it
-up.
