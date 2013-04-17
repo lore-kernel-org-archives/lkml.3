@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab3DQAgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 20:36:53 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46793 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794Ab3DQAgr (ORCPT
+	id S965264Ab3DQAiH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 20:38:07 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:38735 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755130Ab3DQAgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 20:36:47 -0400
+	Tue, 16 Apr 2013 20:36:55 -0400
 From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andi Kleen <andi@firstfloor.org>,
@@ -15,130 +15,171 @@ Cc: Andi Kleen <andi@firstfloor.org>,
         Rik van Riel <riel@redhat.com>, Hillf Danton <dhillf@gmail.com>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Subject: [PATCH v2 1/6] mm/hugetlb: introduce new sysctl knob which control gigantic page pools shrinking
-Date: Wed, 17 Apr 2013 08:36:29 +0800
-Message-Id: <1366158995-3116-2-git-send-email-liwanp@linux.vnet.ibm.com>
+Subject: [PATCH v2 4/6] mm/hugetlb: use already exist huge_page_order() instead of h->order 
+Date: Wed, 17 Apr 2013 08:36:32 +0800
+Message-Id: <1366158995-3116-5-git-send-email-liwanp@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1366158995-3116-1-git-send-email-liwanp@linux.vnet.ibm.com>
 References: <1366158995-3116-1-git-send-email-liwanp@linux.vnet.ibm.com>
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041700-4790-0000-0000-000007E2687C
+x-cbid: 13041700-9264-0000-0000-00000389EF9E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces new sysctl knob to support gigantic hugetlb page
-pools shrinking. The default value is 0 since gigantic page pools
-aren't permitted shrinked by default, administrator can echo 1 to knob
-to enable gigantic page pools shrinking after they confirm they won't
-use them any more.
+Use already exist interface huge_page_order() instead of h->order to get 
+huge page order.
 
 Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- Documentation/sysctl/vm.txt |   13 +++++++++++++
- include/linux/hugetlb.h     |    3 +++
- kernel/sysctl.c             |    7 +++++++
- mm/hugetlb.c                |    9 +++++++++
- 4 files changed, 32 insertions(+)
+ mm/hugetlb.c |   36 +++++++++++++++++++-----------------
+ 1 file changed, 19 insertions(+), 17 deletions(-)
 
-diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-index 21ad181..3baf332 100644
---- a/Documentation/sysctl/vm.txt
-+++ b/Documentation/sysctl/vm.txt
-@@ -30,6 +30,7 @@ Currently, these files are in /proc/sys/vm:
- - extfrag_threshold
- - hugepages_treat_as_movable
- - hugetlb_shm_group
-+- hugetlb_shrink_gigantic_pool
- - laptop_mode
- - legacy_va_layout
- - lowmem_reserve_ratio
-@@ -211,6 +212,18 @@ shared memory segment using hugetlb page.
- 
- ==============================================================
- 
-+hugetlb_shrink_gigantic_pool
-+
-+order >= MAX_ORDER pages are only allocated at boot stage using the bootmem
-+allocator with the "hugepages=xxx" option. These pages are never free'd
-+by default since it would be a one-way street(>= MAX_ORDER pages cannot
-+be allocated later), but if administrator confirm not to use these gigantic
-+pages any more, these pinned pages will waste memory since other users
-+can't grab free pages from gigantic hugetlb pool even OOM. Administrator
-+can enable this parameter to permit to shrink gigantic hugetlb pool
-+
-+==============================================================
-+
- laptop_mode
- 
- laptop_mode is a knob that controls "laptop mode". All the things that are
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 3a62df3..b7e4106 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -36,6 +36,8 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
- int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
- int hugetlb_overcommit_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
- int hugetlb_treat_movable_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-+int hugetlb_shrink_gigantic_pool_handler(struct ctl_table *,
-+				int, void __user *, size_t *, loff_t *);
- 
- #ifdef CONFIG_NUMA
- int hugetlb_mempolicy_sysctl_handler(struct ctl_table *, int,
-@@ -73,6 +75,7 @@ extern unsigned long hugepages_treat_as_movable;
- extern const unsigned long hugetlb_zero, hugetlb_infinity;
- extern int sysctl_hugetlb_shm_group;
- extern struct list_head huge_boot_pages;
-+extern int hugetlb_shrink_gigantic_pool;
- 
- /* arch callbacks */
- 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 3dadde5..25eb85f 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -1187,6 +1187,13 @@ static struct ctl_table vm_table[] = {
- 		.extra1		= (void *)&hugetlb_zero,
- 		.extra2		= (void *)&hugetlb_infinity,
- 	},
-+	{
-+		.procname       = "hugetlb_shrink_gigantic_pool",
-+		.data           = &hugetlb_shrink_gigantic_pool,
-+		.maxlen         = sizeof(int),
-+		.mode           = 0644,
-+		.proc_handler   = hugetlb_shrink_gigantic_pool_handler,
-+	},
- #ifdef CONFIG_NUMA
- 	{
- 		.procname       = "nr_hugepages_mempolicy",
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index bacdf38..4a0c270 100644
+index 328f140..0cae950 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -35,6 +35,7 @@
- const unsigned long hugetlb_zero = 0, hugetlb_infinity = ~0UL;
- static gfp_t htlb_alloc_mask = GFP_HIGHUSER;
- unsigned long hugepages_treat_as_movable;
-+int hugetlb_shrink_gigantic_pool;
+@@ -593,7 +593,8 @@ static void update_and_free_page(struct hstate *h, struct page *page)
+ 	struct page *p;
+ 	int order = huge_page_order(h);
  
- int hugetlb_max_hstate __read_mostly;
- unsigned int default_hstate_idx;
-@@ -671,6 +672,14 @@ static void prep_compound_gigantic_page(struct page *page, unsigned long order)
+-	VM_BUG_ON(!hugetlb_shrink_gigantic_pool && h->order >= MAX_ORDER);
++	VM_BUG_ON(!hugetlb_shrink_gigantic_pool &&
++					huge_page_order(h) >= MAX_ORDER);
+ 
+ 	h->nr_huge_pages--;
+ 	h->nr_huge_pages_node[page_to_nid(page)]--;
+@@ -722,7 +723,7 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ {
+ 	struct page *page;
+ 
+-	if (h->order >= MAX_ORDER)
++	if (huge_page_order(h) >= MAX_ORDER)
+ 		return NULL;
+ 
+ 	page = alloc_pages_exact_node(nid,
+@@ -876,7 +877,7 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
+ 	struct page *page;
+ 	unsigned int r_nid;
+ 
+-	if (h->order >= MAX_ORDER)
++	if (huge_page_order(h) >= MAX_ORDER)
+ 		return NULL;
+ 
+ 	/*
+@@ -1071,7 +1072,7 @@ static void return_unused_surplus_pages(struct hstate *h,
+ 	h->resv_huge_pages -= unused_resv_pages;
+ 
+ 	/* Cannot return gigantic pages currently */
+-	if (h->order >= MAX_ORDER)
++	if (huge_page_order(h) >= MAX_ORDER)
+ 		return;
+ 
+ 	nr_pages = min(unused_resv_pages, h->surplus_huge_pages);
+@@ -1265,7 +1266,7 @@ static void __init gather_bootmem_prealloc(void)
+ #endif
+ 		__ClearPageReserved(page);
+ 		WARN_ON(page_count(page) != 1);
+-		prep_compound_huge_page(page, h->order);
++		prep_compound_huge_page(page, huge_page_order(h));
+ 		prep_new_huge_page(h, page, page_to_nid(page));
+ 		/*
+ 		 * If we had gigantic hugepages allocated at boot time, we need
+@@ -1273,8 +1274,8 @@ static void __init gather_bootmem_prealloc(void)
+ 		 * fix confusing memory reports from free(1) and another
+ 		 * side-effects, like CommitLimit going negative.
+ 		 */
+-		if (h->order > (MAX_ORDER - 1))
+-			totalram_pages += 1 << h->order;
++		if (huge_page_order(h) > (MAX_ORDER - 1))
++			totalram_pages += 1 << huge_page_order(h);
  	}
  }
  
-+int hugetlb_shrink_gigantic_pool_handler(struct ctl_table *table, int write,
-+			void __user *buffer,
-+			size_t *length, loff_t *ppos)
-+{
-+	proc_dointvec(table, write, buffer, length, ppos);
-+	return 0;
-+}
-+
- /*
-  * PageHuge() only returns true for hugetlbfs pages, but not for normal or
-  * transparent huge pages.  See the PageTransHuge() documentation for more
+@@ -1283,7 +1284,7 @@ static void __init hugetlb_hstate_alloc_pages(struct hstate *h)
+ 	unsigned long i;
+ 
+ 	for (i = 0; i < h->max_huge_pages; ++i) {
+-		if (h->order >= MAX_ORDER) {
++		if (huge_page_order(h) >= MAX_ORDER) {
+ 			if (!alloc_bootmem_huge_page(h))
+ 				break;
+ 		} else if (!alloc_fresh_huge_page(h,
+@@ -1299,7 +1300,7 @@ static void __init hugetlb_init_hstates(void)
+ 
+ 	for_each_hstate(h) {
+ 		/* oversize hugepages were init'ed in early boot */
+-		if (h->order < MAX_ORDER)
++		if (huge_page_order(h) < MAX_ORDER)
+ 			hugetlb_hstate_alloc_pages(h);
+ 	}
+ }
+@@ -1333,7 +1334,7 @@ static void try_to_free_low(struct hstate *h, unsigned long count,
+ {
+ 	int i;
+ 
+-	if (h->order >= MAX_ORDER)
++	if (huge_page_order(h) >= MAX_ORDER)
+ 		return;
+ 
+ 	for_each_node_mask(i, *nodes_allowed) {
+@@ -1416,8 +1417,8 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
+ {
+ 	unsigned long min_count, ret;
+ 
+-	if (h->order >= MAX_ORDER && (!hugetlb_shrink_gigantic_pool ||
+-				count > persistent_huge_pages(h)))
++	if (huge_page_order(h) >= MAX_ORDER && (!hugetlb_shrink_gigantic_pool
++				|| count > persistent_huge_pages(h)))
+ 		return h->max_huge_pages;
+ 
+ 	/*
+@@ -1543,7 +1544,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+ 		goto out;
+ 
+ 	h = kobj_to_hstate(kobj, &nid);
+-	if (h->order >= MAX_ORDER && !hugetlb_shrink_gigantic_pool) {
++	if (huge_page_order(h) >= MAX_ORDER && !hugetlb_shrink_gigantic_pool) {
+ 		err = -EINVAL;
+ 		goto out;
+ 	}
+@@ -1626,7 +1627,7 @@ static ssize_t nr_overcommit_hugepages_store(struct kobject *kobj,
+ 	unsigned long input;
+ 	struct hstate *h = kobj_to_hstate(kobj, NULL);
+ 
+-	if (h->order >= MAX_ORDER)
++	if (huge_page_order(h) >= MAX_ORDER)
+ 		return -EINVAL;
+ 
+ 	err = strict_strtoul(buf, 10, &input);
+@@ -2037,7 +2038,8 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+ 
+ 	tmp = h->max_huge_pages;
+ 
+-	if (write && h->order >= MAX_ORDER && !hugetlb_shrink_gigantic_pool)
++	if (write && huge_page_order(h) >= MAX_ORDER &&
++						!hugetlb_shrink_gigantic_pool)
+ 		return -EINVAL;
+ 
+ 	table->data = &tmp;
+@@ -2102,7 +2104,7 @@ int hugetlb_overcommit_handler(struct ctl_table *table, int write,
+ 
+ 	tmp = h->nr_overcommit_huge_pages;
+ 
+-	if (write && h->order >= MAX_ORDER)
++	if (write && huge_page_order(h) >= MAX_ORDER)
+ 		return -EINVAL;
+ 
+ 	table->data = &tmp;
+@@ -3093,7 +3095,7 @@ unsigned long hugetlb_change_protection(struct vm_area_struct *vma,
+ 	flush_tlb_range(vma, start, end);
+ 	mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
+ 
+-	return pages << h->order;
++	return pages << huge_page_order(h);
+ }
+ 
+ int hugetlb_reserve_pages(struct inode *inode,
 -- 
 1.7.10.4
 
