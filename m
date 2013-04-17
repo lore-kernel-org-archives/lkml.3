@@ -1,58 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966005Ab3DQHvB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 03:51:01 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:60076 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965738Ab3DQHu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 03:50:59 -0400
-Date: Wed, 17 Apr 2013 09:50:55 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 2/3] mutex: Queue mutex spinners with MCS lock to
- reduce cacheline contention
-Message-ID: <20130417075055.GC31607@gmail.com>
-References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>
- <1366036679-9702-3-git-send-email-Waiman.Long@hp.com>
- <20130416091026.GB9569@gmail.com>
- <516D5F97.9050203@hp.com>
+	id S966021Ab3DQH4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 03:56:15 -0400
+Received: from softlayer.compulab.co.il ([50.23.254.55]:60242 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965738Ab3DQH4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 03:56:13 -0400
+Message-ID: <516E5597.7050801@compulab.co.il>
+Date: Wed, 17 Apr 2013 10:56:07 +0300
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130415 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <516D5F97.9050203@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Robert Nelson <robertcnelson@gmail.com>
+CC: Tony Lindgren <tony@atomide.com>, Roger Quadros <rogerq@ti.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        b-cousson@ti.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: omap3-beagle-xm: Add USB Host support for Rev
+ Ax/Bx
+References: <1366029306-1824-1-git-send-email-rogerq@ti.com> <516BF4F3.5060904@ti.com> <20130417005232.GV10155@atomide.com> <CAOCHtYgFnCy5Qn2LeJOK96_NdwzxzVe8Vrb8cL=K9AdzPUtQow@mail.gmail.com>
+In-Reply-To: <CAOCHtYgFnCy5Qn2LeJOK96_NdwzxzVe8Vrb8cL=K9AdzPUtQow@mail.gmail.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: grinberg@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Waiman Long <Waiman.Long@hp.com> wrote:
-
-> > I'd suggest a preparatory patch that gets rid of that flag and moves these two
-> > functions from sched/core.c to mutex.c where they belong.
-> >
-> > This will also allow the removal of the mutex prototypes from sched.h.
+On 04/17/13 04:30, Robert Nelson wrote:
+> On Tue, Apr 16, 2013 at 7:52 PM, Tony Lindgren <tony@atomide.com> wrote:
+>> * Roger Quadros <rogerq@ti.com> [130415 05:44]:
+>>> On 04/15/2013 03:35 PM, Roger Quadros wrote:
+>>>> Provide RESET and Power regulators for the USB PHY,
+>>>> the USB Host port mode and the PHY device.
+>>>>
+>>>> Also provide pin multiplexer information for USB host
+>>>> pins.
+>>>>
+>>>> This will not work for Rev Cx boards because of reversed logic
+>>>> for USB_POWER_Enable.
+>>>>
+>>>> CC: Benoît Cousson <b-cousson@ti.com>
+>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>> ---
+>>>>  arch/arm/boot/dts/omap3-beagle-xm.dts |   62 +++++++++++++++++++++++++++++++++
+>>>>  1 files changed, 62 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+>>>> index 5a31964..d394c51 100644
+>>>> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
+>>>> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+>>>> @@ -57,6 +57,60 @@
+>>>>             ti,mcbsp = <&mcbsp2>;
+>>>>             ti,codec = <&twl_audio>;
+>>>>     };
+>>>> +
+>>>> +   /* HS USB Port 2 RESET */
+>>>> +   hsusb2_reset: hsusb2_reset_reg {
+>>>> +           compatible = "regulator-fixed";
+>>>> +           regulator-name = "hsusb2_reset";
+>>>> +           regulator-min-microvolt = <3300000>;
+>>>> +           regulator-max-microvolt = <3300000>;
+>>>> +           gpio = <&gpio5 19 0>;   /* gpio_147 */
+>>>> +           startup-delay-us = <70000>;
+>>>> +           enable-active-high;
+>>>> +   };
+>>>> +
+>>>> +   /* HS USB Port 2 Power */
+>>>> +   hsusb2_power: hsusb2_power_reg {
+>>>> +           compatible = "regulator-fixed";
+>>>> +           regulator-name = "hsusb2_vbus";
+>>>> +           regulator-min-microvolt = <3300000>;
+>>>> +           regulator-max-microvolt = <3300000>;
+>>>> +           gpio = <&twl_gpio 18 0>;        /* GPIO LEDA */
+>>>> +           startup-delay-us = <70000>;
+>>>> +           enable-active-high;     /* FIXME: active-low for Rev. C */
+>>>
+>>> Benoit & Tony,
+>>>
+>>> Any ideas how to tackle the reversed logic for Rev. C boards?
+>>
+>> Sounds like we need a shared omap3-beage.dtsi, then omap3-beagle-xm.dts
+>> and omap3-beagle-rev-c.dts. Then xm and rev-c can both include the
 > 
-> Yes, I can certainly prepare a patch to remove SCHED_FEAT_OWNER_SPIN & move 
-> those functions back to mutex.c after my patch set goes in. As for the timing, 
-> do you want me to do it now or it can wait as I will start my vacation later 
-> this week and will be back by the end of the month.
+> Bike-sheding, but we might want to make that "omap3-beagle-xmc.dts" as
+> there is the "rev c" variant of the original beagle...
+> 
+> It's too bad we can't read the 3 gpio pin states in the device tree
+> and make a decision.
 
-I'd suggest waiting with the latest series until you are back, so that you can 
-address regressions, should there be any.
+I would recommend to move the detection to the boot loader and
+adjust the DT blob at run time (in the boot loader).
+This way, we will not need to deal with all the (sub)revision stuff.
 
-Thanks,
 
-	Ingo
+-- 
+Regards,
+Igor.
