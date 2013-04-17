@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966040Ab3DQLPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 07:15:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57065 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965117Ab3DQLPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 07:15:49 -0400
-Date: Wed, 17 Apr 2013 13:16:17 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Victor Miasnikov <vvm@tut.by>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, x86@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
-        JBeulich@suse.com, bp@alien8.de
-Subject: Re: KVM  "Hyper-V emulation"   -- this can be related "Linux on
- Hyper-V" ? Or  "KVM emulates Hyper-V" as  "Hyper-V emulates Hyper-V" ? Re:
- [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
-Message-ID: <20130417101617.GF3881@redhat.com>
-References: <1359940910-32114-1-git-send-email-kys@microsoft.com>
- <1359940959-32168-1-git-send-email-kys@microsoft.com>
- <1359940959-32168-2-git-send-email-kys@microsoft.com>
- <20130417070616.GA4487@redhat.com>
- <39D7C3658A5B4979A3F025E1D944E743@local.st.by>
+	id S966059Ab3DQL1M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 07:27:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27791 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965132Ab3DQL1K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 07:27:10 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=ofFxtc/jepklO3aWSWiKGA==:17 a=99CFIlhQ8dUA:10 a=XqBCkJwx3yUA:10 a=bIxKA6TX_asA:10 a=vQlp3vXYDpMA:10 a=8nJEP1OIZ-IA:10 a=2KX_Yc5PAAAA:8 a=fkMt6HFWGF8A:10 a=kKAx9GwCrhY_jL7OA4QA:9 a=wPNLvfGTeEIA:10 a=ofFxtc/jepklO3aWSWiKGA==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 70.112.99.80
+Message-ID: <516E870B.5010303@tabi.org>
+Date: Wed, 17 Apr 2013 06:27:07 -0500
+From: Timur Tabi <timur@tabi.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:20.0) Gecko/20100101 Firefox/20.0 SeaMonkey/2.17.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <39D7C3658A5B4979A3F025E1D944E743@local.st.by>
+To: Tang Yuantian-B29983 <B29983@freescale.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v2] of/base: release the node correctly in of_parse_phandle_with_args()
+References: <1365564999-24427-1-git-send-email-Yuantian.Tang@freescale.com> <CAOZdJXW8qKccGKic3R4o1aqJdbfHcBoAp62B4HPFnF=sUAEvuQ@mail.gmail.com> <D07C73A334FF604B95B3CBD2A545D07B0B1456B8@039-SN2MPN1-013.039d.mgd.msft.net> <516E1763.7040206@tabi.org> <D07C73A334FF604B95B3CBD2A545D07B0B1457D2@039-SN2MPN1-013.039d.mgd.msft.net>
+In-Reply-To: <D07C73A334FF604B95B3CBD2A545D07B0B1457D2@039-SN2MPN1-013.039d.mgd.msft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 12:10:01PM +0300, Victor Miasnikov wrote:
-> Question is very simple:  Hyper-V users/sysadmins need wait patch a-la this:
-> 
-> ==
-> KVM emulates Hyper-V to host enlightened Windows. Looks like this
-> emulation may be turned on by default even for Linux guests. Check and
-> fail Hyper-V detection if we are on KVM.
+Tang Yuantian-B29983 wrote:
+> It was placed on ELSE statement originally, I moved it to IF statement.
+> Why is it so wrong?
 
-> [ hpa: the problem here is that KVM doesn't emulate Hyper-V well
->  enough, and if the KVM support isn't compiled in, we end up stubling
->  over the Hyper-V emulation and try to activate it -- and it fails. ]
-> 
-> . . .
-
-What's emulated not well enough?
-
-> + /*
-> +  * KVM emulates Hyper-V to support enlightened Windows.
-> +  * Check to see first if we are on a KVM Hypervisor.
-> +  */
-
-If the hypervisor says it's Hyper-V, that's because it wants
-guests to use Hyper-V. I don't see why is guest second-guessing
-this a good idea.
-
-> + if (KVM_cpuid_base())
-> +  return false;
-> +
-> ==
-> 
-> 
-> Or  "KVM emulates Hyper-V" as  "Hyper-V emulates Hyper-V" ?
-> 
-> 
-> Best regards, Victor Miasnikov
-> Blog:  http://vvm.blog.tut.by/
-> 
-> P.S.
-
-No.  You are using Hyper-V, not the KVM emulation of it.  No patches
-dealing with this emulation should have any effect on you.
+Because the logic of the comment applies to the else-condition, not the 
+if-condtion.
 
 -- 
-MST
+Timur Tabi
