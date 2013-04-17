@@ -1,128 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966209Ab3DQM0b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 08:26:31 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:59765 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965643Ab3DQM03 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 08:26:29 -0400
-Message-ID: <516E94E7.4030202@redhat.com>
-Date: Wed, 17 Apr 2013 14:26:15 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S966288Ab3DQM0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 08:26:43 -0400
+Received: from softlayer.compulab.co.il ([50.23.254.55]:38709 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965643Ab3DQM0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 08:26:40 -0400
+Message-ID: <516E94FA.9060606@compulab.co.il>
+Date: Wed, 17 Apr 2013 15:26:34 +0300
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130415 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, corbet@lwn.net
-CC: Tejun Heo <tj@kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: PING^4 aka The Jon Corbet Effect Re: [PATCH v2 00/14] Corrections
- and customization of the SG_IO command whitelist (CVE-2012-4542)
-References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com> <5124F600.9030908@redhat.com> <514CDB6F.9030505@redhat.com> <515DC3FE.1010405@redhat.com>
-In-Reply-To: <515DC3FE.1010405@redhat.com>
-X-Enigmail-Version: 1.5.1
+To: Roger Quadros <rogerq@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Robert Nelson <robertcnelson@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
+        b-cousson@ti.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: omap3-beagle-xm: Add USB Host support for Rev
+ Ax/Bx
+References: <1366029306-1824-1-git-send-email-rogerq@ti.com> <516BF4F3.5060904@ti.com> <20130417005232.GV10155@atomide.com> <CAOCHtYgFnCy5Qn2LeJOK96_NdwzxzVe8Vrb8cL=K9AdzPUtQow@mail.gmail.com> <516E5597.7050801@compulab.co.il> <516E5F9E.3050204@ti.com>
+In-Reply-To: <516E5F9E.3050204@ti.com>
+X-Enigmail-Version: 1.6a1pre
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: grinberg@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And a fourth ping comes...
-
-Jon, the next time I read "it seems likely to be picked up fairly soon"
-(http://lwn.net/Articles/535075/), I'll picture the author of the patch
-attempting open-heart surgery on a long-red-haired voodoo doll!
-
-Paolo
-
-Il 04/04/2013 20:18, Paolo Bonzini ha scritto:
-> Il 22/03/2013 23:30, Paolo Bonzini ha scritto:
->> Il 20/02/2013 17:12, Paolo Bonzini ha scritto:
->>> Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
->>>> This series regards the whitelist that is used for the SG_IO ioctl.  This
->>>> whitelist has three problems:
+On 04/17/13 11:38, Roger Quadros wrote:
+> On 04/17/2013 10:56 AM, Igor Grinberg wrote:
+>> On 04/17/13 04:30, Robert Nelson wrote:
+>>> On Tue, Apr 16, 2013 at 7:52 PM, Tony Lindgren <tony@atomide.com> wrote:
+>>>> * Roger Quadros <rogerq@ti.com> [130415 05:44]:
+>>>>> On 04/15/2013 03:35 PM, Roger Quadros wrote:
+>>>>>> Provide RESET and Power regulators for the USB PHY,
+>>>>>> the USB Host port mode and the PHY device.
+>>>>>>
+>>>>>> Also provide pin multiplexer information for USB host
+>>>>>> pins.
+>>>>>>
+>>>>>> This will not work for Rev Cx boards because of reversed logic
+>>>>>> for USB_POWER_Enable.
+>>>>>>
+>>>>>> CC: Benoît Cousson <b-cousson@ti.com>
+>>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>>>>> ---
+>>>>>>  arch/arm/boot/dts/omap3-beagle-xm.dts |   62 +++++++++++++++++++++++++++++++++
+>>>>>>  1 files changed, 62 insertions(+), 0 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+>>>>>> index 5a31964..d394c51 100644
+>>>>>> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
+>>>>>> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+>>>>>> @@ -57,6 +57,60 @@
+>>>>>>             ti,mcbsp = <&mcbsp2>;
+>>>>>>             ti,codec = <&twl_audio>;
+>>>>>>     };
+>>>>>> +
+>>>>>> +   /* HS USB Port 2 RESET */
+>>>>>> +   hsusb2_reset: hsusb2_reset_reg {
+>>>>>> +           compatible = "regulator-fixed";
+>>>>>> +           regulator-name = "hsusb2_reset";
+>>>>>> +           regulator-min-microvolt = <3300000>;
+>>>>>> +           regulator-max-microvolt = <3300000>;
+>>>>>> +           gpio = <&gpio5 19 0>;   /* gpio_147 */
+>>>>>> +           startup-delay-us = <70000>;
+>>>>>> +           enable-active-high;
+>>>>>> +   };
+>>>>>> +
+>>>>>> +   /* HS USB Port 2 Power */
+>>>>>> +   hsusb2_power: hsusb2_power_reg {
+>>>>>> +           compatible = "regulator-fixed";
+>>>>>> +           regulator-name = "hsusb2_vbus";
+>>>>>> +           regulator-min-microvolt = <3300000>;
+>>>>>> +           regulator-max-microvolt = <3300000>;
+>>>>>> +           gpio = <&twl_gpio 18 0>;        /* GPIO LEDA */
+>>>>>> +           startup-delay-us = <70000>;
+>>>>>> +           enable-active-high;     /* FIXME: active-low for Rev. C */
+>>>>>
+>>>>> Benoit & Tony,
+>>>>>
+>>>>> Any ideas how to tackle the reversed logic for Rev. C boards?
 >>>>
->>>> * the bitmap of allowed commands is designed for MMC devices (roughly,
->>>>   "play/burn CDs without requiring root") but some opcodes overlap across SCSI
->>>>   device classes and have different meanings for different classes.
->>>>
->>>> * also because the bitmap of allowed commands is designed for MMC devices
->>>>   only, some commands are missing even though they are generally useful and
->>>>   not insecure.  At least not more insecure than anything else you can
->>>>   do if you have access to /dev/sdX or /dev/stX nodes.
->>>>
->>>> * the whitelist can be disabled per-process but not per-disk.  In addition,
->>>>   the required capability (CAP_SYS_RAWIO) gives access to a range of other 
->>>>   resources, enough to make it insecure.
->>>>
->>>> The series corrects these problems.  Patches 1-4 solve the first problem,
->>>> which also has an assigned CVE, by using different bitmaps for the various
->>>> device classes.  Patches 5-11 solve the second by adding more commands
->>>> to the bitmaps.  Patches 12 and 13 solve the third, and were already
->>>> posted but ignored by the maintainers despite multiple pings.
->>>>
->>>> Note: checkpatch hates the formatting of the command table.  I know about this,
->>>> and ensured that there are no errors in the rest of the code.  The current
->>>> formatting is IMHO quite handy, and roughly based on the files available
->>>> from the SCSI standard body.
->>>>
->>>> Ok for the next merge window?
->>>>
->>>> Paolo
->>>>
->>>> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
->>>>         for details).  Added patch 14 and added a few more scanner
->>>>         commands based on SANE (scanners are not whitelisted by default,
->>>>         also were not in v1, but this makes it possible to opt into the
->>>>         whitelist out of paranoia).  Removed C++ comments.  Removed the
->>>>         large #if 0'd list of commands that the kernel does not pass
->>>>         though.  Marked blk_set_cmd_filter_defaults as __init.
+>>>> Sounds like we need a shared omap3-beage.dtsi, then omap3-beagle-xm.dts
+>>>> and omap3-beagle-rev-c.dts. Then xm and rev-c can both include the
 >>>
->>> Ping...
+>>> Bike-sheding, but we might want to make that "omap3-beagle-xmc.dts" as
+>>> there is the "rev c" variant of the original beagle...
 >>>
->>> Jens/James, is anyone going to pick this up for 3.9?
+>>> It's too bad we can't read the 3 gpio pin states in the device tree
+>>> and make a decision.
 >>
->> Another month has passed, Ping^2...
+>> I would recommend to move the detection to the boot loader and
+>> adjust the DT blob at run time (in the boot loader).
+>> This way, we will not need to deal with all the (sub)revision stuff.
+>>
+>>
+> Moving the detection to bootloader is fine, but modifying the DT at
+> runtime would create a debug/maintenance issue. Instead it could just
+> pick one of the .DTBs and pass it to kernel.
+
+Like this will not create create any debug/maintenance issues.... ;-)
+We have no problem with debug, as all the DT nodes can be seen in
+both U-Boot (with fdt commands) and Linux through procfs...
+
+I've just dropped my 2 cents and I don't really insist...
+
 > 
-> Ping^3, any hope for 3.10?
+> Since most users will be using rev-c, I think we should keep the original
+> file 'omap3-beagle-xm.dts" as it is for rev-c boards.
+> I can just create a new dts file for Revisions A and B that will be
+> like so.
 > 
-> Paolo
+> +++ b/arch/arm/boot/dts/omap3-beagle-xm-ab.dts
+> @@ -0,0 +1,6 @@
+> +/include/ "omap3-beagle-xm.dts"
+> +
+> +/* On Rev A/B USBHOST_PWR_EN is active high */
+> +&hsusb2_power {
+> +       enable-active-high;
+> +};
 > 
->>
->> Paolo
->>
->>> Paolo
->>>
->>>>
->>>> Paolo Bonzini (14):
->>>>   sg_io: pass request_queue to blk_verify_command
->>>>   sg_io: reorganize list of allowed commands
->>>>   sg_io: use different default filters for each device class
->>>>   sg_io: resolve conflicts between commands assigned to multiple
->>>>     classes (CVE-2012-4542)
->>>>   sg_io: whitelist a few more commands for rare & obsolete device types
->>>>   sg_io: whitelist another command for multimedia devices
->>>>   sg_io: whitelist a few more commands for media changers
->>>>   sg_io: whitelist a few more commands for tapes
->>>>   sg_io: whitelist a few more commands for disks
->>>>   sg_io: whitelist a few obsolete commands
->>>>   sg_io: mark blk_set_cmd_filter_defaults as __init
->>>>   sg_io: remove remnants of sysfs SG_IO filters
->>>>   sg_io: introduce unpriv_sgio queue flag
->>>>   sg_io: use unpriv_sgio to disable whitelisting for scanners
->>>>
->>>>  Documentation/block/queue-sysfs.txt |    8 +
->>>>  block/blk-sysfs.c                   |   33 +++
->>>>  block/bsg.c                         |    2 +-
->>>>  block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
->>>>  drivers/scsi/scsi_scan.c            |   14 ++-
->>>>  drivers/scsi/sg.c                   |    6 +-
->>>>  include/linux/blkdev.h              |    8 +-
->>>>  include/linux/genhd.h               |    9 -
->>>>  include/scsi/scsi.h                 |    3 +
->>>>  9 files changed, 344 insertions(+), 108 deletions(-)
->>>>
->>>
->>
+> Since omap3-beagle and omap3-beagle-xm use different SoC versions and have
+> quite many differences, I don't think it is a good idea to create a common
+> file between the two.
+> 
+> cheers,
+> -roger
 > 
 
+-- 
+Regards,
+Igor.
