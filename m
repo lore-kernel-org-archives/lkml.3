@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966308Ab3DQMON (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 08:14:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17255 "EHLO mx1.redhat.com"
+	id S966338Ab3DQMXe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 08:23:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63722 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966134Ab3DQMOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 08:14:12 -0400
-Message-ID: <516E9205.3070200@redhat.com>
-Date: Wed, 17 Apr 2013 20:13:57 +0800
-From: Lingzhu Xiang <lxiang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Andy Whitcroft <apw@canonical.com>
-CC: Luis Henriques <luis.henriques@canonical.com>,
-        Matt Fleming <matt.fleming@intel.com>, Josh Boyer <jwboyer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Michael Schroeder <mls@suse.com>
-Subject: Re: [PATCH 097/102] efivars: explicitly calculate length of VariableName
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com> <1365414657-29191-98-git-send-email-luis.henriques@canonical.com> <1365547506.5814.36.camel@deadeye.wl.decadent.org.uk> <51653E81.4090102@redhat.com> <20130410121730.GB3049@hercules> <A5ED84D3BB3A384992CBB9C77DEDA4D41AF8D09E@USINDEM103.corp.hds.com> <20130411091256.GA11370@hercules> <20130416103321.GB3054@hercules> <516E2717.3020309@redhat.com> <20130417115641.GG15755@dm>
-In-Reply-To: <20130417115641.GG15755@dm>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S966238Ab3DQMXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 08:23:33 -0400
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Arnd Bergmann <arnd@arndb.de>,
+        Takashi Iwai <tiwai@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>
+Subject: [PATCH 2/2] [media] videobuf-dma-contig: use vm_iomap_memory()
+Date: Wed, 17 Apr 2013 09:22:16 -0300
+Message-Id: <1366201336-9481-2-git-send-email-mchehab@redhat.com>
+In-Reply-To: <1366201336-9481-1-git-send-email-mchehab@redhat.com>
+References: <20130417074300.33d05475@redhat.com>
+ <1366201336-9481-1-git-send-email-mchehab@redhat.com>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2013 07:56 PM, Andy Whitcroft wrote:
-> On Wed, Apr 17, 2013 at 12:37:43PM +0800, Lingzhu Xiang wrote:
->> On 04/16/2013 06:33 PM, Luis Henriques wrote:
->>> 68d929862e29a8b52a7f2f2f86a0600423b093cd efi: be more paranoid about available space when creating variables
->>
->> This prevents a bricking issue for some Samsung devices but causes
->> regression on many other machines.
->>
->> https://bugzilla.kernel.org/show_bug.cgi?id=55471
->> https://bugzilla.redhat.com/show_bug.cgi?id=947142
->> http://article.gmane.org/gmane.linux.kernel.efi/1078
->> http://article.gmane.org/gmane.linux.kernel.stable/47150
->>
->> This patchset will fix it again:
->>
->> http://thread.gmane.org/gmane.linux.kernel.efi/1081
->
-> Thanks for the pointer.  I note that in that thread you yourself imply
-> there are still issues after applying them?  Was that accurate, is there
-> yet further patches needed?
+vm_iomap_memory() provides a better end user interface than
+remap_pfn_range(), as it does the needed tests before doing
+mmap.
 
-I just find that issue. Didn't see that when writing the above.
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+---
+ drivers/media/v4l2-core/videobuf-dma-contig.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
 
-Earlier I was testing on a different machine and the result was good. I 
-guess the patch still needs some more testing.
+diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c b/drivers/media/v4l2-core/videobuf-dma-contig.c
+index 67f572c..7e6b209 100644
+--- a/drivers/media/v4l2-core/videobuf-dma-contig.c
++++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
+@@ -303,14 +303,9 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+ 		goto error;
+ 
+ 	/* Try to remap memory */
+-
+ 	size = vma->vm_end - vma->vm_start;
+-	size = (size < mem->size) ? size : mem->size;
+-
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-	retval = remap_pfn_range(vma, vma->vm_start,
+-				 mem->dma_handle >> PAGE_SHIFT,
+-				 size, vma->vm_page_prot);
++	retval = vm_iomap_memory(vma, vma->vm_start, size);
+ 	if (retval) {
+ 		dev_err(q->dev, "mmap: remap failed with error %d. ",
+ 			retval);
+-- 
+1.8.1.4
 
-
-Lingzhu
