@@ -1,141 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966288Ab3DQM0n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 08:26:43 -0400
-Received: from softlayer.compulab.co.il ([50.23.254.55]:38709 "EHLO
-	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965643Ab3DQM0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 08:26:40 -0400
-Message-ID: <516E94FA.9060606@compulab.co.il>
-Date: Wed, 17 Apr 2013 15:26:34 +0300
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130415 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>
-CC: Tony Lindgren <tony@atomide.com>, Robert Nelson <robertcnelson@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
-        b-cousson@ti.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: omap3-beagle-xm: Add USB Host support for Rev
- Ax/Bx
-References: <1366029306-1824-1-git-send-email-rogerq@ti.com> <516BF4F3.5060904@ti.com> <20130417005232.GV10155@atomide.com> <CAOCHtYgFnCy5Qn2LeJOK96_NdwzxzVe8Vrb8cL=K9AdzPUtQow@mail.gmail.com> <516E5597.7050801@compulab.co.il> <516E5F9E.3050204@ti.com>
-In-Reply-To: <516E5F9E.3050204@ti.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: grinberg@compulab.co.il|compulab.co.il
+	id S966355Ab3DQMhH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 08:37:07 -0400
+Received: from vsp-authed02.binero.net ([195.74.38.226]:16686 "HELO
+	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S966278Ab3DQMhF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 08:37:05 -0400
+From: Andreas Larsson <andreas@gaisler.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, software@gaisler.com
+Subject: [PATCH v6 1/2] gpio: grgpio: Add device driver for GRGPIO cores
+Date: Wed, 17 Apr 2013 14:36:50 +0200
+Message-Id: <1366202211-6743-2-git-send-email-andreas@gaisler.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1366202211-6743-1-git-send-email-andreas@gaisler.com>
+References: <1366202211-6743-1-git-send-email-andreas@gaisler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/13 11:38, Roger Quadros wrote:
-> On 04/17/2013 10:56 AM, Igor Grinberg wrote:
->> On 04/17/13 04:30, Robert Nelson wrote:
->>> On Tue, Apr 16, 2013 at 7:52 PM, Tony Lindgren <tony@atomide.com> wrote:
->>>> * Roger Quadros <rogerq@ti.com> [130415 05:44]:
->>>>> On 04/15/2013 03:35 PM, Roger Quadros wrote:
->>>>>> Provide RESET and Power regulators for the USB PHY,
->>>>>> the USB Host port mode and the PHY device.
->>>>>>
->>>>>> Also provide pin multiplexer information for USB host
->>>>>> pins.
->>>>>>
->>>>>> This will not work for Rev Cx boards because of reversed logic
->>>>>> for USB_POWER_Enable.
->>>>>>
->>>>>> CC: Benoît Cousson <b-cousson@ti.com>
->>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>>>>> ---
->>>>>>  arch/arm/boot/dts/omap3-beagle-xm.dts |   62 +++++++++++++++++++++++++++++++++
->>>>>>  1 files changed, 62 insertions(+), 0 deletions(-)
->>>>>>
->>>>>> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
->>>>>> index 5a31964..d394c51 100644
->>>>>> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
->>>>>> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
->>>>>> @@ -57,6 +57,60 @@
->>>>>>             ti,mcbsp = <&mcbsp2>;
->>>>>>             ti,codec = <&twl_audio>;
->>>>>>     };
->>>>>> +
->>>>>> +   /* HS USB Port 2 RESET */
->>>>>> +   hsusb2_reset: hsusb2_reset_reg {
->>>>>> +           compatible = "regulator-fixed";
->>>>>> +           regulator-name = "hsusb2_reset";
->>>>>> +           regulator-min-microvolt = <3300000>;
->>>>>> +           regulator-max-microvolt = <3300000>;
->>>>>> +           gpio = <&gpio5 19 0>;   /* gpio_147 */
->>>>>> +           startup-delay-us = <70000>;
->>>>>> +           enable-active-high;
->>>>>> +   };
->>>>>> +
->>>>>> +   /* HS USB Port 2 Power */
->>>>>> +   hsusb2_power: hsusb2_power_reg {
->>>>>> +           compatible = "regulator-fixed";
->>>>>> +           regulator-name = "hsusb2_vbus";
->>>>>> +           regulator-min-microvolt = <3300000>;
->>>>>> +           regulator-max-microvolt = <3300000>;
->>>>>> +           gpio = <&twl_gpio 18 0>;        /* GPIO LEDA */
->>>>>> +           startup-delay-us = <70000>;
->>>>>> +           enable-active-high;     /* FIXME: active-low for Rev. C */
->>>>>
->>>>> Benoit & Tony,
->>>>>
->>>>> Any ideas how to tackle the reversed logic for Rev. C boards?
->>>>
->>>> Sounds like we need a shared omap3-beage.dtsi, then omap3-beagle-xm.dts
->>>> and omap3-beagle-rev-c.dts. Then xm and rev-c can both include the
->>>
->>> Bike-sheding, but we might want to make that "omap3-beagle-xmc.dts" as
->>> there is the "rev c" variant of the original beagle...
->>>
->>> It's too bad we can't read the 3 gpio pin states in the device tree
->>> and make a decision.
->>
->> I would recommend to move the detection to the boot loader and
->> adjust the DT blob at run time (in the boot loader).
->> This way, we will not need to deal with all the (sub)revision stuff.
->>
->>
-> Moving the detection to bootloader is fine, but modifying the DT at
-> runtime would create a debug/maintenance issue. Instead it could just
-> pick one of the .DTBs and pass it to kernel.
+This driver supports GRGPIO gpio cores available in the GRLIB VHDL IP
+core library from Aeroflex Gaisler.
 
-Like this will not create create any debug/maintenance issues.... ;-)
-We have no problem with debug, as all the DT nodes can be seen in
-both U-Boot (with fdt commands) and Linux through procfs...
+Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+---
 
-I've just dropped my 2 cents and I don't really insist...
+Changes since v5:
+- register accesses via base + constant
+- no base irq number from device tree
+- no empty irq-handler
 
-> 
-> Since most users will be using rev-c, I think we should keep the original
-> file 'omap3-beagle-xm.dts" as it is for rev-c boards.
-> I can just create a new dts file for Revisions A and B that will be
-> like so.
-> 
-> +++ b/arch/arm/boot/dts/omap3-beagle-xm-ab.dts
-> @@ -0,0 +1,6 @@
-> +/include/ "omap3-beagle-xm.dts"
-> +
-> +/* On Rev A/B USBHOST_PWR_EN is active high */
-> +&hsusb2_power {
-> +       enable-active-high;
-> +};
-> 
-> Since omap3-beagle and omap3-beagle-xm use different SoC versions and have
-> quite many differences, I don't think it is a good idea to create a common
-> file between the two.
-> 
-> cheers,
-> -roger
-> 
+ .../devicetree/bindings/gpio/gpio-grgpio.txt       |   21 +++
+ drivers/gpio/Kconfig                               |    9 ++
+ drivers/gpio/Makefile                              |    1 +
+ drivers/gpio/gpio-grgpio.c                         |  149 ++++++++++++++++++++
+ 4 files changed, 180 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-grgpio.txt
+ create mode 100644 drivers/gpio/gpio-grgpio.c
 
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-grgpio.txt b/Documentation/devicetree/bindings/gpio/gpio-grgpio.txt
+new file mode 100644
+index 0000000..1ec46fd
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-grgpio.txt
+@@ -0,0 +1,21 @@
++Aeroflex Gaisler GRGPIO General Purpose I/O cores.
++
++The GRGPIO GPIO core is available in the GRLIB VHDL IP core library.
++
++Note: In the ordinary environment for the GRGPIO core, a Leon SPARC system,
++these properties are built from information in the AMBA plug&play.
++
++Required properties:
++
++- name : Should be "GAISLER_GPIO" or "01_01a"
++
++- reg : Address and length of the register set for the device
++
++- interrupts : Interrupt numbers for this device
++
++Optional properties:
++
++- nbits : The number of gpio lines. If not present driver assumes 32 lines.
++
++For further information look in the documentation for the GLIB IP core library:
++http://www.gaisler.com/products/grlib/grip.pdf
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index 93aaadf..32f068d 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -309,6 +309,15 @@ config GPIO_LYNXPOINT
+ 	  driver for GPIO functionality on Intel Lynxpoint PCH chipset
+ 	  Requires ACPI device enumeration code to set up a platform device.
+ 
++config GPIO_GRGPIO
++	tristate "Aeroflex Gaisler GRGPIO support"
++	depends on OF
++	select GPIO_GENERIC
++	select IRQ_DOMAIN
++	help
++	  Select this to support Aeroflex Gaisler GRGPIO cores from the GRLIB
++	  VHDL IP core library.
++
+ comment "I2C GPIO expanders:"
+ 
+ config GPIO_ARIZONA
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index 22e07bc..3e6be51 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_ARCH_DAVINCI)	+= gpio-davinci.o
+ obj-$(CONFIG_GPIO_EM)		+= gpio-em.o
+ obj-$(CONFIG_GPIO_EP93XX)	+= gpio-ep93xx.o
+ obj-$(CONFIG_GPIO_GE_FPGA)	+= gpio-ge.o
++obj-$(CONFIG_GPIO_GRGPIO)	+= gpio-grgpio.o
+ obj-$(CONFIG_GPIO_ICH)		+= gpio-ich.o
+ obj-$(CONFIG_GPIO_IT8761E)	+= gpio-it8761e.o
+ obj-$(CONFIG_GPIO_JANZ_TTL)	+= gpio-janz-ttl.o
+diff --git a/drivers/gpio/gpio-grgpio.c b/drivers/gpio/gpio-grgpio.c
+new file mode 100644
+index 0000000..466a1c7
+--- /dev/null
++++ b/drivers/gpio/gpio-grgpio.c
+@@ -0,0 +1,149 @@
++/*
++ * Driver for Aeroflex Gaisler GRGPIO General Purpose I/O cores.
++ *
++ * 2013 (c) Aeroflex Gaisler AB
++ *
++ * This driver supports the GRGPIO GPIO core available in the GRLIB VHDL
++ * IP core library.
++ *
++ * Full documentation of the GRGPIO core can be found here:
++ * http://www.gaisler.com/products/grlib/grip.pdf
++ *
++ * See "Documentation/devicetree/bindings/gpio/gpio-grgpio.txt" for
++ * information on open firmware properties.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ *
++ * Contributors: Andreas Larsson <andreas@gaisler.com>
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/spinlock.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
++#include <linux/of_platform.h>
++#include <linux/gpio.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/basic_mmio_gpio.h>
++
++#define GRGPIO_MAX_NGPIO 32
++
++#define GRGPIO_DATA		0x00
++#define GRGPIO_OUTPUT		0x04
++#define GRGPIO_DIR		0x08
++#define GRGPIO_IMASK		0x0c
++#define GRGPIO_IPOL		0x10
++#define GRGPIO_IEDGE		0x14
++#define GRGPIO_BYPASS		0x18
++#define GRGPIO_IMAP_BASE	0x20
++
++struct grgpio_priv {
++	struct bgpio_chip bgc;
++	void __iomem *regs;
++	struct device *dev;
++};
++
++static inline struct grgpio_priv *grgpio_gc_to_priv(struct gpio_chip *gc)
++{
++	struct bgpio_chip *bgc = to_bgpio_chip(gc);
++
++	return container_of(bgc, struct grgpio_priv, bgc);
++}
++
++static int grgpio_probe(struct platform_device *ofdev)
++{
++	struct device_node *np = ofdev->dev.of_node;
++	void  __iomem *regs;
++	struct gpio_chip *gc;
++	struct bgpio_chip *bgc;
++	struct grgpio_priv *priv;
++	struct resource *res;
++	int err;
++	u32 prop;
++
++	priv = devm_kzalloc(&ofdev->dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
++	regs = devm_ioremap_resource(&ofdev->dev, res);
++	if (IS_ERR(regs))
++		return PTR_ERR(regs);
++
++	bgc = &priv->bgc;
++	err = bgpio_init(bgc, &ofdev->dev, 4, regs + GRGPIO_DATA,
++			 regs + GRGPIO_OUTPUT, NULL, regs + GRGPIO_DIR, NULL,
++			 BGPIOF_BIG_ENDIAN_BYTE_ORDER);
++	if (err) {
++		dev_err(&ofdev->dev, "bgpio_init() failed\n");
++		return err;
++	}
++
++	priv->regs = regs;
++	priv->dev = &ofdev->dev;
++
++	gc = &bgc->gc;
++	gc->of_node = np;
++	gc->owner = THIS_MODULE;
++	gc->label = np->full_name;
++	gc->base = -1;
++
++	err = of_property_read_u32(np, "nbits", &prop);
++	if (err || prop <= 0 || prop > GRGPIO_MAX_NGPIO) {
++		gc->ngpio = GRGPIO_MAX_NGPIO;
++		dev_dbg(&ofdev->dev,
++			"No or invalid nbits property: assume %d\n", gc->ngpio);
++	} else {
++		gc->ngpio = prop;
++	}
++
++	platform_set_drvdata(ofdev, priv);
++
++	err = gpiochip_add(gc);
++	if (err) {
++		dev_err(&ofdev->dev, "Could not add gpiochip\n");
++		return err;
++	}
++
++	dev_info(&ofdev->dev, "regs=0x%p, base=%d, ngpio=%d\n",
++		 priv->regs, gc->base, gc->ngpio);
++
++	return 0;
++}
++
++static int grgpio_remove(struct platform_device *ofdev)
++{
++	struct grgpio_priv *priv = platform_get_drvdata(ofdev);
++
++	return gpiochip_remove(&priv->bgc.gc);
++}
++
++static struct of_device_id grgpio_match[] = {
++	{.name = "GAISLER_GPIO"},
++	{.name = "01_01a"},
++	{},
++};
++
++MODULE_DEVICE_TABLE(of, grgpio_match);
++
++static struct platform_driver grgpio_driver = {
++	.driver = {
++		.name = "grgpio",
++		.owner = THIS_MODULE,
++		.of_match_table = grgpio_match,
++	},
++	.probe = grgpio_probe,
++	.remove = grgpio_remove,
++};
++module_platform_driver(grgpio_driver);
++
++MODULE_AUTHOR("Aeroflex Gaisler AB.");
++MODULE_DESCRIPTION("Driver for Aeroflex Gaisler GRGPIO");
++MODULE_LICENSE("GPL");
 -- 
-Regards,
-Igor.
+1.7.10.4
+
