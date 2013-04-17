@@ -1,74 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966807Ab3DQOy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 10:54:59 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:45142 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966592Ab3DQOy5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 10:54:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130416235751.GA9531@kroah.com>
-References: <1363557399-11822-1-git-send-email-dlaurie@chromium.org>
- <CAM0nabGd1kPJaEOUNS9A1GOYP757F2SezgqYjK1p3N4AvX0PsA@mail.gmail.com> <20130416235751.GA9531@kroah.com>
-From: Kent Yoder <shpedoikal@gmail.com>
-Date: Wed, 17 Apr 2013 09:54:24 -0500
-Message-ID: <CAM0nabG_iOcThp-9QvupWEi38q0y9Zg7pOpdmue6X7yEw7FRfw@mail.gmail.com>
-Subject: Re: [PATCH] TPM: Retry SaveState command in suspend path
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Duncan Laurie <dlaurie@chromium.org>, Dirk Hohndel <dirk@hohndel.org>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        TPM Device Driver List <tpmdd-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S966818Ab3DQOzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 10:55:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4069 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966474Ab3DQOzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 10:55:35 -0400
+Date: Wed, 17 Apr 2013 10:55:25 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Message-ID: <1366210525-yv9sg53o-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <516E4BDC.9080903@gmail.com>
+References: <51662D5B.3050001@hitachi.com>
+ <1365664306-rvrpdnsl-mutt-n-horiguchi@ah.jp.nec.com>
+ <516E4BDC.9080903@gmail.com>
+Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
+ memory error on dirty cache selectable
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <516E4BDC.9080903@gmail.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 6:57 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Mar 19, 2013 at 10:00:02AM -0500, Kent Yoder wrote:
->> Hi Duncan,
->>
->> On Sun, Mar 17, 2013 at 4:56 PM, Duncan Laurie <dlaurie@chromium.org> wrote:
->> > If the TPM has already been sent a SaveState command before the driver
->> > is loaded it may have problems sending that same command again later.
->> >
->> > This issue is seen with the Chromebook Pixel due to a firmware bug in
->> > the legacy mode boot path which is sending the SaveState command
->> > before booting the kernel.  More information is available at
->> > http://crbug.com/203524
->> >
->> > This change introduces a retry of the SaveState command in the suspend
->> > path in order to work around this issue.  A future firmware update
->> > should fix this but this is also a trivial workaround in the driver
->> > that has no effect on systems that do not show this problem.
->>
->>   I'm not convinced that this needs to be upstream.  The simplest
->> route would seem to be to carry this out of tree until your firmware
->> is fixed.
->
-> Really?  We have machines that we are using right now that need this fix
-> in order to work properly.
->
-> The kernel handles buggy firmware/bioses all the time, we need to work
-> properly on all hardware, we can't count on a firmware update ever
-> getting pushed out publically, and for those of us using this hardware,
-> we want it to work.
+On Wed, Apr 17, 2013 at 03:14:36PM +0800, Simon Jeons wrote:
+> Hi Naoya,
+> On 04/11/2013 03:11 PM, Naoya Horiguchi wrote:
+> > Hi Tanino-san,
+> >
+> > On Thu, Apr 11, 2013 at 12:26:19PM +0900, Mitsuhiro Tanino wrote:
+> > ...
+> >> Solution
+> >> ---------
+> >> The patch proposes a new sysctl interface, vm.memory_failure_dirty_panic,
+> >> in order to prevent data corruption comes from data lost problem.
+> >> Also this patch displays information of affected file such as device name,
+> >> inode number, file offset and file type if the file is mapped on a memory
+> >> and the page is dirty cache.
+> >>
+> >> When SRAO machine check occurs on a dirty page cache, corresponding
+> >> data cannot be recovered any more. Therefore, the patch proposes a kernel
+> >> option to keep a system running or force system panic in order
+> >> to avoid further trouble such as data corruption problem of application.
+> >>
+> >> System administrator can select an error action using this option
+> >> according to characteristics of target system.
+> > Can we do this in userspace?
+> > mcelog can trigger scripts when a MCE which matches the user-configurable
+> > conditions happens, so I think that we can trigger a kernel panic by
+> > chekcing kernel messages from the triggered script.
+> > For that purpose, I recently fixed the dirty/clean messaging in commit
+> > ff604cf6d4 "mm: hwpoison: fix action_result() to print out dirty/clean".
+> 
+> In your commit ff604cf6d4, you mentioned that "because when we check
+> PageDirty in action_result() it was cleared after page isolation even if
+> it's dirty before error handling." Could you point out where page
+> isolation and clear PageDirty? I don't think is isolate_lru_pages.
 
-  That makes sense -- on first read I thought this was an issue with
-Chrome OS only.  I see now this is an issue with reinstalling other
-OS's over Chrome.  I've staged this over here:
+Here is the result of ftracing of memory_failure().
+cancel_dirty_page() is called inside me_pagecache_dirty(), that's it.
 
-git://github.com/shpedoikal/linux.git tpmdd-04-17-13
-
-and I'll push this to James later today.
-
-Kent
-
-> So, please accept this patch,
->
-> thanks,
->
-> greg l-h
+       mceinj.sh-7662  [000] 154195.857024: funcgraph_entry:                   |            memory_failure() {
+       mceinj.sh-7662  [000] 154195.857024: funcgraph_entry:        0.283 us   |              PageHuge();
+       mceinj.sh-7662  [000] 154195.857025: funcgraph_entry:        0.321 us   |              _cond_resched();
+       mceinj.sh-7662  [000] 154195.857025: funcgraph_entry:        0.348 us   |              hwpoison_filter();
+       mceinj.sh-7662  [000] 154195.857026: funcgraph_entry:        0.323 us   |              PageHuge();
+       mceinj.sh-7662  [000] 154195.857027: funcgraph_entry:        0.264 us   |              PageHuge();
+       mceinj.sh-7662  [000] 154195.857027: funcgraph_entry:                   |              kmem_cache_alloc_trace() {
+       mceinj.sh-7662  [000] 154195.857028: funcgraph_entry:        0.254 us   |                _cond_resched();
+       mceinj.sh-7662  [000] 154195.857028: funcgraph_exit:         0.905 us   |              }
+       mceinj.sh-7662  [000] 154195.857029: funcgraph_entry:        0.308 us   |              _read_lock();
+       mceinj.sh-7662  [000] 154195.857029: funcgraph_entry:        0.326 us   |              _spin_lock();
+       mceinj.sh-7662  [000] 154195.857057: funcgraph_entry:                   |              kfree() {
+       mceinj.sh-7662  [000] 154195.857057: funcgraph_entry:        0.252 us   |                __phys_addr();
+       mceinj.sh-7662  [000] 154195.857058: funcgraph_exit:         1.000 us   |              }
+       mceinj.sh-7662  [000] 154195.857058: funcgraph_entry:                   |              try_to_unmap() {
+       mceinj.sh-7662  [000] 154195.857058: funcgraph_entry:                   |                try_to_unmap_file() {
+       mceinj.sh-7662  [000] 154195.857059: funcgraph_entry:        0.430 us   |                  _spin_lock();
+       mceinj.sh-7662  [000] 154195.857060: funcgraph_entry:        0.719 us   |                  vma_prio_tree_next();
+       mceinj.sh-7662  [000] 154195.857061: funcgraph_entry:                   |                  try_to_unmap_one() {
+       mceinj.sh-7662  [000] 154195.857061: funcgraph_entry:                   |                    page_check_address() {
+       mceinj.sh-7662  [000] 154195.857061: funcgraph_entry:        0.256 us   |                      PageHuge();
+       mceinj.sh-7662  [000] 154195.857062: funcgraph_entry:        0.419 us   |                      _spin_lock();
+       mceinj.sh-7662  [000] 154195.857063: funcgraph_exit:         1.812 us   |                    }
+       mceinj.sh-7662  [000] 154195.857063: funcgraph_entry:                   |                    flush_tlb_page() {
+       mceinj.sh-7662  [000] 154195.857064: funcgraph_entry:                   |                      native_flush_tlb_others() {
+       mceinj.sh-7662  [000] 154195.857064: funcgraph_entry:        0.286 us   |                        is_uv_system();
+       mceinj.sh-7662  [000] 154195.857065: funcgraph_entry:                   |                        flush_tlb_others_ipi() {
+       mceinj.sh-7662  [000] 154195.857065: funcgraph_entry:        0.336 us   |                          _spin_lock();
+       mceinj.sh-7662  [000] 154195.857066: funcgraph_entry:                   |                          physflat_send_IPI_mask() {
+       mceinj.sh-7662  [000] 154195.857066: funcgraph_entry:        0.405 us   |                            default_send_IPI_mask_sequence_phys();
+       mceinj.sh-7662  [000] 154195.857067: funcgraph_exit:         1.032 us   |                          }
+       mceinj.sh-7662  [000] 154195.857068: funcgraph_exit:         3.704 us   |                        }
+       mceinj.sh-7662  [000] 154195.857069: funcgraph_exit:         5.000 us   |                      }
+       mceinj.sh-7662  [000] 154195.857069: funcgraph_exit:         6.060 us   |                    }
+       mceinj.sh-7662  [000] 154195.857070: funcgraph_entry:                   |                    set_page_dirty() {
+       mceinj.sh-7662  [000] 154195.857070: funcgraph_entry:                   |                      __set_page_dirty_buffers() {
+       mceinj.sh-7662  [000] 154195.857070: funcgraph_entry:        0.278 us   |                        _spin_lock();
+       mceinj.sh-7662  [000] 154195.857071: funcgraph_exit:         0.972 us   |                      }
+       mceinj.sh-7662  [000] 154195.857071: funcgraph_exit:         1.636 us   |                    }
+       mceinj.sh-7662  [000] 154195.857072: funcgraph_entry:        0.269 us   |                    native_set_pte_at();
+       mceinj.sh-7662  [000] 154195.857072: funcgraph_entry:                   |                    page_remove_rmap() {
+       mceinj.sh-7662  [000] 154195.857073: funcgraph_entry:        0.281 us   |                      PageHuge();
+       mceinj.sh-7662  [000] 154195.857073: funcgraph_entry:                   |                      __dec_zone_page_state() {
+       mceinj.sh-7662  [000] 154195.857073: funcgraph_entry:        0.330 us   |                        __dec_zone_state();
+       mceinj.sh-7662  [000] 154195.857074: funcgraph_exit:         0.991 us   |                      }
+       mceinj.sh-7662  [000] 154195.857074: funcgraph_entry:                   |                      mem_cgroup_update_file_mapped() {
+       mceinj.sh-7662  [000] 154195.857075: funcgraph_entry:        0.278 us   |                        lookup_page_cgroup();
+       mceinj.sh-7662  [000] 154195.857076: funcgraph_exit:         1.112 us   |                      }
+       mceinj.sh-7662  [000] 154195.857076: funcgraph_exit:         3.668 us   |                    }
+       mceinj.sh-7662  [000] 154195.857076: funcgraph_entry:        0.309 us   |                    put_page();
+       mceinj.sh-7662  [000] 154195.857077: funcgraph_exit:       + 16.206 us  |                  }
+       mceinj.sh-7662  [000] 154195.857077: funcgraph_exit:       + 18.641 us  |                }
+       mceinj.sh-7662  [000] 154195.857077: funcgraph_exit:       + 19.336 us  |              }
+       mceinj.sh-7662  [000] 154195.857078: funcgraph_entry:                   |              me_pagecache_dirty() {
+       mceinj.sh-7662  [000] 154195.857079: funcgraph_entry:                   |                me_pagecache_clean() {
+       mceinj.sh-7662  [000] 154195.857079: funcgraph_entry:                   |                  delete_from_lru_cache() {
+       mceinj.sh-7662  [000] 154195.857080: funcgraph_entry:                   |                    isolate_lru_page() {
+       mceinj.sh-7662  [000] 154195.857080: funcgraph_entry:        0.424 us   |                      _spin_lock_irq();
+       mceinj.sh-7662  [000] 154195.857081: funcgraph_entry:                   |                      mem_cgroup_lru_del_list() {
+       mceinj.sh-7662  [000] 154195.857081: funcgraph_entry:        0.278 us   |                        lookup_page_cgroup();
+       mceinj.sh-7662  [000] 154195.857082: funcgraph_exit:         1.097 us   |                      }
+       mceinj.sh-7662  [000] 154195.857082: funcgraph_entry:        0.381 us   |                      __mod_zone_page_state();
+       mceinj.sh-7662  [000] 154195.857083: funcgraph_exit:         3.660 us   |                    }
+       mceinj.sh-7662  [000] 154195.857084: funcgraph_entry:        0.384 us   |                    put_page();
+       mceinj.sh-7662  [000] 154195.857084: funcgraph_exit:         5.176 us   |                  }
+       mceinj.sh-7662  [000] 154195.857085: funcgraph_entry:                   |                  generic_error_remove_page() {
+       mceinj.sh-7662  [000] 154195.857086: funcgraph_entry:                   |                    truncate_inode_page() {
+       mceinj.sh-7662  [000] 154195.857086: funcgraph_entry:                   |                      do_invalidatepage() {
+       mceinj.sh-7662  [000] 154195.857087: funcgraph_entry:                   |                        ext4_da_invalidatepage() {
+       mceinj.sh-7662  [000] 154195.857087: funcgraph_entry:                   |                          ext4_invalidatepage() {
+       mceinj.sh-7662  [000] 154195.857088: funcgraph_entry:                   |                            jbd2_journal_invalidatepage() {
+       mceinj.sh-7662  [000] 154195.857088: funcgraph_entry:        0.281 us   |                              _cond_resched();
+       mceinj.sh-7662  [000] 154195.857088: funcgraph_entry:                   |                              unlock_buffer() {
+       mceinj.sh-7662  [000] 154195.857089: funcgraph_entry:                   |                                wake_up_bit() {
+       mceinj.sh-7662  [000] 154195.857089: funcgraph_entry:                   |                                  bit_waitqueue() {
+       mceinj.sh-7662  [000] 154195.857089: funcgraph_entry:        0.308 us   |                                    __phys_addr();
+       mceinj.sh-7662  [000] 154195.857090: funcgraph_exit:         1.005 us   |                                  }
+       mceinj.sh-7662  [000] 154195.857091: funcgraph_entry:        0.409 us   |                                  __wake_up_bit();
+       mceinj.sh-7662  [000] 154195.857091: funcgraph_exit:         2.495 us   |                                }
+       mceinj.sh-7662  [000] 154195.857092: funcgraph_exit:         3.240 us   |                              }
+       mceinj.sh-7662  [000] 154195.857092: funcgraph_entry:                   |                              try_to_free_buffers() {
+       mceinj.sh-7662  [000] 154195.857093: funcgraph_entry:        0.377 us   |                                _spin_lock();
+       mceinj.sh-7662  [000] 154195.857093: funcgraph_entry:                   |                                drop_buffers() {
+       mceinj.sh-7662  [000] 154195.857094: funcgraph_entry:        0.427 us   |                                  put_page();
+       mceinj.sh-7662  [000] 154195.857095: funcgraph_exit:         1.378 us   |                                }
+       mceinj.sh-7662  [000] 154195.857095: funcgraph_entry:                   |                                cancel_dirty_page() {
+       mceinj.sh-7662  [000] 154195.857096: funcgraph_entry:                   |                                  dec_zone_page_state() {
+       mceinj.sh-7662  [000] 154195.857096: funcgraph_entry:                   |                                    __dec_zone_page_state() {
+       mceinj.sh-7662  [000] 154195.857097: funcgraph_entry:        0.408 us   |                                      __dec_zone_state();
+       mceinj.sh-7662  [000] 154195.857097: funcgraph_exit:         1.198 us   |                                    }
+       mceinj.sh-7662  [000] 154195.857098: funcgraph_exit:         1.987 us   |                                  }
+       mceinj.sh-7662  [000] 154195.857099: funcgraph_exit:         3.303 us   |                                }
+       mceinj.sh-7662  [000] 154195.857099: funcgraph_entry:                   |                                free_buffer_head() {
+       mceinj.sh-7662  [000] 154195.857099: funcgraph_entry:        0.579 us   |                                  kmem_cache_free();
+       mceinj.sh-7662  [000] 154195.857100: funcgraph_entry:        0.406 us   |                                  recalc_bh_state();
+       mceinj.sh-7662  [000] 154195.857101: funcgraph_exit:         2.269 us   |                                }
+       mceinj.sh-7662  [000] 154195.857102: funcgraph_exit:         9.451 us   |                              }
+       mceinj.sh-7662  [000] 154195.857102: funcgraph_exit:       + 14.532 us  |                            }
+       mceinj.sh-7662  [000] 154195.857102: funcgraph_exit:       + 15.321 us  |                          }
+       mceinj.sh-7662  [000] 154195.857103: funcgraph_exit:       + 16.285 us  |                        }
+       mceinj.sh-7662  [000] 154195.857103: funcgraph_exit:       + 17.133 us  |                      }
+       mceinj.sh-7662  [000] 154195.857104: funcgraph_entry:        0.439 us   |                      cancel_dirty_page();
+       mceinj.sh-7662  [000] 154195.857105: funcgraph_entry:                   |                      remove_from_page_cache() {
+       mceinj.sh-7662  [000] 154195.857105: funcgraph_entry:        0.408 us   |                        _spin_lock_irq();
+       mceinj.sh-7662  [000] 154195.857106: funcgraph_entry:                   |                        __remove_from_page_cache() {
+       mceinj.sh-7662  [000] 154195.857107: funcgraph_entry:                   |                          __dec_zone_page_state() {
+       mceinj.sh-7662  [000] 154195.857107: funcgraph_entry:        0.457 us   |                            __dec_zone_state();
+       mceinj.sh-7662  [000] 154195.857108: funcgraph_exit:         1.224 us   |                          }
+       mceinj.sh-7662  [000] 154195.857109: funcgraph_exit:         2.757 us   |                        }
+       mceinj.sh-7662  [000] 154195.857109: funcgraph_entry:                   |                        mem_cgroup_uncharge_cache_page() {
+       mceinj.sh-7662  [000] 154195.857109: funcgraph_entry:                   |                          __mem_cgroup_uncharge_common() {
+       mceinj.sh-7662  [000] 154195.857110: funcgraph_entry:        0.421 us   |                            lookup_page_cgroup();
+       mceinj.sh-7662  [000] 154195.857111: funcgraph_entry:        0.383 us   |                            bit_spin_lock();
+       mceinj.sh-7662  [000] 154195.857112: funcgraph_exit:         2.119 us   |                          }
+       mceinj.sh-7662  [000] 154195.857112: funcgraph_exit:         2.920 us   |                        }
+       mceinj.sh-7662  [000] 154195.857112: funcgraph_exit:         7.783 us   |                      }
+       mceinj.sh-7662  [000] 154195.857113: funcgraph_entry:        0.393 us   |                      put_page();
+       mceinj.sh-7662  [000] 154195.857113: funcgraph_exit:       + 27.960 us  |                    }
+       mceinj.sh-7662  [000] 154195.857114: funcgraph_exit:       + 29.017 us  |                  }
+       mceinj.sh-7662  [000] 154195.857114: funcgraph_exit:       + 35.595 us  |                }
+       mceinj.sh-7662  [000] 154195.857115: funcgraph_exit:       + 36.476 us  |              }
+       mceinj.sh-7662  [000] 154195.857115: funcgraph_entry:                   |              action_result() {
+       mceinj.sh-7662  [000] 154195.857116: funcgraph_entry:                   |                vprintk() {
