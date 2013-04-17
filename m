@@ -1,506 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979Ab3DQJEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 05:04:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45464 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751908Ab3DQJEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 05:04:05 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Bastien Nocera <hadess@hadess.net>, Fabien <fabien.andre@gmail.com>,
-        Jarod Wilson <jarod@redhat.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: [PATCH v2] HID: appleir: add support for Apple ir devices
-Date: Wed, 17 Apr 2013 11:03:09 +0200
-Message-Id: <1366189389-6572-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S965797Ab3DQJFA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 05:05:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:65515 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752944Ab3DQJE4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 05:04:56 -0400
+Date: Wed, 17 Apr 2013 11:04:54 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-kernel@vger.kernel.org
+cc: Jiri Kosina <trivial@kernel.org>
+Subject: [PATCH] trivial: fix some then vs. than typos
+Message-ID: <Pine.LNX.4.64.1304171048390.12878@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V02:K0:y1NEJm22CTNZNlxj7z5i0VtJE73a0GBq31WoUgHN26w
+ s7kscZ3C1KEZy4C3ITRbsD1B/hIPPlch+XZc7o2qBoTD2tWrWI
+ DTvDm6O6iNJP1r4RFn7qA9CuaJVUDgmaXiaJRL7hag/7022m5O
+ xhdvzNoFZYzXOzbKOpHq1rGAwJlpsxLgddloAc8hzaxL2+bHKF
+ 9mEbbfOzq0AoVfoFVn8e3TwmhLJyhGs8Yo1zKdNaIEHQH3lLGE
+ Iv5ifO3cMTGhohJT6Wfn7gBmPzWi1+g3oOcqKO9MDGhdWiVWyH
+ UWu249fAaz9GJW6PM9Lkn+nNWpwV4bi7JlKUWfn7xdo67T8XGP
+ K4gbmWvsNjqBDgMbMnQDNWFdIXK06zPmZi9BwtnWwGLDhZngJL
+ WrhxgyMH3tifA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver was originally written by James McKenzie, updated by
-Greg Kroah-Hartman, further updated by Bastien Nocera, with suspend
-support added.
-I ported it to the HID subsystem, in order to simplify it a litle
-and allow lirc to use it through hiddev.
+This patch fixes some of the obvious then vs. than typos.
 
-More recent versions of the IR receiver are also supported through
-a patch by Alex Karpenko. The patch also adds support for the 2nd
-and 5th generation of the controller, and the menu key on newer
-brushed metal remotes.
-
-Tested-by: Fabien André <fabien.andre@gmail.com>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 ---
 
-Changes in v2:
-* removed the debug parameter and all debug outputs as they can be replaced
-  by standard hid debugfs
-* review formatting of comments to match kernel coding style.
+These are just some of the typos, that a simple grep for patterns like
 
- drivers/hid/Kconfig       |  11 ++
- drivers/hid/Makefile      |   1 +
- drivers/hid/hid-apple.c   |   4 -
- drivers/hid/hid-appleir.c | 352 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/hid/hid-core.c    |   7 +-
- drivers/hid/hid-ids.h     |   5 +-
- 6 files changed, 373 insertions(+), 7 deletions(-)
- create mode 100644 drivers/hid/hid-appleir.c
+"er,\? then\|more,\? then\|less,\? then"
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 613083a..034b0c9 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -122,6 +122,17 @@ config HID_APPLE
- 	Say Y here if you want support for keyboards of	Apple iBooks, PowerBooks,
- 	MacBooks, MacBook Pros and Apple Aluminum.
+catches. Of course, they have to be manually verified, they produce a few 
+false positives, but the success rate isn't too bad :-) Interestingly, 
+opposites like
+
+"[^e].,\? than\|[^r],\? than"
+
+find almost no real typos. The reader is invited to continue these fixes 
+;-)
+
+ .../ABI/testing/sysfs-class-uwb_rc-wusbhc          |    2 +-
+ Documentation/DocBook/media/v4l/controls.xml       |    4 ++--
+ Documentation/hwmon/lm75                           |    2 +-
+ Documentation/hwmon/thmc50                         |    2 +-
+ Documentation/hwmon/w83781d                        |    2 +-
+ Documentation/usb/mass-storage.txt                 |    4 ++--
+ Documentation/watchdog/watchdog-kernel-api.txt     |    2 +-
+ arch/arc/include/asm/entry.h                       |    2 +-
+ arch/arc/kernel/entry.S                            |    2 +-
+ arch/arm/Kconfig                                   |    2 +-
+ arch/blackfin/lib/udivsi3.S                        |    2 +-
+ arch/powerpc/oprofile/op_model_cell.c              |    2 +-
+ arch/x86/kvm/x86.c                                 |    2 +-
+ 13 files changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/Documentation/ABI/testing/sysfs-class-uwb_rc-wusbhc b/Documentation/ABI/testing/sysfs-class-uwb_rc-wusbhc
+index 25b1e75..7e405c5 100644
+--- a/Documentation/ABI/testing/sysfs-class-uwb_rc-wusbhc
++++ b/Documentation/ABI/testing/sysfs-class-uwb_rc-wusbhc
+@@ -32,7 +32,7 @@ Description:
+                 The maximum PHY rate to use for all connected devices.
+                 This is only of limited use for testing and
+                 development as the hardware's automatic rate
+-                adaptation is better then this simple control.
++                adaptation is better than this simple control.
  
-+config HID_APPLEIR
-+	tristate "Apple infrared receiver"
-+	depends on (USB_HID)
-+	---help---
-+	Support for Apple infrared remote control. All the Apple computers from
-+	  2005 onwards include such a port, except the unibody Macbook (2009),
-+	  and Mac Pros. This receiver is also used in the Apple TV set-top box
-+	  prior to the 2010 model.
-+
-+	Say Y here if you want support for Apple infrared remote control.
-+
- config HID_AUREAL
- 	tristate "Aureal"
- 	depends on HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 2735151..2065694 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -39,6 +39,7 @@ endif
- obj-$(CONFIG_HID_A4TECH)	+= hid-a4tech.o
- obj-$(CONFIG_HID_ACRUX)		+= hid-axff.o
- obj-$(CONFIG_HID_APPLE)		+= hid-apple.o
-+obj-$(CONFIG_HID_APPLEIR)	+= hid-appleir.o
- obj-$(CONFIG_HID_AUREAL)        += hid-aureal.o
- obj-$(CONFIG_HID_BELKIN)	+= hid-belkin.o
- obj-$(CONFIG_HID_CHERRY)	+= hid-cherry.o
-diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
-index 9e0c4fbb..feae88b 100644
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -389,10 +389,6 @@ static void apple_remove(struct hid_device *hdev)
- }
+                 Refer to [ECMA-368] section 10.3.1.1 for the value to
+                 use.
+diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+index 8d7a779..b72c2b53 100644
+--- a/Documentation/DocBook/media/v4l/controls.xml
++++ b/Documentation/DocBook/media/v4l/controls.xml
+@@ -2726,7 +2726,7 @@ Applicable to the H264 encoder.</entry>
+ 		<entry>enum&nbsp;v4l2_mpeg_mfc51_video_frame_skip_mode</entry>
+ 	      </row>
+ 	      <row><entry spanname="descr">
+-Indicates in what conditions the encoder should skip frames. If encoding a frame would cause the encoded stream to be larger then
++Indicates in what conditions the encoder should skip frames. If encoding a frame would cause the encoded stream to be larger than
+ a chosen data limit then the frame will be skipped.
+ Possible values are:</entry>
+ 	      </row>
+@@ -2756,7 +2756,7 @@ Possible values are:</entry>
+ If this setting is enabled, then the rate control logic of the encoder will calculate the average bitrate
+ for a GOP and keep it below or equal the set bitrate target. Otherwise the rate control logic calculates the
+ overall average bitrate for the stream and keeps it below or equal to the set bitrate. In the first case
+-the average bitrate for the whole stream will be smaller then the set bitrate. This is caused because the
++the average bitrate for the whole stream will be smaller than the set bitrate. This is caused because the
+ average is calculated for smaller number of frames, on the other hand enabling this setting will ensure that
+ the stream will meet tight bandwidth contraints. Applicable to encoders.
+ </entry>
+diff --git a/Documentation/hwmon/lm75 b/Documentation/hwmon/lm75
+index 69af1c7..46245db 100644
+--- a/Documentation/hwmon/lm75
++++ b/Documentation/hwmon/lm75
+@@ -62,7 +62,7 @@ The LM75 implements one temperature sensor. Limits can be set through the
+ Overtemperature Shutdown register and Hysteresis register. Each value can be
+ set and read to half-degree accuracy.
+ An alarm is issued (usually to a connected LM78) when the temperature
+-gets higher then the Overtemperature Shutdown value; it stays on until
++gets higher than the Overtemperature Shutdown value; it stays on until
+ the temperature falls below the Hysteresis value.
+ All temperatures are in degrees Celsius, and are guaranteed within a
+ range of -55 to +125 degrees.
+diff --git a/Documentation/hwmon/thmc50 b/Documentation/hwmon/thmc50
+index 8a7772a..ab8c900 100644
+--- a/Documentation/hwmon/thmc50
++++ b/Documentation/hwmon/thmc50
+@@ -36,7 +36,7 @@ many processors), and a controllable fan/analog_out DAC. For the temperature
+ sensors, limits can be set through the appropriate Overtemperature Shutdown
+ register and Hysteresis register. Each value can be set and read to half-degree
+ accuracy.  An alarm is issued (usually to a connected LM78) when the
+-temperature gets higher then the Overtemperature Shutdown value; it stays on
++temperature gets higher than the Overtemperature Shutdown value; it stays on
+ until the temperature falls below the Hysteresis value. All temperatures are in
+ degrees Celsius, and are guaranteed within a range of -55 to +125 degrees.
  
- static const struct hid_device_id apple_devices[] = {
--	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ATV_IRCONTROL),
--		.driver_data = APPLE_HIDDEV | APPLE_IGNORE_HIDINPUT },
--	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL4),
--		.driver_data = APPLE_HIDDEV | APPLE_IGNORE_HIDINPUT },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MIGHTYMOUSE),
- 		.driver_data = APPLE_MIGHTYMOUSE | APPLE_INVERT_HWHEEL },
+diff --git a/Documentation/hwmon/w83781d b/Documentation/hwmon/w83781d
+index 129b0a3..df8c8fb 100644
+--- a/Documentation/hwmon/w83781d
++++ b/Documentation/hwmon/w83781d
+@@ -82,7 +82,7 @@ is above the Overtemperature Shutdown value. The driver sets the
+ hysteresis value for temp1 to 127 at initialization.
  
-diff --git a/drivers/hid/hid-appleir.c b/drivers/hid/hid-appleir.c
-new file mode 100644
-index 0000000..11d9407
---- /dev/null
-+++ b/drivers/hid/hid-appleir.c
-@@ -0,0 +1,352 @@
-+/*
-+ * HID driver for the apple ir device
-+ *
-+ * Original driver written by James McKenzie
-+ * Ported to recent 2.6 kernel versions by Greg Kroah-Hartman <gregkh@suse.de>
-+ * Updated to support newer remotes by Bastien Nocera <hadess@hadess.net>
-+ * Ported to HID subsystem by Benjamin Tissoires <benjamin.tissoires@gmail.com>
-+ *
-+ * Copyright (C) 2006 James McKenzie
-+ * Copyright (C) 2008 Greg Kroah-Hartman <greg@kroah.com>
-+ * Copyright (C) 2008 Novell Inc.
-+ * Copyright (C) 2010, 2012 Bastien Nocera <hadess@hadess.net>
-+ * Copyright (C) 2013 Benjamin Tissoires <benjamin.tissoires@gmail.com>
-+ * Copyright (C) 2013 Red Hat Inc. All Rights Reserved
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/hid.h>
-+#include <linux/module.h>
-+#include "hid-ids.h"
-+
-+MODULE_AUTHOR("James McKenzie");
-+MODULE_AUTHOR("Benjamin Tissoires <benjamin.tissoires@redhat.com>");
-+MODULE_DESCRIPTION("HID Apple IR remote controls");
-+MODULE_LICENSE("GPL");
-+
-+#define KEY_MASK		0x0F
-+#define TWO_PACKETS_MASK	0x40
-+
-+/*
-+ * James McKenzie has two devices both of which report the following
-+ * 25 87 ee 83 0a	+
-+ * 25 87 ee 83 0c	-
-+ * 25 87 ee 83 09	<<
-+ * 25 87 ee 83 06	>>
-+ * 25 87 ee 83 05	>"
-+ * 25 87 ee 83 03	menu
-+ * 26 00 00 00 00	for key repeat
-+ */
-+
-+/*
-+ * Thomas Glanzmann reports the following responses
-+ * 25 87 ee ca 0b	+
-+ * 25 87 ee ca 0d	-
-+ * 25 87 ee ca 08	<<
-+ * 25 87 ee ca 07	>>
-+ * 25 87 ee ca 04	>"
-+ * 25 87 ee ca 02	menu
-+ * 26 00 00 00 00       for key repeat
-+ *
-+ * He also observes the following event sometimes
-+ * sent after a key is release, which I interpret
-+ * as a flat battery message
-+ * 25 87 e0 ca 06	flat battery
-+ */
-+
-+/*
-+ * Alexandre Karpenko reports the following responses for Device ID 0x8242
-+ * 25 87 ee 47 0b	+
-+ * 25 87 ee 47 0d	-
-+ * 25 87 ee 47 08	<<
-+ * 25 87 ee 47 07	>>
-+ * 25 87 ee 47 04	>"
-+ * 25 87 ee 47 02	menu
-+ * 26 87 ee 47 **	for key repeat (** is the code of the key being held)
-+ */
-+
-+/*
-+ * Bastien Nocera's remote
-+ * 25 87 ee 91 5f	followed by
-+ * 25 87 ee 91 05	gives you >"
-+ *
-+ * 25 87 ee 91 5c	followed by
-+ * 25 87 ee 91 05	gives you the middle button
-+ */
-+
-+/*
-+ * Fabien Andre's remote
-+ * 25 87 ee a3 5e	followed by
-+ * 25 87 ee a3 04	gives you >"
-+ *
-+ * 25 87 ee a3 5d	followed by
-+ * 25 87 ee a3 04	gives you the middle button
-+ */
-+
-+static const unsigned short appleir_key_table[] = {
-+	KEY_RESERVED,
-+	KEY_MENU,
-+	KEY_PLAYPAUSE,
-+	KEY_FORWARD,
-+	KEY_BACK,
-+	KEY_VOLUMEUP,
-+	KEY_VOLUMEDOWN,
-+	KEY_RESERVED,
-+	KEY_RESERVED,
-+	KEY_RESERVED,
-+	KEY_RESERVED,
-+	KEY_RESERVED,
-+	KEY_RESERVED,
-+	KEY_RESERVED,
-+	KEY_ENTER,
-+	KEY_PLAYPAUSE,
-+	KEY_RESERVED,
-+};
-+
-+struct appleir {
-+	struct input_dev *input_dev;
-+	struct hid_device *hid;
-+	unsigned short keymap[ARRAY_SIZE(appleir_key_table)];
-+	struct timer_list key_up_timer;	/* timer for key up */
-+	spinlock_t lock;		/* protects .current_key */
-+	int current_key;		/* the currently pressed key */
-+	int prev_key_idx;		/* key index in a 2 packets message */
-+};
-+
-+static int get_key(int data)
-+{
-+	/*
-+	 * The key is coded accross bits 2..9:
-+	 *
-+	 * 0x00 or 0x01 (        )	key:  0		-> KEY_RESERVED
-+	 * 0x02 or 0x03 (  menu  )	key:  1		-> KEY_MENU
-+	 * 0x04 or 0x05 (   >"   )	key:  2		-> KEY_PLAYPAUSE
-+	 * 0x06 or 0x07 (   >>   )	key:  3		-> KEY_FORWARD
-+	 * 0x08 or 0x09 (   <<   )	key:  4		-> KEY_BACK
-+	 * 0x0a or 0x0b (    +   )	key:  5		-> KEY_VOLUMEUP
-+	 * 0x0c or 0x0d (    -   )	key:  6		-> KEY_VOLUMEDOWN
-+	 * 0x0e or 0x0f (        )	key:  7		-> KEY_RESERVED
-+	 * 0x50 or 0x51 (        )	key:  8		-> KEY_RESERVED
-+	 * 0x52 or 0x53 (        )	key:  9		-> KEY_RESERVED
-+	 * 0x54 or 0x55 (        )	key: 10		-> KEY_RESERVED
-+	 * 0x56 or 0x57 (        )	key: 11		-> KEY_RESERVED
-+	 * 0x58 or 0x59 (        )	key: 12		-> KEY_RESERVED
-+	 * 0x5a or 0x5b (        )	key: 13		-> KEY_RESERVED
-+	 * 0x5c or 0x5d ( middle )	key: 14		-> KEY_ENTER
-+	 * 0x5e or 0x5f (   >"   )	key: 15		-> KEY_PLAYPAUSE
-+	 *
-+	 * Packets starting with 0x5 are part of a two-packets message,
-+	 * we notify the caller by sending a negative value.
-+	 */
-+	int key = (data >> 1) & KEY_MASK;
-+
-+	if ((data & TWO_PACKETS_MASK))
-+		/* Part of a 2 packets-command */
-+		key = -key;
-+
-+	return key;
-+}
-+
-+static void key_up(struct hid_device *hid, struct appleir *appleir, int key)
-+{
-+	input_report_key(appleir->input_dev, key, 0);
-+	input_sync(appleir->input_dev);
-+}
-+
-+static void key_down(struct hid_device *hid, struct appleir *appleir, int key)
-+{
-+	input_report_key(appleir->input_dev, key, 1);
-+	input_sync(appleir->input_dev);
-+}
-+
-+static void battery_flat(struct appleir *appleir)
-+{
-+	dev_err(&appleir->input_dev->dev, "possible flat battery?\n");
-+}
-+
-+static void key_up_tick(unsigned long data)
-+{
-+	struct appleir *appleir = (struct appleir *)data;
-+	struct hid_device *hid = appleir->hid;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&appleir->lock, flags);
-+	if (appleir->current_key) {
-+		key_up(hid, appleir, appleir->current_key);
-+		appleir->current_key = 0;
-+	}
-+	spin_unlock_irqrestore(&appleir->lock, flags);
-+}
-+
-+static int appleir_raw_event(struct hid_device *hid, struct hid_report *report,
-+	 u8 *data, int len)
-+{
-+	struct appleir *appleir = hid_get_drvdata(hid);
-+	static const u8 keydown[] = { 0x25, 0x87, 0xee };
-+	static const u8 keyrepeat[] = { 0x26, };
-+	static const u8 flatbattery[] = { 0x25, 0x87, 0xe0 };
-+	unsigned long flags;
-+
-+	if (len != 5)
-+		goto out;
-+
-+	if (!memcmp(data, keydown, sizeof(keydown))) {
-+		int index;
-+
-+		spin_lock_irqsave(&appleir->lock, flags);
-+		/*
-+		 * If we already have a key down, take it up before marking
-+		 * this one down
-+		 */
-+		if (appleir->current_key)
-+			key_up(hid, appleir, appleir->current_key);
-+
-+		/* Handle dual packet commands */
-+		if (appleir->prev_key_idx > 0)
-+			index = appleir->prev_key_idx;
-+		else
-+			index = get_key(data[4]);
-+
-+		if (index >= 0) {
-+			appleir->current_key = appleir->keymap[index];
-+
-+			key_down(hid, appleir, appleir->current_key);
-+			/*
-+			 * Remote doesn't do key up, either pull them up, in
-+			 * the test above, or here set a timer which pulls
-+			 * them up after 1/8 s
-+			 */
-+			mod_timer(&appleir->key_up_timer, jiffies + HZ / 8);
-+			appleir->prev_key_idx = 0;
-+		} else
-+			/* Remember key for next packet */
-+			appleir->prev_key_idx = -index;
-+		spin_unlock_irqrestore(&appleir->lock, flags);
-+		goto out;
-+	}
-+
-+	appleir->prev_key_idx = 0;
-+
-+	if (!memcmp(data, keyrepeat, sizeof(keyrepeat))) {
-+		key_down(hid, appleir, appleir->current_key);
-+		/*
-+		 * Remote doesn't do key up, either pull them up, in the test
-+		 * above, or here set a timer which pulls them up after 1/8 s
-+		 */
-+		mod_timer(&appleir->key_up_timer, jiffies + HZ / 8);
-+		goto out;
-+	}
-+
-+	if (!memcmp(data, flatbattery, sizeof(flatbattery))) {
-+		battery_flat(appleir);
-+		/* Fall through */
-+	}
-+
-+out:
-+	/* let hidraw and hiddev handle the report */
-+	return 0;
-+}
-+
-+static void appleir_input_configured(struct hid_device *hid,
-+		struct hid_input *hidinput)
-+{
-+	struct input_dev *input_dev = hidinput->input;
-+	struct appleir *appleir = hid_get_drvdata(hid);
-+	int i;
-+
-+	appleir->input_dev = input_dev;
-+
-+	input_dev->keycode = appleir->keymap;
-+	input_dev->keycodesize = sizeof(unsigned short);
-+	input_dev->keycodemax = ARRAY_SIZE(appleir->keymap);
-+
-+	input_dev->evbit[0] = BIT(EV_KEY) | BIT(EV_REP);
-+
-+	memcpy(appleir->keymap, appleir_key_table, sizeof(appleir->keymap));
-+	for (i = 0; i < ARRAY_SIZE(appleir_key_table); i++)
-+		set_bit(appleir->keymap[i], input_dev->keybit);
-+	clear_bit(KEY_RESERVED, input_dev->keybit);
-+}
-+
-+static int appleir_input_mapping(struct hid_device *hid,
-+		struct hid_input *hi, struct hid_field *field,
-+		struct hid_usage *usage, unsigned long **bit, int *max)
-+{
-+	return -1;
-+}
-+
-+static int appleir_probe(struct hid_device *hid, const struct hid_device_id *id)
-+{
-+	int ret;
-+	struct appleir *appleir;
-+
-+	appleir = kzalloc(sizeof(struct appleir), GFP_KERNEL);
-+	if (!appleir) {
-+		ret = -ENOMEM;
-+		goto allocfail;
-+	}
-+
-+	appleir->hid = hid;
-+
-+	spin_lock_init(&appleir->lock);
-+	setup_timer(&appleir->key_up_timer,
-+		    key_up_tick, (unsigned long) appleir);
-+
-+	hid_set_drvdata(hid, appleir);
-+
-+	ret = hid_parse(hid);
-+	if (ret) {
-+		hid_err(hid, "parse failed\n");
-+		goto fail;
-+	}
-+
-+	ret = hid_hw_start(hid, HID_CONNECT_DEFAULT | HID_CONNECT_HIDDEV_FORCE);
-+	if (ret) {
-+		hid_err(hid, "hw start failed\n");
-+		goto fail;
-+	}
-+
-+	return 0;
-+fail:
-+	kfree(appleir);
-+allocfail:
-+	return ret;
-+}
-+
-+static void appleir_remove(struct hid_device *hid)
-+{
-+	struct appleir *appleir = hid_get_drvdata(hid);
-+	del_timer_sync(&appleir->key_up_timer);
-+	hid_hw_stop(hid);
-+	kfree(appleir);
-+}
-+
-+static const struct hid_device_id appleir_devices[] = {
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL3) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL4) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL5) },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(hid, appleir_devices);
-+
-+static struct hid_driver appleir_driver = {
-+	.name = "appleir",
-+	.id_table = appleir_devices,
-+	.raw_event = appleir_raw_event,
-+	.input_configured = appleir_input_configured,
-+	.probe = appleir_probe,
-+	.remove = appleir_remove,
-+	.input_mapping = appleir_input_mapping,
-+};
-+module_hid_driver(appleir_driver);
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 1129f49..ceb419d 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1501,8 +1501,6 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_X5_005D) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_RP_649) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0x0802) },
--	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ATV_IRCONTROL) },
--	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL4) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MIGHTYMOUSE) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MAGICMOUSE) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MAGICTRACKPAD) },
-@@ -1526,6 +1524,11 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER4_HF_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER4_HF_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER4_HF_JIS) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL2) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL3) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL4) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL5) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_ANSI) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_ISO) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_JIS) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index b622aec..8dd7295 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -137,8 +137,11 @@
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO   0x0256
- #define USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY	0x030a
- #define USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY	0x030b
--#define USB_DEVICE_ID_APPLE_ATV_IRCONTROL	0x8241
-+#define USB_DEVICE_ID_APPLE_IRCONTROL	0x8240
-+#define USB_DEVICE_ID_APPLE_IRCONTROL2	0x1440
-+#define USB_DEVICE_ID_APPLE_IRCONTROL3	0x8241
- #define USB_DEVICE_ID_APPLE_IRCONTROL4	0x8242
-+#define USB_DEVICE_ID_APPLE_IRCONTROL5	0x8243
+ For the other temperature sensor(s), an alarm is triggered when the
+-temperature gets higher then the Overtemperature Shutdown value; it stays
++temperature gets higher than the Overtemperature Shutdown value; it stays
+ on until the temperature falls below the Hysteresis value. But on the
+ W83781D, there is only one alarm that functions for both other sensors!
+ Temperatures are guaranteed within a range of -55 to +125 degrees. The
+diff --git a/Documentation/usb/mass-storage.txt b/Documentation/usb/mass-storage.txt
+index 59063ad..093bbd3 100644
+--- a/Documentation/usb/mass-storage.txt
++++ b/Documentation/usb/mass-storage.txt
+@@ -121,7 +121,7 @@
+     capped.
  
- #define USB_VENDOR_ID_ASUS		0x0486
- #define USB_DEVICE_ID_ASUS_T91MT	0x0185
+     If this parameter is provided, and the number of files specified
+-    in “file” argument is greater then the value of “luns”, all excess
++    in “file” argument is greater than the value of “luns”, all excess
+     files will be ignored.
+ 
+     If this parameter is not present, the number of logical units will
+@@ -174,7 +174,7 @@
+     Reflects the state of nofua flag for given logical unit.  It can
+     be read and written.
+ 
+-  Other then those, as usual, the values of module parameters can be
++  Other than those, as usual, the values of module parameters can be
+   read from /sys/module/g_mass_storage/parameters/* files.
+ 
+ * Other gadgets using mass storage function
+diff --git a/Documentation/watchdog/watchdog-kernel-api.txt b/Documentation/watchdog/watchdog-kernel-api.txt
+index a0438f3..f0335e3 100644
+--- a/Documentation/watchdog/watchdog-kernel-api.txt
++++ b/Documentation/watchdog/watchdog-kernel-api.txt
+@@ -182,7 +182,7 @@ bit-operations. The status bits that are defined are:
+   If this bit is set then the watchdog timer will not be able to stop.
+ * WDOG_UNREGISTERED: this bit gets set by the WatchDog Timer Driver Core
+   after calling watchdog_unregister_device, and then checked before calling
+-  any watchdog_ops, so that you can be sure that no operations (other then
++  any watchdog_ops, so that you can be sure that no operations (other than
+   unref) will get called after unregister, even if userspace still holds a
+   reference to /dev/watchdog
+ 
+diff --git a/arch/arc/include/asm/entry.h b/arch/arc/include/asm/entry.h
+index eb2ae53..3481cd3 100644
+--- a/arch/arc/include/asm/entry.h
++++ b/arch/arc/include/asm/entry.h
+@@ -16,7 +16,7 @@
+  *   Normally CPU does this automatically, however when doing FAKE rtie,
+  *   we also need to explicitly do this. The problem in macros
+  *   FAKE_RET_FROM_EXCPN and FAKE_RET_FROM_EXCPN_LOCK_IRQ was that this bit
+- *   was being "CLEARED" rather then "SET". Actually "SET" clears ZOL context
++ *   was being "CLEARED" rather than "SET". Actually "SET" clears ZOL context
+  *
+  * Vineetg: May 5th 2008
+  *  -Modified CALLEE_REG save/restore macros to handle the fact that
+diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
+index 91eeab8..9346f56 100644
+--- a/arch/arc/kernel/entry.S
++++ b/arch/arc/kernel/entry.S
+@@ -41,7 +41,7 @@
+  *   Normally CPU does this automatically, however when doing FAKE rtie,
+  *   we need to explicitly do this. The problem in macros
+  *   FAKE_RET_FROM_EXCPN and FAKE_RET_FROM_EXCPN_LOCK_IRQ was that this bit
+- *   was being "CLEARED" rather then "SET". Since it is Loop INHIBIT Bit,
++ *   was being "CLEARED" rather than "SET". Since it is Loop INHIBIT Bit,
+  *   setting it and not clearing it clears ZOL context
+  *
+  * Vineetg: May 16th, 2008
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 13b7394..0a3fb7e 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1648,7 +1648,7 @@ config LOCAL_TIMERS
+ 	default y
+ 	select HAVE_ARM_TWD if (!ARCH_MSM_SCORPIONMP && !EXYNOS4_MCT)
+ 	help
+-	  Enable support for local timers on SMP platforms, rather then the
++	  Enable support for local timers on SMP platforms, rather than the
+ 	  legacy IPI broadcast method.  Local timers allows the system
+ 	  accounting to be spread across the timer interval, preventing a
+ 	  "thundering herd" at every timer tick.
+diff --git a/arch/blackfin/lib/udivsi3.S b/arch/blackfin/lib/udivsi3.S
+index 748a6a2..5119871 100644
+--- a/arch/blackfin/lib/udivsi3.S
++++ b/arch/blackfin/lib/udivsi3.S
+@@ -66,7 +66,7 @@ ENTRY(___udivsi3)
+ .Ly_16bit:
+   /* We know that the upper 17 bits of Y might have bits set,
+   ** or that the sign bit of X might have a bit. If Y is a
+-  ** 16-bit number, but not bigger, then we can use the builtins
++  ** 16-bit number, but not bigger, than we can use the builtins
+   ** with a post-divide correction.
+   ** R3 currently holds Y>>15, which means R3's LSB is the
+   ** bit we're interested in.
+diff --git a/arch/powerpc/oprofile/op_model_cell.c b/arch/powerpc/oprofile/op_model_cell.c
+index b9589c1..2bc5b8b 100644
+--- a/arch/powerpc/oprofile/op_model_cell.c
++++ b/arch/powerpc/oprofile/op_model_cell.c
+@@ -1060,7 +1060,7 @@ static int calculate_lfsr(int n)
+ {
+ 	/*
+ 	 * The ranges and steps are in powers of 2 so the calculations
+-	 * can be done using shifts rather then divide.
++	 * can be done using shifts rather than divide.
+ 	 */
+ 	int index;
+ 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index f19ac0a..98e7449 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1360,7 +1360,7 @@ static bool kvm_get_time_and_clockread(s64 *kernel_ns, cycle_t *cycle_now)
+  *
+  * That is, when timespec0 != timespec1, M < N. Unfortunately that is not
+  * always the case (the difference between two distinct xtime instances
+- * might be smaller then the difference between corresponding TSC reads,
++ * might be smaller than the difference between corresponding TSC reads,
+  * when updating guest vcpus pvclock areas).
+  *
+  * To avoid that problem, do not allow visibility of distinct
 -- 
-1.8.1.4
+1.7.2.5
 
