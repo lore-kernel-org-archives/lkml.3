@@ -1,147 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966709Ab3DQSrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 14:47:36 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54580 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S966678Ab3DQSre (ORCPT
+	id S966757Ab3DQSwm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 14:52:42 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:44199 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966716Ab3DQSwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 14:47:34 -0400
-Date: Wed, 17 Apr 2013 14:47:33 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Joe Perches <joe@perches.com>
-cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        usb-storage <usb-storage@lists.one-eyed-alien.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: storage: Add usb_stor_dbg, reduce object size
-In-Reply-To: <1366219045.28609.50.camel@joe-AO722>
-Message-ID: <Pine.LNX.4.44L0.1304171426460.1623-100000@iolanthe.rowland.org>
+	Wed, 17 Apr 2013 14:52:41 -0400
+Message-ID: <516EEF6F.8060905@linux.vnet.ibm.com>
+Date: Thu, 18 Apr 2013 02:52:31 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Robin Holt <holt@sgi.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi.kivity@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: mmu_notifier: re-fix freed page still mapped in secondary
+ MMU
+References: <516CF235.4060103@linux.vnet.ibm.com> <20130416093131.GJ3658@sgi.com> <516D275C.8040406@linux.vnet.ibm.com> <20130416112553.GM3658@sgi.com> <20130416114322.GN3658@sgi.com> <516D4D08.9020602@linux.vnet.ibm.com> <20130416180835.GY3658@sgi.com> <516E0F1E.5090805@linux.vnet.ibm.com> <20130417141035.GA29872@sgi.com> <516EECDB.6090400@linux.vnet.ibm.com> <20130417184523.GN3672@sgi.com>
+In-Reply-To: <20130417184523.GN3672@sgi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041718-2000-0000-0000-00000BC5B573
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Apr 2013, Joe Perches wrote:
+On 04/18/2013 02:45 AM, Robin Holt wrote:
 
-> > > Perhaps a good patch would be to convert US_DEBUGP
-> > > calls where a struct us_data * is available to
-> > > to us_stor_dbg(struct us_data *, const char *fmt, ...)
-> > 
-> > That would be an excellent start.
+>>>>>>> For the v3.10 release, we should work on making this more
+>>>>>>> correct and completely documented.
+>>>>>>
+>>>>>> Better document is always welcomed.
+>>>>>>
+>>>>>> Double call ->release is not bad, like i mentioned it in the changelog:
+>>>>>>
+>>>>>> it is really rare (e.g, can not happen on kvm since mmu-notify is unregistered
+>>>>>> after exit_mmap()) and the later call of multiple ->release should be
+>>>>>> fast since all the pages have already been released by the first call.
+>>>>>>
+>>>>>> But, of course, it's great if you have a _light_ way to avoid this.
+>>>>>
+>>>>> Getting my test environment set back up took longer than I would have liked.
+>>>>>
+>>>>> Your patch passed.  I got no NULL-pointer derefs.
+>>>>
+>>>> Thanks for your test again.
+>>>>
+>>>>>
+>>>>> How would you feel about adding the following to your patch?
+>>>>
+>>>> I prefer to make these changes as a separate patch, this change is the
+>>>> improvement, please do not mix it with bugfix.
+>>>
+>>> I think your "improvement" classification is a bit deceiving.  My previous
+>>> patch fixed the bug in calling release multiple times.  Your patch without
+>>> this will reintroduce that buggy behavior.  Just because the bug is already
+>>> worked around by KVM does not mean it is not a bug.
+>>
+>> As your tested, calling ->release() multiple times can work, but just make your
+>> testcase more _slower_. So your changes is trying to speed it up - it is a
+>> improvement.
+>>
+>> Well, _if_ it is really a bug, could you please do not fix two bugs in one patch?
 > 
-> Hey Alan, care to try this?
-> 
-> o Convert uses of US_DEBUGP to usb_stor_dbg
-> o Add "struct us_data *" to usb_stor_dbg uses when
->   available and NULL when not.
-> o usb_stor_dbg now uses struct device */dev_vprint_emit
->   when available
-> o Removed embedded function names
-> o Coalesce formats
-> o Remove trailing whitespace
-> o Remove useless OOM messages
-> o Remove useless function entry/exit logging
-> 
-> Compiles but completely untested.
-> 
-> This won't apply against Greg's latest usb tree
-> as he's just taken the previous patch.
+> The code, as is, does not call ->release() multiple times.  Your code
+> changes the behavior to call it multiple times.  You are introducing the
+> bug by your code changes.  Why not fix the bug you create in the patch
+> which creates it?
 
-Wow, that's an impressive amount of work in a short time!  I have only
-a few comments.
+Andrew, your thought?
 
-I'm not very concerned about the subdrivers.  In fact, for testing
-purposes it would probably be better to start by changing just the
-"core" part of usb-storage (that is, the parts that actually get built
-into the usb-storage.o file) and then do each subdriver separately, one
-patch for each.
-
-There are a few places where things could be improved...
-
-> +int usb_stor_dbg(const struct us_data *us, const char *fmt, ...)
-> +{
-> +	struct va_format vaf;
-> +	va_list args;
-> +	int r;
-> +
-> +	va_start(args, fmt);
-> +
-> +	if (us && us->pusb_dev) {
-> +		r = dev_vprintk_emit(7, &us->pusb_dev->dev, fmt, args);
-
-Isn't there a symbolic constant you can use instead of "7"?
-
-> --- a/drivers/usb/storage/scsiglue.c
-> +++ b/drivers/usb/storage/scsiglue.c
-
-> @@ -349,8 +347,6 @@ static int command_abort(struct scsi_cmnd *srb)
->  {
->  	struct us_data *us = host_to_us(srb->device->host);
->  
-> -	US_DEBUGP("%s called\n", __func__);
-> -
->  	/* us->srb together with the TIMED_OUT, RESETTING, and ABORTING
->  	 * bits are protected by the host lock. */
->  	scsi_lock(us_to_host(us));
-> @@ -386,8 +382,6 @@ static int device_reset(struct scsi_cmnd *srb)
->  	struct us_data *us = host_to_us(srb->device->host);
->  	int result;
->  
-> -	US_DEBUGP("%s called\n", __func__);
-> -
->  	/* lock the device pointers and do the reset */
->  	mutex_lock(&(us->dev_mutex));
->  	result = us->transport_reset(us);
-> @@ -402,7 +396,6 @@ static int bus_reset(struct scsi_cmnd *srb)
->  	struct us_data *us = host_to_us(srb->device->host);
->  	int result;
->  
-> -	US_DEBUGP("%s called\n", __func__);
->  	result = usb_stor_port_reset(us);
->  	return result < 0 ? FAILED : SUCCESS;
->  }
-
-These three functions get called only in unusual circumstances, and for
-debugging we do want to know when they get called.  So these statements
-should remain.
-
-> --- a/drivers/usb/storage/usb.c
-> +++ b/drivers/usb/storage/usb.c
-
-> @@ -918,7 +902,7 @@ int usb_stor_probe1(struct us_data **pus,
->  	struct us_data *us;
->  	int result;
->  
-> -	US_DEBUGP("USB Mass Storage device detected\n");
-> +	usb_stor_dbg(NULL, "USB Mass Storage device detected\n");
->  
->  	/*
->  	 * Ask the SCSI layer to allocate a host structure, with extra
-
-Even though "us" isn't available here, intf is.  This line can be a
-regular dev_dbg(&intf->dev, ...).  Or even dev_info(&intf->dev, ...);  
-this looks like the sort of thing one sees all the time in kernel logs.
-
-> @@ -1075,9 +1058,8 @@ static int storage_probe(struct usb_interface *intf,
->  	} else {
->  		unusual_dev = &for_dynamic_ids;
->  
-> -		US_DEBUGP("%s %s 0x%04x 0x%04x\n", "Use Bulk-Only transport",
-> -			"with the Transparent SCSI protocol for dynamic id:",
-> -			id->idVendor, id->idProduct);
-> +		usb_stor_dbg(us, "Use Bulk-Only transport with the Transparent SCSI protocol for dynamic id: 0x%04x 0x%04x\n",
-> +			     id->idVendor, id->idProduct);
->  	}
->  
->  	result = usb_stor_probe1(&us, intf, id, unusual_dev);
-
-And here "us" hasn't been set yet (it gets set in usb_stor_probe1), so
-it shouldn't be used.  This can become another dev_dbg(&intf->dev, ...)
-line.
-
-Alan Stern
 
