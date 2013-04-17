@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966492Ab3DQSzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 14:55:48 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:56117 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab3DQSzr (ORCPT
+	id S966792Ab3DQTAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 15:00:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35429 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966507Ab3DQTAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 14:55:47 -0400
-Message-ID: <516EF026.5000508@gmail.com>
-Date: Wed, 17 Apr 2013 14:55:34 -0400
-From: Kyle Evans <kvans32@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130220 Thunderbird/17.0.3
-MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: Re: BUG: Fn keys not working on EliteBook 8460p after fabf85e3ca15d5b94058f391dac8df870cdd427a
-References: <201304130331.18301@pali> <1365816906.13667.6.camel@x230.lan>    <51695169.6090306@gmail.com> <1365870087.13667.7.camel@x230.lan>   <51699843.7060905@gmail.com> <1366129583.13667.11.camel@x230.lan>  <516EC19C.3010906@gmail.com> <1366221554.13667.13.camel@x230.lan>
-In-Reply-To: <1366221554.13667.13.camel@x230.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 17 Apr 2013 15:00:18 -0400
+Date: Wed, 17 Apr 2013 12:00:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Paul Gortmaker <p_gortmaker@yahoo.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Subject: Re: [NEW DRIVER V5 4/7] drivers/rtc: DA9058 RTC driver
+Message-Id: <20130417120016.feb8dbb4b010128c78fa1286@linux-foundation.org>
+In-Reply-To: <201304171644.r3HGi4TM023877@latitude>
+References: <201304171644.r3HGi4TM023877@latitude>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 17 Apr 2013 17:33:35 +0100 Anthony Olech <anthony.olech.opensource@diasemi.com> wrote:
 
-On 04/17/2013 01:59 PM, Matthew Garrett wrote:
-> On Wed, 2013-04-17 at 11:37 -0400, Kyle Evans wrote:
->> On 04/16/2013 12:26 PM, Matthew Garrett wrote:
->>> Can you try this patch?
->>>
->> No dice. I have a dmi check patch that I will send in a day or two if
->> you don't find what you are looking for.
-> DMI's almost certainly the wrong solution. According to your DSDT, EC
-> register 0xe6 is called SFHK. That's written to by the SSHK method,
-> which in turn is executed by SHKS which should be called by the
-> hp_wmi_query call added there. Any chance you can try to figure out why
-> that's not happening?
->
+> This patch is relative to linux next-20130417
+> 
+> This is the RTC component driver of the Dialog DA9058 PMIC.
+> This driver is just one component of the whole DA9058 PMIC driver.
+> It depends on the CORE component driver of the DA9058 MFD.
 
-I see, I don't know how I missed that before. I think because I was 
-searching for e6 instead of E6. I'm sure we can crack this the right way 
-now. I'll do some digging.
+The driver could use devm_request_threaded_irq() rather than the bare
+request_threaded_irq().
+
+Otherwise it looks OK to me.  Please include this in whatever tree
+contains the "CORE component driver of the DA9058 MFD" and merge it
+upstream via that tree.
+
+Please also ask Stephen to include the whole tree into linux-next at
+the earliest possible time, if it isn't already there.
