@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966694Ab3DQOjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 10:39:45 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36103 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S966466Ab3DQOjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 10:39:44 -0400
-Message-ID: <1366209583.28609.35.camel@joe-AO722>
-Subject: Re: [PATCH] usb: storage: Add usb_stor_dbg, reduce object size
-From: Joe Perches <joe@perches.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        usb-storage <usb-storage@lists.one-eyed-alien.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 17 Apr 2013 07:39:43 -0700
-In-Reply-To: <Pine.LNX.4.44L0.1304171012270.1623-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1304171012270.1623-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S966727Ab3DQOog (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 10:44:36 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:58336 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966624Ab3DQOoe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 10:44:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <516E88A9.9070200@ti.com>
+References: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
+	<516E88A9.9070200@ti.com>
+Date: Wed, 17 Apr 2013 07:44:33 -0700
+X-Google-Sender-Auth: NRw9bEvCH2ZPdlagqd9k_A7ynFI
+Message-ID: <CA+55aFwt82h7hk1YiCeoG2-GGpgLvyW8t_hZRHxyhDQw=_Luzw@mail.gmail.com>
+Subject: Re: Device driver memory 'mmap()' function helper cleanup
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Arnd Bergmann <arnd@arndb.de>,
+        Takashi Iwai <tiwai@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        David Miller <davem@davemloft.net>, Ralf Baechle <ralf@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-17 at 10:14 -0400, Alan Stern wrote:
-> On Tue, 16 Apr 2013, Joe Perches wrote:
-> > Reduce the size of the objects by consolidating
-> > the duplicated USB_STORAGE into a single function.
-[]
-> Is there any reasonable way to change this so that US_DEBUGP gets
-> converted to a dev_dbg call instead of a printk call?  Not including
-> the device identifier in the output can be a real problem if there are
-> multiple mass-storage devices in the system.
+On Wed, Apr 17, 2013 at 4:34 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+>
+> Should there be a similar helper that uses remap_pfn_range() instead of
+> io_remap_pfn_range()?
 
-No.
+The two are practically identical (*). I went back-and-forth over
+which one to use, and ended up using io_remap_pfn_range() because that
+ends up being the fancier one in a few special cases.
 
-There's no standardized name of a struct device *.
-struct us_data *us exists for most of them but not
-all.  Some have a struct isd_200 *info available,
-other don't have a struct device * at all.
+And it's actually about 50/50 whether people use that function on RAM
+or on MMIO memory. Some people use it for DMA buffers, some people use
+it for memory-mapped PCI memory, so the whole confusion about naming
+ends up being double. We probably should get rid of
+"io_remap_pfn_range()" entirely, since the real issue ends up being
+what page protection bits to use, and drivers do that outside of this
+function.
 
-Some or all US_DEBUGP calls would have to change
-form.
+So you can use the new helper function to convert things that use
+remap_pfn_range() too. The differences end up mattering only for
+either highmem RAM pages (which get used for /dev/mem, but not for the
+normal drivers) or for actual memory-mapped IO, in which case the
+io_remap_pfn_range() function does a bit more.
 
-Perhaps a good patch would be to convert US_DEBUGP
-calls where a struct us_data * is available to
-to us_stor_dbg(struct us_data *, const char *fmt, ...)
+                    Linus
 
-
-
+(*) io_remap_pfn_page() is the "extended" version that takes care of
+some special magical details on a couple of odd architectures, notably
+sparc (but also one special case of MIPS PAE that have some magic bit
+tricks). But even for MIPS and Sparc, it ends up devolving to be the
+same as the "regular" remap_pfn_page() for normal memory. I'm adding
+David and Ralf to the cc just to verify that I read it right, but
+everybody else just defines "io_remap_pfn_range" to be
+"remap_pfn_range".
