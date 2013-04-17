@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935583Ab3DQBE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 21:04:58 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:56703 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755262Ab3DQBE5 (ORCPT
+	id S1756323Ab3DQBGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 21:06:50 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:13741 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754847Ab3DQBGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 21:04:57 -0400
-X-AuditID: cbfee690-b7f656d0000007e3-42-516df5376049
+	Tue, 16 Apr 2013 21:06:49 -0400
+X-AuditID: cbfee68e-b7f946d000001e37-3f-516df5a8373e
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
-Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Richard Purdie'" <rpurdie@rpsys.net>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <002d01ce3b07$4d838d80$e88aa880$%han@samsung.com>
-In-reply-to: <002d01ce3b07$4d838d80$e88aa880$%han@samsung.com>
-Subject: [PATCH RESEND 3/3] backlight: vgg2432a4: convert vgg2432a4_driver to
+Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [PATCH RESEND 1/8] rtc: rtc-at91sam9: convert at91_rtc_driver to
  dev_pm_ops
-Date: Wed, 17 Apr 2013 10:04:54 +0900
-Message-id: <002f01ce3b07$9274efb0$b75ecf10$%han@samsung.com>
+Date: Wed, 17 Apr 2013 10:06:47 +0900
+Message-id: <003001ce3b07$d5f29da0$81d7d8e0$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac47B00Xwwr4eF6YRha9Jkf5kKWYlAAADejg
+Thread-index: Ac47B9XUIMaX4YjsSbW0FEYgtMIOOA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zA13zr7mBBi92CFnMWb+GzeLywkus
-	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBln5k9g
-	KTglU9F3fyFrA+MP8S5GDg4JAROJxpXaXYycQKaYxIV769m6GLk4hASWMUqcPL+GGSJhIvFj
-	8xNGiMQiRok7R09DOb8YJTZOnsAIUsUmoCbx5cthdpCpIgL6Em0tGiBhZoFSia0P3rOA2EIC
-	thJPj78DG8opYCex/ddtMFtYIEpiVvNuNhCbRUBV4sy7uWD1vED1b04sY4ewBSV+TL7HAjFT
-	S2L9zuNMELa8xOY1b5khnlGXePRXF+ICI4nrp2ogKkQk9r14B3axhMApdonLGzcwQqwSkPg2
-	+RALRKusxKYDUO9KShxccYNlAqPELCSLZyFZPAvJ4llIVixgZFnFKJpakFxQnJReZKJXnJhb
-	XJqXrpecn7uJERKRE3Yw3jtgfYgxGWj9RGYp0eR8YETnlcQbGpsZWZiamBobmVuakSasJM6r
-	3mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFxnuauBLWyCVyGf9blyGybJ3vhz84btQ95
-	Wg4srVkj/dn7xLfJ8r3OfxXPn1DXTj19+KvlwcbGBX48FuZGa9o4Y151NBtve666Pm3/JxOB
-	S2sjOFbdrHu4L1RDzib1wbknG9seBjao/ioylWi2DVjY9eCBIGdb/4+Fvkeaj1gs3rDM7/++
-	p9OvKbEUZyQaajEXFScCADwmGe3eAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jAV3zr7mBBm+n81nMWb+GzeLywkus
-	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
-	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
-	WsA0Ruj6hgTB9RgZoIGEdYwZZ+ZPYCk4JVPRd38hawPjD/EuRk4OCQETiR+bnzBC2GISF+6t
-	Z+ti5OIQEljEKHHn6GlGCOcXo8TGyRPAqtgE1CS+fDnM3sXIwSEioC/R1qIBEmYWKJXY+uA9
-	C4gtJGAr8fT4O2YQm1PATmL7r9tgtrBAlMSs5t1sIDaLgKrEmXdzwep5gerfnFjGDmELSvyY
-	fI8FYqaWxPqdx5kgbHmJzWveMoOslRBQl3j0VxfiAiOJ66dqICpEJPa9eMc4gVFoFpJBs5AM
-	moVk0CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBEf8M+kdjKsaLA4xCnAwKvHw
-	XijIDRRiTSwrrsw9xCjBwawkwqu4CijEm5JYWZValB9fVJqTWnyIMRnoz4nMUqLJ+cBklFcS
-	b2hsYmZkaWRmYWRibk6asJI478FW60AhgfTEktTs1NSC1CKYLUwcnFINjPGWM4Rddugx3ShS
-	3Pq3V7Z1pivjFsUiR/mAXTwsEd3Jv0IW3X7Yp7P7xGO1TE+eOWwcwfa/2pKvf6tTi94dqH/3
-	9pbun2IrLtTP7MlbljdvWo+tWuVnlQ3/ZTtPt2n/43tin5B3x8Cpd3agQP6vdQ0Bup916+t6
-	Hy4uLYzxuHQp/uNUl58SSizFGYmGWsxFxYkA8l4SIjwDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t8zQ90VX3MDDT7OF7ZYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
+	tUjfLoErY3vLTOaCU8IVSxp3MDYw/uTvYuTkkBAwkfh8+RorhC0mceHeerYuRi4OIYFljBKr
+	nz9jhSl6eHMjO0RiEaPEh0VfmCGcX4wSMz7OA6tiE1CT+PLlMFAVB4eIgL5EW4sGSA2zQC+j
+	xJne3ewgNcICYRKPns5gBLFZBFQlTtybAtbLK2Ar0dt/iQXCFpT4MfkemM0soCWxfudxJghb
+	XmLzmrfMIPMlBNQlHv3VBQmLCOhJ9B28ygxRIiKx78U7RpC9EgLH2CVWvpvKDrFLQOLb5EMs
+	EL2yEpsOMEM8JilxcMUNlgmMYrOQbJ6FZPMsJJtnIVmxgJFlFaNoakFyQXFSepGRXnFibnFp
+	Xrpecn7uJkZI7PXtYLx5wPoQYzLQ+onMUqLJ+cDYzSuJNzQ2M7IwNTE1NjK3NCNNWEmcV63F
+	OlBIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDo/siIX7Jp8Vn3tR1OK+ZJqPWOz+u/n/mJI4O
+	7eu2n6a3bWA3M81/2ZD/gKUnaav+T6Yeq9Vf6ypObP0pPVntV/nWhWJqR2fcX/HMdN2mG2lu
+	XmL/r8nx9gVdfrt06a7uE4/+/Ax4U6y+aZFhfZNOhJCG0yQ1iXVXv92ad0DMYprotP0KezhY
+	3JVYijMSDbWYi4oTAeraHznTAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jAd0VX3MDDc6t4rNYcvEqu8Wc9WvY
+	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
+	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
+	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWN7y0zmglPCFUsadzA2MP7k72Lk5JAQMJF4
+	eHMjO4QtJnHh3nq2LkYuDiGBRYwSHxZ9YYZwfjFKzPg4jxWkik1ATeLLl8NAHRwcIgL6Em0t
+	GiA1zAK9jBJneneDTRIWCJN49HQGI4jNIqAqceLeFLBeXgFbid7+SywQtqDEj8n3wGxmAS2J
+	9TuPM0HY8hKb17xlBpkvIaAu8eivLkhYREBPou/gVWaIEhGJfS/eMU5gFJiFZNIsJJNmIZk0
+	C0nLAkaWVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBkf1MegfjqgaLQ4wCHIxKPLwXCnID
+	hVgTy4orcw8xSnAwK4nwKq4CCvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MOnklcQbGpuY
+	GVkamVkYmZibkyasJM57sNU6UEggPbEkNTs1tSC1CGYLEwenVAOji6VOyMPYeIYHruuz5iyy
+	aLx95uMFi3UOpY2xVy3jWbTye0JVNYIemDLvrkx4k5wfnvdzhrKxenNinKZ245M1VwR1orbe
+	E56wOGKmsiy73XXX56tNjh5mOsMeOXOVhnPXXzWfb6+Zmc1z5u8NPKHk5+O/zeD+lzzNml/X
+	FiaXzM8XbjJmKlFiKc5INNRiLipOBACzP12GMAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -58,116 +55,85 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Instead of using legacy suspend/resume methods, using newer dev_pm_ops
-structure allows better control over power management. Also, use of
-pm_message_t is deprecated. Thus, it is removed.
+structure allows better control over power management.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/ili9320.c   |   24 +++++++++---------------
- drivers/video/backlight/ili9320.h   |    2 +-
- drivers/video/backlight/vgg2432a4.c |   18 ++++++++----------
- 3 files changed, 18 insertions(+), 26 deletions(-)
+ drivers/rtc/rtc-at91sam9.c |   23 ++++++++++-------------
+ 1 files changed, 10 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/video/backlight/ili9320.c b/drivers/video/backlight/ili9320.c
-index c3a5299..f8be90c 100644
---- a/drivers/video/backlight/ili9320.c
-+++ b/drivers/video/backlight/ili9320.c
-@@ -270,27 +270,21 @@ int ili9320_remove(struct ili9320 *ili)
- }
- EXPORT_SYMBOL_GPL(ili9320_remove);
- 
--#ifdef CONFIG_PM
--int ili9320_suspend(struct ili9320 *lcd, pm_message_t state)
-+#ifdef CONFIG_PM_SLEEP
-+int ili9320_suspend(struct ili9320 *lcd)
- {
- 	int ret;
- 
--	dev_dbg(lcd->dev, "%s: event %d\n", __func__, state.event);
-+	ret = ili9320_power(lcd, FB_BLANK_POWERDOWN);
- 
--	if (state.event == PM_EVENT_SUSPEND) {
--		ret = ili9320_power(lcd, FB_BLANK_POWERDOWN);
--
--		if (lcd->platdata->suspend == ILI9320_SUSPEND_DEEP) {
--			ili9320_write(lcd, ILI9320_POWER1, lcd->power1 |
--				      ILI9320_POWER1_SLP |
--				      ILI9320_POWER1_DSTB);
--			lcd->initialised = 0;
--		}
--
--		return ret;
-+	if (lcd->platdata->suspend == ILI9320_SUSPEND_DEEP) {
-+		ili9320_write(lcd, ILI9320_POWER1, lcd->power1 |
-+			      ILI9320_POWER1_SLP |
-+			      ILI9320_POWER1_DSTB);
-+		lcd->initialised = 0;
- 	}
- 
--	return 0;
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(ili9320_suspend);
- 
-diff --git a/drivers/video/backlight/ili9320.h b/drivers/video/backlight/ili9320.h
-index e0db738..42329e7 100644
---- a/drivers/video/backlight/ili9320.h
-+++ b/drivers/video/backlight/ili9320.h
-@@ -76,5 +76,5 @@ extern void ili9320_shutdown(struct ili9320 *lcd);
- 
- /* PM */
- 
--extern int ili9320_suspend(struct ili9320 *lcd, pm_message_t state);
-+extern int ili9320_suspend(struct ili9320 *lcd);
- extern int ili9320_resume(struct ili9320 *lcd);
-diff --git a/drivers/video/backlight/vgg2432a4.c b/drivers/video/backlight/vgg2432a4.c
-index 84d582f..d538947 100644
---- a/drivers/video/backlight/vgg2432a4.c
-+++ b/drivers/video/backlight/vgg2432a4.c
-@@ -205,18 +205,15 @@ static int vgg2432a4_lcd_init(struct ili9320 *lcd,
- 	return ret;
+diff --git a/drivers/rtc/rtc-at91sam9.c b/drivers/rtc/rtc-at91sam9.c
+index 39cfd2e..4843e42 100644
+--- a/drivers/rtc/rtc-at91sam9.c
++++ b/drivers/rtc/rtc-at91sam9.c
+@@ -414,14 +414,13 @@ static void at91_rtc_shutdown(struct platform_device *pdev)
+ 	rtt_writel(rtc, MR, mr & ~rtc->imr);
  }
  
 -#ifdef CONFIG_PM
--static int vgg2432a4_suspend(struct spi_device *spi, pm_message_t state)
 +#ifdef CONFIG_PM_SLEEP
-+static int vgg2432a4_suspend(struct device *dev)
+ 
+ /* AT91SAM9 RTC Power management control */
+ 
+-static int at91_rtc_suspend(struct platform_device *pdev,
+-					pm_message_t state)
++static int at91_rtc_suspend(struct device *dev)
  {
--	return ili9320_suspend(spi_get_drvdata(spi), state);
-+	return ili9320_suspend(dev_get_drvdata(dev));
+-	struct sam9_rtc	*rtc = platform_get_drvdata(pdev);
++	struct sam9_rtc	*rtc = dev_get_drvdata(dev);
+ 	u32		mr = rtt_readl(rtc, MR);
+ 
+ 	/*
+@@ -430,7 +429,7 @@ static int at91_rtc_suspend(struct platform_device *pdev,
+ 	 */
+ 	rtc->imr = mr & (AT91_RTT_ALMIEN | AT91_RTT_RTTINCIEN);
+ 	if (rtc->imr) {
+-		if (device_may_wakeup(&pdev->dev) && (mr & AT91_RTT_ALMIEN)) {
++		if (device_may_wakeup(dev) && (mr & AT91_RTT_ALMIEN)) {
+ 			enable_irq_wake(rtc->irq);
+ 			/* don't let RTTINC cause wakeups */
+ 			if (mr & AT91_RTT_RTTINCIEN)
+@@ -442,13 +441,13 @@ static int at91_rtc_suspend(struct platform_device *pdev,
+ 	return 0;
  }
--static int vgg2432a4_resume(struct spi_device *spi)
-+static int vgg2432a4_resume(struct device *dev)
+ 
+-static int at91_rtc_resume(struct platform_device *pdev)
++static int at91_rtc_resume(struct device *dev)
  {
--	return ili9320_resume(spi_get_drvdata(spi));
-+	return ili9320_resume(dev_get_drvdata(dev));
+-	struct sam9_rtc	*rtc = platform_get_drvdata(pdev);
++	struct sam9_rtc	*rtc = dev_get_drvdata(dev);
+ 	u32		mr;
+ 
+ 	if (rtc->imr) {
+-		if (device_may_wakeup(&pdev->dev))
++		if (device_may_wakeup(dev))
+ 			disable_irq_wake(rtc->irq);
+ 		mr = rtt_readl(rtc, MR);
+ 		rtt_writel(rtc, MR, mr | rtc->imr);
+@@ -456,20 +455,18 @@ static int at91_rtc_resume(struct platform_device *pdev)
+ 
+ 	return 0;
  }
 -#else
--#define vgg2432a4_suspend	NULL
--#define vgg2432a4_resume	NULL
+-#define at91_rtc_suspend	NULL
+-#define at91_rtc_resume		NULL
  #endif
  
- static struct ili9320_client vgg2432a4_client = {
-@@ -249,16 +246,17 @@ static void vgg2432a4_shutdown(struct spi_device *spi)
- 	ili9320_shutdown(spi_get_drvdata(spi));
- }
- 
-+static SIMPLE_DEV_PM_OPS(vgg2432a4_pm_ops, vgg2432a4_suspend, vgg2432a4_resume);
++static SIMPLE_DEV_PM_OPS(at91_rtc_pm_ops, at91_rtc_suspend, at91_rtc_resume);
 +
- static struct spi_driver vgg2432a4_driver = {
- 	.driver = {
- 		.name		= "VGG2432A4",
- 		.owner		= THIS_MODULE,
-+		.pm		= &vgg2432a4_pm_ops,
+ static struct platform_driver at91_rtc_driver = {
+ 	.probe		= at91_rtc_probe,
+ 	.remove		= at91_rtc_remove,
+ 	.shutdown	= at91_rtc_shutdown,
+-	.suspend	= at91_rtc_suspend,
+-	.resume		= at91_rtc_resume,
+ 	.driver		= {
+ 		.name	= "rtc-at91sam9",
+ 		.owner	= THIS_MODULE,
++		.pm	= &at91_rtc_pm_ops,
  	},
- 	.probe		= vgg2432a4_probe,
- 	.remove		= vgg2432a4_remove,
- 	.shutdown	= vgg2432a4_shutdown,
--	.suspend	= vgg2432a4_suspend,
--	.resume		= vgg2432a4_resume,
  };
  
- module_spi_driver(vgg2432a4_driver);
 -- 
 1.7.2.5
 
