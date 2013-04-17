@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966507Ab3DQOCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 10:02:23 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:55847 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966321Ab3DQOCW (ORCPT
+	id S966519Ab3DQODf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 10:03:35 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55179 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966321Ab3DQODd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 10:02:22 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] dw_dmac: Couple of small fixups; use of '_' over '-' and a cell-num typo
-Date: Wed, 17 Apr 2013 15:02:10 +0100
-Message-Id: <1366207330-1727-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 17 Apr 2013 10:03:33 -0400
+Date: Wed, 17 Apr 2013 15:03:32 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: sameo@linux.intel.com, gg@slimlogic.co.uk, ian@slimlogic.co.uk,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 1/3] regulator: palmas: clear sleep bits if not selected
+Message-ID: <20130417140331.GN13687@opensource.wolfsonmicro.com>
+References: <1366191793-13934-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vDEbda84Uy/oId5W"
+Content-Disposition: inline
+In-Reply-To: <1366191793-13934-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In Device Tree '-' is always preferred over '_'. This is corrected in
-code as well as in the documentation. Also, there are one too many
-populated cells in the dmas example. Let's remove one of them to aid
-with clarity.
 
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- Documentation/devicetree/bindings/dma/snps-dma.txt |    4 ++--
- drivers/dma/dw_dmac.c                              |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+--vDEbda84Uy/oId5W
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/Documentation/devicetree/bindings/dma/snps-dma.txt b/Documentation/devicetree/bindings/dma/snps-dma.txt
-index d58675e..aaccb9d 100644
---- a/Documentation/devicetree/bindings/dma/snps-dma.txt
-+++ b/Documentation/devicetree/bindings/dma/snps-dma.txt
-@@ -20,7 +20,7 @@ Required properties:
- Optional properties:
- - interrupt-parent: Should be the phandle for the interrupt controller
-   that services interrupts for this device
--- is_private: The device channels should be marked as private and not for by the
-+- is-private: The device channels should be marked as private and not for by the
-   general purpose DMA channel allocator. False if not passed.
- 
- Example:
-@@ -58,6 +58,6 @@ Example:
- 		interrupts = <0 35 0x4>;
- 		status = "disabled";
- 		dmas = <&dmahost 12 0 1>,
--			<&dmahost 13 0 1 0>;
-+			<&dmahost 13 0 1>;
- 		dma-names = "rx", "rx";
- 	};
-diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-index c599558..3448819 100644
---- a/drivers/dma/dw_dmac.c
-+++ b/drivers/dma/dw_dmac.c
-@@ -1592,7 +1592,7 @@ dw_dma_parse_dt(struct platform_device *pdev)
- 	if (of_property_read_u32(np, "dma-channels", &pdata->nr_channels))
- 		return NULL;
- 
--	if (of_property_read_bool(np, "is_private"))
-+	if (of_property_read_bool(np, "is-private"))
- 		pdata->is_private = true;
- 
- 	if (!of_property_read_u32(np, "chan_allocation_order", &tmp))
--- 
-1.7.10.4
+On Wed, Apr 17, 2013 at 03:13:11PM +0530, Laxman Dewangan wrote:
+> Clear the sleep/warm reset bits when it is not selected through
+> regulator platform data. This will make sure that configuration
+> is inline with the platform data regardless of boot/POR
+> configuration.
 
+Applied, thanks.
+
+--vDEbda84Uy/oId5W
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRbqutAAoJELSic+t+oim99YwQAIs6Vh9bHiQOlAXYH33DBN2S
+K3ojPEEI+8PMT8Dlv8tR4zN6KSUrJmm7eOI3etMvS1YY998Ptupb93mJBa6o659W
+Y794avwWYeYQNKOuTzK9k6rqOhRMHV9w2oyTeFCfNlyVxLOv7iVyqGNcZVDPibLn
+5mUV+8TdqMe/LepDmJdeYxGgygLBOsoWcrDZZ8Zl8Edbpd0+9SIr2s/IkhMoElki
+SH/SQHD120cF0XtnfXNw896YB2AeNocZTo9x/OF4jDBS4NtrF8nust+cqbk7MvrQ
+29hcKGqabl1VuiXsWJ++QQLCUpq4MEdKuqM1J6DkWbS8DhDMukQ8B6ve1L/lKyDc
+cKhtfnuJGB4h5Acvt9IQP+NSXgZ9qilInuNtwvqNmaC8NSV2sILeQnmWUOKYx9g3
++V4TtaHMfAhVkFfZfotUuoU0ziFDiTRhRssYUwHXrsxcAqE0NyYkVuDDFodBP1Qd
+EyMTelALDc+LWz9hWBT4NBUJaTRWQs6WY1jtVZNJUbHDhwMn6w2uXVYs2AuW2Vnm
+xvl+ezZN5o7xW4YxMTN6ybY5FyKqcSBGr4glcduqLCrGGWp8iG78Aov0YXAANUfF
+uOACblRBpKpUnF+ZiNuA6pred77OVKDcPmkXQj16S+oE85ohipTykH7R5OcqbNtv
+M8crdKFfwrouvpIp/6Tr
+=Pm+2
+-----END PGP SIGNATURE-----
+
+--vDEbda84Uy/oId5W--
