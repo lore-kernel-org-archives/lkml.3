@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966505Ab3DQOKE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 10:10:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46251 "EHLO
+	id S966511Ab3DQOKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 10:10:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46258 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966321Ab3DQOKC (ORCPT
+	by vger.kernel.org with ESMTP id S966321Ab3DQOKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 10:10:02 -0400
-Date: Wed, 17 Apr 2013 15:10:00 +0100
+	Wed, 17 Apr 2013 10:10:19 -0400
+Date: Wed, 17 Apr 2013 15:10:18 +0100
 From: Mark Brown <broonie@kernel.org>
 To: Axel Lin <axel.lin@ingics.com>
 Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
         Lee Jones <lee.jones@linaro.org>,
         Yvan FILLION <yvan.fillion@stericsson.com>,
         Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] regulator: ab8500-ext: Don't update
- info->update_val if set_mode() fails
-Message-ID: <20130417141000.GR13687@opensource.wolfsonmicro.com>
-References: <1366126152.14735.2.camel@phoenix>
+Subject: Re: [PATCH v3] regulator: ab8500: Fix set voltage for AB8540_LDO_AUX3
+Message-ID: <20130417141017.GS13687@opensource.wolfsonmicro.com>
+References: <1366131020.7842.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PY8tzLeNxmyMVNR3"
+	protocol="application/pgp-signature"; boundary="3sseE1tnmEs+TkKq"
 Content-Disposition: inline
-In-Reply-To: <1366126152.14735.2.camel@phoenix>
+In-Reply-To: <1366131020.7842.1.camel@phoenix>
 X-Cookie: Be different: conform.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,36 +29,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---PY8tzLeNxmyMVNR3
+--3sseE1tnmEs+TkKq
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Tue, Apr 16, 2013 at 11:29:12PM +0800, Axel Lin wrote:
-> This ensures info->update_val status is still correct if set_mode() call fails.
-> Otherwise, get_mode() may return wrong status if a set_mode() call fails.
+On Wed, Apr 17, 2013 at 12:50:20AM +0800, Axel Lin wrote:
+> When setting voltage for AB8540_LDO_AUX3, current code only updates one of
+> info->voltage_reg and info->expand_register registers which is wrong.
+> To ensure we set to correct voltage, it always needs to clear or set
+> expand_register.voltage_mask bit of expand_register.
 
-Applied both, thanks.
+Applied, thanks.
 
---PY8tzLeNxmyMVNR3
+--3sseE1tnmEs+TkKq
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJRbq0wAAoJELSic+t+oim9e6AP/1+9iZByhXgzp0FQI3cQSe+a
-F2bk1FnwEQVYOG90yojMFWnlNxqI3QNqvTHE7Hdnek7tOo+qFPn3VCwbsxSEekhU
-jeBtWVQY7Y0zGfu4lJfMBL5Mt0gYEoxVjEpXEr33L1gigkNCodXPuTqN9/lkyPN6
-FCBfVHTfJX/qx+8y388MkmoKOeu8o50dN9Ok5fVHzl/OP6WOYjE725Y8OEKmesxF
-NZoYg7o1CoBgV0GpScvJWK3wQnOggDChDm90UziSQcdQaADB7VhoKmVCG7cmPrmX
-5rixWPY5PU+BrOy0y3q7unF1xyJKbn0sliRmttSRvAb6qfmFgbjFsbwhHm6aQ/DQ
-wE9/Bru29srOSDjNCh2ThnQ//vhx1+Fq+/4QsV1R8NBjlovYi6Pxovr138AqBDIe
-7cdFvbdKmqP2WiZXVDZe/uawHra36kZeOsPnKqOMA9vMuUiB3ZNp8X25EsEmUHBq
-udr9aDfZIw7TElt4H/XBE3Ox5OcM37ePuK4XzgWfg5Sj7zFqEyQikgs6gcH5F5Sy
-MxjyEwPMG7vcPV+KjeKaHa72TeD5ZckIX8eupAefqf/jmVbz6qPwqwC/QeLJRt8N
-qHmVBgltnDQHcI5TWxggdagFwxijU8hKbkwlahHvFGLvO4hHnnyATbR4wM2Q2Vs/
-KKu578Ujbsf2zxZ24+wo
-=LV8j
+iQIcBAEBAgAGBQJRbq1DAAoJELSic+t+oim9QSwP/AzBdHn+r1T0fxZK1+b8fuxr
+9A7tYp3+xqbTXT7JNfd7DiaQo1LIjBcKrpPNL8aMfHOr0M4isqG1x/wY4Pp4F13B
+RLW4f/idGw1qKDcK+7kytZ48LB+wseHaWEBjKgHUJyvIoIZSesE6ecqzgF8CHNnZ
+GKiEU+dctxgK9hCNYMSQlg/MRW2vQvnReiTPNJGsr3bZPP9GmqWQ9VBgcWn8uroM
+D9TzJn6/jSEaGY9JwLaUfk2G47vV2Mw/KSFCM4wQeXVJGCqoQTMZvGws9E15PML2
+d0VffwkzdboiwV4KcaIV7aDZuxRZYqrQLYl7kxF5aVfLzX4+MWYIsEGOGGJATf7/
+D1UnlgctEyssJZ1FRrSzI/+9b3YsYMGxVE8I/fy16IO2AyPSXbf5oPKKS4/vjGqS
+3KheFnKWPWFTu87kP4wFfvE0wh5++LAK4Hqm1j2Mpia2f3fGqjOBZTg6ku4pk/gx
+PXVYCUQjacaJd6sipFdyuUBVoe5gKQ23xz+EyCKBfYV0TMbWl6VGc2UxUbKBunty
+pUzsmHOoigajdt59DWPAcR3iFMQw8o4c/F0MDWBKHMLcyxC7tIqYEp4XNwd38iVN
+M0CAxPyQ1oX8jb2YKP4/ON3jVROtnSNOJiA9YNlJeV/o67OPhYDa8t+mO2JODdn4
+fNHThP/IiQUjaLahx/F6
+=QAHO
 -----END PGP SIGNATURE-----
 
---PY8tzLeNxmyMVNR3--
+--3sseE1tnmEs+TkKq--
