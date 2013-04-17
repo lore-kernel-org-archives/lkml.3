@@ -1,109 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab3DQGse (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 02:48:34 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:60272 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab3DQGsa (ORCPT
+	id S965774Ab3DQGtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 02:49:50 -0400
+Received: from mail-da0-f52.google.com ([209.85.210.52]:38345 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756925Ab3DQGtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 02:48:30 -0400
-Message-ID: <1366181299.2439.1.camel@localhost>
-Subject: Re: [PATCH] No need to call irq_domain_legacy_revmap() for twice
-From: Mike <qiudayu@linux.vnet.ibm.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, benh@kernel.crashing.org
-Date: Wed, 17 Apr 2013 14:48:19 +0800
-In-Reply-To: <20121211083023.5C5D03E076D@localhost>
-References: <1348479475-13074-1-git-send-email-qiudayu@linux.vnet.ibm.com>
-	 <20121126201739.13F213E09C2@localhost> <1353980506.2309.13.camel@localhost>
-	 <20121211083023.5C5D03E076D@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041706-2674-0000-0000-000008A0CAB7
+	Wed, 17 Apr 2013 02:49:49 -0400
+Date: Tue, 16 Apr 2013 23:49:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.4.41
+Message-ID: <20130417064945.GA13055@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-在 2012-12-11二的 08:30 +0000，Grant Likely写道：
-> On Tue, 27 Nov 2012 09:41:46 +0800, Mike <qiudayu@linux.vnet.ibm.com> wrote:
-> > 在 2012-11-26一的 20:17 +0000，Grant Likely写道：
-> > > On Mon, 24 Sep 2012 17:37:55 +0800, Mike Qiu <qiudayu@linux.vnet.ibm.com> wrote:
-> > > > Function irq_create_mapping() calls irq_find_mapping(). The later
-> > > > function has checked if the indicated IRQ domain has hw IRQ mapped to
-> > > > virtual IRQ through legacy mode or not and return the value of the
-> > > > legacy irq number by call irq_domain_legacy_revmap(). We needn't
-> > > > to call irq_domain_legacy_revmap() to do same check in
-> > > > irq_create_mapping() again.
-> > > > 
-> > > > The patch removes the duplicate call.
-> > > > 
-> > > > Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
-> > > > ---
-> > > >  kernel/irq/irqdomain.c |    7 +++++--
-> > > >  1 files changed, 5 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-> > > > index 49a7772..286d672 100644
-> > > > --- a/kernel/irq/irqdomain.c
-> > > > +++ b/kernel/irq/irqdomain.c
-> > > > @@ -547,9 +547,12 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
-> > > >  		return virq;
-> > > >  	}
-> > > >  
-> > > > -	/* Get a virtual interrupt number */
-> > > > +	/*
-> > > > +	 * For IRQ domain with type of IRQ_DOMAIN_MAP_LEGACY, we needn't
-> > > > +	 * create the IRQ mapping for non-existing one, so just return 0.
-> > > > +	 */
-> > > >  	if (domain->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
-> > > > -		return irq_domain_legacy_revmap(domain, hwirq);
-> > > > +		return 0;
-> > > 
-> > > But it does need to return the virq assigned to the hwirq. That is why
-> > > it has to call the revmap function.
-> > > 
-> > Yes, thanks
-> > 
-> > this judgment has been done in
-> >  /*Check if mapping already exists*/
-> > virq = irq_find_mapping(domain, hwirq);
-> > 
-> > if the virq equals none zero, the func irq_create_mapping will 
-> > return the virq value directly(already exists).
-> > 
-> > otherwise, that means virq equals zero, this has two meanings, one is
-> > haven't find the already exist mapping, the other one is in
-> > irq_find_mapping()
-> > 	case IRQ_DOMAIN_MAP_LEGACY:
-> > 		return irq_domain_legacy_revmap(domain, hwirq); 
-> > this may return zero.
-> > 
-> > So, when we check if it is a IRQ_DOMAIN_MAP_LEGACY, we just return zero
-> > is OK. because if it is none zero, it will be return after check if
-> > mapping already exists, and never come here. also we never try to assign
-> > the virq for the legacy map.
-> > 
-> > I don't know if you have understand my explanation.
-> 
-> Yes, your explanation makes sense and you are correct. I'm not going to
-> apply this for v3.8 (I've left it too late before the merge window), but
-> I'll look again after the merge window closes.
-> 
-Hi Grant 
 
-I don't know if you forget this patch ...
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I haven't see this patch in 3.9-rc7
+I'm announcing the release of the 3.4.41 kernel.
 
-just for a reminder
+All users of the 3.4 kernel series must upgrade.
 
-Thanks
-Mike
-> g.
-> 
+The updated 3.4.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                              |    2 -
+ arch/x86/include/asm/paravirt.h       |    5 ++-
+ arch/x86/include/asm/paravirt_types.h |    2 +
+ arch/x86/kernel/paravirt.c            |   25 +++++++--------
+ arch/x86/lguest/boot.c                |    1=20
+ arch/x86/mm/fault.c                   |    6 ++-
+ arch/x86/xen/mmu.c                    |    1=20
+ drivers/gpu/drm/i915/i915_gem_gtt.c   |    2 -
+ drivers/gpu/drm/udl/udl_connector.c   |    4 ++
+ drivers/mtd/mtdchar.c                 |   56 +++++++++++++++++++++++++++++=
+-----
+ drivers/net/ethernet/realtek/r8169.c  |   28 +++++++++++++++--
+ drivers/scsi/libsas/sas_expander.c    |   12 +++++++
+ drivers/target/target_core_alua.c     |    3 +
+ fs/cifs/connect.c                     |   16 +++++++--
+ fs/inode.c                            |    2 -
+ include/linux/kref.h                  |   21 ++++++++++++
+ kernel/sched/clock.c                  |   26 +++++++++++++++
+ kernel/sys.c                          |    3 +
+ kernel/trace/ftrace.c                 |    1=20
+ lib/kobject.c                         |    9 ++++-
+ sound/soc/codecs/wm8903.c             |    2 +
+ sound/usb/mixer_quirks.c              |    4 +-
+ sound/usb/quirks.c                    |    2 -
+ 23 files changed, 195 insertions(+), 38 deletions(-)
+
+Alban Bedel (1):
+      ASoC: wm8903: Fix the bypass to HP/LINEOUT when no DAC or ADC is runn=
+ing
+
+Boris Ostrovsky (1):
+      x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare me=
+tal
+
+Chris Wilson (1):
+      drm/i915: Use the correct size of the GTT for placing the per-process=
+ entries
+
+Dave Airlie (1):
+      udl: handle EDID failure properly.
+
+David Woodhouse (1):
+      mtd: Disable mtdchar mmap on MMU systems
+
+Eldad Zack (1):
+      ALSA: usb-audio: fix endianness bug in snd_nativeinstruments_*
+
+Greg Kroah-Hartman (1):
+      Linux 3.4.41
+
+Hayes Wang (1):
+      r8169: fix auto speed down issue
+
+Huacai Chen (1):
+      PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
+
+Linus Torvalds (2):
+      mtdchar: fix offset overflow detection
+      kobject: fix kset_find_obj() race with concurrent last kobject_put()
+
+Lukasz Dorau (1):
+      SCSI: libsas: fix handling vacant phy in sas_set_ex_phy()
+
+Namhyung Kim (1):
+      tracing: Fix double free when function profile init failed
+
+Nicholas Bellinger (1):
+      target: Fix incorrect fallthrough of ALUA Standby/Offline/Transition =
+CDBs
+
+Sachin Prabhu (1):
+      cifs: Allow passwords which begin with a delimitor
+
+Samu Kallio (1):
+      x86, mm, paravirt: Fix vmalloc_fault oops during lazy MMU updates
+
+Suleiman Souhlal (1):
+      vfs: Revert spurious fix to spinning prevention in prune_icache_sb
+
+Thomas Gleixner (1):
+      sched_clock: Prevent 64bit inatomicity on 32bit systems
+
+Thomas Hellstrom (1):
+      kref: Implement kref_get_unless_zero v3
 
 
+--d6Gm4EdcadzBjdND
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRbkYJAAoJEDjbvchgkmk+81gQAKlF6jmzzoYQ6TuuhwX48uid
+XQ6qy2cOCLN/90S5xs98uD9gu/oRD9ypBNrPSXrbC4R6HeU1R078UEbQbyknqiK1
+x056xW/JOGGyUcO32yFIj6y2qkkNZu9KgDbTj8w8oqZmPg7WSWm8myhlqoH9cMrY
+LXplhWzmoXAqtlwm4BbXMtJU2AGpUq7o9z0Z2VHPVqz6Fy76GY6gx/joJqJ88eTe
+M/Y/+UUusdTlAtwQBlE17O5DUs/4OlATMUVo/nXYRI0HOYG+EaX7PJwdSJcU8y6v
+EFGX0yuuObT++Pdsrczb+6ICedfUqmHMlkO4dy8j0ZL/rUXufDc6ajZ0Tod93aaz
+HohSPhuu+TC46S/Z1IByTZv8gy1Fup2PK0hNasszGQ165D3iXfNOZdcljHJCpbCb
+iX+43BCTGTAzmPv/h+npQAWaMS+BbMMYjldL7TjjOZ02y6/Zls5272ESxRpVHin7
+iru/wd5uzbRvYGQh+b+yRe0SwzrmULPYuVqA/XNJioIBTRA1JcWt/fU2sP/UM+kh
+COGQ3+wT9TYFrZXNOy/2v1yGPu3y/S4F2h+IsskC8ZvtDkSJqht4sDWy8w052UgY
+0l4Oqz5tqxNdwQcrOG/btM85t2TrpL7lTnO7mApoNSZ06+RIqRbzVTp6XB9lmyrN
+qCF4YHgWjkZWoRyJhkeU
+=RIfQ
+-----END PGP SIGNATURE-----
+
+--d6Gm4EdcadzBjdND--
