@@ -1,63 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966368Ab3DQNlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 09:41:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50577 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966186Ab3DQNlW (ORCPT
+	id S966345Ab3DQNm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 09:42:29 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:48955 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965940Ab3DQNm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 09:41:22 -0400
-Date: Wed, 17 Apr 2013 14:41:20 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+	Wed, 17 Apr 2013 09:42:28 -0400
+Message-ID: <1366206143.3305.4.camel@phoenix>
+Subject: [RFT][PATCH 1/2] regulator: tps80031: Fix LDO2 track mode for
+ TPS80031 or TPS80032-ES1.0
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
         Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] regulator: as3711: Use a static of_regulator_match
- table for of_regulator_match
-Message-ID: <20130417134120.GK13687@opensource.wolfsonmicro.com>
-References: <1366185682.26712.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bX/mw5riLlTkt+Gv"
-Content-Disposition: inline
-In-Reply-To: <1366185682.26712.1.camel@phoenix>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Wed, 17 Apr 2013 21:42:23 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently we have a special code in tps80031_ldo_set_voltage_sel() to handle
+LDO2 track mode for TPS80031 or TPS80032-ES1.0. The purpose is to address below
+issues:
 
---bX/mw5riLlTkt+Gv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Issue description:
+- LDO2 traking mode is enabled
+- LDO2 tracks SMPS2 voltage.
+- LDO2 automatically switch-off when LDO2_CFG_VOLTAGE is changed to some discrete values (non exhaustive list):
+            00011001, 00011010, 00011011, 00011100, .
+- LDO2 switch-on again when LDO2_CFG_VOLTAGE is changed to other values (non exhaustive list):
+        00011000, 00010111, .
 
-On Wed, Apr 17, 2013 at 04:01:22PM +0800, Axel Lin wrote:
-> The same table can be used for multiple instance of pdev, so we don't need to
-> allocate memory for of_regulator_match table per pdev.
+LDOs have reserved codes. For these codes, LDO is switch-off.
 
-Applied, thanks.
+In tracking, LDO2 ref comes from SMPS2.
+However LDO2 enable is still gated by LDO2 VSEL decoding.
+As a result, in tracking mode LDO2 will be disabled for following code (SMPS VSEL format):
+000000 & 100000 (MSB not decoded)
+011001 & 111001 (MSB not decoded)
+011010 & 111010 (MSB not decoded)
+011100 & 111100 (MSB not decoded)
+011101 & 111101 (MSB not decoded)
+011110 & 111110 (MSB not decoded)
 
---bX/mw5riLlTkt+Gv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+However, current code has below bugs:
+1. It uses regulator_list_voltage_linear, so list_voltage() still shows above
+   invalid selectors have supported voltage.
+2. Current code may return -EINVAL in tps80031_ldo_set_voltage_sel() for
+   supported voltage. This is because when we use regulator_list_voltage_linear
+   as list_voltage callback, regulator core will default use
+   regulator_map_voltage_linear(). regulator_map_voltage_linear() has an
+   assumption that the voltages are linear which is not true for this case.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+   For example,
+   when request voltage range is: min_uV=950000 uV && max_uV=1200000 uV
+   regulator_map_voltage_linear() returns the selector is 29 (0x1D),
+   set_voltage_sel() returns -EINVAL.
+   (The selector is in invalid range, 0x19 ~ 0x1f).
 
-iQIcBAEBAgAGBQJRbqZ2AAoJELSic+t+oim9Rb4QAJG4YNF9HNsexvO8e2vaXLHi
-JzHysumF/Ohibk1kHyzYtGUMxcYk1xMqa/C1oQPD3fzMjJoTOXbM81Pp0g2uX3R3
-7ov8XgDajuh8GRFFS2dEBfKJpqagXOrbjoqZjx+9fAAOpMkmbwBs7MZ0M+X1kpl0
-C/DSFiIs+JgkB7jGMoU8U0fxPYcjjHpORctasHIhESdLifhN3wM+B6t3DjkgQaHy
-A9281I6kxGbjEXEQ7JMV3+WHuAMrdWQxBdfmRb5uK9ssCPoU7q1ItvCD/IWi3f2W
-8BVUaWFWEEWBRpbNmkFAlfYziHqQ69P1sPSXQqW28tOx+/PZjSnfYasxahGssi3X
-KUNAVQzc7RLQskypmBnwjD9zk1kZKcDamEgObCLCDIXvjqrcWdzY4CDzAHigVkai
-ciMjFXZJjCMjyWg3mG6tTntFBmWyUL7ME0j0qcluZ4EtdYvZro4JIah0Gx/cFrJV
-sIjiRNfFqh11JMeP4K8jGs8sBbwmUo292Pii/48T62XjglmJ3aXgzysDvhdBANti
-5DSUcpAavpIp0mGlEQ7CC2f8+uz3r7aMBWnzVTw8SL44c6RMIzJhIWRLG0aXdQHS
-p/KIFUoxyhI/29ju7DDAWO3pQCbDBbDwQyAJ5jeVXPGkuiQn+DlY8SUMc/OWJYfu
-v8y6NiNTWZEHKwtG6nUU
-=NOad
------END PGP SIGNATURE-----
+   In above case, map_voltage() should find the lowest valid voltage within
+   specific range (selector = 0x20) and set_voltage_sel() should successfully
+   set the voltage to 987500 uV.
 
---bX/mw5riLlTkt+Gv--
+This patch fixes these issues by:
+1. Add checking valid setting for LDO2 track mode of TPS80031 or TPS80032-ES1.0
+   in list_voltage.  So it returns -EINVAL for invalid selectors.
+2. Implement tps80031_ldo_map_voltage, use regulator_map_voltage_iterate()
+   to find the lowest voltage within specific range for TPS80031 or
+   TPS80032-ES1.0. This is required when the voltage map is no longer linear.
+
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Hi Laxman,
+I don't have this hardware, can you test this patch serial?
+
+Thank you,
+Axel
+ drivers/regulator/tps80031-regulator.c |   38 ++++++++++++++++++++++++++++----
+ 1 file changed, 34 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/regulator/tps80031-regulator.c b/drivers/regulator/tps80031-regulator.c
+index 9019d0e..6430789 100644
+--- a/drivers/regulator/tps80031-regulator.c
++++ b/drivers/regulator/tps80031-regulator.c
+@@ -238,12 +238,11 @@ static int tps80031_dcdc_get_voltage_sel(struct regulator_dev *rdev)
+ 	return vsel & SMPS_VSEL_MASK;
+ }
+ 
+-static int tps80031_ldo_set_voltage_sel(struct regulator_dev *rdev,
+-		unsigned sel)
++static int tps80031_ldo_list_voltage(struct regulator_dev *rdev,
++				     unsigned int sel)
+ {
+ 	struct tps80031_regulator *ri = rdev_get_drvdata(rdev);
+ 	struct device *parent = to_tps80031_dev(rdev);
+-	int ret;
+ 
+ 	/* Check for valid setting for TPS80031 or TPS80032-ES1.0 */
+ 	if ((ri->rinfo->desc.id == TPS80031_REGULATOR_LDO2) &&
+@@ -260,6 +259,36 @@ static int tps80031_ldo_set_voltage_sel(struct regulator_dev *rdev,
+ 		}
+ 	}
+ 
++	return regulator_list_voltage_linear(rdev, sel);
++}
++
++static int tps80031_ldo_map_voltage(struct regulator_dev *rdev,
++				    int min_uV, int max_uV)
++{
++	struct tps80031_regulator *ri = rdev_get_drvdata(rdev);
++	struct device *parent = to_tps80031_dev(rdev);
++
++	/* Check for valid setting for TPS80031 or TPS80032-ES1.0 */
++	if ((ri->rinfo->desc.id == TPS80031_REGULATOR_LDO2) &&
++			(ri->device_flags & TRACK_MODE_ENABLE)) {
++		if (((tps80031_get_chip_info(parent) == TPS80031) ||
++			((tps80031_get_chip_info(parent) == TPS80032) &&
++			(tps80031_get_pmu_version(parent) == 0x0)))) {
++			return regulator_map_voltage_iterate(rdev, min_uV,
++							     max_uV);
++		}
++	}
++
++	return regulator_map_voltage_linear(rdev, min_uV, max_uV);
++}
++
++static int tps80031_ldo_set_voltage_sel(struct regulator_dev *rdev,
++		unsigned sel)
++{
++	struct tps80031_regulator *ri = rdev_get_drvdata(rdev);
++	struct device *parent = to_tps80031_dev(rdev);
++	int ret;
++
+ 	ret = tps80031_write(parent, ri->rinfo->volt_id,
+ 			ri->rinfo->volt_reg, sel);
+ 	if (ret < 0)
+@@ -390,7 +419,8 @@ static struct regulator_ops tps80031_dcdc_ops = {
+ };
+ 
+ static struct regulator_ops tps80031_ldo_ops = {
+-	.list_voltage		= regulator_list_voltage_linear,
++	.list_voltage		= tps80031_ldo_list_voltage,
++	.map_voltage		= tps80031_ldo_map_voltage,
+ 	.set_voltage_sel	= tps80031_ldo_set_voltage_sel,
+ 	.get_voltage_sel	= tps80031_ldo_get_voltage_sel,
+ 	.enable			= tps80031_reg_enable,
+-- 
+1.7.10.4
+
+
+
