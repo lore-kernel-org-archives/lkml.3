@@ -1,164 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758438Ab3DQKt1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 06:49:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64844 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757496Ab3DQKtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 06:49:25 -0400
-Message-ID: <516E7E2C.3000408@redhat.com>
-Date: Wed, 17 Apr 2013 18:49:16 +0800
-From: Lingzhu Xiang <lxiang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S936290Ab3DQKx5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 06:53:57 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:42771
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755866Ab3DQKx4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 06:53:56 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz9371I936eI542I1432I4015Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz17326ah8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ahbe9i1155h)
+From: Liu Shengzhou-B36685 <B36685@freescale.com>
+To: "projekt-wlan@fem.tu-ilmenau.de" <projekt-wlan@fem.tu-ilmenau.de>
+CC: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>
+Subject: RE: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+ Freescale P1020
+Thread-Topic: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+ Freescale P1020
+Thread-Index: AQHOO1OL4gjQYttdgUaXip6rvsFehZjaOxMw
+Date: Wed, 17 Apr 2013 10:53:52 +0000
+Message-ID: <3F453DDFF675A64A89321A1F3528102199A20F@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <20130417100809.GA8855@dynamic.fami-braun.de>
+In-Reply-To: <20130417100809.GA8855@dynamic.fami-braun.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.193.20.68]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: matt.fleming@intel.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V6 3/3] efi: Distinguish between "remaining space" and
- actually used space
-References: <1365561717-12343-1-git-send-email-matthew.garrett@nebula.com> <1366056587-24414-1-git-send-email-matthew.garrett@nebula.com> <1366056587-24414-4-git-send-email-matthew.garrett@nebula.com>
-In-Reply-To: <1366056587-24414-4-git-send-email-matthew.garrett@nebula.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2013 04:09 AM, Matthew Garrett wrote:
-> EFI implementations distinguish between space that is actively used by a
-> variable and space that merely hasn't been garbage collected yet. Space
-> that hasn't yet been garbage collected isn't available for use and so isn't
-> counted in the remaining_space field returned by QueryVariableInfo().
->
-> Combined with commit 68d9298 this can cause problems. Some implementations
-> don't garbage collect until the remaining space is smaller than the maximum
-> variable size, and as a result check_var_size() will always fail once more
-> than 50% of the variable store has been used even if most of that space is
-> marked as available for garbage collection. The user is unable to create
-> new variables, and deleting variables doesn't increase the remaining space.
->
-> The problem that 68d9298 was attempting to avoid was one where certain
-> platforms fail if the actively used space is greater than 50% of the
-> available storage space. We should be able to calculate that by simply
-> summing the size of each available variable and subtracting that from
-> the total storage space. With luck this will fix the problem described in
-> https://bugzilla.kernel.org/show_bug.cgi?id=55471 without permitting
-> damage to occur to the machines 68d9298 was attempting to fix.
->
-> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> ---
->   arch/x86/platform/efi/efi.c | 109 +++++++++++++++++++++++++++++++++++++++++---
->   1 file changed, 102 insertions(+), 7 deletions(-)
->
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-> index e844d82..a3f03cd 100644
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -41,6 +41,7 @@
->   #include <linux/io.h>
->   #include <linux/reboot.h>
->   #include <linux/bcd.h>
-> +#include <linux/ucs2_string.h>
->
->   #include <asm/setup.h>
->   #include <asm/efi.h>
-> @@ -51,6 +52,13 @@
->
->   #define EFI_DEBUG	1
->
-> +/*
-> + * There's some additional metadata associated with each
-> + * variable. Intel's reference implementation is 60 bytes - bump that
-> + * to account for potential alignment constraints
-> + */
-> +#define VAR_METADATA_SIZE 64
-> +
->   struct efi __read_mostly efi = {
->   	.mps        = EFI_INVALID_TABLE_ADDR,
->   	.acpi       = EFI_INVALID_TABLE_ADDR,
-> @@ -72,6 +80,9 @@ static efi_system_table_t efi_systab __initdata;
->   static u64 efi_var_store_size;
->   static u64 efi_var_remaining_size;
->   static u64 efi_var_max_var_size;
-> +static u64 boot_used_size;
-> +static u64 boot_var_size;
-> +static u64 active_size;
->
->   unsigned long x86_efi_facility;
->
-> @@ -166,8 +177,53 @@ static efi_status_t virt_efi_get_next_variable(unsigned long *name_size,
->   					       efi_char16_t *name,
->   					       efi_guid_t *vendor)
->   {
-> -	return efi_call_virt3(get_next_variable,
-> -			      name_size, name, vendor);
-> +	efi_status_t status;
-> +	static bool finished = false;
-> +	static u64 var_size;
-> +
-> +	status = efi_call_virt3(get_next_variable,
-> +				name_size, name, vendor);
-> +
-> +	if (status == EFI_NOT_FOUND) {
-> +		finished = true;
-> +		if (var_size < boot_used_size) {
-> +			boot_var_size = boot_used_size - var_size;
-> +			active_size += boot_var_size;
+Hi Braun,
 
-Doesn't work sometimes. Here, if garbage is not collected, then
-boot_used_size will contain the size of garbage, and get added into
-active_size. This defeats the purpose of active_size.
+It seems the duplicated tdi_reset caused the PHY_CLK_VALID bit unstable,
+introduced by patch "EHCI: centralize controller initialization".
+I submitted a patch to fix it. 
+Please review the patch http://patchwork.ozlabs.org/patch/237201/
 
-I added a big printk before "return EFI_OUT_OF_RESOURCES", here are the 
-results (Dell XPS 8500, Secure Boot capable):
+Regards,
+Shengzhou
 
-Failed to create variables in efivarfs, printk:
-size=22
-storage_size=131072
-remaining_size=5230
-max_size=5204
-efi_var_store_size=131072
-efi_var_remaining_size=5378
-efi_var_max_var_size=5352
-boot_used_size=125694
-boot_var_size=125694
-active_size=125694
 
-After a few reboots,
+> -----Original Message-----
+> From: Michael Braun [mailto:michael-dev@fami-braun.de]
+> Sent: Wednesday, April 17, 2013 6:08 PM
+> To: Liu Shengzhou-B36685
+> Cc: Alan Stern; projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman;
+> linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+> Freescale P1020
+> 
+> Hi,
+> 
+> I'm running OpenWRT Kernel 3.8.3 (which already has
+> f66dea709cd9309b2ee9f715697818001fb518de and
+> 5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN (QorlQ,
+> PPC) device.
+> Before updating the kernel from 3.3.0, USB host support was working fine.
+> Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and the
+> lsusb output is empty, so USB host support is not working. When I apply
+> the following patch, USB host support starts working again, so I guess
+> 3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
+> Do you have an idea how to fix it more appropriately?
+> 
+> Thanks,
+>   M. Braun
+> 
+> --- a/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:52.924403077
+> +0200
+> +++ b/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:57.572410838
+> +0200
+> @@ -273,7 +273,6 @@ static int ehci_fsl_setup_phy(struct usb
+>                  if (!spin_event_timeout(in_be32(non_ehci +
+> FSL_SOC_USB_CTRL) &
+>                                  PHY_CLK_VALID, FSL_USB_PHY_CLK_TIMEOUT,
+> 0)) {
+>                          printk(KERN_WARNING "fsl-ehci: USB PHY clock
+> invalid\n");
+> -                       return -EINVAL;
+>                  }
+>          }
+> 
 
-EFI shell, QueryVariableInfo.efi:
-MaximumVariableStorageSize=131072
-RemainingVariableStorageSize=102113
-MaximumVariableSize=65509
 
-After several more pstore crash dumps, printk:
-size=22
-storage_size=131072
-remaining_size=53064
-max_size=53038
-efi_var_store_size=131072
-efi_var_remaining_size=53212
-efi_var_max_var_size=53186
-boot_used_size=77860
-boot_var_size=77860
-active_size=77860
-
-After reboot, EFI shell, QueryVariableInfo.efi:
-MaximumVariableStorageSize=131072
-RemainingVariableStorageSize=50456
-MaximumVariableSize=50430
--> reset ...
-RemainingVariableStorageSize=47922
-MaximumVariableSize=47896
--> reset ...
-RemainingVariableStorageSize=45462
-MaximumVariableSize=45436
--> reset ...
-RemainingVariableStorageSize=43002
-MaximumVariableSize=42976
--> reset ...
-RemainingVariableStorageSize=40542
-MaximumVariableSize=40516
-
-Each reboot will consume some nvram? This is consistent with
-http://article.gmane.org/gmane.linux.kernel.stable/47156
