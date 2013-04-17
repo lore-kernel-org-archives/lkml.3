@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab3DQE50 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 00:57:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1195 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753479Ab3DQE5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 00:57:25 -0400
-Date: Wed, 17 Apr 2013 06:57:03 +0200
-From: Jan Kratochvil <jan.kratochvil@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Ingo Molnar <mingo@elte.hu>,
-        Maneesh Soni <maneesh@linux.vnet.ibm.com>,
-        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] ptrace/x86: simplify ptrace_write_dr7()
-Message-ID: <20130417045703.GA29524@host2.jankratochvil.net>
-References: <20130414191205.GA28791@redhat.com>
- <20130415233652.GE17561@somewhere.redhat.com>
- <20130416132545.GA9189@redhat.com>
+	id S1757537Ab3DQFTl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 01:19:41 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45330 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab3DQFTk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 01:19:40 -0400
+Message-ID: <516E30DC.5070601@linux.vnet.ibm.com>
+Date: Wed, 17 Apr 2013 10:49:24 +0530
+From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130416132545.GA9189@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Ellerman <michael@ellerman.id.au>
+CC: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, jkenisto@linux.vnet.ibm.com,
+        mahesh@linux.vnet.ibm.com, anton@samba.org
+Subject: Re: [PATCH 4/8] Read/Write oops nvram partition via pstore
+References: <20130410071835.20150.56489.stgit@aruna-ThinkPad-T420> <20130410072303.20150.61382.stgit@aruna-ThinkPad-T420> <20130415075555.GE30156@concordia> <516CEDB4.9090005@linux.vnet.ibm.com>
+In-Reply-To: <516CEDB4.9090005@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041705-0260-0000-0000-000002D22642
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013 15:25:45 +0200, Oleg Nesterov wrote:
-> On 04/16, Frederic Weisbecker wrote:
-> > On Sun, Apr 14, 2013 at 09:12:05PM +0200, Oleg Nesterov wrote:
-> > Looking at the bug report, it seems they only reproduced with a homemade
-> > test. No real app has reported that issue?
-> 
-> iirc (Jan can correct me) gdb hit this problem, but it was already
-> changed to change DR0 first.
+On Tuesday 16 April 2013 11:50 AM, Aruna Balakrishnaiah wrote:
+>
+> Currently with this patchset, pstore is not supporting compression of 
+> oops-messages
+> since it involves some changes in the pstore framework.
+>
+> big_oops_buf will hold the large part of oops data which will be compressed 
+> and put
+> to oops_buf.
+>
+> big_oops_buf: (1.45 of oops_partition_size)
 
-Both old GDB and recent GDB handle it correctly (DR0 first, then DR7).
+Sorry, big_oops_buf is (2.22 of oops_data_sz)
 
-I do not remember how but I have hit this issue, probably during development
-of the GDB watchpoint code, there were many variants of it in the past.
+where oops_data_sz is oops_partition_size - sizeof(oops_log_info).
 
-So it was not found just by an artificial testing.
+where oops_log_info is oops header.
 
-My concern was not so much about GDB but rather about possible other existing
-debugging/tracing software using DR.
+> _________________________
+> |  header |   oops-text |
+> |_________|_____________|
+>
+> <header> is added by the pstore.
+>
+> So in case compression fails:
+>
+> we would need to log the header + last few bytes of big_oops_buf to oops_buf.
+> oops_buf: (this is of oops_partition_size)
+>
 
+We would need to log the header + last oops_data_sz bytes of big_oops_buf to 
+oops_buf.
+So that we can have the header while throwing away the data that immediately
+follows it.
 
-Jan
+> we need last few bytes of big_oops_buf as we need to log the recent messages of
+> printk buffer. For which we need to know the header size and it involves some
+> changes in the pstore framework.
+>
+
+Just communicating the header size from pstore would do the job for us.
+
+> I have the compression patches ready, will be posting it soon as a separate set.
+>
+>> cheers
+>>
+>
+
