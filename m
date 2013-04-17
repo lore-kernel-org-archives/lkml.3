@@ -1,89 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936310Ab3DQRil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:38:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7906 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752272Ab3DQRik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:38:40 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: [PATCH 3/4] HID: debug: empty output queue on read
-Date: Wed, 17 Apr 2013 19:38:15 +0200
-Message-Id: <1366220296-14346-4-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S936353Ab3DQRix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:38:53 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:48957 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936327Ab3DQRiu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 13:38:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130416181432.a28e0465.skraw@ithnet.com>
+References: <20130416162047.2f9b83fe.skraw@ithnet.com> <CAFLxGvykqMUHrmdZnzPXW7i3-ubcF6jv2fLYF3sYPkCtJDJZuA@mail.gmail.com>
+ <20130416145953.GA8184@zod.gha.chartermi.net> <20130416181432.a28e0465.skraw@ithnet.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 17 Apr 2013 11:38:30 -0600
+Message-ID: <CAErSpo77+A0NqZpifCCJZb7T_=o0GcBo9A6Gw5OvV2kDOppt8A@mail.gmail.com>
+Subject: Re: No serial since kernel 3.8
+To: Stephan von Krawczynski <skraw@ithnet.com>
+Cc: Josh Boyer <jwboyer@gmail.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an event occurs while the hid debugfs is forwarding events, list->tail
-is updated during copy_to_user().
+[+cc Rafael & linux-acpi]
 
-Remove the gotos and use a regular while-loop to empty the queue.
+On Tue, Apr 16, 2013 at 10:14 AM, Stephan von Krawczynski
+<skraw@ithnet.com> wrote:
+> On Tue, 16 Apr 2013 10:59:53 -0400
+> Josh Boyer <jwboyer@gmail.com> wrote:
+>
+>> On Tue, Apr 16, 2013 at 04:55:25PM +0200, richard -rw- weinberger wrote:
+>> >On Tue, Apr 16, 2013 at 4:20 PM, Stephan von Krawczynski
+>> ><skraw@ithnet.com> wrote:
+>> >> Hello,
+>> >>
+>> >> can some kind soul please explain how I can get my serial port back under
+>> >> kernel 3.8.X. Earlier kernels showed:
+>> >>
+>> >> Jan 10 13:57:18 mybox kernel: [    0.712829] serial8250: ttyS0 at I/O 0x3f8
+>> >> (irq = 4) is a 16550A
+>> >>
+>> >> But 3.8.4:
+>> >>
+>> >> Mar 26 10:39:14 admin kernel: [    0.603647] serial 00:0a: disabled
+>> >>
+>> >> Only kernel is replaced, no change in distro
+>> >> Is there some kernel boot parameter needed now?
+>> >> I tried 3.4.X and it works, even 3.7.X works...
+>> >
+>> >So, 3.8.3 worked and 3.8.4 introduced a regression?
+>> >If so please confirm.
+>> >
+>> >CC'ing gregkh, just in case...
+>>
+>> We had a report of this in Fedora that was fixed with 3.8.7.  An upstream
+>> change had been brought back to the 3.8.x series, and it was subsequently
+>> reverted.  3.8.7 picked up the revert.
+>>
+>> josh
+>
+> 3.8.7 does not work either. I just checked it. I tried shared and not shared IRQ:
+>
+> Apr 16 17:47:05 mybox kernel: [    0.604826] Serial: 8250/16550 driver, 8 ports, IRQ sharing disabled
+>
+> and another test:
+>
+> Apr 16 18:07:08 mybox kernel: [    0.601203] Serial: 8250/16550 driver, 8 ports, IRQ sharing enabled
+>
+> I must say that 3.8.7 does not even tell the "serial 00:0a: disabled" any more.
+> This is no special board, it is a pretty mainstream asus xeon board with onboard serial.
+> Loading 3.4.24 (just an example) makes the port work immediately.
+> Anything else I can test?
 
-Second benefit, it checks that we are not writing more than count bytes
-to the user-space output buffer.
+3.7.6 works, and 3.8.3, 3.8.4, 3.8.7 all fail.  So it looks like a
+regression between 3.7.6 and 3.8.3.
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
- drivers/hid/hid-debug.c | 27 +++++++++++----------------
- 1 file changed, 11 insertions(+), 16 deletions(-)
+The "serial 00:0a: disabled" message is from PNP, so I added Rafael
+and linux-acpi.  Complete dmesg logs from 3.7.6 and 3.8.4 would be a
+place to start.  Also maybe an acpidump, since the 00:0a PNP device
+probably came from PNPACPI.  You could attach all these to a
+https://bugzilla.kernel.org report if you want a place to stash them.
 
-diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
-index 094cbcf..1dc8104 100644
---- a/drivers/hid/hid-debug.c
-+++ b/drivers/hid/hid-debug.c
-@@ -1000,6 +1000,7 @@ static ssize_t hid_debug_events_read(struct file *file, char __user *buffer,
- 		size_t count, loff_t *ppos)
- {
- 	struct hid_debug_list *list = file->private_data;
-+	char *buf_head;
- 	int ret = 0, len;
- 	DECLARE_WAITQUEUE(wait, current);
- 
-@@ -1039,28 +1040,22 @@ static ssize_t hid_debug_events_read(struct file *file, char __user *buffer,
- 			goto out;
- 
- 		/* pass the ringbuffer contents to userspace */
--copy_rest:
--		if (list->tail == list->head)
--			goto out;
--		if (list->tail > list->head) {
--			len = list->tail - list->head;
-+		while (list->tail != list->head && ret < count) {
-+			buf_head = &list->hid_debug_buf[list->head];
- 
--			if (copy_to_user(buffer + ret, &list->hid_debug_buf[list->head], len)) {
--				ret = -EFAULT;
--				goto out;
--			}
--			ret += len;
--			list->head += len;
--		} else {
--			len = HID_DEBUG_BUFSIZE - list->head;
-+			if (list->tail > list->head)
-+				len = list->tail - list->head;
-+			else
-+				len = HID_DEBUG_BUFSIZE - list->head;
-+
-+			len = min(count - ret, len);
- 
--			if (copy_to_user(buffer, &list->hid_debug_buf[list->head], len)) {
-+			if (copy_to_user(buffer + ret, buf_head, len)) {
- 				ret = -EFAULT;
- 				goto out;
- 			}
--			list->head = 0;
- 			ret += len;
--			goto copy_rest;
-+			list->head = (list->head + len) % HID_DEBUG_BUFSIZE;
- 		}
- 
- 	}
--- 
-1.8.1.4
+Josh, do you have a pointer (URL) to the Fedora issue so we can rule
+that in or out?
 
+Bjorn
