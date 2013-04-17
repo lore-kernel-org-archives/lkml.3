@@ -1,111 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966686Ab3DQPK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 11:10:29 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36662 "EHLO mga11.intel.com"
+	id S966719Ab3DQPKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 11:10:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41943 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966604Ab3DQPK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 11:10:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,492,1363158000"; 
-   d="scan'208";a="320518705"
-Message-ID: <1366211423.2091.53.camel@rzhang1-mobl4>
-Subject: Re: [PATCH RESEND 05/11] thermal: rename get_tz_trend to
- thermal_zone_trend_get
-From: Zhang Rui <rui.zhang@intel.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 17 Apr 2013 23:10:23 +0800
-In-Reply-To: <1365437258-31412-6-git-send-email-eduardo.valentin@ti.com>
-References: <1365437258-31412-1-git-send-email-eduardo.valentin@ti.com>
-	 <1365437258-31412-6-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S966551Ab3DQPKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 11:10:48 -0400
+Date: Wed, 17 Apr 2013 17:10:42 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Minchan Kim <minchan@kernel.org>
+Subject: Re: [PATCH] thp: fix huge zero page logic for page with pfn == 0
+Message-ID: <20130417151041.GA25659@redhat.com>
+References: <1366211253-14325-1-git-send-email-kirill.shutemov@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366211253-14325-1-git-send-email-kirill.shutemov@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-08 at 12:07 -0400, Eduardo Valentin wrote:
-> To follow the prefix names used by the thermal exported functions,
-> this patch renames get_tz_trend to thermal_zone_trend_get.
+On Wed, Apr 17, 2013 at 06:07:33PM +0300, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 > 
-> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-
-NACK.
-
-get_tz_trend will not be exported as API any more.
-
-thanks,
-rui
+> Current implementation of huge zero page uses pfn value 0 to indicate
+> that the page hasn't allocated yet. It assumes that buddy page allocator
+> can't return page with pfn == 0.
+> 
+> Let's rework the code to store 'struct page *' of huge zero page, not
+> its pfn. This way we can avoid the weak assumption.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Reported-by: Minchan Kim <minchan@kernel.org>
+> Acked-by: Minchan Kim <minchan@kernel.org>
 > ---
->  Documentation/thermal/sysfs-api.txt |    2 +-
->  drivers/thermal/step_wise.c         |    2 +-
->  drivers/thermal/thermal_sys.c       |    4 ++--
->  include/linux/thermal.h             |    2 +-
->  4 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
-> index 059b3bf..a9abb84 100644
-> --- a/Documentation/thermal/sysfs-api.txt
-> +++ b/Documentation/thermal/sysfs-api.txt
-> @@ -351,7 +351,7 @@ crosses any of the configured thresholds.
->  
->  5. Export Symbol APIs:
->  
-> -5.1: get_tz_trend:
-> +5.1: thermal_zone_trend_get:
->  This function returns the trend of a thermal zone, i.e the rate of change
->  of temperature of the thermal zone. Ideally, the thermal sensor drivers
->  are supposed to implement the callback. If they don't, the thermal
-> diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
-> index 407cde3..a640e2b 100644
-> --- a/drivers/thermal/step_wise.c
-> +++ b/drivers/thermal/step_wise.c
-> @@ -116,7 +116,7 @@ static void thermal_zone_trip_update(struct thermal_zone_device *tz, int trip)
->  		tz->ops->get_trip_type(tz, trip, &trip_type);
->  	}
->  
-> -	trend = get_tz_trend(tz, trip);
-> +	trend = thermal_zone_trend_get(tz, trip);
->  
->  	if (tz->temperature >= trip_temp)
->  		throttle = true;
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> index 44e89c0..242c82a 100644
-> --- a/drivers/thermal/thermal_sys.c
-> +++ b/drivers/thermal/thermal_sys.c
-> @@ -153,7 +153,7 @@ static void release_idr(struct idr *idr, struct mutex *lock, int id)
->  		mutex_unlock(lock);
->  }
->  
-> -int get_tz_trend(struct thermal_zone_device *tz, int trip)
-> +int thermal_zone_trend_get(struct thermal_zone_device *tz, int trip)
->  {
->  	enum thermal_trend trend;
->  
-> @@ -168,7 +168,7 @@ int get_tz_trend(struct thermal_zone_device *tz, int trip)
->  
->  	return trend;
->  }
-> -EXPORT_SYMBOL(get_tz_trend);
-> +EXPORT_SYMBOL(thermal_zone_trend_get);
->  
->  struct thermal_instance *thermal_instance_get(struct thermal_zone_device *tz,
->  			struct thermal_cooling_device *cdev, int trip)
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index e2a49e1..542a39c 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -238,7 +238,7 @@ struct thermal_cooling_device *thermal_cooling_device_register(char *, void *,
->  		const struct thermal_cooling_device_ops *);
->  void thermal_cooling_device_unregister(struct thermal_cooling_device *);
->  
-> -int get_tz_trend(struct thermal_zone_device *, int);
-> +int thermal_zone_trend_get(struct thermal_zone_device *, int);
->  struct thermal_instance *thermal_instance_get(struct thermal_zone_device *,
->  		struct thermal_cooling_device *, int);
->  void thermal_cdev_update(struct thermal_cooling_device *);
+>  mm/huge_memory.c |   43 +++++++++++++++++++++----------------------
+>  1 file changed, 21 insertions(+), 22 deletions(-)
 
-
+Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
