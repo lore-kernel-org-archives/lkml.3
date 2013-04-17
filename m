@@ -1,135 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966168Ab3DQIqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 04:46:53 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:43216 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965881Ab3DQIqt (ORCPT
+	id S966179Ab3DQItM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 04:49:12 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41919 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965971Ab3DQItI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 04:46:49 -0400
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org, jack@suse.cz,
-        axboe@kernel.dk
-Subject: Re: [PATCH 1/2] blkdev: add flush generation counter
-In-Reply-To: <20130415141439.GH2299@quack.suse.cz>
-References: <87wqs4kiyi.fsf@openvz.org> <1365968068-11766-1-git-send-email-dmonakhov@openvz.org> <20130415141439.GH2299@quack.suse.cz>
-User-Agent: Notmuch/0.6.1 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Wed, 17 Apr 2013 12:46:43 +0400
-Message-ID: <87sj2psfws.fsf@openvz.org>
+	Wed, 17 Apr 2013 04:49:08 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <516E61EE.5030607@jp.fujitsu.com>
+Date: Wed, 17 Apr 2013 17:48:46 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: joro@8bytes.org
+CC: dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
+        tindoh@gmail.com
+Subject: Re: [PATCH] intel-iommu: Synchronize gcmd value with global command
+ register
+References: <20130326144629.GB2727@8bytes.org> <51527D74.9080209@jp.fujitsu.com> <20130327103122.GK30540@8bytes.org> <51591EEE.60401@jp.fujitsu.com> <20130402140546.GA15687@8bytes.org> <515BD638.8070307@jp.fujitsu.com> <1364977479.28127.15.camel@i7.infradead.org> <20130405110616.GB6858@8bytes.org> <5164EEE6.8000707@jp.fujitsu.com> <516BC19D.4090303@jp.fujitsu.com> <20130415101829.GP6858@8bytes.org>
+In-Reply-To: <20130415101829.GP6858@8bytes.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Apr 2013 16:14:39 +0200, Jan Kara <jack@suse.cz> wrote:
-> On Sun 14-04-13 23:34:27, Dmitry Monakhov wrote:
-> > Callers may use this counter to optimize flushes
-> > 
-> > Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
-> > ---
-> >  block/blk-core.c       |    1 +
-> >  block/blk-flush.c      |    3 ++-
-> >  include/linux/blkdev.h |    1 +
-> >  3 files changed, 4 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/block/blk-core.c b/block/blk-core.c
-> > index 074b758..afb5a4b 100644
-> > --- a/block/blk-core.c
-> > +++ b/block/blk-core.c
-> > @@ -537,6 +537,7 @@ void blk_cleanup_queue(struct request_queue *q)
-> >  	spin_unlock_irq(lock);
-> >  	mutex_unlock(&q->sysfs_lock);
-> >  
-> > +	atomic_set(&q->flush_tag, 0);
-> >  	/*
-> >  	 * Drain all requests queued before DYING marking. Set DEAD flag to
-> >  	 * prevent that q->request_fn() gets invoked after draining finished.
-> > diff --git a/block/blk-flush.c b/block/blk-flush.c
-> > index cc2b827..b1adc75 100644
-> > --- a/block/blk-flush.c
-> > +++ b/block/blk-flush.c
-> > @@ -203,7 +203,7 @@ static void flush_end_io(struct request *flush_rq, int error)
-> >  	/* account completion of the flush request */
-> >  	q->flush_running_idx ^= 1;
-> >  	elv_completed_request(q, flush_rq);
-> > -
-> > +	atomic_inc(&q->flush_tag);
-> >  	/* and push the waiting requests to the next stage */
-> >  	list_for_each_entry_safe(rq, n, running, flush.list) {
-> >  		unsigned int seq = blk_flush_cur_seq(rq);
-> > @@ -268,6 +268,7 @@ static bool blk_kick_flush(struct request_queue *q)
-> >  	q->flush_rq.end_io = flush_end_io;
-> >  
-> >  	q->flush_pending_idx ^= 1;
-> > +	atomic_inc(&q->flush_tag);
-> >  	list_add_tail(&q->flush_rq.queuelist, &q->queue_head);
-> >  	return true;
-> >  }
->   But this doesn't quite work, does it? When fs reads flush_tag counter,
-> CACHE_FLUSH command can be already issued so you are not sure how the IO
-> you are issuing relates to the cache flush in flight. If you want to make
-> this work, you really need two counters - one for flush submissions and one
-> for flush completions. Fs would need to read the submission counter before
-> issuing the IO and the completion counter when it wants to make sure date is
-> on the stable storage. But it all gets somewhat complex and I'm not sure
-> it's worth it given the block layer tries to merge flush requests by
-> itself. But you can try for correct implementation and measure the
-> performance impact of course...
+(2013/04/15 19:18), Joerg Roedel wrote:
+> On Mon, Apr 15, 2013 at 06:00:13PM +0900, Takao Indoh wrote:
+>> On DMAR initialization during kdump boot, do you guys agree to change
+>> order like this?
+>>
+>> Current order:
+>> (1) Disable translation
+>> (2) PCI initialization
+>> (3) Make pgtable and enable translation.
+>>
+>> Order I'm proposing:
+>> (1) PCI initialization
+>> (2) Disable translation
+>> (3) Make pgtable and enable translation.
+> 
+> I think this should work. In fact, translation only needs to be disabled
+> while the IOMMU hardware is reprogrammed to the new data structures the
+> kdump kernel set up.
 
-Probably I've missed good comments, but I've tried to make things correct
-Here are an flush implementation assumptions from block/blk-flush.c:
-
-Currently, the following conditions are used to determine when to e flush.
-
-C1. At any given time, only one flush shall be in progress.  This is
-    double buffering sufficient.
-C2. Flush is deferred if any request is executing DATA of its ence.
-    This avoids issuing separate POSTFLUSHes for requests which ed
-    PREFLUSH.
-C3. The second condition is ignored if there is a request which has
-    waited longer than FLUSH_PENDING_TIMEOUT.  This is to avoid
-    starvation in the unlikely case where there are continuous am of
-    FUA (without FLUSH) requests.
-
-So if we will increment flush_tag counter in two places:
-blk_kick_flush: the place where flush request is issued
-flush_end_io : the place where flush is completed
-And by using rule (C1) we can guarantee that
-
-if (flush_tag & 0x1 == 1) then flush_tag  is in progress
-if (flush_tag & 0x1 == 0) then (flush_tag & ~(0x1)) completed
-In other words we can define it as:
-
-FLUSH_TAG_IDX    = (flush_tag +1) & ~0x1
-FLUSH_TAG_STATE  = flush_tag & 0x1 ? IN_PROGRESS : COMPLETED
-
-After that we can define rules for flush optimization:
-We can be sure that our data was flushed only if:
-1) data's bio was completed before flush request was QUEUED
-   and COMPLETED
-So in terms of formulas we can write it like follows:
-is_data_flushed = (blkdev->flush_tag & ~(0x1)) >
-                  ((data->flush_tag + 0x1) & (~0x1))
+Ok, I agree.
 
 > 
-> 								Honza
-> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> > index 78feda9..e079fbd 100644
-> > --- a/include/linux/blkdev.h
-> > +++ b/include/linux/blkdev.h
-> > @@ -416,6 +416,7 @@ struct request_queue {
-> >  	unsigned int		flush_queue_delayed:1;
-> >  	unsigned int		flush_pending_idx:1;
-> >  	unsigned int		flush_running_idx:1;
-> > +	atomic_t		flush_tag;
-> >  	unsigned long		flush_pending_since;
-> >  	struct list_head	flush_queue[2];
-> >  	struct list_head	flush_data_in_flight;
-> > -- 
-> > 1.7.1
-> > 
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+>> As Joerg said, if we need to consider the case that kdump kernel is
+>> compiled without dma-remapping(CONFIG_INTEL_IOMMU is off?), I can update
+>> my patch to handle such a case properly by adding ifdef
+>> CONFIG_INTEL_IOMMU.
+> 
+> Thinking about it, this case is a bit more special. If the kdump kernel
+> has no IOMMU driver at all there is also no code to disable it. So
+> unless we want to force the kdump kernel to have the driver when the
+> first kernel had it, I think we also want some quirk (depending on
+> !CONFIG_INTEL_IOMMU) that disables translation at boot.
+> 
+> I know, its complicated :)
+
+yeah complicated. hmm..., this isn't limited only to iommu case, there
+are many problems which are caused by difference of config between first
+kernel and second one. So, to make code simple, I think we don't need to
+care such a exceptional case. I mean, I think it is a matter of user
+and user has to compile second kernel with dma-remapping if user want to
+use it in first kernel.
+
+Thanks,
+Takao Indoh
+
