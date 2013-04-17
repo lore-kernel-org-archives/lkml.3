@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966628Ab3DQTXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 15:23:52 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:29538 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936356Ab3DQTXp (ORCPT
+	id S966719Ab3DQTYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 15:24:18 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:33372 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757572Ab3DQTXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 15:23:45 -0400
+	Wed, 17 Apr 2013 15:23:40 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
         x86@kernel.org, linux-arch@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
         Davidlohr Bueso <davidlohr.bueso@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>,
         Rik van Riel <riel@redhat.com>
-Subject: [PATCH v4 optional 4/4] mutex: back out architecture specific check for negative mutex count
-Date: Wed, 17 Apr 2013 15:23:14 -0400
-Message-Id: <1366226594-5506-5-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v4 1/4] mutex: Move mutex spinning code from sched/core.c back to mutex.c
+Date: Wed, 17 Apr 2013 15:23:11 -0400
+Message-Id: <1366226594-5506-2-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1366226594-5506-1-git-send-email-Waiman.Long@hp.com>
 References: <1366226594-5506-1-git-send-email-Waiman.Long@hp.com>
@@ -30,60 +30,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If it is confirmed that all the supported architectures can allow a
-negative mutex count without incorrect behavior, we can then back
-out the architecture specific change and allow the mutex count to
-go to any negative number. That should further reduce contention for
-non-x86 architecture.
+As mentioned by Ingo, the SCHED_FEAT_OWNER_SPIN scheduler feature
+bit was really just an early hack to make with/without mutex-spinning
+testable. So it is no longer necessary.
 
-If this is not the case, this patch should be dropped.
+This patch removes the SCHED_FEAT_OWNER_SPIN feature bit and move the
+mutex spinning code from kernel/sched/core.c back to kernel/mutex.c
+which is where they should belong.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- arch/x86/include/asm/mutex.h |   10 ----------
- kernel/mutex.c               |    9 ++-------
- 2 files changed, 2 insertions(+), 17 deletions(-)
+ include/linux/sched.h   |    1 -
+ kernel/mutex.c          |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/core.c     |   45 ---------------------------------------------
+ kernel/sched/features.h |    7 -------
+ 4 files changed, 46 insertions(+), 53 deletions(-)
 
-diff --git a/arch/x86/include/asm/mutex.h b/arch/x86/include/asm/mutex.h
-index bc2a0b0..7d3a482 100644
---- a/arch/x86/include/asm/mutex.h
-+++ b/arch/x86/include/asm/mutex.h
-@@ -3,13 +3,3 @@
- #else
- # include <asm/mutex_64.h>
- #endif
--
--#ifndef	__ASM_MUTEX_H
--#define	__ASM_MUTEX_H
--/*
-- * For the x86 architecture, it allows any negative number (besides -1) in
-- * the mutex count to indicate that some other threads are waiting on the
-- * mutex.
-- */
--#define __ARCH_ALLOW_ANY_NEGATIVE_MUTEX_COUNT	1
--#endif
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e692a02..2d02c76 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -321,7 +321,6 @@ extern signed long schedule_timeout_killable(signed long timeout);
+ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
+ extern void schedule_preempt_disabled(void);
+-extern int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner);
+ 
+ struct nsproxy;
+ struct user_namespace;
 diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 1dbd421..ad53a66 100644
+index 52f2301..262d717 100644
 --- a/kernel/mutex.c
 +++ b/kernel/mutex.c
-@@ -38,15 +38,10 @@
+@@ -95,6 +95,52 @@ void __sched mutex_lock(struct mutex *lock)
+ EXPORT_SYMBOL(mutex_lock);
  #endif
  
- /*
-- * A mutex count of -1 indicates that waiters are sleeping waiting for the
-- * mutex. Some architectures can allow any negative number, not just -1, for
-- * this purpose.
-+ * A negative mutex count indicates that waiters are sleeping waiting for the
-+ * mutex.
-  */
--#ifdef __ARCH_ALLOW_ANY_NEGATIVE_MUTEX_COUNT
- #define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
--#else
--#define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) != -1)
--#endif
++#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
++/*
++ * Mutex spinning code migrated from kernel/sched/core.c
++ */
++
++static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
++{
++	if (lock->owner != owner)
++		return false;
++
++	/*
++	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
++	 * lock->owner still matches owner, if that fails, owner might
++	 * point to free()d memory, if it still matches, the rcu_read_lock()
++	 * ensures the memory stays valid.
++	 */
++	barrier();
++
++	return owner->on_cpu;
++}
++
++/*
++ * Look out! "owner" is an entirely speculative pointer
++ * access and not reliable.
++ */
++static noinline
++int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
++{
++	rcu_read_lock();
++	while (owner_running(lock, owner)) {
++		if (need_resched())
++			break;
++
++		arch_mutex_cpu_relax();
++	}
++	rcu_read_unlock();
++
++	/*
++	 * We break out the loop above on need_resched() and when the
++	 * owner changed, which is a sign for heavy contention. Return
++	 * success only when lock->owner is NULL.
++	 */
++	return lock->owner == NULL;
++}
++#endif
++
+ static __used noinline void __sched __mutex_unlock_slowpath(atomic_t *lock_count);
  
- void
- __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
+ /**
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 67d0465..4205354 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2999,51 +2999,6 @@ void __sched schedule_preempt_disabled(void)
+ 	preempt_disable();
+ }
+ 
+-#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-
+-static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
+-{
+-	if (lock->owner != owner)
+-		return false;
+-
+-	/*
+-	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
+-	 * lock->owner still matches owner, if that fails, owner might
+-	 * point to free()d memory, if it still matches, the rcu_read_lock()
+-	 * ensures the memory stays valid.
+-	 */
+-	barrier();
+-
+-	return owner->on_cpu;
+-}
+-
+-/*
+- * Look out! "owner" is an entirely speculative pointer
+- * access and not reliable.
+- */
+-int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
+-{
+-	if (!sched_feat(OWNER_SPIN))
+-		return 0;
+-
+-	rcu_read_lock();
+-	while (owner_running(lock, owner)) {
+-		if (need_resched())
+-			break;
+-
+-		arch_mutex_cpu_relax();
+-	}
+-	rcu_read_unlock();
+-
+-	/*
+-	 * We break out the loop above on need_resched() and when the
+-	 * owner changed, which is a sign for heavy contention. Return
+-	 * success only when lock->owner is NULL.
+-	 */
+-	return lock->owner == NULL;
+-}
+-#endif
+-
+ #ifdef CONFIG_PREEMPT
+ /*
+  * this is the entry point to schedule() from in-kernel preemption
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index 1ad1d2b..99399f8 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -46,13 +46,6 @@ SCHED_FEAT(DOUBLE_TICK, false)
+ SCHED_FEAT(LB_BIAS, true)
+ 
+ /*
+- * Spin-wait on mutex acquisition when the mutex owner is running on
+- * another cpu -- assumes that when the owner is running, it will soon
+- * release the lock. Decreases scheduling overhead.
+- */
+-SCHED_FEAT(OWNER_SPIN, true)
+-
+-/*
+  * Decrement CPU power based on time not spent running tasks
+  */
+ SCHED_FEAT(NONTASK_POWER, true)
 -- 
 1.7.1
 
