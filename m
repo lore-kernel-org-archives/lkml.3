@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966475Ab3DQOIs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 10:08:48 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:33311 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966393Ab3DQOIr convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
-	Wed, 17 Apr 2013 10:08:47 -0400
-Message-Id: <516EC93D02000078000CE30A@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 17 Apr 2013 15:09:33 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "KY Srinivasan" <kys@microsoft.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-Subject: Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of
- Hyper-V
-References: <1359940910-32114-1-git-send-email-kys@microsoft.com>
- <1359940959-32168-1-git-send-email-kys@microsoft.com>
- <1359940959-32168-2-git-send-email-kys@microsoft.com>
- <20130417070616.GA4487@redhat.com>
- <423ae84de75f4b3587eb2d1a365cbd95@SN2PR03MB061.namprd03.prod.outlook.com>
- <516EC54A02000078000CE2AE@nat28.tlf.novell.com>
- <20130417130102.GE6801@redhat.com>
-In-Reply-To: <20130417130102.GE6801@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S966488Ab3DQOJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 10:09:41 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46244 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966321Ab3DQOJj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 10:09:39 -0400
+Date: Wed, 17 Apr 2013 15:09:38 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: ab8500: Don't update info->update_val if
+ write to register fails
+Message-ID: <20130417140937.GQ13687@opensource.wolfsonmicro.com>
+References: <1365509706.3801.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wr1Q/2bz0MCWWNYv"
 Content-Disposition: inline
+In-Reply-To: <1365509706.3801.1.camel@phoenix>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.04.13 at 15:01, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> On Wed, Apr 17, 2013 at 02:52:42PM +0100, Jan Beulich wrote:
->> >>> On 17.04.13 at 15:20, KY Srinivasan <kys@microsoft.com> wrote:
->> > If I recall correctly, the issue here was that Xen was enabling Hyper-V 
->> > emulation un-conditionally even for Linux guests.
->> 
->> To make this a little more precise - Xen is doing so only when the
->> guest config tells it to.
-> 
-> So it's something explicitly requested for this guest?  Then I don't
-> understand why does not make sense to override it in guest.
 
-Iirc it was/is XenServer which enable Hyper-V emulation for all HVM
-guests, which clearly is the wrong thing. I was personally also not
-really in agreement with the override in the kernel, but it was
-decided to do it that way at that point in time. As a consequence,
-I don't object this to be reverted.
+--wr1Q/2bz0MCWWNYv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Jan
+On Tue, Apr 09, 2013 at 08:15:06PM +0800, Axel Lin wrote:
+> This patch ensures info->update_val is consistent with current register value.
 
+Applied both, thanks.  Bengt, please delete unneeded context from your
+mails - it makes them easier to read and your content easier to find.
+
+--wr1Q/2bz0MCWWNYv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRbq0HAAoJELSic+t+oim9qtoP/AgLwPvfUV6APLBFhunpbAMk
+6N+l4kGzZ/uOzqHw7L9JuR6WqfOrO+8EHiYXQLnr7Y6rCFhsaLgd5lFn+1+tzO7s
+k4FG+rBedSeZEy6dHVSuFVNzTDZGrtOthz1cLvU+cPacoWwxo33z+q9AxkDVOvVi
+IB33MriBzQbz5hLmb28JRIz0pGWbtcdELI6orM8HXG/7/p5kxuKUZ0AtBWMvzgDB
+w/unayvkwEFKDze4iWESdxxJ5uO1Ud0q066Y4ndI6SMpe3SsiGMApITD1IaVrnS6
+yYcrqRJEmIqkqdzjX6nl5Z9RfJk5b0khwnDEs9tqtHgNQPWDTvdE49z72sKYllq1
+WErofBwe7jMeV55BEtbRKEFtFs3ZHnmFQCv2VUXQF3EdFtJaGLup7EcFbmxhbLZ+
+LCI8VP+qym92bQOrgmyLeh4ZfOrlWs18eInxcUmn7FLdbRxZRzHYXQDb+i1T0Smg
+pHV93NhmEKT1eI1cJYVtI550hgIb/XOxN3PJYDio+HurdD3tL46uTihgIL1qXr7N
+rcGummGOhyw7JCMGU7FxMmG0hvXoo4Be6rJXiB/0JIXNbbpccgNggVlA6rjNcsUn
+Y7SAf1RTZGXb2WveTL+PWmPPs+yRFfxn8zdbaEO2YK//X8vsy5ng4/v59t33Pg3I
+IasJuNNJEAO+s4CARFxs
+=kHHu
+-----END PGP SIGNATURE-----
+
+--wr1Q/2bz0MCWWNYv--
