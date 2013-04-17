@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965959Ab3DQHQh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 03:16:37 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:29856 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965736Ab3DQHQg (ORCPT
+	id S965974Ab3DQHQl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 03:16:41 -0400
+Received: from mail-ia0-f175.google.com ([209.85.210.175]:49716 "EHLO
+	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965736Ab3DQHQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 03:16:36 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>
-Subject: [PATCH] mm: fix build warning about kernel_physical_mapping_remove()
-Date: Wed, 17 Apr 2013 15:15:58 +0800
-Message-ID: <1366182958-21892-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
+	Wed, 17 Apr 2013 03:16:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20130417095207.24b24f31e2166d20c07f01fa@canb.auug.org.au>
+References: <1366109016-27442-1-git-send-email-grant.likely@linaro.org> <20130417095207.24b24f31e2166d20c07f01fa@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 17 Apr 2013 08:16:17 +0100
+X-Google-Sender-Auth: yMUs1r5Ly0zYOdO3OCTYBzJgIsU
+Message-ID: <CACxGe6uao632OopSdWaxifanH0t2iG2gQb902L+0PW0kmG3UdQ@mail.gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: Update Grant's email address and maintainership
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If CONFIG_MEMORY_HOTREMOVE is not set, a build warning about
-"warning: ‘kernel_physical_mapping_remove’ defined but not used"
-report.
+On Wed, Apr 17, 2013 at 12:52 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+>
+> On Tue, 16 Apr 2013 11:43:36 +0100 grant.likely@linaro.org wrote:
+>>
+>> From: Grant Likely <grant.likely@secretlab.ca>
+>>
+>> I've taken a full time position with Linaro and so I'll be using my
+>> Linaro email address from this point on. It has also been many years
+>> since I've touched any of the Xilinx related code so mark those items as
+>> unmaintained.
+>>
+>> In addition, Mark Brown is taking the lead on SPI maintainership now, so
+>> I've reversed the order of our names for that entry.
+>
+> Does this have any implications for linux-next included trees or their
+> contacts?
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
----
- arch/x86/mm/init_64.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+No. My old email address still works, and I'm not changing my git
+trees anytime soon.
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 474e28f..dafdeb2 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -1019,6 +1019,7 @@ void __ref vmemmap_free(struct page *memmap, unsigned long nr_pages)
- 	remove_pagetable(start, end, false);
- }
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
- static void __meminit
- kernel_physical_mapping_remove(unsigned long start, unsigned long end)
- {
-@@ -1028,7 +1029,6 @@ kernel_physical_mapping_remove(unsigned long start, unsigned long end)
- 	remove_pagetable(start, end, true);
- }
- 
--#ifdef CONFIG_MEMORY_HOTREMOVE
- int __ref arch_remove_memory(u64 start, u64 size)
- {
- 	unsigned long start_pfn = start >> PAGE_SHIFT;
--- 
-1.7.1
-
-
+g.
