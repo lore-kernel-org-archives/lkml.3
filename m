@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936238Ab3DQCCN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 22:02:13 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:63070 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936095Ab3DQCCM (ORCPT
+	id S936252Ab3DQCGY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 22:06:24 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:62431 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936154Ab3DQCGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 22:02:12 -0400
-Date: Tue, 16 Apr 2013 18:58:09 -0700
+	Tue, 16 Apr 2013 22:06:23 -0400
+Date: Tue, 16 Apr 2013 19:02:19 -0700
 From: Anton Vorontsov <anton@enomsg.org>
-To: Andrei Epure <epure.andrei@gmail.com>
-Cc: dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power: kmemdup instead of kzalloc + memcpy
-Message-ID: <20130417015809.GD18418@lizard.mcd26095.sjc.wayport.net>
-References: <1364420901-10438-1-git-send-email-epure.andrei@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: David Woodhouse <dwmw2@infradead.org>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pm2301-charger: Fix suspend/resume
+Message-ID: <20130417020219.GA357@lizard.mcd26095.sjc.wayport.net>
+References: <1365852007-23369-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1364420901-10438-1-git-send-email-epure.andrei@gmail.com>
+In-Reply-To: <1365852007-23369-1-git-send-email-lars@metafoo.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 11:48:21PM +0200, Andrei Epure wrote:
-> Patch found using coccinelle.
+On Sat, Apr 13, 2013 at 01:20:07PM +0200, Lars-Peter Clausen wrote:
+> The pm2301-charger driver implements runtime pm and at the same time uses the
+> legacy pm callbacks for suspend and resume. This does not work since the I2C
+> core wont look at the legacy pm callbacks if a driver has the 'pm' field set.
+> This patch fixes it by moving over to dev_pm_ops for suspend/resume as well.
 > 
-> Signed-off-by: Andrei Epure <epure.andrei@gmail.com>
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 > ---
 
-Applied, thanks!
+Applied, thanks a lot!
 
->  drivers/power/charger-manager.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-> index 8acc3f8..fefc39f 100644
-> --- a/drivers/power/charger-manager.c
-> +++ b/drivers/power/charger-manager.c
-> @@ -1485,13 +1485,12 @@ static int charger_manager_probe(struct platform_device *pdev)
->  
->  	/* Basic Values. Unspecified are Null or 0 */
->  	cm->dev = &pdev->dev;
-> -	cm->desc = kzalloc(sizeof(struct charger_desc), GFP_KERNEL);
-> +	cm->desc = kmemdup(desc, sizeof(struct charger_desc), GFP_KERNEL);
->  	if (!cm->desc) {
->  		dev_err(&pdev->dev, "Cannot allocate memory.\n");
->  		ret = -ENOMEM;
->  		goto err_alloc_desc;
->  	}
-> -	memcpy(cm->desc, desc, sizeof(struct charger_desc));
->  	cm->last_temp_mC = INT_MIN; /* denotes "unmeasured, yet" */
->  
->  	/*
-> -- 
-> 1.7.9.5
+Anton
