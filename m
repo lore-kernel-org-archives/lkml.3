@@ -1,71 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017Ab3DQEEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 00:04:45 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:25894 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237Ab3DQEEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 00:04:44 -0400
-X-Spam-Score: -100.8
-Message-ID: <516E1F32.6010009@asianux.com>
-Date: Wed, 17 Apr 2013 12:04:02 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753734Ab3DQEIT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 00:08:19 -0400
+Received: from ozlabs.org ([203.10.76.45]:52454 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751241Ab3DQEIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 00:08:18 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Veaceslav Falico <vfalico@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        gregkh@linuxfoundation.org, bhelgaas@google.com
+Subject: Re: [PATCH] module: add kset_obj_exists() and use it
+In-Reply-To: <20130416122653.GB31290@redhat.com>
+References: <1365506529-8396-1-git-send-email-vfalico@redhat.com> <87y5cq6ei9.fsf@rustcorp.com.au> <20130411095537.GC21320@redhat.com> <87vc7o8r7o.fsf@rustcorp.com.au> <20130416122653.GB31290@redhat.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 17 Apr 2013 13:25:13 +0930
+Message-ID: <87txn56cbi.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2] kernel: audit_tree: resource management: need put_tree
- and goto Err when failure occures
-References: <516790ED.6060202@asianux.com> <516CFF2C.7010509@asianux.com>
-In-Reply-To: <516CFF2C.7010509@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Veaceslav Falico <vfalico@redhat.com> writes:
+> Tested for a day on two reproducers on the latest upstream kernel, with the
+> recent kobject fix a49b7e82 ("kobject: fix kset_find_obj() race with
+> concurrent last kobject_put()") - it fixes the issue, no regressions met.
 
-  since "normally audit_add_tree_rule() will free it on failure",
-  need free it completely, when failure occures.
+Thanks, I've included the fix in my modules-next tree.
 
-    need additional put_tree before return, since get_tree was called.
-    always need goto error processing area for list_del_init.
+I did not CC:stable, since concurrent unload and reload is not really a
+normal condition.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/audit_tree.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-index 642a89c..9dfb0da 100644
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -694,13 +694,15 @@ int audit_add_tree_rule(struct audit_krule *rule)
- 		spin_unlock(&hash_lock);
- 	} else {
- 		trim_marked(tree);
-+		put_tree(tree);
- 		goto Err;
- 	}
- 
- 	mutex_lock(&audit_filter_mutex);
- 	if (list_empty(&rule->rlist)) {
- 		put_tree(tree);
--		return -ENOENT;
-+		err = -ENOENT;
-+		goto Err1;
- 	}
- 	rule->tree = tree;
- 	put_tree(tree);
-@@ -708,6 +710,7 @@ int audit_add_tree_rule(struct audit_krule *rule)
- 	return 0;
- Err:
- 	mutex_lock(&audit_filter_mutex);
-+Err1:
- 	list_del_init(&tree->list);
- 	list_del_init(&tree->rules);
- 	put_tree(tree);
--- 
-1.7.7.6
+Cheers,
+Rusty.
