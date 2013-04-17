@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966431Ab3DQScG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 14:32:06 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33328 "EHLO
+	id S966477Ab3DQShl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 14:37:41 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:42106 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966029Ab3DQScF (ORCPT
+	with ESMTP id S966109Ab3DQShj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 14:32:05 -0400
-Message-ID: <516EEAA0.10906@wwwdotorg.org>
-Date: Wed, 17 Apr 2013 12:32:00 -0600
+	Wed, 17 Apr 2013 14:37:39 -0400
+Message-ID: <516EEBEF.9010003@wwwdotorg.org>
+Date: Wed, 17 Apr 2013 12:37:35 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
@@ -19,9 +19,9 @@ CC: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
         Sascha Leuenberger <sascha.leuenberger@abilis.com>,
         Pierrick Hascoet <pierrick.hascoet@abilis.com>,
         devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
-References: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com>
-In-Reply-To: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com>
+Subject: Re: [PATCH 2/2] GPIO: Add TB10x GPIO driver
+References: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com> <1365608728-30494-2-git-send-email-christian.ruppert@abilis.com>
+In-Reply-To: <1365608728-30494-2-git-send-email-christian.ruppert@abilis.com>
 X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -30,54 +30,59 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 04/10/2013 09:45 AM, Christian Ruppert wrote:
-> The pinmux driver of the Abilis Systems TB10x platform based on ARC700 CPUs.
-> Used to control the pinmux and is a prerequisite for the GPIO driver.
+> The GPIO driver for the Abilis Systems TB10x series of SOCs based on ARC700
+> CPUs. It supports GPIO control and GPIO interrupt generation. This driver
+> works in conjunction with the TB10x pinctrl driver.
 
-Linus already did a review of this, but I have a few extra comments:
+I have a couple comments beyond what Linus already said,
 
-> diff --git a/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt b/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt
+> diff --git a/Documentation/devicetree/bindings/gpio/abilis,tb10x-gpio.txt b/Documentation/devicetree/bindings/gpio/abilis,tb10x-gpio.txt
 
-> +Abilis Systems TB10x pin controller
-> +===================================
+> +Required Properties:
+> +- compatible: Should be "abilis,tb10x-gpio"
+> +- reg: Address and length of the register set for the device
+> +- gpio-controller: Marks the device node as a gpio controller.
+> +- #gpio-cells: Should be <1>;
+
+I think this value should be at least two. The extra cell should be used
+to represent flags. Bit 0 of that cell is customarily used to represent
+"active low", which is information for SW to use to interpret the port,
+so it doesn't matter if your HW supports that or not. See for example:
+
+Documentation/devicetree/bindings/gpio/nvidia,tegra20-gpio.txt
+
+- #gpio-cells : Should be two. The first cell is the pin number and the
+  second cell is used to specify optional parameters:
+  - bit 0 specifies polarity (0 for normal, 1 for inverted)
+
+> +Optional Properties:
+> +- interrupt-controller: Marks the device node as an interrupt controller.
+> +- #interrupt-cells: Should be <1>.
+
+Equally here, I imagine you want 2 here not 1, so that IRQ flags can be
+defined. For the customary values in the second cell, see:
+Documentation/devicetree/bindings/interrupt-controller/interrupts.txt's
+"two cells" description. Of course, if your HW can't configure this,
+then ignore this comment.
+
+> +Example:
 > +
-> +Required properties
-> +-------------------
-> +
-> +- #address-cells: should be <1>.
-> +- #size-cells: should be <1>;
+> +gpioa: gpio@FF140000 {
+> +	compatible = "abilis,tb10x-gpio";
+> +	interrupt-controller;
+> +	#interrupt-cells = <1>;
+> +	interrupt-parent = <&tb10x_ictl>;
+> +	interrupts = <27 1>;
+> +	reg = <0xFF140000 0x1000>;
+> +	gpio-controller;
+> +	#gpio-cells = <1>;
+> +	gpio-count = <3>;
 
-What are those two used for? They would normally only be required if the
-child nodes of the pinctrl node contained "reg" properties. But, they
-don't in the examples later in this file.
+The gpio-count property isn't defined above.
 
-> +Ports are defined (and referenced) by sub-nodes of the pin controller. Every
-> +sub-node defines exactly one port (i.e. a set of pins). Ports are defined by
-> +their names in the pin controller driver.
+> +	gpio-base  = <0>;
+> +	gpio-pins = <&pctl_gpio_a>;
+> +};
 
-I'm not really sure what the implication here is. Does this mean that
-the driver isn't expected to contain tables which define which
-pins/groups/functions exist, but rather gets those lists/tables from the
-DT? I prefer not to do that, although it is acceptable to write the
-binding/driver this way.
-
-
-So there seems to be something huge missing here; the only property
-defined here for the child nodes is "pingrp". In the examples, there's
-nothing else used. I don't see how this binding allows the actual
-desired mux functions to be specified. All other pinctrl DT bindings
-have the child nodes contain something along the lines of:
-
-* A list of pins/groups to apply the settings to.
-* A property defining the mux function to select on those pins/groups.
-* Other properties defining configuration for those pins/groups, such as
-pull-up/down, drive-type, drive-strength, etc.
-
-All that seems missing here. Surely it's required?
-
-Perhaps this "abilis,simple-default" thing is intended to represent some
-specific default configuration? If so, I don't think that's the right
-way to go. Also, the DT binding should be as complete as possible from
-the start, rather than planning to define/implement part of it now and
-then keep adding to it later. This all implies that some extra
-properties really should be defined here.
-
+Finally, Documentation/devicetree/bindings/vendor-prefixes.txt should be
+updated to define the abilis vendor prefix.
