@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757544Ab3DQBao (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 21:30:44 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:64971 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756952Ab3DQBan convert rfc822-to-8bit (ORCPT
+	id S935915Ab3DQBec (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 21:34:32 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:46867 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756952Ab3DQBea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 21:30:43 -0400
+	Tue, 16 Apr 2013 21:34:30 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130417005232.GV10155@atomide.com>
-References: <1366029306-1824-1-git-send-email-rogerq@ti.com>
-	<516BF4F3.5060904@ti.com>
-	<20130417005232.GV10155@atomide.com>
-Date: Tue, 16 Apr 2013 20:30:42 -0500
-Message-ID: <CAOCHtYgFnCy5Qn2LeJOK96_NdwzxzVe8Vrb8cL=K9AdzPUtQow@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: omap3-beagle-xm: Add USB Host support for Rev Ax/Bx
-From: Robert Nelson <robertcnelson@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Roger Quadros <rogerq@ti.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-omap@vger.kernel.org, b-cousson@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130408235419.035A131C300@corp2gmr1-1.hot.corp.google.com>
+References: <20130408235419.035A131C300@corp2gmr1-1.hot.corp.google.com>
+Date: Wed, 17 Apr 2013 03:34:27 +0200
+Message-ID: <CAFTL4hxGUPudBNuX8a68CFkM80aKr1M74A4SODZJzj7bypcavw@mail.gmail.com>
+Subject: Re: + posix_timers-remove-dead-task-timer-expiry-caching.patch added
+ to -mm tree
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@elte.hu,
+        oleg@redhat.com, sgruszka@redhat.com, tglx@linutronix.de,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 7:52 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Roger Quadros <rogerq@ti.com> [130415 05:44]:
->> On 04/15/2013 03:35 PM, Roger Quadros wrote:
->> > Provide RESET and Power regulators for the USB PHY,
->> > the USB Host port mode and the PHY device.
->> >
->> > Also provide pin multiplexer information for USB host
->> > pins.
->> >
->> > This will not work for Rev Cx boards because of reversed logic
->> > for USB_POWER_Enable.
->> >
->> > CC: Benoît Cousson <b-cousson@ti.com>
->> > Signed-off-by: Roger Quadros <rogerq@ti.com>
->> > ---
->> >  arch/arm/boot/dts/omap3-beagle-xm.dts |   62 +++++++++++++++++++++++++++++++++
->> >  1 files changed, 62 insertions(+), 0 deletions(-)
->> >
->> > diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
->> > index 5a31964..d394c51 100644
->> > --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
->> > +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
->> > @@ -57,6 +57,60 @@
->> >             ti,mcbsp = <&mcbsp2>;
->> >             ti,codec = <&twl_audio>;
->> >     };
->> > +
->> > +   /* HS USB Port 2 RESET */
->> > +   hsusb2_reset: hsusb2_reset_reg {
->> > +           compatible = "regulator-fixed";
->> > +           regulator-name = "hsusb2_reset";
->> > +           regulator-min-microvolt = <3300000>;
->> > +           regulator-max-microvolt = <3300000>;
->> > +           gpio = <&gpio5 19 0>;   /* gpio_147 */
->> > +           startup-delay-us = <70000>;
->> > +           enable-active-high;
->> > +   };
->> > +
->> > +   /* HS USB Port 2 Power */
->> > +   hsusb2_power: hsusb2_power_reg {
->> > +           compatible = "regulator-fixed";
->> > +           regulator-name = "hsusb2_vbus";
->> > +           regulator-min-microvolt = <3300000>;
->> > +           regulator-max-microvolt = <3300000>;
->> > +           gpio = <&twl_gpio 18 0>;        /* GPIO LEDA */
->> > +           startup-delay-us = <70000>;
->> > +           enable-active-high;     /* FIXME: active-low for Rev. C */
->>
->> Benoit & Tony,
->>
->> Any ideas how to tackle the reversed logic for Rev. C boards?
+2013/4/9  <akpm@linux-foundation.org>:
 >
-> Sounds like we need a shared omap3-beage.dtsi, then omap3-beagle-xm.dts
-> and omap3-beagle-rev-c.dts. Then xm and rev-c can both include the
+> The patch titled
+>      Subject: posix_timers: Remove dead task timer expiry caching
+> has been added to the -mm tree.  Its filename is
+>      posix_timers-remove-dead-task-timer-expiry-caching.patch
+>
+> Before you just go and hit "reply", please:
+>    a) Consider who else should be cc'ed
+>    b) Prefer to cc a suitable mailing list as well
+>    c) Ideally: find the original patch on the mailing list and do a
+>       reply-to-all to that, adding suitable additional cc's
+>
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+>
+> The -mm tree is included into linux-next and is updated
+> there every 3-4 working days
+>
+> ------------------------------------------------------
+> From: Frederic Weisbecker <fweisbec@gmail.com>
+> Subject: posix_timers: Remove dead task timer expiry caching
+>
+> When reading a timer sample, posix_cpu_timer_get() and
+> posix_cpu_timer_schedule() both perform a caching of the timer expiry time
+> by converting its value from absolute to relative if the task has exited.
+>
+> The reason for this caching is not clear though, it could be:
+>
+> 1) For performance reasons: no need to calculate the delta after the
+>    task has died, its cputime won't change anymore.  We can thus avoid
+>    some locking (sighand, tasklist_lock, rq->lock for task_delta_exec(),
+>    ...), and various operations to calculate the sample...
+>
+> 2) To keep the remaining delta for the timer available after the task
+>    has died.  When it gets reaped, its sighand disappears, so accessing
+>    the process wide cputime through tsk->signal is probably not safe.
+>
+> Now, is the first reason really worth it?  I have no idea if it is a case
+> we really want to optimize.
+>
+> Considering the second reason, we return a disarmed zero'ed timer when
+> tsk->sighand == NULL.  So if this is an assumed reason, it's broken.  And
+> this case only concern process wide timers that have their group leader
+> reaped.  The posix cpu timer shouldn't even be available anymore at that
+> time.  Unless the group leader changed since we called
+> posix_cpu_timer_create() after an exec?
+>
+> Anyway for now I'm sending this as an RFC because there may well be subtle
+> things I left behind.
+>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-Bike-sheding, but we might want to make that "omap3-beagle-xmc.dts" as
-there is the "rev c" variant of the original beagle...
+So this very patch probably shouldn't go to 3.10, I sent it early in
+case I could get some hindsight from reviewers.
+Anyway, let me some time to think more about it and all the possible
+implications against exit, de_thread, etc... then I'll resend if that
+sounds palatable.
 
-It's too bad we can't read the 3 gpio pin states in the device tree
-and make a decision.
-
-Regards,
-
--- 
-Robert Nelson
-http://www.rcn-ee.com/
+Thanks.
