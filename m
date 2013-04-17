@@ -1,143 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966477Ab3DQTMZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 15:12:25 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58968 "EHLO bear.ext.ti.com"
+	id S966521Ab3DQTN5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 15:13:57 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:46490 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755943Ab3DQTMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 15:12:23 -0400
-Message-ID: <516EF40E.5020007@ti.com>
-Date: Wed, 17 Apr 2013 15:12:14 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	id S1757200Ab3DQTN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 15:13:56 -0400
+Date: Wed, 17 Apr 2013 14:13:54 -0500
+From: Robin Holt <holt@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Russ Anderson <rja@sgi.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: [PATCH -v5 4/5] checkpatch.pl the new kernel/reboot.c file.
+Message-ID: <20130417191354.GH3658@sgi.com>
+References: <1366224198-49485-1-git-send-email-holt@sgi.com>
+ <1366224198-49485-5-git-send-email-holt@sgi.com>
 MIME-Version: 1.0
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-CC: Zhang Rui <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <durgadoss.r@intel.com>
-Subject: Re: [PATCHv3 1/3] thermal: introduce thermal_zone_get_zone_by_name
- helper function
-References: <1365165150-11720-1-git-send-email-eduardo.valentin@ti.com>  <1365165150-11720-2-git-send-email-eduardo.valentin@ti.com> <1365990196.2803.2.camel@rzhang1-mobl4> <516BFEBF.4040204@ti.com>
-In-Reply-To: <516BFEBF.4040204@ti.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366224198-49485-5-git-send-email-holt@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15-04-2013 09:21, Eduardo Valentin wrote:
-> On 14-04-2013 21:43, Zhang Rui wrote:
->> On Fri, 2013-04-05 at 08:32 -0400, Eduardo Valentin wrote:
->>> This patch adds a helper function to get a reference of
->>> a thermal zone, based on the zone type name.
->>>
->>> It will perform a zone name lookup and return a reference
->>> to a thermal zone device that matches the name requested.
->>> In case the zone is not found or when several zones match
->>> same name or if the required parameters are invalid, it will return
->>> the corresponding error code (ERR_PTR).
->>>
->>> Cc: Durgadoss R <durgadoss.r@intel.com>
->>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
->>
->> refreshed the patch to modify drivers/thermal/thermal_core.c instead of
->> drivers/thermal/thermal_sys.c and applied to thermal -next.
->
-> Thanks.
+On Wed, Apr 17, 2013 at 01:43:17PM -0500, Robin Holt wrote:
+> I did allow the remaining 81 character line behind.  It did not seem
+> like it was worth changing.  Otherwise, it now passes checkpatch.pl.
+> 
+> Signed-off-by: Robin Holt <holt@sgi.com>
+> To: Ingo Molnar <mingo@redhat.com>
+> To: Russ Anderson <rja@sgi.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+> Cc: Michel Lespinasse <walken@google.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Robin Holt <holt@sgi.com>
+> Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: the arch/x86 maintainers <x86@kernel.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Joe Perches <joe@perches.com>
+> 
+> ---
+> 
+> Changes since -v3:
+> Integrated feedback from Joe Perches.
+> ---
+>  kernel/reboot.c | 26 +++++++++++++-------------
+>  1 file changed, 13 insertions(+), 13 deletions(-)
+> 
+> diff --git a/kernel/reboot.c b/kernel/reboot.c
+> index ff92601..c4eb2a4 100644
+> --- a/kernel/reboot.c
+> +++ b/kernel/reboot.c
+> @@ -4,6 +4,8 @@
+>   *  Copyright (C) 2013  Linus Torvalds
+>   */
+>  
+> +#define pr_fmt(fmt)	"reboot: " fmt
+> +
+>  #include <linux/export.h>
+>  #include <linux/kexec.h>
+>  #include <linux/kmod.h>
+> @@ -99,9 +101,9 @@ void kernel_restart(char *cmd)
+>  	migrate_to_reboot_cpu();
+>  	syscore_shutdown();
+>  	if (!cmd)
+> -		printk(KERN_EMERG "Restarting system.\n");
+> +		pr_emerg("Restarting system\n");
+>  	else
+> -		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
+> +		pr_emerg("Restarting system with command '%s'\n", cmd);
+>  	kmsg_dump(KMSG_DUMP_RESTART);
+>  	machine_restart(cmd);
+>  }
+> @@ -110,7 +112,7 @@ EXPORT_SYMBOL_GPL(kernel_restart);
+>  static void kernel_shutdown_prepare(enum system_states state)
+>  {
+>  	blocking_notifier_call_chain(&reboot_notifier_list,
+> -		(state == SYSTEM_HALT)?SYS_HALT:SYS_POWER_OFF, NULL);
+> +		(state == SYSTEM_HALT) ? SYS_HALT : SYS_POWER_OFF, NULL);
+>  	system_state = state;
+>  	usermodehelper_disable();
+>  	device_shutdown();
+> @@ -125,11 +127,10 @@ void kernel_halt(void)
+>  	kernel_shutdown_prepare(SYSTEM_HALT);
+>  	migrate_to_reboot_cpu();
+>  	syscore_shutdown();
+> -	printk(KERN_EMERG "System halted.\n");
+> +	pr_emerg("System halted\n");
+>  	kmsg_dump(KMSG_DUMP_HALT);
+>  	machine_halt();
+>  }
+> -
+>  EXPORT_SYMBOL_GPL(kernel_halt);
+>  
+>  /**
+> @@ -144,7 +145,7 @@ void kernel_power_off(void)
+>  		pm_power_off_prepare();
+>  	migrate_to_reboot_cpu();
+>  	syscore_shutdown();
+> -	printk(KERN_EMERG "Power down.\n");
+> +	pr_emerg("Power down\n");
+>  	kmsg_dump(KMSG_DUMP_POWEROFF);
+>  	machine_power_off();
+>  }
+> @@ -173,10 +174,10 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>  
+>  	/* For safety, we require "magic" arguments. */
+>  	if (magic1 != LINUX_REBOOT_MAGIC1 ||
+> -	    (magic2 != LINUX_REBOOT_MAGIC2 &&
+> -	                magic2 != LINUX_REBOOT_MAGIC2A &&
+> +			(magic2 != LINUX_REBOOT_MAGIC2 &&
+> +			magic2 != LINUX_REBOOT_MAGIC2A &&
+>  			magic2 != LINUX_REBOOT_MAGIC2B &&
+> -	                magic2 != LINUX_REBOOT_MAGIC2C))
+> +			magic2 != LINUX_REBOOT_MAGIC2C))
+>  		return -EINVAL;
+>  
+>  	/*
+> @@ -285,14 +286,13 @@ static int __orderly_poweroff(bool force)
+>  		ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+>  		argv_free(argv);
+>  	} else {
+> -		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
+> -					 __func__, poweroff_cmd);
+> +		pr_warn("%s failed to allocate memory for \"%s\"\n",
+> +						__func__, poweroff_cmd);
 
+Argh.  I had intended to remove this.  I will fix up my workarea and be
+ready to not miss it on the next pass.
 
-
-Just a gentle reminder, this one does not seam to be applied to 
-thermal/next.
-
->
->>
->> thanks,
->> rui
->>> ---
->>>   drivers/thermal/thermal_sys.c |   38
->>> ++++++++++++++++++++++++++++++++++++++
->>>   include/linux/thermal.h       |    1 +
->>>   2 files changed, 39 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/thermal/thermal_sys.c
->>> b/drivers/thermal/thermal_sys.c
->>> index 5bd95d4..e9b636b 100644
->>> --- a/drivers/thermal/thermal_sys.c
->>> +++ b/drivers/thermal/thermal_sys.c
->>> @@ -1790,6 +1790,44 @@ void thermal_zone_device_unregister(struct
->>> thermal_zone_device *tz)
->>>   }
->>>   EXPORT_SYMBOL_GPL(thermal_zone_device_unregister);
->>>
->>> +/**
->>> + * thermal_zone_get_zone_by_name() - search for a zone and returns
->>> its ref
->>> + * @name: thermal zone name to fetch the temperature
->>> + *
->>> + * When only one zone is found with the passed name, returns a
->>> reference to it.
->>> + *
->>> + * Return: On success returns a reference to an unique thermal zone
->>> with
->>> + * matching name equals to @name, an ERR_PTR otherwise (-EINVAL for
->>> invalid
->>> + * paramenters, -ENODEV for not found and -EEXIST for multiple
->>> matches).
->>> + */
->>> +struct thermal_zone_device *thermal_zone_get_zone_by_name(const char
->>> *name)
->>> +{
->>> +    struct thermal_zone_device *pos = NULL, *ref = ERR_PTR(-EINVAL);
->>> +    unsigned int found = 0;
->>> +
->>> +    if (!name)
->>> +        goto exit;
->>> +
->>> +    mutex_lock(&thermal_list_lock);
->>> +    list_for_each_entry(pos, &thermal_tz_list, node)
->>> +        if (!strnicmp(name, pos->type, THERMAL_NAME_LENGTH)) {
->>> +            found++;
->>> +            ref = pos;
->>> +        }
->>> +    mutex_unlock(&thermal_list_lock);
->>> +
->>> +    /* nothing has been found, thus an error code for it */
->>> +    if (found == 0)
->>> +        ref = ERR_PTR(-ENODEV);
->>> +    else if (found > 1)
->>> +    /* Success only when an unique zone is found */
->>> +        ref = ERR_PTR(-EEXIST);
->>> +
->>> +exit:
->>> +    return ref;
->>> +}
->>> +EXPORT_SYMBOL_GPL(thermal_zone_get_zone_by_name);
->>> +
->>>   #ifdef CONFIG_NET
->>>   static struct genl_family thermal_event_genl_family = {
->>>       .id = GENL_ID_GENERATE,
->>> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
->>> index 542a39c..0cf9eb5 100644
->>> --- a/include/linux/thermal.h
->>> +++ b/include/linux/thermal.h
->>> @@ -237,6 +237,7 @@ void thermal_zone_device_update(struct
->>> thermal_zone_device *);
->>>   struct thermal_cooling_device *thermal_cooling_device_register(char
->>> *, void *,
->>>           const struct thermal_cooling_device_ops *);
->>>   void thermal_cooling_device_unregister(struct
->>> thermal_cooling_device *);
->>> +struct thermal_zone_device *thermal_zone_get_zone_by_name(const char
->>> *name);
->>>
->>>   int thermal_zone_trend_get(struct thermal_zone_device *, int);
->>>   struct thermal_instance *thermal_instance_get(struct
->>> thermal_zone_device *,
->>
->>
->>
->>
->
->
->
-
+Robin
