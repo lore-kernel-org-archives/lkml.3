@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab3DQB3o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 21:29:44 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:41097 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756826Ab3DQB3m (ORCPT
+	id S1757544Ab3DQBao (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 21:30:44 -0400
+Received: from mail-vb0-f42.google.com ([209.85.212.42]:64971 "EHLO
+	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756952Ab3DQBan convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 21:29:42 -0400
-Message-ID: <516DFAFC.1030101@huawei.com>
-Date: Wed, 17 Apr 2013 09:29:32 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 16 Apr 2013 21:30:43 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <bsingharora@gmail.com>, <dhaval.giani@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, <jpoimboe@redhat.com>,
-        <berrange@redhat.com>, <lpoetter@redhat.com>,
-        <workman-devel@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup: status-quo and userland efforts
-References: <20130406012159.GA17159@mtj.dyndns.org> <516D333D.4040703@huawei.com> <20130416171056.GA2874@mtj.dyndns.org>
-In-Reply-To: <20130416171056.GA2874@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20130417005232.GV10155@atomide.com>
+References: <1366029306-1824-1-git-send-email-rogerq@ti.com>
+	<516BF4F3.5060904@ti.com>
+	<20130417005232.GV10155@atomide.com>
+Date: Tue, 16 Apr 2013 20:30:42 -0500
+Message-ID: <CAOCHtYgFnCy5Qn2LeJOK96_NdwzxzVe8Vrb8cL=K9AdzPUtQow@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: omap3-beagle-xm: Add USB Host support for Rev Ax/Bx
+From: Robert Nelson <robertcnelson@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Roger Quadros <rogerq@ti.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-omap@vger.kernel.org, b-cousson@ti.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/4/17 1:10, Tejun Heo wrote:
-> Hello, Li.
-> 
-> On Tue, Apr 16, 2013 at 07:17:17PM +0800, Li Zefan wrote:
-> ...
->>> hot-unplug).  It currently transfers all its tasks to the nearest
->>> ancestor with executing resources, which is an irreversible process
->>> which would affect all other co-mounted controllers.  We probably want
->>> it to just take on the masks of the ancestor until its own executing
->>> resources become online again, and the new behavior should be gated
->>> behind a switch (Li, can you please look into this?).
->>>
+On Tue, Apr 16, 2013 at 7:52 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Roger Quadros <rogerq@ti.com> [130415 05:44]:
+>> On 04/15/2013 03:35 PM, Roger Quadros wrote:
+>> > Provide RESET and Power regulators for the USB PHY,
+>> > the USB Host port mode and the PHY device.
+>> >
+>> > Also provide pin multiplexer information for USB host
+>> > pins.
+>> >
+>> > This will not work for Rev Cx boards because of reversed logic
+>> > for USB_POWER_Enable.
+>> >
+>> > CC: Benoît Cousson <b-cousson@ti.com>
+>> > Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> > ---
+>> >  arch/arm/boot/dts/omap3-beagle-xm.dts |   62 +++++++++++++++++++++++++++++++++
+>> >  1 files changed, 62 insertions(+), 0 deletions(-)
+>> >
+>> > diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+>> > index 5a31964..d394c51 100644
+>> > --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
+>> > +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+>> > @@ -57,6 +57,60 @@
+>> >             ti,mcbsp = <&mcbsp2>;
+>> >             ti,codec = <&twl_audio>;
+>> >     };
+>> > +
+>> > +   /* HS USB Port 2 RESET */
+>> > +   hsusb2_reset: hsusb2_reset_reg {
+>> > +           compatible = "regulator-fixed";
+>> > +           regulator-name = "hsusb2_reset";
+>> > +           regulator-min-microvolt = <3300000>;
+>> > +           regulator-max-microvolt = <3300000>;
+>> > +           gpio = <&gpio5 19 0>;   /* gpio_147 */
+>> > +           startup-delay-us = <70000>;
+>> > +           enable-active-high;
+>> > +   };
+>> > +
+>> > +   /* HS USB Port 2 Power */
+>> > +   hsusb2_power: hsusb2_power_reg {
+>> > +           compatible = "regulator-fixed";
+>> > +           regulator-name = "hsusb2_vbus";
+>> > +           regulator-min-microvolt = <3300000>;
+>> > +           regulator-max-microvolt = <3300000>;
+>> > +           gpio = <&twl_gpio 18 0>;        /* GPIO LEDA */
+>> > +           startup-delay-us = <70000>;
+>> > +           enable-active-high;     /* FIXME: active-low for Rev. C */
 >>
->> Sure, I'll be working on sane hierarchy behavior for cpuset.
-> 
-> Great, it'd be great if you can share how it's gonna be done once the
-> basic design gets settled before full implementation.
-> 
+>> Benoit & Tony,
+>>
+>> Any ideas how to tackle the reversed logic for Rev. C boards?
+>
+> Sounds like we need a shared omap3-beage.dtsi, then omap3-beagle-xm.dts
+> and omap3-beagle-rev-c.dts. Then xm and rev-c can both include the
 
-The basic idea is, when a cpuset becomes empty due to hotplug, we don't
-move the tasks in it, but instead we update tasks' cpumask/nodemask using
-the nearest non-empty acestor cpuset's cpus_allowed and mems_allowed.
+Bike-sheding, but we might want to make that "omap3-beagle-xmc.dts" as
+there is the "rev c" variant of the original beagle...
 
-- then it's allowed to move those tasks from the empty cpuset to another
-cpuset
+It's too bad we can't read the 3 gpio pin states in the device tree
+and make a decision.
 
-- when this acestor cpuset's cpumask/nodemask is changed (either by writing
-cpuset.cpus/mems or hotplug), not only the tasks in it but also tasks in
-the empty cpuset will be updated.
+Regards,
 
-- it's allowed to move a task to an empty cpuset, and the task's cpumask/nodemask
-will be updated according to the nearst non-empty acestor, no matter if this
-empty cpuset is exclusive or not.
-
-- if a previously offlined cpu becomes online again, the emtpy cpuset won't
-get this cpu resource automatically, which is the current behavior.
-
-How does this sound?
-
+-- 
+Robert Nelson
+http://www.rcn-ee.com/
