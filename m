@@ -1,130 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966374Ab3DQNsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 09:48:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55370 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966116Ab3DQNsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 09:48:05 -0400
-Date: Wed, 17 Apr 2013 15:48:52 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
-Subject: Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
-Message-ID: <20130417124852.GD6801@redhat.com>
-References: <1359940910-32114-1-git-send-email-kys@microsoft.com>
- <1359940959-32168-1-git-send-email-kys@microsoft.com>
- <1359940959-32168-2-git-send-email-kys@microsoft.com>
- <20130417070616.GA4487@redhat.com>
- <423ae84de75f4b3587eb2d1a365cbd95@SN2PR03MB061.namprd03.prod.outlook.com>
+	id S966395Ab3DQNtW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 09:49:22 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:56853 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966116Ab3DQNtV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 09:49:21 -0400
+Message-ID: <A54DBB19C9CE485FB926E6B9199E7452@local.st.by>
+From: "Victor Miasnikov" <vvm@tut.by>
+To: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: KVM "Hyper-V emulation" -- this can be related "Linux on Hyper-V" ? Or "KVM emulates Hyper-V" as "Hyper-V emulates Hyper-V" ? Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
+Date: Wed, 17 Apr 2013 16:49:16 +0300
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <423ae84de75f4b3587eb2d1a365cbd95@SN2PR03MB061.namprd03.prod.outlook.com>
+Content-Type: text/plain;
+	format=flowed;
+	charset="utf-8";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.3790.4548
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 01:20:58PM +0000, KY Srinivasan wrote:
-> 
-> 
-> > -----Original Message-----
-> > From: Michael S. Tsirkin [mailto:mst@redhat.com]
-> > Sent: Wednesday, April 17, 2013 3:06 AM
-> > To: KY Srinivasan
-> > Cc: x86@kernel.org; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> > jasowang@redhat.com; tglx@linutronix.de; hpa@zytor.com;
-> > JBeulich@suse.com; bp@alien8.de
-> > Subject: Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
-> > 
-> > On Sun, Feb 03, 2013 at 05:22:38PM -0800, K. Y. Srinivasan wrote:
-> > > Xen emulates Hyper-V to host enlightened Windows. Looks like this
-> > > emulation may be turned on by default even for Linux guests. Check and
-> > > fail Hyper-V detection if we are on Xen.
-> > >
-> > > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > 
-> > I'm very curious what's the specific bug that is fixed here?
-> > I went over the original discussion in
-> > https://patchwork.kernel.org/patch/2064331/
-> > and that's still not clear to me. Is there a configuration
-> > that is broken without this patch but starts working with
-> > this patch?
-> > 
-> > It seems that one might want to use hyper-v emulation e.g. to test
-> > hyper-v code without using windows, so the functionality
-> > that this patch disables is not completely useless,
-> > so there should be a good reason for disabling it.
-> > 
-> > Could you enlighten me please? :)
-> 
-> Michael,
-> 
-> If I recall correctly, the issue here was that Xen was enabling
-> Hyper-V emulation un-conditionally even for Linux guests.
+Hi!
 
-Okay so basically some Xen specific strangeness.
+2013/4/17 Jan Beulich
+>
+> >>> On 17.04.13 at 12:16, "Michael S. Tsirkin"  wrote:
+> > If the hypervisor says it's Hyper-V, that's because it wants
+> > guests to use Hyper-V. I don't see why is guest second-guessing
+> > this a good idea.
+>
+> There are two reasons here: For one, when the hypervisor is not
+> Hyper-V, but is providing some Hyper-V emulation, that's intended
+> for Windows guests to use, not e.g. Linux ones, especially when
+> such guests could use the native hypervisor interface with much
+> greater benefit.
+>
+> And second, there reportedly are features of (newer?) Hyper-V
+> that some emulation may not provide, but that are also not easily
+> detectable.
+>
 
-> Clearly,
-> this was not the intention to begin with. This check was added to
-> ensure that while hosting Linux we would not un-intentionally enable
-> Hyper-V emulation in Xen.
 
-What if you want to intentionally enable Hyper-V emulation in Xen?
-There's no way to do this now, right?
+Yes
 
-> Not all Hyper-V features are tagged with a
-> CPUID feature bit and so it was agreed that it would be better to
-> disable Hyper-V emulation when hosting Linux on Xen.
-> 
-> Regards,
-> 
-> K. Y
++
 
-I was just asking whether there are any specific examples of a bug
-or is this change done just in case?
 
-> > 
-> > > ---
-> > >  arch/x86/kernel/cpu/mshyperv.c |    7 +++++++
-> > >  1 files changed, 7 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/arch/x86/kernel/cpu/mshyperv.c
-> > b/arch/x86/kernel/cpu/mshyperv.c
-> > > index 646d192..4dab317 100644
-> > > --- a/arch/x86/kernel/cpu/mshyperv.c
-> > > +++ b/arch/x86/kernel/cpu/mshyperv.c
-> > > @@ -30,6 +30,13 @@ static bool __init ms_hyperv_platform(void)
-> > >  	if (!boot_cpu_has(X86_FEATURE_HYPERVISOR))
-> > >  		return false;
-> > >
-> > > +	/*
-> > > +	 * Xen emulates Hyper-V to support enlightened Windows.
-> > > +	 * Check to see first if we are on a Xen Hypervisor.
-> > > +	 */
-> > > +	if (xen_cpuid_base())
-> > > +		return false;
-> > > +
-> > >  	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS,
-> > >  	      &eax, &hyp_signature[0], &hyp_signature[1], &hyp_signature[2]);
-> > >
-> > > --
-> > > 1.7.4.1
-> > >
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
+
+> On Wed, Apr 17, 2013 at 12:10:01PM +0300, Victor Miasnikov wrote:
+
+
+
+>>
+>> Question is very simple:  Hyper-V users/sysadmins need wait patch a-la this:
+>> Or  "KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V emulates Hyper-V" as "Hyper-V emulates
+>> Hyper-V" ?
+>>
+>
+> No.  You are using Hyper-V, not the KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V
+> emulation of it.
+> No patches dealing with this emulation should have any effect on you.
+
+
+ This is _positive_ variant of possible future,
+but on _practic_ very often we need prevent _negative_ variant of possible future
+
+
+>> ==
+>> + /*
+>> +  * KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V emulates Hyper-V to support
+>> enlightened Windows.
+>> +  * Check to see first if we are on a KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V
+>> Hypervisor.
+>> +  */
+>> +
+>> + if (KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V_cpuid_base())
+>> +  return false;
+
+>
+> If the hypervisor says it's Hyper-V, that's because it wants guests to use Hyper-V.
+>
+
+
+ Even if guest ( i.e. Virtual Computer) contain Linux OS ?
+
+
+>> ==
+>> KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V emulates Hyper-V to host enlightened
+>> Windows.
+>>
+>> . . .
+>>
+>> [ hpa: the problem here is that
+>> KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V doesn't emulate Hyper-V well enough,  .
+>>  . ]
+>
+> What's emulated not well enough?
+>
+
+ In case of XEN variant non-full-emulation_of_Hyper-V , IMHO :
+
+{{
+----- Original Message ----- 
+From: "Victor Miasnikov"
+To: "Michael S. Tsirkin"
+Sent: Wednesday, April 17, 2013 12:41 PM
+Subject: IMHO, XEN emulation of Hyper-V not contain needed clocksource for Lunux guest Re: [PATCH 2/3] X86: Add a check
+to catch Xen emulation of Hyper-V
+
+Hi!
+
+> It seems that one might want to use hyper-v emulation e.g. to test
+> hyper-v code without using windows, so the functionality
+> that this patch disables is not completely useless,
+> so there should be a good reason for disabling it.
+
+ As I undestand, XEN emulation of Hyper-V not contain  needed clocksource for Lunux guest ( virtual computers)
+
+I.e. Linux VM "think" what is running on Hyper-V host call clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100)
+and a-la BSOD or vice versa . . .
+
+
+> I went over the original discussion in
+> https://patchwork.kernel.org/patch/2064331/
+> and that's still not clear to me. Is there a configuration
+> that is broken without this patch but starts working with
+> this patch?
+
+
+ IMHO, this related to:
+
+- clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
++ if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
++  clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+
+
+ See
+
+https://lkml.org/lkml/2013/2/12/623
+==
+            Date Tue, 12 Feb 2013 16:56:07 -0800
+            From tip-bot for Olaf Hering
+            Subject [tip:x86/hyperv] x86: Hyper-V: register clocksource only if its advertised
+
+ . . .
+
+==
+
+
+
+Best regards, Victor Miasnikov
+}}
+
+
+
+
+
+Best regards, Victor Miasnikov
+Blog:  http://vvm.blog.tut.by/
+
