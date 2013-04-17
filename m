@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966227Ab3DQRsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:48:21 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47293 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965225Ab3DQRsU (ORCPT
+	id S966317Ab3DQRtv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:49:51 -0400
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:42075 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966137Ab3DQRts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:48:20 -0400
+	Wed, 17 Apr 2013 13:49:48 -0400
+Date: Wed, 17 Apr 2013 13:49:44 -0400
+From: Josh Boyer <jwboyer@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Stephan von Krawczynski <skraw@ithnet.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: No serial since kernel 3.8
+Message-ID: <20130417174944.GB5788@zod.gha.chartermi.net>
+References: <20130416162047.2f9b83fe.skraw@ithnet.com>
+ <CAFLxGvykqMUHrmdZnzPXW7i3-ubcF6jv2fLYF3sYPkCtJDJZuA@mail.gmail.com>
+ <20130416145953.GA8184@zod.gha.chartermi.net>
+ <20130416181432.a28e0465.skraw@ithnet.com>
+ <CAErSpo77+A0NqZpifCCJZb7T_=o0GcBo9A6Gw5OvV2kDOppt8A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130417.132702.1585825670796781999.davem@davemloft.net>
-References: <CA+55aFwt82h7hk1YiCeoG2-GGpgLvyW8t_hZRHxyhDQw=_Luzw@mail.gmail.com>
-	<20130417.131156.13653463501819067.davem@davemloft.net>
-	<CA+55aFw2f3cnJOSr2Xz78sRACk1k6xLog-3HpqtCsgNtA4=Fdw@mail.gmail.com>
-	<20130417.132702.1585825670796781999.davem@davemloft.net>
-Date: Wed, 17 Apr 2013 10:48:16 -0700
-X-Google-Sender-Auth: ZGE7y6J4Lgg1tlDpZjbxHxTPjK4
-Message-ID: <CA+55aFy9xtep6t3w+WtpjiMreX-++2fW-XrTA=hOcaYRa8fe7A@mail.gmail.com>
-Subject: Re: Device driver memory 'mmap()' function helper cleanup
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Clemens Ladisch <clemens@ladisch.de>, Arnd Bergmann <arnd@arndb.de>,
-        Takashi Iwai <tiwai@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo77+A0NqZpifCCJZb7T_=o0GcBo9A6Gw5OvV2kDOppt8A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 10:27 AM, David Miller <davem@davemloft.net> wrote:
+On Wed, Apr 17, 2013 at 11:38:30AM -0600, Bjorn Helgaas wrote:
+>[+cc Rafael & linux-acpi]
 >
-> Passing PCI BARs into these routines is illegal, we have proper
-> abstractions for mmap()'ing PCI resources via pci_mmap_page_range()
-> et al.
+>On Tue, Apr 16, 2013 at 10:14 AM, Stephan von Krawczynski
+><skraw@ithnet.com> wrote:
+>> On Tue, 16 Apr 2013 10:59:53 -0400
+>> Josh Boyer <jwboyer@gmail.com> wrote:
+>>
+>>> On Tue, Apr 16, 2013 at 04:55:25PM +0200, richard -rw- weinberger wrote:
+>>> >On Tue, Apr 16, 2013 at 4:20 PM, Stephan von Krawczynski
+>>> ><skraw@ithnet.com> wrote:
+>>> >> Hello,
+>>> >>
+>>> >> can some kind soul please explain how I can get my serial port back under
+>>> >> kernel 3.8.X. Earlier kernels showed:
+>>> >>
+>>> >> Jan 10 13:57:18 mybox kernel: [    0.712829] serial8250: ttyS0 at I/O 0x3f8
+>>> >> (irq = 4) is a 16550A
+>>> >>
+>>> >> But 3.8.4:
+>>> >>
+>>> >> Mar 26 10:39:14 admin kernel: [    0.603647] serial 00:0a: disabled
+>>> >>
+>>> >> Only kernel is replaced, no change in distro
+>>> >> Is there some kernel boot parameter needed now?
+>>> >> I tried 3.4.X and it works, even 3.7.X works...
+>>> >
+>>> >So, 3.8.3 worked and 3.8.4 introduced a regression?
+>>> >If so please confirm.
+>>> >
+>>> >CC'ing gregkh, just in case...
+>>>
+>>> We had a report of this in Fedora that was fixed with 3.8.7.  An upstream
+>>> change had been brought back to the 3.8.x series, and it was subsequently
+>>> reverted.  3.8.7 picked up the revert.
+>>>
+>>> josh
+>>
+>> 3.8.7 does not work either. I just checked it. I tried shared and not shared IRQ:
+>>
+>> Apr 16 17:47:05 mybox kernel: [    0.604826] Serial: 8250/16550 driver, 8 ports, IRQ sharing disabled
+>>
+>> and another test:
+>>
+>> Apr 16 18:07:08 mybox kernel: [    0.601203] Serial: 8250/16550 driver, 8 ports, IRQ sharing enabled
+>>
+>> I must say that 3.8.7 does not even tell the "serial 00:0a: disabled" any more.
+>> This is no special board, it is a pretty mainstream asus xeon board with onboard serial.
+>> Loading 3.4.24 (just an example) makes the port work immediately.
+>> Anything else I can test?
 >
-> So, any code doing that needs to be fixed.
+>3.7.6 works, and 3.8.3, 3.8.4, 3.8.7 all fail.  So it looks like a
+>regression between 3.7.6 and 3.8.3.
+>
+>The "serial 00:0a: disabled" message is from PNP, so I added Rafael
+>and linux-acpi.  Complete dmesg logs from 3.7.6 and 3.8.4 would be a
+>place to start.  Also maybe an acpidump, since the 00:0a PNP device
+>probably came from PNPACPI.  You could attach all these to a
+>https://bugzilla.kernel.org report if you want a place to stash them.
+>
+>Josh, do you have a pointer (URL) to the Fedora issue so we can rule
+>that in or out?
 
-Hmm. I've definitely seen code that does that (well, it's not PCI, but
-HPET, which is the same kind of "device mapped into memory rather than
-RAM"), but the one example I definitely know of is x86-specific, where
-it doesn't matter if it's IO memory or RAM.
+https://lkml.org/lkml/2013/4/2/426 is the upstream thread.  Seems that
+was narrowed down to 3.8.4 though, not 3.8.3.
 
-I suspect there may be other drivers our there that do it, for the
-simple reason that "it works on x86". And it's almost certainly
-hardware that anybody with a sparc machine will never ever care about,
-so I wouldn't worry too much about it ;)
-
-(Same goes for things like s390 etc, which has a large comment about
-"io_remap_pfn_range()" not being something they can support).
-
-So in practice I suspect it's moot. The normal uses are about DMA
-kernel allocations, and the cases where that isn't the case they might
-not work on some architectures.
-
-               Linus
+josh
