@@ -1,62 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965930Ab3DQHsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 03:48:07 -0400
-Received: from mx5.zte.com.cn ([63.217.80.70]:41130 "EHLO zte.com.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S965738Ab3DQHsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 03:48:05 -0400
-In-Reply-To: <516D9A74.8030109@linux.intel.com>
-To: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: Darren Hart <dvhart@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Ingo Molnar <mingo@kernel.org>,
+	id S966000Ab3DQHsk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 03:48:40 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:62004 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965738Ab3DQHsj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 03:48:39 -0400
+Date: Wed, 17 Apr 2013 09:48:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Robin Holt <holt@sgi.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Michel Lespinasse <walken@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: [PATCH] futex: bugfix for futex-key conflict when futex use
- hugepage
+Subject: Re: [Patch -v4 1/4] Migrate shutdown/reboot to boot cpu.
+Message-ID: <20130417074835.GB31607@gmail.com>
+References: <20130416095827.GJ3672@sgi.com>
+ <20130416113256.GA10452@gmail.com>
+ <20130416120624.GO3658@sgi.com>
+ <516D72B7.2040608@linux.vnet.ibm.com>
+ <20130416162238.GT3658@sgi.com>
 MIME-Version: 1.0
-X-Mailer: Lotus Notes Release 6.5.4 March 27, 2005
-Message-ID: <OF137D0ABE.5A739596-ON48257B50.002AB95E-48257B50.002AD807@zte.com.cn>
-From: zhang.yi20@zte.com.cn
-Date: Wed, 17 Apr 2013 15:47:23 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
- 2013-04-17 15:47:18,
-	Serialize complete at 2013-04-17 15:47:18
-Content-Type: text/plain; charset="US-ASCII"
-X-MAIL: mse02.zte.com.cn r3H7lXon018686
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130416162238.GT3658@sgi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen <dave.hansen@linux.intel.com> wrote on 2013/04/17 02:37:40:
 
-> Instead of bothering to store the index, why not just calculate it, 
-like:
+* Robin Holt <holt@sgi.com> wrote:
+
+> On Tue, Apr 16, 2013 at 09:18:07PM +0530, Srivatsa S. Bhat wrote:
+> > On 04/16/2013 05:36 PM, Robin Holt wrote:
+> > > On Tue, Apr 16, 2013 at 01:32:56PM +0200, Ingo Molnar wrote:
+> > >>
+> > >> * Robin Holt <holt@sgi.com> wrote:
+> > >>
+> > >>> We recently noticed that reboot of a 1024 cpu machine takes approx 16
+> > >>> minutes of just stopping the cpus.  The slowdown was tracked to commit
+> > >>> f96972f.
+> > >>>
+> > >>> The current implementation does all the work of hot removing the cpus
+> > >>> before halting the system.  We are switching to just migrating to the
+> > >>> boot cpu and then continuing with shutdown/reboot.
+> > >>>
+> > >>> This also has the effect of not breaking x86's command line parameter for
+> > >>> specifying the reboot cpu.  Note, this code was shamelessly copied from
+> > >>> arch/x86/kernel/reboot.c with bits removed pertaining to the reboot_cpu
+> > >>> command line parameter.
+> > >>>
+> > >>> Signed-off-by: Robin Holt <holt@sgi.com>
+> > >>> Tested-by: Shawn Guo <shawn.guo@linaro.org>
+> > >>> To: Ingo Molnar <mingo@redhat.com>
+> > >>> To: Russ Anderson <rja@sgi.com>
+> > >>> To: Oleg Nesterov <oleg@redhat.com>
+> > >>> Cc: Andrew Morton <akpm@linux-foundation.org>
+> > >>> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > >>> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+> > >>> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > >>> Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+> > >>> Cc: Michel Lespinasse <walken@google.com>
+> > >>> Cc: Oleg Nesterov <oleg@redhat.com>
+> > >>> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > >>> Cc: Paul Mackerras <paulus@samba.org>
+> > >>> Cc: Peter Zijlstra <peterz@infradead.org>
+> > >>> Cc: Robin Holt <holt@sgi.com>
+> > >>> Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
+> > >>> Cc: Tejun Heo <tj@kernel.org>
+> > >>> Cc: the arch/x86 maintainers <x86@kernel.org>
+> > >>> Cc: Thomas Gleixner <tglx@linutronix.de>
+> > >>> Cc: <stable@vger.kernel.org>
+> > >>>
+> > >>> ---
+> > >>>
+> > >>> Changes since -v1.
+> > >>> - Set PF_THREAD_BOUND before migrating to eliminate potential race.
+> > >>> - Modified kernel_power_off to also migrate instead of using
+> > >>>   disable_nonboot_cpus().
+> > >>> ---
+> > >>>  kernel/sys.c | 22 +++++++++++++++++++---
+> > >>>  1 file changed, 19 insertions(+), 3 deletions(-)
+> > >>>
+> > >>> diff --git a/kernel/sys.c b/kernel/sys.c
+> > >>> index 0da73cf..5ef7aa2 100644
+> > >>> --- a/kernel/sys.c
+> > >>> +++ b/kernel/sys.c
+> > >>> @@ -357,6 +357,22 @@ int unregister_reboot_notifier(struct notifier_block *nb)
+> > >>>  }
+> > >>>  EXPORT_SYMBOL(unregister_reboot_notifier);
+> > >>>  
+> > >>> +void migrate_to_reboot_cpu(void)
+> > >>
+> > >> It appears to be file-scope, so should be static I guess?
+> > > 
+> > > Done.
+> > > 
+> > >>> +{
+> > >>> +	/* The boot cpu is always logical cpu 0 */
+> > >>> +	int reboot_cpu_id = 0;
+> > >>> +
+> > >>> +	/* Make certain the cpu I'm about to reboot on is online */
+> > >>> +	if (!cpu_online(reboot_cpu_id))
+> > >>> +		reboot_cpu_id = smp_processor_id();
+> > >>
+> > >> Shouldn't we pick the first online CPU instead, to make it deterministic?
+> > > 
+> > > Done.
+> > > 
+> > > 		reboot_cpu_id = cpumask_first(cpu_online_mask);
+> > > 
+> > 
+> > Let me ask again: if CPU 0 (or whatever the preferred reboot cpu is)
+> > is offline, then why should we even bother pinning the task to (another)
+> > CPU? Why not just proceed with the reboot?
 > 
-> On 04/15/2013 08:37 PM, zhang.yi20@zte.com.cn wrote:
-> > +static inline int get_page_compound_index(struct page *page)
-> > +{
-> > +       if (PageHead(page))
-> > +               return 0;
-> > +       return compound_head(page) - page;
-> > +}
-> 
-> BTW, you've really got to get your mail client fixed.  Your patch is
-> still line-wrapped.
+> No idea.  I copied it from the arch/x86 code.  I can not defend it.
 
+I'd say it's a quality of implementation improvement if the choice of the CPU is 
+deterministic, as long as the current configuration of CPUs is deterministic.
 
-I agree that I should calculate the compound index, but refer to 
-prep_compound_gigantic_page, I think it may like this:
+I.e. instead of 'reboot on the first CPU, or a random CPU', make the rule 'reboot 
+on the first online CPU'. That's a simple rule to think about.
 
-+static inline int get_page_compound_index(struct page *page)
-+{
-+       struct page *head_page;
-+       if (PageHead(page))
-+               return 0;
-+
-+       head_page = compound_head(page);
-+       if (compound_order(head_page) >= MAX_ORDER)
-+               return page_to_pfn(page) - page_to_pfn(head_page);
-+       else
-+               return page - compound_head(page);
-+}
+( On most architectures CPU#0 cannot be unplugged, so the rule will effectively be 
+  'reboot on CPU#0'. Like the current upstream behavior. )
+
+Thanks,
+
+	Ingo
