@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936369Ab3DQRjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:39:08 -0400
-Received: from n26.netmark.pl ([94.124.9.61]:40881 "EHLO n26.netmark.pl"
+	id S936402Ab3DQRjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:39:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4258 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936238Ab3DQRjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:39:05 -0400
-Date: Wed, 17 Apr 2013 19:39:03 +0200
-From: Marcin Szewczyk <Marcin.Szewczyk@wodny.org>
-To: linux-kernel@vger.kernel.org
-Subject: How to override GMA500 resolution set by BIOS?
-Message-ID: <20130417173903.GB4140@magazyn-ziarno.chello.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - n26.netmark.pl
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - wodny.org
-X-Get-Message-Sender-Via: n26.netmark.pl: authenticated_id: wodny/from_h
+	id S1754726Ab3DQRjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 13:39:15 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Subject: [PATCH 0/4] HID: debugfs rework
+Date: Wed, 17 Apr 2013 19:38:12 +0200
+Message-Id: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Jiri,
 
-I've got a problem with GMA500 on my EVOC EC2-1711. The graphics
-adapter's resolution is set by selecting an option in BIOS but I would
-like to override it. Can kernel or Xorg do this?
+This is a small rework of the HID debugfs.
+I encountered a problem with multitouch devices: they have too much usages to
+fit into the fixed size output buffer of 512.
+So I digg a little, and end up with those 4 patches.
 
-There are two modes "almost" right for an 800x600 16bit LVDS screen I
-have.  The first one is 800x600 but in 24bit LVDS mode, so colors are
-mangled. The second one is 800x480 16bit -- colors are right, but the
-screen cuts the image at line 480.
+Cheers,
+Benjamin
 
-I've tried video=, overwriting modes via patched 915resolution, vga= and
-Xorg modesetting driver. Nothing works.
+Benjamin Tissoires (4):
+  HID: debug: break out hid_dump_report() into hid-debug
+  HID: core: break out hid_find_max_report() in hid-core
+  HID: debug: empty output queue on read
+  HID: debug: allocate the output buffer with an estimate
 
-Does anyone know if it's possible to override the mode?
+ drivers/hid/hid-core.c        | 84 +++++++++++++++++++++++++++++-----------
+ drivers/hid/hid-debug.c       | 89 +++++++++++++++++++++++++++++++++----------
+ drivers/hid/i2c-hid/i2c-hid.c | 15 ++------
+ drivers/hid/usbhid/hid-core.c | 16 --------
+ include/linux/hid-debug.h     |  7 +++-
+ include/linux/hid.h           |  5 +++
+ 6 files changed, 143 insertions(+), 73 deletions(-)
 
 -- 
-Marcin Szewczyk                       http://wodny.org
-mailto:Marcin.Szewczyk@wodny.borg  <- remove b / usuń b
-xmpp:wodny@ubuntu.pl                  xmpp:wodny@jabster.pl
+1.8.1.4
+
