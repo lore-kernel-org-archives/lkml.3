@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965917Ab3DQKRf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 06:17:35 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:51670 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965778Ab3DQKRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 06:17:34 -0400
-Message-ID: <516E76A5.4090805@imgtec.com>
-Date: Wed, 17 Apr 2013 11:17:09 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1758231Ab3DQKW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 06:22:26 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:33851 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757266Ab3DQKWZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 06:22:25 -0400
 MIME-Version: 1.0
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: James Hogan <james.hogan@imgtec.com>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v7] fs: imgdafs: Add IMG DAFS filesystem for metag
-References: <1364382479-15814-1-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1364382479-15814-1-git-send-email-james.hogan@imgtec.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_04_17_11_17_33
+In-Reply-To: <20130416121255.GA15878@sirena.org.uk>
+References: <1366015230-18243-1-git-send-email-ks.giri@samsung.com>
+	<20130416112035.GD26958@opensource.wolfsonmicro.com>
+	<CAKrE-Kd4Vis0-V_n8zEzqJVBbEYvTiYS8hY_7s7AnUqaK2tFCQ@mail.gmail.com>
+	<20130416121255.GA15878@sirena.org.uk>
+Date: Wed, 17 Apr 2013 15:52:23 +0530
+Message-ID: <CAKrE-KfEetVCE7Q2OyA7dBtFNv71ydX_bNXxMTJK4dSdstoi_A@mail.gmail.com>
+Subject: Re: [PATCH V4 2/5] spi: s3c64xx: added support for polling mode
+From: Girish KS <girishks2000@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, grant.likely@secretlab.ca,
+        t.figa@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+On Tue, Apr 16, 2013 at 5:42 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Tue, Apr 16, 2013 at 04:58:47PM +0530, Girish KS wrote:
+>> On Tue, Apr 16, 2013 at 4:50 PM, Mark Brown <broonie@kernel.org> wrote:
+>
+>> > I'm missing patch 1 of this series.
+>
+>> its already  merged to stable tree after your review
+>
+> The patch numbering should reflect what you're posting.  If you're only
+> sending four patches they should be numbered 1-4, otherwise it looks
+> like there's something missing.  The goal with the numbers is to help
+> people get the patches in the right order, the name should be enough to
+> associate with other versions of the same patch.
 
-On 27/03/13 11:07, James Hogan wrote:
-> Add the IMG Debug Adapter File System (DAFS) for metag, which uses
-> SWITCH operations to communicate with a file server on a host computer
-> via a JTAG debug adapter.
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> ---
-> v7:
->   * use explicit sized types in da_stat and da_finddata (Al Viro)
->   * move IMGDAFS_SUPER_MAGIC to <linux/magic.h> (Al Viro)
->   * use fmode_t instead of int in a couple of places (Al Viro)
->   * removed "will unlock" comment (Al Viro)
->   * use kmalloc and init hi->mode explicitly (Al Viro)
->   * kmalloc instead of using dynamic array for path (Al Viro)
->   * use file_inode() helper in dafs_readdir (Al Viro)
-
-Does this latest version look okay for v3.10?
-
-Cheers
-James
-
+OK. I will submit a new series ignoring the already merged patch.
