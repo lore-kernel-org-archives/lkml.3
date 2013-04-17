@@ -1,114 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936295Ab3DQChd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 22:37:33 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:58537 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936226Ab3DQChc (ORCPT
+	id S936299Ab3DQClv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 22:41:51 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:54776 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936226Ab3DQClu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 22:37:32 -0400
-Message-ID: <1366166245.9682.1.camel@phoenix>
-Subject: [PATCH] regulator: as3711: Use a static of_regulator_match table
- for of_regulator_match
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 17 Apr 2013 10:37:25 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Apr 2013 22:41:50 -0400
+X-Spam-Score: -100.8
+Message-ID: <516E0BC3.6020302@asianux.com>
+Date: Wed, 17 Apr 2013 10:41:07 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Eric Paris <eparis@redhat.com>
+CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel: auditfilter: looping issue, memory leak if has
+ 2 or more AUDIT_FILTERKEYs
+References: <51653645.90401@asianux.com> <51653C7A.6030405@asianux.com> <2119919725.12278128.1365628773876.JavaMail.root@redhat.com> <516637BB.90606@asianux.com> <5167D6FC.3070504@asianux.com> <516D2718.2010205@asianux.com> <516D2A11.2080502@asianux.com>
+In-Reply-To: <516D2A11.2080502@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The same table can be used for multiple instance of pdev, so we don't need to
-allocate memory for of_regulator_match table per pdev.
+On 2013年04月16日 18:38, Chen Gang wrote:
+> On 2013年04月16日 18:25, Chen Gang wrote:
+>> On 2013年04月12日 17:42, Chen Gang wrote:
+>>> On 2013年04月11日 12:10, Chen Gang wrote:
+>>>> On 2013年04月11日 05:19, Eric Paris wrote:
+>>>>> ----- Original Message -----
+>>>>>
+>>>>>>>   b. has an new issue for AUDIT_DIR:
+>>>>>>>        after AUDIT_DIR succeed, it will set rule->tree.
+>>>>>>>        next, the other case fail, then will call audit_free_rule.
+>>>>>>>        but audit_free_rule will not free rule->tree.
+>>>>> Definitely a couple of leaks here...
+>>>>>
+>>>>> I'm seeing leaks on size 8, 64, and 128.
+>>>>>
+>>>>> Al, what do you think?  Should I be calling audit_put_tree() in the error case if entry->tree != NULL?  The audit trees are some of the most complex code in the kernel I think.
+>>>>>
+>>>>>
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/as3711-regulator.c |   46 ++++++++++++++--------------------
- 1 file changed, 19 insertions(+), 27 deletions(-)
+  after the test, the original version really has memory leak.
 
-diff --git a/drivers/regulator/as3711-regulator.c b/drivers/regulator/as3711-regulator.c
-index 0539b3e..dd1a089 100644
---- a/drivers/regulator/as3711-regulator.c
-+++ b/drivers/regulator/as3711-regulator.c
-@@ -278,52 +278,44 @@ static struct as3711_regulator_info as3711_reg_info[] = {
- 
- #define AS3711_REGULATOR_NUM ARRAY_SIZE(as3711_reg_info)
- 
--static const char *as3711_regulator_of_names[AS3711_REGULATOR_NUM] = {
--	[AS3711_REGULATOR_SD_1] = "sd1",
--	[AS3711_REGULATOR_SD_2] = "sd2",
--	[AS3711_REGULATOR_SD_3] = "sd3",
--	[AS3711_REGULATOR_SD_4] = "sd4",
--	[AS3711_REGULATOR_LDO_1] = "ldo1",
--	[AS3711_REGULATOR_LDO_2] = "ldo2",
--	[AS3711_REGULATOR_LDO_3] = "ldo3",
--	[AS3711_REGULATOR_LDO_4] = "ldo4",
--	[AS3711_REGULATOR_LDO_5] = "ldo5",
--	[AS3711_REGULATOR_LDO_6] = "ldo6",
--	[AS3711_REGULATOR_LDO_7] = "ldo7",
--	[AS3711_REGULATOR_LDO_8] = "ldo8",
-+static struct of_regulator_match as3711_regulator_matches[] = {
-+	{ .name = "sd1" },
-+	{ .name = "sd2" },
-+	{ .name = "sd3" },
-+	{ .name = "sd4" },
-+	{ .name = "ldo1" },
-+	{ .name = "ldo2" },
-+	{ .name = "ldo3" },
-+	{ .name = "ldo4" },
-+	{ .name = "ldo5" },
-+	{ .name = "ldo6" },
-+	{ .name = "ldo7" },
-+	{ .name = "ldo8" },
- };
- 
- static int as3711_regulator_parse_dt(struct device *dev,
- 				struct device_node **of_node, const int count)
- {
- 	struct as3711_regulator_pdata *pdata = dev_get_platdata(dev);
--	struct device_node *regulators =
--		of_find_node_by_name(dev->parent->of_node, "regulators");
--	struct of_regulator_match *matches, *match;
-+	struct device_node *regulators;
-+	struct of_regulator_match *match;
- 	int ret, i;
- 
-+	regulators = of_find_node_by_name(dev->parent->of_node, "regulators");
- 	if (!regulators) {
- 		dev_err(dev, "regulator node not found\n");
- 		return -ENODEV;
- 	}
- 
--	matches = devm_kzalloc(dev, sizeof(*matches) * count, GFP_KERNEL);
--	if (!matches)
--		return -ENOMEM;
--
--	for (i = 0, match = matches; i < count; i++, match++) {
--		match->name = as3711_regulator_of_names[i];
--		match->driver_data = as3711_reg_info + i;
--	}
--
--	ret = of_regulator_match(dev->parent, regulators, matches, count);
-+	ret = of_regulator_match(dev->parent, regulators,
-+				 as3711_regulator_matches, count);
- 	of_node_put(regulators);
- 	if (ret < 0) {
- 		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
- 		return ret;
- 	}
- 
--	for (i = 0, match = matches; i < count; i++, match++)
-+	for (i = 0, match = as3711_regulator_matches; i < count; i++, match++)
- 		if (match->of_node) {
- 			pdata->init_data[i] = match->init_data;
- 			of_node[i] = match->of_node;
+  test:
+    the related monitor command is:
+      watch -d -n 1 "cat /proc/meminfo | awk '{print \$2}' \
+        | head -n 4 | xargs \
+        | awk '{print \"used \",\$1 - \$2 - \$3 - \$4}'"
+    I run 15 processes of modified auditctl at the same time.
+
+  result:
+    for original version:
+      can see the memory leak, it will be more clear after 1 - 2 hours.
+
+    for new version (fix it):
+      can not see the memory leak after ran 12 - 14 hours.
+
+
+  I will use LTP (ltp-full-20130109) to test audit again under fedora 17
+x86_64 for next-20130415, then send related patch.
+
+
+  welcome any suggestions or completions.
+
+
+> 
+>   oh, also need buffering optarg of auditctl under fedora 17.
+>   or "-F auid=-1" will be truncated to "-F auid".
+>   it is ok if not looping again. but in our case, we need loop again.
+> 
+>   to see memory usage, I think:
+>     in top, really used memory = 'used' - 'cached'
+>     it is enough for us.
+> 
+>   welcome any suggestions or completions.
+> 
+>   thanks.
+> 
+> 
+>>
+>>   I am just testing about it with:
+>>
+>> ---
+>> while(1)
+>>     auditctl -a exit,always -w /etc -F auid=-1
+>> ---
+>>
+>>   under fedora 17, we need modify the auditctl source code:
+>>     a. let -w /etc can pass auditctl checking.
+>>     b. let loop infinitely in a process (if process quit, will free mem)
+>>     c. need fix a bug for auditctl (under Fedora 17)
+>>          audit_open may open 2 times.
+>>          when loop infinitely, it will cause resource handle leak.
+>>
+>>   I have checked (by insert printf in kernel/auditfilter.c):
+>>     after modify the auditct, the work flow is just what we want to be.
+>>       (will alloc watch, alloc tree, then failure occurs)
+>>
+>>
+>>   I guess, we need 2-3 days to get a test result.
+>>
+>>
+>>   welcome any suggestions and completions.
+>>
+>>   thanks.
+>>
+>>
+>>
+>>>
+>>>   it seems, your way is the only executable way (if not change code much).
+>>>   what my original idea is incorrect.
+>>>
+>>>     we need add related code at failure process area in audit_data_to_entry.
+>>>     and another functions need not add these code (should not add).
+>>>     'watch' also need be processed, since audit_to_watch let ref count = 2.
+>>>       (it just like the function audit_del_rule has done)
+>>>
+>>>   please help check thanks.
+>>>
+>>>   :-)
+>>>
+>>>
+>>> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+>>> index 81f63f9..f5327ce 100644
+>>> --- a/kernel/auditfilter.c
+>>> +++ b/kernel/auditfilter.c
+>>> @@ -594,6 +594,10 @@ exit_nofree:
+>>>  	return entry;
+>>>  
+>>>  exit_free:
+>>> +	if (entry->rule.watch)
+>>> +		audit_put_watch(entry->rule.watch); /* matches initial get */
+>>> +	if (entry->rule.tree)
+>>> +		audit_put_tree(entry->rule.tree); /* that's the temporary one */
+>>>  	audit_free_rule(entry);
+>>>  	return ERR_PTR(err);
+>>>  }
+>>>
+>>>
+>>>
+>>>>
+>>>>   can we add it in audit_free_rule ?
+>>>>
+>>>>   maybe like this:
+>>>>
+>>>> @@ -75,6 +75,8 @@ static inline void audit_free_rule(struct audit_entry *e)
+>>>>  	/* some rules don't have associated watches */
+>>>>  	if (erule->watch)
+>>>>  		audit_put_watch(erule->watch);
+>>>> +	if (erule->tree)
+>>>> +		audit_put_tree(erule->tree);
+>>>>  	if (erule->fields)
+>>>>  		for (i = 0; i < erule->field_count; i++) {
+>>>>  			struct audit_field *f = &erule->fields[i];
+>>>>
+>>>>
+>>>>   thanks.
+>>>>
+>>>>   :-)
+>>>>
+>>>
+>>>
+>>
+>>
+> 
+> 
+
+
 -- 
-1.7.10.4
+Chen Gang
 
-
-
+Asianux Corporation
