@@ -1,127 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758400Ab3DQTJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 15:09:59 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35008 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755943Ab3DQTJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 15:09:57 -0400
-From: Dan Murphy <dmurphy@ti.com>
-To: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Dan Murphy <dmurphy@ti.com>
-Subject: [PATCH] ARM: dts: omap4-panda: Add LED support into the panda DTS files
-Date: Wed, 17 Apr 2013 14:09:38 -0500
-Message-ID: <1366225778-6083-2-git-send-email-dmurphy@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1366225778-6083-1-git-send-email-dmurphy@ti.com>
-References: <1366225778-6083-1-git-send-email-dmurphy@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S966431Ab3DQTKg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 15:10:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28717 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965295Ab3DQTKe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 15:10:34 -0400
+X-Authority-Analysis: v=2.0 cv=aOZyWMBm c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=P9tYZ7KxwnoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=d4Hf9CRHXzMA:10 a=CVF7XyKItEI0EC762UMA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Subject: [PATCH] slab: Remove unnecessary __builtin_constant_p()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Cc: Christoph Lameter <cl@linux.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Apr 2013 15:09:36 -0400
+Message-ID: <1366225776.8817.28.camel@pippen.local.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
-are different.
+The slab.c code has a size check macro that checks the size of the
+following structs:
 
-Abstract away the pinmux and the LED definitions for the two boards.
+struct arraycache_init
+struct kmem_list3
 
-Signed-off-by: Dan Murphy <dmurphy@ti.com>
----
- arch/arm/boot/dts/omap4-panda-es.dts |   33 +++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/omap4-panda.dts    |   22 +++++++++++++++++++++-
- 2 files changed, 54 insertions(+), 1 deletion(-)
+The index_of() function that takes the sizeof() of the above two structs
+and does an unnecessary __builtin_constant_p() on that. As sizeof() will
+always end up being a constant making this always be true. The code is
+not incorrect, but it just adds added complexity, and confuses users and
+wastes the time of reviewers of the code, who spends time trying to
+figure out why the builtin_constant_p() was used.
 
-diff --git a/arch/arm/boot/dts/omap4-panda-es.dts b/arch/arm/boot/dts/omap4-panda-es.dts
-index 73bc1a6..42fdd86 100644
---- a/arch/arm/boot/dts/omap4-panda-es.dts
-+++ b/arch/arm/boot/dts/omap4-panda-es.dts
-@@ -31,3 +31,36 @@
- 		0x5e 0x100	/* hdmi_sda.hdmi_sda INPUT | MODE 0 */
- 		>;
- };
-+
-+&leds {
-+	compatible = "gpio-leds";
-+	heartbeat {
-+		label = "pandaboard::status1";
-+		gpios = <&gpio4 14 0>;
-+		linux,default-trigger = "heartbeat";
-+	};
-+	mmc {
-+		label = "pandaboard::status2";
-+		gpios = <&gpio1 8 0>;
-+		linux,default-trigger = "gpio";
-+	};
-+};
-+
-+&led_gpio_pins {
-+	pinctrl-single,pins = <
-+		0xb6 0x3	/* gpio_110 OUTPUT | MODE 3 */
-+	>;
-+};
-+
-+&omap4_pmx_wkup {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+		&led_wkgpio_pins
-+	>;
-+
-+	led_wkgpio_pins: pinmux_leds_wkpins {
-+		pinctrl-single,pins = <
-+			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
-+		>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/omap4-panda.dts b/arch/arm/boot/dts/omap4-panda.dts
-index 4122efe..465c4b0b8 100644
---- a/arch/arm/boot/dts/omap4-panda.dts
-+++ b/arch/arm/boot/dts/omap4-panda.dts
-@@ -19,7 +19,7 @@
- 		reg = <0x80000000 0x40000000>; /* 1 GB */
- 	};
+This patch is just a clean up that makes the index_of() code a little
+bit less complex.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/mm/slab.c b/mm/slab.c
+index 856e4a1..6047900 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -325,9 +325,7 @@ static void cache_reap(struct work_struct *unused);
+ static __always_inline int index_of(const size_t size)
+ {
+ 	extern void __bad_size(void);
+-
+-	if (__builtin_constant_p(size)) {
+-		int i = 0;
++	int i = 0;
  
--	leds {
-+	leds: leds{
- 		compatible = "gpio-leds";
- 		heartbeat {
- 			label = "pandaboard::status1";
-@@ -67,6 +67,7 @@
- 			&mcbsp1_pins
- 			&dss_hdmi_pins
- 			&tpd12s015_pins
-+			&led_gpio_pins
- 	>;
+ #define CACHE(x) \
+ 	if (size <=x) \
+@@ -336,9 +334,7 @@ static __always_inline int index_of(const size_t size)
+ 		i++;
+ #include <linux/kmalloc_sizes.h>
+ #undef CACHE
+-		__bad_size();
+-	} else
+-		__bad_size();
++	__bad_size();
+ 	return 0;
+ }
  
- 	twl6040_pins: pinmux_twl6040_pins {
-@@ -110,6 +111,25 @@
- 			0x58 0x10b	/* hdmi_hpd.gpio_63 INPUT PULLDOWN | MODE3 */
- 		>;
- 	};
-+
-+	led_gpio_pins: pinmux_leds_pins {
-+		pinctrl-single,pins = <
-+		>;
-+	};
-+};
-+
-+&omap4_pmx_wkup {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <
-+		&led_wkgpio_pins
-+	>;
-+
-+	led_wkgpio_pins: pinmux_leds_wkpins {
-+		pinctrl-single,pins = <
-+			0x1a 0x3	/* gpio_wk7 OUTPUT | MODE 3 */
-+			0x1c 0x3	/* gpio_wk8 OUTPUT | MODE 3 */
-+		>;
-+	};
- };
- 
- &i2c1 {
--- 
-1.7.9.5
+
 
