@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966109Ab3DQLfA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 07:35:00 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36887 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965979Ab3DQLe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 07:34:59 -0400
-Message-ID: <516E88A9.9070200@ti.com>
-Date: Wed, 17 Apr 2013 14:34:01 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S966206Ab3DQLfP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 07:35:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53288 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966185Ab3DQLfL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 07:35:11 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>
+CC: <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>,
+        Sylvain Munaut <tnt@246tNt.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: [RFT/PATCH 2/6] driver: serial: mpc52xx_uart: Remove "uart_console" defintion
+Date: Wed, 17 Apr 2013 17:04:23 +0530
+Message-ID: <1366198467-6757-3-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>
+References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Clemens Ladisch <clemens@ladisch.de>, Arnd Bergmann <arnd@arndb.de>,
-        Takashi Iwai <tiwai@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: Device driver memory 'mmap()' function helper cleanup
-References: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
-In-Reply-To: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enig6DE05481E5D3066F0088B3D7"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enig6DE05481E5D3066F0088B3D7
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Since "uart_console" definition is now moved to serial core
+haeder file . Serial drivers need not define them.
 
-On 2013-04-17 06:12, Linus Torvalds wrote:
-> Guys, I just pushed out a new helper function intended for cleaning up
-> various device driver mmap functions, because they are rather messy,
-> and at least part of the problem was the bad impedance between what a
-> driver author would want to have, and the VM interfaces to map a
-> memory range into user space with mmap.
->=20
-> Some drivers would end up doing extensive checks on the length of the
-> mappings and the page offset within the mapping, while other drivers
-> would end up doing no checks at all.
->=20
-> The new helper is in commit b4cbb197c7e7 ("vm: add vm_iomap_memory()
-> helper function"), but I didn't actually commit any *users* of it,
-> because I just have this untested patch-collection for a few random
-> drivers (picked across a few different driver subsystems, just to make
-> it interesting).  I did that largely just to check the different use
-> cases, but I don't actually tend to *use* all that many fancy drivers,
-> so I don't have much of a way of testing it.
+Cc: Sylvain Munaut <tnt@246tNt.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Rajendra nayak <rnayak@ti.com>
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+---
+ drivers/tty/serial/mpc52xx_uart.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
-Should there be a similar helper that uses remap_pfn_range() instead of
-io_remap_pfn_range()?
+diff --git a/drivers/tty/serial/mpc52xx_uart.c b/drivers/tty/serial/mpc52xx_uart.c
+index 018bad9..d74ac06 100644
+--- a/drivers/tty/serial/mpc52xx_uart.c
++++ b/drivers/tty/serial/mpc52xx_uart.c
+@@ -84,16 +84,6 @@ static void mpc52xx_uart_of_enumerate(void);
+ static irqreturn_t mpc52xx_uart_int(int irq, void *dev_id);
+ static irqreturn_t mpc5xxx_uart_process_int(struct uart_port *port);
+ 
+-
+-/* Simple macro to test if a port is console or not. This one is taken
+- * for serial_core.c and maybe should be moved to serial_core.h ? */
+-#ifdef CONFIG_SERIAL_CORE_CONSOLE
+-#define uart_console(port) \
+-	((port)->cons && (port)->cons->index == (port)->line)
+-#else
+-#define uart_console(port)	(0)
+-#endif
+-
+ /* ======================================================================== */
+ /* PSC fifo operations for isolating differences between 52xx and 512x      */
+ /* ======================================================================== */
+-- 
+1.7.1
 
-Some fb drivers use remap_pfn_range(), and I'm not sure if there could
-be some side effects on some platforms if they are changed to use
-io_remap_pfn_range(). At least mips and sparc seem to have their own
-versions for io_remap_pfn_range().
-
- Tomi
-
-
-
---------------enig6DE05481E5D3066F0088B3D7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJRboitAAoJEPo9qoy8lh71NJcP/imSW2cgY4607og/jO4eRBgf
-TjfvVTxWgDUdvNory1IHUm48Jz5Ah26eW3K3/pOJ6Y7a0b1O0NJbx8LENlcXRH4J
-SPu6zfMQcThrQdjago+F5BObjKk8r5Epj+zfuFtDip1kXNLbL9gXmypBQqotfUQt
-c93ujhgVdVcVM56kN7Ix79XRHWoawvcOY1YKJR8Py5j0ZrObIq7MBai6nqCEEIDO
-gIEQTDwU3EeauAGLVDESSqo7bkYHZCVnTigkjMKWk/NVw49wEzRjV153XKT19OMF
-omRV7nDCg5RcvYD+4PyXNof9Cge7q7QoSW3iYLmzoMvPdk3LunsL4f5JGHB/eiQq
-YQDQsXJIcCVjBVT0zq8boty2r82Wni/Jb7vB2k6+HlEK8mGn3eRFGZ0vQGIZvIKW
-hGEfsVeGZfVQhHCHxM19afLIb1M+Ot1JPN6FkQbm7Ota1rjGDggIWlH41k8nIsc+
-u7zQXQqt4NHV82NsR/CfBBYEfesAN7q3Pl4z0nxZxh0y1TJopjH3w9fmIs9j6umY
-GBtRpuXJSgoeHeEJcttkC3UhD3jMh386aSgigtqKuINxVmMS5aITWYggUMiwgah8
-tiPOYX/lyOjRk2aQ469OCTIgshYdIzIRyxf+mAE5P1pIcTfneYKtnYauRIHk+kpm
-ehCDmzO+CZz5lOZXzOdl
-=Vgop
------END PGP SIGNATURE-----
-
---------------enig6DE05481E5D3066F0088B3D7--
