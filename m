@@ -1,163 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966241Ab3DQMHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 08:07:20 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53013 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966071Ab3DQMHT convert rfc822-to-8bit (ORCPT
+	id S966304Ab3DQMIO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 08:08:14 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:38361 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966251Ab3DQMIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 08:07:19 -0400
-From: "B, Ravi" <ravibabu@ti.com>
-To: "Bilovol, Ruslan" <ruslan.bilovol@ti.com>
-CC: "Balbi, Felipe" <balbi@ti.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded
- systems
-Thread-Topic: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded
- systems
-Thread-Index: AQHOOrj9vvmkWKgZJUSEVp2nIwd7q5jZD1SwgADTvgCAAGl/0A==
-Date: Wed, 17 Apr 2013 12:07:14 +0000
-Message-ID: <6C6B28D4DC342643927BEAFCE8707BF63EAACBB8@DBDE01.ent.ti.com>
-References: <1366126904-31605-1-git-send-email-ruslan.bilovol@ti.com>
-	<6C6B28D4DC342643927BEAFCE8707BF63EAAC0E5@DBDE01.ent.ti.com>
- <CAB=otbS1R+QTDo=MynMRydCZnv4+idWyosRUQ3d1qiFvXaGPpw@mail.gmail.com>
-In-Reply-To: <CAB=otbS1R+QTDo=MynMRydCZnv4+idWyosRUQ3d1qiFvXaGPpw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.190.65]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Wed, 17 Apr 2013 08:08:12 -0400
+Message-ID: <516E9096.70906@linux.vnet.ibm.com>
+Date: Wed, 17 Apr 2013 17:37:50 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Michael Ellerman <michael@ellerman.id.au>
+CC: linuxppc-dev@ozlabs.org, mikey@neuling.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 5/5] powerpc, perf: Enable branch stack sampling framework
+ support with BHRB
+References: <1366127650-1952-1-git-send-email-khandual@linux.vnet.ibm.com> <1366127650-1952-6-git-send-email-khandual@linux.vnet.ibm.com> <20130417070852.GA29203@concordia>
+In-Reply-To: <20130417070852.GA29203@concordia>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041712-2674-0000-0000-000008A1D5C1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ruslan
+On 04/17/2013 12:38 PM, Michael Ellerman wrote:
+> On Tue, Apr 16, 2013 at 09:24:10PM +0530, Anshuman Khandual wrote:
+>> This patch provides basic enablement for perf branch stack sampling framework
+>> on POWER8 processor with a new PMU feature called BHRB (Branch History Rolling
+>> Buffer).
+>>
+>> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+>> ---
+>>  arch/powerpc/perf/core-book3s.c     | 96 +++++++++++++++++++++++++++++++++++--
+>>  arch/powerpc/perf/perf_event_bhrb.c | 85 ++++++++++++++++++++++++++++++++
+>>  2 files changed, 178 insertions(+), 3 deletions(-)
+>>  create mode 100644 arch/powerpc/perf/perf_event_bhrb.c
+>>
+>> diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
+>> index 4ac6e64..f4d1347 100644
+>> --- a/arch/powerpc/perf/core-book3s.c
+>> +++ b/arch/powerpc/perf/core-book3s.c
+>> @@ -19,6 +19,8 @@
+>>  #include <asm/firmware.h>
+>>  #include <asm/ptrace.h>
+>>  
+>> +#define BHRB_MAX_ENTRIES	32
+>> +
+>>  struct cpu_hw_events {
+>>  	int n_events;
+>>  	int n_percpu;
+>> @@ -38,11 +40,21 @@ struct cpu_hw_events {
+>>  
+>>  	unsigned int group_flag;
+>>  	int n_txn_start;
+>> +
+>> +	/* BHRB bits */
+>> +	u64				bhrb_filter;	/* BHRB HW branch filter */
+>> +	int				bhrb_users;
+>> +	void				*bhrb_context;
+>> +	struct	perf_branch_stack	bhrb_stack;
+>> +	struct	perf_branch_entry	bhrb_entries[BHRB_MAX_ENTRIES];
+>>  };
+>> +
+>>  DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
+>>  
+>>  struct power_pmu *ppmu;
+>>  
+>> +#include "perf_event_bhrb.c"
+>> +
+> 
+> Um, why are you doing that?
+> 
 
-> >> Subject: [PATCH] usb: musb: gadget: fix enumeration on heavy-loaded
-> >> systems
-> >>
-> >> From musb point of view, the Address Assignment sequence during
-> >> device enumeration is next:
-> >>  - first ep0 interrupt:
-> >>       * read the address from USB_REQ_SET_ADDRESS request
-> >>       * set up CSR0L.DataEnd bit (that is ACK
-> >>         signalization for the host)
-> >>  - second ep0 interrupt:
-> >>       * indicates that the request completed successfully
-> >>       * set up musb device address
-> >>         Now musb device should answer to this address
-> >>
-> >> From the host perspective, if peripheral device acquires
-> >> SET_ADDRESS request, it now may be accessed only using that address.
-> >> However, on heavy loaded systems, time between first and
-> >> second musb ep0 interrupts may be too long and musb controller
-> >> misses requests between.
-> >
-> > What is meant by heavily loaded system? Is the device is heavily loaded
-> during enumeration stage? Why second ep0 interrupt is too long? whether
-> interrupt occurrence to interrupt service is taking too long?
-> 
-> I mean production system with aggressive power management and tens of
-> interrupt sources.
-> On such systems and in low CPU frequency case, you may meet condition
-> when time between
-> IRQ firing and ISR entering is increased in few times.
-> 
-> In particular case of OMAP4 where I met this issue, time between first
-> and second ep0 interrupt
-> sometimes may be up to 800-900 uS and in this case the USB30CV test fails.
-> If this time is 200-300 uS, the test successfully passes.
-> 
-> Unfortunately, this time is not predictable and depends on many factors so
-> this patch ensures we change the address as soon as sent ACK to the host.
-> 
-> >
-> > As result, device enumeration may be
-> >> unsuccessful. This can be checked on USB3.0 Host and
-> >> using USB3.0 test suite (from usb.org) running ch9 tests
-> >> for USB2.0 devices.
-> >
-> > You mean the usb2.0 musb controller (in device mode) connected to USB3.0
-> host?
-> 
-> Correct. USB2.0 musb controller in device mode, connected to USB3.0
-> host that runs
-> USB30CV utility for USB2.0 devices
-> 
-> >
-> >> Usually 'Addressed state/TD9.1: Device Descriptor Test' will fail
-> >>
-> >> The fix consists in checking CSR0L.DataEnd state and assigning
-> >> the device address in the first ep0 interrupt handling, so
-> >> delay is as minimal as possible
-> >>
-> >> Signed-off-by: Ruslan Bilovol <ruslan.bilovol@ti.com>
-> >> ---
-> >>  drivers/usb/musb/musb_gadget_ep0.c |   31
-> +++++++++++++++++++++++++++++++
-> >>  1 file changed, 31 insertions(+)
-> >>
-> >> diff --git a/drivers/usb/musb/musb_gadget_ep0.c
-> >> b/drivers/usb/musb/musb_gadget_ep0.c
-> >> index c9c1ac4..59bc5a5 100644
-> >> --- a/drivers/usb/musb/musb_gadget_ep0.c
-> >> +++ b/drivers/usb/musb/musb_gadget_ep0.c
-> >> @@ -885,6 +885,37 @@ stall:
-> >>  finish:
-> >>                               musb_writew(regs, MUSB_CSR0,
-> >>                                               musb->ackpend);
-> >> +
-> >> +                             /*
-> >> +                              * If we are at end of SET_ADDRESS
-> sequence,
-> >> +                              * update the address immediately if
-> possible,
-> >> +                              * otherwise we may miss packets between
-> >> +                              * sending ACK from musb side and musb's
-> next
-> >> +                              * interrupt handler firing (in which we
-> update
-> >> +                              * the address). At least this fixes next
-> >> +                              * USB2.0 ch9 test of USB30CV utility:
-> >> +                              * "Addressed state - Device Descriptor
-> test"
-> >> +                              */
-> >> +                             if (musb->set_address && (musb->ackpend &
-> >> +
-> MUSB_CSR0_P_DATAEND) &&
-> >> +                                             (musb->ep0_state ==
-> >> +                                             MUSB_EP0_STAGE_STATUSIN))
-> {
-> >> +                                     u16 ack_delay = 500;
-> >> +
-> >> +                                     while ((musb_readw(regs,
-> MUSB_CSR0) &
-> >> +
-> MUSB_CSR0_P_DATAEND) &&
-> >> +                                                     --ack_delay) {
-> >> +                                             cpu_relax();
-> >> +                                             udelay(1);
-> >> +                                     }
-> >> +
+There was no specific reason for that.
 
-No need to loop here. It is self clearing bit.
+> If it's code that should be in a header, put it in a header. If it's C
+> code, add it to the Makefile.
 
-> >> +                                     if (ack_delay) {
-> >> +                                             musb->set_address =
-> false;
-> >> +                                             musb_writeb(mbase,
-> MUSB_FADDR,
-> >> +                                                             musb-
-> >address);
-> >> +                                     }
+Sure I would get the new code in the Makefile. Thanks!
 
-Setting the address before status phase could lead to dropping of status  packet(IN token) by controller, because the status phase is addressed to device with zero address by host, but device controller already changed to new address.
-I believe above delay loop is saving you in this case.
+Regards
+Anshuman
 
---
-Ravi B
+> 
+> cheers
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
+
