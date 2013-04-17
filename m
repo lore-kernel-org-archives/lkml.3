@@ -1,78 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753340Ab3DQAOo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 20:14:44 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36064 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab3DQAOn (ORCPT
+	id S1753765Ab3DQAYT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 20:24:19 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:42904 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab3DQAYS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 20:14:43 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <516DE958.1090200@jp.fujitsu.com>
-Date: Wed, 17 Apr 2013 09:14:16 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Tue, 16 Apr 2013 20:24:18 -0400
+Date: Tue, 16 Apr 2013 19:24:13 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [RFC 4/7] Docs: Add info on supported kernels to
+ REPORTING-BUGS.
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+In-Reply-To: <2c97a63f6fec91db91241981808d099ec60a4688.1366046390.git.sarah.a.sharp@linux.intel.com>
+	(from sarah.a.sharp@linux.intel.com on Mon Apr 15 12:33:33 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1366158253.18069.109@driftwood>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <rientjes@google.com>, <linuxram@us.ibm.com>
-Subject: Re: [Bug fix PATCH v2] Reusing a resource structure allocated by
- bootmem
-References: <516CA4F1.9060603@jp.fujitsu.com> <1366124458.3824.30.camel@misato.fc.hp.com>
-In-Reply-To: <1366124458.3824.30.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/04/17 0:00, Toshi Kani wrote:
-> On Tue, 2013-04-16 at 10:10 +0900, Yasuaki Ishimatsu wrote:
->> When hot removing memory presented at boot time, following messages are shown:
->
->   :
->
->> The reason why the messages are shown is to release a resource structure,
->> allocated by bootmem, by kfree(). So when we release a resource structure,
->> we should check whether it is allocated by bootmem or not.
->>
->> But even if we know a resource structure is allocated by bootmem, we cannot
->> release it since SLxB cannot treat it. So for reusing a resource structure,
->> this patch remembers it by using bootmem_resource as follows:
->>
->> When releasing a resource structure by free_resource(), free_resource() checks
->> whether the resource structure is allocated by bootmem or not. If it is
->> allocated by bootmem, free_resource() adds it to bootmem_resource. If it is
->> not allocated by bootmem, free_resource() release it by kfree().
->>
->> And when getting a new resource structure by get_resource(), get_resource()
->> checks whether bootmem_resource has released resource structures or not. If
->> there is a released resource structure, get_resource() returns it. If there is
->> not a releaed resource structure, get_resource() returns new resource structure
->> allocated by kzalloc().
->>
->> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> ---
->> v2:
->> Based on following Toshi's works:
->>    Support memory hot-delete to boot memory
->>      https://lkml.org/lkml/2013/4/10/469
->>    resource: Update config option of release_mem_region_adjustable()
->>      https://lkml.org/lkml/2013/4/11/694
->> Added a NULL check into free_resource()
->> Remove __free_resource()
->
-> Thanks for the update.  Looks good.  Can you also address Rui's comment?
+On 04/15/2013 12:33:33 PM, Sarah Sharp wrote:
+> One of the most common frustrations maintainers have with bug  
+> reporters
+> is the email that starts with "I have a two year old kernel from an
+> embedded vendor with some random drivers and fixes thrown in, and it's
+> crashing".
+> 
+> Be specific about what kernel versions the upstream maintainers will  
+> fix
+> bugs in, and direct bug reporters to their Linux distribution or
+> embedded vendor if the bug is in an unsupported kernel.
 
-Thank you for your review.
-Of course I'll update Rui's comment.
+Back in 2006 I wrote a section of the BusyBox FAQ about this:
 
-Thanks,
-Yasuaki Ishimatsu
+http://git.busybox.net/busybox/tree/docs/busybox.net/FAQ.html?id=95718b3091690f1293e3069da75d0d4be2665d0e#n359
 
->
-> -Toshi
->
->
+(Alas, the current version of that page had a large project specific  
+chunk dumped into the middle of it, but the text I linked to out of the  
+repo is reasonably generic to just about any project. Feel free to lift  
+anything that's useful. :)
 
-
+Rob
