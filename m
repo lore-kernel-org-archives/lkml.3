@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab3DQFTl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 01:19:41 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45330 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819Ab3DQFTk (ORCPT
+	id S1757624Ab3DQFau (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 01:30:50 -0400
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:34370 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754486Ab3DQFat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 01:19:40 -0400
-Message-ID: <516E30DC.5070601@linux.vnet.ibm.com>
-Date: Wed, 17 Apr 2013 10:49:24 +0530
-From: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 17 Apr 2013 01:30:49 -0400
+Message-ID: <516E3383.5060105@gmail.com>
+Date: Wed, 17 Apr 2013 13:30:43 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: linuxppc-dev@ozlabs.org, paulus@samba.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, jkenisto@linux.vnet.ibm.com,
-        mahesh@linux.vnet.ibm.com, anton@samba.org
-Subject: Re: [PATCH 4/8] Read/Write oops nvram partition via pstore
-References: <20130410071835.20150.56489.stgit@aruna-ThinkPad-T420> <20130410072303.20150.61382.stgit@aruna-ThinkPad-T420> <20130415075555.GE30156@concordia> <516CEDB4.9090005@linux.vnet.ibm.com>
-In-Reply-To: <516CEDB4.9090005@linux.vnet.ibm.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
+ memory error on dirty cache selectable
+References: <51662D5B.3050001@hitachi.com> <20130411134915.GH16732@two.firstfloor.org>
+In-Reply-To: <20130411134915.GH16732@two.firstfloor.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041705-0260-0000-0000-000002D22642
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 16 April 2013 11:50 AM, Aruna Balakrishnaiah wrote:
->
-> Currently with this patchset, pstore is not supporting compression of 
-> oops-messages
-> since it involves some changes in the pstore framework.
->
-> big_oops_buf will hold the large part of oops data which will be compressed 
-> and put
-> to oops_buf.
->
-> big_oops_buf: (1.45 of oops_partition_size)
+On 04/11/2013 09:49 PM, Andi Kleen wrote:
+>> As a result, if the dirty cache includes user data, the data is lost,
+>> and data corruption occurs if an application uses old data.
 
-Sorry, big_oops_buf is (2.22 of oops_data_sz)
+Hi Andi,
 
-where oops_data_sz is oops_partition_size - sizeof(oops_log_info).
+Could you give me the link of your mce testcase?
 
-where oops_log_info is oops header.
-
-> _________________________
-> |  header |   oops-text |
-> |_________|_____________|
+> The application cannot use old data, the kernel code kills it if it
+> would do that. And if it's IO data there is an EIO triggered.
 >
-> <header> is added by the pstore.
+> iirc the only concern in the past was that the application may miss
+> the asynchronous EIO because it's cleared on any fd access.
 >
-> So in case compression fails:
+> This is a general problem not specific to memory error handling,
+> as these asynchronous IO errors can happen due to other reason
+> (bad disk etc.)
 >
-> we would need to log the header + last few bytes of big_oops_buf to oops_buf.
-> oops_buf: (this is of oops_partition_size)
+> If you're really concerned about this case I think the solution
+> is to make the EIO more sticky so that there is a higher chance
+> than it gets returned.  This will make your data much more safe,
+> as it will cover all kinds of IO errors, not just the obscure memory
+> errors.
 >
-
-We would need to log the header + last oops_data_sz bytes of big_oops_buf to 
-oops_buf.
-So that we can have the header while throwing away the data that immediately
-follows it.
-
-> we need last few bytes of big_oops_buf as we need to log the recent messages of
-> printk buffer. For which we need to know the header size and it involves some
-> changes in the pstore framework.
+> Or maybe have a panic knob on any IO error for any case if you don't
+> trust your application to check IO syscalls. But I would rather
+> have better EIO reporting than just giving up like this.
 >
-
-Just communicating the header size from pstore would do the job for us.
-
-> I have the compression patches ready, will be posting it soon as a separate set.
+> The problem of tying it just to any dirty data for memory errors
+> is that most anonymous data is dirty and it doesn't have this problem
+> at all (because the signals handle this and they cannot be lost)
 >
->> cheers
->>
+> And that is a far more common case than this relatively unlikely
+> case of dirty IO data.
 >
+> So just doing it for "dirty" is not the right knob.
+>
+> Basically I'm saying if you worry about unreliable IO error reporting
+> fix IO error reporting, don't add random unnecessary panics to
+> the memory error handling.
+>
+> BTW my suspicion is that if you approach this from a data driven
+> perspective: that is measure how much such dirty data is typically
+> around in comparison to other data it will be unlikely. Such
+> a study can be done with the "page-types" program in tools/vm
+>
+> -Andi
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
