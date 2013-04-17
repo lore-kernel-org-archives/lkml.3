@@ -1,147 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965315Ab3DQRLk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:11:40 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:56107 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S935546Ab3DQRLj (ORCPT
+	id S965369Ab3DQRL7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:11:59 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35118 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965321Ab3DQRL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:11:39 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+GyTgyuk/5hUhbPYI3NV2d
-Date: Wed, 17 Apr 2013 10:11:32 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Igor Grinberg <grinberg@compulab.co.il>
-Cc: Roger Quadros <rogerq@ti.com>, Robert Nelson <robertcnelson@gmail.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-omap@vger.kernel.org,
-        b-cousson@ti.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: dts: omap3-beagle-xm: Add USB Host support for
- Rev Ax/Bx
-Message-ID: <20130417171132.GY10155@atomide.com>
-References: <1366029306-1824-1-git-send-email-rogerq@ti.com>
- <516BF4F3.5060904@ti.com>
- <20130417005232.GV10155@atomide.com>
- <CAOCHtYgFnCy5Qn2LeJOK96_NdwzxzVe8Vrb8cL=K9AdzPUtQow@mail.gmail.com>
- <516E5597.7050801@compulab.co.il>
- <516E5F9E.3050204@ti.com>
- <516E94FA.9060606@compulab.co.il>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <516E94FA.9060606@compulab.co.il>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 17 Apr 2013 13:11:58 -0400
+Date: Wed, 17 Apr 2013 13:11:56 -0400 (EDT)
+Message-Id: <20130417.131156.13653463501819067.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: tomi.valkeinen@ti.com, linux-kernel@vger.kernel.org, clemens@ladisch.de,
+        arnd@arndb.de, tiwai@suse.de, mchehab@redhat.com, ralf@linux-mips.org
+Subject: Re: Device driver memory 'mmap()' function helper cleanup
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFwt82h7hk1YiCeoG2-GGpgLvyW8t_hZRHxyhDQw=_Luzw@mail.gmail.com>
+References: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
+	<516E88A9.9070200@ti.com>
+	<CA+55aFwt82h7hk1YiCeoG2-GGpgLvyW8t_hZRHxyhDQw=_Luzw@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 17 Apr 2013 10:11:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Igor Grinberg <grinberg@compulab.co.il> [130417 05:31]:
-> On 04/17/13 11:38, Roger Quadros wrote:
-> > On 04/17/2013 10:56 AM, Igor Grinberg wrote:
-> >> On 04/17/13 04:30, Robert Nelson wrote:
-> >>> On Tue, Apr 16, 2013 at 7:52 PM, Tony Lindgren <tony@atomide.com> wrote:
-> >>>> * Roger Quadros <rogerq@ti.com> [130415 05:44]:
-> >>>>> On 04/15/2013 03:35 PM, Roger Quadros wrote:
-> >>>>>> Provide RESET and Power regulators for the USB PHY,
-> >>>>>> the USB Host port mode and the PHY device.
-> >>>>>>
-> >>>>>> Also provide pin multiplexer information for USB host
-> >>>>>> pins.
-> >>>>>>
-> >>>>>> This will not work for Rev Cx boards because of reversed logic
-> >>>>>> for USB_POWER_Enable.
-> >>>>>>
-> >>>>>> CC: Benoît Cousson <b-cousson@ti.com>
-> >>>>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> >>>>>> ---
-> >>>>>>  arch/arm/boot/dts/omap3-beagle-xm.dts |   62 +++++++++++++++++++++++++++++++++
-> >>>>>>  1 files changed, 62 insertions(+), 0 deletions(-)
-> >>>>>>
-> >>>>>> diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
-> >>>>>> index 5a31964..d394c51 100644
-> >>>>>> --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
-> >>>>>> +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
-> >>>>>> @@ -57,6 +57,60 @@
-> >>>>>>             ti,mcbsp = <&mcbsp2>;
-> >>>>>>             ti,codec = <&twl_audio>;
-> >>>>>>     };
-> >>>>>> +
-> >>>>>> +   /* HS USB Port 2 RESET */
-> >>>>>> +   hsusb2_reset: hsusb2_reset_reg {
-> >>>>>> +           compatible = "regulator-fixed";
-> >>>>>> +           regulator-name = "hsusb2_reset";
-> >>>>>> +           regulator-min-microvolt = <3300000>;
-> >>>>>> +           regulator-max-microvolt = <3300000>;
-> >>>>>> +           gpio = <&gpio5 19 0>;   /* gpio_147 */
-> >>>>>> +           startup-delay-us = <70000>;
-> >>>>>> +           enable-active-high;
-> >>>>>> +   };
-> >>>>>> +
-> >>>>>> +   /* HS USB Port 2 Power */
-> >>>>>> +   hsusb2_power: hsusb2_power_reg {
-> >>>>>> +           compatible = "regulator-fixed";
-> >>>>>> +           regulator-name = "hsusb2_vbus";
-> >>>>>> +           regulator-min-microvolt = <3300000>;
-> >>>>>> +           regulator-max-microvolt = <3300000>;
-> >>>>>> +           gpio = <&twl_gpio 18 0>;        /* GPIO LEDA */
-> >>>>>> +           startup-delay-us = <70000>;
-> >>>>>> +           enable-active-high;     /* FIXME: active-low for Rev. C */
-> >>>>>
-> >>>>> Benoit & Tony,
-> >>>>>
-> >>>>> Any ideas how to tackle the reversed logic for Rev. C boards?
-> >>>>
-> >>>> Sounds like we need a shared omap3-beage.dtsi, then omap3-beagle-xm.dts
-> >>>> and omap3-beagle-rev-c.dts. Then xm and rev-c can both include the
-> >>>
-> >>> Bike-sheding, but we might want to make that "omap3-beagle-xmc.dts" as
-> >>> there is the "rev c" variant of the original beagle...
-> >>>
-> >>> It's too bad we can't read the 3 gpio pin states in the device tree
-> >>> and make a decision.
-> >>
-> >> I would recommend to move the detection to the boot loader and
-> >> adjust the DT blob at run time (in the boot loader).
-> >> This way, we will not need to deal with all the (sub)revision stuff.
-> >>
-> >>
-> > Moving the detection to bootloader is fine, but modifying the DT at
-> > runtime would create a debug/maintenance issue. Instead it could just
-> > pick one of the .DTBs and pass it to kernel.
-> 
-> Like this will not create create any debug/maintenance issues.... ;-)
-> We have no problem with debug, as all the DT nodes can be seen in
-> both U-Boot (with fdt commands) and Linux through procfs...
-> 
-> I've just dropped my 2 cents and I don't really insist...
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 17 Apr 2013 07:44:33 -0700
 
-The dynamic configuration from the bootloader can also be done too, I
-don't think they are mutually exclusive. 
- 
-> > Since most users will be using rev-c, I think we should keep the original
-> > file 'omap3-beagle-xm.dts" as it is for rev-c boards.
-> > I can just create a new dts file for Revisions A and B that will be
-> > like so.
-> > 
-> > +++ b/arch/arm/boot/dts/omap3-beagle-xm-ab.dts
-> > @@ -0,0 +1,6 @@
-> > +/include/ "omap3-beagle-xm.dts"
-> > +
-> > +/* On Rev A/B USBHOST_PWR_EN is active high */
-> > +&hsusb2_power {
-> > +       enable-active-high;
-> > +};
-> > 
-> > Since omap3-beagle and omap3-beagle-xm use different SoC versions and have
-> > quite many differences, I don't think it is a good idea to create a common
-> > file between the two.
+> (*) io_remap_pfn_page() is the "extended" version that takes care of
+> some special magical details on a couple of odd architectures, notably
+> sparc (but also one special case of MIPS PAE that have some magic bit
+> tricks). But even for MIPS and Sparc, it ends up devolving to be the
+> same as the "regular" remap_pfn_page() for normal memory. I'm adding
+> David and Ralf to the cc just to verify that I read it right, but
+> everybody else just defines "io_remap_pfn_range" to be
+> "remap_pfn_range".
 
-Sounds good to me. But please also add the revision info to the compatible
-flags for both .dts files.
+Yeah, the only thing special we do on sparc is interpret the PFN
+specially.  We munge it into the real physical address and then
+pass it all down to remap_pfn_range() to do the real work.
 
-Regards,
+We used to have a crazy special version of this entire routine
+on sparc64 that tried to create huge TLB mappings, but that got
+killed quite some time ago:
 
-Tony
+commit 3e37fd3153ac95088a74f5e7c569f7567e9f993a
+Author: David S. Miller <davem@davemloft.net>
+Date:   Thu Nov 17 18:17:59 2011 -0800
+
+    sparc: Kill custom io_remap_pfn_range().
+    
+    To handle the large physical addresses, just make a simple wrapper
+    around remap_pfn_range() like MIPS does.
+    
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
