@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965712Ab3DQDYv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 23:24:51 -0400
-Received: from mail-da0-f53.google.com ([209.85.210.53]:48011 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965667Ab3DQDYu (ORCPT
+	id S965721Ab3DQDas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 23:30:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30394 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965678Ab3DQDar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 23:24:50 -0400
-Message-ID: <1366169084.10398.4.camel@phoenix>
-Subject: regulator: tps80031: question about LDO2 TRACK_MODE_ENABLE of
- TPS80031 or TPS80032-ES1.0
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 17 Apr 2013 11:24:44 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	Tue, 16 Apr 2013 23:30:47 -0400
+X-Authority-Analysis: v=2.0 cv=Pu4Rnnw3 c=1 sm=0 a=ofFxtc/jepklO3aWSWiKGA==:17 a=99CFIlhQ8dUA:10 a=XqBCkJwx3yUA:10 a=bIxKA6TX_asA:10 a=vQlp3vXYDpMA:10 a=8nJEP1OIZ-IA:10 a=2KX_Yc5PAAAA:8 a=fkMt6HFWGF8A:10 a=6ohNodAXAAAA:8 a=bf6-jx-6U4rkcpHJ-RsA:9 a=wPNLvfGTeEIA:10 a=gDjHQkheYgsA:10 a=ofFxtc/jepklO3aWSWiKGA==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 70.112.99.80
+Message-ID: <516E1763.7040206@tabi.org>
+Date: Tue, 16 Apr 2013 22:30:43 -0500
+From: Timur Tabi <timur@tabi.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:20.0) Gecko/20100101 Firefox/20.0 SeaMonkey/2.17.1
+MIME-Version: 1.0
+To: Tang Yuantian-B29983 <B29983@freescale.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH v2] of/base: release the node correctly in of_parse_phandle_with_args()
+References: <1365564999-24427-1-git-send-email-Yuantian.Tang@freescale.com> <CAOZdJXW8qKccGKic3R4o1aqJdbfHcBoAp62B4HPFnF=sUAEvuQ@mail.gmail.com> <D07C73A334FF604B95B3CBD2A545D07B0B1456B8@039-SN2MPN1-013.039d.mgd.msft.net>
+In-Reply-To: <D07C73A334FF604B95B3CBD2A545D07B0B1456B8@039-SN2MPN1-013.039d.mgd.msft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Laxman,
+Tang Yuantian-B29983 wrote:
+>> >On Tue, Apr 9, 2013 at 10:36 PM,<Yuantian.Tang@freescale.com>  wrote:
+>>> > >
+>>> > >+                       /* Found it! return success */
+>> >
+>> >I'm pretty sure this comment is in the wrong place.
 
-Currently we have below code in tps80031_ldo_set_voltage_sel():
+> It is not perfect, but acceptable.
 
-        /* Check for valid setting for TPS80031 or TPS80032-ES1.0 */
-        if ((ri->rinfo->desc.id == TPS80031_REGULATOR_LDO2) &&
-                        (ri->device_flags & TRACK_MODE_ENABLE)) {
-                unsigned nvsel = (sel) & 0x1F;
-                if (((tps80031_get_chip_info(parent) == TPS80031) ||
-                        ((tps80031_get_chip_info(parent) == TPS80032) &&
-                        (tps80031_get_pmu_version(parent) == 0x0))) &&
-                        ((nvsel == 0x0) || (nvsel >= 0x19 && nvsel <= 0x1F))) {
-                                dev_err(ri->dev,
-                                        "Invalid sel %d in track mode LDO2\n",
-                                        nvsel);
-                                return -EINVAL;
-                }
-        }
+Like I said, I'm pretty sure it's in the wrong place.
 
-However, list_voltage() still show these invalid selectors have supported voltage.
-Besides, having the code "nvsel = (sel) & 0x1F" looks a bit odd, because currently
-n_voltages is set to 57 when TRACK_MODE_ENABLE is set.
-
-I'm wondering if below comment is still true for LDO2 TRACK_MODE_ENABLE of
-"TPS80031/TPS80032-ES1.0"?
-
-/* TRACK mode the ldo2 varies from 600mV to 1300mV */
-
-What is the register value && voltage mapping for LDO2 TRACK_MODE_ENABLE of
-TPS80031 or TPS80032-ES1.0?
-
-Regards,
-Axel
-
+-- 
+Timur Tabi
