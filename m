@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966572Ab3DQOOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 10:14:46 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:54422 "HELO
+	id S966596Ab3DQOPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 10:15:09 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54432 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S966321Ab3DQOOp (ORCPT
+	with SMTP id S966464Ab3DQOPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 10:14:45 -0400
-Date: Wed, 17 Apr 2013 10:14:43 -0400 (EDT)
+	Wed, 17 Apr 2013 10:15:07 -0400
+Date: Wed, 17 Apr 2013 10:15:06 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
-To: Joe Perches <joe@perches.com>
-cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        usb-storage <usb-storage@lists.one-eyed-alien.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: storage: Add usb_stor_dbg, reduce object size
-In-Reply-To: <1366177447.28609.25.camel@joe-AO722>
-Message-ID: <Pine.LNX.4.44L0.1304171012270.1623-100000@iolanthe.rowland.org>
+To: Roger Quadros <rogerq@ti.com>
+cc: gregkh@linuxfoundation.org, <balbi@ti.com>, <holler@ahsoftware.de>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 2/2] USB: ehci-omap: Improve PHY error handling
+In-Reply-To: <1366187065-10795-1-git-send-email-rogerq@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1304171014540.1623-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013, Joe Perches wrote:
+On Wed, 17 Apr 2013, Roger Quadros wrote:
 
-> Reduce the size of the objects by consolidating
-> the duplicated USB_STORAGE into a single function.
+> As the USB PHY layer never returns NULL we don't need
+> to check for that condition.
 > 
-> Add function usb_stor_dbg to emit debugging messages.
-> Always validate the format and arguments.
-> Reduce the number of uses of CONFIG_USB_STORAGE_DEBUG.
+> CC: Alan Stern <stern@rowland.harvard.edu>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> ---
+>  drivers/usb/host/ehci-omap.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> Reduces size of objects ~7KB when CONFIG_USB_STORAGE_DEBUG
-> is set.
-> 
-> $ size drivers/usb/storage/built-in.o*
->    text	   data	    bss	    dec	    hex	filename
->  140133	  55296	  70312	 265741	  40e0d	drivers/usb/storage/built-in.o.new
->  147494	  55248	  70296	 273038	  42a8e	drivers/usb/storage/built-in.o.old
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+> index 5de3e43..3d1491b 100644
+> --- a/drivers/usb/host/ehci-omap.c
+> +++ b/drivers/usb/host/ehci-omap.c
+> @@ -175,12 +175,12 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+>  			phy = devm_usb_get_phy_by_phandle(dev, "phys", i);
+>  		else
+>  			phy = devm_usb_get_phy_dev(dev, i);
+> -		if (IS_ERR(phy) || !phy) {
+> +		if (IS_ERR(phy)) {
+>  			/* Don't bail out if PHY is not absolutely necessary */
+>  			if (pdata->port_mode[i] != OMAP_EHCI_PORT_MODE_PHY)
+>  				continue;
+>  
+> -			ret = IS_ERR(phy) ? PTR_ERR(phy) : -ENODEV;
+> +			ret = PTR_ERR(phy);
+>  			dev_err(dev, "Can't get PHY device for port %d: %d\n",
+>  					i, ret);
+>  			goto err_phy;
 
-Is there any reasonable way to change this so that US_DEBUGP gets
-converted to a dev_dbg call instead of a printk call?  Not including
-the device identifier in the output can be a real problem if there are
-multiple mass-storage devices in the system.
-
-Alan Stern
-
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
