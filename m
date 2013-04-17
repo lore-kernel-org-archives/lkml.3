@@ -1,611 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965867Ab3DQGuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 02:50:05 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:46381 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965801Ab3DQGuA (ORCPT
+	id S965884Ab3DQGub (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 02:50:31 -0400
+Received: from mail-da0-f49.google.com ([209.85.210.49]:42811 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965786Ab3DQGu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 02:50:00 -0400
-Date: Tue, 16 Apr 2013 23:49:57 -0700
+	Wed, 17 Apr 2013 02:50:27 -0400
+Date: Tue, 16 Apr 2013 23:50:23 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.41
-Message-ID: <20130417064957.GB13055@kroah.com>
-References: <20130417064945.GA13055@kroah.com>
+Subject: Linux 3.8.8
+Message-ID: <20130417065023.GA13310@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
 Content-Disposition: inline
-In-Reply-To: <20130417064945.GA13055@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index 3efde3d..90c3a6f 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 40
-+SUBLEVEL = 41
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index aa0f913..25e9734 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -741,7 +741,10 @@ static inline void arch_leave_lazy_mmu_mode(void)
- 	PVOP_VCALL0(pv_mmu_ops.lazy_mode.leave);
- }
- 
--void arch_flush_lazy_mmu_mode(void);
-+static inline void arch_flush_lazy_mmu_mode(void)
-+{
-+	PVOP_VCALL0(pv_mmu_ops.lazy_mode.flush);
-+}
- 
- static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
- 				phys_addr_t phys, pgprot_t flags)
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index 8e8b9a4..faf2c04 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -91,6 +91,7 @@ struct pv_lazy_ops {
- 	/* Set deferred update mode, used for batching operations. */
- 	void (*enter)(void);
- 	void (*leave)(void);
-+	void (*flush)(void);
- };
- 
- struct pv_time_ops {
-@@ -680,6 +681,7 @@ void paravirt_end_context_switch(struct task_struct *next);
- 
- void paravirt_enter_lazy_mmu(void);
- void paravirt_leave_lazy_mmu(void);
-+void paravirt_flush_lazy_mmu(void);
- 
- void _paravirt_nop(void);
- u32 _paravirt_ident_32(u32);
-diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
-index ab13760..128323e 100644
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -263,6 +263,18 @@ void paravirt_leave_lazy_mmu(void)
- 	leave_lazy(PARAVIRT_LAZY_MMU);
- }
- 
-+void paravirt_flush_lazy_mmu(void)
-+{
-+	preempt_disable();
-+
-+	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
-+		arch_leave_lazy_mmu_mode();
-+		arch_enter_lazy_mmu_mode();
-+	}
-+
-+	preempt_enable();
-+}
-+
- void paravirt_start_context_switch(struct task_struct *prev)
- {
- 	BUG_ON(preemptible());
-@@ -292,18 +304,6 @@ enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
- 	return percpu_read(paravirt_lazy_mode);
- }
- 
--void arch_flush_lazy_mmu_mode(void)
--{
--	preempt_disable();
--
--	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
--		arch_leave_lazy_mmu_mode();
--		arch_enter_lazy_mmu_mode();
--	}
--
--	preempt_enable();
--}
--
- struct pv_info pv_info = {
- 	.name = "bare hardware",
- 	.paravirt_enabled = 0,
-@@ -477,6 +477,7 @@ struct pv_mmu_ops pv_mmu_ops = {
- 	.lazy_mode = {
- 		.enter = paravirt_nop,
- 		.leave = paravirt_nop,
-+		.flush = paravirt_nop,
- 	},
- 
- 	.set_fixmap = native_set_fixmap,
-diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
-index 642d880..53272bd 100644
---- a/arch/x86/lguest/boot.c
-+++ b/arch/x86/lguest/boot.c
-@@ -1333,6 +1333,7 @@ __init void lguest_init(void)
- 	pv_mmu_ops.read_cr3 = lguest_read_cr3;
- 	pv_mmu_ops.lazy_mode.enter = paravirt_enter_lazy_mmu;
- 	pv_mmu_ops.lazy_mode.leave = lguest_leave_lazy_mmu_mode;
-+	pv_mmu_ops.lazy_mode.flush = paravirt_flush_lazy_mmu;
- 	pv_mmu_ops.pte_update = lguest_pte_update;
- 	pv_mmu_ops.pte_update_defer = lguest_pte_update;
- 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index e922e01..4a0a2e8 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -377,10 +377,12 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
- 	if (pgd_none(*pgd_ref))
- 		return -1;
- 
--	if (pgd_none(*pgd))
-+	if (pgd_none(*pgd)) {
- 		set_pgd(pgd, *pgd_ref);
--	else
-+		arch_flush_lazy_mmu_mode();
-+	} else {
- 		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
-+	}
- 
- 	/*
- 	 * Below here mismatches are bugs because these lower tables
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 5cb8e27..cf7fe36 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2076,6 +2076,7 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
- 	.lazy_mode = {
- 		.enter = paravirt_enter_lazy_mmu,
- 		.leave = xen_leave_lazy_mmu,
-+		.flush = paravirt_flush_lazy_mmu,
- 	},
- 
- 	.set_fixmap = xen_set_fixmap,
-diff --git a/drivers/gpu/drm/i915/i915_gem_gtt.c b/drivers/gpu/drm/i915/i915_gem_gtt.c
-index a135c61..99a7855 100644
---- a/drivers/gpu/drm/i915/i915_gem_gtt.c
-+++ b/drivers/gpu/drm/i915/i915_gem_gtt.c
-@@ -72,7 +72,7 @@ int i915_gem_init_aliasing_ppgtt(struct drm_device *dev)
- 	/* ppgtt PDEs reside in the global gtt pagetable, which has 512*1024
- 	 * entries. For aliasing ppgtt support we just steal them at the end for
- 	 * now. */
--	first_pd_entry_in_global_pt = 512*1024 - I915_PPGTT_PD_ENTRIES;
-+	first_pd_entry_in_global_pt = dev_priv->mm.gtt->gtt_total_entries - I915_PPGTT_PD_ENTRIES;
- 
- 	ppgtt = kzalloc(sizeof(*ppgtt), GFP_KERNEL);
- 	if (!ppgtt)
-diff --git a/drivers/gpu/drm/udl/udl_connector.c b/drivers/gpu/drm/udl/udl_connector.c
-index 3234224..b8e6463 100644
---- a/drivers/gpu/drm/udl/udl_connector.c
-+++ b/drivers/gpu/drm/udl/udl_connector.c
-@@ -61,6 +61,10 @@ static int udl_get_modes(struct drm_connector *connector)
- 	int ret;
- 
- 	edid = (struct edid *)udl_get_edid(udl);
-+	if (!edid) {
-+		drm_mode_connector_update_edid_property(connector, NULL);
-+		return 0;
-+	}
- 
- 	connector->display_info.raw_edid = (char *)edid;
- 
-diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
-index f2f482b..76afcb4 100644
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -1123,6 +1123,33 @@ static unsigned long mtdchar_get_unmapped_area(struct file *file,
- }
- #endif
- 
-+static inline unsigned long get_vm_size(struct vm_area_struct *vma)
-+{
-+	return vma->vm_end - vma->vm_start;
-+}
-+
-+static inline resource_size_t get_vm_offset(struct vm_area_struct *vma)
-+{
-+	return (resource_size_t) vma->vm_pgoff << PAGE_SHIFT;
-+}
-+
-+/*
-+ * Set a new vm offset.
-+ *
-+ * Verify that the incoming offset really works as a page offset,
-+ * and that the offset and size fit in a resource_size_t.
-+ */
-+static inline int set_vm_offset(struct vm_area_struct *vma, resource_size_t off)
-+{
-+	pgoff_t pgoff = off >> PAGE_SHIFT;
-+	if (off != (resource_size_t) pgoff << PAGE_SHIFT)
-+		return -EINVAL;
-+	if (off + get_vm_size(vma) - 1 < off)
-+		return -EINVAL;
-+	vma->vm_pgoff = pgoff;
-+	return 0;
-+}
-+
- /*
-  * set up a mapping for shared memory segments
-  */
-@@ -1132,20 +1159,33 @@ static int mtdchar_mmap(struct file *file, struct vm_area_struct *vma)
- 	struct mtd_file_info *mfi = file->private_data;
- 	struct mtd_info *mtd = mfi->mtd;
- 	struct map_info *map = mtd->priv;
--	unsigned long start;
--	unsigned long off;
--	u32 len;
--
--	if (mtd->type == MTD_RAM || mtd->type == MTD_ROM) {
--		off = vma->vm_pgoff << PAGE_SHIFT;
-+	resource_size_t start, off;
-+	unsigned long len, vma_len;
-+
-+        /* This is broken because it assumes the MTD device is map-based
-+	   and that mtd->priv is a valid struct map_info.  It should be
-+	   replaced with something that uses the mtd_get_unmapped_area()
-+	   operation properly. */
-+	if (0 /*mtd->type == MTD_RAM || mtd->type == MTD_ROM*/) {
-+		off = get_vm_offset(vma);
- 		start = map->phys;
- 		len = PAGE_ALIGN((start & ~PAGE_MASK) + map->size);
- 		start &= PAGE_MASK;
--		if ((vma->vm_end - vma->vm_start + off) > len)
-+		vma_len = get_vm_size(vma);
-+
-+		/* Overflow in off+len? */
-+		if (vma_len + off < off)
-+			return -EINVAL;
-+		/* Does it fit in the mapping? */
-+		if (vma_len + off > len)
- 			return -EINVAL;
- 
- 		off += start;
--		vma->vm_pgoff = off >> PAGE_SHIFT;
-+		/* Did that overflow? */
-+		if (off < start)
-+			return -EINVAL;
-+		if (set_vm_offset(vma, off) < 0)
-+			return -EINVAL;
- 		vma->vm_flags |= VM_IO | VM_RESERVED;
- 
- #ifdef pgprot_noncached
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index df49ce2..978af21 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3483,6 +3483,30 @@ static void __devinit rtl_init_mdio_ops(struct rtl8169_private *tp)
- 	}
- }
- 
-+static void rtl_speed_down(struct rtl8169_private *tp)
-+{
-+	u32 adv;
-+	int lpa;
-+
-+	rtl_writephy(tp, 0x1f, 0x0000);
-+	lpa = rtl_readphy(tp, MII_LPA);
-+
-+	if (lpa & (LPA_10HALF | LPA_10FULL))
-+		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full;
-+	else if (lpa & (LPA_100HALF | LPA_100FULL))
-+		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
-+		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full;
-+	else
-+		adv = ADVERTISED_10baseT_Half | ADVERTISED_10baseT_Full |
-+		      ADVERTISED_100baseT_Half | ADVERTISED_100baseT_Full |
-+		      (tp->mii.supports_gmii ?
-+		       ADVERTISED_1000baseT_Half |
-+		       ADVERTISED_1000baseT_Full : 0);
-+
-+	rtl8169_set_speed(tp->dev, AUTONEG_ENABLE, SPEED_1000, DUPLEX_FULL,
-+			  adv);
-+}
-+
- static void rtl_wol_suspend_quirk(struct rtl8169_private *tp)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -3508,9 +3532,7 @@ static bool rtl_wol_pll_power_down(struct rtl8169_private *tp)
- 	if (!(__rtl8169_get_wol(tp) & WAKE_ANY))
- 		return false;
- 
--	rtl_writephy(tp, 0x1f, 0x0000);
--	rtl_writephy(tp, MII_BMCR, 0x0000);
--
-+	rtl_speed_down(tp);
- 	rtl_wol_suspend_quirk(tp);
- 
- 	return true;
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-index 101b28e..58e6183 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -235,6 +235,17 @@ static void sas_set_ex_phy(struct domain_device *dev, int phy_id, void *rsp)
- 	linkrate  = phy->linkrate;
- 	memcpy(sas_addr, phy->attached_sas_addr, SAS_ADDR_SIZE);
- 
-+	/* Handle vacant phy - rest of dr data is not valid so skip it */
-+	if (phy->phy_state == PHY_VACANT) {
-+		memset(phy->attached_sas_addr, 0, SAS_ADDR_SIZE);
-+		phy->attached_dev_type = NO_DEVICE;
-+		if (!test_bit(SAS_HA_ATA_EH_ACTIVE, &ha->state)) {
-+			phy->phy_id = phy_id;
-+			goto skip;
-+		} else
-+			goto out;
-+	}
-+
- 	phy->attached_dev_type = to_dev_type(dr);
- 	if (test_bit(SAS_HA_ATA_EH_ACTIVE, &ha->state))
- 		goto out;
-@@ -272,6 +283,7 @@ static void sas_set_ex_phy(struct domain_device *dev, int phy_id, void *rsp)
- 	phy->phy->maximum_linkrate = dr->pmax_linkrate;
- 	phy->phy->negotiated_linkrate = phy->linkrate;
- 
-+ skip:
- 	if (new_phy)
- 		if (sas_phy_add(phy->phy)) {
- 			sas_phy_free(phy->phy);
-diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
-index f30e124..aa3c106 100644
---- a/drivers/target/target_core_alua.c
-+++ b/drivers/target/target_core_alua.c
-@@ -392,6 +392,7 @@ static inline int core_alua_state_standby(
- 	case REPORT_LUNS:
- 	case RECEIVE_DIAGNOSTIC:
- 	case SEND_DIAGNOSTIC:
-+		return 0;
- 	case MAINTENANCE_IN:
- 		switch (cdb[1]) {
- 		case MI_REPORT_TARGET_PGS:
-@@ -434,6 +435,7 @@ static inline int core_alua_state_unavailable(
- 	switch (cdb[0]) {
- 	case INQUIRY:
- 	case REPORT_LUNS:
-+		return 0;
- 	case MAINTENANCE_IN:
- 		switch (cdb[1]) {
- 		case MI_REPORT_TARGET_PGS:
-@@ -474,6 +476,7 @@ static inline int core_alua_state_transition(
- 	switch (cdb[0]) {
- 	case INQUIRY:
- 	case REPORT_LUNS:
-+		return 0;
- 	case MAINTENANCE_IN:
- 		switch (cdb[1]) {
- 		case MI_REPORT_TARGET_PGS:
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index f771e9f..9cc574c 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1576,14 +1576,24 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
- 			}
- 			break;
- 		case Opt_blank_pass:
--			vol->password = NULL;
--			break;
--		case Opt_pass:
- 			/* passwords have to be handled differently
- 			 * to allow the character used for deliminator
- 			 * to be passed within them
- 			 */
- 
-+			/*
-+			 * Check if this is a case where the  password
-+			 * starts with a delimiter
-+			 */
-+			tmp_end = strchr(data, '=');
-+			tmp_end++;
-+			if (!(tmp_end < end && tmp_end[1] == delim)) {
-+				/* No it is not. Set the password to NULL */
-+				vol->password = NULL;
-+				break;
-+			}
-+			/* Yes it is. Drop down to Opt_pass below.*/
-+		case Opt_pass:
- 			/* Obtain the value string */
- 			value = strchr(data, '=');
- 			value++;
-diff --git a/fs/inode.c b/fs/inode.c
-index 9f4f5fe..8de457e 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -705,7 +705,7 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
- 		 * inode to the back of the list so we don't spin on it.
- 		 */
- 		if (!spin_trylock(&inode->i_lock)) {
--			list_move_tail(&inode->i_lru, &sb->s_inode_lru);
-+			list_move(&inode->i_lru, &sb->s_inode_lru);
- 			continue;
- 		}
- 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 9c07dce..fd2a616 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -93,4 +93,25 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
- {
- 	return kref_sub(kref, 1, release);
- }
-+
-+/**
-+ * kref_get_unless_zero - Increment refcount for object unless it is zero.
-+ * @kref: object.
-+ *
-+ * Return non-zero if the increment succeeded. Otherwise return 0.
-+ *
-+ * This function is intended to simplify locking around refcounting for
-+ * objects that can be looked up from a lookup structure, and which are
-+ * removed from that lookup structure in the object destructor.
-+ * Operations on such objects require at least a read lock around
-+ * lookup + kref_get, and a write lock around kref_put + remove from lookup
-+ * structure. Furthermore, RCU implementations become extremely tricky.
-+ * With a lookup followed by a kref_get_unless_zero *with return value check*
-+ * locking in the kref_put path can be deferred to the actual removal from
-+ * the lookup structure and RCU lookups become trivial.
-+ */
-+static inline int __must_check kref_get_unless_zero(struct kref *kref)
-+{
-+	return atomic_add_unless(&kref->refcount, 1, 0);
-+}
- #endif /* _KREF_H_ */
-diff --git a/kernel/sched/clock.c b/kernel/sched/clock.c
-index c685e31..c3ae144 100644
---- a/kernel/sched/clock.c
-+++ b/kernel/sched/clock.c
-@@ -176,10 +176,36 @@ static u64 sched_clock_remote(struct sched_clock_data *scd)
- 	u64 this_clock, remote_clock;
- 	u64 *ptr, old_val, val;
- 
-+#if BITS_PER_LONG != 64
-+again:
-+	/*
-+	 * Careful here: The local and the remote clock values need to
-+	 * be read out atomic as we need to compare the values and
-+	 * then update either the local or the remote side. So the
-+	 * cmpxchg64 below only protects one readout.
-+	 *
-+	 * We must reread via sched_clock_local() in the retry case on
-+	 * 32bit as an NMI could use sched_clock_local() via the
-+	 * tracer and hit between the readout of
-+	 * the low32bit and the high 32bit portion.
-+	 */
-+	this_clock = sched_clock_local(my_scd);
-+	/*
-+	 * We must enforce atomic readout on 32bit, otherwise the
-+	 * update on the remote cpu can hit inbetween the readout of
-+	 * the low32bit and the high 32bit portion.
-+	 */
-+	remote_clock = cmpxchg64(&scd->clock, 0, 0);
-+#else
-+	/*
-+	 * On 64bit the read of [my]scd->clock is atomic versus the
-+	 * update, so we can avoid the above 32bit dance.
-+	 */
- 	sched_clock_local(my_scd);
- again:
- 	this_clock = my_scd->clock;
- 	remote_clock = scd->clock;
-+#endif
- 
- 	/*
- 	 * Use the opportunity that we have both locks
-diff --git a/kernel/sys.c b/kernel/sys.c
-index b0003db..6a74b83 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -320,7 +320,6 @@ void kernel_restart_prepare(char *cmd)
- 	system_state = SYSTEM_RESTART;
- 	usermodehelper_disable();
- 	device_shutdown();
--	syscore_shutdown();
- }
- 
- /**
-@@ -366,6 +365,7 @@ void kernel_restart(char *cmd)
- {
- 	kernel_restart_prepare(cmd);
- 	disable_nonboot_cpus();
-+	syscore_shutdown();
- 	if (!cmd)
- 		printk(KERN_EMERG "Restarting system.\n");
- 	else
-@@ -391,6 +391,7 @@ static void kernel_shutdown_prepare(enum system_states state)
- void kernel_halt(void)
- {
- 	kernel_shutdown_prepare(SYSTEM_HALT);
-+	disable_nonboot_cpus();
- 	syscore_shutdown();
- 	printk(KERN_EMERG "System halted.\n");
- 	kmsg_dump(KMSG_DUMP_HALT);
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index e539dfa..a3c1dd9 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -642,7 +642,6 @@ int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
- 		free_page(tmp);
- 	}
- 
--	free_page((unsigned long)stat->pages);
- 	stat->pages = NULL;
- 	stat->start = NULL;
- 
-diff --git a/lib/kobject.c b/lib/kobject.c
-index aeefa8b..d90c692 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -531,6 +531,13 @@ struct kobject *kobject_get(struct kobject *kobj)
- 	return kobj;
- }
- 
-+static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
-+{
-+	if (!kref_get_unless_zero(&kobj->kref))
-+		kobj = NULL;
-+	return kobj;
-+}
-+
- /*
-  * kobject_cleanup - free kobject resources.
-  * @kobj: object to cleanup
-@@ -753,7 +760,7 @@ struct kobject *kset_find_obj(struct kset *kset, const char *name)
- 
- 	list_for_each_entry(k, &kset->list, entry) {
- 		if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
--			ret = kobject_get(k);
-+			ret = kobject_get_unless_zero(k);
- 			break;
- 		}
- 	}
-diff --git a/sound/soc/codecs/wm8903.c b/sound/soc/codecs/wm8903.c
-index c91fb2f..77758542 100644
---- a/sound/soc/codecs/wm8903.c
-+++ b/sound/soc/codecs/wm8903.c
-@@ -1082,6 +1082,8 @@ static const struct snd_soc_dapm_route wm8903_intercon[] = {
- 	{ "ROP", NULL, "Right Speaker PGA" },
- 	{ "RON", NULL, "Right Speaker PGA" },
- 
-+	{ "Charge Pump", NULL, "CLK_DSP" },
-+
- 	{ "Left Headphone Output PGA", NULL, "Charge Pump" },
- 	{ "Right Headphone Output PGA", NULL, "Charge Pump" },
- 	{ "Left Line Output PGA", NULL, "Charge Pump" },
-diff --git a/sound/usb/mixer_quirks.c b/sound/usb/mixer_quirks.c
-index 38a607a..fb95069 100644
---- a/sound/usb/mixer_quirks.c
-+++ b/sound/usb/mixer_quirks.c
-@@ -396,7 +396,7 @@ static int snd_nativeinstruments_control_get(struct snd_kcontrol *kcontrol,
- 	else
- 		ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
- 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
--				  0, cpu_to_le16(wIndex),
-+				  0, wIndex,
- 				  &tmp, sizeof(tmp), 1000);
- 	up_read(&mixer->chip->shutdown_rwsem);
- 
-@@ -427,7 +427,7 @@ static int snd_nativeinstruments_control_put(struct snd_kcontrol *kcontrol,
- 	else
- 		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
- 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
--				  cpu_to_le16(wValue), cpu_to_le16(wIndex),
-+				  wValue, wIndex,
- 				  NULL, 0, 1000);
- 	up_read(&mixer->chip->shutdown_rwsem);
- 
-diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
-index c46171a..b7fa802 100644
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -486,7 +486,7 @@ static int snd_usb_nativeinstruments_boot_quirk(struct usb_device *dev)
- {
- 	int ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
- 				  0xaf, USB_TYPE_VENDOR | USB_RECIP_DEVICE,
--				  cpu_to_le16(1), 0, NULL, 0, 1000);
-+				  1, 0, NULL, 0, 1000);
- 
- 	if (ret < 0)
- 		return ret;
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.8.8 kernel.
+
+All users of the 3.8 kernel series must upgrade.
+
+The updated 3.8.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.8.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                                 |    2=20
+ arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts            |   14=20
+ arch/arm/mach-imx/clk-imx35.c                            |    1=20
+ arch/x86/include/asm/paravirt.h                          |    5=20
+ arch/x86/include/asm/paravirt_types.h                    |    2=20
+ arch/x86/include/asm/tlb.h                               |    2=20
+ arch/x86/kernel/paravirt.c                               |   25 -
+ arch/x86/lguest/boot.c                                   |    1=20
+ arch/x86/mm/fault.c                                      |    6=20
+ arch/x86/mm/pgtable.c                                    |    7=20
+ arch/x86/xen/mmu.c                                       |    1=20
+ drivers/dma/omap-dma.c                                   |   20=20
+ drivers/gpio/gpiolib-of.c                                |    5=20
+ drivers/gpu/drm/udl/udl_connector.c                      |    4=20
+ drivers/net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c    |  369 +++++-----=
+-----
+ drivers/net/wireless/brcm80211/brcmsmac/phy/phytbl_lcn.c |   64 +-
+ drivers/scsi/libsas/sas_expander.c                       |   12=20
+ drivers/target/target_core_alua.c                        |    3=20
+ drivers/tty/tty_ldisc.c                                  |   10=20
+ fs/cifs/connect.c                                        |   16=20
+ fs/gfs2/file.c                                           |    5=20
+ fs/gfs2/rgrp.c                                           |    2=20
+ fs/inode.c                                               |    2=20
+ include/asm-generic/tlb.h                                |    7=20
+ include/linux/ftrace.h                                   |    3=20
+ ipc/msg.c                                                |    1=20
+ kernel/sched/clock.c                                     |   26 +
+ kernel/sys.c                                             |    3=20
+ kernel/trace/ftrace.c                                    |   37 -
+ kernel/trace/trace_stack.c                               |    2=20
+ lib/kobject.c                                            |    9=20
+ mm/memory.c                                              |    1=20
+ sound/soc/codecs/wm5102.c                                |    2=20
+ sound/soc/codecs/wm8903.c                                |    2=20
+ sound/soc/soc-core.c                                     |    2=20
+ sound/usb/mixer_quirks.c                                 |    4=20
+ sound/usb/quirks.c                                       |    2=20
+ 37 files changed, 335 insertions(+), 344 deletions(-)
+
+Alban Bedel (1):
+      ASoC: wm8903: Fix the bypass to HP/LINEOUT when no DAC or ADC is runn=
+ing
+
+Boris Ostrovsky (1):
+      x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare me=
+tal
+
+Dave Airlie (1):
+      udl: handle EDID failure properly.
+
+Dave Hansen (1):
+      x86-32: Fix possible incomplete TLB invalidate with PAE pagetables
+
+Eldad Zack (1):
+      ALSA: usb-audio: fix endianness bug in snd_nativeinstruments_*
+
+Greg Kroah-Hartman (1):
+      Linux 3.8.8
+
+Haojian Zhuang (1):
+      gpio: fix wrong checking condition for gpio range
+
+Huacai Chen (1):
+      PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
+
+John W. Linville (1):
+      Revert "brcmsmac: support 4313iPA"
+
+Joonyoung Shim (1):
+      ASoC: core: Fix to check return value of snd_soc_update_bits_locked()
+
+Linus Torvalds (1):
+      kobject: fix kset_find_obj() race with concurrent last kobject_put()
+
+Lukasz Dorau (1):
+      SCSI: libsas: fix handling vacant phy in sas_set_ex_phy()
+
+Mark Brown (1):
+      ASoC: wm5102: Correct lookup of arizona struct in SYSCLK event
+
+Markus Pargmann (1):
+      ARM: imx35 Bugfix admux clock
+
+Namhyung Kim (2):
+      tracing: Fix double free when function profile init failed
+      tracing: Fix possible NULL pointer dereferences
+
+Nicholas Bellinger (1):
+      target: Fix incorrect fallthrough of ALUA Standby/Offline/Transition =
+CDBs
+
+Nigel Roberts (1):
+      ARM: Kirkwood: Fix typo in the definition of ix2-200 rebuild LED
+
+Peter Ujfalusi (1):
+      dmaengine: omap-dma: Start DMA without delay for cyclic channels
+
+Sachin Prabhu (1):
+      cifs: Allow passwords which begin with a delimitor
+
+Samu Kallio (1):
+      x86, mm, paravirt: Fix vmalloc_fault oops during lazy MMU updates
+
+Sebastian Andrzej Siewior (1):
+      tty: don't deadlock while flushing workqueue
+
+Stanislav Kinsbursky (1):
+      ipc: set msg back to -EAGAIN if copy wasn't performed
+
+Steven Rostedt (Red Hat) (1):
+      ftrace: Move ftrace_filter_lseek out of CONFIG_DYNAMIC_FTRACE section
+
+Steven Whitehouse (1):
+      GFS2: Fix unlock of fcntl locks during withdrawn state
+
+Suleiman Souhlal (1):
+      vfs: Revert spurious fix to spinning prevention in prune_icache_sb
+
+Thomas Gleixner (1):
+      sched_clock: Prevent 64bit inatomicity on 32bit systems
+
+Wei Yongjun (1):
+      GFS2: return error if malloc failed in gfs2_rs_alloc()
+
+
+--RnlQjJ0d97Da+TV1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRbkYvAAoJEDjbvchgkmk+UU4P/29RkeRTXS/4HV4P/z+kxbpN
+zZ29BWG4kCq2M6QRRRrfqRk9gPjByXArejiIAF3azwcx8C0sHDpihl325bJ7/KPL
+VyHm6wIa07xaA0aSLcTFP7e9EqNkyUhhlubbqsoy0vxB26E8U7/Y58fHIFRqjy+a
+f1IMIiz6te+YMPcqEkDeP4vvIhtvdudnryVPS8DjIIUmRxEhYj7Baql+rC94TLDe
+qReIIhDl9bxTmsHgklIrdxaiRdNtFLlEEJjzCi04I9EBdZGFXgW0k2g7dHMCTERm
+DgfBp1ENTpm7LMlFZdck2xZMQpAO33gaQxs6D5rS0XSbz8XLJ9WHYKAufrJBvU6C
+Cjrxv1PVPZVxTN9Q2DwN3tCOQdshEBmgBUvSYBshSxs7EHRHZFAqIJt1nrVRLCX1
+nzS8SNeWAS51VUJsCVxuk9dujaUt+X/SMjxYdMbUTRvnL0kdj+npgPuHf6dzriQr
+Kx+G5BYyCOgIGwhDYDmmBzvkKTWHVxhUPhCAKxtAqCadC326Nk+z4SSV9C4xG5yJ
+2Lhib5FwHvHS/emaVqLPSjF4TasuxYktcsZUV3+TGny/onC2lwUwV7/EBSiyII36
+ba0/38GoRt5LBP1uvVLsdC/HLosbJjucA54+8fPr4BsPMXrEs5PqXFwn1IXgd6sT
+kk0EV2jcz2cpUmnS5hF/
+=+sxJ
+-----END PGP SIGNATURE-----
+
+--RnlQjJ0d97Da+TV1--
