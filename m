@@ -1,52 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab3DQQZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 12:25:45 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:44116 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab3DQQZm (ORCPT
+	id S1756432Ab3DQQZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 12:25:29 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:60074 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755527Ab3DQQZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 12:25:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130408183012.GA5778@linutronix.de>
-References: <20130326201722.GA14220@linutronix.de>
-	<CAP=VYLoXfECaSBuvYdZ3qbsnR9QMYpoRnKGZdY=P6zS_TYOcCA@mail.gmail.com>
-	<20130408183012.GA5778@linutronix.de>
-Date: Wed, 17 Apr 2013 18:25:40 +0200
-X-Google-Sender-Auth: j6WkrLy-dTaPrwg7jkmz_HGZ_g0
-Message-ID: <CAONaPpFSf+Eh3K3BHCsPTQdxmbghHhtH=wMooh+Ers2QiCdH=g@mail.gmail.com>
-Subject: Re: [ANNOUNCE] 3.8.4-rt2
-From: John Kacur <jkacur@redhat.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
+	Wed, 17 Apr 2013 12:25:03 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: [PATCH 3/3] nohz: New option to default all CPUs in full dynticks range
+Date: Wed, 17 Apr 2013 18:24:49 +0200
+Message-Id: <1366215889-2635-4-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1366215889-2635-1-git-send-email-fweisbec@gmail.com>
+References: <1366215889-2635-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 8, 2013 at 8:30 PM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> * Paul Gortmaker | 2013-04-05 19:35:51 [-0400]:
->
->>Thanks for the work in putting this together.  Just a heads up that the
->>split queue fails on a patch with no author/date/subject as follows:
->>
->>[...]
->>git am of percpu-rwsem-compilefix.patch failed.
->>
->>This "treercu-use-simple-waitqueue.patch" has the exact same problem.
->>
->>Note that I'm using git directly, and not quilt -- which is more
->>strict in what it will accept, hence it catches these kinds of things.
->
-> I just fixed up those two. "git quiltimport" works now.
->
+Provide a new kernel config that defaults all CPUs to be part
+of the full dynticks range, except the boot one for timekeeping.
 
-Where did you fix these up? Can we have access?
+This default setting is overriden by the nohz_full= boot option
+if passed by the user.
 
-Thanks
+This is helpful for those who don't need a finegrained range
+of full dynticks CPU and also for automated testing.
 
-John
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/Kconfig      |   10 ++++++++++
+ kernel/time/tick-sched.c |   23 +++++++++++++++++++++--
+ 2 files changed, 31 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 358d601..99c3f13 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -128,6 +128,16 @@ config NO_HZ_FULL
+ 
+ endchoice
+ 
++config NO_HZ_FULL_ALL
++       bool "Full dynticks system on all CPUs by default"
++       depends on NO_HZ_FULL
++       help
++         If the user doesn't pass the nohz_full boot option to
++	 define the range of full dynticks CPUs, consider that all
++	 CPUs in the system are full dynticks by default.
++	 Note the boot CPU will still be kept outside the range to
++	 handle the timekeeping duty.
++
+ config NO_HZ
+ 	bool "Old Idle dynticks config"
+ 	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index d71a5f2..a76e090 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -203,12 +203,31 @@ static int __cpuinit tick_nohz_cpu_down_callback(struct notifier_block *nfb,
+  */
+ static char __initdata nohz_full_buf[NR_CPUS + 1];
+ 
++static int tick_nohz_init_all(void)
++{
++	int err = -1;
++
++#ifdef CONFIG_NO_HZ_FULL_ALL
++	if (!alloc_cpumask_var(&nohz_full_mask, GFP_KERNEL)) {
++		pr_err("NO_HZ: Can't allocate full dynticks cpumask\n");
++		return err;
++	}
++	err = 0;
++	cpumask_setall(nohz_full_mask);
++	cpumask_clear_cpu(smp_processor_id(), nohz_full_mask);
++	have_nohz_full_mask = true;
++#endif
++	return err;
++}
++
+ void __init tick_nohz_init(void)
+ {
+ 	int cpu;
+ 
+-	if (!have_nohz_full_mask)
+-		return;
++	if (!have_nohz_full_mask) {
++		if (tick_nohz_init_all() < 0)
++			return;
++	}
+ 
+ 	cpu_notifier(tick_nohz_cpu_down_callback, 0);
+ 
+-- 
+1.7.5.4
+
