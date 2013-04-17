@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965930Ab3DQR0K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:26:10 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:40824 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965493Ab3DQR0J (ORCPT
+	id S965875Ab3DQR1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:27:07 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35318 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965493Ab3DQR1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:26:09 -0400
-X-IronPort-AV: E=Sophos;i="4.87,495,1363158000"; 
-   d="scan'208";a="39129275"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCH] clockevents: Switch into oneshot mode even if broadcast registered late
-Date: Wed, 17 Apr 2013 10:26:06 -0700
-Message-Id: <1366219566-29783-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1.392.g85e7e81
+	Wed, 17 Apr 2013 13:27:04 -0400
+Date: Wed, 17 Apr 2013 13:27:02 -0400 (EDT)
+Message-Id: <20130417.132702.1585825670796781999.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: tomi.valkeinen@ti.com, linux-kernel@vger.kernel.org, clemens@ladisch.de,
+        arnd@arndb.de, tiwai@suse.de, mchehab@redhat.com, ralf@linux-mips.org
+Subject: Re: Device driver memory 'mmap()' function helper cleanup
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFw2f3cnJOSr2Xz78sRACk1k6xLog-3HpqtCsgNtA4=Fdw@mail.gmail.com>
+References: <CA+55aFwt82h7hk1YiCeoG2-GGpgLvyW8t_hZRHxyhDQw=_Luzw@mail.gmail.com>
+	<20130417.131156.13653463501819067.davem@davemloft.net>
+	<CA+55aFw2f3cnJOSr2Xz78sRACk1k6xLog-3HpqtCsgNtA4=Fdw@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Wed, 17 Apr 2013 10:27:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tick_oneshot_notify() is used to notify a particular CPU to try
-to switch into oneshot mode after a oneshot capable tick device
-is registered and tick_clock_notify() is used to notify all CPUs
-to try to switch into oneshot mode after a high res clocksource
-is registered. There is one caveat; if the tick devices suffer
-from FEAT_C3_STOP we don't try to switch into oneshot mode unless
-we have a oneshot capable broadcast device already registered.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 17 Apr 2013 10:20:43 -0700
 
-If the broadcast device is registered after the tick devices that
-have FEAT_C3_STOP we'll never try to switch into oneshot mode
-again, causing us to be stuck in periodic mode forever. Avoid
-this scenario by calling tick_clock_notify() after we register
-the broadcast device so that we try to switch into oneshot mode
-on all CPUs one more time.
+> On Wed, Apr 17, 2013 at 10:11 AM, David Miller <davem@davemloft.net> wrote:
+>>
+>> Yeah, the only thing special we do on sparc is interpret the PFN
+>> specially.  We munge it into the real physical address and then
+>> pass it all down to remap_pfn_range() to do the real work.
+> 
+> So the main thing I want to check is that *if* it's given a regular
+> RAM physical address, it still works?
+> 
+> Some drivers basically allocate DMA memory and then pass on the
+> resulting physical address to this. Others pass in the PCI BAR
+> addresses etc. And some try to use "remap_pfn_range()", and others try
+> to use "io_remap_pfn_range()", and quite frankly, from what I can tell
+> we can just always use the "io_" version because it ends up being a
+> proper superset.
+> 
+> I'm pretty sure it works fine the way I read it, but I'm just verifying..
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+All we do is take the top 4 bits and shift them down into the
+resulting physical address.
 
-Found this one when we were registering our broadcast timer after irqs were
-enabled. We've moved the registration before the irqs are enabled now so
-technically we don't need this patch anymore, but it seemed like a good idea
-to fix it in the core anyway to save someone else the trouble of tracking it
-down later.
+For normal RAM these bits will be clear, so it should all work out.
 
- kernel/time/tick-broadcast.c | 2 ++
- 1 file changed, 2 insertions(+)
+Passing PCI BARs into these routines is illegal, we have proper
+abstractions for mmap()'ing PCI resources via pci_mmap_page_range()
+et al.
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 7f32fe0..69b1b1a 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -77,6 +77,8 @@ int tick_check_broadcast_device(struct clock_event_device *dev)
- 	tick_broadcast_device.evtdev = dev;
- 	if (!cpumask_empty(tick_get_broadcast_mask()))
- 		tick_broadcast_start_periodic(dev);
-+	if (dev->features & CLOCK_EVT_FEAT_ONESHOT)
-+		tick_clock_notify();
- 	return 1;
- }
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+So, any code doing that needs to be fixed.
