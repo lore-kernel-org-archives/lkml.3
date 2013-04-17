@@ -1,48 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab3DQKIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 06:08:16 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:59729 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab3DQKIO (ORCPT
+	id S1757894Ab3DQKJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 06:09:54 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:53494 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754360Ab3DQKJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 06:08:14 -0400
-X-RZG-AUTH: :P20JeEWkefDI1ODZs1HHtgV3eF0OpFsRaGIBBWYxhJvJPtnXtogBWn6YvUkYzDKvBT07wx/0LJ4BNA==
-X-RZG-CLASS-ID: mo00
-Date: Wed, 17 Apr 2013 12:08:10 +0200
-From: Michael Braun <michael-dev@fami-braun.de>
-To: Shengzhou Liu <Shengzhou.Liu@freescale.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, projekt-wlan@fem.tu-ilmenau.de,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
- Freescale P1020
-Message-ID: <20130417100809.GA8855@dynamic.fami-braun.de>
-Reply-To: projekt-wlan@fem.tu-ilmenau.de
+	Wed, 17 Apr 2013 06:09:53 -0400
+Message-ID: <516E6FEC.9030401@stericsson.com>
+Date: Wed, 17 Apr 2013 11:48:28 +0200
+From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] regulator: ab8500: Don't update info->update_val
+ if write to register fails
+References: <1365509706.3801.1.camel@phoenix>
+In-Reply-To: <1365509706.3801.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/09/2013 02:15 PM, Axel Lin wrote:
+> This patch ensures info->update_val is consistent with current register value.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Looks good to me.
 
-I'm running OpenWRT Kernel 3.8.3 (which already has f66dea709cd9309b2ee9f715697818001fb518de and 5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN (QorlQ, PPC) device.
-Before updating the kernel from 3.3.0, USB host support was working fine. Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and the lsusb output is empty, so USB host support is not working. When I apply the following patch, USB host support starts working again, so I guess 3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
-Do you have an idea how to fix it more appropriately?
-
-Thanks,
-  M. Braun
-
---- a/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:52.924403077 +0200
-+++ b/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:57.572410838 +0200
-@@ -273,7 +273,6 @@ static int ehci_fsl_setup_phy(struct usb
-                 if (!spin_event_timeout(in_be32(non_ehci + FSL_SOC_USB_CTRL) &
-                                 PHY_CLK_VALID, FSL_USB_PHY_CLK_TIMEOUT, 0)) {
-                         printk(KERN_WARNING "fsl-ehci: USB PHY clock invalid\n");
--                       return -EINVAL;
-                 }
-         }
+Acked-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+> ---
+>   drivers/regulator/ab8500.c |   20 +++++++++++---------
+>   1 file changed, 11 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+> index acdffc5..1866dbf 100644
+> --- a/drivers/regulator/ab8500.c
+> +++ b/drivers/regulator/ab8500.c
+> @@ -392,9 +392,8 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
+>   			val = info->mode_val_idle;
+>   			break;
+>   		default:
+> -			if (info->shared_mode)
+> -				mutex_unlock(&shared_mode_mutex);
+> -			return -EINVAL;
+> +			ret = -EINVAL;
+> +			goto out_unlock;
+>   		}
+>   
+>   		bank = info->mode_bank;
+> @@ -405,17 +404,14 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
+>   
+>   		switch (mode) {
+>   		case REGULATOR_MODE_NORMAL:
+> -			info->update_val = info->update_val_normal;
+>   			val = info->update_val_normal;
+>   			break;
+>   		case REGULATOR_MODE_IDLE:
+> -			info->update_val = info->update_val_idle;
+>   			val = info->update_val_idle;
+>   			break;
+>   		default:
+> -			if (info->shared_mode)
+> -				mutex_unlock(&shared_mode_mutex);
+> -			return -EINVAL;
+> +			ret = -EINVAL;
+> +			goto out_unlock;
+>   		}
+>   
+>   		bank = info->update_bank;
+> @@ -426,9 +422,11 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
+>   	if (dmr || ab8500_regulator_is_enabled(rdev)) {
+>   		ret = abx500_mask_and_set_register_interruptible(info->dev,
+>   			bank, reg, mask, val);
+> -		if (ret < 0)
+> +		if (ret < 0) {
+>   			dev_err(rdev_get_dev(rdev),
+>   				"couldn't set regulator mode\n");
+> +			goto out_unlock;
+> +		}
+>   
+>   		dev_vdbg(rdev_get_dev(rdev),
+>   			"%s-set_mode (bank, reg, mask, value): "
+> @@ -437,6 +435,10 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
+>   			mask, val);
+>   	}
+>   
+> +	if (!dmr)
+> +		info->update_val = val;
+> +
+> +out_unlock:
+>   	if (info->shared_mode)
+>   		mutex_unlock(&shared_mode_mutex);
+>   
 
