@@ -1,147 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936388Ab3DQRjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:39:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36900 "EHLO mx1.redhat.com"
+	id S936430Ab3DQRjt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:39:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3669 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936238Ab3DQRjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:39:16 -0400
+	id S936385Ab3DQRjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 13:39:18 -0400
 From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 To: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: [PATCH 1/4] HID: debug: break out hid_dump_report() into hid-debug
-Date: Wed, 17 Apr 2013 19:38:13 +0200
-Message-Id: <1366220296-14346-2-git-send-email-benjamin.tissoires@redhat.com>
+Subject: [PATCH 2/4] HID: core: break out hid_find_max_report() in hid-core
+Date: Wed, 17 Apr 2013 19:38:14 +0200
+Message-Id: <1366220296-14346-3-git-send-email-benjamin.tissoires@redhat.com>
 In-Reply-To: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com>
 References: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No semantic changes, but hid_dump_report should be in hid-debug.c, not
-in hid-core.c
+hid_find_max_report() was used both in usbhid and i2c-hid.
+Put it in core to avoid code duplication.
 
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- drivers/hid/hid-core.c    | 25 ++-----------------------
- drivers/hid/hid-debug.c   | 30 ++++++++++++++++++++++++++++++
- include/linux/hid-debug.h |  6 ++++--
- 3 files changed, 36 insertions(+), 25 deletions(-)
+ drivers/hid/hid-core.c        | 29 +++++++++++++++++++++++++++++
+ drivers/hid/i2c-hid/i2c-hid.c | 15 +++------------
+ drivers/hid/usbhid/hid-core.c | 16 ----------------
+ include/linux/hid.h           |  2 ++
+ 4 files changed, 34 insertions(+), 28 deletions(-)
 
 diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 1129f49..34c53fc 100644
+index 34c53fc..25d7903 100644
 --- a/drivers/hid/hid-core.c
 +++ b/drivers/hid/hid-core.c
-@@ -1259,8 +1259,6 @@ int hid_input_report(struct hid_device *hid, int type, u8 *data, int size, int i
- 	struct hid_report_enum *report_enum;
- 	struct hid_driver *hdrv;
- 	struct hid_report *report;
--	char *buf;
--	unsigned int i;
- 	int ret = 0;
+@@ -1145,6 +1145,35 @@ void hid_output_report(struct hid_report *report, __u8 *data)
+ EXPORT_SYMBOL_GPL(hid_output_report);
  
- 	if (!hid)
-@@ -1283,28 +1281,9 @@ int hid_input_report(struct hid_device *hid, int type, u8 *data, int size, int i
- 	}
- 
- 	/* Avoid unnecessary overhead if debugfs is disabled */
--	if (list_empty(&hid->debug_list))
--		goto nomem;
--
--	buf = kmalloc(sizeof(char) * HID_DEBUG_BUFSIZE, GFP_ATOMIC);
--
--	if (!buf)
--		goto nomem;
--
--	/* dump the report */
--	snprintf(buf, HID_DEBUG_BUFSIZE - 1,
--			"\nreport (size %u) (%snumbered) = ", size, report_enum->numbered ? "" : "un");
--	hid_debug_event(hid, buf);
--
--	for (i = 0; i < size; i++) {
--		snprintf(buf, HID_DEBUG_BUFSIZE - 1,
--				" %02x", data[i]);
--		hid_debug_event(hid, buf);
--	}
--	hid_debug_event(hid, "\n");
--	kfree(buf);
-+	if (!list_empty(&hid->debug_list))
-+		hid_dump_report(hid, type, data, size);
- 
--nomem:
- 	report = hid_get_report(report_enum, data);
- 
- 	if (!report) {
-diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
-index 933fff0..094cbcf 100644
---- a/drivers/hid/hid-debug.c
-+++ b/drivers/hid/hid-debug.c
-@@ -591,6 +591,36 @@ void hid_debug_event(struct hid_device *hdev, char *buf)
- }
- EXPORT_SYMBOL_GPL(hid_debug_event);
- 
-+void hid_dump_report(struct hid_device *hid, int type, u8 *data,
-+		int size)
+ /*
++ * Return the length (in bytes) of a report
++ */
++int hid_get_report_length(struct hid_report *report)
 +{
-+	struct hid_report_enum *report_enum;
-+	char *buf;
-+	unsigned int i;
-+
-+	buf = kmalloc(sizeof(char) * HID_DEBUG_BUFSIZE, GFP_ATOMIC);
-+
-+	if (!buf)
-+		return;
-+
-+	report_enum = hid->report_enum + type;
-+
-+	/* dump the report */
-+	snprintf(buf, HID_DEBUG_BUFSIZE - 1,
-+			"\nreport (size %u) (%snumbered) = ", size,
-+			report_enum->numbered ? "" : "un");
-+	hid_debug_event(hid, buf);
-+
-+	for (i = 0; i < size; i++) {
-+		snprintf(buf, HID_DEBUG_BUFSIZE - 1,
-+				" %02x", data[i]);
-+		hid_debug_event(hid, buf);
-+	}
-+	hid_debug_event(hid, "\n");
-+	kfree(buf);
++	return report->size ? ((report->size - 1) >> 3) + 1 +
++		report->device->report_enum[report->type].numbered : 0;
 +}
-+EXPORT_SYMBOL_GPL(hid_dump_report);
++EXPORT_SYMBOL_GPL(hid_get_report_length);
 +
- void hid_dump_input(struct hid_device *hdev, struct hid_usage *usage, __s32 value)
++/*
++ * Traverse the supplied list of reports and find the longest
++ */
++void hid_find_max_report(struct hid_device *hid, unsigned int type,
++		unsigned int *max)
++{
++	struct hid_report *report;
++	unsigned int size;
++
++	/* We should not rely on wMaxInputLength, as some devices may set it to
++	 * a wrong length. */
++	list_for_each_entry(report, &hid->report_enum[type].report_list, list) {
++		size = hid_get_report_length(report);
++		if (*max < size)
++			*max = size;
++	}
++}
++EXPORT_SYMBOL_GPL(hid_find_max_report);
++
++/*
+  * Set a field value. The report this field belongs to has to be
+  * created and transferred to the device, to set this value in the
+  * device.
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index 2b1799a..5aa1dc0 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -390,8 +390,7 @@ static irqreturn_t i2c_hid_irq(int irq, void *dev_id)
+ 
+ static int i2c_hid_get_report_length(struct hid_report *report)
  {
- 	char *buf;
-diff --git a/include/linux/hid-debug.h b/include/linux/hid-debug.h
-index 53744fa..8663f21 100644
---- a/include/linux/hid-debug.h
-+++ b/include/linux/hid-debug.h
-@@ -22,11 +22,12 @@
-  *
-  */
+-	return ((report->size - 1) >> 3) + 1 +
+-		report->device->report_enum[report->type].numbered + 2;
++	return hid_get_report_length(report) + 2;
+ }
  
--#define HID_DEBUG_BUFSIZE 512
+ static void i2c_hid_init_report(struct hid_report *report, u8 *buffer,
+@@ -456,16 +455,8 @@ static void i2c_hid_init_reports(struct hid_device *hid)
+ static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
+ 		unsigned int *max)
+ {
+-	struct hid_report *report;
+-	unsigned int size;
 -
- #ifdef CONFIG_DEBUG_FS
+-	/* We should not rely on wMaxInputLength, as some devices may set it to
+-	 * a wrong length. */
+-	list_for_each_entry(report, &hid->report_enum[type].report_list, list) {
+-		size = i2c_hid_get_report_length(report);
+-		if (*max < size)
+-			*max = size;
+-	}
++	hid_find_max_report(hid, type, max);
++	*max += 2;
+ }
  
-+#define HID_DEBUG_BUFSIZE 512
-+
- void hid_dump_input(struct hid_device *, struct hid_usage *, __s32);
-+void hid_dump_report(struct hid_device *, int , u8 *, int);
- void hid_dump_device(struct hid_device *, struct seq_file *);
- void hid_dump_field(struct hid_field *, int, struct seq_file *);
- char *hid_resolv_usage(unsigned, struct seq_file *);
-@@ -50,6 +51,7 @@ struct hid_debug_list {
- #else
+ static void i2c_hid_free_buffers(struct i2c_hid *ihid)
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index effcd3d..5cf7ddb 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -869,22 +869,6 @@ void usbhid_set_leds(struct hid_device *hid)
+ }
+ EXPORT_SYMBOL_GPL(usbhid_set_leds);
  
- #define hid_dump_input(a,b,c)		do { } while (0)
-+#define hid_dump_report(a,b,c,d)	do { } while (0)
- #define hid_dump_device(a,b)		do { } while (0)
- #define hid_dump_field(a,b,c)		do { } while (0)
- #define hid_resolv_usage(a,b)		do { } while (0)
+-/*
+- * Traverse the supplied list of reports and find the longest
+- */
+-static void hid_find_max_report(struct hid_device *hid, unsigned int type,
+-		unsigned int *max)
+-{
+-	struct hid_report *report;
+-	unsigned int size;
+-
+-	list_for_each_entry(report, &hid->report_enum[type].report_list, list) {
+-		size = ((report->size - 1) >> 3) + 1 + hid->report_enum[type].numbered;
+-		if (*max < size)
+-			*max = size;
+-	}
+-}
+-
+ static int hid_alloc_buffers(struct usb_device *dev, struct hid_device *hid)
+ {
+ 	struct usbhid_device *usbhid = hid->driver_data;
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index b7b5ff2..9b6c71c 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -736,6 +736,8 @@ extern void hidinput_report_event(struct hid_device *hid, struct hid_report *rep
+ extern int hidinput_connect(struct hid_device *hid, unsigned int force);
+ extern void hidinput_disconnect(struct hid_device *);
+ 
++int hid_get_report_length(struct hid_report *);
++void hid_find_max_report(struct hid_device *, unsigned int, unsigned int *);
+ int hid_set_field(struct hid_field *, unsigned, __s32);
+ int hid_input_report(struct hid_device *, int type, u8 *, int, int);
+ int hidinput_find_field(struct hid_device *hid, unsigned int type, unsigned int code, struct hid_field **field);
 -- 
 1.8.1.4
 
