@@ -1,307 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966688Ab3DQTYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 15:24:14 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:29529 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933709Ab3DQTXn (ORCPT
+	id S966704Ab3DQTZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 15:25:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48527 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757738Ab3DQTYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 15:23:43 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [PATCH v4 3/4] mutex: Queue mutex spinners with MCS lock to reduce cacheline contention
-Date: Wed, 17 Apr 2013 15:23:13 -0400
-Message-Id: <1366226594-5506-4-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1366226594-5506-1-git-send-email-Waiman.Long@hp.com>
-References: <1366226594-5506-1-git-send-email-Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
+	Wed, 17 Apr 2013 15:24:12 -0400
+Message-ID: <516EF5A1.9030306@ti.com>
+Date: Wed, 17 Apr 2013 15:18:57 -0400
+From: Eduardo Valentin <eduardo.valentin@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Zhang Rui <rui.zhang@intel.com>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 04/11] thermal: rename get_thermal_instance to
+ thermal_instance_get
+References: <1365437258-31412-1-git-send-email-eduardo.valentin@ti.com>  <1365437258-31412-5-git-send-email-eduardo.valentin@ti.com> <1366211375.2091.52.camel@rzhang1-mobl4>
+In-Reply-To: <1366211375.2091.52.camel@rzhang1-mobl4>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current mutex spinning code (with MUTEX_SPIN_ON_OWNER option turned
-on) allow multiple tasks to spin on a single mutex concurrently. A
-potential problem with the current approach is that when the mutex
-becomes available, all the spinning tasks will try to acquire the
-mutex more or less simultaneously. As a result, there will be a lot of
-cacheline bouncing especially on systems with a large number of CPUs.
+On 17-04-2013 11:09, Zhang Rui wrote:
+> On Mon, 2013-04-08 at 12:07 -0400, Eduardo Valentin wrote:
+>> To follow the prefix names used by the thermal exported functions,
+>> this patch renames get_thermal_instance to thermal_instance_get.
+>>
+>> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+>
+> NACK.
+>
+> with the change of building all thermal governors into thermal_sys
+> module, get_thermal_instance becomes an internally helper function,
+> rather than external API.
+> thus I think it is okay to use the current name get_thermal_instance.
+> But you remind me a need a cleanup patch to remove these APIs. :)
 
-This patch tries to reduce this kind of contention by putting the
-mutex spinners into a queue so that only the first one in the queue
-will try to acquire the mutex. This will reduce contention and allow
-all the tasks to move forward faster.
+How about keeping this patch and resending with a better description? 
+Something like:
+To follow the prefix names used by the thermal functions,
+this patch renames get_thermal_instance to thermal_instance_get.
 
-The queuing of mutex spinners is done using an MCS lock based
-implementation which will further reduce contention on the mutex
-cacheline than a similar ticket spinlock based implementation. This
-patch will add a new field into the mutex data structure for holding
-the MCS lock. This expands the mutex size by 8 bytes for 64-bit system
-and 4 bytes for 32-bit system. This overhead will be avoid if the
-MUTEX_SPIN_ON_OWNER option is turned off.
 
-The following table shows the jobs per minute (JPM) scalability data
-on an 8-node 80-core Westmere box with a 3.7.10 kernel. The numactl
-command is used to restrict the running of the fserver workloads to
-1/2/4/8 nodes with hyperthreading off.
-
-+-----------------+-----------+-----------+-------------+----------+
-|  Configuration  | Mean JPM  | Mean JPM  |  Mean JPM   | % Change |
-|		  | w/o patch | patch 1   | patches 1&2 |  1->1&2  |
-+-----------------+------------------------------------------------+
-|		  |              User Range 1100 - 2000		   |
-+-----------------+------------------------------------------------+
-| 8 nodes, HT off |  227972   |  227237   |   305043    |  +34.2%  |
-| 4 nodes, HT off |  393503   |  381558   |   394650    |   +3.4%  |
-| 2 nodes, HT off |  334957   |  325240   |   338853    |   +4.2%  |
-| 1 node , HT off |  198141   |  197972   |   198075    |   +0.1%  |
-+-----------------+------------------------------------------------+
-|		  |              User Range 200 - 1000		   |
-+-----------------+------------------------------------------------+
-| 8 nodes, HT off |  282325   |  312870   |   332185    |   +6.2%  |
-| 4 nodes, HT off |  390698   |  378279   |   393419    |   +4.0%  |
-| 2 nodes, HT off |  336986   |  326543   |   340260    |   +4.2%  |
-| 1 node , HT off |  197588   |  197622   |   197582    |    0.0%  |
-+-----------------+-----------+-----------+-------------+----------+
-
-At low user range 10-100, the JPM differences were within +/-1%. So
-they are not that interesting.
-
-The fserver workload uses mutex spinning extensively. With just
-the mutex change in the first patch, there is no noticeable change
-in performance.  Rather, there is a slight drop in performance. This
-mutex spinning patch more than recovers the lost performance and show
-a significant increase of +30% at high user load with the full 8 nodes.
-Similar improvements were also seen in a 3.8 kernel.
-
-The table below shows the %time spent by different kernel functions
-as reported by perf when running the fserver workload at 1500 users
-with all 8 nodes.
-
-+-----------------------+-----------+---------+-------------+
-|        Function       |  % time   | % time  |   % time    |
-|                       | w/o patch | patch 1 | patches 1&2 |
-+-----------------------+-----------+---------+-------------+
-| __read_lock_failed    |  34.96%   | 34.91%  |   29.14%    |
-| __write_lock_failed   |  10.14%   | 10.68%  |    7.51%    |
-| mutex_spin_on_owner   |   3.62%   |  3.42%  |    2.33%    |
-| mspin_lock            |    N/A    |   N/A   |    9.90%    |
-| __mutex_lock_slowpath |   1.46%   |  0.81%  |    0.14%    |
-| _raw_spin_lock        |   2.25%   |  2.50%  |    1.10%    |
-+-----------------------+-----------+---------+-------------+
-
-The fserver workload for an 8-node system is dominated by the
-contention in the read/write lock. Mutex contention also plays a
-role. With the first patch only, mutex contention is down (as shown by
-the __mutex_lock_slowpath figure) which help a little bit. We saw only
-a few percents improvement with that.
-
-By applying patch 2 as well, the single mutex_spin_on_owner figure is
-now split out into an additional mspin_lock figure. The time increases
-from 3.42% to 11.23%. It shows a great reduction in contention among
-the spinners leading to a 30% improvement. The time ratio 9.9/2.33=4.3
-indicates that there are on average 4+ spinners waiting in the spin_lock
-loop for each spinner in the mutex_spin_on_owner loop. Contention in
-other locking functions also go down by quite a lot.
-
-The table below shows the performance change of both patches 1 & 2 over
-patch 1 alone in other AIM7 workloads (at 8 nodes, hyperthreading off).
-
-+--------------+---------------+----------------+-----------------+
-|   Workload   | mean % change | mean % change  | mean % change   |
-|              | 10-100 users  | 200-1000 users | 1100-2000 users |
-+--------------+---------------+----------------+-----------------+
-| alltests     |      0.0%     |     -0.8%      |     +0.6%       |
-| five_sec     |     -0.3%     |     +0.8%      |     +0.8%       |
-| high_systime |     +0.4%     |     +2.4%      |     +2.1%       |
-| new_fserver  |     +0.1%     |    +14.1%      |    +34.2%       |
-| shared       |     -0.5%     |     -0.3%      |     -0.4%       |
-| short        |     -1.7%     |     -9.8%      |     -8.3%       |
-+--------------+---------------+----------------+-----------------+
-
-The short workload is the only one that shows a decline in performance
-probably due to the spinner locking and queuing overhead.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- include/linux/mutex.h |    3 ++
- kernel/mutex.c        |   91 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 93 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/mutex.h b/include/linux/mutex.h
-index 9121595..433da8a 100644
---- a/include/linux/mutex.h
-+++ b/include/linux/mutex.h
-@@ -53,6 +53,9 @@ struct mutex {
- #if defined(CONFIG_DEBUG_MUTEXES) || defined(CONFIG_SMP)
- 	struct task_struct	*owner;
- #endif
-+#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
-+	void			*spin_mlock;	/* Spinner MCS lock */
-+#endif
- #ifdef CONFIG_DEBUG_MUTEXES
- 	const char 		*name;
- 	void			*magic;
-diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 70ebd85..1dbd421 100644
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -55,6 +55,9 @@ __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
- 	spin_lock_init(&lock->wait_lock);
- 	INIT_LIST_HEAD(&lock->wait_list);
- 	mutex_clear_owner(lock);
-+#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
-+	lock->spin_mlock = NULL;
-+#endif
- 
- 	debug_mutex_init(lock, name, key);
- }
-@@ -108,6 +111,60 @@ EXPORT_SYMBOL(mutex_lock);
- 
- #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
- /*
-+ * In order to avoid a stampede of mutex spinners from acquiring the mutex
-+ * more or less simultaneously, the spinners need to acquire a MCS lock
-+ * first before spinning on the owner field.
-+ *
-+ * We don't inline mspin_lock() so that perf can correctly account for the
-+ * time spent in this lock function.
-+ */
-+struct mspin_node {
-+	struct mspin_node *next ;
-+	int		  locked;	/* 1 if lock acquired */
-+};
-+#define	MLOCK(mutex)	((struct mspin_node **)&((mutex)->spin_mlock))
-+
-+static noinline
-+void mspin_lock(struct mspin_node **lock, struct mspin_node *node)
-+{
-+	struct mspin_node *prev;
-+
-+	/* Init node */
-+	node->locked = 0;
-+	node->next   = NULL;
-+
-+	prev = xchg(lock, node);
-+	if (likely(prev == NULL)) {
-+		/* Lock acquired */
-+		node->locked = 1;
-+		return;
-+	}
-+	ACCESS_ONCE(prev->next) = node;
-+	smp_wmb();
-+	/* Wait until the lock holder passes the lock down */
-+	while (!ACCESS_ONCE(node->locked))
-+		arch_mutex_cpu_relax();
-+}
-+
-+static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
-+{
-+	struct mspin_node *next = ACCESS_ONCE(node->next);
-+
-+	if (likely(!next)) {
-+		/*
-+		 * Release the lock by setting it to NULL
-+		 */
-+		if (cmpxchg(lock, node, NULL) == node)
-+			return;
-+		/* Wait until the next pointer is set */
-+		while (!(next = ACCESS_ONCE(node->next)))
-+			arch_mutex_cpu_relax();
-+	}
-+	ACCESS_ONCE(next->locked) = 1;
-+	smp_wmb();
-+}
-+
-+/*
-  * Mutex spinning code migrated from kernel/sched/core.c
-  */
- 
-@@ -150,6 +207,24 @@ int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
- 	 */
- 	return lock->owner == NULL;
- }
-+
-+/*
-+ * Initial check for entering the mutex spinning loop
-+ */
-+static inline int mutex_can_spin_on_owner(struct mutex *lock)
-+{
-+	int retval = 1;
-+
-+	rcu_read_lock();
-+	if (lock->owner)
-+		retval = lock->owner->on_cpu;
-+	rcu_read_unlock();
-+	/*
-+	 * if lock->owner is not set, the mutex owner may have just acquired
-+	 * it and not set the owner yet or the mutex has been released.
-+	 */
-+	return retval;
-+}
- #endif
- 
- static __used noinline void __sched __mutex_unlock_slowpath(atomic_t *lock_count);
-@@ -215,26 +290,39 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 	 *
- 	 * We can't do this for DEBUG_MUTEXES because that relies on wait_lock
- 	 * to serialize everything.
-+	 *
-+	 * The mutex spinners are queued up using MCS lock so that only one
-+	 * spinner can compete for the mutex. However, if mutex spinning isn't
-+	 * going to happen, there is no point in going through the lock/unlock
-+	 * overhead.
- 	 */
-+	if (!mutex_can_spin_on_owner(lock))
-+		goto slowpath;
- 
- 	for (;;) {
- 		struct task_struct *owner;
-+		struct mspin_node  node;
- 
- 		/*
- 		 * If there's an owner, wait for it to either
- 		 * release the lock or go to sleep.
- 		 */
-+		mspin_lock(MLOCK(lock), &node);
- 		owner = ACCESS_ONCE(lock->owner);
--		if (owner && !mutex_spin_on_owner(lock, owner))
-+		if (owner && !mutex_spin_on_owner(lock, owner)) {
-+			mspin_unlock(MLOCK(lock), &node);
- 			break;
-+		}
- 
- 		if ((atomic_read(&lock->count) == 1) &&
- 		    (atomic_cmpxchg(&lock->count, 1, 0) == 1)) {
- 			lock_acquired(&lock->dep_map, ip);
- 			mutex_set_owner(lock);
-+			mspin_unlock(MLOCK(lock), &node);
- 			preempt_enable();
- 			return 0;
- 		}
-+		mspin_unlock(MLOCK(lock), &node);
- 
- 		/*
- 		 * When there's no owner, we might have preempted between the
-@@ -253,6 +341,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 		 */
- 		arch_mutex_cpu_relax();
- 	}
-+slowpath:
- #endif
- 	spin_lock_mutex(&lock->wait_lock, flags);
- 
--- 
-1.7.1
+>
+> thanks,
+> rui
+>> ---
+>>   Documentation/thermal/sysfs-api.txt |    2 +-
+>>   drivers/thermal/fair_share.c        |    2 +-
+>>   drivers/thermal/thermal_sys.c       |    4 ++--
+>>   include/linux/thermal.h             |    2 +-
+>>   4 files changed, 5 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/Documentation/thermal/sysfs-api.txt b/Documentation/thermal/sysfs-api.txt
+>> index 4b23190..059b3bf 100644
+>> --- a/Documentation/thermal/sysfs-api.txt
+>> +++ b/Documentation/thermal/sysfs-api.txt
+>> @@ -358,7 +358,7 @@ are supposed to implement the callback. If they don't, the thermal
+>>   framework calculated the trend by comparing the previous and the current
+>>   temperature values.
+>>
+>> -5.2:get_thermal_instance:
+>> +5.2:thermal_instance_get:
+>>   This function returns the thermal_instance corresponding to a given
+>>   {thermal_zone, cooling_device, trip_point} combination. Returns NULL
+>>   if such an instance does not exist.
+>> diff --git a/drivers/thermal/fair_share.c b/drivers/thermal/fair_share.c
+>> index 792479f..f629446 100644
+>> --- a/drivers/thermal/fair_share.c
+>> +++ b/drivers/thermal/fair_share.c
+>> @@ -95,7 +95,7 @@ static int fair_share_throttle(struct thermal_zone_device *tz, int trip)
+>>   			continue;
+>>
+>>   		cdev = tzp->tbp[i].cdev;
+>> -		instance = get_thermal_instance(tz, cdev, trip);
+>> +		instance = thermal_instance_get(tz, cdev, trip);
+>>   		if (!instance)
+>>   			continue;
+>>
+>> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+>> index ffaf6d3..44e89c0 100644
+>> --- a/drivers/thermal/thermal_sys.c
+>> +++ b/drivers/thermal/thermal_sys.c
+>> @@ -170,7 +170,7 @@ int get_tz_trend(struct thermal_zone_device *tz, int trip)
+>>   }
+>>   EXPORT_SYMBOL(get_tz_trend);
+>>
+>> -struct thermal_instance *get_thermal_instance(struct thermal_zone_device *tz,
+>> +struct thermal_instance *thermal_instance_get(struct thermal_zone_device *tz,
+>>   			struct thermal_cooling_device *cdev, int trip)
+>>   {
+>>   	struct thermal_instance *pos = NULL;
+>> @@ -191,7 +191,7 @@ struct thermal_instance *get_thermal_instance(struct thermal_zone_device *tz,
+>>
+>>   	return target_instance;
+>>   }
+>> -EXPORT_SYMBOL(get_thermal_instance);
+>> +EXPORT_SYMBOL(thermal_instance_get);
+>>
+>>   static void print_bind_err_msg(struct thermal_zone_device *tz,
+>>   			struct thermal_cooling_device *cdev, int ret)
+>> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+>> index e8ec9d8..e2a49e1 100644
+>> --- a/include/linux/thermal.h
+>> +++ b/include/linux/thermal.h
+>> @@ -239,7 +239,7 @@ struct thermal_cooling_device *thermal_cooling_device_register(char *, void *,
+>>   void thermal_cooling_device_unregister(struct thermal_cooling_device *);
+>>
+>>   int get_tz_trend(struct thermal_zone_device *, int);
+>> -struct thermal_instance *get_thermal_instance(struct thermal_zone_device *,
+>> +struct thermal_instance *thermal_instance_get(struct thermal_zone_device *,
+>>   		struct thermal_cooling_device *, int);
+>>   void thermal_cdev_update(struct thermal_cooling_device *);
+>>   void thermal_notify_framework(struct thermal_zone_device *, int);
+>
+>
+>
+>
 
