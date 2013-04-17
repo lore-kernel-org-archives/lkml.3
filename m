@@ -1,136 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966049Ab3DQIGx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 04:06:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:62827 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965847Ab3DQIGu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 04:06:50 -0400
-Date: Wed, 17 Apr 2013 10:06:45 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Axel Lin <axel.lin@ingics.com>
-cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] regulator: as3711: Use a static of_regulator_match
- table for of_regulator_match
-In-Reply-To: <1366185682.26712.1.camel@phoenix>
-Message-ID: <Pine.LNX.4.64.1304171005310.12878@axis700.grange>
-References: <1366185682.26712.1.camel@phoenix>
+	id S966067Ab3DQIMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 04:12:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33979 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965860Ab3DQIMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 04:12:52 -0400
+Message-ID: <516E597B.9010100@ti.com>
+Date: Wed, 17 Apr 2013 11:12:43 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:6JPXSTKPcrPDUVKrAZZvDeDGV3tGSnDqwkUqYEtc8UF
- L9AsoIWfWZ+tRMpXkdNgZxbj5+6Zfz1buTbXhF/xiE2t398UuZ
- AE6ys4aY5Knt4tcGVAw2VnkCidVNpE62aiAb98d792FeHpVBst
- kWCoh3ez5lL2PjR+corllkzmV+Qk2yNBs+S5BkvetyweTY5GZa
- h2GWTwsmIyZjxZqxJgo3PqqvgsHO2pjvKgTECHNvZfx0kpAJ8C
- /Euyv0CDLfZzrgdx5ybDHXkeaiBJ5bhfhWgKx+90dahiUMqJcI
- Ca99dlq6V5geHWMeN3zPS48YrteiQxmx57fffJkKPblq0l8efJ
- EUS8HiZGX8GPd1BN3KG5J4B1g/vmXIHt0NMz8P20Nlp7zdIc//
- 1EGr/2yz53EmQ==
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <holler@ahsoftware.de>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        "ABRAHAM, KISHON VIJAY" <kishon@ti.com>
+Subject: Re: [PATCH 2/2] USB: ehci-omap: Improve PHY error handling
+References: <Pine.LNX.4.44L0.1304161130590.1391-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1304161130590.1391-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Apr 2013, Axel Lin wrote:
-
-> The same table can be used for multiple instance of pdev, so we don't need to
-> allocate memory for of_regulator_match table per pdev.
+On 04/16/2013 06:32 PM, Alan Stern wrote:
+> On Mon, 15 Apr 2013, Roger Quadros wrote:
 > 
-> match->driver_data points to the corresponding entry of as3711_reg_info,
-> however it is not used in current code, thus this patch does not set
-> driver_data in the of_regulator_match table.
+>> As the USB PHY layer never returns NULL we don't need
+>> to check for that condition.
+>>
+>> If we fail to get the PHY device it could be due
+>> to missing USB PHY drivers. Give this hint to the user
+>> in the error message.
+>>
+>> CC: Alan Stern <stern@rowland.harvard.edu>
+>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>> ---
+>>  drivers/usb/host/ehci-omap.c |    6 +++---
+>>  1 files changed, 3 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+>> index 5de3e43..2e34ddd 100644
+>> --- a/drivers/usb/host/ehci-omap.c
+>> +++ b/drivers/usb/host/ehci-omap.c
+>> @@ -175,13 +175,13 @@ static int ehci_hcd_omap_probe(struct platform_device *pdev)
+>>  			phy = devm_usb_get_phy_by_phandle(dev, "phys", i);
+>>  		else
+>>  			phy = devm_usb_get_phy_dev(dev, i);
+>> -		if (IS_ERR(phy) || !phy) {
+>> +		if (IS_ERR(phy)) {
+>>  			/* Don't bail out if PHY is not absolutely necessary */
+>>  			if (pdata->port_mode[i] != OMAP_EHCI_PORT_MODE_PHY)
+>>  				continue;
+>>  
+>> -			ret = IS_ERR(phy) ? PTR_ERR(phy) : -ENODEV;
+>> -			dev_err(dev, "Can't get PHY device for port %d: %d\n",
+>> +			ret = PTR_ERR(phy);
+>> +			dev_err(dev, "Can't get PHY device for port %d: %d. Is USB_PHY driver enabled?\n",
+>>  					i, ret);
+>>  			goto err_phy;
+>>  		}
 > 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> Getting rid of the !phy test is good.  But I'm doubtful about the 
+> change to the error message.  Are you going to make a similar change to 
+> every platform driver?  There doesn't seem to be any reason to do this 
+> for ehci-omap but not the others.
 
-Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+I'm not very sure about that. If using the PHY API while USB_PHY is disabled
+is to be treated as a universal failure, then the print might as well come from
+the dummy stub for xx_usb_get_phy_xx().
 
-Thanks
-Guennadi
+For this patch, I'll just undo the print message change and resend. That could be
+done in a separate patch instead.
 
-> ---
->  drivers/regulator/as3711-regulator.c |   43 ++++++++++++++--------------------
->  1 file changed, 18 insertions(+), 25 deletions(-)
-> 
-> diff --git a/drivers/regulator/as3711-regulator.c b/drivers/regulator/as3711-regulator.c
-> index 0539b3e..3da6bd6 100644
-> --- a/drivers/regulator/as3711-regulator.c
-> +++ b/drivers/regulator/as3711-regulator.c
-> @@ -278,19 +278,20 @@ static struct as3711_regulator_info as3711_reg_info[] = {
->  
->  #define AS3711_REGULATOR_NUM ARRAY_SIZE(as3711_reg_info)
->  
-> -static const char *as3711_regulator_of_names[AS3711_REGULATOR_NUM] = {
-> -	[AS3711_REGULATOR_SD_1] = "sd1",
-> -	[AS3711_REGULATOR_SD_2] = "sd2",
-> -	[AS3711_REGULATOR_SD_3] = "sd3",
-> -	[AS3711_REGULATOR_SD_4] = "sd4",
-> -	[AS3711_REGULATOR_LDO_1] = "ldo1",
-> -	[AS3711_REGULATOR_LDO_2] = "ldo2",
-> -	[AS3711_REGULATOR_LDO_3] = "ldo3",
-> -	[AS3711_REGULATOR_LDO_4] = "ldo4",
-> -	[AS3711_REGULATOR_LDO_5] = "ldo5",
-> -	[AS3711_REGULATOR_LDO_6] = "ldo6",
-> -	[AS3711_REGULATOR_LDO_7] = "ldo7",
-> -	[AS3711_REGULATOR_LDO_8] = "ldo8",
-> +static struct of_regulator_match
-> +as3711_regulator_matches[AS3711_REGULATOR_NUM] = {
-> +	[AS3711_REGULATOR_SD_1] = { .name = "sd1" },
-> +	[AS3711_REGULATOR_SD_2] = { .name = "sd2" },
-> +	[AS3711_REGULATOR_SD_3] = { .name = "sd3" },
-> +	[AS3711_REGULATOR_SD_4] = { .name = "sd4" },
-> +	[AS3711_REGULATOR_LDO_1] = { .name = "ldo1" },
-> +	[AS3711_REGULATOR_LDO_2] = { .name = "ldo2" },
-> +	[AS3711_REGULATOR_LDO_3] = { .name = "ldo3" },
-> +	[AS3711_REGULATOR_LDO_4] = { .name = "ldo4" },
-> +	[AS3711_REGULATOR_LDO_5] = { .name = "ldo5" },
-> +	[AS3711_REGULATOR_LDO_6] = { .name = "ldo6" },
-> +	[AS3711_REGULATOR_LDO_7] = { .name = "ldo7" },
-> +	[AS3711_REGULATOR_LDO_8] = { .name = "ldo8" },
->  };
->  
->  static int as3711_regulator_parse_dt(struct device *dev,
-> @@ -299,7 +300,7 @@ static int as3711_regulator_parse_dt(struct device *dev,
->  	struct as3711_regulator_pdata *pdata = dev_get_platdata(dev);
->  	struct device_node *regulators =
->  		of_find_node_by_name(dev->parent->of_node, "regulators");
-> -	struct of_regulator_match *matches, *match;
-> +	struct of_regulator_match *match;
->  	int ret, i;
->  
->  	if (!regulators) {
-> @@ -307,23 +308,15 @@ static int as3711_regulator_parse_dt(struct device *dev,
->  		return -ENODEV;
->  	}
->  
-> -	matches = devm_kzalloc(dev, sizeof(*matches) * count, GFP_KERNEL);
-> -	if (!matches)
-> -		return -ENOMEM;
-> -
-> -	for (i = 0, match = matches; i < count; i++, match++) {
-> -		match->name = as3711_regulator_of_names[i];
-> -		match->driver_data = as3711_reg_info + i;
-> -	}
-> -
-> -	ret = of_regulator_match(dev->parent, regulators, matches, count);
-> +	ret = of_regulator_match(dev->parent, regulators,
-> +				 as3711_regulator_matches, count);
->  	of_node_put(regulators);
->  	if (ret < 0) {
->  		dev_err(dev, "Error parsing regulator init data: %d\n", ret);
->  		return ret;
->  	}
->  
-> -	for (i = 0, match = matches; i < count; i++, match++)
-> +	for (i = 0, match = as3711_regulator_matches; i < count; i++, match++)
->  		if (match->of_node) {
->  			pdata->init_data[i] = match->init_data;
->  			of_node[i] = match->of_node;
-> -- 
-> 1.7.10.4
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+cheers,
+-roger
