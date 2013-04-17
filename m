@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965994Ab3DQHrA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 03:47:00 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:59722 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965879Ab3DQHq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 03:46:58 -0400
-Date: Wed, 17 Apr 2013 09:46:53 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
+	id S965930Ab3DQHsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 03:48:07 -0400
+Received: from mx5.zte.com.cn ([63.217.80.70]:41130 "EHLO zte.com.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S965738Ab3DQHsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 03:48:05 -0400
+In-Reply-To: <516D9A74.8030109@linux.intel.com>
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Darren Hart <dvhart@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Patch -v4 1/4] Migrate shutdown/reboot to boot cpu.
-Message-ID: <20130417074653.GA31607@gmail.com>
-References: <20130416095827.GJ3672@sgi.com>
- <20130416113256.GA10452@gmail.com>
- <20130416120624.GO3658@sgi.com>
- <20130416140101.GS3658@sgi.com>
+Subject: Re: Re: [PATCH] futex: bugfix for futex-key conflict when futex use
+ hugepage
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130416140101.GS3658@sgi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Lotus Notes Release 6.5.4 March 27, 2005
+Message-ID: <OF137D0ABE.5A739596-ON48257B50.002AB95E-48257B50.002AD807@zte.com.cn>
+From: zhang.yi20@zte.com.cn
+Date: Wed, 17 Apr 2013 15:47:23 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-04-17 15:47:18,
+	Serialize complete at 2013-04-17 15:47:18
+Content-Type: text/plain; charset="US-ASCII"
+X-MAIL: mse02.zte.com.cn r3H7lXon018686
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dave Hansen <dave.hansen@linux.intel.com> wrote on 2013/04/17 02:37:40:
 
-* Robin Holt <holt@sgi.com> wrote:
-
-> > 		reboot_cpu_id = cpumask_first(cpu_online_mask);
-> > 
-> > > Also, does this codepath prevent hotplug from going on in parallel?
-> > 
-> > Not sure.  I have not considered hotplug.  I will look that over when I
-> > am in the office.
+> Instead of bothering to store the index, why not just calculate it, 
+like:
 > 
-> OK.  I have been mulling this over for a bit and I don't think I
-> understand what you are asking.
+> On 04/15/2013 08:37 PM, zhang.yi20@zte.com.cn wrote:
+> > +static inline int get_page_compound_index(struct page *page)
+> > +{
+> > +       if (PageHead(page))
+> > +               return 0;
+> > +       return compound_head(page) - page;
+> > +}
+> 
+> BTW, you've really got to get your mail client fixed.  Your patch is
+> still line-wrapped.
 
-Well, I just saw the apparently naked use of cpu_online_mask, and asked myself 
-whether that's safe against hotplug.
 
-Upstream we had two methods:
+I agree that I should calculate the compound index, but refer to 
+prep_compound_gigantic_page, I think it may like this:
 
- - historical: just reboot on any random CPU we happen to run on
- - current: offline all nonboot CPUs then reboot on the boot CPU
-
-Both methods were implicitly "CPU hotplug safe", no locking needed, because either 
-they didn't need any, or because it used disable_nonboot_cpus() which is a hotplug 
-safe method.
-
-Now your patches change this to:
-
- - migrate to CPU#0 [if possible] and reboot there
-
-Given that on a system CPU-hotplugging might be executing on any given CPU, if 
-reboot is running on another you have to consider the interactions. The previous 
-historic and current upstream method was reasonably hotplug safe - yours I'm not 
-sure about, there's just no hotplug locking in it, etc?
-
-> I would expect that if an architecture depends upon a certain cpu for 
-> shutdown/reboot/halt/suspend/hibernate and that support has been compiled in, 
-> then the arch should be preventing that cpu from being removed. I do not know 
-> how that would work and think that is far beyond the scope of the initial 
-> problem I have been trying to solve.  If that is your question, I certainly do 
-> not know how to address it.  I get the feeling this is off your mark due to the 
-> "parallel" wording above.
-
-What you mention here should indeed already be handled by the architecture hotplug 
-code (for example on x86 the boot CPU cannot be hot-removed).
-
-But beyond that, your use of cpu_online_map is AFAICS not hotplug-safe. For 
-example a possible race would be that another CPU might be not-unplugging a CPU 
-and you try to reboot-migrate to it.
-
-Thanks,
-
-	Ingo
++static inline int get_page_compound_index(struct page *page)
++{
++       struct page *head_page;
++       if (PageHead(page))
++               return 0;
++
++       head_page = compound_head(page);
++       if (compound_order(head_page) >= MAX_ORDER)
++               return page_to_pfn(page) - page_to_pfn(head_page);
++       else
++               return page - compound_head(page);
++}
