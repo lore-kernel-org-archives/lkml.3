@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966443Ab3DQSXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 14:23:31 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62272 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753093Ab3DQSXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 14:23:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,495,1363158000"; 
-   d="scan'208";a="320712285"
-Date: Wed, 17 Apr 2013 11:23:28 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Rob Landley <rob@landley.net>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC 5/7] Docs: Expectations for bug reporters and maintainers
-Message-ID: <20130417182328.GA7690@xanatos>
-References: <412f8f434c32c557b8c17e73163d003b895e2e56.1366046390.git.sarah.a.sharp@linux.intel.com>
- <1366164906.18069.110@driftwood>
+	id S966431Ab3DQScG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 14:32:06 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:33328 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966029Ab3DQScF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 14:32:05 -0400
+Message-ID: <516EEAA0.10906@wwwdotorg.org>
+Date: Wed, 17 Apr 2013 12:32:00 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366164906.18069.110@driftwood>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Christian Ruppert <christian.ruppert@abilis.com>
+CC: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/2] pinmux: Add TB10x pinmux driver
+References: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com>
+In-Reply-To: <1365608728-30494-1-git-send-email-christian.ruppert@abilis.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 09:15:06PM -0500, Rob Landley wrote:
-> On 04/15/2013 12:33:34 PM, Sarah Sharp wrote:
-> >Outline how often it's polite to ping kernel maintainers about
-> >bugs, and
-> >suggest that kernel maintainers should respond to bugs in 1 to 5
-> >business days.
-> 
-> Is there anything in here about the four-level nature of modern
-> maintainership?
-> 
-> Patches go from the developer, to the maintainer, to one of Linus's
-> lieutenants, to Linus himself. If you submit a patch to a maintainer
-> they owe you a response. The lieutenant (subsystem maintainer) owes
-> that maintainer a response, and Linus (the project's architect) owes
-> the lieutenant a response.
+On 04/10/2013 09:45 AM, Christian Ruppert wrote:
+> The pinmux driver of the Abilis Systems TB10x platform based on ARC700 CPUs.
+> Used to control the pinmux and is a prerequisite for the GPIO driver.
 
-Do we want to go into this much detail in a document meant for
-frustrated bug reporters?  Or perhaps we should create a separate
-document about the kernel maintainer hierarchy and reference it here?
+Linus already did a review of this, but I have a few extra comments:
 
-Also, please note that I'm writing this from the perspective of a driver
-maintainer.  I'm not sure if we've met face to face. :)
+> diff --git a/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt b/Documentation/devicetree/bindings/pinctrl/abilis,tb10x-iomux.txt
 
-> Linus does not owe you, personally, a response. Neither do the
-> subsystem maintainers if you approach them directly with something
-> that should have gone through one of the hundreds of domain-specific
-> maintainers out of the Maintainers file. So the point of going to
-> the right people in sequence and getting their review and
-> signed-off-by lines is to ensure you don't sit there listening to
-> crickets chirping while your patch is ignored. (If you approach
-> Linus directly you may randomly _get_ a response, but there's no
-> guarantee, and usually you won't because he's really busy.)
+> +Abilis Systems TB10x pin controller
+> +===================================
+> +
+> +Required properties
+> +-------------------
+> +
+> +- #address-cells: should be <1>.
+> +- #size-cells: should be <1>;
 
-This file is about bug reporting, not submitting patches.  I rewrote
-this file for the audience of people who would like to report a kernel
-bug, but don't necessarily want to track it down and submit a patch
-themselves.  Since this file isn't about submitting patches, let's focus
-the discussion on bug reporters.
+What are those two used for? They would normally only be required if the
+child nodes of the pinctrl node contained "reg" properties. But, they
+don't in the examples later in this file.
 
-I agree that bug reporting should be done from the bottom up.  That's
-why I tried to thoroughly explain how to find the right contact from
-MAINTAINERS or get_maintainer.pl.
+> +Ports are defined (and referenced) by sub-nodes of the pin controller. Every
+> +sub-node defines exactly one port (i.e. a set of pins). Ports are defined by
+> +their names in the pin controller driver.
 
-However, if a driver maintainer is not doing their job, is not
-responding to regressions, it makes sense to escalate that up the chain.
-Security holes in unmaintained code cause problems for anyone that uses
-the Linux kernel, since distro kernels tend to turn nearly every config
-option on.  If code is not being maintained, it may be better to remove
-it, or at least mark it as depending on CONFIG_BROKEN.
+I'm not really sure what the implication here is. Does this mean that
+the driver isn't expected to contain tables which define which
+pins/groups/functions exist, but rather gets those lists/tables from the
+DT? I prefer not to do that, although it is acceptable to write the
+binding/driver this way.
 
-If a driver maintainer isn't responding to a bug or security hole in a
-timely manner, it makes sense to escalate that to the subsystem
-maintainer who merges their patches.  Perhaps the driver maintainer is
-on vacation, and the subsystem maintainer can tell the bug reporter
-they'll have to wait.  Or maybe the driver maintainer has disappeared
-completely from kernel development, and it's time someone else stepped
-into their place.  Either way, the subsystem maintainer's job is to make
-sure their subsystem is maintained by the driver maintainers under them.
 
-If the subsystem maintainer doesn't respond, and it's a critical issue,
-the last-ditch effort to get it fixed may need to be contacting Linus.
-If there's serious code issues with a particular subsystem (like we've
-seen in the past with the graphics subsystem or the ARM arch code), then
-it makes sense for Linus to know about it.
+So there seems to be something huge missing here; the only property
+defined here for the child nodes is "pingrp". In the examples, there's
+nothing else used. I don't see how this binding allows the actual
+desired mux functions to be specified. All other pinctrl DT bindings
+have the child nodes contain something along the lines of:
 
-TLDR version: Yes, it would be nice if bug reporters could go up the
-hierarchy, but they don't have an easy way to know which subsystem
-maintainers to contact.  Perhaps a new line in MAINTAINERS for the
-subsystem maintainer would be helpful?
+* A list of pins/groups to apply the settings to.
+* A property defining the mux function to select on those pins/groups.
+* Other properties defining configuration for those pins/groups, such as
+pull-up/down, drive-type, drive-strength, etc.
 
-Sarah Sharp
+All that seems missing here. Surely it's required?
+
+Perhaps this "abilis,simple-default" thing is intended to represent some
+specific default configuration? If so, I don't think that's the right
+way to go. Also, the DT binding should be as complete as possible from
+the start, rather than planning to define/implement part of it now and
+then keep adding to it later. This all implies that some extra
+properties really should be defined here.
+
