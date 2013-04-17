@@ -1,151 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935675Ab3DQXTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 19:19:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58951 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751919Ab3DQXS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 19:18:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,496,1363158000"; 
-   d="scan'208";a="319978927"
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Tim Chen <tim.c.chen@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        Erdinc Ozturk <erdinc.ozturk@intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: [PATCH v2 4/4] Simple correctness and speed test for CRCT10DIF hash
-Date: Wed, 17 Apr 2013 09:12:55 -0700
-Message-Id: <87f3f79fcdb4172ed7cd09f75d4b8a4618bfea73.1366214842.git.tim.c.chen@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <cover.1366214842.git.tim.c.chen@linux.intel.com>
-References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
-In-Reply-To: <cover.1366214842.git.tim.c.chen@linux.intel.com>
-References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
+	id S1753556Ab3DQXY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 19:24:57 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:52947 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab3DQXY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 19:24:56 -0400
+Date: Thu, 18 Apr 2013 09:24:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: PCI: Remove "extern" from function declarations
+Message-Id: <20130418092444.a4d64d8a9b5f700ba2aae779@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__18_Apr_2013_09_24_44_+1000_HoRVY3qf2Dd2WFx."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are simple tests to do sanity check of CRC T10 DIF hash.  The
-correctness of the transform can be checked with the command
-	modprobe tcrypt mode=47
-The speed of the transform can be evaluated with the command
-	modprobe tcrypt mode=320
+--Signature=_Thu__18_Apr_2013_09_24_44_+1000_HoRVY3qf2Dd2WFx.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Set the cpu frequency to constant and turn turbo off when running the
-speed test so the frequency governor will not tweak the frequency and
-affects the measurements.
+Hi Bjorn,
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
- crypto/tcrypt.c  |  8 ++++++++
- crypto/testmgr.c | 10 ++++++++++
- crypto/testmgr.h | 33 +++++++++++++++++++++++++++++++++
- 3 files changed, 51 insertions(+)
+I just noticed this commit (f39d5b72913e "PCI: Remove "extern" from
+function declarations") in the pci next branch.  Just wondering why you
+would do such a thing.  It is a lot of churn in quite a few header files
+and (in my opinion) goes the wrong way anyway.
 
-diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
-index 24ea7df..5e95722 100644
---- a/crypto/tcrypt.c
-+++ b/crypto/tcrypt.c
-@@ -1174,6 +1174,10 @@ static int do_test(int m)
- 		ret += tcrypt_test("ghash");
- 		break;
- 
-+	case 47:
-+		ret += tcrypt_test("crct10dif");
-+		break;
-+
- 	case 100:
- 		ret += tcrypt_test("hmac(md5)");
- 		break;
-@@ -1498,6 +1502,10 @@ static int do_test(int m)
- 		test_hash_speed("crc32c", sec, generic_hash_speed_template);
- 		if (mode > 300 && mode < 400) break;
- 
-+	case 320:
-+		test_hash_speed("crct10dif", sec, generic_hash_speed_template);
-+		if (mode > 300 && mode < 400) break;
-+
- 	case 399:
- 		break;
- 
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 3807084..b165316 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -1944,6 +1944,16 @@ static const struct alg_test_desc alg_test_descs[] = {
- 			}
- 		}
- 	}, {
-+		.alg = "crct10dif",
-+		.test = alg_test_hash,
-+		.fips_allowed = 1,
-+		.suite = {
-+			.hash = {
-+				.vecs = crct10dif_tv_template,
-+				.count = CRCT10DIF_TEST_VECTORS
-+			}
-+		}
-+	}, {
- 		.alg = "cryptd(__driver-cbc-aes-aesni)",
- 		.test = alg_test_null,
- 		.fips_allowed = 1,
-diff --git a/crypto/testmgr.h b/crypto/testmgr.h
-index d503660..56916d0 100644
---- a/crypto/testmgr.h
-+++ b/crypto/testmgr.h
-@@ -450,6 +450,39 @@ static struct hash_testvec rmd320_tv_template[] = {
- 	}
- };
- 
-+#define CRCT10DIF_TEST_VECTORS	3
-+static struct hash_testvec crct10dif_tv_template[] = {
-+	{
-+		.plaintext = "abc",
-+		.psize  = 3,
-+#ifdef __LITTLE_ENDIAN
-+		.digest = "\x3b\x44",
-+#else
-+		.digest = "\x44\x3b",
-+#endif
-+	}, {
-+		.plaintext = "1234567890123456789012345678901234567890"
-+			     "123456789012345678901234567890123456789",
-+		.psize	= 79,
-+#ifdef __LITTLE_ENDIAN
-+		.digest	= "\x70\x4b",
-+#else
-+		.digest	= "\x4b\x70",
-+#endif
-+	}, {
-+		.plaintext =
-+		"abcddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-+		.psize  = 56,
-+#ifdef __LITTLE_ENDIAN
-+		.digest = "\xe3\x9c",
-+#else
-+		.digest = "\x9c\xe3",
-+#endif
-+		.np     = 2,
-+		.tap    = { 28, 28 }
-+	}
-+};
-+
- /*
-  * SHA1 test vectors  from from FIPS PUB 180-1
-  * Long vector from CAVS 5.0
--- 
-1.7.11.7
+It may not actually make any difference to the compiler for functions, but
+for variables, it does.   A variable declared in a header file without
+"extern" will effectively define it in every compilation that includes
+the header file, one with "extern" will only produce references.
 
+So, since, the global variables really should have the "extern", the
+functions are now inconsistent with that.
+
+It also means that when someone copies a function declaration to make a
+"static inline" stub, the "extern" is a big hint for them to remember to
+make the stub "static" - I have seen several occasions when this was not
+done and that causes compilation failures (but usually only in the
+configuration that the author did not bother to test).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__18_Apr_2013_09_24_44_+1000_HoRVY3qf2Dd2WFx.
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRby88AAoJEECxmPOUX5FENoEP/1f+udRQ8Edap+MUyWWdrHXd
+yTOOgcSFOgHPpTXnMiPPm31JmMHE6HppsFSps2ITJJ6687S2tvgW6i5BvEzDDY6g
+mtg+1NOCkLwCPqW5oWV2Bp92B3q3YRzYKYGX3rBICjYQ4LvoMS9CdmBqDU1Ubu9O
+r0Uvol1WrUHkOo3FVjz12Gs/kR9Han2m5gqvi0MTV7jwx5ijKyXtjHW3D5UYQHfi
+jDvMNiLLFxLLD9I4le0FKSzM2Dktvjjj55s5o3lMeJmrLSUVdqTO4Ab5Olr3ypFu
+qwk3W8VY1IHYYLnj0CmYttiJP5QCTmQBBhRdwoVImiEVfnNu+KsnStj9yI+fYitt
+cn3QqQ7FkTmpTCI/wkuhM6dDaf3ac4LCQMTm+vrwioRaHEXq74DuSqTh3kGegaD/
+W+J91S/r8KFFOxvXCLdj5cJUqB/cHwR28Ve8TW1MI7Z5vT6JH1X3YfQSnmByTH4w
+zkor/bfnLDEyxcDexPCgAHNU1+P3LvmRShUsqRX8doyzHGH6poqteEGoKGoVcKzp
+QWzeHRL6w0vT6zvWIn/c12+30h7PLfY4Q01VurYiOnjJfnrgPoUm8luHVvrpQdhv
+Lo4UWPFaKHt63QMGW3YlJ/X2twEX4rz7zT5LXFYUoPXaaXtYizYBe1OePozPyzkd
+xm7QT/t8eFGJq7F+w5S5
+=iHpk
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__18_Apr_2013_09_24_44_+1000_HoRVY3qf2Dd2WFx.--
