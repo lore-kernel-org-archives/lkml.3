@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966807Ab3DQUxW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 16:53:22 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:56925 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966783Ab3DQUxU (ORCPT
+	id S966783Ab3DQU5I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 16:57:08 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:55129 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755404Ab3DQU5F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 16:53:20 -0400
+	Wed, 17 Apr 2013 16:57:05 -0400
+Date: Wed, 17 Apr 2013 16:57:03 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Greg KH <greg@kroah.com>, <linux-usb@vger.kernel.org>,
+        Manjunath Goudar <manjunath.goudar@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V5 6/6] USB: OHCI: avoid conflicting platform drivers
+In-Reply-To: <1364919844-1726-7-git-send-email-arnd@arndb.de>
+Message-ID: <Pine.LNX.4.44L0.1304171655170.1623-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-X-Originating-IP: [188.6.195.195]
-In-Reply-To: <CAJfpegtvfunCV4cjezQuWji3PoJRpXXKWgH+y55tYMi0O+TdkQ@mail.gmail.com>
-References: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
-	<CAJfpegsD2iyP2=Z3zL-yb_TjjQxipOBKV7yqpdPPTH9oobQ=bA@mail.gmail.com>
-	<CAJfpegtvfunCV4cjezQuWji3PoJRpXXKWgH+y55tYMi0O+TdkQ@mail.gmail.com>
-Date: Wed, 17 Apr 2013 22:53:18 +0200
-Message-ID: <CAJfpegvJGBuOpYi=W3rzzu4Jwa46e_9SxDC4fa-PPmCQs2K3rg@mail.gmail.com>
-Subject: Re: [PATCH 0/5] fuse: close file synchronously
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
-        fuse-devel <fuse-devel@lists.sourceforge.net>,
-        Brian Foster <bfoster@redhat.com>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>, devel@openvz.org,
-        Anand Avati <anand.avati@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 5:30 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> Let's approach it from the other direction:  what if you give back the
-> write lease on the first flush?  It will probably work fine for 99% of
-> cases, since no other writes are going to happen after the first
-> flush.  For the remaining cases you'll just have to reacquire the
-> lease when a write happens after the flush.  I guess performance-wise
-> that will not be an issue, but I may be wrong.
+On Tue, 2 Apr 2013, Arnd Bergmann wrote:
 
-What about this?
+> Like the EHCI driver, OHCI supports a large number of different platform
+> glue drivers by directly including them, which causes problems with
+> conflicting macro definitions in some cases. As more ARM architecture
+> specific back-ends are required to coexist in a single build, we should
+> split those out into separate drivers. Unfortunately, the infrastructure
+> for that is still under development, so to give us more time, this uses
+> a separate *_PLATFORM_DRIVER macro for each ARM specific OHCI backend,
+> just like we already do on PowerPC and some of the other ARM platforms.
+> 
+> In linux-3.10, only the SPEAr and CNS3xxx back-ends would actually conflict
+> without this patch, but over time we would get more of them, so this
+> is a way to avoid having to patch the driver every time it breaks. We
+> should still split out all back-ends into separate loadable modules,
+> but that work is only needed to improve code size and cleanliness after
+> this patch, not for correctness.
+> 
+> While we're here, this fixes the incorrectly sorted error path
+> for the OMAP1 and OMAP3 backends to ensure we always unregister
+> the exact set of drivers that were registered before erroring out.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Thanks,
-Miklos
+I finally had a chance to look through this carefully.  It is fine.
+
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
