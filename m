@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966599Ab3DQOGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 10:06:41 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55192 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966386Ab3DQOGj (ORCPT
+	id S966564Ab3DQOIT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 10:08:19 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58375 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966400Ab3DQOIR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 10:06:39 -0400
-Date: Wed, 17 Apr 2013 15:06:33 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: sameo@linux.intel.com, gg@slimlogic.co.uk, ian@slimlogic.co.uk,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 3/3] regulator: palmas: add support for LDO8 tracking mode
-Message-ID: <20130417140633.GP13687@opensource.wolfsonmicro.com>
-References: <1366191793-13934-1-git-send-email-ldewangan@nvidia.com>
- <1366191793-13934-3-git-send-email-ldewangan@nvidia.com>
+	Wed, 17 Apr 2013 10:08:17 -0400
+Message-ID: <C608646D0DB149C0B7B853090B7F4B05@local.st.by>
+From: "Victor Miasnikov" <vvm@tut.by>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Jan Beulich" <JBeulich@suse.com>, <olaf@aepfle.de>, <bp@alien8.de>,
+        "\"Andy Whitcroft\"" <apw@canonical.com>, <x86@kernel.org>,
+        <tglx@linutronix.de>, <devel@linuxdriverproject.org>,
+        "Greg KH" <gregkh@linuxfoundation.org>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, <jasowang@redhat.com>,
+        <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+References: <1359940910-32114-1-git-send-email-kys@microsoft.com> <1359940959-32168-1-git-send-email-kys@microsoft.com> <1359940959-32168-2-git-send-email-kys@microsoft.com> <20130417070616.GA4487@redhat.com> <39D7C3658A5B4979A3F025E1D944E743@local.st.by> <20130417101617.GF3881@redhat.com> <516EADD502000078000CE112@nat28.tlf.novell.com> <CAP2xkNqGgbYz1gdS85xjA8gwROGY89fAsiaRiGSE90xnzjJ4Xw@mail.gmail.com> <20130417124352.GC6801@redhat.com>
+Subject: Re: KVM "Hyper-V emulation" -- this can be related "Linux on Hyper-V" ? Or "KVM emulates Hyper-V" as "Hyper-V emulates Hyper-V" ? Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
+Date: Wed, 17 Apr 2013 17:08:11 +0300
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1BKOZKwX7DAU5odC"
-Content-Disposition: inline
-In-Reply-To: <1366191793-13934-3-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	format=flowed;
+	charset="iso-8859-1";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.3790.4548
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---1BKOZKwX7DAU5odC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi!
 
-On Wed, Apr 17, 2013 at 03:13:13PM +0530, Laxman Dewangan wrote:
-> LDO8 of Palma device like tps65913 support the tracking mode
-> on which LDO8 track the SMPS45 voltage when SMPS45 is ON
-> and use the LDO8.VOLTAGE_SEL register when SMPS45 is OFF.
+>> This is _positive_ variant of possible future,
+>> but on _practic_ very often we need prevent _negative_ variant of possible
+>> future
+> 
+> I don't really know what this means.
+>
 
-Applied, thanks.
+ On practic: this means, that need test with KVM "Hyper-V emulation" not only Windows guest, but _all_ Linux guest
 
---1BKOZKwX7DAU5odC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+_all_ Linux need read -- not only RHEL, but 
+-- Debian 7.X ( kernell v3.2 with own hotfixes set) , 
+-- Ubuntu 12.04 LTS ( kernell v3.2 with hotfixes)
+-- Ubuntu 12.04.03 LTS ( kernell v3.5 with hotfixes)
+-- Ubuntu 12.10 ( kernell v3.5 with hotfixes)
+-- Linuxes with kernel v3.6 / or v3.7
+-- Linuxes with latest stable kernel v3.8 ( for example Arch Linux)
+-- other possible variants
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Best regards, Victor Miasnikov
+Blog:  http://vvm.blog.tut.by/
 
-iQIcBAEBAgAGBQJRbqxfAAoJELSic+t+oim9PM4P/RdEPZE07MPQ86QEVkaJ5Fd1
-NpTFY1kycCI7ksIh7B+/OaS4iw4r8mFimkRqnrzl7v4TXN+CU4VeewT7viIhqxlS
-8gZjH+sL8uAzAv7isCXRd8UsrkC+J5o4/t/7LtiupyNLQEQfEeibC8vonU/sYhIx
-fICOYxy2RLuTz+mph2Givo4BQAXCd+dOcU/iAYPO3IicK1b/Ec0qcEftNiWPK2W4
-3C461e9Qaq23Ixmyv33OhBNZUzOEXKqDA+gv7aqj4ZKYw7JMVO0N8euAxJfss4tk
-L0GSVoqkIjUt7NpCxuxqWgd2ovVtEszRTfWF32XRDO6f9bzmy7I+D0nPmxSCicrZ
-OjEI04ilcubPJlu9bBr7PleHkGaMKbDhRTUs61zfoym6Ew0chsSQU7qOrEFdwDHR
-SyGx7pJTBAMR5ewZF2TFEHFkXmTAyw5nJ6lC5G3nwH1plCShiV4dwHeW40+hvYsA
-OcbR6rWz23Jj+Zsszzy0ew0xNmAQkCscqYRIN9LzdRx/0upfYDmDH2aw/duTGmRv
-vgFWTKG+iBlM4ysfJGvOWH9mfWxoCAu/v1ovv83mZ1LjggM9RBCg6MzukLW/DrFz
-XLJO1U6z9QHOv8jsfmyENG94gr1e6jz2QQsxobNHRWHYUF7lNfDmmdgt6pJNGyj3
-MLpKamA8SXOqWo3kOhMW
-=gTVp
------END PGP SIGNATURE-----
 
---1BKOZKwX7DAU5odC--
+P.S.
+  I'm personal not want, what KVM "Hyper-V emulation" initiative stopped implemented
+If it work as need -- this is very good
+
