@@ -1,108 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965964Ab3DQHuo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 03:50:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43724 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965738Ab3DQHum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 03:50:42 -0400
-Date: Wed, 17 Apr 2013 09:50:37 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+	id S966005Ab3DQHvB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 03:51:01 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:60076 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965738Ab3DQHu7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 03:50:59 -0400
+Date: Wed, 17 Apr 2013 09:50:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH] x86: Add a Kconfig shortcut for a kvm-bootable kernel
-Message-ID: <20130417075037.GB11807@pd.tnic>
-References: <20130412181956.GA13099@pd.tnic>
- <516A7760.7030907@kernel.org>
- <20130414110320.GB20547@pd.tnic>
- <20130416161852.GH5332@pd.tnic>
- <516DEF20.9060303@gmail.com>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-arch@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH v2 2/3] mutex: Queue mutex spinners with MCS lock to
+ reduce cacheline contention
+Message-ID: <20130417075055.GC31607@gmail.com>
+References: <1366036679-9702-1-git-send-email-Waiman.Long@hp.com>
+ <1366036679-9702-3-git-send-email-Waiman.Long@hp.com>
+ <20130416091026.GB9569@gmail.com>
+ <516D5F97.9050203@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <516DEF20.9060303@gmail.com>
+In-Reply-To: <516D5F97.9050203@hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 08:38:56PM -0400, Sasha Levin wrote:
-> > 	select NET
-> > 	select NETDEVICES
-> > 	select PCI
-> > 	select BLOCK
-> > 	select BLK_DEV
-> > 	select NETWORK_FILESYSTEMS
-> > 	select INET
-> > 	select EXPERIMENTAL
-> > 	select TTY
-> > 	select SERIAL_8250
-> > 	select SERIAL_8250_CONSOLE
-> > 	select IP_PNP
-> > 	select IP_PNP_DHCP
-> > 	select BINFMT_ELF
-> > 	select PCI_MSI
-> > 	select HAVE_ARCH_KGDB
-> > 	select DEBUG_KERNEL
-> > 	select KGDB
-> > 	select KGDB_SERIAL_CONSOLE
-> > 	select VIRTUALIZATION
-> > 	select VIRTIO
-> > 	select VIRTIO_RING
-> > 	select VIRTIO_PCI
-> > 	select VIRTIO_BLK
-> > 	select VIRTIO_CONSOLE
-> > 	select VIRTIO_NET
-> > 	select 9P_FS
-> > 	select NET_9P
-> > 	select NET_9P_VIRTIO
-> > 
-> > to the option below which we already have. It is in the same sense a KVM
-> > guest support deal.
-> > 
-> > Hmm.
-> > 
-> > KVM people, any objections?
-> > 
-> > config KVM_GUEST
-> >         bool "KVM Guest support (including kvmclock)"
-> >         depends on PARAVIRT
-> >         select PARAVIRT_CLOCK
-> >         default y
-> >         ---help---
-> >           This option enables various optimizations for running under the KVM
-> >           hypervisor. It includes a paravirtualized clock, so that instead
-> >           of relying on a PIT (or probably other) emulation by the
-> >           underlying device model, the host provides the guest with
-> >           timing infrastructure such as time of day, and system time
+
+* Waiman Long <Waiman.Long@hp.com> wrote:
+
+> > I'd suggest a preparatory patch that gets rid of that flag and moves these two
+> > functions from sched/core.c to mutex.c where they belong.
+> >
+> > This will also allow the removal of the mutex prototypes from sched.h.
 > 
-> KVM guests don't need a serial device, KGDB, DEBUG_KERNEL or 9p in particular.
+> Yes, I can certainly prepare a patch to remove SCHED_FEAT_OWNER_SPIN & move 
+> those functions back to mutex.c after my patch set goes in. As for the timing, 
+> do you want me to do it now or it can wait as I will start my vacation later 
+> this week and will be back by the end of the month.
 
-Let's see:
+I'd suggest waiting with the latest series until you are back, so that you can 
+address regressions, should there be any.
 
-* we need serial device for catching serial output on the host from the guest
-  kernel
+Thanks,
 
-* KGDB - I guess this was meant to jump into the debugger when the guest crashes
-  or so, we could drop it.
-
-* DEBUG_KERNEL is also good for testing kernels
-* 9p is needed for -virtfs folder sharing, AFAICT: http://wiki.qemu.org/Documentation/9psetup
-
-So, I guess we can have another KVM_GUEST_KERNEL_TESTING option which
-enables those additional, good for debugging options (except 9p - it
-should be in the main thing) and which depends on KVM_GUEST. It would also
-contain other DEBUG_* stuff.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+	Ingo
