@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965991Ab3DQHRb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 03:17:31 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:41599 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965736Ab3DQHR3 (ORCPT
+	id S1757581Ab3DQHSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 03:18:33 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:33399 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754786Ab3DQHSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 03:17:29 -0400
-Date: Wed, 17 Apr 2013 09:17:24 +0200
+	Wed, 17 Apr 2013 03:18:32 -0400
+Date: Wed, 17 Apr 2013 09:18:27 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Waiman Long <Waiman.Long@hp.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -21,14 +21,15 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Davidlohr Bueso <davidlohr.bueso@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>,
         Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v3 4/5] mutex: Remove new typedefs introduced in patch 2
-Message-ID: <20130417071724.GA21051@gmail.com>
+Subject: Re: [PATCH v3 5/5] mutex: Move mutex spinning code from sched/core.c
+ back to mutex.c
+Message-ID: <20130417071827.GB21051@gmail.com>
 References: <1366172891-7729-1-git-send-email-Waiman.Long@hp.com>
- <1366172891-7729-5-git-send-email-Waiman.Long@hp.com>
+ <1366172891-7729-6-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366172891-7729-5-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1366172891-7729-6-git-send-email-Waiman.Long@hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -37,12 +38,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Waiman Long <Waiman.Long@hp.com> wrote:
 
-> In response to the review comment from Davidlohr, this patch will
-> remove the new typedefs introduced by patch 2. It also removes an
-> unnecessary barrier() call.
+> As mentioned by Ingo, the SCHED_FEAT_OWNER_SPIN scheduler feature
+> bit was really just an early hack to make with/without mutex-spinning
+> testable. So it is no longer necessary.
+> 
+> This patch removes the SCHED_FEAT_OWNER_SPIN feature bit and move the
+> mutex spinning code from kernel/sched/core.c back to kernel/mutex.c
+> which is where they should belong.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> ---
+>  include/linux/sched.h   |    4 ---
+>  kernel/mutex.c          |   62 ++++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/sched/core.c     |   63 -----------------------------------------------
+>  kernel/sched/features.h |    7 -----
+>  4 files changed, 62 insertions(+), 74 deletions(-)
 
-Please backmerge this fix of patch #2 into patch #2, that reduces the number of 
-patches by one.
+Please move this patch first in the series - so that later, functional patches are 
+easier to revert, should the need arise. When possible we sort patches by risk: 
+low risk ones first, riskier come later.
 
 Thanks,
 
