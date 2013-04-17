@@ -1,123 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965676Ab3DQR6g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:58:36 -0400
-Received: from sd-mail-sa-02.sanoma.fi ([158.127.18.162]:34392 "EHLO
-	sd-mail-sa-02.sanoma.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936191Ab3DQR6e (ORCPT
+	id S966081Ab3DQR6u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:58:50 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:38807 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965512Ab3DQR6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:58:34 -0400
-Message-ID: <516EE2C6.6010901@iki.fi>
-Date: Wed, 17 Apr 2013 20:58:30 +0300
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 17 Apr 2013 13:58:49 -0400
 MIME-Version: 1.0
-To: Tim Chen <tim.c.chen@linux.intel.com>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Keith Busch <keith.busch@intel.com>,
-        Erdinc Ozturk <erdinc.ozturk@intel.com>,
-        Vinodh Gopal <vinodh.gopal@intel.com>,
-        James Guilford <james.guilford@intel.com>,
-        Wajdi Feghali <wajdi.k.feghali@intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 2/4] Accelerated CRC T10 DIF computation with PCLMULQDQ
- instruction
-References: <cover.1366120266.git.tim.c.chen@linux.intel.com> <5227e0b295142e1fbb3c7e0241646eb65319b18a.1366120266.git.tim.c.chen@linux.intel.com>
-In-Reply-To: <5227e0b295142e1fbb3c7e0241646eb65319b18a.1366120266.git.tim.c.chen@linux.intel.com>
-X-Enigmail-Version: 1.5.1
+In-Reply-To: <201304171115.51509.arnd@arndb.de>
+References: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
+	<201304171115.51509.arnd@arndb.de>
+Date: Wed, 17 Apr 2013 10:58:47 -0700
+X-Google-Sender-Auth: aretvXnORpwP4S1-bhAG_6-u_XM
+Message-ID: <CA+55aFxuLZ5Y2qLtn5=MXNF7oiuTK3ZuQhAjWPPb1wrd6D7sZw@mail.gmail.com>
+Subject: Re: Device driver memory 'mmap()' function helper cleanup
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.04.2013 19:20, Tim Chen wrote:
-> This is the x86_64 CRC T10 DIF transform accelerated with the PCLMULQDQ
-> instructions.  Details discussing the implementation can be found in the
-> paper:
-> 
-> "Fast CRC Computation for Generic Polynomials Using PCLMULQDQ Instruction"
-> URL: http://download.intel.com/design/intarch/papers/323102.pdf
+On Wed, Apr 17, 2013 at 2:15 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>
+> I took a look at the hpet_mmap function, which still contains this check:
+>
+>         if (((vma->vm_end - vma->vm_start) != PAGE_SIZE) || vma->vm_pgoff)
+>                 return -EINVAL;
+>
+> As far as I can tell, this check is implied by the new code in
+> vm_iomap_memory as the len argument passed here is PAGE_SIZE, so you
+> can remove another three lines in hpet_mmap.
 
-URL does not work.
+Not the way things are now.
 
-> 
-> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> Tested-by: Keith Busch <keith.busch@intel.com>
-> ---
->  arch/x86/crypto/crct10dif-pcl-asm_64.S | 659 +++++++++++++++++++++++++++++++++
->  1 file changed, 659 insertions(+)
->  create mode 100644 arch/x86/crypto/crct10dif-pcl-asm_64.S
-<snip>
-> +
-> +	# Allocate Stack Space
-> +	mov     %rsp, %rcx
-> +	sub	$16*10, %rsp
-> +	and     $~(0x20 - 1), %rsp
-> +
-> +	# push the xmm registers into the stack to maintain
-> +	movdqa %xmm10, 16*2(%rsp)
-> +	movdqa %xmm11, 16*3(%rsp)
-> +	movdqa %xmm8 , 16*4(%rsp)
-> +	movdqa %xmm12, 16*5(%rsp)
-> +	movdqa %xmm13, 16*6(%rsp)
-> +	movdqa %xmm6,  16*7(%rsp)
-> +	movdqa %xmm7,  16*8(%rsp)
-> +	movdqa %xmm9,  16*9(%rsp)
+vm_iomap_memory() actually allows non-page-aligned things to be
+mapped, with the assumption that the user will then know about the
+internal offsets.
 
-You don't need to store (and restore) these, as 'crc_t10dif_pcl' is called between kernel_fpu_begin/_end.
+The *reason* for that is questionable, but that's how pretty much
+every single user I've seen has worked, throwing the low bits of the
+physical away (after adding them to the length of the area).
 
-> +
-> +
-> +	# check if smaller than 256
-> +	cmp	$256, arg3
-> +
-<snip>
-> +_cleanup:
-> +	# scale the result back to 16 bits
-> +	shr	$16, %eax
-> +	movdqa	16*2(%rsp), %xmm10
-> +	movdqa	16*3(%rsp), %xmm11
-> +	movdqa	16*4(%rsp), %xmm8
-> +	movdqa	16*5(%rsp), %xmm12
-> +	movdqa	16*6(%rsp), %xmm13
-> +	movdqa	16*7(%rsp), %xmm6
-> +	movdqa	16*8(%rsp), %xmm7
-> +	movdqa	16*9(%rsp), %xmm9
+Now, I sincerely *hope* that there are no users of "let's mmap this
+non-page-aligned thing and let people access the data around it", but
+I didn't want to break things that I didn't know about, and that I
+couldn't test.
 
-Registers are overwritten by kernel_fpu_end.
+The HPET case was the only one (admittedly of the very limited cases I
+looked at and converted) that actually checked alignment, so I left
+that part in.
 
-> +	mov     %rcx, %rsp
-> +	ret
-> +ENDPROC(crc_t10dif_pcl)
-> +
+It may be that I should have done things differently: make the normal
+helper function verify page alignment, and warn if it's missing. Then,
+we could have a "vm_unaligned_iomap_memory()" that would just do the
+"extend to aligned pages" that people could convert any odd users for.
+That would probably be a good thing to do, but it would be separate
+"phase two" from the "let's start using the sane helper".
 
-You should move ENDPROC at end of the full function.
-
-> +########################################################################
-> +
-> +.align 16
-> +_less_than_128:
-> +
-> +	# check if there is enough buffer to be able to fold 16B at a time
-> +	cmp	$32, arg3
-<snip>
-> +	movdqa	(%rsp), %xmm7
-> +	pshufb	%xmm11, %xmm7
-> +	pxor	%xmm0 , %xmm7   # xor the initial crc value
-> +
-> +	psrldq	$7, %xmm7
-> +
-> +	jmp	_barrett
-
-Move ENDPROC here.
-
-
- -Jussi
+               Linus
