@@ -1,137 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965172Ab3DQQLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 12:11:20 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:35599 "EHLO hydra.sisk.pl"
+	id S965402Ab3DQQLo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 12:11:44 -0400
+Received: from sauhun.de ([89.238.76.85]:40898 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752070Ab3DQQLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 12:11:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        "Benenati, Chris J" <chris.j.benenati@intel.com>,
-        Ajaykumar Hotchandani <ajaykumar.hotchandani@oracle.com>
-Subject: Re: [PATCH] PCI / PM: Fix fallback to PCI_D0 in pci_platform_power_transition()
-Date: Wed, 17 Apr 2013 18:19:12 +0200
-Message-ID: <5921138.PXoHfspviV@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.9.0-rc6+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo69sjvPRX5kXcb4kN14HxVBXMVWnG-nGDVaFZd2pUY3YQ@mail.gmail.com>
-References: <48795235.crcTAaJqPb@vostro.rjw.lan> <2880576.TkeK8oBDas@vostro.rjw.lan> <CAErSpo69sjvPRX5kXcb4kN14HxVBXMVWnG-nGDVaFZd2pUY3YQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S964788Ab3DQQLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 12:11:42 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-i2c@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: [PATCH] MAINTAINERS: Ben Dooks is inactive regarding I2C
+Date: Wed, 17 Apr 2013 18:10:56 +0200
+Message-Id: <1366215056-27242-1-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 16, 2013 12:31:55 PM Bjorn Helgaas wrote:
-> On Tue, Apr 16, 2013 at 12:01 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, April 15, 2013 02:18:18 PM Bjorn Helgaas wrote:
-> >> On Fri, Apr 12, 2013 at 11:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> >> > On Fri, Apr 12, 2013 at 4:58 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >>
-> >> >> Commit b51306c (PCI: Set device power state to PCI_D0 for device
-> >> >> without native PM support) modified pci_platform_power_transition()
-> >> >> by adding code causing dev->current_state for devices that don't
-> >> >> support native PCI PM but are power-manageable by the platform to be
-> >> >> changed to PCI_D0 regardless of the value returned by the preceding
-> >> >> platform_pci_set_power_state().  In particular, that also is done
-> >> >> if the platform_pci_set_power_state() has been successful, which
-> >> >> causes the correct power state of the device set by
-> >> >> pci_update_current_state() in that case to be overwritten by PCI_D0.
-> >> >>
-> >> >> Fix that mistake by making the fallback to PCI_D0 only happen if
-> >> >> the platform_pci_set_power_state() has returned an error.
-> >> >>
-> >> >> Reported-by: Chris J. Benenati <chris.j.benenati@intel.com>
-> >> >> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> >> Cc: <stable@vger.kernel.org>
-> >>
-> >> I folded in Yinghai's simplification and added a URL to Chris's report
-> >> and applied to my pci/rafael-pm branch:
-> >> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/log/?h=pci/rafael-pm
-> >>
-> >> If it still looks good to you, Rafael, I'll merge it to next for v3.10.
-> >
-> > Well, the simplification adds an extra check for error into both code paths,
-> > so I'm not sure if it's really worth it (that's why I didn't do it originally
-> > in the first place), but I suppose that's not a big deal.  It looks good as far
-> > as the correctness is concerned anyway.
-> >
-> >> I don't know what the user-visible effect of this is, and it's been
-> >> around for a long time, but if you think this should go in v3.9
-> >> instead, let me know.
-> >
-> > I think v3.9+stable should be sufficient.
-> 
-> It sounds like you meant to say "v3.10+stable should be sufficient".
-> Is that right, or do you want me to push this to Linus before v3.9 is
-> released?
+Ben has done valuable work for the I2C subsystem, yet he has been
+inactive for ~15 months. Let MAINTAINERS reflect that. He will be
+most welcome if he wants to participate again.
 
-Yes, I meant v3.10+stable.  Sorry.
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Cc: Ben Dooks <ben-linux@fluff.org>
+---
 
-Thanks,
-Rafael
+Ben, please speak up if you want to continue co-maintaining I2C. My wish then
+would be assistance in reviewing the patches.
+
+Thanks for all the work so far,
+
+   Wolfram
 
 
-> >> >> ---
-> >> >>  drivers/pci/pci.c |    3 +--
-> >> >>  1 file changed, 1 insertion(+), 2 deletions(-)
-> >> >>
-> >> >> Index: linux-pm/drivers/pci/pci.c
-> >> >> ===================================================================
-> >> >> --- linux-pm.orig/drivers/pci/pci.c
-> >> >> +++ linux-pm/drivers/pci/pci.c
-> >> >> @@ -646,8 +646,7 @@ static int pci_platform_power_transition
-> >> >>                 error = platform_pci_set_power_state(dev, state);
-> >> >>                 if (!error)
-> >> >>                         pci_update_current_state(dev, state);
-> >> >> -               /* Fall back to PCI_D0 if native PM is not supported */
-> >> >> -               if (!dev->pm_cap)
-> >> >> +               else if (!dev->pm_cap) /* Fall back to PCI_D0 */
-> >> >>                         dev->current_state = PCI_D0;
-> >> >>         } else {
-> >> >>                 error = -ENODEV;
-> >> >>
-> >> >
-> >> > Acked-by: Yinghai Lu <yinghai@kernel.org>
-> >> >
-> >> > also could simplify it further.
-> >> >
-> >> > ---
-> >> >  drivers/pci/pci.c |   12 ++++--------
-> >> >  1 file changed, 4 insertions(+), 8 deletions(-)
-> >> >
-> >> > Index: linux-2.6/drivers/pci/pci.c
-> >> > ===================================================================
-> >> > --- linux-2.6.orig/drivers/pci/pci.c
-> >> > +++ linux-2.6/drivers/pci/pci.c
-> >> > @@ -646,15 +646,11 @@ static int pci_platform_power_transition
-> >> >          error = platform_pci_set_power_state(dev, state);
-> >> >          if (!error)
-> >> >              pci_update_current_state(dev, state);
-> >> > -        /* Fall back to PCI_D0 if native PM is not supported */
-> >> > -        if (!dev->pm_cap)
-> >> > -            dev->current_state = PCI_D0;
-> >> > -    } else {
-> >> > +    } else
-> >> >          error = -ENODEV;
-> >> > -        /* Fall back to PCI_D0 if native PM is not supported */
-> >> > -        if (!dev->pm_cap)
-> >> > -            dev->current_state = PCI_D0;
-> >> > -    }
-> >> > +
-> >> > +    if (error && !dev->pm_cap) /* Fall back to PCI_D0 */
-> >> > +        dev->current_state = PCI_D0;
-> >> >
-> >> >      return error;
-> >> >  }
-> > --
-> > I speak only for myself.
-> > Rafael J. Wysocki, Intel Open Source Technology Center.
+ MAINTAINERS |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 4cf5fd3..1b3c1f6 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3858,7 +3858,6 @@ F:	drivers/i2c/i2c-stub.c
+ 
+ I2C SUBSYSTEM
+ M:	Wolfram Sang <wsa@the-dreams.de>
+-M:	"Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
+ L:	linux-i2c@vger.kernel.org
+ W:	http://i2c.wiki.kernel.org/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.10.4
+
