@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab3DQBHk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 21:07:40 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:13923 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab3DQBHi (ORCPT
+	id S1757066Ab3DQBIE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 21:08:04 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:33054 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755484Ab3DQBIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 21:07:38 -0400
-X-AuditID: cbfee68e-b7f946d000001e37-7e-516df5d8ad59
+	Tue, 16 Apr 2013 21:08:01 -0400
+X-AuditID: cbfee691-b7f5f6d000002fda-e8-516df5ef20af
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, "'Alessandro Zummo'" <a.zummo@towertech.it>,
         rtc-linux@googlegroups.com, "'Jingoo Han'" <jg1.han@samsung.com>
 References: <003001ce3b07$d5f29da0$81d7d8e0$%han@samsung.com>
 In-reply-to: <003001ce3b07$d5f29da0$81d7d8e0$%han@samsung.com>
-Subject: [PATCH RESEND 3/8] rtc: rtc-coh901331: convert coh901331_driver to
- dev_pm_ops
-Date: Wed, 17 Apr 2013 10:07:36 +0900
-Message-id: <003201ce3b07$f2bb3cd0$d831b670$%han@samsung.com>
+Subject: [PATCH RESEND 4/8] rtc: rtc-omap: convert omap_rtc_driver to dev_pm_ops
+Date: Wed, 17 Apr 2013 10:07:59 +0900
+Message-id: <003301ce3b08$00b06360$02112a20$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac47B9XUIMaX4YjsSbW0FEYgtMIOOAAABIPA
+Thread-index: Ac47B9XUIMaX4YjsSbW0FEYgtMIOOAAAB23w
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t8zQ90bX3MDDRYttLFYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANYrLJiU1J7Ms
-	tUjfLoErY+KVl2wFN0Qq7vX6NjC2CXYxcnJICJhI3L25mB3CFpO4cG89WxcjF4eQwDJGieNX
-	lwA5HGBFUxdXg9QICUxnlLj2Og2i5hejxM4nm8Ga2QTUJL58OcwOUi8ioC/R1qIBUsMs0Mso
-	caZ3NztEs63EzY5DTCA2p4CdxLcjdxhBbGGBCIlnl76B2SwCqhLzGi6wgNi8QPVX105lhbAF
-	JX5MvgcWZxbQkli/8zgThC0vsXnNW2aIO9UlHv3VBQmLCBhJPJ7axAxRIiKx78U7RpB7JARu
-	sUus//6HDWKXgMS3yYdYIHplJTYdYIaEg6TEwRU3WCYwSsxCsnkWks2zkGyehWTFAkaWVYyi
-	qQXJBcVJ6UVGesWJucWleel6yfm5mxghUdq3g/HmAetDjMlA6ycyS4km5wOjPK8k3tDYzMjC
-	1MTU2Mjc0ow0YSVxXrUW60AhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjPP2L12Stcb6kaQy
-	o9TxyXZmz03WuKvIOvNMSA1gfVHfed75+IE1XK+Ox5gEHF0kODP//bn3TtzZr0xrn336tHnN
-	zrDrRt8SWp8ISDdffLZvf0pU0usrBiFqG8zjfa9N/DiDTUdv1+OyJLeXfFvTXnUdyver3vNJ
-	7OisAtVoz9rYNROfbr4zV16JpTgj0VCLuag4EQBatNV16AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEKsWRmVeSWpSXmKPExsVy+t9jQd0bX3MDDY5uM7dYcvEqu8Wc9WvY
-	LC4vvMRqcXnXHDaL/Z0djA6sHnsmnmTzODHjN4tH35ZVjB7T5/1k8vi8SS6ANaqB0SYjNTEl
-	tUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMHaLuSQlliTilQKCCx
-	uFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMWPilZdsBTdEKu71+jYwtgl2MXJwSAiYSExd
-	XN3FyAlkiklcuLeeDcQWEpjOKHHtdVoXIxeQ/YtRYueTzewgCTYBNYkvXw6zg/SKCOhLtLVo
-	gNQwC/QySpzp3c0O0WwrcbPjEBOIzSlgJ/HtyB1GEFtYIELi2aVvYDaLgKrEvIYLLCA2L1D9
-	1bVTWSFsQYkfk++BxZkFtCTW7zzOBGHLS2xe85YZ4mZ1iUd/dUHCIgJGEo+nNjFDlIhI7Hvx
-	jnECo9AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQITgHPpHcw
-	rmqwOMQowMGoxMN7oSA3UIg1say4MvcQowQHs5IIr+IqoBBvSmJlVWpRfnxRaU5q8SHGZKBH
-	JzJLiSbnA9NTXkm8obGJmZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUw
-	zr3+9eoE7aOhn/2e+q9QfM5/fUNn8GaWE/vUHp9sv8dtdFFwTUr0QsNCU2sNl5RkScXYtdGq
-	4rOfFeW5vbDvaFvOXmTlt0/MoNi9cp7K3WlH1piGfbu5lU954Qax84n3ZsxctO/N6gfvyo1y
-	JkoZW9gUH2wLXM2856V99GTJ4K17tqXcnt/qpsRSnJFoqMVcVJwIAEaqBIpFAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t8zQ90PX3MDDV4XWSy5eJXdYs76NWwW
+	lxdeYrW4vGsOm8X+zg5GB1aPPRNPsnmcmPGbxaNvyypGj+nzfjJ5fN4kF8AaxWWTkpqTWZZa
+	pG+XwJWx8fBh1oKbwhVHf2xha2BcLdDFyMkhIWAisWV/EwuELSZx4d56ti5GLg4hgWWMEl83
+	3WSFKXpx4xkTRGI6o8Shg7eZIZxfjBKvWnYwglSxCahJfPlymL2LkYNDREBfoq1FA6SGWaCX
+	UeJM7252kBohAVuJmx2HmEBsTgE7iW9H7oD1CgsESMyY2gFmswioSpw49xvsJF6g+nObZzFC
+	2IISPybfA4szC2hJrN95nAnClpfYvOYtM8heCQF1iUd/dSFOMJKYONEOokJEYt+Ld4wg50gI
+	3GOXWPX3FRPEKgGJb5MPsUC0ykpsOsAM8a+kxMEVN1gmMErMQrJ4FpLFs5AsnoVkxQJGllWM
+	oqkFyQXFSelFpnrFibnFpXnpesn5uZsYIXE6cQfj/QPWhxiTgdZPZJYSTc4HxnleSbyhsZmR
+	hamJqbGRuaUZacJK4rzqLdaBQgLpiSWp2ampBalF8UWlOanFhxiZODilGhgtAlIutz++o/Bt
+	u/3mAyGe4XOyBVKu3UhlXvyweq6en1bzLNGtLFsXP1898cX3RZs2CpzL2vsoTCImyWrVhd+X
+	N76VCd65bsms+5dO7tUKyNSKCfIz1/66gNVki2DF5OXuL+8uVsl9+MJRYcuvywvYtJ3Wb5b6
+	kGniuSVTzlown//1vwecHzTjlViKMxINtZiLihMBZ66MlOkCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCKsWRmVeSWpSXmKPExsVy+t9jQd33X3MDDZoXW1osuXiV3WLO+jVs
+	FpcXXmK1uLxrDpvF/s4ORgdWjz0TT7J5nJjxm8Wjb8sqRo/p834yeXzeJBfAGtXAaJORmpiS
+	WqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtF1JoSwxpxQoFJBY
+	XKykb4dpQmiIm64FTGOErm9IEFyPkQEaSFjHmLHx8GHWgpvCFUd/bGFrYFwt0MXIySEhYCLx
+	4sYzJghbTOLCvfVsXYxcHEIC0xklDh28zQzh/GKUeNWygxGkik1ATeLLl8PsXYwcHCIC+hJt
+	LRogNcwCvYwSZ3p3s4PUCAnYStzsOAQ2lVPATuLbkTtgvcICARIzpnaA2SwCqhInzv1mAbF5
+	gerPbZ7FCGELSvyYfA8sziygJbF+53EmCFteYvOat8wgeyUE1CUe/dWFOMFIYuJEO4gKEYl9
+	L94xTmAUmoVk0Cwkg2YhGTQLScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFp4Jn0
+	DsZVDRaHGAU4GJV4eC8U5AYKsSaWFVfmHmKU4GBWEuFVXAUU4k1JrKxKLcqPLyrNSS0+xJgM
+	9OdEZinR5HxgisoriTc0NjEzsjQyszAyMTcnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6p
+	BkaxQgdNfRvvGetlvV/ttJ12yXz2vRkVom9PfJgdPGlXlXhx73KNxYuP7eYSVP3aHMr9+czZ
+	Xz3MNhWCARvz/Sb+Sd3wu1Q28GzON6HttT2ZyddU474Y/2g14WZ/ddrr4NUpKpqfNljdz+dp
+	1G0wfZv2o1bwoktKl5Qf36yvt57rvgiTNX/rLabEUpyRaKjFXFScCABJYU41RwMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,86 +60,83 @@ structure allows better control over power management.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/rtc/rtc-coh901331.c |   24 +++++++++++-------------
- 1 files changed, 11 insertions(+), 13 deletions(-)
+ drivers/rtc/rtc-omap.c |   24 ++++++++++--------------
+ 1 files changed, 10 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/rtc/rtc-coh901331.c b/drivers/rtc/rtc-coh901331.c
-index bf0387f..93c0658 100644
---- a/drivers/rtc/rtc-coh901331.c
-+++ b/drivers/rtc/rtc-coh901331.c
-@@ -47,7 +47,7 @@ struct coh901331_port {
- 	u32 physize;
- 	void __iomem *virtbase;
- 	int irq;
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- 	u32 irqmaskstore;
- #endif
- };
-@@ -225,17 +225,17 @@ static int __init coh901331_probe(struct platform_device *pdev)
- 	return ret;
+diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+index a1f9d30..4e1bdb8 100644
+--- a/drivers/rtc/rtc-omap.c
++++ b/drivers/rtc/rtc-omap.c
+@@ -464,11 +464,10 @@ static int __exit omap_rtc_remove(struct platform_device *pdev)
+ 	return 0;
  }
  
 -#ifdef CONFIG_PM
--static int coh901331_suspend(struct platform_device *pdev, pm_message_t state)
+-
 +#ifdef CONFIG_PM_SLEEP
-+static int coh901331_suspend(struct device *dev)
- {
--	struct coh901331_port *rtap = dev_get_drvdata(&pdev->dev);
-+	struct coh901331_port *rtap = dev_get_drvdata(dev);
+ static u8 irqstat;
  
- 	/*
- 	 * If this RTC alarm will be used for waking the system up,
- 	 * don't disable it of course. Else we just disable the alarm
- 	 * and await suspension.
+-static int omap_rtc_suspend(struct platform_device *pdev, pm_message_t state)
++static int omap_rtc_suspend(struct device *dev)
+ {
+ 	irqstat = rtc_read(OMAP_RTC_INTERRUPTS_REG);
+ 
+@@ -476,34 +475,32 @@ static int omap_rtc_suspend(struct platform_device *pdev, pm_message_t state)
+ 	 * source, and in fact this enable() call is just saving a flag
+ 	 * that's never used...
  	 */
--	if (device_may_wakeup(&pdev->dev)) {
-+	if (device_may_wakeup(dev)) {
- 		enable_irq_wake(rtap->irq);
- 	} else {
- 		clk_enable(rtap->clk);
-@@ -247,12 +247,12 @@ static int coh901331_suspend(struct platform_device *pdev, pm_message_t state)
+-	if (device_may_wakeup(&pdev->dev))
++	if (device_may_wakeup(dev))
+ 		enable_irq_wake(omap_rtc_alarm);
+ 	else
+ 		rtc_write(0, OMAP_RTC_INTERRUPTS_REG);
+ 
+ 	/* Disable the clock/module */
+-	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_put_sync(dev);
+ 
  	return 0;
  }
  
--static int coh901331_resume(struct platform_device *pdev)
-+static int coh901331_resume(struct device *dev)
+-static int omap_rtc_resume(struct platform_device *pdev)
++static int omap_rtc_resume(struct device *dev)
  {
--	struct coh901331_port *rtap = dev_get_drvdata(&pdev->dev);
-+	struct coh901331_port *rtap = dev_get_drvdata(dev);
+ 	/* Enable the clock/module so that we can access the registers */
+-	pm_runtime_get_sync(&pdev->dev);
++	pm_runtime_get_sync(dev);
  
- 	clk_prepare(rtap->clk);
--	if (device_may_wakeup(&pdev->dev)) {
-+	if (device_may_wakeup(dev)) {
- 		disable_irq_wake(rtap->irq);
- 	} else {
- 		clk_enable(rtap->clk);
-@@ -261,11 +261,10 @@ static int coh901331_resume(struct platform_device *pdev)
- 	}
+-	if (device_may_wakeup(&pdev->dev))
++	if (device_may_wakeup(dev))
+ 		disable_irq_wake(omap_rtc_alarm);
+ 	else
+ 		rtc_write(irqstat, OMAP_RTC_INTERRUPTS_REG);
  	return 0;
  }
+-
 -#else
--#define coh901331_suspend NULL
--#define coh901331_resume NULL
+-#define omap_rtc_suspend NULL
+-#define omap_rtc_resume  NULL
  #endif
  
-+static SIMPLE_DEV_PM_OPS(coh901331_pm_ops, coh901331_suspend, coh901331_resume);
++static SIMPLE_DEV_PM_OPS(omap_rtc_pm_ops, omap_rtc_suspend, omap_rtc_resume);
 +
- static void coh901331_shutdown(struct platform_device *pdev)
+ static void omap_rtc_shutdown(struct platform_device *pdev)
  {
- 	struct coh901331_port *rtap = dev_get_drvdata(&pdev->dev);
-@@ -279,10 +278,9 @@ static struct platform_driver coh901331_driver = {
- 	.driver = {
- 		.name = "rtc-coh901331",
- 		.owner = THIS_MODULE,
-+		.pm = &coh901331_pm_ops,
+ 	rtc_write(0, OMAP_RTC_INTERRUPTS_REG);
+@@ -512,12 +509,11 @@ static void omap_rtc_shutdown(struct platform_device *pdev)
+ MODULE_ALIAS("platform:omap_rtc");
+ static struct platform_driver omap_rtc_driver = {
+ 	.remove		= __exit_p(omap_rtc_remove),
+-	.suspend	= omap_rtc_suspend,
+-	.resume		= omap_rtc_resume,
+ 	.shutdown	= omap_rtc_shutdown,
+ 	.driver		= {
+ 		.name	= DRIVER_NAME,
+ 		.owner	= THIS_MODULE,
++		.pm	= &omap_rtc_pm_ops,
+ 		.of_match_table = of_match_ptr(omap_rtc_of_match),
  	},
- 	.remove = __exit_p(coh901331_remove),
--	.suspend = coh901331_suspend,
--	.resume = coh901331_resume,
- 	.shutdown = coh901331_shutdown,
- };
- 
+ 	.id_table	= omap_rtc_devtype,
 -- 
 1.7.2.5
 
