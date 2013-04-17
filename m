@@ -1,145 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966453Ab3DQNyf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 09:54:35 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:54369 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966322Ab3DQNyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 09:54:33 -0400
-Message-ID: <516EA998.3050008@slimlogic.co.uk>
-Date: Wed, 17 Apr 2013 14:54:32 +0100
-From: Graeme Gregory <gg@slimlogic.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S966468Ab3DQN4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 09:56:45 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:56705 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966116Ab3DQN4o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 09:56:44 -0400
+From: Pali =?utf-8?q?Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Subject: Re: BUG: Fn keys not working on EliteBook 8460p after fabf85e3ca15d5b94058f391dac8df870cdd427a
+Date: Wed, 17 Apr 2013 15:56:37 +0200
+User-Agent: KMail/1.13.7 (Linux/3.9.0-030900rc4-generic; KDE/4.10.2; x86_64; ; )
+Cc: Kyle Evans <kvans32@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>
+References: <201304130331.18301@pali> <51699843.7060905@gmail.com> <1366129583.13667.11.camel@x230.lan>
+In-Reply-To: <1366129583.13667.11.camel@x230.lan>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: broonie@kernel.org, sameo@linux.intel.com, ian@slimlogic.co.uk,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 3/3] regulator: palmas: add support for LDO8 tracking
- mode
-References: <1366191793-13934-1-git-send-email-ldewangan@nvidia.com> <1366191793-13934-3-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1366191793-13934-3-git-send-email-ldewangan@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed;
+  boundary="nextPart1415175.Y7FE9MHTc6";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304171556.38832@pali>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me, I don't actually know the use case for this feature!
+--nextPart1415175.Y7FE9MHTc6
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
-
-On 17/04/13 10:43, Laxman Dewangan wrote:
-> LDO8 of Palma device like tps65913 support the tracking mode
-> on which LDO8 track the SMPS45 voltage when SMPS45 is ON
-> and use the LDO8.VOLTAGE_SEL register when SMPS45 is OFF.
->
-> On track mode, the steps of voltage change for LDO8 is 25mV
-> where in non-tracking mode it is 50mV. Set the steps accordingly.
-> Number of voltage count is still same for both the cases.
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
->  drivers/regulator/palmas-regulator.c |   53 ++++++++++++++++++++++++++++++++++
->  include/linux/mfd/palmas.h           |    3 ++
->  2 files changed, 56 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-> index 28080a7..d6efaf1 100644
-> --- a/drivers/regulator/palmas-regulator.c
-> +++ b/drivers/regulator/palmas-regulator.c
-> @@ -572,6 +572,46 @@ static int palmas_extreg_init(struct palmas *palmas, int id,
->  	return 0;
+On Tuesday 16 April 2013 18:26:26 Matthew Garrett wrote:
+> Can you try this patch?
+>=20
+> diff --git a/drivers/platform/x86/hp-wmi.c
+> b/drivers/platform/x86/hp-wmi.c
+> index 45cacf7..91cc5df 100644
+> --- a/drivers/platform/x86/hp-wmi.c
+> +++ b/drivers/platform/x86/hp-wmi.c
+> @@ -53,6 +53,7 @@
+> MODULE_ALIAS("wmi:5FB7F034-2C63-45e9-BE91-3D44E2C707E4");
+>  #define HPWMI_ALS_QUERY 0x3
+>  #define HPWMI_HARDWARE_QUERY 0x4
+>  #define HPWMI_WIRELESS_QUERY 0x5
+> +#define HPWMI_BIOS_QUERY 0x8
+>  #define HPWMI_HOTKEY_QUERY 0xc
+>  #define HPWMI_WIRELESS2_QUERY 0x1b
+>=20
+> @@ -284,6 +285,18 @@ static int hp_wmi_tablet_state(void)
+>  	return (state & 0x4) ? 1 : 0;
 >  }
->  
-> +static void palmas_enable_ldo8_track(struct palmas *palmas)
+>=20
+> +static int hp_wmi_enable_hotkeys()
 > +{
-> +	unsigned int reg;
-> +	unsigned int addr;
 > +	int ret;
+> +	int query =3D 1;
 > +
-> +	addr = palmas_regs_info[PALMAS_REG_LDO8].ctrl_addr;
-> +
-> +	ret = palmas_ldo_read(palmas, addr, &reg);
-> +	if (ret) {
-> +		dev_err(palmas->dev, "Error in reading ldo8 control reg\n");
-> +		return;
-> +	}
-> +
-> +	reg |= PALMAS_LDO8_CTRL_LDO_TRACKING_EN;
-> +	ret = palmas_ldo_write(palmas, addr, reg);
-> +	if (ret < 0) {
-> +		dev_err(palmas->dev, "Error in enabling tracking mode\n");
-> +		return;
-> +	}
-> +	/*
-> +	 * When SMPS45 is set to off and LDO8 tracking is enabled, the LDO8
-> +	 * output is defined by the LDO8_VOLTAGE.VSEL register divided by two,
-> +	 * and can be set from 0.45 to 1.65 V.
-> +	 */
-> +	addr = palmas_regs_info[PALMAS_REG_LDO8].vsel_addr;
-> +	ret = palmas_ldo_read(palmas, addr, &reg);
-> +	if (ret) {
-> +		dev_err(palmas->dev, "Error in reading ldo8 voltage reg\n");
-> +		return;
-> +	}
-> +
-> +	reg = (reg << 1) & PALMAS_LDO8_VOLTAGE_VSEL_MASK;
-> +	ret = palmas_ldo_write(palmas, addr, reg);
-> +	if (ret < 0)
-> +		dev_err(palmas->dev, "Error in setting ldo8 voltage reg\n");
-> +
-> +	return;
+> +	ret =3D hp_wmi_perform_query(HPWMI_BIOS_QUERY, 1, &query,
+> sizeof(query), +				   0);
+> +	if (ret)
+> +		return -EINVAL;
+> +	return 0;
 > +}
 > +
->  static struct of_regulator_match palmas_matches[] = {
->  	{ .name = "smps12", },
->  	{ .name = "smps123", },
-> @@ -657,6 +697,11 @@ static void palmas_dt_to_pdata(struct device *dev,
->  		if (ret)
->  			pdata->reg_init[idx]->vsel =
->  				PALMAS_SMPS12_VOLTAGE_RANGE;
-> +
-> +		if (idx == PALMAS_REG_LDO8)
-> +			pdata->enable_ldo8_tracking = of_property_read_bool(
-> +						palmas_matches[idx].of_node,
-> +						"ti,enable-ldo8-tracking");
+>  static int hp_wmi_set_block(void *data, bool blocked)
+>  {
+>  	enum hp_wmi_radio r =3D (enum hp_wmi_radio) data;
+> @@ -925,9 +938,7 @@ static int __init hp_wmi_init(void)
+>  		err =3D hp_wmi_input_setup();
+>  		if (err)
+>  			return err;
+> -
+> -		//Enable magic for hotkeys that run on the SMBus
+> -		ec_write(0xe6,0x6e);
+> +		hp_wmi_enable_hotkeys();
 >  	}
->  
->  	pdata->ldo6_vibrator = of_property_read_bool(node, "ti,ldo6-vibrator");
-> @@ -836,6 +881,13 @@ static int palmas_regulators_probe(struct platform_device *pdev)
->  						palmas_regs_info[id].ctrl_addr);
->  			pmic->desc[id].enable_mask =
->  					PALMAS_LDO1_CTRL_MODE_ACTIVE;
-> +
-> +			/* Check if LDO8 is in tracking mode or not */
-> +			if (pdata && (id == PALMAS_REG_LDO8) &&
-> +					pdata->enable_ldo8_tracking) {
-> +				palmas_enable_ldo8_track(palmas);
-> +				pmic->desc[id].uV_step = 25000;
-> +			}
->  		} else {
->  			pmic->desc[id].n_voltages = 1;
->  			pmic->desc[id].ops = &palmas_ops_extreg;
-> @@ -884,6 +936,7 @@ static int palmas_regulators_probe(struct platform_device *pdev)
->  		}
->  	}
->  
-> +
->  	return 0;
->  
->  err_unregister_regulator:
-> diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-> index fb04d07..12d8a62 100644
-> --- a/include/linux/mfd/palmas.h
-> +++ b/include/linux/mfd/palmas.h
-> @@ -187,6 +187,9 @@ struct palmas_pmic_platform_data {
->  
->  	/* use LDO6 for vibrator control */
->  	int ldo6_vibrator;
-> +
-> +	/* Enable tracking mode of LDO8 */
-> +	bool enable_ldo8_tracking;
->  };
->  
->  struct palmas_usb_platform_data {
+>=20
+>  	if (bios_capable) {
 
+Hello,
+I tested above patch and it fixing my problem. Now Fn keys working=20
+again on my HP EliteBook 8460p.
+
+=2D-=20
+Pali Roh=C3=A1r
+pali.rohar@gmail.com
+
+--nextPart1415175.Y7FE9MHTc6
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEABECAAYFAlFuqhYACgkQi/DJPQPkQ1JXIQCfa0pA6z+mhhBSNwnJc2K0elLH
+GHkAn2ShEJGBZfAzHqclKgD0ZckUYVuv
+=ylYv
+-----END PGP SIGNATURE-----
+
+--nextPart1415175.Y7FE9MHTc6--
