@@ -1,156 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966345Ab3DQNm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 09:42:29 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:48955 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965940Ab3DQNm2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 09:42:28 -0400
-Message-ID: <1366206143.3305.4.camel@phoenix>
-Subject: [RFT][PATCH 1/2] regulator: tps80031: Fix LDO2 track mode for
- TPS80031 or TPS80032-ES1.0
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Wed, 17 Apr 2013 21:42:23 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S966370Ab3DQNnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 09:43:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7893 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966099Ab3DQNnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 09:43:06 -0400
+Date: Wed, 17 Apr 2013 15:43:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Victor M." <vvm@tut.by>
+Cc: Jan Beulich <JBeulich@suse.com>, olaf@aepfle.de, bp@alien8.de,
+        apw@canonical.com, x86@kernel.org, tglx@linutronix.de,
+        devel@linuxdriverproject.org, gregkh@linuxfoundation.org,
+        "K. Y. Srinivasan" <kys@microsoft.com>, jasowang@redhat.com,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: KVM "Hyper-V emulation" -- this can be related "Linux on
+ Hyper-V" ? Or "KVM emulates Hyper-V" as "Hyper-V emulates Hyper-V" ? Re:
+ [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
+Message-ID: <20130417124352.GC6801@redhat.com>
+References: <1359940910-32114-1-git-send-email-kys@microsoft.com>
+ <1359940959-32168-1-git-send-email-kys@microsoft.com>
+ <1359940959-32168-2-git-send-email-kys@microsoft.com>
+ <20130417070616.GA4487@redhat.com>
+ <39D7C3658A5B4979A3F025E1D944E743@local.st.by>
+ <20130417101617.GF3881@redhat.com>
+ <516EADD502000078000CE112@nat28.tlf.novell.com>
+ <CAP2xkNqGgbYz1gdS85xjA8gwROGY89fAsiaRiGSE90xnzjJ4Xw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAP2xkNqGgbYz1gdS85xjA8gwROGY89fAsiaRiGSE90xnzjJ4Xw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we have a special code in tps80031_ldo_set_voltage_sel() to handle
-LDO2 track mode for TPS80031 or TPS80032-ES1.0. The purpose is to address below
-issues:
+On Wed, Apr 17, 2013 at 04:03:08PM +0300, Victor M. wrote:
+> Hi!
+> 
+> 2013/4/17 Jan Beulich
+> 
+>     >>> On 17.04.13 at 12:16, "Michael S. Tsirkin"  wrote:
+>     > If the hypervisor says it's Hyper-V, that's because it wants
+>     > guests to use Hyper-V. I don't see why is guest second-guessing
+>     > this a good idea.
+> 
+>     There are two reasons here: For one, when the hypervisor is not
+>     Hyper-V, but is providing some Hyper-V emulation, that's intended
+>     for Windows guests to use, not e.g. Linux ones, especially when
+>     such guests could use the native hypervisor interface with much
+>     greater benefit.
+> 
+>     And second, there reportedly are features of (newer?) Hyper-V
+>     that some emulation may not provide, but that are also not easily
+>     detectable.
+>    
+> 
+> 
+> 
+> Yes
+>  
+> +
+>  
+> 
+> > On Wed, Apr 17, 2013 at 12:10:01PM +0300, Victor Miasnikov wrote:
+> 
+> 
+> 
+> >>
+> >> Question is very simple:  Hyper-V users/sysadmins need wait patch a-la this:
+> >> Or 
+> "KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V
+> emulates Hyper-V" as "Hyper-V emulates
+> >> Hyper-V" ?
+> >>
+> >
+> > No.  You are using Hyper-V, not the
+> KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V
+> > emulation of it.
+> > No patches dealing with this emulation should have any effect on you.
+> 
+> 
+>  This is _positive_ variant of possible future,
+> but on _practic_ very often we need prevent _negative_ variant of possible
+> future
 
-Issue description:
-- LDO2 traking mode is enabled
-- LDO2 tracks SMPS2 voltage.
-- LDO2 automatically switch-off when LDO2_CFG_VOLTAGE is changed to some discrete values (non exhaustive list):
-            00011001, 00011010, 00011011, 00011100, .
-- LDO2 switch-on again when LDO2_CFG_VOLTAGE is changed to other values (non exhaustive list):
-        00011000, 00010111, .
+I don't really know what this means.
 
-LDOs have reserved codes. For these codes, LDO is switch-off.
+> 
+> >> ==
+> >> + /*
+> >> +  *
+> KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V
+> emulates Hyper-V to support
+> >> enlightened Windows.
+> >> +  * Check to see first if we are on a
+> KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V
+> >> Hypervisor.
+> >> +  */
+> >> +
+> >> + if
+> (KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V_cpuid_base
+> ())
+> >> +  return false;
+> 
+> >
+> > If the hypervisor says it's Hyper-V, that's because it wants guests to use
+> Hyper-V.
+> >
+> 
+> 
+>  Even if guest ( i.e. Virtual Computer) contain Linux OS ?
 
-In tracking, LDO2 ref comes from SMPS2.
-However LDO2 enable is still gated by LDO2 VSEL decoding.
-As a result, in tracking mode LDO2 will be disabled for following code (SMPS VSEL format):
-000000 & 100000 (MSB not decoded)
-011001 & 111001 (MSB not decoded)
-011010 & 111010 (MSB not decoded)
-011100 & 111100 (MSB not decoded)
-011101 & 111101 (MSB not decoded)
-011110 & 111110 (MSB not decoded)
+Why not?  If you don't want the hypervisor to emulate hyper-v, just
+don't tell it to emulate hyper-v.
 
-However, current code has below bugs:
-1. It uses regulator_list_voltage_linear, so list_voltage() still shows above
-   invalid selectors have supported voltage.
-2. Current code may return -EINVAL in tps80031_ldo_set_voltage_sel() for
-   supported voltage. This is because when we use regulator_list_voltage_linear
-   as list_voltage callback, regulator core will default use
-   regulator_map_voltage_linear(). regulator_map_voltage_linear() has an
-   assumption that the voltages are linear which is not true for this case.
 
-   For example,
-   when request voltage range is: min_uV=950000 uV && max_uV=1200000 uV
-   regulator_map_voltage_linear() returns the selector is 29 (0x1D),
-   set_voltage_sel() returns -EINVAL.
-   (The selector is in invalid range, 0x19 ~ 0x1f).
+> 
+> >> ==
+> >> KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V
+> emulates Hyper-V to host enlightened
+> >> Windows.
+> >>
+> >> . . .
+> >>
+> >> [ hpa: the problem here is that
+> >> KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V
+> doesn't emulate Hyper-V well enough,  .
+> >>  . ]
+> >
+> > What's emulated not well enough?
+> >
+> 
+>  In case of XEN variant non-full-emulation_of_Hyper-V , IMHO :
+> 
+> {{
+> ----- Original Message -----
+> From: "Victor Miasnikov"
+> To: "Michael S. Tsirkin"
+> Sent: Wednesday, April 17, 2013 12:41 PM
+> Subject: IMHO, XEN emulation of Hyper-V not contain needed clocksource for
+> Lunux guest Re: [PATCH 2/3] X86: Add a check
+> to catch Xen emulation of Hyper-V
+> 
+> Hi!
+> 
+> > It seems that one might want to use hyper-v emulation e.g. to test
+> > hyper-v code without using windows, so the functionality
+> > that this patch disables is not completely useless,
+> > so there should be a good reason for disabling it.
+> 
+>  As I undestand, XEN emulation of Hyper-V not contain  needed clocksource for
+> Lunux guest ( virtual computers)
+> 
+> I.e. Linux VM "think" what is running on Hyper-V host call
+> clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100)
+> and a-la BSOD or vica verse . . .
+> 
+> 
+> > I went over the original discussion in
+> > https://patchwork.kernel.org/patch/2064331/
+> > and that's still not clear to me. Is there a configuration
+> > that is broken without this patch but starts working with
+> > this patch?
+> 
+> 
+>  IMHO, this related to:
+> 
+> - clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+> + if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
+> +  clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+> 
+> 
+>  See
+> 
+> https://lkml.org/lkml/2013/2/12/623
+> ==
+>             Date Tue, 12 Feb 2013 16:56:07 -0800
+>             From tip-bot for Olaf Hering
+>             Subject [tip:x86/hyperv] x86: Hyper-V: register clocksource only if
+> its advertised
+> 
+>  . . .
+> 
+> ==
+> 
+> 
+> 
+> Best regards, Victor Miasnikov
+> }}
+> 
+> 
+> 
+> 
+> 
+> Best regards, Victor Miasnikov
+> Blog:  http://vvm.blog.tut.by/
 
-   In above case, map_voltage() should find the lowest valid voltage within
-   specific range (selector = 0x20) and set_voltage_sel() should successfully
-   set the voltage to 987500 uV.
+Looks like a counter-example to me.
 
-This patch fixes these issues by:
-1. Add checking valid setting for LDO2 track mode of TPS80031 or TPS80032-ES1.0
-   in list_voltage.  So it returns -EINVAL for invalid selectors.
-2. Implement tps80031_ldo_map_voltage, use regulator_map_voltage_iterate()
-   to find the lowest voltage within specific range for TPS80031 or
-   TPS80032-ES1.0. This is required when the voltage map is no longer linear.
+Apparently a Linux guest bug was found and fixed exactly because we
+trust the hypervisor.  If it wasn't, and if in the future hyper-v hosts
+clear this feature bit, Linux will be broken.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Laxman,
-I don't have this hardware, can you test this patch serial?
-
-Thank you,
-Axel
- drivers/regulator/tps80031-regulator.c |   38 ++++++++++++++++++++++++++++----
- 1 file changed, 34 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/regulator/tps80031-regulator.c b/drivers/regulator/tps80031-regulator.c
-index 9019d0e..6430789 100644
---- a/drivers/regulator/tps80031-regulator.c
-+++ b/drivers/regulator/tps80031-regulator.c
-@@ -238,12 +238,11 @@ static int tps80031_dcdc_get_voltage_sel(struct regulator_dev *rdev)
- 	return vsel & SMPS_VSEL_MASK;
- }
- 
--static int tps80031_ldo_set_voltage_sel(struct regulator_dev *rdev,
--		unsigned sel)
-+static int tps80031_ldo_list_voltage(struct regulator_dev *rdev,
-+				     unsigned int sel)
- {
- 	struct tps80031_regulator *ri = rdev_get_drvdata(rdev);
- 	struct device *parent = to_tps80031_dev(rdev);
--	int ret;
- 
- 	/* Check for valid setting for TPS80031 or TPS80032-ES1.0 */
- 	if ((ri->rinfo->desc.id == TPS80031_REGULATOR_LDO2) &&
-@@ -260,6 +259,36 @@ static int tps80031_ldo_set_voltage_sel(struct regulator_dev *rdev,
- 		}
- 	}
- 
-+	return regulator_list_voltage_linear(rdev, sel);
-+}
-+
-+static int tps80031_ldo_map_voltage(struct regulator_dev *rdev,
-+				    int min_uV, int max_uV)
-+{
-+	struct tps80031_regulator *ri = rdev_get_drvdata(rdev);
-+	struct device *parent = to_tps80031_dev(rdev);
-+
-+	/* Check for valid setting for TPS80031 or TPS80032-ES1.0 */
-+	if ((ri->rinfo->desc.id == TPS80031_REGULATOR_LDO2) &&
-+			(ri->device_flags & TRACK_MODE_ENABLE)) {
-+		if (((tps80031_get_chip_info(parent) == TPS80031) ||
-+			((tps80031_get_chip_info(parent) == TPS80032) &&
-+			(tps80031_get_pmu_version(parent) == 0x0)))) {
-+			return regulator_map_voltage_iterate(rdev, min_uV,
-+							     max_uV);
-+		}
-+	}
-+
-+	return regulator_map_voltage_linear(rdev, min_uV, max_uV);
-+}
-+
-+static int tps80031_ldo_set_voltage_sel(struct regulator_dev *rdev,
-+		unsigned sel)
-+{
-+	struct tps80031_regulator *ri = rdev_get_drvdata(rdev);
-+	struct device *parent = to_tps80031_dev(rdev);
-+	int ret;
-+
- 	ret = tps80031_write(parent, ri->rinfo->volt_id,
- 			ri->rinfo->volt_reg, sel);
- 	if (ret < 0)
-@@ -390,7 +419,8 @@ static struct regulator_ops tps80031_dcdc_ops = {
- };
- 
- static struct regulator_ops tps80031_ldo_ops = {
--	.list_voltage		= regulator_list_voltage_linear,
-+	.list_voltage		= tps80031_ldo_list_voltage,
-+	.map_voltage		= tps80031_ldo_map_voltage,
- 	.set_voltage_sel	= tps80031_ldo_set_voltage_sel,
- 	.get_voltage_sel	= tps80031_ldo_get_voltage_sel,
- 	.enable			= tps80031_reg_enable,
 -- 
-1.7.10.4
-
-
-
+MST
