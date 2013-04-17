@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab3DQQf3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 12:35:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38718 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751160Ab3DQQf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 12:35:28 -0400
-Subject: [PATCH] gpio: ucb1400: Can be built as a module
-From: Jean Delvare <jdelvare@suse.de>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Marek Vasut <marex@denx.de>, linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Wed, 17 Apr 2013 18:34:34 +0200
-Message-ID: <1366216474.8215.1.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1756245Ab3DQQfh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 12:35:37 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:56477 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944Ab3DQQff (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 12:35:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <1366196768-19015-1-git-send-email-s.nawrocki@samsung.com>
+References: <1366134094-23140-1-git-send-email-s.nawrocki@samsung.com>
+	<1366196768-19015-1-git-send-email-s.nawrocki@samsung.com>
+Date: Wed, 17 Apr 2013 18:35:34 +0200
+Message-ID: <CACRpkdZfZtfp5U4-Ab1ufbwBWVSvpDX_F=d-utokDXP7FbQmKw@mail.gmail.com>
+Subject: Re: [PATCH RFC 2/2] gpio: samsung: Remove OF support for Exynos4/5
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the recent code cleanup from Marek Vasut, driver gpio-ucb1400 can
-be built as a module, so change symbol GPIO_UCB1400 from bool to
-tristate.
+On Wed, Apr 17, 2013 at 1:06 PM, Sylwester Nawrocki
+<s.nawrocki@samsung.com> wrote:
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Marek Vasut <marex@denx.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> -#endif
+> +        * All Samsung platforms that support device tree will use the pinctrl
+> +        * driver, hence we skip initialization of this driver if the OF tree
+> +        * is available.
+> +        */
+> +       if (of_have_populated_dt())
+> +               return -ENODEV;
+>
+>         samsung_gpiolib_set_cfg(samsung_gpio_cfgs, ARRAY_SIZE(samsung_gpio_cfgs));
 
---- linux-3.9-rc7.orig/drivers/gpio/Kconfig	2013-03-05 10:33:27.814889286 +0100
-+++ linux-3.9-rc7/drivers/gpio/Kconfig	2013-04-17 18:24:33.732960538 +0200
-@@ -652,7 +652,7 @@ config GPIO_74X164
- comment "AC97 GPIO expanders:"
- 
- config GPIO_UCB1400
--	bool "Philips UCB1400 GPIO"
-+	tristate "Philips UCB1400 GPIO"
- 	depends on UCB1400_CORE
- 	help
- 	  This enables support for the Philips UCB1400 GPIO pins.
+Oh is that how you do it? It looks fragile.
 
--- 
-Jean Delvare
-Suse L3
+Can't you check if you have the pinctrl node atleast?
 
+Yours,
+Linus Walleij
