@@ -1,76 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966024Ab3DQKDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 06:03:42 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:46380 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965955Ab3DQKDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 06:03:32 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>,
-        <linux-kbuild@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, Stephen Warren <swarren@nvidia.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Subject: [PATCH 1/1] metag: avoid unnecessary builtin dtb rebuilds
-Date: Wed, 17 Apr 2013 11:02:55 +0100
-Message-ID: <1366192975-14953-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1755831Ab3DQKFS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 06:05:18 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35398 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754360Ab3DQKFQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 06:05:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_04_17_11_03_31
+Date: Wed, 17 Apr 2013 15:35:15 +0530
+Message-ID: <CAGZFCEHb2Cb_LGXtcYmhDvd0d0zjdb3-5D7-6EBjXmHLJESYoA@mail.gmail.com>
+Subject: scheduler context
+From: ratheesh kannoth <ratheesh.ksz@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The builtin .dtb.S intermediate file needs to be marked with .SECONDARY
-so that it isn't automatically deleted (which causes it to be
-regenerated on every build). Also add *.dtb.S to clean-files so it gets
-cleaned up by make clean.
+I would like to understand on linux scheduler context. I have read a
+lot in websites and i could find
+contradictory statement. There are so many mailing list also ,but with
+less info. I would really appreciate
+if anybody could spend some time answering my question.
 
-Similarly, if the specified builtin dtb isn't already in dtb-y (e.g.
-imported into the tree and specified in CONFIG_METAG_BUILTIN_DTB_NAME)
-it too will be treated as an intermediate and deleted automatically
-(again causing it to be regenerated on every build), so add it to dtb-y
-so it gets added to targets and the dtbs target.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Stephen Warren <swarren@nvidia.com>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Sam Ravnborg <sam@ravnborg.org>
----
- arch/metag/boot/dts/Makefile | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/arch/metag/boot/dts/Makefile b/arch/metag/boot/dts/Makefile
-index e0b5afd..dbd9521 100644
---- a/arch/metag/boot/dts/Makefile
-+++ b/arch/metag/boot/dts/Makefile
-@@ -4,13 +4,17 @@ dtb-y	+= skeleton.dtb
- builtindtb-y				:= skeleton
- 
- ifneq ($(CONFIG_METAG_BUILTIN_DTB_NAME),"")
--	builtindtb-y			:= $(CONFIG_METAG_BUILTIN_DTB_NAME)
-+	builtindtb-y			:= $(patsubst "%",%,$(CONFIG_METAG_BUILTIN_DTB_NAME))
- endif
--obj-$(CONFIG_METAG_BUILTIN_DTB)	+= $(patsubst "%",%,$(builtindtb-y)).dtb.o
-+
-+dtb-$(CONFIG_METAG_BUILTIN_DTB)	+= $(builtindtb-y).dtb
-+obj-$(CONFIG_METAG_BUILTIN_DTB)	+= $(builtindtb-y).dtb.o
- 
- targets	+= dtbs
- targets	+= $(dtb-y)
- 
-+.SECONDARY: $(obj)/$(builtindtb-y).dtb.S
-+
- dtbs: $(addprefix $(obj)/, $(dtb-y))
- 
--clean-files += *.dtb
-+clean-files += *.dtb *.dtb.S
--- 
-1.8.1.2
+1. Which context scheduler run ? ( process context or interrupt context ).
+2. scheduler is the guy  who picks up the next candidate to run.  if
+it gets interrupted by hardirq, what will happen ?
+3. if scheduler run in process context , how bottom half are scheduled ?
+4. In smp, schedule() function may be called  simultaneously. How it
+is handled ?
+5. When a bottom half is interrupted  by hard irq, how softirq kernel
+thread saves the state and restart it later ? ...what i mean is , an
+   hardirq came and its isr executed. bottom half enabled and bottom
+half gets scheduled . Before bottom half is completed , next irq
+   came and it enables bottom half , and the new bottom half is
+scheduled ....So here , what will happen to old bottom half , will it
+again
+   run later ?
 
 
+Thanks,
+Ratheesh
