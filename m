@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755006Ab3DQAlV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 20:41:21 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:54598 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377Ab3DQAlU (ORCPT
+	id S1755760Ab3DQAwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 20:52:38 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:22556 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754273Ab3DQAwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 20:41:20 -0400
-Date: Wed, 17 Apr 2013 09:41:15 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Howells <dhowells@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 19/26] sh: Don't use create_proc_read_entry() [RFC]
-Message-ID: <20130417004115.GD16092@verge.net.au>
-References: <20130411132739.32763.82609.stgit@warthog.procyon.org.uk>
- <20130411133009.32763.71122.stgit@warthog.procyon.org.uk>
- <20130416061113.GA27462@verge.net.au>
- <20130416062842.GL4068@ZenIV.linux.org.uk>
- <20130416184203.GA18348@linux-sh.org>
+	Tue, 16 Apr 2013 20:52:37 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/7Ln7ORT83SEaTl2zaO65c
+Date: Tue, 16 Apr 2013 17:52:32 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: b-cousson@ti.com, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: dts: omap3-beagle-xm: Add USB Host support for
+ Rev Ax/Bx
+Message-ID: <20130417005232.GV10155@atomide.com>
+References: <1366029306-1824-1-git-send-email-rogerq@ti.com>
+ <516BF4F3.5060904@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130416184203.GA18348@linux-sh.org>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <516BF4F3.5060904@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 03:42:03AM +0900, Paul Mundt wrote:
-> On Tue, Apr 16, 2013 at 07:28:42AM +0100, Al Viro wrote:
-> > On Tue, Apr 16, 2013 at 03:11:13PM +0900, Simon Horman wrote:
-> > > On Thu, Apr 11, 2013 at 02:30:09PM +0100, David Howells wrote:
-> > > > Don't use create_proc_read_entry() as that is deprecated, but rather use
-> > > > proc_create_data() and seq_file instead.
-> > > 
-> > > Paul, do you want me to handle this?
+* Roger Quadros <rogerq@ti.com> [130415 05:44]:
+> On 04/15/2013 03:35 PM, Roger Quadros wrote:
+> > Provide RESET and Power regulators for the USB PHY,
+> > the USB Host port mode and the PHY device.
 > > 
-> > FWIW, I can pick that stuff via vfs.git - not a problem and I've already got
-> > shitloads of procfs-related patches in that queue...
+> > Also provide pin multiplexer information for USB host
+> > pins.
+> > 
+> > This will not work for Rev Cx boards because of reversed logic
+> > for USB_POWER_Enable.
+> > 
+> > CC: Benoît Cousson <b-cousson@ti.com>
+> > Signed-off-by: Roger Quadros <rogerq@ti.com>
+> > ---
+> >  arch/arm/boot/dts/omap3-beagle-xm.dts |   62 +++++++++++++++++++++++++++++++++
+> >  1 files changed, 62 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/omap3-beagle-xm.dts b/arch/arm/boot/dts/omap3-beagle-xm.dts
+> > index 5a31964..d394c51 100644
+> > --- a/arch/arm/boot/dts/omap3-beagle-xm.dts
+> > +++ b/arch/arm/boot/dts/omap3-beagle-xm.dts
+> > @@ -57,6 +57,60 @@
+> >  		ti,mcbsp = <&mcbsp2>;
+> >  		ti,codec = <&twl_audio>;
+> >  	};
+> > +
+> > +	/* HS USB Port 2 RESET */
+> > +	hsusb2_reset: hsusb2_reset_reg {
+> > +		compatible = "regulator-fixed";
+> > +		regulator-name = "hsusb2_reset";
+> > +		regulator-min-microvolt = <3300000>;
+> > +		regulator-max-microvolt = <3300000>;
+> > +		gpio = <&gpio5 19 0>;	/* gpio_147 */
+> > +		startup-delay-us = <70000>;
+> > +		enable-active-high;
+> > +	};
+> > +
+> > +	/* HS USB Port 2 Power */
+> > +	hsusb2_power: hsusb2_power_reg {
+> > +		compatible = "regulator-fixed";
+> > +		regulator-name = "hsusb2_vbus";
+> > +		regulator-min-microvolt = <3300000>;
+> > +		regulator-max-microvolt = <3300000>;
+> > +		gpio = <&twl_gpio 18 0>;	/* GPIO LEDA */
+> > +		startup-delay-us = <70000>;
+> > +		enable-active-high;	/* FIXME: active-low for Rev. C */
 > 
-> That works for me.
+> Benoit & Tony,
+> 
+> Any ideas how to tackle the reversed logic for Rev. C boards?
 
-Great.
+Sounds like we need a shared omap3-beage.dtsi, then omap3-beagle-xm.dts
+and omap3-beagle-rev-c.dts. Then xm and rev-c can both include the
+common .dtsi.
 
-Acked-by: Simon Horman <horms+renesas@verge.net.au>
+Regards,
 
+Tony
