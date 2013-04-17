@@ -1,85 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965753Ab3DQD7m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 23:59:42 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52665 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965730Ab3DQD7l (ORCPT
+	id S1752070Ab3DQEBG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 00:01:06 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:36073 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab3DQEBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 23:59:41 -0400
-X-AuditID: 9c930179-b7bd8ae000004629-fa-516e1e2b68d6
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH v2 05/10] perf util: Parse header_page to get proper long size
-Date: Wed, 17 Apr 2013 12:59:21 +0900
-Message-Id: <1366171161-5353-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1366002698-10728-6-git-send-email-namhyung@kernel.org>
-References: <1366002698-10728-6-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 17 Apr 2013 00:01:04 -0400
+Message-ID: <516E1E6C.2040106@linux.vnet.ibm.com>
+Date: Wed, 17 Apr 2013 09:30:44 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Segher Boessenkool <segher@kernel.crashing.org>
+CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org
+Subject: Re: [PATCH V2 2/5] powerpc, perf: Add basic assembly code to read
+ BHRB entries on POWER8
+References: <1366127650-1952-1-git-send-email-khandual@linux.vnet.ibm.com> <1366127650-1952-3-git-send-email-khandual@linux.vnet.ibm.com> <AAEA07FE-7530-46D3-B2FC-B3FD8EC2C6E2@kernel.crashing.org>
+In-Reply-To: <AAEA07FE-7530-46D3-B2FC-B3FD8EC2C6E2@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041703-8256-0000-0000-0000071A082A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On 04/16/2013 10:53 PM, Segher Boessenkool wrote:
+>> +/* r3 = n  (where n = [0-1023])
+>> + * The maximum number of BHRB entries supported with PPC_MFBHRBE
+>> instruction
+>> + * is 1024. We have limited number of table entries here as POWER8
+>> implements
+>> + * 32 BHRB entries.
+>> + */
+>> +
+>> +/* .global read_bhrb */
+>> +_GLOBAL(read_bhrb)
+>> +    cmpldi    r3,1023
+> 
+> This should be 31, since that is the last entry in the table below.
 
-The header_page file describes the format of the ring buffer page
-which is used by ftrace (not perf).  And size of "commit" field (I
-guess it's older name was 'size') represents the real size of long
-type used for kernel.  So update the pevent's long size.
+Hey Segher,
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
-It should read into header_page not buf.
+Would fix this in the next version. Thanks for pointing it out.
 
- tools/perf/util/trace-event-read.c | 22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/trace-event-read.c b/tools/perf/util/trace-event-read.c
-index fa45fca2a2d3..f2112270c663 100644
---- a/tools/perf/util/trace-event-read.c
-+++ b/tools/perf/util/trace-event-read.c
-@@ -212,6 +212,7 @@ static int read_ftrace_printk(struct pevent *pevent)
- static int read_header_files(struct pevent *pevent)
- {
- 	unsigned long long size;
-+	char *header_page;
- 	char buf[BUFSIZ];
- 	int ret = 0;
- 
-@@ -224,7 +225,26 @@ static int read_header_files(struct pevent *pevent)
- 	}
- 
- 	size = read8(pevent);
--	skip(size);
-+
-+	header_page = malloc(size);
-+	if (header_page == NULL)
-+		return -1;
-+
-+	if (do_read(header_page, size) < 0) {
-+		pr_debug("did not read header page");
-+		free(header_page);
-+		return -1;
-+	}
-+
-+	if (!pevent_parse_header_page(pevent, header_page, size,
-+				      pevent_get_long_size(pevent))) {
-+		/*
-+		 * The commit field in the page is of type long,
-+		 * use that instead, since it represents the kernel.
-+		 */
-+		pevent_set_long_size(pevent, pevent->header_page_size_size);
-+	}
-+	free(header_page);
- 
- 	if (do_read(buf, 13) < 0)
- 		return -1;
--- 
-1.7.11.7
+Regards
+Anshuman
 
