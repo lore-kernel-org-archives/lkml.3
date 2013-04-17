@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965938Ab3DQHI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 03:08:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:44270 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965738Ab3DQHIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 03:08:55 -0400
-Date: Wed, 17 Apr 2013 17:08:53 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org
-Subject: Re: [PATCH V2 5/5] powerpc, perf: Enable branch stack sampling
- framework support with BHRB
-Message-ID: <20130417070852.GA29203@concordia>
-References: <1366127650-1952-1-git-send-email-khandual@linux.vnet.ibm.com>
- <1366127650-1952-6-git-send-email-khandual@linux.vnet.ibm.com>
+	id S965858Ab3DQHOo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 03:14:44 -0400
+Received: from mail-gg0-f169.google.com ([209.85.161.169]:63273 "EHLO
+	mail-gg0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965736Ab3DQHOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 03:14:42 -0400
+Message-ID: <516E4BDC.9080903@gmail.com>
+Date: Wed, 17 Apr 2013 15:14:36 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366127650-1952-6-git-send-email-khandual@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
+ memory error on dirty cache selectable
+References: <51662D5B.3050001@hitachi.com> <1365664306-rvrpdnsl-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1365664306-rvrpdnsl-mutt-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 09:24:10PM +0530, Anshuman Khandual wrote:
-> This patch provides basic enablement for perf branch stack sampling framework
-> on POWER8 processor with a new PMU feature called BHRB (Branch History Rolling
-> Buffer).
-> 
-> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/perf/core-book3s.c     | 96 +++++++++++++++++++++++++++++++++++--
->  arch/powerpc/perf/perf_event_bhrb.c | 85 ++++++++++++++++++++++++++++++++
->  2 files changed, 178 insertions(+), 3 deletions(-)
->  create mode 100644 arch/powerpc/perf/perf_event_bhrb.c
-> 
-> diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
-> index 4ac6e64..f4d1347 100644
-> --- a/arch/powerpc/perf/core-book3s.c
-> +++ b/arch/powerpc/perf/core-book3s.c
-> @@ -19,6 +19,8 @@
->  #include <asm/firmware.h>
->  #include <asm/ptrace.h>
->  
-> +#define BHRB_MAX_ENTRIES	32
-> +
->  struct cpu_hw_events {
->  	int n_events;
->  	int n_percpu;
-> @@ -38,11 +40,21 @@ struct cpu_hw_events {
->  
->  	unsigned int group_flag;
->  	int n_txn_start;
-> +
-> +	/* BHRB bits */
-> +	u64				bhrb_filter;	/* BHRB HW branch filter */
-> +	int				bhrb_users;
-> +	void				*bhrb_context;
-> +	struct	perf_branch_stack	bhrb_stack;
-> +	struct	perf_branch_entry	bhrb_entries[BHRB_MAX_ENTRIES];
->  };
-> +
->  DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
->  
->  struct power_pmu *ppmu;
->  
-> +#include "perf_event_bhrb.c"
-> +
+Hi Naoya,
+On 04/11/2013 03:11 PM, Naoya Horiguchi wrote:
+> Hi Tanino-san,
+>
+> On Thu, Apr 11, 2013 at 12:26:19PM +0900, Mitsuhiro Tanino wrote:
+> ...
+>> Solution
+>> ---------
+>> The patch proposes a new sysctl interface, vm.memory_failure_dirty_panic,
+>> in order to prevent data corruption comes from data lost problem.
+>> Also this patch displays information of affected file such as device name,
+>> inode number, file offset and file type if the file is mapped on a memory
+>> and the page is dirty cache.
+>>
+>> When SRAO machine check occurs on a dirty page cache, corresponding
+>> data cannot be recovered any more. Therefore, the patch proposes a kernel
+>> option to keep a system running or force system panic in order
+>> to avoid further trouble such as data corruption problem of application.
+>>
+>> System administrator can select an error action using this option
+>> according to characteristics of target system.
+> Can we do this in userspace?
+> mcelog can trigger scripts when a MCE which matches the user-configurable
+> conditions happens, so I think that we can trigger a kernel panic by
+> chekcing kernel messages from the triggered script.
+> For that purpose, I recently fixed the dirty/clean messaging in commit
+> ff604cf6d4 "mm: hwpoison: fix action_result() to print out dirty/clean".
 
-Um, why are you doing that?
+In your commit ff604cf6d4, you mentioned that "because when we check
+PageDirty in action_result() it was cleared after page isolation even if
+it's dirty before error handling." Could you point out where page
+isolation and clear PageDirty? I don't think is isolate_lru_pages.
 
-If it's code that should be in a header, put it in a header. If it's C
-code, add it to the Makefile.
+>
+>> Use Case
+>> ---------
+>> This option is intended to be adopted in KVM guest because it is
+>> supposed that Linux on KVM guest operates customers business and
+>> it is big impact to lost or corrupt customers data by memory failure.
+>>
+>> On the other hand, this option does not recommend to apply KVM host
+>> as following reasons.
+>>
+>> - Making KVM host panic has a big impact because all virtual guests are
+>>   affected by their host panic. Affected virtual guests are forced to stop
+>>   and have to be restarted on the other hypervisor.
+> In this reasoning, you seem to assume that important data (business data)
+> are only handled on guest OS. That's true in most cases, but not always.
+> I think that the more general approach for this use case is that
+> we trigger kernel panic if memory errors happened on dirty pagecaches
+> used by 'important' processes (for example by adding process flags
+> controlled by prctl(),) and set it on qemu processes.
+>
+>> - If disk cached model of qemu is set to "none", I/O type of virtual
+>>   guests becomes O_DIRECT and KVM host does not cache guest's disk I/O.
+>>   Therefore, if SRAO machine check is reported on a dirty page cache
+>>   in KVM host, its virtual machines are not affected by the machine check.
+>>   So the host is expected to keep operating instead of kernel panic.
+> What to do if there're multiple guests, and some have "none" cache and
+> others have other types?
+> I think that we need more flexible settings for this use case.
+>
+>> Past discussion
+>> --------------------
+>> This problem was previously discussed in the kernel community, 
+>> (refer: mail threads pertaining to
+>> http://marc.info/?l=linux-kernel&m=135187403804934&w=4). 
+>>
+>>>> - I worry that if a hardware error occurs, it might affect a large
+>>>>   amount of memory all at the same time.  For example, if a 4G memory
+>>>>   block goes bad, this message will be printed a million times?
+>> As Andrew mentioned in the above threads, if 4GB memory blocks goes bad,
+>> error messages will be printed a million times and this behavior loses
+>> a system reliability.
+> Maybe "4G memory block goes bad" is not a MCE SRAO but a MCE with higher
+> severity, so we have no choice but to make kernel panic.
+>
+> Thanks,
+> Naoya Horiguchi
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-cheers
