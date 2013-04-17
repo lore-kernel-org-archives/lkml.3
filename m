@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab3DQEYE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 00:24:04 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:35133 "EHLO
+	id S1753828Ab3DQE0o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 00:26:44 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:35152 "EHLO
 	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343Ab3DQEYC (ORCPT
+	with ESMTP id S1750714Ab3DQE0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 00:24:02 -0400
+	Wed, 17 Apr 2013 00:26:43 -0400
 X-Spam-Score: -100.8
-Message-ID: <516E23B8.8030700@asianux.com>
-Date: Wed, 17 Apr 2013 12:23:20 +0800
+Message-ID: <516E245A.1050400@asianux.com>
+Date: Wed, 17 Apr 2013 12:26:02 +0800
 From: Chen Gang <gang.chen@asianux.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+To: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2] kernel: auditfilter: resource management, tree and watch
- will memory leak when failure occurs
-References: <51653645.90401@asianux.com> <51653C7A.6030405@asianux.com> <2119919725.12278128.1365628773876.JavaMail.root@redhat.com> <516637BB.90606@asianux.com> <5167D6FC.3070504@asianux.com> <516D2718.2010205@asianux.com> <516D2A11.2080502@asianux.com> <516E0BC3.6020302@asianux.com>
-In-Reply-To: <516E0BC3.6020302@asianux.com>
+Subject: Re: [PATCH] kernel: auditfilter: resource management, need process
+ tree when audit_add_watch failed in audit_add_rule
+References: <516790ED.6060202@asianux.com> <516792A6.9050904@asianux.com> <5167C36A.5000700@asianux.com> <5167CC21.8090006@asianux.com>
+In-Reply-To: <5167CC21.8090006@asianux.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-  in function audit_data_to_entry:
-    when failure occurs, need check and free tree and watch.
-    or memory leak.
+  also please help checking this patch, when you have time.
 
-  test:
-    plan:
-      test command:
-        "auditctl -a exit,always -w /etc -F auid=-1"
-        (on fedora17, need modify auditctl to let "-w /etc" has effect)
-      running:
-        under fedora17 x86_64, 2 CPUs 3.20GHz, 2.5GB RAM.
-        let 15 auditctl processes continue running at the same time.
-      monitor command: 
-        watch -d -n 1 "cat /proc/meminfo | awk '{print \$2}' \
-          | head -n 4 | xargs \
-          | awk '{print \"used \",\$1 - \$2 - \$3 - \$4}'"
+  thanks.
 
-    result:
-      for original version:
-        will use up all memory, within 3 hours.
-        kill all auditctl, the memory still does not free.
-      for new version (apply this patch):
-        after 14 hours later, not find issues.
+On 2013年04月12日 16:56, Chen Gang wrote:
+> 
+>   need call audit_put_tree, if tree is valid.
+>   just like another area have done in function audit_add_rule.
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  kernel/auditfilter.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
+> index f9fc54b..81f63f9 100644
+> --- a/kernel/auditfilter.c
+> +++ b/kernel/auditfilter.c
+> @@ -952,6 +952,12 @@ static inline int audit_add_rule(struct audit_entry *entry)
+>  		err = audit_add_watch(&entry->rule, &list);
+>  		if (err) {
+>  			mutex_unlock(&audit_filter_mutex);
+> +			/*
+> +			 * normally audit_add_tree_rule() will free it
+> +			 * on failure
+> +			 */
+> +			if (tree)
+> +				audit_put_tree(tree);
+>  			goto error;
+>  		}
+>  	}
+> 
 
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/auditfilter.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/auditfilter.c b/kernel/auditfilter.c
-index f9fc54b..2674368 100644
---- a/kernel/auditfilter.c
-+++ b/kernel/auditfilter.c
-@@ -594,6 +594,10 @@ exit_nofree:
- 	return entry;
- 
- exit_free:
-+	if (entry->rule.watch)
-+		audit_put_watch(entry->rule.watch); /* matches initial get */
-+	if (entry->rule.tree)
-+		audit_put_tree(entry->rule.tree); /* that's the temporary one */
- 	audit_free_rule(entry);
- 	return ERR_PTR(err);
- }
 -- 
-1.7.7.6
+Chen Gang
+
+Asianux Corporation
