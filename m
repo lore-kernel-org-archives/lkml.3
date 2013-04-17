@@ -1,268 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966352Ab3DQMXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 08:23:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7619 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966325Ab3DQMXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 08:23:34 -0400
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Clemens Ladisch <clemens@ladisch.de>, Arnd Bergmann <arnd@arndb.de>,
-        Takashi Iwai <tiwai@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: [PATCH 1/2] [media] videobuf-dma-contig: remove support for cached mem
-Date: Wed, 17 Apr 2013 09:22:15 -0300
-Message-Id: <1366201336-9481-1-git-send-email-mchehab@redhat.com>
-In-Reply-To: <20130417074300.33d05475@redhat.com>
-References: <20130417074300.33d05475@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S966209Ab3DQM0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 08:26:31 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:59765 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965643Ab3DQM03 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 08:26:29 -0400
+Message-ID: <516E94E7.4030202@redhat.com>
+Date: Wed, 17 Apr 2013 14:26:15 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, corbet@lwn.net
+CC: Tejun Heo <tj@kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: PING^4 aka The Jon Corbet Effect Re: [PATCH v2 00/14] Corrections
+ and customization of the SG_IO command whitelist (CVE-2012-4542)
+References: <1360163761-8541-1-git-send-email-pbonzini@redhat.com> <5124F600.9030908@redhat.com> <514CDB6F.9030505@redhat.com> <515DC3FE.1010405@redhat.com>
+In-Reply-To: <515DC3FE.1010405@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-videobuf_queue_dma_contig_init_cached() is not used anywhere.
-Drop support for it, cleaning up the code a little bit.
+And a fourth ping comes...
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
----
- drivers/media/v4l2-core/videobuf-dma-contig.c | 130 +++-----------------------
- include/media/videobuf-dma-contig.h           |  10 --
- 2 files changed, 14 insertions(+), 126 deletions(-)
+Jon, the next time I read "it seems likely to be picked up fairly soon"
+(http://lwn.net/Articles/535075/), I'll picture the author of the patch
+attempting open-heart surgery on a long-red-haired voodoo doll!
 
-diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c b/drivers/media/v4l2-core/videobuf-dma-contig.c
-index 3a43ba0..67f572c 100644
---- a/drivers/media/v4l2-core/videobuf-dma-contig.c
-+++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
-@@ -27,7 +27,6 @@ struct videobuf_dma_contig_memory {
- 	u32 magic;
- 	void *vaddr;
- 	dma_addr_t dma_handle;
--	bool cached;
- 	unsigned long size;
- };
- 
-@@ -43,26 +42,8 @@ static int __videobuf_dc_alloc(struct device *dev,
- 			       unsigned long size, gfp_t flags)
- {
- 	mem->size = size;
--	if (mem->cached) {
--		mem->vaddr = alloc_pages_exact(mem->size, flags | GFP_DMA);
--		if (mem->vaddr) {
--			int err;
--
--			mem->dma_handle = dma_map_single(dev, mem->vaddr,
--							 mem->size,
--							 DMA_FROM_DEVICE);
--			err = dma_mapping_error(dev, mem->dma_handle);
--			if (err) {
--				dev_err(dev, "dma_map_single failed\n");
--
--				free_pages_exact(mem->vaddr, mem->size);
--				mem->vaddr = NULL;
--				return err;
--			}
--		}
--	} else
--		mem->vaddr = dma_alloc_coherent(dev, mem->size,
--						&mem->dma_handle, flags);
-+	mem->vaddr = dma_alloc_coherent(dev, mem->size,
-+					&mem->dma_handle, flags);
- 
- 	if (!mem->vaddr) {
- 		dev_err(dev, "memory alloc size %ld failed\n", mem->size);
-@@ -77,14 +58,7 @@ static int __videobuf_dc_alloc(struct device *dev,
- static void __videobuf_dc_free(struct device *dev,
- 			       struct videobuf_dma_contig_memory *mem)
- {
--	if (mem->cached) {
--		if (!mem->vaddr)
--			return;
--		dma_unmap_single(dev, mem->dma_handle, mem->size,
--				 DMA_FROM_DEVICE);
--		free_pages_exact(mem->vaddr, mem->size);
--	} else
--		dma_free_coherent(dev, mem->size, mem->vaddr, mem->dma_handle);
-+	dma_free_coherent(dev, mem->size, mem->vaddr, mem->dma_handle);
- 
- 	mem->vaddr = NULL;
- }
-@@ -234,7 +208,7 @@ out_up:
- 	return ret;
- }
- 
--static struct videobuf_buffer *__videobuf_alloc_vb(size_t size, bool cached)
-+static struct videobuf_buffer *__videobuf_alloc(size_t size)
- {
- 	struct videobuf_dma_contig_memory *mem;
- 	struct videobuf_buffer *vb;
-@@ -244,22 +218,11 @@ static struct videobuf_buffer *__videobuf_alloc_vb(size_t size, bool cached)
- 		vb->priv = ((char *)vb) + size;
- 		mem = vb->priv;
- 		mem->magic = MAGIC_DC_MEM;
--		mem->cached = cached;
- 	}
- 
- 	return vb;
- }
- 
--static struct videobuf_buffer *__videobuf_alloc_uncached(size_t size)
--{
--	return __videobuf_alloc_vb(size, false);
--}
--
--static struct videobuf_buffer *__videobuf_alloc_cached(size_t size)
--{
--	return __videobuf_alloc_vb(size, true);
--}
--
- static void *__videobuf_to_vaddr(struct videobuf_buffer *buf)
- {
- 	struct videobuf_dma_contig_memory *mem = buf->priv;
-@@ -310,19 +273,6 @@ static int __videobuf_iolock(struct videobuf_queue *q,
- 	return 0;
- }
- 
--static int __videobuf_sync(struct videobuf_queue *q,
--			   struct videobuf_buffer *buf)
--{
--	struct videobuf_dma_contig_memory *mem = buf->priv;
--	BUG_ON(!mem);
--	MAGIC_CHECK(mem->magic, MAGIC_DC_MEM);
--
--	dma_sync_single_for_cpu(q->dev, mem->dma_handle, mem->size,
--				DMA_FROM_DEVICE);
--
--	return 0;
--}
--
- static int __videobuf_mmap_mapper(struct videobuf_queue *q,
- 				  struct videobuf_buffer *buf,
- 				  struct vm_area_struct *vma)
-@@ -331,8 +281,6 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
- 	struct videobuf_mapping *map;
- 	int retval;
- 	unsigned long size;
--	unsigned long pos, start = vma->vm_start;
--	struct page *page;
- 
- 	dev_dbg(q->dev, "%s\n", __func__);
- 
-@@ -359,43 +307,16 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
- 	size = vma->vm_end - vma->vm_start;
- 	size = (size < mem->size) ? size : mem->size;
- 
--	if (!mem->cached) {
--		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
--		retval = remap_pfn_range(vma, vma->vm_start,
--			 mem->dma_handle >> PAGE_SHIFT,
-+	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-+	retval = remap_pfn_range(vma, vma->vm_start,
-+				 mem->dma_handle >> PAGE_SHIFT,
- 				 size, vma->vm_page_prot);
--		if (retval) {
--			dev_err(q->dev, "mmap: remap failed with error %d. ",
--								retval);
--			dma_free_coherent(q->dev, mem->size,
--					mem->vaddr, mem->dma_handle);
--			goto error;
--		}
--	} else {
--		pos = (unsigned long)mem->vaddr;
--
--		while (size > 0) {
--			page = virt_to_page((void *)pos);
--			if (NULL == page) {
--				dev_err(q->dev, "mmap: virt_to_page failed\n");
--				__videobuf_dc_free(q->dev, mem);
--				goto error;
--			}
--			retval = vm_insert_page(vma, start, page);
--			if (retval) {
--				dev_err(q->dev, "mmap: insert failed with error %d\n",
--					retval);
--				__videobuf_dc_free(q->dev, mem);
--				goto error;
--			}
--			start += PAGE_SIZE;
--			pos += PAGE_SIZE;
--
--			if (size > PAGE_SIZE)
--				size -= PAGE_SIZE;
--			else
--				size = 0;
--		}
-+	if (retval) {
-+		dev_err(q->dev, "mmap: remap failed with error %d. ",
-+			retval);
-+		dma_free_coherent(q->dev, mem->size,
-+				  mem->vaddr, mem->dma_handle);
-+		goto error;
- 	}
- 
- 	vma->vm_ops = &videobuf_vm_ops;
-@@ -417,17 +338,8 @@ error:
- 
- static struct videobuf_qtype_ops qops = {
- 	.magic		= MAGIC_QTYPE_OPS,
--	.alloc_vb	= __videobuf_alloc_uncached,
--	.iolock		= __videobuf_iolock,
--	.mmap_mapper	= __videobuf_mmap_mapper,
--	.vaddr		= __videobuf_to_vaddr,
--};
--
--static struct videobuf_qtype_ops qops_cached = {
--	.magic		= MAGIC_QTYPE_OPS,
--	.alloc_vb	= __videobuf_alloc_cached,
-+	.alloc_vb	= __videobuf_alloc,
- 	.iolock		= __videobuf_iolock,
--	.sync		= __videobuf_sync,
- 	.mmap_mapper	= __videobuf_mmap_mapper,
- 	.vaddr		= __videobuf_to_vaddr,
- };
-@@ -447,20 +359,6 @@ void videobuf_queue_dma_contig_init(struct videobuf_queue *q,
- }
- EXPORT_SYMBOL_GPL(videobuf_queue_dma_contig_init);
- 
--void videobuf_queue_dma_contig_init_cached(struct videobuf_queue *q,
--					   const struct videobuf_queue_ops *ops,
--					   struct device *dev,
--					   spinlock_t *irqlock,
--					   enum v4l2_buf_type type,
--					   enum v4l2_field field,
--					   unsigned int msize,
--					   void *priv, struct mutex *ext_lock)
--{
--	videobuf_queue_core_init(q, ops, dev, irqlock, type, field, msize,
--				 priv, &qops_cached, ext_lock);
--}
--EXPORT_SYMBOL_GPL(videobuf_queue_dma_contig_init_cached);
--
- dma_addr_t videobuf_to_dma_contig(struct videobuf_buffer *buf)
- {
- 	struct videobuf_dma_contig_memory *mem = buf->priv;
-diff --git a/include/media/videobuf-dma-contig.h b/include/media/videobuf-dma-contig.h
-index f473aeb..f0ed825 100644
---- a/include/media/videobuf-dma-contig.h
-+++ b/include/media/videobuf-dma-contig.h
-@@ -26,16 +26,6 @@ void videobuf_queue_dma_contig_init(struct videobuf_queue *q,
- 				    void *priv,
- 				    struct mutex *ext_lock);
- 
--void videobuf_queue_dma_contig_init_cached(struct videobuf_queue *q,
--					   const struct videobuf_queue_ops *ops,
--					   struct device *dev,
--					   spinlock_t *irqlock,
--					   enum v4l2_buf_type type,
--					   enum v4l2_field field,
--					   unsigned int msize,
--					   void *priv,
--					   struct mutex *ext_lock);
--
- dma_addr_t videobuf_to_dma_contig(struct videobuf_buffer *buf);
- void videobuf_dma_contig_free(struct videobuf_queue *q,
- 			      struct videobuf_buffer *buf);
--- 
-1.8.1.4
+Paolo
+
+Il 04/04/2013 20:18, Paolo Bonzini ha scritto:
+> Il 22/03/2013 23:30, Paolo Bonzini ha scritto:
+>> Il 20/02/2013 17:12, Paolo Bonzini ha scritto:
+>>> Il 06/02/2013 16:15, Paolo Bonzini ha scritto:
+>>>> This series regards the whitelist that is used for the SG_IO ioctl.  This
+>>>> whitelist has three problems:
+>>>>
+>>>> * the bitmap of allowed commands is designed for MMC devices (roughly,
+>>>>   "play/burn CDs without requiring root") but some opcodes overlap across SCSI
+>>>>   device classes and have different meanings for different classes.
+>>>>
+>>>> * also because the bitmap of allowed commands is designed for MMC devices
+>>>>   only, some commands are missing even though they are generally useful and
+>>>>   not insecure.  At least not more insecure than anything else you can
+>>>>   do if you have access to /dev/sdX or /dev/stX nodes.
+>>>>
+>>>> * the whitelist can be disabled per-process but not per-disk.  In addition,
+>>>>   the required capability (CAP_SYS_RAWIO) gives access to a range of other 
+>>>>   resources, enough to make it insecure.
+>>>>
+>>>> The series corrects these problems.  Patches 1-4 solve the first problem,
+>>>> which also has an assigned CVE, by using different bitmaps for the various
+>>>> device classes.  Patches 5-11 solve the second by adding more commands
+>>>> to the bitmaps.  Patches 12 and 13 solve the third, and were already
+>>>> posted but ignored by the maintainers despite multiple pings.
+>>>>
+>>>> Note: checkpatch hates the formatting of the command table.  I know about this,
+>>>> and ensured that there are no errors in the rest of the code.  The current
+>>>> formatting is IMHO quite handy, and roughly based on the files available
+>>>> from the SCSI standard body.
+>>>>
+>>>> Ok for the next merge window?
+>>>>
+>>>> Paolo
+>>>>
+>>>> v1->v2: remove 2 MMC commands and 6 SBC commands (see patches 6 and 9
+>>>>         for details).  Added patch 14 and added a few more scanner
+>>>>         commands based on SANE (scanners are not whitelisted by default,
+>>>>         also were not in v1, but this makes it possible to opt into the
+>>>>         whitelist out of paranoia).  Removed C++ comments.  Removed the
+>>>>         large #if 0'd list of commands that the kernel does not pass
+>>>>         though.  Marked blk_set_cmd_filter_defaults as __init.
+>>>
+>>> Ping...
+>>>
+>>> Jens/James, is anyone going to pick this up for 3.9?
+>>
+>> Another month has passed, Ping^2...
+> 
+> Ping^3, any hope for 3.10?
+> 
+> Paolo
+> 
+>>
+>> Paolo
+>>
+>>> Paolo
+>>>
+>>>>
+>>>> Paolo Bonzini (14):
+>>>>   sg_io: pass request_queue to blk_verify_command
+>>>>   sg_io: reorganize list of allowed commands
+>>>>   sg_io: use different default filters for each device class
+>>>>   sg_io: resolve conflicts between commands assigned to multiple
+>>>>     classes (CVE-2012-4542)
+>>>>   sg_io: whitelist a few more commands for rare & obsolete device types
+>>>>   sg_io: whitelist another command for multimedia devices
+>>>>   sg_io: whitelist a few more commands for media changers
+>>>>   sg_io: whitelist a few more commands for tapes
+>>>>   sg_io: whitelist a few more commands for disks
+>>>>   sg_io: whitelist a few obsolete commands
+>>>>   sg_io: mark blk_set_cmd_filter_defaults as __init
+>>>>   sg_io: remove remnants of sysfs SG_IO filters
+>>>>   sg_io: introduce unpriv_sgio queue flag
+>>>>   sg_io: use unpriv_sgio to disable whitelisting for scanners
+>>>>
+>>>>  Documentation/block/queue-sysfs.txt |    8 +
+>>>>  block/blk-sysfs.c                   |   33 +++
+>>>>  block/bsg.c                         |    2 +-
+>>>>  block/scsi_ioctl.c                  |  369 ++++++++++++++++++++++++++---------
+>>>>  drivers/scsi/scsi_scan.c            |   14 ++-
+>>>>  drivers/scsi/sg.c                   |    6 +-
+>>>>  include/linux/blkdev.h              |    8 +-
+>>>>  include/linux/genhd.h               |    9 -
+>>>>  include/scsi/scsi.h                 |    3 +
+>>>>  9 files changed, 344 insertions(+), 108 deletions(-)
+>>>>
+>>>
+>>
+> 
 
