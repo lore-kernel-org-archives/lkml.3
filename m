@@ -1,76 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965782Ab3DQGiB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 02:38:01 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38775 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965761Ab3DQGh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 02:37:59 -0400
-Date: Wed, 17 Apr 2013 09:37:36 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Alexandre Courbot <gnurou@gmail.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Greg KH <greg@kroah.com>
-Subject: Re: linux-next: manual merge of the gen-gpio tree with the usb tree
-Message-ID: <20130417063736.GA10582@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130417154715.cd3036b3cc791800938119c4@canb.auug.org.au>
+	id S965794Ab3DQGmA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 02:42:00 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:53130 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752439Ab3DQGl7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 02:41:59 -0400
+Message-ID: <516E4421.3020401@stericsson.com>
+Date: Wed, 17 Apr 2013 08:41:37 +0200
+From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Dxnq1zWXvFF0Q93v"
-Content-Disposition: inline
-In-Reply-To: <20130417154715.cd3036b3cc791800938119c4@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Yvan FILLION <yvan.fillion@stericsson.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] regulator: ab8500: Fix set voltage for AB8540_LDO_AUX3
+References: <1366123590.14735.1.camel@phoenix>
+In-Reply-To: <1366123590.14735.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Dxnq1zWXvFF0Q93v
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/16/2013 04:46 PM, Axel Lin wrote:
+> When setting voltage for AB8540_LDO_AUX3, current code only updates one of
+> info->voltage_reg and info->expand_register registers which is wrong.
+> To ensure we set to correct voltage, it always needs to clear or set
+> expand_register.voltage_mask bit of expand_register.
+>
+> The function of the expand register bit is the following (from the user manual):
+> 0: VAUX3 output voltage is determined by Vaux3Sel bit settings in register
+>     VldoCVaux3Sel
+> 1: VAUX3 output voltage is set to 3.05V regardless of Vaux3Sel settings in
+>     register VldoCVaux3Sel (VldoCVaux3Sel is the register at 0x0421)
+>
+> So when going to 3.05V, set the expand register bit.
+> When leaving 3.05V for another voltage, set the target voltage before clearing
+> the expand register bit.
+>
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Looks fine.Thanks!
 
-Hi,
+Acked-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+> ---
+>   drivers/regulator/ab8500.c |   69 ++++++++++++++++++++++++++++++++------------
+>   1 file changed, 51 insertions(+), 18 deletions(-)
+>
+> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+> index 0a62ef9..84e064b 100644
+> --- a/drivers/regulator/ab8500.c
+> +++ b/drivers/regulator/ab8500.c
+> @@ -612,32 +612,65 @@ static int ab8540_aux3_regulator_set_voltage_sel(struct regulator_dev *rdev,
+>   		return -EINVAL;
+>   	}
+>   
+> +	/* Set the expand register bit for 3.05V.
+> +	   Once expand register bit is set, VAUX3 output voltage is set to 3.05V
+> +	   regardless of Vaux3Sel settings in register VldoCVaux3Sel.
+> +	 */
+>   	if (selector >= info->expand_register.voltage_limit) {
+> -		/* Vaux3 bit4 has different layout */
+> -		regval = (u8)selector << info->expand_register.voltage_shift;
+> -		ret = abx500_mask_and_set_register_interruptible(info->dev,
+> -					info->expand_register.voltage_bank,
+> -					info->expand_register.voltage_reg,
+> -					info->expand_register.voltage_mask,
+> -					regval);
+> -	} else {
+> -		/* set the registers for the request */
+> -		regval = (u8)selector << info->voltage_shift;
+>   		ret = abx500_mask_and_set_register_interruptible(info->dev,
+> -				info->voltage_bank, info->voltage_reg,
+> -				info->voltage_mask, regval);
+> +				info->expand_register.voltage_bank,
+> +				info->expand_register.voltage_reg,
+> +				info->expand_register.voltage_mask,
+> +				info->expand_register.voltage_mask);
+> +		if (ret < 0) {
+> +			dev_err(rdev_get_dev(rdev),
+> +				"couldn't set expand voltage reg for regulator\n");
+> +			return ret;
+> +		}
+> +
+> +		dev_vdbg(rdev_get_dev(rdev),
+> +			 "%s-set_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
+> +			 info->desc.name, info->expand_register.voltage_bank,
+> +			 info->expand_register.voltage_reg,
+> +			 info->expand_register.voltage_mask,
+> +			 info->expand_register.voltage_mask);
+> +
+> +		return 0;
+>   	}
+> -	if (ret < 0)
+> +
+> +	/* Set target voltage before clearing the expand register bit */
+> +	regval = (u8)selector << info->voltage_shift;
+> +	ret = abx500_mask_and_set_register_interruptible(info->dev,
+> +			info->voltage_bank, info->voltage_reg,
+> +			info->voltage_mask, regval);
+> +	if (ret < 0) {
+>   		dev_err(rdev_get_dev(rdev),
+>   			"couldn't set voltage reg for regulator\n");
+> +		return ret;
+> +	}
+>   
+>   	dev_vdbg(rdev_get_dev(rdev),
+> -			"%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
+> -			" 0x%x\n",
+> -			info->desc.name, info->voltage_bank, info->voltage_reg,
+> -			info->voltage_mask, regval);
+> +		 "%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
+> +		 info->desc.name, info->voltage_bank, info->voltage_reg,
+> +		 info->voltage_mask, regval);
+>   
+> -	return ret;
+> +	ret = abx500_mask_and_set_register_interruptible(info->dev,
+> +			info->expand_register.voltage_bank,
+> +			info->expand_register.voltage_reg,
+> +			info->expand_register.voltage_mask, 0);
+> +	if (ret < 0) {
+> +		dev_err(rdev_get_dev(rdev),
+> +			"couldn't clear expand voltage reg for regulator\n");
+> +		return ret;
+> +	}
+> +
+> +	dev_vdbg(rdev_get_dev(rdev),
+> +		 "%s-set_voltage expand (bank, reg, mask, value): 0x%x, 0x%x, 0x%x, 0x%x\n",
+> +		 info->desc.name, info->expand_register.voltage_bank,
+> +		 info->expand_register.voltage_reg,
+> +		 info->expand_register.voltage_mask, 0);
+> +
+> +	return 0;
+>   }
+>   
+>   static struct regulator_ops ab8500_regulator_volt_mode_ops = {
 
-On Wed, Apr 17, 2013 at 03:47:15PM +1000, Stephen Rothwell wrote:
-> Hi Alexandre,
->=20
-> Today's linux-next merge of the gen-gpio tree got a conflict in
-> drivers/usb/otg/Kconfig between commit a0e631235a04 ("usb: phy: move all
-> PHY drivers to drivers/usb/phy/") from the usb tree and commit
-> 76ec9d18b897 ("Convert selectors of GENERIC_GPIO to GPIOLIB") from the
-> gen-gpio tree.
->=20
-> The former patch removed the file, so I did that and then applied the
-> following patch and can carry the fix as necessary (no action is
-> required).
-
-Thanks Stephen, looks alright :-)
-
---=20
-balbi
-
---Dxnq1zWXvFF0Q93v
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRbkMwAAoJEIaOsuA1yqREOvoP/3LZ5YczwPycJD/SzJHIjWrz
-jDMEzwmwD2PvFfJEFtIPMzC1RM11nFmnBf04nwDXJPF81cUdkIraNz1wYrIVlEec
-Iy8EwtAaYDlGhXjAukiyLQ3Qg+wNUN+NCrYjzGAdGc+M+0l54+Mv5AEM1vunXtka
-lTYI2qkdJ5Ye1LdTeCxnJ+Lv9ZcHUnWJWCqaN3gWET0h7t7YekFMHmL1CrfLHG0J
-5yPhoLkI4YSZCzkLo+Oy4VqoeabXMlIigMmdoCjBr70DAC6jpQ0OGkmWpWma1HFa
-DlnMoJdeTxMfMbGhvpHu6IP3L7hzn9fuy5ydlyw6ugYRyfMGrFkzDrsWU+1TRYaq
-B+fl+z4PKLDWXm0hXRQ8UauyX77JIpgiJnoxkQriVEY6kzNiQ7FFitoCCRHqgj6J
-3+M0TNt1DN8mFw1oDI3mqI1vHsC5JNZjlgsKSC1IWSKoUmBElJ7FN3m2aZ/fddbS
-mWKkEFMSgaUv8ir7u9bYIe24Zb3Z26HjsJD9w9UJFi+R0vzLX23pXitKOBm60gQR
-WrAMzbQDDRwA+c3YR+QwJjdk6i32jcIplk1u0PMGG7LoxpGO2/nWVbQ/534B11eG
-JGzBTHFcwLbPjbH58v/2dMeLIaHuidQhFvLIzzErQ2kBZb4yVoi4rULNx/MlVyfD
-xS77E4kOkGczRED1U6aL
-=0aM0
------END PGP SIGNATURE-----
-
---Dxnq1zWXvFF0Q93v--
