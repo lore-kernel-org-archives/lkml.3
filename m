@@ -1,196 +1,1497 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965884Ab3DQGub (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 02:50:31 -0400
-Received: from mail-da0-f49.google.com ([209.85.210.49]:42811 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965786Ab3DQGu1 (ORCPT
+	id S965898Ab3DQGuq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 02:50:46 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:36004 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965786Ab3DQGul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 02:50:27 -0400
-Date: Tue, 16 Apr 2013 23:50:23 -0700
+	Wed, 17 Apr 2013 02:50:41 -0400
+Date: Tue, 16 Apr 2013 23:50:37 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.8.8
-Message-ID: <20130417065023.GA13310@kroah.com>
+Subject: Re: Linux 3.8.8
+Message-ID: <20130417065037.GB13310@kroah.com>
+References: <20130417065023.GA13310@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RnlQjJ0d97Da+TV1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130417065023.GA13310@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---RnlQjJ0d97Da+TV1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-I'm announcing the release of the 3.8.8 kernel.
-
-All users of the 3.8 kernel series must upgrade.
-
-The updated 3.8.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
-x-3.8.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
-mmary
-
-thanks,
-
-greg k-h
-
-------------
-
- Makefile                                                 |    2=20
- arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts            |   14=20
- arch/arm/mach-imx/clk-imx35.c                            |    1=20
- arch/x86/include/asm/paravirt.h                          |    5=20
- arch/x86/include/asm/paravirt_types.h                    |    2=20
- arch/x86/include/asm/tlb.h                               |    2=20
- arch/x86/kernel/paravirt.c                               |   25 -
- arch/x86/lguest/boot.c                                   |    1=20
- arch/x86/mm/fault.c                                      |    6=20
- arch/x86/mm/pgtable.c                                    |    7=20
- arch/x86/xen/mmu.c                                       |    1=20
- drivers/dma/omap-dma.c                                   |   20=20
- drivers/gpio/gpiolib-of.c                                |    5=20
- drivers/gpu/drm/udl/udl_connector.c                      |    4=20
- drivers/net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c    |  369 +++++-----=
------
- drivers/net/wireless/brcm80211/brcmsmac/phy/phytbl_lcn.c |   64 +-
- drivers/scsi/libsas/sas_expander.c                       |   12=20
- drivers/target/target_core_alua.c                        |    3=20
- drivers/tty/tty_ldisc.c                                  |   10=20
- fs/cifs/connect.c                                        |   16=20
- fs/gfs2/file.c                                           |    5=20
- fs/gfs2/rgrp.c                                           |    2=20
- fs/inode.c                                               |    2=20
- include/asm-generic/tlb.h                                |    7=20
- include/linux/ftrace.h                                   |    3=20
- ipc/msg.c                                                |    1=20
- kernel/sched/clock.c                                     |   26 +
- kernel/sys.c                                             |    3=20
- kernel/trace/ftrace.c                                    |   37 -
- kernel/trace/trace_stack.c                               |    2=20
- lib/kobject.c                                            |    9=20
- mm/memory.c                                              |    1=20
- sound/soc/codecs/wm5102.c                                |    2=20
- sound/soc/codecs/wm8903.c                                |    2=20
- sound/soc/soc-core.c                                     |    2=20
- sound/usb/mixer_quirks.c                                 |    4=20
- sound/usb/quirks.c                                       |    2=20
- 37 files changed, 335 insertions(+), 344 deletions(-)
-
-Alban Bedel (1):
-      ASoC: wm8903: Fix the bypass to HP/LINEOUT when no DAC or ADC is runn=
-ing
-
-Boris Ostrovsky (1):
-      x86, mm: Patch out arch_flush_lazy_mmu_mode() when running on bare me=
-tal
-
-Dave Airlie (1):
-      udl: handle EDID failure properly.
-
-Dave Hansen (1):
-      x86-32: Fix possible incomplete TLB invalidate with PAE pagetables
-
-Eldad Zack (1):
-      ALSA: usb-audio: fix endianness bug in snd_nativeinstruments_*
-
-Greg Kroah-Hartman (1):
-      Linux 3.8.8
-
-Haojian Zhuang (1):
-      gpio: fix wrong checking condition for gpio range
-
-Huacai Chen (1):
-      PM / reboot: call syscore_shutdown() after disable_nonboot_cpus()
-
-John W. Linville (1):
-      Revert "brcmsmac: support 4313iPA"
-
-Joonyoung Shim (1):
-      ASoC: core: Fix to check return value of snd_soc_update_bits_locked()
-
-Linus Torvalds (1):
-      kobject: fix kset_find_obj() race with concurrent last kobject_put()
-
-Lukasz Dorau (1):
-      SCSI: libsas: fix handling vacant phy in sas_set_ex_phy()
-
-Mark Brown (1):
-      ASoC: wm5102: Correct lookup of arizona struct in SYSCLK event
-
-Markus Pargmann (1):
-      ARM: imx35 Bugfix admux clock
-
-Namhyung Kim (2):
-      tracing: Fix double free when function profile init failed
-      tracing: Fix possible NULL pointer dereferences
-
-Nicholas Bellinger (1):
-      target: Fix incorrect fallthrough of ALUA Standby/Offline/Transition =
-CDBs
-
-Nigel Roberts (1):
-      ARM: Kirkwood: Fix typo in the definition of ix2-200 rebuild LED
-
-Peter Ujfalusi (1):
-      dmaengine: omap-dma: Start DMA without delay for cyclic channels
-
-Sachin Prabhu (1):
-      cifs: Allow passwords which begin with a delimitor
-
-Samu Kallio (1):
-      x86, mm, paravirt: Fix vmalloc_fault oops during lazy MMU updates
-
-Sebastian Andrzej Siewior (1):
-      tty: don't deadlock while flushing workqueue
-
-Stanislav Kinsbursky (1):
-      ipc: set msg back to -EAGAIN if copy wasn't performed
-
-Steven Rostedt (Red Hat) (1):
-      ftrace: Move ftrace_filter_lseek out of CONFIG_DYNAMIC_FTRACE section
-
-Steven Whitehouse (1):
-      GFS2: Fix unlock of fcntl locks during withdrawn state
-
-Suleiman Souhlal (1):
-      vfs: Revert spurious fix to spinning prevention in prune_icache_sb
-
-Thomas Gleixner (1):
-      sched_clock: Prevent 64bit inatomicity on 32bit systems
-
-Wei Yongjun (1):
-      GFS2: return error if malloc failed in gfs2_rs_alloc()
-
-
---RnlQjJ0d97Da+TV1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBAgAGBQJRbkYvAAoJEDjbvchgkmk+UU4P/29RkeRTXS/4HV4P/z+kxbpN
-zZ29BWG4kCq2M6QRRRrfqRk9gPjByXArejiIAF3azwcx8C0sHDpihl325bJ7/KPL
-VyHm6wIa07xaA0aSLcTFP7e9EqNkyUhhlubbqsoy0vxB26E8U7/Y58fHIFRqjy+a
-f1IMIiz6te+YMPcqEkDeP4vvIhtvdudnryVPS8DjIIUmRxEhYj7Baql+rC94TLDe
-qReIIhDl9bxTmsHgklIrdxaiRdNtFLlEEJjzCi04I9EBdZGFXgW0k2g7dHMCTERm
-DgfBp1ENTpm7LMlFZdck2xZMQpAO33gaQxs6D5rS0XSbz8XLJ9WHYKAufrJBvU6C
-Cjrxv1PVPZVxTN9Q2DwN3tCOQdshEBmgBUvSYBshSxs7EHRHZFAqIJt1nrVRLCX1
-nzS8SNeWAS51VUJsCVxuk9dujaUt+X/SMjxYdMbUTRvnL0kdj+npgPuHf6dzriQr
-Kx+G5BYyCOgIGwhDYDmmBzvkKTWHVxhUPhCAKxtAqCadC326Nk+z4SSV9C4xG5yJ
-2Lhib5FwHvHS/emaVqLPSjF4TasuxYktcsZUV3+TGny/onC2lwUwV7/EBSiyII36
-ba0/38GoRt5LBP1uvVLsdC/HLosbJjucA54+8fPr4BsPMXrEs5PqXFwn1IXgd6sT
-kk0EV2jcz2cpUmnS5hF/
-=+sxJ
------END PGP SIGNATURE-----
-
---RnlQjJ0d97Da+TV1--
+diff --git a/Makefile b/Makefile
+index 85204da..7684f95 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 8
+-SUBLEVEL = 7
++SUBLEVEL = 8
+ EXTRAVERSION =
+ NAME = Displaced Humerus Anterior
+ 
+diff --git a/arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts b/arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts
+index 93c3afb..3694e94 100644
+--- a/arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts
++++ b/arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts
+@@ -96,11 +96,11 @@
+ 				marvell,function = "gpio";
+ 			};
+ 			pmx_led_rebuild_brt_ctrl_1: pmx-led-rebuild-brt-ctrl-1 {
+-				marvell,pins = "mpp44";
++				marvell,pins = "mpp46";
+ 				marvell,function = "gpio";
+ 			};
+ 			pmx_led_rebuild_brt_ctrl_2: pmx-led-rebuild-brt-ctrl-2 {
+-				marvell,pins = "mpp45";
++				marvell,pins = "mpp47";
+ 				marvell,function = "gpio";
+ 			};
+ 
+@@ -157,14 +157,14 @@
+ 			gpios = <&gpio0 16 0>;
+ 			linux,default-trigger = "default-on";
+ 		};
+-		health_led1 {
++		rebuild_led {
++			label = "status:white:rebuild_led";
++			gpios = <&gpio1 4 0>;
++		};
++		health_led {
+ 			label = "status:red:health_led";
+ 			gpios = <&gpio1 5 0>;
+ 		};
+-		health_led2 {
+-			label = "status:white:health_led";
+-			gpios = <&gpio1 4 0>;
+-		};
+ 		backup_led {
+ 			label = "status:blue:backup_led";
+ 			gpios = <&gpio0 15 0>;
+diff --git a/arch/arm/mach-imx/clk-imx35.c b/arch/arm/mach-imx/clk-imx35.c
+index f0727e8..0edce4b 100644
+--- a/arch/arm/mach-imx/clk-imx35.c
++++ b/arch/arm/mach-imx/clk-imx35.c
+@@ -257,6 +257,7 @@ int __init mx35_clocks_init()
+ 	clk_register_clkdev(clk[wdog_gate], NULL, "imx2-wdt.0");
+ 	clk_register_clkdev(clk[nfc_div], NULL, "imx25-nand.0");
+ 	clk_register_clkdev(clk[csi_gate], NULL, "mx3-camera.0");
++	clk_register_clkdev(clk[admux_gate], "audmux", NULL);
+ 
+ 	clk_prepare_enable(clk[spba_gate]);
+ 	clk_prepare_enable(clk[gpio1_gate]);
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index 5edd174..7361e47 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -703,7 +703,10 @@ static inline void arch_leave_lazy_mmu_mode(void)
+ 	PVOP_VCALL0(pv_mmu_ops.lazy_mode.leave);
+ }
+ 
+-void arch_flush_lazy_mmu_mode(void);
++static inline void arch_flush_lazy_mmu_mode(void)
++{
++	PVOP_VCALL0(pv_mmu_ops.lazy_mode.flush);
++}
+ 
+ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
+ 				phys_addr_t phys, pgprot_t flags)
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 142236e..b3b0ec1 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -91,6 +91,7 @@ struct pv_lazy_ops {
+ 	/* Set deferred update mode, used for batching operations. */
+ 	void (*enter)(void);
+ 	void (*leave)(void);
++	void (*flush)(void);
+ };
+ 
+ struct pv_time_ops {
+@@ -679,6 +680,7 @@ void paravirt_end_context_switch(struct task_struct *next);
+ 
+ void paravirt_enter_lazy_mmu(void);
+ void paravirt_leave_lazy_mmu(void);
++void paravirt_flush_lazy_mmu(void);
+ 
+ void _paravirt_nop(void);
+ u32 _paravirt_ident_32(u32);
+diff --git a/arch/x86/include/asm/tlb.h b/arch/x86/include/asm/tlb.h
+index 4fef207..c779730 100644
+--- a/arch/x86/include/asm/tlb.h
++++ b/arch/x86/include/asm/tlb.h
+@@ -7,7 +7,7 @@
+ 
+ #define tlb_flush(tlb)							\
+ {									\
+-	if (tlb->fullmm == 0)						\
++	if (!tlb->fullmm && !tlb->need_flush_all) 			\
+ 		flush_tlb_mm_range(tlb->mm, tlb->start, tlb->end, 0UL);	\
+ 	else								\
+ 		flush_tlb_mm_range(tlb->mm, 0UL, TLB_FLUSH_ALL, 0UL);	\
+diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+index 17fff18..8bfb335 100644
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -263,6 +263,18 @@ void paravirt_leave_lazy_mmu(void)
+ 	leave_lazy(PARAVIRT_LAZY_MMU);
+ }
+ 
++void paravirt_flush_lazy_mmu(void)
++{
++	preempt_disable();
++
++	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
++		arch_leave_lazy_mmu_mode();
++		arch_enter_lazy_mmu_mode();
++	}
++
++	preempt_enable();
++}
++
+ void paravirt_start_context_switch(struct task_struct *prev)
+ {
+ 	BUG_ON(preemptible());
+@@ -292,18 +304,6 @@ enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
+ 	return this_cpu_read(paravirt_lazy_mode);
+ }
+ 
+-void arch_flush_lazy_mmu_mode(void)
+-{
+-	preempt_disable();
+-
+-	if (paravirt_get_lazy_mode() == PARAVIRT_LAZY_MMU) {
+-		arch_leave_lazy_mmu_mode();
+-		arch_enter_lazy_mmu_mode();
+-	}
+-
+-	preempt_enable();
+-}
+-
+ struct pv_info pv_info = {
+ 	.name = "bare hardware",
+ 	.paravirt_enabled = 0,
+@@ -475,6 +475,7 @@ struct pv_mmu_ops pv_mmu_ops = {
+ 	.lazy_mode = {
+ 		.enter = paravirt_nop,
+ 		.leave = paravirt_nop,
++		.flush = paravirt_nop,
+ 	},
+ 
+ 	.set_fixmap = native_set_fixmap,
+diff --git a/arch/x86/lguest/boot.c b/arch/x86/lguest/boot.c
+index df4176c..20a4fd4 100644
+--- a/arch/x86/lguest/boot.c
++++ b/arch/x86/lguest/boot.c
+@@ -1333,6 +1333,7 @@ __init void lguest_init(void)
+ 	pv_mmu_ops.read_cr3 = lguest_read_cr3;
+ 	pv_mmu_ops.lazy_mode.enter = paravirt_enter_lazy_mmu;
+ 	pv_mmu_ops.lazy_mode.leave = lguest_leave_lazy_mmu_mode;
++	pv_mmu_ops.lazy_mode.flush = paravirt_flush_lazy_mmu;
+ 	pv_mmu_ops.pte_update = lguest_pte_update;
+ 	pv_mmu_ops.pte_update_defer = lguest_pte_update;
+ 
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index fb674fd..4f7d793 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -378,10 +378,12 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
+ 	if (pgd_none(*pgd_ref))
+ 		return -1;
+ 
+-	if (pgd_none(*pgd))
++	if (pgd_none(*pgd)) {
+ 		set_pgd(pgd, *pgd_ref);
+-	else
++		arch_flush_lazy_mmu_mode();
++	} else {
+ 		BUG_ON(pgd_page_vaddr(*pgd) != pgd_page_vaddr(*pgd_ref));
++	}
+ 
+ 	/*
+ 	 * Below here mismatches are bugs because these lower tables
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index e27fbf8..395b3b4 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -58,6 +58,13 @@ void ___pte_free_tlb(struct mmu_gather *tlb, struct page *pte)
+ void ___pmd_free_tlb(struct mmu_gather *tlb, pmd_t *pmd)
+ {
+ 	paravirt_release_pmd(__pa(pmd) >> PAGE_SHIFT);
++	/*
++	 * NOTE! For PAE, any changes to the top page-directory-pointer-table
++	 * entries need a full cr3 reload to flush.
++	 */
++#ifdef CONFIG_X86_PAE
++	tlb->need_flush_all = 1;
++#endif
+ 	tlb_remove_page(tlb, virt_to_page(pmd));
+ }
+ 
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 01de35c..cab96b6 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2190,6 +2190,7 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
+ 	.lazy_mode = {
+ 		.enter = paravirt_enter_lazy_mmu,
+ 		.leave = xen_leave_lazy_mmu,
++		.flush = paravirt_flush_lazy_mmu,
+ 	},
+ 
+ 	.set_fixmap = xen_set_fixmap,
+diff --git a/drivers/dma/omap-dma.c b/drivers/dma/omap-dma.c
+index 5a31264..8607724 100644
+--- a/drivers/dma/omap-dma.c
++++ b/drivers/dma/omap-dma.c
+@@ -276,12 +276,20 @@ static void omap_dma_issue_pending(struct dma_chan *chan)
+ 
+ 	spin_lock_irqsave(&c->vc.lock, flags);
+ 	if (vchan_issue_pending(&c->vc) && !c->desc) {
+-		struct omap_dmadev *d = to_omap_dma_dev(chan->device);
+-		spin_lock(&d->lock);
+-		if (list_empty(&c->node))
+-			list_add_tail(&c->node, &d->pending);
+-		spin_unlock(&d->lock);
+-		tasklet_schedule(&d->task);
++		/*
++		 * c->cyclic is used only by audio and in this case the DMA need
++		 * to be started without delay.
++		 */
++		if (!c->cyclic) {
++			struct omap_dmadev *d = to_omap_dma_dev(chan->device);
++			spin_lock(&d->lock);
++			if (list_empty(&c->node))
++				list_add_tail(&c->node, &d->pending);
++			spin_unlock(&d->lock);
++			tasklet_schedule(&d->task);
++		} else {
++			omap_dma_start_desc(c);
++		}
+ 	}
+ 	spin_unlock_irqrestore(&c->vc.lock, flags);
+ }
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index d542a14..ea537fa 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -228,7 +228,7 @@ static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
+ 	if (!np)
+ 		return;
+ 
+-	do {
++	for (;; index++) {
+ 		ret = of_parse_phandle_with_args(np, "gpio-ranges",
+ 				"#gpio-range-cells", index, &pinspec);
+ 		if (ret)
+@@ -257,8 +257,7 @@ static void of_gpiochip_add_pin_range(struct gpio_chip *chip)
+ 
+ 		if (ret)
+ 			break;
+-
+-	} while (index++);
++	}
+ }
+ 
+ #else
+diff --git a/drivers/gpu/drm/udl/udl_connector.c b/drivers/gpu/drm/udl/udl_connector.c
+index fe5cdbc..b44d548 100644
+--- a/drivers/gpu/drm/udl/udl_connector.c
++++ b/drivers/gpu/drm/udl/udl_connector.c
+@@ -61,6 +61,10 @@ static int udl_get_modes(struct drm_connector *connector)
+ 	int ret;
+ 
+ 	edid = (struct edid *)udl_get_edid(udl);
++	if (!edid) {
++		drm_mode_connector_update_edid_property(connector, NULL);
++		return 0;
++	}
+ 
+ 	/*
+ 	 * We only read the main block, but if the monitor reports extension
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c
+index 21a8242..18d3764 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c
+@@ -1137,9 +1137,8 @@ wlc_lcnphy_set_rx_gain_by_distribution(struct brcms_phy *pi,
+ 	gain0_15 = ((biq1 & 0xf) << 12) |
+ 		   ((tia & 0xf) << 8) |
+ 		   ((lna2 & 0x3) << 6) |
+-		   ((lna2 & 0x3) << 4) |
+-		   ((lna1 & 0x3) << 2) |
+-		   ((lna1 & 0x3) << 0);
++		   ((lna2 &
++		     0x3) << 4) | ((lna1 & 0x3) << 2) | ((lna1 & 0x3) << 0);
+ 
+ 	mod_phy_reg(pi, 0x4b6, (0xffff << 0), gain0_15 << 0);
+ 	mod_phy_reg(pi, 0x4b7, (0xf << 0), gain16_19 << 0);
+@@ -1157,8 +1156,6 @@ wlc_lcnphy_set_rx_gain_by_distribution(struct brcms_phy *pi,
+ 	}
+ 
+ 	mod_phy_reg(pi, 0x44d, (0x1 << 0), (!trsw) << 0);
+-	mod_phy_reg(pi, 0x4b1, (0x3 << 11), lna1 << 11);
+-	mod_phy_reg(pi, 0x4e6, (0x3 << 3), lna1 << 3);
+ 
+ }
+ 
+@@ -1331,43 +1328,6 @@ static u32 wlc_lcnphy_measure_digital_power(struct brcms_phy *pi, u16 nsamples)
+ 	return (iq_est.i_pwr + iq_est.q_pwr) / nsamples;
+ }
+ 
+-static bool wlc_lcnphy_rx_iq_cal_gain(struct brcms_phy *pi, u16 biq1_gain,
+-				      u16 tia_gain, u16 lna2_gain)
+-{
+-	u32 i_thresh_l, q_thresh_l;
+-	u32 i_thresh_h, q_thresh_h;
+-	struct lcnphy_iq_est iq_est_h, iq_est_l;
+-
+-	wlc_lcnphy_set_rx_gain_by_distribution(pi, 0, 0, 0, biq1_gain, tia_gain,
+-					       lna2_gain, 0);
+-
+-	wlc_lcnphy_rx_gain_override_enable(pi, true);
+-	wlc_lcnphy_start_tx_tone(pi, 2000, (40 >> 1), 0);
+-	udelay(500);
+-	write_radio_reg(pi, RADIO_2064_REG112, 0);
+-	if (!wlc_lcnphy_rx_iq_est(pi, 1024, 32, &iq_est_l))
+-		return false;
+-
+-	wlc_lcnphy_start_tx_tone(pi, 2000, 40, 0);
+-	udelay(500);
+-	write_radio_reg(pi, RADIO_2064_REG112, 0);
+-	if (!wlc_lcnphy_rx_iq_est(pi, 1024, 32, &iq_est_h))
+-		return false;
+-
+-	i_thresh_l = (iq_est_l.i_pwr << 1);
+-	i_thresh_h = (iq_est_l.i_pwr << 2) + iq_est_l.i_pwr;
+-
+-	q_thresh_l = (iq_est_l.q_pwr << 1);
+-	q_thresh_h = (iq_est_l.q_pwr << 2) + iq_est_l.q_pwr;
+-	if ((iq_est_h.i_pwr > i_thresh_l) &&
+-	    (iq_est_h.i_pwr < i_thresh_h) &&
+-	    (iq_est_h.q_pwr > q_thresh_l) &&
+-	    (iq_est_h.q_pwr < q_thresh_h))
+-		return true;
+-
+-	return false;
+-}
+-
+ static bool
+ wlc_lcnphy_rx_iq_cal(struct brcms_phy *pi,
+ 		     const struct lcnphy_rx_iqcomp *iqcomp,
+@@ -1382,8 +1342,8 @@ wlc_lcnphy_rx_iq_cal(struct brcms_phy *pi,
+ 	    RFOverrideVal0_old, rfoverride2_old, rfoverride2val_old,
+ 	    rfoverride3_old, rfoverride3val_old, rfoverride4_old,
+ 	    rfoverride4val_old, afectrlovr_old, afectrlovrval_old;
+-	int tia_gain, lna2_gain, biq1_gain;
+-	bool set_gain;
++	int tia_gain;
++	u32 received_power, rx_pwr_threshold;
+ 	u16 old_sslpnCalibClkEnCtrl, old_sslpnRxFeClkEnCtrl;
+ 	u16 values_to_save[11];
+ 	s16 *ptr;
+@@ -1408,134 +1368,126 @@ wlc_lcnphy_rx_iq_cal(struct brcms_phy *pi,
+ 		goto cal_done;
+ 	}
+ 
+-	WARN_ON(module != 1);
+-	tx_pwr_ctrl = wlc_lcnphy_get_tx_pwr_ctrl(pi);
+-	wlc_lcnphy_set_tx_pwr_ctrl(pi, LCNPHY_TX_PWR_CTRL_OFF);
+-
+-	for (i = 0; i < 11; i++)
+-		values_to_save[i] =
+-			read_radio_reg(pi, rxiq_cal_rf_reg[i]);
+-	Core1TxControl_old = read_phy_reg(pi, 0x631);
+-
+-	or_phy_reg(pi, 0x631, 0x0015);
+-
+-	RFOverride0_old = read_phy_reg(pi, 0x44c);
+-	RFOverrideVal0_old = read_phy_reg(pi, 0x44d);
+-	rfoverride2_old = read_phy_reg(pi, 0x4b0);
+-	rfoverride2val_old = read_phy_reg(pi, 0x4b1);
+-	rfoverride3_old = read_phy_reg(pi, 0x4f9);
+-	rfoverride3val_old = read_phy_reg(pi, 0x4fa);
+-	rfoverride4_old = read_phy_reg(pi, 0x938);
+-	rfoverride4val_old = read_phy_reg(pi, 0x939);
+-	afectrlovr_old = read_phy_reg(pi, 0x43b);
+-	afectrlovrval_old = read_phy_reg(pi, 0x43c);
+-	old_sslpnCalibClkEnCtrl = read_phy_reg(pi, 0x6da);
+-	old_sslpnRxFeClkEnCtrl = read_phy_reg(pi, 0x6db);
+-
+-	tx_gain_override_old = wlc_lcnphy_tx_gain_override_enabled(pi);
+-	if (tx_gain_override_old) {
+-		wlc_lcnphy_get_tx_gain(pi, &old_gains);
+-		tx_gain_index_old = pi_lcn->lcnphy_current_index;
+-	}
+-
+-	wlc_lcnphy_set_tx_pwr_by_index(pi, tx_gain_idx);
++	if (module == 1) {
+ 
+-	mod_phy_reg(pi, 0x4f9, (0x1 << 0), 1 << 0);
+-	mod_phy_reg(pi, 0x4fa, (0x1 << 0), 0 << 0);
++		tx_pwr_ctrl = wlc_lcnphy_get_tx_pwr_ctrl(pi);
++		wlc_lcnphy_set_tx_pwr_ctrl(pi, LCNPHY_TX_PWR_CTRL_OFF);
+ 
+-	mod_phy_reg(pi, 0x43b, (0x1 << 1), 1 << 1);
+-	mod_phy_reg(pi, 0x43c, (0x1 << 1), 0 << 1);
++		for (i = 0; i < 11; i++)
++			values_to_save[i] =
++				read_radio_reg(pi, rxiq_cal_rf_reg[i]);
++		Core1TxControl_old = read_phy_reg(pi, 0x631);
++
++		or_phy_reg(pi, 0x631, 0x0015);
++
++		RFOverride0_old = read_phy_reg(pi, 0x44c);
++		RFOverrideVal0_old = read_phy_reg(pi, 0x44d);
++		rfoverride2_old = read_phy_reg(pi, 0x4b0);
++		rfoverride2val_old = read_phy_reg(pi, 0x4b1);
++		rfoverride3_old = read_phy_reg(pi, 0x4f9);
++		rfoverride3val_old = read_phy_reg(pi, 0x4fa);
++		rfoverride4_old = read_phy_reg(pi, 0x938);
++		rfoverride4val_old = read_phy_reg(pi, 0x939);
++		afectrlovr_old = read_phy_reg(pi, 0x43b);
++		afectrlovrval_old = read_phy_reg(pi, 0x43c);
++		old_sslpnCalibClkEnCtrl = read_phy_reg(pi, 0x6da);
++		old_sslpnRxFeClkEnCtrl = read_phy_reg(pi, 0x6db);
++
++		tx_gain_override_old = wlc_lcnphy_tx_gain_override_enabled(pi);
++		if (tx_gain_override_old) {
++			wlc_lcnphy_get_tx_gain(pi, &old_gains);
++			tx_gain_index_old = pi_lcn->lcnphy_current_index;
++		}
+ 
+-	write_radio_reg(pi, RADIO_2064_REG116, 0x06);
+-	write_radio_reg(pi, RADIO_2064_REG12C, 0x07);
+-	write_radio_reg(pi, RADIO_2064_REG06A, 0xd3);
+-	write_radio_reg(pi, RADIO_2064_REG098, 0x03);
+-	write_radio_reg(pi, RADIO_2064_REG00B, 0x7);
+-	mod_radio_reg(pi, RADIO_2064_REG113, 1 << 4, 1 << 4);
+-	write_radio_reg(pi, RADIO_2064_REG01D, 0x01);
+-	write_radio_reg(pi, RADIO_2064_REG114, 0x01);
+-	write_radio_reg(pi, RADIO_2064_REG02E, 0x10);
+-	write_radio_reg(pi, RADIO_2064_REG12A, 0x08);
+-
+-	mod_phy_reg(pi, 0x938, (0x1 << 0), 1 << 0);
+-	mod_phy_reg(pi, 0x939, (0x1 << 0), 0 << 0);
+-	mod_phy_reg(pi, 0x938, (0x1 << 1), 1 << 1);
+-	mod_phy_reg(pi, 0x939, (0x1 << 1), 1 << 1);
+-	mod_phy_reg(pi, 0x938, (0x1 << 2), 1 << 2);
+-	mod_phy_reg(pi, 0x939, (0x1 << 2), 1 << 2);
+-	mod_phy_reg(pi, 0x938, (0x1 << 3), 1 << 3);
+-	mod_phy_reg(pi, 0x939, (0x1 << 3), 1 << 3);
+-	mod_phy_reg(pi, 0x938, (0x1 << 5), 1 << 5);
+-	mod_phy_reg(pi, 0x939, (0x1 << 5), 0 << 5);
++		wlc_lcnphy_set_tx_pwr_by_index(pi, tx_gain_idx);
+ 
+-	mod_phy_reg(pi, 0x43b, (0x1 << 0), 1 << 0);
+-	mod_phy_reg(pi, 0x43c, (0x1 << 0), 0 << 0);
++		mod_phy_reg(pi, 0x4f9, (0x1 << 0), 1 << 0);
++		mod_phy_reg(pi, 0x4fa, (0x1 << 0), 0 << 0);
+ 
+-	write_phy_reg(pi, 0x6da, 0xffff);
+-	or_phy_reg(pi, 0x6db, 0x3);
++		mod_phy_reg(pi, 0x43b, (0x1 << 1), 1 << 1);
++		mod_phy_reg(pi, 0x43c, (0x1 << 1), 0 << 1);
+ 
+-	wlc_lcnphy_set_trsw_override(pi, tx_switch, rx_switch);
+-	set_gain = false;
+-
+-	lna2_gain = 3;
+-	while ((lna2_gain >= 0) && !set_gain) {
+-		tia_gain = 4;
+-
+-		while ((tia_gain >= 0) && !set_gain) {
+-			biq1_gain = 6;
+-
+-			while ((biq1_gain >= 0) && !set_gain) {
+-				set_gain = wlc_lcnphy_rx_iq_cal_gain(pi,
+-								     (u16)
+-								     biq1_gain,
+-								     (u16)
+-								     tia_gain,
+-								     (u16)
+-								     lna2_gain);
+-				biq1_gain -= 1;
+-			}
++		write_radio_reg(pi, RADIO_2064_REG116, 0x06);
++		write_radio_reg(pi, RADIO_2064_REG12C, 0x07);
++		write_radio_reg(pi, RADIO_2064_REG06A, 0xd3);
++		write_radio_reg(pi, RADIO_2064_REG098, 0x03);
++		write_radio_reg(pi, RADIO_2064_REG00B, 0x7);
++		mod_radio_reg(pi, RADIO_2064_REG113, 1 << 4, 1 << 4);
++		write_radio_reg(pi, RADIO_2064_REG01D, 0x01);
++		write_radio_reg(pi, RADIO_2064_REG114, 0x01);
++		write_radio_reg(pi, RADIO_2064_REG02E, 0x10);
++		write_radio_reg(pi, RADIO_2064_REG12A, 0x08);
++
++		mod_phy_reg(pi, 0x938, (0x1 << 0), 1 << 0);
++		mod_phy_reg(pi, 0x939, (0x1 << 0), 0 << 0);
++		mod_phy_reg(pi, 0x938, (0x1 << 1), 1 << 1);
++		mod_phy_reg(pi, 0x939, (0x1 << 1), 1 << 1);
++		mod_phy_reg(pi, 0x938, (0x1 << 2), 1 << 2);
++		mod_phy_reg(pi, 0x939, (0x1 << 2), 1 << 2);
++		mod_phy_reg(pi, 0x938, (0x1 << 3), 1 << 3);
++		mod_phy_reg(pi, 0x939, (0x1 << 3), 1 << 3);
++		mod_phy_reg(pi, 0x938, (0x1 << 5), 1 << 5);
++		mod_phy_reg(pi, 0x939, (0x1 << 5), 0 << 5);
++
++		mod_phy_reg(pi, 0x43b, (0x1 << 0), 1 << 0);
++		mod_phy_reg(pi, 0x43c, (0x1 << 0), 0 << 0);
++
++		wlc_lcnphy_start_tx_tone(pi, 2000, 120, 0);
++		write_phy_reg(pi, 0x6da, 0xffff);
++		or_phy_reg(pi, 0x6db, 0x3);
++		wlc_lcnphy_set_trsw_override(pi, tx_switch, rx_switch);
++		wlc_lcnphy_rx_gain_override_enable(pi, true);
++
++		tia_gain = 8;
++		rx_pwr_threshold = 950;
++		while (tia_gain > 0) {
+ 			tia_gain -= 1;
++			wlc_lcnphy_set_rx_gain_by_distribution(pi,
++							       0, 0, 2, 2,
++							       (u16)
++							       tia_gain, 1, 0);
++			udelay(500);
++
++			received_power =
++				wlc_lcnphy_measure_digital_power(pi, 2000);
++			if (received_power < rx_pwr_threshold)
++				break;
+ 		}
+-		lna2_gain -= 1;
+-	}
++		result = wlc_lcnphy_calc_rx_iq_comp(pi, 0xffff);
+ 
+-	if (set_gain)
+-		result = wlc_lcnphy_calc_rx_iq_comp(pi, 1024);
+-	else
+-		result = false;
++		wlc_lcnphy_stop_tx_tone(pi);
+ 
+-	wlc_lcnphy_stop_tx_tone(pi);
++		write_phy_reg(pi, 0x631, Core1TxControl_old);
+ 
+-	write_phy_reg(pi, 0x631, Core1TxControl_old);
+-
+-	write_phy_reg(pi, 0x44c, RFOverrideVal0_old);
+-	write_phy_reg(pi, 0x44d, RFOverrideVal0_old);
+-	write_phy_reg(pi, 0x4b0, rfoverride2_old);
+-	write_phy_reg(pi, 0x4b1, rfoverride2val_old);
+-	write_phy_reg(pi, 0x4f9, rfoverride3_old);
+-	write_phy_reg(pi, 0x4fa, rfoverride3val_old);
+-	write_phy_reg(pi, 0x938, rfoverride4_old);
+-	write_phy_reg(pi, 0x939, rfoverride4val_old);
+-	write_phy_reg(pi, 0x43b, afectrlovr_old);
+-	write_phy_reg(pi, 0x43c, afectrlovrval_old);
+-	write_phy_reg(pi, 0x6da, old_sslpnCalibClkEnCtrl);
+-	write_phy_reg(pi, 0x6db, old_sslpnRxFeClkEnCtrl);
++		write_phy_reg(pi, 0x44c, RFOverrideVal0_old);
++		write_phy_reg(pi, 0x44d, RFOverrideVal0_old);
++		write_phy_reg(pi, 0x4b0, rfoverride2_old);
++		write_phy_reg(pi, 0x4b1, rfoverride2val_old);
++		write_phy_reg(pi, 0x4f9, rfoverride3_old);
++		write_phy_reg(pi, 0x4fa, rfoverride3val_old);
++		write_phy_reg(pi, 0x938, rfoverride4_old);
++		write_phy_reg(pi, 0x939, rfoverride4val_old);
++		write_phy_reg(pi, 0x43b, afectrlovr_old);
++		write_phy_reg(pi, 0x43c, afectrlovrval_old);
++		write_phy_reg(pi, 0x6da, old_sslpnCalibClkEnCtrl);
++		write_phy_reg(pi, 0x6db, old_sslpnRxFeClkEnCtrl);
+ 
+-	wlc_lcnphy_clear_trsw_override(pi);
++		wlc_lcnphy_clear_trsw_override(pi);
+ 
+-	mod_phy_reg(pi, 0x44c, (0x1 << 2), 0 << 2);
++		mod_phy_reg(pi, 0x44c, (0x1 << 2), 0 << 2);
+ 
+-	for (i = 0; i < 11; i++)
+-		write_radio_reg(pi, rxiq_cal_rf_reg[i],
+-				values_to_save[i]);
++		for (i = 0; i < 11; i++)
++			write_radio_reg(pi, rxiq_cal_rf_reg[i],
++					values_to_save[i]);
+ 
+-	if (tx_gain_override_old)
+-		wlc_lcnphy_set_tx_pwr_by_index(pi, tx_gain_index_old);
+-	else
+-		wlc_lcnphy_disable_tx_gain_override(pi);
++		if (tx_gain_override_old)
++			wlc_lcnphy_set_tx_pwr_by_index(pi, tx_gain_index_old);
++		else
++			wlc_lcnphy_disable_tx_gain_override(pi);
+ 
+-	wlc_lcnphy_set_tx_pwr_ctrl(pi, tx_pwr_ctrl);
+-	wlc_lcnphy_rx_gain_override_enable(pi, false);
++		wlc_lcnphy_set_tx_pwr_ctrl(pi, tx_pwr_ctrl);
++		wlc_lcnphy_rx_gain_override_enable(pi, false);
++	}
+ 
+ cal_done:
+ 	kfree(ptr);
+@@ -1829,17 +1781,6 @@ wlc_lcnphy_radio_2064_channel_tune_4313(struct brcms_phy *pi, u8 channel)
+ 		write_radio_reg(pi, RADIO_2064_REG038, 3);
+ 		write_radio_reg(pi, RADIO_2064_REG091, 7);
+ 	}
+-
+-	if (!(pi->sh->boardflags & BFL_FEM)) {
+-		u8 reg038[14] = {0xd, 0xe, 0xd, 0xd, 0xd, 0xc,
+-			0xa, 0xb, 0xb, 0x3, 0x3, 0x2, 0x0, 0x0};
+-
+-		write_radio_reg(pi, RADIO_2064_REG02A, 0xf);
+-		write_radio_reg(pi, RADIO_2064_REG091, 0x3);
+-		write_radio_reg(pi, RADIO_2064_REG038, 0x3);
+-
+-		write_radio_reg(pi, RADIO_2064_REG038, reg038[channel - 1]);
+-	}
+ }
+ 
+ static int
+@@ -2034,16 +1975,6 @@ wlc_lcnphy_set_tssi_mux(struct brcms_phy *pi, enum lcnphy_tssi_mode pos)
+ 		} else {
+ 			mod_radio_reg(pi, RADIO_2064_REG03A, 1, 0x1);
+ 			mod_radio_reg(pi, RADIO_2064_REG11A, 0x8, 0x8);
+-			mod_radio_reg(pi, RADIO_2064_REG028, 0x1, 0x0);
+-			mod_radio_reg(pi, RADIO_2064_REG11A, 0x4, 1<<2);
+-			mod_radio_reg(pi, RADIO_2064_REG036, 0x10, 0x0);
+-			mod_radio_reg(pi, RADIO_2064_REG11A, 0x10, 1<<4);
+-			mod_radio_reg(pi, RADIO_2064_REG036, 0x3, 0x0);
+-			mod_radio_reg(pi, RADIO_2064_REG035, 0xff, 0x77);
+-			mod_radio_reg(pi, RADIO_2064_REG028, 0x1e, 0xe<<1);
+-			mod_radio_reg(pi, RADIO_2064_REG112, 0x80, 1<<7);
+-			mod_radio_reg(pi, RADIO_2064_REG005, 0x7, 1<<1);
+-			mod_radio_reg(pi, RADIO_2064_REG029, 0xf0, 0<<4);
+ 		}
+ 	} else {
+ 		mod_phy_reg(pi, 0x4d9, (0x1 << 2), (0x1) << 2);
+@@ -2130,14 +2061,12 @@ static void wlc_lcnphy_pwrctrl_rssiparams(struct brcms_phy *pi)
+ 		    (auxpga_vmid_temp << 0) | (auxpga_gain_temp << 12));
+ 
+ 	mod_radio_reg(pi, RADIO_2064_REG082, (1 << 5), (1 << 5));
+-	mod_radio_reg(pi, RADIO_2064_REG07C, (1 << 0), (1 << 0));
+ }
+ 
+ static void wlc_lcnphy_tssi_setup(struct brcms_phy *pi)
+ {
+ 	struct phytbl_info tab;
+ 	u32 rfseq, ind;
+-	u8 tssi_sel;
+ 
+ 	tab.tbl_id = LCNPHY_TBL_ID_TXPWRCTL;
+ 	tab.tbl_width = 32;
+@@ -2159,13 +2088,7 @@ static void wlc_lcnphy_tssi_setup(struct brcms_phy *pi)
+ 
+ 	mod_phy_reg(pi, 0x503, (0x1 << 4), (1) << 4);
+ 
+-	if (pi->sh->boardflags & BFL_FEM) {
+-		tssi_sel = 0x1;
+-		wlc_lcnphy_set_tssi_mux(pi, LCNPHY_TSSI_EXT);
+-	} else {
+-		tssi_sel = 0xe;
+-		wlc_lcnphy_set_tssi_mux(pi, LCNPHY_TSSI_POST_PA);
+-	}
++	wlc_lcnphy_set_tssi_mux(pi, LCNPHY_TSSI_EXT);
+ 	mod_phy_reg(pi, 0x4a4, (0x1 << 14), (0) << 14);
+ 
+ 	mod_phy_reg(pi, 0x4a4, (0x1 << 15), (1) << 15);
+@@ -2201,10 +2124,9 @@ static void wlc_lcnphy_tssi_setup(struct brcms_phy *pi)
+ 	mod_phy_reg(pi, 0x49a, (0x1ff << 0), (0xff) << 0);
+ 
+ 	if (LCNREV_IS(pi->pubpi.phy_rev, 2)) {
+-		mod_radio_reg(pi, RADIO_2064_REG028, 0xf, tssi_sel);
++		mod_radio_reg(pi, RADIO_2064_REG028, 0xf, 0xe);
+ 		mod_radio_reg(pi, RADIO_2064_REG086, 0x4, 0x4);
+ 	} else {
+-		mod_radio_reg(pi, RADIO_2064_REG028, 0x1e, tssi_sel << 1);
+ 		mod_radio_reg(pi, RADIO_2064_REG03A, 0x1, 1);
+ 		mod_radio_reg(pi, RADIO_2064_REG11A, 0x8, 1 << 3);
+ 	}
+@@ -2251,10 +2173,6 @@ static void wlc_lcnphy_tssi_setup(struct brcms_phy *pi)
+ 
+ 	mod_phy_reg(pi, 0x4d7, (0xf << 8), (0) << 8);
+ 
+-	mod_radio_reg(pi, RADIO_2064_REG035, 0xff, 0x0);
+-	mod_radio_reg(pi, RADIO_2064_REG036, 0x3, 0x0);
+-	mod_radio_reg(pi, RADIO_2064_REG11A, 0x8, 0x8);
+-
+ 	wlc_lcnphy_pwrctrl_rssiparams(pi);
+ }
+ 
+@@ -2873,8 +2791,6 @@ static void wlc_lcnphy_idle_tssi_est(struct brcms_phy_pub *ppi)
+ 		read_radio_reg(pi, RADIO_2064_REG007) & 1;
+ 	u16 SAVE_jtag_auxpga = read_radio_reg(pi, RADIO_2064_REG0FF) & 0x10;
+ 	u16 SAVE_iqadc_aux_en = read_radio_reg(pi, RADIO_2064_REG11F) & 4;
+-	u8 SAVE_bbmult = wlc_lcnphy_get_bbmult(pi);
+-
+ 	idleTssi = read_phy_reg(pi, 0x4ab);
+ 	suspend = (0 == (bcma_read32(pi->d11core, D11REGOFFS(maccontrol)) &
+ 			 MCTL_EN_MAC));
+@@ -2892,12 +2808,6 @@ static void wlc_lcnphy_idle_tssi_est(struct brcms_phy_pub *ppi)
+ 	mod_radio_reg(pi, RADIO_2064_REG0FF, 0x10, 1 << 4);
+ 	mod_radio_reg(pi, RADIO_2064_REG11F, 0x4, 1 << 2);
+ 	wlc_lcnphy_tssi_setup(pi);
+-
+-	mod_phy_reg(pi, 0x4d7, (0x1 << 0), (1 << 0));
+-	mod_phy_reg(pi, 0x4d7, (0x1 << 6), (1 << 6));
+-
+-	wlc_lcnphy_set_bbmult(pi, 0x0);
+-
+ 	wlc_phy_do_dummy_tx(pi, true, OFF);
+ 	idleTssi = ((read_phy_reg(pi, 0x4ab) & (0x1ff << 0))
+ 		    >> 0);
+@@ -2919,7 +2829,6 @@ static void wlc_lcnphy_idle_tssi_est(struct brcms_phy_pub *ppi)
+ 
+ 	mod_phy_reg(pi, 0x44c, (0x1 << 12), (0) << 12);
+ 
+-	wlc_lcnphy_set_bbmult(pi, SAVE_bbmult);
+ 	wlc_lcnphy_set_tx_gain_override(pi, tx_gain_override_old);
+ 	wlc_lcnphy_set_tx_gain(pi, &old_gains);
+ 	wlc_lcnphy_set_tx_pwr_ctrl(pi, SAVE_txpwrctrl);
+@@ -3133,11 +3042,6 @@ static void wlc_lcnphy_tx_pwr_ctrl_init(struct brcms_phy_pub *ppi)
+ 			wlc_lcnphy_write_table(pi, &tab);
+ 			tab.tbl_offset++;
+ 		}
+-		mod_phy_reg(pi, 0x4d0, (0x1 << 0), (0) << 0);
+-		mod_phy_reg(pi, 0x4d3, (0xff << 0), (0) << 0);
+-		mod_phy_reg(pi, 0x4d3, (0xff << 8), (0) << 8);
+-		mod_phy_reg(pi, 0x4d0, (0x1 << 4), (0) << 4);
+-		mod_phy_reg(pi, 0x4d0, (0x1 << 2), (0) << 2);
+ 
+ 		mod_phy_reg(pi, 0x410, (0x1 << 7), (0) << 7);
+ 
+@@ -3939,6 +3843,7 @@ static void wlc_lcnphy_txpwrtbl_iqlo_cal(struct brcms_phy *pi)
+ 	target_gains.pad_gain = 21;
+ 	target_gains.dac_gain = 0;
+ 	wlc_lcnphy_set_tx_gain(pi, &target_gains);
++	wlc_lcnphy_set_tx_pwr_by_index(pi, 16);
+ 
+ 	if (LCNREV_IS(pi->pubpi.phy_rev, 1) || pi_lcn->lcnphy_hw_iqcal_en) {
+ 
+@@ -3949,7 +3854,6 @@ static void wlc_lcnphy_txpwrtbl_iqlo_cal(struct brcms_phy *pi)
+ 					lcnphy_recal ? LCNPHY_CAL_RECAL :
+ 					LCNPHY_CAL_FULL), false);
+ 	} else {
+-		wlc_lcnphy_set_tx_pwr_by_index(pi, 16);
+ 		wlc_lcnphy_tx_iqlo_soft_cal_full(pi);
+ 	}
+ 
+@@ -4374,22 +4278,17 @@ wlc_lcnphy_load_tx_gain_table(struct brcms_phy *pi,
+ 	if (CHSPEC_IS5G(pi->radio_chanspec))
+ 		pa_gain = 0x70;
+ 	else
+-		pa_gain = 0x60;
++		pa_gain = 0x70;
+ 
+ 	if (pi->sh->boardflags & BFL_FEM)
+ 		pa_gain = 0x10;
+-
+ 	tab.tbl_id = LCNPHY_TBL_ID_TXPWRCTL;
+ 	tab.tbl_width = 32;
+ 	tab.tbl_len = 1;
+ 	tab.tbl_ptr = &val;
+ 
+ 	for (j = 0; j < 128; j++) {
+-		if (pi->sh->boardflags & BFL_FEM)
+-			gm_gain = gain_table[j].gm;
+-		else
+-			gm_gain = 15;
+-
++		gm_gain = gain_table[j].gm;
+ 		val = (((u32) pa_gain << 24) |
+ 		       (gain_table[j].pad << 16) |
+ 		       (gain_table[j].pga << 8) | gm_gain);
+@@ -4600,10 +4499,7 @@ static void wlc_radio_2064_init(struct brcms_phy *pi)
+ 
+ 	write_phy_reg(pi, 0x4ea, 0x4688);
+ 
+-	if (pi->sh->boardflags & BFL_FEM)
+-		mod_phy_reg(pi, 0x4eb, (0x7 << 0), 2 << 0);
+-	else
+-		mod_phy_reg(pi, 0x4eb, (0x7 << 0), 3 << 0);
++	mod_phy_reg(pi, 0x4eb, (0x7 << 0), 2 << 0);
+ 
+ 	mod_phy_reg(pi, 0x4eb, (0x7 << 6), 0 << 6);
+ 
+@@ -4614,13 +4510,6 @@ static void wlc_radio_2064_init(struct brcms_phy *pi)
+ 	wlc_lcnphy_rcal(pi);
+ 
+ 	wlc_lcnphy_rc_cal(pi);
+-
+-	if (!(pi->sh->boardflags & BFL_FEM)) {
+-		write_radio_reg(pi, RADIO_2064_REG032, 0x6f);
+-		write_radio_reg(pi, RADIO_2064_REG033, 0x19);
+-		write_radio_reg(pi, RADIO_2064_REG039, 0xe);
+-	}
+-
+ }
+ 
+ static void wlc_lcnphy_radio_init(struct brcms_phy *pi)
+@@ -4650,20 +4539,22 @@ static void wlc_lcnphy_tbl_init(struct brcms_phy *pi)
+ 		wlc_lcnphy_write_table(pi, &tab);
+ 	}
+ 
+-	if (!(pi->sh->boardflags & BFL_FEM)) {
+-		tab.tbl_id = LCNPHY_TBL_ID_RFSEQ;
+-		tab.tbl_width = 16;
+-		tab.tbl_ptr = &val;
+-		tab.tbl_len = 1;
++	tab.tbl_id = LCNPHY_TBL_ID_RFSEQ;
++	tab.tbl_width = 16;
++	tab.tbl_ptr = &val;
++	tab.tbl_len = 1;
+ 
+-		val = 150;
+-		tab.tbl_offset = 0;
+-		wlc_lcnphy_write_table(pi, &tab);
++	val = 114;
++	tab.tbl_offset = 0;
++	wlc_lcnphy_write_table(pi, &tab);
+ 
+-		val = 220;
+-		tab.tbl_offset = 1;
+-		wlc_lcnphy_write_table(pi, &tab);
+-	}
++	val = 130;
++	tab.tbl_offset = 1;
++	wlc_lcnphy_write_table(pi, &tab);
++
++	val = 6;
++	tab.tbl_offset = 8;
++	wlc_lcnphy_write_table(pi, &tab);
+ 
+ 	if (CHSPEC_IS2G(pi->radio_chanspec)) {
+ 		if (pi->sh->boardflags & BFL_FEM)
+@@ -5055,7 +4946,6 @@ void wlc_phy_chanspec_set_lcnphy(struct brcms_phy *pi, u16 chanspec)
+ 		wlc_lcnphy_load_tx_iir_filter(pi, true, 3);
+ 
+ 	mod_phy_reg(pi, 0x4eb, (0x7 << 3), (1) << 3);
+-	wlc_lcnphy_tssi_setup(pi);
+ }
+ 
+ void wlc_phy_detach_lcnphy(struct brcms_phy *pi)
+@@ -5094,7 +4984,8 @@ bool wlc_phy_attach_lcnphy(struct brcms_phy *pi)
+ 	if (!wlc_phy_txpwr_srom_read_lcnphy(pi))
+ 		return false;
+ 
+-	if (LCNREV_IS(pi->pubpi.phy_rev, 1)) {
++	if ((pi->sh->boardflags & BFL_FEM) &&
++	    (LCNREV_IS(pi->pubpi.phy_rev, 1))) {
+ 		if (pi_lcn->lcnphy_tempsense_option == 3) {
+ 			pi->hwpwrctrl = true;
+ 			pi->hwpwrctrl_capable = true;
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/phy/phytbl_lcn.c b/drivers/net/wireless/brcm80211/brcmsmac/phy/phytbl_lcn.c
+index b7e95ac..622c01c 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/phy/phytbl_lcn.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/phy/phytbl_lcn.c
+@@ -1992,70 +1992,70 @@ static const u16 dot11lcn_sw_ctrl_tbl_4313_epa_rev0[] = {
+ };
+ 
+ static const u16 dot11lcn_sw_ctrl_tbl_4313_rev0[] = {
+-	0x0009,
+ 	0x000a,
+-	0x0005,
+-	0x0006,
+ 	0x0009,
+-	0x000a,
+-	0x0005,
+ 	0x0006,
+-	0x0009,
+-	0x000a,
+ 	0x0005,
+-	0x0006,
+-	0x0009,
+ 	0x000a,
+-	0x0005,
+-	0x0006,
+ 	0x0009,
+-	0x000a,
+-	0x0005,
+ 	0x0006,
+-	0x0009,
+-	0x000a,
+ 	0x0005,
+-	0x0006,
+-	0x0009,
+ 	0x000a,
+-	0x0005,
+-	0x0006,
+ 	0x0009,
+-	0x000a,
+-	0x0005,
+ 	0x0006,
+-	0x0009,
+-	0x000a,
+ 	0x0005,
+-	0x0006,
+-	0x0009,
+ 	0x000a,
+-	0x0005,
+-	0x0006,
+ 	0x0009,
+-	0x000a,
+-	0x0005,
+ 	0x0006,
+-	0x0009,
+-	0x000a,
+ 	0x0005,
+-	0x0006,
++	0x000a,
+ 	0x0009,
++	0x0006,
++	0x0005,
+ 	0x000a,
++	0x0009,
++	0x0006,
+ 	0x0005,
++	0x000a,
++	0x0009,
+ 	0x0006,
++	0x0005,
++	0x000a,
+ 	0x0009,
++	0x0006,
++	0x0005,
+ 	0x000a,
++	0x0009,
++	0x0006,
+ 	0x0005,
++	0x000a,
++	0x0009,
+ 	0x0006,
++	0x0005,
++	0x000a,
+ 	0x0009,
++	0x0006,
++	0x0005,
+ 	0x000a,
++	0x0009,
++	0x0006,
+ 	0x0005,
++	0x000a,
++	0x0009,
+ 	0x0006,
++	0x0005,
++	0x000a,
+ 	0x0009,
++	0x0006,
++	0x0005,
+ 	0x000a,
++	0x0009,
++	0x0006,
+ 	0x0005,
++	0x000a,
++	0x0009,
+ 	0x0006,
++	0x0005,
+ };
+ 
+ static const u16 dot11lcn_sw_ctrl_tbl_rev0[] = {
+diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
+index aec2e0d..1924d8b 100644
+--- a/drivers/scsi/libsas/sas_expander.c
++++ b/drivers/scsi/libsas/sas_expander.c
+@@ -235,6 +235,17 @@ static void sas_set_ex_phy(struct domain_device *dev, int phy_id, void *rsp)
+ 	linkrate  = phy->linkrate;
+ 	memcpy(sas_addr, phy->attached_sas_addr, SAS_ADDR_SIZE);
+ 
++	/* Handle vacant phy - rest of dr data is not valid so skip it */
++	if (phy->phy_state == PHY_VACANT) {
++		memset(phy->attached_sas_addr, 0, SAS_ADDR_SIZE);
++		phy->attached_dev_type = NO_DEVICE;
++		if (!test_bit(SAS_HA_ATA_EH_ACTIVE, &ha->state)) {
++			phy->phy_id = phy_id;
++			goto skip;
++		} else
++			goto out;
++	}
++
+ 	phy->attached_dev_type = to_dev_type(dr);
+ 	if (test_bit(SAS_HA_ATA_EH_ACTIVE, &ha->state))
+ 		goto out;
+@@ -272,6 +283,7 @@ static void sas_set_ex_phy(struct domain_device *dev, int phy_id, void *rsp)
+ 	phy->phy->maximum_linkrate = dr->pmax_linkrate;
+ 	phy->phy->negotiated_linkrate = phy->linkrate;
+ 
++ skip:
+ 	if (new_phy)
+ 		if (sas_phy_add(phy->phy)) {
+ 			sas_phy_free(phy->phy);
+diff --git a/drivers/target/target_core_alua.c b/drivers/target/target_core_alua.c
+index 7d4ec02..fea564c 100644
+--- a/drivers/target/target_core_alua.c
++++ b/drivers/target/target_core_alua.c
+@@ -408,6 +408,7 @@ static inline int core_alua_state_standby(
+ 	case REPORT_LUNS:
+ 	case RECEIVE_DIAGNOSTIC:
+ 	case SEND_DIAGNOSTIC:
++		return 0;
+ 	case MAINTENANCE_IN:
+ 		switch (cdb[1] & 0x1f) {
+ 		case MI_REPORT_TARGET_PGS:
+@@ -450,6 +451,7 @@ static inline int core_alua_state_unavailable(
+ 	switch (cdb[0]) {
+ 	case INQUIRY:
+ 	case REPORT_LUNS:
++		return 0;
+ 	case MAINTENANCE_IN:
+ 		switch (cdb[1] & 0x1f) {
+ 		case MI_REPORT_TARGET_PGS:
+@@ -490,6 +492,7 @@ static inline int core_alua_state_transition(
+ 	switch (cdb[0]) {
+ 	case INQUIRY:
+ 	case REPORT_LUNS:
++		return 0;
+ 	case MAINTENANCE_IN:
+ 		switch (cdb[1] & 0x1f) {
+ 		case MI_REPORT_TARGET_PGS:
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index c578229..78f1be2 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -934,17 +934,17 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
+ 	 * race with the set_ldisc code path.
+ 	 */
+ 
+-	tty_lock_pair(tty, o_tty);
+ 	tty_ldisc_halt(tty);
+-	tty_ldisc_flush_works(tty);
+-	if (o_tty) {
++	if (o_tty)
+ 		tty_ldisc_halt(o_tty);
++
++	tty_ldisc_flush_works(tty);
++	if (o_tty)
+ 		tty_ldisc_flush_works(o_tty);
+-	}
+ 
++	tty_lock_pair(tty, o_tty);
+ 	/* This will need doing differently if we need to lock */
+ 	tty_ldisc_kill(tty);
+-
+ 	if (o_tty)
+ 		tty_ldisc_kill(o_tty);
+ 
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 12b3da3..f7199b9 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -1546,14 +1546,24 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
+ 			}
+ 			break;
+ 		case Opt_blank_pass:
+-			vol->password = NULL;
+-			break;
+-		case Opt_pass:
+ 			/* passwords have to be handled differently
+ 			 * to allow the character used for deliminator
+ 			 * to be passed within them
+ 			 */
+ 
++			/*
++			 * Check if this is a case where the  password
++			 * starts with a delimiter
++			 */
++			tmp_end = strchr(data, '=');
++			tmp_end++;
++			if (!(tmp_end < end && tmp_end[1] == delim)) {
++				/* No it is not. Set the password to NULL */
++				vol->password = NULL;
++				break;
++			}
++			/* Yes it is. Drop down to Opt_pass below.*/
++		case Opt_pass:
+ 			/* Obtain the value string */
+ 			value = strchr(data, '=');
+ 			value++;
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index 991ab2d..7af426b 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -924,8 +924,11 @@ static int gfs2_lock(struct file *file, int cmd, struct file_lock *fl)
+ 		cmd = F_SETLK;
+ 		fl->fl_type = F_UNLCK;
+ 	}
+-	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags)))
++	if (unlikely(test_bit(SDF_SHUTDOWN, &sdp->sd_flags))) {
++		if (fl->fl_type == F_UNLCK)
++			posix_lock_file_wait(file, fl);
+ 		return -EIO;
++	}
+ 	if (IS_GETLK(cmd))
+ 		return dlm_posix_get(ls->ls_dlm, ip->i_no_addr, file, fl);
+ 	else if (fl->fl_type == F_UNLCK)
+diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
+index b7eff07..9afba3d6 100644
+--- a/fs/gfs2/rgrp.c
++++ b/fs/gfs2/rgrp.c
+@@ -576,7 +576,7 @@ int gfs2_rs_alloc(struct gfs2_inode *ip)
+ 	RB_CLEAR_NODE(&ip->i_res->rs_node);
+ out:
+ 	up_write(&ip->i_rw_mutex);
+-	return 0;
++	return error;
+ }
+ 
+ static void dump_rs(struct seq_file *seq, const struct gfs2_blkreserv *rs)
+diff --git a/fs/inode.c b/fs/inode.c
+index 14084b7..b98540e 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -725,7 +725,7 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+ 		 * inode to the back of the list so we don't spin on it.
+ 		 */
+ 		if (!spin_trylock(&inode->i_lock)) {
+-			list_move_tail(&inode->i_lru, &sb->s_inode_lru);
++			list_move(&inode->i_lru, &sb->s_inode_lru);
+ 			continue;
+ 		}
+ 
+diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+index 25f01d0..b1b1fa6 100644
+--- a/include/asm-generic/tlb.h
++++ b/include/asm-generic/tlb.h
+@@ -99,7 +99,12 @@ struct mmu_gather {
+ 	unsigned int		need_flush : 1,	/* Did free PTEs */
+ 				fast_mode  : 1; /* No batching   */
+ 
+-	unsigned int		fullmm;
++	/* we are in the middle of an operation to clear
++	 * a full mm and can make some optimizations */
++	unsigned int		fullmm : 1,
++	/* we have performed an operation which
++	 * requires a complete flush of the tlb */
++				need_flush_all : 1;
+ 
+ 	struct mmu_gather_batch *active;
+ 	struct mmu_gather_batch	local;
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 92691d8..616603d 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -394,7 +394,6 @@ ssize_t ftrace_filter_write(struct file *file, const char __user *ubuf,
+ 			    size_t cnt, loff_t *ppos);
+ ssize_t ftrace_notrace_write(struct file *file, const char __user *ubuf,
+ 			     size_t cnt, loff_t *ppos);
+-loff_t ftrace_regex_lseek(struct file *file, loff_t offset, int whence);
+ int ftrace_regex_release(struct inode *inode, struct file *file);
+ 
+ void __init
+@@ -567,6 +566,8 @@ static inline int
+ ftrace_regex_release(struct inode *inode, struct file *file) { return -ENODEV; }
+ #endif /* CONFIG_DYNAMIC_FTRACE */
+ 
++loff_t ftrace_filter_lseek(struct file *file, loff_t offset, int whence);
++
+ /* totally disable ftrace - can not re-enable after this */
+ void ftrace_kill(void);
+ 
+diff --git a/ipc/msg.c b/ipc/msg.c
+index 31cd1bf..fede1d0 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -872,6 +872,7 @@ long do_msgrcv(int msqid, void __user *buf, size_t bufsz, long msgtyp,
+ 							goto out_unlock;
+ 						break;
+ 					}
++					msg = ERR_PTR(-EAGAIN);
+ 				} else
+ 					break;
+ 				msg_counter++;
+diff --git a/kernel/sched/clock.c b/kernel/sched/clock.c
+index c685e31..c3ae144 100644
+--- a/kernel/sched/clock.c
++++ b/kernel/sched/clock.c
+@@ -176,10 +176,36 @@ static u64 sched_clock_remote(struct sched_clock_data *scd)
+ 	u64 this_clock, remote_clock;
+ 	u64 *ptr, old_val, val;
+ 
++#if BITS_PER_LONG != 64
++again:
++	/*
++	 * Careful here: The local and the remote clock values need to
++	 * be read out atomic as we need to compare the values and
++	 * then update either the local or the remote side. So the
++	 * cmpxchg64 below only protects one readout.
++	 *
++	 * We must reread via sched_clock_local() in the retry case on
++	 * 32bit as an NMI could use sched_clock_local() via the
++	 * tracer and hit between the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	this_clock = sched_clock_local(my_scd);
++	/*
++	 * We must enforce atomic readout on 32bit, otherwise the
++	 * update on the remote cpu can hit inbetween the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	remote_clock = cmpxchg64(&scd->clock, 0, 0);
++#else
++	/*
++	 * On 64bit the read of [my]scd->clock is atomic versus the
++	 * update, so we can avoid the above 32bit dance.
++	 */
+ 	sched_clock_local(my_scd);
+ again:
+ 	this_clock = my_scd->clock;
+ 	remote_clock = scd->clock;
++#endif
+ 
+ 	/*
+ 	 * Use the opportunity that we have both locks
+diff --git a/kernel/sys.c b/kernel/sys.c
+index 265b376..47f1d1b 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -323,7 +323,6 @@ void kernel_restart_prepare(char *cmd)
+ 	system_state = SYSTEM_RESTART;
+ 	usermodehelper_disable();
+ 	device_shutdown();
+-	syscore_shutdown();
+ }
+ 
+ /**
+@@ -369,6 +368,7 @@ void kernel_restart(char *cmd)
+ {
+ 	kernel_restart_prepare(cmd);
+ 	disable_nonboot_cpus();
++	syscore_shutdown();
+ 	if (!cmd)
+ 		printk(KERN_EMERG "Restarting system.\n");
+ 	else
+@@ -394,6 +394,7 @@ static void kernel_shutdown_prepare(enum system_states state)
+ void kernel_halt(void)
+ {
+ 	kernel_shutdown_prepare(SYSTEM_HALT);
++	disable_nonboot_cpus();
+ 	syscore_shutdown();
+ 	printk(KERN_EMERG "System halted.\n");
+ 	kmsg_dump(KMSG_DUMP_HALT);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 64bc5d8..35cc3a8 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -668,7 +668,6 @@ int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
+ 		free_page(tmp);
+ 	}
+ 
+-	free_page((unsigned long)stat->pages);
+ 	stat->pages = NULL;
+ 	stat->start = NULL;
+ 
+@@ -1028,6 +1027,19 @@ static __init void ftrace_profile_debugfs(struct dentry *d_tracer)
+ 
+ static struct pid * const ftrace_swapper_pid = &init_struct_pid;
+ 
++loff_t
++ftrace_filter_lseek(struct file *file, loff_t offset, int whence)
++{
++	loff_t ret;
++
++	if (file->f_mode & FMODE_READ)
++		ret = seq_lseek(file, offset, whence);
++	else
++		file->f_pos = ret = 1;
++
++	return ret;
++}
++
+ #ifdef CONFIG_DYNAMIC_FTRACE
+ 
+ #ifndef CONFIG_FTRACE_MCOUNT_RECORD
+@@ -2590,7 +2602,7 @@ static void ftrace_filter_reset(struct ftrace_hash *hash)
+  * routine, you can use ftrace_filter_write() for the write
+  * routine if @flag has FTRACE_ITER_FILTER set, or
+  * ftrace_notrace_write() if @flag has FTRACE_ITER_NOTRACE set.
+- * ftrace_regex_lseek() should be used as the lseek routine, and
++ * ftrace_filter_lseek() should be used as the lseek routine, and
+  * release must call ftrace_regex_release().
+  */
+ int
+@@ -2674,19 +2686,6 @@ ftrace_notrace_open(struct inode *inode, struct file *file)
+ 				 inode, file);
+ }
+ 
+-loff_t
+-ftrace_regex_lseek(struct file *file, loff_t offset, int whence)
+-{
+-	loff_t ret;
+-
+-	if (file->f_mode & FMODE_READ)
+-		ret = seq_lseek(file, offset, whence);
+-	else
+-		file->f_pos = ret = 1;
+-
+-	return ret;
+-}
+-
+ static int ftrace_match(char *str, char *regex, int len, int type)
+ {
+ 	int matched = 0;
+@@ -3549,7 +3548,7 @@ static const struct file_operations ftrace_filter_fops = {
+ 	.open = ftrace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
+@@ -3557,7 +3556,7 @@ static const struct file_operations ftrace_notrace_fops = {
+ 	.open = ftrace_notrace_open,
+ 	.read = seq_read,
+ 	.write = ftrace_notrace_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
+@@ -3762,8 +3761,8 @@ static const struct file_operations ftrace_graph_fops = {
+ 	.open		= ftrace_graph_open,
+ 	.read		= seq_read,
+ 	.write		= ftrace_graph_write,
++	.llseek		= ftrace_filter_lseek,
+ 	.release	= ftrace_graph_release,
+-	.llseek		= seq_lseek,
+ };
+ #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
+ 
+@@ -4421,7 +4420,7 @@ static const struct file_operations ftrace_pid_fops = {
+ 	.open		= ftrace_pid_open,
+ 	.write		= ftrace_pid_write,
+ 	.read		= seq_read,
+-	.llseek		= seq_lseek,
++	.llseek		= ftrace_filter_lseek,
+ 	.release	= ftrace_pid_release,
+ };
+ 
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index 42ca822..83a8b5b 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -322,7 +322,7 @@ static const struct file_operations stack_trace_filter_fops = {
+ 	.open = stack_trace_filter_open,
+ 	.read = seq_read,
+ 	.write = ftrace_filter_write,
+-	.llseek = ftrace_regex_lseek,
++	.llseek = ftrace_filter_lseek,
+ 	.release = ftrace_regex_release,
+ };
+ 
+diff --git a/lib/kobject.c b/lib/kobject.c
+index e07ee1f..a654866 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -529,6 +529,13 @@ struct kobject *kobject_get(struct kobject *kobj)
+ 	return kobj;
+ }
+ 
++static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
++{
++	if (!kref_get_unless_zero(&kobj->kref))
++		kobj = NULL;
++	return kobj;
++}
++
+ /*
+  * kobject_cleanup - free kobject resources.
+  * @kobj: object to cleanup
+@@ -751,7 +758,7 @@ struct kobject *kset_find_obj(struct kset *kset, const char *name)
+ 
+ 	list_for_each_entry(k, &kset->list, entry) {
+ 		if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
+-			ret = kobject_get(k);
++			ret = kobject_get_unless_zero(k);
+ 			break;
+ 		}
+ 	}
+diff --git a/mm/memory.c b/mm/memory.c
+index bb1369f..f8b734a 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -212,6 +212,7 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm)
+ 	tlb->mm = mm;
+ 
+ 	tlb->fullmm     = fullmm;
++	tlb->need_flush_all = 0;
+ 	tlb->start	= -1UL;
+ 	tlb->end	= 0;
+ 	tlb->need_flush = 0;
+diff --git a/sound/soc/codecs/wm5102.c b/sound/soc/codecs/wm5102.c
+index 1440b3f..b54c2e8 100644
+--- a/sound/soc/codecs/wm5102.c
++++ b/sound/soc/codecs/wm5102.c
+@@ -576,7 +576,7 @@ static int wm5102_sysclk_ev(struct snd_soc_dapm_widget *w,
+ 			    struct snd_kcontrol *kcontrol, int event)
+ {
+ 	struct snd_soc_codec *codec = w->codec;
+-	struct arizona *arizona = dev_get_drvdata(codec->dev);
++	struct arizona *arizona = dev_get_drvdata(codec->dev->parent);
+ 	struct regmap *regmap = codec->control_data;
+ 	const struct reg_default *patch = NULL;
+ 	int i, patch_size;
+diff --git a/sound/soc/codecs/wm8903.c b/sound/soc/codecs/wm8903.c
+index 134e41c..f8a31ad 100644
+--- a/sound/soc/codecs/wm8903.c
++++ b/sound/soc/codecs/wm8903.c
+@@ -1083,6 +1083,8 @@ static const struct snd_soc_dapm_route wm8903_intercon[] = {
+ 	{ "ROP", NULL, "Right Speaker PGA" },
+ 	{ "RON", NULL, "Right Speaker PGA" },
+ 
++	{ "Charge Pump", NULL, "CLK_DSP" },
++
+ 	{ "Left Headphone Output PGA", NULL, "Charge Pump" },
+ 	{ "Right Headphone Output PGA", NULL, "Charge Pump" },
+ 	{ "Left Line Output PGA", NULL, "Charge Pump" },
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 2370063..f3ab918 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -2959,7 +2959,7 @@ int snd_soc_put_volsw_range(struct snd_kcontrol *kcontrol,
+ 	val = val << shift;
+ 
+ 	ret = snd_soc_update_bits_locked(codec, reg, val_mask, val);
+-	if (ret != 0)
++	if (ret < 0)
+ 		return ret;
+ 
+ 	if (snd_soc_volsw_is_stereo(mc)) {
+diff --git a/sound/usb/mixer_quirks.c b/sound/usb/mixer_quirks.c
+index 15520de..190f434 100644
+--- a/sound/usb/mixer_quirks.c
++++ b/sound/usb/mixer_quirks.c
+@@ -509,7 +509,7 @@ static int snd_nativeinstruments_control_get(struct snd_kcontrol *kcontrol,
+ 	else
+ 		ret = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0), bRequest,
+ 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_IN,
+-				  0, cpu_to_le16(wIndex),
++				  0, wIndex,
+ 				  &tmp, sizeof(tmp), 1000);
+ 	up_read(&mixer->chip->shutdown_rwsem);
+ 
+@@ -540,7 +540,7 @@ static int snd_nativeinstruments_control_put(struct snd_kcontrol *kcontrol,
+ 	else
+ 		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), bRequest,
+ 				  USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_DIR_OUT,
+-				  cpu_to_le16(wValue), cpu_to_le16(wIndex),
++				  wValue, wIndex,
+ 				  NULL, 0, 1000);
+ 	up_read(&mixer->chip->shutdown_rwsem);
+ 
+diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
+index 0115289..b9ca776 100644
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -486,7 +486,7 @@ static int snd_usb_nativeinstruments_boot_quirk(struct usb_device *dev)
+ {
+ 	int ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+ 				  0xaf, USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+-				  cpu_to_le16(1), 0, NULL, 0, 1000);
++				  1, 0, NULL, 0, 1000);
+ 
+ 	if (ret < 0)
+ 		return ret;
