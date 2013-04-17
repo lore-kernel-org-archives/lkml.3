@@ -1,108 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966749Ab3DQPEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 11:04:44 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:48908 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966461Ab3DQPEn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 11:04:43 -0400
-Date: Wed, 17 Apr 2013 16:04:37 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: mmci: Allow MMCI to request channels with
- information acquired from DT
-Message-ID: <20130417150437.GA3137@gmail.com>
-References: <1366205534-25079-1-git-send-email-lee.jones@linaro.org>
- <201304171550.56037.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201304171550.56037.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S966725Ab3DQPFk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 11:05:40 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27969 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966461Ab3DQPFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 11:05:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,492,1363158000"; 
+   d="scan'208";a="228326060"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Minchan Kim <minchan@kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: [PATCH] thp: fix huge zero page logic for page with pfn == 0
+Date: Wed, 17 Apr 2013 18:07:33 +0300
+Message-Id: <1366211253-14325-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This looks unnecessarily complex.
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 
-That thought did cross my mind.
+Current implementation of huge zero page uses pfn value 0 to indicate
+that the page hasn't allocated yet. It assumes that buddy page allocator
+can't return page with pfn == 0.
 
-> Why not just do dma_request_slave_channel_compat() unconditionally here?
+Let's rework the code to store 'struct page *' of huge zero page, not
+its pfn. This way we can avoid the weak assumption.
 
-So how about something like this instead, as it keeps the current
-semantics, and only differs in the case of DT.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reported-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Minchan Kim <minchan@kernel.org>
+---
+ mm/huge_memory.c |   43 +++++++++++++++++++++----------------------
+ 1 file changed, 21 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 372e921..1fd212a 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -298,14 +298,16 @@ static void mmci_init_sg(struct mmci_host *host, struct mmc_data *data)
-  * no custom DMA interfaces are supported.
-  */
- #ifdef CONFIG_DMA_ENGINE
--static void mmci_dma_setup(struct mmci_host *host)
-+static void mmci_dma_setup(struct amba_device *dev,
-+			   struct mmci_host *host)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 45eaae0..bc2a548 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -163,25 +163,24 @@ static int start_khugepaged(void)
+ }
+ 
+ static atomic_t huge_zero_refcount;
+-static unsigned long huge_zero_pfn __read_mostly;
++static struct page *huge_zero_page __read_mostly;
+ 
+-static inline bool is_huge_zero_pfn(unsigned long pfn)
++static inline bool is_huge_zero_page(struct page *page)
  {
-+	struct device_node *np = dev->dev.of_node;
- 	struct mmci_platform_data *plat = host->plat;
- 	const char *rxname, *txname;
- 	dma_cap_mask_t mask;
+-	unsigned long zero_pfn = ACCESS_ONCE(huge_zero_pfn);
+-	return zero_pfn && pfn == zero_pfn;
++	return ACCESS_ONCE(huge_zero_page) == page;
+ }
  
--	if (!plat || !plat->dma_filter) {
--		dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
-+	if (!(plat && plat->dma_filter) && !np) {
-+		dev_info(mmc_dev(host->mmc), "no DMA platform data or DT\n");
- 		return;
+ static inline bool is_huge_zero_pmd(pmd_t pmd)
+ {
+-	return is_huge_zero_pfn(pmd_pfn(pmd));
++	return is_huge_zero_page(pmd_page(pmd));
+ }
+ 
+-static unsigned long get_huge_zero_page(void)
++static struct page *get_huge_zero_page(void)
+ {
+ 	struct page *zero_page;
+ retry:
+ 	if (likely(atomic_inc_not_zero(&huge_zero_refcount)))
+-		return ACCESS_ONCE(huge_zero_pfn);
++		return ACCESS_ONCE(huge_zero_page);
+ 
+ 	zero_page = alloc_pages((GFP_TRANSHUGE | __GFP_ZERO) & ~__GFP_MOVABLE,
+ 			HPAGE_PMD_ORDER);
+@@ -191,7 +190,7 @@ retry:
+ 	}
+ 	count_vm_event(THP_ZERO_PAGE_ALLOC);
+ 	preempt_disable();
+-	if (cmpxchg(&huge_zero_pfn, 0, page_to_pfn(zero_page))) {
++	if (cmpxchg(&huge_zero_page, NULL, zero_page)) {
+ 		preempt_enable();
+ 		__free_page(zero_page);
+ 		goto retry;
+@@ -200,7 +199,7 @@ retry:
+ 	/* We take additional reference here. It will be put back by shrinker */
+ 	atomic_set(&huge_zero_refcount, 2);
+ 	preempt_enable();
+-	return ACCESS_ONCE(huge_zero_pfn);
++	return ACCESS_ONCE(huge_zero_page);
+ }
+ 
+ static void put_huge_zero_page(void)
+@@ -220,9 +219,9 @@ static int shrink_huge_zero_page(struct shrinker *shrink,
+ 		return atomic_read(&huge_zero_refcount) == 1 ? HPAGE_PMD_NR : 0;
+ 
+ 	if (atomic_cmpxchg(&huge_zero_refcount, 1, 0) == 1) {
+-		unsigned long zero_pfn = xchg(&huge_zero_pfn, 0);
+-		BUG_ON(zero_pfn == 0);
+-		__free_page(__pfn_to_page(zero_pfn));
++		struct page *zero_page = xchg(&huge_zero_page, NULL);
++		BUG_ON(zero_page == NULL);
++		__free_page(zero_page);
  	}
  
-@@ -321,19 +323,21 @@ static void mmci_dma_setup(struct mmci_host *host)
- 	 * attempt to use it bidirectionally, however if it is
- 	 * is specified but cannot be located, DMA will be disabled.
+ 	return 0;
+@@ -764,12 +763,12 @@ static inline struct page *alloc_hugepage(int defrag)
+ 
+ static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
+ 		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
+-		unsigned long zero_pfn)
++		struct page *zero_page)
+ {
+ 	pmd_t entry;
+ 	if (!pmd_none(*pmd))
+ 		return false;
+-	entry = pfn_pmd(zero_pfn, vma->vm_page_prot);
++	entry = mk_pmd(zero_page, vma->vm_page_prot);
+ 	entry = pmd_wrprotect(entry);
+ 	entry = pmd_mkhuge(entry);
+ 	set_pmd_at(mm, haddr, pmd, entry);
+@@ -794,20 +793,20 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		if (!(flags & FAULT_FLAG_WRITE) &&
+ 				transparent_hugepage_use_zero_page()) {
+ 			pgtable_t pgtable;
+-			unsigned long zero_pfn;
++			struct page *zero_page;
+ 			bool set;
+ 			pgtable = pte_alloc_one(mm, haddr);
+ 			if (unlikely(!pgtable))
+ 				return VM_FAULT_OOM;
+-			zero_pfn = get_huge_zero_page();
+-			if (unlikely(!zero_pfn)) {
++			zero_page = get_huge_zero_page();
++			if (unlikely(!zero_page)) {
+ 				pte_free(mm, pgtable);
+ 				count_vm_event(THP_FAULT_FALLBACK);
+ 				goto out;
+ 			}
+ 			spin_lock(&mm->page_table_lock);
+ 			set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
+-					zero_pfn);
++					zero_page);
+ 			spin_unlock(&mm->page_table_lock);
+ 			if (!set) {
+ 				pte_free(mm, pgtable);
+@@ -886,16 +885,16 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+ 	 * a page table.
  	 */
--	if (plat->dma_rx_param) {
--		host->dma_rx_channel = dma_request_channel(mask,
--							   plat->dma_filter,
--							   plat->dma_rx_param);
-+	if ((plat && plat->dma_rx_param) || np) {
-+		host->dma_rx_channel = dma_request_slave_channel_compat(mask,
-+					(plat) ? plat->dma_filter : NULL,
-+					(plat) ? plat->dma_rx_param : NULL,
-+					&dev->dev, "rx");
- 		/* E.g if no DMA hardware is present */
- 		if (!host->dma_rx_channel)
- 			dev_err(mmc_dev(host->mmc), "no RX DMA channel\n");
- 	}
+ 	if (is_huge_zero_pmd(pmd)) {
+-		unsigned long zero_pfn;
++		struct page *zero_page;
+ 		bool set;
+ 		/*
+ 		 * get_huge_zero_page() will never allocate a new page here,
+ 		 * since we already have a zero page to copy. It just takes a
+ 		 * reference.
+ 		 */
+-		zero_pfn = get_huge_zero_page();
++		zero_page = get_huge_zero_page();
+ 		set = set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd,
+-				zero_pfn);
++				zero_page);
+ 		BUG_ON(!set); /* unexpected !pmd_none(dst_pmd) */
+ 		ret = 0;
+ 		goto out_unlock;
+@@ -1803,7 +1802,7 @@ int split_huge_page(struct page *page)
+ 	struct anon_vma *anon_vma;
+ 	int ret = 1;
  
--	if (plat->dma_tx_param) {
--		host->dma_tx_channel = dma_request_channel(mask,
--							   plat->dma_filter,
--							   plat->dma_tx_param);
-+	if ((plat && plat->dma_tx_param) || np) {
-+		host->dma_tx_channel = dma_request_slave_channel_compat(mask,
-+					(plat) ? plat->dma_filter : NULL,
-+					(plat) ? plat->dma_tx_param : NULL,
-+					&dev->dev, "tx");
- 		if (!host->dma_tx_channel)
- 			dev_warn(mmc_dev(host->mmc), "no TX DMA channel\n");
- 	} else {
-@@ -1538,7 +1542,7 @@ static int mmci_probe(struct amba_device *dev,
- 		 amba_rev(dev), (unsigned long long)dev->res.start,
- 		 dev->irq[0], dev->irq[1]);
+-	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
++	BUG_ON(is_huge_zero_page(page));
+ 	BUG_ON(!PageAnon(page));
  
--	mmci_dma_setup(host);
-+	mmci_dma_setup(dev, host);
- 
- 	pm_runtime_set_autosuspend_delay(&dev->dev, 50);
- 	pm_runtime_use_autosuspend(&dev->dev);
-
+ 	/*
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.10.4
+
