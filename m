@@ -1,117 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966332Ab3DQNcZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 09:32:25 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:57066 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966219Ab3DQNcX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 09:32:23 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org
-Subject: [PATCH] mmc: mmci: Allow MMCI to request channels with information acquired from DT
-Date: Wed, 17 Apr 2013 14:32:14 +0100
-Message-Id: <1366205534-25079-1-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S966365Ab3DQNfJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 09:35:09 -0400
+Received: from plane.gmane.org ([80.91.229.3]:35840 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966186Ab3DQNfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 09:35:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Juno Krahn <Juno.Krahn@gmail.com>
+Subject: Re: WRITE SAME failed in recent kernels
+Date: Wed, 17 Apr 2013 13:30:34 +0000 (UTC)
+Message-ID: <loom.20130417T151925-309@post.gmane.org>
+References: <516A4E2D.30203@molgaard.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 157.98.106.213 (Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20100101 Firefox/18.0)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if DMA information isn't passed from platform data, then DMA
-will not be used. This patch allows DMA information obtained though Device
-Tree to be used as well.
+Sune Mølgaard <sune <at> molgaard.org> writes:
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Chris Ball <cjb@laptop.org>
-Cc: linux-mmc@vger.kernel.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mmc/host/mmci.c |   43 +++++++++++++++++++++++++++++++------------
- 1 file changed, 31 insertions(+), 12 deletions(-)
+> 
+> Dear All,
+> 
+> In the setting of an SSD and an HDD connected to a HighPoint RocketRAID
+> 620, I am seeing quite a number of log messages such as:
+> 
+> Apr 14 06:02:30 jekaterina kernel: [  952.460537] sd 8:0:1:0: [sde]
+> Unhandled error code
+> Apr 14 06:02:30 jekaterina kernel: [  952.460542] sd 8:0:1:0: [sde]
+> Apr 14 06:02:30 jekaterina kernel: [  952.460544] Result: hostbyte=0x05
+> driverbyte=0x05
+> Apr 14 06:02:30 jekaterina kernel: [  952.460546] sd 8:0:1:0: [sde] CDB:
+> Apr 14 06:02:30 jekaterina kernel: [  952.460548] cdb[0]=0x41: 41 00 a8
+> c6 fb 78 00 00 18 00
+> Apr 14 06:02:30 jekaterina kernel: [  952.460557] end_request: I/O
+> error, dev sde, sector 2831612792
+> Apr 14 06:02:30 jekaterina kernel: [  952.460566] sde1: WRITE SAME
+> failed. Manually zeroing.
+> 
+> with sde being the regular HDD.
+> 
+> Now, I am aware that the HighPoint driver, rr62x, isn't part of
+> mainline, and thus I have contacted HighPoint Technologies as well, but
+> I would like to know how to ascertain whether this is, indeed, a problem
+> with their driver, or if it's a problem pertaining to the kernel itself.
+> 
+> Any help, really, is much appreciated, even if it amounts to "HighPoint
+> is to blame", as I would then have that on higher authority than myself.
+> 
+> Best regards,
+> 
+> Sune Mølgaard
+> 
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 372e921..42e8fec 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -298,15 +298,32 @@ static void mmci_init_sg(struct mmci_host *host, struct mmc_data *data)
-  * no custom DMA interfaces are supported.
-  */
- #ifdef CONFIG_DMA_ENGINE
--static void mmci_dma_setup(struct mmci_host *host)
-+static void mmci_dma_setup(struct amba_device *dev,
-+			   struct mmci_host *host)
- {
-+	struct device_node *np = dev->dev.of_node;
- 	struct mmci_platform_data *plat = host->plat;
- 	const char *rxname, *txname;
- 	dma_cap_mask_t mask;
-+	const char *chan_name;
-+	int count, i;
-+	bool do_tx = false, do_rx = false;
- 
- 	if (!plat || !plat->dma_filter) {
--		dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
--		return;
-+		if (np) {
-+			count = of_property_count_strings(np, "dma-names");
-+			for (i = 0; i < count; i++) {
-+				of_property_read_string_index(np, "dma-names",
-+							      i, &chan_name);
-+				if (strcmp(chan_name, "tx"))
-+					do_tx = true;
-+				else if (strcmp(chan_name, "rx"))
-+					do_rx = true;
-+			}
-+		} else {
-+			dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
-+			return;
-+		}
- 	}
- 
- 	/* initialize pre request cookie */
-@@ -321,19 +338,21 @@ static void mmci_dma_setup(struct mmci_host *host)
- 	 * attempt to use it bidirectionally, however if it is
- 	 * is specified but cannot be located, DMA will be disabled.
- 	 */
--	if (plat->dma_rx_param) {
--		host->dma_rx_channel = dma_request_channel(mask,
--							   plat->dma_filter,
--							   plat->dma_rx_param);
-+	if (plat->dma_rx_param || do_rx) {
-+		host->dma_rx_channel = dma_request_slave_channel_compat(mask,
-+					(plat) ? plat->dma_filter : NULL,
-+					(plat) ? plat->dma_rx_param : NULL,
-+					&dev->dev, "rx");
- 		/* E.g if no DMA hardware is present */
- 		if (!host->dma_rx_channel)
- 			dev_err(mmc_dev(host->mmc), "no RX DMA channel\n");
- 	}
- 
--	if (plat->dma_tx_param) {
--		host->dma_tx_channel = dma_request_channel(mask,
--							   plat->dma_filter,
--							   plat->dma_tx_param);
-+	if (plat->dma_tx_param || do_tx) {
-+		host->dma_tx_channel = dma_request_slave_channel_compat(mask,
-+					(plat) ? plat->dma_filter : NULL,
-+					(plat) ? plat->dma_tx_param : NULL,
-+					&dev->dev, "tx");
- 		if (!host->dma_tx_channel)
- 			dev_warn(mmc_dev(host->mmc), "no TX DMA channel\n");
- 	} else {
-@@ -1538,7 +1557,7 @@ static int mmci_probe(struct amba_device *dev,
- 		 amba_rev(dev), (unsigned long long)dev->res.start,
- 		 dev->irq[0], dev->irq[1]);
- 
--	mmci_dma_setup(host);
-+	mmci_dma_setup(dev, host);
- 
- 	pm_runtime_set_autosuspend_delay(&dev->dev, 50);
- 	pm_runtime_use_autosuspend(&dev->dev);
--- 
-1.7.10.4
+I have this same problem, resulting in many thousands of kernel messages.
+Since WRITE SAME support is not essential, it makes sense that the block
+driver should disable this feature when it results in an error.
+
+I am also looking into how the HighPoint driver can be patched to prevent
+the block driver from using WRITE SAME. However, it seems probable that
+other situations will arise due to driver or hardware issues, and it makes
+sense to avoid a potential for a flood of repeated kernel messages,
+especially for an optional feature.
+
+Juno Krahn
 
