@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966742Ab3DQUtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 16:49:17 -0400
-Received: from mail-da0-f48.google.com ([209.85.210.48]:38507 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965907Ab3DQUtN (ORCPT
+	id S966807Ab3DQUxW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 16:53:22 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:56925 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966783Ab3DQUxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 16:49:13 -0400
-Date: Wed, 17 Apr 2013 13:49:10 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Bjorn Helgaas <bhelgaas@google.com>
-cc: Jiang Liu <liuj97@gmail.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Jiang Liu <jiang.liu@huawei.com>, Yinghai Lu <yinghai@kernel.org>,
-        Yijing Wang <wangyijing@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Toshi Kani <toshi.kani@hp.com>, Myron Stowe <myron.stowe@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH v9 09/16] PCI, x86: implement pcibios_{add|remove}_bus()
- hooks
-In-Reply-To: <CAErSpo7A3paLJ8u5FxPZpy=9yT_ZkXvEbcHbKLd7iMutdDaBUA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1304171348420.31235@chino.kir.corp.google.com>
-References: <1365781470-32379-1-git-send-email-jiang.liu@huawei.com> <1365781470-32379-10-git-send-email-jiang.liu@huawei.com> <alpine.DEB.2.02.1304161324500.30779@chino.kir.corp.google.com>
- <CAErSpo7A3paLJ8u5FxPZpy=9yT_ZkXvEbcHbKLd7iMutdDaBUA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 17 Apr 2013 16:53:20 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Originating-IP: [188.6.195.195]
+In-Reply-To: <CAJfpegtvfunCV4cjezQuWji3PoJRpXXKWgH+y55tYMi0O+TdkQ@mail.gmail.com>
+References: <20121220122702.4101.80042.stgit@maximpc.sw.ru>
+	<CAJfpegsD2iyP2=Z3zL-yb_TjjQxipOBKV7yqpdPPTH9oobQ=bA@mail.gmail.com>
+	<CAJfpegtvfunCV4cjezQuWji3PoJRpXXKWgH+y55tYMi0O+TdkQ@mail.gmail.com>
+Date: Wed, 17 Apr 2013 22:53:18 +0200
+Message-ID: <CAJfpegvJGBuOpYi=W3rzzu4Jwa46e_9SxDC4fa-PPmCQs2K3rg@mail.gmail.com>
+Subject: Re: [PATCH 0/5] fuse: close file synchronously
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Brian Foster <bfoster@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>, devel@openvz.org,
+        Anand Avati <anand.avati@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013, Bjorn Helgaas wrote:
+On Mon, Apr 15, 2013 at 5:30 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> Let's approach it from the other direction:  what if you give back the
+> write lease on the first flush?  It will probably work fine for 99% of
+> cases, since no other writes are going to happen after the first
+> flush.  For the remaining cases you'll just have to reacquire the
+> lease when a write happens after the flush.  I guess performance-wise
+> that will not be an issue, but I may be wrong.
 
-> Thanks for the report!
-> 
-> I'm pretty sure I fixed this:
-> http://git.kernel.org/cgit/linux/kernel/git/helgaas/pci.git/commit/?h=pci/jiang-subdrivers&id=3b63aaa70e1ccc4b66d60acc78da09700706a703
-> 
-> The acpi_pci_add_bus()/acpi_pci_remove_bus() stubs for CONFIG_ACPI=n
-> were added early in the series (patch 07/16: "PCI/ACPI: Prepare stub
-> functions to handle ACPI PCI (hotplug) slots") but were mistakenly
-> removed in patch 12/16: "PCI: acpiphp: Do not use ACPI PCI subdriver
-> mechanism".
-> 
-> I updated my "next" branch with the fixed version of patch 12/16, so
-> the 20130417 linux-next tree should have the fix.
-> 
+What about this?
 
-Confirmed it's fixed, thanks.
+Thanks,
+Miklos
