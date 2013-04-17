@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966922Ab3DQVx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 17:53:56 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:32787 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966683Ab3DQVxy (ORCPT
+	id S966941Ab3DQV4d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 17:56:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37216 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966610Ab3DQV4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 17:53:54 -0400
-Message-ID: <516F19EE.5060309@kernel.org>
-Date: Wed, 17 Apr 2013 17:53:50 -0400
-From: Len Brown <lenb@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Borislav Petkov <bp@alien8.de>, Alex Shi <alex.shi@intel.com>,
-        mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, pjt@google.com,
-        namhyung@kernel.org, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, jkosina@suse.cz, clark.williams@gmail.com,
-        tony.luck@intel.com, keescook@chromium.org, mgorman@suse.de,
-        riel@redhat.com, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [patch v7 0/21] sched: power aware scheduling
-References: <1365040862-8390-1-git-send-email-alex.shi@intel.com>  <516724F5.20504@kernel.org> <5167C9FA.8050406@intel.com>  <20130412162348.GE2368@pd.tnic> <1365785311.5814.36.camel@marge.simpson.net>
-In-Reply-To: <1365785311.5814.36.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 17 Apr 2013 17:56:30 -0400
+Date: Wed, 17 Apr 2013 14:56:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nicolas Schichan <nschichan@freebox.fr>
+Cc: Will Drewry <wad@chromium.org>, Mircea Gherzan <mgherzan@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH V2 1/3] seccomp: add generic code for jitted seccomp
+ filters.
+Message-Id: <20130417145628.88058f0f3104ab9ae551ddd3@linux-foundation.org>
+In-Reply-To: <1363618233-6375-2-git-send-email-nschichan@freebox.fr>
+References: <1363618233-6375-1-git-send-email-nschichan@freebox.fr>
+	<1363618233-6375-2-git-send-email-nschichan@freebox.fr>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2013 12:48 PM, Mike Galbraith wrote:
-> On Fri, 2013-04-12 at 18:23 +0200, Borislav Petkov wrote: 
->> On Fri, Apr 12, 2013 at 04:46:50PM +0800, Alex Shi wrote:
->>> Thanks a lot for comments, Len!
->>
->> AFAICT, you kinda forgot to answer his most important question:
->>
->>> These numbers suggest that this patch series simultaneously
->>> has a negative impact on performance and energy required
->>> to retire the workload.  Why do it?
+On Mon, 18 Mar 2013 15:50:30 +0100 Nicolas Schichan <nschichan@freebox.fr> wrote:
+
+> Architecture must select HAVE_SECCOMP_FILTER_JIT and implement
+> seccomp_jit_compile() and seccomp_jit_free() if they intend to support
+> jitted seccomp filters.
 > 
-> Hm.  When I tested AIM7 compute on a NUMA box, there was a marked
-> throughput increase at the low to moderate load end of the test spectrum
-> IIRC.  Fully repeatable.  There were also other benefits unrelated to
-> power, ie mitigation of the evil face of select_idle_sibling().  I
-> rather liked what I saw during ~big box test-drive.
+> struct seccomp_filter has been moved to <linux/seccomp.h> to make its
+> content available to the jit compilation code.
 > 
-> (just saying there are other aspects besides joules in there)
+> In a way similar to the net BPF, the jit compilation code is expected
+> to updates struct seccomp_filter.bpf_func pointer to the generated
+> code.
+> 
 
-Mike,
+This patch is killing me.
 
-Can you re-run your AIM7 measurement with turbo-mode and HT-mode disabled,
-and then independently re-enable them?
+> --- a/include/linux/seccomp.h
+> +++ b/include/linux/seccomp.h
+> @@ -6,6 +6,7 @@
+>  #ifdef CONFIG_SECCOMP
+>  
+>  #include <linux/thread_info.h>
+> +#include <linux/filter.h>
+>  #include <asm/seccomp.h>
 
-If you still see the performance benefit, then that proves
-that the scheduler hacks are not about tricking into
-turbo mode, but something else.
+In file included from include/linux/compat.h:18,
+                 from include/linux/filter.h:9,
+                 from include/linux/seccomp.h:9,
+                 from include/linux/sched.h:39,
+                 from arch/x86/kernel/asm-offsets.c:9:
+/usr/src/25/arch/x86/include/asm/compat.h: In function 'arch_compat_alloc_user_space':
+/usr/src/25/arch/x86/include/asm/compat.h:301: error: dereferencing pointer to incomplete type
 
-If the performance gains *are* about interactions with turbo-mode,
-then perhaps what we should really be doing here is making
-the scheduler explicitly turbo-aware?  Of course, that begs the question
-of how the scheduler should be aware of cpufreq in general...
+Problem is, compat.h's arch_compat_alloc_user_space() needs sched.h for
+task_struct but as you can see from the above include tree, sched.h
+includes seccomp.h and everything falls over.  The preprocessed code
+contains the definition of arch_compat_alloc_user_space() *before* the
+definition of task_struct.
 
-thanks,
-Len Brown, Intel Open Source Technology Center
+This is a basic x86_64 "make clean; make allmodconfig; make".
+
+I had a few slashes at fixing it but got all frustrated.
 
