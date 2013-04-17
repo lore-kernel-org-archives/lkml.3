@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab3DQBEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 21:04:33 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:13325 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754910Ab3DQBEc (ORCPT
+	id S935583Ab3DQBE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 21:04:58 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:56703 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262Ab3DQBE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 21:04:32 -0400
-X-AuditID: cbfee68d-b7f786d000005188-2f-516df51e6f68
+	Tue, 16 Apr 2013 21:04:57 -0400
+X-AuditID: cbfee690-b7f656d0000007e3-42-516df5376049
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>
 Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
@@ -15,40 +15,41 @@ Cc: "'LKML'" <linux-kernel@vger.kernel.org>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <002d01ce3b07$4d838d80$e88aa880$%han@samsung.com>
 In-reply-to: <002d01ce3b07$4d838d80$e88aa880$%han@samsung.com>
-Subject: [PATCH RESEND 2/3] backlight: tosa: convert tosa to dev_pm_ops
-Date: Wed, 17 Apr 2013 10:04:30 +0900
-Message-id: <002e01ce3b07$83e11820$8ba34860$%han@samsung.com>
+Subject: [PATCH RESEND 3/3] backlight: vgg2432a4: convert vgg2432a4_driver to
+ dev_pm_ops
+Date: Wed, 17 Apr 2013 10:04:54 +0900
+Message-id: <002f01ce3b07$9274efb0$b75ecf10$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac47B00Xwwr4eF6YRha9Jkf5kKWYlAAACnwg
+Thread-index: Ac47B00Xwwr4eF6YRha9Jkf5kKWYlAAADejg
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsVy+t8zQ125r7mBBi3zTS3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJYoLpuU1JzMstQifbsErozV+z6w
-	FEySqlhzdxdrA+MZ0S5GTg4JAROJW/uvMELYYhIX7q1n62Lk4hASWMYoMXH9QkaYovMXXzFD
-	JBYxSlybt54RwvnFKLHz4HY2kCo2ATWJL18Os3cxcnCICOhLtLVogISZBUoltj54zwJiCwnY
-	Sjw9/o4ZxOYUsJPY/us2mC0s4C7xbelssDEsAqoSfyacBVvMC1S//XALO4QtKPFj8j0WiJla
-	Eut3HmeCsOUlNq95ywyyVkJAXeLRX12QsIiAkcSK5dOhykUk9r14B3ayhMA5dok3M6YxQuwS
-	kPg2+RALRK+sxKYDzBD/SkocXHGDZQKjxCwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSo
-	V5yYW1yal66XnJ+7iRESlb07GG8fsD7EmAy0fiKzlGhyPjCq80riDY3NjCxMTUyNjcwtzUgT
-	VhLnVWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAmLigyjLu6EUT/QJf2UU3N5SzbjYy
-	jDzDHL+I3yh2s/L0C1XXPXwW5Frze5o1TXtmWV3N2v7OyPzjxf3nhCr/S/g17Pd6XfhlxYFP
-	rAetKpsO70uy8F5i9eOS+KddnxQuVbrtSZQ++of1d5tx7fG6P1cVJ2jwp0irf+PKid/IZXY7
-	4/UkrRluSizFGYmGWsxFxYkAxpolp+ACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jAV25r7mBBm96DC3mrF/DZnF54SVW
-	i8u75rBZ7N71lNWBxePEjN8sHnvm/2D16NuyitHj8ya5AJaoBkabjNTElNQihdS85PyUzLx0
-	WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCdSgpliTmlQKGAxOJiJX07TBNCQ9x0
-	LWAaI3R9Q4LgeowM0EDCOsaM1fs+sBRMkqpYc3cXawPjGdEuRk4OCQETifMXXzFD2GISF+6t
-	Z+ti5OIQEljEKHFt3npGCOcXo8TOg9vZQKrYBNQkvnw5zN7FyMEhIqAv0daiARJmFiiV2Prg
-	PQuILSRgK/H0+DuwoZwCdhLbf90Gs4UF3CW+LZ0NNoZFQFXiz4SzjCA2L1D99sMt7BC2oMSP
-	yfdYIGZqSazfeZwJwpaX2LzmLTPIWgkBdYlHf3VBwiICRhIrlk+HKheR2PfiHeMERqFZSCbN
-	QjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHPPPpHcwrmqwOMQowMGo
-	xMN7oSA3UIg1say4MvcQowQHs5IIr+IqoBBvSmJlVWpRfnxRaU5q8SHGZKBHJzJLiSbnA9NR
-	Xkm8obGJmZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUweoauD1nxw9fQ
-	u3CuKPeM7JgivaWqhQtWzb1hmcd39sXt+SH5p6oZOQ/tsikvLtPyPyh5acmep61pTQ/eubpZ
-	dzC+vpR/+6b41itnFJfyH6v/zjTl49TrV4TtZbk1Jf78jmnmVWOcb+uZK1UkMv/Vw2MnPgYb
-	f34/4073xGuJG7N+Vlc/nxYor8RSnJFoqMVcVJwIANRllOA9AwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsVy+t8zA13zr7mBBi92CFnMWb+GzeLywkus
+	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBln5k9g
+	KTglU9F3fyFrA+MP8S5GDg4JAROJxpXaXYycQKaYxIV769m6GLk4hASWMUqcPL+GGSJhIvFj
+	8xNGiMQiRok7R09DOb8YJTZOnsAIUsUmoCbx5cthdpCpIgL6Em0tGiBhZoFSia0P3rOA2EIC
+	thJPj78DG8opYCex/ddtMFtYIEpiVvNuNhCbRUBV4sy7uWD1vED1b04sY4ewBSV+TL7HAjFT
+	S2L9zuNMELa8xOY1b5khnlGXePRXF+ICI4nrp2ogKkQk9r14B3axhMApdonLGzcwQqwSkPg2
+	+RALRKusxKYDUO9KShxccYNlAqPELCSLZyFZPAvJ4llIVixgZFnFKJpakFxQnJReZKJXnJhb
+	XJqXrpecn7uJERKRE3Yw3jtgfYgxGWj9RGYp0eR8YETnlcQbGpsZWZiamBobmVuakSasJM6r
+	3mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFxnuauBLWyCVyGf9blyGybJ3vhz84btQ95
+	Wg4srVkj/dn7xLfJ8r3OfxXPn1DXTj19+KvlwcbGBX48FuZGa9o4Y151NBtve666Pm3/JxOB
+	S2sjOFbdrHu4L1RDzib1wbknG9seBjao/ioylWi2DVjY9eCBIGdb/4+Fvkeaj1gs3rDM7/++
+	p9OvKbEUZyQaajEXFScCADwmGe3eAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jAV3zr7mBBm+n81nMWb+GzeLywkus
+	Fpd3zWGz2L3rKasDi8eJGb9ZPPbM/8Hq0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnp
+	tkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUA7lRTKEnNKgUIBicXFSvp2mCaEhrjp
+	WsA0Ruj6hgTB9RgZoIGEdYwZZ+ZPYCk4JVPRd38hawPjD/EuRk4OCQETiR+bnzBC2GISF+6t
+	Z+ti5OIQEljEKHHn6GlGCOcXo8TGyRPAqtgE1CS+fDnM3sXIwSEioC/R1qIBEmYWKJXY+uA9
+	C4gtJGAr8fT4O2YQm1PATmL7r9tgtrBAlMSs5t1sIDaLgKrEmXdzwep5gerfnFjGDmELSvyY
+	fI8FYqaWxPqdx5kgbHmJzWveMoOslRBQl3j0VxfiAiOJ66dqICpEJPa9eMc4gVFoFpJBs5AM
+	moVk0CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBEf8M+kdjKsaLA4xCnAwKvHw
+	XijIDRRiTSwrrsw9xCjBwawkwqu4CijEm5JYWZValB9fVJqTWnyIMRnoz4nMUqLJ+cBklFcS
+	b2hsYmZkaWRmYWRibk6asJI478FW60AhgfTEktTs1NSC1CKYLUwcnFINjPGWM4Rddugx3ShS
+	3Pq3V7Z1pivjFsUiR/mAXTwsEd3Jv0IW3X7Yp7P7xGO1TE+eOWwcwfa/2pKvf6tTi94dqH/3
+	9pbun2IrLtTP7MlbljdvWo+tWuVnlQ3/ZTtPt2n/43tin5B3x8Cpd3agQP6vdQ0Bup916+t6
+	Hy4uLYzxuHQp/uNUl58SSizFGYmGWsxFxYkA8l4SIjwDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,120 +58,116 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Instead of using legacy suspend/resume methods, using newer dev_pm_ops
-structure allows better control over power management.
+structure allows better control over power management. Also, use of
+pm_message_t is deprecated. Thus, it is removed.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/tosa_bl.c  |   18 ++++++++----------
- drivers/video/backlight/tosa_lcd.c |   18 ++++++++----------
- 2 files changed, 16 insertions(+), 20 deletions(-)
+ drivers/video/backlight/ili9320.c   |   24 +++++++++---------------
+ drivers/video/backlight/ili9320.h   |    2 +-
+ drivers/video/backlight/vgg2432a4.c |   18 ++++++++----------
+ 3 files changed, 18 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/video/backlight/tosa_bl.c b/drivers/video/backlight/tosa_bl.c
-index 2326fa8..9df66ac 100644
---- a/drivers/video/backlight/tosa_bl.c
-+++ b/drivers/video/backlight/tosa_bl.c
-@@ -134,28 +134,27 @@ static int tosa_bl_remove(struct i2c_client *client)
- 	return 0;
+diff --git a/drivers/video/backlight/ili9320.c b/drivers/video/backlight/ili9320.c
+index c3a5299..f8be90c 100644
+--- a/drivers/video/backlight/ili9320.c
++++ b/drivers/video/backlight/ili9320.c
+@@ -270,27 +270,21 @@ int ili9320_remove(struct ili9320 *ili)
+ }
+ EXPORT_SYMBOL_GPL(ili9320_remove);
+ 
+-#ifdef CONFIG_PM
+-int ili9320_suspend(struct ili9320 *lcd, pm_message_t state)
++#ifdef CONFIG_PM_SLEEP
++int ili9320_suspend(struct ili9320 *lcd)
+ {
+ 	int ret;
+ 
+-	dev_dbg(lcd->dev, "%s: event %d\n", __func__, state.event);
++	ret = ili9320_power(lcd, FB_BLANK_POWERDOWN);
+ 
+-	if (state.event == PM_EVENT_SUSPEND) {
+-		ret = ili9320_power(lcd, FB_BLANK_POWERDOWN);
+-
+-		if (lcd->platdata->suspend == ILI9320_SUSPEND_DEEP) {
+-			ili9320_write(lcd, ILI9320_POWER1, lcd->power1 |
+-				      ILI9320_POWER1_SLP |
+-				      ILI9320_POWER1_DSTB);
+-			lcd->initialised = 0;
+-		}
+-
+-		return ret;
++	if (lcd->platdata->suspend == ILI9320_SUSPEND_DEEP) {
++		ili9320_write(lcd, ILI9320_POWER1, lcd->power1 |
++			      ILI9320_POWER1_SLP |
++			      ILI9320_POWER1_DSTB);
++		lcd->initialised = 0;
+ 	}
+ 
+-	return 0;
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(ili9320_suspend);
+ 
+diff --git a/drivers/video/backlight/ili9320.h b/drivers/video/backlight/ili9320.h
+index e0db738..42329e7 100644
+--- a/drivers/video/backlight/ili9320.h
++++ b/drivers/video/backlight/ili9320.h
+@@ -76,5 +76,5 @@ extern void ili9320_shutdown(struct ili9320 *lcd);
+ 
+ /* PM */
+ 
+-extern int ili9320_suspend(struct ili9320 *lcd, pm_message_t state);
++extern int ili9320_suspend(struct ili9320 *lcd);
+ extern int ili9320_resume(struct ili9320 *lcd);
+diff --git a/drivers/video/backlight/vgg2432a4.c b/drivers/video/backlight/vgg2432a4.c
+index 84d582f..d538947 100644
+--- a/drivers/video/backlight/vgg2432a4.c
++++ b/drivers/video/backlight/vgg2432a4.c
+@@ -205,18 +205,15 @@ static int vgg2432a4_lcd_init(struct ili9320 *lcd,
+ 	return ret;
  }
  
 -#ifdef CONFIG_PM
--static int tosa_bl_suspend(struct i2c_client *client, pm_message_t pm)
+-static int vgg2432a4_suspend(struct spi_device *spi, pm_message_t state)
 +#ifdef CONFIG_PM_SLEEP
-+static int tosa_bl_suspend(struct device *dev)
++static int vgg2432a4_suspend(struct device *dev)
  {
--	struct tosa_bl_data *data = i2c_get_clientdata(client);
-+	struct tosa_bl_data *data = dev_get_drvdata(dev);
- 
- 	tosa_bl_set_backlight(data, 0);
- 
- 	return 0;
+-	return ili9320_suspend(spi_get_drvdata(spi), state);
++	return ili9320_suspend(dev_get_drvdata(dev));
  }
- 
--static int tosa_bl_resume(struct i2c_client *client)
-+static int tosa_bl_resume(struct device *dev)
+-static int vgg2432a4_resume(struct spi_device *spi)
++static int vgg2432a4_resume(struct device *dev)
  {
--	struct tosa_bl_data *data = i2c_get_clientdata(client);
-+	struct tosa_bl_data *data = dev_get_drvdata(dev);
- 
- 	backlight_update_status(data->bl);
- 	return 0;
+-	return ili9320_resume(spi_get_drvdata(spi));
++	return ili9320_resume(dev_get_drvdata(dev));
  }
 -#else
--#define tosa_bl_suspend NULL
--#define tosa_bl_resume NULL
+-#define vgg2432a4_suspend	NULL
+-#define vgg2432a4_resume	NULL
  #endif
  
-+static SIMPLE_DEV_PM_OPS(tosa_bl_pm_ops, tosa_bl_suspend, tosa_bl_resume);
+ static struct ili9320_client vgg2432a4_client = {
+@@ -249,16 +246,17 @@ static void vgg2432a4_shutdown(struct spi_device *spi)
+ 	ili9320_shutdown(spi_get_drvdata(spi));
+ }
+ 
++static SIMPLE_DEV_PM_OPS(vgg2432a4_pm_ops, vgg2432a4_suspend, vgg2432a4_resume);
 +
- static const struct i2c_device_id tosa_bl_id[] = {
- 	{ "tosa-bl", 0 },
- 	{ },
-@@ -165,11 +164,10 @@ static struct i2c_driver tosa_bl_driver = {
+ static struct spi_driver vgg2432a4_driver = {
  	.driver = {
- 		.name		= "tosa-bl",
+ 		.name		= "VGG2432A4",
  		.owner		= THIS_MODULE,
-+		.pm		= &tosa_bl_pm_ops,
++		.pm		= &vgg2432a4_pm_ops,
  	},
- 	.probe		= tosa_bl_probe,
- 	.remove		= tosa_bl_remove,
--	.suspend	= tosa_bl_suspend,
--	.resume		= tosa_bl_resume,
- 	.id_table	= tosa_bl_id,
+ 	.probe		= vgg2432a4_probe,
+ 	.remove		= vgg2432a4_remove,
+ 	.shutdown	= vgg2432a4_shutdown,
+-	.suspend	= vgg2432a4_suspend,
+-	.resume		= vgg2432a4_resume,
  };
  
-diff --git a/drivers/video/backlight/tosa_lcd.c b/drivers/video/backlight/tosa_lcd.c
-index 666fe25..bf08157 100644
---- a/drivers/video/backlight/tosa_lcd.c
-+++ b/drivers/video/backlight/tosa_lcd.c
-@@ -240,19 +240,19 @@ static int tosa_lcd_remove(struct spi_device *spi)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
--static int tosa_lcd_suspend(struct spi_device *spi, pm_message_t state)
-+#ifdef CONFIG_PM_SLEEP
-+static int tosa_lcd_suspend(struct device *dev)
- {
--	struct tosa_lcd_data *data = spi_get_drvdata(spi);
-+	struct tosa_lcd_data *data = dev_get_drvdata(dev);
- 
- 	tosa_lcd_tg_off(data);
- 
- 	return 0;
- }
- 
--static int tosa_lcd_resume(struct spi_device *spi)
-+static int tosa_lcd_resume(struct device *dev)
- {
--	struct tosa_lcd_data *data = spi_get_drvdata(spi);
-+	struct tosa_lcd_data *data = dev_get_drvdata(dev);
- 
- 	tosa_lcd_tg_init(data);
- 	if (POWER_IS_ON(data->lcd_power))
-@@ -262,20 +262,18 @@ static int tosa_lcd_resume(struct spi_device *spi)
- 
- 	return 0;
- }
--#else
--#define tosa_lcd_suspend	NULL
--#define tosa_lcd_resume NULL
- #endif
- 
-+static SIMPLE_DEV_PM_OPS(tosa_lcd_pm_ops, tosa_lcd_suspend, tosa_lcd_resume);
-+
- static struct spi_driver tosa_lcd_driver = {
- 	.driver = {
- 		.name		= "tosa-lcd",
- 		.owner		= THIS_MODULE,
-+		.pm		= &tosa_lcd_pm_ops,
- 	},
- 	.probe		= tosa_lcd_probe,
- 	.remove		= tosa_lcd_remove,
--	.suspend	= tosa_lcd_suspend,
--	.resume		= tosa_lcd_resume,
- };
- 
- module_spi_driver(tosa_lcd_driver);
+ module_spi_driver(vgg2432a4_driver);
 -- 
 1.7.2.5
 
