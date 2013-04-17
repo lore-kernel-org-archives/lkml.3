@@ -1,149 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936430Ab3DQRjt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:39:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936385Ab3DQRjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:39:18 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: [PATCH 2/4] HID: core: break out hid_find_max_report() in hid-core
-Date: Wed, 17 Apr 2013 19:38:14 +0200
-Message-Id: <1366220296-14346-3-git-send-email-benjamin.tissoires@redhat.com>
-In-Reply-To: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com>
-References: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S966013Ab3DQRlV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:41:21 -0400
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:59048 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S965148Ab3DQRlT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 13:41:19 -0400
+Message-ID: <1366220466.2855.14.camel@Wailaba2>
+Subject: [PATCH] Remove spurious cputimer restart and eliminate its drift
+From: Olivier Langlois <olivier@trillion01.com>
+To: tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Date: Wed, 17 Apr 2013 13:41:06 -0400
+Organization: Trillion01 Inc
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hid_find_max_report() was used both in usbhid and i2c-hid.
-Put it in core to avoid code duplication.
+Move the call to stop_process_timers() in order to:
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+1. It catches the exceptionnal case where it would be
+   started without arming any timers in posix_cpu_timer_set()
+ 2. You could end up with no process timers for a short
+    period of time when they find themselves in the firing
+    list. Let 1 tick to periodic timers to have the
+    opportunity to get rearmed.
+
+Also forbids the cputimer to drift ahead of its process clock by
+blocking its update when a tick occurs while a autoreaping task
+is currently in do_exit() between the call to release_task() and
+its final call to schedule().
+
+Any task stats update after having called release_task() will
+be lost because they are added to the global process stats located
+in the signal struct from release_task().
+
+Ideally, you should postpone the release_task() call after the
+final context switch to get all the stats added but this is
+more complex to achieve.
+
+Signed-off-by: Olivier Langlois <olivier@trillion01.com>
 ---
- drivers/hid/hid-core.c        | 29 +++++++++++++++++++++++++++++
- drivers/hid/i2c-hid/i2c-hid.c | 15 +++------------
- drivers/hid/usbhid/hid-core.c | 16 ----------------
- include/linux/hid.h           |  2 ++
- 4 files changed, 34 insertions(+), 28 deletions(-)
+ kernel/posix-cpu-timers.c | 44 +++++++++++++++++++++++++-------------------
+ kernel/sched/fair.c       | 10 +++++++++-
+ 2 files changed, 34 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 34c53fc..25d7903 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1145,6 +1145,35 @@ void hid_output_report(struct hid_report *report, __u8 *data)
- EXPORT_SYMBOL_GPL(hid_output_report);
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 8fd709c..7cecdb9 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -1130,8 +1130,6 @@ static void check_process_timers(struct task_struct *tsk,
+ 	sig->cputime_expires.prof_exp = prof_expires;
+ 	sig->cputime_expires.virt_exp = virt_expires;
+ 	sig->cputime_expires.sched_exp = sched_expires;
+-	if (task_cputime_zero(&sig->cputime_expires))
+-		stop_process_timers(sig);
+ }
  
  /*
-+ * Return the length (in bytes) of a report
-+ */
-+int hid_get_report_length(struct hid_report *report)
-+{
-+	return report->size ? ((report->size - 1) >> 3) + 1 +
-+		report->device->report_enum[report->type].numbered : 0;
-+}
-+EXPORT_SYMBOL_GPL(hid_get_report_length);
+@@ -1238,34 +1236,42 @@ static inline int task_cputime_expired(const struct task_cputime *sample,
+  */
+ static inline int fastpath_timer_check(struct task_struct *tsk)
+ {
+-	struct signal_struct *sig;
+-	cputime_t utime, stime;
++	struct signal_struct *sig = tsk->signal;
+ 
+-	task_cputime(tsk, &utime, &stime);
++	if (sig->cputimer.running) {
++		if (likely(!task_cputime_zero(&sig->cputime_expires))) {
++			struct task_cputime group_sample;
 +
-+/*
-+ * Traverse the supplied list of reports and find the longest
-+ */
-+void hid_find_max_report(struct hid_device *hid, unsigned int type,
-+		unsigned int *max)
-+{
-+	struct hid_report *report;
-+	unsigned int size;
++			raw_spin_lock(&sig->cputimer.lock);
++			group_sample = sig->cputimer.cputime;
++			raw_spin_unlock(&sig->cputimer.lock);
 +
-+	/* We should not rely on wMaxInputLength, as some devices may set it to
-+	 * a wrong length. */
-+	list_for_each_entry(report, &hid->report_enum[type].report_list, list) {
-+		size = hid_get_report_length(report);
-+		if (*max < size)
-+			*max = size;
++			if (task_cputime_expired(&group_sample, &sig->cputime_expires))
++				return 1;
++		} else
++		/*
++		 * Stopping the process timer here has 2 benefits.
++		 *
++		 * 1. It catches the exceptionnal case where it would be
++		 *   started without arming any timers in posix_cpu_timer_set()
++		 * 2. You could end up with no process timers for a short
++		 *    period of time when they find themselves in the firing
++		 *    list. Let 1 tick to periodic timers to have the
++		 *    opportunity to get rearmed.
++		 */
++			stop_process_timers(sig);
 +	}
-+}
-+EXPORT_SYMBOL_GPL(hid_find_max_report);
-+
-+/*
-  * Set a field value. The report this field belongs to has to be
-  * created and transferred to the device, to set this value in the
-  * device.
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index 2b1799a..5aa1dc0 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -390,8 +390,7 @@ static irqreturn_t i2c_hid_irq(int irq, void *dev_id)
  
- static int i2c_hid_get_report_length(struct hid_report *report)
- {
--	return ((report->size - 1) >> 3) + 1 +
--		report->device->report_enum[report->type].numbered + 2;
-+	return hid_get_report_length(report) + 2;
- }
+ 	if (!task_cputime_zero(&tsk->cputime_expires)) {
+ 		struct task_cputime task_sample = {
+-			.utime = utime,
+-			.stime = stime,
+ 			.sum_exec_runtime = tsk->se.sum_exec_runtime
+ 		};
++		task_cputime(tsk, &task_sample.utime, &task_sample.stime);
  
- static void i2c_hid_init_report(struct hid_report *report, u8 *buffer,
-@@ -456,16 +455,8 @@ static void i2c_hid_init_reports(struct hid_device *hid)
- static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
- 		unsigned int *max)
- {
--	struct hid_report *report;
--	unsigned int size;
+ 		if (task_cputime_expired(&task_sample, &tsk->cputime_expires))
+ 			return 1;
+ 	}
+ 
+-	sig = tsk->signal;
+-	if (sig->cputimer.running) {
+-		struct task_cputime group_sample;
 -
--	/* We should not rely on wMaxInputLength, as some devices may set it to
--	 * a wrong length. */
--	list_for_each_entry(report, &hid->report_enum[type].report_list, list) {
--		size = i2c_hid_get_report_length(report);
--		if (*max < size)
--			*max = size;
+-		raw_spin_lock(&sig->cputimer.lock);
+-		group_sample = sig->cputimer.cputime;
+-		raw_spin_unlock(&sig->cputimer.lock);
+-
+-		if (task_cputime_expired(&group_sample, &sig->cputime_expires))
+-			return 1;
 -	}
-+	hid_find_max_report(hid, type, max);
-+	*max += 2;
+-
+ 	return 0;
  }
  
- static void i2c_hid_free_buffers(struct i2c_hid *ihid)
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index effcd3d..5cf7ddb 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -869,22 +869,6 @@ void usbhid_set_leds(struct hid_device *hid)
- }
- EXPORT_SYMBOL_GPL(usbhid_set_leds);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7a33e59..52d7b10 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -708,7 +708,15 @@ static void update_curr(struct cfs_rq *cfs_rq)
  
--/*
-- * Traverse the supplied list of reports and find the longest
-- */
--static void hid_find_max_report(struct hid_device *hid, unsigned int type,
--		unsigned int *max)
--{
--	struct hid_report *report;
--	unsigned int size;
--
--	list_for_each_entry(report, &hid->report_enum[type].report_list, list) {
--		size = ((report->size - 1) >> 3) + 1 + hid->report_enum[type].numbered;
--		if (*max < size)
--			*max = size;
--	}
--}
--
- static int hid_alloc_buffers(struct usb_device *dev, struct hid_device *hid)
- {
- 	struct usbhid_device *usbhid = hid->driver_data;
-diff --git a/include/linux/hid.h b/include/linux/hid.h
-index b7b5ff2..9b6c71c 100644
---- a/include/linux/hid.h
-+++ b/include/linux/hid.h
-@@ -736,6 +736,8 @@ extern void hidinput_report_event(struct hid_device *hid, struct hid_report *rep
- extern int hidinput_connect(struct hid_device *hid, unsigned int force);
- extern void hidinput_disconnect(struct hid_device *);
+ 		trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);
+ 		cpuacct_charge(curtask, delta_exec);
+-		account_group_exec_runtime(curtask, delta_exec);
++		/*
++		 * Do not update the cputimer if the task is already released by
++		 * release_task().
++		 *
++		 * it would preferable to defer the autoreap release_task
++		 * after the last context switch but harder to do.
++		 */
++		if (likely(curtask->sighand))
++			account_group_exec_runtime(curtask, delta_exec);
+ 	}
  
-+int hid_get_report_length(struct hid_report *);
-+void hid_find_max_report(struct hid_device *, unsigned int, unsigned int *);
- int hid_set_field(struct hid_field *, unsigned, __s32);
- int hid_input_report(struct hid_device *, int type, u8 *, int, int);
- int hidinput_find_field(struct hid_device *hid, unsigned int type, unsigned int code, struct hid_field **field);
+ 	account_cfs_rq_runtime(cfs_rq, delta_exec);
 -- 
-1.8.1.4
+1.8.2.1
+
+
+
 
