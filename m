@@ -1,52 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934125Ab3DQXMK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 19:12:10 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:41134 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751919Ab3DQXMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 19:12:08 -0400
-Date: Wed, 17 Apr 2013 16:12:05 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>
-cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        KVM <kvm@vger.kernel.org>
-Subject: [patch] x86, kvm: fix build failure with CONFIG_SMP disabled
-In-Reply-To: <alpine.DEB.2.02.1304171555030.10112@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.02.1304171609580.5541@chino.kir.corp.google.com>
-References: <20130417170450.5dd6e5f450de4d5bf197d997@canb.auug.org.au> <516EE5AB.4080201@infradead.org> <alpine.DEB.2.02.1304171555030.10112@chino.kir.corp.google.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S934991Ab3DQXSe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 19:18:34 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50836 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751455Ab3DQXS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 19:18:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,496,1363158000"; 
+   d="scan'208";a="319978915"
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Keith Busch <keith.busch@intel.com>,
+        Erdinc Ozturk <erdinc.ozturk@intel.com>,
+        Vinodh Gopal <vinodh.gopal@intel.com>,
+        James Guilford <james.guilford@intel.com>,
+        Wajdi Feghali <wajdi.k.feghali@intel.com>,
+        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-crypto@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: [PATCH v2 1/4] Wrap crc_t10dif function all to use crypto transform framework
+Date: Wed, 17 Apr 2013 09:12:52 -0700
+Message-Id: <ea4271721b5ca130849b03da4f172f12f66e5628.1366214842.git.tim.c.chen@linux.intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <cover.1366214842.git.tim.c.chen@linux.intel.com>
+References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
+In-Reply-To: <cover.1366214842.git.tim.c.chen@linux.intel.com>
+References: <cover.1366214842.git.tim.c.chen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The build fails when CONFIG_SMP is disabled:
+When CRC T10 DIF is calculated using the crypto transform framework, we
+wrap the crc_t10dif function call to utilize it.  This allows us to
+take advantage of any accelerated CRC T10 DIF transform that is
+plugged into the crypto framework.
 
-	arch/x86/kvm/vmx.c: In function 'vmx_deliver_posted_interrupt':
-	arch/x86/kvm/vmx.c:3950:3: error: 'apic' undeclared (first use in this function)
-
-Fix it by including the necessary header.
-
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 ---
- arch/x86/kvm/vmx.c | 1 +
- 1 file changed, 1 insertion(+)
+ include/linux/crc-t10dif.h | 10 +++++
+ lib/crc-t10dif.c           | 96 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 106 insertions(+)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -34,6 +34,7 @@
- #include "kvm_cache_regs.h"
- #include "x86.h"
+diff --git a/include/linux/crc-t10dif.h b/include/linux/crc-t10dif.h
+index a9c96d8..f0eb4d5 100644
+--- a/include/linux/crc-t10dif.h
++++ b/include/linux/crc-t10dif.h
+@@ -3,6 +3,16 @@
  
-+#include <asm/apic.h>
- #include <asm/io.h>
- #include <asm/desc.h>
- #include <asm/vmx.h>
+ #include <linux/types.h>
+ 
++#ifdef CONFIG_CRYPTO_CRCT10DIF
++
++#define CRC_T10DIF_DIGEST_SIZE 2
++#define CRC_T10DIF_BLOCK_SIZE 1
++
++__u16 crc_t10dif_generic(__u16 crc, const unsigned char *buffer, size_t len);
++void crc_t10dif_update_lib(void);
++
++#endif /* CONFIG_CRYPTO_CRCT10DIF */
++
+ __u16 crc_t10dif(unsigned char const *, size_t);
+ 
+ #endif
+diff --git a/lib/crc-t10dif.c b/lib/crc-t10dif.c
+index fbbd66e..41f469a 100644
+--- a/lib/crc-t10dif.c
++++ b/lib/crc-t10dif.c
+@@ -11,6 +11,9 @@
+ #include <linux/types.h>
+ #include <linux/module.h>
+ #include <linux/crc-t10dif.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <crypto/hash.h>
+ 
+ /* Table generated using the following polynomium:
+  * x^16 + x^15 + x^11 + x^9 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1
+@@ -51,6 +54,98 @@ static const __u16 t10_dif_crc_table[256] = {
+ 	0xF0D8, 0x7B6F, 0x6C01, 0xE7B6, 0x42DD, 0xC96A, 0xDE04, 0x55B3
+ };
+ 
++#ifdef CONFIG_CRYPTO_CRCT10DIF
++
++static struct crypto_shash *crct10dif_tfm;
++
++/* flag to indicate update to new algorithm in progress*/
++static bool crc_t10dif_newalg;
++
++__u16 crc_t10dif_generic(__u16 crc, const unsigned char *buffer, size_t len)
++{
++	unsigned int i;
++
++	for (i = 0 ; i < len ; i++)
++		crc = (crc << 8) ^ t10_dif_crc_table[((crc >> 8) ^ buffer[i]) & 0xff];
++
++	return crc;
++}
++EXPORT_SYMBOL(crc_t10dif_generic);
++
++/*
++ * If we have defined crypto transform for CRC-T10DIF, use that instead.
++ * This allows us to plug in fast version of CRC-T10DIF when available.
++ */
++
++void crc_t10dif_update_lib()
++{
++	struct crypto_shash *old_tfm, *new_tfm;
++
++	old_tfm = crct10dif_tfm;
++	crc_t10dif_newalg = true;
++	/* make sure new alg flag is turned on before starting to switch tfm */
++	mb();
++
++	new_tfm = crypto_alloc_shash("crct10dif", 0, 0);
++	if (IS_ERR(new_tfm))
++		goto done;
++
++	if (old_tfm)
++		if (crypto_tfm_alg_priority(&old_tfm->base) >=
++		    crypto_tfm_alg_priority(&new_tfm->base)) {
++			crypto_free_shash(new_tfm);
++			goto done;
++		}
++	crct10dif_tfm = new_tfm;
++	/* make sure update to tfm pointer is completed */
++	mb();
++	crypto_free_shash(old_tfm);
++
++done:
++	crc_t10dif_newalg = false;
++}
++EXPORT_SYMBOL(crc_t10dif_update_lib);
++
++__u16 crc_t10dif(const unsigned char *buffer, size_t len)
++{
++	struct {
++		struct shash_desc shash;
++		char ctx[2];
++	} desc;
++	int err;
++
++	/* plugging in new alg or not using a tfm? */
++	if (unlikely(crc_t10dif_newalg) || (!crct10dif_tfm))
++		return crc_t10dif_generic(0, buffer, len);
++
++	desc.shash.tfm = crct10dif_tfm;
++	desc.shash.flags = 0;
++	*(__u16 *)desc.ctx = 0;
++
++	err = crypto_shash_update(&desc.shash, buffer, len);
++	BUG_ON(err);
++
++	return *(__u16 *)desc.ctx;
++}
++EXPORT_SYMBOL(crc_t10dif);
++
++static int __init crc_t10dif_mod_init(void)
++{
++	crct10dif_tfm = NULL;
++	crc_t10dif_newalg = false;
++	return 0;
++}
++
++static void __exit crc_t10dif_mod_fini(void)
++{
++	if (crct10dif_tfm)
++		crypto_free_shash(crct10dif_tfm);
++}
++
++module_init(crc_t10dif_mod_init);
++module_exit(crc_t10dif_mod_fini);
++
++#else
+ __u16 crc_t10dif(const unsigned char *buffer, size_t len)
+ {
+ 	__u16 crc = 0;
+@@ -62,6 +157,7 @@ __u16 crc_t10dif(const unsigned char *buffer, size_t len)
+ 	return crc;
+ }
+ EXPORT_SYMBOL(crc_t10dif);
++#endif
+ 
+ MODULE_DESCRIPTION("T10 DIF CRC calculation");
+ MODULE_LICENSE("GPL");
+-- 
+1.7.11.7
+
