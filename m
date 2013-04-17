@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070Ab3DQEBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 00:01:06 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:36073 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab3DQEBE (ORCPT
+	id S1753017Ab3DQEEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 00:04:45 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:25894 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752237Ab3DQEEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 00:01:04 -0400
-Message-ID: <516E1E6C.2040106@linux.vnet.ibm.com>
-Date: Wed, 17 Apr 2013 09:30:44 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 17 Apr 2013 00:04:44 -0400
+X-Spam-Score: -100.8
+Message-ID: <516E1F32.6010009@asianux.com>
+Date: Wed, 17 Apr 2013 12:04:02 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Segher Boessenkool <segher@kernel.crashing.org>
-CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, mikey@neuling.org
-Subject: Re: [PATCH V2 2/5] powerpc, perf: Add basic assembly code to read
- BHRB entries on POWER8
-References: <1366127650-1952-1-git-send-email-khandual@linux.vnet.ibm.com> <1366127650-1952-3-git-send-email-khandual@linux.vnet.ibm.com> <AAEA07FE-7530-46D3-B2FC-B3FD8EC2C6E2@kernel.crashing.org>
-In-Reply-To: <AAEA07FE-7530-46D3-B2FC-B3FD8EC2C6E2@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2] kernel: audit_tree: resource management: need put_tree
+ and goto Err when failure occures
+References: <516790ED.6060202@asianux.com> <516CFF2C.7010509@asianux.com>
+In-Reply-To: <516CFF2C.7010509@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041703-8256-0000-0000-0000071A082A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2013 10:53 PM, Segher Boessenkool wrote:
->> +/* r3 = n  (where n = [0-1023])
->> + * The maximum number of BHRB entries supported with PPC_MFBHRBE
->> instruction
->> + * is 1024. We have limited number of table entries here as POWER8
->> implements
->> + * 32 BHRB entries.
->> + */
->> +
->> +/* .global read_bhrb */
->> +_GLOBAL(read_bhrb)
->> +    cmpldi    r3,1023
-> 
-> This should be 31, since that is the last entry in the table below.
 
-Hey Segher,
+  since "normally audit_add_tree_rule() will free it on failure",
+  need free it completely, when failure occures.
 
-Would fix this in the next version. Thanks for pointing it out.
+    need additional put_tree before return, since get_tree was called.
+    always need goto error processing area for list_del_init.
 
-Regards
-Anshuman
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/audit_tree.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
+diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+index 642a89c..9dfb0da 100644
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -694,13 +694,15 @@ int audit_add_tree_rule(struct audit_krule *rule)
+ 		spin_unlock(&hash_lock);
+ 	} else {
+ 		trim_marked(tree);
++		put_tree(tree);
+ 		goto Err;
+ 	}
+ 
+ 	mutex_lock(&audit_filter_mutex);
+ 	if (list_empty(&rule->rlist)) {
+ 		put_tree(tree);
+-		return -ENOENT;
++		err = -ENOENT;
++		goto Err1;
+ 	}
+ 	rule->tree = tree;
+ 	put_tree(tree);
+@@ -708,6 +710,7 @@ int audit_add_tree_rule(struct audit_krule *rule)
+ 	return 0;
+ Err:
+ 	mutex_lock(&audit_filter_mutex);
++Err1:
+ 	list_del_init(&tree->list);
+ 	list_del_init(&tree->rules);
+ 	put_tree(tree);
+-- 
+1.7.7.6
