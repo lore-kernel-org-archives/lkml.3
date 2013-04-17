@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab3DQE2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 00:28:47 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:29187 "EHLO
+	id S1755239Ab3DQE3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 00:29:06 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:29179 "EHLO
 	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab3DQE2n (ORCPT
+	with ESMTP id S1754727Ab3DQE2m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 00:28:43 -0400
+	Wed, 17 Apr 2013 00:28:42 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
         x86@kernel.org, linux-arch@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
         Davidlohr Bueso <davidlohr.bueso@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>,
         Rik van Riel <riel@redhat.com>
-Subject: [PATCH v3 5/5] mutex: Move mutex spinning code from sched/core.c back to mutex.c
-Date: Wed, 17 Apr 2013 00:28:11 -0400
-Message-Id: <1366172891-7729-6-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v3 4/5] mutex: Remove new typedefs introduced in patch 2
+Date: Wed, 17 Apr 2013 00:28:10 -0400
+Message-Id: <1366172891-7729-5-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1366172891-7729-1-git-send-email-Waiman.Long@hp.com>
 References: <1366172891-7729-1-git-send-email-Waiman.Long@hp.com>
@@ -30,202 +30,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As mentioned by Ingo, the SCHED_FEAT_OWNER_SPIN scheduler feature
-bit was really just an early hack to make with/without mutex-spinning
-testable. So it is no longer necessary.
-
-This patch removes the SCHED_FEAT_OWNER_SPIN feature bit and move the
-mutex spinning code from kernel/sched/core.c back to kernel/mutex.c
-which is where they should belong.
+In response to the review comment from Davidlohr, this patch will
+remove the new typedefs introduced by patch 2. It also removes an
+unnecessary barrier() call.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- include/linux/sched.h   |    4 ---
- kernel/mutex.c          |   62 ++++++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/core.c     |   63 -----------------------------------------------
- kernel/sched/features.h |    7 -----
- 4 files changed, 62 insertions(+), 74 deletions(-)
+ kernel/mutex.c |   25 +++++++++++--------------
+ 1 files changed, 11 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 8af6f13..aefe45d 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -320,10 +320,6 @@ extern signed long schedule_timeout_killable(signed long timeout);
- extern signed long schedule_timeout_uninterruptible(signed long timeout);
- asmlinkage void schedule(void);
- extern void schedule_preempt_disabled(void);
--#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
--extern int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner);
--extern int mutex_can_spin_on_owner(struct mutex *lock);
--#endif
- 
- struct nsproxy;
- struct user_namespace;
 diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 140f113..ad53a66 100644
+index 5600bdf..140f113 100644
 --- a/kernel/mutex.c
 +++ b/kernel/mutex.c
-@@ -158,6 +158,68 @@ static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
+@@ -113,18 +113,16 @@ EXPORT_SYMBOL(mutex_lock);
+  * We don't inline mspin_lock() so that perf can correctly account for the
+  * time spent in this lock function.
+  */
+-typedef struct mspin_node {
+-	struct mspin_node *next;
+-	int		   locked;	/* 1 if lock acquired */
+-} mspin_node_t;
+-
+-typedef mspin_node_t	*mspin_lock_t;
+-
+-#define	MLOCK(mutex)	((mspin_lock_t *)&((mutex)->spin_mlock))
+-
+-static noinline void mspin_lock(mspin_lock_t *lock,  mspin_node_t *node)
++struct mspin_node {
++	struct mspin_node *next ;
++	int		  locked;	/* 1 if lock acquired */
++};
++#define	MLOCK(mutex)	((struct mspin_node **)&((mutex)->spin_mlock))
++
++static noinline
++void mspin_lock(struct mspin_node **lock, struct mspin_node *node)
+ {
+-	mspin_node_t *prev;
++	struct mspin_node *prev;
+ 
+ 	/* Init node */
+ 	node->locked = 0;
+@@ -143,9 +141,9 @@ static noinline void mspin_lock(mspin_lock_t *lock,  mspin_node_t *node)
+ 		arch_mutex_cpu_relax();
+ }
+ 
+-static void mspin_unlock(mspin_lock_t *lock,  mspin_node_t *node)
++static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
+ {
+-	mspin_node_t *next = ACCESS_ONCE(node->next);
++	struct mspin_node *next = ACCESS_ONCE(node->next);
+ 
+ 	if (likely(!next)) {
+ 		/*
+@@ -157,7 +155,6 @@ static void mspin_unlock(mspin_lock_t *lock,  mspin_node_t *node)
+ 		while (!(next = ACCESS_ONCE(node->next)))
+ 			arch_mutex_cpu_relax();
+ 	}
+-	barrier();
  	ACCESS_ONCE(next->locked) = 1;
  	smp_wmb();
  }
-+
-+/*
-+ * Mutex spinning code migrated from kernel/sched/core.c
-+ */
-+
-+static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
-+{
-+	if (lock->owner != owner)
-+		return false;
-+
-+	/*
-+	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
-+	 * lock->owner still matches owner, if that fails, owner might
-+	 * point to free()d memory, if it still matches, the rcu_read_lock()
-+	 * ensures the memory stays valid.
-+	 */
-+	barrier();
-+
-+	return owner->on_cpu;
-+}
-+
-+/*
-+ * Look out! "owner" is an entirely speculative pointer
-+ * access and not reliable.
-+ */
-+static noinline
-+int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
-+{
-+	rcu_read_lock();
-+	while (owner_running(lock, owner)) {
-+		if (need_resched())
-+			break;
-+
-+		arch_mutex_cpu_relax();
-+	}
-+	rcu_read_unlock();
-+
-+	/*
-+	 * We break out the loop above on need_resched() and when the
-+	 * owner changed, which is a sign for heavy contention. Return
-+	 * success only when lock->owner is NULL.
-+	 */
-+	return lock->owner == NULL;
-+}
-+
-+/*
-+ * Initial check for entering the mutex spinning loop
-+ */
-+static inline int mutex_can_spin_on_owner(struct mutex *lock)
-+{
-+	int retval = 1;
-+
-+	rcu_read_lock();
-+	if (lock->owner)
-+		retval = lock->owner->on_cpu;
-+	rcu_read_unlock();
-+	/*
-+	 * if lock->owner is not set, the mutex owner may have just acquired
-+	 * it and not set the owner yet or the mutex has been released.
-+	 */
-+	return retval;
-+}
- #endif
+@@ -237,7 +234,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
  
- static __used noinline void __sched __mutex_unlock_slowpath(atomic_t *lock_count);
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 176e82a..b37a22b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2997,69 +2997,6 @@ void __sched schedule_preempt_disabled(void)
- 	preempt_disable();
- }
+ 	for (;;) {
+ 		struct task_struct *owner;
+-		mspin_node_t	    node;
++		struct mspin_node  node;
  
--#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
--
--static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
--{
--	if (lock->owner != owner)
--		return false;
--
--	/*
--	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
--	 * lock->owner still matches owner, if that fails, owner might
--	 * point to free()d memory, if it still matches, the rcu_read_lock()
--	 * ensures the memory stays valid.
--	 */
--	barrier();
--
--	return owner->on_cpu;
--}
--
--/*
-- * Look out! "owner" is an entirely speculative pointer
-- * access and not reliable.
-- */
--int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
--{
--	rcu_read_lock();
--	while (owner_running(lock, owner)) {
--		if (need_resched())
--			break;
--
--		arch_mutex_cpu_relax();
--	}
--	rcu_read_unlock();
--
--	/*
--	 * We break out the loop above on need_resched() and when the
--	 * owner changed, which is a sign for heavy contention. Return
--	 * success only when lock->owner is NULL.
--	 */
--	return lock->owner == NULL;
--}
--
--/*
-- * Initial check for entering the mutex spinning loop
-- */
--int mutex_can_spin_on_owner(struct mutex *lock)
--{
--	int retval = 1;
--
--	if (!sched_feat(OWNER_SPIN))
--		return 0;
--
--	rcu_read_lock();
--	if (lock->owner)
--		retval = lock->owner->on_cpu;
--	rcu_read_unlock();
--	/*
--	 * if lock->owner is not set, the mutex owner may have just acquired
--	 * it and not set the owner yet or the mutex has been released.
--	 */
--	return retval;
--}
--#endif
--
- #ifdef CONFIG_PREEMPT
- /*
-  * this is the entry point to schedule() from in-kernel preemption
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index 1ad1d2b..99399f8 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -46,13 +46,6 @@ SCHED_FEAT(DOUBLE_TICK, false)
- SCHED_FEAT(LB_BIAS, true)
- 
- /*
-- * Spin-wait on mutex acquisition when the mutex owner is running on
-- * another cpu -- assumes that when the owner is running, it will soon
-- * release the lock. Decreases scheduling overhead.
-- */
--SCHED_FEAT(OWNER_SPIN, true)
--
--/*
-  * Decrement CPU power based on time not spent running tasks
-  */
- SCHED_FEAT(NONTASK_POWER, true)
+ 		/*
+ 		 * If there's an owner, wait for it to either
 -- 
 1.7.1
 
