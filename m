@@ -1,291 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966951Ab3DQP7T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 11:59:19 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50375 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966900Ab3DQP6j (ORCPT
+	id S965231Ab3DQQCx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 12:02:53 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37100 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467Ab3DQQCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 11:58:39 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 4/4] mfd: Add device tree bindings for Arizona class devices
-Date: Wed, 17 Apr 2013 16:58:35 +0100
-Message-Id: <1366214315-29032-4-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1366214315-29032-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20130417155815.GA13687@opensource.wolfsonmicro.com>
- <1366214315-29032-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Wed, 17 Apr 2013 12:02:51 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Date: Wed, 17 Apr 2013 18:02:20 +0200
+Message-Id: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.8.2.rc3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+Subject: [PATCH v3] irqchip: Add support for ARMv7-M's NVIC
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- Documentation/devicetree/bindings/mfd/arizona.txt |   62 +++++++++++++++++++
- drivers/mfd/arizona-core.c                        |   68 +++++++++++++++++++++
- drivers/mfd/arizona-i2c.c                         |   10 ++-
- drivers/mfd/arizona-spi.c                         |   10 ++-
- drivers/mfd/arizona.h                             |   12 ++++
- 5 files changed, 158 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/arizona.txt
+This interrupt controller is found on Cortex-M3 and Cortex-M4 machines.
 
-diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-new file mode 100644
-index 0000000..0e295c9
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-@@ -0,0 +1,62 @@
-+Wolfson Arizona class audio SoCs
-+
-+These devices are audio SoCs with extensive digital capabilites and a range
-+of analogue I/O.
-+
-+Required properties:
-+
-+  - compatible : one of the following chip-specific strings:
-+	"wlf,wm5102"
-+	"wlf,wm5110"
-+  - reg : I2C slave address when connected using I2C, chip select number when
-+    using SPI.
-+
-+  - interrupts : The interrupt line the /IRQ signal for the device is
-+    connected to.
-+  - interrupt-controller : Arizona class devices contain interrupt controllers
-+    and may provide interrupt services to other devices.
-+  - interrupt-parent : The parent interrupt controller.
-+  - #interrupt-cells: the number of cells to describe an IRQ, this should be 2.
-+    The first cell is the IRQ number.
-+    The second cell is the flags, encoded as the trigger masks from
-+    Documentation/devicetree/bindings/interrupts.txt
-+
-+  - gpio-controller : Indicates this device is a GPIO controller.
-+  - #gpio-cells : Must be 2. The first cell is the pin number and the
-+    second cell is used to specify optional parameters (currently unused).
-+
-+  - AVDD1-supply, DBVDD1-supply, DBVDD2-supply, DBVDD3-supply, CPVDD-supply,
-+    SPKVDDL-supply, SPKVDDR-supply : power supplies for the device, as covered
-+    in Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+Optional properties:
-+
-+  - wlf,reset : GPIO specifier for the GPIO controlling /RESET
-+  - wlf,ldoena : GPIO specifier for the GPIO controlling LDOENA
-+
-+  - wlf,gpio-defaults : A list of GPIO configuration register values. If
-+    absent, no configuration of these registers is performed. If any
-+    entry has a value that is out of range for a 16 bit register then
-+    the chip default will be used.  If present exactly five values must
-+    be specified.
-+
-+Example:
-+
-+codec: wm5102@1a {
-+	compatible = "wlf,wm5102";
-+	reg = <0x1a>;
-+	interrupts = <347>;
-+	#interrupt-cells = <2>;
-+        interrupt-parent = <&gic>;
-+
-+	gpio-controller;
-+	#gpio-cells = <2>;
-+
-+	wlf,gpio-defaults = <
-+		0x00000000, /* AIF1TXLRCLK */
-+		0xffffffff,
-+		0xffffffff,
-+		0xffffffff,
-+		0xffffffff,
-+	>;
-+};
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index 1d20ce0..cbb3e45 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -16,6 +16,9 @@
- #include <linux/interrupt.h>
- #include <linux/mfd/core.h>
- #include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/of_gpio.h>
- #include <linux/pm_runtime.h>
- #include <linux/regmap.h>
- #include <linux/regulator/consumer.h>
-@@ -439,6 +442,69 @@ const struct dev_pm_ops arizona_pm_ops = {
- };
- EXPORT_SYMBOL_GPL(arizona_pm_ops);
+Support for this controller appeared in Catalin's Cortex tree based on
+2.6.33 but was nearly completely rewritten.
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+
+Notes:
+    Changes since v2, sent with
+    Message-id:1363612826-15623-1-git-send-email-u.kleine-koenig@pengutronix.de:
+    
+     - drop superflous check for node != NULL in init function
+     - rework for linear irq domain
+     - drop seperate function for non-dt init
+
+This patch triggers two checkpatch warnings:
+
+	WARNING: Avoid CamelCase: <nvic_do_IRQ>
+	WARNING: Avoid CamelCase: <handle_IRQ>
+
+but I think they are OK for consistency?!
+Moreover sparse tells me:
+
+	drivers/irqchip/irq-nvic.c:58:1: warning: symbol 'nvic_do_IRQ' was not declared. Should it be static?
+
+nvic_do_IRQ is called from assembler only, so a declaration couldn't be
+shared and I couldn't find a nice place for a declaration. Suggestions
+welcome.
+
+Thanks
+Uwe
+
+ drivers/irqchip/Kconfig    |   4 ++
+ drivers/irqchip/Makefile   |   1 +
+ drivers/irqchip/irq-nvic.c | 154 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 159 insertions(+)
+ create mode 100644 drivers/irqchip/irq-nvic.c
+
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index a350969..18657fd 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -10,6 +10,10 @@ config ARM_GIC
+ config GIC_NON_BANKED
+ 	bool
  
-+#ifdef CONFIG_OF
-+int arizona_of_get_type(struct device *dev)
-+{
-+	const struct of_device_id *id = of_match_device(arizona_of_match, dev);
++config ARM_NVIC
++	bool
++	select IRQ_DOMAIN
 +
-+	if (id)
-+		return (int)id->data;
-+	else
-+		return 0;
+ config ARM_VIC
+ 	bool
+ 	select IRQ_DOMAIN
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index 98e3b87..7227c5f 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -7,5 +7,6 @@ obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
+ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sunxi.o
+ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
+ obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
++obj-$(CONFIG_ARM_NVIC)			+= irq-nvic.o
+ obj-$(CONFIG_ARM_VIC)			+= irq-vic.o
+ obj-$(CONFIG_VERSATILE_FPGA_IRQ)	+= irq-versatile-fpga.o
+diff --git a/drivers/irqchip/irq-nvic.c b/drivers/irqchip/irq-nvic.c
+new file mode 100644
+index 0000000..6e9ca8a
+--- /dev/null
++++ b/drivers/irqchip/irq-nvic.c
+@@ -0,0 +1,154 @@
++/*
++ * drivers/irq/irq-nvic.c
++ *
++ * Copyright (C) 2008 ARM Limited, All Rights Reserved.
++ * Copyright (C) 2013 Pengutronix
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * Support for the Nested Vectored Interrupt Controller found on the
++ * ARMv7-M CPUs (Cortex-M3/M4)
++ */
++#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
++
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/export.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
++
++#include <asm/v7m.h>
++#include <asm/exception.h>
++
++#include "irqchip.h"
++
++#define NVIC_ISER			0x000
++#define NVIC_ICER			0x080
++#define NVIC_IPR			0x300
++
++#define NVIC_MAX_BANKS		16
++/*
++ * Each bank handles 32 irqs. Only the 16th (= last) bank handles only
++ * 16 irqs.
++ */
++#define NVIC_MAX_IRQ		((NVIC_MAX_BANKS - 1) * 32 + 16)
++
++struct nvic_bank_data {
++	/*
++	 * For irq i base holds nvic_base + 4 * i / 32. So you can access the
++	 * right ISER register (i.e ISER[i / 32]) by just taking base + ISER.
++	 * Ditto for ICER.
++	 */
++	void __iomem *base;
++};
++
++static struct nvic_chip_data {
++	struct irq_domain *domain;
++	struct nvic_bank_data bdata[NVIC_MAX_BANKS];
++} nvic_chip_data;
++
++asmlinkage void __exception_irq_entry
++nvic_do_IRQ(irq_hw_number_t hwirq, struct pt_regs *regs)
++{
++	unsigned int irq = irq_linear_revmap(nvic_chip_data.domain, hwirq);
++
++	handle_IRQ(irq, regs);
 +}
-+EXPORT_SYMBOL_GPL(arizona_of_get_type);
 +
-+static int arizona_of_get_core_pdata(struct arizona *arizona)
++static inline void __iomem *nvic_bank_base(struct irq_data *d)
 +{
-+	int ret, i;
++	struct nvic_bank_data *bank_data = irq_data_get_irq_chip_data(d);
++	return bank_data->base;
++}
 +
-+	arizona->pdata.reset = of_get_named_gpio(arizona->dev->of_node,
-+						 "wlf,reset", 0);
-+	if (arizona->pdata.reset < 0)
-+		arizona->pdata.reset = 0;
++static void nvic_mask_irq(struct irq_data *d)
++{
++	u32 mask = 1 << (d->hwirq % 32);
 +
-+	arizona->pdata.ldoena = of_get_named_gpio(arizona->dev->of_node,
-+						  "wlf,ldoena", 0);
-+	if (arizona->pdata.ldoena < 0)
-+		arizona->pdata.ldoena = 0;
++	writel_relaxed(mask, nvic_bank_base(d) + NVIC_ICER);
++}
 +
-+	ret = of_property_read_u32_array(arizona->dev->of_node,
-+					 "wlf,gpio-defaults",
-+					 arizona->pdata.gpio_defaults,
-+					 ARRAY_SIZE(arizona->pdata.gpio_defaults));
-+	if (ret >= 0) {
-+		/*
-+		 * All values are literal except out of range values
-+		 * which are chip default, translate into platform
-+		 * data which uses 0 as chip default and out of range
-+		 * as zero.
-+		 */
-+		for (i = 0; i < ARRAY_SIZE(arizona->pdata.gpio_defaults); i++) {
-+			if (arizona->pdata.gpio_defaults[i] > 0xffff)
-+				arizona->pdata.gpio_defaults[i] = 0;
-+			if (arizona->pdata.gpio_defaults[i] == 0)
-+				arizona->pdata.gpio_defaults[i] = 0x10000;
-+		}
-+	} else {
-+		dev_err(arizona->dev, "Failed to parse GPIO defaults: %d\n",
-+			ret);
++static void nvic_unmask_irq(struct irq_data *d)
++{
++	u32 mask = 1 << (d->hwirq % 32);
++
++	writel_relaxed(mask, nvic_bank_base(d) + NVIC_ISER);
++}
++
++static void nvic_eoi(struct irq_data *d)
++{
++	/*
++	 * This is a no-op as end of interrupt is signaled by the exception
++	 * return sequence.
++	 */
++}
++
++static struct irq_chip nvic_chip = {
++	.name = "NVIC",
++	.irq_mask = nvic_mask_irq,
++	.irq_unmask = nvic_unmask_irq,
++	.irq_eoi = nvic_eoi,
++};
++
++static int nvic_irq_domain_map(struct irq_domain *domain, unsigned int virq,
++			       irq_hw_number_t hw)
++{
++	irq_set_chip_and_handler(virq, &nvic_chip,
++				 handle_fasteoi_irq);
++	irq_set_chip_data(virq, nvic_chip_data.bdata + hw / 32);
++	set_irq_flags(virq, IRQF_VALID | IRQF_PROBE);
++
++	return 0;
++}
++
++static struct irq_domain_ops nvic_irq_domain_ops = {
++	.xlate = irq_domain_xlate_onetwocell,
++	.map = nvic_irq_domain_map,
++};
++
++static int __init nvic_of_init(struct device_node *node,
++			       struct device_node *parent)
++{
++	void __iomem *nvic_base;
++	unsigned int irqs, i;
++	unsigned numbanks = (readl_relaxed(V7M_SCS_ICTR) &
++			     V7M_SCS_ICTR_INTLINESNUM_MASK) + 1;
++
++	nvic_base = of_iomap(node, 0);
++	if (!nvic_base) {
++		pr_warn("unable to map nvic registers\n");
++		return -ENOMEM;
 +	}
 +
++	irqs = numbanks * 32;
++	if (irqs > NVIC_MAX_IRQ)
++		irqs = NVIC_MAX_IRQ;
++
++	for (i = 0; i < numbanks; ++i)
++		nvic_chip_data.bdata[i].base = nvic_base + 4 * i;
++
++	nvic_chip_data.domain =
++		irq_domain_add_linear(node, irqs, &nvic_irq_domain_ops, NULL);
++	if (!nvic_chip_data.domain) {
++		pr_warn("Failed to allocate irq domain\n");
++		return -ENOMEM;
++	}
++
++	/* Disable all interrupts */
++	for (i = 0; i < irqs; i += 32)
++		writel_relaxed(~0, nvic_base + NVIC_ICER + i * 4 / 32);
++
++	/* Set priority on all interrupts */
++	for (i = 0; i < irqs; i += 4)
++		writel_relaxed(0, nvic_base + NVIC_IPR + i);
++
 +	return 0;
 +}
-+
-+const struct of_device_id arizona_of_match[] = {
-+	{ .compatible = "wlf,wm5102", .data = (void *)WM5102 },
-+	{ .compatible = "wlf,wm5110", .data = (void *)WM5110 },
-+	{},
-+};
-+EXPORT_SYMBOL_GPL(arizona_of_match);
-+#else
-+static inline int arizona_of_get_core_pdata(struct arizona *arizona)
-+{
-+}
-+#endif
-+
- static struct mfd_cell early_devs[] = {
- 	{ .name = "arizona-ldo1" },
- };
-@@ -472,6 +538,8 @@ int arizona_dev_init(struct arizona *arizona)
- 	dev_set_drvdata(arizona->dev, arizona);
- 	mutex_init(&arizona->clk_lock);
- 
-+	arizona_of_get_core_pdata(arizona);
-+
- 	if (dev_get_platdata(arizona->dev))
- 		memcpy(&arizona->pdata, dev_get_platdata(arizona->dev),
- 		       sizeof(arizona->pdata));
-diff --git a/drivers/mfd/arizona-i2c.c b/drivers/mfd/arizona-i2c.c
-index 44a1bb9..deb267e 100644
---- a/drivers/mfd/arizona-i2c.c
-+++ b/drivers/mfd/arizona-i2c.c
-@@ -27,9 +27,14 @@ static int arizona_i2c_probe(struct i2c_client *i2c,
- {
- 	struct arizona *arizona;
- 	const struct regmap_config *regmap_config;
--	int ret;
-+	int ret, type;
- 
--	switch (id->driver_data) {
-+	if (i2c->dev.of_node)
-+		type = arizona_of_get_type(&i2c->dev);
-+	else
-+		type = id->driver_data;
-+
-+	switch (type) {
- #ifdef CONFIG_MFD_WM5102
- 	case WM5102:
- 		regmap_config = &wm5102_i2c_regmap;
-@@ -84,6 +89,7 @@ static struct i2c_driver arizona_i2c_driver = {
- 		.name	= "arizona",
- 		.owner	= THIS_MODULE,
- 		.pm	= &arizona_pm_ops,
-+		.of_match_table	= of_match_ptr(arizona_of_match),
- 	},
- 	.probe		= arizona_i2c_probe,
- 	.remove		= arizona_i2c_remove,
-diff --git a/drivers/mfd/arizona-spi.c b/drivers/mfd/arizona-spi.c
-index b57e642..47be7b3 100644
---- a/drivers/mfd/arizona-spi.c
-+++ b/drivers/mfd/arizona-spi.c
-@@ -27,9 +27,14 @@ static int arizona_spi_probe(struct spi_device *spi)
- 	const struct spi_device_id *id = spi_get_device_id(spi);
- 	struct arizona *arizona;
- 	const struct regmap_config *regmap_config;
--	int ret;
-+	int ret, type;
- 
--	switch (id->driver_data) {
-+	if (spi->dev.of_node)
-+		type = arizona_of_get_type(&spi->dev);
-+	else
-+		type = id->driver_data;
-+
-+	switch (type) {
- #ifdef CONFIG_MFD_WM5102
- 	case WM5102:
- 		regmap_config = &wm5102_spi_regmap;
-@@ -84,6 +89,7 @@ static struct spi_driver arizona_spi_driver = {
- 		.name	= "arizona",
- 		.owner	= THIS_MODULE,
- 		.pm	= &arizona_pm_ops,
-+		.of_match_table	= of_match_ptr(arizona_of_match),
- 	},
- 	.probe		= arizona_spi_probe,
- 	.remove		= arizona_spi_remove,
-diff --git a/drivers/mfd/arizona.h b/drivers/mfd/arizona.h
-index 9798ae5..db55d98 100644
---- a/drivers/mfd/arizona.h
-+++ b/drivers/mfd/arizona.h
-@@ -13,6 +13,7 @@
- #ifndef _WM5102_H
- #define _WM5102_H
- 
-+#include <linux/of.h>
- #include <linux/regmap.h>
- #include <linux/pm.h>
- 
-@@ -26,6 +27,8 @@ extern const struct regmap_config wm5110_spi_regmap;
- 
- extern const struct dev_pm_ops arizona_pm_ops;
- 
-+extern const struct of_device_id arizona_of_match[];
-+
- extern const struct regmap_irq_chip wm5102_aod;
- extern const struct regmap_irq_chip wm5102_irq;
- 
-@@ -37,4 +40,13 @@ int arizona_dev_exit(struct arizona *arizona);
- int arizona_irq_init(struct arizona *arizona);
- int arizona_irq_exit(struct arizona *arizona);
- 
-+#ifdef CONFIG_OF
-+int arizona_of_get_type(struct device *dev);
-+#else
-+static inline int arizona_of_get_type(struct device *dev)
-+{
-+	return 0;
-+}
-+#endif
-+
- #endif
++IRQCHIP_DECLARE(armv7m_nvic, "arm,armv7m-nvic", nvic_of_init);
 -- 
-1.7.10.4
+1.8.2.rc3
 
