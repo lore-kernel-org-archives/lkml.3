@@ -1,126 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432Ab3DQQZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 12:25:29 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:60074 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755527Ab3DQQZD (ORCPT
+	id S1755289Ab3DQQbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 12:31:13 -0400
+Received: from mail-bn1lp0152.outbound.protection.outlook.com ([207.46.163.152]:23458
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752314Ab3DQQbL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 12:25:03 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/3] nohz: New option to default all CPUs in full dynticks range
-Date: Wed, 17 Apr 2013 18:24:49 +0200
-Message-Id: <1366215889-2635-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1366215889-2635-1-git-send-email-fweisbec@gmail.com>
-References: <1366215889-2635-1-git-send-email-fweisbec@gmail.com>
+	Wed, 17 Apr 2013 12:31:11 -0400
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI9371I542I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz31h2a8h668h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1ad9h1b0ah9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: SFV:SKI;SFS:;DIR:OUT;SFP:;SCL:-1;SRVR:SN2PR03MB062;H:SN2PR03MB061.namprd03.prod.outlook.com;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Jan Beulich <JBeulich@suse.com>, "Michael S. Tsirkin" <mst@redhat.com>
+CC: "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: RE: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
+Thread-Topic: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
+Thread-Index: AQHOAnJoFJQhzmD3TUKsF9dq+4jlRZjabzYAgABndUD///hDAIAAE9LQ///2YoCAABF4gP//9RUAAANR4jAAAPGWAAAA7LQA
+Date: Wed, 17 Apr 2013 16:28:36 +0000
+Message-ID: <76ae3b714d064ae392332615bfd872d5@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1359940910-32114-1-git-send-email-kys@microsoft.com>
+ <1359940959-32168-1-git-send-email-kys@microsoft.com>
+ <1359940959-32168-2-git-send-email-kys@microsoft.com>
+ <20130417070616.GA4487@redhat.com>
+ <423ae84de75f4b3587eb2d1a365cbd95@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130417124852.GD6801@redhat.com>
+ <3b76ebfdb240419aa601309465a4c154@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130417132523.GB26157@redhat.com>
+ <9ffd83acf6ac4a7bb5d51c95c96e6f50@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130417134850.GB26335@redhat.com>
+ <0cd5cde572734ea786664accc1a40bea@SN2PR03MB061.namprd03.prod.outlook.com>
+ <516EE0FE02000078000CE422@nat28.tlf.novell.com>
+In-Reply-To: <516EE0FE02000078000CE422@nat28.tlf.novell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.163]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PR03MB062.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%ZYTOR.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%ALIEN8.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(13464002)(51704004)(377454001)(199002)(189002)(24454001)(76482001)(81542001)(65816001)(53806001)(56816002)(54356001)(54316002)(63696002)(77982001)(56776001)(46102001)(16676001)(51856001)(59766001)(4396001)(50986001)(50466001)(49866001)(47976001)(47776003)(5343635001)(79102001)(20776003)(31966008)(69226001)(74502001)(66066001)(80022001)(47446002)(81342001)(47736001)(74662001)(23726002)(33646001)(46406003)(6806003)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BN1BFFO11HUB010;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 081904387B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a new kernel config that defaults all CPUs to be part
-of the full dynticks range, except the boot one for timekeeping.
 
-This default setting is overriden by the nohz_full= boot option
-if passed by the user.
 
-This is helpful for those who don't need a finegrained range
-of full dynticks CPU and also for automated testing.
+> -----Original Message-----
+> From: Jan Beulich [mailto:JBeulich@suse.com]
+> Sent: Wednesday, April 17, 2013 11:51 AM
+> To: KY Srinivasan; Michael S. Tsirkin
+> Cc: olaf@aepfle.de; bp@alien8.de; apw@canonical.com; x86@kernel.org;
+> tglx@linutronix.de; devel@linuxdriverproject.org; gregkh@linuxfoundation.org;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; hpa@zytor.com
+> Subject: RE: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
+> 
+> >>> On 17.04.13 at 17:31, KY Srinivasan <kys@microsoft.com> wrote:
+> > If Xen were to change where it would not unconditionally emulate Hyper-V, I
+> > would not be opposed to taking
+> > this check out.
+> 
+> But it doesn't do this unconditionally, only upon admin request.
 
-Suggested-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/Kconfig      |   10 ++++++++++
- kernel/time/tick-sched.c |   23 +++++++++++++++++++++--
- 2 files changed, 31 insertions(+), 2 deletions(-)
+>From the discussion we had a couple of months ago, the default setting was to enable
+Hyper-V emulation for all guests. If this is not the case, we ought to be able to drop this.
+However, I think it is not reasonable to add additional checks (in addition to hypervisor check)
+to customize the run-time in the guest for the specific Hypervisor.
 
-diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-index 358d601..99c3f13 100644
---- a/kernel/time/Kconfig
-+++ b/kernel/time/Kconfig
-@@ -128,6 +128,16 @@ config NO_HZ_FULL
- 
- endchoice
- 
-+config NO_HZ_FULL_ALL
-+       bool "Full dynticks system on all CPUs by default"
-+       depends on NO_HZ_FULL
-+       help
-+         If the user doesn't pass the nohz_full boot option to
-+	 define the range of full dynticks CPUs, consider that all
-+	 CPUs in the system are full dynticks by default.
-+	 Note the boot CPU will still be kept outside the range to
-+	 handle the timekeeping duty.
-+
- config NO_HZ
- 	bool "Old Idle dynticks config"
- 	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index d71a5f2..a76e090 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -203,12 +203,31 @@ static int __cpuinit tick_nohz_cpu_down_callback(struct notifier_block *nfb,
-  */
- static char __initdata nohz_full_buf[NR_CPUS + 1];
- 
-+static int tick_nohz_init_all(void)
-+{
-+	int err = -1;
-+
-+#ifdef CONFIG_NO_HZ_FULL_ALL
-+	if (!alloc_cpumask_var(&nohz_full_mask, GFP_KERNEL)) {
-+		pr_err("NO_HZ: Can't allocate full dynticks cpumask\n");
-+		return err;
-+	}
-+	err = 0;
-+	cpumask_setall(nohz_full_mask);
-+	cpumask_clear_cpu(smp_processor_id(), nohz_full_mask);
-+	have_nohz_full_mask = true;
-+#endif
-+	return err;
-+}
-+
- void __init tick_nohz_init(void)
- {
- 	int cpu;
- 
--	if (!have_nohz_full_mask)
--		return;
-+	if (!have_nohz_full_mask) {
-+		if (tick_nohz_init_all() < 0)
-+			return;
-+	}
- 
- 	cpu_notifier(tick_nohz_cpu_down_callback, 0);
- 
--- 
-1.7.5.4
+Regards,
+
+K. Y
+> 
+> Jan
+> 
+> 
+
 
