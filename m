@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab3DQJzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 05:55:09 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:33375 "EHLO relay.sgi.com"
+	id S1757009Ab3DQJ4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 05:56:11 -0400
+Received: from mx7.zte.com.cn ([202.103.147.169]:33579 "EHLO zte.com.cn"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753260Ab3DQJzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 05:55:07 -0400
-Date: Wed, 17 Apr 2013 04:55:01 -0500
-From: Robin Holt <holt@sgi.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@redhat.com>,
-        Russ Anderson <rja@sgi.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
+	id S1753260Ab3DQJ4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 05:56:09 -0400
+In-Reply-To: <516D90F6.3020603@linux.intel.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Patch -v4 4/4] Make reboot_cpuid a kernel parameter. other
- cpus.
-Message-ID: <20130417095501.GD3658@sgi.com>
-References: <20130416095641.GL3658@sgi.com>
- <20130416100439.GM3672@sgi.com>
- <fb8916e0-b41d-4f56-8cfd-3cf791fdc478@email.android.com>
- <20130416124411.GP3658@sgi.com>
+Subject: Re: Re: [PATCH] futex: bugfix for futex-key conflict when futex use
+ hugepage
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130416124411.GP3658@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Lotus Notes Release 6.5.4 March 27, 2005
+Message-ID: <OF79A40956.94F46B9C-ON48257B50.00320F73-48257B50.0036925D@zte.com.cn>
+From: zhang.yi20@zte.com.cn
+Date: Wed, 17 Apr 2013 17:55:29 +0800
+X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP1 HF212|May 23, 2012) at
+ 2013-04-17 17:55:21,
+	Serialize complete at 2013-04-17 17:55:21
+Content-Type: text/plain; charset="US-ASCII"
+X-MAIL: mse02.zte.com.cn r3H9taGC072230
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 07:44:12AM -0500, Robin Holt wrote:
-> On Tue, Apr 16, 2013 at 05:05:45AM -0700, H. Peter Anvin wrote:
-> > Why not just support the existing syntax everywhere?
+Darren Hart <dvhart@linux.intel.com> wrote on 2013/04/17 01:57:10:
+
+> Again, a functional testcase in futextest would be a good idea. This
+> helps validate the patch and also can be used to identify regressions in
+> the future.
+
+I will post the testcase code later.
+
 > 
-> I have not given it much consideration, but IIRC, the other arches that
-> were using reboot= were only looking for an 'h' or something like that.
+> What is the max value of comp_idx? Are we at risk of truncating it?
+> Looks like not really from my initial look.
 > 
-> I will consider making the syntax parse reboot=s#### when I get to
-> the office.
+> This also needs a comment in futex.h describing the usage of the offset
+> field in union futex_key as well as above get_futex_key describing the
+> key for shared mappings.
+> 
+> 
 
-Yesterday was rather disruptive and I did not get to this.  I have given
-it some thought this morning.
-
-Generally speaking, I don't like the feel of this for two reasons.  First,
-having two different places that are parsing reboot=<reboot_mode> and
-its related difficulty in documenting it.  Second, we lose the /sys/ file.
-
-Some background.  First, arm.  It already has a reboot=<c>.  That <c>
-gets passed to the reboot sub-arch function.  It looks like it is ignored,
-but I am very uncertain of that as it is passed into an assembly routine.
-
-Second unicore.  It parses as reboot=<c>.  That <c> gets ignored.
-
-Now the meat of my question.  The Documentation/kernel-parameters.txt
-file indicates reboot= is handled by the arch and are of the format
-<reboot-mode>[,<reboot-mode>[,...]].
-
-I suppose we could have both an arch and generic kernel handler for
-__setup("reboot=",...)  where the generic kernel one just handles the
-s###, but that seems really different from how everything else is done.
-I could not find one instance where a both an arch and the kernel proper
-both parsed the same command-line parameter.
-
-I did not spend the time to see if having two __setup() declarations
-would work.
-
-Additionally, the __setup("... mechanism loses the nice feature the
-core_param gives us in that there is a /sys/ file now available which
-allows us to easily change that setting on the running system.
-
-Are you really sure you want me to do more than I already have.  This
-really feels _VERY_ wrong to me.  Maybe I misunderstood your direction.
-
-Thanks,
-Robin
+As far as I know , the max size of one hugepage is 1 GBytes for x86 cpu.
+Can some other cpus support greater hugepage even more than 4 GBytes? If 
+so, we can change the type of 'offset' from int to long to avoid 
+truncating.
