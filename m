@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab3DQAJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 20:09:26 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:59063 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab3DQAJY (ORCPT
+	id S1753340Ab3DQAOo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 20:14:44 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36064 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab3DQAOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 20:09:24 -0400
-X-AuditID: cbfee68d-b7f786d000005188-e1-516de82eb140
-Date: Wed, 17 Apr 2013 00:09:18 +0000 (GMT)
-From: EUNBONG SONG <eunb.song@samsung.com>
-Subject: [PATCH] um: set CONFIG_LOCKDEP_SUPPORT to CONFIG_LOCKDEP
-To: jdike@addtoit.com, richard@nod.at
-Cc: user-mode-linux-devel@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20130417000516491@eunb.song
-Msgkey: 20130417000516491@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130417000516491@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <8414166.322181366157356551.JavaMail.weblogic@epml27>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+Ztq7ei9xAg6/neS0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfG7ZMv2Qs2sVXcXbWCpYFxBlsXIyeHkICKRMv/74wgtoSAicSX
-	u29YIWwxiQv31gPVcAHVLGOU6Fnzhg2m6O/9qSwQzfMZJfbPtQGxWQRUJZ5MOccOYrMJaEu8
-	/fIAbJCwgKNEe9NbsHoRAUOJxo9NYMuYBUol3txfxAwxR15i8unLYL28AoISJ2c+YYHYpSQx
-	Y+93IJsdKK4ssUMeIiohMWv6BagzeSVmtD+FqpaTmPZ1DTOELS1xftYGRphXFn9/DBXnlzh2
-	ewdTFyMHWO+T+8EwY3Zv/gL1oIDE1DMHGSFK1CUWnneECPNJrFn4lgVmyq5Ty5lhWu9vmcsE
-	8ZOixJTuh+wQtpbElx/72ND9xAsMj5Wnd7JPYFSehSQ1C0n7LCTtyGoWMLKsYhRNLUguKE5K
-	LzLUK07MLS7NS9dLzs/dxAhJCL07GG8fsD7EmAyMj4nMUqLJ+cCEklcSb2hsZmRhamJqbGRu
-	aUaasJI4r1qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRl6enGxe6c9OX3MvnZz0V3hT
-	a6V804+7rC/mtsuumfl2qazvmcufqnxDNxzPb0zi1jSb7duSqHhiq5Ns2o2McvskPe6XS0TP
-	bnRfeckmrWnhyTcTXl9mL9kYczZryoUjf63s5mTYnOV67PDpHD+75xudYzMdGStFK34ZZx45
-	8cunTDNl7vuDBUosxRmJhlrMRcWJACzaquweAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHKsWRmVeSWpSXmKPExsVy+t/t6bp6L3IDDXp6uS0u75rD5sDo8XmT
-	XABjVIZNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
-	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrSRgbGekamJnpGxgZ6JQayVoYGBkSlQVUJG
-	xu2TL9kLNrFV3F21gqWBcQZbFyMnh5CAikTL/++MILaEgInE3/tTWSBsMYkL99ZD1cxnlNg/
-	1wbEZhFQlXgy5Rw7iM0moC3x9ssDVhBbWMBRor3pLViviIChROPHJrCZzAKlEm/uL2KGmCMv
-	Mfn0ZbBeXgFBiZMzn0DtUpKYsfc7kM0OFFeW2CEPEZWQmDX9AiuEzSsxo/0pVLWcxLSva5gh
-	bGmJ87M2MMJcvPj7Y6g4v8Sx2zuYuhg5wHqf3A+GGbN78xc2CFtAYuqZg4wQJeoSC887QoT5
-	JNYsfMsCM2XXqeXMMK33t8xlgvhJUWJK90N2CFtL4suPfWzofuIFhsfK0zvZJzDKzUKSmoWk
-	fRaSdmQ1CxhZVjGKphYkFxQnpVcY6xUn5haX5qXrJefnbmIEp6Zni3cw/j9vfYhRgINRiYf3
-	QkFuoBBrYllxZe4hRgkOZiURXsVVQCHelMTKqtSi/Pii0pzU4kOMycDYm8gsJZqcD0ybeSXx
-	hsYGxoaGluYGpoZGFqQJK4nzPmu1DhQSSE8sSc1OTS1ILYLZwsTBKdXAGBny2+VXz0rDBN6z
-	N7b/nuIU8Hjx+j+rbIr/3wtoMGL5EF0wYWLtwQ1TTb5+nfxkup9vTx7H5GVHNuseONz4uEgk
-	wSzWY4XJ5Akl6e99/wZX26Rb7GV69lvtWeDpgKBNaTK6fRcDlC90z0gt2W4nabZsMm/OhOlr
-	5/k8etE50/Buf9QLziM7ViixFGckGmoxFxUnAgDrow3ZkQMAAA==
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Tue, 16 Apr 2013 20:14:43 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <516DE958.1090200@jp.fujitsu.com>
+Date: Wed, 17 Apr 2013 09:14:16 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <rientjes@google.com>, <linuxram@us.ibm.com>
+Subject: Re: [Bug fix PATCH v2] Reusing a resource structure allocated by
+ bootmem
+References: <516CA4F1.9060603@jp.fujitsu.com> <1366124458.3824.30.camel@misato.fc.hp.com>
+In-Reply-To: <1366124458.3824.30.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3H09WXI006214
+
+2013/04/17 0:00, Toshi Kani wrote:
+> On Tue, 2013-04-16 at 10:10 +0900, Yasuaki Ishimatsu wrote:
+>> When hot removing memory presented at boot time, following messages are shown:
+>
+>   :
+>
+>> The reason why the messages are shown is to release a resource structure,
+>> allocated by bootmem, by kfree(). So when we release a resource structure,
+>> we should check whether it is allocated by bootmem or not.
+>>
+>> But even if we know a resource structure is allocated by bootmem, we cannot
+>> release it since SLxB cannot treat it. So for reusing a resource structure,
+>> this patch remembers it by using bootmem_resource as follows:
+>>
+>> When releasing a resource structure by free_resource(), free_resource() checks
+>> whether the resource structure is allocated by bootmem or not. If it is
+>> allocated by bootmem, free_resource() adds it to bootmem_resource. If it is
+>> not allocated by bootmem, free_resource() release it by kfree().
+>>
+>> And when getting a new resource structure by get_resource(), get_resource()
+>> checks whether bootmem_resource has released resource structures or not. If
+>> there is a released resource structure, get_resource() returns it. If there is
+>> not a releaed resource structure, get_resource() returns new resource structure
+>> allocated by kzalloc().
+>>
+>> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+>> ---
+>> v2:
+>> Based on following Toshi's works:
+>>    Support memory hot-delete to boot memory
+>>      https://lkml.org/lkml/2013/4/10/469
+>>    resource: Update config option of release_mem_region_adjustable()
+>>      https://lkml.org/lkml/2013/4/11/694
+>> Added a NULL check into free_resource()
+>> Remove __free_resource()
+>
+> Thanks for the update.  Looks good.  Can you also address Rui's comment?
+
+Thank you for your review.
+Of course I'll update Rui's comment.
+
+Thanks,
+Yasuaki Ishimatsu
+
+>
+> -Toshi
+>
+>
 
 
-CONFIG_LOCKDEP_SUPPORT is no longer valid.
-
-Singed-off-by: EunBong Song <eunb.song@samsung.com>
-
----
- arch/um/defconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/um/defconfig b/arch/um/defconfig
-index 08107a7..bbc5aa7 100644
---- a/arch/um/defconfig
-+++ b/arch/um/defconfig
-@@ -7,7 +7,7 @@ CONFIG_UML=y
- CONFIG_MMU=y
- CONFIG_NO_IOMEM=y
- # CONFIG_TRACE_IRQFLAGS_SUPPORT is not set
--CONFIG_LOCKDEP_SUPPORT=y
-+CONFIG_LOCKDEP=y
- # CONFIG_STACKTRACE_SUPPORT is not set
- CONFIG_GENERIC_CALIBRATE_DELAY=y
- CONFIG_GENERIC_BUG=y
--- 
-1.7.0.4
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
