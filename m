@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966879Ab3DQPqU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 11:46:20 -0400
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:46168 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965236Ab3DQPqT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 11:46:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+G9fYvL4nM4f7EsryRocwnoftbz1SbTGoFvhdbOAFi029DvKQ@mail.gmail.com>
-References: <CA+G9fYuq3eJp6pfSPXjdPqY7DAW6LF1Q5uDA02GOS65_voo6Bw@mail.gmail.com>
-	<CACRpkdaKajsFc=WGg1OAvBajs5ziCeXbk=-cnMV6EmB3L8rxPg@mail.gmail.com>
-	<CA+G9fYvL4nM4f7EsryRocwnoftbz1SbTGoFvhdbOAFi029DvKQ@mail.gmail.com>
-Date: Wed, 17 Apr 2013 17:46:19 +0200
-Message-ID: <CACRpkdY2_17WufcFYaaRW87JYYNqnGa9sNXQRcduBEsUHHOzQA@mail.gmail.com>
-Subject: Re: [Linaro-QA-Service] [linux-next] Snowball build broken
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Naresh Kamboju <naresh.kamboju@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S966549Ab3DQPuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 11:50:11 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:41089 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855Ab3DQPuK convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:10:1>);
+	Wed, 17 Apr 2013 11:50:10 -0400
+Message-Id: <516EE0FE02000078000CE422@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Wed, 17 Apr 2013 16:50:54 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "KY Srinivasan" <kys@microsoft.com>, "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "olaf@aepfle.de" <olaf@aepfle.de>, "bp@alien8.de" <bp@alien8.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+Subject: RE: [PATCH 2/3] X86: Add a check to catch Xen emulation of
+ Hyper-V
+References: <1359940910-32114-1-git-send-email-kys@microsoft.com>
+ <1359940959-32168-1-git-send-email-kys@microsoft.com>
+ <1359940959-32168-2-git-send-email-kys@microsoft.com>
+ <20130417070616.GA4487@redhat.com>
+ <423ae84de75f4b3587eb2d1a365cbd95@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130417124852.GD6801@redhat.com>
+ <3b76ebfdb240419aa601309465a4c154@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130417132523.GB26157@redhat.com>
+ <9ffd83acf6ac4a7bb5d51c95c96e6f50@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130417134850.GB26335@redhat.com>
+ <0cd5cde572734ea786664accc1a40bea@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <0cd5cde572734ea786664accc1a40bea@SN2PR03MB061.namprd03.prod.outlook.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 3:48 PM, Naresh Kamboju
-<naresh.kamboju@linaro.org> wrote:
-> On 12 April 2013 04:07, Linus Walleij <linus.walleij@linaro.org> wrote:
->> Hey it works. Didn't see this before I fixed it tho :-)
->> http://marc.info/?l=linux-kernel&m=136567139910888&w=2
->
-> This commit not yet been merged in to linux-next  "next-20130416".
-> Due to this reason still snowball build fails at above error.
+>>> On 17.04.13 at 17:31, KY Srinivasan <kys@microsoft.com> wrote:
+> If Xen were to change where it would not unconditionally emulate Hyper-V, I 
+> would not be opposed to taking
+> this check out.
 
-That is outside of my jurisdiction, only the MFD maintainer Samuel
-Ortiz can merge this patch.
+But it doesn't do this unconditionally, only upon admin request.
 
-Yours,
-Linus Walleij
+Jan
+
