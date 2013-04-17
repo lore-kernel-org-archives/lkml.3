@@ -1,201 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965361Ab3DQT7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 15:59:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58359 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936048Ab3DQT7H (ORCPT
+	id S936405Ab3DQT7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 15:59:10 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:38803 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935893Ab3DQT7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 15:59:07 -0400
-Date: Wed, 17 Apr 2013 12:58:29 -0700
-From: tip-bot for Nathan Zimmer <tipbot@zytor.com>
-Message-ID: <tip-b3956a896ea57f25cacd74708b8fab611543a81d@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        johnstul@us.ibm.com, nzimmer@sgi.com, davej@redhat.com,
-        sboyd@codeaurora.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        johnstul@us.ibm.com, nzimmer@sgi.com, davej@redhat.com,
-        sboyd@codeaurora.org, tglx@linutronix.de
-In-Reply-To: <1364345790-14577-3-git-send-email-nzimmer@sgi.com>
-References: <1364345790-14577-3-git-send-email-nzimmer@sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] timer_list:
-  Convert timer list to be a proper seq_file
-Git-Commit-ID: b3956a896ea57f25cacd74708b8fab611543a81d
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 17 Apr 2013 15:59:05 -0400
+Date: Wed, 17 Apr 2013 12:58:46 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 2/3] nohz: Ensure full dynticks CPUs are RCU nocbs
+Message-ID: <20130417195846.GG29861@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1366215889-2635-1-git-send-email-fweisbec@gmail.com>
+ <1366215889-2635-3-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Wed, 17 Apr 2013 12:58:35 -0700 (PDT)
+In-Reply-To: <1366215889-2635-3-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041719-7282-0000-0000-0000163CA80C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b3956a896ea57f25cacd74708b8fab611543a81d
-Gitweb:     http://git.kernel.org/tip/b3956a896ea57f25cacd74708b8fab611543a81d
-Author:     Nathan Zimmer <nzimmer@sgi.com>
-AuthorDate: Tue, 26 Mar 2013 19:56:30 -0500
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 17 Apr 2013 20:51:02 +0200
+On Wed, Apr 17, 2013 at 06:24:48PM +0200, Frederic Weisbecker wrote:
+> We need full dynticks CPU to also be RCU nocb so
+> that we don't have to keep the tick to handle RCU
+> callbacks.
+> 
+> Make sure the range passed to nohz_full= boot
+> parameter is a subset of rcu_nocbs=
+> 
+> The CPUs that fail to meet this requirement will be
+> excluded from the nohz_full range. This is checked
+> early in boot time, before any CPU has the opportunity
+> to stop its tick.
+> 
+> Suggested-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Geoff Levand <geoff@infradead.org>
+> Cc: Gilad Ben Yossef <gilad@benyossef.com>
+> Cc: Hakan Akkan <hakanakkan@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
 
-timer_list: Convert timer list to be a proper seq_file
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-When running with 4096 cores attemping to read /proc/timer_list will fail
-with an ENOMEM condition.  On a sufficantly large systems the total amount
-of data is more then 4mb, so it won't fit into a single buffer.  The
-failure can also occur on smaller systems when memory fragmentation is
-high as reported by Dave Jones.
+(And again, also updated documentation.)
 
-Convert /proc/timer_list to a proper seq_file with its own iterator.  This
-is a little more complex given that we have to make two passes with two
-separate headers.
+> ---
+>  Documentation/kernel-parameters.txt |    2 ++
+>  include/linux/rcupdate.h            |    7 +++++++
+>  include/linux/tick.h                |    2 ++
+>  init/main.c                         |    1 +
+>  kernel/rcutree.c                    |    6 +++---
+>  kernel/rcutree.h                    |    1 -
+>  kernel/rcutree_plugin.h             |   13 ++++---------
+>  kernel/time/tick-sched.c            |   22 ++++++++++++++++------
+>  8 files changed, 35 insertions(+), 19 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 887b297..4865e9b 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1918,6 +1918,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			the specified list of CPUs whose tick will be stopped
+>  			whenever possible. The boot CPU will be forced outside
+>  			the range to maintain the timekeeping.
+> +			The CPUs in this range must also be included in the
+> +			rcu_nocbs= set.
+> 
+>  	noiotrap	[SH] Disables trapped I/O port accesses.
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index b758ce1..8e0948c 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -999,4 +999,11 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
+>  #define kfree_rcu(ptr, rcu_head)					\
+>  	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
+> 
+> +#ifdef CONFIG_RCU_NOCB_CPU
+> +extern bool rcu_is_nocb_cpu(int cpu);
+> +#else
+> +static inline bool rcu_is_nocb_cpu(int cpu) { return false; }
+> +#endif /* #else #ifdef CONFIG_RCU_NOCB_CPU */
+> +
+> +
+>  #endif /* __LINUX_RCUPDATE_H */
+> diff --git a/include/linux/tick.h b/include/linux/tick.h
+> index b4e3b0c..0b6873c 100644
+> --- a/include/linux/tick.h
+> +++ b/include/linux/tick.h
+> @@ -158,8 +158,10 @@ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+>  # endif /* !CONFIG_NO_HZ_COMMON */
+> 
+>  #ifdef CONFIG_NO_HZ_FULL
+> +extern void tick_nohz_init(void);
+>  extern int tick_nohz_full_cpu(int cpu);
+>  #else
+> +static inline void tick_nohz_init(void) { }
+>  static inline int tick_nohz_full_cpu(int cpu) { return 0; }
+>  #endif
+> 
+> diff --git a/init/main.c b/init/main.c
+> index 63534a1..2acb5bb 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -547,6 +547,7 @@ asmlinkage void __init start_kernel(void)
+>  	idr_init_cache();
+>  	perf_event_init();
+>  	rcu_init();
+> +	tick_nohz_init();
+>  	radix_tree_init();
+>  	/* init some links before init_ISA_irqs() */
+>  	early_irq_init();
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index f5ab502..1d4ceff 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -1695,7 +1695,7 @@ rcu_send_cbs_to_orphanage(int cpu, struct rcu_state *rsp,
+>  			  struct rcu_node *rnp, struct rcu_data *rdp)
+>  {
+>  	/* No-CBs CPUs do not have orphanable callbacks. */
+> -	if (is_nocb_cpu(rdp->cpu))
+> +	if (rcu_is_nocb_cpu(rdp->cpu))
+>  		return;
+> 
+>  	/*
+> @@ -2757,10 +2757,10 @@ static void _rcu_barrier(struct rcu_state *rsp)
+>  	 * corresponding CPU's preceding callbacks have been invoked.
+>  	 */
+>  	for_each_possible_cpu(cpu) {
+> -		if (!cpu_online(cpu) && !is_nocb_cpu(cpu))
+> +		if (!cpu_online(cpu) && !rcu_is_nocb_cpu(cpu))
+>  			continue;
+>  		rdp = per_cpu_ptr(rsp->rda, cpu);
+> -		if (is_nocb_cpu(cpu)) {
+> +		if (rcu_is_nocb_cpu(cpu)) {
+>  			_rcu_barrier_trace(rsp, "OnlineNoCB", cpu,
+>  					   rsp->n_barrier_done);
+>  			atomic_inc(&rsp->barrier_cpu_count);
+> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> index f993c0a..38acc49 100644
+> --- a/kernel/rcutree.h
+> +++ b/kernel/rcutree.h
+> @@ -529,7 +529,6 @@ static void print_cpu_stall_info(struct rcu_state *rsp, int cpu);
+>  static void print_cpu_stall_info_end(void);
+>  static void zero_cpu_stall_ticks(struct rcu_data *rdp);
+>  static void increment_cpu_stall_ticks(void);
+> -static bool is_nocb_cpu(int cpu);
+>  static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
+>  			    bool lazy);
+>  static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index a5745e9..0cd91cc 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -2167,7 +2167,7 @@ static int __init parse_rcu_nocb_poll(char *arg)
+>  early_param("rcu_nocb_poll", parse_rcu_nocb_poll);
+> 
+>  /* Is the specified CPU a no-CPUs CPU? */
+> -static bool is_nocb_cpu(int cpu)
+> +bool rcu_is_nocb_cpu(int cpu)
+>  {
+>  	if (have_rcu_nocb_mask)
+>  		return cpumask_test_cpu(cpu, rcu_nocb_mask);
+> @@ -2225,7 +2225,7 @@ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
+>  			    bool lazy)
+>  {
+> 
+> -	if (!is_nocb_cpu(rdp->cpu))
+> +	if (!rcu_is_nocb_cpu(rdp->cpu))
+>  		return 0;
+>  	__call_rcu_nocb_enqueue(rdp, rhp, &rhp->next, 1, lazy);
+>  	return 1;
+> @@ -2242,7 +2242,7 @@ static bool __maybe_unused rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+>  	long qll = rsp->qlen_lazy;
+> 
+>  	/* If this is not a no-CBs CPU, tell the caller to do it the old way. */
+> -	if (!is_nocb_cpu(smp_processor_id()))
+> +	if (!rcu_is_nocb_cpu(smp_processor_id()))
+>  		return 0;
+>  	rsp->qlen = 0;
+>  	rsp->qlen_lazy = 0;
+> @@ -2282,7 +2282,7 @@ static bool nocb_cpu_expendable(int cpu)
+>  	 * If there are no no-CB CPUs or if this CPU is not a no-CB CPU,
+>  	 * then offlining this CPU is harmless.  Let it happen.
+>  	 */
+> -	if (!have_rcu_nocb_mask || is_nocb_cpu(cpu))
+> +	if (!have_rcu_nocb_mask || rcu_is_nocb_cpu(cpu))
+>  		return 1;
+> 
+>  	/* If no memory, play it safe and keep the CPU around. */
+> @@ -2464,11 +2464,6 @@ static void __init rcu_init_nocb(void)
+> 
+>  #else /* #ifdef CONFIG_RCU_NOCB_CPU */
+> 
+> -static bool is_nocb_cpu(int cpu)
+> -{
+> -	return false;
+> -}
+> -
+>  static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
+>  			    bool lazy)
+>  {
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 2bac5ea..d71a5f2 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -203,17 +203,27 @@ static int __cpuinit tick_nohz_cpu_down_callback(struct notifier_block *nfb,
+>   */
+>  static char __initdata nohz_full_buf[NR_CPUS + 1];
+> 
+> -static int __init init_tick_nohz_full(void)
+> +void __init tick_nohz_init(void)
+>  {
+> -	if (have_nohz_full_mask)
+> -		cpu_notifier(tick_nohz_cpu_down_callback, 0);
+> +	int cpu;
+> +
+> +	if (!have_nohz_full_mask)
+> +		return;
+> +
+> +	cpu_notifier(tick_nohz_cpu_down_callback, 0);
+> +
+> +	/* Make sure full dynticks CPU are also RCU nocbs */
+> +	for_each_cpu(cpu, nohz_full_mask) {
+> +		if (!rcu_is_nocb_cpu(cpu)) {
+> +			pr_warning("NO_HZ: CPU %d is not RCU nocb: "
+> +				   "cleared from nohz_full range", cpu);
+> +			cpumask_clear_cpu(cpu, nohz_full_mask);
+> +		}
+> +	}
+> 
+>  	cpulist_scnprintf(nohz_full_buf, sizeof(nohz_full_buf), nohz_full_mask);
+>  	pr_info("NO_HZ: Full dynticks CPUs: %s.\n", nohz_full_buf);
+> -
+> -	return 0;
+>  }
+> -core_initcall(init_tick_nohz_full);
+>  #else
+>  #define have_nohz_full_mask (0)
+>  #endif
+> -- 
+> 1.7.5.4
+> 
 
-sysrq_timer_list_show also needed to be updated to reflect the fact that
-now timer_list_show only does one cpu at at time.
-
-Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
-Link: http://lkml.kernel.org/r/1364345790-14577-3-git-send-email-nzimmer@sgi.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time/timer_list.c | 89 +++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 77 insertions(+), 12 deletions(-)
-
-diff --git a/kernel/time/timer_list.c b/kernel/time/timer_list.c
-index 380a589..3bdf283 100644
---- a/kernel/time/timer_list.c
-+++ b/kernel/time/timer_list.c
-@@ -20,6 +20,13 @@
- 
- #include <asm/uaccess.h>
- 
-+
-+struct timer_list_iter {
-+	int cpu;
-+	bool second_pass;
-+	u64 now;
-+};
-+
- typedef void (*print_fn_t)(struct seq_file *m, unsigned int *classes);
- 
- DECLARE_PER_CPU(struct hrtimer_cpu_base, hrtimer_bases);
-@@ -247,43 +254,101 @@ static void timer_list_show_tickdevices_header(struct seq_file *m)
- }
- #endif
- 
--static int timer_list_show(struct seq_file *m, void *v)
-+static inline void timer_list_header(struct seq_file *m, u64 now)
- {
--	u64 now = ktime_to_ns(ktime_get());
--	int cpu;
--
- 	SEQ_printf(m, "Timer List Version: v0.7\n");
- 	SEQ_printf(m, "HRTIMER_MAX_CLOCK_BASES: %d\n", HRTIMER_MAX_CLOCK_BASES);
- 	SEQ_printf(m, "now at %Ld nsecs\n", (unsigned long long)now);
- 	SEQ_printf(m, "\n");
-+}
-+
-+static int timer_list_show(struct seq_file *m, void *v)
-+{
-+	struct timer_list_iter *iter = v;
-+	u64 now = ktime_to_ns(ktime_get());
-+
-+	if (iter->cpu == -1 && !iter->second_pass)
-+		timer_list_header(m, now);
-+	else if (!iter->second_pass)
-+		print_cpu(m, iter->cpu, iter->now);
-+#ifdef CONFIG_GENERIC_CLOCKEVENTS
-+	else if (iter->cpu == -1 && iter->second_pass)
-+		timer_list_show_tickdevices_header(m);
-+	else
-+		print_tickdevice(m, tick_get_device(iter->cpu), iter->cpu);
-+#endif
-+	return 0;
-+}
-+
-+void sysrq_timer_list_show(void)
-+{
-+	u64 now = ktime_to_ns(ktime_get());
-+	int cpu;
-+
-+	timer_list_header(NULL, now);
- 
- 	for_each_online_cpu(cpu)
--		print_cpu(m, cpu, now);
-+		print_cpu(NULL, cpu, now);
- 
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
--	timer_list_show_tickdevices_header(m);
-+	timer_list_show_tickdevices_header(NULL);
- 	for_each_online_cpu(cpu)
--		print_tickdevice(m, tick_get_device(cpu), cpu);
-+		print_tickdevice(NULL, tick_get_device(cpu), cpu);
- #endif
-+	return;
-+}
- 
--	return 0;
-+static void *timer_list_start(struct seq_file *file, loff_t *offset)
-+{
-+	struct timer_list_iter *iter = file->private;
-+
-+	if (!*offset) {
-+		iter->cpu = -1;
-+		iter->now = ktime_to_ns(ktime_get());
-+	} else if (iter->cpu >= nr_cpu_ids) {
-+#ifdef CONFIG_GENERIC_CLOCKEVENTS
-+		if (!iter->second_pass) {
-+			iter->cpu = -1;
-+			iter->second_pass = true;
-+		} else
-+			return NULL;
-+#else
-+		return NULL;
-+#endif
-+	}
-+	return iter;
- }
- 
--void sysrq_timer_list_show(void)
-+static void *timer_list_next(struct seq_file *file, void *v, loff_t *offset)
- {
--	timer_list_show(NULL, NULL);
-+	struct timer_list_iter *iter = file->private;
-+	iter->cpu = cpumask_next(iter->cpu, cpu_online_mask);
-+	++*offset;
-+	return timer_list_start(file, offset);
- }
- 
-+static void timer_list_stop(struct seq_file *seq, void *v)
-+{
-+}
-+
-+static const struct seq_operations timer_list_sops = {
-+	.start = timer_list_start,
-+	.next = timer_list_next,
-+	.stop = timer_list_stop,
-+	.show = timer_list_show,
-+};
-+
- static int timer_list_open(struct inode *inode, struct file *filp)
- {
--	return single_open(filp, timer_list_show, NULL);
-+	return seq_open_private(filp, &timer_list_sops,
-+			sizeof(struct timer_list_iter));
- }
- 
- static const struct file_operations timer_list_fops = {
- 	.open		= timer_list_open,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= single_release,
-+	.release	= seq_release_private,
- };
- 
- static int __init init_timer_list_procfs(void)
