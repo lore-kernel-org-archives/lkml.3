@@ -1,102 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab3DQKJy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 06:09:54 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:53494 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754360Ab3DQKJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 06:09:53 -0400
-Message-ID: <516E6FEC.9030401@stericsson.com>
-Date: Wed, 17 Apr 2013 11:48:28 +0200
-From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1758111Ab3DQKKP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 06:10:15 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:55819 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757971Ab3DQKKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 06:10:12 -0400
+Date: Wed, 17 Apr 2013 12:10:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH v2] drm/nouveau: always select ACPI_VIDEO if ACPI is
+ enabled.
+Message-ID: <20130417101007.GC11807@pd.tnic>
+References: <20130204152344.GG13909@pd.tnic>
+ <510FD6A2.80101@canonical.com>
+ <20130205145232.GI4827@pd.tnic>
+ <5111277B.5020607@canonical.com>
+ <20130205162206.GJ4827@pd.tnic>
+ <20130220185633.GF16775@pd.tnic>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] regulator: ab8500: Don't update info->update_val
- if write to register fails
-References: <1365509706.3801.1.camel@phoenix>
-In-Reply-To: <1365509706.3801.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130220185633.GF16775@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 02:15 PM, Axel Lin wrote:
-> This patch ensures info->update_val is consistent with current register value.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Looks good to me.
+On Wed, Feb 20, 2013 at 07:56:33PM +0100, Borislav Petkov wrote:
+> On Tue, Feb 05, 2013 at 05:22:06PM +0100, Borislav Petkov wrote:
+> > On Tue, Feb 05, 2013 at 04:38:35PM +0100, Maarten Lankhorst wrote:
+> > > Argh, next attempt, based on i915's Kconfig.
+> > > 
+> > > It seems that not only I have to select ACPI_VIDEO, I also have to select all the dependencies.
+> > > Is this a Kconfig bug or working as intended? i915 seems to have a workaround, so I copied it from
+> > > there. Except it's currently missing select THERMAL, so I guess it didn't get updated when that got
+> > > added.
+> > > 
+> > > ---->8
+> > > Having nouveau builtin would still allow ACPI_VIDEO to be used as external module
+> > > if some of the deps for acpi_video have not been met, which would result in a linking
+> > > failure. Solve this by selecting all dependencies as well.
+> > > 
+> > > Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> > 
+> > Yep, this takes care of all deps,
+> > 
+> > Tested-by: Borislav Petkov <bp@suse.de>
+> 
+> Just to check whether anyone has picked this already - it is triggering
+> on 3.8 too so it most probably needs a stable tag too.
 
-Acked-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-> ---
->   drivers/regulator/ab8500.c |   20 +++++++++++---------
->   1 file changed, 11 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-> index acdffc5..1866dbf 100644
-> --- a/drivers/regulator/ab8500.c
-> +++ b/drivers/regulator/ab8500.c
-> @@ -392,9 +392,8 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
->   			val = info->mode_val_idle;
->   			break;
->   		default:
-> -			if (info->shared_mode)
-> -				mutex_unlock(&shared_mode_mutex);
-> -			return -EINVAL;
-> +			ret = -EINVAL;
-> +			goto out_unlock;
->   		}
->   
->   		bank = info->mode_bank;
-> @@ -405,17 +404,14 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
->   
->   		switch (mode) {
->   		case REGULATOR_MODE_NORMAL:
-> -			info->update_val = info->update_val_normal;
->   			val = info->update_val_normal;
->   			break;
->   		case REGULATOR_MODE_IDLE:
-> -			info->update_val = info->update_val_idle;
->   			val = info->update_val_idle;
->   			break;
->   		default:
-> -			if (info->shared_mode)
-> -				mutex_unlock(&shared_mode_mutex);
-> -			return -EINVAL;
-> +			ret = -EINVAL;
-> +			goto out_unlock;
->   		}
->   
->   		bank = info->update_bank;
-> @@ -426,9 +422,11 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
->   	if (dmr || ab8500_regulator_is_enabled(rdev)) {
->   		ret = abx500_mask_and_set_register_interruptible(info->dev,
->   			bank, reg, mask, val);
-> -		if (ret < 0)
-> +		if (ret < 0) {
->   			dev_err(rdev_get_dev(rdev),
->   				"couldn't set regulator mode\n");
-> +			goto out_unlock;
-> +		}
->   
->   		dev_vdbg(rdev_get_dev(rdev),
->   			"%s-set_mode (bank, reg, mask, value): "
-> @@ -437,6 +435,10 @@ static int ab8500_regulator_set_mode(struct regulator_dev *rdev,
->   			mask, val);
->   	}
->   
-> +	if (!dmr)
-> +		info->update_val = val;
-> +
-> +out_unlock:
->   	if (info->shared_mode)
->   		mutex_unlock(&shared_mode_mutex);
->   
+Ok,
 
+this is not good.
+
+So we have -rc7+, this patch has been out there for 2 months and still
+not in Linus' tree.
+
+Linus,
+
+the patch below fixes a build failure here with my custom config. I
+think this late in the game, we need some kind of a fix before 3.9 is
+released. I'm adding the patch here in case you want to pick it up
+yourself.
+
+Thanks.
+
+--
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Date: Wed, 17 Apr 2013 12:04:09 +0200
+Subject: [PATCH] drm/nouveau: always select ACPI_VIDEO if ACPI is enabled.
+
+Having nouveau builtin would still allow ACPI_VIDEO to be used as
+external module if some of the deps for acpi_video have not been met,
+which would result in a linking failure. Solve this by selecting all
+dependencies as well.
+
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Tested-by: Borislav Petkov <bp@suse.de>
+---
+ drivers/gpu/drm/nouveau/Kconfig | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/nouveau/Kconfig b/drivers/gpu/drm/nouveau/Kconfig
+index a7ff6d5a34b9..845b7caa9ee1 100644
+--- a/drivers/gpu/drm/nouveau/Kconfig
++++ b/drivers/gpu/drm/nouveau/Kconfig
+@@ -10,11 +10,17 @@ config DRM_NOUVEAU
+ 	select FB
+ 	select FRAMEBUFFER_CONSOLE if !EXPERT
+ 	select FB_BACKLIGHT if DRM_NOUVEAU_BACKLIGHT
+-	select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE && VIDEO_OUTPUT_CONTROL && INPUT
+ 	select X86_PLATFORM_DEVICES if ACPI && X86
+ 	select ACPI_WMI if ACPI && X86
+ 	select MXM_WMI if ACPI && X86
+ 	select POWER_SUPPLY
++	# Similar to i915, we need to select ACPI_VIDEO and it's dependencies
++	select BACKLIGHT_LCD_SUPPORT if ACPI && X86
++	select BACKLIGHT_CLASS_DEVICE if ACPI && X86
++	select VIDEO_OUTPUT_CONTROL if ACPI && X86
++	select INPUT if ACPI && X86
++	select THERMAL if ACPI && X86
++	select ACPI_VIDEO if ACPI && X86
+ 	help
+ 	  Choose this option for open-source nVidia support.
+ 
+-- 
+1.8.2.135.g7b592fa
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+- -
