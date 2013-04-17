@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966885Ab3DQV7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 17:59:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49836 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965829Ab3DQV7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 17:59:53 -0400
-Date: Wed, 17 Apr 2013 14:59:51 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] binfmt_elf: PIE: make PF_RANDOMIZE check comment more
- accurate
-Message-ID: <alpine.LNX.2.00.1304171458460.31201@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S966903Ab3DQWAp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 18:00:45 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:35555 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965558Ab3DQWAn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 18:00:43 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAOZdJXVnppPczrJi8jcNWLvabHFWP++Ex1QiEadbyLfApCR85g@mail.gmail.com>
+References: <1365564999-24427-1-git-send-email-Yuantian.Tang@freescale.com>
+ <D07C73A334FF604B95B3CBD2A545D07B0B144FD3@039-SN2MPN1-013.039d.mgd.msft.net>
+ <20130417145719.F194E3E2B73@localhost> <CAOZdJXVnppPczrJi8jcNWLvabHFWP++Ex1QiEadbyLfApCR85g@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 17 Apr 2013 23:00:22 +0100
+X-Google-Sender-Auth: nPZC0UP-8Rwymg1xPr061gKhQpE
+Message-ID: <CACxGe6usVnOdcxELXWcqtuW-YVvDJmyyW+Ds8UQ1xpoCY+_WAg@mail.gmail.com>
+Subject: Re: [PATCH v2] of/base: release the node correctly in of_parse_phandle_with_args()
+To: Timur Tabi <timur@tabi.org>
+Cc: Tang Yuantian-B29983 <B29983@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment I originally added in a3defbe5c337db ("binfmt_elf: fix PIE 
-execution with randomization disabled") is not really 100% accurate -- 
-sysctl is not the only way how PF_RANDOMIZE could be forcibly unset in 
-runtime.
+On Wed, Apr 17, 2013 at 10:52 PM, Timur Tabi <timur@tabi.org> wrote:
+> On Wed, Apr 17, 2013 at 9:57 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>>
+>>> I really preciate if you can spend some times to review this patch.
+>>
+>> Applied, thanks.
+>
+> Pff.  Why do I bother?
 
-Another option of course is direct modification of personality flags (i.e. 
-running through setarch wrapper).
+Relax Timur:
 
-Make the comment more explicit and accurate.
+http://git.secretlab.ca/?p=linux.git;a=commitdiff;h=b855f16b05a697ac1863adabe99bfba56e6d3199
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- fs/binfmt_elf.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+g.
 
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 3939829..7e533c0 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -803,7 +803,8 @@ static int load_elf_binary(struct linux_binprm *bprm)
- 			 * follow the loader, and is not movable.  */
- #ifdef CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE
- 			/* Memory randomization might have been switched off
--			 * in runtime via sysctl.
-+			 * in runtime via sysctl or explicit setting of
-+			 * personality flags.
- 			 * If that is the case, retain the original non-zero
- 			 * load_bias value in order to establish proper
- 			 * non-randomized mappings.
--- 
-Jiri Kosina
-SUSE Labs
+
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
