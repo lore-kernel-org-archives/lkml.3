@@ -1,173 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758367Ab3DQSoX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 14:44:23 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:46418 "EHLO relay.sgi.com"
+	id S966633Ab3DQSp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 14:45:27 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:55840 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S936277Ab3DQSn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 14:43:29 -0400
+	id S966525Ab3DQSpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 14:45:25 -0400
+Date: Wed, 17 Apr 2013 13:45:23 -0500
 From: Robin Holt <holt@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Russ Anderson <rja@sgi.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: [PATCH -v5 5/5] Make reboot_cpuid a kernel parameter.
-Date: Wed, 17 Apr 2013 13:43:18 -0500
-Message-Id: <1366224198-49485-6-git-send-email-holt@sgi.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366224198-49485-1-git-send-email-holt@sgi.com>
-References: <1366224198-49485-1-git-send-email-holt@sgi.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi.kivity@gmail.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>
+Subject: Re: [PATCH] mm: mmu_notifier: re-fix freed page still mapped in
+ secondary MMU
+Message-ID: <20130417184523.GN3672@sgi.com>
+References: <516CF235.4060103@linux.vnet.ibm.com>
+ <20130416093131.GJ3658@sgi.com>
+ <516D275C.8040406@linux.vnet.ibm.com>
+ <20130416112553.GM3658@sgi.com>
+ <20130416114322.GN3658@sgi.com>
+ <516D4D08.9020602@linux.vnet.ibm.com>
+ <20130416180835.GY3658@sgi.com>
+ <516E0F1E.5090805@linux.vnet.ibm.com>
+ <20130417141035.GA29872@sgi.com>
+ <516EECDB.6090400@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <516EECDB.6090400@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moving the reboot=s<##> parameter for x86 to a kernel parameter
-proper.  I did not find any other arch that was specifying the
-reboot cpu.
+On Thu, Apr 18, 2013 at 02:41:31AM +0800, Xiao Guangrong wrote:
+> On 04/17/2013 10:10 PM, Robin Holt wrote:
+> > On Wed, Apr 17, 2013 at 10:55:26AM +0800, Xiao Guangrong wrote:
+> >> On 04/17/2013 02:08 AM, Robin Holt wrote:
+> >>> On Tue, Apr 16, 2013 at 09:07:20PM +0800, Xiao Guangrong wrote:
+> >>>> On 04/16/2013 07:43 PM, Robin Holt wrote:
+> >>>>> Argh.  Taking a step back helped clear my head.
+> >>>>>
+> >>>>> For the -stable releases, I agree we should just go with your
+> >>>>> revert-plus-hlist_del_init_rcu patch.  I will give it a test
+> >>>>> when I am in the office.
+> >>>>
+> >>>> Okay. Wait for your test report. Thank you in advance.
+> >>>>
+> >>>>>
+> >>>>> For the v3.10 release, we should work on making this more
+> >>>>> correct and completely documented.
+> >>>>
+> >>>> Better document is always welcomed.
+> >>>>
+> >>>> Double call ->release is not bad, like i mentioned it in the changelog:
+> >>>>
+> >>>> it is really rare (e.g, can not happen on kvm since mmu-notify is unregistered
+> >>>> after exit_mmap()) and the later call of multiple ->release should be
+> >>>> fast since all the pages have already been released by the first call.
+> >>>>
+> >>>> But, of course, it's great if you have a _light_ way to avoid this.
+> >>>
+> >>> Getting my test environment set back up took longer than I would have liked.
+> >>>
+> >>> Your patch passed.  I got no NULL-pointer derefs.
+> >>
+> >> Thanks for your test again.
+> >>
+> >>>
+> >>> How would you feel about adding the following to your patch?
+> >>
+> >> I prefer to make these changes as a separate patch, this change is the
+> >> improvement, please do not mix it with bugfix.
+> > 
+> > I think your "improvement" classification is a bit deceiving.  My previous
+> > patch fixed the bug in calling release multiple times.  Your patch without
+> > this will reintroduce that buggy behavior.  Just because the bug is already
+> > worked around by KVM does not mean it is not a bug.
+> 
+> As your tested, calling ->release() multiple times can work, but just make your
+> testcase more _slower_. So your changes is trying to speed it up - it is a
+> improvement.
+> 
+> Well, _if_ it is really a bug, could you please do not fix two bugs in one patch?
 
-I left a compatibility mode in there.  The new parameter always
-takes precedence.  I also fixed up the current code to support
-up to cpuid's up to the current max of 4096.
+The code, as is, does not call ->release() multiple times.  Your code
+changes the behavior to call it multiple times.  You are introducing the
+bug by your code changes.  Why not fix the bug you create in the patch
+which creates it?
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-To: Ingo Molnar <mingo@redhat.com>
-To: Russ Anderson <rja@sgi.com>
-Cc: Shawn Guo <shawn.guo@linaro.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robin Holt <holt@sgi.com>
-Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: the arch/x86 maintainers <x86@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- Documentation/kernel-parameters.txt |  2 ++
- arch/x86/kernel/reboot.c            | 39 +++++++++++++------------------------
- kernel/reboot.c                     |  6 +++++-
- 3 files changed, 20 insertions(+), 27 deletions(-)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4609e81..11ebb48 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2597,6 +2597,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			Format: <reboot_mode>[,<reboot_mode2>[,...]]
- 			See arch/*/kernel/reboot.c or arch/*/kernel/process.c
- 
-+	reboot_cpuid=	[KNL] cpuid to use for reboot/halt, etc operations.
-+
- 	relax_domain_level=
- 			[KNL, SMP] Set scheduler's default relax_domain_level.
- 			See Documentation/cgroups/cpusets.txt.
-diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
-index 76fa1e9..cdcf28f 100644
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -49,10 +49,6 @@ int reboot_force;
-  */
- static int reboot_default = 1;
- 
--#ifdef CONFIG_SMP
--static int reboot_cpu = -1;
--#endif
--
- /*
-  * This is set if we need to go through the 'emergency' path.
-  * When machine_emergency_restart() is called, we may be on
-@@ -63,6 +59,8 @@ static int reboot_emergency;
- /* This is set by the PCI code if either type 1 or type 2 PCI is detected */
- bool port_cf9_safe = false;
- 
-+extern int reboot_cpuid;
-+
- /*
-  * reboot=b[ios] | s[mp] | t[riple] | k[bd] | e[fi] [, [w]arm | [c]old] | p[ci]
-  * warm   Don't set the cold reboot flag
-@@ -97,10 +95,14 @@ static int __init reboot_setup(char *str)
- 
- #ifdef CONFIG_SMP
- 		case 's':
--			if (isdigit(*(str+1))) {
--				reboot_cpu = (int) (*(str+1) - '0');
--				if (isdigit(*(str+2)))
--					reboot_cpu = reboot_cpu*10 + (int)(*(str+2) - '0');
-+			if (reboot_cpuid < 0) {
-+				int coffset;
-+
-+				reboot_cpuid = 0;
-+				for (coffset = 1; isdigit(*(str + coffset)); coffset++) {
-+					reboot_cpuid *= 10;
-+					reboot_cpuid += (int)(*(str+2) - '0');
-+				}
- 			}
- 			/*
- 			 * We will leave sorting out the final value
-@@ -615,25 +617,10 @@ void native_machine_shutdown(void)
- 	/* Stop the cpus and apics */
- #ifdef CONFIG_SMP
- 
--	/* The boot cpu is always logical cpu 0 */
--	int reboot_cpu_id = 0;
--
--	/* See if there has been given a command line override */
--	if ((reboot_cpu != -1) && (reboot_cpu < nr_cpu_ids) &&
--		cpu_online(reboot_cpu))
--		reboot_cpu_id = reboot_cpu;
--
--	/* Make certain the cpu I'm about to reboot on is online */
--	if (!cpu_online(reboot_cpu_id))
--		reboot_cpu_id = smp_processor_id();
--
--	/* Make certain I only run on the appropriate processor */
--	set_cpus_allowed_ptr(current, cpumask_of(reboot_cpu_id));
--
- 	/*
--	 * O.K Now that I'm on the appropriate processor, stop all of the
--	 * others. Also disable the local irq to not receive the per-cpu
--	 * timer interrupt which may trigger scheduler's load balance.
-+	 * Stop all of the others. Also disable the local irq to
-+	 * not receive the per-cpu timer interrupt which may trigger
-+	 * scheduler's load balance.
- 	 */
- 	local_irq_disable();
- 	stop_other_cpus();
-diff --git a/kernel/reboot.c b/kernel/reboot.c
-index c4eb2a4..04a162a 100644
---- a/kernel/reboot.c
-+++ b/kernel/reboot.c
-@@ -10,6 +10,7 @@
- #include <linux/kexec.h>
- #include <linux/kmod.h>
- #include <linux/kmsg_dump.h>
-+#include <linux/moduleparam.h>
- #include <linux/reboot.h>
- #include <linux/suspend.h>
- #include <linux/syscalls.h>
-@@ -69,10 +70,13 @@ int unregister_reboot_notifier(struct notifier_block *nb)
- }
- EXPORT_SYMBOL(unregister_reboot_notifier);
- 
-+int reboot_cpuid = -1;
-+core_param(reboot_cpuid, reboot_cpuid, int, 0644);
-+
- static void migrate_to_reboot_cpu(void)
- {
- 	/* The boot cpu is always logical cpu 0 */
--	int reboot_cpu_id = 0;
-+	int reboot_cpu_id = reboot_cpuid;
- 
- 	cpu_hotplug_disable();
- 
--- 
-1.8.1.2
-
+Robin
