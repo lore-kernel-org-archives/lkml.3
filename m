@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966317Ab3DQRtv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:49:51 -0400
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:42075 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966137Ab3DQRts (ORCPT
+	id S936340Ab3DQRyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:54:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57683 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935915Ab3DQRyR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:49:48 -0400
-Date: Wed, 17 Apr 2013 13:49:44 -0400
-From: Josh Boyer <jwboyer@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Stephan von Krawczynski <skraw@ithnet.com>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: No serial since kernel 3.8
-Message-ID: <20130417174944.GB5788@zod.gha.chartermi.net>
-References: <20130416162047.2f9b83fe.skraw@ithnet.com>
- <CAFLxGvykqMUHrmdZnzPXW7i3-ubcF6jv2fLYF3sYPkCtJDJZuA@mail.gmail.com>
- <20130416145953.GA8184@zod.gha.chartermi.net>
- <20130416181432.a28e0465.skraw@ithnet.com>
- <CAErSpo77+A0NqZpifCCJZb7T_=o0GcBo9A6Gw5OvV2kDOppt8A@mail.gmail.com>
+	Wed, 17 Apr 2013 13:54:17 -0400
+Message-ID: <516EE1B9.6000206@infradead.org>
+Date: Wed, 17 Apr 2013 10:54:01 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo77+A0NqZpifCCJZb7T_=o0GcBo9A6Gw5OvV2kDOppt8A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Marek <mmarek@suse.cz>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Simon Glass <sjg@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: Export matrix_keypad_parse_of_params()
+References: <1366102254-12440-1-git-send-email-mmarek@suse.cz>
+In-Reply-To: <1366102254-12440-1-git-send-email-mmarek@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 11:38:30AM -0600, Bjorn Helgaas wrote:
->[+cc Rafael & linux-acpi]
->
->On Tue, Apr 16, 2013 at 10:14 AM, Stephan von Krawczynski
-><skraw@ithnet.com> wrote:
->> On Tue, 16 Apr 2013 10:59:53 -0400
->> Josh Boyer <jwboyer@gmail.com> wrote:
->>
->>> On Tue, Apr 16, 2013 at 04:55:25PM +0200, richard -rw- weinberger wrote:
->>> >On Tue, Apr 16, 2013 at 4:20 PM, Stephan von Krawczynski
->>> ><skraw@ithnet.com> wrote:
->>> >> Hello,
->>> >>
->>> >> can some kind soul please explain how I can get my serial port back under
->>> >> kernel 3.8.X. Earlier kernels showed:
->>> >>
->>> >> Jan 10 13:57:18 mybox kernel: [    0.712829] serial8250: ttyS0 at I/O 0x3f8
->>> >> (irq = 4) is a 16550A
->>> >>
->>> >> But 3.8.4:
->>> >>
->>> >> Mar 26 10:39:14 admin kernel: [    0.603647] serial 00:0a: disabled
->>> >>
->>> >> Only kernel is replaced, no change in distro
->>> >> Is there some kernel boot parameter needed now?
->>> >> I tried 3.4.X and it works, even 3.7.X works...
->>> >
->>> >So, 3.8.3 worked and 3.8.4 introduced a regression?
->>> >If so please confirm.
->>> >
->>> >CC'ing gregkh, just in case...
->>>
->>> We had a report of this in Fedora that was fixed with 3.8.7.  An upstream
->>> change had been brought back to the 3.8.x series, and it was subsequently
->>> reverted.  3.8.7 picked up the revert.
->>>
->>> josh
->>
->> 3.8.7 does not work either. I just checked it. I tried shared and not shared IRQ:
->>
->> Apr 16 17:47:05 mybox kernel: [    0.604826] Serial: 8250/16550 driver, 8 ports, IRQ sharing disabled
->>
->> and another test:
->>
->> Apr 16 18:07:08 mybox kernel: [    0.601203] Serial: 8250/16550 driver, 8 ports, IRQ sharing enabled
->>
->> I must say that 3.8.7 does not even tell the "serial 00:0a: disabled" any more.
->> This is no special board, it is a pretty mainstream asus xeon board with onboard serial.
->> Loading 3.4.24 (just an example) makes the port work immediately.
->> Anything else I can test?
->
->3.7.6 works, and 3.8.3, 3.8.4, 3.8.7 all fail.  So it looks like a
->regression between 3.7.6 and 3.8.3.
->
->The "serial 00:0a: disabled" message is from PNP, so I added Rafael
->and linux-acpi.  Complete dmesg logs from 3.7.6 and 3.8.4 would be a
->place to start.  Also maybe an acpidump, since the 00:0a PNP device
->probably came from PNPACPI.  You could attach all these to a
->https://bugzilla.kernel.org report if you want a place to stash them.
->
->Josh, do you have a pointer (URL) to the Fedora issue so we can rule
->that in or out?
+On 04/16/13 01:50, Michal Marek wrote:
+> Couple of input drivers depend on this symbol:
+> 
+> ERROR: "matrix_keypad_parse_of_params" [drivers/input/keyboard/tca8418_keypad.ko] undefined!
+> ERROR: "matrix_keypad_parse_of_params" [drivers/input/keyboard/cros_ec_keyb.ko] undefined!
+> 
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-https://lkml.org/lkml/2013/4/2/426 is the upstream thread.  Seems that
-was narrowed down to 3.8.4 though, not 3.8.3.
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-josh
+Thanks.
+
+> ---
+>  drivers/input/matrix-keymap.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/input/matrix-keymap.c b/drivers/input/matrix-keymap.c
+> index 619b382..08b61f5 100644
+> --- a/drivers/input/matrix-keymap.c
+> +++ b/drivers/input/matrix-keymap.c
+> @@ -68,6 +68,7 @@ int matrix_keypad_parse_of_params(struct device *dev,
+>  
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(matrix_keypad_parse_of_params);
+>  
+>  static int matrix_keypad_parse_of_keymap(const char *propname,
+>  					 unsigned int rows, unsigned int cols,
+> 
+
+
+-- 
+~Randy
