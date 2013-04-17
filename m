@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966727Ab3DQOog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 10:44:36 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:58336 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966624Ab3DQOoe (ORCPT
+	id S966744Ab3DQOql (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 10:46:41 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40540 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966602Ab3DQOqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 10:44:34 -0400
+	Wed, 17 Apr 2013 10:46:40 -0400
+Date: Wed, 17 Apr 2013 15:46:37 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Padma Venkat <padma.kvr@gmail.com>
+Subject: Re: [PATCH v2] spi: s3c64xx: move to generic dmaengine API
+Message-ID: <20130417144637.GW13687@opensource.wolfsonmicro.com>
+References: <1365638712-1028578-1-git-send-email-arnd@arndb.de>
+ <1365638712-1028578-30-git-send-email-arnd@arndb.de>
+ <20130411165536.GO9243@opensource.wolfsonmicro.com>
+ <201304112242.03252.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <516E88A9.9070200@ti.com>
-References: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
-	<516E88A9.9070200@ti.com>
-Date: Wed, 17 Apr 2013 07:44:33 -0700
-X-Google-Sender-Auth: NRw9bEvCH2ZPdlagqd9k_A7ynFI
-Message-ID: <CA+55aFwt82h7hk1YiCeoG2-GGpgLvyW8t_hZRHxyhDQw=_Luzw@mail.gmail.com>
-Subject: Re: Device driver memory 'mmap()' function helper cleanup
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Clemens Ladisch <clemens@ladisch.de>, Arnd Bergmann <arnd@arndb.de>,
-        Takashi Iwai <tiwai@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        David Miller <davem@davemloft.net>, Ralf Baechle <ralf@linux-mips.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="c7rykKtsZvepKFKR"
+Content-Disposition: inline
+In-Reply-To: <201304112242.03252.arnd@arndb.de>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 4:34 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
->
-> Should there be a similar helper that uses remap_pfn_range() instead of
-> io_remap_pfn_range()?
 
-The two are practically identical (*). I went back-and-forth over
-which one to use, and ended up using io_remap_pfn_range() because that
-ends up being the fancier one in a few special cases.
+--c7rykKtsZvepKFKR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-And it's actually about 50/50 whether people use that function on RAM
-or on MMIO memory. Some people use it for DMA buffers, some people use
-it for memory-mapped PCI memory, so the whole confusion about naming
-ends up being double. We probably should get rid of
-"io_remap_pfn_range()" entirely, since the real issue ends up being
-what page protection bits to use, and drivers do that outside of this
-function.
+On Thu, Apr 11, 2013 at 10:42:03PM +0200, Arnd Bergmann wrote:
+> The spi-s3c64xx uses a Samsung proprietary interface for
+> talking to the DMA engine, which does not work with
+> multiplatform kernels.
 
-So you can use the new helper function to convert things that use
-remap_pfn_range() too. The differences end up mattering only for
-either highmem RAM pages (which get used for /dev/mem, but not for the
-normal drivers) or for actual memory-mapped IO, in which case the
-io_remap_pfn_range() function does a bit more.
+Actually it seems that this patch is causing issues for bulk SPI
+transfers on s3c64xx, especially when they're driven quickly one after
+another.  I've only just found the problem so I've not been able to
+debug yet but a revert fixes it...
 
-                    Linus
+--c7rykKtsZvepKFKR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-(*) io_remap_pfn_page() is the "extended" version that takes care of
-some special magical details on a couple of odd architectures, notably
-sparc (but also one special case of MIPS PAE that have some magic bit
-tricks). But even for MIPS and Sparc, it ends up devolving to be the
-same as the "regular" remap_pfn_page() for normal memory. I'm adding
-David and Ralf to the cc just to verify that I read it right, but
-everybody else just defines "io_remap_pfn_range" to be
-"remap_pfn_range".
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRbrXEAAoJELSic+t+oim99AAP/RdAeszwwW1PpsUnQSv2oCKj
+xFmUUIhOsZLWes0/FutEIZiriu5OOXpjsUnF8efnOw82uz4W68IHlyKDwKmjTluN
+Af2azRFigkd7L4BLJpBl5M9Q1uBJ4oXAw3Z/FtSPGDT7a5hkH0+DU4MYLCV2vRp0
+dKI8AD0B2jQL0HrEShnFpYw2NulgzMemrWcK8hDZU4Ya4AdRxue2bBfoO4+utkBJ
+vZndujoun+YHymAYbO2+oZx0SeCkRZWzd9V05QWhqkGpMFIZIWhviFOrip0ajYFy
+B+47dJWHPqxifui0Ni0Q64j7XUxjzfpQvdsypX1Wl5PQYQW/DFqqOSwbQHFhOY1v
+4849GsKs1yzy10VHQ6sKJiTwq8148+KPrTL9EIZtL5s65pqM5uH4TF27R1eOsS+a
+w2UvIWE5rjWnCVGUm3HiTF4pbhnXq3s1C7CZBZeaFv9+cTf9bQ8BXzaJCScyDoMe
+yYSIjxq5N6hURl9WyOMtY5YejO7ERIvHpxZc1JkY1PnLUXyc9+vkUBNU3KTVDL2j
+Q3OM7q4gMARrqj+k5weK15E2eq1AFKarpLK8mWFj8frOLW6ZysMQOufNSqOoibZV
+/yfcT0s2+NiGSXCN13nt2QOyUIkZn6/JZsRtE6lUzUJDyLbB5O1zohd2xd//WtFz
+pjNsLG2usYvdWS+ps9iM
+=roxK
+-----END PGP SIGNATURE-----
+
+--c7rykKtsZvepKFKR--
