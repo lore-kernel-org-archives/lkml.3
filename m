@@ -1,97 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab3DQGsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 02:48:30 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:5987 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab3DQGs2 (ORCPT
+	id S1757179Ab3DQGse (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 02:48:34 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:60272 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744Ab3DQGsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 02:48:28 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 16 Apr 2013 23:48:27 -0700
-Message-ID: <516E44CD.3010203@nvidia.com>
-Date: Wed, 17 Apr 2013 12:14:29 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: regulator: tps80031: question about LDO2 TRACK_MODE_ENABLE of
- TPS80031 or TPS80032-ES1.0
-References: <1366169084.10398.4.camel@phoenix>
-In-Reply-To: <1366169084.10398.4.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Apr 2013 02:48:30 -0400
+Message-ID: <1366181299.2439.1.camel@localhost>
+Subject: Re: [PATCH] No need to call irq_domain_legacy_revmap() for twice
+From: Mike <qiudayu@linux.vnet.ibm.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, benh@kernel.crashing.org
+Date: Wed, 17 Apr 2013 14:48:19 +0800
+In-Reply-To: <20121211083023.5C5D03E076D@localhost>
+References: <1348479475-13074-1-git-send-email-qiudayu@linux.vnet.ibm.com>
+	 <20121126201739.13F213E09C2@localhost> <1353980506.2309.13.camel@localhost>
+	 <20121211083023.5C5D03E076D@localhost>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041706-2674-0000-0000-000008A0CAB7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 April 2013 08:54 AM, Axel Lin wrote:
-> hi Laxman,
->
-> Currently we have below code in tps80031_ldo_set_voltage_sel():
->
->          /* Check for valid setting for TPS80031 or TPS80032-ES1.0 */
->          if ((ri->rinfo->desc.id == TPS80031_REGULATOR_LDO2) &&
->                          (ri->device_flags & TRACK_MODE_ENABLE)) {
->                  unsigned nvsel = (sel) & 0x1F;
->                  if (((tps80031_get_chip_info(parent) == TPS80031) ||
->                          ((tps80031_get_chip_info(parent) == TPS80032) &&
->                          (tps80031_get_pmu_version(parent) == 0x0))) &&
->                          ((nvsel == 0x0) || (nvsel >= 0x19 && nvsel <= 0x1F))) {
->                                  dev_err(ri->dev,
->                                          "Invalid sel %d in track mode LDO2\n",
->                                          nvsel);
->                                  return -EINVAL;
->                  }
->          }
->
-> However, list_voltage() still show these invalid selectors have supported voltage.
-> Besides, having the code "nvsel = (sel) & 0x1F" looks a bit odd, because currently
-> n_voltages is set to 57 when TRACK_MODE_ENABLE is set.
->
-> I'm wondering if below comment is still true for LDO2 TRACK_MODE_ENABLE of
-> "TPS80031/TPS80032-ES1.0"?
->
-> /* TRACK mode the ldo2 varies from 600mV to 1300mV */
->
-> What is the register value && voltage mapping for LDO2 TRACK_MODE_ENABLE of
-> TPS80031 or TPS80032-ES1.0?
+在 2012-12-11二的 08:30 +0000，Grant Likely写道：
+> On Tue, 27 Nov 2012 09:41:46 +0800, Mike <qiudayu@linux.vnet.ibm.com> wrote:
+> > 在 2012-11-26一的 20:17 +0000，Grant Likely写道：
+> > > On Mon, 24 Sep 2012 17:37:55 +0800, Mike Qiu <qiudayu@linux.vnet.ibm.com> wrote:
+> > > > Function irq_create_mapping() calls irq_find_mapping(). The later
+> > > > function has checked if the indicated IRQ domain has hw IRQ mapped to
+> > > > virtual IRQ through legacy mode or not and return the value of the
+> > > > legacy irq number by call irq_domain_legacy_revmap(). We needn't
+> > > > to call irq_domain_legacy_revmap() to do same check in
+> > > > irq_create_mapping() again.
+> > > > 
+> > > > The patch removes the duplicate call.
+> > > > 
+> > > > Signed-off-by: Mike Qiu <qiudayu@linux.vnet.ibm.com>
+> > > > ---
+> > > >  kernel/irq/irqdomain.c |    7 +++++--
+> > > >  1 files changed, 5 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> > > > index 49a7772..286d672 100644
+> > > > --- a/kernel/irq/irqdomain.c
+> > > > +++ b/kernel/irq/irqdomain.c
+> > > > @@ -547,9 +547,12 @@ unsigned int irq_create_mapping(struct irq_domain *domain,
+> > > >  		return virq;
+> > > >  	}
+> > > >  
+> > > > -	/* Get a virtual interrupt number */
+> > > > +	/*
+> > > > +	 * For IRQ domain with type of IRQ_DOMAIN_MAP_LEGACY, we needn't
+> > > > +	 * create the IRQ mapping for non-existing one, so just return 0.
+> > > > +	 */
+> > > >  	if (domain->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
+> > > > -		return irq_domain_legacy_revmap(domain, hwirq);
+> > > > +		return 0;
+> > > 
+> > > But it does need to return the virq assigned to the hwirq. That is why
+> > > it has to call the revmap function.
+> > > 
+> > Yes, thanks
+> > 
+> > this judgment has been done in
+> >  /*Check if mapping already exists*/
+> > virq = irq_find_mapping(domain, hwirq);
+> > 
+> > if the virq equals none zero, the func irq_create_mapping will 
+> > return the virq value directly(already exists).
+> > 
+> > otherwise, that means virq equals zero, this has two meanings, one is
+> > haven't find the already exist mapping, the other one is in
+> > irq_find_mapping()
+> > 	case IRQ_DOMAIN_MAP_LEGACY:
+> > 		return irq_domain_legacy_revmap(domain, hwirq); 
+> > this may return zero.
+> > 
+> > So, when we check if it is a IRQ_DOMAIN_MAP_LEGACY, we just return zero
+> > is OK. because if it is none zero, it will be return after check if
+> > mapping already exists, and never come here. also we never try to assign
+> > the virq for the legacy map.
+> > 
+> > I don't know if you have understand my explanation.
+> 
+> Yes, your explanation makes sense and you are correct. I'm not going to
+> apply this for v3.8 (I've left it too late before the merge window), but
+> I'll look again after the merge window closes.
+> 
+Hi Grant 
 
-Hi Axel,
+I don't know if you forget this patch ...
 
-Following the excerpt of the mail got from TI on this issue:
+I haven't see this patch in 3.9-rc7
 
-There is a bug on LDO2 tracking on TPS80031 and TPS80032 ES1.0 but you 
-should be able to have the functionality working.
+just for a reminder
 
-Issue description:
-- LDO2 traking mode is enabled
-- LDO2 tracks SMPS2 voltage.
-- LDO2 automatically switch-off when LDO2_CFG_VOLTAGE is changed to some 
-discrete values (non exhaustive list):
-             00011001, 00011010, 00011011, 00011100, .
-- LDO2 switch-on again when LDO2_CFG_VOLTAGE is changed to other values 
-(non exhaustive list):
-         00011000, 00010111, .
-
-LDOs have reserved codes. For these codes, LDO is switch-off.
-
-In tracking, LDO2 ref comes from SMPS2.
-However LDO2 enable is still gated by LDO2 VSEL decoding.
-As a result, in tracking mode LDO2 will be disabled for following code 
-(SMPS VSEL format):
-000000 & 100000 (MSB not decoded)
-011001 & 111001 (MSB not decoded)
-011010 & 111010 (MSB not decoded)
-011100 & 111100 (MSB not decoded)
-011101 & 111101 (MSB not decoded)
-011110 & 111110 (MSB not decoded)
+Thanks
+Mike
+> g.
+> 
 
 
-
-
-
-Therefore, we made this voltage to be invalid on above case.
