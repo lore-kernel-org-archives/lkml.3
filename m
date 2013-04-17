@@ -1,141 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab3DQFo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 01:44:26 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44600 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753416Ab3DQFoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 01:44:25 -0400
-Message-ID: <1366177447.28609.25.camel@joe-AO722>
-Subject: [PATCH] usb: storage: Add usb_stor_dbg, reduce object size
-From: Joe Perches <joe@perches.com>
-To: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        usb-storage <usb-storage@lists.one-eyed-alien.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 16 Apr 2013 22:44:07 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+	id S1757143Ab3DQFr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 01:47:27 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40768 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074Ab3DQFr0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 01:47:26 -0400
+Date: Wed, 17 Apr 2013 15:47:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alexandre Courbot <gnurou@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>
+Subject: linux-next: manual merge of the gen-gpio tree with the usb tree
+Message-Id: <20130417154715.cd3036b3cc791800938119c4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__17_Apr_2013_15_47_15_+1000_sGrzGt7DDRPQma=_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the size of the objects by consolidating
-the duplicated USB_STORAGE into a single function.
+--Signature=_Wed__17_Apr_2013_15_47_15_+1000_sGrzGt7DDRPQma=_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Add function usb_stor_dbg to emit debugging messages.
-Always validate the format and arguments.
-Reduce the number of uses of CONFIG_USB_STORAGE_DEBUG.
+Hi Alexandre,
 
-Reduces size of objects ~7KB when CONFIG_USB_STORAGE_DEBUG
-is set.
+Today's linux-next merge of the gen-gpio tree got a conflict in
+drivers/usb/otg/Kconfig between commit a0e631235a04 ("usb: phy: move all
+PHY drivers to drivers/usb/phy/") from the usb tree and commit
+76ec9d18b897 ("Convert selectors of GENERIC_GPIO to GPIOLIB") from the
+gen-gpio tree.
 
-$ size drivers/usb/storage/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
- 140133	  55296	  70312	 265741	  40e0d	drivers/usb/storage/built-in.o.new
- 147494	  55248	  70296	 273038	  42a8e	drivers/usb/storage/built-in.o.old
+The former patch removed the file, so I did that and then applied the
+following patch and can carry the fix as necessary (no action is
+required).
 
-Signed-off-by: Joe Perches <joe@perches.com>
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 17 Apr 2013 15:44:53 +1000
+Subject: [PATCH] gen-gpio: GPIOLIB merge fix up
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- drivers/usb/storage/debug.c  | 20 +++++++++++++++++++-
- drivers/usb/storage/debug.h  | 14 +++++++++-----
- drivers/usb/storage/isd200.c | 12 ++++++------
- 3 files changed, 34 insertions(+), 12 deletions(-)
+ drivers/usb/phy/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/storage/debug.c b/drivers/usb/storage/debug.c
-index a2b5526..b428129 100644
---- a/drivers/usb/storage/debug.c
-+++ b/drivers/usb/storage/debug.c
-@@ -150,7 +150,7 @@ void usb_stor_show_command(struct scsi_cmnd *srb)
- 	default: what = "(unknown command)"; break;
- 	}
- 	US_DEBUGP("Command %s (%d bytes)\n", what, srb->cmd_len);
--	US_DEBUGP("");
-+	US_DEBUGP("bytes: ");
- 	for (i = 0; i < srb->cmd_len && i < 16; i++)
- 		US_DEBUGPX(" %02x", srb->cmnd[i]);
- 	US_DEBUGPX("\n");
-@@ -175,3 +175,21 @@ void usb_stor_show_sense(
- 	US_DEBUGPX(what, ascq);
- 	US_DEBUGPX("\n");
- }
-+
-+int usb_stor_dbg(const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	int r;
-+
-+	va_start(args, fmt);
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	r = printk(KERN_DEBUG USB_STORAGE "%pV", &vaf);
-+
-+	va_end(args);
-+
-+	return r;
-+}
-diff --git a/drivers/usb/storage/debug.h b/drivers/usb/storage/debug.h
-index dbb985d..d4280e1 100644
---- a/drivers/usb/storage/debug.h
-+++ b/drivers/usb/storage/debug.h
-@@ -50,12 +50,16 @@
- void usb_stor_show_command(struct scsi_cmnd *srb);
- void usb_stor_show_sense( unsigned char key,
- 		unsigned char asc, unsigned char ascq );
--#define US_DEBUGP(x...) printk( KERN_DEBUG USB_STORAGE x )
--#define US_DEBUGPX(x...) printk( x )
--#define US_DEBUG(x) x 
-+__printf(1, 2) int usb_stor_dbg(const char *fmt, ...);
-+
-+#define US_DEBUGP(fmt, ...)	usb_stor_dbg(fmt, ##__VA_ARGS__)
-+#define US_DEBUGPX(fmt, ...)	printk(fmt, ##__VA_ARGS__)
-+#define US_DEBUG(x)		x
- #else
--#define US_DEBUGP(x...)
--#define US_DEBUGPX(x...)
-+#define US_DEBUGP(fmt, ...)					\
-+	do { if (0) printk(fmt, ##__VA_ARGS__); } while (0)
-+#define US_DEBUGPX(fmt, ...)					\
-+	do { if (0) printk(fmt, ##__VA_ARGS__); } while (0)
- #define US_DEBUG(x)
- #endif
- 
-diff --git a/drivers/usb/storage/isd200.c b/drivers/usb/storage/isd200.c
-index 06a3d22..55571ae 100644
---- a/drivers/usb/storage/isd200.c
-+++ b/drivers/usb/storage/isd200.c
-@@ -926,10 +926,6 @@ static int isd200_try_enum(struct us_data *us, unsigned char master_slave,
- 
- 	/* loop until we detect !BSY or timeout */
- 	while(1) {
--#ifdef CONFIG_USB_STORAGE_DEBUG
--		char* mstr = master_slave == ATA_ADDRESS_DEVHEAD_STD ?
--			"Master" : "Slave";
--#endif
- 
- 		status = isd200_action( us, ACTION_ENUM, NULL, master_slave );
- 		if ( status != ISD200_GOOD )
-@@ -942,9 +938,13 @@ static int isd200_try_enum(struct us_data *us, unsigned char master_slave,
- 
- 		if (!detect) {
- 			if (regs[ATA_REG_STATUS_OFFSET] & ATA_BUSY) {
--				US_DEBUGP("   %s status is still BSY, try again...\n",mstr);
-+				US_DEBUGP("   %s status is still BSY, try again...\n",
-+					  master_slave == ATA_ADDRESS_DEVHEAD_STD ?
-+					  "Master" : "Slave");
- 			} else {
--				US_DEBUGP("   %s status !BSY, continue with next operation\n",mstr);
-+				US_DEBUGP("   %s status !BSY, continue with next operation\n",
-+					  master_slave == ATA_ADDRESS_DEVHEAD_STD ?
-+					  "Master" : "Slave");
- 				break;
- 			}
- 		}
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index 3a7fec9..21153d1 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -128,7 +128,7 @@ config TWL6030_USB
+=20
+ config USB_GPIO_VBUS
+ 	tristate "GPIO based peripheral-only VBUS sensing 'transceiver'"
+-	depends on GENERIC_GPIO
++	depends on GPIOLIB
+ 	help
+ 	  Provides simple GPIO VBUS sensing for controllers with an
+ 	  internal transceiver via the usb_phy interface, and
+--=20
+1.8.1
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__17_Apr_2013_15_47_15_+1000_sGrzGt7DDRPQma=_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRbjdjAAoJEECxmPOUX5FEtwgQAKqDlM9TFr+zX8cYk/ECpF5u
+5bRmyJEGeuBO2VFjEd8GyNH3KzV3rTFiJo1kBxY65qVAcJqKctk43mKOgooPbWo0
+nIQec2sp4w+Evlr5krsGKhkKhJZLWso4HosRFawGdU/KGrlZ/1vRGZ+3rtMXx/n5
+t6PUeIMA3nVE5qQQd+MzdiksjneuXnq8fg+5+GD5iBh0unQV41KJJ8qAzFVASIH6
+SNl6VdcbqF7qA08nL3yohlaRLnm8W4ewyMoPjNEjsh5z+yBmXgo8neb28gljSsqb
+J5oh0oysrAwUeSixy/kpdHOihx3jyO4ZO4h40Ml+xgJM8t2reCSvav37IpvFfB4d
+QPxWwzzytKfTsg2VbXElcTWySRAiEou7YyWHL2RDrQdsE+3wcZlPKur9/TUsBP5t
+ei5HoQSALrNCaM6v8iDRWqApBGILb8AR5rzCQfmmaX5xiGK9buBMAif1q57FfSo6
+FR8me5ovXVb8NvVMYZXUu/Mckg7ZOugQDHFtrYylyr3pPYuCY5owTnVkdjdCtbxM
+qaUGrK008ELtASFo86TB1bNuhRsX5d+tUz43s1nKneE4KqvSAV82dSujr5zTzN47
+xOtlxgLyxJPYJcDTRa8vTamjDde0mN8Tl3UtBd2nu1Ytglbv7tGHCFpyLGiSg3Tx
+3MFr/X/i/AvWKrps2jl1
+=lBdX
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__17_Apr_2013_15_47_15_+1000_sGrzGt7DDRPQma=_--
