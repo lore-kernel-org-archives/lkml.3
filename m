@@ -1,43 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab3DQQSV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 12:18:21 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4387 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017Ab3DQQSU (ORCPT
+	id S965286Ab3DQQTg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 12:19:36 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:63508 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965260Ab3DQQTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 12:18:20 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 17 Apr 2013 09:16:27 -0700
-Message-ID: <516ECA59.3050200@nvidia.com>
-Date: Wed, 17 Apr 2013 21:44:17 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Graeme Gregory <gg@slimlogic.co.uk>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
+	Wed, 17 Apr 2013 12:19:34 -0400
+Date: Wed, 17 Apr 2013 09:18:48 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Kent Yoder <shpedoikal@gmail.com>
+Cc: Duncan Laurie <dlaurie@chromium.org>, Dirk Hohndel <dirk@hohndel.org>,
+        Kent Yoder <key@linux.vnet.ibm.com>,
+        Luigi Semenzato <semenzato@chromium.org>,
+        TPM Device Driver List <tpmdd-devel@lists.sourceforge.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 3/3] regulator: palmas: add support for LDO8 tracking
- mode
-References: <1366191793-13934-1-git-send-email-ldewangan@nvidia.com> <1366191793-13934-3-git-send-email-ldewangan@nvidia.com> <516EA998.3050008@slimlogic.co.uk>
-In-Reply-To: <516EA998.3050008@slimlogic.co.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] TPM: Retry SaveState command in suspend path
+Message-ID: <20130417161848.GA8752@kroah.com>
+References: <1363557399-11822-1-git-send-email-dlaurie@chromium.org>
+ <CAM0nabGd1kPJaEOUNS9A1GOYP757F2SezgqYjK1p3N4AvX0PsA@mail.gmail.com>
+ <20130416235751.GA9531@kroah.com>
+ <CAM0nabG_iOcThp-9QvupWEi38q0y9Zg7pOpdmue6X7yEw7FRfw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAM0nabG_iOcThp-9QvupWEi38q0y9Zg7pOpdmue6X7yEw7FRfw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 April 2013 07:24 PM, Graeme Gregory wrote:
-> Looks good to me, I don't actually know the use case for this feature!
->
-> Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
->
+On Wed, Apr 17, 2013 at 09:54:24AM -0500, Kent Yoder wrote:
+> On Tue, Apr 16, 2013 at 6:57 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Tue, Mar 19, 2013 at 10:00:02AM -0500, Kent Yoder wrote:
+> >> Hi Duncan,
+> >>
+> >> On Sun, Mar 17, 2013 at 4:56 PM, Duncan Laurie <dlaurie@chromium.org> wrote:
+> >> > If the TPM has already been sent a SaveState command before the driver
+> >> > is loaded it may have problems sending that same command again later.
+> >> >
+> >> > This issue is seen with the Chromebook Pixel due to a firmware bug in
+> >> > the legacy mode boot path which is sending the SaveState command
+> >> > before booting the kernel.  More information is available at
+> >> > http://crbug.com/203524
+> >> >
+> >> > This change introduces a retry of the SaveState command in the suspend
+> >> > path in order to work around this issue.  A future firmware update
+> >> > should fix this but this is also a trivial workaround in the driver
+> >> > that has no effect on systems that do not show this problem.
+> >>
+> >>   I'm not convinced that this needs to be upstream.  The simplest
+> >> route would seem to be to carry this out of tree until your firmware
+> >> is fixed.
+> >
+> > Really?  We have machines that we are using right now that need this fix
+> > in order to work properly.
+> >
+> > The kernel handles buggy firmware/bioses all the time, we need to work
+> > properly on all hardware, we can't count on a firmware update ever
+> > getting pushed out publically, and for those of us using this hardware,
+> > we want it to work.
+> 
+>   That makes sense -- on first read I thought this was an issue with
+> Chrome OS only.  I see now this is an issue with reinstalling other
+> OS's over Chrome.  I've staged this over here:
+> 
+> git://github.com/shpedoikal/linux.git tpmdd-04-17-13
+> 
+> and I'll push this to James later today.
 
-This is require for Tegra.
-The always ON section of Tegra (say vdd_ao) need to be same as the core 
-voltage(vdd_core) when system is active/idle. Hence the vdd_ao should be 
-track to vdd_core and for this we need to configure the rail in tracking 
-mode.
+Thank you very much, it's appreciated.  I'll watch out for it to hit
+Linus's tree and add it to the -stable releases as well.
+
+greg k-h
