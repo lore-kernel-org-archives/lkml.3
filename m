@@ -1,142 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966543Ab3DQOEw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 10:04:52 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:43644 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966481Ab3DQOEt (ORCPT
+	id S966559Ab3DQOFv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 10:05:51 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:37169 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966386Ab3DQOFu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 10:04:49 -0400
+	Wed, 17 Apr 2013 10:05:50 -0400
+Date: Wed, 17 Apr 2013 10:05:42 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [PATCH v1 2/7] xen-blkback: use balloon pages for all mappings
+Message-ID: <20130417140542.GD21378@phenom.dumpdata.com>
+References: <1364382643-3711-1-git-send-email-roger.pau@citrix.com>
+ <1364382643-3711-3-git-send-email-roger.pau@citrix.com>
+ <20130409144733.GA3158@phenom.dumpdata.com>
+ <516BC4F5.10307@citrix.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAKohpo=OOPBYCD_K6RLw2YrJxhMokwrOww4QM2t2T4SnGObyQQ@mail.gmail.com>
-References: <CA+icZUU_K9PiFMqMsOEk1+c2DX8LrUojZptPiRVarv4dcB2qFA@mail.gmail.com>
-	<CA+icZUUsAqJ3kyCZivYeTpY7n=EDMv1UcC2VNwQro4h7NHDWag@mail.gmail.com>
-	<CA+icZUW+TB3q58bL+d=A355S4vtRhwMq8AV+tqjv6MgDtHRCaA@mail.gmail.com>
-	<1923819.6Nb81T2TR8@vostro.rjw.lan>
-	<CA+icZUXUGOjGUAFxgQk0780pcBB-YjiujDLXF+gJFegi+pd+dA@mail.gmail.com>
-	<516C25AE.4050503@intel.com>
-	<CAKohpo=OOPBYCD_K6RLw2YrJxhMokwrOww4QM2t2T4SnGObyQQ@mail.gmail.com>
-Date: Wed, 17 Apr 2013 16:04:46 +0200
-Message-ID: <CA+icZUVsNG66_v8QA17LQ27z1tjRjDqzB148OSV9WQP0_NkRKA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 9 [cpufreq: NULL pointer deref]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Nathan Zimmer <nzimmer@sgi.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <516BC4F5.10307@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 7:22 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 15 April 2013 21:37, Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
->> If the intel_pstate driver is being used __cpufreq_governor() should NOT be
->> called intel_pstate does not implement the target() callback.
->>
->> Nathan's commit 5800043b2 changed the fence around the call to
->> __cpufreq_governor() in __cpufreq_remove_dev() here is the relevant hunk.
->
-> No it isn't.
->
->> +       if (has_target)
->>                 __cpufreq_governor(data, CPUFREQ_GOV_STOP);
->
-> As it has taken care of this limitation.
->
-> BUT some of my earlier patches haven't. :(
-> Here is the fix (Sedat please try this and give your tested-by, use the attached
-> patch as gmail might break what i am copying in mail)..
->
-> Sorry for being late in fixing this issue, i am still down with Tonsil infection
-> and fever.. Today only i got some power to fix it after seeing Dirk's mail.
->
-> Your tested-by may help me to recover quickly :)
->
-> @Rafael: I will probably be down for one more week and so not doing any
-> reviews for now... I do check important mails sent directly to me though.
->
+On Mon, Apr 15, 2013 at 11:14:29AM +0200, Roger Pau Monné wrote:
+> On 09/04/13 16:47, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Mar 27, 2013 at 12:10:38PM +0100, Roger Pau Monne wrote:
+> >> Using balloon pages for all granted pages allows us to simplify the
+> >> logic in blkback, especially in the xen_blkbk_map function, since now
+> >> we can decide if we want to map a grant persistently or not after we
+> >> have actually mapped it. This could not be done before because
+> >> persistent grants used ballooned pages, whereas non-persistent grants
+> >> used pages from the kernel.
+> >>
+> >> This patch also introduces several changes, the first one is that the
+> >> list of free pages is no longer global, now each blkback instance has
+> >> it's own list of free pages that can be used to map grants. Also, a
+> >> run time parameter (max_buffer_pages) has been added in order to tune
+> >> the maximum number of free pages each blkback instance will keep in
+> >> it's buffer.
+> >>
+> >> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+> >> Cc: xen-devel@lists.xen.org
+> >> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > 
+> > Sorry for the late review. Some comments.
+> >> ---
+> >> Changes since RFC:
+> >>  * Fix typos in commit message.
+> >>  * Minor fixes in code.
+> >> ---
+> >>  Documentation/ABI/stable/sysfs-bus-xen-backend |    8 +
+> >>  drivers/block/xen-blkback/blkback.c            |  265 +++++++++++++-----------
+> >>  drivers/block/xen-blkback/common.h             |    5 +
+> >>  drivers/block/xen-blkback/xenbus.c             |    3 +
+> >>  4 files changed, 165 insertions(+), 116 deletions(-)
+> >>
+> >> diff --git a/Documentation/ABI/stable/sysfs-bus-xen-backend b/Documentation/ABI/stable/sysfs-bus-xen-backend
+> >> index 3d5951c..e04afe0 100644
+> >> --- a/Documentation/ABI/stable/sysfs-bus-xen-backend
+> >> +++ b/Documentation/ABI/stable/sysfs-bus-xen-backend
+> >> @@ -73,3 +73,11 @@ KernelVersion:     3.0
+> >>  Contact:     Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >>  Description:
+> >>                  Number of sectors written by the frontend.
+> >> +
+> >> +What:           /sys/module/xen_blkback/parameters/max_buffer_pages
+> >> +Date:           March 2013
+> >> +KernelVersion:  3.10
+> >> +Contact:        Roger Pau Monné <roger.pau@citrix.com>
+> >> +Description:
+> >> +                Maximum number of free pages to keep in each block
+> >> +                backend buffer.
+> >> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> >> index f7526db..8a1892a 100644
+> >> --- a/drivers/block/xen-blkback/blkback.c
+> >> +++ b/drivers/block/xen-blkback/blkback.c
+> >> @@ -63,6 +63,21 @@ static int xen_blkif_reqs = 64;
+> >>  module_param_named(reqs, xen_blkif_reqs, int, 0);
+> >>  MODULE_PARM_DESC(reqs, "Number of blkback requests to allocate");
+> >>
+> >> +/*
+> >> + * Maximum number of unused free pages to keep in the internal buffer.
+> >> + * Setting this to a value too low will reduce memory used in each backend,
+> >> + * but can have a performance penalty.
+> >> + *
+> >> + * A sane value is xen_blkif_reqs * BLKIF_MAX_SEGMENTS_PER_REQUEST, but can
+> >> + * be set to a lower value that might degrade performance on some intensive
+> >> + * IO workloads.
+> >> + */
+> >> +
+> >> +static int xen_blkif_max_buffer_pages = 704;
+> >> +module_param_named(max_buffer_pages, xen_blkif_max_buffer_pages, int, 0644);
+> >> +MODULE_PARM_DESC(max_buffer_pages,
+> >> +"Maximum number of free pages to keep in each block backend buffer");
+> >> +
+> >>  /* Run-time switchable: /sys/module/blkback/parameters/ */
+> >>  static unsigned int log_stats;
+> >>  module_param(log_stats, int, 0644);
+> >> @@ -82,10 +97,14 @@ struct pending_req {
+> >>       int                     status;
+> >>       struct list_head        free_list;
+> >>       DECLARE_BITMAP(unmap_seg, BLKIF_MAX_SEGMENTS_PER_REQUEST);
+> >> +     struct page             *pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+> >>  };
+> >>
+> >>  #define BLKBACK_INVALID_HANDLE (~0)
+> >>
+> >> +/* Number of free pages to remove on each call to free_xenballooned_pages */
+> >> +#define NUM_BATCH_FREE_PAGES 10
+> >> +
+> >>  struct xen_blkbk {
+> >>       struct pending_req      *pending_reqs;
+> >>       /* List of all 'pending_req' available */
+> >> @@ -93,8 +112,6 @@ struct xen_blkbk {
+> >>       /* And its spinlock. */
+> >>       spinlock_t              pending_free_lock;
+> >>       wait_queue_head_t       pending_free_wq;
+> >> -     /* The list of all pages that are available. */
+> >> -     struct page             **pending_pages;
+> >>       /* And the grant handles that are available. */
+> >>       grant_handle_t          *pending_grant_handles;
+> >>  };
+> >> @@ -143,14 +160,66 @@ static inline int vaddr_pagenr(struct pending_req *req, int seg)
+> >>               BLKIF_MAX_SEGMENTS_PER_REQUEST + seg;
+> >>  }
+> >>
+> >> -#define pending_page(req, seg) pending_pages[vaddr_pagenr(req, seg)]
+> >> +static inline int get_free_page(struct xen_blkif *blkif, struct page **page)
+> >> +{
+> >> +     unsigned long flags;
+> >> +
+> >> +     spin_lock_irqsave(&blkif->free_pages_lock, flags);
+> > 
+> > I am curious to why you need to use the irqsave variant one here, as
+> >> +     if (list_empty(&blkif->free_pages)) {
+> >> +             BUG_ON(blkif->free_pages_num != 0);
+> >> +             spin_unlock_irqrestore(&blkif->free_pages_lock, flags);
+> >> +             return alloc_xenballooned_pages(1, page, false);
+> > 
+> > This function is using an mutex.
+> > 
+> > which would imply it is OK to have an non-irq variant of spinlock?
+> 
+> Sorry, the previous response is wrong, I need to use irqsave in order to
+> disable interrupts, since put_free_pages is called from interrupt
+> context and it could create a race if for example, put_free_pages is
+> called while we are inside shrink_free_pagepool.
 
-Hi Viresh,
-
-can you sent a separate patch on this (with Reported/Tested-by#s)?
-AFAICS this is not in pm.git#linux-next?
-
-Regards,
-- Sedat -
-
-> ------------x----------------------x------------------
->
-> From: Viresh Kumar <viresh.kumar@linaro.org>
-> Date: Mon, 15 Apr 2013 22:43:57 +0530
-> Subject: [PATCH] cpufreq: Don't call __cpufreq_governor() for drivers without
->  target()
->
-> Some cpufreq drivers implement their own governor and so don't need us to call
-> generic governors interface via __cpufreq_governor(). Few recent commits haven't
-> obeyed this law well and we saw some regressions.
->
-> This patch tries to fix this issue.
->
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  drivers/cpufreq/cpufreq.c | 18 +++++++++++++-----
->  1 file changed, 13 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 3564947..a6f6595 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -858,13 +858,18 @@ static int cpufreq_add_policy_cpu(unsigned int
-> cpu, unsigned int sibling,
->                                   struct device *dev)
->  {
->         struct cpufreq_policy *policy;
-> -       int ret = 0;
-> +       int ret = 0, has_target = 0;
->         unsigned long flags;
->
->         policy = cpufreq_cpu_get(sibling);
->         WARN_ON(!policy);
->
-> -       __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
-> +       rcu_read_lock();
-> +       has_target = !!rcu_dereference(cpufreq_driver)->target;
-> +       rcu_read_unlock();
-> +
-> +       if (has_target)
-> +               __cpufreq_governor(policy, CPUFREQ_GOV_STOP);
->
->         lock_policy_rwsem_write(sibling);
->
-> @@ -877,8 +882,10 @@ static int cpufreq_add_policy_cpu(unsigned int
-> cpu, unsigned int sibling,
->
->         unlock_policy_rwsem_write(sibling);
->
-> -       __cpufreq_governor(policy, CPUFREQ_GOV_START);
-> -       __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
-> +       if (has_target) {
-> +               __cpufreq_governor(policy, CPUFREQ_GOV_START);
-> +               __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
-> +       }
->
->         ret = sysfs_create_link(&dev->kobj, &policy->kobj, "cpufreq");
->         if (ret) {
-> @@ -1146,7 +1153,8 @@ static int __cpufreq_remove_dev(struct device
-> *dev, struct subsys_interface *sif
->
->         /* If cpu is last user of policy, free policy */
->         if (cpus == 1) {
-> -               __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
-> +               if (has_target)
-> +                       __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
->
->                 lock_policy_rwsem_read(cpu);
->                 kobj = &data->kobj;
+OK, but you can mix the irq and non-irq spinlocks variants.
