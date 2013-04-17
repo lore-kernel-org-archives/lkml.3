@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab3DQEiH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 00:38:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54536 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753819Ab3DQEiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 00:38:05 -0400
-Message-ID: <516E2717.3020309@redhat.com>
-Date: Wed, 17 Apr 2013 12:37:43 +0800
-From: Lingzhu Xiang <lxiang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756764Ab3DQErW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 00:47:22 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:34908 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab3DQErV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 00:47:21 -0400
+Date: Tue, 16 Apr 2013 21:47:18 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, toshi.kani@hp.com,
+        linuxram@us.ibm.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [Bug fix PATCH v3] Reusing a resource structure allocated by
+ bootmem
+In-Reply-To: <516E2305.3060705@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.02.1304162144320.3493@chino.kir.corp.google.com>
+References: <516DEC34.7040008@jp.fujitsu.com> <alpine.DEB.2.02.1304161733340.14583@chino.kir.corp.google.com> <516E2305.3060705@jp.fujitsu.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Luis Henriques <luis.henriques@canonical.com>
-CC: Seiji Aguchi <seiji.aguchi@hds.com>, Matt Fleming <matt.fleming@intel.com>,
-        Josh Boyer <jwboyer@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
-        Michael Schroeder <mls@suse.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: [PATCH 097/102] efivars: explicitly calculate length of VariableName
-References: <1365414657-29191-1-git-send-email-luis.henriques@canonical.com> <1365414657-29191-98-git-send-email-luis.henriques@canonical.com> <1365547506.5814.36.camel@deadeye.wl.decadent.org.uk> <51653E81.4090102@redhat.com> <20130410121730.GB3049@hercules> <A5ED84D3BB3A384992CBB9C77DEDA4D41AF8D09E@USINDEM103.corp.hds.com> <20130411091256.GA11370@hercules> <20130416103321.GB3054@hercules>
-In-Reply-To: <20130416103321.GB3054@hercules>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2013 06:33 PM, Luis Henriques wrote:
-> 68d929862e29a8b52a7f2f2f86a0600423b093cd efi: be more paranoid about available space when creating variables
+On Wed, 17 Apr 2013, Yasuaki Ishimatsu wrote:
 
-This prevents a bricking issue for some Samsung devices but causes 
-regression on many other machines.
+> > Why not simply do what generic sparsemem support does by testing
+> > PageSlab(virt_to_head_page(res)) and calling kfree() if true and freeing
+> > back to bootmem if false?  This should be like a five line patch.
+> 
+> Is your explanation about free_section_usemap()?
+> If so, I don't think we can release resource structure like
+> free_section_usemap().
 
-https://bugzilla.kernel.org/show_bug.cgi?id=55471
-https://bugzilla.redhat.com/show_bug.cgi?id=947142
-http://article.gmane.org/gmane.linux.kernel.efi/1078
-http://article.gmane.org/gmane.linux.kernel.stable/47150
+Right, you can't release it like free_section_usemap(), but you're free to 
+test for PageSlab(virt_to_head_page(res)) in kernel/resource.c.
 
-This patchset will fix it again:
+> In your explanation case, memmap can be released by put_page_bootmem() in
+> free_map_bootmem() since all pages of memmap is used only for memmap.
+> But if my understanding is correct, a page of released resource structure
+> contain other purpose objects allocated by bootmem. So we cannot
+> release resource structure like free_section_usemap().
+> 
 
-http://thread.gmane.org/gmane.linux.kernel.efi/1081
-
+I'm thinking it would be much easier to just suppress the kfree() if 
+!PageSlab.  If you can free an entire page with free_bootmem_late(), 
+that would be great, but I'm thinking that will take more work than it's 
+worth.  It seems fine to just do free_bootmem() and leave those pages as 
+reserved.  How much memory are we talking about?
