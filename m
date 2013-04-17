@@ -1,230 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966042Ab3DQLGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 07:06:51 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:24331 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965813Ab3DQLGu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 07:06:50 -0400
-X-AuditID: cbfee61a-b7fa86d0000045ae-88-516e8248308c
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: linus.walleij@linaro.org, grant.likely@secretlab.ca
-Cc: kyungmin.park@samsung.com, kgene.kim@samsung.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH RFC 2/2] gpio: samsung: Remove OF support for Exynos4/5
-Date: Wed, 17 Apr 2013 13:06:08 +0200
-Message-id: <1366196768-19015-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1366134094-23140-1-git-send-email-s.nawrocki@samsung.com>
-References: <1366134094-23140-1-git-send-email-s.nawrocki@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrALMWRmVeSWpSXmKPExsVy+t9jAV2PprxAg/mdQhYHZj9ktXh1ZiOb
-	Re+Cq2wWZ5vesFtM+bOcyeLyrjlsFqeuf2azOPymndXi2IwljA6cHneu7WHzOD9jIaPHlRNN
-	rB59W1Yxevx8qePxeZNcAFsUl01Kak5mWWqRvl0CV0b/9QNsBeeNKzob7zM1MDZqdTFyckgI
-	mEisXt7CBGGLSVy4t56ti5GLQ0hgEaPE1Dc7WUESQgIdTBILV5iC2GwChhK9R/sYQWwRAXOJ
-	nmuLGEEamAW+M0q8vtMIlhAWcJc49ewemM0ioCrx5m8rkM3BwSvgJnH9lAGIKSGgIDFnkg1I
-	BSdQ9ZOnB5kgVrlJ3D3+nGUCI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMHh9kxq
-	B+PKBotDjAIcjEo8vBcKcgOFWBPLiitzDzFKcDArifAKN+YFCvGmJFZWpRblxxeV5qQWH2KU
-	5mBREuc90GodKCSQnliSmp2aWpBaBJNl4uCUamDst/5QK75/klziNxu2gz/sHrIeLWjVmqmb
-	XuVm23WuwtNo6tr/toUu54Um3Dgs+lrEJ+fhUcG5gSdsVPUd/T7wzAjZcYWtRCR9fsOvxvro
-	Y9c4+478zre8am2Uvoq96HKL9kKOzvNT3JIvf1p/zuyaaPKGbxYrV3zem15gvIDz4PHiD4Y3
-	r4YosRRnJBpqMRcVJwIAvQqO0DMCAAA=
+	id S965986Ab3DQLPN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 07:15:13 -0400
+Received: from trac3r.net ([69.55.60.109]:59867 "EHLO trac3r.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965117Ab3DQLPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 07:15:11 -0400
+X-Greylist: delayed 508 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Apr 2013 07:15:11 EDT
+From: Artem Savkov <artem.savkov@gmail.com>
+To: linux-pci@vger.kernel.org
+Cc: bhelgaas@google.com, linux-kernel@vger.kernel.org,
+        Artem Savkov <artem.savkov@gmail.com>
+Subject: [PATCH] PCI: pci_bus_add_device() should succeed even if creating sysfs files fails
+Date: Wed, 17 Apr 2013 11:06:38 +0000
+Message-Id: <1366196798-15929-1-git-send-email-artem.savkov@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now when Exynos4 and Exynos5 SoC DT platforms use the pinctrl API
-we can remove the interim OF support from this GPIO driver. There
-should be no need any more to check the compatible property and to
-find out if initialization of the GPIO driver should be skipped
-we just check if OF tree is available.
+Introduced in cc8f7f9e4e79a0940af6b4b6fdfbcf18a03aa9f4
+("PCI: Fix __must_check annotation on pci_create_sysfs_dev_files()")
 
-Cc: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Olof Johansson <olof@lixom.net>
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+pci_bus_add_device() should not fail to add device if
+pci_create_sysfs_dev_files() call fails, as sysfs files are not critical.
+
+pci_sysfs_init() is a "late_initcall" and is called after acpi_init, so
+pci_bus_add_device() fails to create devices during boot resulting in a
+bug during acpi_init. It is safe not to create sysfs_dev_files in
+pci_bus_add_device() as they are later created in pci_sysfs_ini().
+
+[    0.316603] ------------[ cut here ]------------
+[    0.317000] kernel BUG at drivers/pci/bus.c:210!
+[    0.317000] invalid opcode: 0000 [#1] SMP
+[    0.317000] Modules linked in:
+[    0.317000] Pid: 1, comm: swapper/0 Not tainted 3.9.0-rc2+ #357 Bochs Bochs
+[    0.317000] EIP: 0060:[<c12d2d7e>] EFLAGS: 00010246 CPU: 0
+[    0.317000] EIP is at pci_bus_add_devices+0x7e/0x80
+[    0.317000] EAX: fffffff3 EBX: df207000 ECX: 00000000 EDX: 00000001
+[    0.317000] ESI: df228000 EDI: df228014 EBP: df0a1dec ESP: df0a1de0
+[    0.317000]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+[    0.317000] CR0: 8005003b CR2: ffe16000 CR3: 01c32000 CR4: 00000690
+[    0.317000] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[    0.317000] DR6: ffff0ff0 DR7: 00000400
+[    0.317000] Process swapper/0 (pid: 1, ti=df0a0000 task=df098000 task.ti=df0a0000)
+[    0.317000] Stack:
+[    0.317000]  df1702c0 c19f2294 00000000 df0a1e2c c13102d9 c18fec3e c18febce 00000008
+[    0.317000]  00000000 df1702d4 df056044 00000008 00000000 00000000 c130d023 00000006
+[    0.317000]  c19f22fc c173ec9c df17c590 df0a1e5c c130d0f4 df056000 df05603c df02f9c0
+[    0.317000] Call Trace:
+[    0.317000]  [<c13102d9>] acpi_pci_root_add+0x3af/0x3ea
+[    0.317000]  [<c130d023>] ? acpi_bus_type_and_status+0x3d/0x88
+[    0.317000]  [<c130d0f4>] acpi_bus_device_attach+0x86/0xe4
+[    0.317000]  [<c1334d05>] acpi_ns_walk_namespace+0xf5/0x240
+[    0.317000]  [<c1335567>] acpi_walk_namespace+0xdd/0x11c
+[    0.317000]  [<c130d06e>] ? acpi_bus_type_and_status+0x88/0x88
+[    0.317000]  [<c130e021>] acpi_bus_scan+0x95/0xa8
+[    0.317000]  [<c130d06e>] ? acpi_bus_type_and_status+0x88/0x88
+[    0.317000]  [<c1a5dae6>] acpi_scan_init+0x59/0x152
+[    0.317000]  [<c1a5d90d>] acpi_init+0x243/0x28b
+[    0.317000]  [<c1a5d6ca>] ? acpi_sleep_proc_init+0x2e/0x2e
+[    0.317000]  [<c10011f2>] do_one_initcall+0x102/0x150
+[    0.317000]  [<c1a36b40>] kernel_init_freeable+0x135/0x1c7
+[    0.317000]  [<c1a364c8>] ? do_early_param+0x78/0x78
+[    0.317000]  [<c16daae0>] kernel_init+0x10/0x140
+[    0.317000]  [<c16fa4b7>] ret_from_kernel_thread+0x1b/0x28
+[    0.317000]  [<c16daad0>] ? rest_init+0xd0/0xd0
+[    0.317000] Code: 0c 85 f6 74 1b 89 f0 e8 a1 ff ff ff 0f b6 86 18 03 00 00 a8 01 75 09 83 c8 01 88 86 18 03 00 00 8b 1b 39 fb 75 cf 5b 5e 5f 5d c3 <0f> 0b 55 89 e5 53 3e 8d 74 26 00 83 fa 03 7e 32 8b 48 38 8d 58
+[    0.317000] EIP: [<c12d2d7e>] pci_bus_add_devices+0x7e/0x80 SS:ESP 0068:df0a1de0
+[    0.318013] ---[ end trace 9e4164edb7144ba6 ]---
+[    0.319015] swapper/0 (1) used greatest stack depth: 5720 bytes left
+[    0.320011] Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b
+[    0.320011]
+
+Signed-off-by: Artem Savkov <artem.savkov@gmail.com>
 ---
- drivers/gpio/gpio-samsung.c |  106 +++----------------------------------------
- 1 file changed, 6 insertions(+), 100 deletions(-)
+ drivers/pci/bus.c |    4 +---
+ drivers/pci/pci.h |    2 +-
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/gpio/gpio-samsung.c b/drivers/gpio/gpio-samsung.c
-index 4fecfb8..e1c59c0 100644
---- a/drivers/gpio/gpio-samsung.c
-+++ b/drivers/gpio/gpio-samsung.c
-@@ -2658,70 +2658,6 @@ static struct samsung_gpio_chip exynos5_gpios_4[] = {
- };
- #endif
-
--
--#if defined(CONFIG_ARCH_EXYNOS) && defined(CONFIG_OF)
--static int exynos_gpio_xlate(struct gpio_chip *gc,
--			const struct of_phandle_args *gpiospec, u32 *flags)
--{
--	unsigned int pin;
--
--	if (WARN_ON(gc->of_gpio_n_cells < 4))
--		return -EINVAL;
--
--	if (WARN_ON(gpiospec->args_count < gc->of_gpio_n_cells))
--		return -EINVAL;
--
--	if (gpiospec->args[0] > gc->ngpio)
--		return -EINVAL;
--
--	pin = gc->base + gpiospec->args[0];
--
--	if (s3c_gpio_cfgpin(pin, S3C_GPIO_SFN(gpiospec->args[1])))
--		pr_warn("gpio_xlate: failed to set pin function\n");
--	if (s3c_gpio_setpull(pin, gpiospec->args[2] & 0xffff))
--		pr_warn("gpio_xlate: failed to set pin pull up/down\n");
--	if (s5p_gpio_set_drvstr(pin, gpiospec->args[3]))
--		pr_warn("gpio_xlate: failed to set pin drive strength\n");
--
--	if (flags)
--		*flags = gpiospec->args[2] >> 16;
--
--	return gpiospec->args[0];
--}
--
--static const struct of_device_id exynos_gpio_dt_match[] __initdata = {
--	{ .compatible = "samsung,exynos4-gpio", },
--	{}
--};
--
--static __init void exynos_gpiolib_attach_ofnode(struct samsung_gpio_chip *chip,
--						u64 base, u64 offset)
--{
--	struct gpio_chip *gc =  &chip->chip;
--	u64 address;
--
--	if (!of_have_populated_dt())
--		return;
--
--	address = chip->base ? base + ((u32)chip->base & 0xfff) : base + offset;
--	gc->of_node = of_find_matching_node_by_address(NULL,
--			exynos_gpio_dt_match, address);
--	if (!gc->of_node) {
--		pr_info("gpio: device tree node not found for gpio controller"
--			" with base address %08llx\n", address);
--		return;
--	}
--	gc->of_gpio_n_cells = 4;
--	gc->of_xlate = exynos_gpio_xlate;
--}
--#elif defined(CONFIG_ARCH_EXYNOS)
--static __init void exynos_gpiolib_attach_ofnode(struct samsung_gpio_chip *chip,
--						u64 base, u64 offset)
--{
--	return;
--}
--#endif /* defined(CONFIG_ARCH_EXYNOS) && defined(CONFIG_OF) */
--
- static __init void exynos4_gpiolib_init(void)
- {
- #ifdef CONFIG_CPU_EXYNOS4210
-@@ -2746,8 +2682,6 @@ static __init void exynos4_gpiolib_init(void)
- 			chip->config = &exynos_gpio_cfg;
- 			chip->group = group++;
- 		}
--		exynos_gpiolib_attach_ofnode(chip,
--				EXYNOS4_PA_GPIO1, i * 0x20);
- 	}
- 	samsung_gpiolib_add_4bit_chips(exynos4_gpios_1,
- 				       nr_chips, gpio_base1);
-@@ -2773,8 +2707,6 @@ static __init void exynos4_gpiolib_init(void)
- 			chip->config = &exynos_gpio_cfg;
- 			chip->group = group++;
- 		}
--		exynos_gpiolib_attach_ofnode(chip,
--				EXYNOS4_PA_GPIO2, i * 0x20);
- 	}
- 	samsung_gpiolib_add_4bit_chips(exynos4_gpios_2,
- 				       nr_chips, gpio_base2);
-@@ -2794,8 +2726,6 @@ static __init void exynos4_gpiolib_init(void)
- 			chip->config = &exynos_gpio_cfg;
- 			chip->group = group++;
- 		}
--		exynos_gpiolib_attach_ofnode(chip,
--				EXYNOS4_PA_GPIO3, i * 0x20);
- 	}
- 	samsung_gpiolib_add_4bit_chips(exynos4_gpios_3,
- 				       nr_chips, gpio_base3);
-@@ -2849,8 +2779,6 @@ static __init void exynos5_gpiolib_init(void)
- 			chip->config = &exynos_gpio_cfg;
- 			chip->group = group++;
- 		}
--		exynos_gpiolib_attach_ofnode(chip,
--				EXYNOS5_PA_GPIO1, i * 0x20);
- 	}
- 	samsung_gpiolib_add_4bit_chips(exynos5_gpios_1,
- 				       nr_chips, gpio_base1);
-@@ -2870,8 +2798,6 @@ static __init void exynos5_gpiolib_init(void)
- 			chip->config = &exynos_gpio_cfg;
- 			chip->group = group++;
- 		}
--		exynos_gpiolib_attach_ofnode(chip,
--				EXYNOS5_PA_GPIO2, i * 0x20);
- 	}
- 	samsung_gpiolib_add_4bit_chips(exynos5_gpios_2,
- 				       nr_chips, gpio_base2);
-@@ -2898,8 +2824,6 @@ static __init void exynos5_gpiolib_init(void)
- 			chip->config = &exynos_gpio_cfg;
- 			chip->group = group++;
- 		}
--		exynos_gpiolib_attach_ofnode(chip,
--				EXYNOS5_PA_GPIO3, i * 0x20);
- 	}
- 	samsung_gpiolib_add_4bit_chips(exynos5_gpios_3,
- 				       nr_chips, gpio_base3);
-@@ -2919,8 +2843,6 @@ static __init void exynos5_gpiolib_init(void)
- 			chip->config = &exynos_gpio_cfg;
- 			chip->group = group++;
- 		}
--		exynos_gpiolib_attach_ofnode(chip,
--				EXYNOS5_PA_GPIO4, i * 0x20);
- 	}
- 	samsung_gpiolib_add_4bit_chips(exynos5_gpios_4,
- 				       nr_chips, gpio_base4);
-@@ -2945,29 +2867,13 @@ static __init int samsung_gpiolib_init(void)
- 	int i, nr_chips;
- 	int group = 0;
-
--#if defined(CONFIG_PINCTRL_EXYNOS) || defined(CONFIG_PINCTRL_EXYNOS5440)
- 	/*
--	* This gpio driver includes support for device tree support and there
--	* are platforms using it. In order to maintain compatibility with those
--	* platforms, and to allow non-dt Exynos4210 platforms to use this
--	* gpiolib support, a check is added to find out if there is a active
--	* pin-controller driver support available. If it is available, this
--	* gpiolib support is ignored and the gpiolib support available in
--	* pin-controller driver is used. This is a temporary check and will go
--	* away when all of the Exynos4210 platforms have switched to using
--	* device tree and the pin-ctrl driver.
--	*/
--	struct device_node *pctrl_np;
--	static const struct of_device_id exynos_pinctrl_ids[] = {
--		{ .compatible = "samsung,exynos4210-pinctrl", },
--		{ .compatible = "samsung,exynos4x12-pinctrl", },
--		{ .compatible = "samsung,exynos5440-pinctrl", },
--		{ }
--	};
--	for_each_matching_node(pctrl_np, exynos_pinctrl_ids)
--		if (pctrl_np && of_device_is_available(pctrl_np))
--			return -ENODEV;
--#endif
-+	 * All Samsung platforms that support device tree will use the pinctrl
-+	 * driver, hence we skip initialization of this driver if the OF tree
-+	 * is available.
-+	 */
-+	if (of_have_populated_dt())
-+		return -ENODEV;
-
- 	samsung_gpiolib_set_cfg(samsung_gpio_cfgs, ARRAY_SIZE(samsung_gpio_cfgs));
-
---
-1.7.9.5
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 445a99d..748f8f3 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -174,9 +174,7 @@ int pci_bus_add_device(struct pci_dev *dev)
+ 	 * Can not put in pci_device_add yet because resources
+ 	 * are not assigned yet for some devices.
+ 	 */
+-	retval = pci_create_sysfs_dev_files(dev);
+-	if (retval)
+-		return retval;
++	pci_create_sysfs_dev_files(dev);
+ 
+ 	dev->match_driver = true;
+ 	retval = device_attach(&dev->dev);
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index 0f1b306..68678ed 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -8,7 +8,7 @@
+ 
+ /* Functions internal to the PCI core code */
+ 
+-int __must_check pci_create_sysfs_dev_files(struct pci_dev *pdev);
++int pci_create_sysfs_dev_files(struct pci_dev *pdev);
+ void pci_remove_sysfs_dev_files(struct pci_dev *pdev);
+ #if !defined(CONFIG_DMI) && !defined(CONFIG_ACPI)
+ static inline void pci_create_firmware_label_files(struct pci_dev *pdev)
+-- 
+1.7.0.4
 
