@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966858Ab3DQPpT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 11:45:19 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53568 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965236Ab3DQPpR (ORCPT
+	id S966879Ab3DQPqU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 11:46:20 -0400
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:46168 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965236Ab3DQPqT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 11:45:17 -0400
-Message-ID: <516EC1D6.6010205@wwwdotorg.org>
-Date: Wed, 17 Apr 2013 09:37:58 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 17 Apr 2013 11:46:19 -0400
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH 1/1] metag: avoid unnecessary builtin dtb rebuilds
-References: <1366192975-14953-1-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1366192975-14953-1-git-send-email-james.hogan@imgtec.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <CA+G9fYvL4nM4f7EsryRocwnoftbz1SbTGoFvhdbOAFi029DvKQ@mail.gmail.com>
+References: <CA+G9fYuq3eJp6pfSPXjdPqY7DAW6LF1Q5uDA02GOS65_voo6Bw@mail.gmail.com>
+	<CACRpkdaKajsFc=WGg1OAvBajs5ziCeXbk=-cnMV6EmB3L8rxPg@mail.gmail.com>
+	<CA+G9fYvL4nM4f7EsryRocwnoftbz1SbTGoFvhdbOAFi029DvKQ@mail.gmail.com>
+Date: Wed, 17 Apr 2013 17:46:19 +0200
+Message-ID: <CACRpkdY2_17WufcFYaaRW87JYYNqnGa9sNXQRcduBEsUHHOzQA@mail.gmail.com>
+Subject: Re: [Linaro-QA-Service] [linux-next] Snowball build broken
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Naresh Kamboju <naresh.kamboju@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Lists linaro-dev <linaro-dev@lists.linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2013 04:02 AM, James Hogan wrote:
-> The builtin .dtb.S intermediate file needs to be marked with .SECONDARY
-> so that it isn't automatically deleted (which causes it to be
-> regenerated on every build). Also add *.dtb.S to clean-files so it gets
-> cleaned up by make clean.
-> 
-> Similarly, if the specified builtin dtb isn't already in dtb-y (e.g.
-> imported into the tree and specified in CONFIG_METAG_BUILTIN_DTB_NAME)
-> it too will be treated as an intermediate and deleted automatically
-> (again causing it to be regenerated on every build), so add it to dtb-y
-> so it gets added to targets and the dtbs target.
+On Tue, Apr 16, 2013 at 3:48 PM, Naresh Kamboju
+<naresh.kamboju@linaro.org> wrote:
+> On 12 April 2013 04:07, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> Hey it works. Didn't see this before I fixed it tho :-)
+>> http://marc.info/?l=linux-kernel&m=136567139910888&w=2
+>
+> This commit not yet been merged in to linux-next  "next-20130416".
+> Due to this reason still snowball build fails at above error.
 
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
+That is outside of my jurisdiction, only the MFD maintainer Samuel
+Ortiz can merge this patch.
+
+Yours,
+Linus Walleij
