@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab3DQE3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 00:29:06 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:29179 "EHLO
+	id S1755329Ab3DQE3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 00:29:32 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:29171 "EHLO
 	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab3DQE2m (ORCPT
+	with ESMTP id S1752623Ab3DQE2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 00:28:42 -0400
+	Wed, 17 Apr 2013 00:28:41 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
         x86@kernel.org, linux-arch@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org,
         Davidlohr Bueso <davidlohr.bueso@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>,
         Rik van Riel <riel@redhat.com>
-Subject: [PATCH v3 4/5] mutex: Remove new typedefs introduced in patch 2
-Date: Wed, 17 Apr 2013 00:28:10 -0400
-Message-Id: <1366172891-7729-5-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v3 optional 3/5] mutex: back out architecture specific check for negative mutex count
+Date: Wed, 17 Apr 2013 00:28:09 -0400
+Message-Id: <1366172891-7729-4-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1366172891-7729-1-git-send-email-Waiman.Long@hp.com>
 References: <1366172891-7729-1-git-send-email-Waiman.Long@hp.com>
@@ -30,76 +30,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In response to the review comment from Davidlohr, this patch will
-remove the new typedefs introduced by patch 2. It also removes an
-unnecessary barrier() call.
+If it is confirmed that all the supported architectures can allow a
+negative mutex count without incorrect behavior, we can then back
+out the architecture specific change and allow the mutex count to
+go to any negative number. That should further reduce contention for
+non-x86 architecture.
+
+If this is not the case, this patch should be dropped.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- kernel/mutex.c |   25 +++++++++++--------------
- 1 files changed, 11 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/mutex.h |   10 ----------
+ kernel/mutex.c               |    9 ++-------
+ 2 files changed, 2 insertions(+), 17 deletions(-)
 
+diff --git a/arch/x86/include/asm/mutex.h b/arch/x86/include/asm/mutex.h
+index bc2a0b0..7d3a482 100644
+--- a/arch/x86/include/asm/mutex.h
++++ b/arch/x86/include/asm/mutex.h
+@@ -3,13 +3,3 @@
+ #else
+ # include <asm/mutex_64.h>
+ #endif
+-
+-#ifndef	__ASM_MUTEX_H
+-#define	__ASM_MUTEX_H
+-/*
+- * For the x86 architecture, it allows any negative number (besides -1) in
+- * the mutex count to indicate that some other threads are waiting on the
+- * mutex.
+- */
+-#define __ARCH_ALLOW_ANY_NEGATIVE_MUTEX_COUNT	1
+-#endif
 diff --git a/kernel/mutex.c b/kernel/mutex.c
-index 5600bdf..140f113 100644
+index e6a90de..5600bdf 100644
 --- a/kernel/mutex.c
 +++ b/kernel/mutex.c
-@@ -113,18 +113,16 @@ EXPORT_SYMBOL(mutex_lock);
-  * We don't inline mspin_lock() so that perf can correctly account for the
-  * time spent in this lock function.
+@@ -38,15 +38,10 @@
+ #endif
+ 
+ /*
+- * A mutex count of -1 indicates that waiters are sleeping waiting for the
+- * mutex. Some architectures can allow any negative number, not just -1, for
+- * this purpose.
++ * A negative mutex count indicates that waiters are sleeping waiting for the
++ * mutex.
   */
--typedef struct mspin_node {
--	struct mspin_node *next;
--	int		   locked;	/* 1 if lock acquired */
--} mspin_node_t;
--
--typedef mspin_node_t	*mspin_lock_t;
--
--#define	MLOCK(mutex)	((mspin_lock_t *)&((mutex)->spin_mlock))
--
--static noinline void mspin_lock(mspin_lock_t *lock,  mspin_node_t *node)
-+struct mspin_node {
-+	struct mspin_node *next ;
-+	int		  locked;	/* 1 if lock acquired */
-+};
-+#define	MLOCK(mutex)	((struct mspin_node **)&((mutex)->spin_mlock))
-+
-+static noinline
-+void mspin_lock(struct mspin_node **lock, struct mspin_node *node)
- {
--	mspin_node_t *prev;
-+	struct mspin_node *prev;
+-#ifdef __ARCH_ALLOW_ANY_NEGATIVE_MUTEX_COUNT
+ #define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) >= 0)
+-#else
+-#define	MUTEX_SHOW_NO_WAITER(mutex)	(atomic_read(&(mutex)->count) != -1)
+-#endif
  
- 	/* Init node */
- 	node->locked = 0;
-@@ -143,9 +141,9 @@ static noinline void mspin_lock(mspin_lock_t *lock,  mspin_node_t *node)
- 		arch_mutex_cpu_relax();
- }
- 
--static void mspin_unlock(mspin_lock_t *lock,  mspin_node_t *node)
-+static void mspin_unlock(struct mspin_node **lock, struct mspin_node *node)
- {
--	mspin_node_t *next = ACCESS_ONCE(node->next);
-+	struct mspin_node *next = ACCESS_ONCE(node->next);
- 
- 	if (likely(!next)) {
- 		/*
-@@ -157,7 +155,6 @@ static void mspin_unlock(mspin_lock_t *lock,  mspin_node_t *node)
- 		while (!(next = ACCESS_ONCE(node->next)))
- 			arch_mutex_cpu_relax();
- 	}
--	barrier();
- 	ACCESS_ONCE(next->locked) = 1;
- 	smp_wmb();
- }
-@@ -237,7 +234,7 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
- 
- 	for (;;) {
- 		struct task_struct *owner;
--		mspin_node_t	    node;
-+		struct mspin_node  node;
- 
- 		/*
- 		 * If there's an owner, wait for it to either
+ void
+ __mutex_init(struct mutex *lock, const char *name, struct lock_class_key *key)
 -- 
 1.7.1
 
