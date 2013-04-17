@@ -1,256 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966040Ab3DQVUc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 17:20:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43495 "EHLO mail.skyhub.de"
+	id S966784Ab3DQVYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 17:24:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53467 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965128Ab3DQVUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 17:20:31 -0400
-Date: Wed, 17 Apr 2013 23:20:22 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org
-Subject: Re: [PATCH V4] edac: Handle EDAC ECC errors for Family 16h
-Message-ID: <20130417212022.GA9181@pd.tnic>
-References: <1366228633-3159-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1366228633-3159-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S965128Ab3DQVYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 17:24:09 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: linux-watchdog@vger.kernel.org, kexec@lists.infradead.org
+Cc: wim@iguana.be, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
+        dyoung@redhat.com, ebiederm@xmission.com, linux@roeck-us.net,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH v3] watchdog: Add hook for kicking in kdump path
+Date: Wed, 17 Apr 2013 17:19:56 -0400
+Message-Id: <1366233596-34681-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ trim CC-list ]
+A common problem with kdump is that during the boot up of the
+second kernel, the hardware watchdog times out and reboots the
+machine before a vmcore can be captured.
 
-On Wed, Apr 17, 2013 at 02:57:13PM -0500, Aravind Gopalakrishnan wrote:
-> Add code to handle ECC decoding for fam16h. Support exists for
-> previous families already, so code has been reused werever applicable
-> and some code has been added to handle fam16h specific operations.
-> 
-> The patch was tested on Fam16h with ECC turned on
-> using the mce_amd_inj facility and works fine.
-> 
-> update: corrections to code from previous versions involve few cosmetic
-> changes, reusing f10_read_dct_pci_cfg and basing off tip/master
-> 
-> Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+Instead of tellling customers to disable their hardware watchdog
+timers, I hacked up a hook to put in the kdump path that provides
+one last kick before jumping into the second kernel.
 
-Ok,
+The assumption is the watchdog timeout is at least 10-30 seconds
+long, enough to get the second kernel to userspace to kick the watchdog
+again, if needed.
 
-looks almost good, just a couple of cleanups. I also replaced the
-lenghty comments with a reference to the BKDG. Please test the below
-version and let me know,
+Of course kdump is usually executed on a panic path, so grabbing the
+watchdog mutexes to communicate with the hardware won't work.  For now,
+I use trylock, otherwise fail.
 
-Thanks.
+I have tested this with a machine using iTCO_wdt and the 'watchdog' app.
+The extra kicked happened as expected.
 
---
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-Date: Wed, 17 Apr 2013 14:57:13 -0500
-Subject: [PATCH] amd64_edac: Add Family 16h support
+v2:  based on feedback, implemented a linked list of watchdog references.
+     added trylock in watchdog_ping and used that function for kicking.
+     renamed export function to be more generic.
 
-Add code to handle DRAM ECC errors decoding for Fam16h.
+v3:  small cleanups, remove mutex_safe variable from EXPORT_SYMBOL
 
-Tested on Fam16h with ECC turned on using the mce_amd_inj facility and
-works fine.
-
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-[ Boris: cleanups and clarifications ]
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- arch/x86/kernel/amd_nb.c  |  3 ++-
- drivers/edac/amd64_edac.c | 65 ++++++++++++++++++++++++++++++++++++++++++++++-
- drivers/edac/amd64_edac.h |  4 ++-
- include/linux/pci_ids.h   |  2 ++
- 4 files changed, 71 insertions(+), 3 deletions(-)
+ drivers/watchdog/watchdog_dev.c |   74 +++++++++++++++++++++++++++++++++++---
+ include/linux/watchdog.h        |    9 +++++
+ kernel/kexec.c                  |    6 +++
+ 3 files changed, 83 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index 3684129be947..3048ded1b598 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -20,12 +20,14 @@ const struct pci_device_id amd_nb_misc_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
- 	{}
- };
- EXPORT_SYMBOL(amd_nb_misc_ids);
+diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+index 08b48bb..52cb465 100644
+--- a/drivers/watchdog/watchdog_dev.c
++++ b/drivers/watchdog/watchdog_dev.c
+@@ -49,6 +49,16 @@ static dev_t watchdog_devt;
+ /* the watchdog device behind /dev/watchdog */
+ static struct watchdog_device *old_wdd;
  
- static const struct pci_device_id amd_nb_link_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
- 	{}
- };
- 
-@@ -81,7 +83,6 @@ int amd_cache_northbridges(void)
- 			next_northbridge(link, amd_nb_link_ids);
-         }
- 
--	/* some CPU families (e.g. family 0x11) do not support GART */
- 	if (boot_cpu_data.x86 == 0xf || boot_cpu_data.x86 == 0x10 ||
- 	    boot_cpu_data.x86 == 0x15)
- 		amd_northbridges.flags |= AMD_NB_GART;
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index e1d13c463c90..8b6a0343c220 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -98,6 +98,7 @@ int __amd64_write_pci_cfg_dword(struct pci_dev *pdev, int offset,
-  *
-  * F15h: we select which DCT we access using F1x10C[DctCfgSel]
-  *
-+ * F16h: has only 1 DCT
++/* link list of all watchdog devices */
++struct watchdog_list {
++	spinlock_t lock;
++	struct list_head head;
++};
++static struct watchdog_list wdlist = {
++	.lock = __SPIN_LOCK_UNLOCKED(wdlist.lock),
++	.head = LIST_HEAD_INIT(wdlist.head),
++};
++
+ /*
+  *	watchdog_ping: ping the watchdog.
+  *	@wddev: the watchdog device to ping
+@@ -59,11 +69,18 @@ static struct watchdog_device *old_wdd;
+  *	We only ping when the watchdog device is running.
   */
- static int k8_read_dct_pci_cfg(struct amd64_pvt *pvt, int addr, u32 *val,
- 			       const char *func)
-@@ -340,6 +341,27 @@ static void get_cs_base_and_mask(struct amd64_pvt *pvt, int csrow, u8 dct,
- 		base_bits	= GENMASK(21, 31) | GENMASK(9, 15);
- 		mask_bits	= GENMASK(21, 29) | GENMASK(9, 15);
- 		addr_shift	= 4;
-+
-+	/*
-+	* F16h needs two addr_shift values: 8 for high and 6 for low
-+	* (cf. F16h BKDG).
-+	*/
-+	} else if (boot_cpu_data.x86 == 0x16) {
-+		csbase          = pvt->csels[dct].csbases[csrow];
-+		csmask          = pvt->csels[dct].csmasks[csrow >> 1];
-+
-+		*base  = (csbase & GENMASK(5,  15)) << 6;
-+		*base |= (csbase & GENMASK(19, 30)) << 8;
-+
-+		*mask = ~0ULL;
-+		/* poke holes for the csmask */
-+		*mask &= ~((GENMASK(5, 15)  << 6) |
-+			   (GENMASK(19, 30) << 8));
-+
-+		*mask |= (csmask & GENMASK(5, 15))  << 6;
-+		*mask |= (csmask & GENMASK(19, 30)) << 8;
-+
-+		return;
- 	} else {
- 		csbase		= pvt->csels[dct].csbases[csrow];
- 		csmask		= pvt->csels[dct].csmasks[csrow >> 1];
-@@ -1150,6 +1172,21 @@ static int f15_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
- 	return ddr3_cs_size(cs_mode, false);
+ 
+-static int watchdog_ping(struct watchdog_device *wddev)
++static int watchdog_ping(struct watchdog_device *wddev, bool mutex_safe)
+ {
+ 	int err = 0;
+ 
+-	mutex_lock(&wddev->lock);
++	if (mutex_safe) {
++		mutex_lock(&wddev->lock);
++	} else {
++		if (!mutex_trylock(&wddev->lock)) {
++			pr_warn("watchdog%d: Unable to lock mutex\n", wddev->id);
++			return -EAGAIN;
++		}
++	}
+ 
+ 	if (test_bit(WDOG_UNREGISTERED, &wddev->status)) {
+ 		err = -ENODEV;
+@@ -83,6 +100,38 @@ out_ping:
+ 	return err;
  }
  
-+/*
-+ * F16h has only limited cs_modes
++/**
++ *	watchdog_kick_all: kick all the watchdogs
++ *
++ *	There are times when the kernel needs to kick all the
++ *	watchdogs at once without the use of references.  For
++ *	example in the kdump path, when the kernel is about
++ *	to jump into the second kernel.
++ *
++ *	The 'false' variable is for contextes that can not
++ *	sleep, therefore try to kick the watchdog with trylock
++ *	instead.
++ *
++ *	Walk the link list locklessly using RCU to handle various
++ *	contexts this could be called in.  Should support irq and
++ *	NMI contexts correctly.
 + */
-+static int f16_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
-+				unsigned cs_mode)
++
++void watchdog_kick_all(void)
 +{
-+	WARN_ON(cs_mode > 12);
++	struct watchdog_device *wddev;
 +
-+	if (cs_mode == 6 || cs_mode == 8 ||
-+	    cs_mode == 9 || cs_mode == 12)
-+		return -1;
-+	else
-+		return ddr3_cs_size(cs_mode, false);
++	rcu_read_lock();
++
++	list_for_each_entry_rcu(wddev, &wdlist.head, list)
++		watchdog_ping(wddev, false);
++
++	rcu_read_unlock();
++
++	return;
 +}
++EXPORT_SYMBOL_GPL(watchdog_kick_all);
 +
- static void read_dram_ctl_register(struct amd64_pvt *pvt)
- {
+ /*
+  *	watchdog_start: wrapper to start the watchdog.
+  *	@wddev: the watchdog device to start
+@@ -314,7 +363,7 @@ static ssize_t watchdog_write(struct file *file, const char __user *data,
+ 	}
  
-@@ -1587,6 +1624,17 @@ static struct amd64_family_type amd64_family_types[] = {
- 			.read_dct_pci_cfg	= f15_read_dct_pci_cfg,
+ 	/* someone wrote to us, so we send the watchdog a keepalive ping */
+-	watchdog_ping(wdd);
++	watchdog_ping(wdd, true);
+ 
+ 	return len;
+ }
+@@ -370,7 +419,7 @@ static long watchdog_ioctl(struct file *file, unsigned int cmd,
+ 	case WDIOC_KEEPALIVE:
+ 		if (!(wdd->info->options & WDIOF_KEEPALIVEPING))
+ 			return -EOPNOTSUPP;
+-		watchdog_ping(wdd);
++		watchdog_ping(wdd, true);
+ 		return 0;
+ 	case WDIOC_SETTIMEOUT:
+ 		if (get_user(val, p))
+@@ -381,7 +430,7 @@ static long watchdog_ioctl(struct file *file, unsigned int cmd,
+ 		/* If the watchdog is active then we send a keepalive ping
+ 		 * to make sure that the watchdog keep's running (and if
+ 		 * possible that it takes the new timeout) */
+-		watchdog_ping(wdd);
++		watchdog_ping(wdd, true);
+ 		/* Fall */
+ 	case WDIOC_GETTIMEOUT:
+ 		/* timeout == 0 means that we don't know the timeout */
+@@ -479,7 +528,7 @@ static int watchdog_release(struct inode *inode, struct file *file)
+ 		if (!test_bit(WDOG_UNREGISTERED, &wdd->status))
+ 			dev_crit(wdd->dev, "watchdog did not stop!\n");
+ 		mutex_unlock(&wdd->lock);
+-		watchdog_ping(wdd);
++		watchdog_ping(wdd, true);
+ 	}
+ 
+ 	/* Allow the owner module to be unloaded again */
+@@ -550,7 +599,14 @@ int watchdog_dev_register(struct watchdog_device *watchdog)
+ 			misc_deregister(&watchdog_miscdev);
+ 			old_wdd = NULL;
  		}
- 	},
-+	[F16_CPUS] = {
-+		.ctl_name = "F16h",
-+		.f1_id = PCI_DEVICE_ID_AMD_16H_NB_F1,
-+		.f3_id = PCI_DEVICE_ID_AMD_16H_NB_F3,
-+		.ops = {
-+			.early_channel_count	= f1x_early_channel_count,
-+			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
-+			.dbam_to_cs		= f16_dbam_to_chip_select,
-+			.read_dct_pci_cfg	= f10_read_dct_pci_cfg,
-+		}
-+	},
- };
- 
- /*
-@@ -1939,7 +1987,9 @@ static void read_mc_regs(struct amd64_pvt *pvt)
- 
- 	if (c->x86 >= 0x10) {
- 		amd64_read_pci_cfg(pvt->F3, EXT_NB_MCA_CFG, &tmp);
--		amd64_read_dct_pci_cfg(pvt, DBAM1, &pvt->dbam1);
-+		if (c->x86 != 0x16)
-+			/* F16h has only DCT0 */
-+			amd64_read_dct_pci_cfg(pvt, DBAM1, &pvt->dbam1);
- 
- 		/* F10h, revD and later can do x8 ECC too */
- 		if ((c->x86 > 0x10 || c->x86_model > 7) && tmp & BIT(25))
-@@ -2356,6 +2406,11 @@ static struct amd64_family_type *amd64_per_family_init(struct amd64_pvt *pvt)
- 		pvt->ops		= &amd64_family_types[F15_CPUS].ops;
- 		break;
- 
-+	case 0x16:
-+		fam_type		= &amd64_family_types[F16_CPUS];
-+		pvt->ops		= &amd64_family_types[F16_CPUS].ops;
-+		break;
++		return err;
+ 	}
 +
- 	default:
- 		amd64_err("Unsupported family!\n");
- 		return NULL;
-@@ -2581,6 +2636,14 @@ static DEFINE_PCI_DEVICE_TABLE(amd64_pci_table) = {
- 		.class		= 0,
- 		.class_mask	= 0,
- 	},
-+	{
-+		.vendor		= PCI_VENDOR_ID_AMD,
-+		.device		= PCI_DEVICE_ID_AMD_16H_NB_F2,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.class		= 0,
-+		.class_mask	= 0,
-+	},
++	/* no need for save/restore here, not in an irq context */
++	spin_lock_irq(&wdlist.lock);
++	list_add_tail_rcu(&watchdog->list, &wdlist.head);
++	spin_unlock_irq(&wdlist.lock);
++
+ 	return err;
+ }
  
- 	{0, }
+@@ -572,6 +628,12 @@ int watchdog_dev_unregister(struct watchdog_device *watchdog)
+ 		misc_deregister(&watchdog_miscdev);
+ 		old_wdd = NULL;
+ 	}
++
++	/* no need for save/restore here, not in an irq context */
++	spin_lock_irq(&wdlist.lock);
++	list_del_rcu(&watchdog->list);
++	spin_unlock_irq(&wdlist.lock);
++
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+index 2a3038e..d33e209 100644
+--- a/include/linux/watchdog.h
++++ b/include/linux/watchdog.h
+@@ -65,6 +65,7 @@ struct watchdog_ops {
+  * @driver-data:Pointer to the drivers private data.
+  * @lock:	Lock for watchdog core internal use only.
+  * @status:	Field that contains the devices internal status bits.
++ * @list:	Link list of all watchdog devices
+  *
+  * The watchdog_device structure contains all information about a
+  * watchdog timer device.
+@@ -95,6 +96,7 @@ struct watchdog_device {
+ #define WDOG_ALLOW_RELEASE	2	/* Did we receive the magic char ? */
+ #define WDOG_NO_WAY_OUT		3	/* Is 'nowayout' feature set ? */
+ #define WDOG_UNREGISTERED	4	/* Has the device been unregistered */
++	struct list_head list;
  };
-diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-index 35637d83f235..2c6f113bae2b 100644
---- a/drivers/edac/amd64_edac.h
-+++ b/drivers/edac/amd64_edac.h
-@@ -172,7 +172,8 @@
-  */
- #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
- #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
--
-+#define PCI_DEVICE_ID_AMD_16H_NB_F1	0x1531
-+#define PCI_DEVICE_ID_AMD_16H_NB_F2	0x1532
  
- /*
-  * Function 1 - Address Map
-@@ -296,6 +297,7 @@ enum amd_families {
- 	K8_CPUS = 0,
- 	F10_CPUS,
- 	F15_CPUS,
-+	F16_CPUS,
- 	NUM_FAMILIES,
- };
+ #ifdef CONFIG_WATCHDOG_NOWAYOUT
+@@ -142,4 +144,11 @@ extern int watchdog_init_timeout(struct watchdog_device *wdd,
+ extern int watchdog_register_device(struct watchdog_device *);
+ extern void watchdog_unregister_device(struct watchdog_device *);
  
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index f11c1c2609d5..9b3b85822302 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -524,6 +524,8 @@
- #define PCI_DEVICE_ID_AMD_15H_NB_F3	0x1603
- #define PCI_DEVICE_ID_AMD_15H_NB_F4	0x1604
- #define PCI_DEVICE_ID_AMD_15H_NB_F5	0x1605
-+#define PCI_DEVICE_ID_AMD_16H_NB_F3	0x1533
-+#define PCI_DEVICE_ID_AMD_16H_NB_F4	0x1534
- #define PCI_DEVICE_ID_AMD_CNB17H_F3	0x1703
- #define PCI_DEVICE_ID_AMD_LANCE		0x2000
- #define PCI_DEVICE_ID_AMD_LANCE_HOME	0x2001
++#ifdef CONFIG_WATCHDOG_CORE
++/* drivers/watchdog/watchdog_dev.c */
++extern void watchdog_kick_all(void);
++#else
++static inline void watchdog_kick_all(void) { };
++#endif
++
+ #endif  /* ifndef _LINUX_WATCHDOG_H */
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index bddd3d7..24787f1 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -32,6 +32,7 @@
+ #include <linux/vmalloc.h>
+ #include <linux/swap.h>
+ #include <linux/syscore_ops.h>
++#include <linux/watchdog.h>
+ 
+ #include <asm/page.h>
+ #include <asm/uaccess.h>
+@@ -1094,6 +1095,11 @@ void crash_kexec(struct pt_regs *regs)
+ 		if (kexec_crash_image) {
+ 			struct pt_regs fixed_regs;
+ 
++			/*
++			 * Give second kernel a chance to boot
++			 */
++			watchdog_kick_all();
++
+ 			crash_setup_regs(&fixed_regs, regs);
+ 			crash_save_vmcoreinfo();
+ 			machine_crash_shutdown(&fixed_regs);
 -- 
-1.8.2.135.g7b592fa
+1.7.1
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
