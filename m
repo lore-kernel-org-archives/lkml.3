@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966273Ab3DQMLy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 08:11:54 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:55577 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965961Ab3DQMLx convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:11:1>);
-	Wed, 17 Apr 2013 08:11:53 -0400
-Message-Id: <516EADD502000078000CE112@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Wed, 17 Apr 2013 13:12:37 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, "Victor Miasnikov" <vvm@tut.by>
-Cc: <olaf@aepfle.de>, <bp@alien8.de>, <apw@canonical.com>, <x86@kernel.org>,
-        <tglx@linutronix.de>, <devel@linuxdriverproject.org>,
-        <gregkh@linuxfoundation.org>, "K. Y. Srinivasan" <kys@microsoft.com>,
-        <jasowang@redhat.com>, <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: KVM  "Hyper-V emulation"   -- this can be related "Linux
- on Hyper-V" ? Or  "KVM emulates Hyper-V" as  "Hyper-V emulates
- Hyper-V" ? Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of
- Hyper-V
-References: <1359940910-32114-1-git-send-email-kys@microsoft.com>
- <1359940959-32168-1-git-send-email-kys@microsoft.com>
- <1359940959-32168-2-git-send-email-kys@microsoft.com>
- <20130417070616.GA4487@redhat.com>
- <39D7C3658A5B4979A3F025E1D944E743@local.st.by>
- <20130417101617.GF3881@redhat.com>
-In-Reply-To: <20130417101617.GF3881@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S966295Ab3DQMMn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 08:12:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966134Ab3DQMMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 08:12:41 -0400
+Message-ID: <516E918B.3050309@redhat.com>
+Date: Wed, 17 Apr 2013 14:11:55 +0200
+From: Jerome Marchand <jmarchan@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH] swap: redirty page if page write fails on swap file
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.04.13 at 12:16, "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> If the hypervisor says it's Hyper-V, that's because it wants
-> guests to use Hyper-V. I don't see why is guest second-guessing
-> this a good idea.
 
-There are two reasons here: For one, when the hypervisor is not
-Hyper-V, but is providing some Hyper-V emulation, that's intended
-for Windows guests to use, not e.g. Linux ones, especially when
-such guests could use the native hypervisor interface with much
-greater benefit.
+Since commit 62c230b, swap_writepage() calls direct_IO on swap files.
+However, in that case page isn't redirtied if I/O fails, and is therefore
+handled afterwards as if it has been successfully written to the swap
+file, leading to memory corruption when the page is eventually swapped
+back in.
+This patch sets the page dirty when direct_IO() fails. It fixes a memory
+corruption that happened while using swap-over-NFS.
 
-And second, there reportedly are features of (newer?) Hyper-V
-that some emulation may not provide, but that are also not easily
-detectable.
+Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+---
+ mm/page_io.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Jan
-
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 78eee32..04ca00d 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -222,6 +222,8 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+ 		if (ret == PAGE_SIZE) {
+ 			count_vm_event(PSWPOUT);
+ 			ret = 0;
++		} else {
++			set_page_dirty(page);
+ 		}
+ 		return ret;
+ 	}
