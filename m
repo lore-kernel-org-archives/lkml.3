@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965655Ab3DQRPg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:15:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57991 "EHLO arroyo.ext.ti.com"
+	id S965712Ab3DQRPs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:15:48 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:58003 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965286Ab3DQRPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:15:32 -0400
-Message-ID: <516ED8A0.5050706@ti.com>
-Date: Wed, 17 Apr 2013 13:15:12 -0400
+	id S965286Ab3DQRPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 13:15:43 -0400
 From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+To: <amit.kachhap@linaro.org>
+CC: Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, <linux-pm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 08/30] thermal: cpu_cooling: add documentation for get_property
+Date: Wed, 17 Apr 2013 13:12:01 -0400
+Message-ID: <1366218743-20841-9-git-send-email-eduardo.valentin@ti.com>
+X-Mailer: git-send-email 1.8.2.1.342.gfa7285d
+In-Reply-To: <1366218743-20841-1-git-send-email-eduardo.valentin@ti.com>
+References: <1366218743-20841-1-git-send-email-eduardo.valentin@ti.com>
 MIME-Version: 1.0
-To: <rui.zhang@intel.com>
-CC: <linux-pm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <eduardo.valentin@ti.com>
-Subject: Re: From: Eduardo Valentin <eduardo.valentin@ti.com>
-References: <1365437258-31412-1-git-send-email-eduardo.valentin@ti.com>
-In-Reply-To: <1365437258-31412-1-git-send-email-eduardo.valentin@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rui,
+As this is one of the central functions of this file,
+it deserves a proper documentation. This patch improves
+the existing comment to format it as a kernel-doc style.
 
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+---
+ drivers/thermal/cpu_cooling.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
-On 08-04-2013 12:07, Eduardo Valentin wrote:
->
->
-> Here is a sequence of fixes and documentation improvements
-> thermal code base. This should be first of a series of changes
-> I am planing to send out.
->
-> On this very first there is no change in functionality, as
-> the patches only change symbol names and updates kernel-doc
-> comments and their formants.
-
-I am going to rebase this series on top of your latest -next branch and 
-resend with your comments.
-
-I believe name standardization could be still be applied though.
-
->
->
->
-> Eduardo Valentin (11):
->    thermal: use strlcpy instead of strcpy
->    thermal: update driver license
->    thermal: rename notify_thermal_framework to thermal_notify_framework
->    thermal: rename get_thermal_instance to thermal_instance_get
->    thermal: rename get_tz_trend to thermal_zone_trend_get
->    thermal: use EXPORT_SYMBOL_GPL
->    thermal: update kernel-doc for thermal_zone_bind_cooling_device
->    thermal: update kernel-doc for thermal_zone_unbind_cooling_device
->    thermal: update kernel-doc for thermal_cooling_device_register
->    thermal: update kernel-doc for create_trip_attrs
->    thermal: update kernel-doc for thermal_zone_device_register
->
->   Documentation/thermal/sysfs-api.txt |    6 +-
->   drivers/thermal/fair_share.c        |    2 +-
->   drivers/thermal/step_wise.c         |    2 +-
->   drivers/thermal/thermal_sys.c       |   90 ++++++++++++++++++++++++-----------
->   include/linux/thermal.h             |    6 +-
->   5 files changed, 70 insertions(+), 36 deletions(-)
->
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index bc1ec19..0fa14b7 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -124,8 +124,14 @@ enum cpufreq_cooling_property {
+ 	GET_MAXL,
+ };
+ 
+-/*
+- * this is the common function to
++/**
++ * get_property - fetch a property of interest for a give cpu.
++ * @cpu: cpu for which the property is required
++ * @input: query parameter
++ * @output: query return
++ * @property: type of query (frequency, level, max level)
++ *
++ * This is the common function to
+  * 1. get maximum cpu cooling states
+  * 2. translate frequency to cooling state
+  * 3. translate cooling state to frequency
+@@ -134,7 +140,9 @@ enum cpufreq_cooling_property {
+  * a) reduce duplicate code as most of the code can be shared.
+  * b) make sure the logic is consistent when translating between
+  *    cooling states and frequencies.
+-*/
++ *
++ * Return: 0 on success, -EINVAL when invalid parameters are passed.
++ */
+ static int get_property(unsigned int cpu, unsigned long input,
+ 	unsigned int* output, enum cpufreq_cooling_property property)
+ {
+-- 
+1.8.2.1.342.gfa7285d
 
