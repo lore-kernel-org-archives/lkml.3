@@ -1,167 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966395Ab3DQNtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 09:49:22 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:56853 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966116Ab3DQNtV (ORCPT
+	id S966413Ab3DQNvU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 09:51:20 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52491 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966116Ab3DQNvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 09:49:21 -0400
-Message-ID: <A54DBB19C9CE485FB926E6B9199E7452@local.st.by>
-From: "Victor Miasnikov" <vvm@tut.by>
-To: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: KVM "Hyper-V emulation" -- this can be related "Linux on Hyper-V" ? Or "KVM emulates Hyper-V" as "Hyper-V emulates Hyper-V" ? Re: [PATCH 2/3] X86: Add a check to catch Xen emulation of Hyper-V
-Date: Wed, 17 Apr 2013 16:49:16 +0300
+	Wed, 17 Apr 2013 09:51:19 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH] mmc: mmci: Allow MMCI to request channels with information acquired from DT
+Date: Wed, 17 Apr 2013 15:50:55 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Russell King <linux@arm.linux.org.uk>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
+References: <1366205534-25079-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1366205534-25079-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="utf-8";
-	reply-type=original
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.3790.4548
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4862
+Message-Id: <201304171550.56037.arnd@arndb.de>
+X-Provags-ID: V02:K0:yVvCkUP9m4ZRJB4rD/tgucuunRKv7CCKJcZ/faDILbg
+ A04d9Ti9YIMIZUjpQqMMDpiGCa/LL0eSaiD2GqSDtCp2fwswIN
+ +jW6R4pHnjaEqZbOVOAFAB226x3klXkxQ3AGXK84UKATI9jMfD
+ LQYTdGzMaFS8Q01xUaet9Mlm7F4k7W2Ng9S2vs4CD+p0of+wwZ
+ TgCm8aZ0K1wFrX4uO6vIiverfKSVOC5/2L3Wp7N/aJOUXU4Eke
+ UjXynTkUy2f9BzluBClWn0LLmodxeCDNNHZC/uzhBOfhKolUMM
+ YSdAkjctcGy6uDNkT2CC93MpadSv2+KYZQfdFJ9rUTQcb5PpbF
+ UVmEXEgP5R/16HNwZiyY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wednesday 17 April 2013, Lee Jones wrote:
 
-2013/4/17 Jan Beulich
->
-> >>> On 17.04.13 at 12:16, "Michael S. Tsirkin"  wrote:
-> > If the hypervisor says it's Hyper-V, that's because it wants
-> > guests to use Hyper-V. I don't see why is guest second-guessing
-> > this a good idea.
->
-> There are two reasons here: For one, when the hypervisor is not
-> Hyper-V, but is providing some Hyper-V emulation, that's intended
-> for Windows guests to use, not e.g. Linux ones, especially when
-> such guests could use the native hypervisor interface with much
-> greater benefit.
->
-> And second, there reportedly are features of (newer?) Hyper-V
-> that some emulation may not provide, but that are also not easily
-> detectable.
->
+>  #ifdef CONFIG_DMA_ENGINE
+> -static void mmci_dma_setup(struct mmci_host *host)
+> +static void mmci_dma_setup(struct amba_device *dev,
+> +			   struct mmci_host *host)
+>  {
+> +	struct device_node *np = dev->dev.of_node;
+>  	struct mmci_platform_data *plat = host->plat;
+>  	const char *rxname, *txname;
+>  	dma_cap_mask_t mask;
+> +	const char *chan_name;
+> +	int count, i;
+> +	bool do_tx = false, do_rx = false;
+>  
+>  	if (!plat || !plat->dma_filter) {
+> -		dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
+> -		return;
+> +		if (np) {
+> +			count = of_property_count_strings(np, "dma-names");
+> +			for (i = 0; i < count; i++) {
+> +				of_property_read_string_index(np, "dma-names",
+> +							      i, &chan_name);
+> +				if (strcmp(chan_name, "tx"))
+> +					do_tx = true;
+> +				else if (strcmp(chan_name, "rx"))
+> +					do_rx = true;
+> +			}
+> +		} else {
+> +			dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
+> +			return;
+> +		}
+>  	}
 
+This looks unnecessarily complex.
 
-Yes
+>  	/* initialize pre request cookie */
+> @@ -321,19 +338,21 @@ static void mmci_dma_setup(struct mmci_host *host)
+>  	 * attempt to use it bidirectionally, however if it is
+>  	 * is specified but cannot be located, DMA will be disabled.
+>  	 */
+> -	if (plat->dma_rx_param) {
+> -		host->dma_rx_channel = dma_request_channel(mask,
+> -							   plat->dma_filter,
+> -							   plat->dma_rx_param);
+> +	if (plat->dma_rx_param || do_rx) {
+> +		host->dma_rx_channel = dma_request_slave_channel_compat(mask,
+> +					(plat) ? plat->dma_filter : NULL,
+> +					(plat) ? plat->dma_rx_param : NULL,
+> +					&dev->dev, "rx");
+>  		/* E.g if no DMA hardware is present */
+>  		if (!host->dma_rx_channel)
+>  			dev_err(mmc_dev(host->mmc), "no RX DMA channel\n");
+>  	}
 
-+
+Why not just do dma_request_slave_channel_compat() unconditionally here?
+It's not an error for MMCI if that fails. If you want to keep the warning
+in the case dma_rx_channel is provided by not working, you can do it like
 
+	host->dma_rx_channel = dma_request_slave_channel(dev, "rx");
+	if (!host->dma_rx_channel && plat->dma_rx_param) {
+		host->dma_rx_channel = dma_request_channel(mask,
+							   plat->dma_filter,
+							   plat->dma_rx_param);
+		...
+	}
 
-
-> On Wed, Apr 17, 2013 at 12:10:01PM +0300, Victor Miasnikov wrote:
-
-
-
->>
->> Question is very simple:  Hyper-V users/sysadmins need wait patch a-la this:
->> Or  "KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V emulates Hyper-V" as "Hyper-V emulates
->> Hyper-V" ?
->>
->
-> No.  You are using Hyper-V, not the KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V
-> emulation of it.
-> No patches dealing with this emulation should have any effect on you.
-
-
- This is _positive_ variant of possible future,
-but on _practic_ very often we need prevent _negative_ variant of possible future
-
-
->> ==
->> + /*
->> +  * KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V emulates Hyper-V to support
->> enlightened Windows.
->> +  * Check to see first if we are on a KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V
->> Hypervisor.
->> +  */
->> +
->> + if (KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V_cpuid_base())
->> +  return false;
-
->
-> If the hypervisor says it's Hyper-V, that's because it wants guests to use Hyper-V.
->
-
-
- Even if guest ( i.e. Virtual Computer) contain Linux OS ?
-
-
->> ==
->> KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V emulates Hyper-V to host enlightened
->> Windows.
->>
->> . . .
->>
->> [ hpa: the problem here is that
->> KVM_and_or_XEN_or_other_Hypervisor_what_has_non-full-emulation_of_Hyper-V doesn't emulate Hyper-V well enough,  .
->>  . ]
->
-> What's emulated not well enough?
->
-
- In case of XEN variant non-full-emulation_of_Hyper-V , IMHO :
-
-{{
------ Original Message ----- 
-From: "Victor Miasnikov"
-To: "Michael S. Tsirkin"
-Sent: Wednesday, April 17, 2013 12:41 PM
-Subject: IMHO, XEN emulation of Hyper-V not contain needed clocksource for Lunux guest Re: [PATCH 2/3] X86: Add a check
-to catch Xen emulation of Hyper-V
-
-Hi!
-
-> It seems that one might want to use hyper-v emulation e.g. to test
-> hyper-v code without using windows, so the functionality
-> that this patch disables is not completely useless,
-> so there should be a good reason for disabling it.
-
- As I undestand, XEN emulation of Hyper-V not contain  needed clocksource for Lunux guest ( virtual computers)
-
-I.e. Linux VM "think" what is running on Hyper-V host call clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100)
-and a-la BSOD or vice versa . . .
-
-
-> I went over the original discussion in
-> https://patchwork.kernel.org/patch/2064331/
-> and that's still not clear to me. Is there a configuration
-> that is broken without this patch but starts working with
-> this patch?
-
-
- IMHO, this related to:
-
-- clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-+ if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
-+  clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-
-
- See
-
-https://lkml.org/lkml/2013/2/12/623
-==
-            Date Tue, 12 Feb 2013 16:56:07 -0800
-            From tip-bot for Olaf Hering
-            Subject [tip:x86/hyperv] x86: Hyper-V: register clocksource only if its advertised
-
- . . .
-
-==
-
-
-
-Best regards, Victor Miasnikov
-}}
-
-
-
-
-
-Best regards, Victor Miasnikov
-Blog:  http://vvm.blog.tut.by/
-
+	Arnd
