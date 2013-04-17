@@ -1,153 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966013Ab3DQRlV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 13:41:21 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:59048 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S965148Ab3DQRlT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 13:41:19 -0400
-Message-ID: <1366220466.2855.14.camel@Wailaba2>
-Subject: [PATCH] Remove spurious cputimer restart and eliminate its drift
-From: Olivier Langlois <olivier@trillion01.com>
-To: tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 17 Apr 2013 13:41:06 -0400
-Organization: Trillion01 Inc
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
+	id S966157Ab3DQRo3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 13:44:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40721 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965225Ab3DQRo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 13:44:27 -0400
+Date: Wed, 17 Apr 2013 10:44:25 -0700 (PDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] HID: debugfs rework
+In-Reply-To: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com>
+Message-ID: <alpine.LNX.2.00.1304171041070.31201@pobox.suse.cz>
+References: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the call to stop_process_timers() in order to:
+On Wed, 17 Apr 2013, Benjamin Tissoires wrote:
 
-1. It catches the exceptionnal case where it would be
-   started without arming any timers in posix_cpu_timer_set()
- 2. You could end up with no process timers for a short
-    period of time when they find themselves in the firing
-    list. Let 1 tick to periodic timers to have the
-    opportunity to get rearmed.
+> Hi Jiri,
+> 
+> This is a small rework of the HID debugfs.
+> I encountered a problem with multitouch devices: they have too much usages to
+> fit into the fixed size output buffer of 512.
+> So I digg a little, and end up with those 4 patches.
 
-Also forbids the cputimer to drift ahead of its process clock by
-blocking its update when a tick occurs while a autoreaping task
-is currently in do_exit() between the call to release_task() and
-its final call to schedule().
+Hi Benjamin,
 
-Any task stats update after having called release_task() will
-be lost because they are added to the global process stats located
-in the signal struct from release_task().
+thanks, I will look into it and see whether I would be able to apply it 
+still for 3.10 merge window.
 
-Ideally, you should postpone the release_task() call after the
-final context switch to get all the stats added but this is
-more complex to achieve.
+I also have a locking fix for HID-debugfs which I am going to apply 
+shortly, but I am travelling this week, so I am in a bit degraded mode.
 
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+For reference, locking fix below.
+
+
+
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] HID: protect hid_debug_list
+
+Accesses to hid_device->hid_debug_list are not serialized properly, which
+could result in SMP concurrency issues when HID debugfs events are accessesed
+by multiple userspace processess.
+
+Serialize all the list operations by a mutex.
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- kernel/posix-cpu-timers.c | 44 +++++++++++++++++++++++++-------------------
- kernel/sched/fair.c       | 10 +++++++++-
- 2 files changed, 34 insertions(+), 20 deletions(-)
+ drivers/hid/hid-core.c  | 1 +
+ drivers/hid/hid-debug.c | 6 ++++++
+ include/linux/hid.h     | 1 +
+ 3 files changed, 8 insertions(+)
 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 8fd709c..7cecdb9 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -1130,8 +1130,6 @@ static void check_process_timers(struct task_struct *tsk,
- 	sig->cputime_expires.prof_exp = prof_expires;
- 	sig->cputime_expires.virt_exp = virt_expires;
- 	sig->cputime_expires.sched_exp = sched_expires;
--	if (task_cputime_zero(&sig->cputime_expires))
--		stop_process_timers(sig);
- }
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 1129f49..e3b7123 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -2347,6 +2347,7 @@ struct hid_device *hid_allocate_device(void)
  
- /*
-@@ -1238,34 +1236,42 @@ static inline int task_cputime_expired(const struct task_cputime *sample,
-  */
- static inline int fastpath_timer_check(struct task_struct *tsk)
+ 	init_waitqueue_head(&hdev->debug_wait);
+ 	INIT_LIST_HEAD(&hdev->debug_list);
++	mutex_init(&hdev->debug_list_lock);
+ 	sema_init(&hdev->driver_lock, 1);
+ 	sema_init(&hdev->driver_input_lock, 1);
+ 
+diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
+index 933fff0..3337261 100644
+--- a/drivers/hid/hid-debug.c
++++ b/drivers/hid/hid-debug.c
+@@ -580,12 +580,14 @@ void hid_debug_event(struct hid_device *hdev, char *buf)
+ 	int i;
+ 	struct hid_debug_list *list;
+ 
++	mutex_lock(&hdev->debug_list_lock);
+ 	list_for_each_entry(list, &hdev->debug_list, node) {
+ 		for (i = 0; i < strlen(buf); i++)
+ 			list->hid_debug_buf[(list->tail + i) % HID_DEBUG_BUFSIZE] =
+ 				buf[i];
+ 		list->tail = (list->tail + i) % HID_DEBUG_BUFSIZE;
+         }
++	mutex_unlock(&hdev->debug_list_lock);
+ 
+ 	wake_up_interruptible(&hdev->debug_wait);
+ }
+@@ -960,7 +962,9 @@ static int hid_debug_events_open(struct inode *inode, struct file *file)
+ 	file->private_data = list;
+ 	mutex_init(&list->read_mutex);
+ 
++	mutex_lock(&list->hdev->debug_list_lock);
+ 	list_add_tail(&list->node, &list->hdev->debug_list);
++	mutex_unlock(&list->hdev->debug_list_lock);
+ 
+ out:
+ 	return err;
+@@ -1055,7 +1059,9 @@ static int hid_debug_events_release(struct inode *inode, struct file *file)
  {
--	struct signal_struct *sig;
--	cputime_t utime, stime;
-+	struct signal_struct *sig = tsk->signal;
+ 	struct hid_debug_list *list = file->private_data;
  
--	task_cputime(tsk, &utime, &stime);
-+	if (sig->cputimer.running) {
-+		if (likely(!task_cputime_zero(&sig->cputime_expires))) {
-+			struct task_cputime group_sample;
-+
-+			raw_spin_lock(&sig->cputimer.lock);
-+			group_sample = sig->cputimer.cputime;
-+			raw_spin_unlock(&sig->cputimer.lock);
-+
-+			if (task_cputime_expired(&group_sample, &sig->cputime_expires))
-+				return 1;
-+		} else
-+		/*
-+		 * Stopping the process timer here has 2 benefits.
-+		 *
-+		 * 1. It catches the exceptionnal case where it would be
-+		 *   started without arming any timers in posix_cpu_timer_set()
-+		 * 2. You could end up with no process timers for a short
-+		 *    period of time when they find themselves in the firing
-+		 *    list. Let 1 tick to periodic timers to have the
-+		 *    opportunity to get rearmed.
-+		 */
-+			stop_process_timers(sig);
-+	}
++	mutex_lock(&list->hdev->debug_list_lock);
+ 	list_del(&list->node);
++	mutex_unlock(&list->hdev->debug_list_lock);
+ 	kfree(list->hid_debug_buf);
+ 	kfree(list);
  
- 	if (!task_cputime_zero(&tsk->cputime_expires)) {
- 		struct task_cputime task_sample = {
--			.utime = utime,
--			.stime = stime,
- 			.sum_exec_runtime = tsk->se.sum_exec_runtime
- 		};
-+		task_cputime(tsk, &task_sample.utime, &task_sample.stime);
+diff --git a/include/linux/hid.h b/include/linux/hid.h
+index b7b5ff2..af1b86d 100644
+--- a/include/linux/hid.h
++++ b/include/linux/hid.h
+@@ -515,6 +515,7 @@ struct hid_device {							/* device report descriptor */
+ 	struct dentry *debug_rdesc;
+ 	struct dentry *debug_events;
+ 	struct list_head debug_list;
++	struct mutex debug_list_lock;
+ 	wait_queue_head_t debug_wait;
+ };
  
- 		if (task_cputime_expired(&task_sample, &tsk->cputime_expires))
- 			return 1;
- 	}
- 
--	sig = tsk->signal;
--	if (sig->cputimer.running) {
--		struct task_cputime group_sample;
--
--		raw_spin_lock(&sig->cputimer.lock);
--		group_sample = sig->cputimer.cputime;
--		raw_spin_unlock(&sig->cputimer.lock);
--
--		if (task_cputime_expired(&group_sample, &sig->cputime_expires))
--			return 1;
--	}
--
- 	return 0;
- }
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7a33e59..52d7b10 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -708,7 +708,15 @@ static void update_curr(struct cfs_rq *cfs_rq)
- 
- 		trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);
- 		cpuacct_charge(curtask, delta_exec);
--		account_group_exec_runtime(curtask, delta_exec);
-+		/*
-+		 * Do not update the cputimer if the task is already released by
-+		 * release_task().
-+		 *
-+		 * it would preferable to defer the autoreap release_task
-+		 * after the last context switch but harder to do.
-+		 */
-+		if (likely(curtask->sighand))
-+			account_group_exec_runtime(curtask, delta_exec);
- 	}
- 
- 	account_cfs_rq_runtime(cfs_rq, delta_exec);
+
 -- 
-1.8.2.1
-
-
-
-
+Jiri Kosina
+SUSE Labs
