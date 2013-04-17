@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966842Ab3DQV2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 17:28:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53170 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965687Ab3DQV2I (ORCPT
+	id S966853Ab3DQV2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 17:28:51 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:53952 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965687Ab3DQV2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 17:28:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Device driver memory 'mmap()' function helper cleanup
-Date: Wed, 17 Apr 2013 23:28:00 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-References: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com> <201304171115.51509.arnd@arndb.de> <CA+55aFxuLZ5Y2qLtn5=MXNF7oiuTK3ZuQhAjWPPb1wrd6D7sZw@mail.gmail.com>
-In-Reply-To: <CA+55aFxuLZ5Y2qLtn5=MXNF7oiuTK3ZuQhAjWPPb1wrd6D7sZw@mail.gmail.com>
+	Wed, 17 Apr 2013 17:28:49 -0400
+Date: Wed, 17 Apr 2013 14:28:47 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Samuel Ortiz <sameo@linux.intel.com>
+cc: linux-kernel@vger.kernel.org
+Subject: [patch] drivers, mfd: fix tps65912 link error when core mfd is a
+ module
+Message-ID: <alpine.DEB.2.02.1304171428000.31235@chino.kir.corp.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304172328.01071.arnd@arndb.de>
-X-Provags-ID: V02:K0:ll1XB73Bthim4a7KFbl6zcikHT9xo/DCK3NNOTHt9D5
- A7ap1LATcSiN7J4qKMjvcawPIwqrR/AIEFT+yMiJpOTHMLaDtV
- ZIfIUFSP/HbeRmCzfHk2/qRNb1Ne+0mNRewFUKgSM7I/xeH7uG
- XLIgQPaB1vWFb3/ifC3V3H3jPbHasoPP+/+LhTcH0k0YTzhr7e
- NxQ/5TjKYiv5tOIXrYuSSTG6zBXLSHW7cTQnHcnBYwoPBcJo5i
- I5US9ehO8iePgfo/yqCeaaFT/UgWoLx4UH7oKa0bpJRBNpEGiV
- ink3UDQmZeJ4bO179gbLmsi1T/xZMscGhR9Zh/JUnNF82+Ns58
- 4MlyO0PXQkweewaWErjA=
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 April 2013, Linus Torvalds wrote:
-> Not the way things are now.
-> 
-> vm_iomap_memory() actually allows non-page-aligned things to be
-> mapped, with the assumption that the user will then know about the
-> internal offsets.
->
-> The reason for that is questionable, but that's how pretty much
-> every single user I've seen has worked, throwing the low bits of the
-> physical away (after adding them to the length of the area).
+CONFIG_MFD_CORE must be statically linked if CONFIG_MFD_TPS65912 is
+selected, otherwise it results in a link error:
 
-There is a separate check for the physical address that gets
-mapped in hpet_mmap:
+	drivers/built-in.o: In function `tps65912_device_init':
+	(.text+0x587e4): undefined reference to `mfd_add_devices'
+	drivers/built-in.o: In function `tps65912_device_init':
+	(.text+0x5884c): undefined reference to `mfd_remove_devices'
+	drivers/built-in.o: In function `tps65912_device_exit':
+	(.text+0x58878): undefined reference to `mfd_remove_devices'
 
-        if (addr & (PAGE_SIZE - 1))
-                return -ENOSYS;
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ drivers/mfd/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-We cannot remove that without changing the semantics of this function,
-but the check that I mentioned:
-
-        if (((vma->vm_end - vma->vm_start) != PAGE_SIZE) || vma->vm_pgoff)
-                return -EINVAL;
-
-is for the virtual address. All of vm_start, vm_end and vm_pgoff
-are guaranteed to be page-aligned through previous checks or
-shifts, and we have also checked that the size is non-zero.
-
-Since we pass a hardcoded len=PAGE_SIZE into vm_iomap_memory, that will
-return -EINVAL for any non-zero vma->vm_pgoff. Testing ((vma->vm_end - 
-vma->vm_start) != PAGE_SIZE) is redundant as well, because we know it
-is a positive multiple of PAGE_SIZE because of the call chain leading
-up to this function, and vm_iomap_memory() ensures that it can not
-be more than len, which leaves PAGE_SIZE as the only possible value
-not resulting in -EINVAL without the extra check.
-
-> It may be that I should have done things differently: make the normal
-> helper function verify page alignment, and warn if it's missing. Then,
-> we could have a "vm_unaligned_iomap_memory()" that would just do the
-> "extend to aligned pages" that people could convert any odd users for.
-> That would probably be a good thing to do, but it would be separate
-> "phase two" from the "let's start using the sane helper".
-
-Makes sense, but I think this is independent of the observation I made
-regarding the checks for the vma.
-
-	Arnd
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -805,6 +805,7 @@ config MFD_TPS65910
+ config MFD_TPS65912
+ 	bool "TI TPS65912 Power Management chip"
+ 	depends on GPIOLIB
++	select MFD_CORE
+ 	help
+ 	  If you say yes here you get support for the TPS65912 series of
+ 	  PM chips.
