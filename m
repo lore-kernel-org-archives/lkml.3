@@ -1,95 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965687Ab3DQDC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Apr 2013 23:02:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8945 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936277Ab3DQDC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Apr 2013 23:02:28 -0400
-Date: Tue, 16 Apr 2013 23:02:19 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        jjaburek@redhat.com, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: fix audit_inode call in O_CREAT case of do_last
-Message-ID: <20130417030219.GC7233@madcap2.tricolour.ca>
-References: <1365794192-9471-1-git-send-email-jlayton@redhat.com>
+	id S965707Ab3DQDMf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Apr 2013 23:12:35 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:49442 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965667Ab3DQDMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Apr 2013 23:12:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365794192-9471-1-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 16 Apr 2013 20:12:32 -0700
+X-Google-Sender-Auth: 5mHm-pTjJalXs4kbKy7wlH7CRoQ
+Message-ID: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
+Subject: Device driver memory 'mmap()' function helper cleanup
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Arnd Bergmann <arnd@arndb.de>,
+        Takashi Iwai <tiwai@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: multipart/mixed; boundary=047d7b342de063a31304da85db83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 03:16:32PM -0400, Jeff Layton wrote:
-> Jiri reported a regression in auditing of open(..., O_CREAT) syscalls.
-> In older kernels, creating a file with open(..., O_CREAT) created
-> audit_name records that looked like this:
-> 
-> type=PATH msg=audit(1360255720.628:64): item=1 name="/abc/foo" inode=138810 dev=fd:00 mode=0100640 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-> type=PATH msg=audit(1360255720.628:64): item=0 name="/abc/" inode=138635 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-> 
-> ...in recent kernels though, they look like this:
-> 
-> type=PATH msg=audit(1360255402.886:12574): item=2 name=(null) inode=264599 dev=fd:00 mode=0100640 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-> type=PATH msg=audit(1360255402.886:12574): item=1 name=(null) inode=264598 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-> type=PATH msg=audit(1360255402.886:12574): item=0 name="/abc/foo" inode=264598 dev=fd:00 mode=040750 ouid=0 ogid=0 rdev=00:00 obj=unconfined_u:object_r:default_t:s0
-> 
-> Richard bisected to determine that the problems started with commit
-> bfcec708, but the log messages have changed with some later
-> audit-related patches.
-> 
-> The problem is that this audit_inode call is passing in the parent of
-> the dentry being opened, but audit_inode is being called with the parent
-> flag false. This causes later audit_inode and audit_inode_child calls to
-> match the wrong entry in the audit_names list.
-> 
-> This patch simply sets the flag to properly indicate that this inode
-> represents the parent. With this, the audit_names entries are back to
-> looking like they did before.
+--047d7b342de063a31304da85db83
+Content-Type: text/plain; charset=UTF-8
 
-This patch fixes the problem for me.
+Guys, I just pushed out a new helper function intended for cleaning up
+various device driver mmap functions, because they are rather messy,
+and at least part of the problem was the bad impedance between what a
+driver author would want to have, and the VM interfaces to map a
+memory range into user space with mmap.
 
-Tested-by: Richard Guy Briggs <rbriggs@redhat.com>
+Some drivers would end up doing extensive checks on the length of the
+mappings and the page offset within the mapping, while other drivers
+would end up doing no checks at all.
 
-> Cc: <stable@vger.kernel.org> # v3.7+
-> Cc: Richard Guy Briggs <rbriggs@redhat.com>
-> Reported-by: Jiri Jaburek <jjaburek@redhat.com>
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/namei.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 57ae9c8..85e40d1 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -2740,7 +2740,7 @@ static int do_last(struct nameidata *nd, struct path *path,
->  		if (error)
->  			return error;
->  
-> -		audit_inode(name, dir, 0);
-> +		audit_inode(name, dir, LOOKUP_PARENT);
->  		error = -EISDIR;
->  		/* trailing slashes? */
->  		if (nd->last.name[nd->last.len])
-> -- 
-> 1.7.1
-> 
-> --
-> Linux-audit mailing list
-> Linux-audit@redhat.com
-> https://www.redhat.com/mailman/listinfo/linux-audit
+The new helper is in commit b4cbb197c7e7 ("vm: add vm_iomap_memory()
+helper function"), but I didn't actually commit any *users* of it,
+because I just have this untested patch-collection for a few random
+drivers (picked across a few different driver subsystems, just to make
+it interesting).  I did that largely just to check the different use
+cases, but I don't actually tend to *use* all that many fancy drivers,
+so I don't have much of a way of testing it.
 
-- RGB
+The media layer has a few users of [io_]remap_pfn_range() that look
+like they could do with some tender loving too, but they don't match
+this particular pattern of "allow users to map a part of a fixed range
+of memory". In fact, the media pattern seems to be single-page
+mappings, which probably should use "vm_insert_page()" instead, but
+that's a whole separate thing. But I didn't check all the media cases
+(and there's a lot of remap_pfn_range use outside of media drivers I
+didn't check either), so there might be code that could use the new
+helper.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer
-AMER ENG Base Operating Systems
-Remote, Canada, Ottawa
-Voice: 1.647.777.2635
-Internal: (81) 32635
+Anyway, I'm attaching the *untested* patch to several drivers. Guys,
+mind taking a look? The point here is to simplify the interface,
+avoiding bugs, but also:
+
+ 5 files changed, 21 insertions(+), 87 deletions(-)
+
+it needs current -git for the new helper function.
+
+NOTE! The driver subsystem .mmap functions seem to almost universally do
+
+    if (io_remap_pfn_range(..))
+        return -EAGAIN;
+    return 0;
+
+and I didn't make the new helper function do that "turn all
+remap_pfn_range errors into EAGAIN". My *suspicion* is that this is
+just really old copy-pasta and makes no sense, but maybe there is some
+actual reasoning behind EAGAIN vs ENOMEM, for example. EAGAIN is
+documented to be about file/memory locking, which means that it really
+doesn't make any sense, but obviously there might be some binary that
+actally depends on this, so I'm perfectly willing to make the helper
+do that odd error case, I'd just like to know (and a add a comment)
+WHY.
+
+My personal guess is that nobody actually cares (we return other error
+codes for other cases, notably EINVAL for various out-of-mapping-range
+issues), and the whole EAGAIN return value is just a completely
+historical oddity.
+
+(And yes, I know the mtdchar code is actually disabled right now. But
+that was a good example of a driver that had a bug in this area and
+that I touched myself not too long ago, and recent stable noise
+reminded me of it, so I did that one despite it not being active).
+
+                Linus
+
+--047d7b342de063a31304da85db83
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hflxcwiz0
+
+IGRyaXZlcnMvY2hhci9ic3IuYyAgICAgIHwgMTcgKy0tLS0tLS0tLS0tLS0tLS0KIGRyaXZlcnMv
+Y2hhci9ocGV0LmMgICAgIHwgIDggKystLS0tLS0KIGRyaXZlcnMvbXRkL210ZGNoYXIuYyAgIHwg
+MzIgKystLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIGRyaXZlcnMvdmlkZW8vZmJtZW0u
+YyAgIHwgMzkgKysrKysrKysrKysrKystLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiBzb3VuZC9j
+b3JlL3BjbV9uYXRpdmUuYyB8IDEyICsrLS0tLS0tLS0tLQogNSBmaWxlcyBjaGFuZ2VkLCAyMSBp
+bnNlcnRpb25zKCspLCA4NyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJzL2NoYXIv
+YnNyLmMgYi9kcml2ZXJzL2NoYXIvYnNyLmMKaW5kZXggOTc0NjcwNTNhMDFiLi43Yzg3ODUzODg3
+OTggMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY2hhci9ic3IuYworKysgYi9kcml2ZXJzL2NoYXIvYnNy
+LmMKQEAgLTEyNCwyMiArMTI0LDcgQEAgc3RhdGljIGludCBic3JfbW1hcChzdHJ1Y3QgZmlsZSAq
+ZmlscCwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEpCiAJaW50IHJldDsKIAogCXZtYS0+dm1f
+cGFnZV9wcm90ID0gcGdwcm90X25vbmNhY2hlZCh2bWEtPnZtX3BhZ2VfcHJvdCk7Ci0KLQkvKiBj
+aGVjayBmb3IgdGhlIGNhc2Ugb2YgYSBzbWFsbCBCU1IgZGV2aWNlIGFuZCBtYXAgb25lIDRrIHBh
+Z2UgZm9yIGl0Ki8KLQlpZiAoZGV2LT5ic3JfbGVuIDwgUEFHRV9TSVpFICYmIHNpemUgPT0gUEFH
+RV9TSVpFKQotCQlyZXQgPSByZW1hcF80a19wZm4odm1hLCB2bWEtPnZtX3N0YXJ0LCBkZXYtPmJz
+cl9hZGRyID4+IDEyLAotCQkJCSAgIHZtYS0+dm1fcGFnZV9wcm90KTsKLQllbHNlIGlmIChzaXpl
+IDw9IGRldi0+YnNyX2xlbikKLQkJcmV0ID0gaW9fcmVtYXBfcGZuX3JhbmdlKHZtYSwgdm1hLT52
+bV9zdGFydCwKLQkJCQkJIGRldi0+YnNyX2FkZHIgPj4gUEFHRV9TSElGVCwKLQkJCQkJIHNpemUs
+IHZtYS0+dm1fcGFnZV9wcm90KTsKLQllbHNlCi0JCXJldHVybiAtRUlOVkFMOwotCi0JaWYgKHJl
+dCkKLQkJcmV0dXJuIC1FQUdBSU47Ci0KLQlyZXR1cm4gMDsKKwlyZXR1cm4gdm1faW9tYXBfbWVt
+b3J5KHZtYSwgZGV2LT5ic3JfYWRkciwgZGV2LT5ic3JfbGVuKTsKIH0KIAogc3RhdGljIGludCBi
+c3Jfb3BlbihzdHJ1Y3QgaW5vZGUgKiBpbm9kZSwgc3RydWN0IGZpbGUgKiBmaWxwKQpkaWZmIC0t
+Z2l0IGEvZHJpdmVycy9jaGFyL2hwZXQuYyBiL2RyaXZlcnMvY2hhci9ocGV0LmMKaW5kZXggZTNm
+OWE5OWI4NTIyLi4wZjIzOGE4ODZhMmUgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvY2hhci9ocGV0LmMK
+KysrIGIvZHJpdmVycy9jaGFyL2hwZXQuYwpAQCAtMzgyLDEzICszODIsOSBAQCBzdGF0aWMgaW50
+IGhwZXRfbW1hcChzdHJ1Y3QgZmlsZSAqZmlsZSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICp2bWEp
+CiAJaWYgKGFkZHIgJiAoUEFHRV9TSVpFIC0gMSkpCiAJCXJldHVybiAtRU5PU1lTOwogCi0Jdm1h
+LT52bV9mbGFncyB8PSBWTV9JTzsKIAl2bWEtPnZtX3BhZ2VfcHJvdCA9IHBncHJvdF9ub25jYWNo
+ZWQodm1hLT52bV9wYWdlX3Byb3QpOwotCi0JaWYgKGlvX3JlbWFwX3Bmbl9yYW5nZSh2bWEsIHZt
+YS0+dm1fc3RhcnQsIGFkZHIgPj4gUEFHRV9TSElGVCwKLQkJCQkJUEFHRV9TSVpFLCB2bWEtPnZt
+X3BhZ2VfcHJvdCkpIHsKLQkJcHJpbnRrKEtFUk5fRVJSICIlczogaW9fcmVtYXBfcGZuX3Jhbmdl
+IGZhaWxlZFxuIiwKLQkJCV9fZnVuY19fKTsKKwlpZiAodm1faW9tYXBfbWVtb3J5KHZtYSwgYWRk
+ciwgUEFHRV9TSVpFKSkgeworCQlwcmludGsoS0VSTl9FUlIgIiVzOiB2bV9pb21hcF9tZW1vcnkg
+ZmFpbGVkXG4iLCBfX2Z1bmNfXyk7CiAJCXJldHVybiAtRUFHQUlOOwogCX0KIApkaWZmIC0tZ2l0
+IGEvZHJpdmVycy9tdGQvbXRkY2hhci5jIGIvZHJpdmVycy9tdGQvbXRkY2hhci5jCmluZGV4IDky
+YWIzMGFiMDBkYy4uNjFhMWIyMmMwNWU3IDEwMDY0NAotLS0gYS9kcml2ZXJzL210ZC9tdGRjaGFy
+LmMKKysrIGIvZHJpdmVycy9tdGQvbXRkY2hhci5jCkBAIC0xMTU5LDQ1ICsxMTU5LDE3IEBAIHN0
+YXRpYyBpbnQgbXRkY2hhcl9tbWFwKHN0cnVjdCBmaWxlICpmaWxlLCBzdHJ1Y3Qgdm1fYXJlYV9z
+dHJ1Y3QgKnZtYSkKIAlzdHJ1Y3QgbXRkX2ZpbGVfaW5mbyAqbWZpID0gZmlsZS0+cHJpdmF0ZV9k
+YXRhOwogCXN0cnVjdCBtdGRfaW5mbyAqbXRkID0gbWZpLT5tdGQ7CiAJc3RydWN0IG1hcF9pbmZv
+ICptYXAgPSBtdGQtPnByaXY7Ci0JcmVzb3VyY2Vfc2l6ZV90IHN0YXJ0LCBvZmY7Ci0JdW5zaWdu
+ZWQgbG9uZyBsZW4sIHZtYV9sZW47CiAKICAgICAgICAgLyogVGhpcyBpcyBicm9rZW4gYmVjYXVz
+ZSBpdCBhc3N1bWVzIHRoZSBNVEQgZGV2aWNlIGlzIG1hcC1iYXNlZAogCSAgIGFuZCB0aGF0IG10
+ZC0+cHJpdiBpcyBhIHZhbGlkIHN0cnVjdCBtYXBfaW5mby4gIEl0IHNob3VsZCBiZQogCSAgIHJl
+cGxhY2VkIHdpdGggc29tZXRoaW5nIHRoYXQgdXNlcyB0aGUgbXRkX2dldF91bm1hcHBlZF9hcmVh
+KCkKIAkgICBvcGVyYXRpb24gcHJvcGVybHkuICovCiAJaWYgKDAgLyptdGQtPnR5cGUgPT0gTVRE
+X1JBTSB8fCBtdGQtPnR5cGUgPT0gTVREX1JPTSovKSB7Ci0JCW9mZiA9IGdldF92bV9vZmZzZXQo
+dm1hKTsKLQkJc3RhcnQgPSBtYXAtPnBoeXM7Ci0JCWxlbiA9IFBBR0VfQUxJR04oKHN0YXJ0ICYg
+flBBR0VfTUFTSykgKyBtYXAtPnNpemUpOwotCQlzdGFydCAmPSBQQUdFX01BU0s7Ci0JCXZtYV9s
+ZW4gPSBnZXRfdm1fc2l6ZSh2bWEpOwotCi0JCS8qIE92ZXJmbG93IGluIG9mZitsZW4/ICovCi0J
+CWlmICh2bWFfbGVuICsgb2ZmIDwgb2ZmKQotCQkJcmV0dXJuIC1FSU5WQUw7Ci0JCS8qIERvZXMg
+aXQgZml0IGluIHRoZSBtYXBwaW5nPyAqLwotCQlpZiAodm1hX2xlbiArIG9mZiA+IGxlbikKLQkJ
+CXJldHVybiAtRUlOVkFMOwotCi0JCW9mZiArPSBzdGFydDsKLQkJLyogRGlkIHRoYXQgb3ZlcmZs
+b3c/ICovCi0JCWlmIChvZmYgPCBzdGFydCkKLQkJCXJldHVybiAtRUlOVkFMOwotCQlpZiAoc2V0
+X3ZtX29mZnNldCh2bWEsIG9mZikgPCAwKQotCQkJcmV0dXJuIC1FSU5WQUw7Ci0JCXZtYS0+dm1f
+ZmxhZ3MgfD0gVk1fSU8gfCBWTV9ET05URVhQQU5EIHwgVk1fRE9OVERVTVA7Ci0KICNpZmRlZiBw
+Z3Byb3Rfbm9uY2FjaGVkCi0JCWlmIChmaWxlLT5mX2ZsYWdzICYgT19EU1lOQyB8fCBvZmYgPj0g
+X19wYShoaWdoX21lbW9yeSkpCisJCWlmIChmaWxlLT5mX2ZsYWdzICYgT19EU1lOQyB8fCBtYXAt
+PnBoeXMgPj0gX19wYShoaWdoX21lbW9yeSkpCiAJCQl2bWEtPnZtX3BhZ2VfcHJvdCA9IHBncHJv
+dF9ub25jYWNoZWQodm1hLT52bV9wYWdlX3Byb3QpOwogI2VuZGlmCi0JCWlmIChpb19yZW1hcF9w
+Zm5fcmFuZ2Uodm1hLCB2bWEtPnZtX3N0YXJ0LCBvZmYgPj4gUEFHRV9TSElGVCwKLQkJCQkgICAg
+ICAgdm1hLT52bV9lbmQgLSB2bWEtPnZtX3N0YXJ0LAotCQkJCSAgICAgICB2bWEtPnZtX3BhZ2Vf
+cHJvdCkpCi0JCQlyZXR1cm4gLUVBR0FJTjsKLQotCQlyZXR1cm4gMDsKKwkJcmV0dXJuIHZtX2lv
+bWFwX21lbW9yeSh2bWEsIG1hcC0+cGh5cywgbWFwLT5zaXplKTsKIAl9CiAJcmV0dXJuIC1FTk9T
+WVM7CiAjZWxzZQpkaWZmIC0tZ2l0IGEvZHJpdmVycy92aWRlby9mYm1lbS5jIGIvZHJpdmVycy92
+aWRlby9mYm1lbS5jCmluZGV4IDdjMjU0MDg0YjZhMC4uODYyOTFkY2Q5NjRhIDEwMDY0NAotLS0g
+YS9kcml2ZXJzL3ZpZGVvL2ZibWVtLmMKKysrIGIvZHJpdmVycy92aWRlby9mYm1lbS5jCkBAIC0x
+MzczLDE1ICsxMzczLDEyIEBAIGZiX21tYXAoc3RydWN0IGZpbGUgKmZpbGUsIHN0cnVjdCB2bV9h
+cmVhX3N0cnVjdCAqIHZtYSkKIHsKIAlzdHJ1Y3QgZmJfaW5mbyAqaW5mbyA9IGZpbGVfZmJfaW5m
+byhmaWxlKTsKIAlzdHJ1Y3QgZmJfb3BzICpmYjsKLQl1bnNpZ25lZCBsb25nIG9mZjsKKwl1bnNp
+Z25lZCBsb25nIG1taW9fcGdvZmY7CiAJdW5zaWduZWQgbG9uZyBzdGFydDsKIAl1MzIgbGVuOwog
+CiAJaWYgKCFpbmZvKQogCQlyZXR1cm4gLUVOT0RFVjsKLQlpZiAodm1hLT52bV9wZ29mZiA+ICh+
+MFVMID4+IFBBR0VfU0hJRlQpKQotCQlyZXR1cm4gLUVJTlZBTDsKLQlvZmYgPSB2bWEtPnZtX3Bn
+b2ZmIDw8IFBBR0VfU0hJRlQ7CiAJZmIgPSBpbmZvLT5mYm9wczsKIAlpZiAoIWZiKQogCQlyZXR1
+cm4gLUVOT0RFVjsKQEAgLTEzOTMsMzIgKzEzOTAsMjQgQEAgZmJfbW1hcChzdHJ1Y3QgZmlsZSAq
+ZmlsZSwgc3RydWN0IHZtX2FyZWFfc3RydWN0ICogdm1hKQogCQlyZXR1cm4gcmVzOwogCX0KIAot
+CS8qIGZyYW1lIGJ1ZmZlciBtZW1vcnkgKi8KKwkvKgorCSAqIFVnaC4gVGhpcyBjYW4gYmUgZWl0
+aGVyIHRoZSBmcmFtZSBidWZmZXIgbWFwcGluZywgb3IKKwkgKiBpZiBwZ29mZiBwb2ludHMgcGFz
+dCBpdCwgdGhlIG1taW8gbWFwcGluZy4KKwkgKi8KIAlzdGFydCA9IGluZm8tPmZpeC5zbWVtX3N0
+YXJ0OwotCWxlbiA9IFBBR0VfQUxJR04oKHN0YXJ0ICYgflBBR0VfTUFTSykgKyBpbmZvLT5maXgu
+c21lbV9sZW4pOwotCWlmIChvZmYgPj0gbGVuKSB7Ci0JCS8qIG1lbW9yeSBtYXBwZWQgaW8gKi8K
+LQkJb2ZmIC09IGxlbjsKLQkJaWYgKGluZm8tPnZhci5hY2NlbF9mbGFncykgewotCQkJbXV0ZXhf
+dW5sb2NrKCZpbmZvLT5tbV9sb2NrKTsKLQkJCXJldHVybiAtRUlOVkFMOwotCQl9CisJbGVuID0g
+aW5mby0+Zml4LnNtZW1fbGVuOworCW1taW9fcGdvZmYgPSBQQUdFX0FMSUdOKChzdGFydCAmIH5Q
+QUdFX01BU0spICsgbGVuKSA+PiBQQUdFX1NISUZUOworCWlmICh2bWEtPnZtX3Bnb2ZmID49IG1t
+aW9fcGdvZmYpIHsKKwkJdm1hLT52bV9wZ29mZiAtPSBtbWlvX3Bnb2ZmOwogCQlzdGFydCA9IGlu
+Zm8tPmZpeC5tbWlvX3N0YXJ0OwotCQlsZW4gPSBQQUdFX0FMSUdOKChzdGFydCAmIH5QQUdFX01B
+U0spICsgaW5mby0+Zml4Lm1taW9fbGVuKTsKKwkJbGVuID0gaW5mby0+Zml4Lm1taW9fbGVuOwog
+CX0KIAltdXRleF91bmxvY2soJmluZm8tPm1tX2xvY2spOwotCXN0YXJ0ICY9IFBBR0VfTUFTSzsK
+LQlpZiAoKHZtYS0+dm1fZW5kIC0gdm1hLT52bV9zdGFydCArIG9mZikgPiBsZW4pCi0JCXJldHVy
+biAtRUlOVkFMOwotCW9mZiArPSBzdGFydDsKLQl2bWEtPnZtX3Bnb2ZmID0gb2ZmID4+IFBBR0Vf
+U0hJRlQ7Ci0JLyogVk1fSU8gfCBWTV9ET05URVhQQU5EIHwgVk1fRE9OVERVTVAgYXJlIHNldCBi
+eSBpb19yZW1hcF9wZm5fcmFuZ2UoKSovCisKIAl2bWEtPnZtX3BhZ2VfcHJvdCA9IHZtX2dldF9w
+YWdlX3Byb3Qodm1hLT52bV9mbGFncyk7Ci0JZmJfcGdwcm90ZWN0KGZpbGUsIHZtYSwgb2ZmKTsK
+LQlpZiAoaW9fcmVtYXBfcGZuX3JhbmdlKHZtYSwgdm1hLT52bV9zdGFydCwgb2ZmID4+IFBBR0Vf
+U0hJRlQsCi0JCQkgICAgIHZtYS0+dm1fZW5kIC0gdm1hLT52bV9zdGFydCwgdm1hLT52bV9wYWdl
+X3Byb3QpKQotCQlyZXR1cm4gLUVBR0FJTjsKLQlyZXR1cm4gMDsKKwlmYl9wZ3Byb3RlY3QoZmls
+ZSwgdm1hLCBzdGFydCk7CisKKwlyZXR1cm4gdm1faW9tYXBfbWVtb3J5KHZtYSwgc3RhcnQsIGxl
+bik7CiB9CiAKIHN0YXRpYyBpbnQKZGlmZiAtLWdpdCBhL3NvdW5kL2NvcmUvcGNtX25hdGl2ZS5j
+IGIvc291bmQvY29yZS9wY21fbmF0aXZlLmMKaW5kZXggNzFhZTg2Y2E2NGFjLi5lYjU2MGZhMzIz
+MjEgMTAwNjQ0Ci0tLSBhL3NvdW5kL2NvcmUvcGNtX25hdGl2ZS5jCisrKyBiL3NvdW5kL2NvcmUv
+cGNtX25hdGl2ZS5jCkBAIC0zMjIyLDE4ICszMjIyLDEwIEBAIEVYUE9SVF9TWU1CT0xfR1BMKHNu
+ZF9wY21fbGliX2RlZmF1bHRfbW1hcCk7CiBpbnQgc25kX3BjbV9saWJfbW1hcF9pb21lbShzdHJ1
+Y3Qgc25kX3BjbV9zdWJzdHJlYW0gKnN1YnN0cmVhbSwKIAkJCSAgIHN0cnVjdCB2bV9hcmVhX3N0
+cnVjdCAqYXJlYSkKIHsKLQlsb25nIHNpemU7Ci0JdW5zaWduZWQgbG9uZyBvZmZzZXQ7CisJc3Ry
+dWN0IHNuZF9wY21fcnVudGltZSAqcnVudGltZSA9IHN1YnN0cmVhbS0+cnVudGltZTs7CiAKIAlh
+cmVhLT52bV9wYWdlX3Byb3QgPSBwZ3Byb3Rfbm9uY2FjaGVkKGFyZWEtPnZtX3BhZ2VfcHJvdCk7
+Ci0JYXJlYS0+dm1fZmxhZ3MgfD0gVk1fSU87Ci0Jc2l6ZSA9IGFyZWEtPnZtX2VuZCAtIGFyZWEt
+PnZtX3N0YXJ0OwotCW9mZnNldCA9IGFyZWEtPnZtX3Bnb2ZmIDw8IFBBR0VfU0hJRlQ7Ci0JaWYg
+KGlvX3JlbWFwX3Bmbl9yYW5nZShhcmVhLCBhcmVhLT52bV9zdGFydCwKLQkJCQkoc3Vic3RyZWFt
+LT5ydW50aW1lLT5kbWFfYWRkciArIG9mZnNldCkgPj4gUEFHRV9TSElGVCwKLQkJCQlzaXplLCBh
+cmVhLT52bV9wYWdlX3Byb3QpKQotCQlyZXR1cm4gLUVBR0FJTjsKLQlyZXR1cm4gMDsKKwlyZXR1
+cm4gdm1faW9tYXBfbWVtb3J5KGFyZWEsIHJ1bnRpbWUtPmRtYV9hZGRyLCBydW50aW1lLT5kbWFf
+Ynl0ZXMpOwogfQogCiBFWFBPUlRfU1lNQk9MKHNuZF9wY21fbGliX21tYXBfaW9tZW0pOwo=
+--047d7b342de063a31304da85db83--
