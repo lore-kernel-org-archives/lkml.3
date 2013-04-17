@@ -1,42 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966121Ab3DQSLH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 14:11:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57825 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964924Ab3DQSLF (ORCPT
+	id S966273Ab3DQSLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 14:11:36 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:47285 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964924Ab3DQSLf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 14:11:05 -0400
-Message-ID: <516EE5AB.4080201@infradead.org>
-Date: Wed, 17 Apr 2013 11:10:51 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 17 Apr 2013 14:11:35 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: linux-next: Tree for Apr 17 (kvm)
-References: <20130417170450.5dd6e5f450de4d5bf197d997@canb.auug.org.au>
-In-Reply-To: <20130417170450.5dd6e5f450de4d5bf197d997@canb.auug.org.au>
+In-Reply-To: <1366102254-12440-1-git-send-email-mmarek@suse.cz>
+References: <1366102254-12440-1-git-send-email-mmarek@suse.cz>
+Date: Wed, 17 Apr 2013 11:11:34 -0700
+X-Google-Sender-Auth: pqg_0FGEjUSIZJbjYoexx4ntEyM
+Message-ID: <CAPnjgZ3dNT0i4A+AocCSxQU-2v_emDwpFAJyAAZsWgO7fxnLGw@mail.gmail.com>
+Subject: Re: [PATCH] input: Export matrix_keypad_parse_of_params()
+From: Simon Glass <sjg@chromium.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Randy Dunlap <rdunlap@infradead.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        lk <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/13 00:04, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20130416:
-> 
+On Tue, Apr 16, 2013 at 1:50 AM, Michal Marek <mmarek@suse.cz> wrote:
+> Couple of input drivers depend on this symbol:
+>
+> ERROR: "matrix_keypad_parse_of_params" [drivers/input/keyboard/tca8418_keypad.ko] undefined!
+> ERROR: "matrix_keypad_parse_of_params" [drivers/input/keyboard/cros_ec_keyb.ko] undefined!
+>
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
 
-
-on i386, SMP is disabled, X86_UP_APIC is not enabled, but
-CONFIG_KVM_APIC_ARCHITECTURE=y:
-
-arch/x86/kvm/vmx.c: In function 'vmx_deliver_posted_interrupt':
-arch/x86/kvm/vmx.c:3950:3: error: 'apic' undeclared (first use in this function)
-
-
--- 
-~Randy
+Acked-by: Simon Glass <sjg@chromium.org>
