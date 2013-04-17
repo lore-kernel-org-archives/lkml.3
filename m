@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143Ab3DQFr1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 01:47:27 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40768 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3DQFr0 (ORCPT
+	id S1757756Ab3DQFt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 01:49:56 -0400
+Received: from mail-gh0-f180.google.com ([209.85.160.180]:64580 "EHLO
+	mail-gh0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757179Ab3DQFtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 01:47:26 -0400
-Date: Wed, 17 Apr 2013 15:47:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the gen-gpio tree with the usb tree
-Message-Id: <20130417154715.cd3036b3cc791800938119c4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__17_Apr_2013_15_47_15_+1000_sGrzGt7DDRPQma=_"
+	Wed, 17 Apr 2013 01:49:52 -0400
+Message-ID: <516E37FA.4020000@gmail.com>
+Date: Wed, 17 Apr 2013 13:49:46 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Mitsuhiro Tanino <mitsuhiro.tanino.gm@hitachi.com>
+CC: Ric Mason <ric.masonn@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [RFC Patch 0/2] mm: Add parameters to make kernel behavior at
+ memory error on dirty cache selectable
+References: <51662D5B.3050001@hitachi.com> <516633BB.40307@gmail.com> <5166B1DF.8070504@hitachi.com> <5166B3FE.4000002@gmail.com> <51680F97.3020407@hitachi.com>
+In-Reply-To: <51680F97.3020407@hitachi.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__17_Apr_2013_15_47_15_+1000_sGrzGt7DDRPQma=_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Mitsuhiro,
+On 04/12/2013 09:43 PM, Mitsuhiro Tanino wrote:
+> (2013/04/11 22:00), Ric Mason wrote:
+>> Hi Mitsuhiro,
+>> On 04/11/2013 08:51 PM, Mitsuhiro Tanino wrote:
+>>> (2013/04/11 12:53), Simon Jeons wrote:
+>>>> One question against mce instead of the patchset. ;-)
+>>>>
+>>>> When check memory is bad? Before memory access? Is there a process scan it period?
+>>> Hi Simon-san,
+>>>
+>>> Yes, there is a process to scan memory periodically.
+>>>
+>>> At Intel Nehalem-EX and CPUs after Nehalem-EX generation, MCA recovery
+>>> is supported. MCA recovery provides error detection and isolation
+>>> features to work together with OS.
+>>> One of the MCA Recovery features is Memory Scrubbing. It periodically
+>>> checks memory in the background of OS.
+>> Memory Scrubbing is a kernel thread? Where is the codes of memory scrubbing?
+> Hi Ric,
+>
+> No. One of the MCA Recovery features is Memory Scrubbing.
 
-Hi Alexandre,
+Memory Scrubbing is a process in CPU?
 
-Today's linux-next merge of the gen-gpio tree got a conflict in
-drivers/usb/otg/Kconfig between commit a0e631235a04 ("usb: phy: move all
-PHY drivers to drivers/usb/phy/") from the usb tree and commit
-76ec9d18b897 ("Convert selectors of GENERIC_GPIO to GPIOLIB") from the
-gen-gpio tree.
+> And Memory Scrubbing is a hardware feature of Intel CPU.
+>
+> OS has a hwpoison feature which is included at mm/memory-failure.c.
+> A main function is memory_failure().
+>
+> If Memory Scrubbing finds a memory error, MCA recovery notifies SRAO error
+> into OS and OS handles the SRAO error using hwpoison function.
+>
+>
+>>> If Memory Scrubbing find an uncorrectable error on a memory before
+>>> OS accesses the memory bit, MCA recovery notifies SRAO error into OS
+>> It maybe can't find memory error timely since it is sleeping when memory error occur, can this case happened?
+> Memory Scrubbing seems to be operated periodically but I don't have
+> information about how oftern it is executed.
 
-The former patch removed the file, so I did that and then applied the
-following patch and can carry the fix as necessary (no action is
-required).
+If Memory Scurbbing doesn't catch memory error timely, who will send 
+SRAR into OS?
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 17 Apr 2013 15:44:53 +1000
-Subject: [PATCH] gen-gpio: GPIOLIB merge fix up
+>
+> Regards,
+> Mitsuhiro Tanino
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/usb/phy/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index 3a7fec9..21153d1 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -128,7 +128,7 @@ config TWL6030_USB
-=20
- config USB_GPIO_VBUS
- 	tristate "GPIO based peripheral-only VBUS sensing 'transceiver'"
--	depends on GENERIC_GPIO
-+	depends on GPIOLIB
- 	help
- 	  Provides simple GPIO VBUS sensing for controllers with an
- 	  internal transceiver via the usb_phy interface, and
---=20
-1.8.1
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__17_Apr_2013_15_47_15_+1000_sGrzGt7DDRPQma=_
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRbjdjAAoJEECxmPOUX5FEtwgQAKqDlM9TFr+zX8cYk/ECpF5u
-5bRmyJEGeuBO2VFjEd8GyNH3KzV3rTFiJo1kBxY65qVAcJqKctk43mKOgooPbWo0
-nIQec2sp4w+Evlr5krsGKhkKhJZLWso4HosRFawGdU/KGrlZ/1vRGZ+3rtMXx/n5
-t6PUeIMA3nVE5qQQd+MzdiksjneuXnq8fg+5+GD5iBh0unQV41KJJ8qAzFVASIH6
-SNl6VdcbqF7qA08nL3yohlaRLnm8W4ewyMoPjNEjsh5z+yBmXgo8neb28gljSsqb
-J5oh0oysrAwUeSixy/kpdHOihx3jyO4ZO4h40Ml+xgJM8t2reCSvav37IpvFfB4d
-QPxWwzzytKfTsg2VbXElcTWySRAiEou7YyWHL2RDrQdsE+3wcZlPKur9/TUsBP5t
-ei5HoQSALrNCaM6v8iDRWqApBGILb8AR5rzCQfmmaX5xiGK9buBMAif1q57FfSo6
-FR8me5ovXVb8NvVMYZXUu/Mckg7ZOugQDHFtrYylyr3pPYuCY5owTnVkdjdCtbxM
-qaUGrK008ELtASFo86TB1bNuhRsX5d+tUz43s1nKneE4KqvSAV82dSujr5zTzN47
-xOtlxgLyxJPYJcDTRa8vTamjDde0mN8Tl3UtBd2nu1Ytglbv7tGHCFpyLGiSg3Tx
-3MFr/X/i/AvWKrps2jl1
-=lBdX
------END PGP SIGNATURE-----
-
---Signature=_Wed__17_Apr_2013_15_47_15_+1000_sGrzGt7DDRPQma=_--
