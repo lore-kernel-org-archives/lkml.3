@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967351Ab3DRMX5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 08:23:57 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:57609 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966739Ab3DRMX4 (ORCPT
+	id S967437Ab3DRM0m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 08:26:42 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:54163 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967366Ab3DRM0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 08:23:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 24/32] dmaengine: ste_dma40: Supply full Device Tree parsing support
-Date: Thu, 18 Apr 2013 14:23:38 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <201304181337.32700.arnd@arndb.de> <20130418114756.GE27903@gmail.com>
-In-Reply-To: <20130418114756.GE27903@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304181423.38900.arnd@arndb.de>
-X-Provags-ID: V02:K0:iWhySpMnPgg0neuQZB56uR+0oUqca8LAz904l1Wf17m
- nfItyHdFHLEB2okYZvi09dj6lYM13UuRRceX/OKqhLbct5XbpW
- ABuJn0WOjXWR4NMVm/f8u6O5nzHjCmCDMHIKZC9wAuqR3H6B4M
- b/VMcQE/vXL9YhdWuBNvwlsHSWmJvbAhjJc3RG8nFvrCnkkoph
- YKP9rkfKAFmscUim1f+WN1o+YvjueLGiV27V16TRY+rUOZtp/G
- bwKdexmlq4gFRP43yCiKIdbhV6vuiRwBbjYCA3hDefyeukhtRZ
- aI96SMVkdSQ52Y+xmuV3H+BgDsWLHspW3iAAY9WWiUWKGKoNdJ
- 7Ra83pb4uB/wXIX2EpXU=
+	Thu, 18 Apr 2013 08:26:39 -0400
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Cc: michael@ellerman.id.au, mikey@neuling.org
+Subject: [PATCH V3 3/5] powerpc, perf: Add new BHRB related generic functions, data and flags
+Date: Thu, 18 Apr 2013 17:56:14 +0530
+Message-Id: <1366287976-3900-4-git-send-email-khandual@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1366287976-3900-1-git-send-email-khandual@linux.vnet.ibm.com>
+References: <1366287976-3900-1-git-send-email-khandual@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041812-2000-0000-0000-00000BC85697
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013, Lee Jones wrote:
-> > Yes, that's probably better and more in line with what the other
-> > drivers do. You could also put the fixed_chan last if that helps.
-> 
-> I'd rather keep the flags as the final cell if it's all the same to you?
+This patch adds couple of generic functions to power_pmu structure
+which would configure the BHRB and it's filters. It also adds
+representation of the number of BHRB entries present on the PMU.
+A new PMU flag PPMU_BHRB would indicate presence of BHRB feature.
 
-Ok, no problem.
+Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+---
+ arch/powerpc/include/asm/perf_event_server.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-> > I would still like to get a confirmation that we actually still
-> > require the fixed channel assignment, since it's just used
-> > in one driver, and that might only be needed for some buggy
-> > hardware revision if we're lucky.
-> 
-> Unfortunately not:
-> 
-> `git grep "\.use_fixed_channel" <internal_kernel> | grep true | wc -l`
-> 8
+diff --git a/arch/powerpc/include/asm/perf_event_server.h b/arch/powerpc/include/asm/perf_event_server.h
+index 57b42da..3f0c15c 100644
+--- a/arch/powerpc/include/asm/perf_event_server.h
++++ b/arch/powerpc/include/asm/perf_event_server.h
+@@ -33,6 +33,8 @@ struct power_pmu {
+ 				unsigned long *valp);
+ 	int		(*get_alternatives)(u64 event_id, unsigned int flags,
+ 				u64 alt[]);
++	u64             (*bhrb_filter_map)(u64 branch_sample_type);
++	void            (*config_bhrb)(u64 pmu_bhrb_filter);
+ 	void		(*disable_pmc)(unsigned int pmc, unsigned long mmcr[]);
+ 	int		(*limited_pmc_event)(u64 event_id);
+ 	u32		flags;
+@@ -42,6 +44,9 @@ struct power_pmu {
+ 	int		(*cache_events)[PERF_COUNT_HW_CACHE_MAX]
+ 			       [PERF_COUNT_HW_CACHE_OP_MAX]
+ 			       [PERF_COUNT_HW_CACHE_RESULT_MAX];
++
++	/* BHRB entries in the PMU */
++	int		bhrb_nr;
+ };
+ 
+ /*
+@@ -54,6 +59,7 @@ struct power_pmu {
+ #define PPMU_SIAR_VALID		0x00000010 /* Processor has SIAR Valid bit */
+ #define PPMU_HAS_SSLOT		0x00000020 /* Has sampled slot in MMCRA */
+ #define PPMU_HAS_SIER		0x00000040 /* Has SIER */
++#define PPMU_BHRB		0x00000080 /* has BHRB feature enabled */
+ 
+ /*
+  * Values for flags to get_alternatives()
+-- 
+1.7.11.7
 
-I see.
-
-	Arnd
