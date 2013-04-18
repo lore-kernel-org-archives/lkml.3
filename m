@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967571Ab3DRXt2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 19:49:28 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60583 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936608Ab3DRXt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 19:49:27 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5170853B.2040807@jp.fujitsu.com>
-Date: Fri, 19 Apr 2013 08:43:55 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S967611Ab3DRXww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 19:52:52 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65161 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967289Ab3DRXwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 19:52:50 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,504,1363158000"; 
+   d="scan'208";a="320599348"
+Date: Thu, 18 Apr 2013 16:52:45 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Rob Landley <rob@landley.net>
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC 5/7] Docs: Expectations for bug reporters and maintainers
+Message-ID: <20130418235245.GA3565@xanatos>
+References: <20130417182328.GA7690@xanatos>
+ <1366242580.18069.116@driftwood>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <akpm@linux-foundation.org>, <linuxram@us.ibm.com>, <rientjes@google.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [Bug fix PATCH v4] Reusing a resource structure allocated by
- bootmem
-References: <516FB07C.9010603@jp.fujitsu.com>  <1366295000.3824.47.camel@misato.fc.hp.com>  <517082B9.7050708@jp.fujitsu.com> <1366327735.3824.50.camel@misato.fc.hp.com>
-In-Reply-To: <1366327735.3824.50.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366242580.18069.116@driftwood>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/04/19 8:28, Toshi Kani wrote:
-> On Fri, 2013-04-19 at 08:33 +0900, Yasuaki Ishimatsu wrote:
->   :
->>>
->>>> +static struct resource *get_resource(gfp_t flags)
->>>> +{
->>>> +	struct resource *res = NULL;
->>>> +
->>>> +	spin_lock(&bootmem_resource_lock);
->>>> +	if (bootmem_resource.sibling) {
->>>> +		res = bootmem_resource.sibling;
->>>> +		bootmem_resource.sibling = res->sibling;
->>>> +		memset(res, 0, sizeof(struct resource));
->>>> +	}
->>>> +	spin_unlock(&bootmem_resource_lock);
->>>
->>
->>> I prefer to keep memset() outside of the spin lock.
->>>
->>> spin_lock(&bootmem_resource_lock);
->>> if (..) {
->>> 	:
->>> 	spin_unlock(&bootmem_resource_lock);
->>> 	memset(res, 0, sizeof(struct resource));
->>> } else {
->>> 	spin_unlock(&bootmem_resource_lock);
->>> 	res = kzalloc(sizeof(struct resource), flags);
->>> }
->>
->> Hmm. It is a little ugly. How about it?
->>
->> spin_lock(&bootmem_resource_lock);
->> if (bootmem_resource.sibling) {
->> 	res = bootmem_resource.sibling;
->> 	bootmem_resource.sibling = res->sibling;
->> }
->> spin_unlock(&bootmem_resource_lock);
->>
->> if (res)
->> 	memset(res, 0, sizeof(struct resource));
->> else	
->> 	res = kzalloc(sizeof(struct resource), flags);
->
+On Wed, Apr 17, 2013 at 06:49:40PM -0500, Rob Landley wrote:
+> On 04/17/2013 01:23:28 PM, Sarah Sharp wrote:
+> >On Tue, Apr 16, 2013 at 09:15:06PM -0500, Rob Landley wrote:
+> >> On 04/15/2013 12:33:34 PM, Sarah Sharp wrote:
+> >> >Outline how often it's polite to ping kernel maintainers about
+> >> >bugs, and
+> >> >suggest that kernel maintainers should respond to bugs in 1 to 5
+> >> >business days.
+> >>
+> >> Is there anything in here about the four-level nature of modern
+> >> maintainership?
+> >>
+> >> Patches go from the developer, to the maintainer, to one of Linus's
+> >> lieutenants, to Linus himself. If you submit a patch to a maintainer
+> >> they owe you a response. The lieutenant (subsystem maintainer) owes
+> >> that maintainer a response, and Linus (the project's architect) owes
+> >> the lieutenant a response.
+> >
+> >Do we want to go into this much detail in a document meant for
+> >frustrated bug reporters?  Or perhaps we should create a separate
+> >document about the kernel maintainer hierarchy and reference it here?
+> 
+> My point was that you have to contact the right person to
+> semi-reliably get a response, but you're right. That's more about
+> getting patches in than getting problems reproduced and diagnosed.
 
-> Sounds good to me.
+No worries!  I think it's really useful for patch submitters to get
+their work to the right maintainers as well.  That description just
+doesn't belong here. :)
 
-Great. I'll update it.
+> >This file is about bug reporting, not submitting patches.
+> ...
+> >TLDR version: Yes, it would be nice if bug reporters could go up the
+> >hierarchy, but they don't have an easy way to know which subsystem
+> >maintainers to contact.  Perhaps a new line in MAINTAINERS for the
+> >subsystem maintainer would be helpful?
+> 
+> It seemed related at the time (general interacting with the
+> kernel developers), but I guess not.
 
-Thanks,
-Yasuaki Ishimatsu
+Ok.  Do you think the new line in MAINTAINERS would be useful as a
+separate patch?  Possibly if it came from the subsystem maintainers
+themselves?
 
->
-> Thanks,
-> -Toshi
->
->
+> Eh, this has gone undocumented for a full decade and nobody but me's
+> cared.
 
+I think it's less "nobody but me's cared" and more "no one with
+knowledge of the community is willing to write basic documentation that
+is needed".  People care, just not the ones with enough expertise to
+write docs.
 
+I do care about good documentation, so I suspect you'll be getting
+more patches from me in the future. :)
+
+Any other feedback on this patchset?  If not, are you going to send
+it to Linus for 3.10 or should I?
+
+Sarah Sharp
