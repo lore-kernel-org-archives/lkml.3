@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967001Ab3DROYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 10:24:05 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:33550 "EHLO
+	id S966961Ab3DROYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 10:24:04 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:33542 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966753Ab3DROYC (ORCPT
+	with ESMTP id S966179Ab3DROYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Apr 2013 10:24:02 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
@@ -16,15 +16,15 @@ Cc: Kay Sievers <kay@vrfy.org>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Lior Amsalem <alior@marvell.com>,
         Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH RFC] ARM: don't allow to register the early_console twice
-Date: Thu, 18 Apr 2013 16:23:39 +0200
-Message-Id: <1366295019-30335-2-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH RFC] Fix bug if earlyprintk is called twice
+Date: Thu, 18 Apr 2013 16:23:38 +0200
+Message-Id: <1366295019-30335-1-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1366295019-30335-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1366295019-30335-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
+Hello,
 
 If on the kernel command line the parameter "earlyprintk" is written
 twice, then setup_early_printk is called twice. This can happen for
@@ -39,31 +39,28 @@ architecture (Armada XP and Armada 370), and on a ARMv5 one
 (AT91SAMG35 thanks to Richard Genoud), with and with CONFIG_SMP
 selected.
 
-This patch simply doesn't allow to call twice register_console() with
-the early_console.
+After some investigation I found that the problem happened when the
+early_console is register for the second time in file kernel/printk.c
+on line 2310 when the function console_lock() is called, and in this
+function I managed to have traces until the call to down(&console_sem)
+one line 1922. Keep in mind that I had this information using printk
+so maybe it was not the best way to debug the console!
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
+I didn't had other platform that ARM one for testing this behavior, so
+I don't know if this bug is specific to ARM. If you think it is
+something specific to ARM then I propose the patch in the following
+email.
+
+Any feedback on this issue would be welcome
+
+Thanks,
+
+Gregory CLEMENT (1):
+  ARM: don't allow to register the early_console twice
+
  arch/arm/kernel/early_printk.c |    6 +++++-
  1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/kernel/early_printk.c b/arch/arm/kernel/early_printk.c
-index 85aa2b2..435577a 100644
---- a/arch/arm/kernel/early_printk.c
-+++ b/arch/arm/kernel/early_printk.c
-@@ -50,7 +50,11 @@ asmlinkage void early_printk(const char *fmt, ...)
- 
- static int __init setup_early_printk(char *buf)
- {
--	register_console(&early_console);
-+	static int done;
-+	if (!done) {
-+		register_console(&early_console);
-+		done = 1;
-+	}
- 	return 0;
- }
- 
 -- 
 1.7.9.5
 
