@@ -1,45 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758200Ab3DRJah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:30:37 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33607 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757609Ab3DRJad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:30:33 -0400
-Date: Thu, 18 Apr 2013 10:30:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: mmci: Allow MMCI to request channels with
-	information acquired from DT
-Message-ID: <20130418093012.GI14496@n2100.arm.linux.org.uk>
-References: <1366205534-25079-1-git-send-email-lee.jones@linaro.org> <20130418080238.GB3137@gmail.com> <20130418081549.GE14496@n2100.arm.linux.org.uk> <201304181125.44983.arnd@arndb.de>
+	id S967211Ab3DRJa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:30:58 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36424 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755267Ab3DRJaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 05:30:24 -0400
+Message-ID: <516FBD18.3060501@ti.com>
+Date: Thu, 18 Apr 2013 11:30:00 +0200
+From: =?ISO-8859-1?Q?Vincent_Stehl=E9?= <v-stehle@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130404 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201304181125.44983.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Dan Murphy <dmurphy@ti.com>
+CC: <b-cousson@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] ARM:dts:omap4-panda:Update the LED support for the
+ panda DTS
+References: <1366229760-4808-1-git-send-email-dmurphy@ti.com>
+In-Reply-To: <1366229760-4808-1-git-send-email-dmurphy@ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 11:25:44AM +0200, Arnd Bergmann wrote:
-> +static void mmci_dma_setup(struct device *dev, struct mmci_host *host)
-> +{
-> +	const char *rxname, *txname;
+On 04/17/2013 10:16 PM, Dan Murphy wrote:
+> The GPIO for LED D1 on the omap4-panda a1-a3 rev and the omap4-panda-es
+> are different.
+(..)
+> diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+> index 03bd60d..0c48f6b 100644
+> --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+> +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+(..)
+> @@ -135,6 +136,25 @@
+>  			0xf0 0x118     /* i2c4_sda PULLUP | INPUTENABLE | MODE0 */
+>  		>;
+>  	};
 > +
-> +	host->dma_rx_channel = dma_request_slave_channel(dev, "rx");
-> +	host->dma_tx_channel = dma_request_slave_channel(dev, "tx");
-> +
-> +	if (!host->dma_rx_channel && !host->dma_tx_channel) {
-> +		if (host->plat && host->plat->dma_filter)
-> +			mmci_dma_plat_setup(host);
-> +		else
-> +			dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
-> +			return;
+> +	led_gpio_pins: pinmux_leds_pins {
+> +		pinctrl-single,pins = <
+> +		>;
+> +	};
+> +};
 
-You may like to fix the sillies in this patch... but yes, the above
-would be better.
+Hi,
+
+FYI, there was a recent discussion precisely on this topic, where Tomy
+suggested to remove the empty section:
+http://marc.info/?l=linux-omap&m=136546635409232&w=2
+
+Apart from that, I just tested your patch on top of Tomy's
+omap-for-v3.10/dt branch and it is working fine for me on PandaBoards
+EA3, A4 and ES.
+
+Tested-by: Vincent Stehlé <v-stehle@ti.com>
+
+Best regards,
+
+V.
+
