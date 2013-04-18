@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756569Ab3DRXNL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 19:13:11 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:50717 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753871Ab3DRXNJ (ORCPT
+	id S936665Ab3DRXTM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 19:19:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:50598 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936487Ab3DRXTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 19:13:09 -0400
-Date: Thu, 18 Apr 2013 19:13:51 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/2] sched: move content out of core files for load
- average
-Message-ID: <20130418231351.GA25621@windriver.com>
-References: <1365811457-31924-1-git-send-email-paul.gortmaker@windriver.com>
- <20130415093330.GC17715@gmail.com>
- <1366283681.19383.5.camel@laptop>
- <51701722.1070407@windriver.com>
- <CADZ9YHgq1UyyJUaF6j9e7pgwmz4rZmu3YzJrWRXcWCgh7_f+qg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <CADZ9YHgq1UyyJUaF6j9e7pgwmz4rZmu3YzJrWRXcWCgh7_f+qg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 18 Apr 2013 19:19:11 -0400
+Date: Fri, 19 Apr 2013 09:18:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] MAINTAINERS: Update Grant's email address and
+ maintainership
+Message-Id: <20130419091858.c2030abfb050c3935785ae9a@canb.auug.org.au>
+In-Reply-To: <20130418110439.GB13687@opensource.wolfsonmicro.com>
+References: <1366109016-27442-1-git-send-email-grant.likely@linaro.org>
+	<20130417095207.24b24f31e2166d20c07f01fa@canb.auug.org.au>
+	<CACxGe6uao632OopSdWaxifanH0t2iG2gQb902L+0PW0kmG3UdQ@mail.gmail.com>
+	<20130417172134.dea24373a65d78b53cfd3a54@canb.auug.org.au>
+	<20130418110439.GB13687@opensource.wolfsonmicro.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__19_Apr_2013_09_18_58_+1000_o96CJl3/+lSkUsag"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [RFC PATCH 0/2] sched: move content out of core files for load average] On 18/04/2013 (Thu 23:06) Rakib Mullick wrote:
+--Signature=_Fri__19_Apr_2013_09_18_58_+1000_o96CJl3/+lSkUsag
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thu, Apr 18, 2013 at 9:54 PM, Paul Gortmaker
-> <paul.gortmaker@windriver.com> wrote:
-> > On 13-04-18 07:14 AM, Peter Zijlstra wrote:
-> >> On Mon, 2013-04-15 at 11:33 +0200, Ingo Molnar wrote:
-> >>> * Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
-> >>>
-> >>>> Recent activity has had a focus on moving functionally related blocks of stuff
-> >>>> out of sched/core.c into stand-alone files.  The code relating to load average
-> >>>> calculations has grown significantly enough recently to warrant placing it in a
-> >>>> separate file.
-> >>>>
-> >>>> Here we do that, and in doing so, we shed ~20k of code from sched/core.c (~10%).
-> >>>>
-> >>>> A couple small static functions in the core sched.h header were also localized
-> >>>> to their singular user in sched/fair.c at the same time, with the goal to also
-> >>>> reduce the amount of "broadcast" content in that sched.h file.
-> >>>
-> >>> Nice!
-> >>>
-> >>> Peter, is this (and the naming of the new file) fine with you too?
-> >>
-> >> Yes and no.. that is I do like the change, but I don't like the
-> >> filename. We have _waaaay_ too many different things we call load_avg.
-> >>
-> >> That said, I'm having a somewhat hard time coming up with a coherent
-> >> alternative :/
-> >
-> > Several of the relocated functions start their name with "calc_load..."
-> > Does "calc_load.c" sound any better?
-> >
-> How about sched_load.c ?
+Hi Mark,
 
-No, that doesn't work since it duplicates the path info in the file
-name -- something that none of the other kernel/sched/*.c files do.
-Do a "ls -1 kernel/sched" to see what I mean if it is not clear.
+On Thu, 18 Apr 2013 12:04:39 +0100 Mark Brown <broonie@kernel.org> wrote:
+>
+> However could you please change my SPI tree to be:
+>=20
+>   git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git for-next
 
-I honestly didn't spend a lot of time thinking about the file name.
-I chose load_avg.c since it had a parallel to the /proc/loadavg that
-linux has had since the early 1990s.  I have no real attachment
-to that name, but at the same time I'd like to avoid having name
-choice become a bikeshedding event...
+Done.  Should I also use your kernel.org address as your contact address
+(instead of broonie@opensource.wolfsonmicro.com)?
 
-Thanks,
-Paul.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__19_Apr_2013_09_18_58_+1000_o96CJl3/+lSkUsag
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRcH9iAAoJEECxmPOUX5FEhb4QAI3F7GGPoVY6x962I38hQY+2
+mv8YbQ38Sf/oU86YjEp/f2Y7DwiPEiBFvQen5E7nQTiHTRz7DvTo1FOMFqCjVVZK
+Yg/fLgaNxXZvNl1YSxc+/97bNkzvqvnj7Q43k3KiOdDgCO1C7gTqtRUTR9Rt4a1b
+pcUKvVwQUo/BOfYorlYSf5JLCShj/zSuYosadlQN1lLUoqV0gVsPw2NzxXBdYy/W
+VzgBQKqYnPy2dkRunWJPX+C+aKk/NS/9MDAnu1/IUmM/mFdcVnvijAqieRe03YMp
+MeBoJHD4AXHxGdlLtFvuKzFJMliCgzszqL9QdzcgIv0/+DPKv/dpj2iYn8Vsih21
+OQVY1ILzvSF5HSqfUecQHF+p6EExqn1AhvZJLdfNoOkypd1cdx3KFfzCCJguExMz
+rSGkD4V/3pX2H/toxzE4GLoMnUF+BLTiW0GBDNEXxrUtv+SJ6RwkyDKxokUblq6m
+KsaSvhVw6JQdQm1ZL70Riu4IDqDomAQqzSOwT1Tx0YkzYOWCUshb5pgT+XM+rVWI
+VvO2JnuAOcAY4PpZniOxnCT+IzG/VKwLQNR2Si/ovsJRzRqGrnuOzXWsOYglplhF
+0hsYx71yzQMKraI46Rrs1TVtUxo6+4AMtaUPQ6mlD1AHl7d98UE1PbB/fKlhtQYH
+GwGjOl+/4PSbbVpJDNuO
+=4iWn
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__19_Apr_2013_09_18_58_+1000_o96CJl3/+lSkUsag--
