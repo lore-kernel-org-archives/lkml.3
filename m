@@ -1,40 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936614Ab3DRUeV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 16:34:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36513 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936568Ab3DRUeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 16:34:19 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <CAErSpo6UrUWZt1zNq=kmkTk4F6g4uAOs8VPKepdfeuKKxb7pXQ@mail.gmail.com>
-References: <CAErSpo6UrUWZt1zNq=kmkTk4F6g4uAOs8VPKepdfeuKKxb7pXQ@mail.gmail.com> <20130416182550.27773.89310.stgit@warthog.procyon.org.uk> <20130416182734.27773.47452.stgit@warthog.procyon.org.uk>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: dhowells@redhat.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        alsa-devel@alsa-project.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        netfilter-devel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        netdev <netdev@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-        openipmi-developer@lists.sourceforge.net
-Subject: Re: [PATCH 26/28] proc: Supply a function to remove a proc entry by PDE [RFC]
-Date: Thu, 18 Apr 2013 21:34:02 +0100
-Message-ID: <24028.1366317242@warthog.procyon.org.uk>
+	id S936612Ab3DRUho (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 16:37:44 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48910
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936535Ab3DRUhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 16:37:43 -0400
+Date: Thu, 18 Apr 2013 13:37:05 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@gmail.com>, Alasdair G Kergon <agk@redhat.com>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        Neil Brown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
+Message-ID: <20130418203705.GJ4816@kernel.dk>
+References: <516FED09.1040008@cn.fujitsu.com>
+ <20130418133546.GX4816@kernel.dk>
+ <516FFFAC.8040103@cn.fujitsu.com>
+ <20130418143014.GZ4816@kernel.dk>
+ <CA+55aFwA8njGh4v8ZfR_o4s4m=Hugnadeir=uxbeE4yxHiBKLg@mail.gmail.com>
+ <20130418172732.GB9897@mtj.dyndns.org>
+ <20130418173811.GF4816@kernel.dk>
+ <20130418180752.GD9897@mtj.dyndns.org>
+ <20130418181318.GH4816@kernel.dk>
+ <CA+55aFxEThMJid_PiL=ko3duRPzzynkhMovsrm3TR_UXxUGciA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxEThMJid_PiL=ko3duRPzzynkhMovsrm3TR_UXxUGciA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjorn Helgaas <bhelgaas@google.com> wrote:
+On Thu, Apr 18 2013, Linus Torvalds wrote:
+> On Thu, Apr 18, 2013 at 11:13 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> > On Thu, Apr 18 2013, Tejun Heo wrote:
+> >> On Thu, Apr 18, 2013 at 10:39:00AM -0700, Jens Axboe wrote:
+> >> >
+> >> > Yep, thanks Linus for that hint... Must be someone abusing it for a
+> >> > flag field post submission? Crazy.
+> >>
+> >> Let's hope that's not the case because there'll be blood if it is. :)
+> >
+> > Yeah, it's beyond the amount of crazy I've come to expect from various
+> > random users of IO interfaces :-)
+> 
+> I think it's more likely to be some use-after-free after a long timeout.
+> 
+> Wanlong says it happens a few minutes after boot, so maybe something
+> times out a command, does the blk_complete_request(), and free's the
+> bio, which gets re-used before the softirq actually ends up running.
+> 
+> I note that Wanlong uses the SLAB allocator, not the SLUB one. I
+> wonder if the thing goes away with SLUB, and if not, if
+> CONFIG_SLUB_DEBUG_ON=y might help debug it?
 
-> I assume you'll merge this via something other than my tree.
+Hmm dunno. It happens right after we've completed the bio, which touches
+a lot of fields too. bi_bdev sits between bi_next (which we definitely
+used) and bi_flags.
 
-Al's vfs tree, I think.
+But adding slab use-after-free debugging would show for sure.
 
-David
+-- 
+Jens Axboe
+
