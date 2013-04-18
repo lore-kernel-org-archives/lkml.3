@@ -1,51 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab3DRVxx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 17:53:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:53109 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab3DRVxw (ORCPT
+	id S936631Ab3DRVzw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 17:55:52 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:34751 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932207Ab3DRVzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 17:53:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 24/32 v3] dmaengine: ste_dma40: Supply full Device Tree parsing support
-Date: Thu, 18 Apr 2013 23:53:44 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <20130418121253.GF27903@gmail.com> <20130418141752.GC3959@gmail.com>
-In-Reply-To: <20130418141752.GC3959@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304182353.45092.arnd@arndb.de>
-X-Provags-ID: V02:K0:YiUExy8aEHJR104wAsw1MJWOzh3rHvni2d2tZ3X+PIk
- bFwjd+aqfznHBOiYXWewo5hCcvyqBfu//O5k8lRI5v+KWEZrTw
- +PtHiQ1Om4DqbzuI5GKMrsHTC8NF5uw8EF2y5MipzJcST6DsFP
- +w5U1rZ13XLmV4JxNT3KexUKml8HZdDnVoDKFDNvB7KU74Kf6Y
- X1x+GL0+oCHG8ITK9Lklq1g10JeVntG57CvYqh9jpdTs2dviJM
- I3Vb1wInKvlFN36IJ0pHoM2IwnSC8q3RexindP3/k6CAJBIyeS
- z1BMUtMOcRr9Wk2TIEL0wL3+6qrWvQ5IVSj2KQe2kng/ICgyYH
- Mp0yKQqa4ipsTjCJsBGs=
+	Thu, 18 Apr 2013 17:55:51 -0400
+From: Olof Johansson <olof@lixom.net>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: torvalds@linux-foundation.org, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, bleung@chromium.org, dirk@hohndel.org,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH] Platform: x86: chromeos_laptop: defer probing if no i2c busses found
+Date: Thu, 18 Apr 2013 14:55:30 -0700
+Message-Id: <1366322130-19364-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.8.1.192.gc4361b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013, Lee Jones wrote:
-> Using the new DMA DT bindings and API, we can register the DMA40 driver
-> as Device Tree capable. Now, when a client attempts to allocate a
-> channel using the DMA DT bindings via its own node, we are able to parse
-> the request and allocate a channel in the correct manner.
-> 
-> Cc: Vinod Koul <vinod.koul@intel.com>
-> Cc: Dan Williams <djbw@fb.com>
-> Cc: Per Forlin <per.forlin@stericsson.com>
-> Cc: Rabin Vincent <rabin@rab.in>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
+If chromeos_laptop is loaded before the DRM driver, the i2c busses will
+not yet be available. Defer probe for that case and try again later.
 
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+Trickling the error up to the module init function is unfortuantely a
+little awkward, since the i2c bus lookup and device registration happens
+as a dmi callback.
+
+Reported-by: Dirk Hohndel <dirk@hohndel.org>
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
+ drivers/platform/x86/chromeos_laptop.c |   33 ++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/platform/x86/chromeos_laptop.c b/drivers/platform/x86/chromeos_laptop.c
+index 3e5b4497..7ff12fa 100644
+--- a/drivers/platform/x86/chromeos_laptop.c
++++ b/drivers/platform/x86/chromeos_laptop.c
+@@ -39,6 +39,7 @@
+ static struct i2c_client *als;
+ static struct i2c_client *tp;
+ static struct i2c_client *ts;
++static int setup_error;
+ 
+ const char *i2c_adapter_names[] = {
+ 	"SMBus I801 adapter",
+@@ -191,7 +192,8 @@ static int __init find_i2c_adapter_num(enum i2c_adapter_type type)
+ 	if (!dev) {
+ 		pr_err("%s: i2c adapter %s not found on system.\n", __func__,
+ 		       name);
++		setup_error = -EPROBE_DEFER;
+ 		return -ENODEV;
+ 	}
+ 	adapter = to_i2c_adapter(dev);
+ 	return adapter->nr;
+@@ -381,23 +383,38 @@ static struct dmi_system_id __initdata chromeos_laptop_dmi_table[] = {
+ };
+ MODULE_DEVICE_TABLE(dmi, chromeos_laptop_dmi_table);
+ 
++static void chromeos_laptop_unregister(void)
++{
++	if (als)
++		i2c_unregister_device(als);
++	if (tp)
++		i2c_unregister_device(tp);
++	if (ts)
++		i2c_unregister_device(ts);
++
++	als = NULL;
++	tp = NULL;
++	ts = NULL;
++}
++
+ static int __init chromeos_laptop_init(void)
+ {
++	setup_error = 0;
++
+ 	if (!dmi_check_system(chromeos_laptop_dmi_table)) {
+ 		pr_debug("%s unsupported system.\n", __func__);
+ 		return -ENODEV;
+ 	}
+-	return 0;
++
++	if (setup_error)
++		chromeos_laptop_unregister();
++
++	return setup_error;
+ }
+ 
+ static void __exit chromeos_laptop_exit(void)
+ {
+-	if (als)
+-		i2c_unregister_device(als);
+-	if (tp)
+-		i2c_unregister_device(tp);
+-	if (ts)
+-		i2c_unregister_device(ts);
++	chromeos_laptop_unregister();
+ }
+ 
+ module_init(chromeos_laptop_init);
+-- 
+1.7.10.4
+
