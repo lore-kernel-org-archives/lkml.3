@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967531Ab3DRPjS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 11:39:18 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:34055 "EHLO
+	id S967511Ab3DRPjQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 11:39:16 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:34043 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967480Ab3DRPjM (ORCPT
+	with ESMTP id S967479Ab3DRPjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 11:39:12 -0400
+	Thu, 18 Apr 2013 11:39:11 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Shawn Guo <shawn.guo@linaro.org>, Grant Likely <grant.likely@secretlab.ca>
 Cc: jimwall@q.com, brian@crystalfontz.com,
@@ -15,11 +15,10 @@ Cc: jimwall@q.com, brian@crystalfontz.com,
         linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree-discuss@lists.ozlabs.org,
         Jonathan Cameron <jic23@cam.ac.uk>, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 3/3] ARM: mxs: cfa10049: Add NAU7802 ADCs to the device tree
-Date: Thu, 18 Apr 2013 17:38:56 +0200
-Message-Id: <1366299536-18353-4-git-send-email-alexandre.belloni@free-electrons.com>
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH 2/3] ARM: mxs: cfa10049: Switch bus i2c1 to bitbanging
+Date: Thu, 18 Apr 2013 17:38:55 +0200
+Message-Id: <1366299536-18353-3-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366299536-18353-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1366299536-18353-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -29,56 +28,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Since these ADCs share the same non-configurable address on the I2C bus,
-they have to be put behind a muxer.
+The ADCs connected to this bus have been experiencing some timeout
+issues when using the iMX28 i2c controller. Switching back to bitbanging
+solves this.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/boot/dts/imx28-cfa10049.dts |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ arch/arm/boot/dts/imx28-cfa10049.dts |  108 ++++++++++++++++++++--------------
+ 1 file changed, 65 insertions(+), 43 deletions(-)
 
 diff --git a/arch/arm/boot/dts/imx28-cfa10049.dts b/arch/arm/boot/dts/imx28-cfa10049.dts
-index a333dbf..23166d9 100644
+index 79a2007..a333dbf 100644
 --- a/arch/arm/boot/dts/imx28-cfa10049.dts
 +++ b/arch/arm/boot/dts/imx28-cfa10049.dts
-@@ -312,18 +312,36 @@
- 			reg = <0>;
- 			#address-cells = <1>;
- 			#size-cells = <0>;
+@@ -138,6 +138,17 @@
+ 					fsl,voltage = <1>;
+ 					fsl,pull-up = <0>; /* 0 will enable the keeper */
+ 				};
 +
-+			adc0: nau7802@2a {
-+				compatible = "nuvoton,nau7802";
-+				reg = <0x2a>;
-+				nuvoton,vldo = <3000>;
-+			};
- 		};
++				i2c1_pins_cfa10049: i2c1@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
++						0x3103 /* MX28_PAD_PWM0__GPIO */
++						0x3113 /* MX28_PAD_PWM1__I2C1_SDA */
++					>;
++					fsl,drive-strength = <1>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <1>;
++				};
+ 			};
  
- 		i2c@1 {
- 			reg = <1>;
- 			#address-cells = <1>;
- 			#size-cells = <0>;
+ 			lcdif@80030000 {
+@@ -155,49 +166,6 @@
+ 				status = "okay";
+ 			};
+ 
+-			i2c1: i2c@8005a000 {
+-				pinctrl-names = "default";
+-				pinctrl-0 = <&i2c1_pins_a>;
+-				status = "okay";
+-			};
+-
+-			i2cmux {
+-				compatible = "i2c-mux-gpio";
+-				#address-cells = <1>;
+-				#size-cells = <0>;
+-				mux-gpios = <&gpio1 22 0 &gpio1 23 0>;
+-				i2c-parent = <&i2c1>;
+-
+-				i2c@0 {
+-					reg = <0>;
+-				};
+-
+-				i2c@1 {
+-					reg = <1>;
+-				};
+-
+-				i2c@2 {
+-					reg = <2>;
+-				};
+-
+-				i2c@3 {
+-					reg = <3>;
+-					#address-cells = <1>;
+-					#size-cells = <0>;
+-
+-					pca9555: pca9555@20 {
+-						compatible = "nxp,pca9555";
+-						interrupt-parent = <&gpio2>;
+-						interrupts = <19 0x2>;
+-						gpio-controller;
+-						#gpio-cells = <2>;
+-						interrupt-controller;
+-						#interrupt-cells = <2>;
+-						reg = <0x20>;
+-					};
+-				};
+-			};
+-
+ 			usbphy1: usbphy@8007e000 {
+ 				status = "okay";
+ 			};
+@@ -322,6 +290,60 @@
+ 		rotary-encoder,relative-axis;
+ 	};
+ 
++	i2c1gpio: i2c@0 {
++		compatible = "i2c-gpio";
++		pinctrl-0 = <&i2c1_pins_cfa10049>;
++		pinctrl-names = "default";
++		gpios = <
++			&gpio3 17 0 /* sda */
++			&gpio3 16 0 /* scl */
++			 >;
++		i2c-gpio,delay-us = <2>;	/* ~100 kHz */
++	};
 +
-+			adc1: nau7802@2a {
-+				compatible = "nuvoton,nau7802";
-+				reg = <0x2a>;
-+				nuvoton,vldo = <3000>;
-+			};
- 		};
- 
- 		i2c@2 {
- 			reg = <2>;
- 			#address-cells = <1>;
- 			#size-cells = <0>;
++	i2cmux {
++		compatible = "i2c-mux-gpio";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		mux-gpios = <&gpio1 22 0 &gpio1 23 0>;
++		i2c-parent = <&i2c1gpio>;
 +
-+			adc2: nau7802@2a {
-+				compatible = "nuvoton,nau7802";
-+				reg = <0x2a>;
-+				nuvoton,vldo = <3000>;
++		i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c@2 {
++			reg = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c@3 {
++			reg = <3>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			pca9555: pca9555@20 {
++				compatible = "nxp,pca9555";
++				interrupt-parent = <&gpio2>;
++				interrupts = <19 0x2>;
++				gpio-controller;
++				#gpio-cells = <2>;
++				interrupt-controller;
++				#interrupt-cells = <2>;
++				reg = <0x20>;
 +			};
- 		};
- 
- 		i2c@3 {
++		};
++	};
++
+ 	backlight {
+ 		compatible = "pwm-backlight";
+ 		pwms = <&pwm 3 5000000>;
 -- 
 1.7.10.4
 
