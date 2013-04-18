@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967172Ab3DRPMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 11:12:43 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:33655
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966861Ab3DRPMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 11:12:41 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, JBeulich@suse.com, hpa@zytor.com, mst@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] X86: Handle Xen emulation of Hyper-V more gracefully
-Date: Thu, 18 Apr 2013 08:44:46 -0700
-Message-Id: <1366299886-6399-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S967181Ab3DRPOF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 11:14:05 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:27374 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966889Ab3DRPOD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 11:14:03 -0400
+X-RZG-AUTH: :P20JeEWkefDI1ODZs1HHtgV3eF0OpFsRaGIBBWYxhJvJPtnXtogBWn6YvUkYzDKvBT07wx/0LJ4BNA==
+X-RZG-CLASS-ID: mo00
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Thu, 18 Apr 2013 17:13:39 +0200
+From: michael-dev <michael-dev@fami-braun.de>
+To: Shengzhou Liu <Shengzhou.Liu@freescale.com>
+Cc: <projekt-wlan@fem.tu-ilmenau.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Projekt-wlan] Regression in
+ 3735ba8db8e6ea22ad3ff524328926d8d780a884 with Freescale P1020
+Reply-To: <projekt-wlan@fem.tu-ilmenau.de>
+Mail-Reply-To: <projekt-wlan@fem.tu-ilmenau.de>
+In-Reply-To: <3F453DDFF675A64A89321A1F3528102199A20F@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <20130417100809.GA8855@dynamic.fami-braun.de>
+ <3F453DDFF675A64A89321A1F3528102199A20F@039-SN1MPN1-004.039d.mgd.msft.net>
+Message-ID: <751900163975fc8d055bd2414c76d59b@fami-braun.de>
+User-Agent: Roundcube Webmail/0.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Install the Hyper-V specific interrupt handler only when needed. This would
-permit us to get rid of the Xen check. Note that when the vmbus drivers invokes
-the call to register its handler, we are sure to be running on Hyper-V.
+Hi,
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- arch/x86/kernel/cpu/mshyperv.c |   18 +++++-------------
- 1 files changed, 5 insertions(+), 13 deletions(-)
+thanks for the quick reply.
 
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index a7d26d8..8f4be53 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -35,13 +35,6 @@ static bool __init ms_hyperv_platform(void)
- 	if (!boot_cpu_has(X86_FEATURE_HYPERVISOR))
- 		return false;
- 
--	/*
--	 * Xen emulates Hyper-V to support enlightened Windows.
--	 * Check to see first if we are on a Xen Hypervisor.
--	 */
--	if (xen_cpuid_base())
--		return false;
--
- 	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS,
- 	      &eax, &hyp_signature[0], &hyp_signature[1], &hyp_signature[2]);
- 
-@@ -82,12 +75,6 @@ static void __init ms_hyperv_init_platform(void)
- 
- 	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
- 		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
--#if IS_ENABLED(CONFIG_HYPERV)
--	/*
--	 * Setup the IDT for hypervisor callback.
--	 */
--	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
--#endif
- }
- 
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
-@@ -103,6 +90,11 @@ static irq_handler_t vmbus_isr;
- 
- void hv_register_vmbus_handler(int irq, irq_handler_t handler)
- {
-+	/*
-+	 * Setup the IDT for hypervisor callback.
-+	 */
-+	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
-+
- 	vmbus_irq = irq;
- 	vmbus_isr = handler;
- }
--- 
-1.7.4.1
+> Please review the patch http://patchwork.ozlabs.org/patch/237201/
+I applied it, but it does not make any difference on my platform.
 
+Regards,
+  M. Braun
+
+Am 17.04.2013 12:53, schrieb Liu Shengzhou-B36685:
+> Hi Braun,
+> 
+> It seems the duplicated tdi_reset caused the PHY_CLK_VALID bit 
+> unstable,
+> introduced by patch "EHCI: centralize controller initialization".
+> I submitted a patch to fix it.
+> Please review the patch http://patchwork.ozlabs.org/patch/237201/
+> 
+> Regards,
+> Shengzhou
+> 
+> 
+>> -----Original Message-----
+>> From: Michael Braun [mailto:michael-dev@fami-braun.de]
+>> Sent: Wednesday, April 17, 2013 6:08 PM
+>> To: Liu Shengzhou-B36685
+>> Cc: Alan Stern; projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman;
+>> linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+>> Subject: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
+>> Freescale P1020
+>> 
+>> Hi,
+>> 
+>> I'm running OpenWRT Kernel 3.8.3 (which already has
+>> f66dea709cd9309b2ee9f715697818001fb518de and
+>> 5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN 
+>> (QorlQ,
+>> PPC) device.
+>> Before updating the kernel from 3.3.0, USB host support was working 
+>> fine.
+>> Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and the
+>> lsusb output is empty, so USB host support is not working. When I 
+>> apply
+>> the following patch, USB host support starts working again, so I 
+>> guess
+>> 3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
+>> Do you have an idea how to fix it more appropriately?
+>> 
+>> Thanks,
+>>   M. Braun
+>> 
+>> --- a/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:52.924403077
+>> +0200
+>> +++ b/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:57.572410838
+>> +0200
+>> @@ -273,7 +273,6 @@ static int ehci_fsl_setup_phy(struct usb
+>>                  if (!spin_event_timeout(in_be32(non_ehci +
+>> FSL_SOC_USB_CTRL) &
+>>                                  PHY_CLK_VALID, 
+>> FSL_USB_PHY_CLK_TIMEOUT,
+>> 0)) {
+>>                          printk(KERN_WARNING "fsl-ehci: USB PHY clock
+>> invalid\n");
+>> -                       return -EINVAL;
+>>                  }
+>>          }
+>> 
