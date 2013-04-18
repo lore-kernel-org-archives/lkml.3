@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967431Ab3DRLEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 07:04:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38502 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966748Ab3DRLEo (ORCPT
+	id S966993Ab3DRLGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 07:06:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63407 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965772Ab3DRLGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 07:04:44 -0400
-Date: Thu, 18 Apr 2013 12:04:39 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] MAINTAINERS: Update Grant's email address and
- maintainership
-Message-ID: <20130418110439.GB13687@opensource.wolfsonmicro.com>
-References: <1366109016-27442-1-git-send-email-grant.likely@linaro.org>
- <20130417095207.24b24f31e2166d20c07f01fa@canb.auug.org.au>
- <CACxGe6uao632OopSdWaxifanH0t2iG2gQb902L+0PW0kmG3UdQ@mail.gmail.com>
- <20130417172134.dea24373a65d78b53cfd3a54@canb.auug.org.au>
+	Thu, 18 Apr 2013 07:06:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 24/32] dmaengine: ste_dma40: Supply full Device Tree parsing support
+Date: Thu, 18 Apr 2013 13:06:34 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-25-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1366279934-30761-25-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Kf9dPzkPP9+q7vtQ"
-Content-Disposition: inline
-In-Reply-To: <20130417172134.dea24373a65d78b53cfd3a54@canb.auug.org.au>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304181306.34835.arnd@arndb.de>
+X-Provags-ID: V02:K0:S3sgGG7iedz4itWiImxePTrjy0hw8Uvw03WbjGywyfF
+ VACeh1ypHm7MIUIeNDphTj1K78ltlLPchRB/rNj3HAFmKa33R4
+ H0SPsgZo98GPy5gHnbH70zrrEPjRg9roJffoBU0RLHV39dsqAo
+ 8I4OgjeRHvtnQGYPa0CF4t2WJQf66fXPA8p2PpdElMpOisaDnB
+ JrwFvbNcq9EHDbrXVD6qCTKnVKD3vq7tq3C47rrxk4DjIyIHy5
+ BoBLOZLMzyjJwmbbiTYU7lOrPir4BT0y7NOqWlDYyHDyyoVkVJ
+ AxQIdRVv5tHMFwYZeewhdM2uQaJ1m00tgJlBRJDFmfN7QZkJdk
+ keiHETQQgG/tjNkF3OZ0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thursday 18 April 2013, Lee Jones wrote:
+> Using the new DMA DT bindings and API, we can register the DMA40 driver
+> as Device Tree capable. Now, when a client attempts to allocate a
+> channel using the DMA DT bindings via its own node, we are able to parse
+> the request and allocate a channel in the correct manor.
 
---Kf9dPzkPP9+q7vtQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+s/manor/manner/ ?
 
-On Wed, Apr 17, 2013 at 05:21:34PM +1000, Stephen Rothwell wrote:
-> On Wed, 17 Apr 2013 08:16:17 +0100 Grant Likely <grant.likely@secretlab.ca> wrote:
-> > On Wed, Apr 17, 2013 at 12:52 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> +Optional properties:
+> +- interrupt-parent: Should be the phandle for the interrupt controller
+> +  that services interrupts for this device
 
-> > > Does this have any implications for linux-next included trees or their
-> > > contacts?
+I would not bother listing the interrupt-parent.
 
-> > No. My old email address still works, and I'm not changing my git
-> > trees anytime soon.
+> +Clients
+> +Required properties:
+> +- dmas: Comma seperated list of dma channel requests
+> +- dma-names: Names of the aforementioned requested channels
+> +
+> +Each dmas request consists of 4 cells:
+> +  1. A phandle pointing to the DMA controller
+> +  2. The DMA request line number (only when 'use fixed channel' is set)
+> +  3. Device Type
+> +  4. A 32bit mask specifying; mode, direction and endianess [NB: This list will grow]
+> +        bits 1-2: Mode:
+> +          00: Logical
+> +          01: Physical
+> +          10: Operation
+> +          11: Undefined - will most likely return an error
 
-> OK, thanks.
+The statement "will most likely return an error" is not very
+specification-like. ;-) Maybe better call it "reserved".
 
-However could you please change my SPI tree to be:
+What is actually an "Operation" channel? Do we need it for slaves?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/spi.git for-next
 
---Kf9dPzkPP9+q7vtQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> +        bits 3-4: Direction:
+> +          00: Mem to Mem
+> +          01: Mem to Dev
+> +          10: Dev to Mem
+> +          11: Dev to Dev
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+For slave channels, we only need mem-to-dev and dev-to-mem, so I would
+use only one bit here.
 
-iQIcBAEBAgAGBQJRb9NAAAoJELSic+t+oim9k8EQAIHPK3qJYATSlv558qXtXuqO
-scyLsaHrTkrTsNYUX4i8DnrAa0s+NA3eU8H8kgbhmuk07r9QVqFhoyVtPZlAIFNu
-EDkl3+ZcRybiFeuDS/kop+vE6COZa10s+xlQ+uZhlC2HfgNZ/SJi+m5ePThanXD6
-i07t/r1W6zLSSNY1taNs3K9cUjI4eY06/BLEfStd6FzAOhXFeTF+dlp3EJWp0b1H
-0Hw09OrPS/bMeskZMHiVmQKkiYAqV7ORKMTm3ontOb0XC4LBQ/5J3qRCE8J4Srw5
-210JEoEpBYimryKPd8JZqKAxxzDgahh9SD++eSqjhIzhdw5eV5uNz8gHqYTzUPOv
-0sEXM/ptq9PO0mtN7EOP9FPIIor56SlsNIlYQrvEToeeG50eF+7q641LugYVUPpp
-ttm09uAL5VAK7LQM7mUicKo/DMBHeT7pZsAkprL3MuyeWPSEAPAuZpqm6WwU3a8l
-4nPUZKQ9xViZf0ItAqEQXaJYgAj6oAUQjd34EXYVv1NQ4az3PJ+/Ma5FoVTJzP/Y
-xI/PxQiSAw/BMjT5WBDlZGuRVkzT9DrrEBk7DuWdM/HBLLbu1s1EP80XbpDcx/19
-LBIVPWTt5CUQB2HiL7FUNFGObxIjorIYoV7RFBkjSuLo6krzW72aXOtf92lf3cYi
-XwR+PYvKBckwH0JYiqgp
-=I8pS
------END PGP SIGNATURE-----
+> +        bit 5: Endianess:
+> +           0: Little endian
+> +           1: Big endian
+> +        bit 6: Use fixed channel:
+> +           0: Use automatic channel selection
+> +           1: Use DMA request line number
 
---Kf9dPzkPP9+q7vtQ--
+I think you have mixed up the "device type" and "request line number".
+
+The request line is what identifies the slave device (which you call
+the device type), and I would put that number first.
+
+	Arnd
+
