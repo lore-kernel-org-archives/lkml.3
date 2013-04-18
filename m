@@ -1,119 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936543Ab3DRTac (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 15:30:32 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:63036 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935794Ab3DRTaV (ORCPT
+	id S1756587Ab3DRTdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 15:33:13 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:40414 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab3DRTdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 15:30:21 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arm@kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH 2/2] clocksource: arm_arch_timer: add boot and suspend sched_clock offset
-Date: Thu, 18 Apr 2013 14:30:10 -0500
-Message-Id: <1366313410-16692-2-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1366313410-16692-1-git-send-email-robherring2@gmail.com>
-References: <1366313410-16692-1-git-send-email-robherring2@gmail.com>
+	Thu, 18 Apr 2013 15:33:11 -0400
+Message-ID: <1366313588.3205.76.camel@edumazet-glaptop>
+Subject: Re: Bonding driver has bad load balancing for forwarded traffic,
+ 3.7+
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: vitalyb@telenet.dn.ua, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, fubar@us.ibm.com, linux@8192.net
+Date: Thu, 18 Apr 2013 12:33:08 -0700
+In-Reply-To: <20130418.150910.1780951630545456624.davem@davemloft.net>
+References: <516C075E.30105@telenet.dn.ua>
+	 <1366072679.4459.113.camel@edumazet-glaptop>
+	 <1366081404.4459.127.camel@edumazet-glaptop>
+	 <20130418.150910.1780951630545456624.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Thu, 2013-04-18 at 15:09 -0400, David Miller wrote:
 
-Commit 023796b (ARM: arch_timer: use full 64-bit counter for sched_clock)
-fails to ensure sched_clock always starts at time 0 and counting is
-suspended during suspend. arm64 sched_clock support also has the same
-issues. This fixes all architected timer users by maintaining an initial
-offset which is updated on resume.
+> Applied and queued up for -stable, but:
+> 
+> > +						sizeof(_l4), &_l4);						
+>                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 
+> That's some rather amazing trailing whitespace.  Are you trying to break
+> free of earth's atmosphere? :-)
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/kernel/arch_timer.c         |    1 +
- drivers/clocksource/arm_arch_timer.c |   26 +++++++++++++++++++++++++-
- 2 files changed, 26 insertions(+), 1 deletion(-)
+Ah, sorry for this ;)
 
-diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
-index df6825e..9a517fe 100644
---- a/arch/arm/kernel/arch_timer.c
-+++ b/arch/arm/kernel/arch_timer.c
-@@ -42,5 +42,6 @@ int __init arch_timer_arch_init(void)
- 	arch_timer_delay_timer_register();
- 
- 	sched_clock_func = arch_timer_sched_clock;
-+
- 	return 0;
- }
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 17ed8e4..cc0bd67 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -17,6 +17,7 @@
- #include <linux/interrupt.h>
- #include <linux/of_irq.h>
- #include <linux/io.h>
-+#include <linux/syscore_ops.h>
- 
- #include <asm/arch_timer.h>
- #include <asm/virt.h>
-@@ -267,14 +268,34 @@ static struct notifier_block arch_timer_cpu_nb __cpuinitdata = {
- };
- 
- static u64 sched_clock_mult __read_mostly;
-+static u64 arch_timer_suspend_cyc;
-+static u64 arch_timer_sched_clock_offset;
- 
- unsigned long long notrace arch_timer_sched_clock(void)
- {
--	return arch_timer_read_counter() * sched_clock_mult;
-+	u64 cyc = arch_timer_read_counter() - arch_timer_sched_clock_offset;
-+	return cyc * sched_clock_mult;
- }
- unsigned long long sched_clock(void) \
- 	__attribute__((weak, alias("arch_timer_sched_clock")));
- 
-+static int arch_timer_suspend(void)
-+{
-+	arch_timer_suspend_cyc = arch_timer_read_counter();
-+	return 0;
-+}
-+
-+static void arch_timer_resume(void)
-+{
-+	arch_timer_sched_clock_offset +=
-+		arch_timer_read_counter() - arch_timer_suspend_cyc;
-+}
-+
-+static struct syscore_ops arch_timer_ops = {
-+	.suspend = arch_timer_suspend,
-+	.resume = arch_timer_resume,
-+};
-+
- static int __init arch_timer_register(void)
- {
- 	int err;
-@@ -332,6 +353,9 @@ static int __init arch_timer_register(void)
- 	pr_info("sched_clock: ARM arch timer >56 bits at %ukHz, resolution %lluns\n",
- 		arch_timer_rate / 1000, sched_clock_mult);
- 
-+	arch_timer_sched_clock_offset = arch_timer_read_counter();
-+	register_syscore_ops(&arch_timer_ops);
-+
- 	return 0;
- 
- out_free_irq:
--- 
-1.7.10.4
+Thanks
+
 
