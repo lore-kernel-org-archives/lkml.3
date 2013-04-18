@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967823Ab3DRRBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:01:15 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:63743 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967752Ab3DRQ7X (ORCPT
+	id S967836Ab3DRRBc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:01:32 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:24142 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967741Ab3DRRB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:59:23 -0400
-From: Andrey Smirnov <andrew.smirnov@gmail.com>
-To: sameo@linux.intel.com
-Cc: mchehab@redhat.com, andrew.smirnov@gmail.com, hverkuil@xs4all.nl,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH 11/12] si476x: Fix some config dependencies and a compile warnings
-Date: Thu, 18 Apr 2013 09:58:37 -0700
-Message-Id: <1366304318-29620-12-git-send-email-andrew.smirnov@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
-References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
+	Thu, 18 Apr 2013 13:01:28 -0400
+X-IronPort-AV: E=Sophos;i="4.87,503,1363132800"; 
+   d="scan'208";a="19288438"
+Date: Thu, 18 Apr 2013 18:01:14 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>
+Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
+In-Reply-To: <alpine.LFD.2.03.1304181237480.17375@syhkavp.arg>
+Message-ID: <alpine.DEB.2.02.1304181749260.7254@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
+ <alpine.LFD.2.03.1304181237480.17375@syhkavp.arg>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans Verkuil <hverkuil@xs4all.nl>
+On Thu, 18 Apr 2013, Nicolas Pitre wrote:
+> On Thu, 18 Apr 2013, Stefano Stabellini wrote:
+> 
+> > On Thu, 18 Apr 2013, Russell King - ARM Linux wrote:
+> > > This should allow the Xen problem to be resolved, because Xen will
+> > > provide the PSCI operations, and it's correct in that case to override
+> > > the platform's SMP operations.
+> > 
+> > Yes, increasing the priority of PSCI helps Xen a lot.
+> > In order to completely solve the issue for Xen though, another patch is
+> > needed (http://marc.info/?l=linux-kernel&m=136630106201968&w=2) because
+> > of the introduction of smp_init.
+> 
+> Please look at the latest smp_init patch version I sent to you.  It 
+> shouldn't conflict with Xen any longer.  It now returns a bool result 
+> depending on whether it did set up smp_ops or not.
 
-radio-si476x depends on SND and SND_SOC, the mfd driver should select
-REGMAP_I2C.
+CPUs are virtualized by Xen and do not reflect or expose the underlying
+SMP hardware and firmware features, so an hardware specific smp_init
+cannot run.
 
-Also fix a small compile warning in a debug message:
+So the smp_init patch still breaks Xen because even if smp_init can fail
+graciously, executing a platform specific smp_init function that tries
+to access registers and memory regions that are not present is going to
+cause an undefined behaviour.
 
-drivers/mfd/si476x-i2c.c: In function ‘si476x_core_drain_rds_fifo’:
-drivers/mfd/si476x-i2c.c:391:4: warning: field width specifier ‘*’ expects argument of type ‘int’, but argument 4 has type ‘long unsigned int’ [-Wformat]
-
-Acked-by: Andrey Smirnov <andrew.smirnov@gmail.com>
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
----
- drivers/media/radio/Kconfig |    2 +-
- drivers/mfd/Kconfig         |    1 +
- drivers/mfd/si476x-i2c.c    |    2 +-
- 3 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
-index 170460d..181a25f 100644
---- a/drivers/media/radio/Kconfig
-+++ b/drivers/media/radio/Kconfig
-@@ -20,7 +20,7 @@ source "drivers/media/radio/si470x/Kconfig"
- 
- config RADIO_SI476X
- 	tristate "Silicon Laboratories Si476x I2C FM Radio"
--	depends on I2C && VIDEO_V4L2
-+	depends on I2C && VIDEO_V4L2 && SND && SND_SOC
- 	select MFD_CORE
- 	select MFD_SI476X_CORE
- 	select SND_SOC_SI476X
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 3cd8f21..606e549 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -974,6 +974,7 @@ config MFD_SI476X_CORE
- 	tristate "Support for Silicon Laboratories 4761/64/68 AM/FM radio."
- 	depends on I2C
- 	select MFD_CORE
-+	select REGMAP_I2C
- 	help
- 	  This is the core driver for the SI476x series of AM/FM
- 	  radio. This MFD driver connects the radio-si476x V4L2 module
-diff --git a/drivers/mfd/si476x-i2c.c b/drivers/mfd/si476x-i2c.c
-index 118c6b1..f5bc8e4 100644
---- a/drivers/mfd/si476x-i2c.c
-+++ b/drivers/mfd/si476x-i2c.c
-@@ -389,7 +389,7 @@ static void si476x_core_drain_rds_fifo(struct work_struct *work)
- 			kfifo_in(&core->rds_fifo, report.rds,
- 				 sizeof(report.rds));
- 			dev_dbg(&core->client->dev, "RDS data:\n %*ph\n",
--				sizeof(report.rds), report.rds);
-+				(int)sizeof(report.rds), report.rds);
- 		}
- 		dev_dbg(&core->client->dev, "Drrrrained!\n");
- 		wake_up_interruptible(&core->rds_read_queue);
--- 
-1.7.10.4
-
+Under Xen, smp_init won't have a chance to return any value because it
+is going to crash first.
