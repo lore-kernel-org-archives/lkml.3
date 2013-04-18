@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967615Ab3DRRCs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:02:48 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:50732 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967530Ab3DRQ7O (ORCPT
+	id S967469Ab3DRQ7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:59:11 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:47839 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967176Ab3DRQ7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:59:14 -0400
+	Thu, 18 Apr 2013 12:59:07 -0400
 From: Andrey Smirnov <andrew.smirnov@gmail.com>
 To: sameo@linux.intel.com
 Cc: mchehab@redhat.com, andrew.smirnov@gmail.com, hverkuil@xs4all.nl,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/12] v4l2: Add standard controls for FM receivers
-Date: Thu, 18 Apr 2013 09:58:32 -0700
-Message-Id: <1366304318-29620-7-git-send-email-andrew.smirnov@gmail.com>
+Subject: [PATCH 03/12] mfd: Add chip properties handling code for SI476X MFD
+Date: Thu, 18 Apr 2013 09:58:29 -0700
+Message-Id: <1366304318-29620-4-git-send-email-andrew.smirnov@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
 References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
@@ -21,112 +21,265 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit introduces new class of standard controls
-V4L2_CTRL_CLASS_FM_RX. This class is intended to all controls
-pertaining to FM receiver chips. Also, two controls belonging to said
-class are added as a part of this commit: V4L2_CID_TUNE_DEEMPHASIS and
-V4L2_CID_RDS_RECEPTION.
+From: Andrey Smirnov <andreysm@charmander.(none)>
 
-This patch is based on the code found in the patch by Manjunatha Halli [1]
-
-[1] http://lists-archives.com/linux-kernel/27641307-new-control-class-and-features-for-fm-rx.html
+This patch adds code related to manipulation of the properties of
+SI476X chips.
 
 Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Andrey Smirnov <andrew.smirnov@gmail.com>
 ---
- drivers/media/v4l2-core/v4l2-ctrls.c |   14 +++++++++++---
- include/uapi/linux/v4l2-controls.h   |   13 +++++++++++++
- 2 files changed, 24 insertions(+), 3 deletions(-)
+ drivers/mfd/si476x-prop.c |  241 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 241 insertions(+)
+ create mode 100644 drivers/mfd/si476x-prop.c
 
-diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-index 6b28b58..8b89fb8 100644
---- a/drivers/media/v4l2-core/v4l2-ctrls.c
-+++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-@@ -297,8 +297,8 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 		"Text",
- 		NULL
- 	};
--	static const char * const tune_preemphasis[] = {
--		"No Preemphasis",
-+	static const char * const tune_emphasis[] = {
-+		"None",
- 		"50 Microseconds",
- 		"75 Microseconds",
- 		NULL,
-@@ -508,7 +508,9 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
- 	case V4L2_CID_SCENE_MODE:
- 		return scene_mode;
- 	case V4L2_CID_TUNE_PREEMPHASIS:
--		return tune_preemphasis;
-+		return tune_emphasis;
-+	case V4L2_CID_TUNE_DEEMPHASIS:
-+		return tune_emphasis;
- 	case V4L2_CID_FLASH_LED_MODE:
- 		return flash_led_mode;
- 	case V4L2_CID_FLASH_STROBE_SOURCE:
-@@ -799,6 +801,9 @@ const char *v4l2_ctrl_get_name(u32 id)
- 	case V4L2_CID_DV_RX_POWER_PRESENT:	return "Power Present";
- 	case V4L2_CID_DV_RX_RGB_RANGE:		return "Rx RGB Quantization Range";
- 
-+	case V4L2_CID_FM_RX_CLASS:		return "FM Radio Receiver Controls";
-+	case V4L2_CID_TUNE_DEEMPHASIS:		return "De-Emphasis";
-+	case V4L2_CID_RDS_RECEPTION:		return "RDS Reception";
- 	default:
- 		return NULL;
- 	}
-@@ -846,6 +851,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_MPEG_VIDEO_MPEG4_QPEL:
- 	case V4L2_CID_WIDE_DYNAMIC_RANGE:
- 	case V4L2_CID_IMAGE_STABILIZATION:
-+	case V4L2_CID_RDS_RECEPTION:
- 		*type = V4L2_CTRL_TYPE_BOOLEAN;
- 		*min = 0;
- 		*max = *step = 1;
-@@ -904,6 +910,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_DV_TX_RGB_RANGE:
- 	case V4L2_CID_DV_RX_RGB_RANGE:
- 	case V4L2_CID_TEST_PATTERN:
-+	case V4L2_CID_TUNE_DEEMPHASIS:
- 		*type = V4L2_CTRL_TYPE_MENU;
- 		break;
- 	case V4L2_CID_LINK_FREQ:
-@@ -926,6 +933,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
- 	case V4L2_CID_IMAGE_SOURCE_CLASS:
- 	case V4L2_CID_IMAGE_PROC_CLASS:
- 	case V4L2_CID_DV_CLASS:
-+	case V4L2_CID_FM_RX_CLASS:
- 		*type = V4L2_CTRL_TYPE_CTRL_CLASS;
- 		/* You can neither read not write these */
- 		*flags |= V4L2_CTRL_FLAG_READ_ONLY | V4L2_CTRL_FLAG_WRITE_ONLY;
-diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
-index dcd6374..3e985be 100644
---- a/include/uapi/linux/v4l2-controls.h
-+++ b/include/uapi/linux/v4l2-controls.h
-@@ -59,6 +59,7 @@
- #define V4L2_CTRL_CLASS_IMAGE_SOURCE	0x009e0000	/* Image source controls */
- #define V4L2_CTRL_CLASS_IMAGE_PROC	0x009f0000	/* Image processing controls */
- #define V4L2_CTRL_CLASS_DV		0x00a00000	/* Digital Video controls */
-+#define V4L2_CTRL_CLASS_FM_RX		0x00a10000	/* Digital Video controls */
- 
- /* User-class control IDs */
- 
-@@ -825,4 +826,16 @@ enum v4l2_dv_rgb_range {
- #define	V4L2_CID_DV_RX_POWER_PRESENT		(V4L2_CID_DV_CLASS_BASE + 100)
- #define V4L2_CID_DV_RX_RGB_RANGE		(V4L2_CID_DV_CLASS_BASE + 101)
- 
-+#define V4L2_CID_FM_RX_CLASS_BASE		(V4L2_CTRL_CLASS_FM_RX | 0x900)
-+#define V4L2_CID_FM_RX_CLASS			(V4L2_CTRL_CLASS_FM_RX | 1)
+diff --git a/drivers/mfd/si476x-prop.c b/drivers/mfd/si476x-prop.c
+new file mode 100644
+index 0000000..cfeffa6
+--- /dev/null
++++ b/drivers/mfd/si476x-prop.c
+@@ -0,0 +1,241 @@
++/*
++ * drivers/mfd/si476x-prop.c -- Subroutines to access
++ * properties of si476x chips
++ *
++ * Copyright (C) 2012 Innovative Converged Devices(ICD)
++ * Copyright (C) 2013 Andrey Smirnov
++ *
++ * Author: Andrey Smirnov <andrew.smirnov@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ */
++#include <linux/module.h>
 +
-+#define V4L2_CID_TUNE_DEEMPHASIS		(V4L2_CID_FM_RX_CLASS_BASE + 1)
-+enum v4l2_deemphasis {
-+	V4L2_DEEMPHASIS_DISABLED	= V4L2_PREEMPHASIS_DISABLED,
-+	V4L2_DEEMPHASIS_50_uS		= V4L2_PREEMPHASIS_50_uS,
-+	V4L2_DEEMPHASIS_75_uS		= V4L2_PREEMPHASIS_75_uS,
++#include <linux/mfd/si476x-core.h>
++
++struct si476x_property_range {
++	u16 low, high;
 +};
 +
-+#define V4L2_CID_RDS_RECEPTION			(V4L2_CID_FM_RX_CLASS_BASE + 2)
++static bool si476x_core_element_is_in_array(u16 element,
++					    const u16 array[],
++					    size_t size)
++{
++	int i;
 +
- #endif
++	for (i = 0; i < size; i++)
++		if (element == array[i])
++			return true;
++
++	return false;
++}
++
++static bool si476x_core_element_is_in_range(u16 element,
++					    const struct si476x_property_range range[],
++					    size_t size)
++{
++	int i;
++
++	for (i = 0; i < size; i++)
++		if (element <= range[i].high && element >= range[i].low)
++			return true;
++
++	return false;
++}
++
++static bool si476x_core_is_valid_property_a10(struct si476x_core *core,
++					      u16 property)
++{
++	static const u16 valid_properties[] = {
++		0x0000,
++		0x0500, 0x0501,
++		0x0600,
++		0x0709, 0x070C, 0x070D, 0x70E, 0x710,
++		0x0718,
++		0x1207, 0x1208,
++		0x2007,
++		0x2300,
++	};
++
++	static const struct si476x_property_range valid_ranges[] = {
++		{ 0x0200, 0x0203 },
++		{ 0x0300, 0x0303 },
++		{ 0x0400, 0x0404 },
++		{ 0x0700, 0x0707 },
++		{ 0x1100, 0x1102 },
++		{ 0x1200, 0x1204 },
++		{ 0x1300, 0x1306 },
++		{ 0x2000, 0x2005 },
++		{ 0x2100, 0x2104 },
++		{ 0x2106, 0x2106 },
++		{ 0x2200, 0x220E },
++		{ 0x3100, 0x3104 },
++		{ 0x3207, 0x320F },
++		{ 0x3300, 0x3304 },
++		{ 0x3500, 0x3517 },
++		{ 0x3600, 0x3617 },
++		{ 0x3700, 0x3717 },
++		{ 0x4000, 0x4003 },
++	};
++
++	return	si476x_core_element_is_in_range(property, valid_ranges,
++						ARRAY_SIZE(valid_ranges)) ||
++		si476x_core_element_is_in_array(property, valid_properties,
++						ARRAY_SIZE(valid_properties));
++}
++
++static bool si476x_core_is_valid_property_a20(struct si476x_core *core,
++					      u16 property)
++{
++	static const u16 valid_properties[] = {
++		0x071B,
++		0x1006,
++		0x2210,
++		0x3401,
++	};
++
++	static const struct si476x_property_range valid_ranges[] = {
++		{ 0x2215, 0x2219 },
++	};
++
++	return	si476x_core_is_valid_property_a10(core, property) ||
++		si476x_core_element_is_in_range(property, valid_ranges,
++						ARRAY_SIZE(valid_ranges))  ||
++		si476x_core_element_is_in_array(property, valid_properties,
++						ARRAY_SIZE(valid_properties));
++}
++
++static bool si476x_core_is_valid_property_a30(struct si476x_core *core,
++					      u16 property)
++{
++	static const u16 valid_properties[] = {
++		0x071C, 0x071D,
++		0x1007, 0x1008,
++		0x220F, 0x2214,
++		0x2301,
++		0x3105, 0x3106,
++		0x3402,
++	};
++
++	static const struct si476x_property_range valid_ranges[] = {
++		{ 0x0405, 0x0411 },
++		{ 0x2008, 0x200B },
++		{ 0x2220, 0x2223 },
++		{ 0x3100, 0x3106 },
++	};
++
++	return	si476x_core_is_valid_property_a20(core, property) ||
++		si476x_core_element_is_in_range(property, valid_ranges,
++						ARRAY_SIZE(valid_ranges)) ||
++		si476x_core_element_is_in_array(property, valid_properties,
++						ARRAY_SIZE(valid_properties));
++}
++
++typedef bool (*valid_property_pred_t) (struct si476x_core *, u16);
++
++static bool si476x_core_is_valid_property(struct si476x_core *core,
++					  u16 property)
++{
++	static const valid_property_pred_t is_valid_property[] = {
++		[SI476X_REVISION_A10] = si476x_core_is_valid_property_a10,
++		[SI476X_REVISION_A20] = si476x_core_is_valid_property_a20,
++		[SI476X_REVISION_A30] = si476x_core_is_valid_property_a30,
++	};
++
++	BUG_ON(core->revision > SI476X_REVISION_A30 ||
++	       core->revision == -1);
++	return is_valid_property[core->revision](core, property);
++}
++
++
++static bool si476x_core_is_readonly_property(struct si476x_core *core,
++					     u16 property)
++{
++	BUG_ON(core->revision > SI476X_REVISION_A30 ||
++	       core->revision == -1);
++
++	switch (core->revision) {
++	case SI476X_REVISION_A10:
++		return (property == 0x3200);
++	case SI476X_REVISION_A20:
++		return (property == 0x1006 ||
++			property == 0x2210 ||
++			property == 0x3200);
++	case SI476X_REVISION_A30:
++		return false;
++	}
++
++	return false;
++}
++
++static bool si476x_core_regmap_readable_register(struct device *dev,
++						 unsigned int reg)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct si476x_core *core = i2c_get_clientdata(client);
++
++	return si476x_core_is_valid_property(core, (u16) reg);
++
++}
++
++static bool si476x_core_regmap_writable_register(struct device *dev,
++						 unsigned int reg)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct si476x_core *core = i2c_get_clientdata(client);
++
++	return si476x_core_is_valid_property(core, (u16) reg) &&
++		!si476x_core_is_readonly_property(core, (u16) reg);
++}
++
++
++static int si476x_core_regmap_write(void *context, unsigned int reg,
++				    unsigned int val)
++{
++	return si476x_core_cmd_set_property(context, reg, val);
++}
++
++static int si476x_core_regmap_read(void *context, unsigned int reg,
++				   unsigned *val)
++{
++	struct si476x_core *core = context;
++	int err;
++
++	err = si476x_core_cmd_get_property(core, reg);
++	if (err < 0)
++		return err;
++
++	*val = err;
++
++	return 0;
++}
++
++
++static const struct regmap_config si476x_regmap_config = {
++	.reg_bits = 16,
++	.val_bits = 16,
++
++	.max_register = 0x4003,
++
++	.writeable_reg = si476x_core_regmap_writable_register,
++	.readable_reg = si476x_core_regmap_readable_register,
++
++	.reg_read = si476x_core_regmap_read,
++	.reg_write = si476x_core_regmap_write,
++
++	.cache_type = REGCACHE_RBTREE,
++};
++
++struct regmap *devm_regmap_init_si476x(struct si476x_core *core)
++{
++	return devm_regmap_init(&core->client->dev, NULL,
++				core, &si476x_regmap_config);
++}
++EXPORT_SYMBOL_GPL(devm_regmap_init_si476x);
 -- 
 1.7.10.4
 
