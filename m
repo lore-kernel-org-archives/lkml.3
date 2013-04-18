@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965207Ab3DRC7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 22:59:20 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44146 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965054Ab3DRC7S (ORCPT
+	id S965239Ab3DRDAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 23:00:24 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:3325 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965054Ab3DRDAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 22:59:18 -0400
-Message-ID: <516F6165.9070205@linux.vnet.ibm.com>
-Date: Thu, 18 Apr 2013 08:28:45 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: linuxppc-dev@ozlabs.org, mikey@neuling.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 5/5] powerpc, perf: Enable branch stack sampling framework
- support with BHRB
-References: <1366127650-1952-1-git-send-email-khandual@linux.vnet.ibm.com> <1366127650-1952-6-git-send-email-khandual@linux.vnet.ibm.com> <20130417070852.GA29203@concordia> <516E9096.70906@linux.vnet.ibm.com>
-In-Reply-To: <516E9096.70906@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 17 Apr 2013 23:00:22 -0400
+Message-ID: <1366254012.1716.11.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH v4 3/4] mutex: Queue mutex spinners with MCS lock to
+ reduce cacheline contention
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
+        Clark Williams <williams@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, linux-arch@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>,
+        Rik van Riel <riel@redhat.com>
+Date: Wed, 17 Apr 2013 20:00:12 -0700
+In-Reply-To: <1366226594-5506-4-git-send-email-Waiman.Long@hp.com>
+References: <1366226594-5506-1-git-send-email-Waiman.Long@hp.com>
+	 <1366226594-5506-4-git-send-email-Waiman.Long@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041802-5140-0000-0000-0000030CDFD3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2013 05:37 PM, Anshuman Khandual wrote:
-> On 04/17/2013 12:38 PM, Michael Ellerman wrote:
->> On Tue, Apr 16, 2013 at 09:24:10PM +0530, Anshuman Khandual wrote:
->>> This patch provides basic enablement for perf branch stack sampling framework
->>> on POWER8 processor with a new PMU feature called BHRB (Branch History Rolling
->>> Buffer).
->>>
->>> Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
->>> ---
->>>  arch/powerpc/perf/core-book3s.c     | 96 +++++++++++++++++++++++++++++++++++--
->>>  arch/powerpc/perf/perf_event_bhrb.c | 85 ++++++++++++++++++++++++++++++++
->>>  2 files changed, 178 insertions(+), 3 deletions(-)
->>>  create mode 100644 arch/powerpc/perf/perf_event_bhrb.c
->>>
->>> diff --git a/arch/powerpc/perf/core-book3s.c b/arch/powerpc/perf/core-book3s.c
->>> index 4ac6e64..f4d1347 100644
->>> --- a/arch/powerpc/perf/core-book3s.c
->>> +++ b/arch/powerpc/perf/core-book3s.c
->>> @@ -19,6 +19,8 @@
->>>  #include <asm/firmware.h>
->>>  #include <asm/ptrace.h>
->>>  
->>> +#define BHRB_MAX_ENTRIES	32
->>> +
->>>  struct cpu_hw_events {
->>>  	int n_events;
->>>  	int n_percpu;
->>> @@ -38,11 +40,21 @@ struct cpu_hw_events {
->>>  
->>>  	unsigned int group_flag;
->>>  	int n_txn_start;
->>> +
->>> +	/* BHRB bits */
->>> +	u64				bhrb_filter;	/* BHRB HW branch filter */
->>> +	int				bhrb_users;
->>> +	void				*bhrb_context;
->>> +	struct	perf_branch_stack	bhrb_stack;
->>> +	struct	perf_branch_entry	bhrb_entries[BHRB_MAX_ENTRIES];
->>>  };
->>> +
->>>  DEFINE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
->>>  
->>>  struct power_pmu *ppmu;
->>>  
->>> +#include "perf_event_bhrb.c"
->>> +
->>
->> Um, why are you doing that?
->>
+On Wed, 2013-04-17 at 15:23 -0400, Waiman Long wrote:
+> The current mutex spinning code (with MUTEX_SPIN_ON_OWNER option turned
+> on) allow multiple tasks to spin on a single mutex concurrently. A
+> potential problem with the current approach is that when the mutex
+> becomes available, all the spinning tasks will try to acquire the
+> mutex more or less simultaneously. As a result, there will be a lot of
+> cacheline bouncing especially on systems with a large number of CPUs.
 > 
-> There was no specific reason for that.
+> This patch tries to reduce this kind of contention by putting the
+> mutex spinners into a queue so that only the first one in the queue
+> will try to acquire the mutex. This will reduce contention and allow
+> all the tasks to move forward faster.
 > 
+> The queuing of mutex spinners is done using an MCS lock based
+> implementation which will further reduce contention on the mutex
+> cacheline than a similar ticket spinlock based implementation. This
+> patch will add a new field into the mutex data structure for holding
+> the MCS lock. This expands the mutex size by 8 bytes for 64-bit system
+> and 4 bytes for 32-bit system. This overhead will be avoid if the
+> MUTEX_SPIN_ON_OWNER option is turned off.
+> 
+> The following table shows the jobs per minute (JPM) scalability data
+> on an 8-node 80-core Westmere box with a 3.7.10 kernel. The numactl
+> command is used to restrict the running of the fserver workloads to
+> 1/2/4/8 nodes with hyperthreading off.
+[...]
+> 
+> The short workload is the only one that shows a decline in performance
+> probably due to the spinner locking and queuing overhead.
+> 
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
 
-Ahh, I remember it now. The function in the new file uses "cpu_hw_events" structure
-which is passed during "record_and_restart" data capture phase. Right now cpu_hw_events is
-not defined in the header file but inside core-book3s.c itself. Solution to this problem
-could be any of these.
+Reviewed-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 
-(0) Move all the code from the new file perf_event_bhrb.c into core-book3s.c
-(1) Move cpu_hw_events structure to perf_event_server.h
-(2) Create additional BHRB processing function inside struct power_pmu and
-    define it for P8 inside power8_pmu.c
-
-Regards
-Anshuman
 
