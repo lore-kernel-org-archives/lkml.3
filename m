@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965752Ab3DRNzX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 09:55:23 -0400
-Received: from mail-ia0-f171.google.com ([209.85.210.171]:53700 "EHLO
-	mail-ia0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935511Ab3DRNzV (ORCPT
+	id S966048Ab3DROAc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 10:00:32 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:35226 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935635Ab3DROAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 09:55:21 -0400
-Message-ID: <516FFB3D.3060002@gmail.com>
-Date: Thu, 18 Apr 2013 09:55:09 -0400
-From: Kyle Evans <kvans32@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130220 Thunderbird/17.0.3
+	Thu, 18 Apr 2013 10:00:30 -0400
+X-Auth-Info: honeGJaXEFe0sy5kmzhi368njQyaTZvnqlfNy3Rr2co=
+From: Marek Vasut <marex@denx.de>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH] video: mxsfb: Fix colors display on lower color depth
+Date: Thu, 18 Apr 2013 16:00:27 +0200
+User-Agent: KMail/1.13.7 (Linux/3.8-trunk-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thomas Petazzoni <thomas@free-electrons.com>,
+        Brian Lilly <brian@crystalfontz.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <516EBCA4.1020609@free-electrons.com> <1366277032-671-1-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1366277032-671-1-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: =?UTF-8?B?UGFsaSBSb2jDoXI=?= <pali.rohar@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>
-Subject: Re: BUG: Fn keys not working on EliteBook 8460p after fabf85e3ca15d5b94058f391dac8df870cdd427a
-References: <201304130331.18301@pali> <1365816906.13667.6.camel@x230.lan>    <51695169.6090306@gmail.com> <1365870087.13667.7.camel@x230.lan>   <51699843.7060905@gmail.com> <1366129583.13667.11.camel@x230.lan>  <516EC19C.3010906@gmail.com> <1366221554.13667.13.camel@x230.lan>
-In-Reply-To: <1366221554.13667.13.camel@x230.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304181600.27813.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Maxime Ripard,
 
-On 04/17/2013 01:59 PM, Matthew Garrett wrote:
-> On Wed, 2013-04-17 at 11:37 -0400, Kyle Evans wrote:
->> On 04/16/2013 12:26 PM, Matthew Garrett wrote:
->>> Can you try this patch?
->>>
->> No dice. I have a dmi check patch that I will send in a day or two if
->> you don't find what you are looking for.
-> DMI's almost certainly the wrong solution. According to your DSDT, EC
-> register 0xe6 is called SFHK. That's written to by the SSHK method,
-> which in turn is executed by SHKS which should be called by the
-> hp_wmi_query call added there. Any chance you can try to figure out why
-> that's not happening?
->
+> The current code always registers as a 32 bits display, and uses the
+> hardware to drop the MSB of each color to abjust to the interface width
+> used by the panel.
+> 
+> This results on 18 bits (and probably 16 bits display as well) in colors
+> being displayed poorly, because the MSB are obviously the most important
+> bits for each color definition.
+> 
+> The default controller behaviour when using an interface width smaller
+> than the color depth is to drop the LSBs of each color, which makes more
+> sense because you lose the least important part of the color definition.
+> 
+> So, to fix the colors display, just get back to the default controller
+> behaviour.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-I am not fully understanding how the bios query ID gets translated into 
-the method. As far as I can tell this happens under HWMC. But, if I 
-trace through that, 0x8(write) and 0x9(read) do not exist. However, 
-0x9(read) does have a method that works when I query it, GHKS. I do not 
-find the method for 0x8(write).
+Isn't this what M28EVK is doing already? This was last tested on 3.9-rc3 I 
+think:
 
-0x9(write), or SHKS, is essentially ec_write(SFHK,Arg0). Arg0 turns out 
-to be whatever data is sent in the 0x9 buffer.
-                                 ...
-                                 CreateDWordField (Arg1, 0x10, DDWD)
+bits-per-pixel = <16>;
+bus-width = <18>;
 
-                                 If (LEqual (CMDT, 0x09))
-                                 {
-                                     Store (SHKS (DDWD), Local2)
-                                 ...
+But it's also true we have all 24 data lines routed to the LCD.
 
-I tried writing 0x60, and I tried writing 0x0e just to see if it if a 
-subset of that register is needed to enable the keys and it seems I need 
-the full 0x6e. I only find two places in the DSDT with that value, both 
-in the WQAE buffer and I can't see how that is used.
+Best regards,
+Marek Vasut
