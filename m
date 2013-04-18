@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967579Ab3DRJiw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:38:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40051 "EHLO
+	id S967608Ab3DRJjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:39:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40020 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756517Ab3DRJRd (ORCPT
+	with ESMTP id S1756270Ab3DRJR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:33 -0400
+	Thu, 18 Apr 2013 05:17:27 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Shan Hai <shan.hai@windriver.com>, Jeff Garzik <jgarzik@redhat.com>,
+Cc: Stone Piao <piaoyun@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 15/72] libata: Set max sector to 65535 for Slimtype DVD A DS8A8SH drive
-Date: Thu, 18 Apr 2013 10:16:00 +0100
-Message-Id: <1366276617-3553-16-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 07/72] mwifiex: limit channel number not to overflow memory
+Date: Thu, 18 Apr 2013 10:15:52 +0100
+Message-Id: <1366276617-3553-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -27,107 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shan Hai <shan.hai@windriver.com>
+From: Stone Piao <piaoyun@marvell.com>
 
-commit a32450e127fc6e5ca6d958ceb3cfea4d30a00846 upstream.
+commit 901ceba4e81e9dd6b4a3c4c37ee22000a6c5c65f upstream.
 
-The Slimtype DVD A  DS8A8SH drive locks up when max sector is smaller than
-65535, and the blow backtrace is observed on locking up:
+Limit the channel number in scan request, or the driver scan
+config structure memory will be overflowed.
 
-INFO: task flush-8:32:1130 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-flush-8:32      D ffffffff8180cf60     0  1130      2 0x00000000
- ffff880273aef618 0000000000000046 0000000000000005 ffff880273aee000
- ffff880273aee000 ffff880273aeffd8 ffff880273aee010 ffff880273aee000
- ffff880273aeffd8 ffff880273aee000 ffff88026e842ea0 ffff880274a10000
-Call Trace:
- [<ffffffff8168fc2d>] schedule+0x5d/0x70
- [<ffffffff8168fccc>] io_schedule+0x8c/0xd0
- [<ffffffff81324461>] get_request+0x731/0x7d0
- [<ffffffff8133dc60>] ? cfq_allow_merge+0x50/0x90
- [<ffffffff81083aa0>] ? wake_up_bit+0x40/0x40
- [<ffffffff81320443>] ? bio_attempt_back_merge+0x33/0x110
- [<ffffffff813248ea>] blk_queue_bio+0x23a/0x3f0
- [<ffffffff81322176>] generic_make_request+0xc6/0x120
- [<ffffffff81322308>] submit_bio+0x138/0x160
- [<ffffffff811d7596>] ? bio_alloc_bioset+0x96/0x120
- [<ffffffff811d1f61>] submit_bh+0x1f1/0x220
- [<ffffffff811d48b8>] __block_write_full_page+0x228/0x340
- [<ffffffff811d3650>] ? attach_nobh_buffers+0xc0/0xc0
- [<ffffffff811d8960>] ? I_BDEV+0x10/0x10
- [<ffffffff811d8960>] ? I_BDEV+0x10/0x10
- [<ffffffff811d4ab6>] block_write_full_page_endio+0xe6/0x100
- [<ffffffff811d4ae5>] block_write_full_page+0x15/0x20
- [<ffffffff811d9268>] blkdev_writepage+0x18/0x20
- [<ffffffff81142527>] __writepage+0x17/0x40
- [<ffffffff811438ba>] write_cache_pages+0x34a/0x4a0
- [<ffffffff81142510>] ? set_page_dirty+0x70/0x70
- [<ffffffff81143a61>] generic_writepages+0x51/0x80
- [<ffffffff81143ab0>] do_writepages+0x20/0x50
- [<ffffffff811c9ed6>] __writeback_single_inode+0xa6/0x2b0
- [<ffffffff811ca861>] writeback_sb_inodes+0x311/0x4d0
- [<ffffffff811caaa6>] __writeback_inodes_wb+0x86/0xd0
- [<ffffffff811cad43>] wb_writeback+0x1a3/0x330
- [<ffffffff816916cf>] ? _raw_spin_lock_irqsave+0x3f/0x50
- [<ffffffff811b8362>] ? get_nr_inodes+0x52/0x70
- [<ffffffff811cb0ac>] wb_do_writeback+0x1dc/0x260
- [<ffffffff8168dd34>] ? schedule_timeout+0x204/0x240
- [<ffffffff811cb232>] bdi_writeback_thread+0x102/0x2b0
- [<ffffffff811cb130>] ? wb_do_writeback+0x260/0x260
- [<ffffffff81083550>] kthread+0xc0/0xd0
- [<ffffffff81083490>] ? kthread_worker_fn+0x1b0/0x1b0
- [<ffffffff8169a3ec>] ret_from_fork+0x7c/0xb0
- [<ffffffff81083490>] ? kthread_worker_fn+0x1b0/0x1b0
-
- The above trace was triggered by
-   "dd if=/dev/zero of=/dev/sr0 bs=2048 count=32768"
-
- It was previously working by accident, since another bug introduced
- by 4dce8ba94c7 (libata: Use 'bool' return value for ata_id_XXX) caused
- all drives to use maxsect=65535.
-
-Signed-off-by: Shan Hai <shan.hai@windriver.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Stone Piao <piaoyun@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/libata-core.c | 4 ++++
- include/linux/libata.h    | 1 +
- 2 files changed, 5 insertions(+)
+ drivers/net/wireless/mwifiex/cfg80211.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 96f0847..23f092d 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -2408,6 +2408,9 @@ int ata_dev_configure(struct ata_device *dev)
- 		dev->max_sectors = min_t(unsigned int, ATA_MAX_SECTORS_128,
- 					 dev->max_sectors);
+diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
+index 76b5c0f..4506cda 100644
+--- a/drivers/net/wireless/mwifiex/cfg80211.c
++++ b/drivers/net/wireless/mwifiex/cfg80211.c
+@@ -1368,7 +1368,8 @@ mwifiex_cfg80211_scan(struct wiphy *wiphy, struct net_device *dev,
+ 		}
+ 	}
  
-+	if (dev->horkage & ATA_HORKAGE_MAX_SEC_LBA48)
-+		dev->max_sectors = ATA_MAX_SECTORS_LBA48;
-+
- 	if (ap->ops->dev_config)
- 		ap->ops->dev_config(dev);
- 
-@@ -4065,6 +4068,7 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
- 	/* Weird ATAPI devices */
- 	{ "TORiSAN DVD-ROM DRD-N216", NULL,	ATA_HORKAGE_MAX_SEC_128 },
- 	{ "QUANTUM DAT    DAT72-000", NULL,	ATA_HORKAGE_ATAPI_MOD16_DMA },
-+	{ "Slimtype DVD A  DS8A8SH", NULL,	ATA_HORKAGE_MAX_SEC_LBA48 },
- 
- 	/* Devices we expect to fail diagnostics */
- 
-diff --git a/include/linux/libata.h b/include/linux/libata.h
-index 6e887c7..7e13eb4 100644
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -393,6 +393,7 @@ enum {
- 	ATA_HORKAGE_NOSETXFER	= (1 << 14),	/* skip SETXFER, SATA only */
- 	ATA_HORKAGE_BROKEN_FPDMA_AA	= (1 << 15),	/* skip AA */
- 	ATA_HORKAGE_DUMP_ID	= (1 << 16),	/* dump IDENTIFY data */
-+	ATA_HORKAGE_MAX_SEC_LBA48 = (1 << 17),	/* Set max sects to 65535 */
- 
- 	 /* DMA mask for user DMA control: User visible values; DO NOT
- 	    renumber */
+-	for (i = 0; i < request->n_channels; i++) {
++	for (i = 0; i < min_t(u32, request->n_channels,
++			      MWIFIEX_USER_SCAN_CHAN_MAX); i++) {
+ 		chan = request->channels[i];
+ 		priv->user_scan_cfg->chan_list[i].chan_number = chan->hw_value;
+ 		priv->user_scan_cfg->chan_list[i].radio_type = chan->band;
 -- 
 1.8.1.2
 
