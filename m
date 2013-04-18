@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936404Ab3DRRdI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:33:08 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10215 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936140Ab3DRRdH (ORCPT
+	id S936456Ab3DRRd1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:33:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:64778 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936119Ab3DRRd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:33:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 18 Apr 2013 10:31:12 -0700
-Message-ID: <51702D5E.6060304@nvidia.com>
-Date: Thu, 18 Apr 2013 22:59:02 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 18 Apr 2013 13:33:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] spi/s3c64xx: Fix non-dmaengine usage
+Date: Thu, 18 Apr 2013 19:33:21 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        spi-devel-general@lists.sourceforge.net
+References: <1366304814-19428-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1366304814-19428-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Graeme Gregory <gg@slimlogic.co.uk>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFT] regulator: palmas: Fix min_uV for LDO8 tracking mode
-References: <1366304032.27953.1.camel@phoenix>
-In-Reply-To: <1366304032.27953.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304181933.21598.arnd@arndb.de>
+X-Provags-ID: V02:K0:4qSUdGH3/DuykEry6UHUOxEOaiBqnPMI/Z1pCYYkXuD
+ 0q4Ly1/Kd9+Nn8euf9I6QtkDlGrEgoNFrQYYrkt/7wE2v1WCRC
+ 8LSBOMa1wzT2vthfld5Xpar++fTx1KuO610aTm0T1TrO7SSx2x
+ Y9PZeknIFwFMTYYhsRcVSjPoLpm31dPtayPF13gOdln4vORxAe
+ tt2zYdN4R8+S0dxikHe30NaKqh/9sdUyewiNexRmtIs2ettEPW
+ EgzlhhxVvELPwvHsrUkKCqaS+f5ECS3YGQYTbq9qPyTe0sWU5n
+ bjEnQ0pQdhkeT/fj15SnrgkBBBvb+EUXSdpeBFBqNLHZqVexjW
+ MOrWqe8NeoXAHCSdQdt0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013 10:23 PM, Axel Lin wrote:
-> When SMPS45 is set to off and LDO8 tracking is enabled, the output voltage can
-> be set from 0.45 to 1.65 V. Thus set min_uV to be 450000.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
-> Hi Laxman,
-> My understanding is based on your comment in the code.
->          /*
->           * When SMPS45 is set to off and LDO8 tracking is enabled, the LDO8
->           * output is defined by the LDO8_VOLTAGE.VSEL register divided by two,
->           * and can be set from 0.45 to 1.65 V.
->           */
->
-> Can you confirm if this patch is correct or not?
+On Thursday 18 April 2013, Mark Brown wrote:
+> The multiplatform conversion in commit 788437 (spi: s3c64xx: move to
+> generic dmaengine API) tested for the use of the Samsung-specific DMA
+> API with SAMSUNG_DMADEV when in fact S3C_DMA should be used. This
+> renderd DMA based transfers non-functional on platforms not using
+> dmaengine.
+> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Yes, this is correct.
-Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
+Sorry for the confusion on my part. I thought that S3C_DMA was referring
+to just the S3C specific functionality while SAMSUNG_DMADEV was the
+wrapper around it, while in truth SAMSUNG_DMADEV is the wrapper around
+just the dmaengine API.
 
-Unfortunately the PMIC device which we have is having bug for which we 
-are disabling tracking before going to suspend and enabling again in 
-resume and hence it is not
-caught. I will pull this change to my downstream also.
-
+	Arnd
