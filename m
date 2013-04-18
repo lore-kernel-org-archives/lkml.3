@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967829Ab3DRRAv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:00:51 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:45161 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967397Ab3DRRAs (ORCPT
+	id S967823Ab3DRRBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:01:15 -0400
+Received: from mail-da0-f54.google.com ([209.85.210.54]:63743 "EHLO
+	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967752Ab3DRQ7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:00:48 -0400
-Date: Thu, 18 Apr 2013 13:00:30 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
-        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <arekm@maven.pl>
-Subject: Re: [PATCH v10] irq: add quirk for broken interrupt remapping on
- 55XX chipsets
-Message-ID: <20130418170030.GB3788@neilslaptop.think-freely.org>
-References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
- <1366144712-23460-1-git-send-email-nhorman@tuxdriver.com>
- <20130418150222.GB2558@8bytes.org>
+	Thu, 18 Apr 2013 12:59:23 -0400
+From: Andrey Smirnov <andrew.smirnov@gmail.com>
+To: sameo@linux.intel.com
+Cc: mchehab@redhat.com, andrew.smirnov@gmail.com, hverkuil@xs4all.nl,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH 11/12] si476x: Fix some config dependencies and a compile warnings
+Date: Thu, 18 Apr 2013 09:58:37 -0700
+Message-Id: <1366304318-29620-12-git-send-email-andrew.smirnov@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
+References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130418150222.GB2558@8bytes.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 05:02:39PM +0200, Joerg Roedel wrote:
-> On Tue, Apr 16, 2013 at 04:38:32PM -0400, Neil Horman wrote:
-> > A few years back intel published a spec update:
-> > http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
-> > 
-> > For the 5520 and 5500 chipsets which contained an errata (specificially errata
-> > 53), which noted that these chipsets can't properly do interrupt remapping, and
-> > as a result the recommend that interrupt remapping be disabled in bios.  While
-> > many vendors have a bios update to do exactly that, not all do, and of course
-> > not all users update their bios to a level that corrects the problem.  As a
-> > result, occasionally interrupts can arrive at a cpu even after affinity for that
-> > interrupt has be moved, leading to lost or spurrious interrupts (usually
-> > characterized by the message:
-> > kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
-> > 
-> > There have been several incidents recently of people seeing this error, and
-> > investigation has shown that they have system for which their BIOS level is such
-> > that this feature was not properly turned off.  As such, it would be good to
-> > give them a reminder that their systems are vulnurable to this problem.  For
-> > details of those that reported the problem, please see:
-> > https://bugzilla.redhat.com/show_bug.cgi?id=887006
-> > 
-> > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> > CC: Prarit Bhargava <prarit@redhat.com>
-> > CC: Don Zickus <dzickus@redhat.com>
-> > CC: Don Dutile <ddutile@redhat.com>
-> > CC: Bjorn Helgaas <bhelgaas@google.com>
-> > CC: Asit Mallick <asit.k.mallick@intel.com>
-> > CC: David Woodhouse <dwmw2@infradead.org>
-> > CC: linux-pci@vger.kernel.org
-> > CC: Joerg Roedel <joro@8bytes.org>
-> > CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > CC: Arkadiusz Miśkiewicz <arekm@maven.pl>
-> 
-> Applied with some small changes to my x86/vt-d branch, thanks Neil.
-> 
-> 
-> 
-Thanks!
-Neil
+From: Hans Verkuil <hverkuil@xs4all.nl>
+
+radio-si476x depends on SND and SND_SOC, the mfd driver should select
+REGMAP_I2C.
+
+Also fix a small compile warning in a debug message:
+
+drivers/mfd/si476x-i2c.c: In function ‘si476x_core_drain_rds_fifo’:
+drivers/mfd/si476x-i2c.c:391:4: warning: field width specifier ‘*’ expects argument of type ‘int’, but argument 4 has type ‘long unsigned int’ [-Wformat]
+
+Acked-by: Andrey Smirnov <andrew.smirnov@gmail.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+---
+ drivers/media/radio/Kconfig |    2 +-
+ drivers/mfd/Kconfig         |    1 +
+ drivers/mfd/si476x-i2c.c    |    2 +-
+ 3 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
+index 170460d..181a25f 100644
+--- a/drivers/media/radio/Kconfig
++++ b/drivers/media/radio/Kconfig
+@@ -20,7 +20,7 @@ source "drivers/media/radio/si470x/Kconfig"
+ 
+ config RADIO_SI476X
+ 	tristate "Silicon Laboratories Si476x I2C FM Radio"
+-	depends on I2C && VIDEO_V4L2
++	depends on I2C && VIDEO_V4L2 && SND && SND_SOC
+ 	select MFD_CORE
+ 	select MFD_SI476X_CORE
+ 	select SND_SOC_SI476X
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 3cd8f21..606e549 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -974,6 +974,7 @@ config MFD_SI476X_CORE
+ 	tristate "Support for Silicon Laboratories 4761/64/68 AM/FM radio."
+ 	depends on I2C
+ 	select MFD_CORE
++	select REGMAP_I2C
+ 	help
+ 	  This is the core driver for the SI476x series of AM/FM
+ 	  radio. This MFD driver connects the radio-si476x V4L2 module
+diff --git a/drivers/mfd/si476x-i2c.c b/drivers/mfd/si476x-i2c.c
+index 118c6b1..f5bc8e4 100644
+--- a/drivers/mfd/si476x-i2c.c
++++ b/drivers/mfd/si476x-i2c.c
+@@ -389,7 +389,7 @@ static void si476x_core_drain_rds_fifo(struct work_struct *work)
+ 			kfifo_in(&core->rds_fifo, report.rds,
+ 				 sizeof(report.rds));
+ 			dev_dbg(&core->client->dev, "RDS data:\n %*ph\n",
+-				sizeof(report.rds), report.rds);
++				(int)sizeof(report.rds), report.rds);
+ 		}
+ 		dev_dbg(&core->client->dev, "Drrrrained!\n");
+ 		wake_up_interruptible(&core->rds_read_queue);
+-- 
+1.7.10.4
 
