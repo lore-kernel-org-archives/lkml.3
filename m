@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967375Ab3DRWoX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 18:44:23 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:51026 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966174Ab3DRWoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 18:44:21 -0400
+	id S1754241Ab3DRWur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 18:50:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:21679 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752858Ab3DRWup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 18:50:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,504,1363158000"; 
+   d="scan'208";a="229034463"
+Date: Fri, 19 Apr 2013 00:50:23 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: wei_wang@realsil.com.cn
+Cc: cjb@laptop.org, devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, gregkh@linuxfoundation.org,
+        rogerable@realtek.com
+Subject: Re: [PATCH v2] mfd:rtsx: Support RTS5249
+Message-ID: <20130418225022.GF8798@zurbaran>
+References: <cover.1365648007.git.wei_wang@realsil.com.cn>
+ <6b09b5138a549e49ea2d27bfee0e36c7aebb0a1b.1365648007.git.wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:c028]
-In-Reply-To: <CAOesGMj6nyjYjxQ23Vk0L76fYQo7YPeKoKrPptq8TVdv7Cwa-g@mail.gmail.com>
-References: <1366322130-19364-1-git-send-email-olof@lixom.net>
-	<CAOesGMj6nyjYjxQ23Vk0L76fYQo7YPeKoKrPptq8TVdv7Cwa-g@mail.gmail.com>
-Date: Thu, 18 Apr 2013 15:44:20 -0700
-Message-ID: <CAOesGMg5F-+Sco0sA1s2ACD2ZcqG2Z1Ovq51oyo=fO19S6Njfg@mail.gmail.com>
-Subject: Re: [PATCH] Platform: x86: chromeos_laptop: defer probing if no i2c
- busses found
-From: Olof Johansson <olof@lixom.net>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Benson Leung <bleung@chromium.org>, dirk@hohndel.org,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6b09b5138a549e49ea2d27bfee0e36c7aebb0a1b.1365648007.git.wei_wang@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 3:05 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Thu, Apr 18, 2013 at 2:55 PM, Olof Johansson <olof@lixom.net> wrote:
->> If chromeos_laptop is loaded before the DRM driver, the i2c busses will
->> not yet be available. Defer probe for that case and try again later.
->>
->> Trickling the error up to the module init function is unfortuantely a
->> little awkward, since the i2c bus lookup and device registration happens
->> as a dmi callback.
->
-> Uh, wait, hold off on this. I'm returning -EPROBE_DEFER from the
-> module init function. It's not valid outside of the driver model.
+Hi Wei,
 
-Ugh. Ok, so that worked just because any error seem to re-trigger an
-attempt to load the module later on my system (three times, it seems),
-and most of the reproductions I had happened to work out on the second
-load.
+On Thu, Apr 11, 2013 at 10:43:40AM +0800, wei_wang@realsil.com.cn wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
+> 
+> Support new model: RTS5249
+Could you please provide me with a more detailled changelog (What's so
+different with this model that the current driver does not support ?) before I
+apply it ?
 
-Looks like keeping the module loaded and adding a bus notifier to wait
-for the right busses to show up is the only way to do this in a
-foolproof way. Revised patch tonight or tomorrow.
+Cheers,
+Samuel.
 
-
--Olof
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
