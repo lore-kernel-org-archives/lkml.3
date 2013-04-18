@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967243Ab3DRLuf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 07:50:35 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45295 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967170Ab3DRLud (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 07:50:33 -0400
-Message-ID: <516FDDF3.30507@ti.com>
-Date: Thu, 18 Apr 2013 17:20:11 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S966714Ab3DRMBO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 08:01:14 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:17812 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965102Ab3DRMBM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 08:01:12 -0400
+From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+To: kvm list <kvm@vger.kernel.org>, "mst@redhat.com" <mst@redhat.com>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Luonengjun <luonengjun@huawei.com>, Zanghongyong <zanghongyong@huawei.com>,
+        "Huangweidong (C)" <weidong.huang@huawei.com>,
+        "Wangrui (K)" <moon.wangrui@huawei.com>
+Subject: KVM VM(windows xp) reseted when running geekbench for about 2 days
+Thread-Topic: KVM VM(windows xp) reseted when running geekbench for about 2
+ days
+Thread-Index: Ac48LEpguUL++1wxQxiPGnnKCoktbg==
+Date: Thu, 18 Apr 2013 12:00:49 +0000
+Message-ID: <D3E216785288A145B7BC975F83A2ED103FE1E7A5@szxeml556-mbx.china.huawei.com>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.135.68.97]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Vivek Gautam <gautamvivek1987@gmail.com>
-CC: <balbi@ti.com>, Vivek Gautam <gautam.vivek@samsung.com>,
-        <linux-usb@vger.kernel.org>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>,
-        <sarah.a.sharp@linux.intel.com>, <rob.herring@calxeda.com>,
-        <kgene.kim@samsung.com>, <dianders@chromium.org>, <t.figa@samsung.com>,
-        <p.paneri@samsung.com>
-Subject: Re: [PATCH v3 01/11] usb: phy: Add APIs for runtime power management
-References: <1364824448-14732-1-git-send-email-gautam.vivek@samsung.com> <1364824448-14732-2-git-send-email-gautam.vivek@samsung.com> <20130402082342.GF30286@arwen.pp.htv.fi> <CAFp+6iFW9-fOCgCfpfQzS9PZyjb9_NahjSxzbrS0AhVeNngyXw@mail.gmail.com> <20130402121048.GA9488@arwen.pp.htv.fi> <CAFp+6iEqHOc6G+4UpUGneQ43FGf11DOH_LignFiXJxVJnjry2w@mail.gmail.com>
-In-Reply-To: <CAFp+6iEqHOc6G+4UpUGneQ43FGf11DOH_LignFiXJxVJnjry2w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 02 April 2013 06:10 PM, Vivek Gautam wrote:
-> Hi,
->
->
-> On Tue, Apr 2, 2013 at 5:40 PM, Felipe Balbi <balbi@ti.com> wrote:
->> Hi,
->>
->> On Tue, Apr 02, 2013 at 04:04:01PM +0530, Vivek Gautam wrote:
->>>> On Mon, Apr 01, 2013 at 07:24:00PM +0530, Vivek Gautam wrote:
->>>>> Adding  APIs to handle runtime power management on PHY
->>>>> devices. PHY consumers may need to wake-up/suspend PHYs
->>>>> when they work across autosuspend.
->>>>>
->>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->>>>> ---
->>>>>   include/linux/usb/phy.h |  141 +++++++++++++++++++++++++++++++++++++++++++++++
->>>>>   1 files changed, 141 insertions(+), 0 deletions(-)
->>>>>
->>>>> diff --git a/include/linux/usb/phy.h b/include/linux/usb/phy.h
->>>>> index 6b5978f..01bf9c1 100644
->>>>> --- a/include/linux/usb/phy.h
->>>>> +++ b/include/linux/usb/phy.h
->>>>> @@ -297,4 +297,145 @@ static inline const char *usb_phy_type_string(enum usb_phy_type type)
->>>>>                return "UNKNOWN PHY TYPE";
->>>>>        }
->>>>>   }
->>>>> +
->>>>> +static inline void usb_phy_autopm_enable(struct usb_phy *x)
->>>>> +{
->>>>> +     if (!x || !x->dev) {
->>>>> +             dev_err(x->dev, "no PHY or attached device available\n");
->>>>> +             return;
->>>>> +             }
->>>>
->>>> wrong indentation, also, I'm not sure we should allow calls with NULL
->>>> pointers. Perhaps a WARN() so we get API offenders early enough ?
->>>
->>> True, bad coding style :-(
->>> We should be handling dev_err with a NULL pointer.
->>> Will just keep here:
->>> if (WARN_ON(!x->dev))
->>>        return .... ;
->>
->> right, but I guess:
->>
->> if (WARN(!x || !x->dev, "Invalid parameters\n"))
->>          return -EINVAL;
->>
->> would be better ??
+I start 10 VMs(windows xp), then running geekbench tool on them, about 2 days, one of them was reset,
+I found the reset operation is done by
+int kvm_cpu_exec(CPUArchState *env)
+{
+    ...
+       switch (run->exit_reason)
+       ...
+        case KVM_EXIT_SHUTDOWN:
+            DPRINTF("shutdown\n");
+            qemu_system_reset_request();
+            ret = EXCP_INTERRUPT;
+            break;
+    ...
+}
 
-btw, shouldn't it be IS_ERR(x)?
+KVM_EXIT_SHUTDOWN exit reason was set previously in triple fault handle handle_triple_fault().
 
-Thanks
-Kishon
+What causes the triple fault?
+
+Thanks,
+Zhang Haoyu
