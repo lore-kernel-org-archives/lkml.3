@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936488Ab3DRRom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:44:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56343 "EHLO mx1.redhat.com"
+	id S1755824Ab3DRRpz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:45:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7397 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936472Ab3DRRok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:44:40 -0400
-Date: Thu, 18 Apr 2013 13:44:32 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-watchdog@vger.kernel.org, kexec@lists.infradead.org, wim@iguana.be,
-        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
-        dyoung@redhat.com, Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH v3] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130418174432.GN79013@redhat.com>
-References: <1366233596-34681-1-git-send-email-dzickus@redhat.com>
- <87ip3j94qu.fsf@xmission.com>
+	id S1753983Ab3DRRpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 13:45:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,503,1363158000"; 
+   d="scan'208";a="297058150"
+Date: Thu, 18 Apr 2013 19:45:47 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Andrey Smirnov <andrew.smirnov@gmail.com>, hverkuil@xs4all.nl,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v9 00/12]  Driver for Si476x series of chips
+Message-ID: <20130418174547.GV8798@zurbaran>
+References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
+ <20130418142800.5c00b004@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87ip3j94qu.fsf@xmission.com>
+In-Reply-To: <20130418142800.5c00b004@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 09:35:05AM -0700, Eric W. Biederman wrote:
-> Don Zickus <dzickus@redhat.com> writes:
+On Thu, Apr 18, 2013 at 02:28:00PM -0300, Mauro Carvalho Chehab wrote:
+> Em Thu, 18 Apr 2013 09:58:26 -0700
+> Andrey Smirnov <andrew.smirnov@gmail.com> escreveu:
 > 
-> > A common problem with kdump is that during the boot up of the
-> > second kernel, the hardware watchdog times out and reboots the
-> > machine before a vmcore can be captured.
-> >
-> > Instead of tellling customers to disable their hardware watchdog
-> > timers, I hacked up a hook to put in the kdump path that provides
-> > one last kick before jumping into the second kernel.
+> > Driver for Si476x series of chips
+> > 
+> > This is a eight version of the patchset originaly posted here:
+> > https://lkml.org/lkml/2012/9/13/590
+> > 
+> > Second version of the patch was posted here:
+> > https://lkml.org/lkml/2012/10/5/598
+> > 
+> > Third version of the patch was posted here:
+> > https://lkml.org/lkml/2012/10/23/510
+> > 
+> > Fourth version of the patch was posted here:
+> > https://lkml.org/lkml/2013/2/18/572
+> > 
+> > Fifth version of the patch was posted here:
+> > https://lkml.org/lkml/2013/2/26/45
+> > 
+> > Sixth version of the patch was posted here:
+> > https://lkml.org/lkml/2013/2/26/257
+> > 
+> > Seventh version of the patch was posted here:
+> > https://lkml.org/lkml/2013/2/27/22
+> > 
+> > Eighth version of the patch was posted here:
+> > https://lkml.org/lkml/2013/3/26/891
+> > 
+> > To save everyone's time I'll repost the original description of it:
+> > 
+> > This patchset contains a driver for a Silicon Laboratories 476x series
+> > of radio tuners. The driver itself is implemented as an MFD devices
+> > comprised of three parts: 
+> >  1. Core device that provides all the other devices with basic
+> > functionality and locking scheme.
+> >  2. Radio device that translates between V4L2 subsystem requests into
+> > Core device commands.
+> >  3. Codec device that does similar to the earlier described task, but
+> > for ALSA SoC subsystem.
+> > 
+> > v9 of this driver has following changes:
+> >    - MFD part of the driver no longer depends on the header file added
+> >      by the radio driver(media/si476x.h) which should potential
+> >      restore the bisectability of the patches
+> > 
+> > Mauro, I am not sure if you reverted changes in patches 5 - 7, so I am
+> > including them just in case.
 > 
-> Having thought about this a little more this patch is actively wrong.
-> 
-> The problem is you can easily be petting the watchdog in violation of
-> whatever policy is normally in place.  Which means that this extra
-> petting can result in a system that is unavailable for an unacceptably
-> long period of time.
-
-Not really, just an extra period which isn't that much.  This would only
-be noticable if kdump is setup and enabled and then _hung_, otherwise it
-just quickly reboots and noone notices. :-)
-
-> 
-> I expect most watchdog policies are not that strict, but this patch
-> would preclude using those that are.
-
-I would assume most of those users would not enable kdump and would not be
-affected.
-
-> 
-> And like is being discussed in another subthread it does look like
-> changing the timeout and the interval should be enough all on it's own.
-
-Probably and I will pursue that.  Thanks for the suggestion.
+> No, I didn't revert all patches. I just reverted two patches: the
+> last one, and the one that Samuel asked me.
+Sorry I didn't have time to check your email from yesterday, but I was
+actually hoping you would revert the whole patchset, then pull from my
+mfd-next/topic/si476x branch to fetch the MFD bits and then apply the
+v4l2/media ones (From patchset v9) on top of that.
+Does that make sense to you ?
 
 Cheers,
-Don
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
