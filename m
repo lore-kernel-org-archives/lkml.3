@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935635Ab3DRAJY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 20:09:24 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:42139 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935285Ab3DRAJW (ORCPT
+	id S935712Ab3DRANe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 20:13:34 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:56313 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934827Ab3DRANd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 20:09:22 -0400
-Date: Wed, 17 Apr 2013 17:09:19 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Randy Dunlap <rdunlap@infradead.org>, Yang Zhang <yang.z.zhang@Intel.com>
-cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [patch] x86, kvm: fix build failure with CONFIG_SMP disabled
-In-Reply-To: <516F37FF.8040703@infradead.org>
-Message-ID: <alpine.DEB.2.02.1304171707090.24494@chino.kir.corp.google.com>
-References: <20130417170450.5dd6e5f450de4d5bf197d997@canb.auug.org.au> <516EE5AB.4080201@infradead.org> <alpine.DEB.2.02.1304171555030.10112@chino.kir.corp.google.com> <alpine.DEB.2.02.1304171609580.5541@chino.kir.corp.google.com>
- <516F37FF.8040703@infradead.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 17 Apr 2013 20:13:33 -0400
+Message-ID: <516F3AA7.1000908@gmail.com>
+Date: Thu, 18 Apr 2013 08:13:27 +0800
+From: Simon Jeons <simon.jeons@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Jerome Marchand <jmarchan@redhat.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH] swap: redirty page if page write fails on swap file
+References: <516E918B.3050309@redhat.com>
+In-Reply-To: <516E918B.3050309@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Apr 2013, Randy Dunlap wrote:
+Hi Jerome,
+On 04/17/2013 08:11 PM, Jerome Marchand wrote:
+> Since commit 62c230b, swap_writepage() calls direct_IO on swap files.
+> However, in that case page isn't redirtied if I/O fails, and is therefore
+> handled afterwards as if it has been successfully written to the swap
+> file, leading to memory corruption when the page is eventually swapped
+> back in.
+> This patch sets the page dirty when direct_IO() fails. It fixes a memory
 
-> On 04/17/13 16:12, David Rientjes wrote:
-> > The build fails when CONFIG_SMP is disabled:
-> > 
-> > 	arch/x86/kvm/vmx.c: In function 'vmx_deliver_posted_interrupt':
-> > 	arch/x86/kvm/vmx.c:3950:3: error: 'apic' undeclared (first use in this function)
-> > 
-> > Fix it by including the necessary header.
-> 
-> Sorry, i386 build still fails with the same error message plus this one:
-> 
-> ERROR: "apic" [arch/x86/kvm/kvm-intel.ko] undefined!
-> 
+If swapfile has related page cache which cached swapfile in memory? It 
+is not necessary, correct?
 
-Ahh, that's because you don't have CONFIG_X86_LOCAL_APIC as you already 
-mentioned.  So it looks like this error can manifest in two different ways 
-and we got different reports.
+> corruption that happened while using swap-over-NFS.
+>
+> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+> ---
+>   mm/page_io.c |    2 ++
+>   1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/mm/page_io.c b/mm/page_io.c
+> index 78eee32..04ca00d 100644
+> --- a/mm/page_io.c
+> +++ b/mm/page_io.c
+> @@ -222,6 +222,8 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+>   		if (ret == PAGE_SIZE) {
+>   			count_vm_event(PSWPOUT);
+>   			ret = 0;
+> +		} else {
+> +			set_page_dirty(page);
+>   		}
+>   		return ret;
+>   	}
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-This failure came from "KVM: VMX: Add the deliver posted interrupt 
-algorithm", so adding Yang to the cc to specify the dependency this has on 
-apic and how it can be protected without CONFIG_X86_LOCAL_APIC on i386.
