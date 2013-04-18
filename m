@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967809Ab3DRKMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 06:12:52 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:35609 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967796Ab3DRKMu (ORCPT
+	id S967843Ab3DRKND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 06:13:03 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:60942 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967796Ab3DRKM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 06:12:50 -0400
+	Thu, 18 Apr 2013 06:12:58 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH 09/32] ARM: ux500: Remove unused 'data_width' attributes from SDI DMA configs
-Date: Thu, 18 Apr 2013 11:11:51 +0100
-Message-Id: <1366279934-30761-10-git-send-email-lee.jones@linaro.org>
+        Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+Subject: [PATCH 14/32] dmaengine: ste_dma40: Remove 'always true' checking
+Date: Thu, 18 Apr 2013 11:11:56 +0100
+Message-Id: <1366279934-30761-15-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
 References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
@@ -21,86 +23,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DMA configuration data is now allocated in the MMCI driver, so these
-are just ignored.
+Before allocating memory for logical channels, the current driver
+checks to see if there are any. Well as the dma40_memcpy_channels[]
+array is always populated, the check is always true. Best to
+remove the check.
 
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>
+Cc: Per Forlin <per.forlin@stericsson.com>
+Cc: Rabin Vincent <rabin@rab.in>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/board-mop500-sdi.c |   16 ----------------
- 1 file changed, 16 deletions(-)
+ drivers/dma/ste_dma40.c |   16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/board-mop500-sdi.c b/arch/arm/mach-ux500/board-mop500-sdi.c
-index 5c28216..553ace6 100644
---- a/arch/arm/mach-ux500/board-mop500-sdi.c
-+++ b/arch/arm/mach-ux500/board-mop500-sdi.c
-@@ -65,16 +65,12 @@ struct stedma40_chan_cfg mop500_sdi0_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV29_SD_MM0,
--	.src_info.data_width = STEDMA40_WORD_WIDTH,
--	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index a39ef74..ec0d6ab 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -3273,17 +3273,11 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	if (!base->lookup_phy_chans)
+ 		goto failure;
  
- static struct stedma40_chan_cfg mop500_sdi0_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
- 	.dev_type = DB8500_DMA_DEV29_SD_MM0,
--	.src_info.data_width = STEDMA40_WORD_WIDTH,
--	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
- #endif
+-	if (num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) {
+-		/*
+-		 * The max number of logical channels are event lines for all
+-		 * src devices and dst devices
+-		 */
+-		base->lookup_log_chans = kzalloc(num_log_chans *
+-						 sizeof(struct d40_chan *),
+-						 GFP_KERNEL);
+-		if (!base->lookup_log_chans)
+-			goto failure;
+-	}
++	base->lookup_log_chans = kzalloc(num_log_chans *
++					 sizeof(struct d40_chan *),
++					 GFP_KERNEL);
++	if (!base->lookup_log_chans)
++		goto failure;
  
-@@ -134,16 +130,12 @@ static struct stedma40_chan_cfg sdi1_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
- 	.dev_type = DB8500_DMA_DEV32_SD_MM1,
--	.src_info.data_width = STEDMA40_WORD_WIDTH,
--	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
- 
- static struct stedma40_chan_cfg sdi1_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
- 	.dev_type = DB8500_DMA_DEV32_SD_MM1,
--	.src_info.data_width = STEDMA40_WORD_WIDTH,
--	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
- #endif
- 
-@@ -169,16 +161,12 @@ struct stedma40_chan_cfg mop500_sdi2_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
- 	.dev_type =  DB8500_DMA_DEV28_SD_MM2,
--	.src_info.data_width = STEDMA40_WORD_WIDTH,
--	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
- 
- static struct stedma40_chan_cfg mop500_sdi2_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
- 	.dev_type = DB8500_DMA_DEV28_SD_MM2,
--	.src_info.data_width = STEDMA40_WORD_WIDTH,
--	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
- #endif
- 
-@@ -205,16 +193,12 @@ struct stedma40_chan_cfg mop500_sdi4_dma_cfg_rx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_PERIPH_TO_MEM,
- 	.dev_type =  DB8500_DMA_DEV42_SD_MM4,
--	.src_info.data_width = STEDMA40_WORD_WIDTH,
--	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
- 
- static struct stedma40_chan_cfg mop500_sdi4_dma_cfg_tx = {
- 	.mode = STEDMA40_MODE_LOGICAL,
- 	.dir = STEDMA40_MEM_TO_PERIPH,
- 	.dev_type = DB8500_DMA_DEV42_SD_MM4,
--	.src_info.data_width = STEDMA40_WORD_WIDTH,
--	.dst_info.data_width = STEDMA40_WORD_WIDTH,
- };
- #endif
- 
+ 	base->reg_val_backup_chan = kmalloc(base->num_phy_chans *
+ 					    sizeof(d40_backup_regs_chan),
 -- 
 1.7.10.4
 
