@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967156Ab3DRPE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 11:04:59 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:28017 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965506Ab3DRPE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 11:04:57 -0400
+	id S967234Ab3DRPFw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 11:05:52 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:55809 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966354Ab3DRPFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 11:05:50 -0400
 X-IronPort-AV: E=Sophos;i="4.87,502,1363132800"; 
-   d="scan'208";a="19257070"
-Date: Thu, 18 Apr 2013 16:04:44 +0100
+   d="scan'208";a="20210461"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH 0/3 v7] arm: introduce psci_smp_ops
-Message-ID: <alpine.DEB.2.02.1304181556210.7254@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+To: <xen-devel@lists.xensource.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <will.deacon@arm.com>, <arnd@arndb.de>, <nicolas.pitre@linaro.org>,
+        <Stefano.Stabellini@eu.citrix.com>, <rob.herring@calxeda.com>,
+        <linux@arm.linux.org.uk>, <olof@lixom.net>,
+        Jon Medhurst <tixy@linaro.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v7 3/3] ARM: Enable selection of SMP operations at boot time
+Date: Thu, 18 Apr 2013 16:05:30 +0100
+Message-ID: <1366297530-12497-3-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <alpine.DEB.2.02.1304181556210.7254@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304181556210.7254@kaball.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this is the seventh version of the patch series to move virt_smp_ops out
-of mach-virt and make it a generic set of reusable PSCI based smp_ops.
-psci_smp_ops are preferred over the platform smp_ops.
-The last patch introduces smp_init.
+From: Jon Medhurst <tixy@linaro.org>
 
-I removed the patch that makes use of smp_init in Xen, because it
-depends on other Xen changes. I'll send it separately.
-This version of the series is independent of other changes.
+Add a new 'smp_init' hook to machine_desc so platforms can specify a
+function to be used to setup smp ops instead of having a statically
+defined value.  The hook must return true when smp_ops are initialized.
+If false the static mdesc->smp_ops will be used by default.
 
+Signed-off-by: Jon Medhurst <tixy@linaro.org>
+Signed-off-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reviewed-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ arch/arm/include/asm/mach/arch.h |    3 +++
+ arch/arm/kernel/setup.c          |   10 ++++++----
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
-Jon Medhurst (1):
-      ARM: Enable selection of SMP operations at boot time
+diff --git a/arch/arm/include/asm/mach/arch.h b/arch/arm/include/asm/mach/arch.h
+index 308ad7d..af8c54c 100644
+--- a/arch/arm/include/asm/mach/arch.h
++++ b/arch/arm/include/asm/mach/arch.h
+@@ -16,8 +16,10 @@ struct pt_regs;
+ struct smp_operations;
+ #ifdef CONFIG_SMP
+ #define smp_ops(ops) (&(ops))
++#define smp_init_ops(ops) (&(ops))
+ #else
+ #define smp_ops(ops) (struct smp_operations *)NULL
++#define smp_init_ops(ops) (bool (*)(void))NULL
+ #endif
+ 
+ struct machine_desc {
+@@ -41,6 +43,7 @@ struct machine_desc {
+ 	unsigned char		reserve_lp2 :1;	/* never has lp2	*/
+ 	char			restart_mode;	/* default restart mode	*/
+ 	struct smp_operations	*smp;		/* SMP operations	*/
++	bool			(*smp_init)(void);
+ 	void			(*fixup)(struct tag *, char **,
+ 					 struct meminfo *);
+ 	void			(*reserve)(void);/* reserve mem blocks	*/
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index dad3048..22cc863 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -770,10 +770,12 @@ void __init setup_arch(char **cmdline_p)
+ 	psci_init();
+ #ifdef CONFIG_SMP
+ 	if (is_smp()) {
+-		if (psci_smp_available())
+-			smp_set_ops(&psci_smp_ops);
+-		else if (mdesc->smp)
+-			smp_set_ops(mdesc->smp);
++		if (!mdesc->smp_init || !mdesc->smp_init()) {
++			if (psci_smp_available())
++				smp_set_ops(&psci_smp_ops);
++			else if (mdesc->smp)
++				smp_set_ops(mdesc->smp);
++		}
+ 		smp_init_cpus();
+ 	}
+ #endif
+-- 
+1.7.2.5
 
-Stefano Stabellini (2):
-      arm: introduce psci_smp_ops
-      arm: prefer psci_smp_ops over mdesc->smp
-
- arch/arm/include/asm/mach/arch.h |    3 ++
- arch/arm/include/asm/psci.h      |   29 ++++++++++++++++
- arch/arm/kernel/Makefile         |    5 ++-
- arch/arm/kernel/psci.c           |    7 ++--
- arch/arm/kernel/psci_smp.c       |   67 ++++++++++++++++++++++++++++++++++++++
- arch/arm/kernel/setup.c          |    9 ++++-
- arch/arm/mach-virt/Makefile      |    1 -
- arch/arm/mach-virt/platsmp.c     |   58 --------------------------------
- arch/arm/mach-virt/virt.c        |    3 --
- 9 files changed, 114 insertions(+), 68 deletions(-)
-
-
-git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-psci-ops-7-tag
-
-Cheers,
-
-Stefano
