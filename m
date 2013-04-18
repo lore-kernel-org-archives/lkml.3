@@ -1,73 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965828Ab3DRLPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 07:15:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55433 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935410Ab3DRLPU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 07:15:20 -0400
-Date: Thu, 18 Apr 2013 12:15:17 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v2] regulator: core: Add
- regulator_map_voltage_ascend() API
-Message-ID: <20130418111517.GD13687@opensource.wolfsonmicro.com>
-References: <1366252489.17095.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a6YTfLRor63AaheO"
-Content-Disposition: inline
-In-Reply-To: <1366252489.17095.1.camel@phoenix>
-X-Cookie: Be different: conform.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S966552Ab3DRLPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 07:15:34 -0400
+Received: from mail-a03.ithnet.com ([217.64.83.98]:48548 "HELO ithnet.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S965997Ab3DRLPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 07:15:32 -0400
+X-Sender-Authentication: SMTP AUTH verified <skraw>
+Date: Thu, 18 Apr 2013 13:15:27 +0200
+From: Stephan von Krawczynski <skraw@ithnet.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Josh Boyer <jwboyer@gmail.com>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: No serial since kernel 3.8
+Message-Id: <20130418131527.526bcd55.skraw@ithnet.com>
+In-Reply-To: <1973551.DT5YstaY8S@vostro.rjw.lan>
+References: <20130416162047.2f9b83fe.skraw@ithnet.com>
+	<20130416181432.a28e0465.skraw@ithnet.com>
+	<CAErSpo77+A0NqZpifCCJZb7T_=o0GcBo9A6Gw5OvV2kDOppt8A@mail.gmail.com>
+	<1973551.DT5YstaY8S@vostro.rjw.lan>
+Organization: ith Kommunikationstechnik GmbH
+X-Mailer: Sylpheed 3.1.2 (GTK+ 2.24.10; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 17 Apr 2013 20:55:04 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
---a6YTfLRor63AaheO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Wednesday, April 17, 2013 11:38:30 AM Bjorn Helgaas wrote:
+> > [+cc Rafael & linux-acpi]
+> 
+> Thanks.
+> 
+> > On Tue, Apr 16, 2013 at 10:14 AM, Stephan von Krawczynski
+> > <skraw@ithnet.com> wrote:
+> > > On Tue, 16 Apr 2013 10:59:53 -0400
+> > > Josh Boyer <jwboyer@gmail.com> wrote:
+> > >
+> > >> On Tue, Apr 16, 2013 at 04:55:25PM +0200, richard -rw- weinberger wrote:
+> > >> >On Tue, Apr 16, 2013 at 4:20 PM, Stephan von Krawczynski
+> > >> ><skraw@ithnet.com> wrote:
+> > >> >> Hello,
+> > >> >>
+> > >> >> can some kind soul please explain how I can get my serial port back under
+> > >> >> kernel 3.8.X. Earlier kernels showed:
+> > >> >>
+> > >> >> Jan 10 13:57:18 mybox kernel: [    0.712829] serial8250: ttyS0 at I/O 0x3f8
+> > >> >> (irq = 4) is a 16550A
+> > >> >>
+> > >> >> But 3.8.4:
+> > >> >>
+> > >> >> Mar 26 10:39:14 admin kernel: [    0.603647] serial 00:0a: disabled
+> > >> >>
+> > >> >> Only kernel is replaced, no change in distro
+> > >> >> Is there some kernel boot parameter needed now?
+> > >> >> I tried 3.4.X and it works, even 3.7.X works...
+> > >> >
+> > >> >So, 3.8.3 worked and 3.8.4 introduced a regression?
+> > >> >If so please confirm.
+> > >> >
+> > >> >CC'ing gregkh, just in case...
+> > >>
+> > >> We had a report of this in Fedora that was fixed with 3.8.7.  An upstream
+> > >> change had been brought back to the 3.8.x series, and it was subsequently
+> > >> reverted.  3.8.7 picked up the revert.
+> > >>
+> > >> josh
+> > >
+> > > 3.8.7 does not work either. I just checked it. I tried shared and not shared IRQ:
+> > >
+> > > Apr 16 17:47:05 mybox kernel: [    0.604826] Serial: 8250/16550 driver, 8 ports, IRQ sharing disabled
+> > >
+> > > and another test:
+> > >
+> > > Apr 16 18:07:08 mybox kernel: [    0.601203] Serial: 8250/16550 driver, 8 ports, IRQ sharing enabled
+> > >
+> > > I must say that 3.8.7 does not even tell the "serial 00:0a: disabled" any more.
+> > > This is no special board, it is a pretty mainstream asus xeon board with onboard serial.
+> > > Loading 3.4.24 (just an example) makes the port work immediately.
+> > > Anything else I can test?
+> > 
+> > 3.7.6 works, and 3.8.3, 3.8.4, 3.8.7 all fail.  So it looks like a
+> > regression between 3.7.6 and 3.8.3.
+> > 
+> > The "serial 00:0a: disabled" message is from PNP, so I added Rafael
+> > and linux-acpi.  Complete dmesg logs from 3.7.6 and 3.8.4 would be a
+> > place to start.  Also maybe an acpidump, since the 00:0a PNP device
+> > probably came from PNPACPI.  You could attach all these to a
+> > https://bugzilla.kernel.org report if you want a place to stash them.
+> > 
+> > Josh, do you have a pointer (URL) to the Fedora issue so we can rule
+> > that in or out?
+> 
+> Stephan, below is a list of commits touching the PNP code between 3.7 and 3.8.
+> 
+> Can you please check if any of them has triggered the problem you're seeing?
+> 
+> Rafael
+> 
+> 
+> 13cde3b PNP: Handle IORESOURCE_BITS in resource allocation
+> c937766 PNP: Simplify setting of resources
+> cdc87c5 pnpacpi: fix incorrect TEST_ALPHA() test
+> a6b5e88 ACPI / PNP: Do not crash due to stale pointer use during system resume
+> 38de279 pnpbios: remove CONFIG_HOTPLUG ifdefs
+> 2905875 ACPI / PNP: skip ACPI device nodes associated with physical nodes already
+> 046d9ce ACPI: Move device resources interpretation code from PNP to ACPI core
+> 
+> -- 
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
 
-On Thu, Apr 18, 2013 at 10:34:49AM +0800, Axel Lin wrote:
-> A lot of regulator hardware has ascendant voltage list.
-> This patch adds regulator_map_voltage_ascend() and export it.
->=20
-> Drivers that have ascendant voltage list can use this as their map_voltag=
-e()
-> operation, this is more efficient than default regulator_map_voltage_iter=
-ate()
-> function.
+Hello all,
 
-I've applied this since it's a good API to have and it'll let people
-build drivers on it.  It does seem like if we know the list is sorted we
-ought to be able to take advantage of that to do better than a linear
-scan.  Not sure it's worth bothering though as these tend not to have
-that many values to map.
+I checked 3.8.8 today and it _does_ work.
+Shall we burn some time to find out why?
+The only significant output difference between working and not working we could find is:
 
---a6YTfLRor63AaheO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+not working:
+Apr  2 17:28:23 mybox kernel: [    0.603270] serial 00:0a: disabled
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+working (3.8.8):
+Apr 18 12:58:50 mybox kernel: [    2.855929] 00:0a: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
 
-iQIcBAEBAgAGBQJRb9W+AAoJELSic+t+oim9jLIP/2A1CGmDSCRFCmEwHckcsN8j
-WnUFvUzc1bfmdtmc70BLijRbVR+DfN4l6+wYXRdvWdnfa1F8bywrGNwt7omTZSRd
-EBFV43+UzXnqFOL6QWuxBBwvC32pQ5AdGwRhnw7V2kpabT8LGdlHU+qi1jmmhzLg
-aFFKKGFzFPGYVybLDOQ//0ymKFKH5n6eG8V5oQqLq91v4NIRrhAWdG2HtYK97Nkr
-IPSM3hMRQj3AABqWeHBPBT3dGEjSAUD2IQU9bqvGSfDIW2/lNXmdfRApyAaryVIN
-0UKREuFh9na1d9933tQsVjaATZg7722ww8r83luUxuLEb2cx/T2UTa7U0DTxpGpP
-NJ4HyGS+9uXGaNoDPRU0MYVWDYVZznjzaBvnZEY9+sle3SImvYfiG0CBH4EbR1Bj
-OpXAFG0LJNYwiCqHjPVwdgABMA+s+u5vNwIUidcjze15GPLZlU08hnwaISrRu4VO
-vEWs8nUat0UL9SSMmUz3KacT8FjEgJKdOcXq5MnLxXIG2hiOsWw0gWn3Jleq+WAh
-miHTTxVlu0IYwMlaWyChU4i+Gcf6CNfftVASBmuGn4zX8kJg26HZqduxycs0UkdK
-Ch3j5dHZXFrFCkqqJ8vSgJywL/kY2xcWPpQI3A8BhyvFCGuYKojhvYeV6pGl1E59
-wykJscRHGQMFnegy2dsx
-=iXB3
------END PGP SIGNATURE-----
-
---a6YTfLRor63AaheO--
+-- 
+Regards,
+Stephan
