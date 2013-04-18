@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966079Ab3DRJTE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:19:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40363 "EHLO
+	id S965935Ab3DRJTB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:19:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40365 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965227Ab3DRJSk (ORCPT
+	with ESMTP id S965305Ab3DRJSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Apr 2013 05:18:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Seth Forshee <seth.forshee@canonical.com>,
+Cc: Seth Forshee <seth.forshee@canonical.com>, Josh Boyer <jwboyer@redhat.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
         Matt Fleming <matt.fleming@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 72/72] efivars: Fix check for CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE
-Date: Thu, 18 Apr 2013 10:16:57 +0100
-Message-Id: <1366276617-3553-73-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 71/72] efivars: Add module parameter to disable use as a pstore backend
+Date: Thu, 18 Apr 2013 10:16:56 +0100
+Message-Id: <1366276617-3553-72-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -29,33 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Seth Forshee <seth.forshee@canonical.com>
 
-commit ca0ba26fbbd2d81c43085df49ce0abfe34535a90 upstream.
+commit ec0971ba5372a4dfa753f232449d23a8fd98490e upstream.
 
-The 'CONFIG_' prefix is not implicit in IS_ENABLED().
+We know that with some firmware implementations writing too much data to
+UEFI variables can lead to bricking machines. Recent changes attempt to
+address this issue, but for some it may still be prudent to avoid
+writing large amounts of data until the solution has been proven on a
+wide variety of hardware.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Seth Forshee <seth.forshee@canonical.com>
+Crash dumps or other data from pstore can potentially be a large data
+source. Add a pstore_module parameter to efivars to allow disabling its
+use as a backend for pstore. Also add a config option,
+CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE, to allow setting the default
+value of this paramter to true (i.e. disabled by default).
+
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/firmware/efivars.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/firmware/Kconfig   | 9 +++++++++
+ drivers/firmware/efivars.c | 8 +++++++-
+ 2 files changed, 16 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+index 898023d..42c759a 100644
+--- a/drivers/firmware/Kconfig
++++ b/drivers/firmware/Kconfig
+@@ -62,6 +62,15 @@ config EFI_VARS_PSTORE
+ 	  will allow writing console messages, crash dumps, or anything
+ 	  else supported by pstore to EFI variables.
+ 
++config EFI_VARS_PSTORE_DEFAULT_DISABLE
++	bool "Disable using efivars as a pstore backend by default"
++	depends on EFI_VARS_PSTORE
++	default n
++	help
++	  Saying Y here will disable the use of efivars as a storage
++	  backend for pstore by default. This setting can be overridden
++	  using the efivars module's pstore_disable parameter.
++
+ config EFI_PCDP
+ 	bool "Console device selection via EFI PCDP or HCDP table"
+ 	depends on ACPI && EFI && IA64
 diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index af8fec1..303bc8e 100644
+index 40d4e03..af8fec1 100644
 --- a/drivers/firmware/efivars.c
 +++ b/drivers/firmware/efivars.c
-@@ -93,7 +93,7 @@ MODULE_VERSION(EFIVARS_VERSION);
+@@ -92,6 +92,11 @@ MODULE_VERSION(EFIVARS_VERSION);
+ 
  #define DUMP_NAME_LEN 52
  
- static bool efivars_pstore_disable =
--	IS_ENABLED(EFI_VARS_PSTORE_DEFAULT_DISABLE);
-+	IS_ENABLED(CONFIG_EFI_VARS_PSTORE_DEFAULT_DISABLE);
++static bool efivars_pstore_disable =
++	IS_ENABLED(EFI_VARS_PSTORE_DEFAULT_DISABLE);
++
++module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
++
+ /*
+  * The maximum size of VariableName + Data = 1024
+  * Therefore, it's reasonable to save that much
+@@ -1173,7 +1178,8 @@ int register_efivars(struct efivars *efivars,
+ 	if (error)
+ 		unregister_efivars(efivars);
  
- module_param_named(pstore_disable, efivars_pstore_disable, bool, 0644);
+-	efivar_pstore_register(efivars);
++	if (!efivars_pstore_disable)
++		efivar_pstore_register(efivars);
  
+ out:
+ 	kfree(variable_name);
 -- 
 1.8.1.2
 
