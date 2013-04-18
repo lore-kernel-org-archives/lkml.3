@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966804Ab3DRJVB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:21:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40332 "EHLO
+	id S966938Ab3DRJVf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:21:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40318 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759400Ab3DRJSe (ORCPT
+	with ESMTP id S1759331Ab3DRJSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:18:34 -0400
+	Thu, 18 Apr 2013 05:18:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Thomas Hellstrom <thellstrom@vmware.com>, Dave Airlie <airlied@redhat.com>,
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 65/72] kref: Implement kref_get_unless_zero v3
-Date: Thu, 18 Apr 2013 10:16:50 +0100
-Message-Id: <1366276617-3553-66-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 63/72] kobject: fix kset_find_obj() race with concurrent last kobject_put()
+Date: Thu, 18 Apr 2013 10:16:48 +0100
+Message-Id: <1366276617-3553-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -27,61 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Hellstrom <thellstrom@vmware.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 4b20db3de8dab005b07c74161cb041db8c5ff3a7 upstream.
+commit a49b7e82cab0f9b41f483359be83f44fbb6b4979 upstream.
 
-This function is intended to simplify locking around refcounting for
-objects that can be looked up from a lookup structure, and which are
-removed from that lookup structure in the object destructor.
-Operations on such objects require at least a read lock around
-lookup + kref_get, and a write lock around kref_put + remove from lookup
-structure. Furthermore, RCU implementations become extremely tricky.
-With a lookup followed by a kref_get_unless_zero *with return value check*
-locking in the kref_put path can be deferred to the actual removal from
-the lookup structure and RCU lookups become trivial.
+Anatol Pomozov identified a race condition that hits module unloading
+and re-loading.  To quote Anatol:
 
-v2: Formatting fixes.
-v3: Invert the return value.
+ "This is a race codition that exists between kset_find_obj() and
+  kobject_put().  kset_find_obj() might return kobject that has refcount
+  equal to 0 if this kobject is freeing by kobject_put() in other
+  thread.
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-[ luis: adjust context ]
+  Here is timeline for the crash in case if kset_find_obj() searches for
+  an object tht nobody holds and other thread is doing kobject_put() on
+  the same kobject:
+
+    THREAD A (calls kset_find_obj())     THREAD B (calls kobject_put())
+    splin_lock()
+                                         atomic_dec_return(kobj->kref), counter gets zero here
+                                         ... starts kobject cleanup ....
+                                         spin_lock() // WAIT thread A in kobj_kset_leave()
+    iterate over kset->list
+    atomic_inc(kobj->kref) (counter becomes 1)
+    spin_unlock()
+                                         spin_lock() // taken
+                                         // it does not know that thread A increased counter so it
+                                         remove obj from list
+                                         spin_unlock()
+                                         vfree(module) // frees module object with containing kobj
+
+    // kobj points to freed memory area!!
+    kobject_put(kobj) // OOPS!!!!
+
+  The race above happens because module.c tries to use kset_find_obj()
+  when somebody unloads module.  The module.c code was introduced in
+  commit 6494a93d55fa"
+
+Anatol supplied a patch specific for module.c that worked around the
+problem by simply not using kset_find_obj() at all, but rather than make
+a local band-aid, this just fixes kset_find_obj() to be thread-safe
+using the proper model of refusing the get a new reference if the
+refcount has already dropped to zero.
+
+See examples of this proper refcount handling not only in the kref
+documentation, but in various other equivalent uses of this pattern by
+grepping for atomic_inc_not_zero().
+
+[ Side note: the module race does indicate that module loading and
+  unloading is not properly serialized wrt sysfs information using the
+  module mutex.  That may require further thought, but this is the
+  correct fix at the kobject layer regardless. ]
+
+Reported-analyzed-and-tested-by: Anatol Pomozov <anatol.pomozov@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/kref.h | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ lib/kobject.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 9c07dce..fd2a616 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -93,4 +93,25 @@ static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)
- {
- 	return kref_sub(kref, 1, release);
+diff --git a/lib/kobject.c b/lib/kobject.c
+index e07ee1f..a654866 100644
+--- a/lib/kobject.c
++++ b/lib/kobject.c
+@@ -529,6 +529,13 @@ struct kobject *kobject_get(struct kobject *kobj)
+ 	return kobj;
  }
-+
-+/**
-+ * kref_get_unless_zero - Increment refcount for object unless it is zero.
-+ * @kref: object.
-+ *
-+ * Return non-zero if the increment succeeded. Otherwise return 0.
-+ *
-+ * This function is intended to simplify locking around refcounting for
-+ * objects that can be looked up from a lookup structure, and which are
-+ * removed from that lookup structure in the object destructor.
-+ * Operations on such objects require at least a read lock around
-+ * lookup + kref_get, and a write lock around kref_put + remove from lookup
-+ * structure. Furthermore, RCU implementations become extremely tricky.
-+ * With a lookup followed by a kref_get_unless_zero *with return value check*
-+ * locking in the kref_put path can be deferred to the actual removal from
-+ * the lookup structure and RCU lookups become trivial.
-+ */
-+static inline int __must_check kref_get_unless_zero(struct kref *kref)
+ 
++static struct kobject *kobject_get_unless_zero(struct kobject *kobj)
 +{
-+	return atomic_add_unless(&kref->refcount, 1, 0);
++	if (!kref_get_unless_zero(&kobj->kref))
++		kobj = NULL;
++	return kobj;
 +}
- #endif /* _KREF_H_ */
++
+ /*
+  * kobject_cleanup - free kobject resources.
+  * @kobj: object to cleanup
+@@ -751,7 +758,7 @@ struct kobject *kset_find_obj(struct kset *kset, const char *name)
+ 
+ 	list_for_each_entry(k, &kset->list, entry) {
+ 		if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
+-			ret = kobject_get(k);
++			ret = kobject_get_unless_zero(k);
+ 			break;
+ 		}
+ 	}
 -- 
 1.8.1.2
 
