@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968051Ab3DRKS1 (ORCPT <rfc822;w@1wt.eu>);
+	id S1030292Ab3DRKSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 06:18:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52709 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967288Ab3DRKS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Apr 2013 06:18:27 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:57956 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967829Ab3DRKNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 06:13:00 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 15/32] dmaengine: ste_dma40: Separate Logical Global Interrupt Mask (GIM) unmasking
-Date: Thu, 18 Apr 2013 11:11:57 +0100
-Message-Id: <1366279934-30761-16-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+Date: Thu, 18 Apr 2013 12:18:20 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, x86-ml <x86@kernel.org>,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH] x86: Add a Kconfig shortcut for a kvm-bootable kernel
+Message-ID: <20130418101820.GD21719@pd.tnic>
+References: <20130412181956.GA13099@pd.tnic>
+ <516A7760.7030907@kernel.org>
+ <20130414110320.GB20547@pd.tnic>
+ <20130416161852.GH5332@pd.tnic>
+ <20130417232507.GC31059@amt.cnet>
+ <20130418094629.GC21719@pd.tnic>
+ <CAMuHMdVmeMfXKuO9FjHWjS80vUWqc-y0NA8YJruwtkz7QeQosA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAMuHMdVmeMfXKuO9FjHWjS80vUWqc-y0NA8YJruwtkz7QeQosA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During the initial setup of a logical channel, it is necessary to unmask
-the GIM in order to receive generated terminal count and error interrupts.
-We're separating out this required code so it will be possible to move
-the remaining code in d40_phy_cfg(), which is mostly runtime configuration
-into the runtime_config() routine.
+On Thu, Apr 18, 2013 at 11:55:33AM +0200, Geert Uytterhoeven wrote:
+> On Thu, Apr 18, 2013 at 11:46 AM, Borislav Petkov <bp@alien8.de> wrote:
+> > ok, maybe I wasn't clear enough. My proposal was to actually add all (or
+> > maybe not *all* of them, but most) those selects above to the KVM_GUEST
+> > config option. Because, you very probably want to select all that stuff
+> > above anyway if you want to build a kvm guest kernel, no?
+> >
+> > IOW, something which says "Enable KVM guest support" should enable all
+> > the stuff needed for that.
+> 
+> "needed" yes,
+> "probably" no, as there's no way to disable them if they're selected
+> unconditionally.
+> 
+> Perhaps you can make the "probably" selects depend on !EXPERT to fix this?
 
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>
-Cc: Per Forlin <per.forlin@stericsson.com>
-Cc: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/dma/ste_dma40.c    |    3 +++
- drivers/dma/ste_dma40_ll.c |   11 ++++++-----
- drivers/dma/ste_dma40_ll.h |    2 ++
- 3 files changed, 11 insertions(+), 5 deletions(-)
+Nah, I don't want to really involve EXPERT here. You could point,
+though, which are the ones one probably won't select even though it
+would be good to have them on and I could stick them in the second,
+kernel testing option.
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index ec0d6ab..178a03c 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -2456,6 +2456,9 @@ static int d40_alloc_chan_resources(struct dma_chan *chan)
- 				D40_LCPA_CHAN_SIZE + D40_LCPA_CHAN_DST_DELTA;
- 	}
- 
-+	if (chan_is_logical(d40c))
-+		d40_log_gim_unmask(&d40c->src_def_cfg, &d40c->dst_def_cfg);
-+
- 	dev_dbg(chan2dev(d40c), "allocated %s channel (phy %d%s)\n",
- 		 chan_is_logical(d40c) ? "logical" : "physical",
- 		 d40c->phy_chan->num,
-diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
-index 5eb6c10..b72d3e2 100644
---- a/drivers/dma/ste_dma40_ll.c
-+++ b/drivers/dma/ste_dma40_ll.c
-@@ -50,6 +50,12 @@ void d40_log_cfg(struct stedma40_chan_cfg *cfg,
- 
- }
- 
-+void d40_log_gim_unmask(u32 *src_cfg, u32 *dst_cfg) {
-+
-+	*src_cfg |= 1 << D40_SREG_CFG_LOG_GIM_POS;
-+	*dst_cfg |= 1 << D40_SREG_CFG_LOG_GIM_POS;
-+}
-+
- /* Sets up SRC and DST CFG register for both logical and physical channels */
- void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
- 		 u32 *src_cfg, u32 *dst_cfg, bool is_log)
-@@ -107,11 +113,6 @@ void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
- 			src |= 1 << D40_SREG_CFG_PRI_POS;
- 			dst |= 1 << D40_SREG_CFG_PRI_POS;
- 		}
--
--	} else {
--		/* Logical channel */
--		dst |= 1 << D40_SREG_CFG_LOG_GIM_POS;
--		src |= 1 << D40_SREG_CFG_LOG_GIM_POS;
- 	}
- 
- 	if (cfg->src_info.big_endian)
-diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
-index fdde8ef..8aad679 100644
---- a/drivers/dma/ste_dma40_ll.h
-+++ b/drivers/dma/ste_dma40_ll.h
-@@ -430,6 +430,8 @@ enum d40_lli_flags {
- 	LLI_LAST_LINK	= 1 << 3,
- };
- 
-+void d40_log_gim_unmask(u32 *src_cfg, u32 *dst_cfg);
-+
- void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
- 		 u32 *src_cfg,
- 		 u32 *dst_cfg,
+IOW, The way it currently shapes up is this:
+
+* CONFIG_KVM_GUEST - maybe not change it at all, depending on what kvm
+people want in the end.
+
+* CONFIG_KVM_KERNEL_TESTING - all the things you would - probably or
+really - need selected so that you don't go and hunt Kconfig options
+just so the damn guest kernel boots. And not only that but also
+convenience stuff like debugging options and such so that you have the
+chance of getting some more info when the guest dies.
+
+That second option is to be enabled when building the guest kernel only,
+of course.
+
+Better?
+
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
