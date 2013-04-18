@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936704Ab3DRWdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 18:33:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:54014 "EHLO mga14.intel.com"
+	id S967266Ab3DRWgQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 18:36:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:35606 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936545Ab3DRWdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 18:33:49 -0400
+	id S936545Ab3DRWgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 18:36:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,504,1363158000"; 
-   d="scan'208";a="229028501"
-Date: Fri, 19 Apr 2013 00:33:44 +0200
+   d="scan'208";a="297182512"
+Date: Fri, 19 Apr 2013 00:36:09 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v3] MFD: ab8500: pass AB8500 IRQ to debugfs code by
- resource
-Message-ID: <20130418223344.GB8798@zurbaran>
-References: <1366012021-9039-1-git-send-email-linus.walleij@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>
+Subject: Re: [PATCH 1/2] mfd: wm8994: Add device ID data to WM8994 OF device
+ IDs
+Message-ID: <20130418223609.GC8798@zurbaran>
+References: <1365700312-7452-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366012021-9039-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1365700312-7452-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Mark,
 
-On Mon, Apr 15, 2013 at 09:47:01AM +0200, Linus Walleij wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
+On Thu, Apr 11, 2013 at 06:11:50PM +0100, Mark Brown wrote:
+> We can actually read this back from the device but we use this when
+> registered using standard I2C board data registration so make sure
+> it's there for OF too.
 > 
-> The AB8500 debug code which was merged in parallel with the
-> multiplatform work incidentally introduced a new instance using
-> the <mach/irqs.h> header which is now deleted, causing this
-> build regression:
-> 
-> drivers/mfd/ab8500-debugfs.c:95:23:
-> fatal error: mach/irqs.h: No such file or directory
-> compilation terminated.
-> make[4]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
-> 
-> The code most certainly never worked with device tree either
-> since that does not rely on this kind of hard-coded interrupt
-> numbers.
-> 
-> Fix the problem at the root by passing it as a named resource
-> from the ab8500-core driver. Use an untyped resource to
-> stop the MFD core from remapping this IRQ relative to the
-> AB8500 irqdomain.
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 > ---
-> ChangeLov v2->v3:
-> - Fix typos.
-> ChangeLog v1->v2:
-> - Pass an untyped resource to avoid problems due to IRQ
->   remapping.
-> 
-> Sam this would have to go into the v3.10-targetted stuff...
-> Either immediately before you send it upstream or as a fixup.
-I usually try to send one single pull request during the merge window, so I'll
-add this one to my 3.10 MFD fixup pull request.
+>  drivers/mfd/wm8994-core.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+Both patches applied, thanks.
 
 Cheers,
 Samuel.
