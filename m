@@ -1,74 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936283Ab3DRQgD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:36:03 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:47895 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932233Ab3DRQgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:36:00 -0400
-Date: Thu, 18 Apr 2013 12:35:57 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>
-Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
-In-Reply-To: <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
-Message-ID: <alpine.LFD.2.03.1304181233580.17375@syhkavp.arg>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S967698Ab3DRQgi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:36:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:7402 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966792Ab3DRQgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 12:36:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,502,1363158000"; 
+   d="scan'208";a="321243154"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <51701D5E.80802@sr71.net>
+References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1365163198-29726-32-git-send-email-kirill.shutemov@linux.intel.com>
+ <51631206.3060605@sr71.net>
+ <20130417143842.1A76CE0085@blue.fi.intel.com>
+ <516F1D3C.1060804@sr71.net>
+ <20130418160920.4A00DE0085@blue.fi.intel.com>
+ <51701D5E.80802@sr71.net>
+Subject: Re: [PATCHv3, RFC 31/34] thp: initial implementation of
+ do_huge_linear_fault()
+Content-Transfer-Encoding: 7bit
+Message-Id: <20130418163836.B73B2E0085@blue.fi.intel.com>
+Date: Thu, 18 Apr 2013 19:38:36 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Apr 2013, Stefano Stabellini wrote:
-
-> On Thu, 18 Apr 2013, Russell King - ARM Linux wrote:
-> > On Fri, Apr 05, 2013 at 02:11:32PM +0100, Stefano Stabellini wrote:
-> > > +	psci_init();
-> > >  #ifdef CONFIG_SMP
-> > >  	if (is_smp()) {
-> > > -		smp_set_ops(mdesc->smp);
-> > > +		if (mdesc->smp)
-> > > +			smp_set_ops(mdesc->smp);
-> > > +		else if (psci_smp_available())
-> > > +			smp_set_ops(&psci_smp_ops);
+Dave Hansen wrote:
+> On 04/18/2013 09:09 AM, Kirill A. Shutemov wrote:
+> > Dave Hansen wrote:
+> >> On 04/17/2013 07:38 AM, Kirill A. Shutemov wrote:
+> >> Are you still sure you can't do _any_ better than a verbatim copy of 129
+> >> lines?
 > > 
-> > So, I have a vague recollection that the ordering of the above got discussed
-> > but I can't find it amongst the 21k of messages so far this year.
-> > 
-> > The above looks weird to me.  Surely this should be:
-> > 
-> > 		if (psci_smp_available())
-> > 			smp_set_ops(&psci_smp_ops);
-> > 		else if (mdesc->smp)
-> > 			smp_set_ops(mdesc->ops);
-> > 
-> > This means that if PSCI is available, and provides a set of operations,
-> > we override whatever the platform has statically provided.
-> > 
-> > Remember, we're trying to move away from using "mdesc"s for platform
-> > stuff, relying on things like DT and such like.  We really should not
-> > be going for mdesc-overriding-newstuff but newstuff-overriding-mdesc.
+> > It seems I was too lazy. Shame on me. :(
+> > Here's consolidated version. Only build tested. Does it look better?
 > 
-> That's correct, in fact if you look at the next patch you'll see that it
-> changes the order.
+> Yeah, it's definitely a step in the right direction.  There rae
+> definitely some bugs in there like:
 > 
-> I introduced the mechanism first and changed the priority later - it
-> should help bisectability.
-> I can fold the two patches into one if you prefer.
+> +	unsigned long haddr = address & PAGE_MASK;
 
-Please let's keep the order as we discussed.  Otherwise this is just too 
-confusing (Russell's comment is a good example of that).
+It's not bug. It's bad name for the variable.
+See, first 'if (try_huge_pages)'. I update it there for huge page case.
 
+addr_aligned better?
 
-Nicolas
+> 
+> I do think some of this refactoring stuff
+> 
+> > -				unlock_page(page);
+> > -				vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
+> > -				tmp = vma->vm_ops->page_mkwrite(vma, &vmf);
+> > -				if (unlikely(tmp &
+> > -					  (VM_FAULT_ERROR | VM_FAULT_NOPAGE))) {
+> > -					ret = tmp;
+> > +			unlock_page(page);
+> > +			vmf.flags = FAULT_FLAG_WRITE | FAULT_FLAG_MKWRITE;
+> > +			tmp = vma->vm_ops->page_mkwrite(vma, &vmf);
+> > +			if (unlikely(tmp &
+> > +					(VM_FAULT_ERROR | VM_FAULT_NOPAGE))) {
+> > +				ret = tmp;
+> > +				goto unwritable_page;
+> > +			}
+> 
+> could probably be a separate patch and would make what's going on more
+> clear, but it's passable the way it is.  When it is done this way it's
+> hard sometimes reading the diff to realize if you are adding code or
+> just moving it around.
+
+Will do.
+
+> 
+> This stuff:
+> 
+> >  		if (set_page_dirty(dirty_page))
+> > -			dirtied = 1;
+> > +			dirtied = true;
+> 
+> needs to go in another patch for sure.
+
+Ditto.
+
+> One thing I *REALLY* like about doing patches this way is that things
+> like this start to pop out:
+> 
+> > -	ret = vma->vm_ops->fault(vma, &vmf);
+> > +	if (try_huge_pages) {
+> > +		pgtable = pte_alloc_one(mm, haddr);
+> > +		if (unlikely(!pgtable)) {
+> > +			ret = VM_FAULT_OOM;
+> > +			goto uncharge_out;
+> > +		}
+> > +		ret = vma->vm_ops->huge_fault(vma, &vmf);
+> > +	} else
+> > +		ret = vma->vm_ops->fault(vma, &vmf);
+> 
+> The ->fault is (or can be) essentially per filesystem, and we're going
+> to be adding support per-filesystem.  any reason we can't just handle
+> this inside the ->fault code and avoid adding huge_fault altogether?
+
+will check. it's on my todo list already.
+
+-- 
+ Kirill A. Shutemov
