@@ -1,62 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936464Ab3DRTTI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 15:19:08 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:3943 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823Ab3DRTTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 15:19:06 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <51704721.2020001@broadcom.com>
-Date: Thu, 18 Apr 2013 21:18:57 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329
- Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "Marcel Holtmann" <marcel@holtmann.org>
-cc: "Bing Zhao" <bzhao@marvell.com>,
-        "linux-netdev@vger.kernel.org" <linux-netdev@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Paul Stewart" <pstew@chromium.org>
-Subject: Re: [PATCH] net-sysfs: Add entry for nl80211 interface type
-References: <1366236369-543-1-git-send-email-bzhao@marvell.com>
- <0156C538-4175-47E9-B667-C2127CBEF3EB@holtmann.org>
- <477F20668A386D41ADCC57781B1F70430D9E05713A@SC-VEXCH1.marvell.com>
- <CD07F4FD-7136-44EA-A39C-5AB660726BDE@holtmann.org>
-In-Reply-To: <CD07F4FD-7136-44EA-A39C-5AB660726BDE@holtmann.org>
-X-WSS-ID: 7D6E9A603944365876-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+	id S936527Ab3DRTaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 15:30:21 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:39102 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab3DRTaT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 15:30:19 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arm@kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: [PATCH 1/2] clocksource: arm_arch_timer: unify sched_clock init
+Date: Thu, 18 Apr 2013 14:30:09 -0500
+Message-Id: <1366313410-16692-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 09:10 PM, Marcel Holtmann wrote:
-> Hi Bing,
->
->>>> Add a "wireless/nl80211_iftype" entry in the net device sysfs
->>>> file structure to indicate the mode of the wireless device so
->>>> it can be discovered easily from userspace.
->>>
->>> I do question a little bit the usefulness for this one.
->>> It would only work on netdev and on wdev devices.
->>
->> It's true. That's why the new sysfs entry is added in the 'wireless' placeholder.
->>
->> /sys/class/net/ethX/wireless/
->>
->> For non-wireless dev, this won't apply.
->
-> I have to correct myself. I meant it does NOT work for wdev. Please just go with nl80211 for this kind of information. It is the right way to handle it. Not some sysfs file.
->
+From: Rob Herring <rob.herring@calxeda.com>
 
-I wanted to correct you on P2P but that would be diverging from the real 
-message. Totally agreeing. Why add another user-space API when the 
-nl80211 API can provide the information.
+In preparation to fix initial time and suspend/resume handling, unify
+the sched_clock init and implementation for arch timer on arm and arm64.
 
-Gr. AvS
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/kernel/arch_timer.c         |   12 ------------
+ arch/arm64/kernel/time.c             |   10 ----------
+ drivers/clocksource/arm_arch_timer.c |   14 ++++++++++++++
+ include/clocksource/arm_arch_timer.h |    1 +
+ 4 files changed, 15 insertions(+), 22 deletions(-)
 
+diff --git a/arch/arm/kernel/arch_timer.c b/arch/arm/kernel/arch_timer.c
+index 59dcdce..df6825e 100644
+--- a/arch/arm/kernel/arch_timer.c
++++ b/arch/arm/kernel/arch_timer.c
+@@ -22,13 +22,6 @@ static unsigned long arch_timer_read_counter_long(void)
+ 	return arch_timer_read_counter();
+ }
+ 
+-static u32 sched_clock_mult __read_mostly;
+-
+-static unsigned long long notrace arch_timer_sched_clock(void)
+-{
+-	return arch_timer_read_counter() * sched_clock_mult;
+-}
+-
+ static struct delay_timer arch_delay_timer;
+ 
+ static void __init arch_timer_delay_timer_register(void)
+@@ -48,11 +41,6 @@ int __init arch_timer_arch_init(void)
+ 
+ 	arch_timer_delay_timer_register();
+ 
+-	/* Cache the sched_clock multiplier to save a divide in the hot path. */
+-	sched_clock_mult = NSEC_PER_SEC / arch_timer_rate;
+ 	sched_clock_func = arch_timer_sched_clock;
+-	pr_info("sched_clock: ARM arch timer >56 bits at %ukHz, resolution %uns\n",
+-		arch_timer_rate / 1000, sched_clock_mult);
+-
+ 	return 0;
+ }
+diff --git a/arch/arm64/kernel/time.c b/arch/arm64/kernel/time.c
+index a551f88..3a369aa 100644
+--- a/arch/arm64/kernel/time.c
++++ b/arch/arm64/kernel/time.c
+@@ -61,13 +61,6 @@ unsigned long profile_pc(struct pt_regs *regs)
+ EXPORT_SYMBOL(profile_pc);
+ #endif
+ 
+-static u64 sched_clock_mult __read_mostly;
+-
+-unsigned long long notrace sched_clock(void)
+-{
+-	return arch_timer_read_counter() * sched_clock_mult;
+-}
+-
+ int read_current_timer(unsigned long *timer_value)
+ {
+ 	*timer_value = arch_timer_read_counter();
+@@ -84,9 +77,6 @@ void __init time_init(void)
+ 	if (!arch_timer_rate)
+ 		panic("Unable to initialise architected timer.\n");
+ 
+-	/* Cache the sched_clock multiplier to save a divide in the hot path. */
+-	sched_clock_mult = NSEC_PER_SEC / arch_timer_rate;
+-
+ 	/* Calibrate the delay loop directly */
+ 	lpj_fine = arch_timer_rate / HZ;
+ }
+diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+index 122ff05..17ed8e4 100644
+--- a/drivers/clocksource/arm_arch_timer.c
++++ b/drivers/clocksource/arm_arch_timer.c
+@@ -266,6 +266,15 @@ static struct notifier_block arch_timer_cpu_nb __cpuinitdata = {
+ 	.notifier_call = arch_timer_cpu_notify,
+ };
+ 
++static u64 sched_clock_mult __read_mostly;
++
++unsigned long long notrace arch_timer_sched_clock(void)
++{
++	return arch_timer_read_counter() * sched_clock_mult;
++}
++unsigned long long sched_clock(void) \
++	__attribute__((weak, alias("arch_timer_sched_clock")));
++
+ static int __init arch_timer_register(void)
+ {
+ 	int err;
+@@ -318,6 +327,11 @@ static int __init arch_timer_register(void)
+ 	/* Immediately configure the timer on the boot CPU */
+ 	arch_timer_setup(this_cpu_ptr(arch_timer_evt));
+ 
++	/* Cache the sched_clock multiplier to save a divide in the hot path. */
++	sched_clock_mult = NSEC_PER_SEC / arch_timer_rate;
++	pr_info("sched_clock: ARM arch timer >56 bits at %ukHz, resolution %lluns\n",
++		arch_timer_rate / 1000, sched_clock_mult);
++
+ 	return 0;
+ 
+ out_free_irq:
+diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
+index e6c9c4c..ded7c77 100644
+--- a/include/clocksource/arm_arch_timer.h
++++ b/include/clocksource/arm_arch_timer.h
+@@ -34,6 +34,7 @@
+ extern u32 arch_timer_get_rate(void);
+ extern u64 (*arch_timer_read_counter)(void);
+ extern struct timecounter *arch_timer_get_timecounter(void);
++extern unsigned long long notrace arch_timer_sched_clock(void);
+ 
+ #else
+ 
+-- 
+1.7.10.4
 
