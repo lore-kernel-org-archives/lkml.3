@@ -1,270 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966622Ab3DRLAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 07:00:37 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:36741 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965199Ab3DRLAf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 07:00:35 -0400
-Message-ID: <516FD24A.3070502@console-pimps.org>
-Date: Thu, 18 Apr 2013 12:00:26 +0100
-From: Matt Fleming <matt@console-pimps.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S966984Ab3DRLAr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 07:00:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38151 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965199Ab3DRLAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 07:00:44 -0400
+Date: Thu, 18 Apr 2013 14:00:36 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: mtosatti@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v3 08/15] KVM: MMU: allow unmap invalid rmap out of
+ mmu-lock
+Message-ID: <20130418110036.GS8997@redhat.com>
+References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1366093973-2617-9-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
-CC: matthew.garrett@nebula.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Darren Hart <darren.hart@intel.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
-References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <516EAC4A.6040202@console-pimps.org> <516F1B90.9040508@nexus-software.ie>
-In-Reply-To: <516F1B90.9040508@nexus-software.ie>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366093973-2617-9-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/04/13 23:00, Bryan O'Donoghue wrote:
-> In my mind the only memory that is relevant to efi_enter_virtual_mode is
-> memory that the BIOS has marked as EFI_RUNTIME_SERVICE
+On Tue, Apr 16, 2013 at 02:32:46PM +0800, Xiao Guangrong wrote:
+> pte_list_clear_concurrently allows us to reset pte-desc entry
+> out of mmu-lock. We can reset spte out of mmu-lock if we can protect the
+> lifecycle of sp, we use this way to achieve the goal:
 > 
-> md->attribute & 0x80000000_00000000
+> unmap_memslot_rmap_nolock():
+> for-each-rmap-in-slot:
+>       preempt_disable
+>       kvm->arch.being_unmapped_rmap = rmapp
+>       clear spte and reset rmap entry
+>       kvm->arch.being_unmapped_rmap = NULL
+>       preempt_enable
 > 
-> I couldn't quite understand why the code in
+> Other patch like zap-sp and mmu-notify which are protected
+> by mmu-lock:
+>       clear spte and reset rmap entry
+> retry:
+>       if (kvm->arch.being_unmapped_rmap == rmap)
+> 		goto retry
+> (the wait is very rare and clear one rmap is very fast, it
+> is not bad even if wait is needed)
 > 
-> arch/x86/platform/efi/efi.c:enter_virtual_mode() looks like this
-> 
-> for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
->                 md = p;
->                 if (!(md->attribute & EFI_MEMORY_RUNTIME) &&
->                     md->type != EFI_BOOT_SERVICES_CODE &&
->                     md->type != EFI_BOOT_SERVICES_DATA)
->             continue;
-> 
-> While the code in
-> 
-> arch/ia64/kernel/efi.c:enter_virtual_mode
-> 
-> for (p = efi_map_start; p < efi_map_end; p += efi_desc_size) {
->         md = p;
->         if (md->attribute & EFI_MEMORY_RUNTIME) {
-> 
-> The ia64 version is consistent with the standard - but obviously isn't
-> accounting for the work-around implemented to retrieve the BGRT on ia32.
-> 
-> Looking at the commit message associated with
-> arch/x86/platform/efi/efi-bgrt.c
-> 
-> It's pretty obvious the mapping of boot code/data was done to facilitate
-> BGRT.
-
-No, that's incorrect. The patch that introduced the mapping of
-EFI_BOOT_SERVICES_{CODE,DATA} was committed before support for bgrt
-existed. git blame is a good tool to use when doing one of these
-historical digs, and in this case it shows that the above lines from
-efi_enter_virtual_mode() were introduced in the following commit,
-
-commit 916f676f8dc016103f983c7ec54c18ecdbb6e349
-Author: Matthew Garrett <mjg@redhat.com>
-Date:   Wed May 25 09:53:13 2011 -0400
-
-    x86, efi: Retain boot service code until after switching to virtual mode
-    
-    UEFI stands for "Unified Extensible Firmware Interface", where "Firmware"
-    is an ancient African word meaning "Why do something right when you can
-    do it so wrong that children will weep and brave adults will cower before
-    you", and "UEI" is Celtic for "We missed DOS so we burned it into your
-    ROMs". The UEFI specification provides for runtime services (ie, another
-    way for the operating system to be forced to depend on the firmware) and
-    we rely on these for certain trivial tasks such as setting up the
-    bootloader. But some hardware fails to work if we attempt to use these
-    runtime services from physical mode, and so we have to switch into virtual
-    mode. So far so dreadful.
-    
-    The specification makes it clear that the operating system is free to do
-    whatever it wants with boot services code after ExitBootServices() has been
-    called. SetVirtualAddressMap() can't be called until ExitBootServices() has
-    been. So, obviously, a whole bunch of EFI implementations call into boot
-    services code when we do that. Since we've been charmingly naive and
-    trusted that the specification may be somehow relevant to the real world,
-    we've already stuffed a picture of a penguin or something in that address
-    space. And just to make things more entertaining, we've also marked it
-    non-executable.
-    
-    This patch allocates the boot services regions during EFI init and makes
-    sure that they're executable. Then, after SetVirtualAddressMap(), it
-    discards them and everyone lives happily ever after. Except for the ones
-    who have to work on EFI, who live sad lives haunted by the knowledge that
-    someone's eventually going to write yet another firmware specification.
-    
-    [ hpa: adding this to urgent with a stable tag since it fixes currently-broken
-      hardware.  However, I do not know what the dependencies are and so I do
-      not know which -stable versions this may be a candidate for. ]
-    
-    Signed-off-by: Matthew Garrett <mjg@redhat.com>
-    Link: http://lkml.kernel.org/r/1306331593-28715-1-git-send-email-mjg@redhat.com
-    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-    Cc: Tony Luck <tony.luck@intel.com>
-    Cc: <stable@kernel.org>
-
-Yes the bgrt code accesses the Boot Service mappings, but that isn't the
-only reason we want to map those regions.
-
-> That's one solution - you'd need to make the i386::efi_ioremap() aware
-> of the BGRT work-around.
-> 
-> Presumably this work-around is also required on ia64 too.
-
-No, we've never seen an ia64 firmware implementation with the "access
-EFI Boot Services Code/Data after ExitBootServices() bug", and it
-doesn't suffer from the same virtual address space limitations that i386
-does.
+I do not understand what how this achieve the goal. Suppose that rmap
+== X and kvm->arch.being_unmapped_rmap == NULL so "goto retry" is skipped,
+but moment later unmap_memslot_rmap_nolock() does
+vm->arch.being_unmapped_rmap = X.
  
-> No, no - we *don't* have a BGRT object at all.
+> Then, we can sure the spte is always available when we do
+> unmap_memslot_rmap_nolock
 > 
-> We have a completely clean memory map - but the BGRT code is causing the
-> is_ram() failure.
- 
-You assume that mapping of the Boot Services regions is done purely for
-the benefit of pulling out the bgrt image - it's not, see the above
-commit log - and I assumed that you had an ACPI bgrt pointer in your
-memory map, but you don't.
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    2 +
+>  arch/x86/kvm/mmu.c              |  114 ++++++++++++++++++++++++++++++++++++---
+>  arch/x86/kvm/mmu.h              |    2 +-
+>  3 files changed, 110 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index 5fd6ed1..1ad9a34 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -536,6 +536,8 @@ struct kvm_arch {
+>  	 * Hash table of struct kvm_mmu_page.
+>  	 */
+>  	struct list_head active_mmu_pages;
+> +	unsigned long *being_unmapped_rmap;
+> +
+>  	struct list_head assigned_dev_head;
+>  	struct iommu_domain *iommu_domain;
+>  	int iommu_flags;
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 2a7a5d0..e6414d2 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1104,10 +1104,10 @@ static int slot_rmap_add(struct kvm_memory_slot *slot,
+>  	return slot->arch.ops->rmap_add(vcpu, spte, rmapp);
+>  }
+>  
+> -static void slot_rmap_remove(struct kvm_memory_slot *slot,
+> +static void slot_rmap_remove(struct kvm_memory_slot *slot, struct kvm *kvm,
+>  			     unsigned long *rmapp, u64 *spte)
+>  {
+> -	slot->arch.ops->rmap_remove(spte, rmapp);
+> +	slot->arch.ops->rmap_remove(kvm, spte, rmapp);
+>  }
+>  
+>  static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
+> @@ -1132,7 +1132,7 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
+>  	sp = page_header(__pa(spte));
+>  	gfn = kvm_mmu_page_get_gfn(sp, spte - sp->spt);
+>  	rmapp = gfn_to_rmap(kvm, &slot, gfn, sp->role.level);
+> -	slot_rmap_remove(slot, rmapp, spte);
+> +	slot_rmap_remove(slot, kvm, rmapp, spte);
+>  }
+>  
+>  /*
+> @@ -1589,9 +1589,14 @@ int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
+>  	return kvm_handle_hva(kvm, hva, 0, slot_rmap_test_age);
+>  }
+>  
+> +static void rmap_remove_spte(struct kvm *kvm, u64 *spte, unsigned long *rmapp)
+> +{
+> +	pte_list_remove(spte, rmapp);
+> +}
+> +
+>  static struct rmap_operations normal_rmap_ops = {
+>  	.rmap_add = pte_list_add,
+> -	.rmap_remove = pte_list_remove,
+> +	.rmap_remove = rmap_remove_spte,
+>  
+>  	.rmap_write_protect = __rmap_write_protect,
+>  
+> @@ -1613,9 +1618,27 @@ static int invalid_rmap_add(struct kvm_vcpu *vcpu, u64 *spte,
+>  	return 0;
+>  }
+>  
+> -static void invalid_rmap_remove(u64 *spte, unsigned long *rmapp)
+> +static void sync_being_unmapped_rmap(struct kvm *kvm, unsigned long *rmapp)
+> +{
+> +	/*
+> +	 * Ensure all the sptes on the rmap have been zapped and
+> +	 * the rmap's entries have been reset so that
+> +	 * unmap_invalid_rmap_nolock can not get any spte from the
+> +	 * rmap after calling sync_being_unmapped_rmap().
+> +	 */
+> +	smp_mb();
+> +retry:
+> +	if (unlikely(ACCESS_ONCE(kvm->arch.being_unmapped_rmap) == rmapp)) {
+> +		cpu_relax();
+> +		goto retry;
+> +	}
+> +}
+> +
+> +static void
+> +invalid_rmap_remove(struct kvm *kvm, u64 *spte, unsigned long *rmapp)
+>  {
+>  	pte_list_clear_concurrently(spte, rmapp);
+> +	sync_being_unmapped_rmap(kvm, rmapp);
+>  }
+>  
+>  static bool invalid_rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+> @@ -1635,7 +1658,11 @@ static int __kvm_unmap_invalid_rmapp(unsigned long *rmapp)
+>  		if (sptep == PTE_LIST_SPTE_SKIP)
+>  			continue;
+>  
+> -		/* Do not call .rmap_remove(). */
+> +		/*
+> +		 * Do not call .rmap_remove() since we do not want to wait
+> +		 * on sync_being_unmapped_rmap() when all sptes should be
+> +		 * removed from the rmap.
+> +		 */
+>  		if (mmu_spte_clear_track_bits(sptep))
+>  			pte_list_clear_concurrently(sptep, rmapp);
+>  	}
+> @@ -1645,7 +1672,10 @@ static int __kvm_unmap_invalid_rmapp(unsigned long *rmapp)
+>  
+>  static int kvm_unmap_invalid_rmapp(struct kvm *kvm, unsigned long *rmapp)
+>  {
+> -	return __kvm_unmap_invalid_rmapp(rmapp);
+> +	int ret = __kvm_unmap_invalid_rmapp(rmapp);
+> +
+> +	sync_being_unmapped_rmap(kvm, rmapp);
+> +	return ret;
+>  }
+>  
+>  static int invalid_rmap_set_pte(struct kvm *kvm, unsigned long *rmapp,
+> @@ -1686,6 +1716,76 @@ static struct rmap_operations invalid_rmap_ops = {
+>  	.rmap_unmap = kvm_unmap_invalid_rmapp
+>  };
+>  
+> +typedef void (*handle_rmap_fun)(unsigned long *rmapp, void *data);
+> +static void walk_memslot_rmap_nolock(struct kvm_memory_slot *slot,
+> +				     handle_rmap_fun fun, void *data)
+> +{
+> +	int level;
+> +
+> +	for (level = PT_PAGE_TABLE_LEVEL;
+> +	      level < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++level) {
+> +		unsigned long idx, *rmapp;
+> +
+> +		rmapp = slot->arch.rmap[level - PT_PAGE_TABLE_LEVEL];
+> +		idx = gfn_to_index(slot->base_gfn + slot->npages - 1,
+> +				   slot->base_gfn, level) + 1;
+> +		/*
+> +		 * Walk ramp from the high index to low index to reduce
+> +		 * possible wait in sync_being_unmapped_rmap().
+> +		 */
+> +		while (idx--)
+> +			fun(rmapp + idx, data);
+> +	}
+> +}
+> +
+> +static void unmap_rmap_no_lock_begin(struct kvm *kvm, unsigned long *rmapp)
+> +{
+> +	preempt_disable();
+> +	kvm->arch.being_unmapped_rmap = rmapp;
+> +
+> +	/*
+> +	 * Set being_unmapped_rmap should be before read/write any
+> +	 * sptes on the rmaps.
+> +	 * See the comment in sync_being_unmapped_rmap().
+> +	 */
+> +	smp_mb();
+> +}
+> +
+> +static void unmap_rmap_no_lock_end(struct kvm *kvm)
+> +{
+> +	/*
+> +	 * Ensure clearing spte and resetting rmap's entries has
+> +	 * been finished.
+> +	 * See the comment in sync_being_unmapped_rmap().
+> +	 */
+> +	smp_mb();
+> +	kvm->arch.being_unmapped_rmap = NULL;
+> +	preempt_enable();
+> +}
+> +
+> +static void unmap_invalid_rmap_nolock(unsigned long *rmapp, void *data)
+> +{
+> +	struct kvm *kvm = (struct kvm *)data;
+> +
+> +	if (!ACCESS_ONCE(*rmapp))
+> +		return;
+> +
+> +	unmap_rmap_no_lock_begin(kvm, rmapp);
+> +	__kvm_unmap_invalid_rmapp(rmapp);
+> +	unmap_rmap_no_lock_end(kvm);
+> +}
+> +
+> +static void
+> +unmap_memslot_rmap_nolock(struct kvm *kvm, struct kvm_memory_slot *slot)
+> +{
+> +	/* Only invalid rmaps can be unmapped out of mmu-lock. */
+> +	WARN_ON(slot->arch.ops != &invalid_rmap_ops);
+> +	/* Use slots_lock to protect kvm->arch.being_unmapped_rmap. */
+> +	WARN_ON(!mutex_is_locked(&kvm->slots_lock));
+> +
+> +	walk_memslot_rmap_nolock(slot, unmap_invalid_rmap_nolock, kvm);
+> +}
+> +
+>  #ifdef MMU_DEBUG
+>  static int is_empty_shadow_page(u64 *spt)
+>  {
+> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
+> index bb2b22e..d6aa31a 100644
+> --- a/arch/x86/kvm/mmu.h
+> +++ b/arch/x86/kvm/mmu.h
+> @@ -117,7 +117,7 @@ static inline bool permission_fault(struct kvm_mmu *mmu, unsigned pte_access,
+>  struct rmap_operations {
+>  	int (*rmap_add)(struct kvm_vcpu *vcpu, u64 *spte,
+>  			unsigned long *rmap);
+> -	void (*rmap_remove)(u64 *spte, unsigned long *rmap);
+> +	void (*rmap_remove)(struct kvm *kvm, u64 *spte, unsigned long *rmap);
+>  
+>  	bool (*rmap_write_protect)(struct kvm *kvm, unsigned long *rmap,
+>  				   bool pt_protect);
+> -- 
+> 1.7.7.6
 
-Darren, Josh, have you ever seen an i386 machine with a bgrt pointer? If
-not, and given that we've never seen an i386 firmware that requires the
-above workaround from Matthew, combined with the fact that there are so
-few i386 implementations out there, I'm inclined to apply the patch
-below, because anything else is a lot more work. We can address this
-properly if we ever start seeing i386 machines with bgrt pointers that
-reference highmem.
-
----
-
->From 37ba0d4f43e0f8ec3e3342bc1331e36125495d3e Mon Sep 17 00:00:00 2001
-From: Matt Fleming <matt.fleming@intel.com>
-Date: Thu, 18 Apr 2013 09:57:55 +0100
-Subject: [PATCH] x86, efi: Refuse to ioremap highmem on i386
-
-Bryan reports running into the following warning on i386,
-
-  WARNING: at arch/x86/mm/ioremap.c:102 __ioremap_caller+0x3d3/0x440()
-  Modules linked in:
-  Pid: 0, comm: swapper Not tainted 3.9.0-rc7+ #95
-  Call Trace:
-   [<c102b6af>] warn_slowpath_common+0x5f/0x80
-   [<c1023fb3>] ? __ioremap_caller+0x3d3/0x440
-   [<c1023fb3>] ? __ioremap_caller+0x3d3/0x440
-   [<c102b6ed>] warn_slowpath_null+0x1d/0x20
-   [<c1023fb3>] __ioremap_caller+0x3d3/0x440
-   [<c106007b>] ? get_usage_chars+0xfb/0x110
-   [<c102d937>] ? vprintk_emit+0x147/0x480
-   [<c1418593>] ? efi_enter_virtual_mode+0x1e4/0x3de
-   [<c102406a>] ioremap_cache+0x1a/0x20
-   [<c1418593>] ? efi_enter_virtual_mode+0x1e4/0x3de
-   [<c1418593>] efi_enter_virtual_mode+0x1e4/0x3de
-   [<c1407984>] start_kernel+0x286/0x2f4
-   [<c1407535>] ? repair_env_string+0x51/0x51
-   [<c1407362>] i386_start_kernel+0x12c/0x12f
-
-Due to the workaround described in commit 916f676f8 ("x86, efi: Retain
-boot service code until after switching to virtual mode") EFI Boot
-Service regions are mapped for a period during boot. Unfortunately, with
-the limited size of the i386 direct kernel map it's possible that some
-of the Boot Service regions will not be directly accessible, which
-causes them to be ioremap()'d, triggering the above warning as the
-regions are marked as E820_RAM in the e820 memmap.
-
-The simplest fix is to refuse to map ram (and therefore, any EFI Boot
-Service regions) in an i386-specific version of efi_ioremap(), because
-there is no method of mapping arbitrary sizes of highmem at contiguous
-virtual addresses in the kernel address space.
-
-There are currently only two situations where we need to map EFI Boot
-Service regions,
-
-  1. To workaround the firmware bug described in 916f676f8
-  2. To access the ACPI BGRT image
-
-but since we haven't seen an i386 implementation that requires either,
-this simple fix should suffice for now. Item 2. above does still work on
-i386 provided that the BGRT image is not in highmem.
-
-Reported-by: Bryan O'Donoghue <bryan.odonoghue.lkml@nexus-software.ie>
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Darren Hart <dvhart@linux.intel.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
----
- arch/x86/include/asm/efi.h     |    7 ++-----
- arch/x86/platform/efi/efi_32.c |   15 +++++++++++++++
- 2 files changed, 17 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-index 2fb5d58..8f042bf 100644
---- a/arch/x86/include/asm/efi.h
-+++ b/arch/x86/include/asm/efi.h
-@@ -35,8 +35,6 @@ extern unsigned long asmlinkage efi_call_phys(void *, ...);
- #define efi_call_virt6(f, a1, a2, a3, a4, a5, a6)	\
- 	efi_call_virt(f, a1, a2, a3, a4, a5, a6)
- 
--#define efi_ioremap(addr, size, type, attr)	ioremap_cache(addr, size)
--
- #else /* !CONFIG_X86_32 */
- 
- #define EFI_LOADER_SIGNATURE	"EL64"
-@@ -88,9 +86,6 @@ extern u64 efi_call6(void *fp, u64 arg1, u64 arg2, u64 arg3,
- 	efi_call6((void *)(efi.systab->runtime->f), (u64)(a1), (u64)(a2), \
- 		  (u64)(a3), (u64)(a4), (u64)(a5), (u64)(a6))
- 
--extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
--				 u32 type, u64 attribute);
--
- #endif /* CONFIG_X86_32 */
- 
- extern int add_efi_memmap;
-@@ -101,6 +96,8 @@ extern void efi_call_phys_prelog(void);
- extern void efi_call_phys_epilog(void);
- extern void efi_unmap_memmap(void);
- extern void efi_memory_uc(u64 addr, unsigned long size);
-+extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
-+				 u32 type, u64 attribute);
- 
- struct efi_var_bootdata {
- 	struct setup_data data;
-diff --git a/arch/x86/platform/efi/efi_32.c b/arch/x86/platform/efi/efi_32.c
-index 40e4469..fbdfa97 100644
---- a/arch/x86/platform/efi/efi_32.c
-+++ b/arch/x86/platform/efi/efi_32.c
-@@ -67,3 +67,18 @@ void efi_call_phys_epilog(void)
- 
- 	local_irq_restore(efi_rt_eflags);
- }
-+
-+void __iomem *__init efi_ioremap(unsigned long phys_addr, unsigned long size,
-+				 u32 type, u64 attribute)
-+{
-+	/*
-+	 * If we've been asked to map a chunk of ram, that means it is
-+	 * highmem and isn't accessible via the direct kernel mapping.
-+	 * i386 doesn't have a method for mapping arbitrary sized chunks
-+	 * of highmem into contiguous virtual addresses.
-+	 */
-+	if (page_is_ram(phys_addr))
-+		return NULL;
-+
-+	return ioremap_cache(phys_addr, size);
-+}
--- 
-1.7.10.4
-
-
--- 
-Matt Fleming, Intel Open Source Technology Center
+--
+			Gleb.
