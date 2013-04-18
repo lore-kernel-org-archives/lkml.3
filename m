@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967353Ab3DRJec (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:34:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40066 "EHLO
+	id S1756616Ab3DRJRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:17:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40031 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756469Ab3DRJRf (ORCPT
+	with ESMTP id S1756350Ab3DRJR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:35 -0400
+	Thu, 18 Apr 2013 05:17:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
+Cc: Paul Moore <pmoore@redhat.com>, Will Drewry <wad@chromium.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 17/72] remoteproc: fix error path of handle_vdev
-Date: Thu, 18 Apr 2013 10:16:02 +0100
-Message-Id: <1366276617-3553-18-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 09/72] x86: remove the x32 syscall bitmask from syscall_get_nr()
+Date: Thu, 18 Apr 2013 10:15:54 +0100
+Message-Id: <1366276617-3553-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,41 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+From: Paul Moore <pmoore@redhat.com>
 
-commit cde42e076c1cdd69a1f955d66ff6596bad3d2105 upstream.
+commit 8b4b9f27e57584f3d90e0bb84cf800ad81cfe3a1 upstream.
 
-Remove the vdev entry from the list before freeing it,
-otherwise rproc->vdevs will explode.
+Commit fca460f95e928bae373daa8295877b6905bc62b8 simplified the x32
+implementation by creating a syscall bitmask, equal to 0x40000000, that
+could be applied to x32 syscalls such that the masked syscall number
+would be the same as a x86_64 syscall.  While that patch was a nice
+way to simplify the code, it went a bit too far by adding the mask to
+syscall_get_nr(); returning the masked syscall numbers can cause
+confusion with callers that expect syscall numbers matching the x32
+ABI, e.g. unmasked syscall numbers.
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
-Acked-by: Ido Yariv <ido@wizery.com>
-[edit subject, minor commit log edit, cc stable]
-Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
-[ luis: adjust context ]
+This patch fixes this by simply removing the mask from syscall_get_nr()
+while preserving the other changes from the original commit.  While
+there are several syscall_get_nr() callers in the kernel, most simply
+check that the syscall number is greater than zero, in this case this
+patch will have no effect.  Of those remaining callers, they appear
+to be few, seccomp and ftrace, and from my testing of seccomp without
+this patch the original commit definitely breaks things; the seccomp
+filter does not correctly filter the syscalls due to the difference in
+syscall numbers in the BPF filter and the value from syscall_get_nr().
+Applying this patch restores the seccomp BPF filter functionality on
+x32.
+
+I've tested this patch with the seccomp BPF filters as well as ftrace
+and everything looks reasonable to me; needless to say general usage
+seemed fine as well.
+
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Link: http://lkml.kernel.org/r/20130215172143.12549.10292.stgit@localhost
+Cc: Will Drewry <wad@chromium.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/remoteproc/remoteproc_core.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/syscall.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
-index 99b6ee7..82702aa 100644
---- a/drivers/remoteproc/remoteproc_core.c
-+++ b/drivers/remoteproc/remoteproc_core.c
-@@ -440,10 +440,12 @@ static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
- 	/* it is now safe to add the virtio device */
- 	ret = rproc_add_virtio_dev(rvdev, rsc->id);
- 	if (ret)
--		goto free_vrings;
-+		goto remove_rvdev;
+diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
+index 1ace47b..2e188d6 100644
+--- a/arch/x86/include/asm/syscall.h
++++ b/arch/x86/include/asm/syscall.h
+@@ -29,13 +29,13 @@ extern const unsigned long sys_call_table[];
+  */
+ static inline int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
+ {
+-	return regs->orig_ax & __SYSCALL_MASK;
++	return regs->orig_ax;
+ }
  
- 	return 0;
+ static inline void syscall_rollback(struct task_struct *task,
+ 				    struct pt_regs *regs)
+ {
+-	regs->ax = regs->orig_ax & __SYSCALL_MASK;
++	regs->ax = regs->orig_ax;
+ }
  
-+remove_rvdev:
-+	list_del(&rvdev->node);
- free_vrings:
- 	__rproc_free_vrings(rvdev, i);
- 	kfree(rvdev);
+ static inline long syscall_get_error(struct task_struct *task,
 -- 
 1.8.1.2
 
