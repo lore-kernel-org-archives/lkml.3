@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757675Ab3DRJSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:18:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40146 "EHLO
+	id S1759315Ab3DRJS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:18:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40287 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756971Ab3DRJRx (ORCPT
+	with ESMTP id S1759145Ab3DRJSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:53 -0400
+	Thu, 18 Apr 2013 05:18:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: Sachin Prabhu <sprabhu@redhat.com>, Steve French <sfrench@us.ibm.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 33/72] ALSA: hda - fix typo in proc output
-Date: Thu, 18 Apr 2013 10:16:18 +0100
-Message-Id: <1366276617-3553-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 57/72] cifs: Allow passwords which begin with a delimitor
+Date: Thu, 18 Apr 2013 10:16:42 +0100
+Message-Id: <1366276617-3553-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -28,33 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Sachin Prabhu <sprabhu@redhat.com>
 
-commit aeb3a97222832e5457c4b72d72235098ce4bfe8d upstream.
+commit c369c9a4a7c82d33329d869cbaf93304cc7a0c40 upstream.
 
-Rename "Digitial In" to "Digital In". This function is only used for
-proc output, so should not cause any problems to change.
+Fixes a regression in cifs_parse_mount_options where a password
+which begins with a delimitor is parsed incorrectly as being a blank
+password.
 
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sachin Prabhu <sprabhu@redhat.com>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/hda_codec.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/cifs/connect.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
-index 2c6a785..e6b34c8 100644
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -165,7 +165,7 @@ const char *snd_hda_get_jack_type(u32 cfg)
- 		"Line Out", "Speaker", "HP Out", "CD",
- 		"SPDIF Out", "Digital Out", "Modem Line", "Modem Hand",
- 		"Line In", "Aux", "Mic", "Telephony",
--		"SPDIF In", "Digitial In", "Reserved", "Other"
-+		"SPDIF In", "Digital In", "Reserved", "Other"
- 	};
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index f027c2b..9169ae3 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -1644,14 +1644,24 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
+ 			}
+ 			break;
+ 		case Opt_blank_pass:
+-			vol->password = NULL;
+-			break;
+-		case Opt_pass:
+ 			/* passwords have to be handled differently
+ 			 * to allow the character used for deliminator
+ 			 * to be passed within them
+ 			 */
  
- 	return jack_types[(cfg & AC_DEFCFG_DEVICE)
++			/*
++			 * Check if this is a case where the  password
++			 * starts with a delimiter
++			 */
++			tmp_end = strchr(data, '=');
++			tmp_end++;
++			if (!(tmp_end < end && tmp_end[1] == delim)) {
++				/* No it is not. Set the password to NULL */
++				vol->password = NULL;
++				break;
++			}
++			/* Yes it is. Drop down to Opt_pass below.*/
++		case Opt_pass:
+ 			/* Obtain the value string */
+ 			value = strchr(data, '=');
+ 			value++;
 -- 
 1.8.1.2
 
