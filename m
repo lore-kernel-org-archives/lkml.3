@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab3DRJR5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:17:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40148 "EHLO
+	id S967176Ab3DRJ3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:29:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40165 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757220Ab3DRJRx (ORCPT
+	with ESMTP id S1757556Ab3DRJR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:53 -0400
+	Thu, 18 Apr 2013 05:17:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Andrew Honig <ahonig@google.com>, Marcelo Tosatti <mtosatti@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 32/72] ALSA: hda - Enabling Realtek ALC 671 codec
-Date: Thu, 18 Apr 2013 10:16:17 +0100
-Message-Id: <1366276617-3553-33-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 36/72] KVM: Fix bounds checking in ioapic indirect register reads (CVE-2013-1798)
+Date: Thu, 18 Apr 2013 10:16:21 +0100
+Message-Id: <1366276617-3553-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -27,43 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>
+From: Andy Honig <ahonig@google.com>
 
-commit 1d87caa69c04008e09f5ff47b5e6acb6116febc7 upstream.
+commit a2c118bfab8bc6b8bb213abfc35201e441693d55 upstream.
 
-* Added the device ID to the modalias list and assinged ALC662 patches
-for it
-* Added 4 port support for the device ID 0671 in alc662_parse_auto_config
+If the guest specifies a IOAPIC_REG_SELECT with an invalid value and follows
+that with a read of the IOAPIC_REG_WINDOW KVM does not properly validate
+that request.  ioapic_read_indirect contains an
+ASSERT(redir_index < IOAPIC_NUM_PINS), but the ASSERT has no effect in
+non-debug builds.  In recent kernels this allows a guest to cause a kernel
+oops by reading invalid memory.  In older kernels (pre-3.3) this allows a
+guest to read from large ranges of host memory.
 
-Signed-off-by: Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Tested: tested against apic unit tests.
+
+Signed-off-by: Andrew Honig <ahonig@google.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ virt/kvm/ioapic.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index a351a6f..1baf0dc 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -6525,7 +6525,8 @@ static int alc662_parse_auto_config(struct hda_codec *codec)
- 	const hda_nid_t *ssids;
+diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+index 26fd54d..fdb1faf 100644
+--- a/virt/kvm/ioapic.c
++++ b/virt/kvm/ioapic.c
+@@ -73,9 +73,12 @@ static unsigned long ioapic_read_indirect(struct kvm_ioapic *ioapic,
+ 			u32 redir_index = (ioapic->ioregsel - 0x10) >> 1;
+ 			u64 redir_content;
  
- 	if (codec->vendor_id == 0x10ec0272 || codec->vendor_id == 0x10ec0663 ||
--	    codec->vendor_id == 0x10ec0665 || codec->vendor_id == 0x10ec0670)
-+	    codec->vendor_id == 0x10ec0665 || codec->vendor_id == 0x10ec0670 ||
-+	    codec->vendor_id == 0x10ec0671)
- 		ssids = alc663_ssids;
- 	else
- 		ssids = alc662_ssids;
-@@ -6970,6 +6971,7 @@ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
- 	{ .id = 0x10ec0665, .name = "ALC665", .patch = patch_alc662 },
- 	{ .id = 0x10ec0668, .name = "ALC668", .patch = patch_alc662 },
- 	{ .id = 0x10ec0670, .name = "ALC670", .patch = patch_alc662 },
-+	{ .id = 0x10ec0671, .name = "ALC671", .patch = patch_alc662 },
- 	{ .id = 0x10ec0680, .name = "ALC680", .patch = patch_alc680 },
- 	{ .id = 0x10ec0880, .name = "ALC880", .patch = patch_alc880 },
- 	{ .id = 0x10ec0882, .name = "ALC882", .patch = patch_alc882 },
+-			ASSERT(redir_index < IOAPIC_NUM_PINS);
++			if (redir_index < IOAPIC_NUM_PINS)
++				redir_content =
++					ioapic->redirtbl[redir_index].bits;
++			else
++				redir_content = ~0ULL;
+ 
+-			redir_content = ioapic->redirtbl[redir_index].bits;
+ 			result = (ioapic->ioregsel & 0x1) ?
+ 			    (redir_content >> 32) & 0xffffffff :
+ 			    redir_content & 0xffffffff;
 -- 
 1.8.1.2
 
