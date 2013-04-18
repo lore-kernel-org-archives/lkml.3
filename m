@@ -1,77 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964946Ab3DRAev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 20:34:51 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:51697 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934752Ab3DRAeq (ORCPT
+	id S935923Ab3DRAfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 20:35:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15533 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934752Ab3DRAfT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 20:34:46 -0400
+	Wed, 17 Apr 2013 20:35:19 -0400
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,496,1363158000"; 
-   d="scan'208";a="39246987"
-Message-ID: <516F3FA5.8070307@codeaurora.org>
-Date: Wed, 17 Apr 2013 17:34:45 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+   d="scan'208";a="287784008"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: David Rientjes <rientjes@google.com>, Randy Dunlap <rdunlap@infradead.org>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: RE: [patch] x86, kvm: fix build failure with CONFIG_SMP disabled
+Thread-Topic: [patch] x86, kvm: fix build failure with CONFIG_SMP disabled
+Thread-Index: AQHOO8kNpk9rq341F0a3pajUBgR7+ZjbILNw
+Date: Thu, 18 Apr 2013 00:35:14 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E09A13B08@SHSMSX101.ccr.corp.intel.com>
+References: <20130417170450.5dd6e5f450de4d5bf197d997@canb.auug.org.au>
+ <516EE5AB.4080201@infradead.org>
+ <alpine.DEB.2.02.1304171555030.10112@chino.kir.corp.google.com>
+ <alpine.DEB.2.02.1304171609580.5541@chino.kir.corp.google.com>
+ <516F37FF.8040703@infradead.org>
+ <alpine.DEB.2.02.1304171707090.24494@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1304171707090.24494@chino.kir.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Russell King <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: sched_clock: Add more notrace to prevent recursion
-References: <1363306086-23501-1-git-send-email-sboyd@codeaurora.org> <514B483F.7000304@codeaurora.org> <5151DC75.7030606@codeaurora.org>
-In-Reply-To: <5151DC75.7030606@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/13 10:35, Stephen Boyd wrote:
-> On 03/21/13 10:49, Stephen Boyd wrote:
->> On 03/14/13 17:08, Stephen Boyd wrote:
->>> cyc_to_sched_clock() is called by sched_clock() and cyc_to_ns()
->>> is called by cyc_to_sched_clock(). I suspect that some compilers
->>> inline both of these functions into sched_clock() and so we've
->>> been getting away without having a notrace marking. It seems that
->>> my compiler isn't inlining cyc_to_sched_clock() though, so I'm
->>> hitting a recursion bug when I enable the function graph tracer,
->>> causing my system to crash. Marking these functions notrace fixes
->>> it. Technically cyc_to_ns() doesn't need the notrace because it's
->>> already marked inline, but let's just add it so that if we ever
->>> remove inline from that function it doesn't blow up.
->> Anyone else seeing this problem?
-> Russell, should I put this into the patch tracker?
+David Rientjes wrote on 2013-04-18:
+> On Wed, 17 Apr 2013, Randy Dunlap wrote:
+> 
+>> On 04/17/13 16:12, David Rientjes wrote:
+>>> The build fails when CONFIG_SMP is disabled:
+>>> 
+>>> 	arch/x86/kvm/vmx.c: In function 'vmx_deliver_posted_interrupt':
+>>> 	arch/x86/kvm/vmx.c:3950:3: error: 'apic' undeclared (first use in
+>>> this function)
+>>> 
+>>> Fix it by including the necessary header.
+>> 
+>> Sorry, i386 build still fails with the same error message plus this one:
+>> 
+>> ERROR: "apic" [arch/x86/kvm/kvm-intel.ko] undefined!
+>> 
+> 
+> Ahh, that's because you don't have CONFIG_X86_LOCAL_APIC as you already
+> mentioned.  So it looks like this error can manifest in two different ways
+> and we got different reports.
+> 
+> This failure came from "KVM: VMX: Add the deliver posted interrupt
+> algorithm", so adding Yang to the cc to specify the dependency this has on
+> apic and how it can be protected without CONFIG_X86_LOCAL_APIC on i386.
+How about the follow patch?
 
-I'll throw this into the patch tracker tomorrow if nobody complains.
+commit a49dd819f502c1029c5a857e87201ef25ec06ce6
+Author: Yang Zhang <yang.z.zhang@Intel.com>
+Date:   Wed Apr 17 05:34:07 2013 -0400
 
->>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->>> ---
->>>  arch/arm/kernel/sched_clock.c | 4 ++--
->>>  1 file changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
->>> index bd6f56b..59d2adb 100644
->>> --- a/arch/arm/kernel/sched_clock.c
->>> +++ b/arch/arm/kernel/sched_clock.c
->>> @@ -45,12 +45,12 @@ static u32 notrace jiffy_sched_clock_read(void)
->>>  
->>>  static u32 __read_mostly (*read_sched_clock)(void) = jiffy_sched_clock_read;
->>>  
->>> -static inline u64 cyc_to_ns(u64 cyc, u32 mult, u32 shift)
->>> +static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
->>>  {
->>>  	return (cyc * mult) >> shift;
->>>  }
->>>  
->>> -static unsigned long long cyc_to_sched_clock(u32 cyc, u32 mask)
->>> +static unsigned long long notrace cyc_to_sched_clock(u32 cyc, u32 mask)
->>>  {
->>>  	u64 epoch_ns;
->>>  	u32 epoch_cyc;
->
+    KVM: x86: Don't sending posted interrupt if not config CONFIG_SMP
 
+    In UP, posted interrupt logic will not work. So we should not send
+    posted interrupt and let vcpu to pick the pending interrupt before
+    vmentry.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+    Signed-off-by: Yang Zhang <yang.z.zhang@Intel.com>
+
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 52b21da..d5c6b95 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -3946,10 +3946,12 @@ static void vmx_deliver_posted_interrupt(struct kvm_vcpu *vcpu, int vector)
+
+        r = pi_test_and_set_on(&vmx->pi_desc);
+        kvm_make_request(KVM_REQ_EVENT, vcpu);
++#ifdef CONFIG_SMP
+        if (!r && (vcpu->mode == IN_GUEST_MODE))
+                apic->send_IPI_mask(get_cpu_mask(vcpu->cpu),
+                                POSTED_INTR_VECTOR);
+        else
++#endif
+                kvm_vcpu_kick(vcpu);
+ }
+
+Best regards,
+Yang
+
 
