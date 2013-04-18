@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967608Ab3DRJjZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:39:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40020 "EHLO
+	id S967593Ab3DRJjX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:39:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40022 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270Ab3DRJR1 (ORCPT
+	with ESMTP id S1756271Ab3DRJR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Apr 2013 05:17:27 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stone Piao <piaoyun@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Jakub Kicinski <jakub.kicinski@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 07/72] mwifiex: limit channel number not to overflow memory
-Date: Thu, 18 Apr 2013 10:15:52 +0100
-Message-Id: <1366276617-3553-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 10/72] ixgbe: fix registration order of driver and DCA nofitication
+Date: Thu, 18 Apr 2013 10:15:55 +0100
+Message-Id: <1366276617-3553-11-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stone Piao <piaoyun@marvell.com>
+From: Jakub Kicinski <jakub.kicinski@intel.com>
 
-commit 901ceba4e81e9dd6b4a3c4c37ee22000a6c5c65f upstream.
+commit f01fc1a82c2ee68726b400fadb156bd623b5f2f1 upstream.
 
-Limit the channel number in scan request, or the driver scan
-config structure memory will be overflowed.
+ixgbe_notify_dca cannot be called before driver registration
+because it expects driver's klist_devices to be allocated and
+initialized. While on it make sure debugfs files are removed
+when registration fails.
 
-Signed-off-by: Stone Piao <piaoyun@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Jakub Kicinski <jakub.kicinski@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.5: removed debugfs code ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/mwifiex/cfg80211.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
-index 76b5c0f..4506cda 100644
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -1368,7 +1368,8 @@ mwifiex_cfg80211_scan(struct wiphy *wiphy, struct net_device *dev,
- 		}
- 	}
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index 7c0878f..ab8d882 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -7662,12 +7662,15 @@ static int __init ixgbe_init_module(void)
+ 	pr_info("%s - version %s\n", ixgbe_driver_string, ixgbe_driver_version);
+ 	pr_info("%s\n", ixgbe_copyright);
  
--	for (i = 0; i < request->n_channels; i++) {
-+	for (i = 0; i < min_t(u32, request->n_channels,
-+			      MWIFIEX_USER_SCAN_CHAN_MAX); i++) {
- 		chan = request->channels[i];
- 		priv->user_scan_cfg->chan_list[i].chan_number = chan->hw_value;
- 		priv->user_scan_cfg->chan_list[i].radio_type = chan->band;
++	ret = pci_register_driver(&ixgbe_driver);
++	if (ret)
++		return ret;
++
+ #ifdef CONFIG_IXGBE_DCA
+ 	dca_register_notify(&dca_notifier);
+ #endif
+ 
+-	ret = pci_register_driver(&ixgbe_driver);
+-	return ret;
++	return 0;
+ }
+ 
+ module_init(ixgbe_init_module);
 -- 
 1.8.1.2
 
