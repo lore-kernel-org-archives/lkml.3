@@ -1,70 +1,751 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967232Ab3DRQz5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:55:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10545 "EHLO mx1.redhat.com"
+	id S967341Ab3DRQ4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:56:12 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56495 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776Ab3DRQzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:55:55 -0400
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Subject: [PATCH] HID: core: dump events in hidraw even if raw_event() returns > 0
-Date: Thu, 18 Apr 2013 18:55:06 +0200
-Message-Id: <1366304106-32243-1-git-send-email-benjamin.tissoires@redhat.com>
+	id S1753682Ab3DRQz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 12:55:56 -0400
+Date: Fri, 19 Apr 2013 00:55:31 +0800
+From: Han Pingtian <hanpt@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, mhocko@suse.cz
+Cc: rientjes@google.com
+Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
+Message-ID: <20130418165531.GD2672@localhost.localdomain>
+Mail-Followup-To: linux-kernel@vger.kernel.org, mhocko@suse.cz,
+	rientjes@google.com
+References: <20130416110009.GA2664@localhost.localdomain>
+ <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com>
+ <20130417094750.GB2672@localhost.localdomain>
+ <20130417141909.GA24912@dhcp22.suse.cz>
+ <20130418101541.GC2672@localhost.localdomain>
+ <20130418141736.GA7989@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130418141736.GA7989@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041816-7182-0000-0000-0000064D1B9E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If raw_events() returns a value not equal to 0, the processing stops.
-However, I think we should still forward the events to the hidraw node,
-unless there is an error in raw_event() marked by a negative value.
+On Thu, Apr 18, 2013 at 07:17:36AM -0700, Michal Hocko wrote:
+> On Thu 18-04-13 18:15:41, Han Pingtian wrote:
+> > On Wed, Apr 17, 2013 at 07:19:09AM -0700, Michal Hocko wrote:
+> > > On Wed 17-04-13 17:47:50, Han Pingtian wrote:
+> > > > [ 5233.949714] Node 1 DMA free:3968kB min:7808kB low:9728kB high:11712kB active_anon:0kB inactive_anon:3584kB active_file:2240kB inactive_file:576kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:4194304kB managed:3854464kB mlocked:0kB dirty:64kB writeback:448kB mapped:0kB shmem:64kB slab_reclaimable:106496kB slab_unreclaimable:3654976kB kernel_stack:14912kB pagetables:18496kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:531 all_unreclaimable? yes
+> > > 
+> > > This smells either like a slab backed memory leak or something went
+> > > crazy and allocate huge amount of slab. You have 3.6G (or of 4G
+> > > available) of slab_unreclaimable. I would check /proc/slabinfo for which
+> > > cache consumes that huge amount of memory.
+> > 
+> > Thanks your reply. But I cannot find any clues in the slabinfo:
+> 
+> awk '{val=$3*$4; printf "%s %d\n", $1, val}' /proc/slabinfo | sort -k2 -n
+> says:
+> [...]
+> kmalloc-65536 41943040
+> kmemleak_object 112746000
+> pgtable-2^12 113246208
+> kmalloc-8192 122159104
+> kmalloc-32768 137887744
+> task_struct 241293920
+> kmalloc-2048 306446336
+> kmalloc-96 307652928
+> kmalloc-16384 516620288
+> 
+Oh, I see. I only calculated "$2*$4" and got some small numbers. Thanks.
+> Hmm, how many processes you have running? Having 240M in task_structs
+> sounds quite excessive. Also there seem to be quite a lot of memory used
+> in the generic 16K, 96B and 2K caches. Core kernel usually do not use
+> those on its own so I would be inclined to suspect some driver.
+There are 671 processes is running and most of them are kernel thread I
+think:
 
-For instance, hid-magicmouse stops the processing because the device
-use a hidden collection (not declared in hid reports descriptor), making
-hid-core lost when dealing with it. However, forwarding it to the
-user-space through hidraw is harmless and can help debugging the driver.
+    [root@riblp3 ~]# ps haux|wc -l
+    671
+    [root@riblp3 ~]# ps haux|awk '{print $11}'|grep '^\['|wc -l
+    620
+    [root@riblp3 ~]# 
 
-Of course, hid debugfs can be used, but there is currently a problem with
-the output beeing too small for some devices and it adds processing in the
-kernel because debugfs returns human readable strings outputs.
+And this is the outputs of  ps aux :
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
----
+--------------------
 
-Hi Jiri,
+USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root          1  0.0  0.0  12608  2304 ?        Ss   02:43   0:05 /usr/lib/systemd/systemd --switched-root --system --deserialize 22
+root          2  0.0  0.0      0     0 ?        S    02:43   0:00 [kthreadd]
+root          3  0.0  0.0      0     0 ?        S    02:43   0:02 [ksoftirqd/0]
+root          5  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/0:0H]
+root          7  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/u:0H]
+root          8  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/0]
+root          9  0.0  0.0      0     0 ?        S    02:43   0:00 [rcu_bh]
+root         10  0.2  0.0      0     0 ?        S    02:43   1:11 [rcu_sched]
+root         11  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/0]
+root         12  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/1]
+root         13  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/1]
+root         14  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/1]
+root         15  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/1:0]
+root         16  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/1:0H]
+root         17  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/2]
+root         18  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/2]
+root         19  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/2]
+root         21  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/2:0H]
+root         22  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/3]
+root         23  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/3]
+root         24  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/3]
+root         26  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/3:0H]
+root         27  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/4]
+root         28  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/4]
+root         29  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/4]
+root         31  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/4:0H]
+root         32  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/5]
+root         33  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/5]
+root         34  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/5]
+root         36  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/5:0H]
+root         37  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/6]
+root         38  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/6]
+root         39  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/6]
+root         41  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/6:0H]
+root         42  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/7]
+root         43  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/7]
+root         44  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/7]
+root         45  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/7:0]
+root         46  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/7:0H]
+root         47  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/8]
+root         48  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/8]
+root         49  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/8]
+root         50  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/8:0]
+root         51  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/8:0H]
+root         52  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/9]
+root         53  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/9]
+root         54  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/9]
+root         56  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/9:0H]
+root         57  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/10]
+root         58  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/10]
+root         59  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/10]
+root         60  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/10:0]
+root         61  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/10:0H]
+root         62  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/11]
+root         63  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/11]
+root         64  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/11]
+root         65  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/11:0]
+root         66  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/11:0H]
+root         67  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/12]
+root         68  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/12]
+root         69  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/12]
+root         70  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/12:0]
+root         71  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/12:0H]
+root         72  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/13]
+root         73  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/13]
+root         74  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/13]
+root         75  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/13:0]
+root         76  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/13:0H]
+root         77  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/14]
+root         78  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/14]
+root         79  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/14]
+root         80  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/14:0]
+root         81  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/14:0H]
+root         82  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/15]
+root         83  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/15]
+root         84  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/15]
+root         85  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/15:0]
+root         86  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/15:0H]
+root         87  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/16]
+root         88  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/16]
+root         89  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/16]
+root         90  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/16:0]
+root         91  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/16:0H]
+root         92  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/17]
+root         93  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/17]
+root         94  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/17]
+root         95  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/17:0]
+root         96  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/17:0H]
+root         97  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/18]
+root         98  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/18]
+root         99  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/18]
+root        100  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/18:0]
+root        101  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/18:0H]
+root        102  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/19]
+root        103  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/19]
+root        104  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/19]
+root        105  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/19:0]
+root        106  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/19:0H]
+root        107  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/20]
+root        108  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/20]
+root        109  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/20]
+root        110  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/20:0]
+root        111  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/20:0H]
+root        112  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/21]
+root        113  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/21]
+root        114  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/21]
+root        115  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/21:0]
+root        116  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/21:0H]
+root        117  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/22]
+root        118  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/22]
+root        119  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/22]
+root        120  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/22:0]
+root        121  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/22:0H]
+root        122  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/23]
+root        123  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/23]
+root        124  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/23]
+root        125  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/23:0]
+root        126  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/23:0H]
+root        127  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/24]
+root        128  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/24]
+root        129  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/24]
+root        131  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/24:0H]
+root        132  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/25]
+root        133  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/25]
+root        134  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/25]
+root        135  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/25:0]
+root        136  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/25:0H]
+root        137  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/26]
+root        138  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/26]
+root        139  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/26]
+root        140  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/26:0]
+root        141  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/26:0H]
+root        142  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/27]
+root        143  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/27]
+root        144  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/27]
+root        146  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/27:0H]
+root        147  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/28]
+root        148  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/28]
+root        149  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/28]
+root        150  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/28:0]
+root        151  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/28:0H]
+root        152  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/29]
+root        153  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/29]
+root        154  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/29]
+root        155  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/29:0]
+root        156  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/29:0H]
+root        157  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/30]
+root        158  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/30]
+root        159  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/30]
+root        160  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/30:0]
+root        161  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/30:0H]
+root        162  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/31]
+root        163  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/31]
+root        164  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/31]
+root        166  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/31:0H]
+root        167  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/32]
+root        168  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/32]
+root        169  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/32]
+root        170  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/32:0]
+root        171  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/32:0H]
+root        172  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/33]
+root        173  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/33]
+root        174  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/33]
+root        176  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/33:0H]
+root        177  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/34]
+root        178  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/34]
+root        179  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/34]
+root        180  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/34:0]
+root        181  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/34:0H]
+root        182  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/35]
+root        183  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/35]
+root        184  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/35]
+root        185  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/35:0]
+root        186  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/35:0H]
+root        187  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/36]
+root        188  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/36]
+root        189  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/36]
+root        190  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/36:0]
+root        191  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/36:0H]
+root        192  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/37]
+root        193  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/37]
+root        194  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/37]
+root        196  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/37:0H]
+root        197  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/38]
+root        198  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/38]
+root        199  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/38]
+root        200  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/38:0]
+root        201  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/38:0H]
+root        202  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/39]
+root        203  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/39]
+root        204  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/39]
+root        205  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/39:0]
+root        206  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/39:0H]
+root        207  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/40]
+root        208  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/40]
+root        209  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/40]
+root        210  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/40:0]
+root        211  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/40:0H]
+root        212  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/41]
+root        213  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/41]
+root        214  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/41]
+root        216  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/41:0H]
+root        217  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/42]
+root        218  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/42]
+root        219  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/42]
+root        220  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/42:0]
+root        221  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/42:0H]
+root        222  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/43]
+root        223  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/43]
+root        224  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/43]
+root        225  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/43:0]
+root        226  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/43:0H]
+root        227  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/44]
+root        228  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/44]
+root        229  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/44]
+root        231  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/44:0H]
+root        232  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/45]
+root        233  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/45]
+root        234  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/45]
+root        235  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/45:0]
+root        236  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/45:0H]
+root        237  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/46]
+root        238  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/46]
+root        239  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/46]
+root        240  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/46:0]
+root        241  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/46:0H]
+root        242  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/47]
+root        243  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/47]
+root        244  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/47]
+root        245  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/47:0]
+root        246  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/47:0H]
+root        247  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/48]
+root        248  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/48]
+root        249  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/48]
+root        251  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/48:0H]
+root        252  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/49]
+root        253  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/49]
+root        254  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/49]
+root        256  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/49:0H]
+root        257  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/50]
+root        258  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/50]
+root        259  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/50]
+root        261  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/50:0H]
+root        262  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/51]
+root        263  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/51]
+root        264  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/51]
+root        266  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/51:0H]
+root        267  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/52]
+root        268  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/52]
+root        269  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/52]
+root        270  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/52:0]
+root        271  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/52:0H]
+root        272  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/53]
+root        273  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/53]
+root        274  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/53]
+root        275  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/53:0]
+root        276  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/53:0H]
+root        277  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/54]
+root        278  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/54]
+root        279  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/54]
+root        280  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/54:0]
+root        281  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/54:0H]
+root        282  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/55]
+root        283  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/55]
+root        284  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/55]
+root        286  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/55:0H]
+root        287  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/56]
+root        288  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/56]
+root        289  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/56]
+root        290  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/56:0]
+root        291  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/56:0H]
+root        292  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/57]
+root        293  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/57]
+root        294  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/57]
+root        295  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/57:0]
+root        296  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/57:0H]
+root        297  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/58]
+root        298  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/58]
+root        299  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/58]
+root        300  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/58:0]
+root        301  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/58:0H]
+root        302  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/59]
+root        303  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/59]
+root        304  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/59]
+root        305  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/59:0]
+root        306  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/59:0H]
+root        307  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/60]
+root        308  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/60]
+root        309  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/60]
+root        310  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/60:0]
+root        311  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/60:0H]
+root        312  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/61]
+root        313  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/61]
+root        314  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/61]
+root        315  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/61:0]
+root        316  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/61:0H]
+root        317  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/62]
+root        318  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/62]
+root        319  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/62]
+root        320  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/62:0]
+root        321  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/62:0H]
+root        322  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/63]
+root        323  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/63]
+root        324  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/63]
+root        326  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/63:0H]
+root        327  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/64]
+root        328  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/64]
+root        329  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/64]
+root        330  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/64:0]
+root        331  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/64:0H]
+root        332  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/65]
+root        333  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/65]
+root        334  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/65]
+root        335  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/65:0]
+root        336  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/65:0H]
+root        337  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/66]
+root        338  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/66]
+root        339  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/66]
+root        340  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/66:0]
+root        341  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/66:0H]
+root        342  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/67]
+root        343  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/67]
+root        344  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/67]
+root        345  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/67:0]
+root        346  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/67:0H]
+root        347  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/68]
+root        348  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/68]
+root        349  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/68]
+root        350  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/68:0]
+root        351  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/68:0H]
+root        352  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/69]
+root        353  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/69]
+root        354  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/69]
+root        356  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/69:0H]
+root        357  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/70]
+root        358  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/70]
+root        359  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/70]
+root        360  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/70:0]
+root        361  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/70:0H]
+root        362  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/71]
+root        363  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/71]
+root        364  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/71]
+root        365  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/71:0]
+root        366  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/71:0H]
+root        367  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/72]
+root        368  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/72]
+root        369  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/72]
+root        371  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/72:0H]
+root        372  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/73]
+root        373  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/73]
+root        374  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/73]
+root        375  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/73:0]
+root        376  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/73:0H]
+root        377  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/74]
+root        378  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/74]
+root        379  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/74]
+root        380  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/74:0]
+root        381  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/74:0H]
+root        382  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/75]
+root        383  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/75]
+root        384  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/75]
+root        385  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/75:0]
+root        386  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/75:0H]
+root        387  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/76]
+root        388  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/76]
+root        389  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/76]
+root        390  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/76:0]
+root        391  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/76:0H]
+root        392  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/77]
+root        393  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/77]
+root        394  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/77]
+root        395  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/77:0]
+root        396  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/77:0H]
+root        397  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/78]
+root        398  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/78]
+root        399  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/78]
+root        400  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/78:0]
+root        401  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/78:0H]
+root        402  0.0  0.0      0     0 ?        S    02:43   0:00 [watchdog/79]
+root        403  0.0  0.0      0     0 ?        S    02:43   0:00 [migration/79]
+root        404  0.0  0.0      0     0 ?        S    02:43   0:00 [ksoftirqd/79]
+root        405  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/79:0]
+root        406  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/79:0H]
+root        407  0.0  0.0      0     0 ?        S<   02:43   0:00 [khelper]
+root        408  0.0  0.0      0     0 ?        S    02:43   0:00 [kdevtmpfs]
+root        409  0.0  0.0      0     0 ?        S<   02:43   0:00 [netns]
+root        410  0.0  0.0      0     0 ?        S    02:43   0:00 [bdi-default]
+root        411  0.0  0.0      0     0 ?        S<   02:43   0:00 [kintegrityd]
+root        412  0.0  0.0      0     0 ?        S<   02:43   0:00 [kblockd]
+root        413  0.0  0.0      0     0 ?        S    02:43   0:00 [khubd]
+root        414  0.0  0.0      0     0 ?        S<   02:43   0:00 [md]
+root        416  0.0  0.0      0     0 ?        S    02:43   0:02 [kworker/0:1]
+root        417  0.0  0.0      0     0 ?        S    02:43   0:00 [khungtaskd]
+root        418  0.0  0.0      0     0 ?        S    02:43   0:04 [kswapd1]
+root        419  0.0  0.0      0     0 ?        SN   02:43   0:00 [ksmd]
+root        420  0.0  0.0      0     0 ?        S    02:43   0:00 [fsnotify_mark]
+root        421  0.0  0.0      0     0 ?        S<   02:43   0:00 [crypto]
+root        429  0.0  0.0      0     0 ?        S<   02:43   0:00 [kthrotld]
+root        430  0.0  0.0      0     0 ?        S    02:43   0:00 [khvcd]
+root        431  0.0  0.0      0     0 ?        S<   02:43   0:00 [kmpath_rdacd]
+root        432  0.0  0.0      0     0 ?        S<   02:43   0:00 [kpsmoused]
+root        434  0.0  0.0      0     0 ?        S<   02:43   0:00 [deferwq]
+root        435  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/u:1]
+root        436  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/57:1]
+root        443  0.0  0.0      0     0 ?        S    02:43   0:00 [kauditd]
+root        457  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/9:1]
+root        463  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/74:1]
+root        464  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/41:1]
+root        469  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/45:1]
+root        470  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/42:1]
+root        472  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/46:1]
+root        473  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/73:1]
+root        474  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/43:1]
+root        489  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/78:1]
+root        490  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/77:1]
+root        497  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/5:1]
+root        502  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/38:1]
+root        503  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/39:1]
+root        505  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/47:1]
+root        511  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/70:1]
+root        512  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/37:1]
+root        513  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/2:1]
+root        515  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/69:1]
+root        518  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/22:1]
+root        521  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/8:1]
+root        530  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/66:1]
+root        533  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/65:1]
+root        545  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/14:1]
+root        547  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/15:1]
+root        549  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/29:1]
+root        578  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/32:1]
+root        579  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/28:1]
+root        580  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/12:1]
+root        581  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/31:1]
+root        582  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/27:1]
+root        583  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/3:1]
+root        584  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/35:1]
+root        585  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/26:1]
+root        586  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/36:1]
+root        588  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/25:1]
+root        594  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/23:1]
+root        597  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/21:1]
+root        599  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/20:1]
+root        601  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/44:1]
+root        603  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/18:1]
+root        609  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/17:1]
+root        610  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/50:1]
+root        613  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/49:1]
+root        615  0.0  0.0      0     0 ?        S    02:43   0:00 [scsi_eh_0]
+root        616  0.0  0.0      0     0 ?        S<   02:43   0:00 [ibmvscsi_0]
+root        617  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/u:2]
+root        618  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/6:1]
+root        619  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/72:1]
+root        621  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/19:1]
+root        622  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/53:1]
+root        641  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/61:1]
+root        668  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/51:1]
+root        669  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/62:2]
+root        670  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/63:1]
+root        673  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/60:1]
+root        674  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/69:2]
+root        675  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/7:1]
+root        676  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/48:1]
+root        678  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/55:1]
+root        679  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/59:1]
+root        680  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/64:1]
+root        681  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/67:1]
+root        682  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/71:1]
+root        683  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/68:1]
+root        684  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/75:1]
+root        685  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/76:1]
+root        686  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/79:1]
+root        687  0.0  0.0      0     0 ?        S<   02:43   0:00 [kdmflush]
+root        689  0.0  0.0      0     0 ?        S<   02:43   0:00 [kdmflush]
+root        712  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfsalloc]
+root        713  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfs_mru_cache]
+root        714  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfslogd]
+root        715  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfs-data/dm-1]
+root        716  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfs-conv/dm-1]
+root        717  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfs-cil/dm-1]
+root        718  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/41:1H]
+root        719  0.0  0.0      0     0 ?        S    02:43   0:00 [xfsaild/dm-1]
+root        720  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/42:1H]
+root        721  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/43:1H]
+root        722  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/40:1H]
+root        728  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/58:1H]
+root        755  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/45:1H]
+root        756  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/46:1H]
+root        758  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/47:1H]
+root        759  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/44:1H]
+root        761  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/5:2]
+root        764  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/9:2]
+root        765  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/0:1H]
+root        766  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/5:1H]
+root        767  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/6:1H]
+root        768  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/7:1H]
+root        769  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/4:1H]
+root        775  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/18:1H]
+root        776  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/16:1H]
+root        777  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/17:1H]
+root        778  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/19:1H]
+root        780  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/21:1H]
+root        781  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/22:1H]
+root        782  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/23:1H]
+root        783  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/20:1H]
+root        787  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/25:1H]
+root        791  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/24:1H]
+root        794  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/27:1H]
+root        796  0.0  0.0  14016   192 ?        Ss   02:43   0:01 /usr/lib/systemd/systemd-udevd
+root        800  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/26:1H]
+root        804  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/29:1H]
+root        807  0.0  0.0  33344  2368 ?        Ss   02:43   0:01 /usr/lib/systemd/systemd-journald
+root        809  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/16:3]
+root        811  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/33:1H]
+root        814  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/37:1H]
+root        815  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/38:1H]
+root        816  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/39:1H]
+root        817  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/34:1H]
+root        818  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/35:1H]
+root        827  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/36:1H]
+root        832  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/9:1H]
+root        833  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/53:1H]
+root        834  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/10:1H]
+root        835  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/30:1H]
+root        836  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/54:1H]
+root        837  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/55:1H]
+root        839  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/52:1H]
+root        845  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/61:1H]
+root        853  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/66:1H]
+root        856  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/67:1H]
+root        927  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/28:1H]
+root        936  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/31:1H]
+root        940  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/8:1H]
+root        945  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/11:1H]
+root        992  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/32:1H]
+root        998  0.0  0.0      0     0 ?        S<   02:43   0:00 [rpciod]
+root       1199  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/62:1H]
+root       1202  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/73:1H]
+root       1209  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/41:2]
+root       1212  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/44:2]
+root       1220  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/27:2]
+root       1224  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/37:2]
+root       1226  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/24:3]
+root       1228  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/54:2]
+root       1229  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/24:4]
+root       1233  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/55:2]
+root       1237  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfs-data/sda2]
+root       1238  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfs-conv/sda2]
+root       1239  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfs-cil/sda2]
+root       1240  0.0  0.0      0     0 ?        S    02:43   0:00 [xfsaild/sda2]
+root       1243  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/10:2]
+root       1244  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/11:2]
+root       1245  0.0  0.0      0     0 ?        S<   02:43   0:00 [kdmflush]
+root       1258  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/33:2]
+root       1261  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfs-data/dm-2]
+root       1262  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfs-conv/dm-2]
+root       1263  0.0  0.0      0     0 ?        S<   02:43   0:00 [xfs-cil/dm-2]
+root       1264  0.0  0.0      0     0 ?        S    02:43   0:01 [xfsaild/dm-2]
+root       1269  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/34:2]
+root       1273  0.0  0.0  17792    64 ?        S<sl 02:43   0:00 /sbin/auditd -n
+root       1282  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/75:1H]
+root       1285  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/72:1H]
+root       1288  0.0  0.1 144896  7680 ?        Ss   02:43   0:01 /usr/bin/python -Es /usr/sbin/firewalld --nofork
+root       1289  0.0  0.0 116864   192 ?        Ss   02:43   0:00 /usr/sbin/abrtd -d -s
+root       1290  0.0  0.0 116672   896 ?        Ss   02:43   0:00 /usr/bin/abrt-watch-log -F BUG: WARNING: at INFO: possible recursive locking detected ernel BUG at list_del corruption list_add corruption do_IRQ: stack overflow: ear stack overflow (cur: eneral protection fault nable to handle kernel ouble fault: RTNL: assertion failed eek! page_mapcount(page) went negative! adness at NETDEV WATCHDOG ysctl table check failed : nobody cared IRQ handler type mismatch divide error: bounds: coprocessor segment overrun: invalid TSS: segment not present: invalid opcode: alignment check: stack segment: fpu exception: simd exception: iret exception: /var/log/messages -- /usr/bin/abrt-dump-oops -xD
+root       1311  0.0  0.0 228992     0 ?        Ssl  02:43   0:00 /sbin/rsyslogd -n -c 5
+root       1312  0.0  0.0   6848  1792 ?        Ss   02:43   0:04 /usr/sbin/irqbalance --foreground
+root       1314  0.0  0.0 114176     0 ?        Ss   02:43   0:00 /usr/sbin/smartd -n -q never
+root       1315  0.0  0.0   7552  2816 ?        Ss   02:43   0:00 /usr/lib/systemd/systemd-logind
+dbus       1316  0.0  0.0   6272  1024 ?        Ss   02:43   0:00 /bin/dbus-daemon --system --address=systemd: --nofork --nopidfile --systemd-activation
+root       1318  0.0  0.0   5440    64 ?        Ss   02:43   0:00 /usr/sbin/rtas_errd
+chrony     1328  0.0  0.0   6080     0 ?        S    02:43   0:00 /usr/sbin/chronyd -u chrony
+root       1329  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/49:1H]
+root       1338  0.0  0.1 283776  4864 ?        Ssl  02:43   0:00 /usr/sbin/NetworkManager --no-daemon
+polkitd    1350  0.0  0.0 233728  1792 ?        Ssl  02:43   0:00 /usr/lib/polkit-1/polkitd --no-debug
+root       1548  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/15:1H]
+root       1556  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/13:1H]
+root       1564  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/12:1H]
+root       1571  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/14:1H]
+root       1623  0.0  0.0  32320   192 ?        S    02:43   0:00 /sbin/dhclient -d -4 -sf /usr/libexec/nm-dhcp-client.action -pf /var/run/dhclient-eth0.pid -lf /var/lib/dhclient/dhclient-d3bbed5b-8ee3-4451-8888-2998c38a92cc-eth0.lease -cf /var/run/nm-dhclient-eth0.conf eth0
+root       1633  0.0  0.0 111168   128 ?        Ss   02:43   0:00 /usr/bin/rhsmcertd
+root       1674  0.0  0.0   7488   128 ?        Ss   02:43   0:00 /usr/sbin/xinetd -stayalive -pidfile /var/run/xinetd.pid
+rpc        1675  0.0  0.0   4736   192 ?        Ss   02:43   0:00 /sbin/rpcbind -w 
+root       1681  0.0  0.0  18688   192 ?        Ss   02:43   0:00 /usr/sbin/sshd -D
+root       1693  0.0  0.0   4800     0 ?        Ss   02:43   0:00 /usr/sbin/rpc.rstatd
+rpcuser    1708  0.0  0.0   5440   192 ?        Ss   02:43   0:00 /sbin/rpc.statd
+root       1711  0.0  0.0      0     0 ?        S<   02:43   0:00 [nfsd4]
+root       1712  0.0  0.0      0     0 ?        S<   02:43   0:00 [nfsd4_callbacks]
+root       1713  0.0  0.0      0     0 ?        S    02:43   0:00 [lockd]
+root       1718  0.0  0.0      0     0 ?        S    02:43   0:00 [nfsd]
+root       1719  0.0  0.0      0     0 ?        S    02:43   0:00 [nfsd]
+root       1720  0.0  0.0      0     0 ?        S    02:43   0:00 [nfsd]
+root       1721  0.0  0.0      0     0 ?        S    02:43   0:00 [nfsd]
+root       1722  0.0  0.0      0     0 ?        S    02:43   0:00 [nfsd]
+root       1723  0.0  0.0      0     0 ?        S    02:43   0:00 [nfsd]
+root       1724  0.0  0.0      0     0 ?        S    02:43   0:00 [nfsd]
+root       1725  0.0  0.0      0     0 ?        S    02:43   0:00 [nfsd]
+root       1728  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/4:2]
+root       1746  0.0  0.0   5312    64 ?        Ss   02:43   0:00 /usr/sbin/rpc.idmapd
+root       1760  0.0  0.0 109760    64 ?        Ss   02:43   0:00 /usr/sbin/rpc.rquotad
+root       1776  0.0  0.0   6016    64 ?        Ss   02:43   0:00 /usr/sbin/rpc.mountd
+root       1797  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/59:1H]
+root       1798  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/56:1H]
+root       1799  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/57:1H]
+root       1838  0.0  0.0  25856   768 ?        Ss   02:43   0:00 /usr/libexec/postfix/master
+root       1839  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/64:1H]
+root       1840  0.0  0.0      0     0 ?        S<   02:43   0:00 [nfsiod]
+root       1841  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/65:1H]
+root       1844  0.0  0.0 177408  2176 ?        Ss   02:43   0:01 /usr/sbin/smbd
+postfix    1846  0.0  0.0  26048   320 ?        S    02:43   0:00 qmgr -l -t fifo -u
+root       1847  0.0  0.0 177408  2880 ?        S    02:43   0:00 /usr/sbin/smbd
+root       1849  0.0  0.0      0     0 ?        S<   02:43   0:00 [kworker/77:1H]
+root       1854  0.0  0.0      0     0 ?        S    02:43   0:00 [nfsv4.0-svc]
+root       1863  0.0  0.0      0     0 ?        S    02:43   0:00 [kworker/3:2]
+root       1921  0.0  0.0 112128  2176 ?        Ss   02:43   0:00 /usr/sbin/crond -n
+root       1931  0.0  0.0   5568     0 ?        Ss   02:43   0:00 /usr/sbin/atd -f
+root       1966  0.0  0.0   3328  1280 ?        Ss   02:43   0:00 /sbin/iprupdate --daemon
+root       1968  0.0  0.0   3328   960 ?        Ss   02:43   0:00 /sbin/iprinit --daemon
+root       1974  0.0  0.0 118080   192 ?        Ss   02:43   0:00 login -- root     
+root       1985  0.0  0.0 109248   128 tty1     Ss+  02:43   0:00 /sbin/agetty --noclear tty1 38400 linux
+root       2000  1.1  0.0 597696    64 ?        Sl   02:43   6:16 /usr/local/staf/bin/STAFProc
+root       2005  0.0  0.0   3840  2304 ?        S<   02:44   0:00 /usr/local/staf/tools/sendStatus
+root       2010  0.0  0.0  35904   448 ?        Ss   02:44   0:00 /sbin/iprdump --daemon
+root       2144  0.0  0.1 7938816 6080 ?        Sl   02:44   0:05 java -Xmx1024m com.ibm.staf.service.STAFServiceHelper STAFJVM1
+root       2265  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/60:1H]
+root       2281  0.0  0.0 111040  2304 ?        S<   02:44   0:00 /bin/sh /usr/local/bin/report_results
+root       2343  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/69:1H]
+root       2344  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/74:1H]
+root       2485  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/70:1H]
+root       2621  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/78:1H]
+root       2623  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/79:1H]
+root       2626  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/76:1H]
+root       2880  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/50:1H]
+root       2881  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/51:1H]
+root       2999  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/63:1H]
+root       3159  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/68:1H]
+root       3164  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/48:1H]
+root       3187  0.0  0.0      0     0 ?        S<   02:44   0:00 [kworker/71:1H]
+root       3290  0.0  0.0      0     0 ?        S    02:44   0:00 [kworker/6:2]
+root       7662  0.0  0.0      0     0 ?        S    02:47   0:00 [kworker/72:2]
+root       8685  0.0  0.0      0     0 ?        S<   02:47   0:00 [kworker/3:1H]
+root       8784  0.0  0.0 111360  3520 hvc0     Ss   02:48   0:00 -bash
+root       8848  0.0  0.0      0     0 ?        S    02:50   0:00 [kworker/13:2]
+root      12505  0.0  0.0      0     0 ?        S    05:02   0:00 [kworker/56:2]
+root      13450  0.0  0.0      0     0 ?        S    05:02   0:00 [kworker/52:2]
+root      13717  0.0  0.0      0     0 ?        S    05:02   0:00 [kworker/2:0]
+root      14423  0.0  0.0      0     0 ?        S    05:03   0:00 [kworker/63:2]
+root      16200  0.0  0.0      0     0 ?        S    05:04   0:00 [kworker/58:2]
+root      17408  0.0  0.0      0     0 ?        S    05:05   0:00 [kworker/40:2]
+root      18142  0.0  0.0      0     0 ?        S    05:10   0:00 [kworker/31:2]
+root      18678  0.0  0.0      0     0 ?        S    06:00   0:00 [kworker/33:0]
+root      19782  0.0  0.0      0     0 ?        S    08:00   0:00 [kworker/50:0]
+root      20298  0.0  0.0      0     0 ?        S    09:00   0:00 [kworker/30:2]
+root      20299  0.0  0.0      0     0 ?        S    09:00   0:00 [kworker/51:2]
+root      20337  0.0  0.0      0     0 ?        S    09:00   0:00 [kworker/48:2]
+root      20388  0.0  0.0      0     0 ?        S<   09:10   0:00 [kworker/1:1H]
+root      20457  0.0  0.0      0     0 ?        S    09:20   0:00 [kworker/49:2]
+root      21061  0.0  0.0      0     0 ?        S    10:30   0:00 [flush-253:1]
+root      21132  0.0  0.0      0     0 ?        S    10:40   0:00 [kworker/4:0]
+postfix   21515  0.0  0.0  25984  1216 ?        S    11:03   0:00 pickup -l -t fifo -u
+root      21613  0.0  0.0      0     0 ?        S    11:28   0:00 [kworker/0:2]
+root      21614  0.0  0.0  26048   256 ?        Ss   11:28   0:00 sshd: hpt [priv]    
+hpt       21616  0.0  0.0  26240   256 ?        S    11:28   0:00 sshd: hpt@pts/0     
+hpt       21617  0.0  0.0 116032   576 pts/0    Ss   11:28   0:00 -zsh
+root      21714  0.0  0.0 120896   448 pts/0    S+   11:39   0:00 sudo vim /sys/kernel/debug/kmemleak
+root      21715  0.0  0.0 119616   128 pts/0    S+   11:39   0:00 vim /sys/kernel/debug/kmemleak
+root      21739  0.0  0.0      0     0 ?        S    11:43   0:00 [kworker/1:1]
+root      21816  0.0  0.0 109056   384 ?        S<   11:45   0:00 sleep 900
+root      21868  0.0  0.0 110336  3456 hvc0     R+   11:52   0:00 ps aux
 
-well, this is the patch I mentioned earlier.
-I don't think it will break anything, but I don't know how many applications
-use hidraw and will be hurt by receiving more events. I did a quick review
-of all hid drivers, and some of them are returning 1 in their raw_event().
-The only problematic one is hid-primax, which manually calls
-hid_report_raw_event() before returning 1... which is... weird.
-
-Anyway, I would like your advice on this, if you think it's valuable or if
-we should drop it and continue with the current implementation.
-
-Cheers,
-Benjamin
-
- drivers/hid/hid-core.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 1129f49..e0b8175 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1315,6 +1315,8 @@ nomem:
- 	if (hdrv && hdrv->raw_event && hid_match_report(hid, report)) {
- 		ret = hdrv->raw_event(hid, report, data, size);
- 		if (ret != 0) {
-+			if (ret > 0 && (hid->claimed & HID_CLAIMED_HIDRAW))
-+				ret = hidraw_report_event(hid, data, size);
- 			ret = ret < 0 ? ret : 0;
- 			goto unlock;
- 		}
--- 
-1.8.1.4
+--------------------
 
