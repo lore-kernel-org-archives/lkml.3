@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967416Ab3DROx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 10:53:57 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:58673 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967009Ab3DROxz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 10:53:55 -0400
-X-Originating-IP: 108.223.40.66
-Date: Thu, 18 Apr 2013 07:54:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Don Zickus <dzickus@redhat.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-watchdog@vger.kernel.org, kexec@lists.infradead.org,
-        wim@iguana.be, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
-        dyoung@redhat.com
-Subject: Re: [PATCH v3] watchdog: Add hook for kicking in kdump path
-Message-ID: <20130418145413.GA1980@roeck-us.net>
-References: <1366233596-34681-1-git-send-email-dzickus@redhat.com>
- <87li8gaku0.fsf@xmission.com>
- <20130418130009.GH79013@redhat.com>
- <20130418134904.GC2767@roeck-us.net>
- <20130418135257.GL79013@redhat.com>
+	id S967447Ab3DROyc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 10:54:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30975 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967009Ab3DROyb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 10:54:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,502,1363158000"; 
+   d="scan'208";a="320336588"
+Message-ID: <51700926.8020309@linux.intel.com>
+Date: Thu, 18 Apr 2013 07:54:30 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130418135257.GL79013@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: zhang.yi20@zte.com.cn
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] futex: bugfix for robust futex deadlock when waking only
+ one thread in handle_futex_death
+References: <OF1AAB4598.9A9CCAE8-ON48257B51.000416F3-48257B51.0009DE5A@zte.com.cn>
+In-Reply-To: <OF1AAB4598.9A9CCAE8-ON48257B51.000416F3-48257B51.0009DE5A@zte.com.cn>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 09:52:57AM -0400, Don Zickus wrote:
-> On Thu, Apr 18, 2013 at 06:49:04AM -0700, Guenter Roeck wrote:
-> > On Thu, Apr 18, 2013 at 09:00:09AM -0400, Don Zickus wrote:
-> > > On Wed, Apr 17, 2013 at 02:49:59PM -0700, Eric W. Biederman wrote:
-> > > > Don Zickus <dzickus@redhat.com> writes:
-> > > > 
-> > > > > A common problem with kdump is that during the boot up of the
-> > > > > second kernel, the hardware watchdog times out and reboots the
-> > > > > machine before a vmcore can be captured.
-> > > > >
-> > > > > Instead of tellling customers to disable their hardware watchdog
-> > > > > timers, I hacked up a hook to put in the kdump path that provides
-> > > > > one last kick before jumping into the second kernel.
-> > > > >
-> > > > > The assumption is the watchdog timeout is at least 10-30 seconds
-> > > > > long, enough to get the second kernel to userspace to kick the watchdog
-> > > > > again, if needed.
-> > > > 
-> > > > Why not double the watchdog timeout? and/or pet the watchdog a little
-> > > > more frequently.
-> > > 
-> > > I am not sure if the watchdog timeouts can be doubled.  I think Guenter
-> > > was saying some have a max of a couple seconds?? Petting a little more
-> > > frequently might be an option.  Guenter can that be done with a softdog
-> > > option?
-> > > 
-> > Most watchdog driver permit at least a minute. Some are more limited.
-> > Worst I have seen is the BookE watchdog timer (non-Freescale version)
-> > which has a maximum of three seconds. But that is broken anyway.
-> > 
-> > Most hardware watchdogs implement a softdog on top of the hardware watchdog
-> > if the hardware needs to be pinged faster than every 60 seconds.
-> > 
-> > So, yes, for the most common case you should actually be able to live with a,
-> > say, 30-60 second timeout which is pinged at least every 5-10 seconds. I thought
-> > that somehow did not work in your case. Maybe a misunderstanding ?
-> 
-> No, that will probably work.  It is my misunderstanding.  Is there a
-> common way to check the timeout length and the ping frequency?
-> 
-Usually it is configured in /etc/watchdog.conf if the watchdog package
-is installed. The standard ping interval is "interval", the timeout is
-"watchdog-timeout". See "man watchdog.conf" for details.
 
-Minimum and maximum values for a given watchdog driver are not exported
-to user space, so you would have to look into the driver sources to find
-out what they are.
 
-Guenter
+On 04/17/2013 06:47 PM, zhang.yi20@zte.com.cn wrote:
+> 
+> 
+> Darren Hart <dvhart@linux.intel.com> wrote on 2013/04/18 03:42:07:
+> 
+>> 
+>> 
+>> On 04/17/2013 03:40 AM, zhang.yi20@zte.com.cn wrote:
+>> > Darren Hart <dvhart@linux.intel.com> wrote on 2013/04/17 01:05:28:
+>> > 
+>> > 
+>> >>
+>> >> Performance isn't an issue here as this is an error path. The question
+>> >> is if the
+>> >> changed behavior will constitute a problem for existing applications.
+>> > Rather
+>> >> than a serialized cascading wake, we have them all wake at once. If an
+>> >> application depended on the first waker after owner death to do some
+>> > cleanup
+>> >> before the rest came along, I could imagine some potential for failure
+>> >> there.
+>> >>
+>> > 
+>> > I don't find out there are any APIs can wake all waiters at once, so still
+>> > use futex_wake.
+>> > When waiter return form futex_wait syscall, glibc check the futex's value
+>> > and try to modify it by using atomic instructions, and let the waiter
+>> > return only if successed.
+>> > The applications which not use the glibc's library should follow this.
+>> 
+>> Indeed they *should*. :-)
+>> 
+>> > 
+>> >> One possible alternative would be to wake waiters for a different
+>> >> process group
+>> >> when OWNER_DEAD is set, and leave it as a single wake.
+>> >>
+>> > 
+>> > To wake one waiter of other process cannot slove this problem , because it
+>> > can be exiting too.
+>> 
+>> If I understood the point of your change, it was to ensure all tasks
+>> would be woken because tasks that were exiting wouldn't propogate the
+>> wake. If there are nothing but exiting tasks available.... does it even
+>> matter?
+>> 
+> 
+> I mean that there may be some processes (more than 2) waitting for the
+> lock, we can't choose the one which is exiting or it will exit later.
+> It's difficult to accomplish this.
+> 
+
+"or it will exit later" .... I don't follow you there, it sounds like
+you are saying if we try to wake the exiting process, that process will
+be delayed and take longer to exit.... I don't think that is what you
+meant. Can you elaborate please?
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
