@@ -1,234 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936241Ab3DRQer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:34:47 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:30839 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932233Ab3DRQeq (ORCPT
+	id S967646Ab3DRQfP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:35:15 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:53738 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932233Ab3DRQfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:34:46 -0400
-Message-ID: <517020A1.3070504@atmel.com>
-Date: Thu, 18 Apr 2013 18:34:41 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: <linux-arm-kernel@lists.infradead.org>, <dgilbert@interlog.com>
-CC: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <robertcnelson@gmail.com>, <tanzilli@acmesystems.it>
-Subject: Re: [PATCH 5/5] ARM: at91: add Acme Systems Fox G20 board
-References: <cover.1366289869.git.nicolas.ferre@atmel.com> <a647ac59d50fdee9a0e9e87f362febe1ad2b1264.1366289869.git.nicolas.ferre@atmel.com>
-In-Reply-To: <a647ac59d50fdee9a0e9e87f362febe1ad2b1264.1366289869.git.nicolas.ferre@atmel.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Thu, 18 Apr 2013 12:35:13 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, pjt@google.com,
+        rostedt@goodmis.org, fweisbec@gmail.com, efault@gmx.de
+Cc: Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH Resend v6] sched: fix wrong rq's runnable_avg update with rt tasks
+Date: Thu, 18 Apr 2013 18:34:26 +0200
+Message-Id: <1366302867-5055-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 03:01 PM, Nicolas Ferre :
-> From: Douglas Gilbert <dgilbert@interlog.com>
-> 
-> Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  arch/arm/boot/dts/Makefile        |   1 +
->  arch/arm/boot/dts/at91-foxg20.dts | 166 ++++++++++++++++++++++++++++++++++++++
+The current update of the rq's load can be erroneous when RT tasks are
+involved
 
-FYI: I have to review this one: error while compiling.
+The update of the load of a rq that becomes idle, is done only if the avg_idle
+is less than sysctl_sched_migration_cost. If RT tasks and short idle duration
+alternate, the runnable_avg will not be updated correctly and the time will be
+accounted as idle time when a CFS task wakes up.
 
->  2 files changed, 167 insertions(+)
->  create mode 100644 arch/arm/boot/dts/at91-foxg20.dts
-> 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index b07f162..914fe65 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -16,6 +16,7 @@ dtb-$(CONFIG_ARCH_AT91) += at91sam9263ek.dtb
->  dtb-$(CONFIG_ARCH_AT91) += tny_a9263.dtb
->  dtb-$(CONFIG_ARCH_AT91) += usb_a9263.dtb
->  # sam9g20
-> +dtb-$(CONFIG_ARCH_AT91) += at91-foxg20.dtb
->  dtb-$(CONFIG_ARCH_AT91) += at91sam9g20ek.dtb
->  dtb-$(CONFIG_ARCH_AT91) += at91sam9g20ek_2mmc.dtb
->  dtb-$(CONFIG_ARCH_AT91) += kizbox.dtb
-> diff --git a/arch/arm/boot/dts/at91-foxg20.dts b/arch/arm/boot/dts/at91-foxg20.dts
-> new file mode 100644
-> index 0000000..7d24ef7
-> --- /dev/null
-> +++ b/arch/arm/boot/dts/at91-foxg20.dts
-> @@ -0,0 +1,166 @@
-> +/*
-> + * at91-foxg20.dts - Device Tree file for Acme Systems FoxG20 board
-> + *
-> + * Based on DT files for at91sam9g20ek evaluation board (AT91SAM9G20 SoC)
-> + *
-> + * Copyright (C) 2013 Douglas Gilbert <dgilbert@interlog.com>
-> + *
-> + * Licensed under GPLv2 or later.
-> + */
-> +/dts-v1/;
-> +/include/ "at91sam9g20.dtsi"
-> +
-> +/ {
-> +	model = "Acme Systems FoxG20";
-> +	compatible = "acme,foxg20", "atmel,at91sam9g20", "atmel,at91sam9";
-> +
-> +	chosen {
-> +		bootargs = "console=ttyS0,115200 root=/dev/mmcblk0p2 rw rootwait";
-> +	};
-> +
-> +	memory {
-> +		reg = <0x20000000 0x4000000>;
-> +	};
-> +
-> +	clocks {
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		ranges;
-> +
-> +		main_clock: clock@0 {
-> +			compatible = "atmel,osc", "fixed-clock";
-> +			clock-frequency = <18432000>;
-> +		};
-> +	};
-> +
-> +	ahb {
-> +		apb {
-> +			usb1: gadget@fffa4000 {
-> +				atmel,vbus-gpio = <&pioC 6 0>;
-> +				status = "okay";
-> +			};
-> +
-> +			mmc0: mmc@fffa8000 {
-> +				pinctrl-0 = <
-> +					&pinctrl_mmc0_clk
-> +					&pinctrl_mmc0_slot1_cmd_dat0
-> +					&pinctrl_mmc0_slot1_dat1_3>;
-> +				status = "okay";
-> +				slot@1 {
-> +					reg = <1>;
-> +					bus-width = <4>;
-> +				};
-> +			};
-> +
-> +			usart0: serial@fffb0000 {
-> +				pinctrl-0 =
-> +					<&pinctrl_usart0
-> +					 &pinctrl_usart0_rts
-> +					 &pinctrl_usart0_cts
-> +					>;
-> +				status = "okay";
-> +			};
-> +
-> +			usart1: serial@fffb4000 {
-> +				status = "okay";
-> +			};
-> +
-> +			usart2: serial@fffb8000 {
-> +				status = "okay";
-> +			};
-> +
-> +			macb0: ethernet@fffc4000 {
-> +				phy-mode = "rmii";
-> +				status = "okay";
-> +			};
-> +
-> +			spi0: spi@fffc8000 {
-> +				cs-gpios = <0>, <&pioC 11 0>, <0>, <0>;
-> +				mtd_dataflash@0 {
-> +					compatible = "atmel,at45", "atmel,dataflash";
-> +					spi-max-frequency = <50000000>;
-> +					reg = <1>;
-> +				};
-> +				status = "disabled";
-> +			};
-> +
-> +			usart3: serial@fffd0000 {
-> +				status = "okay";
-> +			};
-> +
-> +			uart0: serial@fffd4000 {
-> +				status = "okay";
-> +			};
-> +
-> +			uart1: serial@fffd8000 {
-> +				status = "okay";
-> +			};
-> +
-> +			dbgu: serial@fffff200 {
-> +				status = "okay";
-> +			};
-> +
-> +			pinctrl@fffff400 {
-> +				board {
-> +					pinctrl_pck0_as_mck: pck0_as_mck {
-> +						atmel,pins =
-> +							<2 1 0x2 0x0>;	/* PC1 periph B */
-> +					};
-> +				};
-> +
-> +				mmc0_slot1 {
-> +					pinctrl_board_mmc0_slot1: mmc0_slot1-board {
-> +						atmel,pins =
-> +							<2 9 0x0 0x5>;	/* PC9 gpio CD pin pull up and deglitch */
-> +					};
-> +				};
-> +
-> +				i2c0 {
-> +					pinctrl_i2c0: i2c0-0 {
-> +						atmel,pins =
-> +							<0 23 0x1 0x2	/* TWD (SDA) PA23 periph A, open drain */
-> +							 0 24 0x1 0x2>;	/* TWCK (SCL) PA24 periph A, open drain */
-> +					};
-> +				};
-> +			};
-> +
-> +			watchdog@fffffd40 {
-> +				status = "okay";
-> +			};
-> +		};
-> +
-> +		usb0: ohci@00500000 {
-> +			num-ports = <2>;
-> +			status = "okay";
-> +		};
-> +	};
-> +
-> +	i2c@0 {
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&pinctrl_i2c0>;
-> +		i2c-gpio,delay-us = <5>;	/* ~85 kHz */
-> +		status = "okay";
-> +	};
-> +
-> +	leds {
-> +		compatible = "gpio-leds";
-> +
-> +		/* red LED marked "PC7" near mini USB (device) receptacle */
-> +		user_led {
-> +			label = "user_led";
-> +			gpios = <&pioC 7 0>;	/* PC7 */
-> +			linux,default-trigger = "heartbeat";
-> +		};
-> +	};
-> +
-> +	gpio_keys {
-> +		compatible = "gpio-keys";
-> +
-> +		btn {
-> +			label = "Button";
-> +			gpios = <&pioC 4 1>;
-> +			linux,code = <0x103>;
-> +			gpio-key,wakeup;
-> +		};
-> +	};
-> +};
-> 
+A new idle_enter function is called when the next task is the idle function
+so the elapsed time will be accounted as run time in the load of the rq,
+whatever the average idle time is. The function update_rq_runnable_avg is
+removed from idle_balance.
 
+When a RT task is scheduled on an idle CPU, the update of the rq's load is
+not done when the rq exit idle state because CFS's functions are not
+called. Then, the idle_balance, which is called just before entering the
+idle function, updates the rq's load and makes the assumption that the
+elapsed time since the last update, was only running time.
 
+As a consequence, the rq's load of a CPU that only runs a periodic RT task,
+is close to LOAD_AVG_MAX whatever the running duration of the RT task is.
+
+A new idle_exit function is called when the prev task is the idle function
+so the elapsed time will be accounted as idle time in the rq's load.
+
+Changes since V5:
+- Rename idle_enter/exit function to idle_enter/exit_fair
+
+Changes since V4:
+- Rebase on v3.9-rc6 instead of Steven Rostedt's patches
+- Create the post_schedule_idle function that was previously created by Steven's patches
+
+Changes since V3:
+- Remove dependancy with CONFIG_FAIR_GROUP_SCHED
+- Add a new idle_enter function and create a post_schedule callback for
+ idle class
+- Remove the update_runnable_avg from idle_balance
+
+Changes since V2:
+- remove useless definition for UP platform
+- rebased on top of Steven Rostedt's patches :
+https://lkml.org/lkml/2013/2/12/558
+
+Changes since V1:
+- move code out of schedule function and create a pre_schedule callback for
+  idle class instead.
+
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ kernel/sched/fair.c      |   23 +++++++++++++++++++++--
+ kernel/sched/idle_task.c |   16 ++++++++++++++++
+ kernel/sched/sched.h     |   12 ++++++++++++
+ 3 files changed, 49 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7a33e59..1de3df0 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1562,6 +1562,27 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
+ 	} /* migrations, e.g. sleep=0 leave decay_count == 0 */
+ }
++
++/*
++ * Update the rq's load with the elapsed running time before entering
++ * idle. if the last scheduled task is not a CFS task, idle_enter will
++ * be the only way to update the runnable statistic.
++ */
++void idle_enter_fair(struct rq *this_rq)
++{
++	update_rq_runnable_avg(this_rq, 1);
++}
++
++/*
++ * Update the rq's load with the elapsed idle time before a task is
++ * scheduled. if the newly scheduled task is not a CFS task, idle_exit will
++ * be the only way to update the runnable statistic.
++ */
++void idle_exit_fair(struct rq *this_rq)
++{
++	update_rq_runnable_avg(this_rq, 0);
++}
++
+ #else
+ static inline void update_entity_load_avg(struct sched_entity *se,
+ 					  int update_cfs_rq) {}
+@@ -5219,8 +5240,6 @@ void idle_balance(int this_cpu, struct rq *this_rq)
+ 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
+ 		return;
+ 
+-	update_rq_runnable_avg(this_rq, 1);
+-
+ 	/*
+ 	 * Drop the rq->lock, but keep IRQ/preempt disabled.
+ 	 */
+diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
+index b6baf37..b8ce773 100644
+--- a/kernel/sched/idle_task.c
++++ b/kernel/sched/idle_task.c
+@@ -13,6 +13,16 @@ select_task_rq_idle(struct task_struct *p, int sd_flag, int flags)
+ {
+ 	return task_cpu(p); /* IDLE tasks as never migrated */
+ }
++
++static void pre_schedule_idle(struct rq *rq, struct task_struct *prev)
++{
++	idle_exit_fair(rq);
++}
++
++static void post_schedule_idle(struct rq *rq)
++{
++	idle_enter_fair(rq);
++}
+ #endif /* CONFIG_SMP */
+ /*
+  * Idle tasks are unconditionally rescheduled:
+@@ -25,6 +35,10 @@ static void check_preempt_curr_idle(struct rq *rq, struct task_struct *p, int fl
+ static struct task_struct *pick_next_task_idle(struct rq *rq)
+ {
+ 	schedstat_inc(rq, sched_goidle);
++#ifdef CONFIG_SMP
++	/* Trigger the post schedule to do an idle_enter for CFS */
++	rq->post_schedule = 1;
++#endif
+ 	return rq->idle;
+ }
+ 
+@@ -86,6 +100,8 @@ const struct sched_class idle_sched_class = {
+ 
+ #ifdef CONFIG_SMP
+ 	.select_task_rq		= select_task_rq_idle,
++	.pre_schedule		= pre_schedule_idle,
++	.post_schedule		= post_schedule_idle,
+ #endif
+ 
+ 	.set_curr_task          = set_curr_task_idle,
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index cc03cfd..8f1d80e 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -880,6 +880,18 @@ extern const struct sched_class idle_sched_class;
+ extern void trigger_load_balance(struct rq *rq, int cpu);
+ extern void idle_balance(int this_cpu, struct rq *this_rq);
+ 
++/*
++ * Only depends on SMP, FAIR_GROUP_SCHED may be removed when runnable_avg
++ * becomes useful in lb
++ */
++#if defined(CONFIG_FAIR_GROUP_SCHED)
++extern void idle_enter_fair(struct rq *this_rq);
++extern void idle_exit_fair(struct rq *this_rq);
++#else
++static inline void idle_enter_fair(struct rq *this_rq) {}
++static inline void idle_exit_fair(struct rq *this_rq) {}
++#endif
++
+ #else	/* CONFIG_SMP */
+ 
+ static inline void idle_balance(int cpu, struct rq *rq)
 -- 
-Nicolas Ferre
+1.7.9.5
+
