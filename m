@@ -1,108 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967476Ab3DRPCO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 11:02:14 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:43341 "EHLO zene.cmpxchg.org"
+	id S967484Ab3DRPCq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 11:02:46 -0400
+Received: from 8bytes.org ([85.214.48.195]:49016 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966926Ab3DRPCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 11:02:13 -0400
-Date: Thu, 18 Apr 2013 08:01:05 -0700
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
-        dormando <dormando@rydia.net>, Michal Hocko <mhocko@suse.cz>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
- requirements for kswapd
-Message-ID: <20130418150105.GD2018@cmpxchg.org>
-References: <1365710278-6807-1-git-send-email-mgorman@suse.de>
- <1365710278-6807-3-git-send-email-mgorman@suse.de>
+	id S966367Ab3DRPCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 11:02:44 -0400
+Date: Thu, 18 Apr 2013 17:02:39 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <arekm@maven.pl>
+Subject: Re: [PATCH v10] irq: add quirk for broken interrupt remapping on
+ 55XX chipsets
+Message-ID: <20130418150222.GB2558@8bytes.org>
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+ <1366144712-23460-1-git-send-email-nhorman@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1365710278-6807-3-git-send-email-mgorman@suse.de>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1366144712-23460-1-git-send-email-nhorman@tuxdriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Apr 18 17:02:42 2013
+X-DSPAM-Confidence: 0.9996
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51700b1223678514019764
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 11, 2013 at 08:57:50PM +0100, Mel Gorman wrote:
-> @@ -1841,17 +1848,58 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
->  							    lruvec, sc);
->  			}
->  		}
-> +
-> +		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
-> +			continue;
-> +
->  		/*
-> -		 * On large memory systems, scan >> priority can become
-> -		 * really large. This is fine for the starting priority;
-> -		 * we want to put equal scanning pressure on each zone.
-> -		 * However, if the VM has a harder time of freeing pages,
-> -		 * with multiple processes reclaiming pages, the total
-> -		 * freeing target can get unreasonably large.
-> +		 * For global direct reclaim, reclaim only the number of pages
-> +		 * requested. Less care is taken to scan proportionally as it
-> +		 * is more important to minimise direct reclaim stall latency
-> +		 * than it is to properly age the LRU lists.
->  		 */
-> -		if (nr_reclaimed >= nr_to_reclaim &&
-> -		    sc->priority < DEF_PRIORITY)
-> +		if (global_reclaim(sc) && !current_is_kswapd())
->  			break;
-> +
-> +		/*
-> +		 * For kswapd and memcg, reclaim at least the number of pages
-> +		 * requested. Ensure that the anon and file LRUs shrink
-> +		 * proportionally what was requested by get_scan_count(). We
-> +		 * stop reclaiming one LRU and reduce the amount scanning
-> +		 * proportional to the original scan target.
-> +		 */
-> +		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
-> +		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
-> +
-> +		if (nr_file > nr_anon) {
-> +			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
-> +						targets[LRU_ACTIVE_ANON] + 1;
-> +			lru = LRU_BASE;
-> +			percentage = nr_anon * 100 / scan_target;
-> +		} else {
-> +			unsigned long scan_target = targets[LRU_INACTIVE_FILE] +
-> +						targets[LRU_ACTIVE_FILE] + 1;
-> +			lru = LRU_FILE;
-> +			percentage = nr_file * 100 / scan_target;
-> +		}
-> +
-> +		/* Stop scanning the smaller of the LRU */
-> +		nr[lru] = 0;
-> +		nr[lru + LRU_ACTIVE] = 0;
-> +
-> +		/*
-> +		 * Recalculate the other LRU scan count based on its original
-> +		 * scan target and the percentage scanning already complete
-> +		 */
-> +		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
-> +		nr[lru] = targets[lru] * (100 - percentage) / 100;
-> +		nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
+On Tue, Apr 16, 2013 at 04:38:32PM -0400, Neil Horman wrote:
+> A few years back intel published a spec update:
+> http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+> 
+> For the 5520 and 5500 chipsets which contained an errata (specificially errata
+> 53), which noted that these chipsets can't properly do interrupt remapping, and
+> as a result the recommend that interrupt remapping be disabled in bios.  While
+> many vendors have a bios update to do exactly that, not all do, and of course
+> not all users update their bios to a level that corrects the problem.  As a
+> result, occasionally interrupts can arrive at a cpu even after affinity for that
+> interrupt has be moved, leading to lost or spurrious interrupts (usually
+> characterized by the message:
+> kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
+> 
+> There have been several incidents recently of people seeing this error, and
+> investigation has shown that they have system for which their BIOS level is such
+> that this feature was not properly turned off.  As such, it would be good to
+> give them a reminder that their systems are vulnurable to this problem.  For
+> details of those that reported the problem, please see:
+> https://bugzilla.redhat.com/show_bug.cgi?id=887006
+> 
+> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> CC: Prarit Bhargava <prarit@redhat.com>
+> CC: Don Zickus <dzickus@redhat.com>
+> CC: Don Dutile <ddutile@redhat.com>
+> CC: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Asit Mallick <asit.k.mallick@intel.com>
+> CC: David Woodhouse <dwmw2@infradead.org>
+> CC: linux-pci@vger.kernel.org
+> CC: Joerg Roedel <joro@8bytes.org>
+> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> CC: Arkadiusz Miśkiewicz <arekm@maven.pl>
 
-This doesn't seem right.  Say percentage is 60, then
+Applied with some small changes to my x86/vt-d branch, thanks Neil.
 
-    nr[lru] = targets[lru] * (100 - percentage) / 100;
 
-sets nr[lru] to 40% of targets[lru], and so in
-
-    nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
-
-targets[lru] - nr[lru] is 60% of targets[lru], making it bigger than
-nr[lru], which is in turn subtracted from itself, i.e. it leaves the
-remaining type at 0 if >= 50% of the other type were scanned, and at
-half of the inverted scan percentage if less than 50% were scanned.
-
-Would this be more sensible?
-
-    already_scanned = targets[lru] - nr[lru];
-    nr[lru] = targets[lru] * percentage / 100; /* adjusted original target */
-    nr[lru] -= min(nr[lru], already_scanned);  /* minus work already done */
