@@ -1,119 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967698Ab3DRQgi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:36:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:7402 "EHLO mga11.intel.com"
+	id S967676Ab3DRQgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:36:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15630 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966792Ab3DRQgf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:36:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,502,1363158000"; 
-   d="scan'208";a="321243154"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <51701D5E.80802@sr71.net>
-References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1365163198-29726-32-git-send-email-kirill.shutemov@linux.intel.com>
- <51631206.3060605@sr71.net>
- <20130417143842.1A76CE0085@blue.fi.intel.com>
- <516F1D3C.1060804@sr71.net>
- <20130418160920.4A00DE0085@blue.fi.intel.com>
- <51701D5E.80802@sr71.net>
-Subject: Re: [PATCHv3, RFC 31/34] thp: initial implementation of
- do_huge_linear_fault()
-Content-Transfer-Encoding: 7bit
-Message-Id: <20130418163836.B73B2E0085@blue.fi.intel.com>
-Date: Thu, 18 Apr 2013 19:38:36 +0300 (EEST)
+	id S932233Ab3DRQge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 12:36:34 -0400
+Date: Thu, 18 Apr 2013 19:36:03 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
+Message-ID: <20130418163603.GG5807@redhat.com>
+References: <20130322112811.GV9382@redhat.com>
+ <514C42EC.6000303@linux.vnet.ibm.com>
+ <20130322114715.GW9382@redhat.com>
+ <514C4878.5000404@linux.vnet.ibm.com>
+ <20130322121254.GX9382@redhat.com>
+ <514C508D.6070903@linux.vnet.ibm.com>
+ <20130322191524.GY9382@redhat.com>
+ <20130417203904.GA29493@amt.cnet>
+ <20130418094239.GR8997@redhat.com>
+ <20130418140118.GA32288@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130418140118.GA32288@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Hansen wrote:
-> On 04/18/2013 09:09 AM, Kirill A. Shutemov wrote:
-> > Dave Hansen wrote:
-> >> On 04/17/2013 07:38 AM, Kirill A. Shutemov wrote:
-> >> Are you still sure you can't do _any_ better than a verbatim copy of 129
-> >> lines?
-> > 
-> > It seems I was too lazy. Shame on me. :(
-> > Here's consolidated version. Only build tested. Does it look better?
+On Thu, Apr 18, 2013 at 11:01:18AM -0300, Marcelo Tosatti wrote:
+> On Thu, Apr 18, 2013 at 12:42:39PM +0300, Gleb Natapov wrote:
+> > > > that, but if not then less code is better.
+> > > 
+> > > The number of sp->role.invalid=1 pages is small (only shadow roots). It
+> > > can grow but is bounded to a handful. No improvement visible there.
+> > > 
+> > > The number of shadow pages with old mmu_gen_number is potentially large.
+> > > 
+> > > Returning all shadow pages to the allocator is problematic because it
+> > > takes a long time (therefore the suggestion to postpone it).
+> > > 
+> > > Spreading the work to free (or reuse) those shadow pages to individual
+> > > page fault instances alleviates the mmu_lock hold time issue without
+> > > significant reduction to post kvm_mmu_zap_all operation (which has to
+> > > rebuilt all pagetables anyway).
+> > > 
+> > > You prefer to modify SLAB allocator to aggressively free these stale
+> > > shadow pages rather than kvm_mmu_get_page to reuse them?
+> > Are you saying that what makes kvm_mmu_zap_all() slow is that we return
+> > all the shadow pages to the SLAB allocator? As far as I understand what
+> > makes it slow is walking over huge number of shadow pages via various
+> > lists, actually releasing them to the SLAB is not an issue, otherwise
+> > the problem could have been solved by just moving
+> > kvm_mmu_commit_zap_page() out of the mmu_lock. If there is measurable
+> > SLAB overhead from not reusing the pages I am all for reusing them, but
+> > is this really the case or just premature optimization?
 > 
-> Yeah, it's definitely a step in the right direction.  There rae
-> definitely some bugs in there like:
+> Actually releasing them is not a problem. Walking all pages, lists and
+> releasing in the process part of the problem ("returning them to the allocator"
+> would have been clearer with "freeing them").
 > 
-> +	unsigned long haddr = address & PAGE_MASK;
+> Point is at some point you have to walk all pages and release their data
+> structures. With Xiaos scheme its possible to avoid this lengthy process
+> by either:
+> 
+> 1) reusing the pages with stale generation number
+> or
+> 2) releasing them via the SLAB shrinker more aggressively
+> 
+But is it really so? The number of allocated shadow pages are limited
+via n_max_mmu_pages mechanism, so I expect most freeing to happen in
+make_mmu_pages_available() which is called during page fault so freeing
+will be spread across page faults more or less equally. Doing
+kvm_mmu_prepare_zap_page()/kvm_mmu_commit_zap_page() and zapping unknown
+number of shadow pages during kvm_mmu_get_page() just to reuse one does
+not sound like a clear win to me.
 
-It's not bug. It's bad name for the variable.
-See, first 'if (try_huge_pages)'. I update it there for huge page case.
-
-addr_aligned better?
-
+> (another typo, i meant "SLAB shrinker" not "SLAB allocator").
 > 
-> I do think some of this refactoring stuff
+> But you seem to be concerned for 1) due to code complexity issues?
 > 
-> > -				unlock_page(page);
-> > -				vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
-> > -				tmp = vma->vm_ops->page_mkwrite(vma, &vmf);
-> > -				if (unlikely(tmp &
-> > -					  (VM_FAULT_ERROR | VM_FAULT_NOPAGE))) {
-> > -					ret = tmp;
-> > +			unlock_page(page);
-> > +			vmf.flags = FAULT_FLAG_WRITE | FAULT_FLAG_MKWRITE;
-> > +			tmp = vma->vm_ops->page_mkwrite(vma, &vmf);
-> > +			if (unlikely(tmp &
-> > +					(VM_FAULT_ERROR | VM_FAULT_NOPAGE))) {
-> > +				ret = tmp;
-> > +				goto unwritable_page;
-> > +			}
-> 
-> could probably be a separate patch and would make what's going on more
-> clear, but it's passable the way it is.  When it is done this way it's
-> hard sometimes reading the diff to realize if you are adding code or
-> just moving it around.
+It adds code that looks to me redundant. I may be wrong of course, if
+it is a demonstrable win I am all for it.
 
-Will do.
-
-> 
-> This stuff:
-> 
-> >  		if (set_page_dirty(dirty_page))
-> > -			dirtied = 1;
-> > +			dirtied = true;
-> 
-> needs to go in another patch for sure.
-
-Ditto.
-
-> One thing I *REALLY* like about doing patches this way is that things
-> like this start to pop out:
-> 
-> > -	ret = vma->vm_ops->fault(vma, &vmf);
-> > +	if (try_huge_pages) {
-> > +		pgtable = pte_alloc_one(mm, haddr);
-> > +		if (unlikely(!pgtable)) {
-> > +			ret = VM_FAULT_OOM;
-> > +			goto uncharge_out;
-> > +		}
-> > +		ret = vma->vm_ops->huge_fault(vma, &vmf);
-> > +	} else
-> > +		ret = vma->vm_ops->fault(vma, &vmf);
-> 
-> The ->fault is (or can be) essentially per filesystem, and we're going
-> to be adding support per-filesystem.  any reason we can't just handle
-> this inside the ->fault code and avoid adding huge_fault altogether?
-
-will check. it's on my todo list already.
-
--- 
- Kirill A. Shutemov
+--
+			Gleb.
