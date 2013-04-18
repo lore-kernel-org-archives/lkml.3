@@ -1,273 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965997Ab3DRNoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 09:44:10 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:55183 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934480Ab3DRNoH (ORCPT
+	id S966149Ab3DRNpj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 09:45:39 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:11554 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965366Ab3DRNph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 09:44:07 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 2/3] of/pci: Provide support for parsing PCI DT ranges property
-To: Andrew Murray <Andrew.Murray@arm.com>, linux-mips@linux-mips.org,
-        linuxppc-dev@lists.ozlabs.org
-Cc: rob.herring@calxeda.com, jgunthorpe@obsidianresearch.com,
-        linux@arm.linux.org.uk, siva.kallam@samsung.com,
-        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        jg1.han@samsung.com, Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
-        bhelgaas@google.com, suren.reddy@samsung.com,
-        linux-arm-kernel@lists.infradead.org, monstr@monstr.eu,
-        benh@kernel.crashing.org, paulus@samba.org,
-        thomas.petazzoni@free-electrons.com, thierry.reding@avionic-design.de,
-        thomas.abraham@linaro.org, arnd@arndb.de, linus.walleij@linaro.org,
-        Andrew Murray <Andrew.Murray@arm.com>
-In-Reply-To: <1366107508-12672-3-git-send-email-Andrew.Murray@arm.com>
-References: <1366107508-12672-1-git-send-email-Andrew.Murray@arm.com> <1366107508-12672-3-git-send-email-Andrew.Murray@arm.com>
-Date: Thu, 18 Apr 2013 14:44:01 +0100
-Message-Id: <20130418134401.84AEE3E1319@localhost>
+	Thu, 18 Apr 2013 09:45:37 -0400
+Message-ID: <516FF8FC.7070901@atmel.com>
+Date: Thu, 18 Apr 2013 15:45:32 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Andrew Victor <linux@maxim.org.za>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>
+Subject: Re: [PATCH 18/19] ARM: at91: suspend both memory controllers on at91sam9263
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359153858-31992-1-git-send-email-arnd@arndb.de> <1359153858-31992-19-git-send-email-arnd@arndb.de>
+In-Reply-To: <1359153858-31992-19-git-send-email-arnd@arndb.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Apr 2013 11:18:27 +0100, Andrew Murray <Andrew.Murray@arm.com> wrote:
-> This patch factors out common implementation patterns to reduce overall kernel
-> code and provide a means for host bridge drivers to directly obtain struct
-> resources from the DT's ranges property without relying on architecture specific
-> DT handling. This will make it easier to write archiecture independent host bridge
-> drivers and mitigate against further duplication of DT parsing code.
-> 
-> This patch can be used in the following way:
-> 
-> 	struct of_pci_range_parser parser;
-> 	struct of_pci_range range;
-> 
-> 	if (of_pci_range_parser(&parser, np))
-> 		; //no ranges property
-> 
-> 	for_each_of_pci_range(&parser, &range) {
-> 
-> 		/*
-> 			directly access properties of the address range, e.g.:
-> 			range.pci_space, range.pci_addr, range.cpu_addr,
-> 			range.size, range.flags
-> 
-> 			alternatively obtain a struct resource, e.g.:
-> 			struct resource res;
-> 			of_pci_range_to_resource(&range, np, &res);
-> 		*/
-> 	}
-> 
-> Additionally the implementation takes care of adjacent ranges and merges them
-> into a single range (as was the case with powerpc and microblaze).
-> 
-> Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
-> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Reviewed-by: Rob Herring <rob.herring@calxeda.com>
-> Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Tested-by: Linus Walleij <linus.walleij@linaro.org>
+I come back to this for AT91
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-But comments below...
+On 01/25/2013 11:44 PM, Arnd Bergmann :
+> For the past three years, we have had a #warning in
+> mach-at91 about the sdram_selfrefresh_enable or
+> at91sam9_standby functions possibly not working on
+> at91sam9263. In the meantime a function was added
+> to do the right thing on at91sam9g45, which looks like
+> it should also work on '9263.
+> 
+> This patch blindly removes the warning and changes the
+> at91sam9263 to use the same code at at91sam9g45, which
+> may or may not be the right solution. If it is not,
+> maybe someone could provide a better fix.
+
+Maybe you can remove this paragraph: now you are using the proper fix
+with proper RAM type.
+
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+
+What is the future of this patch series: do you want us to take this
+patch separately or to you want to apply the whole series on the arm-soc
+tree?
+
+
+> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+> Cc: Andrew Victor <linux@maxim.org.za>
+> Cc: Albin Tonnerre <albin.tonnerre@free-electrons.com>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+
+Moreover, this patch my conflict with Daniel's current initiative to
+move cpuidle driver to its own directory: how do we coordinate with each
+other?
+
+Arnd,
+Thanks a lot for having taking care of this old warning...
+
+
+Best regards,
 
 > ---
->  drivers/of/address.c       |   67 ++++++++++++++++++++++++++
->  drivers/of/of_pci.c        |  113 ++++++++++++++++----------------------------
->  include/linux/of_address.h |   46 ++++++++++++++++++
->  3 files changed, 154 insertions(+), 72 deletions(-)
+>  arch/arm/mach-at91/cpuidle.c |  2 ++
+>  arch/arm/mach-at91/pm.c      |  2 ++
+>  arch/arm/mach-at91/pm.h      | 30 ++++++++++++++++++++++++------
+>  3 files changed, 28 insertions(+), 6 deletions(-)
 > 
-> diff --git a/drivers/of/address.c b/drivers/of/address.c
-> index 04da786..6eec70c 100644
-> --- a/drivers/of/address.c
-> +++ b/drivers/of/address.c
-> @@ -227,6 +227,73 @@ int of_pci_address_to_resource(struct device_node *dev, int bar,
->  	return __of_address_to_resource(dev, addrp, size, flags, NULL, r);
+> diff --git a/arch/arm/mach-at91/cpuidle.c b/arch/arm/mach-at91/cpuidle.c
+> index 0c63815..4c67946 100644
+> --- a/arch/arm/mach-at91/cpuidle.c
+> +++ b/arch/arm/mach-at91/cpuidle.c
+> @@ -38,6 +38,8 @@ static int at91_enter_idle(struct cpuidle_device *dev,
+>  		at91rm9200_standby();
+>  	else if (cpu_is_at91sam9g45())
+>  		at91sam9g45_standby();
+> +	else if (cpu_is_at91sam9263())
+> +		at91sam9263_standby();
+>  	else
+>  		at91sam9_standby();
+>  
+> diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+> index adb6db8..b8017c1 100644
+> --- a/arch/arm/mach-at91/pm.c
+> +++ b/arch/arm/mach-at91/pm.c
+> @@ -267,6 +267,8 @@ static int at91_pm_enter(suspend_state_t state)
+>  				at91rm9200_standby();
+>  			else if (cpu_is_at91sam9g45())
+>  				at91sam9g45_standby();
+> +			else if (cpu_is_at91sam9263())
+> +				at91sam9263_standby();
+>  			else
+>  				at91sam9_standby();
+>  			break;
+> diff --git a/arch/arm/mach-at91/pm.h b/arch/arm/mach-at91/pm.h
+> index 38f467c..2f5908f 100644
+> --- a/arch/arm/mach-at91/pm.h
+> +++ b/arch/arm/mach-at91/pm.h
+> @@ -70,13 +70,31 @@ static inline void at91sam9g45_standby(void)
+>  	at91_ramc_write(1, AT91_DDRSDRC_LPR, saved_lpr1);
 >  }
->  EXPORT_SYMBOL_GPL(of_pci_address_to_resource);
-> +
-> +int of_pci_range_parser(struct of_pci_range_parser *parser,
-> +			struct device_node *node)
-> +{
-> +	const int na = 3, ns = 2;
-> +	int rlen;
-> +
-> +	parser->node = node;
-> +	parser->pna = of_n_addr_cells(node);
-> +	parser->np = parser->pna + na + ns;
-> +
-> +	parser->range = of_get_property(node, "ranges", &rlen);
-> +	if (parser->range == NULL)
-> +		return -ENOENT;
-> +
-> +	parser->end = parser->range + rlen / sizeof(__be32);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(of_pci_range_parser);
-
-"of_pci_range_parser_init" would be a clearer name
-
-> +struct of_pci_range *of_pci_process_ranges(struct of_pci_range_parser *parser,
-> +						struct of_pci_range *range)
-
-Similarly, "of_pci_range_parser_one" would be more consistent.
-
-> +{
-> +	const int na = 3, ns = 2;
-> +
-> +	if (!range)
-> +		return NULL;
-> +
-> +	if (!parser->range || parser->range + parser->np > parser->end)
-> +		return NULL;
-> +
-> +	range->pci_space = parser->range[0];
-> +	range->flags = of_bus_pci_get_flags(parser->range);
-> +	range->pci_addr = of_read_number(parser->range + 1, ns);
-> +	range->cpu_addr = of_translate_address(parser->node,
-> +				parser->range + na);
-> +	range->size = of_read_number(parser->range + parser->pna + na, ns);
-> +
-> +	parser->range += parser->np;
-> +
-> +	/* Now consume following elements while they are contiguous */
-> +	while (parser->range + parser->np <= parser->end) {
-> +		u32 flags, pci_space;
-> +		u64 pci_addr, cpu_addr, size;
-> +
-> +		pci_space = be32_to_cpup(parser->range);
-> +		flags = of_bus_pci_get_flags(parser->range);
-> +		pci_addr = of_read_number(parser->range + 1, ns);
-> +		cpu_addr = of_translate_address(parser->node,
-> +				parser->range + na);
-> +		size = of_read_number(parser->range + parser->pna + na, ns);
-> +
-> +		if (flags != range->flags)
-> +			break;
-> +		if (pci_addr != range->pci_addr + range->size ||
-> +		    cpu_addr != range->cpu_addr + range->size)
-> +			break;
-> +
-> +		range->size += size;
-> +		parser->range += parser->np;
-> +	}
-> +
-> +	return range;
-> +}
-> +EXPORT_SYMBOL_GPL(of_pci_process_ranges);
-> +
->  #endif /* CONFIG_PCI */
 >  
->  /*
-> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
-> index 1626172..e5ab604 100644
-> --- a/drivers/of/of_pci.c
-> +++ b/drivers/of/of_pci.c
-> @@ -2,6 +2,7 @@
->  #include <linux/export.h>
->  #include <linux/of.h>
->  #include <linux/of_pci.h>
-> +#include <linux/of_address.h>
->  #include <asm/prom.h>
+> -#ifdef CONFIG_SOC_AT91SAM9263
+> -/*
+> - * FIXME either or both the SDRAM controllers (EB0, EB1) might be in use;
+> - * handle those cases both here and in the Suspend-To-RAM support.
+> +/* We manage both DDRAM/SDRAM controllers, we need more than one value to
+> + * remember.
+>   */
+> -#warning Assuming EB1 SDRAM controller is *NOT* used
+> -#endif
+> +static inline void at91sam9263_standby(void)
+> +{
+> +	u32 lpr0, lpr1;
+> +	u32 saved_lpr0, saved_lpr1;
+> +
+> +	saved_lpr1 = at91_ramc_read(1, AT91_SDRAMC_LPR);
+> +	lpr1 = saved_lpr1 & ~AT91_SDRAMC_LPCB;
+> +	lpr1 |= AT91_SDRAMC_LPCB_SELF_REFRESH;
+> +
+> +	saved_lpr0 = at91_ramc_read(0, AT91_SDRAMC_LPR);
+> +	lpr0 = saved_lpr0 & ~AT91_SDRAMC_LPCB;
+> +	lpr0 |= AT91_SDRAMC_LPCB_SELF_REFRESH;
+> +
+> +	/* self-refresh mode now */
+> +	at91_ramc_write(0, AT91_SDRAMC_LPR, lpr0);
+> +	at91_ramc_write(1, AT91_SDRAMC_LPR, lpr1);
+> +
+> +	cpu_do_idle();
+> +
+> +	at91_ramc_write(0, AT91_SDRAMC_LPR, saved_lpr0);
+> +	at91_ramc_write(1, AT91_SDRAMC_LPR, saved_lpr1);
+> +}
 >  
->  #if defined(CONFIG_PPC32) || defined(CONFIG_PPC64) || defined(CONFIG_MICROBLAZE)
-> @@ -82,67 +83,43 @@ EXPORT_SYMBOL_GPL(of_pci_find_child_device);
->  void pci_process_bridge_OF_ranges(struct pci_controller *hose,
->  				  struct device_node *dev, int primary)
+>  static inline void at91sam9_standby(void)
 >  {
-> -	const u32 *ranges;
-> -	int rlen;
-> -	int pna = of_n_addr_cells(dev);
-> -	int np = pna + 5;
->  	int memno = 0, isa_hole = -1;
-> -	u32 pci_space;
-> -	unsigned long long pci_addr, cpu_addr, pci_next, cpu_next, size;
->  	unsigned long long isa_mb = 0;
->  	struct resource *res;
-> +	struct of_pci_range range;
-> +	struct of_pci_range_parser parser;
-> +	u32 res_type;
->  
->  	pr_info("PCI host bridge %s %s ranges:\n",
->  	       dev->full_name, primary ? "(primary)" : "");
->  
-> -	/* Get ranges property */
-> -	ranges = of_get_property(dev, "ranges", &rlen);
-> -	if (ranges == NULL)
-> +	/* Check for ranges property */
-> +	if (of_pci_range_parser(&parser, dev))
->  		return;
->  
-> -	/* Parse it */
->  	pr_debug("Parsing ranges property...\n");
-> -	while ((rlen -= np * 4) >= 0) {
-> +	for_each_of_pci_range(&parser, &range) {
->  		/* Read next ranges element */
-> -		pci_space = ranges[0];
-> -		pci_addr = of_read_number(ranges + 1, 2);
-> -		cpu_addr = of_translate_address(dev, ranges + 3);
-> -		size = of_read_number(ranges + pna + 3, 2);
+> 
 
-Tip: the diff on this function would be a whole lot simpler if the
-above locals were kept, but updated from the ranges structure. Not at
-all a big problem, but it is something that makes changes like this
-easier to review. The removal of the locals could also be split into a
-separate patch to end up with the same result.
 
-> -
-> -		pr_debug("pci_space: 0x%08x pci_addr:0x%016llx ",
-> -				pci_space, pci_addr);
-> -		pr_debug("cpu_addr:0x%016llx size:0x%016llx\n",
-> -					cpu_addr, size);
-> -
-> -		ranges += np;
-> +		pr_debug("pci_space: 0x%08x pci_addr: 0x%016llx ",
-> +				range.pci_space, range.pci_addr);
-> +		pr_debug("cpu_addr: 0x%016llx size: 0x%016llx\n",
-> +				range.cpu_addr, range.size);
-
-Nit: the patch changed whitespace on the pr_debug() statements, so even
-though the first line of each is identical, they look different in the
-patch.
-
->  
->  		/* If we failed translation or got a zero-sized region
->  		 * (some FW try to feed us with non sensical zero sized regions
->  		 * such as power3 which look like some kind of attempt
->  		 * at exposing the VGA memory hole)
->  		 */
-> -		if (cpu_addr == OF_BAD_ADDR || size == 0)
-> +		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
->  			continue;
-
-Can this also be rolled into the parsing iterator?
-
->  
-> -		/* Now consume following elements while they are contiguous */
-> -		for (; rlen >= np * sizeof(u32);
-> -		     ranges += np, rlen -= np * 4) {
-> -			if (ranges[0] != pci_space)
-> -				break;
-> -			pci_next = of_read_number(ranges + 1, 2);
-> -			cpu_next = of_translate_address(dev, ranges + 3);
-> -			if (pci_next != pci_addr + size ||
-> -			    cpu_next != cpu_addr + size)
-> -				break;
-> -			size += of_read_number(ranges + pna + 3, 2);
-> -		}
-> -
->  		/* Act based on address space type */
->  		res = NULL;
-> -		switch ((pci_space >> 24) & 0x3) {
-> -		case 1:		/* PCI IO space */
-> +		res_type = range.flags & IORESOURCE_TYPE_BITS;
-> +		if (res_type == IORESOURCE_IO) {
-
-Why the change from switch() to an if/else if sequence?
-
-But those are mostly nitpicks. If this is deferred to v3.10 then I would
-suggest fixing them up and posting for another round of review.
-
-g.
+-- 
+Nicolas Ferre
