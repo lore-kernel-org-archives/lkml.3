@@ -1,185 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966842Ab3DROR7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 10:17:59 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:44964 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965049Ab3DROR6 (ORCPT
+	id S966906Ab3DROSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 10:18:07 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:57708 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965049Ab3DROSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 10:17:58 -0400
-Date: Thu, 18 Apr 2013 15:17:52 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 24/32 v3] dmaengine: ste_dma40: Supply full Device Tree
- parsing support
-Message-ID: <20130418141752.GC3959@gmail.com>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
- <1366279934-30761-25-git-send-email-lee.jones@linaro.org>
- <20130418121253.GF27903@gmail.com>
+	Thu, 18 Apr 2013 10:18:03 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH v2] media: davinci: vpif: align the buffers size to page page size boundary
+Date: Thu, 18 Apr 2013 16:18:07 +0200
+Message-ID: <2027043.VMAkRsPzpo@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.7.10-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <20130418110828.563ff251@redhat.com>
+References: <1366109670-28030-1-git-send-email-prabhakar.csengg@gmail.com> <4068729.pdlKXoIiR6@avalon> <20130418110828.563ff251@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130418121253.GF27903@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the new DMA DT bindings and API, we can register the DMA40 driver
-as Device Tree capable. Now, when a client attempts to allocate a
-channel using the DMA DT bindings via its own node, we are able to parse
-the request and allocate a channel in the correct manner.
+On Thursday 18 April 2013 11:08:28 Mauro Carvalho Chehab wrote:
+> Em Thu, 18 Apr 2013 15:22:16 +0200 Laurent Pinchart escreveu:
+> > On Thursday 18 April 2013 08:35:47 Mauro Carvalho Chehab wrote:
+> > > Em Thu, 18 Apr 2013 08:21:21 -0300 Mauro Carvalho Chehab escreveu:
+> > > > Em Thu, 18 Apr 2013 10:17:14 +0530 Prabhakar Lad escreveu:
+> > > > > On Tue, Apr 16, 2013 at 4:48 PM, Laurent Pinchart wrote:
+> > > > > > Hi Prabhakar,
+> > > > 
+> > > > ...
+> > > > 
+> > > > > >> *nbuffers = config_params.min_numbuffers;
+> > > > > >> 
+> > > > > >>       *nplanes = 1;
+> > > > > >> 
+> > > > > >> +     size = PAGE_ALIGN(size);
+> > > > > > 
+> > > > > > I wonder if that's the best fix.
+> > > > > > The queue_setup operation is supposed to return the size required
+> > > > > > by the driver for each plane. Depending on the hardware
+> > > > > > requirements, that size might not be a multiple of the page size.
+> > > > > > 
+> > > > > > As we can't mmap() a fraction of a page, the allocated plane size
+> > > > > > needs to be rounded up to the next page boundary to allow mmap()
+> > > > > > support. The dma-contig and dma-sg allocators already do so in
+> > > > > > their alloc operation, but the vmalloc allocator doesn't.
+> > > > > > 
+> > > > > > The recent "media: vb2: add length check for mmap" patch verifies
+> > > > > > that the mmap() size requested by userspace doesn't exceed the
+> > > > > > buffer size. As the mmap() size is rounded up to the next page
+> > > > > > boundary the check will fail for buffer sizes that are not
+> > > > > > multiple of the page size.
+> > > > > > 
+> > > > > > Your fix will not result in overallocation (as the allocator
+> > > > > > already rounds the size up), but will prevent the driver from
+> > > > > > importing a buffer large enough for the hardware but not rounded
+> > > > > > up to the page size.
+> > > > > > 
+> > > > > > A better fix might be to round up the buffer size in the buffer
+> > > > > > size check at mmap() time, and fix the vmalloc allocator to round
+> > > > > > up the size. That the allocator, not drivers, is responsible for
+> > > > > > buffer size alignment should be documented in videobuf2-core.h.
+> > > > > 
+> > > > > Do you plan to post a patch fixing it as per Laurent's suggestion ?
+> > > > 
+> > > > I agree with Laurent: page size roundup should be done at VB2 core
+> > > > code, for memory allocated there, and not at driver's level. Yet,
+> > > > looking at VB2 code, it already does page size align at
+> > > > __setup_offsets(), but it doesn't do if for the size field; just for
+> > > > the offset.
+> > > > 
+> > > > The adjusted size should be stored at the VB2 size field, and the
+> > > > check for buffer overflow, added on changeset
+> > > > 068a0df76023926af958a336a78bef60468d2033 should be kept.
+> > > > 
+> > > > IMO, it also makes sense to enforce that the USERPTR memory is
+> > > > multiple of the page size, as otherwise the DMA transfer may overwrite
+> > > > some area that is outside the allocated range. So, the size from
+> > > > USERPTR should be round down.
+> > 
+> > I don't think that's needed. You can transfer a number of bytes not
+> > multiple of the page size using DMA. This is true for DMABUF as well, an
+> > imported buffer might have a size not aligned on a page boundary.
+> 
+> Are you sure that, on all supported archs/buses, the DMA transfers are
+> byte-aligned?
 
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>
-Cc: Per Forlin <per.forlin@stericsson.com>
-Cc: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+They're most probably not byte-aligned, but they're not page-aligned either. 
+That's something the driver should know, and that information will be passed 
+throught the plane sizes by the queue_setup operation.
 
-diff --git a/Documentation/devicetree/bindings/dma/ste-dma40.txt b/Documentation/devicetree/bindings/dma/ste-dma40.txt
-new file mode 100644
-index 0000000..2679a87
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/ste-dma40.txt
-@@ -0,0 +1,62 @@
-+* DMA40 DMA Controller
-+
-+Required properties:
-+- compatible: "stericsson,dma40"
-+- reg: Address range of the DMAC registers
-+- reg-names: Names of the above areas to use during resource look-up
-+- interrupt: Should contain the DMAC interrupt number
-+- #dma-cells: must be <3>
-+
-+Optional properties:
-+- dma-channels: Number of channels supported by hardware - if not present
-+		the driver will attempt to obtain the information from H/W
-+
-+Example:
-+
-+	dma: dma-controller@801C0000 {
-+		compatible = "stericsson,db8500-dma40", "stericsson,dma40";
-+		reg = <0x801C0000 0x1000  0x40010000 0x800>;
-+		reg-names = "base", "lcpa";
-+		interrupt-parent = <&intc>;
-+		interrupts = <0 25 0x4>;
-+
-+		#dma-cells = <2>;
-+		dma-channels = <8>;
-+	};
-+
-+Clients
-+Required properties:
-+- dmas: Comma separated list of dma channel requests
-+- dma-names: Names of the aforementioned requested channels
-+
-+Each dmas request consists of 4 cells:
-+  1. A phandle pointing to the DMA controller
-+  2. Device Type
-+  3. The DMA request line number (only when 'use fixed channel' is set)
-+  4. A 32bit mask specifying; mode, direction and endianess [NB: This list will grow]
-+        0x00000001: Mode:
-+                Logical channel when unset
-+                Physical channel when set
-+        0x00000002: Direction:
-+                Memory to Device when unset
-+                Device to Memory when set
-+        0x00000004: Endianess:
-+                Little endian when unset
-+                Big endian when set
-+        0x00000008: Use fixed channel:
-+                Use automatic channel selection when unset
-+                Use DMA request line number when set
-+
-+Example:
-+
-+	uart@80120000 {
-+		compatible = "arm,pl011", "arm,primecell";
-+		reg = <0x80120000 0x1000>;
-+		interrupts = <0 11 0x4>;
-+
-+		dmas = <&dma 13 0 0x2>, /* Logical - DevToMem */
-+		       <&dma 13 0 0x0>; /* Logical - MemToDev */
-+		dma-names = "rx", "rx";
-+
-+		status = "disabled";
-+	};
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index bad8753..94d0edb 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -18,6 +18,7 @@
- #include <linux/pm_runtime.h>
- #include <linux/err.h>
- #include <linux/of.h>
-+#include <linux/of_dma.h>
- #include <linux/amba/bus.h>
- #include <linux/regulator/consumer.h>
- #include <linux/platform_data/dma-ste-dma40.h>
-@@ -2409,6 +2410,50 @@ static void d40_set_prio_realtime(struct d40_chan *d40c)
- 		__d40_set_prio_rt(d40c, d40c->dma_cfg.dev_type, false);
- }
- 
-+#define D40_DT_FLAGS_MODE(flags)       ((flags >> 0) & 0x1)
-+#define D40_DT_FLAGS_DIR(flags)        ((flags >> 1) & 0x1)
-+#define D40_DT_FLAGS_BIG_ENDIAN(flags) ((flags >> 2) & 0x1)
-+#define D40_DT_FLAGS_FIXED_CHAN(flags) ((flags >> 3) & 0x1)
-+
-+static struct dma_chan *d40_xlate(struct of_phandle_args *dma_spec,
-+				  struct of_dma *ofdma)
-+{
-+	struct stedma40_chan_cfg cfg;
-+	dma_cap_mask_t cap;
-+	u32 flags;
-+
-+	memset(&cfg, 0, sizeof(struct stedma40_chan_cfg));
-+
-+	dma_cap_zero(cap);
-+	dma_cap_set(DMA_SLAVE, cap);
-+
-+	cfg.dev_type = dma_spec->args[0];
-+	flags = dma_spec->args[2];
-+
-+	switch (D40_DT_FLAGS_MODE(flags)) {
-+	case 0: cfg.mode = STEDMA40_MODE_LOGICAL; break;
-+	case 1: cfg.mode = STEDMA40_MODE_PHYSICAL; break;
-+	}
-+
-+	switch (D40_DT_FLAGS_DIR(flags)) {
-+	case 0:
-+		cfg.dir = STEDMA40_MEM_TO_PERIPH;
-+		cfg.dst_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
-+		break;
-+	case 1:
-+		cfg.dir = STEDMA40_PERIPH_TO_MEM;
-+		cfg.src_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
-+		break;
-+	}
-+
-+	if (D40_DT_FLAGS_FIXED_CHAN(flags)) {
-+		cfg.phy_channel = dma_spec->args[1];
-+		cfg.use_fixed_channel = true;
-+	}
-+
-+	return dma_request_channel(cap, stedma40_filter, &cfg);
-+}
-+
- /* DMA ENGINE functions */
- static int d40_alloc_chan_resources(struct dma_chan *chan)
- {
-@@ -3615,6 +3660,13 @@ static int __init d40_probe(struct platform_device *pdev)
- 
- 	d40_hw_init(base);
- 
-+	if (np) {
-+		err = of_dma_controller_register(np, d40_xlate, NULL);
-+		if (err && err != -ENODEV)
-+			dev_err(&pdev->dev,
-+				"could not register of_dma_controller\n");
-+	}
-+
- 	dev_info(base->dev, "initialized\n");
- 	return 0;
+> > > > That change, however, will break userspace, as it uses the picture
+> > > > sizeimage to allocate the buffers. So, sizeimage needs to be PAGE_SIZE
+> > > > roundup before passing it to userspace.
+> > > > 
+> > > > Instead of modifying all drivers, the better seems to patch
+> > > > v4l_g_fmt() and v4l_try_fmt() to return a roundup value for sizeimage.
+> > > > As usual, uvcvideo requires a separate patch, because it doesn't use
+> > > > vidio_ioctl2.
+> > > 
+> > > Hmm... PAGE_SIZE alignment is not needed on all places. It is needed
+> > > only when DMA is done directly into the buffer, e. g. videobuf2-dma-
+> > > contig and videobuf2-dma-sg.
+> > > 
+> > > It means that we'll need an extra function for the VB2 memory allocation
+> > > drivers to do do the memory-dependent roundups, and a new ancillary
+> > > function at VB2 core for the VB2 clients to call to round sizeimage if
+> > > needed.
+> > 
+> > Can't we just round the size up at allocation time and when checking the
+> > size in mmap() ? That's a simple fix, local to vb2, and won't require new
+> > vb2 memops.
+> 
+> That's not needed for videobuf2-vmalloc.
+
+Yes it is, as mmap() works on a page basis. Every buffer that will be mmap()ed 
+to userspace needs to be aligned to the page size.
+
+> We shouldn't bloat the core VB2 with memops specific stuff. Ok, in this
+> specific case, this is a simple trivial patch, so perhaps we could do it
+> there.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
