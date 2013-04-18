@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936654Ab3DRWXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 18:23:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41972 "EHLO mx2.suse.de"
+	id S936639Ab3DRW0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 18:26:33 -0400
+Received: from mga03.intel.com ([143.182.124.21]:22490 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752689Ab3DRWXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 18:23:17 -0400
-Date: Fri, 19 Apr 2013 00:21:39 +0200
-From: Jan Kara <jack@suse.cz>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH v3 12/18] Revert "ext4: fix fsx truncate failure"
-Message-ID: <20130418222139.GC19244@quack.suse.cz>
-References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
- <1365498867-27782-13-git-send-email-lczerner@redhat.com>
+	id S1752689Ab3DRW0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 18:26:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,504,1363158000"; 
+   d="scan'208";a="229026688"
+Date: Fri, 19 Apr 2013 00:26:25 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Andrey Smirnov <andrew.smirnov@gmail.com>
+Cc: mchehab@redhat.com, hverkuil@xs4all.nl, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/12] v4l2: Add a V4L2 driver for SI476X MFD
+Message-ID: <20130418222625.GZ8798@zurbaran>
+References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
+ <1366304318-29620-10-git-send-email-andrew.smirnov@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1365498867-27782-13-git-send-email-lczerner@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1366304318-29620-10-git-send-email-andrew.smirnov@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-04-13 11:14:21, Lukas Czerner wrote:
-> This reverts commit 189e868fa8fdca702eb9db9d8afc46b5cb9144c9.
-> 
-> This commit reintroduces the use of ext4_block_truncate_page() in ext4
-> truncate operation instead of ext4_discard_partial_page_buffers().
-> 
-> The statement in the commit description that the truncate operation only
-> zero block unaligned portion of the last page is not exactly right,
-> since truncate_pagecache_range() also zeroes and invalidate the unaligned
-> portion of the page. Then there is no need to zero and unmap it once more
-> and ext4_block_truncate_page() was doing the right job, although we
-> still need to update the buffer head containing the last block, which is
-> exactly what ext4_block_truncate_page() is doing.
-> 
-> Moreover the problem described in the commit is fixed more properly with
-> commit
-  Looks good. You can add
-Reviewed-by: Jan Kara <jack@suse.cz>
+Hi Andrey,
 
-  I'd just add one nit that you might fix. In case of truncate called from
-orphan cleanup code, we don't really call mm to zero the tail of the page.
-It shouldn't really matter because the page shouldn't be uptodate but it
-might be a trap we eventually fall into so calling truncate_inode_pages()
-there might be a reasonable precaution.
+On Thu, Apr 18, 2013 at 09:58:35AM -0700, Andrey Smirnov wrote:
+> diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
+> index ead9928..170460d 100644
+> --- a/drivers/media/radio/Kconfig
+> +++ b/drivers/media/radio/Kconfig
+> @@ -18,6 +18,23 @@ config RADIO_SI470X
+>  
+>  source "drivers/media/radio/si470x/Kconfig"
+>  
+> +config RADIO_SI476X
+> +	tristate "Silicon Laboratories Si476x I2C FM Radio"
+> +	depends on I2C && VIDEO_V4L2
+> +	select MFD_CORE
+> +	select MFD_SI476X_CORE
+This is wrong. You want depends on MFD_SI476X_CORE, you should not select a
+symbol that has other dependencies. It also would allow us to carry the
+v4l2/media parts of your patchset independently from the MFD ones as the radio
+driver will not be buildable on a tree where the MFD part is not present.
+We'll try to figure something out with Mauro.
 
-								Honza
-> 
-> 15291164b22a357cb211b618adfef4fa82fc0de3
-> 	jbd2: clear BH_Delay & BH_Unwritten in journal_unmap_buffer
-> 
-> This was tested on ppc64 machine with block size of 1024 bytes without
-> any problems.
-> 
-> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> ---
->  fs/ext4/inode.c |   11 ++---------
->  1 files changed, 2 insertions(+), 9 deletions(-)
-> 
-> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-> index 5729d21..d58e13c 100644
-> --- a/fs/ext4/inode.c
-> +++ b/fs/ext4/inode.c
-> @@ -3920,7 +3920,6 @@ void ext4_truncate(struct inode *inode)
->  	unsigned int credits;
->  	handle_t *handle;
->  	struct address_space *mapping = inode->i_mapping;
-> -	loff_t page_len;
->  
->  	/*
->  	 * There is a possibility that we're either freeing the inode
-> @@ -3964,14 +3963,8 @@ void ext4_truncate(struct inode *inode)
->  		return;
->  	}
->  
-> -	if (inode->i_size % PAGE_CACHE_SIZE != 0) {
-> -		page_len = PAGE_CACHE_SIZE -
-> -			(inode->i_size & (PAGE_CACHE_SIZE - 1));
-> -
-> -		if (ext4_discard_partial_page_buffers(handle,
-> -				mapping, inode->i_size, page_len, 0))
-> -			goto out_stop;
-> -	}
-> +	if (inode->i_size & (inode->i_sb->s_blocksize - 1))
-> +		ext4_block_truncate_page(handle, mapping, inode->i_size);
->  
->  	/*
->  	 * We add the inode to the orphan list, so that if this
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Cheers,
+Samuel.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Intel Open Source Technology Centre
+http://oss.intel.com/
