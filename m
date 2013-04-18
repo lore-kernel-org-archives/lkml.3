@@ -1,130 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967485Ab3DRJf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:35:26 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:43951 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967442Ab3DRJfY (ORCPT
+	id S967500Ab3DRJff (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:35:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43226 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967442Ab3DRJfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:35:24 -0400
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Subject: [PATCH v4 8/8] vmcore: support mmap() on /proc/vmcore
-To: vgoyal@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org
-Cc: cpw@sgi.com, kumagai-atsushi@mxc.nes.nec.co.jp, lisa.mitchell@hp.com,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com, jingbai.ma@hp.com
-Date: Sat, 13 Apr 2013 09:21:51 +0900
-Message-ID: <20130413002151.18245.23358.stgit@localhost6.localdomain6>
-In-Reply-To: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
-References: <20130413002000.18245.21513.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
+	Thu, 18 Apr 2013 05:35:30 -0400
+Date: Thu, 18 Apr 2013 11:35:22 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+cc: kernel@pengutronix.de, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3] irqchip: Add support for ARMv7-M's NVIC
+In-Reply-To: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Message-ID: <alpine.LFD.2.02.1304180947070.21884@ionos>
+References: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2068579284-1366272803=:21884"
+Content-ID: <alpine.LFD.2.02.1304181131040.21884@ionos>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces mmap_vmcore().
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-If flag MEM_TYPE_CURRENT_KERNEL is set, map buffer on the 2nd
-kernel. If not set, map some area in old memory.
+--8323328-2068579284-1366272803=:21884
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.LFD.2.02.1304181131041.21884@ionos>
 
-Neither writable nor executable mapping is permitted even with
-mprotect(). Non-writable mapping is also requirement of
-remap_pfn_range() when mapping linear pages on non-consequtive
-physical pages; see is_cow_mapping().
+On Wed, 17 Apr 2013, Uwe Kleine-König wrote:
+> +struct nvic_bank_data {
+> +	/*
+> +	 * For irq i base holds nvic_base + 4 * i / 32. So you can access the
+> +	 * right ISER register (i.e ISER[i / 32]) by just taking base + ISER.
+> +	 * Ditto for ICER.
+> +	 */
+> +	void __iomem *base;
+> +};
 
-On x86-32 PAE kernels, mmap() supports at most 16TB memory only. This
-limitation comes from the fact that the third argument of
-remap_pfn_range(), pfn, is of 32-bit length on x86-32: unsigned long.
+What's the point of a struct with a single member? Why not having an
+array of base pointers ?
 
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
----
+> +static struct nvic_chip_data {
+> +	struct irq_domain *domain;
+> +	struct nvic_bank_data bdata[NVIC_MAX_BANKS];
+> +} nvic_chip_data;
+> +
+> +asmlinkage void __exception_irq_entry
+> +nvic_do_IRQ(irq_hw_number_t hwirq, struct pt_regs *regs)
+> +{
+> +	unsigned int irq = irq_linear_revmap(nvic_chip_data.domain, hwirq);
+> +
+> +	handle_IRQ(irq, regs);
+> +}
+> +
+> +static inline void __iomem *nvic_bank_base(struct irq_data *d)
+> +{
+> +	struct nvic_bank_data *bank_data = irq_data_get_irq_chip_data(d);
+> +	return bank_data->base;
+> +}
+> +
+> +static void nvic_mask_irq(struct irq_data *d)
+> +{
+> +	u32 mask = 1 << (d->hwirq % 32);
+> +
+> +	writel_relaxed(mask, nvic_bank_base(d) + NVIC_ICER);
+> +}
+> +
+> +static void nvic_unmask_irq(struct irq_data *d)
+> +{
+> +	u32 mask = 1 << (d->hwirq % 32);
+> +
+> +	writel_relaxed(mask, nvic_bank_base(d) + NVIC_ISER);
+> +}
 
- fs/proc/vmcore.c |   68 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 68 insertions(+), 0 deletions(-)
+How is that different from what the generic irq chip implementation
+does? The only difference is that mask is generated by d->hwirq and
+not by d->irq. And due to the fact, that you use a full linear mapping
+between hwirq and virq the generic code simply works.
 
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index cd0f9d9..aecdc72 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -176,9 +176,77 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
- 	return acc;
- }
- 
-+static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
-+{
-+	size_t size = vma->vm_end - vma->vm_start;
-+	u64 start, end, len, tsz;
-+	struct vmcore *m;
-+
-+	start = (u64)vma->vm_pgoff << PAGE_SHIFT;
-+	end = start + size;
-+
-+	if (size > vmcore_size || end > vmcore_size)
-+		return -EINVAL;
-+
-+	if (vma->vm_flags & (VM_WRITE | VM_EXEC))
-+		return -EPERM;
-+
-+	vma->vm_flags &= ~(VM_MAYWRITE | VM_MAYEXEC);
-+
-+	len = 0;
-+
-+	if (start < elfcorebuf_sz) {
-+		u64 pfn;
-+
-+		tsz = elfcorebuf_sz - start;
-+		if (size < tsz)
-+			tsz = size;
-+		pfn = __pa(elfcorebuf + start) >> PAGE_SHIFT;
-+		if (remap_pfn_range(vma, vma->vm_start, pfn, tsz,
-+				    vma->vm_page_prot))
-+			return -EAGAIN;
-+		size -= tsz;
-+		start += tsz;
-+		len += tsz;
-+
-+		if (size == 0)
-+			return 0;
-+	}
-+
-+	list_for_each_entry(m, &vmcore_list, list) {
-+		if (start < m->offset + m->size) {
-+			u64 paddr = 0;
-+
-+			tsz = m->offset + m->size - start;
-+			if (size < tsz)
-+				tsz = size;
-+			if (m->flag & MEM_TYPE_CURRENT_KERNEL) {
-+				paddr = __pa(m->buf + start - m->offset);
-+			} else {
-+				paddr = m->paddr + start - m->offset;
-+			}
-+			if (remap_pfn_range(vma, vma->vm_start + len,
-+					    paddr >> PAGE_SHIFT, tsz,
-+					    vma->vm_page_prot)) {
-+				do_munmap(vma->vm_mm, vma->vm_start, len);
-+				return -EAGAIN;
-+			}
-+			size -= tsz;
-+			start += tsz;
-+			len += tsz;
-+
-+			if (size == 0)
-+				return 0;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static const struct file_operations proc_vmcore_operations = {
- 	.read		= read_vmcore,
- 	.llseek		= default_llseek,
-+	.mmap		= mmap_vmcore,
- };
- 
- static struct vmcore* __init get_new_element(void)
+Even if it would not work, it would be trivial to extend the generic
+chip with that functionality instead of hacking another slightly
+different copy of the same thing.
 
+Thanks,
+
+	tglx
+
+
+--8323328-2068579284-1366272803=:21884--
