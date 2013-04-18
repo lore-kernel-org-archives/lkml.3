@@ -1,123 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab3DRFxS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 01:53:18 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:45189 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab3DRFxQ (ORCPT
+	id S1754667Ab3DRGFy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 02:05:54 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51723 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab3DRGFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 01:53:16 -0400
-From: PranavkumarSawargaonkar <pranavkumar@linaro.org>
-To: kvmarm@lists.cs.columbia.edu
-Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>
-Subject: [RFC] arm64: Early printk support for virtio-mmio console devices.
-Date: Thu, 18 Apr 2013 11:22:24 +0530
-Message-Id: <1366264344-28025-1-git-send-email-pranavkumar@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 18 Apr 2013 02:05:53 -0400
+Date: Thu, 18 Apr 2013 16:05:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joe Perches <joe@perches.com>
+Subject: linux-next: build failure after merge of the usb tree
+Message-Id: <20130418160541.57123749577f29665fba7839@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__18_Apr_2013_16_05_41_+1000_I8KQ.6MuGAUGgazv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+--Signature=_Thu__18_Apr_2013_16_05_41_+1000_I8KQ.6MuGAUGgazv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch implements early printk support for virtio-mmio console devices without using any hypercalls.
+Hi Greg,
 
-The current virtio early printk code in kernel expects that hypervisor will provide some mechanism generally a hypercall to support early printk. This patch does not break existing hypercall based early print support.
+After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-This implementation adds:
-1. Early read-write register named early_rw in virtio console's config space.
-2. Two host feature flags namely VIRTIO_CONSOLE_F_EARLY_READ and VIRTIO_CONSOLE_F_EARLY_WRITE for telling guest about early-read and early-write capability in console device.
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-usbat.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-sddr55.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-sddr09.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-realtek.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-karma.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-jumpshot.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-isd200.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-freecom.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-eneub6250.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-datafab.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-cypress.ko] undefined!
+ERROR: "usb_stor_dbg" [drivers/usb/storage/ums-alauda.ko] undefined!
 
-Early write mechanism:
-1. When a guest wants to out some character, it has to simply write the character to early_rw register in config space of virtio console device.
+Caused by commit 75b9130e8af6 ("usb: storage: Add usb_stor_dbg, reduce
+object size").  Please build test such infrastructure patches with and
+without MODULES ...
 
-Early read mechanism:
-1. When a guest wants to in some character, it has to simply read the early_rw register in config space of virtio console device. Lets say we get 32-bit value X.
-2. If most significant bit of X is set (i.e. X & 0x80000000 == 0x80000000) then least significant 8 bits of X represents input charaacter else guest need to try again reading early_rw register.
+I have used the usb tree from next-20130417 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Note: This patch only includes kernel side changes for early printk, the host/hypervisor side emulation of early_rw register is out of scope here.
+--Signature=_Thu__18_Apr_2013_16_05_41_+1000_I8KQ.6MuGAUGgazv
+Content-Type: application/pgp-signature
 
-Signed-off-by: Anup Patel <anup.patel@linaro.org>
----
- arch/arm64/kernel/early_printk.c    |   24 ++++++++++++++++++++++++
- include/uapi/linux/virtio_console.h |    4 ++++
- 2 files changed, 28 insertions(+)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/arch/arm64/kernel/early_printk.c b/arch/arm64/kernel/early_printk.c
-index ac974f4..a82b5aa 100644
---- a/arch/arm64/kernel/early_printk.c
-+++ b/arch/arm64/kernel/early_printk.c
-@@ -25,6 +25,9 @@
- 
- #include <linux/amba/serial.h>
- #include <linux/serial_reg.h>
-+#include <linux/virtio_ids.h>
-+#include <linux/virtio_mmio.h>
-+#include <linux/virtio_console.h>
- 
- static void __iomem *early_base;
- static void (*printch)(char ch);
-@@ -53,6 +56,26 @@ static void smh_printch(char ch)
- }
- 
- /*
-+ * VIRTIO MMIO based debug console.
-+ */
-+static void virtio_console_early_printch(char ch)
-+{
-+	u32 tmp;
-+	struct virtio_console_config *p = early_base + VIRTIO_MMIO_CONFIG;
-+
-+	tmp = readl_relaxed(early_base + VIRTIO_MMIO_DEVICE_ID);
-+	if (tmp != VIRTIO_ID_CONSOLE) {
-+		return;
-+	}
-+
-+	tmp = readl_relaxed(early_base + VIRTIO_MMIO_HOST_FEATURES);
-+	if (!(tmp & (1 << VIRTIO_CONSOLE_F_EARLY_WRITE))) {
-+		return;
-+	}
-+	writeb_relaxed(ch, &p->early_rw);
-+}
-+
-+/*
-  * 8250/16550 (8-bit aligned registers) single character TX.
-  */
- static void uart8250_8bit_printch(char ch)
-@@ -82,6 +105,7 @@ static const struct earlycon_match earlycon_match[] __initconst = {
- 	{ .name = "smh", .printch = smh_printch, },
- 	{ .name = "uart8250-8bit", .printch = uart8250_8bit_printch, },
- 	{ .name = "uart8250-32bit", .printch = uart8250_32bit_printch, },
-+	{ .name = "virtio-console", .printch = virtio_console_early_printch, },
- 	{}
- };
- 
-diff --git a/include/uapi/linux/virtio_console.h b/include/uapi/linux/virtio_console.h
-index ee13ab6..1171cb4 100644
---- a/include/uapi/linux/virtio_console.h
-+++ b/include/uapi/linux/virtio_console.h
-@@ -38,6 +38,8 @@
- /* Feature bits */
- #define VIRTIO_CONSOLE_F_SIZE	0	/* Does host provide console size? */
- #define VIRTIO_CONSOLE_F_MULTIPORT 1	/* Does host provide multiple ports? */
-+#define VIRTIO_CONSOLE_F_EARLY_READ 2	/* Does host support early read? */
-+#define VIRTIO_CONSOLE_F_EARLY_WRITE 3	/* Does host support early write? */
- 
- #define VIRTIO_CONSOLE_BAD_ID		(~(u32)0)
- 
-@@ -48,6 +50,8 @@ struct virtio_console_config {
- 	__u16 rows;
- 	/* max. number of ports this device can hold */
- 	__u32 max_nr_ports;
-+	/* early read/write register */
-+	__u32 early_rw;
- } __attribute__((packed));
- 
- /*
--- 
-1.7.9.5
+iQIcBAEBCAAGBQJRb401AAoJEECxmPOUX5FEH3MQAJ1P0f0tapn6B8uojqw7jMal
+ytl1iJZCXCC5pKkRn7n2KuyUZIJPF+nbAEYgLUD3NyE2erwDXMOFk9nCU2ZY6zIu
+rbZb1QVsLKp2TpuLljE2IeuPYcHD7BoVU1vCDg58DmhefuBVFR32AeFN0YiBQRDB
+G8F4rmLGFjBc/zTzham1jw5Yw1HkGQOSVmZXd+ATuSjIt1bXqE2LAxafUcX5TaOY
+5vLkA2LjCQvdzHNHYd2kK4UzGtdinz6tQIyL1l63MQu3cJ9fpKxNc+6F4G1D2jre
+mlANgOL39h5jKyT5IaAq4wfwJW93jKqnnF0eH2AIyRNA8s0ofVJPTBz+iD0TUU7o
+OrLD3V9x8t5xBrfw2JM9ylKLiDdNAhVmVmpuboWZQkhcqSBBu6aoOP4pQXc53O5z
+DleobQZy4HbRTCFPY+hpHL+JOZGcDvVgD1IliSWpPoANKSJEBiaBVQ5s3PPl0+vR
++PCtbeLNbFYvLGT/NnF8vlzp0bov4zhwRKz98Yn0woZgQo9U0mgdwCWqkNxc88g7
+r1ITELbqNh7uNzdqBqJaSSHiEnfFJSO2l48Q6RcbGBNP5Dpctuj2XPklEx1yqpUL
+VLnHOftR9bLNfXGOdK7Wjdujv5iforaT5LeBsS7xstL8DfWCa95XEAOiiNRB6T9W
+5bgdcB8BjBGWg1EhN6iE
+=mMm6
+-----END PGP SIGNATURE-----
 
+--Signature=_Thu__18_Apr_2013_16_05_41_+1000_I8KQ.6MuGAUGgazv--
