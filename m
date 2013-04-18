@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab3DRR6B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:58:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751536Ab3DRR57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:57:59 -0400
-Date: Thu, 18 Apr 2013 14:57:53 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Andrey Smirnov <andrew.smirnov@gmail.com>, hverkuil@xs4all.nl,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 00/12]  Driver for Si476x series of chips
-Message-ID: <20130418145753.7bacee9b@redhat.com>
-In-Reply-To: <20130418174547.GV8798@zurbaran>
-References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
-	<20130418142800.5c00b004@redhat.com>
-	<20130418174547.GV8798@zurbaran>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752411Ab3DRSFm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 14:05:42 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:36014 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731Ab3DRSFl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 14:05:41 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] arm: mach-omap2: remove "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check
+References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>
+	<1366198467-6757-5-git-send-email-sourav.poddar@ti.com>
+Date: Thu, 18 Apr 2013 11:05:37 -0700
+In-Reply-To: <1366198467-6757-5-git-send-email-sourav.poddar@ti.com> (Sourav
+	Poddar's message of "Wed, 17 Apr 2013 17:04:25 +0530")
+Message-ID: <87li8f4sum.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 18 Apr 2013 19:45:47 +0200
-Samuel Ortiz <sameo@linux.intel.com> escreveu:
+Sourav Poddar <sourav.poddar@ti.com> writes:
 
-> On Thu, Apr 18, 2013 at 02:28:00PM -0300, Mauro Carvalho Chehab wrote:
-> > Em Thu, 18 Apr 2013 09:58:26 -0700
-> > Andrey Smirnov <andrew.smirnov@gmail.com> escreveu:
-> > 
-> > > Driver for Si476x series of chips
-> > > 
-> > > This is a eight version of the patchset originaly posted here:
-> > > https://lkml.org/lkml/2012/9/13/590
-> > > 
-> > > Second version of the patch was posted here:
-> > > https://lkml.org/lkml/2012/10/5/598
-> > > 
-> > > Third version of the patch was posted here:
-> > > https://lkml.org/lkml/2012/10/23/510
-> > > 
-> > > Fourth version of the patch was posted here:
-> > > https://lkml.org/lkml/2013/2/18/572
-> > > 
-> > > Fifth version of the patch was posted here:
-> > > https://lkml.org/lkml/2013/2/26/45
-> > > 
-> > > Sixth version of the patch was posted here:
-> > > https://lkml.org/lkml/2013/2/26/257
-> > > 
-> > > Seventh version of the patch was posted here:
-> > > https://lkml.org/lkml/2013/2/27/22
-> > > 
-> > > Eighth version of the patch was posted here:
-> > > https://lkml.org/lkml/2013/3/26/891
-> > > 
-> > > To save everyone's time I'll repost the original description of it:
-> > > 
-> > > This patchset contains a driver for a Silicon Laboratories 476x series
-> > > of radio tuners. The driver itself is implemented as an MFD devices
-> > > comprised of three parts: 
-> > >  1. Core device that provides all the other devices with basic
-> > > functionality and locking scheme.
-> > >  2. Radio device that translates between V4L2 subsystem requests into
-> > > Core device commands.
-> > >  3. Codec device that does similar to the earlier described task, but
-> > > for ALSA SoC subsystem.
-> > > 
-> > > v9 of this driver has following changes:
-> > >    - MFD part of the driver no longer depends on the header file added
-> > >      by the radio driver(media/si476x.h) which should potential
-> > >      restore the bisectability of the patches
-> > > 
-> > > Mauro, I am not sure if you reverted changes in patches 5 - 7, so I am
-> > > including them just in case.
-> > 
-> > No, I didn't revert all patches. I just reverted two patches: the
-> > last one, and the one that Samuel asked me.
-> Sorry I didn't have time to check your email from yesterday, but I was
-> actually hoping you would revert the whole patchset, then pull from my
-> mfd-next/topic/si476x branch to fetch the MFD bits and then apply the
-> v4l2/media ones (From patchset v9) on top of that.
-> Does that make sense to you ?
+> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since UART was the only one making
+> use of it. Now serial core/driver takes care of the case when "no_console_suspend" 
+> is used in the bootargs and you need to keep the clock enable for console even while suspend.
+>
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
 
-I don't rebase my tree, as this would cause troubles for everybody that
-relies on it.
+NAK.  This patch will break many things...
 
-Reverting the entire patchset is hard, as there are lots of patches after
-them, and some patches touch at V4L2 core. Even reverting those
-two patches hit conflicts, that I needed to manage, in order to avoid
-compilation breakages.
+> ---
+>  arch/arm/mach-omap2/omap_device.c |    7 +------
+>  1 files changed, 1 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+> index 381be7a..d6dce8f 100644
+> --- a/arch/arm/mach-omap2/omap_device.c
+> +++ b/arch/arm/mach-omap2/omap_device.c
+> @@ -620,11 +620,8 @@ static int _od_suspend_noirq(struct device *dev)
+>  	ret = pm_generic_suspend_noirq(dev);
+>  
+>  	if (!ret && !pm_runtime_status_suspended(dev)) {
+> -		if (pm_generic_runtime_suspend(dev) == 0) {
+> -			if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
+> -				omap_device_idle(pdev);
 
-So, I really prefer to confine the patch reversion to the absolute 
-minimum.
+Why did you remove the omap_device_idle() here?
 
--- 
+> +		if (pm_generic_runtime_suspend(dev) == 0)
+>  			od->flags |= OMAP_DEVICE_SUSPENDED;
+> -		}
+>  	}
+>  
+>  	return ret;
+> @@ -638,8 +635,6 @@ static int _od_resume_noirq(struct device *dev)
+>  	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+>  	    !pm_runtime_status_suspended(dev)) {
+>  		od->flags &= ~OMAP_DEVICE_SUSPENDED;
+> -		if (!(od->flags & OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
+> -			omap_device_enable(pdev);
 
-Cheers,
-Mauro
+And the _enable() here?
+
+>  		pm_generic_runtime_resume(dev);
+>  	}
+
+Note that the check is for when the flag is *not* set, so this patch
+changes behavior for all the drivers that do not use
+_NO_IDLE_ON_SUSPEND.  I think that's the opposite of what you intended.
+
+Kevin
