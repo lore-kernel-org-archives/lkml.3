@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759154Ab3DRJSX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:18:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40216 "EHLO
+	id S1759459Ab3DRJSf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:18:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40321 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758200Ab3DRJSH (ORCPT
+	with ESMTP id S1759339Ab3DRJSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:18:07 -0400
+	Thu, 18 Apr 2013 05:18:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Suleiman Souhlal <suleiman@google.com>, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 44/72] drm/i915: add quirk to invert brightness on eMachines G725
-Date: Thu, 18 Apr 2013 10:16:29 +0100
-Message-Id: <1366276617-3553-45-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 64/72] vfs: Revert spurious fix to spinning prevention in prune_icache_sb
+Date: Thu, 18 Apr 2013 10:16:49 +0100
+Message-Id: <1366276617-3553-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -28,34 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Suleiman Souhlal <suleiman@google.com>
 
-commit 1ffff60320879830e469e26062c18f75236822ba upstream.
+commit 5b55d708335a9e3e4f61f2dadf7511502205ccd1 upstream.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=59628
-Reported-by: Roland Gruber <post@rolandgruber.de>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-[ luis: adjust context ]
+Revert commit 62a3ddef6181 ("vfs: fix spinning prevention in prune_icache_sb").
+
+This commit doesn't look right: since we are looking at the tail of the
+list (sb->s_inode_lru.prev) if we want to skip an inode, we should put
+it back at the head of the list instead of the tail, otherwise we will
+keep spinning on it.
+
+Discovered when investigating why prune_icache_sb came top in perf
+reports of a swapping load.
+
+Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 3 +++
- 1 file changed, 3 insertions(+)
+ fs/inode.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 16c6d6b..a0cfeb6 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -6940,6 +6940,9 @@ static struct intel_quirk intel_quirks[] = {
+diff --git a/fs/inode.c b/fs/inode.c
+index 6d5a282..78c342b 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -725,7 +725,7 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+ 		 * inode to the back of the list so we don't spin on it.
+ 		 */
+ 		if (!spin_trylock(&inode->i_lock)) {
+-			list_move_tail(&inode->i_lru, &sb->s_inode_lru);
++			list_move(&inode->i_lru, &sb->s_inode_lru);
+ 			continue;
+ 		}
  
- 	/* Acer Aspire 4736Z */
- 	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
-+
-+	/* Acer/eMachines G725 */
-+	{ 0x2a42, 0x1025, 0x0210, quirk_invert_brightness },
- };
- 
- static void intel_init_quirks(struct drm_device *dev)
 -- 
 1.8.1.2
 
