@@ -1,75 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965122Ab3DRN2a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 09:28:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18445 "EHLO mx1.redhat.com"
+	id S1755824Ab3DRN3q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 09:29:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58906 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755078Ab3DRN22 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 09:28:28 -0400
-Subject: Re: KVM VM(windows xp) reseted when running geekbench for about 2 days
-Mime-Version: 1.0 (Apple Message framework v1283)
+	id S1754789Ab3DRN3p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 09:29:45 -0400
+Date: Thu, 18 Apr 2013 10:29:24 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v3 12/15] KVM: MMU: fast invalid all shadow pages
+Message-ID: <20130418132924.GB29705@amt.cnet>
+References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <1366093973-2617-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+ <20130418000550.GE31059@amt.cnet>
+ <516F6FD0.5050902@linux.vnet.ibm.com>
+ <20130418130306.GA29705@amt.cnet>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Yan Vugenfirer <yvugenfi@redhat.com>
-In-Reply-To: <20130418125532.GW8997@redhat.com>
-Date: Thu, 18 Apr 2013 16:25:48 +0300
-Cc: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>, kvm list <kvm@vger.kernel.org>,
-        "mst@redhat.com" <mst@redhat.com>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Luonengjun <luonengjun@huawei.com>,
-        Zanghongyong <zanghongyong@huawei.com>,
-        "Huangweidong (C)" <weidong.huang@huawei.com>,
-        "Wangrui (K)" <moon.wangrui@huawei.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <9C764699-6F9C-4AD8-A6C9-34D818753452@redhat.com>
-References: <D3E216785288A145B7BC975F83A2ED103FE1E7A5@szxeml556-mbx.china.huawei.com> <20130418125532.GW8997@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
+Content-Disposition: inline
+In-Reply-To: <20130418130306.GA29705@amt.cnet>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Apr 18, 2013, at 3:55 PM, Gleb Natapov wrote:
-
-> On Thu, Apr 18, 2013 at 12:00:49PM +0000, Zhanghaoyu (A) wrote:
->> I start 10 VMs(windows xp), then running geekbench tool on them, about 2 days, one of them was reset,
->> I found the reset operation is done by
->> int kvm_cpu_exec(CPUArchState *env)
->> {
->>    ...
->>       switch (run->exit_reason)
->>       ...
->>        case KVM_EXIT_SHUTDOWN:
->>            DPRINTF("shutdown\n");
->>            qemu_system_reset_request();
->>            ret = EXCP_INTERRUPT;
->>            break;
->>    ...
->> }
->> 
->> KVM_EXIT_SHUTDOWN exit reason was set previously in triple fault handle handle_triple_fault().
->> 
-> How do you know that reset was done here? This is not the only place
-> where qemu_system_reset_request() is called.
-
-Make sure XP is not set to auto-reset in case of BSOD. 
-
-Best regards,
-Yan.
-
+On Thu, Apr 18, 2013 at 10:03:06AM -0300, Marcelo Tosatti wrote:
+> On Thu, Apr 18, 2013 at 12:00:16PM +0800, Xiao Guangrong wrote:
+> > > 
+> > > What is the justification for this? 
+> > 
+> > We want the rmap of being deleted memslot is removed-only that is
+> > needed for unmapping rmap out of mmu-lock.
+> > 
+> > ======
+> > 1) do not corrupt the rmap
+> > 2) keep pte-list-descs available
+> > 3) keep shadow page available
+> > 
+> > Resolve 1):
+> > we make the invalid rmap be remove-only that means we only delete and
+> > clear spte from the rmap, no new sptes can be added to it.
+> > This is reasonable since kvm can not do address translation on invalid rmap
+> > (gfn_to_pfn is failed on invalid memslot) and all sptes on invalid rmap can
+> > not be reused (they belong to invalid shadow page).
+> > ======
+> > 
+> > clear_flush_young / test_young / change_pte of mmu-notify can rewrite
+> > rmap with the present-spte (P bit is set), we should umap rmap in
+> > these handlers.
+> > 
+> > > 
+> > >> +
+> > >> +	/*
+> > >> +	 * To ensure that all vcpus and mmu-notify are not clearing
+> > >> +	 * spte and rmap entry.
+> > >> +	 */
+> > >> +	synchronize_srcu_expedited(&kvm->srcu);
+> > >> +}
+> > >> +
+> > >>  #ifdef MMU_DEBUG
+> > >>  static int is_empty_shadow_page(u64 *spt)
+> > >>  {
+> > >> @@ -2219,6 +2283,11 @@ static void clear_sp_write_flooding_count(u64 *spte)
+> > >>  	__clear_sp_write_flooding_count(sp);
+> > >>  }
+> > >>  
+> > >> +static bool is_valid_sp(struct kvm *kvm, struct kvm_mmu_page *sp)
+> > >> +{
+> > >> +	return likely(sp->mmu_valid_gen == kvm->arch.mmu_valid_gen);
+> > >> +}
+> > >> +
+> > >>  static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+> > >>  					     gfn_t gfn,
+> > >>  					     gva_t gaddr,
+> > >> @@ -2245,6 +2314,9 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+> > >>  		role.quadrant = quadrant;
+> > >>  	}
+> > >>  	for_each_gfn_sp(vcpu->kvm, sp, gfn) {
+> > >> +		if (!is_valid_sp(vcpu->kvm, sp))
+> > >> +			continue;
+> > >> +
+> > >>  		if (!need_sync && sp->unsync)
+> > >>  			need_sync = true;
+> > >>  
+> > >> @@ -2281,6 +2353,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+> > >>  
+> > >>  		account_shadowed(vcpu->kvm, gfn);
+> > >>  	}
+> > >> +	sp->mmu_valid_gen = vcpu->kvm->arch.mmu_valid_gen;
+> > >>  	init_shadow_page_table(sp);
+> > >>  	trace_kvm_mmu_get_page(sp, true);
+> > >>  	return sp;
+> > >> @@ -2451,8 +2524,12 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
+> > >>  	ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
+> > >>  	kvm_mmu_page_unlink_children(kvm, sp);
+> > > 
+> > > The rmaps[] arrays linked to !is_valid_sp() shadow pages should not be
+> > > accessed (as they have been freed already).
+> > > 
+> > > I suppose the is_valid_sp() conditional below should be moved earlier,
+> > > before kvm_mmu_unlink_parents or any other rmap access.
+> > > 
+> > > This is fine: the !is_valid_sp() shadow pages are only reachable
+> > > by SLAB and the hypervisor itself.
+> > 
+> > Unfortunately we can not do this. :(
+> > 
+> > The sptes in shadow pape can linked to many slots, if the spte is linked
+> > to the rmap of being deleted memslot, it is ok, otherwise, the rmap of
+> > still used memslot is miss updated.
+> > 
+> > For example, slot 0 is being deleted, sp->spte[0] is linked on slot[0].rmap,
+> > sp->spte[1] is linked on slot[1].rmap. If we do not access rmap of this 'sp',
+> > the already-freed spte[1] is still linked on slot[1].rmap.
+> > 
+> > We can let kvm update the rmap for sp->spte[1] and do not unlink sp->spte[0].
+> > This is also not allowed since mmu-notify can access the invalid rmap before
+> > the memslot is destroyed, then mmu-notify will get already-freed spte on
+> > the rmap or page Access/Dirty is miss tracked (if let mmu-notify do not access
+> > the invalid rmap).
 > 
->> What causes the triple fault?
->> 
-> Are you asking what is triple fault or why it happened in your case?
-> For the former see here: http://en.wikipedia.org/wiki/Triple_fault
-> For the later it is to late to tell after VM reset. You can run QEMU with
-> -no-reboot -no-shutdown. VM will pause instead of rebooting and then you
-> can examine what is going on.
+> Why not release all rmaps?
 > 
-> --
-> 			Gleb.
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Subject: [PATCH v2 3/7] KVM: x86: introduce kvm_clear_all_gfn_page_info
+> 
+> This function is used to reset the rmaps and page info of all guest page
+> which will be used in later patch
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+
+Which you have later in patchset.
+
+So, what is the justification for the zap root + generation number increase 
+to work on a per memslot basis, given that
+
+        /*
+         * If memory slot is created, or moved, we need to clear all
+         * mmio sptes.
+         */
+        if ((change == KVM_MR_CREATE) || (change == KVM_MR_MOVE)) {
+                kvm_mmu_zap_mmio_sptes(kvm);
+                kvm_reload_remote_mmus(kvm);
+        }
+
+Is going to be dealt with generation number on mmio spte idea?
+
+Note at the moment all shadows pages are zapped on deletion / move,
+and there is no performance complaint for those cases.
+
+In fact, for what case is generation number on mmio spte optimizes for?
+The cases are where slots are deleted/moved/created on a live guest
+are:
+
+- Legacy VGA mode operation where VGA slots are created/deleted. Zapping
+all shadow not a performance issue in that case.
+- Device hotplug (not performance critical).
+- Remapping of PCI memory regions (not a performance issue).
+- Memory hotplug (not a performance issue).
+
+These are all rare events in which there is no particular concern about
+rebuilding shadow pages to resume cruise speed operation.
+
+So from this POV (please correct if not accurate) avoiding problems
+with huge number of shadow pages is all thats being asked for.
+
+Which is handled nicely by zap roots + sp gen number increase.
+
 
