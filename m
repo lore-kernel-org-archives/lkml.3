@@ -1,157 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab3DRSrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 14:47:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28957 "EHLO mx1.redhat.com"
+	id S1755177Ab3DRSrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 14:47:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7935 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab3DRSrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 14:47:14 -0400
-Date: Thu, 18 Apr 2013 20:44:14 +0200
+	id S1753869Ab3DRSrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 14:47:17 -0400
+Date: Thu, 18 Apr 2013 20:43:50 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Alan Stern <stern@rowland.harvard.edu>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Jan Kratochvil <jan.kratochvil@redhat.com>,
         Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6] ptrace/x86: dont delay "disable" till second pass in
-	ptrace_write_dr7()
-Message-ID: <20130418184414.GA4432@redhat.com>
+Subject: [PATCH v2 0/6] ptrace/x86: hw_breakpoints fixes/cleanups
+Message-ID: <20130418184350.GA4407@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130418184350.GA4407@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ptrace_write_dr7() skips ptrace_modify_breakpoint(disabled => true)
-unless second_pass, this buys nothing but complicates the code and
-means that we always do the main loop twice even if "disabled" was
-never true.
+Hello.
 
-The comment says:
+On top of "[PATCH 0/5] kill ptrace_{get,put}_breakpoints()".
 
-	Don't unregister the breakpoints right-away,
-	unless all register_user_hw_breakpoint()
-	requests have succeeded.
+V2:
+	- 2/6 was updated as Frederic suggested,
 
-Firstly, we do not do register_user_hw_breakpoint(), it was removed
-by 24f1e32c "hw-breakpoints: Rewrite the hw-breakpoints layer on top
-of perf events".
+		- if (!second_pass && rc)
+		+ if (rc && !WARN_ON(second_pass))
 
-We are going to restore register_user_hw_breakpoint() (see the next
-patch) but this doesn't matter, after 44234adc "hw-breakpoints: Modify
-breakpoints without unregistering them" perf_event_disable() can not
-hurt, hw_breakpoint_del() does not free the slot.
+	  and the changelog was rewritten. I preserved your ack,
+	  hopefully this is fine.
 
-Remove the "second_pass" check from the main loop and simplify the
-code. Since we have to check "bp != NULL" anyway, the patch also
-removes the same check in ptrace_modify_breakpoint() and moves the
-comment into ptrace_write_dr7().
+	- 3-6 are new. 4/6 fixes the regression we discussed in V1.
 
-With this patch the second pass is only needed to restore the saved
-old_dr7. This should never fail, so the patch adds WARN_ON() to catch
-the potential problems as Frederic suggested.
+Jan, this fixes watchpoint-zeroaddr test, but that test looks
+"too simple", it doesn't check that bp actually works. I created
+another test, see below.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- arch/x86/kernel/ptrace.c |   53 +++++++++++++++++----------------------------
- 1 files changed, 20 insertions(+), 33 deletions(-)
+Oleg.
 
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 0649f16..98b0a2c 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -609,14 +609,6 @@ ptrace_modify_breakpoint(struct perf_event *bp, int len, int type,
- 	int gen_len, gen_type;
- 	struct perf_event_attr attr;
- 
--	/*
--	 * We should have at least an inactive breakpoint at this
--	 * slot. It means the user is writing dr7 without having
--	 * written the address register first
--	 */
--	if (!bp)
--		return -EINVAL;
--
- 	err = arch_bp_generic_fields(len, type, &gen_len, &gen_type);
- 	if (err)
- 		return err;
-@@ -634,52 +626,47 @@ ptrace_modify_breakpoint(struct perf_event *bp, int len, int type,
-  */
- static int ptrace_write_dr7(struct task_struct *tsk, unsigned long data)
- {
--	struct thread_struct *thread = &(tsk->thread);
-+	struct thread_struct *thread = &tsk->thread;
- 	unsigned long old_dr7;
--	int i, orig_ret = 0, rc = 0;
--	int second_pass = 0;
-+	bool second_pass = false;
-+	int i, rc, ret = 0;
- 
- 	data &= ~DR_CONTROL_RESERVED;
- 	old_dr7 = ptrace_get_dr7(thread->ptrace_bps);
-+
- restore:
--	/*
--	 * Loop through all the hardware breakpoints, making the
--	 * appropriate changes to each.
--	 */
-+	rc = 0;
- 	for (i = 0; i < HBP_NUM; i++) {
- 		unsigned len, type;
- 		bool disabled = !decode_dr7(data, i, &len, &type);
- 		struct perf_event *bp = thread->ptrace_bps[i];
- 
--		if (disabled) {
-+		if (!bp) {
-+			if (disabled)
-+				continue;
- 			/*
--			 * Don't unregister the breakpoints right-away, unless
--			 * all register_user_hw_breakpoint() requests have
--			 * succeeded. This prevents any window of opportunity
--			 * for debug register grabbing by other users.
-+			 * We should have at least an inactive breakpoint at
-+			 * this slot. It means the user is writing dr7 without
-+			 * having written the address register first.
- 			 */
--			if (!bp || !second_pass)
--				continue;
-+			rc = -EINVAL;
-+			break;
- 		}
- 
- 		rc = ptrace_modify_breakpoint(bp, len, type, tsk, disabled);
- 		if (rc)
- 			break;
- 	}
--	/*
--	 * Make a second pass to free the remaining unused breakpoints
--	 * or to restore the original breakpoints if an error occurred.
--	 */
--	if (!second_pass) {
--		second_pass = 1;
--		if (rc < 0) {
--			orig_ret = rc;
--			data = old_dr7;
--		}
-+
-+	/* Restore if the first pass failed, second_pass shouldn't fail. */
-+	if (rc && !WARN_ON(second_pass)) {
-+		ret = rc;
-+		data = old_dr7;
-+		second_pass = true;
- 		goto restore;
- 	}
- 
--	return orig_ret < 0 ? orig_ret : rc;
-+	return ret;
- }
- 
- /*
--- 
-1.5.5.1
+------------------------------------------------------------------------------
+#define _GNU_SOURCE 1
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/ptrace.h>
+#include <sys/debugreg.h>
+#include <sys/user.h>
+#include <sys/wait.h>
+#include <assert.h>
+#include <assert.h>
+#include <stddef.h>
+
+#define DR_GLOBAL_ENABLE	0x2
+#define DR_LOCAL_ENABLE		0x1
+
+unsigned long encode_dr7(int drnum, int enable, unsigned int type, unsigned int len)
+{
+	unsigned long dr7;
+
+	dr7 = ((len | type) & 0xf)
+		<< (DR_CONTROL_SHIFT + drnum * DR_CONTROL_SIZE);
+	if (enable)
+		dr7 |= (DR_GLOBAL_ENABLE << (drnum * DR_ENABLE_SIZE));
+
+	return dr7;
+}
+
+int write_dr(int pid, int dr, unsigned long val)
+{
+	return ptrace(PTRACE_POKEUSER, pid,
+			offsetof (struct user, u_debugreg[dr]),
+			val);
+}
+
+#define GET_REG(pid, reg)				\
+	ptrace(PTRACE_PEEKUSER, (pid),			\
+		offsetof(struct user, regs.reg), 0)
+
+void *get_ip(int pid)
+{
+	return (void*)GET_REG(pid, rip);
+}
+
+
+void func1(void)
+{
+	printf("HERE_1\n");
+}
+void func2(void)
+{
+	printf("HERE_2\n");
+}
+
+int main(void)
+{
+	int pid, stat;
+	unsigned long dr7;
+
+	pid = fork();
+	if (!pid) {
+		assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
+		kill(getpid(), SIGHUP);
+
+		func1();
+		func2();
+
+		return 0x13;
+	}
+
+	assert(pid == waitpid(-1, &stat, 0));
+	assert(WSTOPSIG(stat) == SIGHUP);
+
+	dr7 = 0;
+	dr7 |= encode_dr7(0, 1, DR_RW_EXECUTE, DR_LEN_1);
+	dr7 |= encode_dr7(1, 1, DR_RW_EXECUTE, DR_LEN_1);
+	assert(write_dr(pid, 7, dr7) == 0);
+
+	assert(write_dr(pid, 0, (long)func1) == 0);
+	assert(write_dr(pid, 1, (long)func2) == 0);
+
+	assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
+	assert(pid == waitpid(-1, &stat, 0));
+	assert(WSTOPSIG(stat) == SIGTRAP);
+	assert(get_ip(pid) == func1);
+
+	assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
+	assert(pid == waitpid(-1, &stat, 0));
+	assert(WSTOPSIG(stat) == SIGTRAP);
+	assert(get_ip(pid) == func2);
+
+	assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
+	assert(pid == waitpid(-1, &stat, 0));
+	assert(stat == 0x1300);
+
+	return 0;
+}
 
