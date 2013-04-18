@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936725Ab3DRWky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 18:40:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37841 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936708Ab3DRWkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 18:40:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,504,1363158000"; 
-   d="scan'208";a="320571594"
-Date: Fri, 19 Apr 2013 00:40:46 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Marek Vasut <marex@denx.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2] UCB1400: Pass ucb1400-gpio data through ac97 bus
-Message-ID: <20130418224046.GD8798@zurbaran>
-References: <CACRpkdZ+ku_-SBTXwwwRDh7F2TXzpgpAF3k+Ksn98BNYXximXw@mail.gmail.com>
- <1365964548-4193-1-git-send-email-marex@denx.de>
+	id S967375Ab3DRWoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 18:44:23 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:51026 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966174Ab3DRWoV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 18:44:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365964548-4193-1-git-send-email-marex@denx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:c028]
+In-Reply-To: <CAOesGMj6nyjYjxQ23Vk0L76fYQo7YPeKoKrPptq8TVdv7Cwa-g@mail.gmail.com>
+References: <1366322130-19364-1-git-send-email-olof@lixom.net>
+	<CAOesGMj6nyjYjxQ23Vk0L76fYQo7YPeKoKrPptq8TVdv7Cwa-g@mail.gmail.com>
+Date: Thu, 18 Apr 2013 15:44:20 -0700
+Message-ID: <CAOesGMg5F-+Sco0sA1s2ACD2ZcqG2Z1Ovq51oyo=fO19S6Njfg@mail.gmail.com>
+Subject: Re: [PATCH] Platform: x86: chromeos_laptop: defer probing if no i2c
+ busses found
+From: Olof Johansson <olof@lixom.net>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Benson Leung <bleung@chromium.org>, dirk@hohndel.org,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 14, 2013 at 08:35:48PM +0200, Marek Vasut wrote:
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Jean Delvare <jdelvare@suse.de>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Cc: Guenter Roeck <linux@roeck-us.net>
-> Cc: linux-kernel <linux-kernel@vger.kernel.org>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Marek Vasut <marex@denx.de>
-> ---
->  drivers/gpio/gpio-ucb1400.c |   19 ++++++-------------
->  drivers/mfd/ucb1400_core.c  |    5 +++++
->  include/linux/ucb1400.h     |   18 ++++++------------
->  3 files changed, 17 insertions(+), 25 deletions(-)
-Applied, thanks.
+On Thu, Apr 18, 2013 at 3:05 PM, Olof Johansson <olof@lixom.net> wrote:
+> On Thu, Apr 18, 2013 at 2:55 PM, Olof Johansson <olof@lixom.net> wrote:
+>> If chromeos_laptop is loaded before the DRM driver, the i2c busses will
+>> not yet be available. Defer probe for that case and try again later.
+>>
+>> Trickling the error up to the module init function is unfortuantely a
+>> little awkward, since the i2c bus lookup and device registration happens
+>> as a dmi callback.
+>
+> Uh, wait, hold off on this. I'm returning -EPROBE_DEFER from the
+> module init function. It's not valid outside of the driver model.
 
-Cheers,
-Samuel.
+Ugh. Ok, so that worked just because any error seem to re-trigger an
+attempt to load the module later on my system (three times, it seems),
+and most of the reproductions I had happened to work out on the second
+load.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Looks like keeping the module loaded and adding a bus notifier to wait
+for the right busses to show up is the only way to do this in a
+foolproof way. Revised patch tonight or tomorrow.
+
+
+-Olof
