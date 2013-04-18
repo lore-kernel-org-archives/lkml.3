@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968233Ab3DRKsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 06:48:16 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:24098 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968220Ab3DRKsP convert rfc822-to-8bit (ORCPT
+	id S967173Ab3DRKsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 06:48:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:59614 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967094Ab3DRKsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 06:48:15 -0400
-From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-To: Guenter Roeck <linux@roeck-us.net>,
-        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: CodingStyle
-Thread-Topic: CodingStyle
-Thread-Index: Ac48IAaDW3YOWOBKR5mRpQXBtpPdfw==
-Date: Thu, 18 Apr 2013 10:48:06 +0000
-Message-ID: <24DF37198A1E704D9811D8F72B87EB514191EABF@NB-EX-MBX02.diasemi.com>
-Accept-Language: en-GB, de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.27.109]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 18 Apr 2013 06:48:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 07/32] ARM: ux500: Supply address location names for the DMA40 DMA controller
+Date: Thu, 18 Apr 2013 12:48:36 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-8-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1366279934-30761-8-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304181248.36597.arnd@arndb.de>
+X-Provags-ID: V02:K0:zhwA2wb12qhWPtlicReGLh0dfnvILAQftnOlpZBp5G2
+ N9zpw/U7i23iZVzR7790vU/uD8XX62ofEWOfKzq/jHYJErvAXZ
+ fU/OGp6KfD66w37LW7vElMoiKBhr2xa5kkpi4TnmzQ5eJqhfnY
+ U18phQVVYLFgEq0HUTcRoOQBlq+MWz3ByUILwmS18eoHPfOAD6
+ DIyHPAvZOfK5N1y7Gp23U23wRTcVm+2h+VTpV0CBfIg1VQ2oYN
+ uMCEgGFPzi+NANBc762q06zGcw5bzmwwCKvUzVnRDsioktzCnS
+ G9S9nIMr5cNVF96aZBFCClgd0v+QHi2hbzDeNXf+hs2qPkcJz/
+ 4AQBRjGBcuxQTD5s8J0c=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Guenter Roeck [mailto:linux@roeck-us.net]
-> Sent: 18 April 2013 05:14
-> To: Opensource [Anthony Olech]
-> Cc: Jean Delvare; Mark Brown; Randy Dunlap; lm-sensors@lm-sensors.org;
-> LKML; David Dajun Chen
-> Subject: Re: [NEW DRIVER V5 6/7] drivers/hwmon: DA9058 HWMON driver
+On Thursday 18 April 2013, Lee Jones wrote:
+> The DMA40 controller uses two sets of base addresses. In order to have
+> them automatically setup as resources by the Open Format framework we
+> have to set names for them. The names have to be the same as the ones
+> used to fetch them back out of the resource structure.
 > 
-[...]
-> > +	if (cell == NULL) {
-> > +		ret = -ENODEV;
-> > +		goto exit;
-> 
-> Just return -ENODEV is good enough here. See CodingStyle, chapter 7.
-> 
-[...]
-> > +exit:
-> > +	return ret;
-> > +}
-[...]
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-Hi Guenter,
+Typo: s/Open Format/Open Firmware/
 
-I have read CodingStyle, chapter 7 and it seems to encourage a single exit point from functions.
+To be more specific, just write of_platform framework. Note that we
+still get resources without passing the names, they are just not
+named in that case and have to be retrieved by index.
 
-During development there was some logging done at the (single) exit point but that has been stripped out for submission.
-Whilst I can duplicate the logging and do an immediate 'return' at all those points, I am hesitant to do so when chapter 7 of the CodingStyle appears to say to use a single exit point. In addition I had thought that a single exit point from functions was a good thing.
+You should also document the strings in the binding document.
 
-Tony Olech
-
-
+	ARnd
