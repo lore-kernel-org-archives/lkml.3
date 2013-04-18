@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967147Ab3DRJ2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:28:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40190 "EHLO
+	id S1757540Ab3DRJR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:17:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40148 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757754Ab3DRJSD (ORCPT
+	with ESMTP id S1757220Ab3DRJRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:18:03 -0400
+	Thu, 18 Apr 2013 05:17:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 39/72] tracing: Fix double free when function profile init failed
-Date: Thu, 18 Apr 2013 10:16:24 +0100
-Message-Id: <1366276617-3553-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 32/72] ALSA: hda - Enabling Realtek ALC 671 codec
+Date: Thu, 18 Apr 2013 10:16:17 +0100
+Message-Id: <1366276617-3553-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -30,36 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+From: Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>
 
-commit 83e03b3fe4daffdebbb42151d5410d730ae50bd1 upstream.
+commit 1d87caa69c04008e09f5ff47b5e6acb6116febc7 upstream.
 
-On the failure path, stat->start and stat->pages will refer same page.
-So it'll attempt to free the same page again and get kernel panic.
+* Added the device ID to the modalias list and assinged ALC662 patches
+for it
+* Added 4 port support for the device ID 0671 in alc662_parse_auto_config
 
-Link: http://lkml.kernel.org/r/1364820385-32027-1-git-send-email-namhyung@kernel.org
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Rainer Koenig <Rainer.Koenig@ts.fujitsu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/ftrace.c | 1 -
- 1 file changed, 1 deletion(-)
+ sound/pci/hda/patch_realtek.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 00ea125..7da46c7 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -642,7 +642,6 @@ int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
- 		free_page(tmp);
- 	}
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index a351a6f..1baf0dc 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6525,7 +6525,8 @@ static int alc662_parse_auto_config(struct hda_codec *codec)
+ 	const hda_nid_t *ssids;
  
--	free_page((unsigned long)stat->pages);
- 	stat->pages = NULL;
- 	stat->start = NULL;
- 
+ 	if (codec->vendor_id == 0x10ec0272 || codec->vendor_id == 0x10ec0663 ||
+-	    codec->vendor_id == 0x10ec0665 || codec->vendor_id == 0x10ec0670)
++	    codec->vendor_id == 0x10ec0665 || codec->vendor_id == 0x10ec0670 ||
++	    codec->vendor_id == 0x10ec0671)
+ 		ssids = alc663_ssids;
+ 	else
+ 		ssids = alc662_ssids;
+@@ -6970,6 +6971,7 @@ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
+ 	{ .id = 0x10ec0665, .name = "ALC665", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0668, .name = "ALC668", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0670, .name = "ALC670", .patch = patch_alc662 },
++	{ .id = 0x10ec0671, .name = "ALC671", .patch = patch_alc662 },
+ 	{ .id = 0x10ec0680, .name = "ALC680", .patch = patch_alc680 },
+ 	{ .id = 0x10ec0880, .name = "ALC880", .patch = patch_alc880 },
+ 	{ .id = 0x10ec0882, .name = "ALC882", .patch = patch_alc882 },
 -- 
 1.8.1.2
 
