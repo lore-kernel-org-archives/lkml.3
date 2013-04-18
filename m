@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935032Ab3DQX5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 19:57:46 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:49113 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab3DQX5m (ORCPT
+	id S935407Ab3DRAC2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 20:02:28 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47518 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753713Ab3DRAC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 19:57:42 -0400
+	Wed, 17 Apr 2013 20:02:27 -0400
+Message-ID: <516F37FF.8040703@infradead.org>
+Date: Wed, 17 Apr 2013 17:02:07 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130418092444.a4d64d8a9b5f700ba2aae779@canb.auug.org.au>
-References: <20130418092444.a4d64d8a9b5f700ba2aae779@canb.auug.org.au>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 17 Apr 2013 17:57:21 -0600
-Message-ID: <CAErSpo4B0sQpozB9Zco892_wtykMQ9-P2iF4QR+HXdte1YpMzg@mail.gmail.com>
-Subject: Re: PCI: Remove "extern" from function declarations
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
+To: David Rientjes <rientjes@google.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [patch] x86, kvm: fix build failure with CONFIG_SMP disabled
+References: <20130417170450.5dd6e5f450de4d5bf197d997@canb.auug.org.au> <516EE5AB.4080201@infradead.org> <alpine.DEB.2.02.1304171555030.10112@chino.kir.corp.google.com> <alpine.DEB.2.02.1304171609580.5541@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1304171609580.5541@chino.kir.corp.google.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 5:24 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Bjorn,
->
-> I just noticed this commit (f39d5b72913e "PCI: Remove "extern" from
-> function declarations") in the pci next branch.  Just wondering why you
-> would do such a thing.  It is a lot of churn in quite a few header files
-> and (in my opinion) goes the wrong way anyway.
->
-> It may not actually make any difference to the compiler for functions, but
-> for variables, it does.   A variable declared in a header file without
-> "extern" will effectively define it in every compilation that includes
-> the header file, one with "extern" will only produce references.
->
-> So, since, the global variables really should have the "extern", the
-> functions are now inconsistent with that.
->
-> It also means that when someone copies a function declaration to make a
-> "static inline" stub, the "extern" is a big hint for them to remember to
-> make the stub "static" - I have seen several occasions when this was not
-> done and that causes compilation failures (but usually only in the
-> configuration that the author did not bother to test).
+On 04/17/13 16:12, David Rientjes wrote:
+> The build fails when CONFIG_SMP is disabled:
+> 
+> 	arch/x86/kvm/vmx.c: In function 'vmx_deliver_posted_interrupt':
+> 	arch/x86/kvm/vmx.c:3950:3: error: 'apic' undeclared (first use in this function)
+> 
+> Fix it by including the necessary header.
 
-Good points.  The fact that some function declarations use "extern"
-and some don't is just an annoying inconsistency.  I prefer fewer
-words to read, so I removed them, but that's just a personal
-preference, and I'd be OK it were always present, too.  I suppose if
-anybody but me actually cared very much, we'd have checkpatch complain
-about one way or the other, but I don't think it does.
+Sorry, i386 build still fails with the same error message plus this one:
 
-Bjorn
+ERROR: "apic" [arch/x86/kvm/kvm-intel.ko] undefined!
+
+
+> Reported-by: Randy Dunlap <rdunlap@infradead.org>
+> Signed-off-by: David Rientjes <rientjes@google.com>
+> ---
+>  arch/x86/kvm/vmx.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -34,6 +34,7 @@
+>  #include "kvm_cache_regs.h"
+>  #include "x86.h"
+>  
+> +#include <asm/apic.h>
+>  #include <asm/io.h>
+>  #include <asm/desc.h>
+>  #include <asm/vmx.h>
+> --
+
+
+-- 
+~Randy
