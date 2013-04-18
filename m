@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968217Ab3DRKqJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 06:46:09 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54982 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967157Ab3DRKqH (ORCPT
+	id S968233Ab3DRKsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 06:48:16 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:24098 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968220Ab3DRKsP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 06:46:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 08/32] dmaengine: ste_dma40: Optimise local MAX() macro
-Date: Thu, 18 Apr 2013 12:46:03 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-9-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1366279934-30761-9-git-send-email-lee.jones@linaro.org>
+	Thu, 18 Apr 2013 06:48:15 -0400
+From: "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+To: Guenter Roeck <linux@roeck-us.net>,
+        "Opensource [Anthony Olech]" <anthony.olech.opensource@diasemi.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: CodingStyle
+Thread-Topic: CodingStyle
+Thread-Index: Ac48IAaDW3YOWOBKR5mRpQXBtpPdfw==
+Date: Thu, 18 Apr 2013 10:48:06 +0000
+Message-ID: <24DF37198A1E704D9811D8F72B87EB514191EABF@NB-EX-MBX02.diasemi.com>
+Accept-Language: en-GB, de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.27.109]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304181246.03357.arnd@arndb.de>
-X-Provags-ID: V02:K0:+lnzb1lUr2DnTREb8BOhwVKPiIEsvfDhA1UQp9xJ7VD
- QQRBmyRWvBwxAJXwhq4QsBLOh5as7qkyt08Zkk63LcQqsUEIf9
- ZAAEXTe8FRqoJh1xIkfYBVlvyQXpBhNsYKXtqB/jwyOz30mXHm
- JWOb9AKK0/sXGpZlyAarc9zOyKbY3qDHF0jxK6t3sg+8lSLQsy
- pdMuQIgj61yjVPcQ9qlAIDuasWYVHelvQeC66d7Oli3AtM8may
- kv83jSR4RfcU7TdoJaHm2eIuawoIJqC02hoo4STX38jmUgZAKE
- HZU7coa5RwMLxyBpIyvxVl3ORGCE+z+iTK0dcylk0L9aXm+804
- AUcCZjBBMOCUTdLCzr/g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013, Lee Jones wrote:
-> The current implementation of the DMA40's local MAX() macro evaluates
-> its arguments more times than is necessary. This patch strips it
-> optimises it to only evaluate what's appropriate.
+> -----Original Message-----
+> From: Guenter Roeck [mailto:linux@roeck-us.net]
+> Sent: 18 April 2013 05:14
+> To: Opensource [Anthony Olech]
+> Cc: Jean Delvare; Mark Brown; Randy Dunlap; lm-sensors@lm-sensors.org;
+> LKML; David Dajun Chen
+> Subject: Re: [NEW DRIVER V5 6/7] drivers/hwmon: DA9058 HWMON driver
+> 
+[...]
+> > +	if (cell == NULL) {
+> > +		ret = -ENODEV;
+> > +		goto exit;
+> 
+> Just return -ENODEV is good enough here. See CodingStyle, chapter 7.
+> 
+[...]
+> > +exit:
+> > +	return ret;
+> > +}
+[...]
 
-No, it does not.
+Hi Guenter,
 
-> index b21a8a3..7b451b2 100644
-> --- a/drivers/dma/ste_dma40.c
-> +++ b/drivers/dma/ste_dma40.c
-> @@ -53,7 +53,7 @@
->  #define D40_ALLOC_PHY          BIT(30)
->  #define D40_ALLOC_LOG_FREE     BIT(0)
->  
-> -#define MAX(a, b) (((a) < (b)) ? (b) : (a))
-> +#define MAX(a, b) ((a > b) ? a : b)
+I have read CodingStyle, chapter 7 and it seems to encourage a single exit point from functions.
 
-This just makes the macro worse in case you pass a complex expression
-in, which can now have additional unwanted effects. Just drop this patch.
+During development there was some logging done at the (single) exit point but that has been stripped out for submission.
+Whilst I can duplicate the logging and do an immediate 'return' at all those points, I am hesitant to do so when chapter 7 of the CodingStyle appears to say to use a single exit point. In addition I had thought that a single exit point from functions was a good thing.
 
-	Arnd
+Tony Olech
+
+
