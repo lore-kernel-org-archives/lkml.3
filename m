@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967315Ab3DRJd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:33:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40094 "EHLO
+	id S967330Ab3DRJdr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:33:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40074 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756505Ab3DRJRm (ORCPT
+	with ESMTP id S1756784Ab3DRJRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:42 -0400
+	Thu, 18 Apr 2013 05:17:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Christopher Harvey <charvey@matrox.com>, Dave Airlie <airlied@redhat.com>,
+Cc: Robert Tivy <rtivy@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 23/72] drm/mgag200: Index 24 in extended CRTC registers is 24 in hex, not decimal.
-Date: Thu, 18 Apr 2013 10:16:08 +0100
-Message-Id: <1366276617-3553-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 19/72] remoteproc: fix FW_CONFIG typo
+Date: Thu, 18 Apr 2013 10:16:04 +0100
+Message-Id: <1366276617-3553-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -27,73 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christopher Harvey <charvey@matrox.com>
+From: Robert Tivy <rtivy@ti.com>
 
-commit 1812a3db0874be1d1524086da9e84397b800f546 upstream.
+commit c7426bce5933d16b492a34e42ae77e26fceddff6 upstream.
 
-This change properly enables the "requester" in G200ER cards that is
-responsible for getting pixels out of memory and clocking them out to
-the screen.
+Fix obvious typo introduced in commit e121aefa7d9f10eee5cf26ed47129237a05d940b
+("remoteproc: fix missing CONFIG_FW_LOADER configurations").
 
-Signed-off-by: Christopher Harvey <charvey@matrox.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Robert Tivy <rtivy@ti.com>
+[cc stable, slight subject change]
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+[ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/mgag200/mgag200_mode.c | 13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+ drivers/remoteproc/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
-index 505a917..abb9776 100644
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -752,8 +752,6 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
- 	int i;
- 	unsigned char misc = 0;
- 	unsigned char ext_vga[6];
--	unsigned char ext_vga_index24;
--	unsigned char dac_index90 = 0;
- 	u8 bppshift;
+diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
+index 811ff72..324d84e 100644
+--- a/drivers/remoteproc/Kconfig
++++ b/drivers/remoteproc/Kconfig
+@@ -4,7 +4,7 @@ menu "Remoteproc drivers (EXPERIMENTAL)"
+ config REMOTEPROC
+ 	tristate
+ 	depends on EXPERIMENTAL
+-	select FW_CONFIG
++	select FW_LOADER
+ 	select VIRTIO
  
- 	static unsigned char dacvalue[] = {
-@@ -804,7 +802,6 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
- 		option2 = 0x0000b000;
- 		break;
- 	case G200_ER:
--		dac_index90 = 0;
- 		break;
- 	}
- 
-@@ -853,10 +850,8 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
- 		WREG_DAC(i, dacvalue[i]);
- 	}
- 
--	if (mdev->type == G200_ER) {
--		WREG_DAC(0x90, dac_index90);
--	}
--
-+	if (mdev->type == G200_ER)
-+		WREG_DAC(0x90, 0);
- 
- 	if (option)
- 		pci_write_config_dword(dev->pdev, PCI_MGA_OPTION, option);
-@@ -953,8 +948,6 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
- 	if (mdev->type == G200_WB)
- 		ext_vga[1] |= 0x88;
- 
--	ext_vga_index24 = 0x05;
--
- 	/* Set pixel clocks */
- 	misc = 0x2d;
- 	WREG8(MGA_MISC_OUT, misc);
-@@ -966,7 +959,7 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
- 	}
- 
- 	if (mdev->type == G200_ER)
--		WREG_ECRT(24, ext_vga_index24);
-+		WREG_ECRT(0x24, 0x5);
- 
- 	if (mdev->type == G200_EV) {
- 		WREG_ECRT(6, 0);
+ config OMAP_REMOTEPROC
 -- 
 1.8.1.2
 
