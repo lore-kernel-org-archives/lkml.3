@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab3DRL0p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 07:26:45 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:37455 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756123Ab3DRL0o (ORCPT
+	id S936002Ab3DRL3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 07:29:20 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46201
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935355Ab3DRL3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 07:26:44 -0400
-Message-ID: <516FD76F.6090306@linux.vnet.ibm.com>
-Date: Thu, 18 Apr 2013 19:22:23 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mtosatti@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v3 08/15] KVM: MMU: allow unmap invalid rmap out of mmu-lock
-References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1366093973-2617-9-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130418110036.GS8997@redhat.com>
-In-Reply-To: <20130418110036.GS8997@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 18 Apr 2013 07:29:19 -0400
+Message-ID: <1366284534.19383.13.camel@laptop>
+Subject: Re: [PATCH 2/2] perf, amd: support for AMD NB and L2I "uncore"
+ counters.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Stephane Eranian <eranian@google.com>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Date: Thu, 18 Apr 2013 13:28:54 +0200
+In-Reply-To: <1366046483-1765-3-git-send-email-jacob.shin@amd.com>
+References: <1366046483-1765-1-git-send-email-jacob.shin@amd.com>
+	 <1366046483-1765-3-git-send-email-jacob.shin@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041811-0260-0000-0000-000002D42F57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 07:00 PM, Gleb Natapov wrote:
-> On Tue, Apr 16, 2013 at 02:32:46PM +0800, Xiao Guangrong wrote:
->> pte_list_clear_concurrently allows us to reset pte-desc entry
->> out of mmu-lock. We can reset spte out of mmu-lock if we can protect the
->> lifecycle of sp, we use this way to achieve the goal:
->>
->> unmap_memslot_rmap_nolock():
->> for-each-rmap-in-slot:
->>       preempt_disable
->>       kvm->arch.being_unmapped_rmap = rmapp
->>       clear spte and reset rmap entry
->>       kvm->arch.being_unmapped_rmap = NULL
->>       preempt_enable
->>
->> Other patch like zap-sp and mmu-notify which are protected
->> by mmu-lock:
->>       clear spte and reset rmap entry
->> retry:
->>       if (kvm->arch.being_unmapped_rmap == rmap)
->> 		goto retry
->> (the wait is very rare and clear one rmap is very fast, it
->> is not bad even if wait is needed)
->>
-> I do not understand what how this achieve the goal. Suppose that rmap
-> == X and kvm->arch.being_unmapped_rmap == NULL so "goto retry" is skipped,
-> but moment later unmap_memslot_rmap_nolock() does
-> vm->arch.being_unmapped_rmap = X.
+On Mon, 2013-04-15 at 12:21 -0500, Jacob Shin wrote:
+> Add support for AMD Family 15h [and above] northbridge performance
+> counters. MSRs 0xc0010240 ~ 0xc0010247 are shared across all cores
+> that share a common northbridge.
+> 
+> Add support for AMD Family 16h L2 performance counters. MSRs
+> 0xc0010230 ~ 0xc0010237 are shared across all cores that share a
+> common L2 cache.
+> 
+> We do not enable counter overflow interrupts. Sampling mode and
+> per-thread events are not supported.
 
-Access rmap is always safe since rmap and its entries are valid until
-memslot is destroyed.
 
-This algorithm protects spte since it can be freed in the protection of mmu-lock.
+Nice!
 
-In your scenario:
+There's one crucial thing missing though.. The Intel uncore driver
+explicitly maps all events of cpus that are of the same uncore to a
+single cpu and migrates the events to another cpu (if any is available)
+when that cpu goes down.
 
-======
-   CPU 1                                      CPU 2
+The advantage of keeping all the events on the same cpu is that we
+don't need to consider shared resources between cpus of an uncore
+group.
 
-vcpu / mmu-notify access the RMAP         unmap rmap out of mmu-lock which is under
-which is under mmu-lock                   slot-lock
+That way things like event rotation on overcommit also trivially works
+right.
 
-zap spte1
-clear RMAP entry
+I appreciate the intel uncore driver might be a tad hard to read -- its
+somewhat unwieldy. But it basically sets event->cpu on
+pmu::event_init() to whatever cpu is selected to represent the group,
+and then calls perf_pmu_migrate_context() from a hotplug notifier.
 
-kvm->arch.being_unmapped_rmap = NULL,
-do not wait
-
-free spte1
-
-                                        set kvm->arch.being_unmapped_rmap = RMAP
-                                        walking RMAP and do not see spet1 on RMAP
-                                        (the entry of spte 1 has been reset by CPU 1)
-                                        set kvm->arch.being_unmapped_rmap = NULL
-======
-
-That protect CPU 2 can not access the freed-spte.
 
 
