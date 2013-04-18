@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab3DRJRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:17:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40031 "EHLO
+	id S967553Ab3DRJiD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:38:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40055 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350Ab3DRJR3 (ORCPT
+	with ESMTP id S1756561Ab3DRJRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:29 -0400
+	Thu, 18 Apr 2013 05:17:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Moore <pmoore@redhat.com>, Will Drewry <wad@chromium.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Shan Hai <shan.hai@windriver.com>, Jeff Garzik <jgarzik@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 09/72] x86: remove the x32 syscall bitmask from syscall_get_nr()
-Date: Thu, 18 Apr 2013 10:15:54 +0100
-Message-Id: <1366276617-3553-10-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 14/72] libata: Use integer return value for atapi_command_packet_set
+Date: Thu, 18 Apr 2013 10:15:59 +0100
+Message-Id: <1366276617-3553-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -29,65 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Shan Hai <shan.hai@windriver.com>
 
-commit 8b4b9f27e57584f3d90e0bb84cf800ad81cfe3a1 upstream.
+commit d8668fcb0b257d9fdcfbe5c172a99b8d85e1cd82 upstream.
 
-Commit fca460f95e928bae373daa8295877b6905bc62b8 simplified the x32
-implementation by creating a syscall bitmask, equal to 0x40000000, that
-could be applied to x32 syscalls such that the masked syscall number
-would be the same as a x86_64 syscall.  While that patch was a nice
-way to simplify the code, it went a bit too far by adding the mask to
-syscall_get_nr(); returning the masked syscall numbers can cause
-confusion with callers that expect syscall numbers matching the x32
-ABI, e.g. unmasked syscall numbers.
+The function returns type of ATAPI drives so it should return integer value.
+The commit 4dce8ba94c7 (libata: Use 'bool' return value for ata_id_XXX) since
+v2.6.39 changed the type of return value from int to bool, the change would
+cause all of the ATAPI class drives to be treated as TYPE_TAPE and the
+max_sectors of the drives to be set to 65535 because of the commit
+f8d8e5799b7(libata: increase 128 KB / cmd limit for ATAPI tape drives), for the
+function would return true for all ATAPI class drives and the TYPE_TAPE is
+defined as 0x01.
 
-This patch fixes this by simply removing the mask from syscall_get_nr()
-while preserving the other changes from the original commit.  While
-there are several syscall_get_nr() callers in the kernel, most simply
-check that the syscall number is greater than zero, in this case this
-patch will have no effect.  Of those remaining callers, they appear
-to be few, seccomp and ftrace, and from my testing of seccomp without
-this patch the original commit definitely breaks things; the seccomp
-filter does not correctly filter the syscalls due to the difference in
-syscall numbers in the BPF filter and the value from syscall_get_nr().
-Applying this patch restores the seccomp BPF filter functionality on
-x32.
-
-I've tested this patch with the seccomp BPF filters as well as ftrace
-and everything looks reasonable to me; needless to say general usage
-seemed fine as well.
-
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Link: http://lkml.kernel.org/r/20130215172143.12549.10292.stgit@localhost
-Cc: Will Drewry <wad@chromium.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Shan Hai <shan.hai@windriver.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/include/asm/syscall.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/ata.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
-index 1ace47b..2e188d6 100644
---- a/arch/x86/include/asm/syscall.h
-+++ b/arch/x86/include/asm/syscall.h
-@@ -29,13 +29,13 @@ extern const unsigned long sys_call_table[];
-  */
- static inline int syscall_get_nr(struct task_struct *task, struct pt_regs *regs)
- {
--	return regs->orig_ax & __SYSCALL_MASK;
-+	return regs->orig_ax;
+diff --git a/include/linux/ata.h b/include/linux/ata.h
+index 32df2b6..5856c9e 100644
+--- a/include/linux/ata.h
++++ b/include/linux/ata.h
+@@ -937,7 +937,7 @@ static inline int atapi_cdb_len(const u16 *dev_id)
+ 	}
  }
  
- static inline void syscall_rollback(struct task_struct *task,
- 				    struct pt_regs *regs)
+-static inline bool atapi_command_packet_set(const u16 *dev_id)
++static inline int atapi_command_packet_set(const u16 *dev_id)
  {
--	regs->ax = regs->orig_ax & __SYSCALL_MASK;
-+	regs->ax = regs->orig_ax;
+ 	return (dev_id[ATA_ID_CONFIG] >> 8) & 0x1f;
  }
- 
- static inline long syscall_get_error(struct task_struct *task,
 -- 
 1.8.1.2
 
