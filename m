@@ -1,57 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936486Ab3DRTJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 15:09:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:55675 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab3DRTJN (ORCPT
+	id S1756223Ab3DRTJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 15:09:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54437 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab3DRTJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 15:09:13 -0400
-Date: Thu, 18 Apr 2013 15:09:10 -0400 (EDT)
-Message-Id: <20130418.150910.1780951630545456624.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: vitalyb@telenet.dn.ua, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, fubar@us.ibm.com, linux@8192.net
-Subject: Re: Bonding driver has bad load balancing for forwarded traffic,
- 3.7+
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1366081404.4459.127.camel@edumazet-glaptop>
-References: <516C075E.30105@telenet.dn.ua>
-	<1366072679.4459.113.camel@edumazet-glaptop>
-	<1366081404.4459.127.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 18 Apr 2013 15:09:57 -0400
+Message-ID: <517044F8.9060701@ti.com>
+Date: Fri, 19 Apr 2013 00:39:44 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+MIME-Version: 1.0
+To: Kevin Hilman <khilman@linaro.org>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [PATCH 6/6] arm: mach-omap2: Remove "no_console_suspend"
+References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>	<1366198467-6757-7-git-send-email-sourav.poddar@ti.com> <87d2tr4sor.fsf@linaro.org>
+In-Reply-To: <87d2tr4sor.fsf@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Thu, 18 Apr 2013 12:09:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 15 Apr 2013 20:03:24 -0700
+Hi Kevin,
+On Thursday 18 April 2013 11:39 PM, Kevin Hilman wrote:
+> Sourav Poddar<sourav.poddar@ti.com>  writes:
+>
+>> Since the omap serial driver is now adapted to handle the
+>> case where you dont need to cut the clock on suspend while
+>> using "no_console_suspend" in the bootargs.
+>>
+>> We can get rid of the previous implementation of setting the od->flags to
+>> "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" from platform
+>> and omap_device files.
+>>
+>> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>> Cc: Felipe Balbi<balbi@ti.com>
+>> Cc: Rajendra nayak<rnayak@ti.com>
+>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+> Subject should be arm: omap2+: omap_device: remove no_idle_on_suspend
+>
+> Also, you should remove the flag from omap_device.h.
+>
+> Kevin
+Ok. Will change it in the next version.
 
-> [PATCH] bonding: fix l23 and l34 load balancing in forwarding path
-> 
-> Since commit 6b923cb7188d46 (bonding: support for IPv6 transmit hashing)
-> bonding doesn't properly hash traffic in forwarding setups.
-> 
-> Vitaly V. Bursov diagnosed that skb_network_header_len() returned 0 in
-> this case.
-> 
-> More generally, the transport header might not be in the skb head.
-> 
-> Use pskb_may_pull() & skb_header_pointer() to get it right, and use
-> proto_ports_offset() in bond_xmit_hash_policy_l34() to get support for
-> more protocols than TCP and UDP.
-> 
-> Reported-by: Vitaly V. Bursov <vitalyb@telenet.dn.ua>
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
+~Sourav
+>> ---
+>>   arch/arm/mach-omap2/omap_device.c |    3 ---
+>>   arch/arm/mach-omap2/serial.c      |    7 -------
+>>   2 files changed, 0 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+>> index d6dce8f..c226946 100644
+>> --- a/arch/arm/mach-omap2/omap_device.c
+>> +++ b/arch/arm/mach-omap2/omap_device.c
+>> @@ -170,9 +170,6 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
+>>   			r->name = dev_name(&pdev->dev);
+>>   	}
+>>
+>> -	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
+>> -		omap_device_disable_idle_on_suspend(pdev);
+>> -
+>>   	pdev->dev.pm_domain =&omap_device_pm_domain;
+>>
+>>   odbfd_exit1:
+>> diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
+>> index f660156..58d5b56 100644
+>> --- a/arch/arm/mach-omap2/serial.c
+>> +++ b/arch/arm/mach-omap2/serial.c
+>> @@ -63,7 +63,6 @@ struct omap_uart_state {
+>>   static LIST_HEAD(uart_list);
+>>   static u8 num_uarts;
+>>   static u8 console_uart_id = -1;
+>> -static u8 no_console_suspend;
+>>   static u8 uart_debug;
+>>
+>>   #define DEFAULT_RXDMA_POLLRATE		1	/* RX DMA polling rate (us) */
+>> @@ -207,9 +206,6 @@ static int __init omap_serial_early_init(void)
+>>   					uart_name, uart->num);
+>>   			}
+>>
+>> -			if (cmdline_find_option("no_console_suspend"))
+>> -				no_console_suspend = true;
+>> -
+>>   			/*
+>>   			 * omap-uart can be used for earlyprintk logs
+>>   			 * So if omap-uart is used as console then prevent
+>> @@ -292,9 +288,6 @@ void __init omap_serial_init_port(struct omap_board_data *bdata,
+>>   		return;
+>>   	}
+>>
+>> -	if ((console_uart_id == bdata->id)&&  no_console_suspend)
+>> -		omap_device_disable_idle_on_suspend(pdev);
+>> -
+>>   	oh->mux = omap_hwmod_mux_init(bdata->pads, bdata->pads_cnt);
+>>
+>>   	if (console_uart_id == bdata->id) {
 
-Applied and queued up for -stable, but:
-
-> +						sizeof(_l4), &_l4);						
-                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^
-
-That's some rather amazing trailing whitespace.  Are you trying to break
-free of earth's atmosphere? :-)
