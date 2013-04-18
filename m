@@ -1,43 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936622Ab3DRUq1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 16:46:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41936 "EHLO mail.zytor.com"
+	id S936629Ab3DRU7a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 16:59:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10316 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936581Ab3DRUq0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 16:46:26 -0400
-Message-ID: <51705B87.9000509@zytor.com>
-Date: Thu, 18 Apr 2013 13:45:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Darren Hart <darren.hart@intel.com>
-CC: Matthew Garrett <matthew.garrett@nebula.com>,
-        Matt Fleming <matt@console-pimps.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
-References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <516EAC4A.6040202@console-pimps.org> <516F1B90.9040508@nexus-software.ie> <516FD24A.3070502@console-pimps.org> <20130418163325.GA6884@leaf> <5170216C.9020300@zytor.com> <20130418164457.GB6884@leaf> <51704FA8.7060801@console-pimps.org> <1366315083.13667.19.camel@x230.lan> <51705366.8070001@intel.com> <517053EF.2030900@zytor.com> <517054EF.9070500@intel.com>
-In-Reply-To: <517054EF.9070500@intel.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S936593Ab3DRU73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 16:59:29 -0400
+From: Bill Nottingham <notting@redhat.com>
+To: tomas.winkler@intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] mei: reseting -> resetting
+Date: Thu, 18 Apr 2013 16:59:51 -0400
+Message-Id: <1366318791-10509-1-git-send-email-notting@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 01:17 PM, Darren Hart wrote:
-> 
-> Ah, well then I've misunderstood the nature of the problem a bit. Will
-> have to spend some time understanding this better.
-> 
+This enum leaks out to userspace via error messages, so fix the spelling.
 
-Way, way too many people misunderstand HIGHMEM.
+Signed-off-by: Bill Nottingham <notting@redhat.com>
+---
+ drivers/misc/mei/hbm.c     | 8 ++++----
+ drivers/misc/mei/hw-me.c   | 2 +-
+ drivers/misc/mei/init.c    | 4 ++--
+ drivers/misc/mei/mei_dev.h | 2 +-
+ 4 files changed, 8 insertions(+), 8 deletions(-)
 
-	-hpa
+diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+index fb9e63b..e02d4cf 100644
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -52,7 +52,7 @@ static void mei_hbm_me_cl_allocate(struct mei_device *dev)
+ 			sizeof(struct mei_me_client), GFP_KERNEL);
+ 	if (!clients) {
+ 		dev_err(&dev->pdev->dev, "memory allocation for ME clients failed.\n");
+-		dev->dev_state = MEI_DEV_RESETING;
++		dev->dev_state = MEI_DEV_RESETTING;
+ 		mei_reset(dev, 1);
+ 		return;
+ 	}
+@@ -146,7 +146,7 @@ void mei_hbm_start_req(struct mei_device *dev)
+ 	dev->recvd_msg = false;
+ 	if (mei_write_message(dev, mei_hdr, dev->wr_msg.data)) {
+ 		dev_dbg(&dev->pdev->dev, "write send version message to FW fail.\n");
+-		dev->dev_state = MEI_DEV_RESETING;
++		dev->dev_state = MEI_DEV_RESETTING;
+ 		mei_reset(dev, 1);
+ 	}
+ 	dev->init_clients_state = MEI_START_MESSAGE;
+@@ -174,7 +174,7 @@ static void mei_hbm_enum_clients_req(struct mei_device *dev)
+ 	enum_req->hbm_cmd = HOST_ENUM_REQ_CMD;
+ 
+ 	if (mei_write_message(dev, mei_hdr, dev->wr_msg.data)) {
+-		dev->dev_state = MEI_DEV_RESETING;
++		dev->dev_state = MEI_DEV_RESETTING;
+ 		dev_dbg(&dev->pdev->dev, "write send enumeration request message to FW fail.\n");
+ 		mei_reset(dev, 1);
+ 	}
+@@ -226,7 +226,7 @@ static int mei_hbm_prop_req(struct mei_device *dev)
+ 	prop_req->address = next_client_index;
+ 
+ 	if (mei_write_message(dev, mei_hdr, dev->wr_msg.data)) {
+-		dev->dev_state = MEI_DEV_RESETING;
++		dev->dev_state = MEI_DEV_RESETTING;
+ 		dev_err(&dev->pdev->dev, "Properties request command failed\n");
+ 		mei_reset(dev, 1);
+ 
+diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
+index 642c622..4460a3e 100644
+--- a/drivers/misc/mei/hw-me.c
++++ b/drivers/misc/mei/hw-me.c
+@@ -452,7 +452,7 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
+ 
+ 	/* check if ME wants a reset */
+ 	if (!mei_hw_is_ready(dev) &&
+-	    dev->dev_state != MEI_DEV_RESETING &&
++	    dev->dev_state != MEI_DEV_RESETTING &&
+ 	    dev->dev_state != MEI_DEV_INITIALIZING) {
+ 		dev_dbg(&dev->pdev->dev, "FW not ready.\n");
+ 		mei_reset(dev, 1);
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 3561799..cb58f72 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -31,7 +31,7 @@ const char *mei_dev_state_str(int state)
+ 	MEI_DEV_STATE(INITIALIZING);
+ 	MEI_DEV_STATE(INIT_CLIENTS);
+ 	MEI_DEV_STATE(ENABLED);
+-	MEI_DEV_STATE(RESETING);
++	MEI_DEV_STATE(RESETTING);
+ 	MEI_DEV_STATE(DISABLED);
+ 	MEI_DEV_STATE(RECOVERING_FROM_RESET);
+ 	MEI_DEV_STATE(POWER_DOWN);
+@@ -151,7 +151,7 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
+ 	if (dev->dev_state != MEI_DEV_INITIALIZING) {
+ 		if (dev->dev_state != MEI_DEV_DISABLED &&
+ 		    dev->dev_state != MEI_DEV_POWER_DOWN)
+-			dev->dev_state = MEI_DEV_RESETING;
++			dev->dev_state = MEI_DEV_RESETTING;
+ 
+ 		mei_cl_all_disconnect(dev);
+ 
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 9787381..77a584b 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -95,7 +95,7 @@ enum mei_dev_state {
+ 	MEI_DEV_INITIALIZING = 0,
+ 	MEI_DEV_INIT_CLIENTS,
+ 	MEI_DEV_ENABLED,
+-	MEI_DEV_RESETING,
++	MEI_DEV_RESETTING,
+ 	MEI_DEV_DISABLED,
+ 	MEI_DEV_RECOVERING_FROM_RESET,
+ 	MEI_DEV_POWER_DOWN,
+-- 
+1.8.1.4
 
