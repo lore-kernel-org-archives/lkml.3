@@ -1,110 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966390Ab3DRLgB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 07:36:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6747 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965997Ab3DRLf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 07:35:59 -0400
-Date: Thu, 18 Apr 2013 08:35:47 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH v2] media: davinci: vpif: align the buffers size to page
- page size boundary
-Message-ID: <20130418083547.41f975f8@redhat.com>
-In-Reply-To: <20130418082121.0221e59e@redhat.com>
-References: <1366109670-28030-1-git-send-email-prabhakar.csengg@gmail.com>
-	<2933946.BRNjyJUSVm@avalon>
-	<CA+V-a8uV1e0FSe0kO6VBe=fRj9hf8Oo5VzrrbMtnR-onJo9pog@mail.gmail.com>
-	<20130418082121.0221e59e@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756364Ab3DRLhy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 07:37:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56500 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755987Ab3DRLhx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 07:37:53 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 24/32] dmaengine: ste_dma40: Supply full Device Tree parsing support
+Date: Thu, 18 Apr 2013 13:37:32 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <201304181306.34835.arnd@arndb.de> <20130418113138.GD27903@gmail.com>
+In-Reply-To: <20130418113138.GD27903@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201304181337.32700.arnd@arndb.de>
+X-Provags-ID: V02:K0:5adOEgooOQrRgpjM0dHqKs/0Cat3Owv61cMxiPo0okT
+ JcKOO97gYoqrv2304OXJKQWjbSq3/gcUBNPiTU5M4JlI4SXiH0
+ +BiDfeXtr85bC4qQL2WtsadQmBsGkGRm2KGddYc9OAc1OcAxRT
+ dDtkBK7bTPXUDyjvmoCxKQx7USqztBtLuS3IQG+VmoZwO5if8O
+ Q6FtCuqAm5grsQr3EfP/I2c6p9hWDK2gDzRFPUxiuSph6xh1PS
+ Yb4OQBNsFbD7o1DmhFkqvjKpoSJLSIOhV3P+FJrzlXFlUEImYo
+ aiKy9hW3fVMQlppiE6dY4ZXlu1JJ07UHmpMR4bHpe77aURwzC6
+ IxjKBO49PwkeAMNhGP5A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 18 Apr 2013 08:21:21 -0300
-Mauro Carvalho Chehab <mchehab@redhat.com> escreveu:
+On Thursday 18 April 2013, Lee Jones wrote:
+> You're right, I am a little confused by them.
+> 
+> I call them 'device type' because that's what they're called already.
+> Grep for 'dma_dev_type'. This is the number which gets split into
+> event group and line, like this:
+> 
+>         event_group = D40_TYPE_TO_GROUP(dev_type);
+>         event_line = D40_TYPE_TO_EVENT(dev_type);
+> 
+> > and I would put that number first.
+> 
+> So you want me to switch that round so it looks like:
+> 
+>         dmas = <<phandle> <dev_type> <fixed_chan> <flags>;
+> 
+> Instead of what I have at the moment:
+> 
+>         dmas = <<phandle> <fixed_chan> <dev_type> <flags>;
+> 
+> Correct?
 
-> Em Thu, 18 Apr 2013 10:17:14 +0530
-> Prabhakar Lad <prabhakar.csengg@gmail.com> escreveu:
-> 
-> > Hi Marek,
-> > 
-> > On Tue, Apr 16, 2013 at 4:48 PM, Laurent Pinchart
-> > <laurent.pinchart@ideasonboard.com> wrote:
-> > > Hi Prabhakar,
-> 
-> ...
-> 
-> > >> *nbuffers = config_params.min_numbuffers;
-> > >>
-> > >>       *nplanes = 1;
-> > >> +     size = PAGE_ALIGN(size);
-> > >
-> > > I wonder if that's the best fix.
-> > > The queue_setup operation is supposed to return the size required by the
-> > > driver for each plane. Depending on the hardware requirements, that size might
-> > > not be a multiple of the page size.
-> > >
-> > > As we can't mmap() a fraction of a page, the allocated plane size needs to be
-> > > rounded up to the next page boundary to allow mmap() support. The dma-contig
-> > > and dma-sg allocators already do so in their alloc operation, but the vmalloc
-> > > allocator doesn't.
-> > >
-> > > The recent "media: vb2: add length check for mmap" patch verifies that the
-> > > mmap() size requested by userspace doesn't exceed the buffer size. As the
-> > > mmap() size is rounded up to the next page boundary the check will fail for
-> > > buffer sizes that are not multiple of the page size.
-> > >
-> > > Your fix will not result in overallocation (as the allocator already rounds
-> > > the size up), but will prevent the driver from importing a buffer large enough
-> > > for the hardware but not rounded up to the page size.
-> > >
-> > > A better fix might be to round up the buffer size in the buffer size check at
-> > > mmap() time, and fix the vmalloc allocator to round up the size. That the
-> > > allocator, not drivers, is responsible for buffer size alignment should be
-> > > documented in videobuf2-core.h.
-> 
-> > >
-> > Do you plan to post a patch fixing it as per Laurent's suggestion ?
-> 
-> I agree with Laurent: page size roundup should be done at VB2 core code,
-> for memory allocated there, and not at driver's level. Yet, looking at
-> VB2 code, it already does page size align at __setup_offsets(), but it
-> doesn't do if for the size field; just for the offset.
-> 
-> The adjusted size should be stored at the VB2 size field, and the check for
-> buffer overflow, added on changeset 068a0df76023926af958a336a78bef60468d2033
-> should be kept.
-> 
-> IMO, it also makes sense to enforce that the USERPTR memory is multiple of the
-> page size, as otherwise the DMA transfer may overwrite some area that is
-> outside the allocated range. So, the size from USERPTR should be round down.
-> 
-> That change, however, will break userspace, as it uses the picture sizeimage
-> to allocate the buffers. So, sizeimage needs to be PAGE_SIZE roundup before
-> passing it to userspace.
-> 
-> Instead of modifying all drivers, the better seems to patch v4l_g_fmt() and
-> v4l_try_fmt() to return a roundup value for sizeimage. As usual, uvcvideo
-> requires a separate patch, because it doesn't use vidio_ioctl2.
+Yes, that's probably better and more in line with what the other
+drivers do. You could also put the fixed_chan last if that helps.
 
-Hmm... PAGE_SIZE alignment is not needed on all places. It is needed only when
-DMA is done directly into the buffer, e. g. videobuf2-dma-contig and
-videobuf2-dma-sg.
+I would still like to get a confirmation that we actually still
+require the fixed channel assignment, since it's just used
+in one driver, and that might only be needed for some buggy
+hardware revision if we're lucky.
 
-It means that we'll need an extra function for the VB2 memory allocation drivers
-to do do the memory-dependent roundups, and a new ancillary function at VB2 core
-for the VB2 clients to call to round sizeimage if needed.
-
-Regards,
-Mauro
+	Arnd
