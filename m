@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab3DRTsJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 15:48:09 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:53907 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975Ab3DRTsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 15:48:07 -0400
+	id S936553Ab3DRTtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 15:49:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40281 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752860Ab3DRTtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 15:49:14 -0400
+Message-ID: <51704F2C.6060901@ti.com>
+Date: Thu, 18 Apr 2013 15:53:16 -0400
+From: Matt Porter <mporter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
-References: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
-Date: Thu, 18 Apr 2013 21:48:06 +0200
-Message-ID: <CAKMK7uFEaiT_1siQBcp_-S0RwLvy3XSjqLn1ksq70VhNTZSfLw@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 18 [ call-trace: drm | x86 | smp | rcu
- related? ]
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Christian Eggers <ceggers@gmx.de>
+CC: <linux-kernel@vger.kernel.org>, <spi-devel-general@lists.sourceforge.net>
+Subject: Re: spi: spi-davinci: Fix direction in dma_map_single()
+References: <2298140.4jrJLRXeBJ@p2400>
+In-Reply-To: <2298140.4jrJLRXeBJ@p2400>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 3:05 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Thu, Apr 18, 2013 at 10:28 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi all,
->>
->> Changes since 20130417:
->>
->> New Trees:      rpmsg (actually added yesterday)
->>                 ppc-temp (replacing powerpc for this week)
->>
->> The ceph tree gained a conflict against Linus' tree.
->>
->> The net-next tree gained a conflict against the infiniband tree.
->>
->> The usb tree gained a build failure so I used the version from
->> next-20130417.
->>
->> I added two merge fix patches after the gen-gpio tree.
->>
->> The ppc-temp tree gained a conflict against the metag tree.
->>
->> The akpm tree lost a patch that turned up elsewhere.
->>
->> ----------------------------------------------------------------------------
->>
+On 04/18/2013 03:31 PM, Christian Eggers wrote:
+> Commit 048177ce3b3962852fd34a7e04938959271c7e70 (spi: spi-davinci:
 >
-> Not sure what the root-cause for this call-trace is (see screenshot).
+> convert to DMA engine API) introduced a regression: dma_map_single()
 >
-> This is reproducible when running my kernel build-script (4 parallel-make-jobs).
+> is called with direction DMA_FROM_DEVICE for rx and for tx.
 >
-> Any hints welcome!
+> Signed-off-by: Christian Eggers <ceggers@gmx.de>
+>
+> Cc: stable@vger.kernel.org
 
-The panic handlers in our modeset code are pretty decent fubar - they
-take mutexes all over the place. So I think the backtrace you see
-there is actually a secondary effect. I've looked into fixing this up,
-but the issue is that drivers themselves have tons of state protected
-with mutexes, which all potentially affects the panic handler. So I've
-given up on that for now ...
--Daniel
---
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Cc: stable@vger.kernel.org # v3.7.x+
+will get this applied to the correct stable kernels.
+
+I'm wearing the brown bag for this one so other than fixing the Cc: it 
+looks good.
+
+Acked-by: Matt Porter <mporter@ti.com>
+
+> --- drivers/spi/spi-davinci.c.orig 2013-04-18 20:54:02.728719412 +0200
+>
+> +++ drivers/spi/spi-davinci.c 2013-04-18 20:54:51.900623956 +0200
+>
+> @@ -608,7 +608,7 @@ static int davinci_spi_bufs(struct spi_d
+>
+> else
+>
+> buf = (void *)t->tx_buf;
+>
+> t->tx_dma = dma_map_single(&spi->dev, buf,
+>
+> - t->len, DMA_FROM_DEVICE);
+>
+> + t->len, DMA_TO_DEVICE);
+>
+> if (!t->tx_dma) {
+>
+> ret = -EFAULT;
+>
+> goto err_tx_map;
+>
+
