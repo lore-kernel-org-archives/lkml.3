@@ -1,225 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab3DRNBr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 09:01:47 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:4437 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757801Ab3DRNBk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 09:01:40 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <dgilbert@interlog.com>, <robertcnelson@gmail.com>,
-        <tanzilli@acmesystems.it>, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 5/5] ARM: at91: add Acme Systems Fox G20 board
-Date: Thu, 18 Apr 2013 15:01:13 +0200
-Message-ID: <a647ac59d50fdee9a0e9e87f362febe1ad2b1264.1366289869.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <cover.1366289869.git.nicolas.ferre@atmel.com>
-References: <cover.1366289869.git.nicolas.ferre@atmel.com>
+	id S935759Ab3DRNGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 09:06:43 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45099 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752807Ab3DRNGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 09:06:42 -0400
+Date: Thu, 18 Apr 2013 16:06:05 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <khilman@linaro.org>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] driver: serial: omap: add prepare/complete callback
+ for "no_console_suspend" case
+Message-ID: <20130418130605.GC23120@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>
+ <1366198467-6757-4-git-send-email-sourav.poddar@ti.com>
+ <20130418035801.GB18349@arwen.pp.htv.fi>
+ <516FE214.6010008@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ALfTUftag+2gvp1h"
+Content-Disposition: inline
+In-Reply-To: <516FE214.6010008@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Douglas Gilbert <dgilbert@interlog.com>
+--ALfTUftag+2gvp1h
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Douglas Gilbert <dgilbert@interlog.com>
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/boot/dts/Makefile        |   1 +
- arch/arm/boot/dts/at91-foxg20.dts | 166 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 167 insertions(+)
- create mode 100644 arch/arm/boot/dts/at91-foxg20.dts
+Hi,
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index b07f162..914fe65 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -16,6 +16,7 @@ dtb-$(CONFIG_ARCH_AT91) += at91sam9263ek.dtb
- dtb-$(CONFIG_ARCH_AT91) += tny_a9263.dtb
- dtb-$(CONFIG_ARCH_AT91) += usb_a9263.dtb
- # sam9g20
-+dtb-$(CONFIG_ARCH_AT91) += at91-foxg20.dtb
- dtb-$(CONFIG_ARCH_AT91) += at91sam9g20ek.dtb
- dtb-$(CONFIG_ARCH_AT91) += at91sam9g20ek_2mmc.dtb
- dtb-$(CONFIG_ARCH_AT91) += kizbox.dtb
-diff --git a/arch/arm/boot/dts/at91-foxg20.dts b/arch/arm/boot/dts/at91-foxg20.dts
-new file mode 100644
-index 0000000..7d24ef7
---- /dev/null
-+++ b/arch/arm/boot/dts/at91-foxg20.dts
-@@ -0,0 +1,166 @@
-+/*
-+ * at91-foxg20.dts - Device Tree file for Acme Systems FoxG20 board
-+ *
-+ * Based on DT files for at91sam9g20ek evaluation board (AT91SAM9G20 SoC)
-+ *
-+ * Copyright (C) 2013 Douglas Gilbert <dgilbert@interlog.com>
-+ *
-+ * Licensed under GPLv2 or later.
-+ */
-+/dts-v1/;
-+/include/ "at91sam9g20.dtsi"
-+
-+/ {
-+	model = "Acme Systems FoxG20";
-+	compatible = "acme,foxg20", "atmel,at91sam9g20", "atmel,at91sam9";
-+
-+	chosen {
-+		bootargs = "console=ttyS0,115200 root=/dev/mmcblk0p2 rw rootwait";
-+	};
-+
-+	memory {
-+		reg = <0x20000000 0x4000000>;
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		main_clock: clock@0 {
-+			compatible = "atmel,osc", "fixed-clock";
-+			clock-frequency = <18432000>;
-+		};
-+	};
-+
-+	ahb {
-+		apb {
-+			usb1: gadget@fffa4000 {
-+				atmel,vbus-gpio = <&pioC 6 0>;
-+				status = "okay";
-+			};
-+
-+			mmc0: mmc@fffa8000 {
-+				pinctrl-0 = <
-+					&pinctrl_mmc0_clk
-+					&pinctrl_mmc0_slot1_cmd_dat0
-+					&pinctrl_mmc0_slot1_dat1_3>;
-+				status = "okay";
-+				slot@1 {
-+					reg = <1>;
-+					bus-width = <4>;
-+				};
-+			};
-+
-+			usart0: serial@fffb0000 {
-+				pinctrl-0 =
-+					<&pinctrl_usart0
-+					 &pinctrl_usart0_rts
-+					 &pinctrl_usart0_cts
-+					>;
-+				status = "okay";
-+			};
-+
-+			usart1: serial@fffb4000 {
-+				status = "okay";
-+			};
-+
-+			usart2: serial@fffb8000 {
-+				status = "okay";
-+			};
-+
-+			macb0: ethernet@fffc4000 {
-+				phy-mode = "rmii";
-+				status = "okay";
-+			};
-+
-+			spi0: spi@fffc8000 {
-+				cs-gpios = <0>, <&pioC 11 0>, <0>, <0>;
-+				mtd_dataflash@0 {
-+					compatible = "atmel,at45", "atmel,dataflash";
-+					spi-max-frequency = <50000000>;
-+					reg = <1>;
-+				};
-+				status = "disabled";
-+			};
-+
-+			usart3: serial@fffd0000 {
-+				status = "okay";
-+			};
-+
-+			uart0: serial@fffd4000 {
-+				status = "okay";
-+			};
-+
-+			uart1: serial@fffd8000 {
-+				status = "okay";
-+			};
-+
-+			dbgu: serial@fffff200 {
-+				status = "okay";
-+			};
-+
-+			pinctrl@fffff400 {
-+				board {
-+					pinctrl_pck0_as_mck: pck0_as_mck {
-+						atmel,pins =
-+							<2 1 0x2 0x0>;	/* PC1 periph B */
-+					};
-+				};
-+
-+				mmc0_slot1 {
-+					pinctrl_board_mmc0_slot1: mmc0_slot1-board {
-+						atmel,pins =
-+							<2 9 0x0 0x5>;	/* PC9 gpio CD pin pull up and deglitch */
-+					};
-+				};
-+
-+				i2c0 {
-+					pinctrl_i2c0: i2c0-0 {
-+						atmel,pins =
-+							<0 23 0x1 0x2	/* TWD (SDA) PA23 periph A, open drain */
-+							 0 24 0x1 0x2>;	/* TWCK (SCL) PA24 periph A, open drain */
-+					};
-+				};
-+			};
-+
-+			watchdog@fffffd40 {
-+				status = "okay";
-+			};
-+		};
-+
-+		usb0: ohci@00500000 {
-+			num-ports = <2>;
-+			status = "okay";
-+		};
-+	};
-+
-+	i2c@0 {
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&pinctrl_i2c0>;
-+		i2c-gpio,delay-us = <5>;	/* ~85 kHz */
-+		status = "okay";
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+
-+		/* red LED marked "PC7" near mini USB (device) receptacle */
-+		user_led {
-+			label = "user_led";
-+			gpios = <&pioC 7 0>;	/* PC7 */
-+			linux,default-trigger = "heartbeat";
-+		};
-+	};
-+
-+	gpio_keys {
-+		compatible = "gpio-keys";
-+
-+		btn {
-+			label = "Button";
-+			gpios = <&pioC 4 1>;
-+			linux,code = <0x103>;
-+			gpio-key,wakeup;
-+		};
-+	};
-+};
--- 
-1.8.0
+On Thu, Apr 18, 2013 at 05:37:48PM +0530, Sourav Poddar wrote:
+> Hi Felipe,
+> On Thursday 18 April 2013 09:28 AM, Felipe Balbi wrote:
+> >Hi,
+> >
+> >On Wed, Apr 17, 2013 at 05:04:24PM +0530, Sourav Poddar wrote:
+> >>@@ -1632,6 +1650,8 @@ static const struct dev_pm_ops serial_omap_dev_pm=
+_ops =3D {
+> >>  	SET_SYSTEM_SLEEP_PM_OPS(serial_omap_suspend, serial_omap_resume)
+> >>  	SET_RUNTIME_PM_OPS(serial_omap_runtime_suspend,
+> >>  				serial_omap_runtime_resume, NULL)
+> >>+	.prepare        =3D serial_omap_prepare,
+> >>+	.complete       =3D serial_omap_complete,
+> >if CONFIG_PM_SLEEP isn't defined, this will break compilation.
+> >
+> True.
+>=20
+> Then, will it not be  a better idea to add a similar macro[1] in
+> include/linux/pm.h for
+> prepare/complete callback as it is present for suspend/resume ?.
+>=20
+> [1]:
+> #ifdef CONFIG_PM_SLEEP
+> #define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
+>         .suspend =3D suspend_fn, \
+>         .resume =3D resume_fn, \
+>         .freeze =3D suspend_fn, \
+>         .thaw =3D resume_fn, \
+>         .poweroff =3D suspend_fn, \
+>         .restore =3D resume_fn,
+> #else
+> #define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn)
+> #endif
 
+might be :-)
+
+--=20
+balbi
+
+--ALfTUftag+2gvp1h
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRb++9AAoJEIaOsuA1yqREgNwQAKuUl9/lwD2aFQsx8cvwWJVt
+NUpZf8yCsgmIeMj+ZdcyI2HAxgUqSY2g6HxCfaYGHzDvCu6Rp/S6XMP9yxY888Wo
+NU7ed672g4+LJIqM2DStrUDwbo1Sunxng3M4DwQOJWRpVs4DXJ8gx3/gzVFFAqCA
+9a/FCm7YAfl9H7Brbr1jxNIYtc1KSzKD/kF2grUaUCTqzwsa1iJB/B2FD4sFRShz
+zFpSF4IMRyJanPZEOIPwN6nD18+Ao+Yi6z+ylDk5AbyX16+iLu0fNFL+SpUk5wg0
+W9gJg+JNLGoNJHQXWkHrYyFeU0xqB96Y+S6LrLapIcu9euiBBVmI4t7Rf41qsF5N
+gavAmCVuFLdlFoQ4U311EmB85n9jyzXfdCrwmlk3zw1wh8CAMpEzpG3cqjRi7tnB
+dTB8ZlCKOMS1yKN3Q87UFXxkL292NLCpomUPt6ZpkVSsTLdgehOZW6xnx6HgF1zo
+zEEnOEwVoRsxHR9zZYAsEG/8CZ+V0z2ulxVS2ycXY625EOlenXZrbLeiWCL6H7qs
+asKNIJTf/iLkZ5Yr/VR47otycmKxy2MQULPR/JzRi9Dkedb0YPBzHr6jnkIKavPj
+5TMFZj8393dF93P8AaDaQvOcjKpIn8AgoWqdPRgQMiFZ78N5LMAYSKS9vdr45ys0
+IP6TB66hALVo1AeMWn3y
+=0QMA
+-----END PGP SIGNATURE-----
+
+--ALfTUftag+2gvp1h--
