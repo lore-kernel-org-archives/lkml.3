@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967627Ab3DRJjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:39:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40013 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756234Ab3DRJR0 (ORCPT
+	id S1756459Ab3DRJkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:40:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43272 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754297Ab3DRJkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:26 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 08/72] ALSA: hda - bug fix on return value when getting HDMI ELD info
-Date: Thu, 18 Apr 2013 10:15:53 +0100
-Message-Id: <1366276617-3553-9-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
-References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 18 Apr 2013 05:40:35 -0400
+Date: Thu, 18 Apr 2013 11:40:32 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Michael Bohan <mbohan@codeaurora.org>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-arm-msm@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/2] hrtimer: Consider preemption when migrating hrtimer
+ cpu_bases
+In-Reply-To: <1365628068-32738-2-git-send-email-mbohan@codeaurora.org>
+Message-ID: <alpine.LFD.2.02.1304181138290.21884@ionos>
+References: <1365628068-32738-1-git-send-email-mbohan@codeaurora.org> <1365628068-32738-2-git-send-email-mbohan@codeaurora.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.11 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, 10 Apr 2013, Michael Bohan wrote:
 
-------------------
+> When switching to a new cpu_base in switch_hrtimer_base(), we
+> briefly enable preemption by unlocking the cpu_base lock in two
+> places. During this interval it's possible for the running thread
+> to be swapped to a different CPU.
+> 
+> Consider the following example:
+> 
+> CPU #0                                 CPU #1
+> ----                                   ----
+> hrtimer_start()                        ...
+>  lock_hrtimer_base()
+>  switch_hrtimer_base()
+>   this_cpu = 0;
+>   target_cpu_base = 0;
+>   raw_spin_unlock(&cpu_base->lock)
+> <migrate to CPU 1>
 
-From: Mengdong Lin <mengdong.lin@intel.com>
+Errm. switch_hrtimer_base() is called with interrupts disabled and
+they stay disabled, so how exactly is the task going to be migrated?
 
-commit 2ef5692efad330b67a234e2c49edad38538751e7 upstream.
+Thanks,
 
-In function snd_hdmi_get_eld(), the variable 'ret' should be initialized to 0.
-Otherwise it will be returned uninitialized as non-zero after ELD info is got
-successfully. Thus hdmi_present_sense() will always assume ELD info is invalid
-by mistake, and /proc file system cannot show the proper ELD info.
-
-Signed-off-by: Mengdong Lin <mengdong.lin@intel.com>
-Acked-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- sound/pci/hda/hda_eld.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/sound/pci/hda/hda_eld.c b/sound/pci/hda/hda_eld.c
-index 4c054f4..86f6468 100644
---- a/sound/pci/hda/hda_eld.c
-+++ b/sound/pci/hda/hda_eld.c
-@@ -322,7 +322,7 @@ int snd_hdmi_get_eld(struct hdmi_eld *eld,
- 		     struct hda_codec *codec, hda_nid_t nid)
- {
- 	int i;
--	int ret;
-+	int ret = 0;
- 	int size;
- 	unsigned char *buf;
- 
--- 
-1.8.1.2
-
+	tglx
