@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967195Ab3DRM1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 08:27:50 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:39297 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967361Ab3DRM0i (ORCPT
+	id S1755624Ab3DRMc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 08:32:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60484 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755287Ab3DRMc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 08:26:38 -0400
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-To: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Cc: michael@ellerman.id.au, mikey@neuling.org
-Subject: [PATCH V3 2/5] powerpc, perf: Add basic assembly code to read BHRB entries on POWER8
-Date: Thu, 18 Apr 2013 17:56:13 +0530
-Message-Id: <1366287976-3900-3-git-send-email-khandual@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1366287976-3900-1-git-send-email-khandual@linux.vnet.ibm.com>
-References: <1366287976-3900-1-git-send-email-khandual@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041812-9574-0000-0000-000007840206
+	Thu, 18 Apr 2013 08:32:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 24/32 v2] dmaengine: ste_dma40: Supply full Device Tree parsing support
+Date: Thu, 18 Apr 2013 14:32:11 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-25-git-send-email-lee.jones@linaro.org> <20130418121253.GF27903@gmail.com>
+In-Reply-To: <20130418121253.GF27903@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304181432.11503.arnd@arndb.de>
+X-Provags-ID: V02:K0:fH3MhLjxVM/uWO56FRwihL85k0FgJXa5Eo50s2PorCW
+ CzOp64ksd1Cud3KfcbG7kbS6rg80vAbG8Q+lWMRkKPXYHp3v8s
+ mbXfBL8fqJojeXM77EV8y1DoniElUXtiPUsaNDxs/i3FVHHAaK
+ zyozzV0C96fIYbpioO7lJLj4istHJgZ8rUIPs83twuafM4ulNB
+ I7Ip4XUcjsrsltrXbo9HTc7hHOnXKeSy0FpZQZNAnG4zyqCNaR
+ YYpvBxKUF20o5L8YE+u/k5HV3N3iMICNr1A7TTxvMf2Q/Fz767
+ lVAoXCOGkVdd14FXlBmOtGHPOtjnPNM5VouFrENMh6YBD8EqCH
+ w2R8riiT5y1FVrhKLf3Q=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the basic assembly code to read BHRB buffer. BHRB entries
-are valid only after a PMU interrupt has happened (when MMCR0[PMAO]=1)
-and BHRB has been freezed. BHRB read should not be attempted when it is
-still enabled (MMCR0[PMAE]=1) and getting updated, as this can produce
-non-deterministic results.
+On Thursday 18 April 2013, Lee Jones wrote:
+> +Clients
+> +Required properties:
+> +- dmas: Comma separated list of dma channel requests
+> +- dma-names: Names of the aforementioned requested channels
+> +
+> +Each dmas request consists of 4 cells:
+> +  1. A phandle pointing to the DMA controller
+> +  2. Device Type
+> +  3. The DMA request line number (only when 'use fixed channel' is set)
+> +  4. A 32bit mask specifying; mode, direction and endianess [NB: This list will grow]
+> +        bit 1: Mode:
+> +           0: Logical
+> +           1: Physical
+> +        bit 2: Direction:
+> +           0: Mem to Mem
+> +           1: Mem to Dev
 
-Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
----
- arch/powerpc/perf/Makefile |  2 +-
- arch/powerpc/perf/bhrb.S   | 44 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+), 1 deletion(-)
- create mode 100644 arch/powerpc/perf/bhrb.S
+You probably mean 
 
-diff --git a/arch/powerpc/perf/Makefile b/arch/powerpc/perf/Makefile
-index 472db18..510fae1 100644
---- a/arch/powerpc/perf/Makefile
-+++ b/arch/powerpc/perf/Makefile
-@@ -2,7 +2,7 @@ subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
- 
- obj-$(CONFIG_PERF_EVENTS)	+= callchain.o
- 
--obj-$(CONFIG_PPC_PERF_CTRS)	+= core-book3s.o
-+obj-$(CONFIG_PPC_PERF_CTRS)	+= core-book3s.o bhrb.o
- obj64-$(CONFIG_PPC_PERF_CTRS)	+= power4-pmu.o ppc970-pmu.o power5-pmu.o \
- 				   power5+-pmu.o power6-pmu.o power7-pmu.o \
- 				   power8-pmu.o
-diff --git a/arch/powerpc/perf/bhrb.S b/arch/powerpc/perf/bhrb.S
-new file mode 100644
-index 0000000..d85f9a5
---- /dev/null
-+++ b/arch/powerpc/perf/bhrb.S
-@@ -0,0 +1,44 @@
-+/*
-+ * Basic assembly code to read BHRB entries
-+ *
-+ * Copyright 2013 Anshuman Khandual, IBM Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the License, or (at your option) any later version.
-+ */
-+#include <asm/ppc_asm.h>
-+#include <asm/ppc-opcode.h>
-+
-+	.text
-+
-+.balign 8
-+
-+/* r3 = n  (where n = [0-31])
-+ * The maximum number of BHRB entries supported with PPC_MFBHRBE instruction
-+ * is 1024. We have limited number of table entries here as POWER8 implements
-+ * 32 BHRB entries.
-+ */
-+
-+/* .global read_bhrb */
-+_GLOBAL(read_bhrb)
-+	cmpldi	r3,31
-+	bgt	1f
-+	ld	r4,bhrb_table@got(r2)
-+	sldi	r3,r3,3
-+	add	r3,r4,r3
-+	mtctr	r3
-+	bctr
-+1:	li	r3,0
-+	blr
-+
-+#define MFBHRB_TABLE1(n) PPC_MFBHRBE(R3,n); blr
-+#define MFBHRB_TABLE2(n) MFBHRB_TABLE1(n); MFBHRB_TABLE1(n+1)
-+#define MFBHRB_TABLE4(n) MFBHRB_TABLE2(n); MFBHRB_TABLE2(n+2)
-+#define MFBHRB_TABLE8(n) MFBHRB_TABLE4(n); MFBHRB_TABLE4(n+4)
-+#define MFBHRB_TABLE16(n) MFBHRB_TABLE8(n); MFBHRB_TABLE8(n+8)
-+#define MFBHRB_TABLE32(n) MFBHRB_TABLE16(n); MFBHRB_TABLE16(n+16)
-+
-+bhrb_table:
-+	MFBHRB_TABLE32(0)
--- 
-1.7.11.7
+		0: Dev to mem
 
+Related to this, I would recommend not listing bit numbers like this, since there
+is some amount of confusion regarding how they are counted: zero-based on one-based
+and LSB-to-MSB or MSB-to-LSB
+
+You can completely avoid this problem by listing them as bit masks:
+
+	0x00000002:
+		Logical channel when unset
+		Physical channel when set
+	0x00000004:
+		Direction from device when unset
+		Direction to device when unset
+	... 
+
+> +		dmas = <&dma 13 0 0x8>, /* Logical - DevToMem */
+> +		       <&dma 13 0 0x4>; /* Logical - MemToDev */
+
+The bit in the example no longer matches the description.
+
+> +
+> +	switch (D40_DT_FLAGS_DIR(flags)) {
+> +	case 0: cfg.dir = STEDMA40_MEM_TO_MEM; break;
+> +	case 1: cfg.dir = STEDMA40_MEM_TO_PERIPH; break;
+> +	}
+
+Same typo above.
+
+> +	if (cfg.dir == STEDMA40_PERIPH_TO_MEM)
+> +		cfg.src_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
+> +	if (cfg.dir == STEDMA40_MEM_TO_PERIPH)
+> +		cfg.dst_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
+
+You can fold these two into the switch statement above.
+
+	Arnd
