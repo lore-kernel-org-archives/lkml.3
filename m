@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966248Ab3DRJTl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:19:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40357 "EHLO
+	id S966472Ab3DRJT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:19:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40335 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964922Ab3DRJSk (ORCPT
+	with ESMTP id S1759423Ab3DRJSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:18:40 -0400
+	Thu, 18 Apr 2013 05:18:34 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Seth Forshee <seth.forshee@canonical.com>, Josh Boyer <jwboyer@redhat.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
-        Matt Fleming <matt.fleming@intel.com>,
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 70/72] efivars: Allow disabling use as a pstore backend
-Date: Thu, 18 Apr 2013 10:16:55 +0100
-Message-Id: <1366276617-3553-71-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 66/72] mtdchar: fix offset overflow detection
+Date: Thu, 18 Apr 2013 10:16:51 +0100
+Message-Id: <1366276617-3553-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -30,152 +28,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Forshee <seth.forshee@canonical.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit ed9dc8ce7a1c8115dba9483a9b51df8b63a2e0ef upstream.
+commit 9c603e53d380459fb62fec7cd085acb0b74ac18f upstream.
 
-Add a new option, CONFIG_EFI_VARS_PSTORE, which can be set to N to
-avoid using efivars as a backend to pstore, as some users may want to
-compile out the code completely.
+Sasha Levin has been running trinity in a KVM tools guest, and was able
+to trigger the BUG_ON() at arch/x86/mm/pat.c:279 (verifying the range of
+the memory type).  The call trace showed that it was mtdchar_mmap() that
+created an invalid remap_pfn_range().
 
-Set the default to Y to maintain backwards compatability, since this
-feature has always been enabled until now.
+The problem is that mtdchar_mmap() does various really odd and subtle
+things with the vma page offset etc, and uses the wrong types (and the
+wrong overflow) detection for it.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[ luis: adjust context ]
+For example, the page offset may well be 32-bit on a 32-bit
+architecture, but after shifting it up by PAGE_SHIFT, we need to use a
+potentially 64-bit resource_size_t to correctly hold the full value.
+
+Also, we need to check that the vma length plus offset doesn't overflow
+before we check that it is smaller than the length of the mtdmap region.
+
+This fixes things up and tries to make the code a bit easier to read.
+
+Reported-and-tested-by: Sasha Levin <levinsasha928@gmail.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-mtd@lists.infradead.org
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/firmware/Kconfig   |  9 +++++++
- drivers/firmware/efivars.c | 63 +++++++++++++++-------------------------------
- 2 files changed, 29 insertions(+), 43 deletions(-)
+ drivers/mtd/mtdchar.c | 48 ++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 42 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
-index 9b00072..898023d 100644
---- a/drivers/firmware/Kconfig
-+++ b/drivers/firmware/Kconfig
-@@ -53,6 +53,15 @@ config EFI_VARS
- 	  Subsequent efibootmgr releases may be found at:
- 	  <http://linux.dell.com/efibootmgr>
- 
-+config EFI_VARS_PSTORE
-+	bool "Register efivars backend for pstore"
-+	depends on EFI_VARS && PSTORE
-+	default y
-+	help
-+	  Say Y here to enable use efivars as a backend to pstore. This
-+	  will allow writing console messages, crash dumps, or anything
-+	  else supported by pstore to EFI variables.
-+
- config EFI_PCDP
- 	bool "Console device selection via EFI PCDP or HCDP table"
- 	depends on ACPI && EFI && IA64
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index bfd8f43..40d4e03 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -629,15 +629,13 @@ static struct kobj_type efivar_ktype = {
- 	.default_attrs = def_attrs,
- };
- 
--static struct pstore_info efi_pstore_info;
--
- static inline void
- efivar_unregister(struct efivar_entry *var)
- {
- 	kobject_put(&var->kobj);
+diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
+index f2f482b..a6e7451 100644
+--- a/drivers/mtd/mtdchar.c
++++ b/drivers/mtd/mtdchar.c
+@@ -1123,6 +1123,33 @@ static unsigned long mtdchar_get_unmapped_area(struct file *file,
  }
+ #endif
  
--#ifdef CONFIG_PSTORE
-+#ifdef CONFIG_EFI_VARS_PSTORE
- 
- static int efi_pstore_open(struct pstore_info *psi)
- {
-@@ -771,37 +769,6 @@ static int efi_pstore_erase(enum pstore_type_id type, u64 id,
- 
- 	return 0;
- }
--#else
--static int efi_pstore_open(struct pstore_info *psi)
--{
--	return 0;
--}
--
--static int efi_pstore_close(struct pstore_info *psi)
--{
--	return 0;
--}
--
--static ssize_t efi_pstore_read(u64 *id, enum pstore_type_id *type,
--			       struct timespec *timespec,
--			       char **buf, struct pstore_info *psi)
--{
--	return -1;
--}
--
--static int efi_pstore_write(enum pstore_type_id type,
--		enum kmsg_dump_reason reason, u64 *id,
--		unsigned int part, size_t size, struct pstore_info *psi)
--{
--	return 0;
--}
--
--static int efi_pstore_erase(enum pstore_type_id type, u64 id,
--			    struct pstore_info *psi)
--{
--	return 0;
--}
--#endif
- 
- static struct pstore_info efi_pstore_info = {
- 	.owner		= THIS_MODULE,
-@@ -813,6 +780,24 @@ static struct pstore_info efi_pstore_info = {
- 	.erase		= efi_pstore_erase,
- };
- 
-+static void efivar_pstore_register(struct efivars *efivars)
++static inline unsigned long get_vm_size(struct vm_area_struct *vma)
 +{
-+	efivars->efi_pstore_info = efi_pstore_info;
-+	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
-+	if (efivars->efi_pstore_info.buf) {
-+		efivars->efi_pstore_info.bufsize = 1024;
-+		efivars->efi_pstore_info.data = efivars;
-+		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
-+		pstore_register(&efivars->efi_pstore_info);
-+	}
++	return vma->vm_end - vma->vm_start;
 +}
-+#else
-+static void efivar_pstore_register(struct efivars *efivars)
-+{
-+	return;
-+}
-+#endif
 +
- static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 			     struct bin_attribute *bin_attr,
- 			     char *buf, loff_t pos, size_t count)
-@@ -1188,15 +1173,7 @@ int register_efivars(struct efivars *efivars,
- 	if (error)
- 		unregister_efivars(efivars);
++static inline resource_size_t get_vm_offset(struct vm_area_struct *vma)
++{
++	return (resource_size_t) vma->vm_pgoff << PAGE_SHIFT;
++}
++
++/*
++ * Set a new vm offset.
++ *
++ * Verify that the incoming offset really works as a page offset,
++ * and that the offset and size fit in a resource_size_t.
++ */
++static inline int set_vm_offset(struct vm_area_struct *vma, resource_size_t off)
++{
++	pgoff_t pgoff = off >> PAGE_SHIFT;
++	if (off != (resource_size_t) pgoff << PAGE_SHIFT)
++		return -EINVAL;
++	if (off + get_vm_size(vma) - 1 < off)
++		return -EINVAL;
++	vma->vm_pgoff = pgoff;
++	return 0;
++}
++
+ /*
+  * set up a mapping for shared memory segments
+  */
+@@ -1132,20 +1159,29 @@ static int mtdchar_mmap(struct file *file, struct vm_area_struct *vma)
+ 	struct mtd_file_info *mfi = file->private_data;
+ 	struct mtd_info *mtd = mfi->mtd;
+ 	struct map_info *map = mtd->priv;
+-	unsigned long start;
+-	unsigned long off;
+-	u32 len;
++	resource_size_t start, off;
++	unsigned long len, vma_len;
  
--	efivars->efi_pstore_info = efi_pstore_info;
--
--	efivars->efi_pstore_info.buf = kmalloc(4096, GFP_KERNEL);
--	if (efivars->efi_pstore_info.buf) {
--		efivars->efi_pstore_info.bufsize = 1024;
--		efivars->efi_pstore_info.data = efivars;
--		spin_lock_init(&efivars->efi_pstore_info.buf_lock);
--		pstore_register(&efivars->efi_pstore_info);
--	}
-+	efivar_pstore_register(efivars);
+ 	if (mtd->type == MTD_RAM || mtd->type == MTD_ROM) {
+-		off = vma->vm_pgoff << PAGE_SHIFT;
++		off = get_vm_offset(vma);
+ 		start = map->phys;
+ 		len = PAGE_ALIGN((start & ~PAGE_MASK) + map->size);
+ 		start &= PAGE_MASK;
+-		if ((vma->vm_end - vma->vm_start + off) > len)
++		vma_len = get_vm_size(vma);
++
++		/* Overflow in off+len? */
++		if (vma_len + off < off)
++			return -EINVAL;
++		/* Does it fit in the mapping? */
++		if (vma_len + off > len)
+ 			return -EINVAL;
  
- out:
- 	kfree(variable_name);
+ 		off += start;
+-		vma->vm_pgoff = off >> PAGE_SHIFT;
++		/* Did that overflow? */
++		if (off < start)
++			return -EINVAL;
++		if (set_vm_offset(vma, off) < 0)
++			return -EINVAL;
+ 		vma->vm_flags |= VM_IO | VM_RESERVED;
+ 
+ #ifdef pgprot_noncached
 -- 
 1.8.1.2
 
