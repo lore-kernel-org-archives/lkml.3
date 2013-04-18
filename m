@@ -1,192 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967202Ab3DRPQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 11:16:29 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:2522 "EHLO SMTP02.CITRIX.COM"
+	id S967282Ab3DRPQn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 11:16:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34040 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966917Ab3DRPQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 11:16:27 -0400
-X-IronPort-AV: E=Sophos;i="4.87,502,1363132800"; 
-   d="scan'208";a="19260144"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <will.deacon@arm.com>, <arnd@arndb.de>, <nicolas.pitre@linaro.org>,
-        <rob.herring@calxeda.com>, <linux@arm.linux.org.uk>, <olof@lixom.net>
-Subject: [PATCH] xen/arm: introduce xen_early_init, use PSCI on xen
-Date: Thu, 18 Apr 2013 16:16:07 +0100
-Message-ID: <1366298167-12755-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S966917Ab3DRPQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 11:16:42 -0400
+Date: Thu, 18 Apr 2013 17:17:48 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, JBeulich@suse.com, hpa@zytor.com
+Subject: Re: [PATCH 1/1] X86: Handle Xen emulation of Hyper-V more gracefully
+Message-ID: <20130418141748.GA21146@redhat.com>
+References: <1366299886-6399-1-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366299886-6399-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split xen_guest_init in two functions, one of them (xen_early_init) is
-going to be called very early from setup_arch.
+On Thu, Apr 18, 2013 at 08:44:46AM -0700, K. Y. Srinivasan wrote:
+> Install the Hyper-V specific interrupt handler only when needed. This would
+> permit us to get rid of the Xen check. Note that when the vmbus drivers invokes
+> the call to register its handler, we are sure to be running on Hyper-V.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 
-Change machine_desc->smp_init to xen_smp_init if Xen is present on the
-platform. xen_smp_init just sets smp_ops to psci_smp_ops.
+Looks good to me, this will address the concern. FWIW
 
-XEN selects ARM_PSCI.
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 
+Any chance we can fast-path this patch into 3.9 so that we don't release
+a kernel with hyper-v on Xen completely disabled?
 
-This patch is based on "xen/arm: move to mach-virt and support SMP"
-(http://marc.info/?l=linux-kernel&m=136629656432231&w=2)
-and "arm: introduce psci_smp_ops"
-(http://marc.info/?l=linux-kernel&m=136629750732674&w=2).
-A git tag for this patch is available here:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-psci-xen-1-tag
-
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: xen-devel@lists.xensource.com
-CC: linux-kernel@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org
-CC: will.deacon@arm.com
-CC: arnd@arndb.de
-CC: nicolas.pitre@linaro.org
-CC: rob.herring@calxeda.com
-CC: linux@arm.linux.org.uk
-CC: olof@lixom.net
----
- arch/arm/Kconfig                      |    1 +
- arch/arm/include/asm/xen/hypervisor.h |    6 +++++
- arch/arm/kernel/setup.c               |    3 ++
- arch/arm/xen/enlighten.c              |   39 ++++++++++++++++++++++++++------
- 4 files changed, 41 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 2c3bdce..344e299 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1892,6 +1892,7 @@ config XEN
- 	depends on ARM && AEABI && OF
- 	depends on CPU_V7 && !CPU_V6
- 	depends on !GENERIC_ATOMIC64
-+	select ARM_PSCI
- 	help
- 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
- 
-diff --git a/arch/arm/include/asm/xen/hypervisor.h b/arch/arm/include/asm/xen/hypervisor.h
-index d7ab99a..17b3ea2 100644
---- a/arch/arm/include/asm/xen/hypervisor.h
-+++ b/arch/arm/include/asm/xen/hypervisor.h
-@@ -16,4 +16,10 @@ static inline enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
- 	return PARAVIRT_LAZY_NONE;
- }
- 
-+#ifdef CONFIG_XEN
-+void xen_early_init(void);
-+#else
-+static inline void xen_early_init(void) { return; }
-+#endif
-+
- #endif /* _ASM_ARM_XEN_HYPERVISOR_H */
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 22cc863..3dcd357 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -55,6 +55,8 @@
- #include <asm/unwind.h>
- #include <asm/memblock.h>
- #include <asm/virt.h>
-+#include <asm/xen/hypervisor.h>
-+#include <xen/xen.h>
- 
- #include "atags.h"
- #include "tcm.h"
-@@ -768,6 +770,7 @@ void __init setup_arch(char **cmdline_p)
- 
- 	arm_dt_init_cpu_maps();
- 	psci_init();
-+	xen_early_init();
- #ifdef CONFIG_SMP
- 	if (is_smp()) {
- 		if (!mdesc->smp_init || !mdesc->smp_init()) {
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index b002822..3006de4 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -11,6 +11,8 @@
- #include <xen/xenbus.h>
- #include <xen/page.h>
- #include <xen/xen-ops.h>
-+#include <asm/mach/arch.h>
-+#include <asm/psci.h>
- #include <asm/xen/hypervisor.h>
- #include <asm/xen/hypercall.h>
- #include <linux/interrupt.h>
-@@ -176,11 +178,36 @@ static int __init xen_secondary_init(unsigned int cpu)
- 	return 0;
- }
- 
-+static bool __init xen_smp_init(void)
-+{
-+#ifdef CONFIG_SMP
-+	/* If we are running on Xen, use PSCI if available.
-+	 * In any case do not try to use the native smp_ops. */
-+	if (psci_smp_available())
-+		smp_set_ops(&psci_smp_ops);
-+	return true;
-+#endif
-+}
-+
- /*
-  * see Documentation/devicetree/bindings/arm/xen.txt for the
-  * documentation of the Xen Device Tree format.
-  */
- #define GRANT_TABLE_PHYSADDR 0
-+void __init xen_early_init(void)
-+{
-+	struct device_node *node;
-+
-+	node = of_find_compatible_node(NULL, NULL, "xen,xen");
-+	if (!node) {
-+		pr_debug("No Xen support\n");
-+		return;
-+	}
-+
-+	xen_domain_type = XEN_HVM_DOMAIN;
-+	machine_desc->smp_init = xen_smp_init;
-+}
-+
- static int __init xen_guest_init(void)
- {
- 	struct xen_add_to_physmap xatp;
-@@ -194,25 +221,21 @@ static int __init xen_guest_init(void)
- 	int i;
- 
- 	node = of_find_compatible_node(NULL, NULL, "xen,xen");
--	if (!node) {
--		pr_debug("No Xen support\n");
--		return 0;
--	}
-+
- 	s = of_get_property(node, "compatible", &len);
- 	if (strlen(xen_prefix) + 3  < len &&
- 			!strncmp(xen_prefix, s, strlen(xen_prefix)))
- 		version = s + strlen(xen_prefix);
- 	if (version == NULL) {
--		pr_debug("Xen version not found\n");
--		return 0;
-+		pr_warn("Xen version not found\n");
-+		return -EINVAL;
- 	}
- 	if (of_address_to_resource(node, GRANT_TABLE_PHYSADDR, &res))
--		return 0;
-+		return -EINVAL;
- 	xen_hvm_resume_frames = res.start >> PAGE_SHIFT;
- 	xen_events_irq = irq_of_parse_and_map(node, 0);
- 	pr_info("Xen %s support found, events_irq=%d gnttab_frame_pfn=%lx\n",
- 			version, xen_events_irq, xen_hvm_resume_frames);
--	xen_domain_type = XEN_HVM_DOMAIN;
- 
- 	xen_setup_features();
- 	if (xen_feature(XENFEAT_dom0))
--- 
-1.7.2.5
-
+> ---
+>  arch/x86/kernel/cpu/mshyperv.c |   18 +++++-------------
+>  1 files changed, 5 insertions(+), 13 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+> index a7d26d8..8f4be53 100644
+> --- a/arch/x86/kernel/cpu/mshyperv.c
+> +++ b/arch/x86/kernel/cpu/mshyperv.c
+> @@ -35,13 +35,6 @@ static bool __init ms_hyperv_platform(void)
+>  	if (!boot_cpu_has(X86_FEATURE_HYPERVISOR))
+>  		return false;
+>  
+> -	/*
+> -	 * Xen emulates Hyper-V to support enlightened Windows.
+> -	 * Check to see first if we are on a Xen Hypervisor.
+> -	 */
+> -	if (xen_cpuid_base())
+> -		return false;
+> -
+>  	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS,
+>  	      &eax, &hyp_signature[0], &hyp_signature[1], &hyp_signature[2]);
+>  
+> @@ -82,12 +75,6 @@ static void __init ms_hyperv_init_platform(void)
+>  
+>  	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
+>  		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+> -#if IS_ENABLED(CONFIG_HYPERV)
+> -	/*
+> -	 * Setup the IDT for hypervisor callback.
+> -	 */
+> -	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
+> -#endif
+>  }
+>  
+>  const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+> @@ -103,6 +90,11 @@ static irq_handler_t vmbus_isr;
+>  
+>  void hv_register_vmbus_handler(int irq, irq_handler_t handler)
+>  {
+> +	/*
+> +	 * Setup the IDT for hypervisor callback.
+> +	 */
+> +	alloc_intr_gate(HYPERVISOR_CALLBACK_VECTOR, hyperv_callback_vector);
+> +
+>  	vmbus_irq = irq;
+>  	vmbus_isr = handler;
+>  }
+> -- 
+> 1.7.4.1
