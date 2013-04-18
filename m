@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936685Ab3DRWcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 18:32:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5198 "EHLO mga02.intel.com"
+	id S936704Ab3DRWdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 18:33:50 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54014 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936545Ab3DRWcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 18:32:07 -0400
+	id S936545Ab3DRWdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 18:33:49 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,504,1363158000"; 
-   d="scan'208";a="320568275"
-Date: Fri, 19 Apr 2013 00:31:59 +0200
+   d="scan'208";a="229028501"
+Date: Fri, 19 Apr 2013 00:33:44 +0200
 From: Samuel Ortiz <sameo@linux.intel.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Simon Glass <sjg@chromium.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: Export matrix_keypad_parse_of_params()
-Message-ID: <20130418223159.GA8798@zurbaran>
-References: <1366102254-12440-1-git-send-email-mmarek@suse.cz>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v3] MFD: ab8500: pass AB8500 IRQ to debugfs code by
+ resource
+Message-ID: <20130418223344.GB8798@zurbaran>
+References: <1366012021-9039-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366102254-12440-1-git-send-email-mmarek@suse.cz>
+In-Reply-To: <1366012021-9039-1-git-send-email-linus.walleij@stericsson.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
+Hi Linus,
 
-On Tue, Apr 16, 2013 at 10:50:54AM +0200, Michal Marek wrote:
-> Couple of input drivers depend on this symbol:
+On Mon, Apr 15, 2013 at 09:47:01AM +0200, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> ERROR: "matrix_keypad_parse_of_params" [drivers/input/keyboard/tca8418_keypad.ko] undefined!
-> ERROR: "matrix_keypad_parse_of_params" [drivers/input/keyboard/cros_ec_keyb.ko] undefined!
+> The AB8500 debug code which was merged in parallel with the
+> multiplatform work incidentally introduced a new instance using
+> the <mach/irqs.h> header which is now deleted, causing this
+> build regression:
 > 
-> Reported-by: Randy Dunlap <rdunlap@infradead.org>
-> Acked-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
+> drivers/mfd/ab8500-debugfs.c:95:23:
+> fatal error: mach/irqs.h: No such file or directory
+> compilation terminated.
+> make[4]: *** [drivers/mfd/ab8500-debugfs.o] Error 1
+> 
+> The code most certainly never worked with device tree either
+> since that does not rely on this kind of hard-coded interrupt
+> numbers.
+> 
+> Fix the problem at the root by passing it as a named resource
+> from the ab8500-core driver. Use an untyped resource to
+> stop the MFD core from remapping this IRQ relative to the
+> AB8500 irqdomain.
+> 
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 > ---
->  drivers/input/matrix-keymap.c | 1 +
->  1 file changed, 1 insertion(+)
-Applied, thanks.
+> ChangeLov v2->v3:
+> - Fix typos.
+> ChangeLog v1->v2:
+> - Pass an untyped resource to avoid problems due to IRQ
+>   remapping.
+> 
+> Sam this would have to go into the v3.10-targetted stuff...
+> Either immediately before you send it upstream or as a fixup.
+I usually try to send one single pull request during the merge window, so I'll
+add this one to my 3.10 MFD fixup pull request.
 
 Cheers,
 Samuel.
