@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936456Ab3DRRd1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:33:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64778 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936119Ab3DRRd0 (ORCPT
+	id S967484Ab3DRRgO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:36:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42179 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967156Ab3DRRgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:33:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH] spi/s3c64xx: Fix non-dmaengine usage
-Date: Thu, 18 Apr 2013 19:33:21 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        spi-devel-general@lists.sourceforge.net
-References: <1366304814-19428-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1366304814-19428-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Thu, 18 Apr 2013 13:36:12 -0400
+Date: Thu, 18 Apr 2013 18:36:04 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFT] regulator: palmas: Fix min_uV for LDO8 tracking mode
+Message-ID: <20130418173603.GQ13687@opensource.wolfsonmicro.com>
+References: <1366304032.27953.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304181933.21598.arnd@arndb.de>
-X-Provags-ID: V02:K0:4qSUdGH3/DuykEry6UHUOxEOaiBqnPMI/Z1pCYYkXuD
- 0q4Ly1/Kd9+Nn8euf9I6QtkDlGrEgoNFrQYYrkt/7wE2v1WCRC
- 8LSBOMa1wzT2vthfld5Xpar++fTx1KuO610aTm0T1TrO7SSx2x
- Y9PZeknIFwFMTYYhsRcVSjPoLpm31dPtayPF13gOdln4vORxAe
- tt2zYdN4R8+S0dxikHe30NaKqh/9sdUyewiNexRmtIs2ettEPW
- EgzlhhxVvELPwvHsrUkKCqaS+f5ECS3YGQYTbq9qPyTe0sWU5n
- bjEnQ0pQdhkeT/fj15SnrgkBBBvb+EUXSdpeBFBqNLHZqVexjW
- MOrWqe8NeoXAHCSdQdt0=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4v4CeaphHHcoDrun"
+Content-Disposition: inline
+In-Reply-To: <1366304032.27953.1.camel@phoenix>
+X-Cookie: Be different: conform.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013, Mark Brown wrote:
-> The multiplatform conversion in commit 788437 (spi: s3c64xx: move to
-> generic dmaengine API) tested for the use of the Samsung-specific DMA
-> API with SAMSUNG_DMADEV when in fact S3C_DMA should be used. This
-> renderd DMA based transfers non-functional on platforms not using
-> dmaengine.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+--4v4CeaphHHcoDrun
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Sorry for the confusion on my part. I thought that S3C_DMA was referring
-to just the S3C specific functionality while SAMSUNG_DMADEV was the
-wrapper around it, while in truth SAMSUNG_DMADEV is the wrapper around
-just the dmaengine API.
+On Fri, Apr 19, 2013 at 12:53:52AM +0800, Axel Lin wrote:
+> When SMPS45 is set to off and LDO8 tracking is enabled, the output voltage can
+> be set from 0.45 to 1.65 V. Thus set min_uV to be 450000.
 
-	Arnd
+Applied, thanks.
+
+--4v4CeaphHHcoDrun
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJRcC70AAoJELSic+t+oim9v20P/2g1dtky0zmG91mOj0i079Hm
+yvIdHLYK4oQbeXLe/iEyCVg6cApYRbgV+XHsn1atFLFOH1oTD0dMJ0jB0uk7BQff
+rQqIbsAv8SuKLQkLYtnQshNHNHyVK7nSjdfHTmWlhQD5+JSJIIW3JOV/w1ru/CWT
+WWfExVKV8wv8/fmsnzYTIFUpR6t2/v8ZSXSzli+mKw873RLiUfYnLbnO2oU1t3Gx
+XN1Snm6JItuupEHoQPoXiB+gYJsXTIu66+h6HI5xvRjr9g3PCSSJFenFVjzXJzBt
+MVjuYNB9OF0l3daQJ3xCJyc2qjxzX7qFD8LwFy1kTB5+KUK2SqTjO9vQGtOZBQuY
+D1oqglLKxC4YV+bU7O2abRSbqJXJHeSHwJjycv7qViy5yBqQAcpZMIvxDZYP2Zc/
+2XYG3QmZ15yIrnA+zuJL0TaoQ+ZUt/jFhrPwliMSPNskDwFLmgyri0iD/pA9BsxM
+1GMfV5bFMjVPYUj5e9XeRCDJQjJxyVv93Ih90fAUbAzy/yLGsf/L2tYNnm8U/NXs
+jVDETwGdmzXXvqQyyiNGs2Q+b2rs1dbn6LOQCgJ5+W8UNgvGo6mUgWvdE/Ivas7G
+lWCdzwpV/OXxw3o0d3IqCwM0HlHxvuCfoLVpm1TRAy4oNaRPc786lH87KPDyko9f
+PuBpV4QdfGCeTOqAbldE
+=RGBl
+-----END PGP SIGNATURE-----
+
+--4v4CeaphHHcoDrun--
