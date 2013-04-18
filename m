@@ -1,40 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965547Ab3DRGi4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 02:38:56 -0400
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:45302 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752906Ab3DRGiy (ORCPT
+	id S965839Ab3DRGoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 02:44:07 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:47319 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965638Ab3DRGoG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 02:38:54 -0400
-Message-ID: <516F94DD.1040400@stericsson.com>
-Date: Thu, 18 Apr 2013 08:38:21 +0200
-From: =?UTF-8?B?QmVuZ3QgSsO2bnNzb24=?= <bengt.g.jonsson@stericsson.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Yvan FILLION <yvan.fillion@stericsson.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] regulator: ab8500: Get rid of voltage_shift field
- from struct ab8500_regulator_info
-References: <1366210440.15800.0.camel@phoenix> <1366210545.15800.2.camel@phoenix>
-In-Reply-To: <1366210545.15800.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Apr 2013 02:44:06 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
+Subject: Re: [PATCH] net-sysfs: Add entry for nl80211 interface type
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <516F8F4B.1000504@lri.fr>
+Date: Wed, 17 Apr 2013 23:43:59 -0700
+Cc: Johannes Berg <johannes@sipsolutions.net>, Bing Zhao <bzhao@marvell.com>,
+        linux-netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Stewart <pstew@chromium.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BF64DFEC-CFE7-4A89-B251-8E9AF3E44642@holtmann.org>
+References: <1366236369-543-1-git-send-email-bzhao@marvell.com>  (sfid-20130418_000709_842159_3005786A) <1366236590.8217.64.camel@jlt4.sipsolutions.net> <516F8F4B.1000504@lri.fr>
+To: Nicolas Cavallari <Nicolas.Cavallari@lri.fr>
+X-Mailer: Apple Mail (2.1503)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2013 04:55 PM, Axel Lin wrote:
-> The voltage_shift can be calculated from voltage_mask.
-> Let's remove voltage_shift fied from struct ab8500_regulator_info, this change
-> can prevent missing voltage_shift setting issue.
->
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Nice improvement.Thanks.
+Hi Nicolas,
 
-Acked-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+>>> Add a "wireless/nl80211_iftype" entry in the net device sysfs
+>>> file structure to indicate the mode of the wireless device so
+>>> it can be discovered easily from userspace.
+>> 
+>> What's wrong with "iw dev", i.e. netlink/nl80211?
+> 
+> "Do NOT screenscrape this tool, we don't consider its output stable."
+> 
+> So if you are in a shell script, you're basically screwed.
+
+if you are in a shell script, you are screwed no matter what. So what is your point?
+
+Regards
+
+Marcel
+
 
