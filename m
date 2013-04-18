@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967027Ab3DRJYp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:24:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:32868 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966307Ab3DRJYm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:24:42 -0400
-Date: Thu, 18 Apr 2013 11:24:36 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3] irqchip: Add support for ARMv7-M's NVIC
-Message-ID: <20130418092436.GB21099@pengutronix.de>
-References: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <201304172223.43707.arnd@arndb.de>
- <20130418081555.GV30416@pengutronix.de>
- <201304181101.13644.arnd@arndb.de>
+	id S967067Ab3DRJZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:25:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9940 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966349Ab3DRJZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 05:25:20 -0400
+Message-ID: <516FBBF7.1080400@redhat.com>
+Date: Thu, 18 Apr 2013 11:25:11 +0200
+From: Gerd Hoffmann <kraxel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201304181101.13644.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Stefan Hajnoczi <stefanha@gmail.com>
+CC: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>,
+        "Huangweidong (C)" <weidong.huang@huawei.com>,
+        kvm list <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Luonengjun <luonengjun@huawei.com>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zanghongyong <zanghongyong@huawei.com>,
+        Zhanghuanzhong <zhanghuanzhong@huawei.com>, corentin.chary@gmail.com
+Subject: Re: [Qemu-devel] reply: reply: qemu crashed when starting vm(kvm)
+ with vnc connect
+References: <D3E216785288A145B7BC975F83A2ED103FE154C1@szxeml556-mbx.china.huawei.com> <20130405063456.GA27569@stefanha-thinkpad.redhat.com> <D3E216785288A145B7BC975F83A2ED103FE16528@szxeml556-mbx.china.huawei.com> <20130408105052.GC12076@stefanha-thinkpad.redhat.com> <D3E216785288A145B7BC975F83A2ED103FE16749@szxeml556-mbx.china.huawei.com> <20130411092958.GF8904@stefanha-thinkpad.redhat.com>
+In-Reply-To: <20130411092958.GF8904@stefanha-thinkpad.redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 11:01:13AM +0200, Arnd Bergmann wrote:
-> On Thursday 18 April 2013, Uwe Kleine-König wrote:
-> > > > + * Each bank handles 32 irqs. Only the 16th (= last) bank handles only
-> > > > + * 16 irqs.
-> > > > + */
-> > > > +#define NVIC_MAX_IRQ               ((NVIC_MAX_BANKS - 1) * 32 + 16)
-> > > 
-> > > Is this actually inherent to the hardware design, or is the number of irqs
-> > > actually customizable? Also, why do you care about the maximum? You only
-> > > use it to check against the device tree provided value, but I suppose
-> > > you could just as well trust that property to be correct.
-> > I don't provide a value for the number of irqs in the device tree. There
-> > is only the value INTLINESNUM in the V7M_SCS_ICTR register that is used
-> > to determine the number of interrupt banks.
-> 
-> Ah, right. But do you have any reason to believe it could be wrong?
-No it's just that the mapping isn't linear in the end.
+On 04/11/13 11:29, Stefan Hajnoczi wrote:
+> On Mon, Apr 08, 2013 at 12:27:06PM +0000, Zhanghaoyu (A) wrote:
+>> On Sun, Apr 07, 2013 at 04:58:07AM +0000, Zhanghaoyu (A) wrote:
+>>>>>> I start a kvm VM with vnc(using the zrle protocol) connect, sometimes qemu program crashed during starting period, received signal SIGABRT.
+>>>>>> Trying about 20 times, this crash may be reproduced.
+>>>>>> I guess the cause memory corruption or double free.
+>>>>>
+>>>>> Which version of QEMU are you running?
+>>>>>
+>>>>> Please try qemu.git/master.
 
-	INTLINESNUM | number of irqs
-	      0     |     32
-	      1     |     64
-	      2     |     96
-	      3     |    128
-	      4     |    160
-	      5     |    192
-	      6     |    224
-	      7     |    256
-	      8     |    288
-	      9     |    320
-	     10     |    352
-	     11     |    384
-	     12     |    416
-	     13     |    448
-	     14     |    480
-	     15     |    496
+Please try again with latest master, might be fixed meanwhile.
 
-That is, there are (INTLINESNUM + 1) * 32 irqs for INTLINESNUM < 15. For
-INTLINESNUM == 15 there are only 496 and not 16 * 32 == 512. That's the
-same on the gic (just with bigger numbers).
+If it still happens pleas provide full qemu and vnc client command lines.
 
-Best regards
-Uwe
+>> backtrace from core file is shown as below:
+>>
+>> Program received signal SIGABRT, Aborted.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+>> #8  0x00007f32efd26d07 in vnc_disconnect_finish (vs=0x7f32f0c762d0)
+>>     at ui/vnc.c:1050
+
+Do you have a vnc client connected?  Do you close it?
+
+Any errors reported by the vnc client (maybe it disconnects due to an
+error in the data stream)?
+
+cheers,
+  Gerd
+
+
