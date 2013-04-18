@@ -1,86 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936680Ab3DRWDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 18:03:23 -0400
-Received: from mail-da0-f42.google.com ([209.85.210.42]:50225 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936642Ab3DRWDV (ORCPT
+	id S936689Ab3DRWEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 18:04:38 -0400
+Received: from relay2.blacknight.com ([78.153.203.205]:59752 "EHLO
+	relay2.blacknight.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936487Ab3DRWEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 18:03:21 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] arm: mach-omap2: remove "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check
-References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>
-	<1366198467-6757-5-git-send-email-sourav.poddar@ti.com>
-	<87li8f4sum.fsf@linaro.org> <5170434C.7040706@ti.com>
-Date: Thu, 18 Apr 2013 15:03:16 -0700
-In-Reply-To: <5170434C.7040706@ti.com> (Sourav Poddar's message of "Fri, 19
-	Apr 2013 00:32:36 +0530")
-Message-ID: <874nf31opn.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 18 Apr 2013 18:04:36 -0400
+Message-ID: <51706E8A.7030909@nexus-software.ie>
+Date: Thu, 18 Apr 2013 23:07:06 +0100
+From: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Matt Fleming <matt@console-pimps.org>
+CC: matthew.garrett@nebula.com, linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Darren Hart <darren.hart@intel.com>,
+        Josh Triplett <josh@joshtriplett.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
+References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <516EAC4A.6040202@console-pimps.org> <516F1B90.9040508@nexus-software.ie> <516FD24A.3070502@console-pimps.org>
+In-Reply-To: <516FD24A.3070502@console-pimps.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sourav Poddar <sourav.poddar@ti.com> writes:
 
-> On Thursday 18 April 2013 11:35 PM, Kevin Hilman wrote:
->> Sourav Poddar<sourav.poddar@ti.com>  writes:
->>
->>> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since UART was the only one making
->>> use of it. Now serial core/driver takes care of the case when "no_console_suspend"
->>> is used in the bootargs and you need to keep the clock enable for console even while suspend.
->>>
->>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
->> NAK.  This patch will break many things...
->>
->>> ---
->>>   arch/arm/mach-omap2/omap_device.c |    7 +------
->>>   1 files changed, 1 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
->>> index 381be7a..d6dce8f 100644
->>> --- a/arch/arm/mach-omap2/omap_device.c
->>> +++ b/arch/arm/mach-omap2/omap_device.c
->>> @@ -620,11 +620,8 @@ static int _od_suspend_noirq(struct device *dev)
->>>   	ret = pm_generic_suspend_noirq(dev);
->>>
->>>   	if (!ret&&  !pm_runtime_status_suspended(dev)) {
->>> -		if (pm_generic_runtime_suspend(dev) == 0) {
->>> -			if (!(od->flags&  OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
->>> -				omap_device_idle(pdev);
->> Why did you remove the omap_device_idle() here?
-> This patch is used along with patch3 to get rid of the issue. I posted
-> them as a
-> seperate patch beacuse of the subject line as one goes under drivers/*
-> and the other
-> arm/mach-omap2/*..
+>      UEFI stands for "Unified Extensible Firmware Interface", where "Firmware"
+>      is an ancient African word meaning "Why do something right when you can
+>      do it so wrong that children will weep and brave adults will cower before
+>      you", and "UEI" is Celtic for "We missed DOS so we burned it into your
+>      ROMs". The UEFI specification provides for runtime services (ie, another
+>      way for the operating system to be forced to depend on the firmware) and
+>      we rely on these for certain trivial tasks such as setting up the
+>      bootloader. But some hardware fails to work if we attempt to use these
+>      runtime services from physical mode, and so we have to switch into virtual
+>      mode. So far so dreadful.
 >
-> This check was only valid for UART, and if od->flags is set to the
-> "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" flag, then UART will not be idled. 
 
-correct, but *every other device* would be idled (if not already idle.)
+"UEI" is Celtic for "We missed DOS so we burned it into your ROMS"
 
-> But now, we no longer depend on od->flag value to prevent idling of
-> our console UART as the prepare/complete apis will take care of them.
+I love it "maith an fear"
 
-Right, so removing the check on od->flags is fine, but what I asked
-about is why you removed the omap_device_idle() call.
+> There are currently only two situations where we need to map EFI Boot
+> Service regions,
+>
+>    1. To workaround the firmware bug described in 916f676f8
+>    2. To access the ACPI BGRT image
+>
+> but since we haven't seen an i386 implementation that requires either,
+> this simple fix should suffice for now. Item 2. above does still work on
+> i386 provided that the BGRT image is not in highmem.
 
-Remember that this code is called for *every* omap_device during
-suspend, not just UART.
+Matt, Peter, Josh, Darren.
 
-What you did stops *every* device from being idled during suspend.
+Given it's not possible to guarantee someone won't stuff a BGRT into 
+EFI_BOOT_MEMORY >= highmem eventually (and indeed the axioms of the 
+universe pretty much guarantee eventually it will be so) - I'd suggest 
+version 2.
 
-You didn't read my whole message.  Specifically this part:
+A kernel parameter - rather than a probe for BGRT - since we anticipate 
+BIOS bugs on the way.
 
->> Note that the check is for when the flag is *not* set, so this patch
->> changes behavior for all the drivers that do not use
->> _NO_IDLE_ON_SUSPEND.  I think that's the opposite of what you intended.
+Version 2 of the submitted path introduces an early kernel parameter 
+"virt_mapboot" - which is true by default (maintaining the current 
+behavior of mapping EFI_BOOT_MEMORY by default) - but which can be set 
+to false - if your IA32 BIOS is not buggy.
 
-Kevin
+Perhaps it would be better to be optimistic.
+
+Change the behavior of efi_enter_virtual_mode() to do the right thing 
+re: the standard and require passing of a parameter to switch on 
+work-arounds for non-standards conformant BIOS. Note: this approach 
+would break BGRT code - requiring addition of kernel parameters to 
+existing systems - which from a user-friendliness POV is probably 
+verboten....
+
