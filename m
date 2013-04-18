@@ -1,285 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967469Ab3DRQ7L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:59:11 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:47839 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967176Ab3DRQ7H (ORCPT
+	id S936435Ab3DRRD3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:03:29 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:43010 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936055Ab3DRRD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:59:07 -0400
-From: Andrey Smirnov <andrew.smirnov@gmail.com>
-To: sameo@linux.intel.com
-Cc: mchehab@redhat.com, andrew.smirnov@gmail.com, hverkuil@xs4all.nl,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 03/12] mfd: Add chip properties handling code for SI476X MFD
-Date: Thu, 18 Apr 2013 09:58:29 -0700
-Message-Id: <1366304318-29620-4-git-send-email-andrew.smirnov@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
-References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
+	Thu, 18 Apr 2013 13:03:26 -0400
+Date: Thu, 18 Apr 2013 10:03:17 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        dm-crypt@saout.de, Christian Schmidt <schmidt@digadd.de>,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        dm-devel@redhat.com, Andi Kleen <andi@firstfloor.org>,
+        "Alasdair G. Kergon" <agk@redhat.com>,
+        Milan Broz <gmazyland@gmail.com>, Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH v2] make dm and dm-crypt forward cgroup context (was:
+ dm-crypt parallelization patches)
+Message-ID: <20130418170317.GA9897@mtj.dyndns.org>
+References: <Pine.LNX.4.64.1304101938280.24258@file.rdu.redhat.com>
+ <20130410235009.GI17641@mtj.dyndns.org>
+ <Pine.LNX.4.64.1304111544050.32536@file.rdu.redhat.com>
+ <20130411195203.GA11956@mtj.dyndns.org>
+ <20130411200005.GB11956@mtj.dyndns.org>
+ <Pine.LNX.4.64.1304121340350.3359@file.rdu.redhat.com>
+ <20130412182941.GF11956@mtj.dyndns.org>
+ <Pine.LNX.4.64.1304150827480.1859@file.rdu.redhat.com>
+ <20130416172418.GB2874@mtj.dyndns.org>
+ <20130418164742.GA8254@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130418164742.GA8254@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrey Smirnov <andreysm@charmander.(none)>
+Hello, Mike.
 
-This patch adds code related to manipulation of the properties of
-SI476X chips.
+On Thu, Apr 18, 2013 at 12:47:42PM -0400, Mike Snitzer wrote:
+> I see you nack and raise you with: please reconsider in the near term.
 
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
-Signed-off-by: Andrey Smirnov <andrew.smirnov@gmail.com>
----
- drivers/mfd/si476x-prop.c |  241 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 241 insertions(+)
- create mode 100644 drivers/mfd/si476x-prop.c
+The thing is that percpu-refcnting is already in mostly ready-form, so
+unless this dm series is planned to be merged for v3.10-rc1, I don't
+see the need for a separate near term solution.  Mikulas can just do
+the normal refcnting and cgroup will most likely adopt per-cpu ref
+anyway once percpu-refcnting is in, so it should all fall in places
+pretty quickly.  For devel / testing / whatever, Mikulas can surely
+turn off cgroup, right?
 
-diff --git a/drivers/mfd/si476x-prop.c b/drivers/mfd/si476x-prop.c
-new file mode 100644
-index 0000000..cfeffa6
---- /dev/null
-+++ b/drivers/mfd/si476x-prop.c
-@@ -0,0 +1,241 @@
-+/*
-+ * drivers/mfd/si476x-prop.c -- Subroutines to access
-+ * properties of si476x chips
-+ *
-+ * Copyright (C) 2012 Innovative Converged Devices(ICD)
-+ * Copyright (C) 2013 Andrey Smirnov
-+ *
-+ * Author: Andrey Smirnov <andrew.smirnov@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+#include <linux/module.h>
-+
-+#include <linux/mfd/si476x-core.h>
-+
-+struct si476x_property_range {
-+	u16 low, high;
-+};
-+
-+static bool si476x_core_element_is_in_array(u16 element,
-+					    const u16 array[],
-+					    size_t size)
-+{
-+	int i;
-+
-+	for (i = 0; i < size; i++)
-+		if (element == array[i])
-+			return true;
-+
-+	return false;
-+}
-+
-+static bool si476x_core_element_is_in_range(u16 element,
-+					    const struct si476x_property_range range[],
-+					    size_t size)
-+{
-+	int i;
-+
-+	for (i = 0; i < size; i++)
-+		if (element <= range[i].high && element >= range[i].low)
-+			return true;
-+
-+	return false;
-+}
-+
-+static bool si476x_core_is_valid_property_a10(struct si476x_core *core,
-+					      u16 property)
-+{
-+	static const u16 valid_properties[] = {
-+		0x0000,
-+		0x0500, 0x0501,
-+		0x0600,
-+		0x0709, 0x070C, 0x070D, 0x70E, 0x710,
-+		0x0718,
-+		0x1207, 0x1208,
-+		0x2007,
-+		0x2300,
-+	};
-+
-+	static const struct si476x_property_range valid_ranges[] = {
-+		{ 0x0200, 0x0203 },
-+		{ 0x0300, 0x0303 },
-+		{ 0x0400, 0x0404 },
-+		{ 0x0700, 0x0707 },
-+		{ 0x1100, 0x1102 },
-+		{ 0x1200, 0x1204 },
-+		{ 0x1300, 0x1306 },
-+		{ 0x2000, 0x2005 },
-+		{ 0x2100, 0x2104 },
-+		{ 0x2106, 0x2106 },
-+		{ 0x2200, 0x220E },
-+		{ 0x3100, 0x3104 },
-+		{ 0x3207, 0x320F },
-+		{ 0x3300, 0x3304 },
-+		{ 0x3500, 0x3517 },
-+		{ 0x3600, 0x3617 },
-+		{ 0x3700, 0x3717 },
-+		{ 0x4000, 0x4003 },
-+	};
-+
-+	return	si476x_core_element_is_in_range(property, valid_ranges,
-+						ARRAY_SIZE(valid_ranges)) ||
-+		si476x_core_element_is_in_array(property, valid_properties,
-+						ARRAY_SIZE(valid_properties));
-+}
-+
-+static bool si476x_core_is_valid_property_a20(struct si476x_core *core,
-+					      u16 property)
-+{
-+	static const u16 valid_properties[] = {
-+		0x071B,
-+		0x1006,
-+		0x2210,
-+		0x3401,
-+	};
-+
-+	static const struct si476x_property_range valid_ranges[] = {
-+		{ 0x2215, 0x2219 },
-+	};
-+
-+	return	si476x_core_is_valid_property_a10(core, property) ||
-+		si476x_core_element_is_in_range(property, valid_ranges,
-+						ARRAY_SIZE(valid_ranges))  ||
-+		si476x_core_element_is_in_array(property, valid_properties,
-+						ARRAY_SIZE(valid_properties));
-+}
-+
-+static bool si476x_core_is_valid_property_a30(struct si476x_core *core,
-+					      u16 property)
-+{
-+	static const u16 valid_properties[] = {
-+		0x071C, 0x071D,
-+		0x1007, 0x1008,
-+		0x220F, 0x2214,
-+		0x2301,
-+		0x3105, 0x3106,
-+		0x3402,
-+	};
-+
-+	static const struct si476x_property_range valid_ranges[] = {
-+		{ 0x0405, 0x0411 },
-+		{ 0x2008, 0x200B },
-+		{ 0x2220, 0x2223 },
-+		{ 0x3100, 0x3106 },
-+	};
-+
-+	return	si476x_core_is_valid_property_a20(core, property) ||
-+		si476x_core_element_is_in_range(property, valid_ranges,
-+						ARRAY_SIZE(valid_ranges)) ||
-+		si476x_core_element_is_in_array(property, valid_properties,
-+						ARRAY_SIZE(valid_properties));
-+}
-+
-+typedef bool (*valid_property_pred_t) (struct si476x_core *, u16);
-+
-+static bool si476x_core_is_valid_property(struct si476x_core *core,
-+					  u16 property)
-+{
-+	static const valid_property_pred_t is_valid_property[] = {
-+		[SI476X_REVISION_A10] = si476x_core_is_valid_property_a10,
-+		[SI476X_REVISION_A20] = si476x_core_is_valid_property_a20,
-+		[SI476X_REVISION_A30] = si476x_core_is_valid_property_a30,
-+	};
-+
-+	BUG_ON(core->revision > SI476X_REVISION_A30 ||
-+	       core->revision == -1);
-+	return is_valid_property[core->revision](core, property);
-+}
-+
-+
-+static bool si476x_core_is_readonly_property(struct si476x_core *core,
-+					     u16 property)
-+{
-+	BUG_ON(core->revision > SI476X_REVISION_A30 ||
-+	       core->revision == -1);
-+
-+	switch (core->revision) {
-+	case SI476X_REVISION_A10:
-+		return (property == 0x3200);
-+	case SI476X_REVISION_A20:
-+		return (property == 0x1006 ||
-+			property == 0x2210 ||
-+			property == 0x3200);
-+	case SI476X_REVISION_A30:
-+		return false;
-+	}
-+
-+	return false;
-+}
-+
-+static bool si476x_core_regmap_readable_register(struct device *dev,
-+						 unsigned int reg)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct si476x_core *core = i2c_get_clientdata(client);
-+
-+	return si476x_core_is_valid_property(core, (u16) reg);
-+
-+}
-+
-+static bool si476x_core_regmap_writable_register(struct device *dev,
-+						 unsigned int reg)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct si476x_core *core = i2c_get_clientdata(client);
-+
-+	return si476x_core_is_valid_property(core, (u16) reg) &&
-+		!si476x_core_is_readonly_property(core, (u16) reg);
-+}
-+
-+
-+static int si476x_core_regmap_write(void *context, unsigned int reg,
-+				    unsigned int val)
-+{
-+	return si476x_core_cmd_set_property(context, reg, val);
-+}
-+
-+static int si476x_core_regmap_read(void *context, unsigned int reg,
-+				   unsigned *val)
-+{
-+	struct si476x_core *core = context;
-+	int err;
-+
-+	err = si476x_core_cmd_get_property(core, reg);
-+	if (err < 0)
-+		return err;
-+
-+	*val = err;
-+
-+	return 0;
-+}
-+
-+
-+static const struct regmap_config si476x_regmap_config = {
-+	.reg_bits = 16,
-+	.val_bits = 16,
-+
-+	.max_register = 0x4003,
-+
-+	.writeable_reg = si476x_core_regmap_writable_register,
-+	.readable_reg = si476x_core_regmap_readable_register,
-+
-+	.reg_read = si476x_core_regmap_read,
-+	.reg_write = si476x_core_regmap_write,
-+
-+	.cache_type = REGCACHE_RBTREE,
-+};
-+
-+struct regmap *devm_regmap_init_si476x(struct si476x_core *core)
-+{
-+	return devm_regmap_init(&core->client->dev, NULL,
-+				core, &si476x_regmap_config);
-+}
-+EXPORT_SYMBOL_GPL(devm_regmap_init_si476x);
+Thanks.
+
 -- 
-1.7.10.4
-
+tejun
