@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966666Ab3DROPj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 10:15:39 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59827 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965049Ab3DROPi (ORCPT
+	id S966781Ab3DRORD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 10:17:03 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:10914 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965049Ab3DRORB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 10:15:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH 18/19] ARM: at91: suspend both memory controllers on at91sam9263
-Date: Thu, 18 Apr 2013 16:15:20 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Victor <linux@maxim.org.za>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359153858-31992-19-git-send-email-arnd@arndb.de> <516FF8FC.7070901@atmel.com>
-In-Reply-To: <516FF8FC.7070901@atmel.com>
+	Thu, 18 Apr 2013 10:17:01 -0400
+X-IronPort-AV: E=Sophos;i="4.87,502,1363132800"; 
+   d="scan'208";a="3698414"
+Message-ID: <5170005B.807@citrix.com>
+Date: Thu, 18 Apr 2013 16:16:59 +0200
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304181615.20542.arnd@arndb.de>
-X-Provags-ID: V02:K0:mBrg2x15Wqk+oZy3VGGn/Jt3Wuxo/KQFqobLWlQghBG
- DwBvTv+012S5qGWGBgEdJHuBLtl1/QgOAIy9ANgG37RbHfEvoq
- 3dCaL+GB8aHTIm2WdH9eoVO4r5ND6Yj1uFWrRXZKENfvURRk4E
- KMlttNCN8fM64nKkywjsW0h0iLxhqyg1BiPkatZIbbTj7qOMEn
- 2dfhKIm6VfpQVKgZxS8ucO9ZpkiHB+/Y1tqkC2nh/EOxayc/wu
- mxi2yJBvW+72J/XQOwZUUMA2lxRHVuTma1tKm+V0qEmTJYuSUK
- aSHWNwvtAtCyrM6i9Q+wRm64oJYuGDv9aAdGjK4iSpBXewQ0El
- xyBAM2D/DFRGIKk22mvg=
+To: Jens Axboe <axboe@kernel.dk>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "martin.peterson@oracle.com" <martin.peterson@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [PATCH v1 7/7] xen-block: implement indirect descriptors
+References: <1364382643-3711-1-git-send-email-roger.pau@citrix.com> <1364382643-3711-8-git-send-email-roger.pau@citrix.com> <20130409184923.GA4978@phenom.dumpdata.com> <516C3264.3050409@citrix.com> <20130417142554.GG21378@phenom.dumpdata.com> <516ED633.3040205@citrix.com> <20130417172747.GA25736@phenom.dumpdata.com> <20130418124355.GW4816@kernel.dk>
+In-Reply-To: <20130418124355.GW4816@kernel.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013, Nicolas Ferre wrote:
-
-> > This patch blindly removes the warning and changes the
-> > at91sam9263 to use the same code at at91sam9g45, which
-> > may or may not be the right solution. If it is not,
-> > maybe someone could provide a better fix.
+On 18/04/13 14:43, Jens Axboe wrote:
+> On Wed, Apr 17 2013, Konrad Rzeszutek Wilk wrote:
+>> On Wed, Apr 17, 2013 at 07:04:51PM +0200, Roger Pau Monné wrote:
+>>> On 17/04/13 16:25, Konrad Rzeszutek Wilk wrote:
+>>>>>> Perhaps the xen-blkfront part of the patch should be just split out to make
+>>>>>> this easier?
+>>>>>>
+>>>>>> Perhaps what we really should have is just the 'max' value of megabytes
+>>>>>> we want to handle on the ring.
+>>>>>>
+>>>>>> As right now 32 ring requests * 32 segments = 4MB.  But if the user wants
+>>>>>> to se the max: 32 * 4096 = so 512MB (right? each request would handle now 16MB
+>>>>>> and since we have 32 of them = 512MB).
+>>>>>
+>>>>> I've just set that to something that brings a performance benefit
+>>>>> without having to map an insane number of persistent grants in blkback.
+>>>>>
+>>>>> Yes, the values are correct, but the device request queue (rq) is only
+>>>>> able to provide read requests with 64 segments or write requests with
+>>>>> 128 segments. I haven't been able to get larger requests, even when
+>>>>> setting this to 512 or higer.
+>>>>
+>>>> What are you using to drive the requests? 'fio'?
+>>>
+>>> Yes, I've tried fio with several "bs=" values, but it doesn't seem to
+>>> change the size of the underlying requests. Have you been able to get
+>>> bigger requests?
+>>
+>> Martin, Jens,
+>> Any way to drive more than 128 segments?
 > 
-> Maybe you can remove this paragraph: now you are using the proper fix
-> with proper RAM type.
-> 
-> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> 
-> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> 
-> What is the future of this patch series: do you want us to take this
-> patch separately or to you want to apply the whole series on the arm-soc
-> tree?
+> If the driver is bio based, then there's a natural size constraint on
+> the number of vecs in the bio. So to get truly large requests, the
+> driver would need to merge incoming sequential IOs (similar to how it's
+> done for rq based drivers).
 
-I'd prefer if you could just apply or forward it to an appropriate tree.
+When you say rq based drivers, you mean drivers with a request queue?
 
-Most of the other patches have found their way into mainline by now.
+We are already using a request queue in blkfront, and I'm setting the
+maximum number of segments per request using:
 
-> > Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> > Cc: Andrew Victor <linux@maxim.org.za>
-> > Cc: Albin Tonnerre <albin.tonnerre@free-electrons.com>
-> > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
-> 
-> Moreover, this patch my conflict with Daniel's current initiative to
-> move cpuidle driver to its own directory: how do we coordinate with each
-> other?
+blk_queue_max_segments(<rq>, <segments>);
 
-Maybe you can make sure it actually works and send it to Daniel to apply on
-top of his other patches?
+But even when setting <segments> to 256 or 512, I only get read requests
+with 64 segments and write requests with 128 segments from the queue.
 
-	Arnd
