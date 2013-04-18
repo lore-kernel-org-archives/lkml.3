@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966247Ab3DRJkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:40:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39993 "EHLO
+	id S966595Ab3DRJlS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:41:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:39981 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756151Ab3DRJRT (ORCPT
+	with ESMTP id S1756092Ab3DRJRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:19 -0400
+	Thu, 18 Apr 2013 05:17:17 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anatolij Gustschin <agust@denx.de>,
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 04/72] spi/mpc512x-psc: optionally keep PSC SS asserted across xfer segmensts
-Date: Thu, 18 Apr 2013 10:15:49 +0100
-Message-Id: <1366276617-3553-5-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 02/72] ASoC: dma-sh7760: Fix compile error
+Date: Thu, 18 Apr 2013 10:15:47 +0100
+Message-Id: <1366276617-3553-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -28,45 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anatolij Gustschin <agust@denx.de>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 1ad849aee5f53353ed88d9cd3d68a51b03a7d44f upstream.
+commit 417a1178f1bf3cdc606376b3ded3a22489fbb3eb upstream.
 
-Some SPI slave devices require asserted chip select signal across
-multiple transfer segments of an SPI message. Currently the driver
-always de-asserts the internal SS signal for every single transfer
-segment of the message and ignores the 'cs_change' flag of the
-transfer description. Disable the internal chip select (SS) only
-if this is needed and indicated by the 'cs_change' flag.
+The dma-sh7760 currently fails with the following compile error:
+	sound/soc/sh/dma-sh7760.c:346:2: error: unknown field 'pcm_ops' specified in initializer
+	sound/soc/sh/dma-sh7760.c:346:2: warning: initialization from incompatible pointer type
+	sound/soc/sh/dma-sh7760.c:347:2: error: unknown field 'pcm_new' specified in initializer
+	sound/soc/sh/dma-sh7760.c:347:2: warning: initialization makes integer from pointer without a cast
+	sound/soc/sh/dma-sh7760.c:348:2: error: unknown field 'pcm_free' specified in initializer
+	sound/soc/sh/dma-sh7760.c:348:2: warning: initialization from incompatible pointer type
+	sound/soc/sh/dma-sh7760.c: In function 'sh7760_soc_platform_probe':
+	sound/soc/sh/dma-sh7760.c:353:2: warning: passing argument 2 of 'snd_soc_register_platform' from incompatible pointer type
+	include/sound/soc.h:368:5: note: expected 'struct snd_soc_platform_driver *' but argument is of type 'struct snd_soc_platform *'
 
-Without this change, each partial transfer of a surrounding
-multi-part SPI transaction might erroneously change the SS
-signal, which might prevent slaves from answering the request
-that was sent in a previous transfer segment because the
-transaction could be considered aborted (SS was de-asserted
-before reading the response).
+This is due the misnaming of the snd_soc_platform_driver type name and 'ops'
+field. The issue was introduced in commit f0fba2a("ASoC: multi-component - ASoC
+Multi-Component Support").
 
-Reported-by: Gerhard Sittig <gerhard.sittig@ifm.com>
-Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/spi/spi-mpc512x-psc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/sh/dma-sh7760.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/spi/spi-mpc512x-psc.c b/drivers/spi/spi-mpc512x-psc.c
-index 4c63f77..2e2b04f 100644
---- a/drivers/spi/spi-mpc512x-psc.c
-+++ b/drivers/spi/spi-mpc512x-psc.c
-@@ -164,7 +164,7 @@ static int mpc512x_psc_spi_transfer_rxtx(struct spi_device *spi,
+diff --git a/sound/soc/sh/dma-sh7760.c b/sound/soc/sh/dma-sh7760.c
+index 7da2018..312715f 100644
+--- a/sound/soc/sh/dma-sh7760.c
++++ b/sound/soc/sh/dma-sh7760.c
+@@ -342,8 +342,8 @@ static int camelot_pcm_new(struct snd_soc_pcm_runtime *rtd)
+ 	return 0;
+ }
  
- 		for (i = count; i > 0; i--) {
- 			data = tx_buf ? *tx_buf++ : 0;
--			if (len == EOFBYTE)
-+			if (len == EOFBYTE && t->cs_change)
- 				setbits32(&fifo->txcmd, MPC512x_PSC_FIFO_EOF);
- 			out_8(&fifo->txdata_8, data);
- 			len--;
+-static struct snd_soc_platform sh7760_soc_platform = {
+-	.pcm_ops 	= &camelot_pcm_ops,
++static struct snd_soc_platform_driver sh7760_soc_platform = {
++	.ops		= &camelot_pcm_ops,
+ 	.pcm_new	= camelot_pcm_new,
+ 	.pcm_free	= camelot_pcm_free,
+ };
 -- 
 1.8.1.2
 
