@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967511Ab3DRWvC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 18:51:02 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:36450 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754598Ab3DRWuz (ORCPT
+	id S1755388Ab3DRXBd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 19:01:33 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:49284 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753483Ab3DRXBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 18:50:55 -0400
-X-AuditID: cbfee68f-b7f4a6d000001436-5a-517078cd19ca
-Date: Thu, 18 Apr 2013 22:50:52 +0000 (GMT)
-From: EUNBONG SONG <eunb.song@samsung.com>
-Subject: [PATCH] mips: Fix invalid interrupt name in cavium-octeon
-To: ralf@linux-mips.org
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Reply-to: eunb.song@samsung.com
-MIME-version: 1.0
-X-MTR: 20130418224829249@eunb.song
-Msgkey: 20130418224829249@eunb.song
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130418224829249@eunb.song
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <2202498.1401366325451851.JavaMail.weblogic@epv6ml11>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+Zju7ZioJAg8UtrBaXd81hc2D0+LxJ
-	LoAxissmJTUnsyy1SN8ugSvjxtHXLAVrhCtWNX9kbWB8IdTFyMkhJKAi0fL/OyOILSFgInFz
-	yzw2CFtM4sK99WwQNcsYJe5/K4KpaW3ewd7FyAUUn88ocb7vIHMXIwcHi4CqxI32IJAaNgFt
-	ibdfHrCChIUFnCR6ZxSChEUEZCSWfroCtopZwF3i7afjzBDj5SUmn77MDmLzCghKnJz5hAVi
-	lZJEw8N9LBBxZYlDk25DnSYhMWv6BVYIm1diRvtTqHo5iWlf1zBD2NIS52dtYIR5ZfH3x1Bx
-	foljt3cwgZwG0vvkfjDMmN2bv0CNF5CYeuYgVKu6xLw5p6HifBJrFr5lgRmz69RyZpje+1vm
-	MkG8pSgxpfshO4StJfHlxz42dG/xCjhKbNh3nWkCo/IsJKlZSNpnIWlHVrOAkWUVo2hqQXJB
-	cVJ6kbFecWJucWleul5yfu4mRkhK6N/BePeA9SHGZGCETGSWEk3OB6aUvJJ4Q2MzIwtTE1Nj
-	I3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUw2tasZi8XveK75ax+sBiT
-	SNHzrRmnd+eFrvqbbLaiTEmiO2aNzGyx3Z86dZ2CYjn6n2orh7+aeSpZ8F2F2KWmSdHnlprZ
-	7HoTmajJoPWiwk3jq5Txppc9xrtduh5nfVx0T+nzf7/TRs0CGpJBSWK73TL3nZ7OP7e28DuD
-	yYyJf40Wse4y9GNRYinOSDTUYi4qTgQAnG/vlR8DAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2TN2zFQWBBs+OMFpc3jWHzYHR4/Mm
-	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
-	jBtHX7MUrBGuWNX8kbWB8YVQFyMnh5CAikTL/++MILaEgIlEa/MOdghbTOLCvfVsXYxcQDXz
-	GSXO9x1k7mLk4GARUJW40R4EUsMmoC3x9ssDVpCwsICTRO+MQpCwiICMxNJPV8BGMgu4S7z9
-	dJwZYpW8xOTTl8HG8woISpyc+YQFYpWSRMPDfSwQcWWJQ5Nus0HEJSRmTb/ACmHzSsxofwpV
-	Lycx7esaZghbWuL8rA2MMCcv/v4YKs4vcez2DiaQ00B6n9wPhhmze/MXqPECElPPHIRqVZeY
-	N+c0VJxPYs3CtywwY3adWs4M03t/y1wmiLcUJaZ0P2SHsLUkvvzYx4buLV4BR4kN+64zTWCU
-	m4UkNQtJ+ywk7chqFjCyrGIUTS1ILihOSq8w1CtOzC0uzUvXS87P3cQITk/PFu5g/HLe+hCj
-	AAejEg/vDamCQCHWxLLiytxDjBIczEoivNOTgEK8KYmVValF+fFFpTmpxYcYk4HRN5FZSjQ5
-	H5g680riDY0NjA0NLc0NTA2NLEgTVhLnfdpqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBMezd1ai8
-	wN8SRVe3rtjyw372grMM9i4pJrM/f2GufmvoPk3n2ufyOVvWZbyOF+Tf3PxZecvatqWTN789
-	/6PgKVcmz1qx1yWTfutPN9rjsPzMs5Tskn828499af58+X21+7t919n1H6/Y8vjWHgOZs6GZ
-	Tmc7BAxr9+sZtrm23yoLfSVuXbvE7ZQSS3FGoqEWc1FxIgACT0SnkwMAAA==
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Thu, 18 Apr 2013 19:01:32 -0400
+X-Originating-IP: 173.246.103.110
+Date: Thu, 18 Apr 2013 16:01:20 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
+Cc: Matt Fleming <matt@console-pimps.org>, matthew.garrett@nebula.com,
+        linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Darren Hart <darren.hart@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
+Message-ID: <20130418230120.GA7078@jtriplet-mobl1>
+References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie>
+ <516EAC4A.6040202@console-pimps.org>
+ <516F1B90.9040508@nexus-software.ie>
+ <516FD24A.3070502@console-pimps.org>
+ <51706E8A.7030909@nexus-software.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51706E8A.7030909@nexus-software.ie>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3IMp6jl020460
 
+On Thu, Apr 18, 2013 at 11:07:06PM +0100, Bryan O'Donoghue wrote:
+> 
+> >     UEFI stands for "Unified Extensible Firmware Interface", where "Firmware"
+> >     is an ancient African word meaning "Why do something right when you can
+> >     do it so wrong that children will weep and brave adults will cower before
+> >     you", and "UEI" is Celtic for "We missed DOS so we burned it into your
+> >     ROMs". The UEFI specification provides for runtime services (ie, another
+> >     way for the operating system to be forced to depend on the firmware) and
+> >     we rely on these for certain trivial tasks such as setting up the
+> >     bootloader. But some hardware fails to work if we attempt to use these
+> >     runtime services from physical mode, and so we have to switch into virtual
+> >     mode. So far so dreadful.
+> >
+> 
+> "UEI" is Celtic for "We missed DOS so we burned it into your ROMS"
+> 
+> I love it "maith an fear"
+> 
+> >There are currently only two situations where we need to map EFI Boot
+> >Service regions,
+> >
+> >   1. To workaround the firmware bug described in 916f676f8
+> >   2. To access the ACPI BGRT image
+> >
+> >but since we haven't seen an i386 implementation that requires either,
+> >this simple fix should suffice for now. Item 2. above does still work on
+> >i386 provided that the BGRT image is not in highmem.
+> 
+> Matt, Peter, Josh, Darren.
+> 
+> Given it's not possible to guarantee someone won't stuff a BGRT into
+> EFI_BOOT_MEMORY >= highmem eventually (and indeed the axioms of the
+> universe pretty much guarantee eventually it will be so) - I'd
+> suggest version 2.
+> 
+> A kernel parameter - rather than a probe for BGRT - since we
+> anticipate BIOS bugs on the way.
+> 
+> Version 2 of the submitted path introduces an early kernel parameter
+> "virt_mapboot" - which is true by default (maintaining the current
+> behavior of mapping EFI_BOOT_MEMORY by default) - but which can be
+> set to false - if your IA32 BIOS is not buggy.
+> 
+> Perhaps it would be better to be optimistic.
+> 
+> Change the behavior of efi_enter_virtual_mode() to do the right
+> thing re: the standard and require passing of a parameter to switch
+> on work-arounds for non-standards conformant BIOS. Note: this
+> approach would break BGRT code - requiring addition of kernel
+> parameters to existing systems - which from a user-friendliness POV
+> is probably verboten....
 
-Change interrupt name from "RML/RSL" to "RMLRSL".
-This fixes following warning message.
+I'd much rather see the code do the right thing automatically, rather
+than requiring an "unbreak me" command-line parameter.
 
-[   24.938793] WARNING: at fs/proc/generic.c:307 __xlate_proc_name+0x124/0x160()
-[   24.945926] name 'RML/RSL'
-[   24.948642] Modules linked in:
-[   24.951707] Call Trace:
-[   24.954157] [<ffffffff8069fe18>] dump_stack+0x8/0x34
-[   24.959136] [<ffffffff80290d90>] warn_slowpath_common+0x78/0xa8
-[   24.965056] [<ffffffff80290e60>] warn_slowpath_fmt+0x38/0x48
-[   24.970723] [<ffffffff803cbc8c>] __xlate_proc_name+0x124/0x160
-[   24.976556] [<ffffffff803cbe78>] __proc_create+0x78/0x128
-[   24.981963] [<ffffffff803cd044>] proc_mkdir_mode+0x2c/0x70
-[   24.987451] [<ffffffff80302418>] register_handler_proc+0x108/0x130
-[   24.993642] [<ffffffff802fd078>] __setup_irq+0x210/0x540
-[   24.998963] [<ffffffff802fd67c>] request_threaded_irq+0x114/0x1a0
-[   25.005060] [<ffffffff80262e0c>] prom_free_prom_memory+0xd4/0x588
-[   25.011164] [<ffffffff80691820>] free_initmem+0x10/0xc0
-[   25.016390] [<ffffffff80691720>] kernel_init+0x20/0x100
-[   25.021624] [<ffffffff8026c7e0>] ret_from_kernel_thread+0x10/0x18
+But in any case, since BGRT is a "make my system look prettier" feature
+rather than core functionality, giving up on it on 32-bit EFI seems
+fairly reasonable, especially since it may still work if stored
+sufficiently low in memory.
 
-Signed-off-by: Eunbong Song <eunb.song@samsung.com>
----
- arch/mips/cavium-octeon/setup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
-index b0baa29..92c3150 100644
---- a/arch/mips/cavium-octeon/setup.c
-+++ b/arch/mips/cavium-octeon/setup.c
-@@ -1066,7 +1066,7 @@ void prom_free_prom_memory(void)
- 
- 	/* Add an interrupt handler for general failures. */
- 	if (request_irq(OCTEON_IRQ_RML, octeon_rlm_interrupt, IRQF_SHARED,
--			"RML/RSL", octeon_rlm_interrupt)) {
-+			"RMLRSL", octeon_rlm_interrupt)) {
- 		panic("Unable to request_irq(OCTEON_IRQ_RML)");
- 	}
- #endif
--- 
-1.7.0.4
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+- Josh Triplett
