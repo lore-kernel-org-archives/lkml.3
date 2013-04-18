@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936419Ab3DRQjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:39:12 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:34749 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936298Ab3DRQjI (ORCPT
+	id S967640Ab3DRQkK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:40:10 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:45106 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936231Ab3DRQkI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:39:08 -0400
-Date: Thu, 18 Apr 2013 09:39:09 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "arm@kernel.org" <arm@kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Barry Song <baohua.song@csr.com>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>, John Stultz <john.stultz@linaro.org>,
-        "Brown, David" <davidb@quicinc.com>
-Subject: Re: [PATCHv4 00/11] Remove ARM local timer API
-Message-ID: <20130418163909.GH7083@quad.lixom.net>
-References: <1365456453-16297-1-git-send-email-sboyd@codeaurora.org>
- <516F09AA.2000902@codeaurora.org>
+	Thu, 18 Apr 2013 12:40:08 -0400
+Date: Thu, 18 Apr 2013 12:40:05 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>
+Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
+In-Reply-To: <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
+Message-ID: <alpine.LFD.2.03.1304181237480.17375@syhkavp.arg>
+References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <516F09AA.2000902@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 01:44:26PM -0700, Stephen Boyd wrote:
-> Thomas,
-> 
-> Would you be able to pick up patches 1 and 2 from this series and
-> publish it as a stable branch? Preferably based on rc5 but I can always
-> merge it to rc5 and apply the rest of the patches.
-> 
-> Arnd/Olof,
-> 
-> Would you be able to merge in the rest of the patches to arm-soc? I can
-> provide a branch on 3.9-rc5 and a merge resolution with for-next in
-> arm-soc that you can pull to look at.
-> 
-> If not I will have to resend the series.
+On Thu, 18 Apr 2013, Stefano Stabellini wrote:
 
-Hi,
+> On Thu, 18 Apr 2013, Russell King - ARM Linux wrote:
+> > This should allow the Xen problem to be resolved, because Xen will
+> > provide the PSCI operations, and it's correct in that case to override
+> > the platform's SMP operations.
+> 
+> Yes, increasing the priority of PSCI helps Xen a lot.
+> In order to completely solve the issue for Xen though, another patch is
+> needed (http://marc.info/?l=linux-kernel&m=136630106201968&w=2) because
+> of the introduction of smp_init.
 
-I think this is 3.11 material at this point, so please send a fresh pull
-request (or re-ask us to apply it) after -rc1.
+Please look at the latest smp_init patch version I sent to you.  It 
+shouldn't conflict with Xen any longer.  It now returns a bool result 
+depending on whether it did set up smp_ops or not.
 
 
--Olof
+Nicolas
