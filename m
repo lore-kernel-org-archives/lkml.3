@@ -1,124 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967074Ab3DRJZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:25:55 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61446 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab3DRJZx (ORCPT
+	id S1758619Ab3DRJSP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:18:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40206 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758155Ab3DRJSG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:25:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] mmc: mmci: Allow MMCI to request channels with information acquired from DT
-Date: Thu, 18 Apr 2013 11:25:44 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linus.walleij@stericsson.com,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
-References: <1366205534-25079-1-git-send-email-lee.jones@linaro.org> <20130418080238.GB3137@gmail.com> <20130418081549.GE14496@n2100.arm.linux.org.uk>
-In-Reply-To: <20130418081549.GE14496@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304181125.44983.arnd@arndb.de>
-X-Provags-ID: V02:K0:HGs4jvCbGiAZVBj7koLQ+ekcu3JmQlyLa0ClxHNqGUH
- DOgovapFBvIZ9um1xyweJL26Q4ij+1UAXQw/DUHByUyeltl2wo
- hXzqCGGL8XdGsEOD5ByXM6/KN3x4uX76VAvu+cXvNm7m5rKSKB
- SwBO8ChjjNUFTyl4XG2vsAGEG0kuvnK6O/3B9fX1nPwgfh47x/
- dWdx5zyz/H07w9srgnsPjN34zIbZ8/cB9YYfUlXYCagZJSk95c
- qUxyODh4GegRSAW+ZaTej6F9yeQRTPEkQnNbQoacfzt2onAeBO
- xC7gpbtf0WIe3KAjW0QwttmiwngmhzaNi6haP7sZGtsl4iOonp
- oJY1O0QM701DgkL/eQlw=
+	Thu, 18 Apr 2013 05:18:06 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jan Beulich <jbeulich@suse.com>, Matthew Garrett <mjg@redhat.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 41/72] x86: Fix rebuild with EFI_STUB enabled
+Date: Thu, 18 Apr 2013 10:16:26 +0100
+Message-Id: <1366276617-3553-42-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
+References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013, Russell King - ARM Linux wrote:
-> On Thu, Apr 18, 2013 at 09:02:38AM +0100, Lee Jones wrote:
-> > @@ -321,19 +323,21 @@ static void mmci_dma_setup(struct mmci_host *host)
-> >        * attempt to use it bidirectionally, however if it is
-> >        * is specified but cannot be located, DMA will be disabled.
-> >        */
-> > -     if (plat->dma_rx_param) {
-> > -             host->dma_rx_channel = dma_request_channel(mask,
-> > -                                                        plat->dma_filter,
-> > -                                                        plat->dma_rx_param);
-> > +     if (plat->dma_rx_param || np) {
-> > +             host->dma_rx_channel = dma_request_slave_channel_compat(mask,
-> > +                                                             plat->dma_filter,
-> > +                                                             plat->dma_rx_param,
-> > +                                                             &dev->dev, "rx");
-> >               /* E.g if no DMA hardware is present */
-> >               if (!host->dma_rx_channel)
-> >                       dev_err(mmc_dev(host->mmc), "no RX DMA channel\n");
-> 
-> I don't think this is right - I think Arnd has been leading you up the
-> garden path saying that this can be simplified.  Why?
-> 
-> If you look at what this code does, the DMA channels are optional.  If
-> they're not provided, then you don't get an error or a warning printk from
-> the code.  However, after your conversion, if you use DT and avoid giving
-> the DMA information (which you have to avoid on the majority of ARM
-> platforms) then "np" will be non-NULL, and
-> dma_request_slave_channel_compat() will return NULL, causing the error
-> and/or warning to be printed.
+3.5.7.11 -stable review patch.  If anyone has any objections, please let me know.
 
-Right, so I guess we should print the warning only if plat->dma_filter
-is non-NULL, or we don't use dma_request_slave_channel_compat, which
-does not actually simplify the code here.
+------------------
 
-	Arnd
+From: Jan Beulich <JBeulich@suse.com>
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 375c109..c97bc92 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -298,20 +298,11 @@ static void mmci_init_sg(struct mmci_host *host, struct mmc_data *data)
-  * no custom DMA interfaces are supported.
-  */
- #ifdef CONFIG_DMA_ENGINE
--static void mmci_dma_setup(struct mmci_host *host)
-+static int mmci_dma_plat_setup(struct mmci_host *host)
- {
- 	struct mmci_platform_data *plat = host->plat;
--	const char *rxname, *txname;
- 	dma_cap_mask_t mask;
+commit 918708245e92941df16a634dc201b407d12bcd91 upstream.
+
+eboot.o and efi_stub_$(BITS).o didn't get added to "targets", and hence
+their .cmd files don't get included by the build machinery, leading to
+the files always getting rebuilt.
+
+Rather than adding the two files individually, take the opportunity and
+add $(VMLINUX_OBJS) to "targets" instead, thus allowing the assignment
+at the top of the file to be shrunk quite a bit.
+
+At the same time, remove a pointless flags override line - the variable
+assigned to was misspelled anyway, and the options added are
+meaningless for assembly sources.
+
+[ hpa: the patch is not minimal, but I am taking it for -urgent anyway
+  since the excess impact of the patch seems to be small enough. ]
+
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Link: http://lkml.kernel.org/r/515C5D2502000078000CA6AD@nat28.tlf.novell.com
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/x86/boot/compressed/Makefile | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
+index 8a84501..5ef205c 100644
+--- a/arch/x86/boot/compressed/Makefile
++++ b/arch/x86/boot/compressed/Makefile
+@@ -4,7 +4,7 @@
+ # create a compressed vmlinux image from the original vmlinux
+ #
  
--	if (!plat || !plat->dma_filter) {
--		dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
--		return;
--	}
--
--	/* initialize pre request cookie */
--	host->next_data.cookie = 1;
--
- 	/* Try to acquire a generic DMA engine slave channel */
- 	dma_cap_zero(mask);
- 	dma_cap_set(DMA_SLAVE, mask);
-@@ -339,6 +330,25 @@ static void mmci_dma_setup(struct mmci_host *host)
- 	} else {
- 		host->dma_tx_channel = host->dma_rx_channel;
- 	}
-+}
-+
-+static void mmci_dma_setup(struct device *dev, struct mmci_host *host)
-+{
-+	const char *rxname, *txname;
-+
-+	host->dma_rx_channel = dma_request_slave_channel(dev, "rx");
-+	host->dma_tx_channel = dma_request_slave_channel(dev, "tx");
-+
-+	if (!host->dma_rx_channel && !host->dma_tx_channel) {
-+		if (host->plat && host->plat->dma_filter)
-+			mmci_dma_plat_setup(host);
-+		else
-+			dev_info(mmc_dev(host->mmc), "no DMA platform data\n");
-+			return;
-+	}
-+
-+	/* initialize pre request cookie */
-+	host->next_data.cookie = 1;
+-targets := vmlinux.lds vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo head_$(BITS).o misc.o string.o cmdline.o early_serial_console.o piggy.o
++targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma vmlinux.bin.xz vmlinux.bin.lzo
  
- 	if (host->dma_rx_channel)
- 		rxname = dma_chan_name(host->dma_rx_channel);
+ KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
+ KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
+@@ -29,7 +29,6 @@ VMLINUX_OBJS = $(obj)/vmlinux.lds $(obj)/head_$(BITS).o $(obj)/misc.o \
+ 	$(obj)/piggy.o
+ 
+ $(obj)/eboot.o: KBUILD_CFLAGS += -fshort-wchar -mno-red-zone
+-$(obj)/efi_stub_$(BITS).o: KBUILD_CLFAGS += -fshort-wchar -mno-red-zone
+ 
+ ifeq ($(CONFIG_EFI_STUB), y)
+ 	VMLINUX_OBJS += $(obj)/eboot.o $(obj)/efi_stub_$(BITS).o
+@@ -43,7 +42,7 @@ OBJCOPYFLAGS_vmlinux.bin :=  -R .comment -S
+ $(obj)/vmlinux.bin: vmlinux FORCE
+ 	$(call if_changed,objcopy)
+ 
+-targets += vmlinux.bin.all vmlinux.relocs
++targets += $(patsubst $(obj)/%,%,$(VMLINUX_OBJS)) vmlinux.bin.all vmlinux.relocs
+ 
+ CMD_RELOCS = arch/x86/tools/relocs
+ quiet_cmd_relocs = RELOCS  $@
+-- 
+1.8.1.2
+
