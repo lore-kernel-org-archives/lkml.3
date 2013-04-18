@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584Ab3DRRzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:55:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34784 "EHLO mx2.suse.de"
+	id S1751823Ab3DRR4l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:56:41 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63938 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751394Ab3DRRzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:55:19 -0400
-Date: Thu, 18 Apr 2013 10:55:14 -0700
-From: Michal Hocko <mhocko@suse.cz>
-To: Han Pingtian <hanpt@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, rientjes@google.com
-Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
-Message-ID: <20130418175513.GA12581@dhcp22.suse.cz>
-References: <20130416110009.GA2664@localhost.localdomain>
- <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com>
- <20130417094750.GB2672@localhost.localdomain>
- <20130417141909.GA24912@dhcp22.suse.cz>
- <20130418101541.GC2672@localhost.localdomain>
- <20130418141736.GA7989@dhcp22.suse.cz>
- <20130418165531.GD2672@localhost.localdomain>
+	id S1751419Ab3DRR4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 13:56:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,503,1363158000"; 
+   d="scan'208";a="320428942"
+Date: Thu, 18 Apr 2013 19:56:17 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Andrey Smirnov <andrew.smirnov@gmail.com>
+Cc: mchehab@redhat.com, hverkuil@xs4all.nl, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH 11/12] si476x: Fix some config dependencies and a compile
+ warnings
+Message-ID: <20130418175617.GW8798@zurbaran>
+References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
+ <1366304318-29620-12-git-send-email-andrew.smirnov@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130418165531.GD2672@localhost.localdomain>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1366304318-29620-12-git-send-email-andrew.smirnov@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 19-04-13 00:55:31, Han Pingtian wrote:
-> On Thu, Apr 18, 2013 at 07:17:36AM -0700, Michal Hocko wrote:
-> > On Thu 18-04-13 18:15:41, Han Pingtian wrote:
-> > > On Wed, Apr 17, 2013 at 07:19:09AM -0700, Michal Hocko wrote:
-> > > > On Wed 17-04-13 17:47:50, Han Pingtian wrote:
-> > > > > [ 5233.949714] Node 1 DMA free:3968kB min:7808kB low:9728kB high:11712kB active_anon:0kB inactive_anon:3584kB active_file:2240kB inactive_file:576kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:4194304kB managed:3854464kB mlocked:0kB dirty:64kB writeback:448kB mapped:0kB shmem:64kB slab_reclaimable:106496kB slab_unreclaimable:3654976kB kernel_stack:14912kB pagetables:18496kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:531 all_unreclaimable? yes
-> > > > 
-> > > > This smells either like a slab backed memory leak or something went
-> > > > crazy and allocate huge amount of slab. You have 3.6G (or of 4G
-> > > > available) of slab_unreclaimable. I would check /proc/slabinfo for which
-> > > > cache consumes that huge amount of memory.
-> > > 
-> > > Thanks your reply. But I cannot find any clues in the slabinfo:
-> > 
-> > awk '{val=$3*$4; printf "%s %d\n", $1, val}' /proc/slabinfo | sort -k2 -n
-> > says:
-> > [...]
-> > kmalloc-65536 41943040
-> > kmemleak_object 112746000
-> > pgtable-2^12 113246208
-> > kmalloc-8192 122159104
-> > kmalloc-32768 137887744
-> > task_struct 241293920
-> > kmalloc-2048 306446336
-> > kmalloc-96 307652928
-> > kmalloc-16384 516620288
-> > 
-> Oh, I see. I only calculated "$2*$4" and got some small numbers. Thanks.
-
-OK, this is interesting. Only 865M out of 3.5G slabs are on the partial
-or full lists. I do not have much time to look at this more closely but
-it would suggest that free slabs do not get returned to the system.
-
-> > Hmm, how many processes you have running? Having 240M in task_structs
-> > sounds quite excessive. Also there seem to be quite a lot of memory used
-> > in the generic 16K, 96B and 2K caches. Core kernel usually do not use
-> > those on its own so I would be inclined to suspect some driver.
-> There are 671 processes is running and most of them are kernel thread I
-> think:
-
-awk '{val=$2*$4; sum+=val; printf "%s %d\n", $1, val}' a | grep task_struct
-task_struct 27080016
-
-looks only slightly more reasonable because it is still way too high and
-it doesn't seem to match the number of processes you see.
-
-What is the kernel that you are using and what config?
-
->     [root@riblp3 ~]# ps haux|wc -l
->     671
->     [root@riblp3 ~]# ps haux|awk '{print $11}'|grep '^\['|wc -l
->     620
->     [root@riblp3 ~]# 
+On Thu, Apr 18, 2013 at 09:58:37AM -0700, Andrey Smirnov wrote:
+> From: Hans Verkuil <hverkuil@xs4all.nl>
 > 
-[...]
+> radio-si476x depends on SND and SND_SOC, the mfd driver should select
+> REGMAP_I2C.
+> 
+> Also fix a small compile warning in a debug message:
+> 
+> drivers/mfd/si476x-i2c.c: In function ‘si476x_core_drain_rds_fifo’:
+> drivers/mfd/si476x-i2c.c:391:4: warning: field width specifier ‘*’ expects argument of type ‘int’, but argument 4 has type ‘long unsigned int’ [-Wformat]
+> 
+> Acked-by: Andrey Smirnov <andrew.smirnov@gmail.com>
+> Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+> ---
+>  drivers/media/radio/Kconfig |    2 +-
+>  drivers/mfd/Kconfig         |    1 +
+>  drivers/mfd/si476x-i2c.c    |    2 +-
+You should have merged the MFD bits from this patch into one of the first 4
+patches, that are MFD related. Or at least separated those 2 changes into 2
+patches...
+
+Cheers,
+Samuel.
+
 -- 
-Michal Hocko
-SUSE Labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
