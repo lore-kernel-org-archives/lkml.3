@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936657Ab3DRV5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 17:57:34 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:33706 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932207Ab3DRV5c (ORCPT
+	id S936666Ab3DRV7Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 17:59:25 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:48169 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498Ab3DRV7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 17:57:32 -0400
-Date: Thu, 18 Apr 2013 22:57:26 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: torvalds@linux-foundation.org
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] X86 platform driver update for 3.9
-Message-ID: <20130418215726.GA27006@srcf.ucam.org>
+	Thu, 18 Apr 2013 17:59:23 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0OAP2g/MAC+5xKAE"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAKMK7uFEaiT_1siQBcp_-S0RwLvy3XSjqLn1ksq70VhNTZSfLw@mail.gmail.com>
+References: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
+	<CAKMK7uFEaiT_1siQBcp_-S0RwLvy3XSjqLn1ksq70VhNTZSfLw@mail.gmail.com>
+Date: Thu, 18 Apr 2013 23:59:21 +0200
+Message-ID: <CA+icZUWQEiGecR8jgw4P-2YCKyqSDMMP0Ufwn8aBU_-AOf0a-Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for Apr 18 [ call-trace: drm | x86 | smp | rcu
+ related? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Dave Airlie <airlied@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 18, 2013 at 9:48 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+> On Thu, Apr 18, 2013 at 3:05 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Thu, Apr 18, 2013 at 10:28 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20130417:
+>>>
+>>> New Trees:      rpmsg (actually added yesterday)
+>>>                 ppc-temp (replacing powerpc for this week)
+>>>
+>>> The ceph tree gained a conflict against Linus' tree.
+>>>
+>>> The net-next tree gained a conflict against the infiniband tree.
+>>>
+>>> The usb tree gained a build failure so I used the version from
+>>> next-20130417.
+>>>
+>>> I added two merge fix patches after the gen-gpio tree.
+>>>
+>>> The ppc-temp tree gained a conflict against the metag tree.
+>>>
+>>> The akpm tree lost a patch that turned up elsewhere.
+>>>
+>>> ----------------------------------------------------------------------------
+>>>
+>>
+>> Not sure what the root-cause for this call-trace is (see screenshot).
+>>
+>> This is reproducible when running my kernel build-script (4 parallel-make-jobs).
+>>
+>> Any hints welcome!
+>
+> The panic handlers in our modeset code are pretty decent fubar - they
+> take mutexes all over the place. So I think the backtrace you see
+> there is actually a secondary effect. I've looked into fixing this up,
+> but the issue is that drivers themselves have tons of state protected
+> with mutexes, which all potentially affects the panic handler. So I've
+> given up on that for now ...
 
---0OAP2g/MAC+5xKAE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for taking care.
 
-Hi Linus,
+On suspicion [1] I have reverted [2]... NOPE.
 
-It turns out that one of the hp-wmi patches this cycle breaks some other=20
-HP laptops. I think we have a good idea how to work on it for 3.10, but=20
-it's safer to just revert it for now.
+- Sedat -
 
-The following changes since commit 445e8d007c29d7f4d497c7912236b69f608340c6:
+[1] http://marc.info/?l=linux-kernel&m=136631921208895&w=2
+[2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=5a90d1a95356de7a32acb2e5309ac579a891af8f
 
-  ideapad-laptop: Depend on BACKLIGHT_CLASS_DEVICE instead of selecting it =
-(2013-02-27 08:30:47 -0500)
-
-are available in the git repository at:
-
-  git://cavan.codon.org.uk/platform-drivers-x86.git for_linus
-
-for you to fetch changes up to c857b7f45b1f9fb7bad1eaa42b8ad68327738232:
-
-  Revert "hp-wmi: Add support for SMBus hotkeys" (2013-04-18 14:53:10 -0700)
-
-----------------------------------------------------------------
-Matthew Garrett (1):
-      Revert "hp-wmi: Add support for SMBus hotkeys"
-
- drivers/platform/x86/hp-wmi.c | 4 ----
- 1 file changed, 4 deletions(-)
-
---=20
-Matthew Garrett | mjg59@srcf.ucam.org
-
---0OAP2g/MAC+5xKAE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAlFwbEYACgkQ7Hkv8l1YiTv6IACePamsBOuEnw3KK2cyWwHIbx6n
-920An0E3oJz18bE6A+c61BP79xx+KKBL
-=Bsv4
------END PGP SIGNATURE-----
-
---0OAP2g/MAC+5xKAE--
+> -Daniel
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
