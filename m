@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967114Ab3DRVRS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 17:17:18 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34839 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751781Ab3DRVRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 17:17:15 -0400
-Message-ID: <1366319834.2119.27.camel@joe-AO722>
-Subject: [PATCH usb-next] usb: storage: Fix link error
-From: Joe Perches <joe@perches.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        usb-storage <usb-storage@lists.one-eyed-alien.net>
-Date: Thu, 18 Apr 2013 14:17:14 -0700
-In-Reply-To: <20130418160541.57123749577f29665fba7839@canb.auug.org.au>
-References: <20130418160541.57123749577f29665fba7839@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S936498Ab3DRVj4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 17:39:56 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:11581 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936039Ab3DRVjz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 17:39:55 -0400
+X-IronPort-AV: E=Sophos;i="4.87,504,1363132800"; 
+   d="scan'208";a="19355411"
+From: Ben Guthro <benjamin.guthro@citrix.com>
+To: <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>
+CC: Ben Guthro <benjamin.guthro@citrix.com>
+Subject: [PATCH] xen: resolve section mismatch warnings in xen-acpi-processor
+Date: Thu, 18 Apr 2013 17:39:48 -0400
+Message-ID: <1366321188-17934-1-git-send-email-benjamin.guthro@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.204.241.11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix allmodconfig link error introduced by commit 75b9130e8a
-("usb: storage: Add usb_stor_dbg, reduce object size")
+The following resolves a section mismatch warning below in xen-acpi-processor introduced by
+3fac10145b766a2244422788f62dc35978613fd8 [13/13] xen: Re-upload processor PM data to hypervisor after S3 resume (v2)
 
-Export the symbol usb_stor_dbg.
-Add export.h
+Warning:
+WARNING: drivers/xen/built-in.o(.text+0x2056a): Section mismatch in reference from the function xen_upload_processor_pm_data() to the function .init.text:read_acpi_id()
+   The function xen_upload_processor_pm_data() references
+   the function __init read_acpi_id().
+   This is often because xen_upload_processor_pm_data lacks a __init
+   annotation or the annotation of read_acpi_id is wrong.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+
+Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
 ---
- drivers/usb/storage/debug.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/xen/xen-acpi-processor.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/storage/debug.c b/drivers/usb/storage/debug.c
-index b428129..29fe08f 100644
---- a/drivers/usb/storage/debug.c
-+++ b/drivers/usb/storage/debug.c
-@@ -43,6 +43,7 @@
+diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
+index 86b6f69..e69eb3b 100644
+--- a/drivers/xen/xen-acpi-processor.c
++++ b/drivers/xen/xen-acpi-processor.c
+@@ -330,7 +330,7 @@ static unsigned int __init get_max_acpi_id(void)
+  * for_each_[present|online]_cpu macros which are banded to the virtual
+  * CPU amount.
   */
+-static acpi_status __init
++static acpi_status
+ read_acpi_id(acpi_handle handle, u32 lvl, void *context, void **rv)
+ {
+ 	u32 acpi_id;
+@@ -385,7 +385,7 @@ read_acpi_id(acpi_handle handle, u32 lvl, void *context, void **rv)
  
- #include <linux/cdrom.h>
-+#include <linux/export.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_cmnd.h>
- #include <scsi/scsi_dbg.h>
-@@ -193,3 +194,4 @@ int usb_stor_dbg(const char *fmt, ...)
- 
- 	return r;
+ 	return AE_OK;
  }
-+EXPORT_SYMBOL_GPL(usb_stor_dbg);
-
+-static int __init check_acpi_ids(struct acpi_processor *pr_backup)
++static int check_acpi_ids(struct acpi_processor *pr_backup)
+ {
+ 
+ 	if (!pr_backup)
+-- 
+1.7.9.5
 
