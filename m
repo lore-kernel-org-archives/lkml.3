@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab3DRJR0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:17:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39998 "EHLO
+	id S1756865Ab3DRJRk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:17:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40037 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756187Ab3DRJRV (ORCPT
+	with ESMTP id S1756459Ab3DRJRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:21 -0400
+	Thu, 18 Apr 2013 05:17:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Jay Estabrook <jay.estabrook@gmail.com>, Matt Turner <mattst88@gmail.com>,
+        Michael Cree <mcree@orcon.net.nz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 05/72] EISA/PCI: Fix bus res reference
-Date: Thu, 18 Apr 2013 10:15:50 +0100
-Message-Id: <1366276617-3553-6-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 12/72] alpha: Add irongate_io to PCI bus resources
+Date: Thu, 18 Apr 2013 10:15:57 +0100
+Message-Id: <1366276617-3553-13-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -27,83 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Jay Estabrook <jay.estabrook@gmail.com>
 
-commit 2cfda637e29ce9e3df31b59f64516b2e571cc985 upstream.
+commit aa8b4be3ac049c8b1df2a87e4d1d902ccfc1f7a9 upstream.
 
-Matthew found that 3.8.3 is having problems with an old (ancient)
-PCI-to-EISA bridge, the Intel 82375. It worked with the 3.2 kernel.
-He identified the 82375, but doesn't assign the struct resource *res
-pointer inside the struct eisa_root_device, and panics.
+Fixes a NULL pointer dereference at boot on UP1500.
 
-pci_eisa_init() was using bus->resource[] directly instead of
-pci_bus_resource_n().  The bus->resource[] array is a PCI-internal
-implementation detail, and after commit 45ca9e97 (PCI: add helpers for
-building PCI bus resource lists) and commit 0efd5aab (PCI: add struct
-pci_host_bridge_window with CPU/bus address offset), bus->resource[] is not
-used for PCI root buses any more.
-
-The 82375 is a subtractive-decode PCI device, so handle it the same
-way we handle PCI-PCI bridges in subtractive-decode mode in
-pci_read_bridge_bases().
-
-[bhelgaas: changelog]
-Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
-Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-and-Tested-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Jay Estabrook <jay.estabrook@gmail.com>
+Signed-off-by: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/eisa/pci_eisa.c | 28 +++++++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
+ arch/alpha/kernel/sys_nautilus.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/eisa/pci_eisa.c b/drivers/eisa/pci_eisa.c
-index cdae207..ef5c3ec 100644
---- a/drivers/eisa/pci_eisa.c
-+++ b/drivers/eisa/pci_eisa.c
-@@ -22,7 +22,8 @@ static struct eisa_root_device pci_eisa_root;
- static int __init pci_eisa_init(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
--	int rc;
-+	int rc, i;
-+	struct resource *res, *bus_res = NULL;
+diff --git a/arch/alpha/kernel/sys_nautilus.c b/arch/alpha/kernel/sys_nautilus.c
+index 4d4c046..1383f86 100644
+--- a/arch/alpha/kernel/sys_nautilus.c
++++ b/arch/alpha/kernel/sys_nautilus.c
+@@ -188,6 +188,10 @@ nautilus_machine_check(unsigned long vector, unsigned long la_ptr)
+ extern void free_reserved_mem(void *, void *);
+ extern void pcibios_claim_one_bus(struct pci_bus *);
  
- 	if ((rc = pci_enable_device (pdev))) {
- 		printk (KERN_ERR "pci_eisa : Could not enable device %s\n",
-@@ -30,9 +31,30 @@ static int __init pci_eisa_init(struct pci_dev *pdev,
- 		return rc;
- 	}
++static struct resource irongate_io = {
++	.name	= "Irongate PCI IO",
++	.flags	= IORESOURCE_IO,
++};
+ static struct resource irongate_mem = {
+ 	.name	= "Irongate PCI MEM",
+ 	.flags	= IORESOURCE_MEM,
+@@ -209,6 +213,7 @@ nautilus_init_pci(void)
  
-+	/*
-+	 * The Intel 82375 PCI-EISA bridge is a subtractive-decode PCI
-+	 * device, so the resources available on EISA are the same as those
-+	 * available on the 82375 bus.  This works the same as a PCI-PCI
-+	 * bridge in subtractive-decode mode (see pci_read_bridge_bases()).
-+	 * We assume other PCI-EISA bridges are similar.
-+	 *
-+	 * eisa_root_register() can only deal with a single io port resource,
-+	*  so we use the first valid io port resource.
-+	 */
-+	pci_bus_for_each_resource(pdev->bus, res, i)
-+		if (res && (res->flags & IORESOURCE_IO)) {
-+			bus_res = res;
-+			break;
-+		}
-+
-+	if (!bus_res) {
-+		dev_err(&pdev->dev, "No resources available\n");
-+		return -1;
-+	}
-+
- 	pci_eisa_root.dev              = &pdev->dev;
--	pci_eisa_root.res	       = pdev->bus->resource[0];
--	pci_eisa_root.bus_base_addr    = pdev->bus->resource[0]->start;
-+	pci_eisa_root.res	       = bus_res;
-+	pci_eisa_root.bus_base_addr    = bus_res->start;
- 	pci_eisa_root.slots	       = EISA_MAX_SLOTS;
- 	pci_eisa_root.dma_mask         = pdev->dma_mask;
- 	dev_set_drvdata(pci_eisa_root.dev, &pci_eisa_root);
+ 	irongate = pci_get_bus_and_slot(0, 0);
+ 	bus->self = irongate;
++	bus->resource[0] = &irongate_io;
+ 	bus->resource[1] = &irongate_mem;
+ 
+ 	pci_bus_size_bridges(bus);
 -- 
 1.8.1.2
 
