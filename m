@@ -1,135 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967342Ab3DROwl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 10:52:41 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:36406 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967059Ab3DROvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 10:51:07 -0400
-X-IronPort-AV: E=Sophos;i="4.87,502,1363132800"; 
-   d="scan'208";a="20206186"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <Stefano.Stabellini@eu.citrix.com>, <konrad.wilk@oracle.com>,
-        <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 2/5] xen/arm: SMP support
-Date: Thu, 18 Apr 2013 15:50:43 +0100
-Message-ID: <1366296646-12215-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1304181538160.7254@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304181538160.7254@kaball.uk.xensource.com>
+	id S967416Ab3DROx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 10:53:57 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:58673 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967009Ab3DROxz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 10:53:55 -0400
+X-Originating-IP: 108.223.40.66
+Date: Thu, 18 Apr 2013 07:54:13 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Don Zickus <dzickus@redhat.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-watchdog@vger.kernel.org, kexec@lists.infradead.org,
+        wim@iguana.be, LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
+        dyoung@redhat.com
+Subject: Re: [PATCH v3] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130418145413.GA1980@roeck-us.net>
+References: <1366233596-34681-1-git-send-email-dzickus@redhat.com>
+ <87li8gaku0.fsf@xmission.com>
+ <20130418130009.GH79013@redhat.com>
+ <20130418134904.GC2767@roeck-us.net>
+ <20130418135257.GL79013@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130418135257.GL79013@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Map vcpu_info using VCPUOP_register_vcpu_info on secondary cpus.
+On Thu, Apr 18, 2013 at 09:52:57AM -0400, Don Zickus wrote:
+> On Thu, Apr 18, 2013 at 06:49:04AM -0700, Guenter Roeck wrote:
+> > On Thu, Apr 18, 2013 at 09:00:09AM -0400, Don Zickus wrote:
+> > > On Wed, Apr 17, 2013 at 02:49:59PM -0700, Eric W. Biederman wrote:
+> > > > Don Zickus <dzickus@redhat.com> writes:
+> > > > 
+> > > > > A common problem with kdump is that during the boot up of the
+> > > > > second kernel, the hardware watchdog times out and reboots the
+> > > > > machine before a vmcore can be captured.
+> > > > >
+> > > > > Instead of tellling customers to disable their hardware watchdog
+> > > > > timers, I hacked up a hook to put in the kdump path that provides
+> > > > > one last kick before jumping into the second kernel.
+> > > > >
+> > > > > The assumption is the watchdog timeout is at least 10-30 seconds
+> > > > > long, enough to get the second kernel to userspace to kick the watchdog
+> > > > > again, if needed.
+> > > > 
+> > > > Why not double the watchdog timeout? and/or pet the watchdog a little
+> > > > more frequently.
+> > > 
+> > > I am not sure if the watchdog timeouts can be doubled.  I think Guenter
+> > > was saying some have a max of a couple seconds?? Petting a little more
+> > > frequently might be an option.  Guenter can that be done with a softdog
+> > > option?
+> > > 
+> > Most watchdog driver permit at least a minute. Some are more limited.
+> > Worst I have seen is the BookE watchdog timer (non-Freescale version)
+> > which has a maximum of three seconds. But that is broken anyway.
+> > 
+> > Most hardware watchdogs implement a softdog on top of the hardware watchdog
+> > if the hardware needs to be pinged faster than every 60 seconds.
+> > 
+> > So, yes, for the most common case you should actually be able to live with a,
+> > say, 30-60 second timeout which is pinged at least every 5-10 seconds. I thought
+> > that somehow did not work in your case. Maybe a misunderstanding ?
+> 
+> No, that will probably work.  It is my misunderstanding.  Is there a
+> common way to check the timeout length and the ping frequency?
+> 
+Usually it is configured in /etc/watchdog.conf if the watchdog package
+is installed. The standard ping interval is "interval", the timeout is
+"watchdog-timeout". See "man watchdog.conf" for details.
 
-Call enable_percpu_irq on every cpu.
+Minimum and maximum values for a given watchdog driver are not exported
+to user space, so you would have to look into the driver sources to find
+out what they are.
 
-Changed in v2:
-- move the percpu variable argument fix to a separate patch;
-- remove unused variable.
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/arm/xen/enlighten.c |   38 +++++++++++++++++++++++++++++++++++++-
- 1 files changed, 37 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index 99ce189..94bbf3b 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -2,6 +2,7 @@
- #include <xen/events.h>
- #include <xen/grant_table.h>
- #include <xen/hvm.h>
-+#include <xen/interface/vcpu.h>
- #include <xen/interface/xen.h>
- #include <xen/interface/memory.h>
- #include <xen/interface/hvm/params.h>
-@@ -32,6 +33,7 @@ struct shared_info xen_dummy_shared_info;
- struct shared_info *HYPERVISOR_shared_info = (void *)&xen_dummy_shared_info;
- 
- DEFINE_PER_CPU(struct vcpu_info *, xen_vcpu);
-+DEFINE_PER_CPU(struct vcpu_info, xen_vcpu_info);
- 
- /* These are unused until we support booting "pre-ballooned" */
- unsigned long xen_released_pages;
-@@ -148,6 +150,32 @@ int xen_unmap_domain_mfn_range(struct vm_area_struct *vma,
- }
- EXPORT_SYMBOL_GPL(xen_unmap_domain_mfn_range);
- 
-+static int __init xen_secondary_init(unsigned int cpu)
-+{
-+	struct vcpu_register_vcpu_info info;
-+	struct vcpu_info *vcpup;
-+	int err;
-+
-+	if (cpu == 0)
-+		return 0;
-+
-+	pr_info("Xen: initializing cpu%d\n", cpu);
-+	vcpup = &per_cpu(xen_vcpu_info, cpu);
-+
-+	info.mfn = __pa(vcpup) >> PAGE_SHIFT;
-+	info.offset = offset_in_page(vcpup);
-+
-+	err = HYPERVISOR_vcpu_op(VCPUOP_register_vcpu_info, cpu, &info);
-+	if (err) {
-+		pr_debug("register_vcpu_info failed: err=%d\n", err);
-+	} else {
-+		/* This cpu is using the registered vcpu info, even if
-+		   later ones fail to. */
-+		per_cpu(xen_vcpu, cpu) = vcpup;
-+	}
-+	return 0;
-+}
-+
- /*
-  * see Documentation/devicetree/bindings/arm/xen.txt for the
-  * documentation of the Xen Device Tree format.
-@@ -163,6 +191,7 @@ static int __init xen_guest_init(void)
- 	const char *version = NULL;
- 	const char *xen_prefix = "xen,xen-";
- 	struct resource res;
-+	int i;
- 
- 	node = of_find_compatible_node(NULL, NULL, "xen,xen");
- 	if (!node) {
-@@ -216,6 +245,8 @@ static int __init xen_guest_init(void)
- 	 * is required to use VCPUOP_register_vcpu_info to place vcpu info
- 	 * for secondary CPUs as they are brought up. */
- 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
-+	for_each_online_cpu(i)
-+		xen_secondary_init(i);
- 
- 	gnttab_init();
- 	if (!xen_initial_domain())
-@@ -231,6 +262,11 @@ static irqreturn_t xen_arm_callback(int irq, void *arg)
- 	return IRQ_HANDLED;
- }
- 
-+static __init void xen_percpu_enable_events(void *unused)
-+{
-+	enable_percpu_irq(xen_events_irq, 0);
-+}
-+
- static int __init xen_init_events(void)
- {
- 	if (!xen_domain() || xen_events_irq < 0)
-@@ -244,7 +280,7 @@ static int __init xen_init_events(void)
- 		return -EINVAL;
- 	}
- 
--	enable_percpu_irq(xen_events_irq, 0);
-+	on_each_cpu(xen_percpu_enable_events, NULL, 0);
- 
- 	return 0;
- }
--- 
-1.7.2.5
-
+Guenter
