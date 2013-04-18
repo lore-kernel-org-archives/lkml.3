@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936553Ab3DRTtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 15:49:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40281 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752860Ab3DRTtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 15:49:14 -0400
-Message-ID: <51704F2C.6060901@ti.com>
-Date: Thu, 18 Apr 2013 15:53:16 -0400
-From: Matt Porter <mporter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S936577Ab3DRTz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 15:55:26 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:40222 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S936351Ab3DRTzY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 15:55:24 -0400
+Message-ID: <51704FA8.7060801@console-pimps.org>
+Date: Thu, 18 Apr 2013 20:55:20 +0100
+From: Matt Fleming <matt@console-pimps.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Christian Eggers <ceggers@gmx.de>
-CC: <linux-kernel@vger.kernel.org>, <spi-devel-general@lists.sourceforge.net>
-Subject: Re: spi: spi-davinci: Fix direction in dma_map_single()
-References: <2298140.4jrJLRXeBJ@p2400>
-In-Reply-To: <2298140.4jrJLRXeBJ@p2400>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Josh Triplett <josh@joshtriplett.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>,
+        matthew.garrett@nebula.com, linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Darren Hart <darren.hart@intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
+References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <516EAC4A.6040202@console-pimps.org> <516F1B90.9040508@nexus-software.ie> <516FD24A.3070502@console-pimps.org> <20130418163325.GA6884@leaf> <5170216C.9020300@zytor.com> <20130418164457.GB6884@leaf>
+In-Reply-To: <20130418164457.GB6884@leaf>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 03:31 PM, Christian Eggers wrote:
-> Commit 048177ce3b3962852fd34a7e04938959271c7e70 (spi: spi-davinci:
->
-> convert to DMA engine API) introduced a regression: dma_map_single()
->
-> is called with direction DMA_FROM_DEVICE for rx and for tx.
->
-> Signed-off-by: Christian Eggers <ceggers@gmx.de>
->
-> Cc: stable@vger.kernel.org
+On 04/18/2013 05:44 PM, Josh Triplett wrote:
+>>> The machine I developed the BGRT changes on kept the image below the 4G
+>>> mark, inside one of the memory regions reclaimable via
+>>> ExitBootServices().
+>>
+>> Well, highmem is >= ~896M.  Do you have a machine with BGRT over the
+>> highmem mark?
+> 
+> I don't have the machine in question anymore, and I don't remember.
 
-Cc: stable@vger.kernel.org # v3.7.x+
-will get this applied to the correct stable kernels.
+Sorry, I should have been more clear - having a BGRT image in highmem
+has never worked for the reasons I outlined in my previous mail. What I
+was really asking was: is it OK that we now explicitly don't support
+that case? I'm working on the assumption that it's pointless writing
+support for the BGRT in highmem because no such i386 machines exist. If
+the BGRT code works for your i386 right now, the address isn't in highmem.
 
-I'm wearing the brown bag for this one so other than fixing the Cc: it 
-looks good.
+If there are machines out there that would require us to write support,
+it's probably worth doing now instead of punting. But it sounds like
+there aren't any.
 
-Acked-by: Matt Porter <mporter@ti.com>
-
-> --- drivers/spi/spi-davinci.c.orig 2013-04-18 20:54:02.728719412 +0200
->
-> +++ drivers/spi/spi-davinci.c 2013-04-18 20:54:51.900623956 +0200
->
-> @@ -608,7 +608,7 @@ static int davinci_spi_bufs(struct spi_d
->
-> else
->
-> buf = (void *)t->tx_buf;
->
-> t->tx_dma = dma_map_single(&spi->dev, buf,
->
-> - t->len, DMA_FROM_DEVICE);
->
-> + t->len, DMA_TO_DEVICE);
->
-> if (!t->tx_dma) {
->
-> ret = -EFAULT;
->
-> goto err_tx_map;
->
-
+-- 
+Matt Fleming, Intel Open Source Technology Center
