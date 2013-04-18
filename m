@@ -1,83 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966804Ab3DROcb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 10:32:31 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:42697 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965654Ab3DROca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 10:32:30 -0400
-Message-ID: <517003FA.4000509@linaro.org>
-Date: Thu, 18 Apr 2013 16:32:26 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S967097Ab3DROeb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 10:34:31 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46954 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966791Ab3DROea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 10:34:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,502,1363158000"; 
+   d="scan'208";a="296957639"
+Message-ID: <51700475.7050102@linux.intel.com>
+Date: Thu, 18 Apr 2013 07:34:29 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Victor <linux@maxim.org.za>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>
-Subject: Re: [PATCH 18/19] ARM: at91: suspend both memory controllers on at91sam9263
-References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359153858-31992-19-git-send-email-arnd@arndb.de> <516FF8FC.7070901@atmel.com> <201304181615.20542.arnd@arndb.de> <51700105.9080802@atmel.com>
-In-Reply-To: <51700105.9080802@atmel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: zhang.yi20@zte.com.cn
+CC: Dave Hansen <dave@linux.vnet.ibm.com>, Dave Hansen <dave@sr71.net>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] futex: bugfix for futex-key conflict when futex use hugepage
+References: <OF79A40956.94F46B9C-ON48257B50.00320F73-48257B50.0036925D@zte.com.cn> <516EAF31.8000107@linux.intel.com> <516EBF23.2090600@sr71.net> <516EC508.6070200@linux.intel.com> <OF7B3DF162.973A9AD7-ON48257B51.00299512-48257B51.002C7D65@zte.com.cn>
+In-Reply-To: <OF7B3DF162.973A9AD7-ON48257B51.00299512-48257B51.002C7D65@zte.com.cn>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 04:19 PM, Nicolas Ferre wrote:
-> On 04/18/2013 04:15 PM, Arnd Bergmann :
->> On Thursday 18 April 2013, Nicolas Ferre wrote:
->>
->>>> This patch blindly removes the warning and changes the
->>>> at91sam9263 to use the same code at at91sam9g45, which
->>>> may or may not be the right solution. If it is not,
->>>> maybe someone could provide a better fix.
->>>
->>> Maybe you can remove this paragraph: now you are using the proper fix
->>> with proper RAM type.
->>>
->>>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->>>> Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>
->>> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>
->>> What is the future of this patch series: do you want us to take this
->>> patch separately or to you want to apply the whole series on the arm-soc
->>> tree?
->>
->> I'd prefer if you could just apply or forward it to an appropriate tree.
->>
->> Most of the other patches have found their way into mainline by now.
->>
->>>> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
->>>> Cc: Andrew Victor <linux@maxim.org.za>
->>>> Cc: Albin Tonnerre <albin.tonnerre@free-electrons.com>
->>>> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
->>>
->>> Moreover, this patch my conflict with Daniel's current initiative to
->>> move cpuidle driver to its own directory: how do we coordinate with each
->>> other?
->>
->> Maybe you can make sure it actually works and send it to Daniel to apply on
->> top of his other patches?
+
+
+On 04/18/2013 01:05 AM, zhang.yi20@zte.com.cn wrote:
+> Darren Hart <dvhart@linux.intel.com> wrote on 2013/04/17 23:51:36:
 > 
-> Well, as Daniel's patches are still under construction, I stack this one
-> on the at91-3.10-soc branch and let Daniel rebase his work on top of a
-> 3.10-rc1-ish tree...
+>> On 04/17/2013 08:26 AM, Dave Hansen wrote:
+>>> On 04/17/2013 07:18 AM, Darren Hart wrote:
+>>>>>> This also needs a comment in futex.h describing the usage of the
+>>>>>> offset field in union futex_key as well as above get_futex_key
+>>>>>> describing the key for shared mappings.
+>>>>>>
+>>>>> As far as I know , the max size of one hugepage is 1 GBytes for 
+>>>>> x86 cpu. Can some other cpus support greater hugepage even more 
+>>>>> than 4 GBytes? If so, we can change the type of 'offset' from int 
+>>>>>  to long to avoid truncating.
+>>>>
+>>>> I discussed this with Dave Hansen, on CC, and he thought we needed
+>>>> 9 bits, so even on x86 32b we should be covered.
+>>>
+>>> I think the problem is actually on 64-bit since you still only have
+>>> 32-bits in an 'int' there.
+>>>
+>>> I guess it's remotely possible that we could have some
+>>> mega-super-huge-gigantic pages show up in hardware some day, or that
+>>> somebody would come up with software-only one.  I bet there's a lot
+>>> more code that will break in the kernel than this futex code, though.
+>>>
+>>> The other option would be to start #defining some build-time constant
+>>> for what the largest possible huge page size is, then BUILD_BUG_ON()
+>>> it.
+>>>
+>>> Or you can just make it a long ;)
+>>
+>> If we make it a long I'd want to see futextest performance tests before
+>> and after. Messing with the futex_key has been known to have bad results
+>> in the past :-)
+>>
+>> -- 
+>  
+> I have run futextest/performance/futex_wait for testing, 5 times before 
+> make it long:
+> futex_wait: Measure FUTEX_WAIT operations per second
+>         Arguments: iterations=100000000 threads=256
+> Result: 10215 Kiter/s
+> 
+> futex_wait: Measure FUTEX_WAIT operations per second
+>         Arguments: iterations=100000000 threads=256
+> Result: 9862 Kiter/s
+> 
+> futex_wait: Measure FUTEX_WAIT operations per second
+>         Arguments: iterations=100000000 threads=256
+> Result: 10081 Kiter/s
+> 
+> futex_wait: Measure FUTEX_WAIT operations per second
+>         Arguments: iterations=100000000 threads=256
+> Result: 10060 Kiter/s
+> 
+> futex_wait: Measure FUTEX_WAIT operations per second
+>         Arguments: iterations=100000000 threads=256
+> Result: 10081 Kiter/s
+> 
+> 
+> And 5 times after make it long:
+> futex_wait: Measure FUTEX_WAIT operations per second
+>         Arguments: iterations=100000000 threads=256
+> Result: 9940 Kiter/s
+> 
+> futex_wait: Measure FUTEX_WAIT operations per second
+>         Arguments: iterations=100000000 threads=256
+> Result: 10204 Kiter/s
+> 
+> futex_wait: Measure FUTEX_WAIT operations per second
+>         Arguments: iterations=100000000 threads=256
+> Result: 9901 Kiter/s
+> 
+> futex_wait: Measure FUTEX_WAIT operations per second
+>         Arguments: iterations=100000000 threads=256
+> Result: 10152 Kiter/s
+> 
+> futex_wait: Measure FUTEX_WAIT operations per second
+>         Arguments: iterations=100000000 threads=256
+> Result: 10060 Kiter/s
+> 
+> 
+> Seems OK, is it?
+> 
 
-No problem.
+Changes appear to be in the noise, no impact with this load anyway.
 
-Thanks
-  -- Daniel
-
+How many CPUs on your test machine? I presume not 256?
 
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Technical Lead - Linux Kernel
