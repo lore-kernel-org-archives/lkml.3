@@ -1,84 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936444Ab3DRRka (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:40:30 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:49323 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935906Ab3DRRk3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:40:29 -0400
-Date: Thu, 18 Apr 2013 13:40:26 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>
-Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
-In-Reply-To: <alpine.DEB.2.02.1304181748010.7254@kaball.uk.xensource.com>
-Message-ID: <alpine.LFD.2.03.1304181339510.17375@syhkavp.arg>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
- <alpine.LFD.2.03.1304181233580.17375@syhkavp.arg> <alpine.DEB.2.02.1304181748010.7254@kaball.uk.xensource.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	id S936426Ab3DRRoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:44:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753938Ab3DRRoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 13:44:21 -0400
+Date: Thu, 18 Apr 2013 14:34:34 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
+Message-ID: <20130418173434.GC9035@amt.cnet>
+References: <514C42EC.6000303@linux.vnet.ibm.com>
+ <20130322114715.GW9382@redhat.com>
+ <514C4878.5000404@linux.vnet.ibm.com>
+ <20130322121254.GX9382@redhat.com>
+ <514C508D.6070903@linux.vnet.ibm.com>
+ <20130322191524.GY9382@redhat.com>
+ <20130417203904.GA29493@amt.cnet>
+ <20130418094239.GR8997@redhat.com>
+ <20130418140118.GA32288@amt.cnet>
+ <20130418163603.GG5807@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130418163603.GG5807@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Apr 2013, Stefano Stabellini wrote:
-
-> On Thu, 18 Apr 2013, Nicolas Pitre wrote:
-> > On Thu, 18 Apr 2013, Stefano Stabellini wrote:
+On Thu, Apr 18, 2013 at 07:36:03PM +0300, Gleb Natapov wrote:
+> On Thu, Apr 18, 2013 at 11:01:18AM -0300, Marcelo Tosatti wrote:
+> > On Thu, Apr 18, 2013 at 12:42:39PM +0300, Gleb Natapov wrote:
+> > > > > that, but if not then less code is better.
+> > > > 
+> > > > The number of sp->role.invalid=1 pages is small (only shadow roots). It
+> > > > can grow but is bounded to a handful. No improvement visible there.
+> > > > 
+> > > > The number of shadow pages with old mmu_gen_number is potentially large.
+> > > > 
+> > > > Returning all shadow pages to the allocator is problematic because it
+> > > > takes a long time (therefore the suggestion to postpone it).
+> > > > 
+> > > > Spreading the work to free (or reuse) those shadow pages to individual
+> > > > page fault instances alleviates the mmu_lock hold time issue without
+> > > > significant reduction to post kvm_mmu_zap_all operation (which has to
+> > > > rebuilt all pagetables anyway).
+> > > > 
+> > > > You prefer to modify SLAB allocator to aggressively free these stale
+> > > > shadow pages rather than kvm_mmu_get_page to reuse them?
+> > > Are you saying that what makes kvm_mmu_zap_all() slow is that we return
+> > > all the shadow pages to the SLAB allocator? As far as I understand what
+> > > makes it slow is walking over huge number of shadow pages via various
+> > > lists, actually releasing them to the SLAB is not an issue, otherwise
+> > > the problem could have been solved by just moving
+> > > kvm_mmu_commit_zap_page() out of the mmu_lock. If there is measurable
+> > > SLAB overhead from not reusing the pages I am all for reusing them, but
+> > > is this really the case or just premature optimization?
 > > 
-> > > On Thu, 18 Apr 2013, Russell King - ARM Linux wrote:
-> > > > On Fri, Apr 05, 2013 at 02:11:32PM +0100, Stefano Stabellini wrote:
-> > > > > +	psci_init();
-> > > > >  #ifdef CONFIG_SMP
-> > > > >  	if (is_smp()) {
-> > > > > -		smp_set_ops(mdesc->smp);
-> > > > > +		if (mdesc->smp)
-> > > > > +			smp_set_ops(mdesc->smp);
-> > > > > +		else if (psci_smp_available())
-> > > > > +			smp_set_ops(&psci_smp_ops);
-> > > > 
-> > > > So, I have a vague recollection that the ordering of the above got discussed
-> > > > but I can't find it amongst the 21k of messages so far this year.
-> > > > 
-> > > > The above looks weird to me.  Surely this should be:
-> > > > 
-> > > > 		if (psci_smp_available())
-> > > > 			smp_set_ops(&psci_smp_ops);
-> > > > 		else if (mdesc->smp)
-> > > > 			smp_set_ops(mdesc->ops);
-> > > > 
-> > > > This means that if PSCI is available, and provides a set of operations,
-> > > > we override whatever the platform has statically provided.
-> > > > 
-> > > > Remember, we're trying to move away from using "mdesc"s for platform
-> > > > stuff, relying on things like DT and such like.  We really should not
-> > > > be going for mdesc-overriding-newstuff but newstuff-overriding-mdesc.
-> > > 
-> > > That's correct, in fact if you look at the next patch you'll see that it
-> > > changes the order.
-> > > 
-> > > I introduced the mechanism first and changed the priority later - it
-> > > should help bisectability.
-> > > I can fold the two patches into one if you prefer.
+> > Actually releasing them is not a problem. Walking all pages, lists and
+> > releasing in the process part of the problem ("returning them to the allocator"
+> > would have been clearer with "freeing them").
 > > 
-> > Please let's keep the order as we discussed.  Otherwise this is just too 
-> > confusing (Russell's comment is a good example of that).
-> 
-> You are right, it is confusing.
-> By "keep the order as we discussed", do you mean merge the second patch
-> into the first one, correct?
+> > Point is at some point you have to walk all pages and release their data
+> > structures. With Xiaos scheme its possible to avoid this lengthy process
+> > by either:
+> > 
+> > 1) reusing the pages with stale generation number
+> > or
+> > 2) releasing them via the SLAB shrinker more aggressively
+> > 
+> But is it really so? The number of allocated shadow pages are limited
+> via n_max_mmu_pages mechanism, so I expect most freeing to happen in
+> make_mmu_pages_available() which is called during page fault so freeing
+> will be spread across page faults more or less equally. Doing
+> kvm_mmu_prepare_zap_page()/kvm_mmu_commit_zap_page() and zapping unknown
+> number of shadow pages during kvm_mmu_get_page() just to reuse one does
+> not sound like a clear win to me.
 
-Correct.  And merge the commit log message too.
+Makes sense.
 
+> > (another typo, i meant "SLAB shrinker" not "SLAB allocator").
+> > 
+> > But you seem to be concerned for 1) due to code complexity issues?
+> > 
+> It adds code that looks to me redundant. I may be wrong of course, if
+> it is a demonstrable win I am all for it.
 
-Nicolas
+Ditto.
+
