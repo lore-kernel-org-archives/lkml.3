@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936426Ab3DRRoX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:44:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27120 "EHLO mx1.redhat.com"
+	id S936488Ab3DRRom (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:44:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56343 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753938Ab3DRRoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:44:21 -0400
-Date: Thu, 18 Apr 2013 14:34:34 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v2 0/7] KVM: MMU: fast zap all shadow pages
-Message-ID: <20130418173434.GC9035@amt.cnet>
-References: <514C42EC.6000303@linux.vnet.ibm.com>
- <20130322114715.GW9382@redhat.com>
- <514C4878.5000404@linux.vnet.ibm.com>
- <20130322121254.GX9382@redhat.com>
- <514C508D.6070903@linux.vnet.ibm.com>
- <20130322191524.GY9382@redhat.com>
- <20130417203904.GA29493@amt.cnet>
- <20130418094239.GR8997@redhat.com>
- <20130418140118.GA32288@amt.cnet>
- <20130418163603.GG5807@redhat.com>
+	id S936472Ab3DRRok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 13:44:40 -0400
+Date: Thu, 18 Apr 2013 13:44:32 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-watchdog@vger.kernel.org, kexec@lists.infradead.org, wim@iguana.be,
+        LKML <linux-kernel@vger.kernel.org>, vgoyal@redhat.com,
+        dyoung@redhat.com, Guenter Roeck <linux@roeck-us.net>
+Subject: Re: [PATCH v3] watchdog: Add hook for kicking in kdump path
+Message-ID: <20130418174432.GN79013@redhat.com>
+References: <1366233596-34681-1-git-send-email-dzickus@redhat.com>
+ <87ip3j94qu.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130418163603.GG5807@redhat.com>
+In-Reply-To: <87ip3j94qu.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 07:36:03PM +0300, Gleb Natapov wrote:
-> On Thu, Apr 18, 2013 at 11:01:18AM -0300, Marcelo Tosatti wrote:
-> > On Thu, Apr 18, 2013 at 12:42:39PM +0300, Gleb Natapov wrote:
-> > > > > that, but if not then less code is better.
-> > > > 
-> > > > The number of sp->role.invalid=1 pages is small (only shadow roots). It
-> > > > can grow but is bounded to a handful. No improvement visible there.
-> > > > 
-> > > > The number of shadow pages with old mmu_gen_number is potentially large.
-> > > > 
-> > > > Returning all shadow pages to the allocator is problematic because it
-> > > > takes a long time (therefore the suggestion to postpone it).
-> > > > 
-> > > > Spreading the work to free (or reuse) those shadow pages to individual
-> > > > page fault instances alleviates the mmu_lock hold time issue without
-> > > > significant reduction to post kvm_mmu_zap_all operation (which has to
-> > > > rebuilt all pagetables anyway).
-> > > > 
-> > > > You prefer to modify SLAB allocator to aggressively free these stale
-> > > > shadow pages rather than kvm_mmu_get_page to reuse them?
-> > > Are you saying that what makes kvm_mmu_zap_all() slow is that we return
-> > > all the shadow pages to the SLAB allocator? As far as I understand what
-> > > makes it slow is walking over huge number of shadow pages via various
-> > > lists, actually releasing them to the SLAB is not an issue, otherwise
-> > > the problem could have been solved by just moving
-> > > kvm_mmu_commit_zap_page() out of the mmu_lock. If there is measurable
-> > > SLAB overhead from not reusing the pages I am all for reusing them, but
-> > > is this really the case or just premature optimization?
-> > 
-> > Actually releasing them is not a problem. Walking all pages, lists and
-> > releasing in the process part of the problem ("returning them to the allocator"
-> > would have been clearer with "freeing them").
-> > 
-> > Point is at some point you have to walk all pages and release their data
-> > structures. With Xiaos scheme its possible to avoid this lengthy process
-> > by either:
-> > 
-> > 1) reusing the pages with stale generation number
-> > or
-> > 2) releasing them via the SLAB shrinker more aggressively
-> > 
-> But is it really so? The number of allocated shadow pages are limited
-> via n_max_mmu_pages mechanism, so I expect most freeing to happen in
-> make_mmu_pages_available() which is called during page fault so freeing
-> will be spread across page faults more or less equally. Doing
-> kvm_mmu_prepare_zap_page()/kvm_mmu_commit_zap_page() and zapping unknown
-> number of shadow pages during kvm_mmu_get_page() just to reuse one does
-> not sound like a clear win to me.
+On Thu, Apr 18, 2013 at 09:35:05AM -0700, Eric W. Biederman wrote:
+> Don Zickus <dzickus@redhat.com> writes:
+> 
+> > A common problem with kdump is that during the boot up of the
+> > second kernel, the hardware watchdog times out and reboots the
+> > machine before a vmcore can be captured.
+> >
+> > Instead of tellling customers to disable their hardware watchdog
+> > timers, I hacked up a hook to put in the kdump path that provides
+> > one last kick before jumping into the second kernel.
+> 
+> Having thought about this a little more this patch is actively wrong.
+> 
+> The problem is you can easily be petting the watchdog in violation of
+> whatever policy is normally in place.  Which means that this extra
+> petting can result in a system that is unavailable for an unacceptably
+> long period of time.
 
-Makes sense.
+Not really, just an extra period which isn't that much.  This would only
+be noticable if kdump is setup and enabled and then _hung_, otherwise it
+just quickly reboots and noone notices. :-)
 
-> > (another typo, i meant "SLAB shrinker" not "SLAB allocator").
-> > 
-> > But you seem to be concerned for 1) due to code complexity issues?
-> > 
-> It adds code that looks to me redundant. I may be wrong of course, if
-> it is a demonstrable win I am all for it.
+> 
+> I expect most watchdog policies are not that strict, but this patch
+> would preclude using those that are.
 
-Ditto.
+I would assume most of those users would not enable kdump and would not be
+affected.
 
+> 
+> And like is being discussed in another subthread it does look like
+> changing the timeout and the interval should be enough all on it's own.
+
+Probably and I will pursue that.  Thanks for the suggestion.
+
+Cheers,
+Don
