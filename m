@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967616Ab3DRRKS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:10:18 -0400
-Received: from www.sr71.net ([198.145.64.142]:52465 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966989Ab3DRRKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:10:16 -0400
-Message-ID: <517028F1.6000002@sr71.net>
-Date: Thu, 18 Apr 2013 10:10:09 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: akpm@linux-foundation.org, mgorman@suse.de, matthew.garrett@nebula.com,
-        rientjes@google.com, riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, maxime.coquelin@stericsson.com,
-        loic.pallardy@stericsson.com, kamezawa.hiroyu@jp.fujitsu.com,
-        lenb@kernel.org, rjw@sisk.pl, gargankita@gmail.com,
-        paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org, wujianguo@huawei.com,
-        kmpark@infradead.org, thomas.abraham@linaro.org,
-        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 00/15][Sorted-buddy] mm: Memory Power Management
-References: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S967742Ab3DRROW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:14:22 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38362 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967186Ab3DRROV (ORCPT
+	<rfc822;linux-kernel@Vger.kernel.org>);
+	Thu, 18 Apr 2013 13:14:21 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@linaro.org>, Arnd Bergman <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] spi/s3c64xx: Check for errors in dmaengine prepare_transfer()
+Date: Thu, 18 Apr 2013 18:14:17 +0100
+Message-Id: <1366305257-20942-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2013 02:45 PM, Srivatsa S. Bhat wrote:
-> 2. Performance overhead is expected to be low: Since we retain the simplicity
->    of the algorithm in the page allocation path, page allocation can
->    potentially remain as fast as it would be without memory regions. The
->    overhead is pushed to the page-freeing paths which are not that critical.
+Don't silently ignore errors, report them.
 
-Numbers, please.  The problem with pushing the overhead to frees is that
-they, believe it or not, actually average out to the same as the number
-of allocs.  Think kernel compile, or a large dd.  Both of those churn
-through a lot of memory, and both do an awful lot of allocs _and_ frees.
- We need to know both the overhead on a system that does *no* memory
-power management, and the overhead on a system which is carved and
-actually using this code.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/spi/spi-s3c64xx.c |   26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
-> Kernbench results didn't show any noticeable performance degradation with
-> this patchset as compared to vanilla 3.9-rc5.
+diff --git a/drivers/spi/spi-s3c64xx.c b/drivers/spi/spi-s3c64xx.c
+index 6d6537d..5000586 100644
+--- a/drivers/spi/spi-s3c64xx.c
++++ b/drivers/spi/spi-s3c64xx.c
+@@ -421,6 +421,7 @@ static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
+ 	dma_filter_fn filter = sdd->cntrlr_info->filter;
+ 	struct device *dev = &sdd->pdev->dev;
+ 	dma_cap_mask_t mask;
++	int ret;
+ 
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
+@@ -428,11 +429,34 @@ static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
+ 	/* Acquire DMA channels */
+ 	sdd->rx_dma.ch = dma_request_slave_channel_compat(mask, filter,
+ 				(void*)sdd->rx_dma.dmach, dev, "rx");
++	if (!sdd->rx_dma.ch) {
++		dev_err(dev, "Failed to get RX DMA channel\n");
++		ret = -EBUSY;
++		goto out;
++	}
++
+ 	sdd->tx_dma.ch = dma_request_slave_channel_compat(mask, filter,
+ 				(void*)sdd->tx_dma.dmach, dev, "tx");
+-	pm_runtime_get_sync(&sdd->pdev->dev);
++	if (!sdd->tx_dma.ch) {
++		dev_err(dev, "Failed to get TX DMA channel\n");
++		ret = -EBUSY;
++		goto out_rx;
++	}
++
++	ret = pm_runtime_get_sync(&sdd->pdev->dev);
++	if (ret != 0) {
++		dev_err(dev, "Failed to enable device: %d\n", ret);
++		goto out_tx;
++	}
+ 
+ 	return 0;
++
++out_tx:
++	dma_release_channel(sdd->tx_dma.ch);
++out_rx:
++	dma_release_channel(sdd->rx_dma.ch);
++out:
++	return ret;
+ }
+ 
+ static int s3c64xx_spi_unprepare_transfer(struct spi_master *spi)
+-- 
+1.7.10.4
 
-Surely this code isn't magical and there's overhead _somewhere_, and
-such overhead can be quantified _somehow_.  Have you made an effort to
-find those cases, even with microbenchmarks?
-
-I still also want to see some hard numbers on:
-> However, memory consumes a significant amount of power, potentially upto
-> more than a third of total system power on server systems.
-and
-> It had been demonstrated on a Samsung Exynos board
-> (with 2 GB RAM) that upto 6 percent of total system power can be saved by
-> making the Linux kernel MM subsystem power-aware[4]. 
-
-That was *NOT* with this code, and it's nearing being two years old.
-What can *this* *patch* do?
-
-I think there are three scenarios to look at.  Let's say you have an 8GB
-system with 1GB regions:
-1. Normal unpatched kernel, booted with  mem=1G...8G (in 1GB increments
-   perhaps) running some benchmark which sees performance scale with
-   the amount of memory present in the system.
-2. Kernel patched with this set, running the same test, but with single
-   memory regions.
-3. Kernel patched with this set.  But, instead of using mem=, you run
-   it trying to evacuate equivalent amount of memory to the amounts you
-   removed using mem=.
-
-That will tell us both what the overhead is, and how effective it is.
-I'd much rather see actual numbers and a description of the test than
-some hand waving that it "didn't show any noticeable performance
-degradation".
-
-The amount of code here isn't huge.  But, it sucks that it's bloating
-the already quite plump page_alloc.c.
