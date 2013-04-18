@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965968Ab3DRGxw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 02:53:52 -0400
-Received: from ozlabs.org ([203.10.76.45]:38217 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965920Ab3DRGxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 02:53:51 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: PranavkumarSawargaonkar <pranavkumar@linaro.org>,
-        kvmarm@lists.cs.columbia.edu
-Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, linux-kernel@vger.kernel.org,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
-        Anup Patel <anup.patel@linaro.org>
-Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console devices.
-In-Reply-To: <1366264344-28025-1-git-send-email-pranavkumar@linaro.org>
-References: <1366264344-28025-1-git-send-email-pranavkumar@linaro.org>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Thu, 18 Apr 2013 16:21:47 +0930
-Message-ID: <87wqs02uws.fsf@rustcorp.com.au>
+	id S1755460Ab3DRHDc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 03:03:32 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:64724 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab3DRHDb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 03:03:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <BF64DFEC-CFE7-4A89-B251-8E9AF3E44642@holtmann.org>
+References: <1366236369-543-1-git-send-email-bzhao@marvell.com>
+	<1366236590.8217.64.camel@jlt4.sipsolutions.net>
+	<516F8F4B.1000504@lri.fr>
+	<BF64DFEC-CFE7-4A89-B251-8E9AF3E44642@holtmann.org>
+Date: Thu, 18 Apr 2013 00:03:30 -0700
+X-Google-Sender-Auth: LvzziqorD7-3p2gXO-3Ts8UjnDg
+Message-ID: <CAMcMvsiW5KQmZq9VgdNOOG+7y-ZWO1yCsv4BD7iFQrR+wcHQ3w@mail.gmail.com>
+Subject: Re: [PATCH] net-sysfs: Add entry for nl80211 interface type
+From: Paul Stewart <pstew@chromium.org>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Nicolas Cavallari <Nicolas.Cavallari@lri.fr>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Bing Zhao <bzhao@marvell.com>, linux-netdev@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PranavkumarSawargaonkar <pranavkumar@linaro.org> writes:
-> From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+The original reason to request this change was simple: to figure out
+what type of interface we are looking at, since now some wireless
+drivers can simultaneously create managed, p2p and ap interfaces.
+Knowing that, from a simple front-end (let's even say a shell script)
+we can decide what arguments to use with wpa_supplicant (or indeed if
+we want to start it on this interface).  wpa_supplicant, of course,
+knows how to manipulate the device further using nl80211.  I thought
+it was a bit onerous to force userspace all the way through nl80211
+just to get this trivial piece of information, but apparently this
+doesn't seem to be the common point of view.
+
+--
+Paul
+
+On Wed, Apr 17, 2013 at 11:43 PM, Marcel Holtmann <marcel@holtmann.org> wrote:
+> Hi Nicolas,
 >
-> This patch implements early printk support for virtio-mmio console devices without using any hypercalls.
-
-This makes some sense, though not sure that early console *read* makes
-much sense.  I can see the PCI version of this being useful as well.
-
-The spec definition for this will be interesting, because it can be used
-before the device is initialized (something which is generally
-verboten).
-
-Cheers,
-Rusty.
+>>>> Add a "wireless/nl80211_iftype" entry in the net device sysfs
+>>>> file structure to indicate the mode of the wireless device so
+>>>> it can be discovered easily from userspace.
+>>>
+>>> What's wrong with "iw dev", i.e. netlink/nl80211?
+>>
+>> "Do NOT screenscrape this tool, we don't consider its output stable."
+>>
+>> So if you are in a shell script, you're basically screwed.
+>
+> if you are in a shell script, you are screwed no matter what. So what is your point?
+>
+> Regards
+>
+> Marcel
+>
+>
