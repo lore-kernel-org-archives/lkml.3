@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967746Ab3DRKMk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 06:12:40 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:41393 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967726Ab3DRKMf (ORCPT
+	id S968079Ab3DRKVc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 06:21:32 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50485 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967733Ab3DRKMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 06:12:35 -0400
+	Thu, 18 Apr 2013 06:12:39 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>,
         Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
         Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 01/32] dmaengine: ste_dma40: Assign memcpy channels in the driver
-Date: Thu, 18 Apr 2013 11:11:43 +0100
-Message-Id: <1366279934-30761-2-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 03/32] dmaengine: ste_dma40: Use the BIT macro to replace ugly '(1 << x)'s
+Date: Thu, 18 Apr 2013 11:11:45 +0100
+Message-Id: <1366279934-30761-4-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
 References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
@@ -23,10 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The channels reserved for memcpy are the same for all currently
-supported platforms. With this in mind, we can ease the platform
-data passing requirement by moving these assignments out from
-platform code and place them directly into the driver.
+The aim is to make the code that little more readable.
 
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>
@@ -35,111 +32,117 @@ Cc: Rabin Vincent <rabin@rab.in>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/mach-ux500/devices-db8500.c        |   12 ------------
- drivers/dma/ste_dma40.c                     |   12 +++++++-----
- include/linux/platform_data/dma-ste-dma40.h |    4 ----
- 3 files changed, 7 insertions(+), 21 deletions(-)
+ drivers/dma/ste_dma40.c |   34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
-index afa5b04..9b09683 100644
---- a/arch/arm/mach-ux500/devices-db8500.c
-+++ b/arch/arm/mach-ux500/devices-db8500.c
-@@ -146,22 +146,10 @@ static const dma_addr_t dma40_rx_map[DB8500_DMA_NR_DEV] = {
- 	[DB8500_DMA_DEV48_CAC1_RX] = U8500_CRYP1_BASE + CRYP1_RX_REG_OFFSET,
- };
- 
--/* Reserved event lines for memcpy only */
--static int dma40_memcpy_event[] = {
--	DB8500_DMA_MEMCPY_TX_0,
--	DB8500_DMA_MEMCPY_TX_1,
--	DB8500_DMA_MEMCPY_TX_2,
--	DB8500_DMA_MEMCPY_TX_3,
--	DB8500_DMA_MEMCPY_TX_4,
--	DB8500_DMA_MEMCPY_TX_5,
--};
--
- static struct stedma40_platform_data dma40_plat_data = {
- 	.dev_len = DB8500_DMA_NR_DEV,
- 	.dev_rx = dma40_rx_map,
- 	.dev_tx = dma40_tx_map,
--	.memcpy = dma40_memcpy_event,
--	.memcpy_len = ARRAY_SIZE(dma40_memcpy_event),
- 	.memcpy_conf_phy = &dma40_memcpy_conf_phy,
- 	.memcpy_conf_log = &dma40_memcpy_conf_log,
- 	.disabled_channels = {-1},
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 1734fee..12de79e 100644
+index 3b83dee..121c46b 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -55,6 +55,9 @@
+@@ -49,9 +49,9 @@
+ #define MAX_LCLA_ALLOC_ATTEMPTS 256
+ 
+ /* Bit markings for allocation map */
+-#define D40_ALLOC_FREE		(1 << 31)
+-#define D40_ALLOC_PHY		(1 << 30)
+-#define D40_ALLOC_LOG_FREE	0
++#define D40_ALLOC_FREE		BIT(31)
++#define D40_ALLOC_PHY		BIT(30)
++#define D40_ALLOC_LOG_FREE	BIT(0)
  
  #define MAX(a, b) (((a) < (b)) ? (b) : (a))
  
-+/* Reserved event lines for memcpy only. */
-+static int dma40_memcpy_channels[] = { 56, 57, 58, 59, 60 };
-+
- /**
-  * enum 40_command - The different commands and/or statuses.
-  *
-@@ -2014,8 +2017,7 @@ static int d40_config_memcpy(struct d40_chan *d40c)
- 	if (dma_has_cap(DMA_MEMCPY, cap) && !dma_has_cap(DMA_SLAVE, cap)) {
- 		d40c->dma_cfg = *d40c->base->plat_data->memcpy_conf_log;
- 		d40c->dma_cfg.src_dev_type = STEDMA40_DEV_SRC_MEMORY;
--		d40c->dma_cfg.dst_dev_type = d40c->base->plat_data->
--			memcpy[d40c->chan.chan_id];
-+		d40c->dma_cfg.dst_dev_type = dma40_memcpy_channels[d40c->chan.chan_id];
+@@ -993,12 +993,12 @@ static int d40_size_2_dmalen(int size, u32 data_width1, u32 data_width2)
+ 	int dmalen;
+ 	u32 max_w = max(data_width1, data_width2);
+ 	u32 min_w = min(data_width1, data_width2);
+-	u32 seg_max = ALIGN(STEDMA40_MAX_SEG_SIZE << min_w, 1 << max_w);
++	u32 seg_max = ALIGN(STEDMA40_MAX_SEG_SIZE << min_w, BIT(max_w));
  
- 	} else if (dma_has_cap(DMA_MEMCPY, cap) &&
- 		   dma_has_cap(DMA_SLAVE, cap)) {
-@@ -2927,7 +2929,7 @@ static int __init d40_dmaengine_init(struct d40_base *base,
+ 	if (seg_max > STEDMA40_MAX_SEG_SIZE)
+-		seg_max -= (1 << max_w);
++		seg_max -= BIT(max_w);
+ 
+-	if (!IS_ALIGNED(size, 1 << max_w))
++	if (!IS_ALIGNED(size, BIT(max_w)))
+ 		return -EINVAL;
+ 
+ 	if (size <= seg_max)
+@@ -1448,7 +1448,7 @@ static u32 d40_residue(struct d40_chan *d40c)
+ 			  >> D40_SREG_ELEM_PHY_ECNT_POS;
  	}
  
- 	d40_chan_init(base, &base->dma_memcpy, base->log_chans,
--		      base->num_log_chans, base->plat_data->memcpy_len);
-+		      base->num_log_chans, ARRAY_SIZE(dma40_memcpy_channels));
+-	return num_elt * (1 << d40c->dma_cfg.dst_info.data_width);
++	return num_elt * BIT(d40c->dma_cfg.dst_info.data_width);
+ }
  
- 	dma_cap_zero(base->dma_memcpy.cap_mask);
- 	dma_cap_set(DMA_MEMCPY, base->dma_memcpy.cap_mask);
-@@ -3215,7 +3217,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
- 			num_log_chans++;
+ static bool d40_tx_is_linked(struct d40_chan *d40c)
+@@ -1722,7 +1722,7 @@ static irqreturn_t d40_handle_interrupt(int irq, void *data)
+ 		}
  
- 	base = kzalloc(ALIGN(sizeof(struct d40_base), 4) +
--		       (num_phy_chans + num_log_chans + plat_data->memcpy_len) *
-+		       (num_phy_chans + num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) *
- 		       sizeof(struct d40_chan), GFP_KERNEL);
+ 		/* ACK interrupt */
+-		writel(1 << idx, base->virtbase + il[row].clr);
++		writel(BIT(idx), base->virtbase + il[row].clr);
  
- 	if (base == NULL) {
-@@ -3276,7 +3278,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
- 	if (!base->lookup_phy_chans)
- 		goto failure;
+ 		spin_lock(&d40c->lock);
  
--	if (num_log_chans + plat_data->memcpy_len) {
-+	if (num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) {
+@@ -1804,9 +1804,9 @@ static int d40_validate_conf(struct d40_chan *d40c,
+ 	}
+ 
+ 	if (d40_psize_2_burst_size(is_log, conf->src_info.psize) *
+-	    (1 << conf->src_info.data_width) !=
++	    BIT(conf->src_info.data_width) !=
+ 	    d40_psize_2_burst_size(is_log, conf->dst_info.psize) *
+-	    (1 << conf->dst_info.data_width)) {
++	    BIT(conf->dst_info.data_width)) {
  		/*
- 		 * The max number of logical channels are event lines for all
- 		 * src devices and dst devices
-diff --git a/include/linux/platform_data/dma-ste-dma40.h b/include/linux/platform_data/dma-ste-dma40.h
-index 4b78101..a808784 100644
---- a/include/linux/platform_data/dma-ste-dma40.h
-+++ b/include/linux/platform_data/dma-ste-dma40.h
-@@ -141,8 +141,6 @@ struct stedma40_chan_cfg {
-  * @dev_len: length of dev_tx and dev_rx
-  * @dev_tx: mapping between destination event line and io address
-  * @dev_rx: mapping between source event line and io address
-- * @memcpy: list of memcpy event lines
-- * @memcpy_len: length of memcpy
-  * @memcpy_conf_phy: default configuration of physical channel memcpy
-  * @memcpy_conf_log: default configuration of logical channel memcpy
-  * @disabled_channels: A vector, ending with -1, that marks physical channels
-@@ -162,8 +160,6 @@ struct stedma40_platform_data {
- 	u32				 dev_len;
- 	const dma_addr_t		*dev_tx;
- 	const dma_addr_t		*dev_rx;
--	int				*memcpy;
--	u32				 memcpy_len;
- 	struct stedma40_chan_cfg	*memcpy_conf_phy;
- 	struct stedma40_chan_cfg	*memcpy_conf_log;
- 	int				 disabled_channels[STEDMA40_MAX_PHYS];
+ 		 * The DMAC hardware only supports
+ 		 * src (burst x width) == dst (burst x width)
+@@ -1848,8 +1848,8 @@ static bool d40_alloc_mask_set(struct d40_phy_res *phy,
+ 		if (phy->allocated_src == D40_ALLOC_FREE)
+ 			phy->allocated_src = D40_ALLOC_LOG_FREE;
+ 
+-		if (!(phy->allocated_src & (1 << log_event_line))) {
+-			phy->allocated_src |= 1 << log_event_line;
++		if (!(phy->allocated_src & BIT(log_event_line))) {
++			phy->allocated_src |= BIT(log_event_line);
+ 			goto found;
+ 		} else
+ 			goto not_found;
+@@ -1860,8 +1860,8 @@ static bool d40_alloc_mask_set(struct d40_phy_res *phy,
+ 		if (phy->allocated_dst == D40_ALLOC_FREE)
+ 			phy->allocated_dst = D40_ALLOC_LOG_FREE;
+ 
+-		if (!(phy->allocated_dst & (1 << log_event_line))) {
+-			phy->allocated_dst |= 1 << log_event_line;
++		if (!(phy->allocated_dst & BIT(log_event_line))) {
++			phy->allocated_dst |= BIT(log_event_line);
+ 			goto found;
+ 		} else
+ 			goto not_found;
+@@ -1891,11 +1891,11 @@ static bool d40_alloc_mask_free(struct d40_phy_res *phy, bool is_src,
+ 
+ 	/* Logical channel */
+ 	if (is_src) {
+-		phy->allocated_src &= ~(1 << log_event_line);
++		phy->allocated_src &= ~BIT(log_event_line);
+ 		if (phy->allocated_src == D40_ALLOC_LOG_FREE)
+ 			phy->allocated_src = D40_ALLOC_FREE;
+ 	} else {
+-		phy->allocated_dst &= ~(1 << log_event_line);
++		phy->allocated_dst &= ~BIT(log_event_line);
+ 		if (phy->allocated_dst == D40_ALLOC_LOG_FREE)
+ 			phy->allocated_dst = D40_ALLOC_FREE;
+ 	}
+@@ -2394,7 +2394,7 @@ static void __d40_set_prio_rt(struct d40_chan *d40c, int dev_type, bool src)
+ 	u32 rtreg;
+ 	u32 event = D40_TYPE_TO_EVENT(dev_type);
+ 	u32 group = D40_TYPE_TO_GROUP(dev_type);
+-	u32 bit = 1 << event;
++	u32 bit = BIT(event);
+ 	u32 prioreg;
+ 	struct d40_gen_dmac *dmac = &d40c->base->gen_dmac;
+ 
 -- 
 1.7.10.4
 
