@@ -1,145 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967289Ab3DRMQo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 08:16:44 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:40721 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966596Ab3DRMQn (ORCPT
+	id S967334Ab3DRMV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 08:21:28 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29541 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967265Ab3DRMV1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 08:16:43 -0400
-Date: Thu, 18 Apr 2013 13:16:37 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Per Forlin <per.forlin@stericsson.com>, Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 03/32 v2] dmaengine: ste_dma40: Use the BIT macro to replace
- ugly '(1 << x)'s
-Message-ID: <20130418121637.GG27903@gmail.com>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
- <1366279934-30761-4-git-send-email-lee.jones@linaro.org>
+	Thu, 18 Apr 2013 08:21:27 -0400
+Date: Thu, 18 Apr 2013 08:21:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau Monne <roger.pau@citrix.com>
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org
+Subject: Re: [PATCH v2 7/7] xen-block: implement indirect descriptors
+Message-ID: <20130418122119.GB29883@phenom.dumpdata.com>
+References: <1366222741-39902-1-git-send-email-roger.pau@citrix.com>
+ <1366222741-39902-8-git-send-email-roger.pau@citrix.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1366279934-30761-4-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1366222741-39902-8-git-send-email-roger.pau@citrix.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The aim is to make the code that little more readable.
+On Wed, Apr 17, 2013 at 08:19:01PM +0200, Roger Pau Monne wrote:
+> Indirect descriptors introduce a new block operation
+> (BLKIF_OP_INDIRECT) that passes grant references instead of segments
+> in the request. This grant references are filled with arrays of
+> blkif_request_segment_aligned, this way we can send more segments in a
+> request.
+> 
+> The proposed implementation sets the maximum number of indirect grefs
+> (frames filled with blkif_request_segment_aligned) to 256 in the
+> backend and 32 in the frontend. The value in the frontend has been
+> chosen experimentally, and the backend value has been set to a sane
+> value that allows expanding the maximum number of indirect descriptors
+> in the frontend if needed.
+> 
+> The migration code has changed from the previous implementation, in
+> which we simply remapped the segments on the shared ring. Now the
+> maximum number of segments allowed in a request can change depending
+> on the backend, so we have to requeue all the requests in the ring and
+> in the queue and split the bios in them if they are bigger than the
+> new maximum number of segments.
+> 
+> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: xen-devel@lists.xen.org
+> ---
+> Changes since v1:
+>  * Added padding to make the indirect request 64bit aligned.
+>  * Added some BUGs.
+>  * Added comments.
+>  * Fixed number of indirect pages in blkif_get_x86_{32/64}_req.
+>  * Added description about the indirect operation in blkif.h
 
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>
-Cc: Per Forlin <per.forlin@stericsson.com>
-Cc: Rabin Vincent <rabin@rab.in>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Good. I only have three comments - and if you want to handle them later
+as seperate patches that is OK too.
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 3b83dee..ddf5ff1 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -49,9 +49,9 @@
- #define MAX_LCLA_ALLOC_ATTEMPTS 256
- 
- /* Bit markings for allocation map */
--#define D40_ALLOC_FREE		(1 << 31)
--#define D40_ALLOC_PHY		(1 << 30)
--#define D40_ALLOC_LOG_FREE	0
-+#define D40_ALLOC_FREE		BIT(31)
-+#define D40_ALLOC_PHY		BIT(30)
-+#define D40_ALLOC_LOG_FREE	BIT(0)
- 
- #define MAX(a, b) (((a) < (b)) ? (b) : (a))
- 
-@@ -993,12 +993,12 @@ static int d40_size_2_dmalen(int size, u32 data_width1, u32 data_width2)
- 	int dmalen;
- 	u32 max_w = max(data_width1, data_width2);
- 	u32 min_w = min(data_width1, data_width2);
--	u32 seg_max = ALIGN(STEDMA40_MAX_SEG_SIZE << min_w, 1 << max_w);
-+	u32 seg_max = ALIGN(STEDMA40_MAX_SEG_SIZE << min_w, BIT(max_w));
- 
- 	if (seg_max > STEDMA40_MAX_SEG_SIZE)
--		seg_max -= (1 << max_w);
-+		seg_max -= BIT(max_w);
- 
--	if (!IS_ALIGNED(size, 1 << max_w))
-+	if (!IS_ALIGNED(size, BIT(max_w)))
- 		return -EINVAL;
- 
- 	if (size <= seg_max)
-@@ -1448,7 +1448,7 @@ static u32 d40_residue(struct d40_chan *d40c)
- 			  >> D40_SREG_ELEM_PHY_ECNT_POS;
- 	}
- 
--	return num_elt * (1 << d40c->dma_cfg.dst_info.data_width);
-+	return num_elt << d40c->dma_cfg.dst_info.data_width;
- }
- 
- static bool d40_tx_is_linked(struct d40_chan *d40c)
-@@ -1722,7 +1722,7 @@ static irqreturn_t d40_handle_interrupt(int irq, void *data)
- 		}
- 
- 		/* ACK interrupt */
--		writel(1 << idx, base->virtbase + il[row].clr);
-+		writel(BIT(idx), base->virtbase + il[row].clr);
- 
- 		spin_lock(&d40c->lock);
- 
-@@ -1804,9 +1804,9 @@ static int d40_validate_conf(struct d40_chan *d40c,
- 	}
- 
- 	if (d40_psize_2_burst_size(is_log, conf->src_info.psize) *
--	    (1 << conf->src_info.data_width) !=
-+	    BIT(conf->src_info.data_width) !=
- 	    d40_psize_2_burst_size(is_log, conf->dst_info.psize) *
--	    (1 << conf->dst_info.data_width)) {
-+	    BIT(conf->dst_info.data_width)) {
- 		/*
- 		 * The DMAC hardware only supports
- 		 * src (burst x width) == dst (burst x width)
-@@ -1848,8 +1848,8 @@ static bool d40_alloc_mask_set(struct d40_phy_res *phy,
- 		if (phy->allocated_src == D40_ALLOC_FREE)
- 			phy->allocated_src = D40_ALLOC_LOG_FREE;
- 
--		if (!(phy->allocated_src & (1 << log_event_line))) {
--			phy->allocated_src |= 1 << log_event_line;
-+		if (!(phy->allocated_src & BIT(log_event_line))) {
-+			phy->allocated_src |= BIT(log_event_line);
- 			goto found;
- 		} else
- 			goto not_found;
-@@ -1860,8 +1860,8 @@ static bool d40_alloc_mask_set(struct d40_phy_res *phy,
- 		if (phy->allocated_dst == D40_ALLOC_FREE)
- 			phy->allocated_dst = D40_ALLOC_LOG_FREE;
- 
--		if (!(phy->allocated_dst & (1 << log_event_line))) {
--			phy->allocated_dst |= 1 << log_event_line;
-+		if (!(phy->allocated_dst & BIT(log_event_line))) {
-+			phy->allocated_dst |= BIT(log_event_line);
- 			goto found;
- 		} else
- 			goto not_found;
-@@ -1891,11 +1891,11 @@ static bool d40_alloc_mask_free(struct d40_phy_res *phy, bool is_src,
- 
- 	/* Logical channel */
- 	if (is_src) {
--		phy->allocated_src &= ~(1 << log_event_line);
-+		phy->allocated_src &= ~BIT(log_event_line);
- 		if (phy->allocated_src == D40_ALLOC_LOG_FREE)
- 			phy->allocated_src = D40_ALLOC_FREE;
- 	} else {
--		phy->allocated_dst &= ~(1 << log_event_line);
-+		phy->allocated_dst &= ~BIT(log_event_line);
- 		if (phy->allocated_dst == D40_ALLOC_LOG_FREE)
- 			phy->allocated_dst = D40_ALLOC_FREE;
- 	}
-@@ -2394,7 +2394,7 @@ static void __d40_set_prio_rt(struct d40_chan *d40c, int dev_type, bool src)
- 	u32 rtreg;
- 	u32 event = D40_TYPE_TO_EVENT(dev_type);
- 	u32 group = D40_TYPE_TO_GROUP(dev_type);
--	u32 bit = 1 << event;
-+	u32 bit = BIT(event);
- 	u32 prioreg;
- 	struct d40_gen_dmac *dmac = &d40c->base->gen_dmac;
+They are:
+
+> --- a/drivers/block/xen-blkback/xenbus.c
+> +++ b/drivers/block/xen-blkback/xenbus.c
+> @@ -107,6 +107,8 @@ static struct xen_blkif *xen_blkif_alloc(domid_t domid)
+>  	struct xen_blkif *blkif;
+>  	int i;
+>  
+> +	BUILD_BUG_ON(MAX_INDIRECT_PAGES > BLKIF_MAX_INDIRECT_PAGES_PER_REQUEST);
+> +
+>  	blkif = kmem_cache_zalloc(xen_blkif_cachep, GFP_KERNEL);
+>  	if (!blkif)
+>  		return ERR_PTR(-ENOMEM);
+> @@ -710,6 +712,12 @@ again:
+>  		goto abort;
+>  	}
+>  
+> +	err = xenbus_printf(xbt, dev->nodename, "feature-max-indirect-segments", "%u",
+> +	                    MAX_INDIRECT_SEGMENTS);
+> +	if (err)
+> +		xenbus_dev_fatal(dev, err, "writing %s/feature-max-indirect-segments",
+> +				 dev->nodename);
+
+Not really fatal. We can continue on and just not use that feature.
+
+.. snip..
+> @@ -1483,6 +1799,13 @@ static void blkfront_connect(struct blkfront_info *info)
+>  	else
+>  		info->feature_persistent = persistent;
+>  
+> +	err = blkfront_setup_indirect(info);
+> +	if (err) {
+> +		xenbus_dev_fatal(info->xbdev, err, "setup_indirect at %s",
+> +				 info->xbdev->otherend);
+> +		return;
+
+I thought we decided not to make it fatal?
+
+> +	}
+> +
+>  	err = xlvbd_alloc_gendisk(sectors, info, binfo, sector_size);
+>  	if (err) {
+>  		xenbus_dev_fatal(info->xbdev, err, "xlvbd_add at %s",
+> diff --git a/include/xen/interface/io/blkif.h b/include/xen/interface/io/blkif.h
+> index ffd4652..7901e58 100644
+> --- a/include/xen/interface/io/blkif.h
+> +++ b/include/xen/interface/io/blkif.h
+> @@ -103,12 +103,41 @@ typedef uint64_t blkif_sector_t;
+>  #define BLKIF_OP_DISCARD           5
+>  
+>  /*
+> + * Recognized if "feature-max-indirect-segments" in present in the backend
+> + * xenbus info. The "feature-max-indirect-segments" node contains the maximum
+> + * number of segments allowed by the backend. If the node is present,
+                                               ^-'per request'.
+
+> + * the frontend might use blkif_request_indirect in order to issue requests
+                                                   ^ structs
+> + * with more than BLKIF_MAX_SEGMENTS_PER_REQUEST. The maximum number
+                                                   ^(11)
+
+> + * of indirect segments is fixed by the backend, but the frontend can issue
+> + * requests with any number of indirect segments as long as it's inferior
+                                                                    ^^- less 
+> + * than the number provided by the backend. The indirect_grefs field in
+> + * blkif_request_indirect should be filled by the frontend with the
+> + * grant references of the pages that are holding the indirect segments.
+> + * This pages are filled with an array of blkif_request_segment_aligned
+> + * that hold the information about the segments.
+
+You should probably explain where the counter for the amount of indirect_grefs
+that are going to be used is computed.
+
+> + *
+> + * If a backend does not recognize BLKIF_OP_INDIRECT, it should *not*
+> + * create the "feature-max-indirect-segments" node!
+> + */
+> +#define BLKIF_OP_INDIRECT          6
