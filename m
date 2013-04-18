@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967879Ab3DRKNN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 06:13:13 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:52996 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967796Ab3DRKNF (ORCPT
+	id S1030273Ab3DRKRP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 06:17:15 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:36261 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967868Ab3DRKNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 06:13:05 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 18/32] dmaengine: ste_dma40: Don't configure runtime configurable setup during allocate
-Date: Thu, 18 Apr 2013 11:12:00 +0100
-Message-Id: <1366279934-30761-19-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+	Thu, 18 Apr 2013 06:13:12 -0400
+Message-ID: <516FC732.9080109@atmel.com>
+Date: Thu, 18 Apr 2013 12:13:06 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: <dgilbert@interlog.com>, <robertcnelson@gmail.com>
+CC: <jhovold@gmail.com>, <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        "Sergio Tanzilli" <tanzilli@acmesystems.it>
+Subject: Re: [PATCH v3] ARM: at91: add Acme Systems Aria G25 board
+References: <20130402184947.GA8015@quad.lixom.net> <1365090153-1807-1-git-send-email-nicolas.ferre@atmel.com> <515DB248.6070105@interlog.com> <516FB671.2030706@atmel.com>
+In-Reply-To: <516FB671.2030706@atmel.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the dmaengine API, allocating and configuring a channel are two
-separate actions. Here we're removing logical channel configuration from
-the channel allocating routines.
+On 04/18/2013 11:01 AM, Nicolas Ferre :
+> On 04/04/2013 07:03 PM, Douglas Gilbert :
 
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Dan Williams <djbw@fb.com>
-Cc: Per Forlin <per.forlin@stericsson.com>
-Cc: Rabin Vincent <rabin@rab.in>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/dma/ste_dma40.c |    3 ---
- 1 file changed, 3 deletions(-)
+[..]
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index ff41972..04cc75f 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -2441,9 +2441,6 @@ static int d40_alloc_chan_resources(struct dma_chan *chan)
- 	d40_set_prio_realtime(d40c);
- 
- 	if (chan_is_logical(d40c)) {
--		d40_log_cfg(&d40c->dma_cfg,
--			    &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
--
- 		if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM)
- 			d40c->lcpa = d40c->base->lcpa_base +
- 				d40c->dma_cfg.src_dev_type * D40_LCPA_CHAN_SIZE;
+>> The lack of use of uart1 is for my own, private reasons.
+>> I think it would be more generally useful to show uart1's
+>> definition and disable it as shown in the attached patch
+>> fragment.
+> 
+> Well, if uart1 is available on Aria board, I should enable it! If you do
+> not want it on your own design, you must modify the .dts yourself. So I
+> plan to have an "okay" status on it (and move the definition itself to
+> the generic .dtsi).
+
+Update: I have just checked the ACME website and both UART0 and UART1
+pins are expected to be used as GPIOs. So maybe we should mark them as
+"disabled":
+
++                       /*
++                        * UART1 pins are marked as GPIO on Aria
++                        * documentation: change to "okay" if you need
++                        * an additional serial port
++                        */
++                       uart0: serial@f8040000 {
++                               status = "disabled";
++                       };
++
++                       uart1: serial@f8044000 {
++                               status = "disabled";
++                       };
+
+(uart0 definition moved to at91sam9x5.dtsi)
+What do you think?
+
+[..]
+
+Bye,
 -- 
-1.7.10.4
-
+Nicolas Ferre
