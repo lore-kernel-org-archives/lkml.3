@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967593Ab3DRJjX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:39:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40022 "EHLO
+	id S967627Ab3DRJjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:39:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40013 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756271Ab3DRJR1 (ORCPT
+	with ESMTP id S1756234Ab3DRJR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:27 -0400
+	Thu, 18 Apr 2013 05:17:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jakub Kicinski <jakub.kicinski@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Mengdong Lin <mengdong.lin@intel.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 10/72] ixgbe: fix registration order of driver and DCA nofitication
-Date: Thu, 18 Apr 2013 10:15:55 +0100
-Message-Id: <1366276617-3553-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 08/72] ALSA: hda - bug fix on return value when getting HDMI ELD info
+Date: Thu, 18 Apr 2013 10:15:53 +0100
+Message-Id: <1366276617-3553-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -29,47 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jakub Kicinski <jakub.kicinski@intel.com>
+From: Mengdong Lin <mengdong.lin@intel.com>
 
-commit f01fc1a82c2ee68726b400fadb156bd623b5f2f1 upstream.
+commit 2ef5692efad330b67a234e2c49edad38538751e7 upstream.
 
-ixgbe_notify_dca cannot be called before driver registration
-because it expects driver's klist_devices to be allocated and
-initialized. While on it make sure debugfs files are removed
-when registration fails.
+In function snd_hdmi_get_eld(), the variable 'ret' should be initialized to 0.
+Otherwise it will be returned uninitialized as non-zero after ELD info is got
+successfully. Thus hdmi_present_sense() will always assume ELD info is invalid
+by mistake, and /proc file system cannot show the proper ELD info.
 
-Signed-off-by: Jakub Kicinski <jakub.kicinski@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.5: removed debugfs code ]
+Signed-off-by: Mengdong Lin <mengdong.lin@intel.com>
+Acked-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ sound/pci/hda/hda_eld.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 7c0878f..ab8d882 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -7662,12 +7662,15 @@ static int __init ixgbe_init_module(void)
- 	pr_info("%s - version %s\n", ixgbe_driver_string, ixgbe_driver_version);
- 	pr_info("%s\n", ixgbe_copyright);
+diff --git a/sound/pci/hda/hda_eld.c b/sound/pci/hda/hda_eld.c
+index 4c054f4..86f6468 100644
+--- a/sound/pci/hda/hda_eld.c
++++ b/sound/pci/hda/hda_eld.c
+@@ -322,7 +322,7 @@ int snd_hdmi_get_eld(struct hdmi_eld *eld,
+ 		     struct hda_codec *codec, hda_nid_t nid)
+ {
+ 	int i;
+-	int ret;
++	int ret = 0;
+ 	int size;
+ 	unsigned char *buf;
  
-+	ret = pci_register_driver(&ixgbe_driver);
-+	if (ret)
-+		return ret;
-+
- #ifdef CONFIG_IXGBE_DCA
- 	dca_register_notify(&dca_notifier);
- #endif
- 
--	ret = pci_register_driver(&ixgbe_driver);
--	return ret;
-+	return 0;
- }
- 
- module_init(ixgbe_init_module);
 -- 
 1.8.1.2
 
