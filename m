@@ -1,122 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967160Ab3DROfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 10:35:47 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:35686 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965239Ab3DROfq (ORCPT
+	id S967131Ab3DROm6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 10:42:58 -0400
+Received: from ihemail2.lucent.com ([135.245.0.35]:47126 "EHLO
+	ihemail2.lucent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966753Ab3DROm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 10:35:46 -0400
-Message-ID: <1366295000.3824.47.camel@misato.fc.hp.com>
-Subject: Re: [Bug fix PATCH v4] Reusing a resource structure allocated by
- bootmem
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org, linuxram@us.ibm.com, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Thu, 18 Apr 2013 08:23:20 -0600
-In-Reply-To: <516FB07C.9010603@jp.fujitsu.com>
-References: <516FB07C.9010603@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Apr 2013 10:42:56 -0400
+Date: Thu, 18 Apr 2013 09:42:46 -0500 (CDT)
+From: Ilija Hadzic <ihadzic@research.bell-labs.com>
+X-X-Sender: ihadzic@umail
+To: David Herrmann <dh.herrmann@gmail.com>
+cc: Byron Stanoszek <gandalf@winds.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: Standalone DRM application
+In-Reply-To: <CANq1E4RGD+8QNAin+A-MZWAiqhLLvH+zG+gfhi7Vd6bYOuV75A@mail.gmail.com>
+Message-ID: <Pine.GSO.4.64.1304180853530.9152@umail>
+References: <alpine.LNX.2.00.1304171605010.19898@winds.org>
+ <CANq1E4RGD+8QNAin+A-MZWAiqhLLvH+zG+gfhi7Vd6bYOuV75A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-18 at 17:36 +0900, Yasuaki Ishimatsu wrote:
-> When hot removing memory presented at boot time, following messages are shown:
- :
-> diff --git a/kernel/resource.c b/kernel/resource.c
-> index 4aef886..637e8d2 100644
-> --- a/kernel/resource.c
-> +++ b/kernel/resource.c
-> @@ -21,6 +21,7 @@
->  #include <linux/seq_file.h>
->  #include <linux/device.h>
->  #include <linux/pfn.h>
-> +#include <linux/mm.h>
->  #include <asm/io.h>
->  
-> 
-> @@ -50,6 +51,16 @@ struct resource_constraint {
->  
->  static DEFINE_RWLOCK(resource_lock);
->  
-> +/*
-> + * For memory hotplug, there is no way to free resource entries allocated
-> + * by boot mem after the system is up. So for reusing the resource entry
-> + * we need to remember the resource.
-> + */
-> +struct resource bootmem_resource = {
-> +	.sibling = NULL,
-> +};
-
-This should be a pointer of struct resource and declared as static, such
-as:
-
-static struct resource *bootmem_resource_free;
-
-> +static DEFINE_SPINLOCK(bootmem_resource_lock);
-> +
->  static void *r_next(struct seq_file *m, void *v, loff_t *pos)
->  {
->  	struct resource *p = v;
-> @@ -151,6 +162,39 @@ __initcall(ioresources_init);
->  
->  #endif /* CONFIG_PROC_FS */
->  
-> +static void free_resource(struct resource *res)
-> +{
-> +	if (!res)
-> +		return;
-> +
-> +	if (PageSlab(virt_to_head_page(res))) {
-> +		spin_lock(&bootmem_resource_lock);
-> +		res->sibling = bootmem_resource.sibling;
-> +		bootmem_resource.sibling = res;
-> +		spin_unlock(&bootmem_resource_lock);
-> +	} else {
-> +		kfree(res);
-> +	}
-> +}
-
-I second with Johannes.
-
-> +static struct resource *get_resource(gfp_t flags)
-> +{
-> +	struct resource *res = NULL;
-> +
-> +	spin_lock(&bootmem_resource_lock);
-> +	if (bootmem_resource.sibling) {
-> +		res = bootmem_resource.sibling;
-> +		bootmem_resource.sibling = res->sibling;
-> +		memset(res, 0, sizeof(struct resource));
-> +	}
-> +	spin_unlock(&bootmem_resource_lock);
-
-I prefer to keep memset() outside of the spin lock.
-
-spin_lock(&bootmem_resource_lock);
-if (..) {
-	:
-	spin_unlock(&bootmem_resource_lock);
-	memset(res, 0, sizeof(struct resource));
-} else {
-	spin_unlock(&bootmem_resource_lock);
-	res = kzalloc(sizeof(struct resource), flags);
-}
-
-Thanks,
--Toshi
-
-> +
-> +	if (!res)
-> +		res = kzalloc(sizeof(struct resource), flags);
-> +
-> +	return res;
-> +}
-> +
 
 
+On Thu, 18 Apr 2013, David Herrmann wrote:
+
+> Hi
+>
+> On Wed, Apr 17, 2013 at 11:05 PM, Byron Stanoszek <gandalf@winds.org> wrote:
+>> David,
+>>
+>> I'm developing a small application that uses libdrm (DRM ioctls) to change
+>> the
+>> resolution of a single graphics display and show a framebuffer. I've run
+>> into
+>> two problems with this implementation that I'm hoping you can address.
+>>
+>>
+>> 1. Each application is its own process, which is designed to control 1
+>> graphics
+>> display. This is unlike X, for instance, which could be configured to grab
+>> all
+>> of the displays in the system at once.
+>>
+>> Depending on our stackup, there can be as many as 4 displays connected to a
+>> single graphics card. One process could open /dev/dri/card0 and call
+>> drmModeSetCrtc() to initialize one of its displays to the requested
+>> resolution.
+>> However, whenever a second process calls drmModeSetCrtc() to control a
+>> second
+>> display on the same card, it gets -EPERM back from the ioctl.
+>>
+>> I've traced this down to the following line in
+>> linux/drivers/gpu/drm/drm_drv.c:
+>>
+>> DRM_IOCTL_DEF(DRM_IOCTL_MODE_SETCRTC, drm_mode_setcrtc,
+>> DRM_MASTER|DRM_CONTROL_ALLOW|DRM_UNLOCKED),
+>>
+>> If I remove the DRM_MASTER flag, then my application behaves correctly, and
+>> 4
+>> separate processes can then control each individual display on the card
+>> without
+>> issue.
+>>
+>> My question is, is there any real benefit to restricting drm_mode_setcrtc()
+>> with DRM_MASTER, or can we lose this flag in order to support
+>> one-process-per-
+>> display programs like the above?
+>
+> Only one open-file can be DRM-Master. And only DRM-Master is allowed
+> to perform mode-setting. This is to prevent render-clients (like
+> OpenGL clients) to perform mode-setting, which should be restricted to
+> the compositor/...
+>
+> In your scenario, you should share a single open-file between the
+> processes by passing the FDs to each. Or do all of that in a single
+> process. There is no way to split CRTCs/connectors between different
+> nodes or have multiple DRM-Masters on a single node at once. (There is
+> work going on to allow this, but it will take a while...)
+>
+
+If running a custom-patched kernel is acceptable (i.e. custom-built, 
+embedded system or the like), then a set of patches that I sent about a 
+year ago [1] will probably do the job. The problem is that these patches 
+are apparently not going upstream because there was little interest and 
+there were a couple of arguments against them [2]. Originally, it's the 
+work that Dave Airlie started but abandoned. I finished it off and tried 
+to have it included upstream but it didn't happen.
+
+I have an application that is similar to what is described here and I am 
+using these patches to make it work. Essentially, what you do is call a 
+small userspace utility (also included with the patches for libdrm) and 
+specify which CRTCs/encoders/connectors/planes do you want included in the 
+node and you get a new /dev/dri/render<N> node that your application can 
+use and be the master on these resources only. Then for the next node you 
+call the utility again and specify a new set of display resources and then 
+you run the other application on the top of that node.
+
+The patches that are on the mailing list archive [1] are now a year old, 
+but I have a rebased version for newer kernels, which I can send to 
+whoever is interested in having them (I am just hesitating to pollute the 
+mailing list with patches to which the maintainers have already said 
+"no").
+
+[1] http://lists.freedesktop.org/archives/dri-devel/2012-April/021326.html
+[2] http://lists.freedesktop.org/archives/dri-devel/2012-September/028348.html
+
+-- Ilija
