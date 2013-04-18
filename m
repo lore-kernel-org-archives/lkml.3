@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab3DRKvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 06:51:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58966 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967094Ab3DRKvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 06:51:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 06/32] ARM: ux500: Strip out duplicate USB DMA configuration
-Date: Thu, 18 Apr 2013 12:51:44 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-7-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1366279934-30761-7-git-send-email-lee.jones@linaro.org>
+	id S968264Ab3DRKwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 06:52:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39383 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967301Ab3DRKwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 06:52:10 -0400
+Message-ID: <516FD042.5090303@ti.com>
+Date: Thu, 18 Apr 2013 16:21:46 +0530
+From: Sourav Poddar <sourav.poddar@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>, <khilman@linaro.org>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Sylvain Munaut <tnt@246tNt.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
+Subject: Re: [RFT/PATCH 2/6] driver: serial: mpc52xx_uart: Remove	"uart_console"
+ defintion
+References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com> <1366198467-6757-3-git-send-email-sourav.poddar@ti.com> <20130418105003.GB14500@n2100.arm.linux.org.uk>
+In-Reply-To: <20130418105003.GB14500@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304181251.44758.arnd@arndb.de>
-X-Provags-ID: V02:K0:1+YQiicrXnXnFyY9fXY7wSE8yDOpqWwYWRFkBuaIGPW
- HE3nJ7Goiba/HV5GYB9GIWgnWMgg4mXsBMcfG7wXCbqCS52Yg5
- vCW8sZ5rAqR5dEDdH6woy/yrOMi8KHMrVinEj3nYALQk52/Prv
- pOSBKWTxWEV7F0FHEFx05e2IyZ/dNxdYuMiyi88u5ZHOJzAnHw
- gU1XpISPMCZNB7C1poyyVP4AzwDcapAe1euyDymGLVsJYCYdav
- n3pD9n9XZDg6X61g0J8l5v5SfWYbQFUZrAXWqpZkMsf7rJMSXf
- UHmQQYkTbdwaaQgIR5U2H8DTBJhKtpW6ZjMQMEutw36UT9TycQ
- ewZRPYo8ikEWSI4X2+2U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013, Lee Jones wrote:
-> For the moment at least, the TX and RX channels for DB8500 USB are
-> identical, so this patch generalises them into a single structure
-> and passes it twice. Once as the TX and again for the RX configuration.
-> We're keeping the infrastructure the same i.e. passing the TX and RX
-> separately in case they start to differ on latter incarnations of the
-> platform.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Hi Russell,
+On Thursday 18 April 2013 04:20 PM, Russell King - ARM Linux wrote:
+> On Wed, Apr 17, 2013 at 05:04:23PM +0530, Sourav Poddar wrote:
+>> Since "uart_console" definition is now moved to serial core
+>> haeder file . Serial drivers need not define them.
+> This needs to be part of patch 1.  Having it separate may provoke compiler
+> warnings.
+Ok. I will fold it in the first patch in my next version.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Thanks,
+Sourav
