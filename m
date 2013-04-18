@@ -1,91 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936069Ab3DRQC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:02:29 -0400
-Received: from 8bytes.org ([85.214.48.195]:49124 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932602Ab3DRQC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:02:28 -0400
-Date: Thu, 18 Apr 2013 18:02:24 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: suravee.suthikulpanit@amd.com
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2 V2] iommu/amd: Add workaround for ERBT1312
-Message-ID: <20130418160220.GA4153@8bytes.org>
-References: <1366009666-44792-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S936124Ab3DRQEO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:04:14 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:43934 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932602Ab3DRQEM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 12:04:12 -0400
+X-IronPort-AV: E=Sophos;i="4.87,502,1363132800"; 
+   d="scan'208";a="19273079"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: <xen-devel@lists.xensource.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <will.deacon@arm.com>, <arnd@arndb.de>, <nicolas.pitre@linaro.org>,
+        <rob.herring@calxeda.com>, <linux@arm.linux.org.uk>, <olof@lixom.net>
+Subject: [PATCH v2] xen/arm: introduce xen_early_init, use PSCI on xen
+Date: Thu, 18 Apr 2013 17:03:58 +0100
+Message-ID: <1366301038-13433-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366009666-44792-1-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Apr 18 18:02:26 2013
-X-DSPAM-Confidence: 0.9995
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5170191223671437818720
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 15, 2013 at 02:07:46AM -0500, suravee.suthikulpanit@amd.com wrote:
->  drivers/iommu/amd_iommu.c |  145 +++++++++++++++++++++++++++++----------------
+Split xen_guest_init in two functions, one of them (xen_early_init) is
+going to be called very early from setup_arch.
 
-That is way too much for a simple erratum workaround, and too much for a
-stable backport. I queued the patch below instead, which has a much
-smaller diff and does the same. Please rebase your second patch on-top
-of this one and send it again.
+Change machine_desc->smp_init to xen_smp_init if Xen is present on the
+platform. xen_smp_init just sets smp_ops to psci_smp_ops.
 
->From 4ba052102863da02db79c03d2483b6ad905737ad Mon Sep 17 00:00:00 2001
-From: Joerg Roedel <joro@8bytes.org>
-Date: Thu, 18 Apr 2013 17:55:04 +0200
-Subject: [PATCH] iommu/amd: Workaround for ERBT1312
+XEN selects ARM_PSCI.
 
-Work around an IOMMU  hardware bug where clearing the
-EVT_INT bit in the status register may race with the
-hardware trying to set it again. When not handled the bit
-might not be cleared and we lose all future event
-interrupts.
+This patch is based on "xen/arm: move to mach-virt and support SMP"
+(http://marc.info/?l=linux-kernel&m=136629656432231&w=2)
+and "arm: introduce psci_smp_ops"
+(http://marc.info/?l=linux-kernel&m=136629750732674&w=2).
 
-Reported-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Changes in v2:
+- fix missing return value for xen_smp_init ifndef CONFIG_SMP.
+
+A git tag for this patch is available here:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-psci-xen-2-tag
+
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: xen-devel@lists.xensource.com
+CC: linux-kernel@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org
+CC: will.deacon@arm.com
+CC: arnd@arndb.de
+CC: nicolas.pitre@linaro.org
+CC: rob.herring@calxeda.com
+CC: linux@arm.linux.org.uk
+CC: olof@lixom.net
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- drivers/iommu/amd_iommu.c |   17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ arch/arm/Kconfig                      |    1 +
+ arch/arm/include/asm/xen/hypervisor.h |    6 +++++
+ arch/arm/kernel/setup.c               |    3 ++
+ arch/arm/xen/enlighten.c              |   39 ++++++++++++++++++++++++++------
+ 4 files changed, 41 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index f42793d..de5ae4b 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -700,14 +700,23 @@ retry:
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 2c3bdce..344e299 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1892,6 +1892,7 @@ config XEN
+ 	depends on ARM && AEABI && OF
+ 	depends on CPU_V7 && !CPU_V6
+ 	depends on !GENERIC_ATOMIC64
++	select ARM_PSCI
+ 	help
+ 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
  
- static void iommu_poll_events(struct amd_iommu *iommu)
- {
--	u32 head, tail;
-+	u32 head, tail, status;
- 	unsigned long flags;
+diff --git a/arch/arm/include/asm/xen/hypervisor.h b/arch/arm/include/asm/xen/hypervisor.h
+index d7ab99a..17b3ea2 100644
+--- a/arch/arm/include/asm/xen/hypervisor.h
++++ b/arch/arm/include/asm/xen/hypervisor.h
+@@ -16,4 +16,10 @@ static inline enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
+ 	return PARAVIRT_LAZY_NONE;
+ }
  
--	/* enable event interrupts again */
--	writel(MMIO_STATUS_EVT_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
--
- 	spin_lock_irqsave(&iommu->lock, flags);
- 
-+	/* enable event interrupts again */
-+	do {
-+		/*
-+		 * Workaround for Erratum ERBT1312
-+		 * Clearing the EVT_INT bit may race in the hardware, so read
-+		 * it again and make sure it was really cleared
-+		 */
-+		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
-+		writel(MMIO_STATUS_EVT_INT_MASK,
-+		       iommu->mmio_base + MMIO_STATUS_OFFSET);
-+	} while (status & MMIO_STATUS_EVT_INT_MASK);
++#ifdef CONFIG_XEN
++void xen_early_init(void);
++#else
++static inline void xen_early_init(void) { return; }
++#endif
 +
- 	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
- 	tail = readl(iommu->mmio_base + MMIO_EVT_TAIL_OFFSET);
+ #endif /* _ASM_ARM_XEN_HYPERVISOR_H */
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 22cc863..3dcd357 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -55,6 +55,8 @@
+ #include <asm/unwind.h>
+ #include <asm/memblock.h>
+ #include <asm/virt.h>
++#include <asm/xen/hypervisor.h>
++#include <xen/xen.h>
  
+ #include "atags.h"
+ #include "tcm.h"
+@@ -768,6 +770,7 @@ void __init setup_arch(char **cmdline_p)
+ 
+ 	arm_dt_init_cpu_maps();
+ 	psci_init();
++	xen_early_init();
+ #ifdef CONFIG_SMP
+ 	if (is_smp()) {
+ 		if (!mdesc->smp_init || !mdesc->smp_init()) {
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index b002822..c1fe6f3 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -11,6 +11,8 @@
+ #include <xen/xenbus.h>
+ #include <xen/page.h>
+ #include <xen/xen-ops.h>
++#include <asm/mach/arch.h>
++#include <asm/psci.h>
+ #include <asm/xen/hypervisor.h>
+ #include <asm/xen/hypercall.h>
+ #include <linux/interrupt.h>
+@@ -176,11 +178,36 @@ static int __init xen_secondary_init(unsigned int cpu)
+ 	return 0;
+ }
+ 
++static bool __init xen_smp_init(void)
++{
++#ifdef CONFIG_SMP
++	/* If we are running on Xen, use PSCI if available.
++	 * In any case do not try to use the native smp_ops. */
++	if (psci_smp_available())
++		smp_set_ops(&psci_smp_ops);
++#endif
++	return true;
++}
++
+ /*
+  * see Documentation/devicetree/bindings/arm/xen.txt for the
+  * documentation of the Xen Device Tree format.
+  */
+ #define GRANT_TABLE_PHYSADDR 0
++void __init xen_early_init(void)
++{
++	struct device_node *node;
++
++	node = of_find_compatible_node(NULL, NULL, "xen,xen");
++	if (!node) {
++		pr_debug("No Xen support\n");
++		return;
++	}
++
++	xen_domain_type = XEN_HVM_DOMAIN;
++	machine_desc->smp_init = xen_smp_init;
++}
++
+ static int __init xen_guest_init(void)
+ {
+ 	struct xen_add_to_physmap xatp;
+@@ -194,25 +221,21 @@ static int __init xen_guest_init(void)
+ 	int i;
+ 
+ 	node = of_find_compatible_node(NULL, NULL, "xen,xen");
+-	if (!node) {
+-		pr_debug("No Xen support\n");
+-		return 0;
+-	}
++
+ 	s = of_get_property(node, "compatible", &len);
+ 	if (strlen(xen_prefix) + 3  < len &&
+ 			!strncmp(xen_prefix, s, strlen(xen_prefix)))
+ 		version = s + strlen(xen_prefix);
+ 	if (version == NULL) {
+-		pr_debug("Xen version not found\n");
+-		return 0;
++		pr_warn("Xen version not found\n");
++		return -EINVAL;
+ 	}
+ 	if (of_address_to_resource(node, GRANT_TABLE_PHYSADDR, &res))
+-		return 0;
++		return -EINVAL;
+ 	xen_hvm_resume_frames = res.start >> PAGE_SHIFT;
+ 	xen_events_irq = irq_of_parse_and_map(node, 0);
+ 	pr_info("Xen %s support found, events_irq=%d gnttab_frame_pfn=%lx\n",
+ 			version, xen_events_irq, xen_hvm_resume_frames);
+-	xen_domain_type = XEN_HVM_DOMAIN;
+ 
+ 	xen_setup_features();
+ 	if (xen_feature(XENFEAT_dom0))
 -- 
-1.7.9.5
-
+1.7.2.5
 
