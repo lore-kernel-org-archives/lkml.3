@@ -1,46 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab3DRSj4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 14:39:56 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:52605 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776Ab3DRSjy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 14:39:54 -0400
-Date: Thu, 18 Apr 2013 11:39:50 -0700
-From: Tejun Heo <tj@kernel.org>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        Li Zefan <lizefan@huawei.com>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: [PATCH 25/28] proc: Supply an accessor to get the process ID
- associated with some proc files [RFC]
-Message-ID: <20130418183950.GJ9897@mtj.dyndns.org>
-References: <20130416182550.27773.89310.stgit@warthog.procyon.org.uk>
- <20130416182730.27773.88726.stgit@warthog.procyon.org.uk>
+	id S1754147Ab3DRSrG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 14:47:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50741 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753776Ab3DRSrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 14:47:04 -0400
+Date: Thu, 18 Apr 2013 20:44:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>,
+        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] ptrace/x86: simplify the "disable" logic in
+	ptrace_write_dr7()
+Message-ID: <20130418184410.GA4425@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130416182730.27773.88726.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130418184350.GA4407@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, David.
+ptrace_write_dr7() looks unnecessarily overcomplicated. We can
+factor out ptrace_modify_breakpoint() and do not do "continue"
+twice, just we need to pass the proper "disabled" argument to
+ptrace_modify_breakpoint().
 
-On Tue, Apr 16, 2013 at 07:27:30PM +0100, David Howells wrote:
-> +struct pid *get_proc_pid(const struct inode *inode)
-> +{
-> +	return PROC_I(inode)->pid;
-> +}
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/x86/kernel/ptrace.c |   40 +++++++++++++++-------------------------
+ 1 files changed, 15 insertions(+), 25 deletions(-)
 
-Maybe we can add /** comment explaining what this is about?  Other
-than that, it looks fine to me.  It probably would be best to route
-this through -mm given it touches /proc too, so cc Andrew on the next
-posting?
-
-Thanks.
-
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 7a98b21..0649f16 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -637,9 +637,7 @@ static int ptrace_write_dr7(struct task_struct *tsk, unsigned long data)
+ 	struct thread_struct *thread = &(tsk->thread);
+ 	unsigned long old_dr7;
+ 	int i, orig_ret = 0, rc = 0;
+-	int enabled, second_pass = 0;
+-	unsigned len, type;
+-	struct perf_event *bp;
++	int second_pass = 0;
+ 
+ 	data &= ~DR_CONTROL_RESERVED;
+ 	old_dr7 = ptrace_get_dr7(thread->ptrace_bps);
+@@ -649,30 +647,22 @@ restore:
+ 	 * appropriate changes to each.
+ 	 */
+ 	for (i = 0; i < HBP_NUM; i++) {
+-		enabled = decode_dr7(data, i, &len, &type);
+-		bp = thread->ptrace_bps[i];
+-
+-		if (!enabled) {
+-			if (bp) {
+-				/*
+-				 * Don't unregister the breakpoints right-away,
+-				 * unless all register_user_hw_breakpoint()
+-				 * requests have succeeded. This prevents
+-				 * any window of opportunity for debug
+-				 * register grabbing by other users.
+-				 */
+-				if (!second_pass)
+-					continue;
+-
+-				rc = ptrace_modify_breakpoint(bp, len, type,
+-							      tsk, 1);
+-				if (rc)
+-					break;
+-			}
+-			continue;
++		unsigned len, type;
++		bool disabled = !decode_dr7(data, i, &len, &type);
++		struct perf_event *bp = thread->ptrace_bps[i];
++
++		if (disabled) {
++			/*
++			 * Don't unregister the breakpoints right-away, unless
++			 * all register_user_hw_breakpoint() requests have
++			 * succeeded. This prevents any window of opportunity
++			 * for debug register grabbing by other users.
++			 */
++			if (!bp || !second_pass)
++				continue;
+ 		}
+ 
+-		rc = ptrace_modify_breakpoint(bp, len, type, tsk, 0);
++		rc = ptrace_modify_breakpoint(bp, len, type, tsk, disabled);
+ 		if (rc)
+ 			break;
+ 	}
 -- 
-tejun
+1.5.5.1
+
