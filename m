@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967273Ab3DRJcA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:32:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40111 "EHLO
+	id S967258Ab3DRJb6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:31:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40114 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756459Ab3DRJRp (ORCPT
+	with ESMTP id S1757044Ab3DRJRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:45 -0400
+	Thu, 18 Apr 2013 05:17:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Vikram Mulukutla <markivx@codeaurora.org>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Daniel Schaal <farbing@web.de>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 24/72] panic: fix a possible deadlock in panic()
-Date: Thu, 18 Apr 2013 10:16:09 +0100
-Message-Id: <1366276617-3553-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 26/72] Bluetooth: Add support for GC-WB300D PCIe [04ca:3006] to ath3k.
+Date: Thu, 18 Apr 2013 10:16:11 +0100
+Message-Id: <1366276617-3553-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -30,60 +28,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vikram Mulukutla <markivx@codeaurora.org>
+From: Daniel Schaal <farbing@web.de>
 
-commit 190320c3b6640d4104650f55ff69611e050ea06b upstream.
+commit 2c262b2a5235b7f5b18d4d58394511f76371d7cb upstream.
 
-panic_lock is meant to ensure that panic processing takes place only on
-one cpu; if any of the other cpus encounter a panic, they will spin
-waiting to be shut down.
+T:  Bus=02 Lev=02 Prnt=02 Port=06 Cnt=01 Dev#=  4 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=04ca ProdID=3006 Rev= 0.02
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-However, this causes a regression in this scenario:
-
-1. Cpu 0 encounters a panic and acquires the panic_lock
-   and proceeds with the panic processing.
-2. There is an interrupt on cpu 0 that also encounters
-   an error condition and invokes panic.
-3. This second invocation fails to acquire the panic_lock
-   and enters the infinite while loop in panic_smp_self_stop.
-
-Thus all panic processing is stopped, and the cpu is stuck for eternity
-in the while(1) inside panic_smp_self_stop.
-
-To address this, disable local interrupts with local_irq_disable before
-acquiring the panic_lock.  This will prevent interrupt handlers from
-executing during the panic processing, thus avoiding this particular
-problem.
-
-Signed-off-by: Vikram Mulukutla <markivx@codeaurora.org>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Daniel Schaal <farbing@web.de>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/panic.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/bluetooth/ath3k.c | 2 ++
+ drivers/bluetooth/btusb.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index d2a5f4e..e1b2822 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -75,6 +75,14 @@ void panic(const char *fmt, ...)
- 	int state = 0;
- 
- 	/*
-+	 * Disable local interrupts. This will prevent panic_smp_self_stop
-+	 * from deadlocking the first cpu that invokes the panic, since
-+	 * there is nothing to prevent an interrupt handler (that runs
-+	 * after the panic_lock is acquired) from invoking panic again.
-+	 */
-+	local_irq_disable();
-+
-+	/*
- 	 * It's possible to come here directly from a panic-assertion and
- 	 * not have preempt disabled. Some functions called from here want
- 	 * preempt to be disabled. No point enabling it later though...
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 46e42fc..67e36f9 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -79,6 +79,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x0CF3, 0x817a) },
+ 	{ USB_DEVICE(0x13d3, 0x3375) },
+ 	{ USB_DEVICE(0x04CA, 0x3005) },
++	{ USB_DEVICE(0x04CA, 0x3006) },
+ 	{ USB_DEVICE(0x13d3, 0x3362) },
+ 	{ USB_DEVICE(0x0CF3, 0xE004) },
+ 	{ USB_DEVICE(0x0930, 0x0219) },
+@@ -109,6 +110,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
+ 	{ USB_DEVICE(0x0CF3, 0x817a), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 07f250b..f6e6f7f 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -145,6 +145,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x0cf3, 0x817a), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
 -- 
 1.8.1.2
 
