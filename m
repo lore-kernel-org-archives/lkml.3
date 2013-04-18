@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936309Ab3DRQid (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:38:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39901 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933132Ab3DRQib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:38:31 -0400
-Message-ID: <5170216C.9020300@zytor.com>
-Date: Thu, 18 Apr 2013 09:38:04 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S936364Ab3DRQin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:38:43 -0400
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:40179
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933132Ab3DRQik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 12:38:40 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI1432Ic540Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-WSS-ID: 0MLGM8B-01-6YL-02
+X-M-MSG: 
+Date: Thu, 18 Apr 2013 11:38:32 -0500
+From: Jacob Shin <jacob.shin@amd.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Fr??d??ric Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        <x86@kernel.org>, Stephane Eranian <eranian@google.com>,
+        Jiri Olsa <jolsa@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] perf: Add support for hardware breakpoint address
+ masks
+Message-ID: <20130418163832.GA14253@jshin-Toonie>
+References: <1365528113-5458-1-git-send-email-jacob.shin@amd.com>
+ <20130415172803.GA18406@jshin-Toonie>
+ <20130416093620.GH9569@gmail.com>
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: Matt Fleming <matt@console-pimps.org>,
-        "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>,
-        matthew.garrett@nebula.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Darren Hart <darren.hart@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
-References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <516EAC4A.6040202@console-pimps.org> <516F1B90.9040508@nexus-software.ie> <516FD24A.3070502@console-pimps.org> <20130418163325.GA6884@leaf>
-In-Reply-To: <20130418163325.GA6884@leaf>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130416093620.GH9569@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 09:33 AM, Josh Triplett wrote:
-> On Thu, Apr 18, 2013 at 12:00:26PM +0100, Matt Fleming wrote:
->>> No, no - we *don't* have a BGRT object at all.
->>>
->>> We have a completely clean memory map - but the BGRT code is causing the
->>> is_ram() failure.
->>  
->> You assume that mapping of the Boot Services regions is done purely for
->> the benefit of pulling out the bgrt image - it's not, see the above
->> commit log - and I assumed that you had an ACPI bgrt pointer in your
->> memory map, but you don't.
->>
->> Darren, Josh, have you ever seen an i386 machine with a bgrt pointer? If
->> not, and given that we've never seen an i386 firmware that requires the
->> above workaround from Matthew, combined with the fact that there are so
->> few i386 implementations out there, I'm inclined to apply the patch
->> below, because anything else is a lot more work. We can address this
->> properly if we ever start seeing i386 machines with bgrt pointers that
->> reference highmem.
+On Tue, Apr 16, 2013 at 11:36:20AM +0200, Ingo Molnar wrote:
 > 
-> The machine I developed the BGRT changes on kept the image below the 4G
-> mark, inside one of the memory regions reclaimable via
-> ExitBootServices().
+> * Jacob Shin <jacob.shin@amd.com> wrote:
 > 
+> > On Tue, Apr 09, 2013 at 12:21:48PM -0500, Jacob Shin wrote:
+> > > The following patchset adds address masks to existing perf hardware
+> > > breakpoint mechanism to allow trapping on an address range (currently
+> > > only single address) on supported architectures.
+> > > 
+> > > perf uapi is updated, x86 AMD implementation (for AMD Family 16h and
+> > > beyond) is provided, and perf tool has been extended to do:
+> > > 
+> > >   $ perf stat -e mem:0x1000:w:0xf a.out
+> > >                               ^^^
+> > >                               "don't care" bit mask
+> > > 
+> > >   which will count writes to [0x1000 ~ 0x1010)
+> > 
+> > Ping .. Ingo?
+> 
+> breakpoint patches usually come to me through (or with the acks of) Frederic 
+> and/or Oleg.
+> 
+> Frederic, Oleg, mind having a look?
 
-Well, highmem is >= ~896M.  Do you have a machine with BGRT over the
-highmem mark?
-
-	-hpa
-
+Hi Frederic, Oleg. Could one of you take a look over this patchset
+when you get the chance? Thank you in advance for taking the time!
 
