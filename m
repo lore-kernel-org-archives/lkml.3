@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936426Ab3DRTC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 15:02:56 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56745 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958Ab3DRTCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 15:02:54 -0400
-Message-ID: <5170434C.7040706@ti.com>
-Date: Fri, 19 Apr 2013 00:32:36 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S936494Ab3DRTDV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 15:03:21 -0400
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:40194 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753969Ab3DRTDU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 15:03:20 -0400
+From: Bing Zhao <bzhao@marvell.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: "linux-netdev@vger.kernel.org" <linux-netdev@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Stewart <pstew@chromium.org>
+Date: Thu, 18 Apr 2013 12:03:02 -0700
+Subject: RE: [PATCH] net-sysfs: Add entry for nl80211 interface type
+Thread-Topic: [PATCH] net-sysfs: Add entry for nl80211 interface type
+Thread-Index: Ac47vojpsm3icznpRxSxh0mQrV6SIQAp8JFw
+Message-ID: <477F20668A386D41ADCC57781B1F70430D9E05713A@SC-VEXCH1.marvell.com>
+References: <1366236369-543-1-git-send-email-bzhao@marvell.com>
+ <0156C538-4175-47E9-B667-C2127CBEF3EB@holtmann.org>
+In-Reply-To: <0156C538-4175-47E9-B667-C2127CBEF3EB@holtmann.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] arm: mach-omap2: remove "OMAP_DEVICE_NO_IDLE_ON_SUSPEND"
- check
-References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>	<1366198467-6757-5-git-send-email-sourav.poddar@ti.com> <87li8f4sum.fsf@linaro.org>
-In-Reply-To: <87li8f4sum.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013 11:35 PM, Kevin Hilman wrote:
-> Sourav Poddar<sourav.poddar@ti.com>  writes:
->
->> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since UART was the only one making
->> use of it. Now serial core/driver takes care of the case when "no_console_suspend"
->> is used in the bootargs and you need to keep the clock enable for console even while suspend.
->>
->> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
-> NAK.  This patch will break many things...
->
->> ---
->>   arch/arm/mach-omap2/omap_device.c |    7 +------
->>   1 files changed, 1 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
->> index 381be7a..d6dce8f 100644
->> --- a/arch/arm/mach-omap2/omap_device.c
->> +++ b/arch/arm/mach-omap2/omap_device.c
->> @@ -620,11 +620,8 @@ static int _od_suspend_noirq(struct device *dev)
->>   	ret = pm_generic_suspend_noirq(dev);
->>
->>   	if (!ret&&  !pm_runtime_status_suspended(dev)) {
->> -		if (pm_generic_runtime_suspend(dev) == 0) {
->> -			if (!(od->flags&  OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
->> -				omap_device_idle(pdev);
-> Why did you remove the omap_device_idle() here?
-This patch is used along with patch3 to get rid of the issue. I posted 
-them as a
-seperate patch beacuse of the subject line as one goes under drivers/* 
-and the other
-arm/mach-omap2/*..
+Hi Marcel,
 
-This check was only valid for UART, and if od->flags is set to the
-"OMAP_DEVICE_NO_IDLE_ON_SUSPEND" flag, then UART will not be idled. But now,
-we no longer depend on od->flag value to prevent idling of our console 
-UART as the
-prepare/complete apis will take care of them.
+> Hi Bing,
+> 
+> > Add a "wireless/nl80211_iftype" entry in the net device sysfs
+> > file structure to indicate the mode of the wireless device so
+> > it can be discovered easily from userspace.
+> 
+> I do question a little bit the usefulness for this one.
+> It would only work on netdev and on wdev devices.
 
->> +		if (pm_generic_runtime_suspend(dev) == 0)
->>   			od->flags |= OMAP_DEVICE_SUSPENDED;
->> -		}
->>   	}
->>
->>   	return ret;
->> @@ -638,8 +635,6 @@ static int _od_resume_noirq(struct device *dev)
->>   	if ((od->flags&  OMAP_DEVICE_SUSPENDED)&&
->>   	!pm_runtime_status_suspended(dev)) {
->>   		od->flags&= ~OMAP_DEVICE_SUSPENDED;
->> -		if (!(od->flags&  OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
->> -			omap_device_enable(pdev);
-> And the _enable() here?
->
->>   		pm_generic_runtime_resume(dev);
->>   	}
-> Note that the check is for when the flag is *not* set, so this patch
-> changes behavior for all the drivers that do not use
-> _NO_IDLE_ON_SUSPEND.  I think that's the opposite of what you intended.
->
-> Kevin
+It's true. That's why the new sysfs entry is added in the 'wireless' placeholder.
+
+/sys/class/net/ethX/wireless/
+
+For non-wireless dev, this won't apply.
+
+Thanks,
+Bing
+
+> Using nl80211 to discover this information seems a lot better approach.
+> 
+> Regards
+> 
+> Marcel
 
