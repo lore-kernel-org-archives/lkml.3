@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab3DRTJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 15:09:59 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54437 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782Ab3DRTJ5 (ORCPT
+	id S936515Ab3DRTKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 15:10:46 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:64389 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab3DRTKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 15:09:57 -0400
-Message-ID: <517044F8.9060701@ti.com>
-Date: Fri, 19 Apr 2013 00:39:44 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	Thu, 18 Apr 2013 15:10:45 -0400
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
-        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: Re: [PATCH 6/6] arm: mach-omap2: Remove "no_console_suspend"
-References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>	<1366198467-6757-7-git-send-email-sourav.poddar@ti.com> <87d2tr4sor.fsf@linaro.org>
-In-Reply-To: <87d2tr4sor.fsf@linaro.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130418181318.GH4816@kernel.dk>
+References: <1366209997.8817.12.camel@pippen.local.home>
+	<20130418123738.GV4816@kernel.dk>
+	<516FED09.1040008@cn.fujitsu.com>
+	<20130418133546.GX4816@kernel.dk>
+	<516FFFAC.8040103@cn.fujitsu.com>
+	<20130418143014.GZ4816@kernel.dk>
+	<CA+55aFwA8njGh4v8ZfR_o4s4m=Hugnadeir=uxbeE4yxHiBKLg@mail.gmail.com>
+	<20130418172732.GB9897@mtj.dyndns.org>
+	<20130418173811.GF4816@kernel.dk>
+	<20130418180752.GD9897@mtj.dyndns.org>
+	<20130418181318.GH4816@kernel.dk>
+Date: Thu, 18 Apr 2013 12:10:44 -0700
+X-Google-Sender-Auth: obBx1Vp4ZpTJgOhrTHdvAjvZ7FU
+Message-ID: <CA+55aFxEThMJid_PiL=ko3duRPzzynkhMovsrm3TR_UXxUGciA@mail.gmail.com>
+Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@gmail.com>, Alasdair G Kergon <agk@redhat.com>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        Neil Brown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
-On Thursday 18 April 2013 11:39 PM, Kevin Hilman wrote:
-> Sourav Poddar<sourav.poddar@ti.com>  writes:
->
->> Since the omap serial driver is now adapted to handle the
->> case where you dont need to cut the clock on suspend while
->> using "no_console_suspend" in the bootargs.
+On Thu, Apr 18, 2013 at 11:13 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On Thu, Apr 18 2013, Tejun Heo wrote:
+>> On Thu, Apr 18, 2013 at 10:39:00AM -0700, Jens Axboe wrote:
+>> >
+>> > Yep, thanks Linus for that hint... Must be someone abusing it for a
+>> > flag field post submission? Crazy.
 >>
->> We can get rid of the previous implementation of setting the od->flags to
->> "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" from platform
->> and omap_device files.
->>
->> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
->> Cc: Felipe Balbi<balbi@ti.com>
->> Cc: Rajendra nayak<rnayak@ti.com>
->> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
-> Subject should be arm: omap2+: omap_device: remove no_idle_on_suspend
+>> Let's hope that's not the case because there'll be blood if it is. :)
 >
-> Also, you should remove the flag from omap_device.h.
->
-> Kevin
-Ok. Will change it in the next version.
+> Yeah, it's beyond the amount of crazy I've come to expect from various
+> random users of IO interfaces :-)
 
-~Sourav
->> ---
->>   arch/arm/mach-omap2/omap_device.c |    3 ---
->>   arch/arm/mach-omap2/serial.c      |    7 -------
->>   2 files changed, 0 insertions(+), 10 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
->> index d6dce8f..c226946 100644
->> --- a/arch/arm/mach-omap2/omap_device.c
->> +++ b/arch/arm/mach-omap2/omap_device.c
->> @@ -170,9 +170,6 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
->>   			r->name = dev_name(&pdev->dev);
->>   	}
->>
->> -	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
->> -		omap_device_disable_idle_on_suspend(pdev);
->> -
->>   	pdev->dev.pm_domain =&omap_device_pm_domain;
->>
->>   odbfd_exit1:
->> diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
->> index f660156..58d5b56 100644
->> --- a/arch/arm/mach-omap2/serial.c
->> +++ b/arch/arm/mach-omap2/serial.c
->> @@ -63,7 +63,6 @@ struct omap_uart_state {
->>   static LIST_HEAD(uart_list);
->>   static u8 num_uarts;
->>   static u8 console_uart_id = -1;
->> -static u8 no_console_suspend;
->>   static u8 uart_debug;
->>
->>   #define DEFAULT_RXDMA_POLLRATE		1	/* RX DMA polling rate (us) */
->> @@ -207,9 +206,6 @@ static int __init omap_serial_early_init(void)
->>   					uart_name, uart->num);
->>   			}
->>
->> -			if (cmdline_find_option("no_console_suspend"))
->> -				no_console_suspend = true;
->> -
->>   			/*
->>   			 * omap-uart can be used for earlyprintk logs
->>   			 * So if omap-uart is used as console then prevent
->> @@ -292,9 +288,6 @@ void __init omap_serial_init_port(struct omap_board_data *bdata,
->>   		return;
->>   	}
->>
->> -	if ((console_uart_id == bdata->id)&&  no_console_suspend)
->> -		omap_device_disable_idle_on_suspend(pdev);
->> -
->>   	oh->mux = omap_hwmod_mux_init(bdata->pads, bdata->pads_cnt);
->>
->>   	if (console_uart_id == bdata->id) {
+I think it's more likely to be some use-after-free after a long timeout.
 
+Wanlong says it happens a few minutes after boot, so maybe something
+times out a command, does the blk_complete_request(), and free's the
+bio, which gets re-used before the softirq actually ends up running.
+
+I note that Wanlong uses the SLAB allocator, not the SLUB one. I
+wonder if the thing goes away with SLUB, and if not, if
+CONFIG_SLUB_DEBUG_ON=y might help debug it?
+
+                     Linus
