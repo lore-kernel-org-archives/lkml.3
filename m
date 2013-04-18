@@ -1,267 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966984Ab3DRLAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 07:00:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38151 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965199Ab3DRLAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 07:00:44 -0400
-Date: Thu, 18 Apr 2013 14:00:36 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: mtosatti@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v3 08/15] KVM: MMU: allow unmap invalid rmap out of
- mmu-lock
-Message-ID: <20130418110036.GS8997@redhat.com>
-References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
- <1366093973-2617-9-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+	id S967137Ab3DRLAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 07:00:52 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33770 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965199Ab3DRLAt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 07:00:49 -0400
+Date: Thu, 18 Apr 2013 12:00:24 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Lee Jones <lee.jones@linaro.org>, Rabin Vincent <rabin@rab.in>,
+        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org, Per Forlin <per.forlin@stericsson.com>,
+        Dan Williams <djbw@fb.com>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 08/32] dmaengine: ste_dma40: Optimise local MAX() macro
+Message-ID: <20130418110024.GP14496@n2100.arm.linux.org.uk>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-9-git-send-email-lee.jones@linaro.org> <201304181246.03357.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1366093973-2617-9-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+In-Reply-To: <201304181246.03357.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 16, 2013 at 02:32:46PM +0800, Xiao Guangrong wrote:
-> pte_list_clear_concurrently allows us to reset pte-desc entry
-> out of mmu-lock. We can reset spte out of mmu-lock if we can protect the
-> lifecycle of sp, we use this way to achieve the goal:
+On Thu, Apr 18, 2013 at 12:46:03PM +0200, Arnd Bergmann wrote:
+> On Thursday 18 April 2013, Lee Jones wrote:
+> > The current implementation of the DMA40's local MAX() macro evaluates
+> > its arguments more times than is necessary. This patch strips it
+> > optimises it to only evaluate what's appropriate.
 > 
-> unmap_memslot_rmap_nolock():
-> for-each-rmap-in-slot:
->       preempt_disable
->       kvm->arch.being_unmapped_rmap = rmapp
->       clear spte and reset rmap entry
->       kvm->arch.being_unmapped_rmap = NULL
->       preempt_enable
+> No, it does not.
 > 
-> Other patch like zap-sp and mmu-notify which are protected
-> by mmu-lock:
->       clear spte and reset rmap entry
-> retry:
->       if (kvm->arch.being_unmapped_rmap == rmap)
-> 		goto retry
-> (the wait is very rare and clear one rmap is very fast, it
-> is not bad even if wait is needed)
+> > index b21a8a3..7b451b2 100644
+> > --- a/drivers/dma/ste_dma40.c
+> > +++ b/drivers/dma/ste_dma40.c
+> > @@ -53,7 +53,7 @@
+> >  #define D40_ALLOC_PHY          BIT(30)
+> >  #define D40_ALLOC_LOG_FREE     BIT(0)
+> >  
+> > -#define MAX(a, b) (((a) < (b)) ? (b) : (a))
+> > +#define MAX(a, b) ((a > b) ? a : b)
 > 
-I do not understand what how this achieve the goal. Suppose that rmap
-== X and kvm->arch.being_unmapped_rmap == NULL so "goto retry" is skipped,
-but moment later unmap_memslot_rmap_nolock() does
-vm->arch.being_unmapped_rmap = X.
- 
-> Then, we can sure the spte is always available when we do
-> unmap_memslot_rmap_nolock
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    2 +
->  arch/x86/kvm/mmu.c              |  114 ++++++++++++++++++++++++++++++++++++---
->  arch/x86/kvm/mmu.h              |    2 +-
->  3 files changed, 110 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index 5fd6ed1..1ad9a34 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -536,6 +536,8 @@ struct kvm_arch {
->  	 * Hash table of struct kvm_mmu_page.
->  	 */
->  	struct list_head active_mmu_pages;
-> +	unsigned long *being_unmapped_rmap;
-> +
->  	struct list_head assigned_dev_head;
->  	struct iommu_domain *iommu_domain;
->  	int iommu_flags;
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 2a7a5d0..e6414d2 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -1104,10 +1104,10 @@ static int slot_rmap_add(struct kvm_memory_slot *slot,
->  	return slot->arch.ops->rmap_add(vcpu, spte, rmapp);
->  }
->  
-> -static void slot_rmap_remove(struct kvm_memory_slot *slot,
-> +static void slot_rmap_remove(struct kvm_memory_slot *slot, struct kvm *kvm,
->  			     unsigned long *rmapp, u64 *spte)
->  {
-> -	slot->arch.ops->rmap_remove(spte, rmapp);
-> +	slot->arch.ops->rmap_remove(kvm, spte, rmapp);
->  }
->  
->  static int rmap_add(struct kvm_vcpu *vcpu, u64 *spte, gfn_t gfn)
-> @@ -1132,7 +1132,7 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
->  	sp = page_header(__pa(spte));
->  	gfn = kvm_mmu_page_get_gfn(sp, spte - sp->spt);
->  	rmapp = gfn_to_rmap(kvm, &slot, gfn, sp->role.level);
-> -	slot_rmap_remove(slot, rmapp, spte);
-> +	slot_rmap_remove(slot, kvm, rmapp, spte);
->  }
->  
->  /*
-> @@ -1589,9 +1589,14 @@ int kvm_test_age_hva(struct kvm *kvm, unsigned long hva)
->  	return kvm_handle_hva(kvm, hva, 0, slot_rmap_test_age);
->  }
->  
-> +static void rmap_remove_spte(struct kvm *kvm, u64 *spte, unsigned long *rmapp)
-> +{
-> +	pte_list_remove(spte, rmapp);
-> +}
-> +
->  static struct rmap_operations normal_rmap_ops = {
->  	.rmap_add = pte_list_add,
-> -	.rmap_remove = pte_list_remove,
-> +	.rmap_remove = rmap_remove_spte,
->  
->  	.rmap_write_protect = __rmap_write_protect,
->  
-> @@ -1613,9 +1618,27 @@ static int invalid_rmap_add(struct kvm_vcpu *vcpu, u64 *spte,
->  	return 0;
->  }
->  
-> -static void invalid_rmap_remove(u64 *spte, unsigned long *rmapp)
-> +static void sync_being_unmapped_rmap(struct kvm *kvm, unsigned long *rmapp)
-> +{
-> +	/*
-> +	 * Ensure all the sptes on the rmap have been zapped and
-> +	 * the rmap's entries have been reset so that
-> +	 * unmap_invalid_rmap_nolock can not get any spte from the
-> +	 * rmap after calling sync_being_unmapped_rmap().
-> +	 */
-> +	smp_mb();
-> +retry:
-> +	if (unlikely(ACCESS_ONCE(kvm->arch.being_unmapped_rmap) == rmapp)) {
-> +		cpu_relax();
-> +		goto retry;
-> +	}
-> +}
-> +
-> +static void
-> +invalid_rmap_remove(struct kvm *kvm, u64 *spte, unsigned long *rmapp)
->  {
->  	pte_list_clear_concurrently(spte, rmapp);
-> +	sync_being_unmapped_rmap(kvm, rmapp);
->  }
->  
->  static bool invalid_rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
-> @@ -1635,7 +1658,11 @@ static int __kvm_unmap_invalid_rmapp(unsigned long *rmapp)
->  		if (sptep == PTE_LIST_SPTE_SKIP)
->  			continue;
->  
-> -		/* Do not call .rmap_remove(). */
-> +		/*
-> +		 * Do not call .rmap_remove() since we do not want to wait
-> +		 * on sync_being_unmapped_rmap() when all sptes should be
-> +		 * removed from the rmap.
-> +		 */
->  		if (mmu_spte_clear_track_bits(sptep))
->  			pte_list_clear_concurrently(sptep, rmapp);
->  	}
-> @@ -1645,7 +1672,10 @@ static int __kvm_unmap_invalid_rmapp(unsigned long *rmapp)
->  
->  static int kvm_unmap_invalid_rmapp(struct kvm *kvm, unsigned long *rmapp)
->  {
-> -	return __kvm_unmap_invalid_rmapp(rmapp);
-> +	int ret = __kvm_unmap_invalid_rmapp(rmapp);
-> +
-> +	sync_being_unmapped_rmap(kvm, rmapp);
-> +	return ret;
->  }
->  
->  static int invalid_rmap_set_pte(struct kvm *kvm, unsigned long *rmapp,
-> @@ -1686,6 +1716,76 @@ static struct rmap_operations invalid_rmap_ops = {
->  	.rmap_unmap = kvm_unmap_invalid_rmapp
->  };
->  
-> +typedef void (*handle_rmap_fun)(unsigned long *rmapp, void *data);
-> +static void walk_memslot_rmap_nolock(struct kvm_memory_slot *slot,
-> +				     handle_rmap_fun fun, void *data)
-> +{
-> +	int level;
-> +
-> +	for (level = PT_PAGE_TABLE_LEVEL;
-> +	      level < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++level) {
-> +		unsigned long idx, *rmapp;
-> +
-> +		rmapp = slot->arch.rmap[level - PT_PAGE_TABLE_LEVEL];
-> +		idx = gfn_to_index(slot->base_gfn + slot->npages - 1,
-> +				   slot->base_gfn, level) + 1;
-> +		/*
-> +		 * Walk ramp from the high index to low index to reduce
-> +		 * possible wait in sync_being_unmapped_rmap().
-> +		 */
-> +		while (idx--)
-> +			fun(rmapp + idx, data);
-> +	}
-> +}
-> +
-> +static void unmap_rmap_no_lock_begin(struct kvm *kvm, unsigned long *rmapp)
-> +{
-> +	preempt_disable();
-> +	kvm->arch.being_unmapped_rmap = rmapp;
-> +
-> +	/*
-> +	 * Set being_unmapped_rmap should be before read/write any
-> +	 * sptes on the rmaps.
-> +	 * See the comment in sync_being_unmapped_rmap().
-> +	 */
-> +	smp_mb();
-> +}
-> +
-> +static void unmap_rmap_no_lock_end(struct kvm *kvm)
-> +{
-> +	/*
-> +	 * Ensure clearing spte and resetting rmap's entries has
-> +	 * been finished.
-> +	 * See the comment in sync_being_unmapped_rmap().
-> +	 */
-> +	smp_mb();
-> +	kvm->arch.being_unmapped_rmap = NULL;
-> +	preempt_enable();
-> +}
-> +
-> +static void unmap_invalid_rmap_nolock(unsigned long *rmapp, void *data)
-> +{
-> +	struct kvm *kvm = (struct kvm *)data;
-> +
-> +	if (!ACCESS_ONCE(*rmapp))
-> +		return;
-> +
-> +	unmap_rmap_no_lock_begin(kvm, rmapp);
-> +	__kvm_unmap_invalid_rmapp(rmapp);
-> +	unmap_rmap_no_lock_end(kvm);
-> +}
-> +
-> +static void
-> +unmap_memslot_rmap_nolock(struct kvm *kvm, struct kvm_memory_slot *slot)
-> +{
-> +	/* Only invalid rmaps can be unmapped out of mmu-lock. */
-> +	WARN_ON(slot->arch.ops != &invalid_rmap_ops);
-> +	/* Use slots_lock to protect kvm->arch.being_unmapped_rmap. */
-> +	WARN_ON(!mutex_is_locked(&kvm->slots_lock));
-> +
-> +	walk_memslot_rmap_nolock(slot, unmap_invalid_rmap_nolock, kvm);
-> +}
-> +
->  #ifdef MMU_DEBUG
->  static int is_empty_shadow_page(u64 *spt)
->  {
-> diff --git a/arch/x86/kvm/mmu.h b/arch/x86/kvm/mmu.h
-> index bb2b22e..d6aa31a 100644
-> --- a/arch/x86/kvm/mmu.h
-> +++ b/arch/x86/kvm/mmu.h
-> @@ -117,7 +117,7 @@ static inline bool permission_fault(struct kvm_mmu *mmu, unsigned pte_access,
->  struct rmap_operations {
->  	int (*rmap_add)(struct kvm_vcpu *vcpu, u64 *spte,
->  			unsigned long *rmap);
-> -	void (*rmap_remove)(u64 *spte, unsigned long *rmap);
-> +	void (*rmap_remove)(struct kvm *kvm, u64 *spte, unsigned long *rmap);
->  
->  	bool (*rmap_write_protect)(struct kvm *kvm, unsigned long *rmap,
->  				   bool pt_protect);
-> -- 
-> 1.7.7.6
+> This just makes the macro worse in case you pass a complex expression
+> in, which can now have additional unwanted effects. Just drop this patch.
 
---
-			Gleb.
+Never got the original patch...
+
+A much better idea is to get rid of that buggy MAX() macro altogether
+and use the macros already provided by the kernel, which are safe from
+side effects - but more importantly are _type_ _safe_.  The above goes
+wrong when you consider 'a' and 'b' may have different signed-ness.
+
+Consider:
+
+	int val_in = -5;
+	unsigned val = MAX(val_in, 5U);
+
+The resulting value is (unsigned)-5, not (unsigned)5.
+
+Best use the kernel's max() or max_t() _everywhere_.
