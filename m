@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030243Ab3DRKQQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 06:16:16 -0400
-Received: from mail.riopreto.sp.gov.br ([200.168.242.10]:56074 "EHLO
-	mail.riopreto.sp.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030229Ab3DRKQM convert rfc822-to-8bit (ORCPT
+	id S967894Ab3DRKNP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 06:13:15 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:40870 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967838Ab3DRKNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 06:16:12 -0400
-X-Greylist: delayed 3901 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Apr 2013 06:16:12 EDT
-Content-Type: text/plain; charset=US-ASCII
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: system administrator
-To: Recipients <admin@empro.com.br>
-From: "ADMIN" <admin@empro.com.br>
-Date: Fri, 19 Apr 2013 01:32:20 -0700
-Reply-To: upgrade@dgoh.org
-X-Antivirus: avast! (VPS 130417-1, 04/17/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-Id: <20130418083051.EDC3881EFE@mail.riopreto.sp.gov.br>
+	Thu, 18 Apr 2013 06:13:02 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+Subject: [PATCH 16/32] dmaengine: ste_dma40: Remove unnecessary call to d40_phy_cfg()
+Date: Thu, 18 Apr 2013 11:11:58 +0100
+Message-Id: <1366279934-30761-17-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your e-mail has exceeded 2GB which is established by our webmaster, you are runing at 2.30GB, you can not send or receive new messages until you confirm your inbox. Complete the form below to check their
-account.
+All configuration left in d40_phy_cfg() is runtime configurable and
+there is already a call into it from d40_runtime_config(), so let's
+rely on that.
 
-Fill out the request form below and email to the following:
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>
+Cc: Per Forlin <per.forlin@stericsson.com>
+Cc: Rabin Vincent <rabin@rab.in>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/dma/ste_dma40.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-(1) E-mail:
-(2) User Name:
-(3) Password:
-(4) Confirm Password:
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 178a03c..1c570b6 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -2437,9 +2437,6 @@ static int d40_alloc_chan_resources(struct dma_chan *chan)
+ 	}
+ 
+ 	pm_runtime_get_sync(d40c->base->dev);
+-	/* Fill in basic CFG register values */
+-	d40_phy_cfg(&d40c->dma_cfg, &d40c->src_def_cfg,
+-		    &d40c->dst_def_cfg, chan_is_logical(d40c));
+ 
+ 	d40_set_prio_realtime(d40c);
+ 
+-- 
+1.7.10.4
 
-thank you
-system administrator
