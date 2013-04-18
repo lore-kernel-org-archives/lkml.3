@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab3DRJR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:17:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40003 "EHLO
+	id S1757009Ab3DRJRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:17:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40089 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756196Ab3DRJRV (ORCPT
+	with ESMTP id S1756459Ab3DRJRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:17:21 -0400
+	Thu, 18 Apr 2013 05:17:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+Cc: Jan Kiszka <jan.kiszka@siemens.com>, Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 06/72] EISA/PCI: Init EISA early, before PNP
-Date: Thu, 18 Apr 2013 10:15:51 +0100
-Message-Id: <1366276617-3553-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 21/72] ftrace: Consistently restore trace function on sysctl enabling
+Date: Thu, 18 Apr 2013 10:16:06 +0100
+Message-Id: <1366276617-3553-22-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -27,100 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Jan Kiszka <jan.kiszka@siemens.com>
 
-commit c5fb301ae83bec6892e54984e6ec765c47df8e10 upstream.
+commit 5000c418840b309251c5887f0b56503aae30f84c upstream.
 
-Matthew reported kernels fail the pci_eisa probe and are later successful
-with the virtual_eisa_root_init force probe without slot0.
+If we reenable ftrace via syctl, we currently set ftrace_trace_function
+based on the previous simplistic algorithm. This is inconsistent with
+what update_ftrace_function does. So better call that helper instead.
 
-The reason for that is: PNP probing is before pci_eisa_init gets called
-as pci_eisa_init is called via pci_driver.
+Link: http://lkml.kernel.org/r/5151D26F.1070702@siemens.com
 
-pnp 00:0f has 0xc80 - 0xc84 reserved.
-[    9.700409] pnp 00:0f: [io  0x0c80-0x0c84]
-
-so eisa_probe will fail from pci_eisa_init
-				==>eisa_root_register
-					==>eisa_probe path.
-as force_probe is not set in pci_eisa_root, it will bail early when
-slot0 is not probed and initialized.
-
-Try to use subsys_initcall_sync instead, and will keep following sequence:
-	pci_subsys_init
-	pci_eisa_init_early
-	pnpacpi_init/isapnp_init
-
-After this patch EISA can be initialized properly, and PNP overlapping
-resource will not be reserved.
-[   10.104434] system 00:0f: [io  0x0c80-0x0c84] could not be reserved
-
-Reported-by: Matthew Whitehead <mwhitehe@redhat.com>
-Tested-by: Matthew Whitehead <mwhitehe@redhat.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/eisa/pci_eisa.c | 39 +++++++++++++++++++++------------------
- 1 file changed, 21 insertions(+), 18 deletions(-)
+ kernel/trace/ftrace.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/eisa/pci_eisa.c b/drivers/eisa/pci_eisa.c
-index ef5c3ec..6c3fca9 100644
---- a/drivers/eisa/pci_eisa.c
-+++ b/drivers/eisa/pci_eisa.c
-@@ -19,8 +19,7 @@
- /* There is only *one* pci_eisa device per machine, right ? */
- static struct eisa_root_device pci_eisa_root;
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 1b6ec54..00ea125 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -4375,12 +4375,8 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
+ 		ftrace_startup_sysctl();
  
--static int __init pci_eisa_init(struct pci_dev *pdev,
--				const struct pci_device_id *ent)
-+static int __init pci_eisa_init(struct pci_dev *pdev)
- {
- 	int rc, i;
- 	struct resource *res, *bus_res = NULL;
-@@ -67,22 +66,26 @@ static int __init pci_eisa_init(struct pci_dev *pdev,
- 	return 0;
- }
+ 		/* we are starting ftrace again */
+-		if (ftrace_ops_list != &ftrace_list_end) {
+-			if (ftrace_ops_list->next == &ftrace_list_end)
+-				ftrace_trace_function = ftrace_ops_list->func;
+-			else
+-				ftrace_trace_function = ftrace_ops_list_func;
+-		}
++		if (ftrace_ops_list != &ftrace_list_end)
++			update_ftrace_function();
  
--static struct pci_device_id pci_eisa_pci_tbl[] = {
--	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
--	  PCI_CLASS_BRIDGE_EISA << 8, 0xffff00, 0 },
--	{ 0, }
--};
-+/*
-+ * We have to call pci_eisa_init_early() before pnpacpi_init()/isapnp_init().
-+ *   Otherwise pnp resource will get enabled early and could prevent eisa
-+ *   to be initialized.
-+ * Also need to make sure pci_eisa_init_early() is called after
-+ * x86/pci_subsys_init().
-+ * So need to use subsys_initcall_sync with it.
-+ */
-+static int __init pci_eisa_init_early(void)
-+{
-+	struct pci_dev *dev = NULL;
-+	int ret;
- 
--static struct pci_driver __refdata pci_eisa_driver = {
--	.name		= "pci_eisa",
--	.id_table	= pci_eisa_pci_tbl,
--	.probe		= pci_eisa_init,
--};
-+	for_each_pci_dev(dev)
-+		if ((dev->class >> 8) == PCI_CLASS_BRIDGE_EISA) {
-+			ret = pci_eisa_init(dev);
-+			if (ret)
-+				return ret;
-+		}
- 
--static int __init pci_eisa_init_module (void)
--{
--	return pci_register_driver (&pci_eisa_driver);
-+	return 0;
- }
--
--device_initcall(pci_eisa_init_module);
--MODULE_DEVICE_TABLE(pci, pci_eisa_pci_tbl);
-+subsys_initcall_sync(pci_eisa_init_early);
+ 	} else {
+ 		/* stopping ftrace calls (just send to ftrace_stub) */
 -- 
 1.8.1.2
 
