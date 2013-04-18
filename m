@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967611Ab3DRQRH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:17:07 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56790 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967469Ab3DRQRF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:17:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,502,1363158000"; 
-   d="scan'208";a="320378887"
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Dave Hansen <dave@sr71.net>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20130418160920.4A00DE0085@blue.fi.intel.com>
-References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com>
- <1365163198-29726-32-git-send-email-kirill.shutemov@linux.intel.com>
- <51631206.3060605@sr71.net>
- <20130417143842.1A76CE0085@blue.fi.intel.com>
- <516F1D3C.1060804@sr71.net>
- <20130418160920.4A00DE0085@blue.fi.intel.com>
-Subject: Re: [PATCHv3, RFC 31/34] thp: initial implementation of
- do_huge_linear_fault()
+	id S966542Ab3DRQUD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:20:03 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:43609 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965490Ab3DRQUB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 12:20:01 -0400
+Message-ID: <51701D2E.6060903@console-pimps.org>
+Date: Thu, 18 Apr 2013 17:19:58 +0100
+From: Matt Fleming <matt@console-pimps.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Darren Hart <darren.hart@intel.com>
+CC: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>,
+        matthew.garrett@nebula.com, linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
+References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <516EAC4A.6040202@console-pimps.org> <516F1B90.9040508@nexus-software.ie> <516FD24A.3070502@console-pimps.org> <51700876.1000305@intel.com>
+In-Reply-To: <51700876.1000305@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20130418161906.2818DE0085@blue.fi.intel.com>
-Date: Thu, 18 Apr 2013 19:19:06 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kirill A. Shutemov wrote:
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index c8a8626..4669c19 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -165,6 +165,11 @@ extern pgprot_t protection_map[16];
->  #define FAULT_FLAG_RETRY_NOWAIT	0x10	/* Don't drop mmap_sem and wait when retrying */
->  #define FAULT_FLAG_KILLABLE	0x20	/* The fault task is in SIGKILL killable region */
->  #define FAULT_FLAG_TRIED	0x40	/* second try */
-> +#ifdef CONFIG_CONFIG_TRANSPARENT_HUGEPAGE
+On 18/04/13 15:51, Darren Hart wrote:
+> I don't believe I have seen a 32-bit EFI system with a BGRT, but then
+> again, I had to look it up today! That said, I suspect the MinnowBoard
+> would benefit from such a thing, so we should have an example of it
+> there in the near future.
+ 
+That's fine and things will work as-is provided that the BGRT image is
+not in highmem.
 
-Oops, s/CONFIG_CONFIG/CONFIG/.
+> Is this in anyway related to the following patch from Josh Boyer? We're
+> carrying this in the Yocto Project trees currently.
+> 
+>      commit 6f3e186bc7721c5b24ad90d4a751cccfccd445e6
+>      Author: Josh Boyer <jwboyer@redhat.com>
+>      Date:   Fri Aug 5 08:47:23 2011 -0400
+> 
+>         Add patch to fix 32bit EFI service mapping (rhbz 726701)
+> 
+>     Signed-off-by: Tom Zanussi <tom.zanussi@intel.com>
+>     Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+
+Yep, it's basically the same fix. My patch just avoids the #ifdef and
+prints an error message if we have EFI Boot services regions we can't
+access directly. The error message will at least be useful if we do
+start seeing BGRT pointers in highmem.
+
+Could you give it a spin on your MinnowBoard?
 
 -- 
- Kirill A. Shutemov
+Matt Fleming, Intel Open Source Technology Center
