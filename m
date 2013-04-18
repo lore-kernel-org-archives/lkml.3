@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968034Ab3DRKRh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 06:17:37 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:40360 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967865Ab3DRKNL (ORCPT
+	id S967861Ab3DRKNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 06:13:09 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:64114 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967846Ab3DRKNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 06:13:11 -0400
+	Thu, 18 Apr 2013 06:13:04 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Lee Jones <lee.jones@linaro.org>, Vinod Koul <vinod.koul@intel.com>,
         Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
         Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 21/32] dmaengine: ste_dma40: Also report the number of logical channels
-Date: Thu, 18 Apr 2013 11:12:03 +0100
-Message-Id: <1366279934-30761-22-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 17/32] dmaengine: ste_dma40: Remove redundant argument from d40_phy_cfg()
+Date: Thu, 18 Apr 2013 11:11:59 +0100
+Message-Id: <1366279934-30761-18-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
 References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
@@ -23,14 +23,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we know the total of physical and logical channels, we may as
-well report them within the information log.
-
-Before:
-dma40 dma40.0: hardware revision: 3 @ 0x801c0000 with 8 physical channels
-
-After:
-<as above ...> and 256 logical channels
+d40_phy_cfg is now only ever called to configure physical channels, so
+there's no requirement to pass though an argument describing the type
+of channel and to subsequently test for it.
 
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>
@@ -38,25 +33,155 @@ Cc: Per Forlin <per.forlin@stericsson.com>
 Cc: Rabin Vincent <rabin@rab.in>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/dma/ste_dma40.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/dma/ste_dma40.c    |    3 +-
+ drivers/dma/ste_dma40_ll.c |  101 +++++++++++++++++++++-----------------------
+ drivers/dma/ste_dma40_ll.h |    3 +-
+ 3 files changed, 50 insertions(+), 57 deletions(-)
 
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 282dd59..805049c 100644
+index 1c570b6..ff41972 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -3200,8 +3200,9 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+@@ -2799,8 +2799,7 @@ static int d40_set_runtime_config(struct dma_chan *chan,
+ 	if (chan_is_logical(d40c))
+ 		d40_log_cfg(cfg, &d40c->log_def.lcsp1, &d40c->log_def.lcsp3);
+ 	else
+-		d40_phy_cfg(cfg, &d40c->src_def_cfg,
+-			    &d40c->dst_def_cfg, false);
++		d40_phy_cfg(cfg, &d40c->src_def_cfg, &d40c->dst_def_cfg);
  
- 	num_log_chans = num_phy_chans * D40_MAX_LOG_CHAN_PER_PHY;
+ 	/* These settings will take precedence later */
+ 	d40c->runtime_addr = config_addr;
+diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
+index b72d3e2..9ab9dff 100644
+--- a/drivers/dma/ste_dma40_ll.c
++++ b/drivers/dma/ste_dma40_ll.c
+@@ -56,63 +56,58 @@ void d40_log_gim_unmask(u32 *src_cfg, u32 *dst_cfg) {
+ 	*dst_cfg |= 1 << D40_SREG_CFG_LOG_GIM_POS;
+ }
  
--	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x with %d physical channels\n",
--		 rev, res->start, num_phy_chans);
-+	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x with "
-+		"%d physical channels and %d logical channels\n",
-+		rev, res->start, num_phy_chans, num_log_chans);
+-/* Sets up SRC and DST CFG register for both logical and physical channels */
+-void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
+-		 u32 *src_cfg, u32 *dst_cfg, bool is_log)
++void d40_phy_cfg(struct stedma40_chan_cfg *cfg, u32 *src_cfg, u32 *dst_cfg)
+ {
+ 	u32 src = 0;
+ 	u32 dst = 0;
  
- 	base = kzalloc(ALIGN(sizeof(struct d40_base), 4) +
- 		       (num_phy_chans + num_log_chans + ARRAY_SIZE(dma40_memcpy_channels)) *
+-	if (!is_log) {
+-		/* Physical channel */
+-		if ((cfg->dir ==  STEDMA40_PERIPH_TO_MEM) ||
+-		    (cfg->dir == STEDMA40_PERIPH_TO_PERIPH)) {
+-			/* Set master port to 1 */
+-			src |= 1 << D40_SREG_CFG_MST_POS;
+-			src |= D40_TYPE_TO_EVENT(cfg->dev_type);
+-
+-			if (cfg->src_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
+-				src |= 1 << D40_SREG_CFG_PHY_TM_POS;
+-			else
+-				src |= 3 << D40_SREG_CFG_PHY_TM_POS;
+-		}
+-		if ((cfg->dir ==  STEDMA40_MEM_TO_PERIPH) ||
+-		    (cfg->dir == STEDMA40_PERIPH_TO_PERIPH)) {
+-			/* Set master port to 1 */
+-			dst |= 1 << D40_SREG_CFG_MST_POS;
+-			dst |= D40_TYPE_TO_EVENT(cfg->dev_type);
+-
+-			if (cfg->dst_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
+-				dst |= 1 << D40_SREG_CFG_PHY_TM_POS;
+-			else
+-				dst |= 3 << D40_SREG_CFG_PHY_TM_POS;
+-		}
+-		/* Interrupt on end of transfer for destination */
+-		dst |= 1 << D40_SREG_CFG_TIM_POS;
+-
+-		/* Generate interrupt on error */
+-		src |= 1 << D40_SREG_CFG_EIM_POS;
+-		dst |= 1 << D40_SREG_CFG_EIM_POS;
+-
+-		/* PSIZE */
+-		if (cfg->src_info.psize != STEDMA40_PSIZE_PHY_1) {
+-			src |= 1 << D40_SREG_CFG_PHY_PEN_POS;
+-			src |= cfg->src_info.psize << D40_SREG_CFG_PSIZE_POS;
+-		}
+-		if (cfg->dst_info.psize != STEDMA40_PSIZE_PHY_1) {
+-			dst |= 1 << D40_SREG_CFG_PHY_PEN_POS;
+-			dst |= cfg->dst_info.psize << D40_SREG_CFG_PSIZE_POS;
+-		}
+-
+-		/* Element size */
+-		src |= cfg->src_info.data_width << D40_SREG_CFG_ESIZE_POS;
+-		dst |= cfg->dst_info.data_width << D40_SREG_CFG_ESIZE_POS;
+-
+-		/* Set the priority bit to high for the physical channel */
+-		if (cfg->high_priority) {
+-			src |= 1 << D40_SREG_CFG_PRI_POS;
+-			dst |= 1 << D40_SREG_CFG_PRI_POS;
+-		}
++	if ((cfg->dir ==  STEDMA40_PERIPH_TO_MEM) ||
++	    (cfg->dir == STEDMA40_PERIPH_TO_PERIPH)) {
++		/* Set master port to 1 */
++		src |= 1 << D40_SREG_CFG_MST_POS;
++		src |= D40_TYPE_TO_EVENT(cfg->dev_type);
++
++		if (cfg->src_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
++			src |= 1 << D40_SREG_CFG_PHY_TM_POS;
++		else
++			src |= 3 << D40_SREG_CFG_PHY_TM_POS;
++	}
++	if ((cfg->dir ==  STEDMA40_MEM_TO_PERIPH) ||
++	    (cfg->dir == STEDMA40_PERIPH_TO_PERIPH)) {
++		/* Set master port to 1 */
++		dst |= 1 << D40_SREG_CFG_MST_POS;
++		dst |= D40_TYPE_TO_EVENT(cfg->dev_type);
++
++		if (cfg->dst_info.flow_ctrl == STEDMA40_NO_FLOW_CTRL)
++			dst |= 1 << D40_SREG_CFG_PHY_TM_POS;
++		else
++			dst |= 3 << D40_SREG_CFG_PHY_TM_POS;
++	}
++	/* Interrupt on end of transfer for destination */
++	dst |= 1 << D40_SREG_CFG_TIM_POS;
++
++	/* Generate interrupt on error */
++	src |= 1 << D40_SREG_CFG_EIM_POS;
++	dst |= 1 << D40_SREG_CFG_EIM_POS;
++
++	/* PSIZE */
++	if (cfg->src_info.psize != STEDMA40_PSIZE_PHY_1) {
++		src |= 1 << D40_SREG_CFG_PHY_PEN_POS;
++		src |= cfg->src_info.psize << D40_SREG_CFG_PSIZE_POS;
++	}
++	if (cfg->dst_info.psize != STEDMA40_PSIZE_PHY_1) {
++		dst |= 1 << D40_SREG_CFG_PHY_PEN_POS;
++		dst |= cfg->dst_info.psize << D40_SREG_CFG_PSIZE_POS;
++	}
++
++	/* Element size */
++	src |= cfg->src_info.data_width << D40_SREG_CFG_ESIZE_POS;
++	dst |= cfg->dst_info.data_width << D40_SREG_CFG_ESIZE_POS;
++
++	/* Set the priority bit to high for the physical channel */
++	if (cfg->high_priority) {
++		src |= 1 << D40_SREG_CFG_PRI_POS;
++		dst |= 1 << D40_SREG_CFG_PRI_POS;
+ 	}
+ 
+ 	if (cfg->src_info.big_endian)
+diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
+index 8aad679..e54df09 100644
+--- a/drivers/dma/ste_dma40_ll.h
++++ b/drivers/dma/ste_dma40_ll.h
+@@ -434,8 +434,7 @@ void d40_log_gim_unmask(u32 *src_cfg, u32 *dst_cfg);
+ 
+ void d40_phy_cfg(struct stedma40_chan_cfg *cfg,
+ 		 u32 *src_cfg,
+-		 u32 *dst_cfg,
+-		 bool is_log);
++		 u32 *dst_cfg);
+ 
+ void d40_log_cfg(struct stedma40_chan_cfg *cfg,
+ 		 u32 *lcsp1,
 -- 
 1.7.10.4
 
