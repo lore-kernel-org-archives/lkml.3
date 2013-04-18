@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966542Ab3DRQUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:20:03 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:43609 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965490Ab3DRQUB (ORCPT
+	id S967525Ab3DRQUi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:20:38 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:28996 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965490Ab3DRQUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:20:01 -0400
-Message-ID: <51701D2E.6060903@console-pimps.org>
-Date: Thu, 18 Apr 2013 17:19:58 +0100
-From: Matt Fleming <matt@console-pimps.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 18 Apr 2013 12:20:36 -0400
+X-IronPort-AV: E=Sophos;i="4.87,502,1363132800"; 
+   d="scan'208";a="19278221"
+Date: Thu, 18 Apr 2013 17:20:23 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "nicolas.pitre@linaro.org" <nicolas.pitre@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "nico@linaro.org" <nico@linaro.org>
+Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
+In-Reply-To: <20130418161341.GB14496@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Darren Hart <darren.hart@intel.com>
-CC: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>,
-        matthew.garrett@nebula.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
-References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <516EAC4A.6040202@console-pimps.org> <516F1B90.9040508@nexus-software.ie> <516FD24A.3070502@console-pimps.org> <51700876.1000305@intel.com>
-In-Reply-To: <51700876.1000305@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/04/13 15:51, Darren Hart wrote:
-> I don't believe I have seen a 32-bit EFI system with a BGRT, but then
-> again, I had to look it up today! That said, I suspect the MinnowBoard
-> would benefit from such a thing, so we should have an example of it
-> there in the near future.
- 
-That's fine and things will work as-is provided that the BGRT image is
-not in highmem.
-
-> Is this in anyway related to the following patch from Josh Boyer? We're
-> carrying this in the Yocto Project trees currently.
+On Thu, 18 Apr 2013, Russell King - ARM Linux wrote:
+> On Fri, Apr 05, 2013 at 02:11:32PM +0100, Stefano Stabellini wrote:
+> > +	psci_init();
+> >  #ifdef CONFIG_SMP
+> >  	if (is_smp()) {
+> > -		smp_set_ops(mdesc->smp);
+> > +		if (mdesc->smp)
+> > +			smp_set_ops(mdesc->smp);
+> > +		else if (psci_smp_available())
+> > +			smp_set_ops(&psci_smp_ops);
 > 
->      commit 6f3e186bc7721c5b24ad90d4a751cccfccd445e6
->      Author: Josh Boyer <jwboyer@redhat.com>
->      Date:   Fri Aug 5 08:47:23 2011 -0400
+> So, I have a vague recollection that the ordering of the above got discussed
+> but I can't find it amongst the 21k of messages so far this year.
 > 
->         Add patch to fix 32bit EFI service mapping (rhbz 726701)
+> The above looks weird to me.  Surely this should be:
 > 
->     Signed-off-by: Tom Zanussi <tom.zanussi@intel.com>
->     Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> 		if (psci_smp_available())
+> 			smp_set_ops(&psci_smp_ops);
+> 		else if (mdesc->smp)
+> 			smp_set_ops(mdesc->ops);
+> 
+> This means that if PSCI is available, and provides a set of operations,
+> we override whatever the platform has statically provided.
+> 
+> Remember, we're trying to move away from using "mdesc"s for platform
+> stuff, relying on things like DT and such like.  We really should not
+> be going for mdesc-overriding-newstuff but newstuff-overriding-mdesc.
 
-Yep, it's basically the same fix. My patch just avoids the #ifdef and
-prints an error message if we have EFI Boot services regions we can't
-access directly. The error message will at least be useful if we do
-start seeing BGRT pointers in highmem.
+That's correct, in fact if you look at the next patch you'll see that it
+changes the order.
 
-Could you give it a spin on your MinnowBoard?
+I introduced the mechanism first and changed the priority later - it
+should help bisectability.
+I can fold the two patches into one if you prefer.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+
+> Now, if the psci stuff can't be relied upon to provide the correct
+> functionality, then that's a separate problem which needs addressing
+> differently.
+> 
+> This should allow the Xen problem to be resolved, because Xen will
+> provide the PSCI operations, and it's correct in that case to override
+> the platform's SMP operations.
+
+Yes, increasing the priority of PSCI helps Xen a lot.
+In order to completely solve the issue for Xen though, another patch is
+needed (http://marc.info/?l=linux-kernel&m=136630106201968&w=2) because
+of the introduction of smp_init.
+
