@@ -1,94 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab3DRMc2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 08:32:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60484 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755287Ab3DRMc1 (ORCPT
+	id S1756188Ab3DRMiA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 08:38:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45157 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755895Ab3DRMh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 08:32:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 24/32 v2] dmaengine: ste_dma40: Supply full Device Tree parsing support
-Date: Thu, 18 Apr 2013 14:32:11 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-25-git-send-email-lee.jones@linaro.org> <20130418121253.GF27903@gmail.com>
-In-Reply-To: <20130418121253.GF27903@gmail.com>
+	Thu, 18 Apr 2013 08:37:59 -0400
+Date: Thu, 18 Apr 2013 05:37:38 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: gaowanlong@cn.fujitsu.com, Tejun Heo <tj@kernel.org>, namhyung@gmail.com,
+        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
+Message-ID: <20130418123738.GV4816@kernel.dk>
+References: <516E5EF8.9090507@cn.fujitsu.com>
+ <1366209997.8817.12.camel@pippen.local.home>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304181432.11503.arnd@arndb.de>
-X-Provags-ID: V02:K0:fH3MhLjxVM/uWO56FRwihL85k0FgJXa5Eo50s2PorCW
- CzOp64ksd1Cud3KfcbG7kbS6rg80vAbG8Q+lWMRkKPXYHp3v8s
- mbXfBL8fqJojeXM77EV8y1DoniElUXtiPUsaNDxs/i3FVHHAaK
- zyozzV0C96fIYbpioO7lJLj4istHJgZ8rUIPs83twuafM4ulNB
- I7Ip4XUcjsrsltrXbo9HTc7hHOnXKeSy0FpZQZNAnG4zyqCNaR
- YYpvBxKUF20o5L8YE+u/k5HV3N3iMICNr1A7TTxvMf2Q/Fz767
- lVAoXCOGkVdd14FXlBmOtGHPOtjnPNM5VouFrENMh6YBD8EqCH
- w2R8riiT5y1FVrhKLf3Q=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366209997.8817.12.camel@pippen.local.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013, Lee Jones wrote:
-> +Clients
-> +Required properties:
-> +- dmas: Comma separated list of dma channel requests
-> +- dma-names: Names of the aforementioned requested channels
-> +
-> +Each dmas request consists of 4 cells:
-> +  1. A phandle pointing to the DMA controller
-> +  2. Device Type
-> +  3. The DMA request line number (only when 'use fixed channel' is set)
-> +  4. A 32bit mask specifying; mode, direction and endianess [NB: This list will grow]
-> +        bit 1: Mode:
-> +           0: Logical
-> +           1: Physical
-> +        bit 2: Direction:
-> +           0: Mem to Mem
-> +           1: Mem to Dev
+On Wed, Apr 17 2013, Steven Rostedt wrote:
+> On Wed, 2013-04-17 at 16:36 +0800, Wanlong Gao wrote:
+> > Hi Tj, all,
+> > 
+> > I can get kernel panic on my machine with kernel 3.9.0-rc7-4-gbb33db7 every time
+> > after booting for several minutes.
+> > 
+> > Here attached the panic picture and the config.
+> > I'm sorry that the panic log is not completed.
+> > 
+> > But fortunately, the panic was gone when I reverted the below commit from Tj,
+> > 
+> > commit 3a366e614d0837d9fc23f78cdb1a1186ebc3387f
+> > Author: Tejun Heo <tj@kernel.org>
+> > Date:   Fri Jan 11 13:06:33 2013 -0800
+> > 
+> >     block: add missing block_bio_complete() tracepoint
+> > 
+> > I think this will be helpful for you to resolve this bug, and this may be urgent,
+> > because it's already rc-7 now.
+> 
+> 
+> Doing a objdump on the code I found this:
+> 
+> ffffffff8123d479:       8b 77 48                mov    0x48(%rdi),%esi
+> ffffffff8123d47c:       48 8d 7d c8             lea    -0x38(%rbp),%rdi
+> ffffffff8123d480:       48 8b 4d b8             mov    -0x48(%rbp),%rcx
+> ffffffff8123d484:       ba 28 00 00 00          mov    $0x28,%edx
+> ffffffff8123d489:       45 89 e8                mov    %r13d,%r8d
+> ffffffff8123d48c:       e8 1f d3 ea ff          callq  ffffffff810ea7b0 <trace_current_buffer_lock_reserve>
+> ffffffff8123d491:       48 85 c0                test   %rax,%rax
+> ffffffff8123d494:       49 89 c6                mov    %rax,%r14
+> ffffffff8123d497:       74 5a                   je     ffffffff8123d4f3 <ftrace_raw_event_block_bio_complete+0xb3>
+> ffffffff8123d499:       48 89 c7                mov    %rax,%rdi
+> ffffffff8123d49c:       e8 5f 4f ea ff          callq  ffffffff810e2400 <ring_buffer_event_data>
+> ffffffff8123d4a1:       48 8b 4b 10             mov    0x10(%rbx),%rcx
+> ffffffff8123d4a5:       31 d2                   xor    %edx,%edx
+> ffffffff8123d4a7:       48 85 c9                test   %rcx,%rcx
+> ffffffff8123d4aa:       74 02                   je     ffffffff8123d4ae <ftrace_raw_event_block_bio_complete+0x6e>
+> 
+> ffffffff8123d4ac:       8b 11                   mov    (%rcx),%edx   <<<---- BUG IS HERE
+> 
+> ffffffff8123d4ae:       89 50 08                mov    %edx,0x8(%rax)
+> ffffffff8123d4b1:       48 8b 13                mov    (%rbx),%rdx
+> ffffffff8123d4b4:       48 8d 78 20             lea    0x20(%rax),%rdi
+> ffffffff8123d4b8:       48 89 50 10             mov    %rdx,0x10(%rax)
+> ffffffff8123d4bc:       8b 53 30                mov    0x30(%rbx),%edx
+> ffffffff8123d4bf:       44 89 78 1c             mov    %r15d,0x1c(%rax)
+> ffffffff8123d4c3:       c1 ea 09                shr    $0x9,%edx
+> ffffffff8123d4c6:       89 50 18                mov    %edx,0x18(%rax)
+> ffffffff8123d4c9:       8b 53 30                mov    0x30(%rbx),%edx
+> ffffffff8123d4cc:       48 8b 73 20             mov    0x20(%rbx),%rsi
+> 
+> According to the picture, that showed where in the code dump, it has the
+> command that died: "<8b> 11 89 50 08".
+> 
+> Just before that, rcx was tested for zero, and passed (wasn't zero). But
+> it seems that it wasn't a real address space either.
+> 
+> bio is allocated with kmalloc and not kzalloc, so it is possible that if
+> bio->bi_bdev never got initialized and is just garbage.
 
-You probably mean 
+A bio is always fully initialized, regardless of which internal
+allocator it came from. If people are doing private kmallocs, then they
+better be using bio_init() as well.
 
-		0: Dev to mem
+Wanlong, would it be possible to get a full dmesg on boot see I can see
+what drivers and file systems are in use? Anything special about your
+setup.
 
-Related to this, I would recommend not listing bit numbers like this, since there
-is some amount of confusion regarding how they are counted: zero-based on one-based
-and LSB-to-MSB or MSB-to-LSB
+Will get this reverted for 3.9 final, so we have some time to
+investigate.
 
-You can completely avoid this problem by listing them as bit masks:
+-- 
+Jens Axboe
 
-	0x00000002:
-		Logical channel when unset
-		Physical channel when set
-	0x00000004:
-		Direction from device when unset
-		Direction to device when unset
-	... 
-
-> +		dmas = <&dma 13 0 0x8>, /* Logical - DevToMem */
-> +		       <&dma 13 0 0x4>; /* Logical - MemToDev */
-
-The bit in the example no longer matches the description.
-
-> +
-> +	switch (D40_DT_FLAGS_DIR(flags)) {
-> +	case 0: cfg.dir = STEDMA40_MEM_TO_MEM; break;
-> +	case 1: cfg.dir = STEDMA40_MEM_TO_PERIPH; break;
-> +	}
-
-Same typo above.
-
-> +	if (cfg.dir == STEDMA40_PERIPH_TO_MEM)
-> +		cfg.src_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
-> +	if (cfg.dir == STEDMA40_MEM_TO_PERIPH)
-> +		cfg.dst_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
-
-You can fold these two into the switch statement above.
-
-	Arnd
