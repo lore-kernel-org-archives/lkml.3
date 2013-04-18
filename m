@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967642Ab3DRRig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:38:36 -0400
-Received: from mail-qe0-f54.google.com ([209.85.128.54]:59659 "EHLO
-	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966799Ab3DRRif (ORCPT
+	id S936414Ab3DRRjm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:39:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52557 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936039Ab3DRRjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:38:35 -0400
-Date: Thu, 18 Apr 2013 13:38:32 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>
-Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
-In-Reply-To: <alpine.DEB.2.02.1304181749260.7254@kaball.uk.xensource.com>
-Message-ID: <alpine.LFD.2.03.1304181336280.17375@syhkavp.arg>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
- <alpine.LFD.2.03.1304181237480.17375@syhkavp.arg> <alpine.DEB.2.02.1304181749260.7254@kaball.uk.xensource.com>
-User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+	Thu, 18 Apr 2013 13:39:41 -0400
+Date: Thu, 18 Apr 2013 10:39:00 -0700
+From: Jens Axboe <axboe@kernel.dk>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@gmail.com>, Alasdair G Kergon <agk@redhat.com>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        Neil Brown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
+Message-ID: <20130418173811.GF4816@kernel.dk>
+References: <516E5EF8.9090507@cn.fujitsu.com>
+ <1366209997.8817.12.camel@pippen.local.home>
+ <20130418123738.GV4816@kernel.dk>
+ <516FED09.1040008@cn.fujitsu.com>
+ <20130418133546.GX4816@kernel.dk>
+ <516FFFAC.8040103@cn.fujitsu.com>
+ <20130418143014.GZ4816@kernel.dk>
+ <CA+55aFwA8njGh4v8ZfR_o4s4m=Hugnadeir=uxbeE4yxHiBKLg@mail.gmail.com>
+ <20130418172732.GB9897@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130418172732.GB9897@mtj.dyndns.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Apr 2013, Stefano Stabellini wrote:
-
-> On Thu, 18 Apr 2013, Nicolas Pitre wrote:
-> > On Thu, 18 Apr 2013, Stefano Stabellini wrote:
-> > 
-> > > On Thu, 18 Apr 2013, Russell King - ARM Linux wrote:
-> > > > This should allow the Xen problem to be resolved, because Xen will
-> > > > provide the PSCI operations, and it's correct in that case to override
-> > > > the platform's SMP operations.
-> > > 
-> > > Yes, increasing the priority of PSCI helps Xen a lot.
-> > > In order to completely solve the issue for Xen though, another patch is
-> > > needed (http://marc.info/?l=linux-kernel&m=136630106201968&w=2) because
-> > > of the introduction of smp_init.
-> > 
-> > Please look at the latest smp_init patch version I sent to you.  It 
-> > shouldn't conflict with Xen any longer.  It now returns a bool result 
-> > depending on whether it did set up smp_ops or not.
+On Thu, Apr 18 2013, Tejun Heo wrote:
+> Hello,
 > 
-> CPUs are virtualized by Xen and do not reflect or expose the underlying
-> SMP hardware and firmware features, so an hardware specific smp_init
-> cannot run.
+> On Thu, Apr 18, 2013 at 09:08:34AM -0700, Linus Torvalds wrote:
+> > On Thu, Apr 18, 2013 at 7:30 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> > >
+> > > Could you capture the full dump? I'd like to see what rcx was, and that
+> > > seems to have scrolled off.
+> > 
+> > You don't need it. The %cr2 value shows the address of the bad access,
+> > and it's 0x00000001.
 > 
-> So the smp_init patch still breaks Xen because even if smp_init can fail
-> graciously, executing a platform specific smp_init function that tries
-> to access registers and memory regions that are not present is going to
-> cause an undefined behaviour.
+> If I'm not mistaken, it seems like we have a bio which has 1 as its
+> ->bi_bdev.  Ummm.... no idea whatsoever how that can happen tho right
+> now.  Looking into it.
 
-It won't access hardware but just look into the DT and return false if 
-nothing interesting is found.  At which point the next attempt in the 
-priority list is PSCI by default.
+Yep, thanks Linus for that hint... Must be someone abusing it for a
+flag field post submission? Crazy.
 
+-- 
+Jens Axboe
 
-Nicolas
