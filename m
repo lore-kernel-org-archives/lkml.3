@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967001Ab3DRSsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 14:48:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21002 "EHLO mx1.redhat.com"
+	id S936309Ab3DRSsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 14:48:11 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:5855 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754200Ab3DRSsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754294Ab3DRSsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Apr 2013 14:48:09 -0400
-Date: Thu, 18 Apr 2013 20:44:22 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] ptrace/x86: cleanup ptrace_set_debugreg()
-Message-ID: <20130418184422.GA4447@redhat.com>
+X-IronPort-AV: E=Sophos;i="4.87,503,1363132800"; 
+   d="scan'208";a="20272492"
+From: Ben Guthro <benjamin.guthro@citrix.com>
+To: <konrad.wilk@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xensource.com>
+CC: Ben Guthro <benjamin.guthro@citrix.com>
+Subject: [PATCH] xen: resolve section mismatch warnings
+Date: Thu, 18 Apr 2013 14:48:00 -0400
+Message-ID: <1366310880-818-1-git-send-email-benjamin.guthro@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130418184350.GA4407@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-Originating-IP: [10.204.241.11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ptrace_set_debugreg() is trivial but looks horrible. Kill the
-unnecessary goto's and return's to cleanup the code.
-
-This matches ptrace_get_debugreg() which also needs the trivial
-whitespace cleanups.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/kernel/ptrace.c |   26 ++++++++------------------
- 1 files changed, 8 insertions(+), 18 deletions(-)
+ drivers/xen/xen-acpi-processor.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 5c387b3..7461f50 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -703,7 +703,7 @@ restore:
-  */
- static unsigned long ptrace_get_debugreg(struct task_struct *tsk, int n)
- {
--	struct thread_struct *thread = &(tsk->thread);
-+	struct thread_struct *thread = &tsk->thread;
- 	unsigned long val = 0;
+diff --git a/drivers/xen/xen-acpi-processor.c b/drivers/xen/xen-acpi-processor.c
+index 86b6f69..285e3d5 100644
+--- a/drivers/xen/xen-acpi-processor.c
++++ b/drivers/xen/xen-acpi-processor.c
+@@ -470,7 +470,7 @@ static void free_acpi_perf_data(void)
+ 	free_percpu(acpi_perf_data);
+ }
  
- 	if (n < HBP_NUM) {
-@@ -713,7 +713,7 @@ static unsigned long ptrace_get_debugreg(struct task_struct *tsk, int n)
- 			val = bp->hw.info.address;
- 	} else if (n == 6) {
- 		val = thread->debugreg6;
--	 } else if (n == 7) {
-+	} else if (n == 7) {
- 		val = thread->ptrace_dr7;
- 	}
- 	return val;
-@@ -761,30 +761,20 @@ static int ptrace_set_breakpoint_addr(struct task_struct *tsk, int nr,
- static int ptrace_set_debugreg(struct task_struct *tsk, int n,
- 			       unsigned long val)
+-static int xen_upload_processor_pm_data(void)
++static int __init xen_upload_processor_pm_data(void)
  {
--	struct thread_struct *thread = &(tsk->thread);
--	int rc = 0;
--
-+	struct thread_struct *thread = &tsk->thread;
- 	/* There are no DR4 or DR5 registers */
--	if (n == 4 || n == 5)
--		return -EIO;
-+	int rc = -EIO;
- 
--	if (n == 6) {
--		thread->debugreg6 = val;
--		goto ret_path;
--	}
- 	if (n < HBP_NUM) {
- 		rc = ptrace_set_breakpoint_addr(tsk, n, val);
--		if (rc)
--			return rc;
--	}
--	/* All that's left is DR7 */
--	if (n == 7) {
-+	} else if (n == 6) {
-+		thread->debugreg6 = val;
-+		rc = 0;
-+	} else if (n == 7) {
- 		rc = ptrace_write_dr7(tsk, val);
- 		if (!rc)
- 			thread->ptrace_dr7 = val;
- 	}
--
--ret_path:
+ 	struct acpi_processor *pr_backup = NULL;
+ 	unsigned int i;
+@@ -498,7 +498,7 @@ static int xen_upload_processor_pm_data(void)
  	return rc;
  }
  
+-static void xen_acpi_processor_resume(void)
++static void __init xen_acpi_processor_resume(void)
+ {
+ 	bitmap_zero(acpi_ids_done, nr_acpi_bits);
+ 	xen_upload_processor_pm_data();
 -- 
-1.5.5.1
+1.7.9.5
 
