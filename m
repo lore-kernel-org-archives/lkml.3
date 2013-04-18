@@ -1,34 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964949Ab3DRAcK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 20:32:10 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:55590 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935285Ab3DRAcH (ORCPT
+	id S964946Ab3DRAev (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 20:34:51 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:51697 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934752Ab3DRAeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 20:32:07 -0400
-Date: Wed, 17 Apr 2013 17:32:03 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Will Huck <will.huckk@gmail.com>
-cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        Behan Webster <behanw@converseincode.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] slab: Remove unnecessary __builtin_constant_p()
-In-Reply-To: <516F3B30.30307@gmail.com>
-Message-ID: <alpine.DEB.2.02.1304171731410.26200@chino.kir.corp.google.com>
-References: <1366225776.8817.28.camel@pippen.local.home> <516F3B30.30307@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 17 Apr 2013 20:34:46 -0400
+X-IronPort-AV: E=Sophos;i="4.87,496,1363158000"; 
+   d="scan'208";a="39246987"
+Message-ID: <516F3FA5.8070307@codeaurora.org>
+Date: Wed, 17 Apr 2013 17:34:45 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Russell King <linux@arm.linux.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: sched_clock: Add more notrace to prevent recursion
+References: <1363306086-23501-1-git-send-email-sboyd@codeaurora.org> <514B483F.7000304@codeaurora.org> <5151DC75.7030606@codeaurora.org>
+In-Reply-To: <5151DC75.7030606@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Apr 2013, Will Huck wrote:
+On 03/26/13 10:35, Stephen Boyd wrote:
+> On 03/21/13 10:49, Stephen Boyd wrote:
+>> On 03/14/13 17:08, Stephen Boyd wrote:
+>>> cyc_to_sched_clock() is called by sched_clock() and cyc_to_ns()
+>>> is called by cyc_to_sched_clock(). I suspect that some compilers
+>>> inline both of these functions into sched_clock() and so we've
+>>> been getting away without having a notrace marking. It seems that
+>>> my compiler isn't inlining cyc_to_sched_clock() though, so I'm
+>>> hitting a recursion bug when I enable the function graph tracer,
+>>> causing my system to crash. Marking these functions notrace fixes
+>>> it. Technically cyc_to_ns() doesn't need the notrace because it's
+>>> already marked inline, but let's just add it so that if we ever
+>>> remove inline from that function it doesn't blow up.
+>> Anyone else seeing this problem?
+> Russell, should I put this into the patch tracker?
 
-> In normal case, builtin_constant_p() is used for what?
-> 
+I'll throw this into the patch tracker tomorrow if nobody complains.
 
-http://gcc.gnu.org/onlinedocs/
+>>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>> ---
+>>>  arch/arm/kernel/sched_clock.c | 4 ++--
+>>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/arch/arm/kernel/sched_clock.c b/arch/arm/kernel/sched_clock.c
+>>> index bd6f56b..59d2adb 100644
+>>> --- a/arch/arm/kernel/sched_clock.c
+>>> +++ b/arch/arm/kernel/sched_clock.c
+>>> @@ -45,12 +45,12 @@ static u32 notrace jiffy_sched_clock_read(void)
+>>>  
+>>>  static u32 __read_mostly (*read_sched_clock)(void) = jiffy_sched_clock_read;
+>>>  
+>>> -static inline u64 cyc_to_ns(u64 cyc, u32 mult, u32 shift)
+>>> +static inline u64 notrace cyc_to_ns(u64 cyc, u32 mult, u32 shift)
+>>>  {
+>>>  	return (cyc * mult) >> shift;
+>>>  }
+>>>  
+>>> -static unsigned long long cyc_to_sched_clock(u32 cyc, u32 mask)
+>>> +static unsigned long long notrace cyc_to_sched_clock(u32 cyc, u32 mask)
+>>>  {
+>>>  	u64 epoch_ns;
+>>>  	u32 epoch_cyc;
+>
+
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
