@@ -1,100 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965816Ab3DRNnX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 09:43:23 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:53127 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934480Ab3DRNnW (ORCPT
+	id S965997Ab3DRNoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 09:44:10 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:55183 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934480Ab3DRNoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 09:43:22 -0400
-Date: Thu, 18 Apr 2013 14:43:16 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
-        Rabin Vincent <rabin@rab.in>
-Subject: Re: [PATCH 24/32 v2] dmaengine: ste_dma40: Supply full Device Tree
- parsing support
-Message-ID: <20130418134316.GA3959@gmail.com>
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
- <1366279934-30761-25-git-send-email-lee.jones@linaro.org>
- <20130418121253.GF27903@gmail.com>
- <201304181432.11503.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201304181432.11503.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 18 Apr 2013 09:44:07 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 2/3] of/pci: Provide support for parsing PCI DT ranges property
+To: Andrew Murray <Andrew.Murray@arm.com>, linux-mips@linux-mips.org,
+        linuxppc-dev@lists.ozlabs.org
+Cc: rob.herring@calxeda.com, jgunthorpe@obsidianresearch.com,
+        linux@arm.linux.org.uk, siva.kallam@samsung.com,
+        linux-pci@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        jg1.han@samsung.com, Liviu.Dudau@arm.com, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        bhelgaas@google.com, suren.reddy@samsung.com,
+        linux-arm-kernel@lists.infradead.org, monstr@monstr.eu,
+        benh@kernel.crashing.org, paulus@samba.org,
+        thomas.petazzoni@free-electrons.com, thierry.reding@avionic-design.de,
+        thomas.abraham@linaro.org, arnd@arndb.de, linus.walleij@linaro.org,
+        Andrew Murray <Andrew.Murray@arm.com>
+In-Reply-To: <1366107508-12672-3-git-send-email-Andrew.Murray@arm.com>
+References: <1366107508-12672-1-git-send-email-Andrew.Murray@arm.com> <1366107508-12672-3-git-send-email-Andrew.Murray@arm.com>
+Date: Thu, 18 Apr 2013 14:44:01 +0100
+Message-Id: <20130418134401.84AEE3E1319@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Apr 2013, Arnd Bergmann wrote:
+On Tue, 16 Apr 2013 11:18:27 +0100, Andrew Murray <Andrew.Murray@arm.com> wrote:
+> This patch factors out common implementation patterns to reduce overall kernel
+> code and provide a means for host bridge drivers to directly obtain struct
+> resources from the DT's ranges property without relying on architecture specific
+> DT handling. This will make it easier to write archiecture independent host bridge
+> drivers and mitigate against further duplication of DT parsing code.
+> 
+> This patch can be used in the following way:
+> 
+> 	struct of_pci_range_parser parser;
+> 	struct of_pci_range range;
+> 
+> 	if (of_pci_range_parser(&parser, np))
+> 		; //no ranges property
+> 
+> 	for_each_of_pci_range(&parser, &range) {
+> 
+> 		/*
+> 			directly access properties of the address range, e.g.:
+> 			range.pci_space, range.pci_addr, range.cpu_addr,
+> 			range.size, range.flags
+> 
+> 			alternatively obtain a struct resource, e.g.:
+> 			struct resource res;
+> 			of_pci_range_to_resource(&range, np, &res);
+> 		*/
+> 	}
+> 
+> Additionally the implementation takes care of adjacent ranges and merges them
+> into a single range (as was the case with powerpc and microblaze).
+> 
+> Signed-off-by: Andrew Murray <Andrew.Murray@arm.com>
+> Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Reviewed-by: Rob Herring <rob.herring@calxeda.com>
+> Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Tested-by: Linus Walleij <linus.walleij@linaro.org>
 
-> On Thursday 18 April 2013, Lee Jones wrote:
-> > +Clients
-> > +Required properties:
-> > +- dmas: Comma separated list of dma channel requests
-> > +- dma-names: Names of the aforementioned requested channels
-> > +
-> > +Each dmas request consists of 4 cells:
-> > +  1. A phandle pointing to the DMA controller
-> > +  2. Device Type
-> > +  3. The DMA request line number (only when 'use fixed channel' is set)
-> > +  4. A 32bit mask specifying; mode, direction and endianess [NB: This list will grow]
-> > +        bit 1: Mode:
-> > +           0: Logical
-> > +           1: Physical
-> > +        bit 2: Direction:
-> > +           0: Mem to Mem
-> > +           1: Mem to Dev
-> 
-> You probably mean 
-> 
-> 		0: Dev to mem
-> 
-> Related to this, I would recommend not listing bit numbers like this, since there
-> is some amount of confusion regarding how they are counted: zero-based on one-based
-> and LSB-to-MSB or MSB-to-LSB
-> 
-> You can completely avoid this problem by listing them as bit masks:
-> 
-> 	0x00000002:
-> 		Logical channel when unset
-> 		Physical channel when set
-> 	0x00000004:
-> 		Direction from device when unset
-> 		Direction to device when unset
-> 	... 
-> 
-> > +		dmas = <&dma 13 0 0x8>, /* Logical - DevToMem */
-> > +		       <&dma 13 0 0x4>; /* Logical - MemToDev */
-> 
-> The bit in the example no longer matches the description.
-> 
-> > +
-> > +	switch (D40_DT_FLAGS_DIR(flags)) {
-> > +	case 0: cfg.dir = STEDMA40_MEM_TO_MEM; break;
-> > +	case 1: cfg.dir = STEDMA40_MEM_TO_PERIPH; break;
-> > +	}
-> 
-> Same typo above.
-> 
-> > +	if (cfg.dir == STEDMA40_PERIPH_TO_MEM)
-> > +		cfg.src_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
-> > +	if (cfg.dir == STEDMA40_MEM_TO_PERIPH)
-> > +		cfg.dst_info.big_endian = D40_DT_FLAGS_BIG_ENDIAN(flags);
-> 
-> You can fold these two into the switch statement above.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-This is what happens when you rush a fixup. :)
+But comments below...
 
-I'll do it properly now.
+> ---
+>  drivers/of/address.c       |   67 ++++++++++++++++++++++++++
+>  drivers/of/of_pci.c        |  113 ++++++++++++++++----------------------------
+>  include/linux/of_address.h |   46 ++++++++++++++++++
+>  3 files changed, 154 insertions(+), 72 deletions(-)
+> 
+> diff --git a/drivers/of/address.c b/drivers/of/address.c
+> index 04da786..6eec70c 100644
+> --- a/drivers/of/address.c
+> +++ b/drivers/of/address.c
+> @@ -227,6 +227,73 @@ int of_pci_address_to_resource(struct device_node *dev, int bar,
+>  	return __of_address_to_resource(dev, addrp, size, flags, NULL, r);
+>  }
+>  EXPORT_SYMBOL_GPL(of_pci_address_to_resource);
+> +
+> +int of_pci_range_parser(struct of_pci_range_parser *parser,
+> +			struct device_node *node)
+> +{
+> +	const int na = 3, ns = 2;
+> +	int rlen;
+> +
+> +	parser->node = node;
+> +	parser->pna = of_n_addr_cells(node);
+> +	parser->np = parser->pna + na + ns;
+> +
+> +	parser->range = of_get_property(node, "ranges", &rlen);
+> +	if (parser->range == NULL)
+> +		return -ENOENT;
+> +
+> +	parser->end = parser->range + rlen / sizeof(__be32);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(of_pci_range_parser);
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+"of_pci_range_parser_init" would be a clearer name
+
+> +struct of_pci_range *of_pci_process_ranges(struct of_pci_range_parser *parser,
+> +						struct of_pci_range *range)
+
+Similarly, "of_pci_range_parser_one" would be more consistent.
+
+> +{
+> +	const int na = 3, ns = 2;
+> +
+> +	if (!range)
+> +		return NULL;
+> +
+> +	if (!parser->range || parser->range + parser->np > parser->end)
+> +		return NULL;
+> +
+> +	range->pci_space = parser->range[0];
+> +	range->flags = of_bus_pci_get_flags(parser->range);
+> +	range->pci_addr = of_read_number(parser->range + 1, ns);
+> +	range->cpu_addr = of_translate_address(parser->node,
+> +				parser->range + na);
+> +	range->size = of_read_number(parser->range + parser->pna + na, ns);
+> +
+> +	parser->range += parser->np;
+> +
+> +	/* Now consume following elements while they are contiguous */
+> +	while (parser->range + parser->np <= parser->end) {
+> +		u32 flags, pci_space;
+> +		u64 pci_addr, cpu_addr, size;
+> +
+> +		pci_space = be32_to_cpup(parser->range);
+> +		flags = of_bus_pci_get_flags(parser->range);
+> +		pci_addr = of_read_number(parser->range + 1, ns);
+> +		cpu_addr = of_translate_address(parser->node,
+> +				parser->range + na);
+> +		size = of_read_number(parser->range + parser->pna + na, ns);
+> +
+> +		if (flags != range->flags)
+> +			break;
+> +		if (pci_addr != range->pci_addr + range->size ||
+> +		    cpu_addr != range->cpu_addr + range->size)
+> +			break;
+> +
+> +		range->size += size;
+> +		parser->range += parser->np;
+> +	}
+> +
+> +	return range;
+> +}
+> +EXPORT_SYMBOL_GPL(of_pci_process_ranges);
+> +
+>  #endif /* CONFIG_PCI */
+>  
+>  /*
+> diff --git a/drivers/of/of_pci.c b/drivers/of/of_pci.c
+> index 1626172..e5ab604 100644
+> --- a/drivers/of/of_pci.c
+> +++ b/drivers/of/of_pci.c
+> @@ -2,6 +2,7 @@
+>  #include <linux/export.h>
+>  #include <linux/of.h>
+>  #include <linux/of_pci.h>
+> +#include <linux/of_address.h>
+>  #include <asm/prom.h>
+>  
+>  #if defined(CONFIG_PPC32) || defined(CONFIG_PPC64) || defined(CONFIG_MICROBLAZE)
+> @@ -82,67 +83,43 @@ EXPORT_SYMBOL_GPL(of_pci_find_child_device);
+>  void pci_process_bridge_OF_ranges(struct pci_controller *hose,
+>  				  struct device_node *dev, int primary)
+>  {
+> -	const u32 *ranges;
+> -	int rlen;
+> -	int pna = of_n_addr_cells(dev);
+> -	int np = pna + 5;
+>  	int memno = 0, isa_hole = -1;
+> -	u32 pci_space;
+> -	unsigned long long pci_addr, cpu_addr, pci_next, cpu_next, size;
+>  	unsigned long long isa_mb = 0;
+>  	struct resource *res;
+> +	struct of_pci_range range;
+> +	struct of_pci_range_parser parser;
+> +	u32 res_type;
+>  
+>  	pr_info("PCI host bridge %s %s ranges:\n",
+>  	       dev->full_name, primary ? "(primary)" : "");
+>  
+> -	/* Get ranges property */
+> -	ranges = of_get_property(dev, "ranges", &rlen);
+> -	if (ranges == NULL)
+> +	/* Check for ranges property */
+> +	if (of_pci_range_parser(&parser, dev))
+>  		return;
+>  
+> -	/* Parse it */
+>  	pr_debug("Parsing ranges property...\n");
+> -	while ((rlen -= np * 4) >= 0) {
+> +	for_each_of_pci_range(&parser, &range) {
+>  		/* Read next ranges element */
+> -		pci_space = ranges[0];
+> -		pci_addr = of_read_number(ranges + 1, 2);
+> -		cpu_addr = of_translate_address(dev, ranges + 3);
+> -		size = of_read_number(ranges + pna + 3, 2);
+
+Tip: the diff on this function would be a whole lot simpler if the
+above locals were kept, but updated from the ranges structure. Not at
+all a big problem, but it is something that makes changes like this
+easier to review. The removal of the locals could also be split into a
+separate patch to end up with the same result.
+
+> -
+> -		pr_debug("pci_space: 0x%08x pci_addr:0x%016llx ",
+> -				pci_space, pci_addr);
+> -		pr_debug("cpu_addr:0x%016llx size:0x%016llx\n",
+> -					cpu_addr, size);
+> -
+> -		ranges += np;
+> +		pr_debug("pci_space: 0x%08x pci_addr: 0x%016llx ",
+> +				range.pci_space, range.pci_addr);
+> +		pr_debug("cpu_addr: 0x%016llx size: 0x%016llx\n",
+> +				range.cpu_addr, range.size);
+
+Nit: the patch changed whitespace on the pr_debug() statements, so even
+though the first line of each is identical, they look different in the
+patch.
+
+>  
+>  		/* If we failed translation or got a zero-sized region
+>  		 * (some FW try to feed us with non sensical zero sized regions
+>  		 * such as power3 which look like some kind of attempt
+>  		 * at exposing the VGA memory hole)
+>  		 */
+> -		if (cpu_addr == OF_BAD_ADDR || size == 0)
+> +		if (range.cpu_addr == OF_BAD_ADDR || range.size == 0)
+>  			continue;
+
+Can this also be rolled into the parsing iterator?
+
+>  
+> -		/* Now consume following elements while they are contiguous */
+> -		for (; rlen >= np * sizeof(u32);
+> -		     ranges += np, rlen -= np * 4) {
+> -			if (ranges[0] != pci_space)
+> -				break;
+> -			pci_next = of_read_number(ranges + 1, 2);
+> -			cpu_next = of_translate_address(dev, ranges + 3);
+> -			if (pci_next != pci_addr + size ||
+> -			    cpu_next != cpu_addr + size)
+> -				break;
+> -			size += of_read_number(ranges + pna + 3, 2);
+> -		}
+> -
+>  		/* Act based on address space type */
+>  		res = NULL;
+> -		switch ((pci_space >> 24) & 0x3) {
+> -		case 1:		/* PCI IO space */
+> +		res_type = range.flags & IORESOURCE_TYPE_BITS;
+> +		if (res_type == IORESOURCE_IO) {
+
+Why the change from switch() to an if/else if sequence?
+
+But those are mostly nitpicks. If this is deferred to v3.10 then I would
+suggest fixing them up and posting for another round of review.
+
+g.
