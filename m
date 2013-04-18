@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967819Ab3DRRA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:00:29 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:63029 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967514Ab3DRRAY (ORCPT
+	id S967829Ab3DRRAv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:00:51 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:45161 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967397Ab3DRRAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:00:24 -0400
-X-IronPort-AV: E=Sophos;i="4.87,503,1363132800"; 
-   d="scan'208";a="19288134"
-Date: Thu, 18 Apr 2013 17:49:21 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>
-Subject: Re: [PATCH v6 1/4] arm: introduce psci_smp_ops
-In-Reply-To: <alpine.LFD.2.03.1304181233580.17375@syhkavp.arg>
-Message-ID: <alpine.DEB.2.02.1304181748010.7254@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
- <alpine.LFD.2.03.1304181233580.17375@syhkavp.arg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 18 Apr 2013 13:00:48 -0400
+Date: Thu, 18 Apr 2013 13:00:30 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: linux-kernel@vger.kernel.org, Prarit Bhargava <prarit@redhat.com>,
+        Don Zickus <dzickus@redhat.com>, Don Dutile <ddutile@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pci@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Arkadiusz =?utf-8?Q?Mi=C5=9Bkiewicz?= <arekm@maven.pl>
+Subject: Re: [PATCH v10] irq: add quirk for broken interrupt remapping on
+ 55XX chipsets
+Message-ID: <20130418170030.GB3788@neilslaptop.think-freely.org>
+References: <1362158276-4901-1-git-send-email-nhorman@tuxdriver.com>
+ <1366144712-23460-1-git-send-email-nhorman@tuxdriver.com>
+ <20130418150222.GB2558@8bytes.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130418150222.GB2558@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Apr 2013, Nicolas Pitre wrote:
-> On Thu, 18 Apr 2013, Stefano Stabellini wrote:
-> 
-> > On Thu, 18 Apr 2013, Russell King - ARM Linux wrote:
-> > > On Fri, Apr 05, 2013 at 02:11:32PM +0100, Stefano Stabellini wrote:
-> > > > +	psci_init();
-> > > >  #ifdef CONFIG_SMP
-> > > >  	if (is_smp()) {
-> > > > -		smp_set_ops(mdesc->smp);
-> > > > +		if (mdesc->smp)
-> > > > +			smp_set_ops(mdesc->smp);
-> > > > +		else if (psci_smp_available())
-> > > > +			smp_set_ops(&psci_smp_ops);
-> > > 
-> > > So, I have a vague recollection that the ordering of the above got discussed
-> > > but I can't find it amongst the 21k of messages so far this year.
-> > > 
-> > > The above looks weird to me.  Surely this should be:
-> > > 
-> > > 		if (psci_smp_available())
-> > > 			smp_set_ops(&psci_smp_ops);
-> > > 		else if (mdesc->smp)
-> > > 			smp_set_ops(mdesc->ops);
-> > > 
-> > > This means that if PSCI is available, and provides a set of operations,
-> > > we override whatever the platform has statically provided.
-> > > 
-> > > Remember, we're trying to move away from using "mdesc"s for platform
-> > > stuff, relying on things like DT and such like.  We really should not
-> > > be going for mdesc-overriding-newstuff but newstuff-overriding-mdesc.
+On Thu, Apr 18, 2013 at 05:02:39PM +0200, Joerg Roedel wrote:
+> On Tue, Apr 16, 2013 at 04:38:32PM -0400, Neil Horman wrote:
+> > A few years back intel published a spec update:
+> > http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
 > > 
-> > That's correct, in fact if you look at the next patch you'll see that it
-> > changes the order.
+> > For the 5520 and 5500 chipsets which contained an errata (specificially errata
+> > 53), which noted that these chipsets can't properly do interrupt remapping, and
+> > as a result the recommend that interrupt remapping be disabled in bios.  While
+> > many vendors have a bios update to do exactly that, not all do, and of course
+> > not all users update their bios to a level that corrects the problem.  As a
+> > result, occasionally interrupts can arrive at a cpu even after affinity for that
+> > interrupt has be moved, leading to lost or spurrious interrupts (usually
+> > characterized by the message:
+> > kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
 > > 
-> > I introduced the mechanism first and changed the priority later - it
-> > should help bisectability.
-> > I can fold the two patches into one if you prefer.
+> > There have been several incidents recently of people seeing this error, and
+> > investigation has shown that they have system for which their BIOS level is such
+> > that this feature was not properly turned off.  As such, it would be good to
+> > give them a reminder that their systems are vulnurable to this problem.  For
+> > details of those that reported the problem, please see:
+> > https://bugzilla.redhat.com/show_bug.cgi?id=887006
+> > 
+> > Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+> > CC: Prarit Bhargava <prarit@redhat.com>
+> > CC: Don Zickus <dzickus@redhat.com>
+> > CC: Don Dutile <ddutile@redhat.com>
+> > CC: Bjorn Helgaas <bhelgaas@google.com>
+> > CC: Asit Mallick <asit.k.mallick@intel.com>
+> > CC: David Woodhouse <dwmw2@infradead.org>
+> > CC: linux-pci@vger.kernel.org
+> > CC: Joerg Roedel <joro@8bytes.org>
+> > CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > CC: Arkadiusz Miśkiewicz <arekm@maven.pl>
 > 
-> Please let's keep the order as we discussed.  Otherwise this is just too 
-> confusing (Russell's comment is a good example of that).
+> Applied with some small changes to my x86/vt-d branch, thanks Neil.
+> 
+> 
+> 
+Thanks!
+Neil
 
-You are right, it is confusing.
-By "keep the order as we discussed", do you mean merge the second patch
-into the first one, correct?
