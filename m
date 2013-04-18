@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967181Ab3DRPOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 11:14:05 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:27374 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966889Ab3DRPOD (ORCPT
+	id S967236Ab3DRPOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 11:14:34 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:34091 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967071Ab3DRPOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 11:14:03 -0400
-X-RZG-AUTH: :P20JeEWkefDI1ODZs1HHtgV3eF0OpFsRaGIBBWYxhJvJPtnXtogBWn6YvUkYzDKvBT07wx/0LJ4BNA==
-X-RZG-CLASS-ID: mo00
+	Thu, 18 Apr 2013 11:14:33 -0400
+X-IronPort-AV: E=Sophos;i="4.87,502,1363132800"; 
+   d="scan'208";a="3701213"
+Message-ID: <51700DD6.1020603@citrix.com>
+Date: Thu, 18 Apr 2013 17:14:30 +0200
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+To: Jens Axboe <axboe@kernel.dk>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "martin.peterson@oracle.com" <martin.peterson@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [PATCH v1 7/7] xen-block: implement indirect descriptors
+References: <1364382643-3711-1-git-send-email-roger.pau@citrix.com> <1364382643-3711-8-git-send-email-roger.pau@citrix.com> <20130409184923.GA4978@phenom.dumpdata.com> <516C3264.3050409@citrix.com> <20130417142554.GG21378@phenom.dumpdata.com> <516ED633.3040205@citrix.com> <20130417172747.GA25736@phenom.dumpdata.com> <20130418124355.GW4816@kernel.dk> <5170005B.807@citrix.com> <20130418142642.GY4816@kernel.dk>
+In-Reply-To: <20130418142642.GY4816@kernel.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Date: Thu, 18 Apr 2013 17:13:39 +0200
-From: michael-dev <michael-dev@fami-braun.de>
-To: Shengzhou Liu <Shengzhou.Liu@freescale.com>
-Cc: <projekt-wlan@fem.tu-ilmenau.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [Projekt-wlan] Regression in
- 3735ba8db8e6ea22ad3ff524328926d8d780a884 with Freescale P1020
-Reply-To: <projekt-wlan@fem.tu-ilmenau.de>
-Mail-Reply-To: <projekt-wlan@fem.tu-ilmenau.de>
-In-Reply-To: <3F453DDFF675A64A89321A1F3528102199A20F@039-SN1MPN1-004.039d.mgd.msft.net>
-References: <20130417100809.GA8855@dynamic.fami-braun.de>
- <3F453DDFF675A64A89321A1F3528102199A20F@039-SN1MPN1-004.039d.mgd.msft.net>
-Message-ID: <751900163975fc8d055bd2414c76d59b@fami-braun.de>
-User-Agent: Roundcube Webmail/0.8.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-thanks for the quick reply.
-
-> Please review the patch http://patchwork.ozlabs.org/patch/237201/
-I applied it, but it does not make any difference on my platform.
-
-Regards,
-  M. Braun
-
-Am 17.04.2013 12:53, schrieb Liu Shengzhou-B36685:
-> Hi Braun,
+On 18/04/13 16:26, Jens Axboe wrote:
+>>>>>>> I've just set that to something that brings a performance benefit
+>>>>>>> without having to map an insane number of persistent grants in blkback.
+>>>>>>>
+>>>>>>> Yes, the values are correct, but the device request queue (rq) is only
+>>>>>>> able to provide read requests with 64 segments or write requests with
+>>>>>>> 128 segments. I haven't been able to get larger requests, even when
+>>>>>>> setting this to 512 or higer.
+>>>>>>
+>>>>>> What are you using to drive the requests? 'fio'?
+>>>>>
+>>>>> Yes, I've tried fio with several "bs=" values, but it doesn't seem to
+>>>>> change the size of the underlying requests. Have you been able to get
+>>>>> bigger requests?
+>>>>
+>>>> Martin, Jens,
+>>>> Any way to drive more than 128 segments?
+>>>
+>>> If the driver is bio based, then there's a natural size constraint on
+>>> the number of vecs in the bio. So to get truly large requests, the
+>>> driver would need to merge incoming sequential IOs (similar to how it's
+>>> done for rq based drivers).
+>>
+>> When you say rq based drivers, you mean drivers with a request queue?
+>>
+>> We are already using a request queue in blkfront, and I'm setting the
+>> maximum number of segments per request using:
+>>
+>> blk_queue_max_segments(<rq>, <segments>);
+>>
+>> But even when setting <segments> to 256 or 512, I only get read requests
+>> with 64 segments and write requests with 128 segments from the queue.
 > 
-> It seems the duplicated tdi_reset caused the PHY_CLK_VALID bit 
-> unstable,
-> introduced by patch "EHCI: centralize controller initialization".
-> I submitted a patch to fix it.
-> Please review the patch http://patchwork.ozlabs.org/patch/237201/
+> What kernel are you testing? The plugging is usually what will trigger a
+> run of the queue, for rq based drivers. What does your fio job look
+> like?
 > 
-> Regards,
-> Shengzhou
-> 
-> 
->> -----Original Message-----
->> From: Michael Braun [mailto:michael-dev@fami-braun.de]
->> Sent: Wednesday, April 17, 2013 6:08 PM
->> To: Liu Shengzhou-B36685
->> Cc: Alan Stern; projekt-wlan@fem.tu-ilmenau.de; Greg Kroah-Hartman;
->> linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
->> Subject: Regression in 3735ba8db8e6ea22ad3ff524328926d8d780a884 with
->> Freescale P1020
->> 
->> Hi,
->> 
->> I'm running OpenWRT Kernel 3.8.3 (which already has
->> f66dea709cd9309b2ee9f715697818001fb518de and
->> 5ed338778f917a035f0f0a52327fc4f72e36f7a1 applied) on a P1020WLAN 
->> (QorlQ,
->> PPC) device.
->> Before updating the kernel from 3.3.0, USB host support was working 
->> fine.
->> Now I get "fsl-ehci: USB PHY clock invalid" messages in dmesg and the
->> lsusb output is empty, so USB host support is not working. When I 
->> apply
->> the following patch, USB host support starts working again, so I 
->> guess
->> 3735ba8db8e6ea22ad3ff524328926d8d780a884 is the cause.
->> Do you have an idea how to fix it more appropriately?
->> 
->> Thanks,
->>   M. Braun
->> 
->> --- a/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:52.924403077
->> +0200
->> +++ b/drivers/usb/host/ehci-fsl.c       2013-04-15 21:13:57.572410838
->> +0200
->> @@ -273,7 +273,6 @@ static int ehci_fsl_setup_phy(struct usb
->>                  if (!spin_event_timeout(in_be32(non_ehci +
->> FSL_SOC_USB_CTRL) &
->>                                  PHY_CLK_VALID, 
->> FSL_USB_PHY_CLK_TIMEOUT,
->> 0)) {
->>                          printk(KERN_WARNING "fsl-ehci: USB PHY clock
->> invalid\n");
->> -                       return -EINVAL;
->>                  }
->>          }
->> 
+
+I'm currently testing on top of Konrad for-jens-3.9 branch, which is
+3.8.0-rc7. This is how my fio job looks like:
+
+[read]
+rw=read
+size=900m
+bs=4k
+directory=/root/fio
+loops=100000
+
+I've tried several bs sizes; 4k, 16k, 128k, 1m, 10m, and as far as I can
+see requests from the queue don't have more than 64 segments.
+
+Also tried a simple dd with several bs sizes and got the same result.
