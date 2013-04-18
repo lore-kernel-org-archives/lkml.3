@@ -1,65 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936002Ab3DRL3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 07:29:20 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:46201
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935355Ab3DRL3T (ORCPT
+	id S936140Ab3DRLbp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 07:31:45 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:37472 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936028Ab3DRLbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 07:29:19 -0400
-Message-ID: <1366284534.19383.13.camel@laptop>
-Subject: Re: [PATCH 2/2] perf, amd: support for AMD NB and L2I "uncore"
- counters.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, Stephane Eranian <eranian@google.com>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Date: Thu, 18 Apr 2013 13:28:54 +0200
-In-Reply-To: <1366046483-1765-3-git-send-email-jacob.shin@amd.com>
-References: <1366046483-1765-1-git-send-email-jacob.shin@amd.com>
-	 <1366046483-1765-3-git-send-email-jacob.shin@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Apr 2013 07:31:44 -0400
+Date: Thu, 18 Apr 2013 12:31:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+Subject: Re: [PATCH 24/32] dmaengine: ste_dma40: Supply full Device Tree
+ parsing support
+Message-ID: <20130418113138.GD27903@gmail.com>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+ <1366279934-30761-25-git-send-email-lee.jones@linaro.org>
+ <201304181306.34835.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201304181306.34835.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-04-15 at 12:21 -0500, Jacob Shin wrote:
-> Add support for AMD Family 15h [and above] northbridge performance
-> counters. MSRs 0xc0010240 ~ 0xc0010247 are shared across all cores
-> that share a common northbridge.
+On Thu, 18 Apr 2013, Arnd Bergmann wrote:
+
+> On Thursday 18 April 2013, Lee Jones wrote:
+> > Using the new DMA DT bindings and API, we can register the DMA40 driver
+> > as Device Tree capable. Now, when a client attempts to allocate a
+> > channel using the DMA DT bindings via its own node, we are able to parse
+> > the request and allocate a channel in the correct manor.
 > 
-> Add support for AMD Family 16h L2 performance counters. MSRs
-> 0xc0010230 ~ 0xc0010237 are shared across all cores that share a
-> common L2 cache.
+> s/manor/manner/ ?
 > 
-> We do not enable counter overflow interrupts. Sampling mode and
-> per-thread events are not supported.
+> > +Optional properties:
+> > +- interrupt-parent: Should be the phandle for the interrupt controller
+> > +  that services interrupts for this device
+> 
+> I would not bother listing the interrupt-parent.
+> 
+> > +Clients
+> > +Required properties:
+> > +- dmas: Comma seperated list of dma channel requests
+> > +- dma-names: Names of the aforementioned requested channels
+> > +
+> > +Each dmas request consists of 4 cells:
+> > +  1. A phandle pointing to the DMA controller
+> > +  2. The DMA request line number (only when 'use fixed channel' is set)
+> > +  3. Device Type
+> > +  4. A 32bit mask specifying; mode, direction and endianess [NB: This list will grow]
+> > +        bits 1-2: Mode:
+> > +          00: Logical
+> > +          01: Physical
+> > +          10: Operation
+> > +          11: Undefined - will most likely return an error
+> 
+> The statement "will most likely return an error" is not very
+> specification-like. ;-) Maybe better call it "reserved".
 
+Actually, I wrote this before I wrote the code.
 
-Nice!
+It definitely does return an error. :)
 
-There's one crucial thing missing though.. The Intel uncore driver
-explicitly maps all events of cpus that are of the same uncore to a
-single cpu and migrates the events to another cpu (if any is available)
-when that cpu goes down.
+I'll fixup as you requested anyway.
 
-The advantage of keeping all the events on the same cpu is that we
-don't need to consider shared resources between cpus of an uncore
-group.
+> What is actually an "Operation" channel? Do we need it for slaves?
 
-That way things like event rotation on overcommit also trivially works
-right.
+No idea. It was in the header file, so I thought I'd better reserve a
+bit for it early in case it comes in handy later. 
 
-I appreciate the intel uncore driver might be a tad hard to read -- its
-somewhat unwieldy. But it basically sets event->cpu on
-pmu::event_init() to whatever cpu is selected to represent the group,
-and then calls perf_pmu_migrate_context() from a hotplug notifier.
+> > +        bits 3-4: Direction:
+> > +          00: Mem to Mem
+> > +          01: Mem to Dev
+> > +          10: Dev to Mem
+> > +          11: Dev to Dev
+> 
+> For slave channels, we only need mem-to-dev and dev-to-mem, so I would
+> use only one bit here.
 
+Okay.
 
+> > +        bit 5: Endianess:
+> > +           0: Little endian
+> > +           1: Big endian
+> > +        bit 6: Use fixed channel:
+> > +           0: Use automatic channel selection
+> > +           1: Use DMA request line number
+> 
+> I think you have mixed up the "device type" and "request line number".
+> 
+> The request line is what identifies the slave device (which you call
+> the device type)
 
+You're right, I am a little confused by them.
+
+I call them 'device type' because that's what they're called already.
+Grep for 'dma_dev_type'. This is the number which gets split into
+event group and line, like this:
+
+	event_group = D40_TYPE_TO_GROUP(dev_type);
+	event_line = D40_TYPE_TO_EVENT(dev_type);
+
+> and I would put that number first.
+
+So you want me to switch that round so it looks like:
+
+	dmas = <<phandle> <dev_type> <fixed_chan> <flags>;
+
+Instead of what I have at the moment:
+
+	dmas = <<phandle> <fixed_chan> <dev_type> <flags>;
+
+Correct?
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
