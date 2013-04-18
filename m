@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967153Ab3DRJ2o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:28:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40189 "EHLO
+	id S967147Ab3DRJ2m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:28:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40190 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757747Ab3DRJSD (ORCPT
+	with ESMTP id S1757754Ab3DRJSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Apr 2013 05:18:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 38/72] can: gw: use kmem_cache_free() instead of kfree()
-Date: Thu, 18 Apr 2013 10:16:23 +0100
-Message-Id: <1366276617-3553-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 39/72] tracing: Fix double free when function profile init failed
+Date: Thu, 18 Apr 2013 10:16:24 +0100
+Message-Id: <1366276617-3553-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -28,52 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-commit 3480a2125923e4b7a56d79efc76743089bf273fc upstream.
+commit 83e03b3fe4daffdebbb42151d5410d730ae50bd1 upstream.
 
-Memory allocated by kmem_cache_alloc() should be freed using
-kmem_cache_free(), not kfree().
+On the failure path, stat->start and stat->pages will refer same page.
+So it'll attempt to free the same page again and get kernel panic.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Acked-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Link: http://lkml.kernel.org/r/1364820385-32027-1-git-send-email-namhyung@kernel.org
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/can/gw.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ kernel/trace/ftrace.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/net/can/gw.c b/net/can/gw.c
-index b41acf2..423d226 100644
---- a/net/can/gw.c
-+++ b/net/can/gw.c
-@@ -436,7 +436,7 @@ static int cgw_notifier(struct notifier_block *nb,
- 			if (gwj->src.dev == dev || gwj->dst.dev == dev) {
- 				hlist_del(&gwj->list);
- 				cgw_unregister_filter(gwj);
--				kfree(gwj);
-+				kmem_cache_free(cgw_cache, gwj);
- 			}
- 		}
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 00ea125..7da46c7 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -642,7 +642,6 @@ int ftrace_profile_pages_init(struct ftrace_profile_stat *stat)
+ 		free_page(tmp);
  	}
-@@ -850,7 +850,7 @@ static void cgw_remove_all_jobs(void)
- 	hlist_for_each_entry_safe(gwj, n, nx, &cgw_list, list) {
- 		hlist_del(&gwj->list);
- 		cgw_unregister_filter(gwj);
--		kfree(gwj);
-+		kmem_cache_free(cgw_cache, gwj);
- 	}
- }
  
-@@ -903,7 +903,7 @@ static int cgw_remove_job(struct sk_buff *skb,  struct nlmsghdr *nlh, void *arg)
+-	free_page((unsigned long)stat->pages);
+ 	stat->pages = NULL;
+ 	stat->start = NULL;
  
- 		hlist_del(&gwj->list);
- 		cgw_unregister_filter(gwj);
--		kfree(gwj);
-+		kmem_cache_free(cgw_cache, gwj);
- 		err = 0;
- 		break;
- 	}
 -- 
 1.8.1.2
 
