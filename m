@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3DRSNl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 14:13:41 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:48321
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751252Ab3DRSNk (ORCPT
+	id S966038Ab3DRSOd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 14:14:33 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54015 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab3DRSOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 14:13:40 -0400
-Date: Thu, 18 Apr 2013 11:13:18 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@gmail.com>, Alasdair G Kergon <agk@redhat.com>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        Neil Brown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
-Message-ID: <20130418181318.GH4816@kernel.dk>
-References: <1366209997.8817.12.camel@pippen.local.home>
- <20130418123738.GV4816@kernel.dk>
- <516FED09.1040008@cn.fujitsu.com>
- <20130418133546.GX4816@kernel.dk>
- <516FFFAC.8040103@cn.fujitsu.com>
- <20130418143014.GZ4816@kernel.dk>
- <CA+55aFwA8njGh4v8ZfR_o4s4m=Hugnadeir=uxbeE4yxHiBKLg@mail.gmail.com>
- <20130418172732.GB9897@mtj.dyndns.org>
- <20130418173811.GF4816@kernel.dk>
- <20130418180752.GD9897@mtj.dyndns.org>
+	Thu, 18 Apr 2013 14:14:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130418180752.GD9897@mtj.dyndns.org>
+Date: Thu, 18 Apr 2013 14:14:31 -0400
+Message-ID: <CAB9dFdunPQo5a9bgwFvaZ4++4Zm1HEaQ8VEK7pmKuwc7+DTv6g@mail.gmail.com>
+Subject: Reboot problem with nouveau - bisected
+From: Marc Dionne <marc.c.dionne@gmail.com>
+To: Ben Skeggs <skeggsb@gmail.com>, Dave Airlie <airlied@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18 2013, Tejun Heo wrote:
-> On Thu, Apr 18, 2013 at 10:39:00AM -0700, Jens Axboe wrote:
-> > > If I'm not mistaken, it seems like we have a bio which has 1 as its
-> > > ->bi_bdev.  Ummm.... no idea whatsoever how that can happen tho right
-> > > now.  Looking into it.
-> > 
-> > Yep, thanks Linus for that hint... Must be someone abusing it for a
-> > flag field post submission? Crazy.
-> 
-> Let's hope that's not the case because there'll be blood if it is. :)
+My machine has been getting stuck when rebooting during the current
+3.9 cycle, and yesterday I took the time to bisect the problem to this
+commit:
 
-Yeah, it's beyond the amount of crazy I've come to expect from various
-random users of IO interfaces :-)
+32256c87ead3edec86bed5023a0ff96a6d907931:  drm/nouveau/fifo/nvc0:
+improve interrupt handler somewhat
 
--- 
-Jens Axboe
+    Logs extra info for interrupts that have a sub-status register, and
+    handles the "special" ack from INTR bit 31.
 
+    Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+
+The symptom when rebooting is that the console starts spitting out a
+continuous stream of identical messages like this (transcribed by
+hand):
+
+    nouveau W[   PFIFO][0000:03:00.0] INTR 0x01000000: 0x00000005
+
+The system is then unresponsive until it is reset.  Just commenting
+out the corresponding nv_warn() in
+drivers/gpu/drm/nouveau/core/engine/fifo/nvc0.c is enough to allow the
+system to reboot normally.
+
+Video card in this system is (from lspci -v):
+
+03:00.0 VGA compatible controller: NVIDIA Corporation GF119 [GeForce
+GT 520] (rev a1) (prog-if 00 [VGA controller])
+    Subsystem: Micro-Star International Co., Ltd. Device 2630
+    Flags: bus master, fast devsel, latency 0, IRQ 16
+    Memory at fa000000 (32-bit, non-prefetchable) [size=16M]
+    Memory at d8000000 (64-bit, prefetchable) [size=128M]
+    Memory at d6000000 (64-bit, prefetchable) [size=32M]
+    I/O ports at bc00 [size=128]
+    Expansion ROM at fbb80000 [disabled] [size=512K]
+    Capabilities: <access denied>
+    Kernel driver in use: nouveau
+
+Marc
