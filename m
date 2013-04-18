@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936486Ab3DRTLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 15:11:36 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35989 "EHLO bear.ext.ti.com"
+	id S1756392Ab3DRTR0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 15:17:26 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:57412 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932262Ab3DRTLe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 15:11:34 -0400
-Message-ID: <51704557.5080307@ti.com>
-Date: Fri, 19 Apr 2013 00:41:19 +0530
+	id S1754541Ab3DRTRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 15:17:24 -0400
+Message-ID: <517046B8.6000900@ti.com>
+Date: Fri, 19 Apr 2013 00:47:12 +0530
 From: Sourav Poddar <sourav.poddar@ti.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
@@ -17,9 +17,9 @@ CC: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Felipe Balbi <balbi@ti.com>, Rajendra nayak <rnayak@ti.com>
-Subject: Re: [PATCH 6/6] arm: mach-omap2: Remove "no_console_suspend"
-References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>	<1366198467-6757-7-git-send-email-sourav.poddar@ti.com> <877gjz4sk6.fsf@linaro.org>
-In-Reply-To: <877gjz4sk6.fsf@linaro.org>
+Subject: Re: [PATCH 0/6] Serial Omap fixes and cleanups
+References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com> <87mwsv3dgk.fsf@linaro.org>
+In-Reply-To: <87mwsv3dgk.fsf@linaro.org>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,78 +27,84 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Kevin,
-On Thursday 18 April 2013 11:41 PM, Kevin Hilman wrote:
+On Thursday 18 April 2013 11:53 PM, Kevin Hilman wrote:
+> Hi Sourav,
+>
 > Sourav Poddar<sourav.poddar@ti.com>  writes:
 >
->> Since the omap serial driver is now adapted to handle the
->> case where you dont need to cut the clock on suspend while
->> using "no_console_suspend" in the bootargs.
+>> Hi,
 >>
->> We can get rid of the previous implementation of setting the od->flags to
->> "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" from platform
->> and omap_device files.
+>> This patch series contains fixes and cleanups around the issue that
+>> the console UART should not idled on suspend while using "no_console_suspend"
+>> in bootargs.
+>>
+> The direction of the series is right, thanks for the updated approach.
+> I had a comple minor comments on specific patches, but the ordering of
+> the series needs a little tweaking.  It should be
+>
+> - core/driver changes [current 1-3/6 are ok]
+> - remove usage from mach-omap2/serial.c (currently part of 4/6)
+> - remove am33x DT usage (current 5/6 is ok)
+> - remove entirely from omap_device (omap_device part of 4/6 and 6/6 should be combined)
+>
+Thanks a lot for your review and comments.
+I have replied to your comments on the respective patches.
+Will take care of the "ordering" which you mentioned above
+in the next version.
+
+Thanks
+Sourav
+> Kevin
+>
+>> The approach thought of is to modify the serial core/serial driver to bypass
+>> runtime PM if the UART in contention is a console and we are using "no_console_suspend"
+>> in our bootargs.
+>>
+>> While fixing the above issue, there are other cleanups also done as part of
+>> this series which are no longer required. This cleanups mainly include getting
+>> rid of using "omap_device_disable_idle_on_suspend" api for both dt and non dt case
+>> as the serial driver will be self sufficient to handle the "no_idle_on_suspend" issue.
+>> Serial was the only one making use of "omap_device_disable_idle_on_suspend"
+>>
+>> Test info (except drivers: serial: mpc52xx_uart: Remove "uart_console" defintion):
+>> Omap4430sdp:
+>> - Tested wakeup from UART after suspend for dt and non dt case.
+>> Omap5430evm:
+>> - Tested wakeup from UART after suspend for dt case.
+>>
+>>
+>> There were discussions about how to handle "no_idle_on_suspend" issue and all the
+>> discussions are as follows:
+>> [v3]: https://lkml.org/lkml/2013/4/5/239
+>> [v2]: https://lkml.org/lkml/2013/4/2/350
+>> [v1]: https://lkml.org/lkml/2013/3/18/199
+>>        https://lkml.org/lkml/2013/3/18/295
+>> Due to the amount of change in approach and other cleanups coming around it, I am posting
+>> this as a new series.
+>>
+>> This patches are based on 3.9-rc3 custom tree which has
+>> Santosh Shilimkar serial patch[1]
+>> [1]: http://permalink.gmane.org/gmane.linux.ports.arm.omap/95828
 >>
 >> Cc: Santosh Shilimkar<santosh.shilimkar@ti.com>
 >> Cc: Felipe Balbi<balbi@ti.com>
 >> Cc: Rajendra nayak<rnayak@ti.com>
->> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
-> also, the serial.c change here should be a separate patch
-> subject: arm: omap2+: serial: remove no_console_suspend support
->
-> with a changelog stating that it's no longer handled in the core.
->
-Ok. Will create a seperate patch and update the changelog.
-> Kevin
->
->> ---
->>   arch/arm/mach-omap2/omap_device.c |    3 ---
+>>
+>> Sourav Poddar (6):
+>>    drivers: tty: serial: Move "uart_console" def to core header file.
+>>    drivers: serial: mpc52xx_uart: Remove "uart_console" defintion
+>>    driver: serial: omap: add prepare/complete callback for
+>>      "no_console_suspend" case
+>>    arm: mach-omap2: remove "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check
+>>    arm: dts: am33xx: Remove "ti,no_idle_on_suspend" property.
+>>    arm: mach-omap2: Remove "no_console_suspend"
+>>
+>>   arch/arm/boot/dts/am33xx.dtsi     |    1 -
+>>   arch/arm/mach-omap2/omap_device.c |   10 +---------
 >>   arch/arm/mach-omap2/serial.c      |    7 -------
->>   2 files changed, 0 insertions(+), 10 deletions(-)
->>
->> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
->> index d6dce8f..c226946 100644
->> --- a/arch/arm/mach-omap2/omap_device.c
->> +++ b/arch/arm/mach-omap2/omap_device.c
->> @@ -170,9 +170,6 @@ static int omap_device_build_from_dt(struct platform_device *pdev)
->>   			r->name = dev_name(&pdev->dev);
->>   	}
->>
->> -	if (of_get_property(node, "ti,no_idle_on_suspend", NULL))
->> -		omap_device_disable_idle_on_suspend(pdev);
->> -
->>   	pdev->dev.pm_domain =&omap_device_pm_domain;
->>
->>   odbfd_exit1:
->> diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
->> index f660156..58d5b56 100644
->> --- a/arch/arm/mach-omap2/serial.c
->> +++ b/arch/arm/mach-omap2/serial.c
->> @@ -63,7 +63,6 @@ struct omap_uart_state {
->>   static LIST_HEAD(uart_list);
->>   static u8 num_uarts;
->>   static u8 console_uart_id = -1;
->> -static u8 no_console_suspend;
->>   static u8 uart_debug;
->>
->>   #define DEFAULT_RXDMA_POLLRATE		1	/* RX DMA polling rate (us) */
->> @@ -207,9 +206,6 @@ static int __init omap_serial_early_init(void)
->>   					uart_name, uart->num);
->>   			}
->>
->> -			if (cmdline_find_option("no_console_suspend"))
->> -				no_console_suspend = true;
->> -
->>   			/*
->>   			 * omap-uart can be used for earlyprintk logs
->>   			 * So if omap-uart is used as console then prevent
->> @@ -292,9 +288,6 @@ void __init omap_serial_init_port(struct omap_board_data *bdata,
->>   		return;
->>   	}
->>
->> -	if ((console_uart_id == bdata->id)&&  no_console_suspend)
->> -		omap_device_disable_idle_on_suspend(pdev);
->> -
->>   	oh->mux = omap_hwmod_mux_init(bdata->pads, bdata->pads_cnt);
->>
->>   	if (console_uart_id == bdata->id) {
+>>   drivers/tty/serial/mpc52xx_uart.c |   10 ----------
+>>   drivers/tty/serial/omap-serial.c  |   20 ++++++++++++++++++++
+>>   drivers/tty/serial/serial_core.c  |    6 ------
+>>   include/linux/serial_core.h       |    6 ++++++
+>>   7 files changed, 27 insertions(+), 33 deletions(-)
 
