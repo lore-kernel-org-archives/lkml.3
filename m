@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967019Ab3DRPBT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 11:01:19 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:32188
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965906Ab3DRPBR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 11:01:17 -0400
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT004.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: PS-3(zz98dI936eI4015Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275dhz2fh2a8h668h839h93fhd24he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Josh Boyer <jwboyer@redhat.com>
-CC: Matt Fleming <matt@console-pimps.org>,
-        "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Darren Hart <darren.hart@intel.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
-Thread-Topic: [PATCH] Remove warning in efi_enter_virtual_mode
-Thread-Index: AQHOOrruj8eFhjMAhk2umQbQokvUbJjac+0AgACEpgCAANnTAIAALNyAgAAWaIA=
-Date: Thu, 18 Apr 2013 15:01:12 +0000
-Message-ID: <1366297271.13667.14.camel@x230.lan>
-References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie>
-	 <516EAC4A.6040202@console-pimps.org> <516F1B90.9040508@nexus-software.ie>
-	 <516FD24A.3070502@console-pimps.org>
-	 <20130418134059.GF18383@hansolo.jdub.homelinux.org>
-In-Reply-To: <20130418134059.GF18383@hansolo.jdub.homelinux.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <42209C1F464620409A5718816AEC3EF7@namprd05.prod.outlook.com>
+	id S967476Ab3DRPCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 11:02:14 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:43341 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966926Ab3DRPCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 11:02:13 -0400
+Date: Thu, 18 Apr 2013 08:01:05 -0700
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Rik van Riel <riel@redhat.com>, Zlatko Calusic <zcalusic@bitsync.net>,
+        dormando <dormando@rydia.net>, Michal Hocko <mhocko@suse.cz>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] mm: vmscan: Obey proportional scanning
+ requirements for kswapd
+Message-ID: <20130418150105.GD2018@cmpxchg.org>
+References: <1365710278-6807-1-git-send-email-mgorman@suse.de>
+ <1365710278-6807-3-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365710278-6807-3-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3IF1Oxr017872
 
-On Thu, 2013-04-18 at 09:40 -0400, Josh Boyer wrote:
+On Thu, Apr 11, 2013 at 08:57:50PM +0100, Mel Gorman wrote:
+> @@ -1841,17 +1848,58 @@ static void shrink_lruvec(struct lruvec *lruvec, struct scan_control *sc)
+>  							    lruvec, sc);
+>  			}
+>  		}
+> +
+> +		if (nr_reclaimed < nr_to_reclaim || scan_adjusted)
+> +			continue;
+> +
+>  		/*
+> -		 * On large memory systems, scan >> priority can become
+> -		 * really large. This is fine for the starting priority;
+> -		 * we want to put equal scanning pressure on each zone.
+> -		 * However, if the VM has a harder time of freeing pages,
+> -		 * with multiple processes reclaiming pages, the total
+> -		 * freeing target can get unreasonably large.
+> +		 * For global direct reclaim, reclaim only the number of pages
+> +		 * requested. Less care is taken to scan proportionally as it
+> +		 * is more important to minimise direct reclaim stall latency
+> +		 * than it is to properly age the LRU lists.
+>  		 */
+> -		if (nr_reclaimed >= nr_to_reclaim &&
+> -		    sc->priority < DEF_PRIORITY)
+> +		if (global_reclaim(sc) && !current_is_kswapd())
+>  			break;
+> +
+> +		/*
+> +		 * For kswapd and memcg, reclaim at least the number of pages
+> +		 * requested. Ensure that the anon and file LRUs shrink
+> +		 * proportionally what was requested by get_scan_count(). We
+> +		 * stop reclaiming one LRU and reduce the amount scanning
+> +		 * proportional to the original scan target.
+> +		 */
+> +		nr_file = nr[LRU_INACTIVE_FILE] + nr[LRU_ACTIVE_FILE];
+> +		nr_anon = nr[LRU_INACTIVE_ANON] + nr[LRU_ACTIVE_ANON];
+> +
+> +		if (nr_file > nr_anon) {
+> +			unsigned long scan_target = targets[LRU_INACTIVE_ANON] +
+> +						targets[LRU_ACTIVE_ANON] + 1;
+> +			lru = LRU_BASE;
+> +			percentage = nr_anon * 100 / scan_target;
+> +		} else {
+> +			unsigned long scan_target = targets[LRU_INACTIVE_FILE] +
+> +						targets[LRU_ACTIVE_FILE] + 1;
+> +			lru = LRU_FILE;
+> +			percentage = nr_file * 100 / scan_target;
+> +		}
+> +
+> +		/* Stop scanning the smaller of the LRU */
+> +		nr[lru] = 0;
+> +		nr[lru + LRU_ACTIVE] = 0;
+> +
+> +		/*
+> +		 * Recalculate the other LRU scan count based on its original
+> +		 * scan target and the percentage scanning already complete
+> +		 */
+> +		lru = (lru == LRU_FILE) ? LRU_BASE : LRU_FILE;
+> +		nr[lru] = targets[lru] * (100 - percentage) / 100;
+> +		nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
 
-> BGRT is a new addition in ACPI 5.0, right?  Hopefully with it being
-> relatively recent, and new 32-bit firmware being somewhat rare, it won't
-> be a problem.
+This doesn't seem right.  Say percentage is 60, then
 
-New 32-bit UEFI firmware is fairly common. Thanks, Intel.
+    nr[lru] = targets[lru] * (100 - percentage) / 100;
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+sets nr[lru] to 40% of targets[lru], and so in
+
+    nr[lru] -= min(nr[lru], (targets[lru] - nr[lru]));
+
+targets[lru] - nr[lru] is 60% of targets[lru], making it bigger than
+nr[lru], which is in turn subtracted from itself, i.e. it leaves the
+remaining type at 0 if >= 50% of the other type were scanned, and at
+half of the inverted scan percentage if less than 50% were scanned.
+
+Would this be more sensible?
+
+    already_scanned = targets[lru] - nr[lru];
+    nr[lru] = targets[lru] * percentage / 100; /* adjusted original target */
+    nr[lru] -= min(nr[lru], already_scanned);  /* minus work already done */
