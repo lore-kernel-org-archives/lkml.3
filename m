@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965490Ab3DRDS6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 23:18:58 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36763 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965364Ab3DRDS5 (ORCPT
+	id S965557Ab3DRDZi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 23:25:38 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:33231 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965363Ab3DRDZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 23:18:57 -0400
-Date: Thu, 18 Apr 2013 13:18:43 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org,
-        Vipul Pandya <vipul@chelsio.com>
-Subject: linux-next: manual merge of the net-next tree with the infiniband
- tree
-Message-Id: <20130418131843.bfeb6b1ad5fba1b0f706076e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__18_Apr_2013_13_18_43_+1000_KNU/WCBiq_VN2ZdP"
+	Wed, 17 Apr 2013 23:25:37 -0400
+Message-ID: <516F67AE.9070109@parallels.com>
+Date: Wed, 17 Apr 2013 20:25:34 -0700
+From: Maxim Patlasov <mpatlasov@parallels.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Miklos Szeredi <miklos@szeredi.hu>
+CC: Kirill Korotaev <dev@parallels.com>, Pavel Emelianov <xemul@parallels.com>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>,
+        Brian Foster <bfoster@redhat.com>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>, <devel@openvz.org>,
+        Anand Avati <anand.avati@gmail.com>
+Subject: Re: [PATCH 0/5] fuse: close file synchronously
+References: <20121220122702.4101.80042.stgit@maximpc.sw.ru> <CAJfpegsD2iyP2=Z3zL-yb_TjjQxipOBKV7yqpdPPTH9oobQ=bA@mail.gmail.com> <CAJfpegtvfunCV4cjezQuWji3PoJRpXXKWgH+y55tYMi0O+TdkQ@mail.gmail.com> <CAJfpegvJGBuOpYi=W3rzzu4Jwa46e_9SxDC4fa-PPmCQs2K3rg@mail.gmail.com>
+In-Reply-To: <CAJfpegvJGBuOpYi=W3rzzu4Jwa46e_9SxDC4fa-PPmCQs2K3rg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [69.38.217.3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__18_Apr_2013_13_18_43_+1000_KNU/WCBiq_VN2ZdP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 4/17/13 1:53 PM, Miklos Szeredi wrote:
+> On Mon, Apr 15, 2013 at 5:30 PM, Miklos Szeredi<miklos@szeredi.hu>  wrote:
+>> Let's approach it from the other direction:  what if you give back the
+>> write lease on the first flush?  It will probably work fine for 99% of
+>> cases, since no other writes are going to happen after the first
+>> flush.  For the remaining cases you'll just have to reacquire the
+>> lease when a write happens after the flush.  I guess performance-wise
+>> that will not be an issue, but I may be wrong.
+> What about this?
 
-Hi all,
+We'd like to do it, but we can't. Firstly because we rely on the fact 
+that the file cannot be modified by someone else while we hold exclusive 
+write lease. By the time we decide to reacquire the lease, the file can 
+be re-used by someone else and become completely different comparatively 
+with its state at the moment of first flush. Secondly, we can't sensibly 
+handle a case when the lease is already acquired by someone else by the 
+time of attempt to reacquire it.
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/infiniband/hw/cxgb4/qp.c between commit 5b0c275926b8
-("RDMA/cxgb4: Fix SQ allocation when on-chip SQ is disabled") from the
-infiniband tree and commit 9919d5bd01b9 ("RDMA/cxgb4: Fix onchip queue
-support for T5") from the net-next tree.
-
-I think that they are 2 different fixes for the same problem, so I just
-used the net-next version and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__18_Apr_2013_13_18_43_+1000_KNU/WCBiq_VN2ZdP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJRb2YTAAoJEECxmPOUX5FEFpcP/jxk88uFsqeNw4wl1AXsa0ql
-B/bW1x/ehp6kumkS1/1YYl8SoACtTr8FnBKJVv3hWKGQ7ZD8iQzqV1kcTnw32M5y
-7gfgalnf+P3Pj156sI9onURhUUglq0u8+aN6skysnB9W4ucvCFq32bpYGn2jA89w
-tVSZZTJS9O7XAMBuKpizEar+nk+gA++T3FKpynFoaZeizyoT6YKaMAuiXxMoGP3O
-0odvLdUFmIalkcn15wkIIinrtgK0nkXy1QBeipxVtBusuuJhxp9fiI+cuXw6whCm
-VWyfN72bh8PT2nri+xjNJI4TO+K4OZKjDN2MVXsRwVApNz/j0ML6TOSTWWemLscR
-mBh2i4XXkhgY2PKHYioeubuCGbI6MAFXky9QQulOIV4GdZqeK16FwxOBYJsxxqc5
-8+23I0V2OHloFe1ss3+gkBz1Niyb83EDRk1+wLGyydvotwpMj0s6P91rfKXO5s8p
-q9AJM7XuNWn8SCsBjr280yfQeyoKoGsG9Be6y6grEZraasBCrVi4tqoKdi/U6SCM
-Rxg5y1sKI2RgIpXlHNKsGzmXpA+tyte0HotPnVMvK/j54PXT7cRpTAo9Xy1o5X8r
-GVMBSq9aw3Mgb0oBDoPufLPwsOmb8dwa2qpGgjpDpYoEx/OWRfZkcQX0ykwt+Ta3
-fgO9YHHVfE9V8LwZP/IN
-=qH0d
------END PGP SIGNATURE-----
-
---Signature=_Thu__18_Apr_2013_13_18_43_+1000_KNU/WCBiq_VN2ZdP--
+Thanks,
+Maxim
