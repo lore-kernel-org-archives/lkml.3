@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935407Ab3DRAC2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 20:02:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47518 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753713Ab3DRAC1 (ORCPT
+	id S964847Ab3DRAD0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 20:03:26 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:51235 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab3DRADY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 20:02:27 -0400
-Message-ID: <516F37FF.8040703@infradead.org>
-Date: Wed, 17 Apr 2013 17:02:07 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 17 Apr 2013 20:03:24 -0400
+Date: Wed, 17 Apr 2013 17:03:21 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Steven Rostedt <rostedt@goodmis.org>, Pekka Enberg <penberg@kernel.org>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux.com>,
+        Behan Webster <behanw@converseincode.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] slab: Remove unnecessary __builtin_constant_p()
+In-Reply-To: <1366225776.8817.28.camel@pippen.local.home>
+Message-ID: <alpine.DEB.2.02.1304171702380.24494@chino.kir.corp.google.com>
+References: <1366225776.8817.28.camel@pippen.local.home>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, x86@kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [patch] x86, kvm: fix build failure with CONFIG_SMP disabled
-References: <20130417170450.5dd6e5f450de4d5bf197d997@canb.auug.org.au> <516EE5AB.4080201@infradead.org> <alpine.DEB.2.02.1304171555030.10112@chino.kir.corp.google.com> <alpine.DEB.2.02.1304171609580.5541@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1304171609580.5541@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/13 16:12, David Rientjes wrote:
-> The build fails when CONFIG_SMP is disabled:
+On Wed, 17 Apr 2013, Steven Rostedt wrote:
+
+> The slab.c code has a size check macro that checks the size of the
+> following structs:
 > 
-> 	arch/x86/kvm/vmx.c: In function 'vmx_deliver_posted_interrupt':
-> 	arch/x86/kvm/vmx.c:3950:3: error: 'apic' undeclared (first use in this function)
+> struct arraycache_init
+> struct kmem_list3
 > 
-> Fix it by including the necessary header.
-
-Sorry, i386 build still fails with the same error message plus this one:
-
-ERROR: "apic" [arch/x86/kvm/kvm-intel.ko] undefined!
-
-
-> Reported-by: Randy Dunlap <rdunlap@infradead.org>
-> Signed-off-by: David Rientjes <rientjes@google.com>
-> ---
->  arch/x86/kvm/vmx.c | 1 +
->  1 file changed, 1 insertion(+)
+> The index_of() function that takes the sizeof() of the above two structs
+> and does an unnecessary __builtin_constant_p() on that. As sizeof() will
+> always end up being a constant making this always be true. The code is
+> not incorrect, but it just adds added complexity, and confuses users and
+> wastes the time of reviewers of the code, who spends time trying to
+> figure out why the builtin_constant_p() was used.
 > 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -34,6 +34,7 @@
->  #include "kvm_cache_regs.h"
->  #include "x86.h"
+> This patch is just a clean up that makes the index_of() code a little
+> bit less complex.
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Acked-by: David Rientjes <rientjes@google.com>
+
+Adding Pekka to the cc.
+
+> 
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 856e4a1..6047900 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -325,9 +325,7 @@ static void cache_reap(struct work_struct *unused);
+>  static __always_inline int index_of(const size_t size)
+>  {
+>  	extern void __bad_size(void);
+> -
+> -	if (__builtin_constant_p(size)) {
+> -		int i = 0;
+> +	int i = 0;
 >  
-> +#include <asm/apic.h>
->  #include <asm/io.h>
->  #include <asm/desc.h>
->  #include <asm/vmx.h>
-> --
-
-
--- 
-~Randy
+>  #define CACHE(x) \
+>  	if (size <=x) \
+> @@ -336,9 +334,7 @@ static __always_inline int index_of(const size_t size)
+>  		i++;
+>  #include <linux/kmalloc_sizes.h>
+>  #undef CACHE
+> -		__bad_size();
+> -	} else
+> -		__bad_size();
+> +	__bad_size();
+>  	return 0;
+>  }
+>  
