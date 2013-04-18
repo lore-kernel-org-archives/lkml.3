@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965232Ab3DRDPC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 23:15:02 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:38064 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965089Ab3DRDPA (ORCPT
+	id S965346Ab3DRDPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 23:15:49 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:49476 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965089Ab3DRDPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 23:15:00 -0400
+	Wed, 17 Apr 2013 23:15:47 -0400
+Message-ID: <516F6559.1020309@linux.vnet.ibm.com>
+Date: Thu, 18 Apr 2013 11:15:37 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Date: Thu, 18 Apr 2013 11:14:59 +0800
-Message-ID: <CAPgLHd8qt3o285vskc-JzNOh0Yorehgxy+SEUoJ_kccy3cjcMQ@mail.gmail.com>
-Subject: [PATCH -next] spi: omap2-mcspi: fix error return code in omap2_mcspi_probe()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: grant.likely@secretlab.ca, broonie@kernel.org, rob.herring@calxeda.com
-Cc: yongjun_wei@trendmicro.com.cn, spi-devel-general@lists.sourceforge.net,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce invalid rmap handlers
+References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1366093973-2617-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130417233810.GD31059@amt.cnet>
+In-Reply-To: <20130417233810.GD31059@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041803-6102-0000-0000-00000356E274
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On 04/18/2013 07:38 AM, Marcelo Tosatti wrote:
+> On Tue, Apr 16, 2013 at 02:32:45PM +0800, Xiao Guangrong wrote:
+>> Invalid rmaps is the rmap of the invalid memslot which is being
+>> deleted, especially, we can treat all rmaps are invalid when
+>> kvm is being destroyed since all memslot will be deleted soon.
+>> MMU should remove all sptes on these rmaps before the invalid
+>> memslot fully deleted
+>>
+>> The reason why we separately handle invalid rmap is we want to
+>> unmap invalid-rmap out of mmu-lock to achieve scale performance
+>> on intensive memory and vcpu used guest
+> 
+> Better try to make the code simpler, and introduce complexity only 
+> if necessary.
 
-Fix to return a negative error code from the error handling
-case instead of 0, as returned elsewhere in this function.
+Marcelo,
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/spi/spi-omap2-mcspi.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+This code is necessary to implement "unmap invalid rmap out of mmu-lock",
+the reason why we need it is that ...
 
-diff --git a/drivers/spi/spi-omap2-mcspi.c b/drivers/spi/spi-omap2-mcspi.c
-index 893c3d7..c31a1c0 100644
---- a/drivers/spi/spi-omap2-mcspi.c
-+++ b/drivers/spi/spi-omap2-mcspi.c
-@@ -1277,7 +1277,8 @@ static int omap2_mcspi_probe(struct platform_device *pdev)
- 	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
- 	pm_runtime_enable(&pdev->dev);
- 
--	if (status || omap2_mcspi_master_setup(mcspi) < 0)
-+	status = omap2_mcspi_master_setup(mcspi);
-+	if (status < 0)
- 		goto disable_pm;
- 
- 	status = spi_register_master(master);
+> 
+> The idea to zap the roots is very elegant and apparently effective. What
+> are its problems?
+
+I mentioned it in 00/15:
+
+* Challenges
+Some page invalidation is requested when memslot is moved or deleted
+and kvm is being destroy who call zap_all_pages to delete all sp using
+their rmap and lpage-info, after call zap_all_pages, the rmap and lpage-info
+will be freed. So, we should implement a fast way to delete sp from the rmap
+and lpage-info.
+
 
