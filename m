@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935970Ab3DRARa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 20:17:30 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:57125 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S935849Ab3DRAR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 20:17:28 -0400
-Date: Wed, 17 Apr 2013 19:17:26 -0500
-From: Robin Holt <holt@sgi.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Robin Holt <holt@sgi.com>, Ingo Molnar <mingo@kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Russ Anderson <rja@sgi.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH -v5 5/5] Make reboot_cpuid a kernel parameter.
-Message-ID: <20130418001726.GM3658@sgi.com>
-References: <1366224198-49485-1-git-send-email-holt@sgi.com>
- <1366224198-49485-6-git-send-email-holt@sgi.com>
- <516EF9DE.6000707@zytor.com>
- <20130417194836.GK3658@sgi.com>
- <516EFF3D.4040506@zytor.com>
- <20130417201533.GL3658@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130417201533.GL3658@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S936069Ab3DRASm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 20:18:42 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:42273 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S935682Ab3DRASl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Apr 2013 20:18:41 -0400
+Message-ID: <1366244319.28609.57.camel@joe-AO722>
+Subject: Re: [PATCH] usb: storage: Add usb_stor_dbg, reduce object size
+From: Joe Perches <joe@perches.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb <linux-usb@vger.kernel.org>,
+        usb-storage <usb-storage@lists.one-eyed-alien.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 17 Apr 2013 17:18:39 -0700
+In-Reply-To: <Pine.LNX.4.44L0.1304171426460.1623-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1304171426460.1623-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 03:15:33PM -0500, Robin Holt wrote:
-> On Wed, Apr 17, 2013 at 12:59:57PM -0700, H. Peter Anvin wrote:
-> > It is also worth noting that the documentation says reboot=s[mp]#
-> > whereas in fact only reboot=s# parse correctly.  I consider this to be a
-> > bug.
-> > 
-> > If we centralized the parser, we could take a string like
-> > 
-> > "reboot=bios,smp32,warm"
-> > 
-> > and parse it into:
-> > 
-> > reboot_cpu = 32
-> > reboot_mode = "bw"
-> > 
-> > ... and pass the information in that form to the arch layer.  I don't
-> > think we can do more parsing at that in the main kernel.
+On Wed, 2013-04-17 at 14:47 -0400, Alan Stern wrote:
+> On Wed, 17 Apr 2013, Joe Perches wrote:
+[]
+> > +int usb_stor_dbg(const struct us_data *us, const char *fmt, ...)
+> > +{
+> > +     struct va_format vaf;
+> > +     va_list args;
+> > +     int r;
+> > +
+> > +     va_start(args, fmt);
+> > +
+> > +     if (us && us->pusb_dev) {
+> > +             r = dev_vprintk_emit(7, &us->pusb_dev->dev, fmt, args);
 > 
-> OK.  I will go back to the drawing board again.
+> Isn't there a symbolic constant you can use instead of "7"?
 
-There are 4 items being parsed out of reboot= for x86:
- - reboot_mode		w[arm] | c[old]
- - reboot_cpu		s[mp]####
- - reboot_type		b[ios] | a[cpi] | k[bd] | t[riple] | e[fi] | p[ci]
- - reboot_force		f[orce]
+Nope.
+lib/dynamic_debug:__dynamic_dev_dbg() does the same thing.
 
-This seems like a lot to push into the generic kernel just to make it
-appear consistent when there will be no real cross arch consistency.
+> > --- a/drivers/usb/storage/scsiglue.c
+> > +++ b/drivers/usb/storage/scsiglue.c
+> 
+> > @@ -349,8 +347,6 @@ static int command_abort(struct scsi_cmnd *srb)
+[]
+> > -     US_DEBUGP("%s called\n", __func__);
+[]
+> > @@ -386,8 +382,6 @@ static int device_reset(struct scsi_cmnd *srb)
+[]
+> > -     US_DEBUGP("%s called\n", __func__);
+[]
+> > @@ -402,7 +396,6 @@ static int bus_reset(struct scsi_cmnd *srb)
+[]
+> > -     US_DEBUGP("%s called\n", __func__);
+
+> These three functions get called only in unusual circumstances, and for
+> debugging we do want to know when they get called.  So these statements
+> should remain.
+
+I'll put 'em back and resubmit the whole schmear against
+what Greg has in his tree now later.  I do think that
+the function tracer does all that though and more.
+
+Look at Documentation/trace/ftrace.txt
+
+> > --- a/drivers/usb/storage/usb.c
+[]
+> > @@ -918,7 +902,7 @@ int usb_stor_probe1(struct us_data **pus,
+[]
+> > -     US_DEBUGP("USB Mass Storage device detected\n");
+> > +     usb_stor_dbg(NULL, "USB Mass Storage device detected\n");
+[]
+> Even though "us" isn't available here, intf is.  This line can be a
+> regular dev_dbg(&intf->dev, ...).  Or even dev_info(&intf->dev, ...);  
+> this looks like the sort of thing one sees all the time in kernel logs.
+
+I'll make it dev_info
+
+> > @@ -1075,9 +1058,8 @@ static int storage_probe(struct usb_interface *intf,
+[]
+> > +             usb_stor_dbg(us, "Use Bulk-Only transport with the Transparent SCSI protocol for dynamic id: 0x%04x 0x%04x\n",
+> > +                          id->idVendor, id->idProduct);
+
+> And here "us" hasn't been set yet (it gets set in usb_stor_probe1), so
+> it shouldn't be used.  This can become another dev_dbg(&intf->dev, ...)
+> line.
+
+OK.
 
 
-Contrast that with:
-1) New kernel parameter (reboot_cpu) which is clear and concise, uses standard
-   parsing methods.
-2) Backwards compatibility in that a user with an existing (broken) reboot=s32
-   on the command line will set reboot_cpu unless both were specified, in which
-   case reboot_cpu takes precedence.
-
-What is so fundamentally wrong with that?  It accomplishes exactly what
-you had asked for in that existing users are not broken.  We are introducing
-a new functionality in the general kernel.  Why not introduce a new parameter
-associated with that functionality.
-
-Thanks,
-Robin
