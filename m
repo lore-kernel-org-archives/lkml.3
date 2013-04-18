@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967439Ab3DRXlZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 19:41:25 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:42495 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966999Ab3DRXlY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 19:41:24 -0400
-Message-ID: <1366327735.3824.50.camel@misato.fc.hp.com>
-Subject: Re: [Bug fix PATCH v4] Reusing a resource structure allocated by
- bootmem
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org, linuxram@us.ibm.com, rientjes@google.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Thu, 18 Apr 2013 17:28:55 -0600
-In-Reply-To: <517082B9.7050708@jp.fujitsu.com>
-References: <516FB07C.9010603@jp.fujitsu.com>
-	 <1366295000.3824.47.camel@misato.fc.hp.com>
-	 <517082B9.7050708@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S967524Ab3DRXmp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 19:42:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44011 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966999Ab3DRXmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 19:42:44 -0400
+Message-ID: <517084DA.4090401@zytor.com>
+Date: Thu, 18 Apr 2013 16:42:18 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
+CC: Matt Fleming <matt@console-pimps.org>, matthew.garrett@nebula.com,
+        linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Darren Hart <darren.hart@intel.com>,
+        Josh Triplett <josh@joshtriplett.org>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Josh Boyer <jwboyer@redhat.com>
+Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
+References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <516EAC4A.6040202@console-pimps.org> <516F1B90.9040508@nexus-software.ie> <516FD24A.3070502@console-pimps.org> <51706E8A.7030909@nexus-software.ie>
+In-Reply-To: <51706E8A.7030909@nexus-software.ie>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-19 at 08:33 +0900, Yasuaki Ishimatsu wrote:
- :
-> >
-> >> +static struct resource *get_resource(gfp_t flags)
-> >> +{
-> >> +	struct resource *res = NULL;
-> >> +
-> >> +	spin_lock(&bootmem_resource_lock);
-> >> +	if (bootmem_resource.sibling) {
-> >> +		res = bootmem_resource.sibling;
-> >> +		bootmem_resource.sibling = res->sibling;
-> >> +		memset(res, 0, sizeof(struct resource));
-> >> +	}
-> >> +	spin_unlock(&bootmem_resource_lock);
-> >
 > 
-> > I prefer to keep memset() outside of the spin lock.
-> >
-> > spin_lock(&bootmem_resource_lock);
-> > if (..) {
-> > 	:
-> > 	spin_unlock(&bootmem_resource_lock);
-> > 	memset(res, 0, sizeof(struct resource));
-> > } else {
-> > 	spin_unlock(&bootmem_resource_lock);
-> > 	res = kzalloc(sizeof(struct resource), flags);
-> > }
+> "UEI" is Celtic for "We missed DOS so we burned it into your ROMS"
 > 
-> Hmm. It is a little ugly. How about it?
+> I love it "maith an fear"
 > 
-> spin_lock(&bootmem_resource_lock);
-> if (bootmem_resource.sibling) {
-> 	res = bootmem_resource.sibling;
-> 	bootmem_resource.sibling = res->sibling;
-> }
-> spin_unlock(&bootmem_resource_lock);
+>> There are currently only two situations where we need to map EFI Boot
+>> Service regions,
+>>
+>>    1. To workaround the firmware bug described in 916f676f8
+>>    2. To access the ACPI BGRT image
+>>
+>> but since we haven't seen an i386 implementation that requires either,
+>> this simple fix should suffice for now. Item 2. above does still work on
+>> i386 provided that the BGRT image is not in highmem.
 > 
-> if (res)
-> 	memset(res, 0, sizeof(struct resource));
-> else	
-> 	res = kzalloc(sizeof(struct resource), flags);
+> Matt, Peter, Josh, Darren.
+> 
+> Given it's not possible to guarantee someone won't stuff a BGRT into
+> EFI_BOOT_MEMORY >= highmem eventually (and indeed the axioms of the
+> universe pretty much guarantee eventually it will be so) - I'd suggest
+> version 2.
+> 
 
-Sounds good to me.
+Quite frankly, it is quite likely.
 
-Thanks,
--Toshi
+> A kernel parameter - rather than a probe for BGRT - since we anticipate
+> BIOS bugs on the way.
 
+Pardon?  Kernel parameter for what?
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
