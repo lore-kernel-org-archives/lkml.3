@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966961Ab3DRPEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 11:04:45 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:62853 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965506Ab3DRPEo (ORCPT
+	id S967156Ab3DRPE7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 11:04:59 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:28017 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965506Ab3DRPE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 11:04:44 -0400
-Date: Thu, 18 Apr 2013 17:04:32 +0200
-From: Richard GENOUD <richard.genoud@gmail.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Kay Sievers <kay@vrfy.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Subject: Re: [PATCH RFC] ARM: don't allow to register the early_console
- twice
-Message-ID: <20130418150430.GA19382@lnx-rg>
-References: <1366295019-30335-1-git-send-email-gregory.clement@free-electrons.com>
- <1366295019-30335-2-git-send-email-gregory.clement@free-electrons.com>
+	Thu, 18 Apr 2013 11:04:57 -0400
+X-IronPort-AV: E=Sophos;i="4.87,502,1363132800"; 
+   d="scan'208";a="19257070"
+Date: Thu, 18 Apr 2013 16:04:44 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Olof Johansson <olof@lixom.net>
+Subject: [PATCH 0/3 v7] arm: introduce psci_smp_ops
+Message-ID: <alpine.DEB.2.02.1304181556210.7254@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366295019-30335-2-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On [jeu., 18.04.2013 16:23:39], Gregory CLEMENT wrote:
-> If on the kernel command line the parameter "earlyprintk" is written
-> twice, then setup_early_printk is called twice. This can happen for
-> example with the option CONFIG_ARM_ATAG_DTB_COMPAT_CMDLINE_EXTEND is
-> selected, and the "earlyprintk" is passed from the ATAG_CMDLINE and
-> from the dtb.
-> 
-> This lead to an infinite loop on the message "Booting Linux on
-> physical CPU 0" displayed from smp_setup_processor_id() in
-> arch/arm/kernel/setup.c. This behavior as been reproduced on ARMv7
-> architecture (Armada XP and Armada 370), and on a ARMv5 one
-> (AT91SAMG35 thanks to Richard Genoud), with and with CONFIG_SMP
-> selected.
-> 
-> This patch simply doesn't allow to call twice register_console() with
-> the early_console.
-> 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
->  arch/arm/kernel/early_printk.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/kernel/early_printk.c b/arch/arm/kernel/early_printk.c
-> index 85aa2b2..435577a 100644
-> --- a/arch/arm/kernel/early_printk.c
-> +++ b/arch/arm/kernel/early_printk.c
-> @@ -50,7 +50,11 @@ asmlinkage void early_printk(const char *fmt, ...)
->  
->  static int __init setup_early_printk(char *buf)
->  {
-> -	register_console(&early_console);
-> +	static int done;
-> +	if (!done) {
-> +		register_console(&early_console);
-> +		done = 1;
-> +	}
->  	return 0;
->  }
->  
-> -- 
-> 1.7.9.5
-Tested on at91sam9g35-ek kernel 3.9-rc7 +custom patches
+Hi all,
+this is the seventh version of the patch series to move virt_smp_ops out
+of mach-virt and make it a generic set of reusable PSCI based smp_ops.
+psci_smp_ops are preferred over the platform smp_ops.
+The last patch introduces smp_init.
 
-Tested-by: Richard Genoud <richard.genoud@gmail.com>
+I removed the patch that makes use of smp_init in Xen, because it
+depends on other Xen changes. I'll send it separately.
+This version of the series is independent of other changes.
 
+
+Jon Medhurst (1):
+      ARM: Enable selection of SMP operations at boot time
+
+Stefano Stabellini (2):
+      arm: introduce psci_smp_ops
+      arm: prefer psci_smp_ops over mdesc->smp
+
+ arch/arm/include/asm/mach/arch.h |    3 ++
+ arch/arm/include/asm/psci.h      |   29 ++++++++++++++++
+ arch/arm/kernel/Makefile         |    5 ++-
+ arch/arm/kernel/psci.c           |    7 ++--
+ arch/arm/kernel/psci_smp.c       |   67 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/kernel/setup.c          |    9 ++++-
+ arch/arm/mach-virt/Makefile      |    1 -
+ arch/arm/mach-virt/platsmp.c     |   58 --------------------------------
+ arch/arm/mach-virt/virt.c        |    3 --
+ 9 files changed, 114 insertions(+), 68 deletions(-)
+
+
+git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git 3.9-rc3-psci-ops-7-tag
+
+Cheers,
+
+Stefano
