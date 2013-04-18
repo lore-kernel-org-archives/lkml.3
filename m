@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936609Ab3DRVwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 17:52:12 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:47400 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936362Ab3DRVwJ (ORCPT
+	id S1753684Ab3DRVxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 17:53:53 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53109 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab3DRVxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 17:52:09 -0400
+	Thu, 18 Apr 2013 17:53:52 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 24/32 v3] dmaengine: ste_dma40: Supply full Device Tree parsing support
+Date: Thu, 18 Apr 2013 23:53:44 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <20130418121253.GF27903@gmail.com> <20130418141752.GC3959@gmail.com>
+In-Reply-To: <20130418141752.GC3959@gmail.com>
 MIME-Version: 1.0
-Date: Thu, 18 Apr 2013 15:52:09 -0600
-Message-ID: <CAL-B5D3mP-Eo7yzZb=ZJ_+GK5YGzKZV2p0SD05s3fXDR2BGorA@mail.gmail.com>
-Subject: 2013 Linux Plumbers ACPI/PM, PCI Microconference proposal call for participaton
-From: Myron Stowe <myron.stowe@gmail.com>
-To: linux-pci <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304182353.45092.arnd@arndb.de>
+X-Provags-ID: V02:K0:YiUExy8aEHJR104wAsw1MJWOzh3rHvni2d2tZ3X+PIk
+ bFwjd+aqfznHBOiYXWewo5hCcvyqBfu//O5k8lRI5v+KWEZrTw
+ +PtHiQ1Om4DqbzuI5GKMrsHTC8NF5uw8EF2y5MipzJcST6DsFP
+ +w5U1rZ13XLmV4JxNT3KexUKml8HZdDnVoDKFDNvB7KU74Kf6Y
+ X1x+GL0+oCHG8ITK9Lklq1g10JeVntG57CvYqh9jpdTs2dviJM
+ I3Vb1wInKvlFN36IJ0pHoM2IwnSC8q3RexindP3/k6CAJBIyeS
+ z1BMUtMOcRr9Wk2TIEL0wL3+6qrWvQ5IVSj2KQe2kng/ICgyYH
+ Mp0yKQqa4ipsTjCJsBGs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All:
+On Thursday 18 April 2013, Lee Jones wrote:
+> Using the new DMA DT bindings and API, we can register the DMA40 driver
+> as Device Tree capable. Now, when a client attempts to allocate a
+> channel using the DMA DT bindings via its own node, we are able to parse
+> the request and allocate a channel in the correct manner.
+> 
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
 
-We would like to hold a combined ACPI/PM, PCI focused microconference
-as part of this year's Linux Plumbers conference but first we need to
-show that there is enough interest and material that needs covered.
-
-There is a lot of activity in these subsystems so please respond by
-submitting presentation or discussion proposals that you would be
-willing to cover for consideration (respond to this mail on the
-linux-pci list for tracking purposes please).  You should also feel
-free to submit ideas as proposals that others could cover.  This is
-the "Plumbers" conference so topics concerning userspace interaction
-with the kernel and not just topics concerning pure kernel subsystem
-internals would be greatly welcomed.
-
-The initial call[1] only produced two responses.  We understand that
-everyone is busy but without proposals the program committee will not
-be able to select this topic for approval - so please step up.
-
-
-If approved by the program committee, we will give precedence to
-proposals that bring up current issues that need attention, help, or
-resolution.  We would like for the majority of the microconference to
-be "working session discussions" in which a current issues in/with the
-ACPI/PM and PCI subsystem space that needs solving are introduced and
-then opened up for live discussion by attendees - much like what took
-place last year during the Kernel Summit's PCI miniconf.
-
-As a possible aid towards promoting topics for submissions we have
-listed a few candidates that seem to meet the criteria in the
-microconference proposals wiki located at
-http://wiki.linuxplumbersconf.org/2013:pci_subsystem
-
-
-Please feel free to forward this invitation on to any others, or
-relevant lists, that seem appropriate.
-
-Thanks,
-  Len, Bjorn, Myron, Rafael
-
-
-[1] https://lkml.org/lkml/2013/3/7/315
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
