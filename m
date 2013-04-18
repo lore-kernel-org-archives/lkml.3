@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919Ab3DRSsC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 14:48:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21300 "EHLO mx1.redhat.com"
+	id S967001Ab3DRSsN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 14:48:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21002 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750934Ab3DRSsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 14:48:00 -0400
-Date: Thu, 18 Apr 2013 20:44:19 +0200
+	id S1754200Ab3DRSsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 14:48:09 -0400
+Date: Thu, 18 Apr 2013 20:44:22 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Alan Stern <stern@rowland.harvard.edu>,
         Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Jan Kratochvil <jan.kratochvil@redhat.com>,
         Prasad <prasad@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] ptrace/x86: ptrace_write_dr7() should create bp if
-	!disabled
-Message-ID: <20130418184419.GA4444@redhat.com>
+Subject: [PATCH 5/6] ptrace/x86: cleanup ptrace_set_debugreg()
+Message-ID: <20130418184422.GA4447@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,53 +24,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-24f1e32c "hw-breakpoints: Rewrite the hw-breakpoints layer on top
-of perf events" introduced the minor regression. Before this commit
+ptrace_set_debugreg() is trivial but looks horrible. Kill the
+unnecessary goto's and return's to cleanup the code.
 
-	PTRACE_POKEUSER DR7, enableDR0
-	PTRACE_POKEUSER DR0, address
+This matches ptrace_get_debugreg() which also needs the trivial
+whitespace cleanups.
 
-was perfectly valid, now PTRACE_POKEUSER(DR7) fails if DR0 was not
-previously initialized by PTRACE_POKEUSER(DR0).
-
-Change ptrace_write_dr7() to do ptrace_register_breakpoint(addr => 0)
-if !bp && !disabled. This fixes watchpoint-zeroaddr from ptrace-tests,
-see https://bugzilla.redhat.com/show_bug.cgi?id=660204.
-
-Reported-by: Jan Kratochvil <jan.kratochvil@redhat.com>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/kernel/ptrace.c |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
+ arch/x86/kernel/ptrace.c |   26 ++++++++------------------
+ 1 files changed, 8 insertions(+), 18 deletions(-)
 
 diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 0526368..5c387b3 100644
+index 5c387b3..7461f50 100644
 --- a/arch/x86/kernel/ptrace.c
 +++ b/arch/x86/kernel/ptrace.c
-@@ -670,13 +670,16 @@ restore:
- 		if (!bp) {
- 			if (disabled)
- 				continue;
--			/*
--			 * We should have at least an inactive breakpoint at
--			 * this slot. It means the user is writing dr7 without
--			 * having written the address register first.
--			 */
--			rc = -EINVAL;
--			break;
-+
-+			bp = ptrace_register_breakpoint(tsk,
-+					len, type, 0, disabled);
-+			if (IS_ERR(bp)) {
-+				rc = PTR_ERR(bp);
-+				break;
-+			}
-+
-+			thread->ptrace_bps[i] = bp;
-+			continue;
- 		}
+@@ -703,7 +703,7 @@ restore:
+  */
+ static unsigned long ptrace_get_debugreg(struct task_struct *tsk, int n)
+ {
+-	struct thread_struct *thread = &(tsk->thread);
++	struct thread_struct *thread = &tsk->thread;
+ 	unsigned long val = 0;
  
- 		rc = ptrace_modify_breakpoint(bp, len, type, disabled);
+ 	if (n < HBP_NUM) {
+@@ -713,7 +713,7 @@ static unsigned long ptrace_get_debugreg(struct task_struct *tsk, int n)
+ 			val = bp->hw.info.address;
+ 	} else if (n == 6) {
+ 		val = thread->debugreg6;
+-	 } else if (n == 7) {
++	} else if (n == 7) {
+ 		val = thread->ptrace_dr7;
+ 	}
+ 	return val;
+@@ -761,30 +761,20 @@ static int ptrace_set_breakpoint_addr(struct task_struct *tsk, int nr,
+ static int ptrace_set_debugreg(struct task_struct *tsk, int n,
+ 			       unsigned long val)
+ {
+-	struct thread_struct *thread = &(tsk->thread);
+-	int rc = 0;
+-
++	struct thread_struct *thread = &tsk->thread;
+ 	/* There are no DR4 or DR5 registers */
+-	if (n == 4 || n == 5)
+-		return -EIO;
++	int rc = -EIO;
+ 
+-	if (n == 6) {
+-		thread->debugreg6 = val;
+-		goto ret_path;
+-	}
+ 	if (n < HBP_NUM) {
+ 		rc = ptrace_set_breakpoint_addr(tsk, n, val);
+-		if (rc)
+-			return rc;
+-	}
+-	/* All that's left is DR7 */
+-	if (n == 7) {
++	} else if (n == 6) {
++		thread->debugreg6 = val;
++		rc = 0;
++	} else if (n == 7) {
+ 		rc = ptrace_write_dr7(tsk, val);
+ 		if (!rc)
+ 			thread->ptrace_dr7 = val;
+ 	}
+-
+-ret_path:
+ 	return rc;
+ }
+ 
 -- 
 1.5.5.1
 
