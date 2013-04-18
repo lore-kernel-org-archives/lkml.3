@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936577Ab3DRTz0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 15:55:26 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:40222 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S936351Ab3DRTzY (ORCPT
+	id S967001Ab3DRT5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 15:57:31 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:40088 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab3DRT5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 15:55:24 -0400
-Message-ID: <51704FA8.7060801@console-pimps.org>
-Date: Thu, 18 Apr 2013 20:55:20 +0100
-From: Matt Fleming <matt@console-pimps.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Thu, 18 Apr 2013 15:57:30 -0400
+Message-ID: <51705025.4000107@gmail.com>
+Date: Thu, 18 Apr 2013 21:57:25 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Josh Triplett <josh@joshtriplett.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>,
-        matthew.garrett@nebula.com, linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Darren Hart <darren.hart@intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Josh Boyer <jwboyer@redhat.com>
-Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode
-References: <1366127886-31460-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <516EAC4A.6040202@console-pimps.org> <516F1B90.9040508@nexus-software.ie> <516FD24A.3070502@console-pimps.org> <20130418163325.GA6884@leaf> <5170216C.9020300@zytor.com> <20130418164457.GB6884@leaf>
-In-Reply-To: <20130418164457.GB6884@leaf>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH RFC 2/2] gpio: samsung: Remove OF support for Exynos4/5
+References: <1366134094-23140-1-git-send-email-s.nawrocki@samsung.com> <1366196768-19015-1-git-send-email-s.nawrocki@samsung.com> <CACRpkdZfZtfp5U4-Ab1ufbwBWVSvpDX_F=d-utokDXP7FbQmKw@mail.gmail.com>
+In-Reply-To: <CACRpkdZfZtfp5U4-Ab1ufbwBWVSvpDX_F=d-utokDXP7FbQmKw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 05:44 PM, Josh Triplett wrote:
->>> The machine I developed the BGRT changes on kept the image below the 4G
->>> mark, inside one of the memory regions reclaimable via
->>> ExitBootServices().
+On 04/17/2013 06:35 PM, Linus Walleij wrote:
+> On Wed, Apr 17, 2013 at 1:06 PM, Sylwester Nawrocki
+> <s.nawrocki@samsung.com>  wrote:
+>
+>> -#endif
+>> +        * All Samsung platforms that support device tree will use the pinctrl
+>> +        * driver, hence we skip initialization of this driver if the OF tree
+>> +        * is available.
+>> +        */
+>> +       if (of_have_populated_dt())
+>> +               return -ENODEV;
 >>
->> Well, highmem is >= ~896M.  Do you have a machine with BGRT over the
->> highmem mark?
-> 
-> I don't have the machine in question anymore, and I don't remember.
+>>          samsung_gpiolib_set_cfg(samsung_gpio_cfgs, ARRAY_SIZE(samsung_gpio_cfgs));
+>
+> Oh is that how you do it? It looks fragile.
+>
+> Can't you check if you have the pinctrl node atleast?
 
-Sorry, I should have been more clear - having a BGRT image in highmem
-has never worked for the reasons I outlined in my previous mail. What I
-was really asking was: is it OK that we now explicitly don't support
-that case? I'm working on the assumption that it's pointless writing
-support for the BGRT in highmem because no such i386 machines exist. If
-the BGRT code works for your i386 right now, the address isn't in highmem.
+But this driver won't help if there is no pinctrl node found anyway, since
+any OF support is removed from it.
 
-If there are machines out there that would require us to write support,
-it's probably worth doing now instead of punting. But it sounds like
-there aren't any.
+This way there is no need for any additional DT parsing, just to skip 
+probing
+of this legacy GPIO driver.
 
--- 
-Matt Fleming, Intel Open Source Technology Center
+There might be something that could have gone wrong and I am missing though.
+
+Thanks,
+Sylwester
