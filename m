@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756052Ab3DRLII (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 07:08:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:58644 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab3DRLIG (ORCPT
+	id S1755501Ab3DRLJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 07:09:32 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:49284 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab3DRLJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 07:08:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 25/32] ARM: ux500: Setup the DMA40 driver's DT node using the new DMA API
-Date: Thu, 18 Apr 2013 13:08:02 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+	Thu, 18 Apr 2013 07:09:30 -0400
+Date: Thu, 18 Apr 2013 12:09:18 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linus.walleij@stericsson.com
-References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-26-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1366279934-30761-26-git-send-email-lee.jones@linaro.org>
+Subject: Re: [PATCH 07/32] ARM: ux500: Supply address location names for the
+ DMA40 DMA controller
+Message-ID: <20130418110918.GC27903@gmail.com>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org>
+ <1366279934-30761-8-git-send-email-lee.jones@linaro.org>
+ <201304181248.36597.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304181308.03130.arnd@arndb.de>
-X-Provags-ID: V02:K0:17ldJBma8hdaUXBL5EFW8z/qc1Erpo+Uo6cHEXkFue1
- 0540B/hNCuGNVyoK7NMU/BIYOATkn75DnL0A81F7jmPAZBa+rX
- 8byIMRu1BiR28oAgmus9r9CAs4DBjwwWjYP4ZOQrdccu7HY2gM
- CFlAyDcvTjDCbf+L8qYH9YgWhWQLcfptfAOu8zfhzKXlQZlnaW
- ReToifnhurvXaH+8f9t+d6RBhngs9R7YKIOn1Lk3Fh6K9xu8sw
- QGsvnfOU12wfomdPG692GAhIFrg5GP0SMXO2t42jV019IPGSmf
- 5O8dR+ED2P9lFCEgU5GCIhTzsveBbBREO+ZCMGSwwXbQBidAZE
- 3weO1mCP1k15YLrvJ5hs=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201304181248.36597.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 18 April 2013, Lee Jones wrote:
-> The new DMA is now available, so let's use it to setup ST-Ericsson's
-> DMA40 driver when Device Tree is enabled.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+On Thu, 18 Apr 2013, Arnd Bergmann wrote:
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+> On Thursday 18 April 2013, Lee Jones wrote:
+> > The DMA40 controller uses two sets of base addresses. In order to have
+> > them automatically setup as resources by the Open Format framework we
+> > have to set names for them. The names have to be the same as the ones
+> > used to fetch them back out of the resource structure.
+> > 
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Typo: s/Open Format/Open Firmware/
+> 
+> To be more specific, just write of_platform framework. Note that we
+> still get resources without passing the names, they are just not
+> named in that case and have to be retrieved by index.
+
+Changed to:
+
+The DMA40 controller uses two sets of base addresses. In order to have
+the resources setup by the of_platform framework so they are searchable
+by name instead of index, we have to set names for them. The names have
+to be the same as the ones used to fetch them back out of the resource
+structure.
+
+> You should also document the strings in the binding document.
+
+Done.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
