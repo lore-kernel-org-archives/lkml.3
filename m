@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756587Ab3DRTdN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 15:33:13 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:40414 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab3DRTdL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 15:33:11 -0400
-Message-ID: <1366313588.3205.76.camel@edumazet-glaptop>
-Subject: Re: Bonding driver has bad load balancing for forwarded traffic,
- 3.7+
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: vitalyb@telenet.dn.ua, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, fubar@us.ibm.com, linux@8192.net
-Date: Thu, 18 Apr 2013 12:33:08 -0700
-In-Reply-To: <20130418.150910.1780951630545456624.davem@davemloft.net>
-References: <516C075E.30105@telenet.dn.ua>
-	 <1366072679.4459.113.camel@edumazet-glaptop>
-	 <1366081404.4459.127.camel@edumazet-glaptop>
-	 <20130418.150910.1780951630545456624.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S936535Ab3DRTob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 15:44:31 -0400
+Received: from mout.gmx.net ([212.227.17.22]:50600 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936351Ab3DRToa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 15:44:30 -0400
+X-Authenticated: #181789
+X-Provags-ID: V01U2FsdGVkX19CZI8xIo1C2Fxni+/h8cFKmeDvhR1lr9ncK1YLh+
+	qfC5EuuPaUA4+5
+From: Christian Eggers <ceggers@gmx.de>
+To: Matt Porter <mporter@ti.com>
+Cc: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
+Subject: spi: spi-davinci: Fix direction in dma_map_single()
+Date: Thu, 18 Apr 2013 21:44:21 +0200
+Message-ID: <8339377.qGdTICXBF1@p2400>
+User-Agent: KMail/4.8.5 (Linux/3.8.6-2-desktop; KDE/4.8.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-18 at 15:09 -0400, David Miller wrote:
+Commit 048177ce3b3962852fd34a7e04938959271c7e70 (spi: spi-davinci: 
+convert to DMA engine API) introduced a regression: dma_map_single() 
+is called with direction DMA_FROM_DEVICE for rx and for tx.
 
-> Applied and queued up for -stable, but:
-> 
-> > +						sizeof(_l4), &_l4);						
->                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
-> 
-> That's some rather amazing trailing whitespace.  Are you trying to break
-> free of earth's atmosphere? :-)
+Signed-off-by: Christian Eggers <ceggers@gmx.de>
+Cc: stable@vger.kernel.org
+---
+--- drivers/spi/spi-davinci.c.orig	2013-04-18 20:54:02.728719412 +0200
++++ drivers/spi/spi-davinci.c	2013-04-18 20:54:51.900623956 +0200
+@@ -608,7 +608,7 @@ static int davinci_spi_bufs(struct spi_d
+ 		else
+ 			buf = (void *)t->tx_buf;
+ 		t->tx_dma = dma_map_single(&spi->dev, buf,
+-				t->len, DMA_FROM_DEVICE);
++				t->len, DMA_TO_DEVICE);
+ 		if (!t->tx_dma) {
+ 			ret = -EFAULT;
+ 			goto err_tx_map;
 
-Ah, sorry for this ;)
-
-Thanks
 
 
