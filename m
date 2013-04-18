@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966999Ab3DRJWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:22:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40308 "EHLO
+	id S967019Ab3DRJWk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:22:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40292 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759289Ab3DRJS2 (ORCPT
+	with ESMTP id S1758200Ab3DRJSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 05:18:28 -0400
+	Thu, 18 Apr 2013 05:18:24 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josef Bacik <jbacik@fusionio.com>, Chris Mason <chris.mason@fusionio.com>,
+Cc: Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 62/72] Btrfs: make sure nbytes are right after log replay
-Date: Thu, 18 Apr 2013 10:16:47 +0100
-Message-Id: <1366276617-3553-63-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 59/72] udl: handle EDID failure properly.
+Date: Thu, 18 Apr 2013 10:16:44 +0100
+Message-Id: <1366276617-3553-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -27,130 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fusionio.com>
+From: Dave Airlie <airlied@gmail.com>
 
-commit 4bc4bee4595662d8bff92180d5c32e3313a704b0 upstream.
+commit 1baee58638fc58248625255f5c5fcdb987f11b1f upstream.
 
-While trying to track down a tree log replay bug I noticed that fsck was always
-complaining about nbytes not being right for our fsynced file.  That is because
-the new fsync stuff doesn't wait for ordered extents to complete, so the inodes
-nbytes are not necessarily updated properly when we log it.  So to fix this we
-need to set nbytes to whatever it is on the inode that is on disk, so when we
-replay the extents we can just add the bytes that are being added as we replay
-the extent.  This makes it work for the case that we have the wrong nbytes or
-the case that we logged everything and nbytes is actually correct.  With this
-I'm no longer getting nbytes errors out of btrfsck.
+Don't oops seems proper.
 
-Signed-off-by: Josef Bacik <jbacik@fusionio.com>
-Signed-off-by: Chris Mason <chris.mason@fusionio.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 [ luis: adjust context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/btrfs/tree-log.c | 48 ++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 42 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/udl/udl_connector.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/fs/btrfs/tree-log.c b/fs/btrfs/tree-log.c
-index aad8644..5a1ff11 100644
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -315,6 +315,7 @@ static noinline int overwrite_item(struct btrfs_trans_handle *trans,
- 	unsigned long src_ptr;
- 	unsigned long dst_ptr;
- 	int overwrite_root = 0;
-+	bool inode_item = key->type == BTRFS_INODE_ITEM_KEY;
+diff --git a/drivers/gpu/drm/udl/udl_connector.c b/drivers/gpu/drm/udl/udl_connector.c
+index 3234224..b8e6463 100644
+--- a/drivers/gpu/drm/udl/udl_connector.c
++++ b/drivers/gpu/drm/udl/udl_connector.c
+@@ -61,6 +61,10 @@ static int udl_get_modes(struct drm_connector *connector)
+ 	int ret;
  
- 	if (root->root_key.objectid != BTRFS_TREE_LOG_OBJECTID)
- 		overwrite_root = 1;
-@@ -324,6 +325,9 @@ static noinline int overwrite_item(struct btrfs_trans_handle *trans,
+ 	edid = (struct edid *)udl_get_edid(udl);
++	if (!edid) {
++		drm_mode_connector_update_edid_property(connector, NULL);
++		return 0;
++	}
  
- 	/* look for the key in the destination tree */
- 	ret = btrfs_search_slot(NULL, root, key, path, 0, 0);
-+	if (ret < 0)
-+		return ret;
-+
- 	if (ret == 0) {
- 		char *src_copy;
- 		char *dst_copy;
-@@ -365,6 +369,30 @@ static noinline int overwrite_item(struct btrfs_trans_handle *trans,
- 			return 0;
- 		}
+ 	connector->display_info.raw_edid = (char *)edid;
  
-+		/*
-+		 * We need to load the old nbytes into the inode so when we
-+		 * replay the extents we've logged we get the right nbytes.
-+		 */
-+		if (inode_item) {
-+			struct btrfs_inode_item *item;
-+			u64 nbytes;
-+
-+			item = btrfs_item_ptr(path->nodes[0], path->slots[0],
-+					      struct btrfs_inode_item);
-+			nbytes = btrfs_inode_nbytes(path->nodes[0], item);
-+			item = btrfs_item_ptr(eb, slot,
-+					      struct btrfs_inode_item);
-+			btrfs_set_inode_nbytes(eb, item, nbytes);
-+		}
-+	} else if (inode_item) {
-+		struct btrfs_inode_item *item;
-+
-+		/*
-+		 * New inode, set nbytes to 0 so that the nbytes comes out
-+		 * properly when we replay the extents.
-+		 */
-+		item = btrfs_item_ptr(eb, slot, struct btrfs_inode_item);
-+		btrfs_set_inode_nbytes(eb, item, 0);
- 	}
- insert:
- 	btrfs_release_path(path);
-@@ -486,7 +514,7 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
- 	u64 extent_end;
- 	u64 alloc_hint;
- 	u64 start = key->offset;
--	u64 saved_nbytes;
-+	u64 nbytes = 0;
- 	struct btrfs_file_extent_item *item;
- 	struct inode *inode = NULL;
- 	unsigned long size;
-@@ -496,10 +524,19 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
- 	found_type = btrfs_file_extent_type(eb, item);
- 
- 	if (found_type == BTRFS_FILE_EXTENT_REG ||
--	    found_type == BTRFS_FILE_EXTENT_PREALLOC)
--		extent_end = start + btrfs_file_extent_num_bytes(eb, item);
--	else if (found_type == BTRFS_FILE_EXTENT_INLINE) {
-+	    found_type == BTRFS_FILE_EXTENT_PREALLOC) {
-+		nbytes = btrfs_file_extent_num_bytes(eb, item);
-+		extent_end = start + nbytes;
-+
-+		/*
-+		 * We don't add to the inodes nbytes if we are prealloc or a
-+		 * hole.
-+		 */
-+		if (btrfs_file_extent_disk_bytenr(eb, item) == 0)
-+			nbytes = 0;
-+	} else if (found_type == BTRFS_FILE_EXTENT_INLINE) {
- 		size = btrfs_file_extent_inline_len(eb, item);
-+		nbytes = btrfs_file_extent_ram_bytes(eb, item);
- 		extent_end = (start + size + mask) & ~mask;
- 	} else {
- 		ret = 0;
-@@ -548,7 +585,6 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
- 	}
- 	btrfs_release_path(path);
- 
--	saved_nbytes = inode_get_bytes(inode);
- 	/* drop any overlapping extents */
- 	ret = btrfs_drop_extents(trans, inode, start, extent_end,
- 				 &alloc_hint, 1);
-@@ -636,7 +672,7 @@ static noinline int replay_one_extent(struct btrfs_trans_handle *trans,
- 		BUG_ON(ret);
- 	}
- 
--	inode_set_bytes(inode, saved_nbytes);
-+	inode_add_bytes(inode, nbytes);
- 	btrfs_update_inode(trans, root, inode);
- out:
- 	if (inode)
 -- 
 1.8.1.2
 
