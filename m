@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966678Ab3DROOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 10:14:42 -0400
-Received: from mail.ch.keymile.com ([193.17.201.103]:55999 "HELO
-	mail-ch.keymile.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S965346Ab3DROOk (ORCPT
+	id S966666Ab3DROPj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 10:15:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59827 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965049Ab3DROPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 10:14:40 -0400
-X-Greylist: delayed 713 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Apr 2013 10:14:40 EDT
-Message-ID: <516FFCB5.7080900@keymile.com>
-Date: Thu, 18 Apr 2013 16:01:25 +0200
-From: Gerlando Falauto <gerlando.falauto@keymile.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
+	Thu, 18 Apr 2013 10:15:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: [PATCH 18/19] ARM: at91: suspend both memory controllers on at91sam9263
+Date: Thu, 18 Apr 2013 16:15:20 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrew Victor <linux@maxim.org.za>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>
+References: <1359123276-15833-1-git-send-email-arnd@arndb.de> <1359153858-31992-19-git-send-email-arnd@arndb.de> <516FF8FC.7070901@atmel.com>
+In-Reply-To: <516FF8FC.7070901@atmel.com>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Simon Guinot <sguinot@lacie.com>
-Subject: Re: [PATCH v3b 0/9] refactoring for mask_cache
-References: <1363885931-20571-1-git-send-email-gerlando.falauto@keymile.com>
-In-Reply-To: <1363885931-20571-1-git-send-email-gerlando.falauto@keymile.com>
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Apr 2013 14:01:25.0827 (UTC) FILETIME=[37451930:01CE3C3D]
-X-ESAFE-STATUS: [srvchber1306.keymile.net] Mail allowed
+Message-Id: <201304181615.20542.arnd@arndb.de>
+X-Provags-ID: V02:K0:mBrg2x15Wqk+oZy3VGGn/Jt3Wuxo/KQFqobLWlQghBG
+ DwBvTv+012S5qGWGBgEdJHuBLtl1/QgOAIy9ANgG37RbHfEvoq
+ 3dCaL+GB8aHTIm2WdH9eoVO4r5ND6Yj1uFWrRXZKENfvURRk4E
+ KMlttNCN8fM64nKkywjsW0h0iLxhqyg1BiPkatZIbbTj7qOMEn
+ 2dfhKIm6VfpQVKgZxS8ucO9ZpkiHB+/Y1tqkC2nh/EOxayc/wu
+ mxi2yJBvW+72J/XQOwZUUMA2lxRHVuTma1tKm+V0qEmTJYuSUK
+ aSHWNwvtAtCyrM6i9Q+wRm64oJYuGDv9aAdGjK4iSpBXewQ0El
+ xyBAM2D/DFRGIKk22mvg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Thursday 18 April 2013, Nicolas Ferre wrote:
 
-any chance we could move this pachset to the next level (at least for 
-mainline)?
+> > This patch blindly removes the warning and changes the
+> > at91sam9263 to use the same code at at91sam9g45, which
+> > may or may not be the right solution. If it is not,
+> > maybe someone could provide a better fix.
+> 
+> Maybe you can remove this paragraph: now you are using the proper fix
+> with proper RAM type.
+> 
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
+> What is the future of this patch series: do you want us to take this
+> patch separately or to you want to apply the whole series on the arm-soc
+> tree?
 
-Thanks a lot!
-Gerlando
+I'd prefer if you could just apply or forward it to an appropriate tree.
 
-On 03/21/2013 06:12 PM, Gerlando Falauto wrote:
-> This patchset addresses a regression found with the Orion GPIO controller
-> when both Edge- and Level- based interrupts are requested within the same
-> GPIO chip. The regression was introduced by e59347a
-> "arm: orion: Use generic irq chip"
->
-> thereby affecting all kernel releases since 3.0.x.
->
-> The reason behind it is that the Orion GPIO controller uses separate
-> mask registers for the two types of interrupts (one for edge and one
-> for level), whereas in other cases the same register would be shared.
-> Since this mask register is cached, we need to have (potentially)
-> separate register caches.
-> We do that by adding a per-chip-type mask register cache, and a mask cache
-> pointer (which will point either to that or the shared one).
->
-> So we proceed with incremental stages:
-> a) we introduce the new fields and pointer (though only the shared one is used)
-> b) we convert all drivers to use it
-> c) we rename the field so to force the use of the per-ct pointer
-> d) we add per-ct mask cache, provided the new flag
->     IRQ_GC_SEPARATE_MASK_REGISTERS is enabled
-> e) we enable the flag for orion-gpio and mvebu drivers
->
-> The changes were tested by Simon Guinot to be effective on Kirkwood chipsets,
-> on both the legacy orion-gpio and the new gpio-mvebu drivers.
-> The bug should also affect the other two Marvell variants handled by
-> the gpio-mvebu driver.
->
-> Changes from v3: cover letter and SOB lines.
->
-> Gerlando Falauto (9):
->    genirq: cosmetic: remove cur_regs
->    genirq: add mask_cache and pmask_cache into struct irq_chip_type
->    gpio: mvebu: convert to usage of *pmask_cache within irq_chip_type
->    MIPS: JZ4740: convert to usage of *pmask_cache within irq_chip_type
->    ARM: SAMSUNG: convert to usage of *pmask_cache within irq_chip_type
->    genirq: rename mask_cache to shared_mask_cache
->    genirq: handle separate mask registers
->    orion-gpio: enable IRQ_GC_SEPARATE_MASK_REGISTERS
->    gpio: mvebu: enable IRQ_GC_SEPARATE_MASK_REGISTERS
->
->   arch/arm/plat-orion/gpio.c            |    3 +-
->   arch/arm/plat-samsung/irq-vic-timer.c |    6 ++--
->   arch/mips/jz4740/irq.c                |    3 +-
->   drivers/gpio/gpio-mvebu.c             |   23 ++++++++------
->   include/linux/irq.h                   |    9 ++++--
->   kernel/irq/generic-chip.c             |   55 +++++++++++++++++++++------------
->   6 files changed, 64 insertions(+), 35 deletions(-)
->
+Most of the other patches have found their way into mainline by now.
 
+> > Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+> > Cc: Andrew Victor <linux@maxim.org.za>
+> > Cc: Albin Tonnerre <albin.tonnerre@free-electrons.com>
+> > Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> 
+> Moreover, this patch my conflict with Daniel's current initiative to
+> move cpuidle driver to its own directory: how do we coordinate with each
+> other?
+
+Maybe you can make sure it actually works and send it to Daniel to apply on
+top of his other patches?
+
+	Arnd
