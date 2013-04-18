@@ -1,93 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab3DRRw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 13:52:56 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:54057 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab3DRRwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 13:52:55 -0400
-Date: Thu, 18 Apr 2013 10:52:51 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
-        namhyung@gmail.com, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
-Message-ID: <20130418175251.GC9897@mtj.dyndns.org>
-References: <516E5EF8.9090507@cn.fujitsu.com>
- <1366209997.8817.12.camel@pippen.local.home>
- <20130418123738.GV4816@kernel.dk>
- <516FED09.1040008@cn.fujitsu.com>
- <20130418133546.GX4816@kernel.dk>
- <516FFFAC.8040103@cn.fujitsu.com>
- <20130418143014.GZ4816@kernel.dk>
- <517006F6.7030806@cn.fujitsu.com>
+	id S1751584Ab3DRRzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:55:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34784 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751394Ab3DRRzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 13:55:19 -0400
+Date: Thu, 18 Apr 2013 10:55:14 -0700
+From: Michal Hocko <mhocko@suse.cz>
+To: Han Pingtian <hanpt@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, rientjes@google.com
+Subject: Re: OOM-killer and strange RSS value in 3.9-rc7
+Message-ID: <20130418175513.GA12581@dhcp22.suse.cz>
+References: <20130416110009.GA2664@localhost.localdomain>
+ <alpine.DEB.2.02.1304161315290.30779@chino.kir.corp.google.com>
+ <20130417094750.GB2672@localhost.localdomain>
+ <20130417141909.GA24912@dhcp22.suse.cz>
+ <20130418101541.GC2672@localhost.localdomain>
+ <20130418141736.GA7989@dhcp22.suse.cz>
+ <20130418165531.GD2672@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <517006F6.7030806@cn.fujitsu.com>
+In-Reply-To: <20130418165531.GD2672@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Wanlong.
+On Fri 19-04-13 00:55:31, Han Pingtian wrote:
+> On Thu, Apr 18, 2013 at 07:17:36AM -0700, Michal Hocko wrote:
+> > On Thu 18-04-13 18:15:41, Han Pingtian wrote:
+> > > On Wed, Apr 17, 2013 at 07:19:09AM -0700, Michal Hocko wrote:
+> > > > On Wed 17-04-13 17:47:50, Han Pingtian wrote:
+> > > > > [ 5233.949714] Node 1 DMA free:3968kB min:7808kB low:9728kB high:11712kB active_anon:0kB inactive_anon:3584kB active_file:2240kB inactive_file:576kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:4194304kB managed:3854464kB mlocked:0kB dirty:64kB writeback:448kB mapped:0kB shmem:64kB slab_reclaimable:106496kB slab_unreclaimable:3654976kB kernel_stack:14912kB pagetables:18496kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:531 all_unreclaimable? yes
+> > > > 
+> > > > This smells either like a slab backed memory leak or something went
+> > > > crazy and allocate huge amount of slab. You have 3.6G (or of 4G
+> > > > available) of slab_unreclaimable. I would check /proc/slabinfo for which
+> > > > cache consumes that huge amount of memory.
+> > > 
+> > > Thanks your reply. But I cannot find any clues in the slabinfo:
+> > 
+> > awk '{val=$3*$4; printf "%s %d\n", $1, val}' /proc/slabinfo | sort -k2 -n
+> > says:
+> > [...]
+> > kmalloc-65536 41943040
+> > kmemleak_object 112746000
+> > pgtable-2^12 113246208
+> > kmalloc-8192 122159104
+> > kmalloc-32768 137887744
+> > task_struct 241293920
+> > kmalloc-2048 306446336
+> > kmalloc-96 307652928
+> > kmalloc-16384 516620288
+> > 
+> Oh, I see. I only calculated "$2*$4" and got some small numbers. Thanks.
 
-On Thu, Apr 18, 2013 at 10:45:10PM +0800, Wanlong Gao wrote:
-> OK, but I should capture it tomorrow morning because this remote machine has already panicked
-> and need hard reboot.
+OK, this is interesting. Only 865M out of 3.5G slabs are on the partial
+or full lists. I do not have much time to look at this more closely but
+it would suggest that free slabs do not get returned to the system.
 
-Can you please apply the following patch when you try the next time
-and report the kernel log?  It should prevent the oops from happening
-and dump information on at least who are the involved parties.
+> > Hmm, how many processes you have running? Having 240M in task_structs
+> > sounds quite excessive. Also there seem to be quite a lot of memory used
+> > in the generic 16K, 96B and 2K caches. Core kernel usually do not use
+> > those on its own so I would be inclined to suspect some driver.
+> There are 671 processes is running and most of them are kernel thread I
+> think:
 
-Thanks.
+awk '{val=$2*$4; sum+=val; printf "%s %d\n", $1, val}' a | grep task_struct
+task_struct 27080016
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 074b758..d5efebe 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -150,6 +150,8 @@ void blk_rq_init(struct request_queue *q, struct request *rq)
- }
- EXPORT_SYMBOL(blk_rq_init);
- 
-+
-+
- static void req_bio_endio(struct request *rq, struct bio *bio,
- 			  unsigned int nbytes, int error)
- {
-@@ -174,8 +176,15 @@ static void req_bio_endio(struct request *rq, struct bio *bio,
- 		bio_integrity_advance(bio, nbytes);
- 
- 	/* don't actually finish bio if it's part of flush sequence */
--	if (bio->bi_size == 0 && !(rq->cmd_flags & REQ_FLUSH_SEQ))
-+	if (bio->bi_size == 0 && !(rq->cmd_flags & REQ_FLUSH_SEQ)) {
-+		if (bio->bi_bdev && (unsigned long)bio->bi_bdev < 4096) {
-+			printk_ratelimited("XXX req_bio_endio: queue %s bio=%p bi_bdev=%p bi_end_io=%pf\n",
-+					   (rq->q && rq->q->backing_dev_info.dev) ?
-+					   dev_name(rq->q->backing_dev_info.dev) : "<unknown>",
-+					   bio, bio->bi_bdev, bio->bi_end_io);
-+		}
- 		bio_endio(bio, error);
-+	}
- }
- 
- void blk_dump_rq_flags(struct request *rq, char *msg)
-diff --git a/fs/bio.c b/fs/bio.c
-index bb5768f..da64e5a 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -1428,7 +1428,10 @@ void bio_endio(struct bio *bio, int error)
- 	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
- 		error = -EIO;
- 
--	trace_block_bio_complete(bio, error);
-+	if (bio->bi_bdev && (unsigned long)bio->bi_bdev < 4096)
-+		printk_ratelimited("XXX bio_endio: skipping TP for %p\n", bio);
-+	else
-+		trace_block_bio_complete(bio, error);
- 
- 	if (bio->bi_end_io)
- 		bio->bi_end_io(bio, error);
+looks only slightly more reasonable because it is still way too high and
+it doesn't seem to match the number of processes you see.
+
+What is the kernel that you are using and what config?
+
+>     [root@riblp3 ~]# ps haux|wc -l
+>     671
+>     [root@riblp3 ~]# ps haux|awk '{print $11}'|grep '^\['|wc -l
+>     620
+>     [root@riblp3 ~]# 
+> 
+[...]
+-- 
+Michal Hocko
+SUSE Labs
