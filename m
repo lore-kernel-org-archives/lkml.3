@@ -1,255 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966188Ab3DRHgV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 03:36:21 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:34736 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965937Ab3DRHgU (ORCPT
+	id S966230Ab3DRHkV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 03:40:21 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:26203 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965993Ab3DRHkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 03:36:20 -0400
-To: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console devices.
-X-PHP-Originating-Script: 0:func.inc
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Date: Thu, 18 Apr 2013 09:36:12 +0200
-From: Marc Zyngier <marc.zyngier@arm.com>
-Cc: <kvmarm@lists.cs.columbia.edu>, <linaro-kernel@lists.linaro.org>,
-        Anup Patel <anup.patel@linaro.org>, <patches@linaro.org>,
-        <rusty@rustcorp.com.au>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Organization: ARM Ltd
-In-Reply-To: <CAAHg+HhajHFC=1nh6YQNgpf=Na2FqcsYJ=t+ag9QiTg6TxUz9w@mail.gmail.com>
-References: <1366264344-28025-1-git-send-email-pranavkumar@linaro.org> <ede8ee08bb2616c2ed642200e3357367@localhost> <CAAHg+HhajHFC=1nh6YQNgpf=Na2FqcsYJ=t+ag9QiTg6TxUz9w@mail.gmail.com>
-Message-ID: <bb1193983de3ea9f4df1a570441df34c@localhost>
-User-Agent: RoundCube Webmail/0.3.1
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Rcpt-To: pranavkumar@linaro.org, kvmarm@lists.cs.columbia.edu, linaro-kernel@lists.linaro.org, anup.patel@linaro.org, patches@linaro.org, rusty@rustcorp.com.au, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-SA-Exim-Mail-From: marc.zyngier@arm.com
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+	Thu, 18 Apr 2013 03:40:19 -0400
+X-AuditID: cbfee68d-b7f786d000005188-b4-516fa3619634
+Date: Thu, 18 Apr 2013 07:40:17 +0000 (GMT)
+From: =?euc-kr?B?vNvAurrA?= <eunb.song@samsung.com>
+Subject: [PATCH] I2C: Fix i2c fail problem when a process is terminated by a
+ signal on octeon in 3.8
+To: "wsa@the-dreams.de" <wsa@the-dreams.de>, linux-i2c@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Reply-to: eunb.song@samsung.com
+MIME-version: 1.0
+X-MTR: 20130418073423458@eunb.song
+Msgkey: 20130418073423458@eunb.song
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20130418073423458@eunb.song
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <11412343.361631366270816380.JavaMail.weblogic@epv6ml12>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphleLIzCtJLcpLzFFi42I5/e+Zrm7i4vxAg/cXlCwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGtY3RBe/4Kg7uvM7SwLiDr4uRk0NIQEWi5f93xi5GDg4JAROJ
+	bTs1QcISAmISF+6tZ+ti5AIqWcYo0TirmRmmpussD0R8PqPE2eYVTCANLAKqEr9bVzGD2GxA
+	NRt+TGAHsYUFUiR2rt/PCmKLCPhK7JozA6yeGaj+fstGZogb5CUmn74MVs8rIChxcuYTFogj
+	lCQa/t9ihYgrS/RsXM0IEZeQmDX9AiuEzSsxo/0pVL2cxLSva5ghbGmJ87M2MMI8s/j7Y6g4
+	v8Sx2zuYIH7hlXhyPxhmzO7NX9ggbAGJqWcOQrWqS9y/28YEYfNJrFn4lgVmzK5Ty5lheu9v
+	mQv1lqLElO6H7BC2lsSXH/vY0L3FK+Aicf7cWsYJjMqzkKRmIWmfhaQdWc0CRpZVjKKpBckF
+	xUnpRYZ6xYm5xaV56XrJ+bmbGCEpoXcH4+0D1ocYk4FRMpFZSjQ5H5hS8kriDY3NjCxMTUyN
+	jcwtzUgTVhLnVWuxDhQSSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAKNHqP+dG5b2f2bLlQdGC
+	+Q7F6Yxry6QalphLlWdfMdwe6fh/+d2wn5kzdO3vcfBIXlmXlCr+1vX7V/30+kMXL4b7r3u5
+	/pajzrTsvUeXNMjuK5I4UlI/fQFfi1BmoI7P7hTnqzqlilWSNQsLmCKyMltrN+esublEZEG9
+	xqe8116NZ/ffPRupxFKckWioxVxUnAgAevXrxx8DAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2DN3ExfmBBh+/y1tc3jWHzYHR4/Mm
+	uQDGqAybjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
+	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWgjA2M9I1MTPSNjAz0Tg1grQwMDI1OgqoSM
+	jGsbowve8VUc3HmdpYFxB18XIyeHkICKRMv/74xdjBwcEgImEl1neUDCEgJiEhfurWfrYuQC
+	KpnPKHG2eQUTSIJFQFXid+sqZhCbDah+w48J7CC2sECKxM71+1lBbBEBX4ldc2aA1TMD1d9v
+	2cgMsUteYvLpy2D1vAKCEidnPmGBWKYk0fD/FitEXFmiZ+NqRoi4hMSs6RdYIWxeiRntT6Hq
+	5SSmfV3DDGFLS5yftYER5ujF3x9Dxfkljt3ewQTxF6/Ek/vBMGN2b/7CBmELSEw9cxCqVV3i
+	/t02JgibT2LNwrcsMGN2nVrODNN7f8tcqLcUJaZ0P2SHsLUkvvzYx4buLV4BF4nz59YyTmCU
+	m4UkNQtJ+ywk7chqFjCyrGIUTS1ILihOSq8w0StOzC0uzUvXS87P3cQITk/PluxgbLhgfYhR
+	gINRiYf3waq8QCHWxLLiytxDjBIczEoivI9k8wOFeFMSK6tSi/Lji0pzUosPMSYDI3Ais5Ro
+	cj4wdeaVxBsaGxgbGlqaG5gaGlmQJqwkzvus1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA6Os559p
+	mXN32ISvde6JtSw7FdN791aAmLfqrc0xSza4BAee+bpqeplhHgfzpfNL8phq1LJWGO5JKi2Z
+	KNr/TE2i+yCPuWuE2ZtEveZzbwy2PJHeHhCiNrt/evy/AzlXQwLnpvV59j56sSEg5nSUyeeA
+	Oatu7M9lPruPz/bdG19LjeNOVyTDfJRYijMSDbWYi4oTARwwHLWTAwAA
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r3I7eR6h014496
 
-On Thu, 18 Apr 2013 12:47:18 +0530, Pranavkumar Sawargaonkar
-<pranavkumar@linaro.org> wrote:
-> Hi Marc,
-> 
-> On 18 April 2013 12:19, Marc Zyngier <maz@misterjones.org> wrote:
-> 
->> Hi Pranavkumar,
->>
->> On Thu, 18 Apr 2013 11:22:24 +0530, PranavkumarSawargaonkar
->> <pranavkumar@linaro.org> wrote:
->> > From: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
->> >
->> > This patch implements early printk support for virtio-mmio console
->> devices
->> > without using any hypercalls.
->> >
->> > The current virtio early printk code in kernel expects that
-hypervisor
->> > will provide some mechanism generally a hypercall to support early
->> printk.
->> > This patch does not break existing hypercall based early print
-support.
->> >
->> > This implementation adds:
->> > 1. Early read-write register named early_rw in virtio console's
-config
->> > space.
->> > 2. Two host feature flags namely VIRTIO_CONSOLE_F_EARLY_READ and
->> > VIRTIO_CONSOLE_F_EARLY_WRITE for telling guest about early-read and
->> > early-write capability in console device.
->> >
->> > Early write mechanism:
->> > 1. When a guest wants to out some character, it has to simply write
-the
->> > character to early_rw register in config space of virtio console
->> > device.
->> >
->> > Early read mechanism:
->> > 1. When a guest wants to in some character, it has to simply read the
->> > early_rw register in config space of virtio console device. Lets say
-we
->> get
->> > 32-bit value X.
->> > 2. If most significant bit of X is set (i.e. X & 0x80000000 ==
->> 0x80000000)
->> > then least significant 8 bits of X represents input charaacter else
->> guest
->> > need to try again reading early_rw register.
->> >
->> > Note: This patch only includes kernel side changes for early printk,
->> > the
->> > host/hypervisor side emulation of early_rw register is out of scope
->> here.
->>
->> Well, that's unfortunate, as it makes it quite difficult to understand
->> the
->> impact of this patch.
->> Has the virtio side been posted somewhere? I expect you've implemented
->> something in kvmtool...
->>
-> 
-> Yes i have implemented kvmtool side also and code change is really small
-> (not really a clean code currently)
-> I can post it also but since it is specific to kvmtool i have not posted
-it
-> with rfc.
 
-Doesn't really if the code needs some rework at this point (I expect the
-patch to be fairly small indeed). Any chance you could post it to the KVM
-list?
+I rewrite my patch because the patch before i sent have many white space.
+Thanks!
+---
+I've been debugging the abnormal operation of i2c on octeon.
+If a process is terminated by signal in the middle of i2c operation,
+next i2c read operation which is done by another process was failed.
+So i changed to ignore signal in the middle of i2c operation.
+After that the problem was not reproduced.
 
->>
->> > Signed-off-by: Anup Patel <anup.patel@linaro.org>
->> > ---
->> >  arch/arm64/kernel/early_printk.c    |   24 ++++++++++++++++++++++++
->> >  include/uapi/linux/virtio_console.h |    4 ++++
->> >  2 files changed, 28 insertions(+)
->> >
->> > diff --git a/arch/arm64/kernel/early_printk.c
->> > b/arch/arm64/kernel/early_printk.c
->> > index ac974f4..a82b5aa 100644
->> > --- a/arch/arm64/kernel/early_printk.c
->> > +++ b/arch/arm64/kernel/early_printk.c
->> > @@ -25,6 +25,9 @@
->> >
->> >  #include <linux/amba/serial.h>
->> >  #include <linux/serial_reg.h>
->> > +#include <linux/virtio_ids.h>
->> > +#include <linux/virtio_mmio.h>
->> > +#include <linux/virtio_console.h>
->> >
->> >  static void __iomem *early_base;
->> >  static void (*printch)(char ch);
->> > @@ -53,6 +56,26 @@ static void smh_printch(char ch)
->> >  }
->> >
->> >  /*
->> > + * VIRTIO MMIO based debug console.
->> > + */
->> > +static void virtio_console_early_printch(char ch)
->> > +{
->> > +     u32 tmp;
->> > +     struct virtio_console_config *p = early_base +
->> > VIRTIO_MMIO_CONFIG;
->> > +
->> > +     tmp = readl_relaxed(early_base + VIRTIO_MMIO_DEVICE_ID);
->> > +     if (tmp != VIRTIO_ID_CONSOLE) {
->> > +             return;
->> > +     }
->> > +
->> > +     tmp = readl_relaxed(early_base + VIRTIO_MMIO_HOST_FEATURES);
->> > +     if (!(tmp & (1 << VIRTIO_CONSOLE_F_EARLY_WRITE))) {
->> > +             return;
->> > +     }
->> > +     writeb_relaxed(ch, &p->early_rw);
->>
->> So here, you end up trapping 3 times per character being output on the
->> console. Surely there's a better way. How about remembering the result
-of
->> these tests in a static variable?
->>
-> Yeah surely it is a better idea to remember using static variable, so
-that
-> after initialize once, it will trap only one time.
+Signed-off-by: Eunbong Song <eunb.song@samsung.com>
+---
+ drivers/i2c/busses/i2c-octeon.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Also, would it be possible to directly get the base address from DT? It
-would save having to pass the address (which is not known before runtime in
-the case of kvmtool). Not sure if it is available that early though...
-
->>
->> > +}
->> > +
->> > +/*
->> >   * 8250/16550 (8-bit aligned registers) single character TX.
->> >   */
->> >  static void uart8250_8bit_printch(char ch)
->> > @@ -82,6 +105,7 @@ static const struct earlycon_match
-earlycon_match[]
->> > __initconst = {
->> >       { .name = "smh", .printch = smh_printch, },
->> >       { .name = "uart8250-8bit", .printch = uart8250_8bit_printch, },
->> >       { .name = "uart8250-32bit", .printch = uart8250_32bit_printch,
-},
->> > +     { .name = "virtio-console", .printch =
->> virtio_console_early_printch,
->> },
->> >       {}
->> >  };
->> >
->> > diff --git a/include/uapi/linux/virtio_console.h
->> > b/include/uapi/linux/virtio_console.h
->> > index ee13ab6..1171cb4 100644
->> > --- a/include/uapi/linux/virtio_console.h
->> > +++ b/include/uapi/linux/virtio_console.h
->> > @@ -38,6 +38,8 @@
->> >  /* Feature bits */
->> >  #define VIRTIO_CONSOLE_F_SIZE        0       /* Does host provide
->> console size? */
->> >  #define VIRTIO_CONSOLE_F_MULTIPORT 1 /* Does host provide multiple
->> ports?
->> >  */
->> > +#define VIRTIO_CONSOLE_F_EARLY_READ 2        /* Does host support
->> > early
->> read?
->> */
->> > +#define VIRTIO_CONSOLE_F_EARLY_WRITE 3       /* Does host support
->> > early
->> write?
->> > */
->> >
->> >  #define VIRTIO_CONSOLE_BAD_ID                (~(u32)0)
->> >
->> > @@ -48,6 +50,8 @@ struct virtio_console_config {
->> >       __u16 rows;
->> >       /* max. number of ports this device can hold */
->> >       __u32 max_nr_ports;
->> > +     /* early read/write register */
->> > +     __u32 early_rw;
->> >  } __attribute__((packed));
->> >
->> >  /*
->>
->> So that bit is clearly a spec change. How does it work with PCI, or any
->> other virtio transport?
->>
-> I am not sure about PCI hence just posted for MMIO.
-> 
->>
->> Overall, I'm a bit concerned with adding features that don't really
-match
->> the way virtio is supposed to work. The whole goal of virtio is to
->> minimize
->> the amount of trapping, and here you end up trapping on each and every
->> access.
->>
->> If you need an early console, why not simply wire the 8250 emulation in
->> kvmtool to be useable from the MMIO bus? I reckon this would solve your
->> problem in a more elegant way...
->>
-> Emulation will solve the issue but having a virtio early read or write
-has
-> one more advantage i.e.
-> In case of mach-virt we might need early read-write support for virtio
-> console to see if kernel is not panic before actual virtio drivers takes
-> control.
-> Also if someone wants to have UEFI or uboot running on mach-virt then we
-> also need early input facility in virtio console.
-
-That's exactly why I was suggesting using the 8250 emulation. It is
-supported by everything under the sun. I do not immediately see what the
-gain is with this virtio approach, as compared to 8250 emulation.
-
-Don't misunderstand me, I like the idea of having a virtio-only system,
-specially if we can make it work with other transports. I just want to
-outline that there may be a simpler way for your particular use case.
-
-Thanks,
-
-        M.
+diff --git a/drivers/i2c/busses/i2c-octeon.c b/drivers/i2c/busses/i2c-octeon.c
+index 935585e..b2e3259 100644
+--- a/drivers/i2c/busses/i2c-octeon.c
++++ b/drivers/i2c/busses/i2c-octeon.c
+@@ -183,7 +183,7 @@ static irqreturn_t octeon_i2c_isr(int irq, void *dev_id)
+ 	struct octeon_i2c *i2c = dev_id;
+ 
+ 	octeon_i2c_int_disable(i2c);
+-	wake_up_interruptible(&i2c->queue);
++	wake_up(&i2c->queue);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -206,9 +206,9 @@ static int octeon_i2c_wait(struct octeon_i2c *i2c)
+ 
+ 	octeon_i2c_int_enable(i2c);
+ 
+-	result = wait_event_interruptible_timeout(i2c->queue,
+-						  octeon_i2c_test_iflg(i2c),
+-						  i2c->adap.timeout);
++	result = wait_event_timeout(i2c->queue,
++					octeon_i2c_test_iflg(i2c),
++					i2c->adap.timeout);
+ 
+ 	octeon_i2c_int_disable(i2c);
+ 
 -- 
-Fast, cheap, reliable. Pick two.
+1.7.0.4
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
