@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965346Ab3DRDPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Apr 2013 23:15:49 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:49476 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965089Ab3DRDPr (ORCPT
+	id S965490Ab3DRDS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Apr 2013 23:18:58 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:36763 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965364Ab3DRDS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Apr 2013 23:15:47 -0400
-Message-ID: <516F6559.1020309@linux.vnet.ibm.com>
-Date: Thu, 18 Apr 2013 11:15:37 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: gleb@redhat.com, avi.kivity@gmail.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v3 07/15] KVM: MMU: introduce invalid rmap handlers
-References: <1366093973-2617-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <1366093973-2617-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <20130417233810.GD31059@amt.cnet>
-In-Reply-To: <20130417233810.GD31059@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041803-6102-0000-0000-00000356E274
+	Wed, 17 Apr 2013 23:18:57 -0400
+Date: Thu, 18 Apr 2013 13:18:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        Roland Dreier <roland@kernel.org>, linux-rdma@vger.kernel.org,
+        Vipul Pandya <vipul@chelsio.com>
+Subject: linux-next: manual merge of the net-next tree with the infiniband
+ tree
+Message-Id: <20130418131843.bfeb6b1ad5fba1b0f706076e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__18_Apr_2013_13_18_43_+1000_KNU/WCBiq_VN2ZdP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 07:38 AM, Marcelo Tosatti wrote:
-> On Tue, Apr 16, 2013 at 02:32:45PM +0800, Xiao Guangrong wrote:
->> Invalid rmaps is the rmap of the invalid memslot which is being
->> deleted, especially, we can treat all rmaps are invalid when
->> kvm is being destroyed since all memslot will be deleted soon.
->> MMU should remove all sptes on these rmaps before the invalid
->> memslot fully deleted
->>
->> The reason why we separately handle invalid rmap is we want to
->> unmap invalid-rmap out of mmu-lock to achieve scale performance
->> on intensive memory and vcpu used guest
-> 
-> Better try to make the code simpler, and introduce complexity only 
-> if necessary.
+--Signature=_Thu__18_Apr_2013_13_18_43_+1000_KNU/WCBiq_VN2ZdP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Marcelo,
+Hi all,
 
-This code is necessary to implement "unmap invalid rmap out of mmu-lock",
-the reason why we need it is that ...
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/infiniband/hw/cxgb4/qp.c between commit 5b0c275926b8
+("RDMA/cxgb4: Fix SQ allocation when on-chip SQ is disabled") from the
+infiniband tree and commit 9919d5bd01b9 ("RDMA/cxgb4: Fix onchip queue
+support for T5") from the net-next tree.
 
-> 
-> The idea to zap the roots is very elegant and apparently effective. What
-> are its problems?
+I think that they are 2 different fixes for the same problem, so I just
+used the net-next version and can carry the fix as necessary (no action
+is required).
 
-I mentioned it in 00/15:
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-* Challenges
-Some page invalidation is requested when memslot is moved or deleted
-and kvm is being destroy who call zap_all_pages to delete all sp using
-their rmap and lpage-info, after call zap_all_pages, the rmap and lpage-info
-will be freed. So, we should implement a fast way to delete sp from the rmap
-and lpage-info.
+--Signature=_Thu__18_Apr_2013_13_18_43_+1000_KNU/WCBiq_VN2ZdP
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRb2YTAAoJEECxmPOUX5FEFpcP/jxk88uFsqeNw4wl1AXsa0ql
+B/bW1x/ehp6kumkS1/1YYl8SoACtTr8FnBKJVv3hWKGQ7ZD8iQzqV1kcTnw32M5y
+7gfgalnf+P3Pj156sI9onURhUUglq0u8+aN6skysnB9W4ucvCFq32bpYGn2jA89w
+tVSZZTJS9O7XAMBuKpizEar+nk+gA++T3FKpynFoaZeizyoT6YKaMAuiXxMoGP3O
+0odvLdUFmIalkcn15wkIIinrtgK0nkXy1QBeipxVtBusuuJhxp9fiI+cuXw6whCm
+VWyfN72bh8PT2nri+xjNJI4TO+K4OZKjDN2MVXsRwVApNz/j0ML6TOSTWWemLscR
+mBh2i4XXkhgY2PKHYioeubuCGbI6MAFXky9QQulOIV4GdZqeK16FwxOBYJsxxqc5
+8+23I0V2OHloFe1ss3+gkBz1Niyb83EDRk1+wLGyydvotwpMj0s6P91rfKXO5s8p
+q9AJM7XuNWn8SCsBjr280yfQeyoKoGsG9Be6y6grEZraasBCrVi4tqoKdi/U6SCM
+Rxg5y1sKI2RgIpXlHNKsGzmXpA+tyte0HotPnVMvK/j54PXT7cRpTAo9Xy1o5X8r
+GVMBSq9aw3Mgb0oBDoPufLPwsOmb8dwa2qpGgjpDpYoEx/OWRfZkcQX0ykwt+Ta3
+fgO9YHHVfE9V8LwZP/IN
+=qH0d
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__18_Apr_2013_13_18_43_+1000_KNU/WCBiq_VN2ZdP--
