@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966038Ab3DRSOd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 14:14:33 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:54015 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab3DRSOc (ORCPT
+	id S1753776Ab3DRSRP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 14:17:15 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:58227 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab3DRSRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 14:14:32 -0400
+	Thu, 18 Apr 2013 14:17:13 -0400
+Date: Thu, 18 Apr 2013 11:17:09 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH -tip ] [BUGFIX] kprobes: Fix a double lock bug of
+ kprobe_mutex
+Message-ID: <20130418181709.GE9897@mtj.dyndns.org>
+References: <20130418093318.13070.29847.stgit@mhiramat-M0-7522>
 MIME-Version: 1.0
-Date: Thu, 18 Apr 2013 14:14:31 -0400
-Message-ID: <CAB9dFdunPQo5a9bgwFvaZ4++4Zm1HEaQ8VEK7pmKuwc7+DTv6g@mail.gmail.com>
-Subject: Reboot problem with nouveau - bisected
-From: Marc Dionne <marc.c.dionne@gmail.com>
-To: Ben Skeggs <skeggsb@gmail.com>, Dave Airlie <airlied@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130418093318.13070.29847.stgit@mhiramat-M0-7522>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My machine has been getting stuck when rebooting during the current
-3.9 cycle, and yesterday I took the time to bisect the problem to this
-commit:
+On Thu, Apr 18, 2013 at 06:33:18PM +0900, Masami Hiramatsu wrote:
+> Fix a double locking bug caused when debug.kprobe-optimization=0.
+> While the proc_kprobes_optimization_handler locks kprobe_mutex,
+> wait_for_kprobe_optimizer locks it again and that causes a double lock.
+> To fix the bug, this introduces different mutex for protecting
+> sysctl parameter and locks it in proc_kprobes_optimization_handler.
+> Of course, since we need to lock kprobe_mutex when touching kprobes
+> resources, that is done in *optimize_all_kprobes().
+> 
+> This bug was from ad72b3bea744b4db01c89af0f86f3e8920d354df
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
 
-32256c87ead3edec86bed5023a0ff96a6d907931:  drm/nouveau/fifo/nvc0:
-improve interrupt handler somewhat
+Oops,
 
-    Logs extra info for interrupts that have a sub-status register, and
-    handles the "special" ack from INTR bit 31.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-    Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Thanks.
 
-The symptom when rebooting is that the console starts spitting out a
-continuous stream of identical messages like this (transcribed by
-hand):
-
-    nouveau W[   PFIFO][0000:03:00.0] INTR 0x01000000: 0x00000005
-
-The system is then unresponsive until it is reset.  Just commenting
-out the corresponding nv_warn() in
-drivers/gpu/drm/nouveau/core/engine/fifo/nvc0.c is enough to allow the
-system to reboot normally.
-
-Video card in this system is (from lspci -v):
-
-03:00.0 VGA compatible controller: NVIDIA Corporation GF119 [GeForce
-GT 520] (rev a1) (prog-if 00 [VGA controller])
-    Subsystem: Micro-Star International Co., Ltd. Device 2630
-    Flags: bus master, fast devsel, latency 0, IRQ 16
-    Memory at fa000000 (32-bit, non-prefetchable) [size=16M]
-    Memory at d8000000 (64-bit, prefetchable) [size=128M]
-    Memory at d6000000 (64-bit, prefetchable) [size=32M]
-    I/O ports at bc00 [size=128]
-    Expansion ROM at fbb80000 [disabled] [size=512K]
-    Capabilities: <access denied>
-    Kernel driver in use: nouveau
-
-Marc
+-- 
+tejun
