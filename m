@@ -1,123 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936677Ab3DRWAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 18:00:04 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:62397 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689Ab3DRWAA (ORCPT
+	id S936680Ab3DRWDX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 18:03:23 -0400
+Received: from mail-da0-f42.google.com ([209.85.210.42]:50225 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936642Ab3DRWDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 18:00:00 -0400
+	Thu, 18 Apr 2013 18:03:21 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] arm: mach-omap2: remove "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check
+References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>
+	<1366198467-6757-5-git-send-email-sourav.poddar@ti.com>
+	<87li8f4sum.fsf@linaro.org> <5170434C.7040706@ti.com>
+Date: Thu, 18 Apr 2013 15:03:16 -0700
+In-Reply-To: <5170434C.7040706@ti.com> (Sourav Poddar's message of "Fri, 19
+	Apr 2013 00:32:36 +0530")
+Message-ID: <874nf31opn.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1366322130-19364-1-git-send-email-olof@lixom.net>
-References: <1366322130-19364-1-git-send-email-olof@lixom.net>
-Date: Thu, 18 Apr 2013 15:00:00 -0700
-X-Google-Sender-Auth: UIqD-fTQvr4XIgjiGICpVf4W080
-Message-ID: <CANLzEks9ne5eOjQTkZAHSbR+jPGjyw9RPQODi=cB_eOz7zCskA@mail.gmail.com>
-Subject: Re: [PATCH] Platform: x86: chromeos_laptop: defer probing if no i2c
- busses found
-From: Benson Leung <bleung@chromium.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dirk@hohndel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Acked-by: Benson Leung <bleung@chromium.org>
+Sourav Poddar <sourav.poddar@ti.com> writes:
 
-On Thu, Apr 18, 2013 at 2:55 PM, Olof Johansson <olof@lixom.net> wrote:
-> If chromeos_laptop is loaded before the DRM driver, the i2c busses will
-> not yet be available. Defer probe for that case and try again later.
+> On Thursday 18 April 2013 11:35 PM, Kevin Hilman wrote:
+>> Sourav Poddar<sourav.poddar@ti.com>  writes:
+>>
+>>> Remove the "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check, since UART was the only one making
+>>> use of it. Now serial core/driver takes care of the case when "no_console_suspend"
+>>> is used in the bootargs and you need to keep the clock enable for console even while suspend.
+>>>
+>>> Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
+>> NAK.  This patch will break many things...
+>>
+>>> ---
+>>>   arch/arm/mach-omap2/omap_device.c |    7 +------
+>>>   1 files changed, 1 insertions(+), 6 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+>>> index 381be7a..d6dce8f 100644
+>>> --- a/arch/arm/mach-omap2/omap_device.c
+>>> +++ b/arch/arm/mach-omap2/omap_device.c
+>>> @@ -620,11 +620,8 @@ static int _od_suspend_noirq(struct device *dev)
+>>>   	ret = pm_generic_suspend_noirq(dev);
+>>>
+>>>   	if (!ret&&  !pm_runtime_status_suspended(dev)) {
+>>> -		if (pm_generic_runtime_suspend(dev) == 0) {
+>>> -			if (!(od->flags&  OMAP_DEVICE_NO_IDLE_ON_SUSPEND))
+>>> -				omap_device_idle(pdev);
+>> Why did you remove the omap_device_idle() here?
+> This patch is used along with patch3 to get rid of the issue. I posted
+> them as a
+> seperate patch beacuse of the subject line as one goes under drivers/*
+> and the other
+> arm/mach-omap2/*..
 >
-> Trickling the error up to the module init function is unfortuantely a
-> little awkward, since the i2c bus lookup and device registration happens
-> as a dmi callback.
->
-> Reported-by: Dirk Hohndel <dirk@hohndel.org>
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> ---
->  drivers/platform/x86/chromeos_laptop.c |   33 ++++++++++++++++++++++++--------
->  1 file changed, 25 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/platform/x86/chromeos_laptop.c b/drivers/platform/x86/chromeos_laptop.c
-> index 3e5b4497..7ff12fa 100644
-> --- a/drivers/platform/x86/chromeos_laptop.c
-> +++ b/drivers/platform/x86/chromeos_laptop.c
-> @@ -39,6 +39,7 @@
->  static struct i2c_client *als;
->  static struct i2c_client *tp;
->  static struct i2c_client *ts;
-> +static int setup_error;
->
->  const char *i2c_adapter_names[] = {
->         "SMBus I801 adapter",
-> @@ -191,7 +192,8 @@ static int __init find_i2c_adapter_num(enum i2c_adapter_type type)
->         if (!dev) {
->                 pr_err("%s: i2c adapter %s not found on system.\n", __func__,
->                        name);
-> +               setup_error = -EPROBE_DEFER;
->                 return -ENODEV;
->         }
->         adapter = to_i2c_adapter(dev);
->         return adapter->nr;
-> @@ -381,23 +383,38 @@ static struct dmi_system_id __initdata chromeos_laptop_dmi_table[] = {
->  };
->  MODULE_DEVICE_TABLE(dmi, chromeos_laptop_dmi_table);
->
-> +static void chromeos_laptop_unregister(void)
-> +{
-> +       if (als)
-> +               i2c_unregister_device(als);
-> +       if (tp)
-> +               i2c_unregister_device(tp);
-> +       if (ts)
-> +               i2c_unregister_device(ts);
-> +
-> +       als = NULL;
-> +       tp = NULL;
-> +       ts = NULL;
-> +}
-> +
->  static int __init chromeos_laptop_init(void)
->  {
-> +       setup_error = 0;
-> +
->         if (!dmi_check_system(chromeos_laptop_dmi_table)) {
->                 pr_debug("%s unsupported system.\n", __func__);
->                 return -ENODEV;
->         }
-> -       return 0;
-> +
-> +       if (setup_error)
-> +               chromeos_laptop_unregister();
-> +
-> +       return setup_error;
->  }
->
->  static void __exit chromeos_laptop_exit(void)
->  {
-> -       if (als)
-> -               i2c_unregister_device(als);
-> -       if (tp)
-> -               i2c_unregister_device(tp);
-> -       if (ts)
-> -               i2c_unregister_device(ts);
-> +       chromeos_laptop_unregister();
->  }
->
->  module_init(chromeos_laptop_init);
-> --
-> 1.7.10.4
->
+> This check was only valid for UART, and if od->flags is set to the
+> "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" flag, then UART will not be idled. 
 
+correct, but *every other device* would be idled (if not already idle.)
 
+> But now, we no longer depend on od->flag value to prevent idling of
+> our console UART as the prepare/complete apis will take care of them.
 
--- 
-Benson Leung
-Software Engineer, Chrom* OS
-bleung@chromium.org
+Right, so removing the check on od->flags is fine, but what I asked
+about is why you removed the omap_device_idle() call.
+
+Remember that this code is called for *every* omap_device during
+suspend, not just UART.
+
+What you did stops *every* device from being idled during suspend.
+
+You didn't read my whole message.  Specifically this part:
+
+>> Note that the check is for when the flag is *not* set, so this patch
+>> changes behavior for all the drivers that do not use
+>> _NO_IDLE_ON_SUSPEND.  I think that's the opposite of what you intended.
+
+Kevin
