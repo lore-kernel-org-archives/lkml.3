@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936391Ab3DRQmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:42:22 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:39970 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S936266Ab3DRQmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:42:18 -0400
-Message-ID: <1366303337.2119.22.camel@joe-AO722>
-Subject: Re: [PATCH 1/4] mfd: Kontron PLD mfd driver
-From: Joe Perches <joe@perches.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Kevin Strasser <kevin.strasser@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        Michael Brunner <michael.brunner@kontron.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Ben Dooks <ben-linux@fluff.org>, linux-i2c@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        Darren Hart <dvhart@linux.intel.com>, Michael Brunner <mibru@gmx.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Thu, 18 Apr 2013 09:42:17 -0700
-In-Reply-To: <20130418133555.GA2767@roeck-us.net>
-References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
-	 <alpine.LFD.2.02.1304132152320.21884@ionos>
-	 <20130418041940.GB7535@roeck-us.net> <1366260053.28609.66.camel@joe-AO722>
-	 <20130418133555.GA2767@roeck-us.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S967711Ab3DRQmb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:42:31 -0400
+Received: from www.sr71.net ([198.145.64.142]:52069 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936352Ab3DRQmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 12:42:21 -0400
+Message-ID: <51702267.3040205@sr71.net>
+Date: Thu, 18 Apr 2013 09:42:15 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3, RFC 31/34] thp: initial implementation of do_huge_linear_fault()
+References: <1365163198-29726-1-git-send-email-kirill.shutemov@linux.intel.com> <1365163198-29726-32-git-send-email-kirill.shutemov@linux.intel.com> <51631206.3060605@sr71.net> <20130417143842.1A76CE0085@blue.fi.intel.com> <516F1D3C.1060804@sr71.net> <20130418160920.4A00DE0085@blue.fi.intel.com> <51701D5E.80802@sr71.net> <20130418163836.B73B2E0085@blue.fi.intel.com>
+In-Reply-To: <20130418163836.B73B2E0085@blue.fi.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-18 at 06:35 -0700, Guenter Roeck wrote:
-> On Wed, Apr 17, 2013 at 09:40:53PM -0700, Joe Perches wrote:
-> > On Wed, 2013-04-17 at 21:19 -0700, Guenter Roeck wrote:
-> > > On Sat, Apr 13, 2013 at 10:38:07PM +0200, Thomas Gleixner wrote:
-> > > > > + return kempld_read8(pld, index) | kempld_read8(pld, index+1) << 8;
-> > > >                                                         index + 1)
-> > > > Please
-> > > Wondering .... why does checkpatch not report those ?
-> > 
-> > because checkpatch doesn't care about spacing around
-> > arithmetic as long as it's consistent.
-> > 
-> > Documentation/CodingStyle doesn't say anything about
-> > it either.
-> > 
-> Hi Joe,
+On 04/18/2013 09:38 AM, Kirill A. Shutemov wrote:
+> Dave Hansen wrote:
+>> On 04/18/2013 09:09 AM, Kirill A. Shutemov wrote:
+>>> Dave Hansen wrote:
+>>>> On 04/17/2013 07:38 AM, Kirill A. Shutemov wrote:
+>>>> Are you still sure you can't do _any_ better than a verbatim copy of 129
+>>>> lines?
+>>>
+>>> It seems I was too lazy. Shame on me. :(
+>>> Here's consolidated version. Only build tested. Does it look better?
+>>
+>> Yeah, it's definitely a step in the right direction.  There rae
+>> definitely some bugs in there like:
+>>
+>> +	unsigned long haddr = address & PAGE_MASK;
 > 
-> "Use one space around (on each side of) most binary and ternary operators"
+> It's not bug. It's bad name for the variable.
+> See, first 'if (try_huge_pages)'. I update it there for huge page case.
 > 
-> doesn't apply, then ? When does it apply ? I always thought it would apply
-> to cases such as the above.
+> addr_aligned better?
 
-There's a _lot_ of code that doesn't follow the
-"single space around binary operators" style,
-it's contentious, and was determined when Andy
-did the original checkpatch implementation to not
-be a valuable addition or worth the complaint pain.
+That's a criminally bad name. :)
+
+addr_aligned is better, and also please initialize the two cases
+together.  It's mean to separate them.
 
 
