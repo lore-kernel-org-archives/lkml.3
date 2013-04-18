@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967007Ab3DRJXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 05:23:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:40269 "EHLO
+	id S966925Ab3DRJXt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 05:23:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:40271 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758058Ab3DRJSU (ORCPT
+	with ESMTP id S1759038Ab3DRJSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Apr 2013 05:18:20 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lukasz Dorau <lukasz.dorau@intel.com>,
-        Pawel Baldysiak <pawel.baldysiak@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Steven Rostedt <rostedt@goodmis.org>, Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 53/72] libsas: fix handling vacant phy in sas_set_ex_phy()
-Date: Thu, 18 Apr 2013 10:16:38 +0100
-Message-Id: <1366276617-3553-54-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 54/72] sched_clock: Prevent 64bit inatomicity on 32bit systems
+Date: Thu, 18 Apr 2013 10:16:39 +0100
+Message-Id: <1366276617-3553-55-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
 References: <1366276617-3553-1-git-send-email-luis.henriques@canonical.com>
@@ -29,75 +27,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukasz Dorau <lukasz.dorau@intel.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit d4a2618fa77b5e58ec15342972bd3505a1c3f551 upstream.
+commit a1cbcaa9ea87b87a96b9fc465951dcf36e459ca2 upstream.
 
-If a result of the SMP discover function is PHY VACANT,
-the content of discover response structure (dr) is not valid.
-It sometimes happens that dr->attached_sas_addr can contain
-even SAS address of other phy. In such case an invalid phy
-is created, what causes NULL pointer dereference during
-destruction of expander's phys.
+The sched_clock_remote() implementation has the following inatomicity
+problem on 32bit systems when accessing the remote scd->clock, which
+is a 64bit value.
 
-So if a result of SMP function is PHY VACANT, the content of discover
-response structure (dr) must not be copied to phy structure.
+CPU0			CPU1
 
-This patch fixes the following bug:
+sched_clock_local()	sched_clock_remote(CPU0)
+...
+			remote_clock = scd[CPU0]->clock
+			    read_low32bit(scd[CPU0]->clock)
+cmpxchg64(scd->clock,...)
+			    read_high32bit(scd[CPU0]->clock)
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000030
-IP: [<ffffffff811c9002>] sysfs_find_dirent+0x12/0x90
-Call Trace:
-  [<ffffffff811c95f5>] sysfs_get_dirent+0x35/0x80
-  [<ffffffff811cb55e>] sysfs_unmerge_group+0x1e/0xb0
-  [<ffffffff813329f4>] dpm_sysfs_remove+0x24/0x90
-  [<ffffffff8132b0f4>] device_del+0x44/0x1d0
-  [<ffffffffa016fc59>] sas_rphy_delete+0x9/0x20 [scsi_transport_sas]
-  [<ffffffffa01a16f6>] sas_destruct_devices+0xe6/0x110 [libsas]
-  [<ffffffff8107ac7c>] process_one_work+0x16c/0x350
-  [<ffffffff8107d84a>] worker_thread+0x17a/0x410
-  [<ffffffff81081b76>] kthread+0x96/0xa0
-  [<ffffffff81464944>] kernel_thread_helper+0x4/0x10
+While the update of scd->clock is using an atomic64 mechanism, the
+readout on the remote cpu is not, which can cause completely bogus
+readouts.
 
-Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Signed-off-by: Pawel Baldysiak <pawel.baldysiak@intel.com>
-Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+It is a quite rare problem, because it requires the update to hit the
+narrow race window between the low/high readout and the update must go
+across the 32bit boundary.
+
+The resulting misbehaviour is, that CPU1 will see the sched_clock on
+CPU1 ~4 seconds ahead of it's own and update CPU1s sched_clock value
+to this bogus timestamp. This stays that way due to the clamping
+implementation for about 4 seconds until the synchronization with
+CLOCK_MONOTONIC undoes the problem.
+
+The issue is hard to observe, because it might only result in a less
+accurate SCHED_OTHER timeslicing behaviour. To create observable
+damage on realtime scheduling classes, it is necessary that the bogus
+update of CPU1 sched_clock happens in the context of an realtime
+thread, which then gets charged 4 seconds of RT runtime, which results
+in the RT throttler mechanism to trigger and prevent scheduling of RT
+tasks for a little less than 4 seconds. So this is quite unlikely as
+well.
+
+The issue was quite hard to decode as the reproduction time is between
+2 days and 3 weeks and intrusive tracing makes it less likely, but the
+following trace recorded with trace_clock=global, which uses
+sched_clock_local(), gave the final hint:
+
+  <idle>-0   0d..30 400269.477150: hrtimer_cancel: hrtimer=0xf7061e80
+  <idle>-0   0d..30 400269.477151: hrtimer_start:  hrtimer=0xf7061e80 ...
+irq/20-S-587 1d..32 400273.772118: sched_wakeup:   comm= ... target_cpu=0
+  <idle>-0   0dN.30 400273.772118: hrtimer_cancel: hrtimer=0xf7061e80
+
+What happens is that CPU0 goes idle and invokes
+sched_clock_idle_sleep_event() which invokes sched_clock_local() and
+CPU1 runs a remote wakeup for CPU0 at the same time, which invokes
+sched_remote_clock(). The time jump gets propagated to CPU0 via
+sched_remote_clock() and stays stale on both cores for ~4 seconds.
+
+There are only two other possibilities, which could cause a stale
+sched clock:
+
+1) ktime_get() which reads out CLOCK_MONOTONIC returns a sporadic
+   wrong value.
+
+2) sched_clock() which reads the TSC returns a sporadic wrong value.
+
+#1 can be excluded because sched_clock would continue to increase for
+   one jiffy and then go stale.
+
+#2 can be excluded because it would not make the clock jump
+   forward. It would just result in a stale sched_clock for one jiffy.
+
+After quite some brain twisting and finding the same pattern on other
+traces, sched_clock_remote() remained the only place which could cause
+such a problem and as explained above it's indeed racy on 32bit
+systems.
+
+So while on 64bit systems the readout is atomic, we need to verify the
+remote readout on 32bit machines. We need to protect the local->clock
+readout in sched_clock_remote() on 32bit as well because an NMI could
+hit between the low and the high readout, call sched_clock_local() and
+modify local->clock.
+
+Thanks to Siegfried Wulsch for bearing with my debug requests and
+going through the tedious tasks of running a bunch of reproducer
+systems to generate the debug information which let me decode the
+issue.
+
+Reported-by: Siegfried Wulsch <Siegfried.Wulsch@rovema.de>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1304051544160.21884@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/libsas/sas_expander.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ kernel/sched/clock.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-index 101b28e..58e6183 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -235,6 +235,17 @@ static void sas_set_ex_phy(struct domain_device *dev, int phy_id, void *rsp)
- 	linkrate  = phy->linkrate;
- 	memcpy(sas_addr, phy->attached_sas_addr, SAS_ADDR_SIZE);
+diff --git a/kernel/sched/clock.c b/kernel/sched/clock.c
+index c685e31..c3ae144 100644
+--- a/kernel/sched/clock.c
++++ b/kernel/sched/clock.c
+@@ -176,10 +176,36 @@ static u64 sched_clock_remote(struct sched_clock_data *scd)
+ 	u64 this_clock, remote_clock;
+ 	u64 *ptr, old_val, val;
  
-+	/* Handle vacant phy - rest of dr data is not valid so skip it */
-+	if (phy->phy_state == PHY_VACANT) {
-+		memset(phy->attached_sas_addr, 0, SAS_ADDR_SIZE);
-+		phy->attached_dev_type = NO_DEVICE;
-+		if (!test_bit(SAS_HA_ATA_EH_ACTIVE, &ha->state)) {
-+			phy->phy_id = phy_id;
-+			goto skip;
-+		} else
-+			goto out;
-+	}
-+
- 	phy->attached_dev_type = to_dev_type(dr);
- 	if (test_bit(SAS_HA_ATA_EH_ACTIVE, &ha->state))
- 		goto out;
-@@ -272,6 +283,7 @@ static void sas_set_ex_phy(struct domain_device *dev, int phy_id, void *rsp)
- 	phy->phy->maximum_linkrate = dr->pmax_linkrate;
- 	phy->phy->negotiated_linkrate = phy->linkrate;
++#if BITS_PER_LONG != 64
++again:
++	/*
++	 * Careful here: The local and the remote clock values need to
++	 * be read out atomic as we need to compare the values and
++	 * then update either the local or the remote side. So the
++	 * cmpxchg64 below only protects one readout.
++	 *
++	 * We must reread via sched_clock_local() in the retry case on
++	 * 32bit as an NMI could use sched_clock_local() via the
++	 * tracer and hit between the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	this_clock = sched_clock_local(my_scd);
++	/*
++	 * We must enforce atomic readout on 32bit, otherwise the
++	 * update on the remote cpu can hit inbetween the readout of
++	 * the low32bit and the high 32bit portion.
++	 */
++	remote_clock = cmpxchg64(&scd->clock, 0, 0);
++#else
++	/*
++	 * On 64bit the read of [my]scd->clock is atomic versus the
++	 * update, so we can avoid the above 32bit dance.
++	 */
+ 	sched_clock_local(my_scd);
+ again:
+ 	this_clock = my_scd->clock;
+ 	remote_clock = scd->clock;
++#endif
  
-+ skip:
- 	if (new_phy)
- 		if (sas_phy_add(phy->phy)) {
- 			sas_phy_free(phy->phy);
+ 	/*
+ 	 * Use the opportunity that we have both locks
 -- 
 1.8.1.2
 
