@@ -1,270 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967804Ab3DRQ7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:59:52 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:41421 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967753Ab3DRQ7Z (ORCPT
+	id S967807Ab3DRRAO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 13:00:14 -0400
+Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:25919
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967753Ab3DRRAI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:59:25 -0400
-From: Andrey Smirnov <andrew.smirnov@gmail.com>
-To: sameo@linux.intel.com
-Cc: mchehab@redhat.com, andrew.smirnov@gmail.com, hverkuil@xs4all.nl,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH 12/12] radio-si476x: Fix incorrect pointer checking
-Date: Thu, 18 Apr 2013 09:58:38 -0700
-Message-Id: <1366304318-29620-13-git-send-email-andrew.smirnov@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
-References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
+	Thu, 18 Apr 2013 13:00:08 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VPS-5(zzbb2dI98dI9371I1432I1447Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bh8275dhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1155h)
+X-WSS-ID: 0MLGN7Y-01-8DX-02
+X-M-MSG: 
+Message-ID: <5170268E.8080706@amd.com>
+Date: Thu, 18 Apr 2013 11:59:58 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2 V2] iommu/amd: Add workaround for ERBT1312
+References: <1366009666-44792-1-git-send-email-suravee.suthikulpanit@amd.com> <20130418160220.GA4153@8bytes.org> <51701B9F.10003@amd.com> <20130418162856.GA13891@8bytes.org>
+In-Reply-To: <20130418162856.GA13891@8bytes.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix incorrect pointer checking and make some minor code improvements:
+Joerg,
 
-* Remove unnecessary elements from function pointer table(vtable),
-  that includes all the elements that are FM-only, this allows for not
-  checking of the fucntion pointer and calling of the function
-  directly(THe check if the tuner is in FM mode has to be done anyway)
+One last concern I have for this patch is the case when we re-enable the 
+interrupt, then another interrupt happens while we processing the log 
+and set the bit.  If the interrupt thread doesn't check this right 
+before the thread exits the handler.  We could still end up leaving the 
+interrupt disabled.
 
-* Fix incorrect function pointer checking where the code would check one
-  pointer to be non-NULL, but would use other pointer, which would not
-  be checked.
+Suravee
 
-* Remove code duplication in "si476x_radio_read_rsq_blob" and
-  "si476x_radio_read_rsq_primary_blob".
+On 4/18/2013 11:28 AM, Joerg Roedel wrote:
+> On Thu, Apr 18, 2013 at 11:13:19AM -0500, Suravee Suthikulanit wrote:
+>> This workaround is required for both event log and ppr log.  Your
+>> patch is only taking care of the event log.
+> Right, thanks for the notice. Here is the updated patch.
+>
+>  From cebe04596989c4b9001e2c1571c4fb219ea37b99 Mon Sep 17 00:00:00 2001
+> From: Joerg Roedel <joro@8bytes.org>
+> Date: Thu, 18 Apr 2013 17:55:04 +0200
+> Subject: [PATCH] iommu/amd: Workaround for ERBT1312
+>
+> Work around an IOMMU  hardware bug where clearing the
+> EVT_INT or PPR_INT bit in the status register may race with
+> the hardware trying to set it again. When not handled the
+> bit might not be cleared and we lose all future event or ppr
+> interrupts.
+>
+> Reported-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Joerg Roedel <joro@8bytes.org>
+> ---
+>   drivers/iommu/amd_iommu.c |   34 ++++++++++++++++++++++++++--------
+>   1 file changed, 26 insertions(+), 8 deletions(-)
+>
+> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+> index f42793d..27792f8 100644
+> --- a/drivers/iommu/amd_iommu.c
+> +++ b/drivers/iommu/amd_iommu.c
+> @@ -700,14 +700,23 @@ retry:
+>   
+>   static void iommu_poll_events(struct amd_iommu *iommu)
+>   {
+> -	u32 head, tail;
+> +	u32 head, tail, status;
+>   	unsigned long flags;
+>   
+> -	/* enable event interrupts again */
+> -	writel(MMIO_STATUS_EVT_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
+> -
+>   	spin_lock_irqsave(&iommu->lock, flags);
+>   
+> +	/* enable event interrupts again */
+> +	do {
+> +		/*
+> +		 * Workaround for Erratum ERBT1312
+> +		 * Clearing the EVT_INT bit may race in the hardware, so read
+> +		 * it again and make sure it was really cleared
+> +		 */
+> +		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
+> +		writel(MMIO_STATUS_EVT_INT_MASK,
+> +		       iommu->mmio_base + MMIO_STATUS_OFFSET);
+> +	} while (status & MMIO_STATUS_EVT_INT_MASK);
+> +
+>   	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
+>   	tail = readl(iommu->mmio_base + MMIO_EVT_TAIL_OFFSET);
+>   
+> @@ -744,16 +753,25 @@ static void iommu_handle_ppr_entry(struct amd_iommu *iommu, u64 *raw)
+>   static void iommu_poll_ppr_log(struct amd_iommu *iommu)
+>   {
+>   	unsigned long flags;
+> -	u32 head, tail;
+> +	u32 head, tail, status;
+>   
+>   	if (iommu->ppr_log == NULL)
+>   		return;
+>   
+> -	/* enable ppr interrupts again */
+> -	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
+> -
+>   	spin_lock_irqsave(&iommu->lock, flags);
+>   
+> +	/* enable ppr interrupts again */
+> +	do {
+> +		/*
+> +		 * Workaround for Erratum ERBT1312
+> +		 * Clearing the PPR_INT bit may race in the hardware, so read
+> +		 * it again and make sure it was really cleared
+> +		 */
+> +		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
+> +		writel(MMIO_STATUS_PPR_INT_MASK,
+> +		       iommu->mmio_base + MMIO_STATUS_OFFSET);
+> +	} while (status & MMIO_STATUS_PPR_INT_MASK);
+> +
+>   	head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
+>   	tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
+>   
 
-* Add some BUG_ON statements for function pointers that should never be NULL
-
-Signed-off-by: Andrey Smirnov <andrew.smirnov@gmail.com>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
- drivers/media/radio/radio-si476x.c |   90 +++++++++++++-----------------------
- 1 file changed, 33 insertions(+), 57 deletions(-)
-
-diff --git a/drivers/media/radio/radio-si476x.c b/drivers/media/radio/radio-si476x.c
-index 9430c6a..378c7f0 100644
---- a/drivers/media/radio/radio-si476x.c
-+++ b/drivers/media/radio/radio-si476x.c
-@@ -270,8 +270,6 @@ struct si476x_radio;
-  * @seek_start: Star station seeking
-  * @rsq_status: Get Recieved Signal Quality(RSQ) status
-  * @rds_blckcnt: Get recived RDS blocks count
-- * @phase_diversity: Change phase diversity mode of the tuner
-- * @phase_div_status: Get phase diversity mode status
-  * @acf_status: Get the status of Automatically Controlled
-  * Features(ACF)
-  * @agc_status: Get Automatic Gain Control(AGC) status
-@@ -281,16 +279,8 @@ struct si476x_radio_ops {
- 	int (*seek_start)(struct si476x_core *, bool, bool);
- 	int (*rsq_status)(struct si476x_core *, struct si476x_rsq_status_args *,
- 			  struct si476x_rsq_status_report *);
--	int (*rds_blckcnt)(struct si476x_core *, bool,
--			   struct si476x_rds_blockcount_report *);
--
--	int (*phase_diversity)(struct si476x_core *,
--			       enum si476x_phase_diversity_mode);
--	int (*phase_div_status)(struct si476x_core *);
- 	int (*acf_status)(struct si476x_core *,
- 			  struct si476x_acf_status_report *);
--	int (*agc_status)(struct si476x_core *,
--			  struct si476x_agc_status_report *);
- };
- 
- /**
-@@ -495,22 +485,14 @@ static int si476x_radio_init_vtable(struct si476x_radio *radio,
- 		.tune_freq		= si476x_core_cmd_fm_tune_freq,
- 		.seek_start		= si476x_core_cmd_fm_seek_start,
- 		.rsq_status		= si476x_core_cmd_fm_rsq_status,
--		.rds_blckcnt		= si476x_core_cmd_fm_rds_blockcount,
--		.phase_diversity	= si476x_core_cmd_fm_phase_diversity,
--		.phase_div_status	= si476x_core_cmd_fm_phase_div_status,
- 		.acf_status		= si476x_core_cmd_fm_acf_status,
--		.agc_status		= si476x_core_cmd_agc_status,
- 	};
- 
- 	static const struct si476x_radio_ops am_ops = {
- 		.tune_freq		= si476x_core_cmd_am_tune_freq,
- 		.seek_start		= si476x_core_cmd_am_seek_start,
- 		.rsq_status		= si476x_core_cmd_am_rsq_status,
--		.rds_blckcnt		= NULL,
--		.phase_diversity	= NULL,
--		.phase_div_status	= NULL,
- 		.acf_status		= si476x_core_cmd_am_acf_status,
--		.agc_status		= NULL,
- 	};
- 
- 	switch (func) {
-@@ -545,11 +527,15 @@ static int si476x_radio_pretune(struct si476x_radio *radio,
- 	case SI476X_FUNC_FM_RECEIVER:
- 		args.freq = v4l2_to_si476x(radio->core,
- 					   92 * FREQ_MUL);
-+
-+		BUG_ON(!radio->ops->tune_freq);
- 		retval = radio->ops->tune_freq(radio->core, &args);
- 		break;
- 	case SI476X_FUNC_AM_RECEIVER:
- 		args.freq = v4l2_to_si476x(radio->core,
- 					   0.6 * FREQ_MUL);
-+
-+		BUG_ON(!radio->ops->tune_freq);
- 		retval = radio->ops->tune_freq(radio->core, &args);
- 		break;
- 	default:
-@@ -599,7 +585,7 @@ static int si476x_radio_do_post_powerup_init(struct si476x_radio *radio,
- 	if (err < 0)
- 		return err;
- 
--	if (func == SI476X_FUNC_FM_RECEIVER) {
-+	if (!si476x_core_is_in_am_receiver_mode(radio->core)) {
- 		if (si476x_core_has_diversity(radio->core)) {
- 			err = si476x_core_cmd_fm_phase_diversity(radio->core,
- 								 radio->core->diversity_mode);
-@@ -743,6 +729,7 @@ static int si476x_radio_s_frequency(struct file *file, void *priv,
- 	args.smoothmetrics	= SI476X_SM_INITIALIZE_AUDIO;
- 	args.antcap		= 0;
- 
-+	BUG_ON(!radio->ops->tune_freq);
- 	err = radio->ops->tune_freq(radio->core, &args);
- 
- unlock:
-@@ -833,6 +820,7 @@ static int si476x_radio_s_hw_freq_seek(struct file *file, void *priv,
- 			goto unlock;
- 	}
- 
-+	BUG_ON(!radio->ops->seek_start);
- 	err = radio->ops->seek_start(radio->core,
- 				     seek->seek_upward,
- 				     seek->wrap_around);
-@@ -854,8 +842,8 @@ static int si476x_radio_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
- 	switch (ctrl->id) {
- 	case V4L2_CID_SI476X_INTERCHIP_LINK:
- 		if (si476x_core_has_diversity(radio->core)) {
--			if (radio->ops->phase_diversity) {
--				retval = radio->ops->phase_div_status(radio->core);
-+			if (!si476x_core_is_in_am_receiver_mode(radio->core)) {
-+				retval = si476x_core_cmd_fm_phase_div_status(radio->core);
- 				if (retval < 0)
- 					break;
- 
-@@ -1002,7 +990,7 @@ static int si476x_radio_s_ctrl(struct v4l2_ctrl *ctrl)
- 			radio->core->diversity_mode = mode;
- 			retval = 0;
- 		} else {
--			retval = radio->ops->phase_diversity(radio->core, mode);
-+			retval = si476x_core_cmd_fm_phase_diversity(radio->core, mode);
- 			if (!retval)
- 				radio->core->diversity_mode = mode;
- 		}
-@@ -1256,11 +1244,11 @@ static ssize_t si476x_radio_read_rds_blckcnt_blob(struct file *file,
- 	struct si476x_rds_blockcount_report report;
- 
- 	si476x_core_lock(radio->core);
--	if (radio->ops->rds_blckcnt)
--		err = radio->ops->rds_blckcnt(radio->core, true,
--					       &report);
--	else
-+	if (si476x_core_is_in_am_receiver_mode(radio->core))
- 		err = -ENOENT;
-+	else
-+		err = si476x_core_cmd_fm_rds_blockcount(radio->core, true,
-+							&report);
- 	si476x_core_unlock(radio->core);
- 
- 	if (err < 0)
-@@ -1285,10 +1273,10 @@ static ssize_t si476x_radio_read_agc_blob(struct file *file,
- 	struct si476x_agc_status_report report;
- 
- 	si476x_core_lock(radio->core);
--	if (radio->ops->rds_blckcnt)
--		err = radio->ops->agc_status(radio->core, &report);
--	else
-+	if (si476x_core_is_in_am_receiver_mode(radio->core))
- 		err = -ENOENT;
-+	else
-+		err = si476x_core_cmd_agc_status(radio->core, &report);
- 	si476x_core_unlock(radio->core);
- 
- 	if (err < 0)
-@@ -1304,15 +1292,17 @@ static const struct file_operations radio_agc_fops = {
- 	.read	= si476x_radio_read_agc_blob,
- };
- 
--static ssize_t si476x_radio_read_rsq_blob(struct file *file,
--					  char __user *user_buf,
--					  size_t count, loff_t *ppos)
-+
-+static ssize_t __si476x_radio_read_rsq_blob(bool is_primary,
-+					    struct file *file,
-+					    char __user *user_buf,
-+					    size_t count, loff_t *ppos)
- {
- 	int err;
- 	struct si476x_radio *radio = file->private_data;
- 	struct si476x_rsq_status_report report;
- 	struct si476x_rsq_status_args args = {
--		.primary	= false,
-+		.primary	= is_primary,
- 		.rsqack		= false,
- 		.attune		= false,
- 		.cancel		= false,
-@@ -1320,7 +1310,7 @@ static ssize_t si476x_radio_read_rsq_blob(struct file *file,
- 	};
- 
- 	si476x_core_lock(radio->core);
--	if (radio->ops->rds_blckcnt)
-+	if (radio->ops->rsq_status)
- 		err = radio->ops->rsq_status(radio->core, &args, &report);
- 	else
- 		err = -ENOENT;
-@@ -1331,6 +1321,14 @@ static ssize_t si476x_radio_read_rsq_blob(struct file *file,
- 
- 	return simple_read_from_buffer(user_buf, count, ppos, &report,
- 				       sizeof(report));
-+
-+}
-+
-+static ssize_t si476x_radio_read_rsq_blob(struct file *file,
-+					  char __user *user_buf,
-+					  size_t count, loff_t *ppos)
-+{
-+	return __si476x_radio_read_rsq_blob(false, file, user_buf, count, ppos);
- }
- 
- static const struct file_operations radio_rsq_fops = {
-@@ -1343,29 +1341,7 @@ static ssize_t si476x_radio_read_rsq_primary_blob(struct file *file,
- 						  char __user *user_buf,
- 						  size_t count, loff_t *ppos)
- {
--	int err;
--	struct si476x_radio *radio = file->private_data;
--	struct si476x_rsq_status_report report;
--	struct si476x_rsq_status_args args = {
--		.primary	= true,
--		.rsqack		= false,
--		.attune		= false,
--		.cancel		= false,
--		.stcack		= false,
--	};
--
--	si476x_core_lock(radio->core);
--	if (radio->ops->rds_blckcnt)
--		err = radio->ops->rsq_status(radio->core, &args, &report);
--	else
--		err = -ENOENT;
--	si476x_core_unlock(radio->core);
--
--	if (err < 0)
--		return err;
--
--	return simple_read_from_buffer(user_buf, count, ppos, &report,
--				       sizeof(report));
-+	return __si476x_radio_read_rsq_blob(true, file, user_buf, count, ppos);
- }
- 
- static const struct file_operations radio_rsq_primary_fops = {
--- 
-1.7.10.4
 
