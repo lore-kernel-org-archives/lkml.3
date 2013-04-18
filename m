@@ -1,38 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab3DRGV7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 02:21:59 -0400
-Received: from smtp1.u-psud.fr ([129.175.33.41]:62473 "EHLO smtp1.u-psud.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754500Ab3DRGV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 02:21:58 -0400
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Apr 2013 02:21:58 EDT
-Message-ID: <516F8F4B.1000504@lri.fr>
-Date: Thu, 18 Apr 2013 08:14:35 +0200
-From: Nicolas Cavallari <Nicolas.Cavallari@lri.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1755331Ab3DRG1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 02:27:51 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:52458 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab3DRG1u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 02:27:50 -0400
+Date: Thu, 18 Apr 2013 02:27:45 -0400 (EDT)
+From: Zhouping Liu <zliu@redhat.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        caiqian <caiqian@redhat.com>, Caspar Zhang <czhang@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Message-ID: <1638103518.2400447.1366266465689.JavaMail.root@redhat.com>
+In-Reply-To: <20130416075047.GA4184@osiris>
+References: <156480624.266924.1365995933797.JavaMail.root@redhat.com> <2068164110.268217.1365996520440.JavaMail.root@redhat.com> <20130415055627.GB4207@osiris> <516B9B57.6050308@redhat.com> <20130416075047.GA4184@osiris>
+Subject: Re: [BUG][s390x] mm: system crashed
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: Bing Zhao <bzhao@marvell.com>, linux-netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Stewart <pstew@chromium.org>
-Subject: Re: [PATCH] net-sysfs: Add entry for nl80211 interface type
-References: <1366236369-543-1-git-send-email-bzhao@marvell.com>  (sfid-20130418_000709_842159_3005786A) <1366236590.8217.64.camel@jlt4.sipsolutions.net>
-In-Reply-To: <1366236590.8217.64.camel@jlt4.sipsolutions.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF19 (Linux)/8.0.3_GA_5664)
+Thread-Topic: system crashed
+Thread-Index: bp+e33tZCp3/TZR/Ktj0xpu2NNHoOA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/04/2013 00:09, Johannes Berg wrote:
-> On Wed, 2013-04-17 at 15:06 -0700, Bing Zhao wrote:
->> Add a "wireless/nl80211_iftype" entry in the net device sysfs
->> file structure to indicate the mode of the wireless device so
->> it can be discovered easily from userspace.
+Hello Heiko,
+
+----- Original Message -----
+> From: "Heiko Carstens" <heiko.carstens@de.ibm.com>
+> To: "Zhouping Liu" <zliu@redhat.com>
+> Cc: linux-mm@kvack.org, "LKML" <linux-kernel@vger.kernel.org>, "caiqian" <caiqian@redhat.com>, "Caspar Zhang"
+> <czhang@redhat.com>, "Martin Schwidefsky" <schwidefsky@de.ibm.com>
+> Sent: Tuesday, April 16, 2013 3:50:47 PM
+> Subject: Re: [BUG][s390x] mm: system crashed
 > 
-> What's wrong with "iw dev", i.e. netlink/nl80211?
+> On Mon, Apr 15, 2013 at 02:16:55PM +0800, Zhouping Liu wrote:
+> > On 04/15/2013 01:56 PM, Heiko Carstens wrote:
+> > >On Sun, Apr 14, 2013 at 11:28:40PM -0400, Zhouping Liu wrote:
+> > >>� 16109.346170¨ Call Trace:
+> > >>� 16109.346179¨ (� <0000000000100920>¨ show_trace+0x128/0x12c)
+> > >>� 16109.346195¨  � <00000000001cd320>¨ rcu_check_callbacks+0x458/0xccc
+> > >>� 16109.346209¨  � <0000000000140f2e>¨ update_process_times+0x4a/0x74
+> > >>� 16109.346222¨  � <0000000000199452>¨
+> > >>tick_sched_handle.isra.12+0x5e/0x70
+> > >>� 16109.346235¨  � <00000000001995aa>¨ tick_sched_timer+0x6a/0x98
+> > >>� 16109.346247¨  � <000000000015c1ea>¨ __run_hrtimer+0x8e/0x200
+> > >>� 16109.346381¨  � <000000000015d1b2>¨ hrtimer_interrupt+0x212/0x2b0
+> > >>� 16109.346385¨  � <00000000001040f6>¨ clock_comparator_work+0x4a/0x54
+> > >>� 16109.346390¨  � <000000000010d658>¨ do_extint+0x158/0x15c
+> > >>� 16109.346396¨  � <000000000062aa24>¨ ext_skip+0x38/0x3c
+> > >>� 16109.346404¨  � <00000000001153c8>¨ smp_yield_cpu+0x44/0x48
+> > >>� 16109.346412¨ (� <000003d10051aec0>¨ 0x3d10051aec0)
+> > >>� 16109.346457¨  � <000000000024206a>¨ __page_check_address+0x16a/0x170
+> > >>� 16109.346466¨  � <00000000002423a2>¨ page_referenced_one+0x3e/0xa0
+> > >>� 16109.346501¨  � <000000000024427c>¨ page_referenced+0x32c/0x41c
+> > >>� 16109.346510¨  � <000000000021b1dc>¨ shrink_page_list+0x380/0xb9c
+> > >>� 16109.346521¨  � <000000000021c0a6>¨ shrink_inactive_list+0x1c6/0x56c
+> > >>� 16109.346532¨  � <000000000021c69e>¨ shrink_lruvec+0x252/0x56c
+> > >>� 16109.346542¨  � <000000000021ca44>¨ shrink_zone+0x8c/0x1bc
+> > >>� 16109.346553¨  � <000000000021d080>¨ balance_pgdat+0x50c/0x658
+> > >>� 16109.346564¨  � <000000000021d318>¨ kswapd+0x14c/0x470
+> > >>� 16109.346576¨  � <0000000000158292>¨ kthread+0xda/0xe4
+> > >>� 16109.346656¨  � <000000000062a5de>¨ kernel_thread_starter+0x6/0xc
+> > >>� 16109.346682¨  � <000000000062a5d8>¨ kernel_thread_starter+0x0/0xc
+> > >>[-- MARK -- Fri Apr 12 06:15:00 2013]
+> > >>� 16289.386061¨ INFO: rcu_sched self-detected stall on CPU { 0}  (t=42010
+> > >>jiffies
+> > >>  g=89766 c=89765 q=10627)
+> > >Did the system really crash or did you just see the rcu related
+> > >warning(s)?
+> > 
+> > I just check it again, actually at first the system didn't really
+> > crash, but the system is very slow in response.
+> > and the reproducer process can't be killed, after I did some common
+> > actions such as 'ls' 'vim' etc, the system
+> > seemed to be really crashed, no any response.
+> > 
+> > also in the previous testing, I can remember that the system would
+> > be no any response for a long time, just only
+> > repeatedly print out the such above 'Call Trace' into console.
+> 
+> Ok, thanks.
+> Just a couple of more questions: did you see this also on other archs, or
+> just
+> s390 (if you tried other platforms at all).
+> 
+> If you have some time, could you please repeat your test with the kernel
+> command line option " user_mode=home "?
 
-"Do NOT screenscrape this tool, we don't consider its output stable."
+I tested the system with the kernel parameter, but the issue still appeared,
+I just to say it takes longer time to reproduce the issue than the before.
 
-So if you are in a shell script, you're basically screwed.
+> 
+> As far as I can tell there was only one s390 patch merged that was
+> mmap related: 486c0a0bc80d370471b21662bf03f04fbb37cdc6 "s390/mm: Fix crst
+> upgrade of mmap with MAP_FIXED".
+
+also I tested the revert commit, unluckily, the same issue as the before.
+
+
+-- 
+Thanks,
+Zhouping
