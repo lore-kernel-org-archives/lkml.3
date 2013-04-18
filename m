@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967562Ab3DRQMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 12:12:19 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:47979 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966792Ab3DRQMR (ORCPT
+	id S967566Ab3DRQNb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 12:13:31 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:45252
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967280Ab3DRQNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 12:12:17 -0400
-Message-ID: <51701B5F.9090203@console-pimps.org>
-Date: Thu, 18 Apr 2013 17:12:15 +0100
-From: Matt Fleming <matt@console-pimps.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 18 Apr 2013 12:13:30 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bh8275dhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1155h)
+X-WSS-ID: 0MLGL28-01-57C-02
+X-M-MSG: 
+Message-ID: <51701B9F.10003@amd.com>
+Date: Thu, 18 Apr 2013 11:13:19 -0500
+From: Suravee Suthikulanit <suravee.suthikulpanit@amd.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tom Gundersen <teg@jklm.no>
-Subject: [GIT PULL] EFI efivars.c dissection
-Content-Type: text/plain; charset=ISO-8859-1
+To: Joerg Roedel <joro@8bytes.org>
+CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2 V2] iommu/amd: Add workaround for ERBT1312
+References: <1366009666-44792-1-git-send-email-suravee.suthikulpanit@amd.com> <20130418160220.GA4153@8bytes.org>
+In-Reply-To: <20130418160220.GA4153@8bytes.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Joerg,
 
-As discussed previously, please consider pulling this into a new topic
-branch, to potentially merge for v3.10. The changes move all the code in
-drivers/firmware/efivars.c into new files under drivers/firmware/efi/
-and moves the efivarfs code to fs/efivarfs. This allow us to pick and
-choose which EFI support to compile instead of having everything under
-one monolithic file. In particular, having the efivarfs code under fs/
-allows building an efivarfs.ko module, which means mount(8) can
-automatically load it.
+This workaround is required for both event log and ppr log.  Your patch 
+is only taking care of the event log.
 
-It also introduces the new efivar_entry API.
+Suravee
 
-The following changes since commit 07961ac7c0ee8b546658717034fe692fd12eefa9:
+On 4/18/2013 11:02 AM, Joerg Roedel wrote:
+> On Mon, Apr 15, 2013 at 02:07:46AM -0500, suravee.suthikulpanit@amd.com wrote:
+>>   drivers/iommu/amd_iommu.c |  145 +++++++++++++++++++++++++++++----------------
+> That is way too much for a simple erratum workaround, and too much for a
+> stable backport. I queued the patch below instead, which has a much
+> smaller diff and does the same. Please rebase your second patch on-top
+> of this one and send it again.
+>
+>  From 4ba052102863da02db79c03d2483b6ad905737ad Mon Sep 17 00:00:00 2001
+> From: Joerg Roedel <joro@8bytes.org>
+> Date: Thu, 18 Apr 2013 17:55:04 +0200
+> Subject: [PATCH] iommu/amd: Workaround for ERBT1312
+>
+> Work around an IOMMU  hardware bug where clearing the
+> EVT_INT bit in the status register may race with the
+> hardware trying to set it again. When not handled the bit
+> might not be cleared and we lose all future event
+> interrupts.
+>
+> Reported-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Joerg Roedel <joro@8bytes.org>
+> ---
+>   drivers/iommu/amd_iommu.c |   17 +++++++++++++----
+>   1 file changed, 13 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+> index f42793d..de5ae4b 100644
+> --- a/drivers/iommu/amd_iommu.c
+> +++ b/drivers/iommu/amd_iommu.c
+> @@ -700,14 +700,23 @@ retry:
+>   
+>   static void iommu_poll_events(struct amd_iommu *iommu)
+>   {
+> -	u32 head, tail;
+> +	u32 head, tail, status;
+>   	unsigned long flags;
+>   
+> -	/* enable event interrupts again */
+> -	writel(MMIO_STATUS_EVT_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
+> -
+>   	spin_lock_irqsave(&iommu->lock, flags);
+>   
+> +	/* enable event interrupts again */
+> +	do {
+> +		/*
+> +		 * Workaround for Erratum ERBT1312
+> +		 * Clearing the EVT_INT bit may race in the hardware, so read
+> +		 * it again and make sure it was really cleared
+> +		 */
+> +		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
+> +		writel(MMIO_STATUS_EVT_INT_MASK,
+> +		       iommu->mmio_base + MMIO_STATUS_OFFSET);
+> +	} while (status & MMIO_STATUS_EVT_INT_MASK);
+> +
+>   	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
+>   	tail = readl(iommu->mmio_base + MMIO_EVT_TAIL_OFFSET);
+>   
 
-  Linux 3.9-rc5 (2013-03-31 15:12:43 -0700)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git chainsaw
-
-for you to fetch changes up to a9499fa7cd3fd4824a7202d00c766b269fa3bda6:
-
-  efi: split efisubsystem from efivars (2013-04-17 13:27:06 +0100)
-
-----------------------------------------------------------------
-Matt Fleming (5):
-      efi: move utf16 string functions to efi.h
-      efivars: Keep a private global pointer to efivars
-      efivars: efivar_entry API
-      efivars: Move pstore code into the new EFI directory
-      efivarfs: Move to fs/efivarfs
-
-Tom Gundersen (1):
-      efi: split efisubsystem from efivars
-
- MAINTAINERS                       |   13 +-
- drivers/firmware/Kconfig          |   36 +-
- drivers/firmware/Makefile         |    2 +-
- drivers/firmware/efi/Kconfig      |   39 +
- drivers/firmware/efi/Makefile     |    6 +
- drivers/firmware/efi/efi-pstore.c |  244 +++++
- drivers/firmware/efi/efi.c        |  134 +++
- drivers/firmware/efi/efivars.c    |  617 +++++++++++
- drivers/firmware/efi/vars.c       | 1049 ++++++++++++++++++
- drivers/firmware/efivars.c        | 2171 -------------------------------------
- drivers/firmware/google/gsmi.c    |   30 +-
- fs/Kconfig                        |    1 +
- fs/Makefile                       |    1 +
- fs/efivarfs/Kconfig               |   12 +
- fs/efivarfs/Makefile              |    7 +
- fs/efivarfs/file.c                |  111 ++
- fs/efivarfs/inode.c               |  173 +++
- fs/efivarfs/internal.h            |   22 +
- fs/efivarfs/super.c               |  267 +++++
- include/linux/efi.h               |  134 ++-
- 20 files changed, 2835 insertions(+), 2234 deletions(-)
- create mode 100644 drivers/firmware/efi/Kconfig
- create mode 100644 drivers/firmware/efi/Makefile
- create mode 100644 drivers/firmware/efi/efi-pstore.c
- create mode 100644 drivers/firmware/efi/efi.c
- create mode 100644 drivers/firmware/efi/efivars.c
- create mode 100644 drivers/firmware/efi/vars.c
- delete mode 100644 drivers/firmware/efivars.c
- create mode 100644 fs/efivarfs/Kconfig
- create mode 100644 fs/efivarfs/Makefile
- create mode 100644 fs/efivarfs/file.c
- create mode 100644 fs/efivarfs/inode.c
- create mode 100644 fs/efivarfs/internal.h
- create mode 100644 fs/efivarfs/super.c
-
--- 
-Matt Fleming, Intel Open Source Technology Center
