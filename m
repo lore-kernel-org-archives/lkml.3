@@ -1,37 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968279Ab3DRKw4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 06:52:56 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33749 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967301Ab3DRKwz (ORCPT
+	id S968287Ab3DRKxs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 06:53:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51292 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967253Ab3DRKxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 06:52:55 -0400
-Date: Thu, 18 Apr 2013 11:52:46 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        Laurent Meunier <laurent.meunier@st.com>
-Subject: Re: [PATCH v3] pinctrl/pinconfig: add debug interface
-Message-ID: <20130418105246.GO14496@n2100.arm.linux.org.uk>
-References: <1366281314-14613-1-git-send-email-linus.walleij@stericsson.com>
+	Thu, 18 Apr 2013 06:53:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 14/32] dmaengine: ste_dma40: Remove 'always true' checking
+Date: Thu, 18 Apr 2013 12:53:33 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linus.walleij@stericsson.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>, Per Forlin <per.forlin@stericsson.com>,
+        Rabin Vincent <rabin@rab.in>
+References: <1366279934-30761-1-git-send-email-lee.jones@linaro.org> <1366279934-30761-15-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1366279934-30761-15-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366281314-14613-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304181253.33762.arnd@arndb.de>
+X-Provags-ID: V02:K0:++lBT8XvfNuS9+H9jPMWfrIA+IcKmwdWzyf2CdbJjoq
+ ou21mI2M6yoGNBLwHuyPSVm34ZWdaSMqeUZpMZXYK/csttZHq3
+ R0Fzd5hVv0KkHo2efPOQ8YhfxomEtCZfwYvS9BMEjA7hiQvyug
+ jpY4+EZfg7dzU3r5fC6rQPZHKyGvPrH/5V/eA67uupZ7exQ+Cw
+ QNiEXjH0y7LTIYOPEEW4KAV7kSFC0GBd/TOEMeqaaEtLlyvfUi
+ umNeGpMdRJGhLkEYyq1aQh7Ap0QX6OJnquJTiwVbp8MXM6LUq7
+ DxyNsBF2WnR65Kam56ZaLMVxZeScItrtnzTNt5Mzk9y77nFUEW
+ EHz3iADhIOFEel9AFDO8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 12:35:14PM +0200, Linus Walleij wrote:
-> +		if (map->type != dbg->map_type)
-> +			continue;
-> +		if (!!strcmp(map->dev_name, dbg->dev_name))
+On Thursday 18 April 2013, Lee Jones wrote:
+> Before allocating memory for logical channels, the current driver
+> checks to see if there are any. Well as the dma40_memcpy_channels[]
+> array is always populated, the check is always true. Best to
+> remove the check.
+> 
+> Cc: Vinod Koul <vinod.koul@intel.com>
+> Cc: Dan Williams <djbw@fb.com>
+> Cc: Per Forlin <per.forlin@stericsson.com>
+> Cc: Rabin Vincent <rabin@rab.in>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-!! is pointless in this context - if() evaluates any non-zero value as
-true, so there's no point making the code more complicated by trying to
-convert it to a false/true value first.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
