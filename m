@@ -1,75 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030811Ab3DSQWA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:22:00 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34295 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756221Ab3DSQV6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 12:21:58 -0400
-Date: Fri, 19 Apr 2013 11:21:53 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Taras Kondratiuk <taras@ti.com>
-CC: <lgirdwood@gmail.com>, <broonie@kernel.org>, <rjw@sisk.pl>,
-        <viresh.kumar@linaro.org>, <shawn.guo@linaro.org>,
-        <cpufreq@vger.kernel.org>, <linux-pm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 0/2] cpufreq/regulator: Limit minimum voltage only
-Message-ID: <20130419162153.GA24066@kahuna>
-References: <1366372554-20866-1-git-send-email-taras@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1366372554-20866-1-git-send-email-taras@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S968393Ab3DSQVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:21:10 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:13964 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757615Ab3DSQTu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 12:19:50 -0400
+X-IronPort-AV: E=Sophos;i="4.87,510,1363158000"; 
+   d="scan'208";a="39954140"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: arm@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCHv5 10/11] clocksource: time-armada-370-xp: Divorce from local timer API
+Date: Fri, 19 Apr 2013 09:19:44 -0700
+Message-Id: <1366388385-30722-11-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1.392.g85e7e81
+In-Reply-To: <1366388385-30722-1-git-send-email-sboyd@codeaurora.org>
+References: <1366388385-30722-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:55-20130419, Taras Kondratiuk wrote:
-> Using a "voltage tolerance" for doing DVFS is not a proper way.
-> It leads to a few issues:
-> - voltage is limited to a narrow range near OPP voltage,
->   so other consumers of the same regulator can't set their own constraints
->   if they don't overlap with this narrow range. No ganged rails :(
-> - usually OPP voltage is an absolute minimum voltage
->   necessary for correct work (not taking into account AVS).
->   Applying plus/minus tolerance can lead to an unstable device.
->   For example omap-cpufreq has 4% tolerance configured,
->   so for OMAP4430 MPU OPP50 we get 0.984V instead of 1.025V. 
-there is a reason for this - board level IRDROP and the real PMIC
-accuracy compared to the SoC assumption about the PMIC accuracy.
+Separate the armada 370xp local timers from the local timer API.
+This will allow us to remove ARM local timer support in the near
+future and makes this driver multi-architecture friendly.
 
-That said, I had been always been a little confused with the usage
-in AM335x. For that matter, I dont even think this is constrainted to
-TI SoC usage, other SoCs also probably have the same pain.
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Tested-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/clocksource/time-armada-370-xp.c | 89 +++++++++++++++-----------------
+ 1 file changed, 41 insertions(+), 48 deletions(-)
 
-How does it actually work?
-
-Lets say ntarget/Vnom has PMIC tolerance of 5% (SoC tolerance assumed
-for OPP voltage documented in data manual for the SoC), say the
-OPP voltage is 1.2V - that translates to an voltage of 1.14V on a perfect
-PMIC (with 0 drop or perfect accuracy) for the SoC.
-Now, the real world is never perfect. So, lets take the following cases:
-a) PMIC with 2% variance
-b) PMIC with 5% variance (usually the reference PMIC we put on SoC
-   vendor platform)
-c) PMIC with 10% variance.
-
-How does this translate to dts definition? As you stated, with 5%
-variance(b), the call will become min_uV=1.14V max_uV=1.26V when
-the tolerance translation is done. with (a) and (c) tolernace value
-chooses a different value.
-
-In short,
-a) we need to be able to describe in some form the assumption for
-board variances in the OPP voltage in the SoC data manual.
-b) we need some way for board/PMIC definitions to be able to influence
-and adjust for assumption.
-
-This is what I believe is achieved using voltage_tolerance.
-
-regulator_set_voltage_min is not really the way to do it IMHO.
-
+diff --git a/drivers/clocksource/time-armada-370-xp.c b/drivers/clocksource/time-armada-370-xp.c
+index efe4aef..4a31e86 100644
+--- a/drivers/clocksource/time-armada-370-xp.c
++++ b/drivers/clocksource/time-armada-370-xp.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/kernel.h>
+ #include <linux/clk.h>
++#include <linux/cpu.h>
+ #include <linux/timer.h>
+ #include <linux/clockchips.h>
+ #include <linux/interrupt.h>
+@@ -31,7 +32,6 @@
+ #include <linux/time-armada-370-xp.h>
+ 
+ #include <asm/sched_clock.h>
+-#include <asm/localtimer.h>
+ /*
+  * Timer block registers.
+  */
+@@ -70,7 +70,7 @@ static bool timer25Mhz = true;
+  */
+ static u32 ticks_per_jiffy;
+ 
+-static struct clock_event_device __percpu **percpu_armada_370_xp_evt;
++static struct clock_event_device __percpu *armada_370_xp_evt;
+ 
+ static u32 notrace armada_370_xp_read_sched_clock(void)
+ {
+@@ -143,21 +143,14 @@ armada_370_xp_clkevt_mode(enum clock_event_mode mode,
+ 	}
+ }
+ 
+-static struct clock_event_device armada_370_xp_clkevt = {
+-	.name		= "armada_370_xp_per_cpu_tick",
+-	.features	= CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_PERIODIC,
+-	.shift		= 32,
+-	.rating		= 300,
+-	.set_next_event	= armada_370_xp_clkevt_next_event,
+-	.set_mode	= armada_370_xp_clkevt_mode,
+-};
++static int armada_370_xp_clkevt_irq;
+ 
+ static irqreturn_t armada_370_xp_timer_interrupt(int irq, void *dev_id)
+ {
+ 	/*
+ 	 * ACK timer interrupt and call event handler.
+ 	 */
+-	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
++	struct clock_event_device *evt = dev_id;
+ 
+ 	writel(TIMER0_CLR_MASK, local_base + LCL_TIMER_EVENTS_STATUS);
+ 	evt->event_handler(evt);
+@@ -173,42 +166,55 @@ static int __cpuinit armada_370_xp_timer_setup(struct clock_event_device *evt)
+ 	u32 u;
+ 	int cpu = smp_processor_id();
+ 
+-	/* Use existing clock_event for cpu 0 */
+-	if (!smp_processor_id())
+-		return 0;
+-
+ 	u = readl(local_base + TIMER_CTRL_OFF);
+ 	if (timer25Mhz)
+ 		writel(u | TIMER0_25MHZ, local_base + TIMER_CTRL_OFF);
+ 	else
+ 		writel(u & ~TIMER0_25MHZ, local_base + TIMER_CTRL_OFF);
+ 
+-	evt->name		= armada_370_xp_clkevt.name;
+-	evt->irq		= armada_370_xp_clkevt.irq;
+-	evt->features		= armada_370_xp_clkevt.features;
+-	evt->shift		= armada_370_xp_clkevt.shift;
+-	evt->rating		= armada_370_xp_clkevt.rating,
++	evt->name		= "armada_370_xp_per_cpu_tick",
++	evt->features		= CLOCK_EVT_FEAT_ONESHOT |
++				  CLOCK_EVT_FEAT_PERIODIC;
++	evt->shift		= 32,
++	evt->rating		= 300,
+ 	evt->set_next_event	= armada_370_xp_clkevt_next_event,
+ 	evt->set_mode		= armada_370_xp_clkevt_mode,
++	evt->irq		= armada_370_xp_clkevt_irq;
+ 	evt->cpumask		= cpumask_of(cpu);
+ 
+-	*__this_cpu_ptr(percpu_armada_370_xp_evt) = evt;
+-
+ 	clockevents_config_and_register(evt, timer_clk, 1, 0xfffffffe);
+ 	enable_percpu_irq(evt->irq, 0);
+ 
+ 	return 0;
+ }
+ 
+-static void  armada_370_xp_timer_stop(struct clock_event_device *evt)
++static void __cpuinit armada_370_xp_timer_stop(struct clock_event_device *evt)
+ {
+ 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
+ 	disable_percpu_irq(evt->irq);
+ }
+ 
+-static struct local_timer_ops armada_370_xp_local_timer_ops __cpuinitdata = {
+-	.setup	= armada_370_xp_timer_setup,
+-	.stop	=  armada_370_xp_timer_stop,
++static int __cpuinit armada_370_xp_timer_cpu_notify(struct notifier_block *self,
++					   unsigned long action, void *hcpu)
++{
++	/*
++	 * Grab cpu pointer in each case to avoid spurious
++	 * preemptible warnings
++	 */
++	switch (action & ~CPU_TASKS_FROZEN) {
++	case CPU_STARTING:
++		armada_370_xp_timer_setup(this_cpu_ptr(armada_370_xp_evt));
++		break;
++	case CPU_DYING:
++		armada_370_xp_timer_stop(this_cpu_ptr(armada_370_xp_evt));
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block armada_370_xp_timer_cpu_nb __cpuinitdata = {
++	.notifier_call = armada_370_xp_timer_cpu_notify,
+ };
+ 
+ void __init armada_370_xp_timer_init(void)
+@@ -224,9 +230,6 @@ void __init armada_370_xp_timer_init(void)
+ 
+ 	if (of_find_property(np, "marvell,timer-25Mhz", NULL)) {
+ 		/* The fixed 25MHz timer is available so let's use it */
+-		u = readl(local_base + TIMER_CTRL_OFF);
+-		writel(u | TIMER0_25MHZ,
+-		       local_base + TIMER_CTRL_OFF);
+ 		u = readl(timer_base + TIMER_CTRL_OFF);
+ 		writel(u | TIMER0_25MHZ,
+ 		       timer_base + TIMER_CTRL_OFF);
+@@ -236,9 +239,6 @@ void __init armada_370_xp_timer_init(void)
+ 		struct clk *clk = of_clk_get(np, 0);
+ 		WARN_ON(IS_ERR(clk));
+ 		rate =  clk_get_rate(clk);
+-		u = readl(local_base + TIMER_CTRL_OFF);
+-		writel(u & ~(TIMER0_25MHZ),
+-		       local_base + TIMER_CTRL_OFF);
+ 
+ 		u = readl(timer_base + TIMER_CTRL_OFF);
+ 		writel(u & ~(TIMER0_25MHZ),
+@@ -252,7 +252,7 @@ void __init armada_370_xp_timer_init(void)
+ 	 * We use timer 0 as clocksource, and private(local) timer 0
+ 	 * for clockevents
+ 	 */
+-	armada_370_xp_clkevt.irq = irq_of_parse_and_map(np, 4);
++	armada_370_xp_clkevt_irq = irq_of_parse_and_map(np, 4);
+ 
+ 	ticks_per_jiffy = (timer_clk + HZ / 2) / HZ;
+ 
+@@ -277,26 +277,19 @@ void __init armada_370_xp_timer_init(void)
+ 			      "armada_370_xp_clocksource",
+ 			      timer_clk, 300, 32, clocksource_mmio_readl_down);
+ 
+-	/* Register the clockevent on the private timer of CPU 0 */
+-	armada_370_xp_clkevt.cpumask = cpumask_of(0);
+-	clockevents_config_and_register(&armada_370_xp_clkevt,
+-					timer_clk, 1, 0xfffffffe);
++	register_cpu_notifier(&armada_370_xp_timer_cpu_nb);
+ 
+-	percpu_armada_370_xp_evt = alloc_percpu(struct clock_event_device *);
++	armada_370_xp_evt = alloc_percpu(struct clock_event_device);
+ 
+ 
+ 	/*
+ 	 * Setup clockevent timer (interrupt-driven).
+ 	 */
+-	*__this_cpu_ptr(percpu_armada_370_xp_evt) = &armada_370_xp_clkevt;
+-	res = request_percpu_irq(armada_370_xp_clkevt.irq,
++	res = request_percpu_irq(armada_370_xp_clkevt_irq,
+ 				armada_370_xp_timer_interrupt,
+-				armada_370_xp_clkevt.name,
+-				percpu_armada_370_xp_evt);
+-	if (!res) {
+-		enable_percpu_irq(armada_370_xp_clkevt.irq, 0);
+-#ifdef CONFIG_LOCAL_TIMERS
+-		local_timer_register(&armada_370_xp_local_timer_ops);
+-#endif
+-	}
++				"armada_370_xp_per_cpu_tick",
++				armada_370_xp_evt);
++	/* Immediately configure the timer on the boot CPU */
++	if (!res)
++		armada_370_xp_timer_setup(this_cpu_ptr(armada_370_xp_evt));
+ }
 -- 
-Regards,
-Nishanth Menon
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
