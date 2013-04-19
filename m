@@ -1,148 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601Ab3DSSxG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 14:53:06 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:64946 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543Ab3DSSxE (ORCPT
+	id S1754011Ab3DSSzn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 14:55:43 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53867
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753926Ab3DSSzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 14:53:04 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUVE-ikxEp65bUHMp0WEPX_MDbA06ykzeSxygJv=9f45ig@mail.gmail.com>
-References: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
-	<CAKMK7uFEaiT_1siQBcp_-S0RwLvy3XSjqLn1ksq70VhNTZSfLw@mail.gmail.com>
-	<CA+icZUWQEiGecR8jgw4P-2YCKyqSDMMP0Ufwn8aBU_-AOf0a-Q@mail.gmail.com>
-	<CA+icZUWcwvFFVesJDoFNT3DbgRMXvDp7QLn+S5Ze_5d8gJRx1g@mail.gmail.com>
-	<CA+icZUXjTGSG+tejOAFgXr8EpKd7dL=-W41ha_-0N=roAxN3eg@mail.gmail.com>
-	<CA+icZUVE-ikxEp65bUHMp0WEPX_MDbA06ykzeSxygJv=9f45ig@mail.gmail.com>
-Date: Fri, 19 Apr 2013 20:53:00 +0200
-Message-ID: <CA+icZUUp84vzF_0n77wsJ6dBOS26vSRCXaFUDbCQi-wG0b-Osg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 18 [ call-trace: drm | x86 | smp | rcu
- related? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@redhat.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Emmanuel Benisty <benisty.e@gmail.com>,
-        Rik van Riel <riel@surriel.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 19 Apr 2013 14:55:42 -0400
+Message-ID: <1366397724.24945.8.camel@laptop>
+Subject: Re: [PATCH 2/2] perf, amd: support for AMD NB and L2I "uncore"
+ counters.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Stephane Eranian <eranian@google.com>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Date: Fri, 19 Apr 2013 20:55:24 +0200
+In-Reply-To: <20130419144100.GA2894@jshin-Toonie>
+References: <1366046483-1765-1-git-send-email-jacob.shin@amd.com>
+	 <1366046483-1765-3-git-send-email-jacob.shin@amd.com>
+	 <1366284534.19383.13.camel@laptop> <20130418163315.GA7903@jshin-Toonie>
+	 <1366374436.24945.6.camel@laptop> <20130419144100.GA2894@jshin-Toonie>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 6:43 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Fri, Apr 19, 2013 at 12:27 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Fri, Apr 19, 2013 at 12:19 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> On Thu, Apr 18, 2013 at 11:59 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>> On Thu, Apr 18, 2013 at 9:48 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->>>>> On Thu, Apr 18, 2013 at 3:05 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>>>> On Thu, Apr 18, 2013 at 10:28 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>>>>>> Hi all,
->>>>>>>
->>>>>>> Changes since 20130417:
->>>>>>>
->>>>>>> New Trees:      rpmsg (actually added yesterday)
->>>>>>>                 ppc-temp (replacing powerpc for this week)
->>>>>>>
->>>>>>> The ceph tree gained a conflict against Linus' tree.
->>>>>>>
->>>>>>> The net-next tree gained a conflict against the infiniband tree.
->>>>>>>
->>>>>>> The usb tree gained a build failure so I used the version from
->>>>>>> next-20130417.
->>>>>>>
->>>>>>> I added two merge fix patches after the gen-gpio tree.
->>>>>>>
->>>>>>> The ppc-temp tree gained a conflict against the metag tree.
->>>>>>>
->>>>>>> The akpm tree lost a patch that turned up elsewhere.
->>>>>>>
->>>>>>> ----------------------------------------------------------------------------
->>>>>>>
->>>>>>
->>>>>> Not sure what the root-cause for this call-trace is (see screenshot).
->>>>>>
->>>>>> This is reproducible when running my kernel build-script (4 parallel-make-jobs).
->>>>>>
->>>>>> Any hints welcome!
->>>>>
->>>>> The panic handlers in our modeset code are pretty decent fubar - they
->>>>> take mutexes all over the place. So I think the backtrace you see
->>>>> there is actually a secondary effect. I've looked into fixing this up,
->>>>> but the issue is that drivers themselves have tons of state protected
->>>>> with mutexes, which all potentially affects the panic handler. So I've
->>>>> given up on that for now ...
->>>>
->>>> Thanks for taking care.
->>>>
->>>> On suspicion [1] I have reverted [2]... NOPE.
->>>>
->>>> - Sedat -
->>>>
->>>> [1] http://marc.info/?l=linux-kernel&m=136631921208895&w=2
->>>> [2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=5a90d1a95356de7a32acb2e5309ac579a891af8f
->>>>
->>>
->>> Hmmm, the issue seems to be gone with today's Linux-Next (next-20130419).
->>> My kernel-build is still running with no call-trace...
->>>
->>
->> NO, It's no good.
->>
->
-> I tried to switch from SLUB to SLAB...
->
-> ...and also from VIRT_CPU_ACCOUNTING_GEN to TICK_CPU_ACCOUNTING.
->
-> 2x NOPE.
->
-> In one kernel-build I saw in my console...
->
->      semop(1): encountered an error: Identifier removed
->
-> ...if this says sth. to you.
->
+On Fri, 2013-04-19 at 09:41 -0500, Jacob Shin wrote:
+> 
+> Thank you again, for taking the time.
 
-[ CC folks from below thread ]
+Ah something I just remembered, could you do a patch like the below
+one? That makes things like perf stat -A work as expected.
 
-I have found a thread called "Re: ipc,sem: sysv semaphore scalability"
-on LKML with a screenshot that shows the same call-trace.
-I followed it a bit.
-There is a patch in [3]... unconfirmed.
+---
+commit 314d9f63f385096580e9e2a06eaa0745d92fe4ac
+Author: Yan, Zheng <zheng.z.yan@intel.com>
+Date:   Mon Sep 10 15:53:49 2012 +0800
 
-Comments on the rcu read-lock and "sem_lock()" vs "sem_unlock()" from Linus.
+    perf/x86: Add cpumask for uncore pmu
+    
+    This patch adds a cpumask file to the uncore pmu sysfs directory.  The
+    cpumask file contains one active cpu for every socket.
+    
+    Signed-off-by: "Yan, Zheng" <zheng.z.yan@intel.com>
+    Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Acked-by: Ingo Molnar <mingo@kernel.org>
+    Cc: Andi Kleen <andi@firstfloor.org>
+    Cc: Jiri Olsa <jolsa@redhat.com>
+    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Cc: Stephane Eranian <eranian@google.com>
+    Cc: "Yan, Zheng" <zheng.z.yan@intel.com>
+    Link: http://lkml.kernel.org/r/1347263631-23175-2-git-send-email-zheng.z.yan@intel.com
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-What's the status of this discussion?
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 0a55710..62ec3e6 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2341,6 +2341,27 @@ int uncore_pmu_event_init(struct perf_event *event)
+ 	return ret;
+ }
+ 
++static ssize_t uncore_get_attr_cpumask(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	int n = cpulist_scnprintf(buf, PAGE_SIZE - 2, &uncore_cpu_mask);
++
++	buf[n++] = '\n';
++	buf[n] = '\0';
++	return n;
++}
++
++static DEVICE_ATTR(cpumask, S_IRUGO, uncore_get_attr_cpumask, NULL);
++
++static struct attribute *uncore_pmu_attrs[] = {
++	&dev_attr_cpumask.attr,
++	NULL,
++};
++
++static struct attribute_group uncore_pmu_attr_group = {
++	.attrs = uncore_pmu_attrs,
++};
++
+ static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
+ {
+ 	int ret;
+@@ -2378,8 +2399,8 @@ static void __init uncore_type_exit(struct intel_uncore_type *type)
+ 		free_percpu(type->pmus[i].box);
+ 	kfree(type->pmus);
+ 	type->pmus = NULL;
+-	kfree(type->attr_groups[1]);
+-	type->attr_groups[1] = NULL;
++	kfree(type->events_group);
++	type->events_group = NULL;
+ }
+ 
+ static void __init uncore_types_exit(struct intel_uncore_type **types)
+@@ -2431,9 +2452,10 @@ static int __init uncore_type_init(struct intel_uncore_type *type)
+ 		for (j = 0; j < i; j++)
+ 			attrs[j] = &type->event_descs[j].attr.attr;
+ 
+-		type->attr_groups[1] = events_group;
++		type->events_group = events_group;
+ 	}
+ 
++	type->pmu_group = &uncore_pmu_attr_group;
+ 	type->pmus = pmus;
+ 	return 0;
+ fail:
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index 5b81c18..e68a455 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -369,10 +369,12 @@ struct intel_uncore_type {
+ 	struct intel_uncore_pmu *pmus;
+ 	struct intel_uncore_ops *ops;
+ 	struct uncore_event_desc *event_descs;
+-	const struct attribute_group *attr_groups[3];
++	const struct attribute_group *attr_groups[4];
+ };
+ 
+-#define format_group attr_groups[0]
++#define pmu_group attr_groups[0]
++#define format_group attr_groups[1]
++#define events_group attr_groups[2]
+ 
+ struct intel_uncore_ops {
+ 	void (*init_box)(struct intel_uncore_box *);
 
-- Sedat -
 
-[1] https://lkml.org/lkml/2013/3/30/6
-[2] http://i.imgur.com/uk6gmq1.jpg
-[3] https://lkml.org/lkml/2013/3/31/12
-[4] https://lkml.org/lkml/2013/3/31/77
-
-> - Sedat -
->
-> - Sedat -
->
->> - Sedat -
->>
->> [1] http://www.youtube.com/watch?v=LwicaralvS0
->>
->>> - Sedat -
->>>
->>>>> -Daniel
->>>>> --
->>>>> Daniel Vetter
->>>>> Software Engineer, Intel Corporation
->>>>> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
