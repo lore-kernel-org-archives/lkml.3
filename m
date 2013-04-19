@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968424Ab3DSQWj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:22:39 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:13957 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756979Ab3DSQTt (ORCPT
+	id S968410Ab3DSQWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:22:38 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:29403 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757159Ab3DSQTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Apr 2013 12:19:49 -0400
 X-IronPort-AV: E=Sophos;i="4.87,510,1363158000"; 
-   d="scan'208";a="39954135"
+   d="scan'208";a="39797390"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: arm@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCHv5 05/11] ARM: OMAP2+: Divorce from local timer API
-Date: Fri, 19 Apr 2013 09:19:39 -0700
-Message-Id: <1366388385-30722-6-git-send-email-sboyd@codeaurora.org>
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCHv5 03/11] ARM: smp: Remove duplicate dummy timer implementation
+Date: Fri, 19 Apr 2013 09:19:37 -0700
+Message-Id: <1366388385-30722-4-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1.392.g85e7e81
 In-Reply-To: <1366388385-30722-1-git-send-email-sboyd@codeaurora.org>
 References: <1366388385-30722-1-git-send-email-sboyd@codeaurora.org>
@@ -23,55 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the TWD doesn't rely on the local timer API, OMAP can
-stop selecting it in Kconfig and relying on the config option to
-decide if it should call smp_twd functions.
+Drop ARM's version of the dummy timer now that we have a generic
+implementation in drivers/clocksource.
 
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
+Cc: Russell King <linux@arm.linux.org.uk>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-omap2/Kconfig | 1 -
- arch/arm/mach-omap2/timer.c | 7 -------
- 2 files changed, 8 deletions(-)
+ arch/arm/kernel/smp.c | 22 ++--------------------
+ 1 file changed, 2 insertions(+), 20 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index 568bb74..ff185ef 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -91,7 +91,6 @@ config ARCH_OMAP4
- 	select HAVE_ARM_SCU if SMP
- 	select HAVE_ARM_TWD if SMP
- 	select HAVE_SMP
--	select LOCAL_TIMERS if SMP
- 	select OMAP_INTERCONNECT
- 	select PL310_ERRATA_588369
- 	select PL310_ERRATA_727915
-diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-index ce57228..7f2ef6c 100644
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -600,7 +600,6 @@ static OMAP_SYS_32K_TIMER_INIT(4, 1, "timer_32k_ck", "ti,timer-alwon",
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 4619177..806b84d 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -469,24 +469,6 @@ void tick_broadcast(const struct cpumask *mask)
+ }
  #endif
  
- #ifdef CONFIG_ARCH_OMAP4
--#ifdef CONFIG_LOCAL_TIMERS
- static DEFINE_TWD_LOCAL_TIMER(twd_local_timer, OMAP44XX_LOCAL_TWD_BASE, 29);
- void __init omap4_local_timer_init(void)
- {
-@@ -619,12 +618,6 @@ void __init omap4_local_timer_init(void)
- 			pr_err("twd_local_timer_register failed %d\n", err);
- 	}
- }
--#else /* CONFIG_LOCAL_TIMERS */
--void __init omap4_local_timer_init(void)
+-static void broadcast_timer_set_mode(enum clock_event_mode mode,
+-	struct clock_event_device *evt)
 -{
--	omap4_sync32k_timer_init();
 -}
--#endif /* CONFIG_LOCAL_TIMERS */
- #endif /* CONFIG_ARCH_OMAP4 */
+-
+-static void __cpuinit broadcast_timer_setup(struct clock_event_device *evt)
+-{
+-	evt->name	= "dummy_timer";
+-	evt->features	= CLOCK_EVT_FEAT_ONESHOT |
+-			  CLOCK_EVT_FEAT_PERIODIC |
+-			  CLOCK_EVT_FEAT_DUMMY;
+-	evt->rating	= 100;
+-	evt->mult	= 1;
+-	evt->set_mode	= broadcast_timer_set_mode;
+-
+-	clockevents_register_device(evt);
+-}
+-
+ static struct local_timer_ops *lt_ops;
  
- #ifdef CONFIG_SOC_OMAP5
+ #ifdef CONFIG_LOCAL_TIMERS
+@@ -510,8 +492,8 @@ static void __cpuinit percpu_timer_setup(void)
+ 
+ 	evt->cpumask = cpumask_of(cpu);
+ 
+-	if (!lt_ops || lt_ops->setup(evt))
+-		broadcast_timer_setup(evt);
++	if (lt_ops)
++		lt_ops->setup(evt);
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
