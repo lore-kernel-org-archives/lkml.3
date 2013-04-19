@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968246Ab3DSJx7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 05:53:59 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:40622 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968061Ab3DSJxz (ORCPT
+	id S1757825Ab3DSJzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 05:55:09 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34633 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756774Ab3DSJzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 05:53:55 -0400
-From: Prabhakar lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH 2/2] media: davinci: vpif_display: move displaying of error to approppraite place
-Date: Fri, 19 Apr 2013 15:23:30 +0530
-Message-Id: <1366365210-3778-3-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1366365210-3778-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1366365210-3778-1-git-send-email-prabhakar.csengg@gmail.com>
+	Fri, 19 Apr 2013 05:55:07 -0400
+Date: Fri, 19 Apr 2013 10:54:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Colin Cross <ccross@android.com>
+Cc: Rob Herring <robherring2@gmail.com>, Tony Luck <tony.luck@intel.com>,
+        Kees Cook <keescook@chromium.org>, lkml <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 1/3] pstore-ram: use write-combine mappings
+Message-ID: <20130419095445.GG14496@n2100.arm.linux.org.uk>
+References: <1365563297-12480-1-git-send-email-robherring2@gmail.com> <CAMbhsRSvQPbzJ7Nt=OSSYE_A1e+eaUjO7XY+qRppJ5_gfWmW4A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMbhsRSvQPbzJ7Nt=OSSYE_A1e+eaUjO7XY+qRppJ5_gfWmW4A@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+On Tue, Apr 09, 2013 at 08:53:18PM -0700, Colin Cross wrote:
+> On Tue, Apr 9, 2013 at 8:08 PM, Rob Herring <robherring2@gmail.com> wrote:
+> > -       return ioremap(start, size);
+> > +       return ioremap_wc(start, size);
+> 
+> ioremap_wc corresponds to MT_DEVICE_WC, which is still device memory,
+> so I don't see how this helps solve the problem in the commit message.
 
-this patch moves the displaying out error case  "VPIF IRQ request failed\n"
-when there is actual request_irq() fail.
+In reality it isn't, because there's no such thing as "write combining
+device memory" in the ARM memory model.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpif_display.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+There are three major memory types: strongly ordered, device and normal
+memory.  Only normal memory can be cached in any way, which includes
+using write combining.
 
-diff --git a/drivers/media/platform/davinci/vpif_display.c b/drivers/media/platform/davinci/vpif_display.c
-index d833056..7b17368 100644
---- a/drivers/media/platform/davinci/vpif_display.c
-+++ b/drivers/media/platform/davinci/vpif_display.c
-@@ -1725,6 +1725,7 @@ static __init int vpif_probe(struct platform_device *pdev)
- 				for (j = 0; j < i; j++)
- 					free_irq(j, (void *)
- 					(&vpif_obj.dev[res_idx]->channel_id));
-+				vpif_err("VPIF IRQ request failed\n");
- 				goto vpif_int_err;
- 			}
- 		}
-@@ -1878,7 +1879,6 @@ vpif_sd_error:
- 	}
- vpif_int_err:
- 	v4l2_device_unregister(&vpif_obj.v4l2_dev);
--	vpif_err("VPIF IRQ request failed\n");
- 	for (i = 0; i < res_idx; i++) {
- 		res = platform_get_resource(pdev, IORESOURCE_IRQ, i);
- 		for (j = res->start; j <= res->end; j++)
--- 
-1.7.4.1
+#define ioremap_wc(cookie,size) __arm_ioremap((cookie), (size), MT_DEVICE_WC)
 
+        [MT_DEVICE_WC] = {      /* ioremap_wc */
+                .prot_pte       = PROT_PTE_DEVICE | L_PTE_MT_DEV_WC,
+
+         *                      n       TR      IR      OR
+         *   BUFFERABLE         001     10      00      00
+         *   DEV_WC             001     10
+(see arch/arm/mm/proc-v7-2level.S for the rest of the table and its
+description.)
+
+So, DEV_WC is an alias for BUFFERABLE, which is normal memory,
+uncacheable in both inner and outer caches.  This means that at the
+moment, ioremap_wc() memory has the same properties as system memory
+- with all the out of ordering effects you get there.
+
+I don't put any guarantee on this though - we may end up having to
+change it if we find a SoC needing this to really be device memory...
