@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968329Ab3DSMOQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:14:16 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51556 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968240Ab3DSMOP (ORCPT
+	id S1030246Ab3DSMPh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 08:15:37 -0400
+Received: from dkim1.fusionio.com ([66.114.96.53]:41564 "EHLO
+	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968240Ab3DSMPf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 08:14:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chen Gang <gang.chen@asianux.com>
-Subject: Re: [PATCH] ARM64: kernel: compiling issue: need define readq and writeq for driver module using.
-Date: Fri, 19 Apr 2013 14:13:57 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Tony Lindgren <tony@atomide.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <51712975.8030104@asianux.com>
-In-Reply-To: <51712975.8030104@asianux.com>
+	Fri, 19 Apr 2013 08:15:35 -0400
+X-ASG-Debug-ID: 1366373734-03d6a52ac02fe0c0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201304191413.57424.arnd@arndb.de>
-X-Provags-ID: V02:K0:f9QydTEnA5q7MZiQZWnsZC0nrBGp14kfqrMh8RwIWEi
- JqBolJi0pS1jJTa/n8xW7esjqNri7pQ2QgEYptyWuc6OIiltQX
- mu4jrFAUi128fUq5sB9jjyY/hh5u1dgRXXU8l9a0daPhUsClVJ
- jnrC4jyutl788nhoyNmfrZgVOmKasjfWANTssMuMFCQLbJ0Yx9
- ItBKgjA4RffoOOzarqXiKhm8L2cNIVtBco0IUvEkGlF1kCUoPH
- xhMfghgD/bduOFP+top1aO7hBS4Kh+r1hrHRE3GNXTSdWA1Dbd
- L0iHMS0gCRoZ7orwn0/CQF2tQu1NohlLVq8+n2EVsBuQv738IG
- i6X2qCzqI0eGL4qRhjK8=
+Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>, Wanlong Gao <gaowanlong@cn.fujitsu.com>
+From: Chris Mason <clmason@fusionio.com>
+In-Reply-To: <20130419055754.GA9691@mtj.dyndns.org>
+CC: Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "agk@redhat.com" <agk@redhat.com>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "neilb@suse.de" <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <516E5EF8.9090507@cn.fujitsu.com>
+ <1366209997.8817.12.camel@pippen.local.home>
+ <20130418123738.GV4816@kernel.dk> <516FED09.1040008@cn.fujitsu.com>
+ <20130418133546.GX4816@kernel.dk> <516FFFAC.8040103@cn.fujitsu.com>
+ <20130418143014.GZ4816@kernel.dk> <5170BB00.8080200@cn.fujitsu.com>
+ <20130419055754.GA9691@mtj.dyndns.org>
+Message-ID: <20130419121532.30947.69296@localhost.localdomain>
+User-Agent: alot/0.3.4
+Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
+Date: Fri, 19 Apr 2013 08:15:32 -0400
+X-ASG-Orig-Subj: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1366373734
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.128566
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 April 2013, Chen Gang wrote:
->   when compiling with allmodconfig, CONFIG_64BIT=y
->     the file drivers/base/regmap/regmap-mmio.c will use readq and writeq.
+Quoting Tejun Heo (2013-04-19 01:57:54)
 > 
->   so we need implement these functions.
+> Ewweeeeeeeeeeeeeeeeeehh........
 > 
-> BTW:
->   the coding style can not pass ./scripts/checkpatch.pl.
->   it seems better to provide additional patch for beautifying code.
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> No wonder this thing crashes.  Chris, can't the original bio carry
+> bbio in bi_private and let end_bio_extent_readpage() free the bbio
+> instead of abusing bi_bdev like this?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Yes, we can definitely carry bbio up higher in the stack.  I'll patch it
+up right now.  I do agree that it'll be too big for -final, but we'll
+have it either way.
+
+-chris
+
