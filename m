@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030461Ab3DSM13 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:27:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37586 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030384Ab3DSM1Z (ORCPT
+	id S1030476Ab3DSM1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 08:27:37 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:58697 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030384Ab3DSM1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 08:27:25 -0400
-Message-ID: <1366374436.24945.6.camel@laptop>
-Subject: Re: [PATCH 2/2] perf, amd: support for AMD NB and L2I "uncore"
- counters.
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jacob Shin <jacob.shin@amd.com>
-Cc: Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, Stephane Eranian <eranian@google.com>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Date: Fri, 19 Apr 2013 14:27:16 +0200
-In-Reply-To: <20130418163315.GA7903@jshin-Toonie>
-References: <1366046483-1765-1-git-send-email-jacob.shin@amd.com>
-	 <1366046483-1765-3-git-send-email-jacob.shin@amd.com>
-	 <1366284534.19383.13.camel@laptop> <20130418163315.GA7903@jshin-Toonie>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	Fri, 19 Apr 2013 08:27:34 -0400
+Message-ID: <5171382F.709@huawei.com>
+Date: Fri, 19 Apr 2013 20:27:27 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH 06/10] cpuset: re-structure update_cpumask() a bit
+References: <517137A7.4020605@huawei.com>
+In-Reply-To: <517137A7.4020605@huawei.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-04-18 at 11:33 -0500, Jacob Shin wrote:
+Check if cpus_allowed is to be changed before calling validate_change().
 
-> Okay, here is V2 which does that. Thanks again in advance for taking
-> the time to look it over.
+This won't change any behavior, but later it will allow us to do this:
 
-Awesome, looks good on a first read.. I'm assuming you've tested things
-and they actually work too? :-)
+ # mkdir /cpuset/child
+ # echo $$ > /cpuset/child/tasks	/* empty cpuset */
+ # echo > /cpuset/child/cpuset.cpus	/* do nothing, won't fail */
 
-> From d68225744196d8b0d60a1bc33ae9abdbffbd9bc9 Mon Sep 17 00:00:00 2001
-> From: Jacob Shin <jacob.shin@amd.com>
-> Date: Sun, 14 Apr 2013 04:12:42 -0500
-> Subject: [PATCH 2/2] perf, amd: support for AMD NB and L2I "uncore" counters.
-> 
-> Add support for AMD Family 15h [and above] northbridge performance
-> counters. MSRs 0xc0010240 ~ 0xc0010247 are shared across all cores
-> that share a common northbridge.
-> 
-> Add support for AMD Family 16h L2 performance counters. MSRs
-> 0xc0010230 ~ 0xc0010237 are shared across all cores that share a
-> common L2 cache.
-> 
-> We do not enable counter overflow interrupts. Sampling mode and
-> per-thread events are not supported.
-> 
-> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Without this patch, the last operation will fail.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cpuset.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 2e4c5af..63a5343 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -855,14 +855,15 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
+ 		if (!cpumask_subset(trialcs->cpus_allowed, cpu_active_mask))
+ 			return -EINVAL;
+ 	}
+-	retval = validate_change(cs, trialcs);
+-	if (retval < 0)
+-		return retval;
+ 
+ 	/* Nothing to do if the cpus didn't change */
+ 	if (cpumask_equal(cs->cpus_allowed, trialcs->cpus_allowed))
+ 		return 0;
+ 
++	retval = validate_change(cs, trialcs);
++	if (retval < 0)
++		return retval;
++
+ 	retval = heap_init(&heap, PAGE_SIZE, GFP_KERNEL, NULL);
+ 	if (retval)
+ 		return retval;
+-- 
+1.8.0.2
