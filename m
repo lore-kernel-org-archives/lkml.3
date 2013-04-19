@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753740Ab3DSSgd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 14:36:33 -0400
-Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:54749 "EHLO
-	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753655Ab3DSSga (ORCPT
+	id S932363Ab3DSSna (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 14:43:30 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:57350 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753041Ab3DSSn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 14:36:30 -0400
-X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Apr 2013 14:36:30 EDT
-Message-ID: <51718D24.3020902@gmail.com>
-Date: Fri, 19 Apr 2013 20:29:56 +0200
-From: Gertjan van Wingerde <gwingerde@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Fri, 19 Apr 2013 14:43:29 -0400
+Date: Fri, 19 Apr 2013 14:43:24 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] Fix: remove stale include/linux/version.h in toplevel
+	Makefile
+Message-ID: <20130419184324.GA1108@Krystal>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Ivo van Doorn <IvDoorn@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        rt2x00 Users List <users@rt2x00.serialmonkey.com>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH wireless-next V2] rt2x00: Use more current logging styles,
- shrink object size
-References: <1366360406.3901.10.camel@joe-AO722>  <CAL1gcdOMtbzxCVLNvDK_CD-M+_SdAeL3Sja9khO9+G2bNOCz1g@mail.gmail.com>  <1366365149.3901.15.camel@joe-AO722> <1366385620.3901.28.camel@joe-AO722>
-In-Reply-To: <1366385620.3901.28.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Apr 2013 18:30:16.0261 (UTC) FILETIME=[F02BBF50:01CE3D2B]
-X-RcptDomain: vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/13 17:33, Joe Perches wrote:
-> Reduce object space ~2% using more current logging styles.
-> 
-> Neaten and simplify logging macros.
-> Use wiphy_<level> where appropriate.
-> Coalesce formats.
-> 
-> Convert ERROR/WARNING/INFO macros to rt2x00_<level>
-> Convert EEPROM to rt2x00_eeprom_dbg
-> Convert PROBE_ERROR to rt2x00_probe_err
-> Convert DEBUG to rt2x00_dbg
-> Convert EEPROM to rt2x00_eeprom_dbg
-> 
-> $ size drivers/net/wireless/rt2x00/built-in.o*
->    text	   data	    bss	    dec	    hex	filename
->  245639	  71696	  69584	 386919	  5e767	drivers/net/wireless/rt2x00/built-in.o.new
->  240609	  70096	  68944	 379649	  5cb01	drivers/net/wireless/rt2x00/built-in.o.new.nodyndbg
->  240609	  70096	  68944	 379649	  5cb01	drivers/net/wireless/rt2x00/built-in.o.new.no_rt2x00_debug
->  249198	  70096	  70352	 389646	  5f20e	drivers/net/wireless/rt2x00/built-in.o.old
->  249198	  70096	  70352	 389646	  5f20e	drivers/net/wireless/rt2x00/built-in.o.old.nodyndbg
->  244222	  70096	  69712	 384030	  5dc1e	drivers/net/wireless/rt2x00/built-in.o.old.no_rt2x00_debug
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+With a kernel tree that contains a generated include/linux/version.h, if
+someone just does a git pull to update to a newer kernel version that
+includes
 
-Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+commit 10b63956fce7f369cc37fd4d994f09bd5203efe4
 
-> ---
-> V2 differences:
-> 
-> Correct copy/paste error in rt2x00_info/warn macros
-> Reorder macro definitions
-> Use embedded prefix in rt2x00_eeprom_dbg
-> 
-> Object size increased from v1 ~100 bytes x86/32.
-> Object size may be slightly smaller this way for x86/64
-> 
->
+"UAPI: Plumb the UAPI Kbuilds into the user header installation and
+checking"
+
+and
+commit d183e6f570f3c0c23d253fd262c90244e72d7ffd
+
+"UAPI: Move linux/version.h"
+
+Any newer build will fail to overwrite or remove the stale version.h
+file. The new include/generated/uapi/linux/version.h is indeed
+generated, but the stale file in include/linux has precedence.
+
+This leads to very unfortunate consequences for any user relying on
+version.h to expose the kernel version accurately, since the old "stale"
+kernel version will be seen by the build.
+
+Ensure that stale include/linux/version.h is removed whenever the new
+version.h is generated.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: David Howells <dhowells@redhat.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: Dave Jones <davej@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
 ---
-Gertjan
+ Makefile |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: linux/Makefile
+===================================================================
+--- linux.orig/Makefile
++++ linux/Makefile
+@@ -823,8 +823,10 @@ endif
+ # prepare2 creates a makefile if using a separate output directory
+ prepare2: prepare3 outputmakefile asm-generic
+ 
++# Includes removal of stale version.h from earlier kernel versions.
+ prepare1: prepare2 $(version_h) include/generated/utsrelease.h \
+                    include/config/auto.conf
++	$(Q)rm -f include/linux/version.h
+ 	$(cmd_crmodverdir)
+ 
+ archprepare: archheaders archscripts prepare1 scripts_basic
+
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
