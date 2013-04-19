@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757147Ab3DSHZH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 03:25:07 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:46445 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756668Ab3DSHZF (ORCPT
+	id S1757277Ab3DSH0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 03:26:21 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:45658 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756770Ab3DSH0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 03:25:05 -0400
-Date: Fri, 19 Apr 2013 09:25:00 +0200
+	Fri, 19 Apr 2013 03:26:19 -0400
+Date: Fri, 19 Apr 2013 09:26:15 +0200
 From: Ingo Molnar <mingo@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH -tip ] [BUGFIX] kprobes: Fix a double lock bug of
- kprobe_mutex
-Message-ID: <20130419072500.GA21866@gmail.com>
-References: <20130418093318.13070.29847.stgit@mhiramat-M0-7522>
- <20130418181709.GE9897@mtj.dyndns.org>
- <20130419072250.GA20897@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Aravind <aravind.gopalakrishnan@amd.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-edac@vger.kernel.org
+Subject: Re: [PATCH V4] edac: Handle EDAC ECC errors for Family 16h
+Message-ID: <20130419072615.GB20897@gmail.com>
+References: <1366228633-3159-1-git-send-email-Aravind.Gopalakrishnan@amd.com>
+ <20130417212022.GA9181@pd.tnic>
+ <516F41FF.8000202@amd.com>
+ <20130418090800.GA21719@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130419072250.GA20897@gmail.com>
+In-Reply-To: <20130418090800.GA21719@pd.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Ingo Molnar <mingo@kernel.org> wrote:
+* Borislav Petkov <bp@alien8.de> wrote:
 
-> 
-> * Tejun Heo <tj@kernel.org> wrote:
-> 
-> > On Thu, Apr 18, 2013 at 06:33:18PM +0900, Masami Hiramatsu wrote:
-> > > Fix a double locking bug caused when debug.kprobe-optimization=0.
-> > > While the proc_kprobes_optimization_handler locks kprobe_mutex,
-> > > wait_for_kprobe_optimizer locks it again and that causes a double lock.
-> > > To fix the bug, this introduces different mutex for protecting
-> > > sysctl parameter and locks it in proc_kprobes_optimization_handler.
-> > > Of course, since we need to lock kprobe_mutex when touching kprobes
-> > > resources, that is done in *optimize_all_kprobes().
-> > > 
-> > > This bug was from ad72b3bea744b4db01c89af0f86f3e8920d354df
-> > > 
-> > > Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> > > Cc: Ingo Molnar <mingo@redhat.com>
-> > > Cc: Tejun Heo <tj@kernel.org>
-> > > Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> > > Cc: "David S. Miller" <davem@davemloft.net>
+> On Wed, Apr 17, 2013 at 07:44:47PM -0500, Aravind wrote:
+> > For some reason, this hunk does not apply cleanly..
+> > I tried this: (moving the line)
 > > 
-> > Oops,
-> > 
-> > Acked-by: Tejun Heo <tj@kernel.org>
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
+> >  	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
+> > 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
+> > 	{}
 > 
-> Since you pushed the original commit, mind pushing this fix to Linus too?
+> I swapped that in your patch because wanted to have those sorted. We're
+> probably using different trees though..
+> 
+> > and this seems to work..
+> > Otherwise, I tested the patch and it works.
+> 
+> Ok, good.
+> 
+> Thanks.
 
-I see Linus applied it out of email, so never mind.
+Ok, mind resending the last version with all acks/signoff included?
 
 Thanks,
 
