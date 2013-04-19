@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030210Ab3DSKum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 06:50:42 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:16064
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757961Ab3DSKsZ (ORCPT
+	id S968214Ab3DSKvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 06:51:06 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:43254 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S968046Ab3DSKsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 06:48:25 -0400
+	Fri, 19 Apr 2013 06:48:20 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
 From: Zhao Chenhui <chenhui.zhao@freescale.com>
 To: <linuxppc-dev@lists.ozlabs.org>
 CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 08/15] powerpc/85xx: add cpu hotplug support for e500mc/e5500
-Date: Fri, 19 Apr 2013 18:47:41 +0800
-Message-ID: <1366368468-29143-8-git-send-email-chenhui.zhao@freescale.com>
+Subject: [PATCH v2 05/15] fsl_pmc: update device bindings
+Date: Fri, 19 Apr 2013 18:47:38 +0800
+Message-ID: <1366368468-29143-5-git-send-email-chenhui.zhao@freescale.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
 References: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
@@ -26,202 +26,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chen-Hui Zhao <chenhui.zhao@freescale.com>
+From: Li Yang <leoli@freescale.com>
 
-Add support to disable and re-enable individual cores at runtime.
-This supports e500mc/e5500 core based SoCs.
-
-To prevent the register access race, only read/write RCPM registers
-in platform_cpu_die() on the boot cpu instead of accessing by individual
-cpus. Platform implementations can override the platform_cpu_die().
-
-Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
 Signed-off-by: Li Yang <leoli@freescale.com>
-Signed-off-by: Andy Fleming <afleming@freescale.com>
+Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
 ---
- arch/powerpc/Kconfig              |    2 +-
- arch/powerpc/include/asm/smp.h    |    1 +
- arch/powerpc/kernel/smp.c         |   16 ++++++++++-
- arch/powerpc/platforms/85xx/smp.c |   56 ++++++++++++++++++++++++++++++++++--
- 4 files changed, 69 insertions(+), 6 deletions(-)
+ .../devicetree/bindings/powerpc/fsl/pmc.txt        |   59 +++++++++++--------
+ 1 files changed, 34 insertions(+), 25 deletions(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 0e11a09..b6851be 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -347,7 +347,7 @@ config SWIOTLB
- config HOTPLUG_CPU
- 	bool "Support for enabling/disabling CPUs"
- 	depends on SMP && HOTPLUG && (PPC_PSERIES || \
--	PPC_PMAC || PPC_POWERNV || (PPC_85xx && !PPC_E500MC))
-+	PPC_PMAC || PPC_POWERNV || PPC_85xx)
- 	---help---
- 	  Say Y here to be able to disable and re-enable individual
- 	  CPUs at runtime on SMP machines.
-diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
-index 195ce2a..95be584 100644
---- a/arch/powerpc/include/asm/smp.h
-+++ b/arch/powerpc/include/asm/smp.h
-@@ -60,6 +60,7 @@ extern void smp_generic_take_timebase(void);
- DECLARE_PER_CPU(unsigned int, cpu_pvr);
+diff --git a/Documentation/devicetree/bindings/powerpc/fsl/pmc.txt b/Documentation/devicetree/bindings/powerpc/fsl/pmc.txt
+index 07256b7..f1f749f 100644
+--- a/Documentation/devicetree/bindings/powerpc/fsl/pmc.txt
++++ b/Documentation/devicetree/bindings/powerpc/fsl/pmc.txt
+@@ -9,15 +9,20 @@ Properties:
  
- #ifdef CONFIG_HOTPLUG_CPU
-+void platform_cpu_die(unsigned int cpu);
- extern void migrate_irqs(void);
- int generic_cpu_disable(void);
- void generic_cpu_die(unsigned int cpu);
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index 76bd9da..386c7ea 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -381,14 +381,28 @@ int generic_cpu_disable(void)
- 	return 0;
- }
- 
-+/**
-+ * platform_cpu_die() - do platform related operations on the boot cpu
-+ * after CPU_DEAD is assigned to the variable cpu_state of the dying cpu.
-+ * Platform implementations can override this.
-+ *
-+ * @cpu:	the cpu to die
-+ */
-+void __attribute__ ((weak)) platform_cpu_die(unsigned int cpu)
-+{
-+	return;
-+}
+   "fsl,mpc8548-pmc" should be listed for any chip whose PMC is
+   compatible.  "fsl,mpc8536-pmc" should also be listed for any chip
+-  whose PMC is compatible, and implies deep-sleep capability.
++  whose PMC is compatible, and implies deep-sleep capability and
++  wake on user defined packet(wakeup on ARP).
 +
- void generic_cpu_die(unsigned int cpu)
- {
- 	int i;
++  "fsl,p1022-pmc" should be listed for any chip whose PMC is
++  compatible, and implies lossless Ethernet capability during sleep.
  
- 	for (i = 0; i < 100; i++) {
- 		smp_rmb();
--		if (per_cpu(cpu_state, cpu) == CPU_DEAD)
-+		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
-+			platform_cpu_die(cpu);
- 			return;
-+		}
- 		msleep(100);
- 	}
- 	printk(KERN_ERR "CPU%d didn't die...\n", cpu);
-diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
-index 6c2fe6b..6eae2e0 100644
---- a/arch/powerpc/platforms/85xx/smp.c
-+++ b/arch/powerpc/platforms/85xx/smp.c
-@@ -40,7 +40,7 @@ struct epapr_spin_table {
- 	u32	pir;
- };
+   "fsl,mpc8641d-pmc" should be listed for any chip whose PMC is
+   compatible; all statements below that apply to "fsl,mpc8548-pmc" also
+   apply to "fsl,mpc8641d-pmc".
  
--static struct ccsr_guts __iomem *guts;
-+static void __iomem *guts_regs;
- static u64 timebase;
- static int tb_req;
- static int tb_valid;
-@@ -62,7 +62,7 @@ static inline u32 get_phy_cpu_mask(void)
+   Compatibility does not include bit assignments in SCCR/PMCDR/DEVDISR; these
+-  bit assignments are indicated via the sleep specifier in each device's
+-  sleep property.
++  bit assignments are indicated via the clock nodes.  Device which has a
++  controllable clock source should have a "fsl,pmc-handle" property pointing
++  to the clock node.
  
- static void mpc85xx_timebase_freeze(int freeze)
- {
--	struct ccsr_rcpm __iomem *rcpm = (typeof(rcpm))guts;
-+	struct ccsr_rcpm __iomem *rcpm = guts_regs;
- 	u32 mask = get_phy_cpu_mask();
+ - reg: For devices compatible with "fsl,mpc8349-pmc", the first resource
+   is the PMC block, and the second resource is the Clock Configuration
+@@ -33,31 +38,35 @@ Properties:
+   this is a phandle to an "fsl,gtm" node on which timer 4 can be used as
+   a wakeup source from deep sleep.
  
- 	if (freeze)
-@@ -76,6 +76,7 @@ static void mpc85xx_timebase_freeze(int freeze)
- #else
- static void mpc85xx_timebase_freeze(int freeze)
- {
-+	struct ccsr_guts __iomem *guts = guts_regs;
- 	uint32_t mask;
+-Sleep specifiers:
++Clock nodes:
++The clock nodes are to describe the masks in PM controller registers for each
++soc clock.
++- fsl,pmcdr-mask: For "fsl,mpc8548-pmc"-compatible devices, the mask will be
++  ORed into PMCDR before suspend if the device using this clock is the wake-up
++  source and need to be running during low power mode; clear the mask if
++  otherwise.
  
- 	mask = CCSR_GUTS_DEVDISR_TB0 | CCSR_GUTS_DEVDISR_TB1;
-@@ -84,6 +85,7 @@ static void mpc85xx_timebase_freeze(int freeze)
- 	else
- 		clrbits32(&guts->devdisr, mask);
+-  fsl,mpc8349-pmc: Sleep specifiers consist of one cell.  For each bit
+-  that is set in the cell, the corresponding bit in SCCR will be saved
+-  and cleared on suspend, and restored on resume.  This sleep controller
+-  supports disabling and resuming devices at any time.
++- fsl,sccr-mask: For "fsl,mpc8349-pmc"-compatible devices, the corresponding
++  bit specified by the mask in SCCR will be saved and cleared on suspend, and
++  restored on resume.
  
-+	/* read back to push the previous write */
- 	in_be32(&guts->devdisr);
- }
- #endif
-@@ -128,7 +130,45 @@ static void mpc85xx_take_timebase(void)
- 	local_irq_restore(flags);
- }
+-  fsl,mpc8536-pmc: Sleep specifiers consist of three cells, the third of
+-  which will be ORed into PMCDR upon suspend, and cleared from PMCDR
+-  upon resume.  The first two cells are as described for fsl,mpc8578-pmc.
+-  This sleep controller only supports disabling devices during system
+-  sleep, or permanently.
+-
+-  fsl,mpc8548-pmc: Sleep specifiers consist of one or two cells, the
+-  first of which will be ORed into DEVDISR (and the second into
+-  DEVDISR2, if present -- this cell should be zero or absent if the
+-  hardware does not have DEVDISR2) upon a request for permanent device
+-  disabling.  This sleep controller does not support configuring devices
+-  to disable during system sleep (unless supported by another compatible
+-  match), or dynamically.
++- fsl,devdisr-mask: Contain one or two cells, depending on the availability of
++  DEVDISR2 register.  For compatible devices, the mask will be ORed into DEVDISR
++  or DEVDISR2 when the clock should be permenently disabled.
  
-+static void core_reset_erratum(int hw_cpu)
-+{
-+#ifdef CONFIG_PPC_E500MC
-+	struct ccsr_rcpm __iomem *rcpm = guts_regs;
-+
-+	clrbits32(&rcpm->cnapcr, 1 << hw_cpu);
-+#endif
-+}
-+
- #ifdef CONFIG_HOTPLUG_CPU
-+#ifdef CONFIG_PPC_E500MC
-+static void __cpuinit smp_85xx_mach_cpu_die(void)
-+{
-+	unsigned int cpu = smp_processor_id();
-+
-+	local_irq_disable();
-+	idle_task_exit();
-+	mb();
-+
-+	mtspr(SPRN_TCR, 0);
-+
-+	__flush_disable_L1();
-+	disable_backside_L2_cache();
-+
-+	generic_set_cpu_dead(cpu);
-+
-+	while (1);
-+}
-+
-+void platform_cpu_die(unsigned int cpu)
-+{
-+	unsigned int hw_cpu = get_hard_smp_processor_id(cpu);
-+	struct ccsr_rcpm __iomem *rcpm = guts_regs;
-+
-+	/* Core Nap Operation */
-+	setbits32(&rcpm->cnapcr, 1 << hw_cpu);
-+}
-+#else
-+/* for e500v1 and e500v2 */
- static void __cpuinit smp_85xx_mach_cpu_die(void)
- {
- 	unsigned int cpu = smp_processor_id();
-@@ -156,6 +196,7 @@ static void __cpuinit smp_85xx_mach_cpu_die(void)
- 	while (1)
- 		;
- }
-+#endif /* CONFIG_PPC_E500MC */
- #endif
+ Example:
  
- static inline void flush_spin_table(void *spin_table)
-@@ -228,6 +269,13 @@ static int __cpuinit smp_85xx_kick_cpu(int nr)
- 		flush_spin_table(spin_table);
- 
- 		/*
-+		 * Due to an erratum that core hard reset and core warm reset
-+		 * are unable to wake up cores from power management modes,
-+		 * wake up cores before reset.
-+		 */
-+		core_reset_erratum(hw_cpu);
+-	power@b00 {
+-		compatible = "fsl,mpc8313-pmc", "fsl,mpc8349-pmc";
+-		reg = <0xb00 0x100 0xa00 0x100>;
+-		interrupts = <80 8>;
++	power@e0070 {
++		compatible = "fsl,mpc8536-pmc", "fsl,mpc8548-pmc";
++		reg = <0xe0070 0x20>;
 +
-+		/*
- 		 * We don't set the BPTR register here since it already points
- 		 * to the boot page properly.
- 		 */
-@@ -436,9 +484,9 @@ void __init mpc85xx_smp_init(void)
- 
- 	np = of_find_matching_node(NULL, mpc85xx_smp_guts_ids);
- 	if (np) {
--		guts = of_iomap(np, 0);
-+		guts_regs = of_iomap(np, 0);
- 		of_node_put(np);
--		if (!guts) {
-+		if (!guts_regs) {
- 			pr_err("%s: Could not map guts node address\n",
- 								__func__);
- 			return;
++		etsec1_clk: soc-clk@24 {
++			fsl,pmcdr-mask = <0x00000080>;
++		};
++		etsec2_clk: soc-clk@25 {
++			fsl,pmcdr-mask = <0x00000040>;
++		};
++		etsec3_clk: soc-clk@26 {
++			fsl,pmcdr-mask = <0x00000020>;
++		};
+ 	};
 -- 
 1.7.3
 
