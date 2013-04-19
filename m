@@ -1,163 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab3DSFCa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 01:02:30 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:59151 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab3DSFC2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 01:02:28 -0400
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: rusty@rustcorp.com.au, dhowells@redhat.com, herbert@gondor.hengli.com.au,
-        davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH v3] X.509: Support parse long form of length octets in Authority Key Identifier
-Date: Fri, 19 Apr 2013 13:01:23 +0800
-Message-Id: <1366347683-29707-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	id S1752979Ab3DSFPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 01:15:45 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:57861 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751294Ab3DSFPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 01:15:42 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] e1000e: fix mismatch in mutex lock-unlock in e1000_reset_hw_82571()
+Date: Thu, 18 Apr 2013 22:15:18 -0700
+Message-Id: <1366348518-5594-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chun-Yi Lee <jlee@suse.com>
+If e1000_get_hw_semaphore_82574() succeed, it acquires swflag_mutex,
+otherwise it does not. But the returned value of
+e1000_get_hw_semaphore_82574() is ignored, so unlocking of swflag_mutex
+happens anyway.
 
-Per X.509 spec in 4.2.1.1 section, the structure of Authority Key
-Identifier Extension is:
+The patch fixes the issue by breaking reset if MIC ownership is not acquired.
 
-   AuthorityKeyIdentifier ::= SEQUENCE {
-      keyIdentifier             [0] KeyIdentifier           OPTIONAL,
-      authorityCertIssuer       [1] GeneralNames            OPTIONAL,
-      authorityCertSerialNumber [2] CertificateSerialNumber OPTIONAL  }
+Found by Linux Driver Verification project (linuxtesting.org).
 
-   KeyIdentifier ::= OCTET STRING
-
-When a certificate also provides
-authorityCertIssuer and authorityCertSerialNumber then the length of
-AuthorityKeyIdentifier SEQUENCE is likely to long form format.
-e.g.
-   The example certificate demos/tunala/A-server.pem in openssl source:
-
-X509v3 Authority Key Identifier:
-    keyid:49:FB:45:72:12:C4:CC:E1:45:A1:D3:08:9E:95:C4:2C:6D:55:3F:17
-    DirName:/C=NZ/L=Wellington/O=Really Irresponsible Authorisation Authority (RIAA)/OU=Cert-stamping/CN=Jackov al-Trades/emailAddress=none@fake.domain
-    serial:00
-
-Current parsing rule of OID_authorityKeyIdentifier only take care the
-short form format, it causes load certificate to modsign_keyring fail:
-
-[   12.061147] X.509: Extension: 47
-[   12.075121] MODSIGN: Problem loading in-kernel X.509 certificate (-74)
-
-So, this patch add the parsing rule for support long form format against
-Authority Key Identifier.
-
-v3:
-Changed the size check in "Short Form length" case, we allow v[3] smaller
-then (vlen - 4) because authorityCertIssuer and authorityCertSerialNumber
-are also possible attach in AuthorityKeyIdentifier sequence.
-
-v2:
- - Removed comma from author's name.
- - Moved 'Short Form length' comment inside the if-body.
- - Changed the type of sub to size_t.
- - Use ASN1_INDEFINITE_LENGTH rather than writing 0x80 and 127.
- - Moved the key_len's value assignment before alter v.
- - Fixed the typo of octets.
- - Add 2 to v before entering the loop for calculate the length.
- - Removed the comment of check vlen.
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Acked-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- crypto/asymmetric_keys/x509_cert_parser.c |   55 ++++++++++++++++++++++++----
- 1 files changed, 47 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/intel/e1000e/82571.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/crypto/asymmetric_keys/x509_cert_parser.c b/crypto/asymmetric_keys/x509_cert_parser.c
-index 7fabc4c..59ab6d2 100644
---- a/crypto/asymmetric_keys/x509_cert_parser.c
-+++ b/crypto/asymmetric_keys/x509_cert_parser.c
-@@ -373,6 +373,9 @@ int rsa_extract_mpi(void *context, size_t hdrlen,
- 	return 0;
- }
- 
-+/* The keyIdentifier in AuthorityKeyIdentifier SEQUENCE is tag(CONT,PRIM,0) */
-+#define SEQ_TAG_KEYID (ASN1_CONT << 6)
-+
- /*
-  * Process certificate extensions that are used to qualify the certificate.
-  */
-@@ -407,21 +410,57 @@ int x509_process_extension(void *context, size_t hdrlen,
+diff --git a/drivers/net/ethernet/intel/e1000e/82571.c b/drivers/net/ethernet/intel/e1000e/82571.c
+index 2faffbd..a6bd80e 100644
+--- a/drivers/net/ethernet/intel/e1000e/82571.c
++++ b/drivers/net/ethernet/intel/e1000e/82571.c
+@@ -1003,8 +1003,10 @@ static s32 e1000_reset_hw_82571(struct e1000_hw *hw)
+ 	default:
+ 		break;
  	}
+-	if (ret_val)
++	if (ret_val) {
+ 		e_dbg("Cannot acquire MDIO ownership\n");
++		return ret_val;
++	}
  
- 	if (ctx->last_oid == OID_authorityKeyIdentifier) {
-+		size_t key_len;
-+
- 		/* Get hold of the CA key fingerprint */
- 		if (vlen < 5)
- 			return -EBADMSG;
--		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)) ||
--		    v[1] != vlen - 2 ||
--		    v[2] != (ASN1_CONT << 6) ||
--		    v[3] != vlen - 4)
-+
-+		/* Authority Key Identifier must be a Constructed SEQUENCE */
-+		if (v[0] != (ASN1_SEQ | (ASN1_CONS << 5)))
- 			return -EBADMSG;
--		v += 4;
--		vlen -= 4;
+ 	ctrl = er32(CTRL);
  
--		f = kmalloc(vlen * 2 + 1, GFP_KERNEL);
-+		/* Authority Key Identifier is not indefinite length */
-+		if (unlikely(vlen == ASN1_INDEFINITE_LENGTH))
-+			return -EBADMSG;
-+
-+		if (vlen < ASN1_INDEFINITE_LENGTH) {
-+			/* Short Form length */
-+			if (v[1] != vlen - 2 ||
-+			    v[2] != SEQ_TAG_KEYID ||
-+			    v[3] > vlen - 4)
-+				return -EBADMSG;
-+
-+			key_len = v[3];
-+			v += 4;
-+		} else {
-+			/* Long Form length */
-+			size_t seq_len = 0;
-+			size_t sub = v[1] - ASN1_INDEFINITE_LENGTH;
-+
-+			if (sub > 2)
-+				return -EBADMSG;
-+
-+			/* calculate the length from subsequent octets */
-+			v += 2;
-+			for (i = 0; i < sub; i++) {
-+				seq_len <<= 8;
-+				seq_len |= v[i];
-+			}
-+
-+			if (seq_len != vlen - 2 - sub ||
-+			    v[sub] != SEQ_TAG_KEYID ||
-+			    v[sub + 1] > vlen - 4 - sub)
-+				return -EBADMSG;
-+
-+			key_len = v[sub + 1];
-+			v += (sub + 2);
-+		}
-+
-+		f = kmalloc(key_len * 2 + 1, GFP_KERNEL);
- 		if (!f)
- 			return -ENOMEM;
--		for (i = 0; i < vlen; i++)
-+		for (i = 0; i < key_len; i++)
- 			sprintf(f + i * 2, "%02x", v[i]);
- 		pr_debug("authority   %s\n", f);
- 		ctx->cert->authority = f;
 -- 
-1.6.4.2
+1.7.9.5
 
