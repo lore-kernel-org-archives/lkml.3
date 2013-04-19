@@ -1,139 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030880Ab3DSOwK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 10:52:10 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:60579 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030702Ab3DSOvw (ORCPT
+	id S1030897Ab3DSOwa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 10:52:30 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:51340 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030730Ab3DSOw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 10:51:52 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/3] posix_timers: New API to prevent from stopping the tick when timers are running
-Date: Fri, 19 Apr 2013 16:51:40 +0200
-Message-Id: <1366383100-17053-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1366383100-17053-1-git-send-email-fweisbec@gmail.com>
-References: <1366383100-17053-1-git-send-email-fweisbec@gmail.com>
+	Fri, 19 Apr 2013 10:52:27 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: <gregkh@linuxfoundation.org>, <tony@atomide.com>,
+        <rmk+kernel@arm.linux.org.uk>, <linux-serial@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] arm: mach-omap2: remove "OMAP_DEVICE_NO_IDLE_ON_SUSPEND" check
+References: <1366198467-6757-1-git-send-email-sourav.poddar@ti.com>
+	<1366198467-6757-5-git-send-email-sourav.poddar@ti.com>
+	<87li8f4sum.fsf@linaro.org> <5170434C.7040706@ti.com>
+	<874nf31opn.fsf@linaro.org> <51714CCC.9090800@ti.com>
+Date: Fri, 19 Apr 2013 07:52:23 -0700
+In-Reply-To: <51714CCC.9090800@ti.com> (Sourav Poddar's message of "Fri, 19
+	Apr 2013 19:25:24 +0530")
+Message-ID: <871ua6zi6w.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bring a new helper that the full dynticks infrastructure can
-call in order to know if it can safely stop the tick from
-the posix cpu timers subsystem point of view.
+Sourav Poddar <sourav.poddar@ti.com> writes:
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/posix-timers.h |    2 ++
- kernel/posix-cpu-timers.c    |   41 ++++++++++++++++++++++++++---------------
- 2 files changed, 28 insertions(+), 15 deletions(-)
+[...]
 
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 042058f..3698d9d 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -122,6 +122,8 @@ void run_posix_cpu_timers(struct task_struct *task);
- void posix_cpu_timers_exit(struct task_struct *task);
- void posix_cpu_timers_exit_group(struct task_struct *task);
- 
-+bool posix_cpu_timers_can_stop_tick(struct task_struct *tsk);
-+
- void set_process_cpu_timer(struct task_struct *task, unsigned int clock_idx,
- 			   cputime_t *newval, cputime_t *oldval);
- 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 0bc3356..84d5cb3 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -155,6 +155,21 @@ static void bump_cpu_timer(struct k_itimer *timer,
- 	}
- }
- 
-+/**
-+ * task_cputime_zero - Check a task_cputime struct for all zero fields.
-+ *
-+ * @cputime:	The struct to compare.
-+ *
-+ * Checks @cputime to see if all fields are zero.  Returns true if all fields
-+ * are zero, false if any field is nonzero.
-+ */
-+static inline int task_cputime_zero(const struct task_cputime *cputime)
-+{
-+	if (!cputime->utime && !cputime->stime && !cputime->sum_exec_runtime)
-+		return 1;
-+	return 0;
-+}
-+
- static inline cputime_t prof_ticks(struct task_struct *p)
- {
- 	cputime_t utime, stime;
-@@ -654,6 +669,17 @@ static void posix_cpu_timer_kick_nohz(void)
- {
- 	schedule_work(&nohz_kick_work);
- }
-+
-+bool posix_cpu_timers_can_stop_tick(struct task_struct *tsk)
-+{
-+	if (!task_cputime_zero(&tsk->cputime_expires))
-+		return true;
-+
-+	if (tsk->signal->cputimer.running)
-+		return true;
-+
-+	return false;
-+}
- #else
- static inline void posix_cpu_timer_kick_nohz(void) { }
- #endif
-@@ -1032,21 +1058,6 @@ static void check_cpu_itimer(struct task_struct *tsk, struct cpu_itimer *it,
- 	}
- }
- 
--/**
-- * task_cputime_zero - Check a task_cputime struct for all zero fields.
-- *
-- * @cputime:	The struct to compare.
-- *
-- * Checks @cputime to see if all fields are zero.  Returns true if all fields
-- * are zero, false if any field is nonzero.
-- */
--static inline int task_cputime_zero(const struct task_cputime *cputime)
--{
--	if (!cputime->utime && !cputime->stime && !cputime->sum_exec_runtime)
--		return 1;
--	return 0;
--}
--
- /*
-  * Check for any per-thread CPU timers that have fired and move them
-  * off the tsk->*_timers list onto the firing list.  Per-thread timers
--- 
-1.7.5.4
+> Yes, got your point. omap_device_idle should not be called only
+> for console uart.
+>
+> Just did a quick testing by including the following hunk on top of my
+> patch series..
+>
+> diff --git a/arch/arm/mach-omap2/omap_device.c
+> b/arch/arm/mach-omap2/omap_device.c
+> index c226946..7480e87 100644
+> --- a/arch/arm/mach-omap2/omap_device.c
+> +++ b/arch/arm/mach-omap2/omap_device.c
+> @@ -617,8 +617,10 @@ static int _od_suspend_noirq(struct device *dev)
+>         ret = pm_generic_suspend_noirq(dev);
+>
+>         if (!ret && !pm_runtime_status_suspended(dev)) {
+> -               if (pm_generic_runtime_suspend(dev) == 0)
+> +               if (pm_generic_runtime_suspend(dev) == 0) {
+> +                       omap_device_idle(pdev);
+>                         od->flags |= OMAP_DEVICE_SUSPENDED;
+> +               }
+>         }
+>
+>         return ret;
+> @@ -631,6 +633,7 @@ static int _od_resume_noirq(struct device *dev)
+>
+>         if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
+>             !pm_runtime_status_suspended(dev)) {
+> +               omap_device_enable(pdev);
+>                 od->flags &= ~OMAP_DEVICE_SUSPENDED;
+>                 pm_generic_runtime_resume(dev);
+>         }
+> And found the wakeup from UART is no more functional.
+> So, the omap_device_idle gets called for console UART also, thereby
+> preventing the "no_idle_on_suspend" theory.
+>
+> Hence, merely putting prepare/complete callback the way I did is not
+> helping.
+> We need to delete omap_device_idle also, which I agree is not correct.
+> So, we need a way to bypass this "omap_device_idle"
+> call for console UART. ?
+
+OK, I see what's happening now.
+
+How about this: rather than using prepare/complete callbacks, can you
+use the runtime_suspend callback to return an error code during suspend?
+(only for the console, and only when no_console_suspend is enabled, and
+only during suspend)
+
+Since _od_suspend_noirq checks to be sure the drivers ->runtime_suspend
+callback succeeds before it calls omap_device_idle(), if you report a
+failure, omap_device_idle will not be called.
+
+Kevin
+
 
