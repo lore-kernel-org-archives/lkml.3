@@ -1,91 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114Ab3DSRGQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 13:06:16 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:53572 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959Ab3DSRGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 13:06:15 -0400
-X-IronPort-AV: E=Sophos;i="4.87,510,1363132800"; 
-   d="scan'208";a="20499641"
-Date: Fri, 19 Apr 2013 18:06:01 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Xen-devel] [PATCH v6 1/4] arm: introduce psci_smp_ops
-In-Reply-To: <alpine.LFD.2.03.1304191223280.17375@syhkavp.arg>
-Message-ID: <alpine.DEB.2.02.1304191739120.7254@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com> <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com> <20130418161341.GB14496@n2100.arm.linux.org.uk> <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
- <alpine.LFD.2.03.1304181237480.17375@syhkavp.arg> <alpine.DEB.2.02.1304181749260.7254@kaball.uk.xensource.com> <alpine.LFD.2.03.1304181336280.17375@syhkavp.arg> <alpine.DEB.2.02.1304191035360.7254@kaball.uk.xensource.com> <alpine.LFD.2.03.1304191146230.17375@syhkavp.arg>
- <1366388166.29403.2.camel@dagon.hellion.org.uk> <alpine.LFD.2.03.1304191223280.17375@syhkavp.arg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1752276Ab3DSRHA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 13:07:00 -0400
+Received: from mailrelay1.diasemi.com ([82.210.246.133]:33767 "EHLO
+	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab3DSRG7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 13:06:59 -0400
+Message-Id: <201304191705.r3JH5oxp017581@latitude>
+From: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Date: Fri, 19 Apr 2013 17:56:28 +0100
+Subject: [NEW DRIVER V6 7/7] drivers/regulator: DA9058 REGULATOR driver
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lgirdwood@gmail.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: David Dajun Chen <david.chen@diasemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Apr 2013, Nicolas Pitre wrote:
-> On Fri, 19 Apr 2013, Ian Campbell wrote:
-> 
-> > On Fri, 2013-04-19 at 16:47 +0100, Nicolas Pitre wrote:
-> > > No one should be probing registers without making sure it is safe to do 
-> > > so.  Even on non virtualized hardware this can be a dangerous thing to 
-> > > do.
-> > 
-> > Won't people writing per machine code consider, not unreasonably, that
-> > having been called through a mdesc machine specific hook constitutes
-> > enough "making sure" that they think it is safe to touch registers which
-> > are specific to that machine?
-> 
-> Remember that this hook was introduced to decide at run time between 
-> different possibilities for SMP ops on the _same_ machine configuration.  
-> That machine shouldn't do things which is not permitted on either 
-> possible alternatives already.  So far the actual usage of that hook 
-> only looks in the DT to make a decision.  But even if it were to touch 
-> the hardware, that means it has to be safe to do so on all the possible 
-> hardware variations this mdesc is associated to.
+This patch is relative to next-20130419 of linux-next
 
-This last sentence is the key.
+This is the REGULATOR component driver of the Dialog DA9058 PMIC.
+This driver is just one component of the whole DA9058 PMIC driver.
+It depends on the CORE component driver of the DA9058 MFD.
 
-It is not guaranteed that being safe on "all the possible hardware
-variations this mdesc is associated to" and being safe on Xen are the
-same thing.
+There are 4 CamelCase warnings from scripts/checkpatch.pl, but they
+are due to struture field names in the regulator core not due to
+names created in this driver
 
-What if the same magic configuration register exists on all the possible
-variations of the platform?
-I understand that it is unlikely but I think it is a possibility.
+Changes relative to V5 of this patch:
+- rebased to next-20130419 in git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+- removed redundant #include <linux/mfd/da9058/version.h>
+- reverted regulator_desc.min_uv to min_uV
+- reverted regulator_desc.uv_step to uV_step
+- reverted regulation_constraints.min_uv to min_uV
+- reverted regulation_constraints.max_uv to max_uV
+- corrected dates on copyright statements
+- removed system specific regulator consumer
+- use multiple exit points in functions when no common code
+  is to be executed.
+- embedded a regulator_init_data in the platform data
 
-If we don't take further precautions I'll be forced to regularly scan
-the list for smp_init implementations and look for possible breakages,
-pointing the unaware author of the patches to this conversation.
-Honestly it is not my idea of fun.
+Signed-off-by: Anthony Olech <anthony.olech.opensource@diasemi.com>
+Signed-off-by: David Dajun Chen <david.chen@diasemi.com>
+---
+ drivers/regulator/Kconfig            |   11 ++
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/da9058-regulator.c |  199 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 211 insertions(+)
+ create mode 100644 drivers/regulator/da9058-regulator.c
 
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 8bb2644..0e36ef6 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -64,6 +64,17 @@ config REGULATOR_USERSPACE_CONSUMER
+ 
+ 	  If unsure, say no.
+ 
++config REGULATOR_DA9058
++	tristate "Support regulators on Dialog Semiconductor DA9058 PMIC"
++	depends on MFD_DA9058
++	help
++	  Say y here to support the BUCKs and LDOs regulators found on
++	  Dialog Semiconductor DA9058 PMIC.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called da9058-regulator.
++
++
+ config REGULATOR_GPIO
+ 	tristate "GPIO regulator support"
+ 	depends on GPIOLIB
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 47a34ff..d3a1dc4 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
+ obj-$(CONFIG_REGULATOR_FAN53555) += fan53555.o
+ obj-$(CONFIG_REGULATOR_GPIO) += gpio-regulator.o
+ obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
++obj-$(CONFIG_REGULATOR_DA9058) += da9058-regulator.o
+ obj-$(CONFIG_REGULATOR_LP3971) += lp3971.o
+ obj-$(CONFIG_REGULATOR_LP3972) += lp3972.o
+ obj-$(CONFIG_REGULATOR_LP872X) += lp872x.o
+diff --git a/drivers/regulator/da9058-regulator.c b/drivers/regulator/da9058-regulator.c
+new file mode 100644
+index 0000000..2e8672f
+--- /dev/null
++++ b/drivers/regulator/da9058-regulator.c
+@@ -0,0 +1,199 @@
++/*
++ *  Copyright (C) 2012, 2013 Dialog Semiconductor Ltd.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/driver.h>
++#include <linux/regmap.h>
++#include <linux/mfd/core.h>
++
++#include <linux/mfd/da9058/registers.h>
++#include <linux/mfd/da9058/core.h>
++#include <linux/mfd/da9058/regulator.h>
++
++struct da9058_regulator {
++	struct da9058 *da9058;
++	int ramp_register;
++	int ramp_enable_mask;
++	struct platform_device *pdev;
++	struct regulator_dev *reg_dev;
++	struct regulator_desc desc;
++};
++
++static struct regulator_ops da9058_buck_regulator_ops = {
++	.map_voltage = regulator_map_voltage_linear,
++	.list_voltage = regulator_list_voltage_linear,
++	.set_voltage_time_sel = regulator_set_voltage_time_sel,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++};
++
++static struct regulator_ops da9058_ldo_regulator_ops = {
++	.map_voltage = regulator_map_voltage_linear,
++	.list_voltage = regulator_list_voltage_linear,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++};
++
++static int da9058_regulator_probe(struct platform_device *pdev)
++{
++	struct da9058 *da9058 = dev_get_drvdata(pdev->dev.parent);
++	const struct mfd_cell *cell = mfd_get_cell(pdev);
++	struct da9058_regulator_pdata *rpdata;
++	struct da9058_regulator *reg;
++	struct regulator_dev *rdev;
++	struct regulator_config config = { };
++	int ret;
++	unsigned int val;
++	const char *regulator_name;
++	int min_uv;
++	int max_uv;
++
++	if (cell == NULL)
++		return -ENODEV;
++
++	rpdata = cell->platform_data;
++
++	if (rpdata == NULL)
++		return -EINVAL;
++
++	if (rpdata->control_register == 0)
++		return -EINVAL;
++
++	if (rpdata->control_enable_mask == 0)
++		return -EINVAL;
++
++	regulator_name = rpdata->init.constraints.name;
++
++	if (!regulator_name)
++		return -EINVAL;
++
++	min_uv = rpdata->init.constraints.min_uV;
++	max_uv = rpdata->init.constraints.max_uV;
++
++	reg = devm_kzalloc(&pdev->dev, sizeof(struct da9058_regulator),
++			   GFP_KERNEL);
++	if (!reg)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, reg);
++
++	reg->da9058 = da9058;
++	reg->pdev = pdev;
++	reg->ramp_register = rpdata->ramp_register;
++	reg->ramp_enable_mask = rpdata->ramp_enable_mask;
++
++	reg->desc.name = regulator_name;
++	reg->desc.id = rpdata->regulator_id;
++	reg->desc.type = REGULATOR_VOLTAGE;
++	reg->desc.n_voltages = 1;
++
++	if (rpdata->control_voltage_step > 0)
++		reg->desc.n_voltages += (max_uv - min_uv) /
++					rpdata->control_voltage_step;
++
++	reg->desc.owner = THIS_MODULE;
++	reg->desc.enable_reg = rpdata->control_register;
++	reg->desc.enable_mask = rpdata->control_enable_mask;
++
++	reg->desc.vsel_reg = rpdata->control_register;
++	reg->desc.vsel_mask = rpdata->control_step_mask;
++
++	reg->desc.min_uV = min_uv;
++	reg->desc.uV_step = rpdata->control_voltage_step;
++
++	if (reg->ramp_register) {
++		reg->desc.apply_reg = rpdata->ramp_register;
++		reg->desc.apply_bit = rpdata->ramp_enable_mask;
++		reg->desc.ramp_delay = 1000;
++		reg->desc.ops = &da9058_buck_regulator_ops;
++	} else {
++		reg->desc.ops = &da9058_ldo_regulator_ops;
++	}
++
++	config.dev = pdev->dev.parent;
++	config.init_data = &rpdata->init;
++	config.driver_data = reg;
++	config.regmap = da9058->regmap;
++
++	rdev = regulator_register(&reg->desc, &config);
++
++	if (IS_ERR(rdev)) {
++		ret = PTR_ERR(rdev);
++		dev_err(&pdev->dev, "failed %d to register %s\n",
++			ret, regulator_name);
++		goto failed_to_register;
++	}
++	reg->reg_dev = rdev;
++
++	/* before we do anything check the lock bit */
++	ret = da9058_reg_read(da9058, DA9058_SUPPLY_REG, &val);
++	if (ret)
++		goto unlock_failed;
++
++	if (val & DA9058_SUPPLY_VLOCK)
++		ret = da9058_clear_bits(da9058, DA9058_SUPPLY_REG,
++					DA9058_SUPPLY_VLOCK);
++	if (ret)
++		goto unlock_failed;
++
++	goto exit;
++
++unlock_failed:
++	regulator_unregister(rdev);
++failed_to_register:
++	platform_set_drvdata(pdev, NULL);
++exit:
++	return ret;
++}
++
++static int da9058_regulator_remove(struct platform_device *pdev)
++{
++	struct regulator_dev *rdev = platform_get_drvdata(pdev);
++
++	regulator_unregister(rdev);
++
++	return 0;
++}
++
++static struct platform_driver da9058_regulator_driver = {
++	.probe = da9058_regulator_probe,
++	.remove = da9058_regulator_remove,
++	.driver = {
++		.name = "da9058-regulator",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init da9058_regulator_init(void)
++{
++	return platform_driver_register(&da9058_regulator_driver);
++}
++
++subsys_initcall(da9058_regulator_init);
++
++static void __exit da9058_regulator_exit(void)
++{
++	platform_driver_unregister(&da9058_regulator_driver);
++}
++
++module_exit(da9058_regulator_exit);
++
++MODULE_DESCRIPTION("Dialog DA9058 PMIC voltage and current regulator");
++MODULE_AUTHOR("Anthony Olech <Anthony.Olech@diasemi.com>");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:da9058-regulator");
+-- 
+end-of-patch for NEW DRIVER V6
 
-> And if Xen wants to emulate one of those hardware alternatives, then it 
-> better be ready to emulate it properly, or manage for _another_ mdesc to 
-> be selected instead.  That's why mach-virt was introduced.
-
-I don't mean to argue pointlessly here, but I thought that it was clear
-that Xen does not emulate any hardware interfaces at all.
-
-Of course when a convenient virtualization aware hardware interface is
-available (the vGIC for example) Xen is going to use it, but other than
-that no emulation is going to be done.
-
-
-> So in my opinion there is just no issue here.
-
-Not now, and maybe not even in the near future.
-But I feel that we are taking an error prone approach.
