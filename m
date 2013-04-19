@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab3DSHpi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 03:45:38 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:34240 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754760Ab3DSHpg (ORCPT
+	id S1757384Ab3DSHtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 03:49:24 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:43668 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757024Ab3DSHtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 03:45:36 -0400
-Date: Fri, 19 Apr 2013 09:37:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
-        Clark Williams <williams@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v4 0/4]  mutex: Improve mutex performance by doing less
- atomic-ops & better spinning
-Message-ID: <20130419073731.GD20897@gmail.com>
-References: <1366226594-5506-1-git-send-email-Waiman.Long@hp.com>
+	Fri, 19 Apr 2013 03:49:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366226594-5506-1-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1366345833.4708.17.camel@marge.simpson.net>
+References: <1366302867-5055-1-git-send-email-vincent.guittot@linaro.org>
+	<1366345833.4708.17.camel@marge.simpson.net>
+Date: Fri, 19 Apr 2013 09:49:19 +0200
+Message-ID: <CAKfTPtAaUG4Yi5xienLRvnO7Q8nTWjk9a0azRWwdqmvCu3NSrA@mail.gmail.com>
+Subject: Re: [PATCH Resend v6] sched: fix wrong rq's runnable_avg update with
+ rt tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 19 April 2013 06:30, Mike Galbraith <efault@gmx.de> wrote:
+> On Thu, 2013-04-18 at 18:34 +0200, Vincent Guittot wrote:
+>> The current update of the rq's load can be erroneous when RT tasks are
+>> involved
+>>
+>> The update of the load of a rq that becomes idle, is done only if the avg_idle
+>> is less than sysctl_sched_migration_cost. If RT tasks and short idle duration
+>> alternate, the runnable_avg will not be updated correctly and the time will be
+>> accounted as idle time when a CFS task wakes up.
+>>
+>> A new idle_enter function is called when the next task is the idle function
+>> so the elapsed time will be accounted as run time in the load of the rq,
+>> whatever the average idle time is. The function update_rq_runnable_avg is
+>> removed from idle_balance.
+>>
+>> When a RT task is scheduled on an idle CPU, the update of the rq's load is
+>> not done when the rq exit idle state because CFS's functions are not
+>> called. Then, the idle_balance, which is called just before entering the
+>> idle function, updates the rq's load and makes the assumption that the
+>> elapsed time since the last update, was only running time.
+>>
+>> As a consequence, the rq's load of a CPU that only runs a periodic RT task,
+>> is close to LOAD_AVG_MAX whatever the running duration of the RT task is.
+>
+> Why do we care what rq's load says, if the only thing running is a
+> periodic RT task?  I _think_ I recall that stuff being put under the
 
-* Waiman Long <Waiman.Long@hp.com> wrote:
+cfs scheduler will use a wrong rq load the next time it wants to schedule a task
 
-> v3->v4
->  - Merge patch 4 into patch 2
->  - Move patch 5 forward to become patch 1
-> 
-> v2->v3
->   - Add patch 4 to remove new typedefs introduced in patch 2.
->   - Add patch 5 to remove SCHED_FEAT_OWNER_SPIN and move the mutex
->     spinning code to mutex.c.
-> 
-> v1->v2
->  - Remove the 2 mutex spinner patches and replaced it by another one
->    to improve the mutex spinning process.
->  - Remove changes made to kernel/mutex.h & localize changes in
->    kernel/mutex.c.
->  - Add an optional patch to remove architecture specific check in patch
->    1.
+> throttle specifically to not waste cycles doing that on every
+> microscopic idle.
 
-The patches look pretty nice now - thanks Waiman. I have applied them to 
-tip:core/locking and started testing them.
+yes but this lead to the wrong computation of runnable_avg_sum. To be
+more precise, we only need to call __update_entity_runnable_avg,
+__update_tg_runnable_avg is not mandatory in this step.
 
-Thanks,
+>
+> Seems to me when scheduling an rt task, you want to do as little other
+> than switching to/from the rt task as possible.  I don't let rt tasks do
+> idle balancing either, their job isn't to balance fair class on the way
+> out the door, it's to get off/onto the cpu ASAP, and do rt work.
 
-	Ingo
+I agree but the patch is not about balancing fair task but keep
+coherent runnable value
+
+Vincent
+>
+> -Mike
+>
