@@ -1,158 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590Ab3DSRFR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 13:05:17 -0400
-Received: from mailrelay1.diasemi.com ([82.210.246.133]:62282 "EHLO
-	mailrelay1.diasemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab3DSRFO (ORCPT
+	id S1751868Ab3DSRFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 13:05:34 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:40058 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab3DSRFb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 13:05:14 -0400
-Message-Id: <201304191703.r3JH3du0017574@latitude>
-From: Anthony Olech <anthony.olech.opensource@diasemi.com>
-Date: Fri, 19 Apr 2013 17:56:29 +0100
-Subject: [NEW DRIVER V6 0/7] DA9058 PMIC - please comment on this new driver
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Andrew Jones <drjones@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Eric Andersson <eric.andersson@unixphere.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Guenter Roeck <linux@roeck-us.net>
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-iio@vger.kernel.org
-Cc: linux-input@vger.kernel.org
-Cc: lm-sensors@lm-sensors.org
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Michael Krufky <mkrufky@kernellabs.com>
-Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: rtc-linux@googlegroups.com
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Steven Toth <stoth@kernellabs.com>
+	Fri, 19 Apr 2013 13:05:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130419082546.GA25370@gmail.com>
+References: <1365811457-31924-1-git-send-email-paul.gortmaker@windriver.com>
+	<20130415093330.GC17715@gmail.com>
+	<1366283681.19383.5.camel@laptop>
+	<51701722.1070407@windriver.com>
+	<20130419082546.GA25370@gmail.com>
+Date: Fri, 19 Apr 2013 23:05:30 +0600
+Message-ID: <CADZ9YHiy59tASG3uMXqdOv=RY79SMSzZb47oBh2uZGqfbCR+YQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/2] sched: move content out of core files for load average
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is submission attempt number 6 to have this driver included in
-the linux kernel source tree. This is the driver for the Dialog DA9058.
+On Fri, Apr 19, 2013 at 2:25 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+>
+>> On 13-04-18 07:14 AM, Peter Zijlstra wrote:
+>> > On Mon, 2013-04-15 at 11:33 +0200, Ingo Molnar wrote:
+>> >> * Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+>> >>
+>> >>> Recent activity has had a focus on moving functionally related blocks of stuff
+>> >>> out of sched/core.c into stand-alone files.  The code relating to load average
+>> >>> calculations has grown significantly enough recently to warrant placing it in a
+>> >>> separate file.
+>> >>>
+>> >>> Here we do that, and in doing so, we shed ~20k of code from sched/core.c (~10%).
+>> >>>
+>> >>> A couple small static functions in the core sched.h header were also localized
+>> >>> to their singular user in sched/fair.c at the same time, with the goal to also
+>> >>> reduce the amount of "broadcast" content in that sched.h file.
+>> >>
+>> >> Nice!
+>> >>
+>> >> Peter, is this (and the naming of the new file) fine with you too?
+>> >
+>> > Yes and no.. that is I do like the change, but I don't like the
+>> > filename. We have _waaaay_ too many different things we call load_avg.
+>> >
+>> > That said, I'm having a somewhat hard time coming up with a coherent
+>> > alternative :/
+>>
+>> Several of the relocated functions start their name with "calc_load..."
+>> Does "calc_load.c" sound any better?
+>
+> Peter has a point about load_avg being somewhat of a misnomer: that's not your
+> fault in any way, we created overlapping naming within the scheduler and are now
+> hurting from it.
+>
+> Here are the main scheduler 'load' concepts we have right now:
+>
+>  - The externally visible 'average load' value extracted by tools like 'top' via
+>    /proc/loadavg and handled by fs/proc/loadavg.c. Internally the naming is all
+>    over the map: the fields that are updated are named 'avenrun[]', most other
+>    variables and methods are named calc_load_*(), and a few callbacks are named
+>    *_cpu_load_*().
+>
+>  - rq->cpu_load, a weighted, vectored scheduler-internal notion of task load
+>    average with multiple run length averages. Only exposed by debug interfaces but
+>    otherwise relied on by the scheduler for SMP load balancing.
+>
+>  - se->avg - per entity (per task) load average. This is integrated differently
+>    from the cpu_load - but work is ongoing to possibly integrate it with the
+>    rq->cpu_load metric. This metric is used for CPU internal execution time
+>    allocation and timeslicing, based on nice value priorities and cgroup
+>    weights and constraints.
+>
+> Work is ongoing to integrate rq->cpu_load and se->avg - eventually they will
+> become one metric.
+>
+> It might eventually make sense to integrate the 'average load' calculation as well
+> with all this - as they really have a similar purpose, the avenload[] vector of
+> averages is conceptually similar to the rq->cpu_load[] vector of averages.
+>
+> So I'd suggest to side-step all that existing confusion and simply name the new
+> file kernel/sched/proc.c - our external /proc scheduler ABI towards userspace.
+> This is similar to the already existing kernel/irq/proc.c pattern.
+>
+Well, kernel/sched/stat.c - also exposes scheduler ABI to userspace.
+Aren't these things going to introduce confusion (stat.c and proc.c
+under same sched directory) ?
 
-The DA9058 is a low power Power Management Integrated Circuit with extra
-functionality. It is a Multi Function Device controlled only from an I2C
-bus whose components can raise an interrupt request on a single IRQ line.
-
-The driver for the DA9058 consists of a core (i2c) device driver that
-instantiates the individual component device drivers for:
-
-adc - 5 ADC channels
-gpio - 2 available pins
-onkey - 1 device
-regulator - 4 BUCKS, 19 LDO and 3 fixed
-rtc - low power clock
-hwmon - 5 monitored voltages/temperatures
-
-All the above six component device drivers depend on the 'core'
-component driver, which is number one in the patch series.
-
-Each component driver for the Dialog DA9058 will follow as an e-mail
-patch relative to 
-
-This driver has been tested on a Samsung SMDK6410 connected to a Dialog
-DA9058 Evaluation Board via one GPIO and a 3-wire I2C connection.
-
-All the components can be builtin to the kernel or compiled as modules.
-As far as I can tell, all the latest APIs both for the core driver and
-all the component drivers have been adhered to, but if I have missed
-something please let me know.
-
-In a clean check out of next-20130419 in linux-next, each patch has been
-applied individually and the final result has been built successfully.
-
-Many thanks,
-Anthony Olech, Dialog Semiconductor Ltd.
-
-Tony Olech (at Home) (7):
-  drivers/mfd: DA9058 MFD core driver
-  drivers/iio/adc: DA9058 ADC driver
-  drivers/input/misc: DA9058 ONKEY driver
-  drivers/rtc: DA9058 RTC driver
-  drivers/gpio: DA9058 GPIO driver
-  drivers/hwmon: DA9058 HWMON driver
-  drivers/regulator: DA9058 REGULATOR driver
-
- Documentation/hwmon/da9058           |   38 ++
- drivers/gpio/Kconfig                 |   12 +
- drivers/gpio/Makefile                |    1 +
- drivers/gpio/gpio-da9058.c           |  376 ++++++++++++++
- drivers/hwmon/Kconfig                |   10 +
- drivers/hwmon/Makefile               |    3 +-
- drivers/hwmon/da9058-hwmon.c         |  330 ++++++++++++
- drivers/iio/adc/Kconfig              |   12 +
- drivers/iio/adc/Makefile             |    1 +
- drivers/iio/adc/da9058-adc.c         |  396 ++++++++++++++
- drivers/input/misc/Kconfig           |   10 +
- drivers/input/misc/Makefile          |    1 +
- drivers/input/misc/da9058_onkey.c    |  173 +++++++
- drivers/mfd/Kconfig                  |   17 +
- drivers/mfd/Makefile                 |    3 +
- drivers/mfd/da9058-core.c            |   73 +++
- drivers/mfd/da9058-i2c.c             |   96 ++++
- drivers/mfd/da9058-info.c            |  939 ++++++++++++++++++++++++++++++++++
- drivers/mfd/da9058-irq.c             |   56 ++
- drivers/regulator/Kconfig            |   11 +
- drivers/regulator/Makefile           |    1 +
- drivers/regulator/da9058-regulator.c |  199 +++++++
- drivers/rtc/Kconfig                  |   10 +
- drivers/rtc/Makefile                 |    1 +
- drivers/rtc/rtc-da9058.c             |  448 ++++++++++++++++
- include/linux/mfd/da9058/adc.h       |   18 +
- include/linux/mfd/da9058/bat.h       |   33 ++
- include/linux/mfd/da9058/codec.h     |   22 +
- include/linux/mfd/da9058/conf.h      |   22 +
- include/linux/mfd/da9058/core.h      |   66 +++
- include/linux/mfd/da9058/gpio.h      |   19 +
- include/linux/mfd/da9058/hwmon.h     |   32 ++
- include/linux/mfd/da9058/i2c.h       |   22 +
- include/linux/mfd/da9058/irq.h       |   50 ++
- include/linux/mfd/da9058/onkey.h     |   17 +
- include/linux/mfd/da9058/pdata.h     |   30 ++
- include/linux/mfd/da9058/registers.h |  480 +++++++++++++++++
- include/linux/mfd/da9058/regulator.h |   26 +
- include/linux/mfd/da9058/rtc.h       |   17 +
- 39 files changed, 4070 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/hwmon/da9058
- create mode 100644 drivers/gpio/gpio-da9058.c
- create mode 100644 drivers/hwmon/da9058-hwmon.c
- create mode 100644 drivers/iio/adc/da9058-adc.c
- create mode 100644 drivers/input/misc/da9058_onkey.c
- create mode 100644 drivers/mfd/da9058-core.c
- create mode 100644 drivers/mfd/da9058-i2c.c
- create mode 100644 drivers/mfd/da9058-info.c
- create mode 100644 drivers/mfd/da9058-irq.c
- create mode 100644 drivers/regulator/da9058-regulator.c
- create mode 100644 drivers/rtc/rtc-da9058.c
- create mode 100644 include/linux/mfd/da9058/adc.h
- create mode 100644 include/linux/mfd/da9058/bat.h
- create mode 100644 include/linux/mfd/da9058/codec.h
- create mode 100644 include/linux/mfd/da9058/conf.h
- create mode 100644 include/linux/mfd/da9058/core.h
- create mode 100644 include/linux/mfd/da9058/gpio.h
- create mode 100644 include/linux/mfd/da9058/hwmon.h
- create mode 100644 include/linux/mfd/da9058/i2c.h
- create mode 100644 include/linux/mfd/da9058/irq.h
- create mode 100644 include/linux/mfd/da9058/onkey.h
- create mode 100644 include/linux/mfd/da9058/pdata.h
- create mode 100644 include/linux/mfd/da9058/registers.h
- create mode 100644 include/linux/mfd/da9058/regulator.h
- create mode 100644 include/linux/mfd/da9058/rtc.h
-
--- 
-end-of-patch for NEW DRIVER V6
-
+Thanks,
+Rakib
