@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030316Ab3DSMYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:24:36 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:48725 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968324Ab3DSMYd (ORCPT
+	id S1030325Ab3DSMZW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 08:25:22 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:21201 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968317Ab3DSMZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 08:24:33 -0400
-Date: Fri, 19 Apr 2013 13:24:28 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andreas Westin <andreas.westin@stericsson.com>,
-        linux-crypto@vger.kernel.org
-Subject: [PATCH 1/9 v2] crypto: ux500/hash - Prepare clock before enabling it
-Message-ID: <20130419122428.GC3432@gmail.com>
-References: <1366280825-31136-1-git-send-email-lee.jones@linaro.org>
- <1366280825-31136-2-git-send-email-lee.jones@linaro.org>
+	Fri, 19 Apr 2013 08:25:21 -0400
+Message-ID: <517137A7.4020605@huawei.com>
+Date: Fri, 19 Apr 2013 20:25:11 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366280825-31136-2-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: [PATCH 00/10] cpuset: implement sane hierarchy behaviors
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Slight change of plan for v2.
+Currently some cpuset behaviors are not friendly when cpuset is co-mounted
+with other cgroup controllers.
 
-Now we're doing a seperate clk_prepare(), as the clk_enable() in the
-previous patch turned out to be called inside a spin_lock().
+Now with this patchset if cpuset is mounted with sane_behavior option, it
+behaves differently:
 
-Arnd, can you confirm your Ack please?
+- Tasks will be kept in empty cpusets when hotplug happens and take masks
+of ancestors with non-empty cpus/mems, instead of being moved to an ancestor.
 
----
+- A task can be moved into an empty cpuset, and again it takes masks of
+ancestors, so we drop a task into a newly created cgroup without the user
+having to do anything for it.
 
-crypto: ux500/hash - Prepare clock before enabling it
+As tasks can reside in empy cpusets, here're some rules:
 
-If we fail to prepare the ux500-hash clock before enabling it the
-platform will fail to boot. Here we insure this happens.
+- They can be moved to another cpuset, regardless it's empty or not.
 
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Andreas Westin <andreas.westin@stericsson.com>
-Cc: linux-crypto@vger.kernel.org
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+- Though it takes masks from ancestors, it takes other configs from the
+empty cpuset.
 
-diff --git a/drivers/crypto/ux500/hash/hash_core.c b/drivers/crypto/ux500/hash/hash_core.c
-index 632c333..1e8b2f3 100644
---- a/drivers/crypto/ux500/hash/hash_core.c
-+++ b/drivers/crypto/ux500/hash/hash_core.c
-@@ -1727,11 +1727,17 @@ static int ux500_hash_probe(struct platform_device *pdev)
- 		goto out_regulator;
- 	}
- 
-+	ret = clk_prepare(device_data->clk);
-+	if (ret) {
-+		dev_err(dev, "[%s] clk_prepare() failed!", __func__);
-+		goto out_clk;
-+	}
-+
- 	/* Enable device power (and clock) */
- 	ret = hash_enable_power(device_data, false);
- 	if (ret) {
- 		dev_err(dev, "[%s]: hash_enable_power() failed!", __func__);
--		goto out_clk;
-+		goto out_clk_unprepare;
- 	}
- 
- 	ret = hash_check_hw(device_data);
-@@ -1763,6 +1769,9 @@ static int ux500_hash_probe(struct platform_device *pdev)
- out_power:
- 	hash_disable_power(device_data, false);
- 
-+out_clk_unprepare:
-+	clk_unprepare(device_data->clk);
-+
- out_clk:
- 	clk_put(device_data->clk);
- 
-@@ -1827,6 +1836,7 @@ static int ux500_hash_remove(struct platform_device *pdev)
- 		dev_err(dev, "[%s]: hash_disable_power() failed",
- 			__func__);
- 
-+	clk_unprepare(device_data->clk);
- 	clk_put(device_data->clk);
- 	regulator_put(device_data->regulator);
+- If the ancestors' masks are changed, those tasks will also be updated
+to take new masks.
+
+The first 6 patches are actually cleanups which can be applied no matter
+if the last 4 patches are acceptable or not.
+
+Li Zefan (10):
+      cpuset: remove redundant check in cpuset_cpus_allowed_fallback()
+      cpuset: cleanup guarantee_online_{cpus|mems}()
+      cpuset: remove unnecessary variable in cpuset_attach()
+      cpuset: remove cpuset_test_cpumask()
+      cpuset: don't update tasks' cpumask and nodemask in an empty cpuset
+      cpuset: re-structure update_cpumask() a bit
+      cpuset: record old_mems_allowed in struct cpuset
+      cpuset: introduce effective_{cpumask|nodemask}_cpuset()
+      cpuset: allow to keep tasks in empty cpusets
+      cpuset: allow to move tasks to empty cpusets
+
+--
+ kernel/cpuset.c | 363 +++++++++++++++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 262 insertions(+), 101 deletions(-)
