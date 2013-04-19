@@ -1,154 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030701Ab3DSPQA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 11:16:00 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:56015 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030512Ab3DSPP5 (ORCPT
+	id S1030735Ab3DSPVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 11:21:23 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:49237 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030512Ab3DSPVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 11:15:57 -0400
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 3/3] rtc: rtc-hid-sensor-time; add option hctosys to set time at boot
-Date: Fri, 19 Apr 2013 17:14:12 +0200
-Message-Id: <1366384452-14367-4-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1366384452-14367-1-git-send-email-holler@ahsoftware.de>
-References: <1366384452-14367-1-git-send-email-holler@ahsoftware.de>
+	Fri, 19 Apr 2013 11:21:21 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX189NP4Oqzje1FN9dDEQop4q
+Date: Fri, 19 Apr 2013 08:21:17 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: b-cousson@ti.com, nm@ti.com, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        paul@pwsan.com, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] ARM: dts: omap4-panda: Add USB Host support
+Message-ID: <20130419152117.GE10155@atomide.com>
+References: <1366015721-25608-1-git-send-email-rogerq@ti.com>
+ <20130418200935.GD10155@atomide.com>
+ <5170FDD9.904@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5170FDD9.904@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/rtc/hctosys (CONFIG_RTC_HCTOSYS) doesn't work for
-rtc-hid-sensor-time because it will be called in late_init, and thus before
-rtc-hid-sensor-time gets loaded. To set the time through rtc-hid-sensor-time
-at startup, the module now checks by default if the system time is before
-1970-01-02 and sets the system time (once) if this is the case.
+* Roger Quadros <rogerq@ti.com> [130419 01:23]:
+> On 04/18/2013 11:09 PM, Tony Lindgren wrote:
+> 
+> > the naming should be mode0name.modename to be consistent. Here's
+> > what I dumped out, please check and replace spaces with tabs:
+> > 
+> >                         0x82 0x10c      /* usbb1_ulpitll_clk.usbb1_ulpiphy_clk gpio84 INPUT_PULLDOWN | MODE4 */
+> >                         0x84 0x4        /* usbb1_ulpitll_stp.usbb1_ulpiphy_stp gpio85 OUTPUT | MODE4 */
+> >                         0x86 0x104      /* usbb1_ulpitll_dir.usbb1_ulpiphy_dir gpio86 INPUT | MODE4 */
+> >                         0x88 0x104      /* usbb1_ulpitll_nxt.usbb1_ulpiphy_nxt gpio87 INPUT | MODE4 */
+> >                         0x8a 0x104      /* usbb1_ulpitll_dat0.usbb1_ulpiphy_dat0 gpio88 INPUT | MODE4 */
+> >                         0x8c 0x104      /* usbb1_ulpitll_dat1.usbb1_ulpiphy_dat1 gpio89 INPUT | MODE4 */
+> >                         0x8e 0x104      /* usbb1_ulpitll_dat2.usbb1_ulpiphy_dat2 gpio90 INPUT | MODE4 */
+> >                         0x90 0x104      /* usbb1_ulpitll_dat3.usbb1_ulpiphy_dat3 gpio91 INPUT | MODE4 */
+> >                         0x92 0x104      /* usbb1_ulpitll_dat4.usbb1_ulpiphy_dat4 gpio92 INPUT | MODE4 */
+> >                         0x94 0x104      /* usbb1_ulpitll_dat5.usbb1_ulpiphy_dat5 gpio93 INPUT | MODE4 */
+> >                         0x96 0x104      /* usbb1_ulpitll_dat6.usbb1_ulpiphy_dat6 gpio94 INPUT | MODE4 */
+> >                         0x98 0x104      /* usbb1_ulpitll_dat7.usbb1_ulpiphy_dat7 gpio95 INPUT | MODE4 */
+> 
+> I don't think gpioXX is necessary as we aren't using any of them as GPIOs.
 
-To disable this behaviour, set the module option hctosys to zero, e.g. by
-using rtc-hid-sensor-time.hctosys=0 at the kernel command line if the
-driver is statically linked into the kernel.
+Oops sorry yeah please check as that's something I just dumped
+from the system. The gpio numbering is just data for debugging
+that you can leave out. Also check please check I dumped the right
+pins, I just grepped for usbb1.
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
----
- drivers/rtc/rtc-hid-sensor-time.c | 72 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 72 insertions(+)
+Regards,
 
-diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
-index 10fc0f0..3184729 100644
---- a/drivers/rtc/rtc-hid-sensor-time.c
-+++ b/drivers/rtc/rtc-hid-sensor-time.c
-@@ -27,6 +27,12 @@
- /* Usage ID from spec for Time: 0x2000A0 */
- #define DRIVER_NAME "HID-SENSOR-2000a0" /* must be lowercase */
- 
-+static bool hid_time_hctosys_enabled = 1;
-+module_param_named(hctosys, hid_time_hctosys_enabled, bool, 0644);
-+MODULE_PARM_DESC(hctosys,
-+	"set the system time (once) if it is before 1970-01-02");
-+static bool hid_time_time_set_once;
-+
- enum hid_time_channel {
- 	CHANNEL_SCAN_INDEX_YEAR,
- 	CHANNEL_SCAN_INDEX_MONTH,
-@@ -62,6 +68,38 @@ static const char * const hid_time_channel_names[TIME_RTC_CHANNEL_MAX] = {
- 	"year", "month", "day", "hour", "minute", "second",
- };
- 
-+static void hid_time_hctosys(struct hid_time_state *time_state)
-+{
-+	struct timeval tv;
-+	struct timespec ts;
-+	int rc = rtc_valid_tm(&time_state->last_time);
-+	if (rc) {
-+		dev_err(time_state->rtc->dev.parent,
-+			"hctosys: invalid date/time\n");
-+		return;
-+	}
-+	do_gettimeofday(&tv);
-+	if (tv.tv_sec >= 86400) /* 1970-01-02 00:00:00 UTC */
-+		/*
-+		 * Security: don't let a hot-pluggable device change
-+		 * a valid system time.
-+		 */
-+		return;
-+	ts.tv_nsec = NSEC_PER_SEC >> 1;
-+	rtc_tm_to_time(&time_state->last_time, &ts.tv_sec);
-+	rc = do_settimeofday(&ts);
-+	dev_info(time_state->rtc->dev.parent,
-+		"hctosys: setting system clock to "
-+		"%d-%02d-%02d %02d:%02d:%02d UTC (%u)\n",
-+		time_state->last_time.tm_year + 1900,
-+		time_state->last_time.tm_mon + 1,
-+		time_state->last_time.tm_mday,
-+		time_state->last_time.tm_hour,
-+		time_state->last_time.tm_min,
-+		time_state->last_time.tm_sec,
-+		(unsigned int) ts.tv_sec);
-+}
-+
- /* Callback handler to send event after all samples are received and captured */
- static int hid_time_proc_event(struct hid_sensor_hub_device *hsdev,
- 				unsigned usage_id, void *priv)
-@@ -73,6 +111,10 @@ static int hid_time_proc_event(struct hid_sensor_hub_device *hsdev,
- 	time_state->last_time = time_state->time_buf;
- 	spin_unlock_irqrestore(&time_state->lock_last_time, flags);
- 	complete(&time_state->comp_last_time);
-+	if (unlikely(!hid_time_time_set_once && hid_time_hctosys_enabled)) {
-+		hid_time_time_set_once = 1;
-+		hid_time_hctosys(time_state);
-+	}
- 	return 0;
- }
- 
-@@ -237,6 +279,22 @@ static const struct rtc_class_ops hid_time_rtc_ops = {
- 	.read_time = hid_rtc_read_time,
- };
- 
-+struct hid_time_work_time_state {
-+	struct work_struct work;
-+	struct hid_time_state *time_state;
-+};
-+
-+static void hid_time_request_report_work(struct work_struct *work)
-+{
-+	struct hid_time_state *time_state =
-+		((struct hid_time_work_time_state *)work)->time_state;
-+	/* get a report with all values through requesting one value */
-+	sensor_hub_input_attr_get_raw_value(
-+		time_state->common_attributes.hsdev, HID_USAGE_SENSOR_TIME,
-+		hid_time_addresses[0], time_state->info[0].report_id);
-+	kfree(work);
-+}
-+
- static int hid_time_probe(struct platform_device *pdev)
- {
- 	int ret = 0;
-@@ -287,6 +345,20 @@ static int hid_time_probe(struct platform_device *pdev)
- 		return PTR_ERR(time_state->rtc);
- 	}
- 
-+	if (!hid_time_time_set_once && hid_time_hctosys_enabled) {
-+		/*
-+		 * Request a HID report to set the time.
-+		 * Calling sensor_hub_..._get_raw_value() here directly
-+		 * doesn't work, therefor we have to use a work.
-+		 */
-+		struct hid_time_work_time_state *hdwork =
-+			kmalloc(sizeof(struct hid_time_work_time_state),
-+				GFP_KERNEL);
-+		hdwork->time_state = time_state;
-+		INIT_WORK(&hdwork->work, hid_time_request_report_work);
-+		schedule_work(&hdwork->work);
-+	}
-+
- 	return ret;
- }
- 
--- 
-1.8.1.4
-
+Tony
