@@ -1,90 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968504Ab3DSQaK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:30:10 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:16450 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S968397Ab3DSQaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 12:30:01 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v2 1/3] clk: abstract parent cache
-Date: Fri, 19 Apr 2013 17:28:22 +0100
-Message-ID: <1366388904-13903-2-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com>
-References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2013_04_19_17_29_55
+	id S1030909Ab3DSQaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:30:20 -0400
+Received: from mail-da0-f50.google.com ([209.85.210.50]:58718 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968397Ab3DSQaR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 12:30:17 -0400
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com, rostedt@goodmis.org
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Pankaj Kumar <pankaj.km@samsung.com>
+Subject: [PATCH v4 7/7] f2fs: add tracepoints to debug checkpoint request
+Date: Sat, 20 Apr 2013 01:30:10 +0900
+Message-Id: <1366389010-19017-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Abstract access to the clock parent cache by defining
-__clk_get_parent_by_index(clk, index). This allows access to parent
-clocks from clock drivers.
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Add tracepoints to debug checkpoint request.
+
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/clk/clk.c            | 21 ++++++++++++++-------
- include/linux/clk-provider.h |  1 +
- 2 files changed, 15 insertions(+), 7 deletions(-)
+ fs/f2fs/checkpoint.c        |    4 ++++
+ include/trace/events/f2fs.h |   22 ++++++++++++++++++++++
+ 2 files changed, 26 insertions(+)
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index ed87b24..79d5deb 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -415,6 +415,19 @@ struct clk *__clk_get_parent(struct clk *clk)
- 	return !clk ? NULL : clk->parent;
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index 197796a..c633efd 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -717,7 +717,10 @@ void write_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+ 	unsigned long long ckpt_ver;
+ 
+ 	mutex_lock(&sbi->cp_mutex);
++	trace_f2fs_write_checkpoint(sbi->sb, is_umount,
++					 "Try to block operation");
+ 	block_operations(sbi);
++	trace_f2fs_write_checkpoint(sbi->sb, is_umount, "Done block operation");
+ 
+ 	f2fs_submit_bio(sbi, DATA, true);
+ 	f2fs_submit_bio(sbi, NODE, true);
+@@ -740,6 +743,7 @@ void write_checkpoint(struct f2fs_sb_info *sbi, bool is_umount)
+ 
+ 	unblock_operations(sbi);
+ 	mutex_unlock(&sbi->cp_mutex);
++	trace_f2fs_write_checkpoint(sbi->sb, is_umount, "Done checkpoint");
  }
  
-+struct clk *__clk_get_parent_by_index(struct clk *clk, u8 index)
-+{
-+	if (!clk || index >= clk->num_parents)
-+		return NULL;
-+	else if (!clk->parents)
-+		return __clk_lookup(clk->parent_names[index]);
-+	else if (!clk->parents[index])
-+		return clk->parents[index] =
-+			__clk_lookup(clk->parent_names[index]);
-+	else
-+		return clk->parents[index];
-+}
+ void init_orphan_info(struct f2fs_sb_info *sbi)
+diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
+index 32372a6..e49253a 100644
+--- a/include/trace/events/f2fs.h
++++ b/include/trace/events/f2fs.h
+@@ -688,6 +688,28 @@ DEFINE_EVENT(f2fs_page_type_op, f2fs_write_page,
+ 	TP_ARGS(page, type)
+ );
+ 
++TRACE_EVENT(f2fs_write_checkpoint,
++	TP_PROTO(struct super_block *sb, int umount, char *str),
 +
- unsigned int __clk_get_enable_count(struct clk *clk)
- {
- 	return !clk ? 0 : clk->enable_count;
-@@ -1150,13 +1163,7 @@ static struct clk *__clk_init_parent(struct clk *clk)
- 			kzalloc((sizeof(struct clk*) * clk->num_parents),
- 					GFP_KERNEL);
++	TP_ARGS(sb, umount, str),
++
++	TP_STRUCT__entry(
++		__field(dev_t,	dev)
++		__field(int,	umount)
++		__field(char *,	msg)
++	),
++
++	TP_fast_assign(
++		__entry->dev	= sb->s_dev;
++		__entry->umount	= umount;
++		__entry->msg	= str;
++	),
++
++	TP_printk("dev %d,%d is_umount %d message %s ",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++			__entry->umount, __entry->msg)
++
++);
+ #endif /* _TRACE_F2FS_H */
  
--	if (!clk->parents)
--		ret = __clk_lookup(clk->parent_names[index]);
--	else if (!clk->parents[index])
--		ret = clk->parents[index] =
--			__clk_lookup(clk->parent_names[index]);
--	else
--		ret = clk->parents[index];
-+	ret = __clk_get_parent_by_index(clk, index);
- 
- out:
- 	return ret;
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 7f197d7..4e0b634 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -347,6 +347,7 @@ const char *__clk_get_name(struct clk *clk);
- struct clk_hw *__clk_get_hw(struct clk *clk);
- u8 __clk_get_num_parents(struct clk *clk);
- struct clk *__clk_get_parent(struct clk *clk);
-+struct clk *__clk_get_parent_by_index(struct clk *clk, u8 index);
- unsigned int __clk_get_enable_count(struct clk *clk);
- unsigned int __clk_get_prepare_count(struct clk *clk);
- unsigned long __clk_get_rate(struct clk *clk);
+  /* This part must be outside protection */
 -- 
-1.8.1.2
-
+1.7.9.5
 
