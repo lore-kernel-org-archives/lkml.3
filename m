@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab3DSS1f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 14:27:35 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:58672 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753097Ab3DSS1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 14:27:34 -0400
-Message-ID: <1366396053.3901.40.camel@joe-AO722>
-Subject: Re: [PATCH] mtd: Convert logging messages
-From: Joe Perches <joe@perches.com>
-To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Joern Engel <joern@lazybastard.org>, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Apr 2013 11:27:33 -0700
-In-Reply-To: <20130419165516.GA19480@logfs.org>
-References: <1366394375.3901.36.camel@joe-AO722>
-	 <20130419165516.GA19480@logfs.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S1753506Ab3DSSbE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 14:31:04 -0400
+Received: from sauhun.de ([89.238.76.85]:54382 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753203Ab3DSSbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 14:31:02 -0400
+Date: Fri, 19 Apr 2013 20:30:57 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: =?utf-8?B?7Iah7J2A67SJ?= <eunb.song@samsung.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] I2C: Fix i2c fail problem when a process is terminated
+ by a signal on octeon in 3.8
+Message-ID: <20130419183057.GA3702@the-dreams.de>
+References: <11412343.361631366270816380.JavaMail.weblogic@epv6ml12>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <11412343.361631366270816380.JavaMail.weblogic@epv6ml12>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-19 at 12:55 -0400, J�rn Engel wrote:
-> On Fri, 19 April 2013 10:59:35 -0700, Joe Perches wrote:
-> >  	}
-> >  	list_add(&dev->list, &blkmtd_device_list);
-> > -	INFO("mtd%d: [%s] erase_size = %dKiB [%d]", dev->mtd.index,
-> > -			dev->mtd.name + strlen("block2mtd: "),
-> > -			dev->mtd.erasesize >> 10, dev->mtd.erasesize);
-> > +	pr_info("mtd%d: [%s] erase_size = %dKiB [%d]\n",
-> > +		dev->mtd.index,
-> > +		dev->mtd.name + strlen("block2mtd: "),
-> > +		dev->mtd.erasesize >> 10, dev->mtd.erasesize);
+On Thu, Apr 18, 2013 at 07:40:16AM +0000, 송은봉 wrote:
 > 
-> I personally dislike the indent-to-braces style because it causes
-> unnecessary churn in patches like this.
+> I rewrite my patch because the patch before i sent have many white space.
+> Thanks!
 
-It comes from an automated emacs conversion.
+This should have been below the "---" after the sigend-off.
 
-> The reindenting improves nothing at all.
+> ---
+> I've been debugging the abnormal operation of i2c on octeon.
+> If a process is terminated by signal in the middle of i2c operation,
+> next i2c read operation which is done by another process was failed.
+> So i changed to ignore signal in the middle of i2c operation.
+> After that the problem was not reproduced.
+> 
+> Signed-off-by: Eunbong Song <eunb.song@samsung.com>
 
-Debatable.
-
-> It will waste time when people care about revision history because
-> they encounter a bug, want a fix quick and are pressed for time.
-
-Not really if you use existing tools with options.
-
-Try:
-	git diff -w
-	git blame -w
-
-> If you care about my ack, please remove random churn.  This is not a
-> competition about who gets the most lines in git blame.
-
-I care not at all about commit counts,
-nor things like lines added or removed.
+Applied to for-next, thanks!
 
