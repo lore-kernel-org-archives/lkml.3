@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967951Ab3DSIMa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 04:12:30 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:39970 "EHLO
+	id S967967Ab3DSIMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 04:12:36 -0400
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:39720 "EHLO
 	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S967934Ab3DSIM2 (ORCPT
+	by vger.kernel.org with ESMTP id S967935Ab3DSIMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 04:12:28 -0400
+	Fri, 19 Apr 2013 04:12:31 -0400
 From: Chao Xie <chao.xie@marvell.com>
 To: <thierry.reding@avionic-design.de>, <linux-kernel@vger.kernel.org>,
         <xiechao.mail@gmail.com>
 CC: Chao Xie <chao.xie@marvell.com>
-Subject: [PATCH V2  0/3] pwm: pxa: bug fix and device tree support
-Date: Fri, 19 Apr 2013 04:08:38 -0400
-Message-ID: <1366358921-24478-1-git-send-email-chao.xie@marvell.com>
+Subject: [PATCH V2  2/3] pwm: pxa: use module_platform_driver for driver register
+Date: Fri, 19 Apr 2013 04:08:40 -0400
+Message-ID: <1366358921-24478-3-git-send-email-chao.xie@marvell.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1366358921-24478-1-git-send-email-chao.xie@marvell.com>
+References: <1366358921-24478-1-git-send-email-chao.xie@marvell.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patches fix some bugs
-1. pwm-pxa driver is shared by ARCH_PXA and ARCH_MMP
-2. use module_platform_driver for driver register
+Signed-off-by: Chao Xie <chao.xie@marvell.com>
+---
+ drivers/pwm/pwm-pxa.c |   12 +-----------
+ 1 files changed, 1 insertions(+), 11 deletions(-)
 
-The patches also add device tree support for pwm.
-
-V2->V1:
-  remove the redundant initialization.
-  fix device tree support bugs.
-  rebase to for-next
-
-Chao Xie (3):
-  pwm: pxa: ARCH_MMP share same pwm driver with ARCH_PXA
-  pwm: pxa: use module_platform_driver for driver register
-  pwm: pxa: add device tree support
-
- drivers/pwm/Kconfig   |    2 +-
- drivers/pwm/pwm-pxa.c |   67 +++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 55 insertions(+), 14 deletions(-)
-
+diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
+index dee6ab55..aa4bea7 100644
+--- a/drivers/pwm/pwm-pxa.c
++++ b/drivers/pwm/pwm-pxa.c
+@@ -187,16 +187,6 @@ static struct platform_driver pwm_driver = {
+ 	.id_table	= pwm_id_table,
+ };
+ 
+-static int __init pwm_init(void)
+-{
+-	return platform_driver_register(&pwm_driver);
+-}
+-arch_initcall(pwm_init);
+-
+-static void __exit pwm_exit(void)
+-{
+-	platform_driver_unregister(&pwm_driver);
+-}
+-module_exit(pwm_exit);
++module_platform_driver(pwm_driver);
+ 
+ MODULE_LICENSE("GPL v2");
 -- 
 1.7.4.1
 
