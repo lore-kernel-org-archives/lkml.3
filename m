@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab3DSTDT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 15:03:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:2768 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753246Ab3DSTDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 15:03:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,510,1363158000"; 
-   d="scan'208,223";a="325043314"
-Date: Fri, 19 Apr 2013 19:05:30 +0100 (IST)
-From: Josef Ahmad <josef.ahmad@linux.intel.com>
-X-X-Sender: joey@localhost
-To: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        Jean Delvare <khali@linux-fr.org>, Stefan Roese <sr@denx.de>,
-        Axel Lin <axel.lin@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH] i2c-designware: fix RX FIFO overrun
-Message-ID: <alpine.DEB.2.02.1304191859570.17829@localhost>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753563Ab3DSTLV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 15:11:21 -0400
+Received: from mail.windriver.com ([147.11.1.11]:60982 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab3DSTLU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 15:11:20 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCHv2 0/2] sched: move content out of core files for load calculations
+Date: Fri, 19 Apr 2013 15:10:48 -0400
+Message-ID: <1366398650-31599-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From a969728248c3b439dc97a69e7dac133b5efa34e7 Mon Sep 17 00:00:00 2001
-From: Josef Ahmad <josef.ahmad@linux.intel.com>
-Date: Fri, 19 Apr 2013 17:28:10 +0100
-Subject: [PATCH] i2c-designware: fix RX FIFO overrun
+Recent activity has had a focus on moving functionally related blocks of
+stuff out of sched/core.c into stand-alone files.  The code relating to load
+calculations has grown significantly enough recently to warrant placing it in
+a separate file.
 
-i2c_dw_xfer_msg() pushes a number of bytes to transmit/receive
-to/from the bus into the TX FIFO.
-For master-rx transactions, the maximum amount of data that can be
-received is calculated depending solely on TX and RX FIFO load.
+Here we do that, and in doing so, we shed ~20k of code from sched/core.c (~10%).
 
-This is racy - TX FIFO may contain master-rx data yet to be
-processed, which will eventually land into the RX FIFO. This
-data is not taken into account and the function may request more
-data than the controller is actually capable of storing.
+A couple small static functions in the core sched.h header were also localized
+to their singular user in sched/fair.c at the same time, with the goal to also
+reduce the amount of "broadcast" content in that sched.h file.
 
-This patch ensures the driver takes into account the outstanding
-master-rx data in TX FIFO to prevent RX FIFO overrun.
-
-Signed-off-by: Josef Ahmad <josef.ahmad@linux.intel.com>
+Paul.
 ---
-  drivers/i2c/busses/i2c-designware-core.c |   11 ++++++++++-
-  drivers/i2c/busses/i2c-designware-core.h |    2 ++
-  2 files changed, 12 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
-index 94fd818..8dbeef1 100644
---- a/drivers/i2c/busses/i2c-designware-core.c
-+++ b/drivers/i2c/busses/i2c-designware-core.c
-@@ -426,8 +426,14 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
-  				cmd |= BIT(9);
+v2 changes:
 
-  			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
-+
-+				/* avoid rx buffer overrun */
-+				if (rx_limit - dev->rx_outstanding <= 0)
-+					break;
-+
-  				dw_writel(dev, cmd | 0x100, DW_IC_DATA_CMD);
-  				rx_limit--;
-+				dev->rx_outstanding++;
-  			} else
-  				dw_writel(dev, cmd | *buf++, DW_IC_DATA_CMD);
-  			tx_limit--; buf_len--;
-@@ -480,8 +486,10 @@ i2c_dw_read(struct dw_i2c_dev *dev)
+  1) rebase from tip's sched/core (v3.9-rc1-38-gb329fd5) to today's
+     tip master (v3.9-rc6-2031-g27f8b76).
+  2) rename file from load_avg.c to proc.c
 
-  		rx_valid = dw_readl(dev, DW_IC_RXFLR);
+---
 
--		for (; len > 0 && rx_valid > 0; len--, rx_valid--)
-+		for (; len > 0 && rx_valid > 0; len--, rx_valid--) {
-  			*buf++ = dw_readl(dev, DW_IC_DATA_CMD);
-+			dev->rx_outstanding--;
-+		}
+The following changes since commit 27f8b769cba5a97ffcbaae92fd4c0ed84f00e214:
 
-  		if (len > 0) {
-  			dev->status |= STATUS_READ_IN_PROGRESS;
-@@ -539,6 +547,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
-  	dev->msg_err = 0;
-  	dev->status = STATUS_IDLE;
-  	dev->abort_source = 0;
-+	dev->rx_outstanding = 0;
+  manual merge of tools/kvm (2013-04-19 13:05:17 +0200)
 
-  	ret = i2c_dw_wait_bus_not_busy(dev);
-  	if (ret < 0)
-diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
-index 9c1840e..e761ad1 100644
---- a/drivers/i2c/busses/i2c-designware-core.h
-+++ b/drivers/i2c/busses/i2c-designware-core.h
-@@ -60,6 +60,7 @@
-   * @adapter: i2c subsystem adapter node
-   * @tx_fifo_depth: depth of the hardware tx fifo
-   * @rx_fifo_depth: depth of the hardware rx fifo
-+ * @rx_outstanding: current master-rx elements in tx fifo
-   */
-  struct dw_i2c_dev {
-  	struct device		*dev;
-@@ -88,6 +89,7 @@ struct dw_i2c_dev {
-  	u32			master_cfg;
-  	unsigned int		tx_fifo_depth;
-  	unsigned int		rx_fifo_depth;
-+	int			rx_outstanding;
-  };
+are available in the git repository at:
 
-  #define ACCESS_SWAP		0x00000001
--- 
-1.7.0.7
+  git://git.kernel.org/pub/scm/linux/kernel/git/paulg/linux.git for-ingo
 
+for you to fetch changes up to dac25445169ff97142ae4f7174e3d94ce7036ad3:
+
+  sched: move update_load_[add/sub/set] from sched.h to fair.c (2013-04-19 14:38:11 -0400)
+
+----------------------------------------------------------------
+Paul Gortmaker (2):
+      sched: fork load calculation code from sched/core --> sched/proc
+      sched: move update_load_[add/sub/set] from sched.h to fair.c
+
+ kernel/sched/Makefile |   2 +-
+ kernel/sched/core.c   | 569 -------------------------------------------------
+ kernel/sched/fair.c   |  18 ++
+ kernel/sched/proc.c   | 578 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/sched.h  |  26 +--
+ 5 files changed, 605 insertions(+), 588 deletions(-)
+ create mode 100644 kernel/sched/proc.c
