@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968215Ab3DSKsg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 06:48:36 -0400
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:14372
+	id S1030205Ab3DSKsz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 06:48:55 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:38065
 	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S968050Ab3DSKs2 (ORCPT
+	by vger.kernel.org with ESMTP id S968050Ab3DSKsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 06:48:28 -0400
+	Fri, 19 Apr 2013 06:48:37 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
 From: Zhao Chenhui <chenhui.zhao@freescale.com>
 To: <linuxppc-dev@lists.ozlabs.org>
 CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 10/15] powerpc/85xx: fix 64-bit support for cpu hotplug
-Date: Fri, 19 Apr 2013 18:47:43 +0800
-Message-ID: <1366368468-29143-10-git-send-email-chenhui.zhao@freescale.com>
+Subject: [PATCH v2 12/15] powerpc/85xx: add time base sync support for e6500
+Date: Fri, 19 Apr 2013 18:47:45 +0800
+Message-ID: <1366368468-29143-12-git-send-email-chenhui.zhao@freescale.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
 References: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
@@ -28,125 +28,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chen-Hui Zhao <chenhui.zhao@freescale.com>
 
-* The paca[cpu].cpu_start is used as a signal to indicate if the cpu
-  should start. So it should be cleard in .cpu_die().
-* The limit memory routine only needs to be ran once at boot time
-  by the boot cpu. Prevent other cpus running it again.
-* Rearrange the code segment in smp_85xx_kick_cpu() to share codes
-  between PPC64 and PPC32 as far as possible.
+For e6500, two threads in one core share one time base. Just need
+to do time base sync on first thread of one core, and skip it on
+the other thread.
 
 Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
 Signed-off-by: Li Yang <leoli@freescale.com>
 Signed-off-by: Andy Fleming <afleming@freescale.com>
 ---
- arch/powerpc/Kconfig              |    2 +-
- arch/powerpc/kernel/smp.c         |    3 +++
- arch/powerpc/mm/tlb_nohash.c      |    6 ++++--
- arch/powerpc/platforms/85xx/smp.c |   23 +++++++++++------------
- 4 files changed, 19 insertions(+), 15 deletions(-)
+ arch/powerpc/platforms/85xx/smp.c |   52 +++++++++++++++++++++++++++++++-----
+ 1 files changed, 44 insertions(+), 8 deletions(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 0ad6e30..aa5794b 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -347,7 +347,7 @@ config SWIOTLB
- config HOTPLUG_CPU
- 	bool "Support for enabling/disabling CPUs"
- 	depends on SMP && HOTPLUG && (PPC_PSERIES || \
--	PPC_PMAC || PPC_POWERNV || PPC_85xx)
-+	PPC_PMAC || PPC_POWERNV || FSL_SOC_BOOKE)
- 	---help---
- 	  Say Y here to be able to disable and re-enable individual
- 	  CPUs at runtime on SMP machines.
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index 386c7ea..c8aa739 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -401,6 +401,9 @@ void generic_cpu_die(unsigned int cpu)
- 		smp_rmb();
- 		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
- 			platform_cpu_die(cpu);
-+#ifdef CONFIG_PPC64
-+			paca[cpu].cpu_start = 0;
-+#endif
- 			return;
- 		}
- 		msleep(100);
-diff --git a/arch/powerpc/mm/tlb_nohash.c b/arch/powerpc/mm/tlb_nohash.c
-index 6888cad..de7bf06 100644
---- a/arch/powerpc/mm/tlb_nohash.c
-+++ b/arch/powerpc/mm/tlb_nohash.c
-@@ -627,8 +627,10 @@ static void __early_init_mmu(int boot_cpu)
- 		num_cams = (mfspr(SPRN_TLB1CFG) & TLBnCFG_N_ENTRY) / 4;
- 		linear_map_top = map_mem_in_cams(linear_map_top, num_cams);
- 
--		/* limit memory so we dont have linear faults */
--		memblock_enforce_memory_limit(linear_map_top);
-+		if (boot_cpu) {
-+			/* limit memory so we dont have linear faults */
-+			memblock_enforce_memory_limit(linear_map_top);
-+		}
- 
- 		patch_exception(0x1c0, exc_data_tlb_miss_bolted_book3e);
- 		patch_exception(0x1e0, exc_instruction_tlb_miss_bolted_book3e);
 diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
-index 6eae2e0..74d8cde 100644
+index 74d8cde..5f3eee3 100644
 --- a/arch/powerpc/platforms/85xx/smp.c
 +++ b/arch/powerpc/platforms/85xx/smp.c
-@@ -251,10 +251,6 @@ static int __cpuinit smp_85xx_kick_cpu(int nr)
- 		spin_table = phys_to_virt(*cpu_rel_addr);
+@@ -26,6 +26,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/dbell.h>
+ #include <asm/fsl_guts.h>
++#include <asm/cputhreads.h>
  
- 	local_irq_save(flags);
--#ifdef CONFIG_PPC32
--#ifdef CONFIG_HOTPLUG_CPU
--	/* Corresponding to generic_set_cpu_dead() */
--	generic_set_cpu_up(nr);
+ #include <sysdev/fsl_soc.h>
+ #include <sysdev/mpic.h>
+@@ -45,6 +46,7 @@ static u64 timebase;
+ static int tb_req;
+ static int tb_valid;
+ static u32 cur_booting_core;
++static bool rcpmv2;
  
- 	if (system_state == SYSTEM_RUNNING) {
- 		/*
-@@ -298,12 +294,19 @@ static int __cpuinit smp_85xx_kick_cpu(int nr)
- 		/*  clear the acknowledge status */
- 		__secondary_hold_acknowledge = -1;
- 	}
--#endif
- 	flush_spin_table(spin_table);
- 	out_be32(&spin_table->pir, hw_cpu);
-+#ifdef CONFIG_PPC32
- 	out_be32(&spin_table->addr_l, __pa(__early_start));
-+#else
-+	out_be32(&spin_table->addr_h,
-+		__pa(*(u64 *)generic_secondary_smp_init) >> 32);
-+	out_be32(&spin_table->addr_l,
-+		__pa(*(u64 *)generic_secondary_smp_init) & 0xffffffff);
-+#endif
- 	flush_spin_table(spin_table);
+ #ifdef CONFIG_PPC_E500MC
+ /* get a physical mask of online cores and booting core */
+@@ -53,26 +55,40 @@ static inline u32 get_phy_cpu_mask(void)
+ 	u32 mask;
+ 	int cpu;
  
-+#ifdef CONFIG_PPC32
- 	/* Wait a bit for the CPU to ack. */
- 	if (!spin_event_timeout(__secondary_hold_acknowledge == hw_cpu,
- 					10000, 100)) {
-@@ -312,18 +315,14 @@ static int __cpuinit smp_85xx_kick_cpu(int nr)
- 		ret = -ENOENT;
- 		goto out;
- 	}
--out:
+-	mask = 1 << cur_booting_core;
+-	for_each_online_cpu(cpu)
+-		mask |= 1 << get_hard_smp_processor_id(cpu);
++	if (smt_capable()) {
++		/* two threads in one core share one time base */
++		mask = 1 << cpu_core_index_of_thread(cur_booting_core);
++		for_each_online_cpu(cpu)
++			mask |= 1 << cpu_core_index_of_thread(
++					get_hard_smp_processor_id(cpu));
++	} else {
++		mask = 1 << cur_booting_core;
++		for_each_online_cpu(cpu)
++			mask |= 1 << get_hard_smp_processor_id(cpu);
++	}
+ 
+ 	return mask;
+ }
+ 
+ static void mpc85xx_timebase_freeze(int freeze)
+ {
+-	struct ccsr_rcpm __iomem *rcpm = guts_regs;
++	u32 *addr;
+ 	u32 mask = get_phy_cpu_mask();
+ 
++	if (rcpmv2)
++		addr = &((struct ccsr_rcpm_v2 *)guts_regs)->pctbenr;
++	else
++		addr = &((struct ccsr_rcpm *)guts_regs)->ctbenr;
++
+ 	if (freeze)
+-		clrbits32(&rcpm->ctbenr, mask);
++		clrbits32(addr, mask);
+ 	else
+-		setbits32(&rcpm->ctbenr, mask);
++		setbits32(addr, mask);
+ 
+-	/* read back to push the previos write */
+-	in_be32(&rcpm->ctbenr);
++	/* read back to push the previous write */
++	in_be32(addr);
+ }
++
  #else
- 	smp_generic_kick_cpu(nr);
--
--	flush_spin_table(spin_table);
--	out_be32(&spin_table->pir, hw_cpu);
--	out_be64((u64 *)(&spin_table->addr_h),
--	  __pa((u64)*((unsigned long long *)generic_secondary_smp_init)));
--	flush_spin_table(spin_table);
- #endif
-+	/* Corresponding to generic_set_cpu_dead() */
-+	generic_set_cpu_up(nr);
- 	cur_booting_core = hw_cpu;
+ static void mpc85xx_timebase_freeze(int freeze)
+ {
+@@ -94,6 +110,16 @@ static void mpc85xx_give_timebase(void)
+ {
+ 	unsigned long flags;
  
-+out:
- 	local_irq_restore(flags);
++#ifdef CONFIG_PPC_E500MC
++	/*
++	 * If the booting thread is not the first thread of the core,
++	 * skip time base sync.
++	 */
++	if (smt_capable() &&
++		cur_booting_core != cpu_first_thread_sibling(cur_booting_core))
++		return;
++#endif
++
+ 	local_irq_save(flags);
  
- 	if (ioremappable)
+ 	while (!tb_req)
+@@ -117,6 +143,12 @@ static void mpc85xx_take_timebase(void)
+ {
+ 	unsigned long flags;
+ 
++#ifdef CONFIG_PPC_E500MC
++	if (smt_capable() &&
++		cur_booting_core != cpu_first_thread_sibling(cur_booting_core))
++		return;
++#endif
++
+ 	local_irq_save(flags);
+ 
+ 	tb_req = 1;
+@@ -457,6 +489,7 @@ static const struct of_device_id mpc85xx_smp_guts_ids[] = {
+ 	{ .compatible = "fsl,p1023-guts", },
+ 	{ .compatible = "fsl,p2020-guts", },
+ 	{ .compatible = "fsl,qoriq-rcpm-1.0", },
++	{ .compatible = "fsl,qoriq-rcpm-2.0", },
+ 	{},
+ };
+ 
+@@ -483,6 +516,9 @@ void __init mpc85xx_smp_init(void)
+ 
+ 	np = of_find_matching_node(NULL, mpc85xx_smp_guts_ids);
+ 	if (np) {
++		if (of_device_is_compatible(np, "fsl,qoriq-rcpm-2.0"))
++			rcpmv2 = true;
++
+ 		guts_regs = of_iomap(np, 0);
+ 		of_node_put(np);
+ 		if (!guts_regs) {
 -- 
 1.7.3
 
