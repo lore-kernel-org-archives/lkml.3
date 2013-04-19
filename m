@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030442Ab3DSNvP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 09:51:15 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36210 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968179Ab3DSNvO (ORCPT
+	id S1030482Ab3DSNwU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 09:52:20 -0400
+Received: from dkim2.fusionio.com ([66.114.96.54]:49787 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968307Ab3DSNwS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 09:51:14 -0400
-Date: Fri, 19 Apr 2013 15:51:07 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3] irqchip: Add support for ARMv7-M's NVIC
-Message-ID: <20130419135107.GD15233@pengutronix.de>
-References: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <201304181101.13644.arnd@arndb.de>
- <20130418092436.GB21099@pengutronix.de>
- <201304181138.13599.arnd@arndb.de>
+	Fri, 19 Apr 2013 09:52:18 -0400
+X-ASG-Debug-ID: 1366379535-03d6a51395176a60001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201304181138.13599.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+To: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>
+From: Chris Mason <clmason@fusionio.com>
+In-Reply-To: <20130419133250.GR4816@kernel.dk>
+CC: Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "agk@redhat.com" <agk@redhat.com>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        "neilb@suse.de" <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
+References: <516E5EF8.9090507@cn.fujitsu.com>
+ <1366209997.8817.12.camel@pippen.local.home>
+ <20130418123738.GV4816@kernel.dk> <516FED09.1040008@cn.fujitsu.com>
+ <20130418133546.GX4816@kernel.dk> <516FFFAC.8040103@cn.fujitsu.com>
+ <20130418143014.GZ4816@kernel.dk> <5170BB00.8080200@cn.fujitsu.com>
+ <20130419055754.GA9691@mtj.dyndns.org> <20130419133250.GR4816@kernel.dk>
+Message-ID: <20130419135214.30947.96188@localhost.localdomain>
+User-Agent: alot/0.3.4
+Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
+Date: Fri, 19 Apr 2013 09:52:14 -0400
+X-ASG-Orig-Subj: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1366379535
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.128572
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 11:38:13AM +0200, Arnd Bergmann wrote:
-> On Thursday 18 April 2013, Uwe Kleine-König wrote:
-> > That is, there are (INTLINESNUM + 1) * 32 irqs for INTLINESNUM < 15. For
-> > INTLINESNUM == 15 there are only 496 and not 16 * 32 == 512. That's the
-> > same on the gic (just with bigger numbers).
+Quoting Jens Axboe (2013-04-19 09:32:50)
+> > 
+> > No wonder this thing crashes.  Chris, can't the original bio carry
+> > bbio in bi_private and let end_bio_extent_readpage() free the bbio
+> > instead of abusing bi_bdev like this?
 > 
-> Ok, but since you are now using a linear domain, it doesn't actually hurt
-> to register 512 in that special case, right?
-Well, it depends if allocating space for 16 unused unsigned ints hurts
-(maybe not). And it makes mapping some irqs successfull while the irq
-doesn't really exist. But probably this doesn't hurt either because the
-problem already exists.
+> Ugh, wtf.
+> 
+> Chris, time for a swim in the bay :-)
 
-I don't care much. Is there another advantage beside saving a few source
-lines/instructions?
+Yeah, I can't really defend this one.  We needed a space for an int and
+I assumed end_io meant the FS was free to do horrible things.
 
-Best regards
-Uwe
+Really though, I'll just take a quick dip in the lake and patch this out
+of btrfs. 
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Jan is probably right about changing around our endio callbacks to
+explicitly pass the mirror, it should be less complex and cleaner.
+
+Many thanks to everyone here that tracked it down.
+
+-chris
