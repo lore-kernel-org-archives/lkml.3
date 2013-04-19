@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030979Ab3DSQlM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:41:12 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:53300 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967882Ab3DSQlI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 12:41:08 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: dwmw2@infradead.org, axboe@kernel.dk, shli@kernel.org,
-        Paul.Clements@steeleye.com, npiggin@kernel.dk, neilb@suse.de,
-        cjb@laptop.org, adrian.hunter@intel.com,
-        James.Bottomley@HansenPartnership.com, JBottomley@parallels.com
-Cc: linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org,
-        nbd-general@lists.sourceforge.net, linux-raid@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jcmvbkbc@gmail.com, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>
-Subject: [PATCH v2 3/9] sd: use generic helper to set max_discard_sectors
-Date: Sat, 20 Apr 2013 01:41:00 +0900
-Message-Id: <1366389660-19417-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1030988Ab3DSQlU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:41:20 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:20021 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967882Ab3DSQlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 12:41:16 -0400
+Message-ID: <5171739C.90707@imgtec.com>
+Date: Fri, 19 Apr 2013 17:41:00 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Mike Turquette <mturquette@linaro.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Chao Xie <xiechao.mail@gmail.com>
+Subject: Re: [RFC PATCH v1 0/3] clk: implement remuxing during set_rate
+References: <1363967031-22781-1-git-send-email-james.hogan@imgtec.com> <515B8EAD.8020109@codeaurora.org> <CAAG0J99i-AwbGoerTzQvJ+JC9yj-3Owm3e5+6xTijo4Gihcx-Q@mail.gmail.com> <20130403213412.3383.84823@quantum>
+In-Reply-To: <20130403213412.3383.84823@quantum>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_04_19_17_41_01
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+Hi Mike,
 
-It is better to use blk_queue_max_discard_sectors helper
-function to set max_discard_sectors as it checks
-max_discard_sectors upper limit UINT_MAX >> 9
+On 03/04/13 22:34, Mike Turquette wrote:
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index 9fdfae7..1a19186 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -126,6 +126,9 @@ struct clk_ops {
+>  					unsigned long parent_rate);
+>  	long		(*round_rate)(struct clk_hw *hw, unsigned long,
+>  					unsigned long *);
+> +	s64		(*determine_rate)(struct clk_hw *hw, unsigned long rate,
+> +					unsigned long *best_parent_rate,
+> +					struct clk *best_parent_clk);
 
-similar issue was reported for mmc in below link
-https://lkml.org/lkml/2013/4/1/292
+Thanks for the comments. I've sent a new patchset based on this. I've
+left the return value for determine_rate the same as round_rate though
+(long rather than s64), figuring that introducing s64 would be a can of
+worms, and if wanting to convert code to use s64, it should probably be
+done together in a separate patchset.
 
-If multiple discard requests get merged, merged discard request's
-size exceeds 4GB, there is possibility that merged discard request's
-__data_len field may overflow.
-
-This patch fixes this issue.
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Vivek Trivedi <t.vivek@samsung.com>
----
- drivers/scsi/sd.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 7992635..93c26b3 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -632,7 +632,8 @@ static void sd_config_discard(struct scsi_disk *sdkp, unsigned int mode)
- 		break;
- 	}
- 
--	q->limits.max_discard_sectors = max_blocks * (logical_block_size >> 9);
-+	blk_queue_max_discard_sectors(q,
-+				max_blocks * (logical_block_size >> 9));
- 	queue_flag_set_unlocked(QUEUE_FLAG_DISCARD, q);
- }
- 
--- 
-1.7.9.5
+Cheers
+James
 
