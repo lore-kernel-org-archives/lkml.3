@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030204Ab3DSMND (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:13:03 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:58588 "EHLO
+	id S968329Ab3DSMOQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 08:14:16 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:51556 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968244Ab3DSMNB (ORCPT
+	with ESMTP id S968240Ab3DSMOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 08:13:01 -0400
+	Fri, 19 Apr 2013 08:14:15 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Chen Gang <gang.chen@asianux.com>
-Subject: Re: [Suggestion] ARM64: kernel: compiling issue, need implement cmpxchg64 with assembler language.
-Date: Fri, 19 Apr 2013 14:12:54 +0200
+Subject: Re: [PATCH] ARM64: kernel: compiling issue: need define readq and writeq for driver module using.
+Date: Fri, 19 Apr 2013 14:13:57 +0200
 User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
 Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>, Tony Lindgren <tony@atomide.com>,
@@ -19,41 +19,35 @@ Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <51712E5E.2020809@asianux.com>
-In-Reply-To: <51712E5E.2020809@asianux.com>
+References: <51712975.8030104@asianux.com>
+In-Reply-To: <51712975.8030104@asianux.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201304191412.54601.arnd@arndb.de>
-X-Provags-ID: V02:K0:qxATHFze3+3+CnqVL3w00rJBvzSmnl8WkLzOI7pkZpR
- cgoF7CNcAZA+eDUsrTlXfi63tcFQDE5bOTJQsNx9MtyRiUYP6D
- EBLaKMeqYX4Ilgha41VytvlMhcaZqdCk5te0Ud2jtl9KSqx8Sn
- QWOd5HPclPdl4VQlV/t6ABLYRu3TgQrYFJUzszFKpsNwQQN6XQ
- dEWR4Ee11wJIDIP4LDnlxFTYA4U8zqFPJXbTDjYrchQK37tkf8
- qSu7cZNOz99u9rvpeam7likYmVG3N9JhrAa9Ez/6kNW5f5qeZu
- JEKaRspqglJmdiII7ICJoapquMlWzEitOzp1LxP3Iak2chmivO
- LyP/sTQP+mOtGKxmQJmo=
+Message-Id: <201304191413.57424.arnd@arndb.de>
+X-Provags-ID: V02:K0:f9QydTEnA5q7MZiQZWnsZC0nrBGp14kfqrMh8RwIWEi
+ JqBolJi0pS1jJTa/n8xW7esjqNri7pQ2QgEYptyWuc6OIiltQX
+ mu4jrFAUi128fUq5sB9jjyY/hh5u1dgRXXU8l9a0daPhUsClVJ
+ jnrC4jyutl788nhoyNmfrZgVOmKasjfWANTssMuMFCQLbJ0Yx9
+ ItBKgjA4RffoOOzarqXiKhm8L2cNIVtBco0IUvEkGlF1kCUoPH
+ xhMfghgD/bduOFP+top1aO7hBS4Kh+r1hrHRE3GNXTSdWA1Dbd
+ L0iHMS0gCRoZ7orwn0/CQF2tQu1NohlLVq8+n2EVsBuQv738IG
+ i6X2qCzqI0eGL4qRhjK8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Friday 19 April 2013, Chen Gang wrote:
-> in arch/arm64/include/asm, not define the function cmpxchg64
+>   when compiling with allmodconfig, CONFIG_64BIT=y
+>     the file drivers/base/regmap/regmap-mmio.c will use readq and writeq.
 > 
->   when compiling with allmodconfig,
->     drivers/block/blockconsole.c will need this function.
+>   so we need implement these functions.
 > 
->   I am not quite familiar with ARM64 (neither ARM64 assembler)
+> BTW:
+>   the coding style can not pass ./scripts/checkpatch.pl.
+>   it seems better to provide additional patch for beautifying code.
 > 
->   can any member helps to send related patch ?
->     if no one have time to send related patch, I should try.
->     and I am glad to try, but need additional time resources,
->     if I try, I should finish it within this month (2013-4-30).
-> 
->   welcome any suggestions or completions.
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-cmpxchg64 is the same as cmpxchg on 64-bit platforms, can't the
-driver be changed to use the latter?
-
-	Arnd
+Acked-by: Arnd Bergmann <arnd@arndb.de>
