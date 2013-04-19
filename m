@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967790Ab3DSBzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 21:55:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46026 "EHLO mx2.suse.de"
+	id S967804Ab3DSCBa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 22:01:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46116 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967641Ab3DSBzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 21:55:49 -0400
-Date: Thu, 18 Apr 2013 18:55:47 -0700 (PDT)
+	id S967641Ab3DSCB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 22:01:28 -0400
+Date: Thu, 18 Apr 2013 19:01:27 -0700 (PDT)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] HID: debug: empty output queue on read
-In-Reply-To: <1366220296-14346-4-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1304181854470.31201@pobox.suse.cz>
-References: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com> <1366220296-14346-4-git-send-email-benjamin.tissoires@redhat.com>
+Subject: Re: [PATCH 1/4] HID: debug: break out hid_dump_report() into
+ hid-debug
+In-Reply-To: <1366220296-14346-2-git-send-email-benjamin.tissoires@redhat.com>
+Message-ID: <alpine.LNX.2.00.1304181900510.31201@pobox.suse.cz>
+References: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com> <1366220296-14346-2-git-send-email-benjamin.tissoires@redhat.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,62 +26,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 17 Apr 2013, Benjamin Tissoires wrote:
 
-> If an event occurs while the hid debugfs is forwarding events, list->tail
-> is updated during copy_to_user().
-> 
-> Remove the gotos and use a regular while-loop to empty the queue.
-> 
-> Second benefit, it checks that we are not writing more than count bytes
-> to the user-space output buffer.
+> No semantic changes, but hid_dump_report should be in hid-debug.c, not
+> in hid-core.c
 > 
 > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/hid/hid-debug.c | 27 +++++++++++----------------
->  1 file changed, 11 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
-> index 094cbcf..1dc8104 100644
-> --- a/drivers/hid/hid-debug.c
-> +++ b/drivers/hid/hid-debug.c
-> @@ -1000,6 +1000,7 @@ static ssize_t hid_debug_events_read(struct file *file, char __user *buffer,
->  		size_t count, loff_t *ppos)
->  {
->  	struct hid_debug_list *list = file->private_data;
-> +	char *buf_head;
->  	int ret = 0, len;
->  	DECLARE_WAITQUEUE(wait, current);
->  
-> @@ -1039,28 +1040,22 @@ static ssize_t hid_debug_events_read(struct file *file, char __user *buffer,
->  			goto out;
->  
->  		/* pass the ringbuffer contents to userspace */
-> -copy_rest:
-> -		if (list->tail == list->head)
-> -			goto out;
-> -		if (list->tail > list->head) {
-> -			len = list->tail - list->head;
-> +		while (list->tail != list->head && ret < count) {
-> +			buf_head = &list->hid_debug_buf[list->head];
->  
-> -			if (copy_to_user(buffer + ret, &list->hid_debug_buf[list->head], len)) {
-> -				ret = -EFAULT;
-> -				goto out;
-> -			}
-> -			ret += len;
-> -			list->head += len;
-> -		} else {
-> -			len = HID_DEBUG_BUFSIZE - list->head;
-> +			if (list->tail > list->head)
-> +				len = list->tail - list->head;
-> +			else
-> +				len = HID_DEBUG_BUFSIZE - list->head;
-> +
-> +			len = min(count - ret, len);
 
-This triggers a type checking warning in min(), and it seems to be correct 
-on this one (mixing size_t with signed int).
-
-drivers/hid/hid-debug.c:1079: warning: comparison of distinct pointer types lacks a cast
+I have applied this one independently on the rest.
 
 -- 
 Jiri Kosina
