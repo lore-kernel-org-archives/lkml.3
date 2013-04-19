@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030581Ab3DSMrf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:47:35 -0400
-Received: from mail.neotion.com ([91.121.222.125]:56097 "EHLO mail.neotion.com"
+	id S1030475Ab3DSMre (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 08:47:34 -0400
+Received: from mail.neotion.com ([91.121.222.125]:56092 "EHLO mail.neotion.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030356Ab3DSMrd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1030341Ab3DSMrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Apr 2013 08:47:33 -0400
-Message-ID: <51713B7B.3060402@neotion.com>
-Date: Fri, 19 Apr 2013 14:41:31 +0200
+X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Apr 2013 08:47:32 EDT
+Message-ID: <51713B86.2090001@neotion.com>
+Date: Fri, 19 Apr 2013 14:41:42 +0200
 From: Neil Armstrong <narmstrong@neotion.com>
 Reply-To: narmstrong@neotion.com
 Organization: Neotion
@@ -20,7 +20,8 @@ CC: Chris Ball <cjb@laptop.org>, Namjae Jeon <linkinjeon@gmail.com>,
         Seungwon Jeon <tgih.jun@samsung.com>,
         Subhash Jadavani <subhashj@codeaurora.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] Add BOOT_PARTITION_ENABLE definition to MMC EXT_CSD PART_CONFIG
+Subject: [PATCH 0/3] Add boot_enable attribute to eMMC device for boot mode
+ operation selection
 X-Enigmail-Version: 1.5.1
 OpenPGP: id=1166F485
 Content-Type: text/plain; charset=US-ASCII
@@ -29,26 +30,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add bit mask for the BOOT_PARTITION_ENABLE values.
+Since eMMC 4.3 a special boot mode operation was introduced to retrieve
+data from the eMMC device with a very simple procedure. Since the Linux
+kernel exports these device boot partitions, it may be useful to select
+the boot partition from the user space.
 
-Signed-off-by: Neil Armstrong <narmstrong@neotion.com>
----
- include/linux/mmc/mmc.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+The patch has been tested on a Toshiba eMMC conforming with eMMC 4.5
+specifications.
 
-diff --git a/include/linux/mmc/mmc.h b/include/linux/mmc/mmc.h
-index 50bcde3..eb5b361 100644
---- a/include/linux/mmc/mmc.h
-+++ b/include/linux/mmc/mmc.h
-@@ -347,6 +347,7 @@ struct _mmc_csd {
- #define EXT_CSD_PART_CONFIG_ACC_BOOT0    (0x1)
- #define EXT_CSD_PART_CONFIG_ACC_RPMB    (0x3)
- #define EXT_CSD_PART_CONFIG_ACC_GP0    (0x4)
-+#define EXT_CSD_PART_CONFIG_EN_MASK    (0x38)
- 
- #define EXT_CSD_PART_SUPPORT_PART_EN    (0x1)
- 
--- 
-1.7.0.4
+Neil Armstrong (3):
+  Add BOOT_PARTITION_ENABLE definition to MMC EXT_CSD PART_CONFIG
+  Add boot_enable sysfs attribute to select MMC boot operation
+    partition
+  Add Documentation for MMC boot_enable attribute
+
+ Documentation/mmc/mmc-dev-parts.txt |    6 +++
+ drivers/mmc/card/block.c            |   72
+++++++++++++++++++++++++++++++++++-
+ include/linux/mmc/mmc.h             |    1 +
+ 3 files changed, 78 insertions(+), 1 deletions(-)
 
 
