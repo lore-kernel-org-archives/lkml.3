@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab3DSSdA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 14:33:00 -0400
-Received: from sauhun.de ([89.238.76.85]:54596 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753171Ab3DSSc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 14:32:59 -0400
-Date: Fri, 19 Apr 2013 20:32:58 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: EUNBONG SONG <eunb.song@samsung.com>
-Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Re: [PATCH]  I2C: Change the value of octeon i2c adapter timeout
- value
-Message-ID: <20130419183258.GB3702@the-dreams.de>
-References: <33288064.110491366362833968.JavaMail.weblogic@epv6ml06>
+	id S1753628Ab3DSSgZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 14:36:25 -0400
+Received: from mail-qe0-f44.google.com ([209.85.128.44]:57962 "EHLO
+	mail-qe0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753212Ab3DSSgX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 14:36:23 -0400
+Date: Fri, 19 Apr 2013 11:36:18 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>
+Subject: Re: [PATCH 05/10] cpuset: don't update tasks' cpumask and nodemask
+ in an empty cpuset
+Message-ID: <20130419183618.GC13811@mtj.dyndns.org>
+References: <517137A7.4020605@huawei.com>
+ <51713819.8050708@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <33288064.110491366362833968.JavaMail.weblogic@epv6ml06>
+In-Reply-To: <51713819.8050708@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 09:13:54AM +0000, EUNBONG SONG wrote:
-> 
-> 
-> On Fri, Apr 19, 2013 at 12:01:04AM +0000, EUNBONG SONG wrote:
-> >> 
-> >>  I think HZ/50 is better than 2 for adapter timeout.
-> 
-> > Basically OK. But why HZ/50? Most drivers use HZ.
-> 
-> Actually, I just translated 2 jiffies because HZ is 100 in default cavium config. 
-> You can find that in "arch/mips/configs/cavium_octeon_defconfig". 
-> And i have been using this value over 1 year in octeon board without problem.
+Hello, Li.
 
-Have you been writing to EEPROMS? Their erase/write cycle might be
-longer. But I am not forcing you to change the value, just giving some
-suggestions.
+On Fri, Apr 19, 2013 at 08:27:05PM +0800, Li Zefan wrote:
+> I think this was introduced unintentionally when cpuset hotplug was
+> made asynchronous. Fortunately it does no harm, as updating tasks'
+> cpumask will just return failure and there's a guarantee_online_mems()
+> when updating nodemask, and then the tasks will be moved to an ancestor
+> cpuset.
 
+Yeah, which will update the masks to the proper values anyway, so it
+was intentionally written that way as it didn't really matter either
+way.  I suppose this helps future changes?  Maybe update the
+description a bit?
+
+Thanks.
+
+-- 
+tejun
