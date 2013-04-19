@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030444Ab3DSNdW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 09:33:22 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52577
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030254Ab3DSNdU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 09:33:20 -0400
-Date: Fri, 19 Apr 2013 06:32:50 -0700
-From: Jens Axboe <axboe@kernel.dk>
-To: Tejun Heo <tj@kernel.org>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>,
-        Steven Rostedt <rostedt@goodmis.org>, namhyung@gmail.com,
-        agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
-Message-ID: <20130419133250.GR4816@kernel.dk>
-References: <516E5EF8.9090507@cn.fujitsu.com>
- <1366209997.8817.12.camel@pippen.local.home>
- <20130418123738.GV4816@kernel.dk>
- <516FED09.1040008@cn.fujitsu.com>
- <20130418133546.GX4816@kernel.dk>
- <516FFFAC.8040103@cn.fujitsu.com>
- <20130418143014.GZ4816@kernel.dk>
- <5170BB00.8080200@cn.fujitsu.com>
- <20130419055754.GA9691@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130419055754.GA9691@mtj.dyndns.org>
+	id S1030438Ab3DSNjA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 09:39:00 -0400
+Received: from mx03.lb01.inode.at ([62.99.145.3]:27293 "EHLO mx.inode.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1030254Ab3DSNi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 09:38:59 -0400
+From: Michal Bachraty <michal.bachraty@streamunlimited.com>
+To: perex@perex.cz, tiwai@suse.de, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Cc: lgirdwood@gmail.com, marek.belisko@streamunlimited.com,
+        broonie@opensource.wolfsonmicro.com,
+        Michal Bachraty <michal.bachraty@streamunlimited.com>
+Subject: [PATCH 1/2] ALSA: ASoc: spdif_transciever: Add DT support
+Date: Fri, 19 Apr 2013 15:38:45 +0200
+Message-Id: <1366378725-14471-1-git-send-email-michal.bachraty@streamunlimited.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Authenticated-Sender: michal.bachraty@streamunlimited.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18 2013, Tejun Heo wrote:
-> (cc'ing btrfs people)
-> 
-> On Fri, Apr 19, 2013 at 11:33:20AM +0800, Wanlong Gao wrote:
-> > RIP: 0010:[<ffffffff812484d3>]  [<ffffffff812484d3>] ftrace_raw_event_block_bio_complete+0x73/0xf0
-> ...
-> >  [<ffffffff811b6c10>] bio_endio+0x80/0x90
-> >  [<ffffffffa0790d26>] btrfs_end_bio+0xf6/0x190 [btrfs]
-> >  [<ffffffff811b6bcd>] bio_endio+0x3d/0x90
-> >  [<ffffffff81249873>] req_bio_endio+0xa3/0xe0
-> 
-> Ugh....
-> 
-> In fs/btrfs/volumes.c
-> 
->   static void bbio_error(struct btrfs_bio *bbio, struct bio *bio, u64 logical)
->   {
-> 	...
-> 		bio->bi_bdev = (struct block_device *)
-> 			       	       (unsigned long)bbio->mirror_num;
-> 	...
->   }
-> 
->   static void btrfs_end_bio(struct bio *bio, int err)
->   {
-> 	...
-> 		bio->bi_bdev = (struct block_device *)
-> 					(unsigned long)bbio->mirror_num;
-> 									
-> 	...
->   }
-> 
-> In fs/btrfs/extent_io.c
-> 
->   static void end_bio_extent_readpage(struct bio *bio, int err)
->   {
-> 	int mirror;
-> 	...
-> 		mirror = (int)(unsigned long)bio->bi_bdev;
-> 	...
->   }
-> 
-> Ewweeeeeeeeeeeeeeeeeehh........
-> 
-> No wonder this thing crashes.  Chris, can't the original bio carry
-> bbio in bi_private and let end_bio_extent_readpage() free the bbio
-> instead of abusing bi_bdev like this?
+Add devicetree support for this dummy audio soc driver.
 
-Ugh, wtf.
+Signed-off-by: Michal Bachraty <michal.bachraty@streamunlimited.com>
+---
+ sound/soc/codecs/spdif_transciever.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Chris, time for a swim in the bay :-)
-
+diff --git a/sound/soc/codecs/spdif_transciever.c b/sound/soc/codecs/spdif_transciever.c
+index 112a49d..4c8c295 100644
+--- a/sound/soc/codecs/spdif_transciever.c
++++ b/sound/soc/codecs/spdif_transciever.c
+@@ -20,6 +20,7 @@
+ #include <sound/soc.h>
+ #include <sound/pcm.h>
+ #include <sound/initval.h>
++#include <linux/of.h>
+ 
+ #define DRV_NAME "spdif-dit"
+ 
+@@ -52,12 +53,21 @@ static int spdif_dit_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id spdif_dit_dt_ids[] = {
++	{ .compatible = DRV_NAME, },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, spdif_dits_dt_ids);
++#endif
++
+ static struct platform_driver spdif_dit_driver = {
+ 	.probe		= spdif_dit_probe,
+ 	.remove		= spdif_dit_remove,
+ 	.driver		= {
+ 		.name	= DRV_NAME,
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(spdif_dit_dt_ids),
+ 	},
+ };
+ 
 -- 
-Jens Axboe
+1.7.9.5
 
