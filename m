@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030559Ab3DSMeL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:34:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52374 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S968302Ab3DSMeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 08:34:09 -0400
-From: Taras Kondratiuk <taras@ti.com>
-To: <lgirdwood@gmail.com>, <broonie@kernel.org>
-CC: Taras Kondratiuk <taras@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] MAINTAINERS: update Liam Girdwood email address
-Date: Fri, 19 Apr 2013 15:28:17 +0300
-Message-ID: <1366374499-21651-1-git-send-email-taras@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1030568Ab3DSMfm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 08:35:42 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:45777 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S968302Ab3DSMfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 08:35:41 -0400
+Date: Fri, 19 Apr 2013 13:35:13 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM64: kernel: compiling issue: need define readq and
+ writeq for driver module using.
+Message-ID: <20130419123513.GB18443@arm.com>
+References: <51712975.8030104@asianux.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51712975.8030104@asianux.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 6b9cf5c2f286b6e86be8f1c509f6d84e675aa366
-updated only one of Liam's TI address entries.
-So update the other one.
+On Fri, Apr 19, 2013 at 12:24:37PM +0100, Chen Gang wrote:
+> 
+>   when compiling with allmodconfig, CONFIG_64BIT=y
+>     the file drivers/base/regmap/regmap-mmio.c will use readq and writeq.
+> 
+>   so we need implement these functions.
+> 
+> BTW:
+>   the coding style can not pass ./scripts/checkpatch.pl.
+>   it seems better to provide additional patch for beautifying code.
 
-There is one more Slimlogic address under WM97XX touchscreen
-maintainers list, but this patch doesn't touch it.
+If it complains about long lines, just ignore it. I wouldn't worry too
+much about checkpatch.pl and coding style warnings ;)
 
-Signed-off-by: Taras Kondratiuk <taras@ti.com>
----
- MAINTAINERS |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8bdd7a7..c2d3458 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -8712,7 +8712,7 @@ F:	drivers/scsi/vmw_pvscsi.c
- F:	drivers/scsi/vmw_pvscsi.h
- 
- VOLTAGE AND CURRENT REGULATOR FRAMEWORK
--M:	Liam Girdwood <lrg@ti.com>
-+M:	Liam Girdwood <lgirdwood@gmail.com>
- M:	Mark Brown <broonie@kernel.org>
- W:	http://opensource.wolfsonmicro.com/node/15
- W:	http://www.slimlogic.co.uk/?p=48
+Thanks.
+
 -- 
-1.7.9.5
-
+Catalin
