@@ -1,51 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967782Ab3DSBu4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 21:50:56 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:52071 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967641Ab3DSBuz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 21:50:55 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r3J1oWv2000481
-Message-ID: <5170A2E9.1030704@realsil.com.cn>
-Date: Fri, 19 Apr 2013 09:50:33 +0800
-From: wwang <wei_wang@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S967790Ab3DSBzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 21:55:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46026 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967641Ab3DSBzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 21:55:49 -0400
+Date: Thu, 18 Apr 2013 18:55:47 -0700 (PDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] HID: debug: empty output queue on read
+In-Reply-To: <1366220296-14346-4-git-send-email-benjamin.tissoires@redhat.com>
+Message-ID: <alpine.LNX.2.00.1304181854470.31201@pobox.suse.cz>
+References: <1366220296-14346-1-git-send-email-benjamin.tissoires@redhat.com> <1366220296-14346-4-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: <cjb@laptop.org>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>
-Subject: Re: [PATCH v2] mfd:rtsx: Support RTS5249
-References: <cover.1365648007.git.wei_wang@realsil.com.cn> <6b09b5138a549e49ea2d27bfee0e36c7aebb0a1b.1365648007.git.wei_wang@realsil.com.cn> <20130418225022.GF8798@zurbaran>
-In-Reply-To: <20130418225022.GF8798@zurbaran>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [172.29.41.8]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年04月19日 06:50, Samuel Ortiz 写道:
-> Hi Wei,
->
-> On Thu, Apr 11, 2013 at 10:43:40AM +0800, wei_wang@realsil.com.cn wrote:
->> From: Wei WANG <wei_wang@realsil.com.cn>
->>
->> Support new model: RTS5249
-> Could you please provide me with a more detailled changelog (What's so
-> different with this model that the current driver does not support ?) before I
-> apply it ?
->
-> Cheers,
-> Samuel.
->
+On Wed, 17 Apr 2013, Benjamin Tissoires wrote:
 
-The difference is minor except that RTS5249 supports SD UHS-II interface.
+> If an event occurs while the hid debugfs is forwarding events, list->tail
+> is updated during copy_to_user().
+> 
+> Remove the gotos and use a regular while-loop to empty the queue.
+> 
+> Second benefit, it checks that we are not writing more than count bytes
+> to the user-space output buffer.
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>  drivers/hid/hid-debug.c | 27 +++++++++++----------------
+>  1 file changed, 11 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-debug.c b/drivers/hid/hid-debug.c
+> index 094cbcf..1dc8104 100644
+> --- a/drivers/hid/hid-debug.c
+> +++ b/drivers/hid/hid-debug.c
+> @@ -1000,6 +1000,7 @@ static ssize_t hid_debug_events_read(struct file *file, char __user *buffer,
+>  		size_t count, loff_t *ppos)
+>  {
+>  	struct hid_debug_list *list = file->private_data;
+> +	char *buf_head;
+>  	int ret = 0, len;
+>  	DECLARE_WAITQUEUE(wait, current);
+>  
+> @@ -1039,28 +1040,22 @@ static ssize_t hid_debug_events_read(struct file *file, char __user *buffer,
+>  			goto out;
+>  
+>  		/* pass the ringbuffer contents to userspace */
+> -copy_rest:
+> -		if (list->tail == list->head)
+> -			goto out;
+> -		if (list->tail > list->head) {
+> -			len = list->tail - list->head;
+> +		while (list->tail != list->head && ret < count) {
+> +			buf_head = &list->hid_debug_buf[list->head];
+>  
+> -			if (copy_to_user(buffer + ret, &list->hid_debug_buf[list->head], len)) {
+> -				ret = -EFAULT;
+> -				goto out;
+> -			}
+> -			ret += len;
+> -			list->head += len;
+> -		} else {
+> -			len = HID_DEBUG_BUFSIZE - list->head;
+> +			if (list->tail > list->head)
+> +				len = list->tail - list->head;
+> +			else
+> +				len = HID_DEBUG_BUFSIZE - list->head;
+> +
+> +			len = min(count - ret, len);
 
-In order to support SD UHS-II，the definitions of some internal 
-registers of RTS5249 have to be modified and are different from its 
-predecessors. So we need this patch to ensure RTS5249 can work, even 
-SD/MMC stack doesn't support UHS-II interface.
+This triggers a type checking warning in min(), and it seems to be correct 
+on this one (mixing size_t with signed int).
 
+drivers/hid/hid-debug.c:1079: warning: comparison of distinct pointer types lacks a cast
+
+-- 
+Jiri Kosina
+SUSE Labs
