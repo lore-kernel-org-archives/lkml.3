@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030448Ab3DSM1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:27:13 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:58629 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030388Ab3DSM1J (ORCPT
+	id S1030461Ab3DSM13 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 08:27:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37586 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030384Ab3DSM1Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 08:27:09 -0400
-Message-ID: <51713819.8050708@huawei.com>
-Date: Fri, 19 Apr 2013 20:27:05 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 05/10] cpuset: don't update tasks' cpumask and nodemask in
- an empty cpuset
-References: <517137A7.4020605@huawei.com>
-In-Reply-To: <517137A7.4020605@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+	Fri, 19 Apr 2013 08:27:25 -0400
+Message-ID: <1366374436.24945.6.camel@laptop>
+Subject: Re: [PATCH 2/2] perf, amd: support for AMD NB and L2I "uncore"
+ counters.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jacob Shin <jacob.shin@amd.com>
+Cc: Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Stephane Eranian <eranian@google.com>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Date: Fri, 19 Apr 2013 14:27:16 +0200
+In-Reply-To: <20130418163315.GA7903@jshin-Toonie>
+References: <1366046483-1765-1-git-send-email-jacob.shin@amd.com>
+	 <1366046483-1765-3-git-send-email-jacob.shin@amd.com>
+	 <1366284534.19383.13.camel@laptop> <20130418163315.GA7903@jshin-Toonie>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think this was introduced unintentionally when cpuset hotplug was
-made asynchronous. Fortunately it does no harm, as updating tasks'
-cpumask will just return failure and there's a guarantee_online_mems()
-when updating nodemask, and then the tasks will be moved to an ancestor
-cpuset.
+On Thu, 2013-04-18 at 11:33 -0500, Jacob Shin wrote:
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cpuset.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+> Okay, here is V2 which does that. Thanks again in advance for taking
+> the time to look it over.
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 8b0e433..2e4c5af 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2013,7 +2013,9 @@ static void cpuset_propagate_hotplug_workfn(struct work_struct *work)
- 		mutex_lock(&callback_mutex);
- 		cpumask_andnot(cs->cpus_allowed, cs->cpus_allowed, &off_cpus);
- 		mutex_unlock(&callback_mutex);
--		update_tasks_cpumask(cs, NULL);
-+
-+		if (!cpumask_empty(cs->cpus_allowed))
-+			update_tasks_cpumask(cs, NULL);
- 	}
- 
- 	/* remove offline mems from @cs */
-@@ -2022,7 +2024,9 @@ static void cpuset_propagate_hotplug_workfn(struct work_struct *work)
- 		mutex_lock(&callback_mutex);
- 		nodes_andnot(cs->mems_allowed, cs->mems_allowed, off_mems);
- 		mutex_unlock(&callback_mutex);
--		update_tasks_nodemask(cs, &tmp_mems, NULL);
-+
-+		if (!nodes_empty(cs->mems_allowed))
-+			update_tasks_nodemask(cs, &tmp_mems, NULL);
- 	}
- 
- 	is_empty = cpumask_empty(cs->cpus_allowed) ||
--- 
-1.8.0.2
+Awesome, looks good on a first read.. I'm assuming you've tested things
+and they actually work too? :-)
+
+> From d68225744196d8b0d60a1bc33ae9abdbffbd9bc9 Mon Sep 17 00:00:00 2001
+> From: Jacob Shin <jacob.shin@amd.com>
+> Date: Sun, 14 Apr 2013 04:12:42 -0500
+> Subject: [PATCH 2/2] perf, amd: support for AMD NB and L2I "uncore" counters.
+> 
+> Add support for AMD Family 15h [and above] northbridge performance
+> counters. MSRs 0xc0010240 ~ 0xc0010247 are shared across all cores
+> that share a common northbridge.
+> 
+> Add support for AMD Family 16h L2 performance counters. MSRs
+> 0xc0010230 ~ 0xc0010237 are shared across all cores that share a
+> common L2 cache.
+> 
+> We do not enable counter overflow interrupts. Sampling mode and
+> per-thread events are not supported.
+> 
+> Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+
+
