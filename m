@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968098Ab3DSKsW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 06:48:22 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:43164 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756780Ab3DSKsQ (ORCPT
+	id S968130Ab3DSKs1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 06:48:27 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:14263
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S968050Ab3DSKsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 06:48:16 -0400
+	Fri, 19 Apr 2013 06:48:21 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 3
 X-BigFish: VS3(zzc8kzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
 From: Zhao Chenhui <chenhui.zhao@freescale.com>
 To: <linuxppc-dev@lists.ozlabs.org>
 CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 04/15] pm: add power node to dts
-Date: Fri, 19 Apr 2013 18:47:37 +0800
-Message-ID: <1366368468-29143-4-git-send-email-chenhui.zhao@freescale.com>
+Subject: [PATCH v2 06/15] powerpc/85xx: add support to JOG feature using cpufreq interface
+Date: Fri, 19 Apr 2013 18:47:39 +0800
+Message-ID: <1366368468-29143-6-git-send-email-chenhui.zhao@freescale.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
 References: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
@@ -26,320 +26,476 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Power Management device tree stub indicated that the platform
-supports Power Management feature.
+From: chenhui zhao <chenhui.zhao@freescale.com>
 
+Some 85xx silicons like MPC8536 and P1022 have a JOG feature, which provides
+a dynamic mechanism to lower or raise the CPU core clock at runtime.
+
+This patch adds the support to change CPU frequency using the standard
+cpufreq interface. The ratio CORE to CCB can be 1:1(except MPC8536), 3:2,
+2:1, 5:2, 3:1, 7:2 and 4:1.
+
+Two CPU cores on P1022 must not in the low power state during the frequency
+transition. The driver uses a atomic counter to meet the requirement.
+
+The jog mode frequency transition process on the MPC8536 is similar to
+the deep sleep process. The driver need save the CPU state and restore
+it after CPU warm reset.
+
+Note:
+ * The I/O peripherals such as PCIe and eTSEC may lose packets during
+   the jog mode frequency transition.
+ * The driver doesn't support MPC8536 Rev 1.0 due to a JOG erratum.
+   Subsequent revisions of MPC8536 have corrected the erratum.
+
+Signed-off-by: Dave Liu <daveliu@freescale.com>
+Signed-off-by: Li Yang <leoli@freescale.com>
+Signed-off-by: Jerry Huang <Chang-Ming.Huang@freescale.com>
 Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
+CC: Scott Wood <scottwood@freescale.com>
 ---
- arch/powerpc/boot/dts/fsl/mpc8536si-post.dtsi |   14 ++++++-
- arch/powerpc/boot/dts/fsl/mpc8544si-post.dtsi |    2 +
- arch/powerpc/boot/dts/fsl/mpc8548si-post.dtsi |    2 +
- arch/powerpc/boot/dts/fsl/mpc8572si-post.dtsi |    2 +
- arch/powerpc/boot/dts/fsl/p1010si-post.dtsi   |    8 ++++
- arch/powerpc/boot/dts/fsl/p1020si-post.dtsi   |    5 +++
- arch/powerpc/boot/dts/fsl/p1021si-post.dtsi   |    5 +++
- arch/powerpc/boot/dts/fsl/p1022si-post.dtsi   |   11 ++++--
- arch/powerpc/boot/dts/fsl/p2020si-post.dtsi   |   14 +++++++
- arch/powerpc/boot/dts/fsl/pq3-power.dtsi      |   48 +++++++++++++++++++++++++
- 10 files changed, 106 insertions(+), 5 deletions(-)
- create mode 100644 arch/powerpc/boot/dts/fsl/pq3-power.dtsi
+ arch/powerpc/platforms/85xx/Makefile |    1 +
+ drivers/cpufreq/Kconfig.powerpc      |   10 +
+ drivers/cpufreq/Makefile             |    1 +
+ drivers/cpufreq/mpc85xx-cpufreq.c    |  390 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 402 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/cpufreq/mpc85xx-cpufreq.c
 
-diff --git a/arch/powerpc/boot/dts/fsl/mpc8536si-post.dtsi b/arch/powerpc/boot/dts/fsl/mpc8536si-post.dtsi
-index c8b2daa..900f117 100644
---- a/arch/powerpc/boot/dts/fsl/mpc8536si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/mpc8536si-post.dtsi
-@@ -199,6 +199,10 @@
+diff --git a/arch/powerpc/platforms/85xx/Makefile b/arch/powerpc/platforms/85xx/Makefile
+index a35bab7..da53bde 100644
+--- a/arch/powerpc/platforms/85xx/Makefile
++++ b/arch/powerpc/platforms/85xx/Makefile
+@@ -3,6 +3,7 @@
+ #
+ obj-$(CONFIG_SMP) += smp.o
+ obj-$(CONFIG_FSL_PMC)	+= sleep.o
++obj-$(CONFIG_CPU_FREQ_MPC85xx)	+= sleep.o
  
- /include/ "pq3-dma-0.dtsi"
- /include/ "pq3-etsec1-0.dtsi"
-+	enet0: ethernet@24000 {
-+		fsl,wake-on-filer;
-+		fsl,pmc-handle = <&etsec1_clk>;
-+	};
- /include/ "pq3-etsec1-timer-0.dtsi"
+ obj-y += common.o
  
- 	usb@22000 {
-@@ -222,9 +226,10 @@
- 	};
- 
- /include/ "pq3-etsec1-2.dtsi"
--
--	ethernet@26000 {
-+	enet2: ethernet@26000 {
- 		cell-index = <1>;
-+		fsl,wake-on-filer;
-+		fsl,pmc-handle = <&etsec3_clk>;
- 	};
- 
- 	usb@2b000 {
-@@ -249,4 +254,9 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
+diff --git a/drivers/cpufreq/Kconfig.powerpc b/drivers/cpufreq/Kconfig.powerpc
+index e76992f..ba06a00 100644
+--- a/drivers/cpufreq/Kconfig.powerpc
++++ b/drivers/cpufreq/Kconfig.powerpc
+@@ -5,3 +5,13 @@ config CPU_FREQ_MAPLE
+ 	help
+ 	  This adds support for frequency switching on Maple 970FX
+ 	  Evaluation Board and compatible boards (IBM JS2x blades).
 +
-+/include/ "pq3-power.dtsi"
-+	power@e0070 {
-+		compatible = "fsl,mpc8536-pmc", "fsl,mpc8548-pmc";
-+	};
- };
-diff --git a/arch/powerpc/boot/dts/fsl/mpc8544si-post.dtsi b/arch/powerpc/boot/dts/fsl/mpc8544si-post.dtsi
-index b68eb11..ea7416a 100644
---- a/arch/powerpc/boot/dts/fsl/mpc8544si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/mpc8544si-post.dtsi
-@@ -188,4 +188,6 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
-diff --git a/arch/powerpc/boot/dts/fsl/mpc8548si-post.dtsi b/arch/powerpc/boot/dts/fsl/mpc8548si-post.dtsi
-index 579d76c..dddb737 100644
---- a/arch/powerpc/boot/dts/fsl/mpc8548si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/mpc8548si-post.dtsi
-@@ -156,4 +156,6 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
-diff --git a/arch/powerpc/boot/dts/fsl/mpc8572si-post.dtsi b/arch/powerpc/boot/dts/fsl/mpc8572si-post.dtsi
-index d44e25a..7313351 100644
---- a/arch/powerpc/boot/dts/fsl/mpc8572si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/mpc8572si-post.dtsi
-@@ -193,4 +193,6 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
-diff --git a/arch/powerpc/boot/dts/fsl/p1010si-post.dtsi b/arch/powerpc/boot/dts/fsl/p1010si-post.dtsi
-index af12ead..01c8c33 100644
---- a/arch/powerpc/boot/dts/fsl/p1010si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/p1010si-post.dtsi
-@@ -171,6 +171,8 @@
- 
- /include/ "pq3-etsec2-0.dtsi"
- 	enet0: ethernet@b0000 {
-+		fsl,pmc-handle = <&etsec1_clk>;
-+
- 		queue-group@b0000 {
- 			fsl,rx-bit-map = <0xff>;
- 			fsl,tx-bit-map = <0xff>;
-@@ -179,6 +181,8 @@
- 
- /include/ "pq3-etsec2-1.dtsi"
- 	enet1: ethernet@b1000 {
-+		fsl,pmc-handle = <&etsec2_clk>;
-+
- 		queue-group@b1000 {
- 			fsl,rx-bit-map = <0xff>;
- 			fsl,tx-bit-map = <0xff>;
-@@ -187,6 +191,8 @@
- 
- /include/ "pq3-etsec2-2.dtsi"
- 	enet2: ethernet@b2000 {
-+		fsl,pmc-handle = <&etsec3_clk>;
-+
- 		queue-group@b2000 {
- 			fsl,rx-bit-map = <0xff>;
- 			fsl,tx-bit-map = <0xff>;
-@@ -199,4 +205,6 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
-diff --git a/arch/powerpc/boot/dts/fsl/p1020si-post.dtsi b/arch/powerpc/boot/dts/fsl/p1020si-post.dtsi
-index 68cc5e7..410e6e5 100644
---- a/arch/powerpc/boot/dts/fsl/p1020si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/p1020si-post.dtsi
-@@ -162,14 +162,17 @@
- 
- /include/ "pq3-etsec2-0.dtsi"
- 	enet0: enet0_grp2: ethernet@b0000 {
-+		fsl,pmc-handle = <&etsec1_clk>;
- 	};
- 
- /include/ "pq3-etsec2-1.dtsi"
- 	enet1: enet1_grp2: ethernet@b1000 {
-+		fsl,pmc-handle = <&etsec2_clk>;
- 	};
- 
- /include/ "pq3-etsec2-2.dtsi"
- 	enet2: enet2_grp2: ethernet@b2000 {
-+		fsl,pmc-handle = <&etsec3_clk>;
- 	};
- 
- 	global-utilities@e0000 {
-@@ -177,6 +180,8 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
- 
- /include/ "pq3-etsec2-grp2-0.dtsi"
-diff --git a/arch/powerpc/boot/dts/fsl/p1021si-post.dtsi b/arch/powerpc/boot/dts/fsl/p1021si-post.dtsi
-index adb82fd..02df574 100644
---- a/arch/powerpc/boot/dts/fsl/p1021si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/p1021si-post.dtsi
-@@ -158,14 +158,17 @@
- 
- /include/ "pq3-etsec2-0.dtsi"
- 	enet0: enet0_grp2: ethernet@b0000 {
-+		fsl,pmc-handle = <&etsec1_clk>;
- 	};
- 
- /include/ "pq3-etsec2-1.dtsi"
- 	enet1: enet1_grp2: ethernet@b1000 {
-+		fsl,pmc-handle = <&etsec2_clk>;
- 	};
- 
- /include/ "pq3-etsec2-2.dtsi"
- 	enet2: enet2_grp2: ethernet@b2000 {
-+		fsl,pmc-handle = <&etsec3_clk>;
- 	};
- 
- 	global-utilities@e0000 {
-@@ -173,6 +176,8 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
- 
- &qe {
-diff --git a/arch/powerpc/boot/dts/fsl/p1022si-post.dtsi b/arch/powerpc/boot/dts/fsl/p1022si-post.dtsi
-index e179803..c5343e7 100644
---- a/arch/powerpc/boot/dts/fsl/p1022si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/p1022si-post.dtsi
-@@ -223,10 +223,14 @@
- 
- /include/ "pq3-etsec2-0.dtsi"
- 	enet0: enet0_grp2: ethernet@b0000 {
-+		fsl,wake-on-filer;
-+		fsl,pmc-handle = <&etsec1_clk>;
- 	};
- 
- /include/ "pq3-etsec2-1.dtsi"
- 	enet1: enet1_grp2: ethernet@b1000 {
-+		fsl,wake-on-filer;
-+		fsl,pmc-handle = <&etsec2_clk>;
- 	};
- 
- 	global-utilities@e0000 {
-@@ -235,9 +239,10 @@
- 		fsl,has-rstcr;
- 	};
- 
--	power@e0070{
--		compatible = "fsl,mpc8536-pmc", "fsl,mpc8548-pmc";
--		reg = <0xe0070 0x20>;
-+/include/ "pq3-power.dtsi"
-+	power@e0070 {
-+		compatible = "fsl,p1022-pmc", "fsl,mpc8536-pmc",
-+				"fsl,mpc8548-pmc";
- 	};
- 
- };
-diff --git a/arch/powerpc/boot/dts/fsl/p2020si-post.dtsi b/arch/powerpc/boot/dts/fsl/p2020si-post.dtsi
-index 884e01b..2c4787c 100644
---- a/arch/powerpc/boot/dts/fsl/p2020si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/p2020si-post.dtsi
-@@ -175,6 +175,10 @@
- 		compatible = "fsl-usb2-dr-v1.6", "fsl-usb2-dr";
- 	};
- /include/ "pq3-etsec1-0.dtsi"
-+	enet0: ethernet@24000 {
-+		fsl,pmc-handle = <&etsec1_clk>;
-+
-+	};
- /include/ "pq3-etsec1-timer-0.dtsi"
- 
- 	ptp_clock@24e00 {
-@@ -183,7 +187,15 @@
- 
- 
- /include/ "pq3-etsec1-1.dtsi"
-+	enet1: ethernet@25000 {
-+		fsl,pmc-handle = <&etsec2_clk>;
-+	};
-+
- /include/ "pq3-etsec1-2.dtsi"
-+	enet2: ethernet@26000 {
-+		fsl,pmc-handle = <&etsec3_clk>;
-+	};
-+
- /include/ "pq3-esdhc-0.dtsi"
- 	sdhc@2e000 {
- 		compatible = "fsl,p2020-esdhc", "fsl,esdhc";
-@@ -198,4 +210,6 @@
- 		reg = <0xe0000 0x1000>;
- 		fsl,has-rstcr;
- 	};
-+
-+/include/ "pq3-power.dtsi"
- };
-diff --git a/arch/powerpc/boot/dts/fsl/pq3-power.dtsi b/arch/powerpc/boot/dts/fsl/pq3-power.dtsi
++config CPU_FREQ_MPC85xx
++	bool "Support for Freescale MPC85xx CPU freq"
++	depends on PPC_85xx && PPC32 && !PPC_E500MC
++	select CPU_FREQ_TABLE
++	help
++	  This adds support for dynamic frequency switching on
++	  Freescale MPC85xx by cpufreq interface. MPC8536 and P1022
++	  have a JOG feature, which provides a dynamic mechanism
++	  to lower or raise the CPU core clock at runtime.
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index 863fd18..e7aecc5 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -61,3 +61,4 @@ obj-$(CONFIG_ARM_IMX6Q_CPUFREQ)		+= imx6q-cpufreq.o
+ ##################################################################################
+ # PowerPC platform drivers
+ obj-$(CONFIG_CPU_FREQ_MAPLE)		+= maple-cpufreq.o
++obj-$(CONFIG_CPU_FREQ_MPC85xx)		+= mpc85xx-cpufreq.o
+diff --git a/drivers/cpufreq/mpc85xx-cpufreq.c b/drivers/cpufreq/mpc85xx-cpufreq.c
 new file mode 100644
-index 0000000..5a760b3
+index 0000000..f56c826
 --- /dev/null
-+++ b/arch/powerpc/boot/dts/fsl/pq3-power.dtsi
-@@ -0,0 +1,48 @@
++++ b/drivers/cpufreq/mpc85xx-cpufreq.c
+@@ -0,0 +1,390 @@
 +/*
-+ * PQ3 Power Management device tree stub
++ * Copyright (C) 2008-2012 Freescale Semiconductor, Inc.
++ * Author: Dave Liu <daveliu@freescale.com>
++ * Modifier: Chenhui Zhao <chenhui.zhao@freescale.com>
 + *
-+ * Copyright 2012-2013 Freescale Semiconductor Inc.
++ * The cpufreq driver is for Freescale 85xx processor,
++ * based on arch/powerpc/platforms/cell/cbe_cpufreq.c
++ * (C) Copyright IBM Deutschland Entwicklung GmbH 2005-2007
++ *	Christian Krafft <krafft@de.ibm.com>
 + *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above copyright
-+ *       notice, this list of conditions and the following disclaimer in the
-+ *       documentation and/or other materials provided with the distribution.
-+ *     * Neither the name of Freescale Semiconductor nor the
-+ *       names of its contributors may be used to endorse or promote products
-+ *       derived from this software without specific prior written permission.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
 + *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
-+ * ALTERNATIVELY, this software may be distributed under the terms of the
-+ * GNU General Public License ("GPL") as published by the Free Software
-+ * Foundation, either version 2 of that License or (at your option) any
-+ * later version.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
-+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-+ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
-+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 + */
 +
-+power@e0070 {
-+	compatible = "fsl,mpc8548-pmc";
-+	reg = <0xe0070 0x20>;
++#include <linux/module.h>
++#include <linux/cpufreq.h>
++#include <linux/of_platform.h>
++#include <linux/suspend.h>
++#include <linux/cpu.h>
++#include <linux/time.h>
++#include <linux/io.h>
++#include <linux/smp.h>
 +
-+	etsec1_clk: soc-clk@24 {
-+		fsl,pmcdr-mask = <0x00000080>;
-+	};
-+	etsec2_clk: soc-clk@25 {
-+		fsl,pmcdr-mask = <0x00000040>;
-+	};
-+	etsec3_clk: soc-clk@26 {
-+		fsl,pmcdr-mask = <0x00000020>;
-+	};
++#include <asm/prom.h>
++#include <asm/reg.h>
++#include <asm/machdep.h>
++
++#include <sysdev/fsl_soc.h>
++
++static DEFINE_MUTEX(mpc85xx_switch_mutex);
++static void __iomem *guts;
++
++static u32 sysfreq;
++static unsigned int max_pll[2];
++static atomic_t in_jog_process;
++static struct cpufreq_frequency_table *mpc85xx_freqs;
++static int (*set_pll)(unsigned int cpu, unsigned int pll);
++
++static struct cpufreq_frequency_table mpc8536_freqs_table[] = {
++	{3,	0},
++	{4,	0},
++	{5,	0},
++	{6,	0},
++	{7,	0},
++	{8,	0},
++	{0,	CPUFREQ_TABLE_END},
 +};
++
++static struct cpufreq_frequency_table p1022_freqs_table[] = {
++	{2,	0},
++	{3,	0},
++	{4,	0},
++	{5,	0},
++	{6,	0},
++	{7,	0},
++	{8,	0},
++	{0,	CPUFREQ_TABLE_END},
++};
++
++#define FREQ_500MHz	500000000
++#define FREQ_800MHz	800000000
++
++#define CORE_RATIO_STRIDE	8
++#define CORE_RATIO_MASK		0x3f
++#define CORE_RATIO_SHIFT	16
++
++#define PORPLLSR	0x0	/* Power-On Reset PLL ratio status register */
++
++#define PMJCR		0x7c	/* Power Management Jog Control Register */
++#define PMJCR_CORE0_SPD	0x00001000
++#define PMJCR_CORE_SPD	0x00002000
++
++#define POWMGTCSR	0x80 /* Power management control and status register */
++#define POWMGTCSR_JOG		0x00200000
++#define POWMGTCSR_INT_MASK	0x00000f00
++
++static void spin_while_jogging(void *dummy)
++{
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	atomic_inc(&in_jog_process);
++
++	while (atomic_read(&in_jog_process) != 0)
++		barrier();
++
++	local_irq_restore(flags);
++}
++
++static int get_pll(int hw_cpu)
++{
++	int shift;
++	u32 val = in_be32(guts + PORPLLSR);
++
++	shift = hw_cpu * CORE_RATIO_STRIDE + CORE_RATIO_SHIFT;
++
++	return (val >> shift) & CORE_RATIO_MASK;
++}
++
++static int mpc8536_set_pll(unsigned int cpu, unsigned int pll)
++{
++	u32 corefreq, val, mask;
++	unsigned int cur_pll = get_pll(0);
++	unsigned long flags;
++
++	if (pll == cur_pll)
++		return 0;
++
++	val = (pll & CORE_RATIO_MASK) << CORE_RATIO_SHIFT;
++
++	corefreq = sysfreq * pll / 2;
++	/*
++	 * Set the COREx_SPD bit if the requested core frequency
++	 * is larger than the threshold frequency.
++	 */
++	if (corefreq > FREQ_800MHz)
++			val |= PMJCR_CORE_SPD;
++
++	mask = (CORE_RATIO_MASK << CORE_RATIO_SHIFT) | PMJCR_CORE_SPD;
++	clrsetbits_be32(guts + PMJCR, mask, val);
++
++	/* readback to sync write */
++	in_be32(guts + PMJCR);
++
++	local_irq_save(flags);
++	mpc85xx_enter_deep_sleep(get_immrbase(), POWMGTCSR_JOG);
++	local_irq_restore(flags);
++
++	/* verify */
++	cur_pll =  get_pll(0);
++	if (cur_pll != pll) {
++		pr_err("%s: error. The current PLL is %d instead of %d.\n",
++				__func__, cur_pll, pll);
++		return -1;
++	}
++
++	return 0;
++}
++
++static int p1022_set_pll(unsigned int cpu, unsigned int pll)
++{
++	int index, hw_cpu = get_hard_smp_processor_id(cpu);
++	int shift;
++	u32 corefreq, val, mask = 0;
++	unsigned int cur_pll = get_pll(hw_cpu);
++	unsigned long flags;
++	int ret = 0;
++
++	if (pll == cur_pll)
++		return 0;
++
++	shift = hw_cpu * CORE_RATIO_STRIDE + CORE_RATIO_SHIFT;
++	val = (pll & CORE_RATIO_MASK) << shift;
++
++	corefreq = sysfreq * pll / 2;
++	/*
++	 * Set the COREx_SPD bit if the requested core frequency
++	 * is larger than the threshold frequency.
++	 */
++	if (corefreq > FREQ_500MHz)
++		val |= PMJCR_CORE0_SPD << hw_cpu;
++
++	mask = (CORE_RATIO_MASK << shift) | (PMJCR_CORE0_SPD << hw_cpu);
++	clrsetbits_be32(guts + PMJCR, mask, val);
++
++	/* readback to sync write */
++	in_be32(guts + PMJCR);
++
++	get_online_cpus();
++	/*
++	 * A Jog request can not be asserted when any core is in a low
++	 * power state on P1022. Before executing a jog request, any
++	 * core which is in a low power state must be waked by a
++	 * interrupt, and keep waking up until the sequence is
++	 * finished.
++	 */
++	for_each_present_cpu(index) {
++		if (!cpu_online(index)) {
++			put_online_cpus();
++			pr_err("%s: error, core%d is down.\n", __func__, index);
++			return -1;
++		}
++	}
++
++	atomic_set(&in_jog_process, 0);
++	smp_call_function(spin_while_jogging, NULL, 0);
++
++	local_irq_save(flags);
++
++	/* Wait for the other core to wake. */
++	if (!spin_event_timeout(atomic_read(&in_jog_process) == 1, 1000, 100)) {
++		pr_err("%s: timeout, the other core is not at running state.\n",
++					__func__);
++		ret = -1;
++		goto err;
++	}
++
++	out_be32(guts + POWMGTCSR, POWMGTCSR_JOG | POWMGTCSR_INT_MASK);
++
++	if (!spin_event_timeout(
++		(in_be32(guts + POWMGTCSR) & POWMGTCSR_JOG) == 0, 1000, 100)) {
++		pr_err("%s: timeout, fail to switch the core frequency.\n",
++				__func__);
++		ret = -1;
++		goto err;
++	}
++
++	clrbits32(guts + POWMGTCSR, POWMGTCSR_INT_MASK);
++	in_be32(guts + POWMGTCSR);
++
++	atomic_set(&in_jog_process, 0);
++err:
++	local_irq_restore(flags);
++	put_online_cpus();
++
++	/* verify */
++	cur_pll =  get_pll(hw_cpu);
++	if (cur_pll != pll) {
++		pr_err("%s: error, the current PLL of core %d is %d instead of %d.\n",
++				__func__, hw_cpu, cur_pll, pll);
++		return -1;
++	}
++
++	return ret;
++}
++
++/*
++ * cpufreq functions
++ */
++static int mpc85xx_cpufreq_cpu_init(struct cpufreq_policy *policy)
++{
++	unsigned int i, cur_pll;
++	int hw_cpu = get_hard_smp_processor_id(policy->cpu);
++
++	if (!cpu_present(policy->cpu))
++		return -ENODEV;
++
++	/* the latency of a transition, the unit is ns */
++	policy->cpuinfo.transition_latency = 2000;
++
++	cur_pll = get_pll(hw_cpu);
++
++	/* initialize frequency table */
++	pr_debug("core%d frequency table:\n", hw_cpu);
++	for (i = 0; mpc85xx_freqs[i].frequency != CPUFREQ_TABLE_END; i++) {
++		if (mpc85xx_freqs[i].index <= max_pll[hw_cpu]) {
++			/* The frequency unit is kHz. */
++			mpc85xx_freqs[i].frequency =
++				(sysfreq * mpc85xx_freqs[i].index / 2) / 1000;
++		} else {
++			mpc85xx_freqs[i].frequency = CPUFREQ_ENTRY_INVALID;
++		}
++
++		pr_debug("%d: %dkHz\n", i, mpc85xx_freqs[i].frequency);
++
++		if (mpc85xx_freqs[i].index == cur_pll)
++			policy->cur = mpc85xx_freqs[i].frequency;
++	}
++	pr_debug("current pll is at %d, and core freq is%d\n",
++			cur_pll, policy->cur);
++
++	cpufreq_frequency_table_get_attr(mpc85xx_freqs, policy->cpu);
++
++	/*
++	 * This ensures that policy->cpuinfo_min
++	 * and policy->cpuinfo_max are set correctly.
++	 */
++	return cpufreq_frequency_table_cpuinfo(policy, mpc85xx_freqs);
++}
++
++static int mpc85xx_cpufreq_cpu_exit(struct cpufreq_policy *policy)
++{
++	cpufreq_frequency_table_put_attr(policy->cpu);
++
++	return 0;
++}
++
++static int mpc85xx_cpufreq_verify(struct cpufreq_policy *policy)
++{
++	return cpufreq_frequency_table_verify(policy, mpc85xx_freqs);
++}
++
++static int mpc85xx_cpufreq_target(struct cpufreq_policy *policy,
++			      unsigned int target_freq,
++			      unsigned int relation)
++{
++	struct cpufreq_freqs freqs;
++	unsigned int new;
++	int ret = 0;
++
++	if (!set_pll)
++		return -ENODEV;
++
++	cpufreq_frequency_table_target(policy,
++				       mpc85xx_freqs,
++				       target_freq,
++				       relation,
++				       &new);
++
++	freqs.old = policy->cur;
++	freqs.new = mpc85xx_freqs[new].frequency;
++	freqs.cpu = policy->cpu;
++
++	mutex_lock(&mpc85xx_switch_mutex);
++	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
++
++	ret = set_pll(policy->cpu, mpc85xx_freqs[new].index);
++	if (!ret) {
++		pr_info("cpufreq: Setting core%d frequency to %d kHz and PLL ratio to %d:2\n",
++			 policy->cpu, mpc85xx_freqs[new].frequency,
++			 mpc85xx_freqs[new].index);
++
++		ppc_proc_freq = freqs.new * 1000ul;
++	}
++	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
++	mutex_unlock(&mpc85xx_switch_mutex);
++
++	return ret;
++}
++
++static struct cpufreq_driver mpc85xx_cpufreq_driver = {
++	.verify		= mpc85xx_cpufreq_verify,
++	.target		= mpc85xx_cpufreq_target,
++	.init		= mpc85xx_cpufreq_cpu_init,
++	.exit		= mpc85xx_cpufreq_cpu_exit,
++	.name		= "mpc85xx-JOG",
++	.owner		= THIS_MODULE,
++	.flags		= CPUFREQ_CONST_LOOPS,
++};
++
++static struct of_device_id mpc85xx_jog_ids[] = {
++	{ .compatible = "fsl,mpc8536-guts", },
++	{ .compatible = "fsl,p1022-guts", },
++	{}
++};
++
++static int __init mpc85xx_jog_init(void)
++{
++	struct device_node *np;
++	unsigned int svr;
++
++	np = of_find_matching_node(NULL, mpc85xx_jog_ids);
++	if (!np)
++		return -ENODEV;
++
++	guts = of_iomap(np, 0);
++	if (!guts) {
++		of_node_put(np);
++		return -ENODEV;
++	}
++
++	sysfreq = fsl_get_sys_freq();
++
++	if (of_device_is_compatible(np, "fsl,mpc8536-guts")) {
++		svr = mfspr(SPRN_SVR);
++		if ((svr & 0x7fff) == 0x10) {
++			pr_err("MPC8536 Rev 1.0 does not support cpufreq(JOG).\n");
++			of_node_put(np);
++			return -ENODEV;
++		}
++		mpc85xx_freqs = mpc8536_freqs_table;
++		set_pll = mpc8536_set_pll;
++		max_pll[0] = get_pll(0);
++
++	} else if (of_device_is_compatible(np, "fsl,p1022-guts")) {
++		mpc85xx_freqs = p1022_freqs_table;
++		set_pll = p1022_set_pll;
++		max_pll[0] = get_pll(0);
++		max_pll[1] = get_pll(1);
++	}
++
++	pr_info("Freescale MPC85xx cpufreq(JOG) driver\n");
++
++	of_node_put(np);
++	return cpufreq_register_driver(&mpc85xx_cpufreq_driver);
++}
++
++device_initcall(mpc85xx_jog_init);
 -- 
 1.7.3
 
