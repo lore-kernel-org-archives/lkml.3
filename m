@@ -1,96 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030845Ab3DSPPF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 11:15:05 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:55941 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030656Ab3DSPPB (ORCPT
+	id S1030865Ab3DSPPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 11:15:19 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:41553 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030656Ab3DSPPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 11:15:01 -0400
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
-        Alexander Holler <holler@ahsoftware.de>
-Subject: [PATCH 1/3 RESEND] rtc: rtc-hid-sensor-time: allow full years (16bit) in HID reports
-Date: Fri, 19 Apr 2013 17:14:10 +0200
-Message-Id: <1366384452-14367-2-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1366384452-14367-1-git-send-email-holler@ahsoftware.de>
-References: <1366384452-14367-1-git-send-email-holler@ahsoftware.de>
+	Fri, 19 Apr 2013 11:15:11 -0400
+MIME-Version: 1.0
+X-Originating-IP: [188.6.195.195]
+Date: Fri, 19 Apr 2013 17:15:10 +0200
+Message-ID: <CAJfpeguWUqaRwd4FgoZyJ0Se6i-_J06vcCKkWCa5q_+DDMncog@mail.gmail.com>
+Subject: [GIT PULL] fuse build fix for 3.9
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Colin Cross <ccross@android.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The draft for HID-sensors (HUTRR39) currently doesn't define the range
-for the attribute year. Asking one of the authors revealed that full years
-(e.g. 2013 instead of just 13) were meant.
+Linus,
 
-So we now allow both, 8 bit and 16 bit values for the attribute year and
-assuming full years when the value is 16 bits wide.
+Could you please pull this single fix from
 
-We will still support 8 bit values until the specification gets final
-(and maybe defines a way to set the time too).
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
 
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+This fixes android builds.  The patch appears large, but is just
+search & replace.
+
+Thanks,
+Miklos
+----
+
+Miklos Szeredi (1):
+      fuse: fix type definitions in uapi header
+
 ---
- drivers/rtc/rtc-hid-sensor-time.c | 33 ++++++++++++++++++++++++++-------
- 1 file changed, 26 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
-index 31c5728..f3ef38a 100644
---- a/drivers/rtc/rtc-hid-sensor-time.c
-+++ b/drivers/rtc/rtc-hid-sensor-time.c
-@@ -85,10 +85,13 @@ static int hid_time_capture_sample(struct hid_sensor_hub_device *hsdev,
- 
- 	switch (usage_id) {
- 	case HID_USAGE_SENSOR_TIME_YEAR:
--		time_buf->tm_year = *(u8 *)raw_data;
--		if (time_buf->tm_year < 70)
--			/* assume we are in 1970...2069 */
--			time_buf->tm_year += 100;
-+		if (raw_len == 1) {
-+			time_buf->tm_year = *(u8 *)raw_data;
-+			if (time_buf->tm_year < 70)
-+				/* assume we are in 1970...2069 */
-+				time_buf->tm_year += 100;
-+		} else
-+			time_buf->tm_year = *(u16 *)raw_data-1900;
- 		break;
- 	case HID_USAGE_SENSOR_TIME_MONTH:
- 		/* sensor sending the month as 1-12, we need 0-11 */
-@@ -151,11 +154,27 @@ static int hid_time_parse_report(struct platform_device *pdev,
- 			return -EINVAL;
- 		}
- 		if (time_state->info[i].size != 1) {
--			dev_err(&pdev->dev,
--				"attribute '%s' not 8 bits wide!\n",
-+			/*
-+			 * The draft for HID-sensors (HUTRR39) currently
-+			 * doesn't define the range for the year attribute.
-+			 * Therefor we support both 8 bit (0-99) and 16 bit
-+			 * (full) as size for the year.
-+			 */
-+			if (time_state->info[i].attrib_id !=
-+				HID_USAGE_SENSOR_TIME_YEAR) {
-+				dev_err(&pdev->dev,
-+					"attribute '%s' not 8 bits wide!\n",
- 				hid_time_attrib_name(
- 					time_state->info[i].attrib_id));
--			return -EINVAL;
-+				return -EINVAL;
-+			}
-+			if (time_state->info[i].size != 2) {
-+				dev_err(&pdev->dev,
-+					"attribute '%s' not 8 or 16 bits wide!\n",
-+				hid_time_attrib_name(
-+					time_state->info[i].attrib_id));
-+				return -EINVAL;
-+			}
- 		}
- 		if (time_state->info[i].units !=
- 				HID_USAGE_SENSOR_UNITS_NOT_SPECIFIED &&
--- 
-1.8.1.4
-
+ include/uapi/linux/fuse.h |  436 ++++++++++++++++++++++-----------------------
