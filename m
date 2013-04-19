@@ -1,79 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968173Ab3DSJwc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 05:52:32 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56256 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S967950Ab3DSJwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 05:52:31 -0400
-Message-ID: <1366365149.3901.15.camel@joe-AO722>
-Subject: Re: [PATCH wireless-next] rt2x00: Use more current logging styles,
- shrink object size
-From: Joe Perches <joe@perches.com>
-To: Gertjan van Wingerde <gwingerde@gmail.com>
-Cc: Ivo van Doorn <IvDoorn@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        rt2x00 Users List <users@rt2x00.serialmonkey.com>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Apr 2013 02:52:29 -0700
-In-Reply-To: <CAL1gcdOMtbzxCVLNvDK_CD-M+_SdAeL3Sja9khO9+G2bNOCz1g@mail.gmail.com>
-References: <1366360406.3901.10.camel@joe-AO722>
-	 <CAL1gcdOMtbzxCVLNvDK_CD-M+_SdAeL3Sja9khO9+G2bNOCz1g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
+	id S968192Ab3DSJwj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 05:52:39 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:36703 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967950Ab3DSJwe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 05:52:34 -0400
+X-IronPort-AV: E=Sophos;i="4.87,508,1363132800"; 
+   d="scan'208";a="3731638"
+Message-ID: <1366365151.19111.80.camel@zakaz.uk.xensource.com>
+Subject: Re: [Xen-devel] [PATCH v6 1/4] arm: introduce psci_smp_ops
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "marc.zyngier@arm.com" <marc.zyngier@arm.com>,
+        "will.deacon@arm.com" <will.deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 19 Apr 2013 10:52:31 +0100
+In-Reply-To: <alpine.LFD.2.03.1304181336280.17375@syhkavp.arg>
+References: <alpine.DEB.2.02.1304031239550.5078@kaball.uk.xensource.com>
+	 <1365167495-18508-1-git-send-email-stefano.stabellini@eu.citrix.com>
+	 <20130418161341.GB14496@n2100.arm.linux.org.uk>
+	 <alpine.DEB.2.02.1304181714560.7254@kaball.uk.xensource.com>
+	 <alpine.LFD.2.03.1304181237480.17375@syhkavp.arg>
+	 <alpine.DEB.2.02.1304181749260.7254@kaball.uk.xensource.com>
+	 <alpine.LFD.2.03.1304181336280.17375@syhkavp.arg>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-19 at 11:45 +0200, Gertjan van Wingerde wrote:
-> Hi Joe,
-
-Hello Gertjan.
-
-> On Fri, Apr 19, 2013 at 10:33 AM, Joe Perches <joe@perches.com> wrote:
-> > Reduce object size ~2% using more current logging styles.
-[]
-> > +/* Utility printing macros */
-> > +#define rt2x00_err(dev, fmt, ...)                                      \
-> > +       wiphy_err((dev)->hw->wiphy, "%s: Error - " fmt,                 \
-> > +                 __func__, ##__VA_ARGS__)
-> > +#define rt2x00_warn(dev, fmt, ...)                                     \
-> > +       wiphy_err((dev)->hw->wiphy, "%s: Warning - " fmt,               \
-> > +                 __func__, ##__VA_ARGS__)
+On Thu, 2013-04-18 at 18:38 +0100, Nicolas Pitre wrote:
+> On Thu, 18 Apr 2013, Stefano Stabellini wrote:
 > 
-> Shouldn't this use wiphy_warn instead of wiphy_err?
+> > On Thu, 18 Apr 2013, Nicolas Pitre wrote:
+> > > On Thu, 18 Apr 2013, Stefano Stabellini wrote:
+> > > 
+> > > > On Thu, 18 Apr 2013, Russell King - ARM Linux wrote:
+> > > > > This should allow the Xen problem to be resolved, because Xen will
+> > > > > provide the PSCI operations, and it's correct in that case to override
+> > > > > the platform's SMP operations.
+> > > > 
+> > > > Yes, increasing the priority of PSCI helps Xen a lot.
+> > > > In order to completely solve the issue for Xen though, another patch is
+> > > > needed (http://marc.info/?l=linux-kernel&m=136630106201968&w=2) because
+> > > > of the introduction of smp_init.
+> > > 
+> > > Please look at the latest smp_init patch version I sent to you.  It 
+> > > shouldn't conflict with Xen any longer.  It now returns a bool result 
+> > > depending on whether it did set up smp_ops or not.
+> > 
+> > CPUs are virtualized by Xen and do not reflect or expose the underlying
+> > SMP hardware and firmware features, so an hardware specific smp_init
+> > cannot run.
+> > 
+> > So the smp_init patch still breaks Xen because even if smp_init can fail
+> > graciously, executing a platform specific smp_init function that tries
+> > to access registers and memory regions that are not present is going to
+> > cause an undefined behaviour.
 > 
-> > +#define rt2x00_info(dev, fmt, ...)                                     \
-> > +       wiphy_err((dev)->hw->wiphy, "%s: Info - " fmt,                  \
-> > +                 __func__, ##__VA_ARGS__)
-> 
-> Shouldn't this use wiphy_info instead of wiphy_err?
+> It won't access hardware but just look into the DT and return false if 
+> nothing interesting is found.  At which point the next attempt in the 
+> priority list is PSCI by default.
 
-Gah, of course you're right, copy/paste dumbness.
+I think there might be some confusion about the semantics of smp_init,
+since it is in mdesc I had interpreted it as a per-platform hook to
+allow "magic" SMP setup, which I at least had assumed would (be
+permitted to) involve hardware specific frobbing, including touching
+platform specific devices etc.
 
-> > +#define rt2x00_eeprom_dbg(dev, fmt, ...)                               \
-> > +       wiphy_dbg((dev)->hw->wiphy, "%s: %s - " fmt,                    \
-> > +                 __func__, "EEPROM recovery", ##__VA_ARGS__)
+Is that not the case?
 
-> Why do you give the "EEPROM recovery" string as extra argument instead
-> of embedding it in the format string, like you do in the rt2x00_dbg
-> macro for the "Debug" string?
+Can we guarantee that this hook won't be used by hardware platforms to
+e.g. probe NVRAM for SMP topology information or other activities which
+touch hardware?
 
-Trivial space reduction on x86/32.
-It's just a few bytes.  It may not be
-a savings at all for x86/64.
+If it isn't hardware specific then does this hook really belong in
+mdesc? Or if it is purely driven by DT can we not implement it in terms
+of DT at the top level rather than abstracting via a hardware specific
+hook?
 
-I'd actually prefer to remove all the
-extra "INFO/ERR/WARNING" bits from the
-messages as it's a simple duplication of
-the KERN_<LEVEL> and I think not useful.
-
-> Also, please put all rt2x00_<level> next to each other, instead of
-> scattering them around with the "#define DEBUG" in between them.
-
-I'll resubmit tomorrow.
+Ian.
 
