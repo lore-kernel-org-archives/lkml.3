@@ -1,35 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030472Ab3DSM7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:59:55 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34747 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030222Ab3DSM7y (ORCPT
+	id S1030315Ab3DSNDZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 09:03:25 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:40659 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968302Ab3DSNDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 08:59:54 -0400
-Date: Fri, 19 Apr 2013 13:58:58 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jongsung Kim <neidhard.kim@lge.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, jslaby@suse.cz,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: PL011: add support for extended FIFO-size of
-	PL011-r1p5
-Message-ID: <20130419125858.GL14496@n2100.arm.linux.org.uk>
-References: <007301ce375e$bcf6d6b0$36e48410$@lge.com>
+	Fri, 19 Apr 2013 09:03:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <007301ce375e$bcf6d6b0$36e48410$@lge.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1365782115.17140.68.camel@laptop>
+References: <1365184746.874.103.camel@Wailaba2>
+	<1365593710.30071.52.camel@laptop>
+	<1365608911.707.65.camel@Wailaba2>
+	<1365763837.17140.52.camel@laptop>
+	<1365782115.17140.68.camel@laptop>
+Date: Fri, 19 Apr 2013 15:03:22 +0200
+Message-ID: <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
+Subject: Re: [PATCH] process cputimer is moving faster than its corresponding clock
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Motohiro KOSAKI <kosaki.motohiro@gmail.com>
+Cc: Olivier Langlois <olivier@trillion01.com>, mingo@redhat.com,
+        tglx@linutronix.de, schwidefsky@de.ibm.com, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 12, 2013 at 06:18:47PM +0900, Jongsung Kim wrote:
-> +static unsigned int get_fifosize_arm(unsigned int periphid)
-> +{
-> +	unsigned int rev = (periphid >> 20) & 0xf;
-> +	return rev < 3 ? 16 : 32;
+2013/4/12 Peter Zijlstra <peterz@infradead.org>:
+> On Fri, 2013-04-12 at 12:50 +0200, Peter Zijlstra wrote:
+>
+>> I'll try and dig through the rest of your email later.. sorry for
+>> being
+>> a tad slow etc.
+>
+>
+> So at thread_group_cputimer() we initialize the cputimer->cputime state
+> by using thread_group_cputime() which iterates all tasks of the process
+> and calls task_sched_runtime() upon them (which includes the current
+> delta).
+>
+> Upon subsequent account_group_exec_runtime() calls (from all schedule
+> events and timer ticks) we add the current delta to cputimer->cputime.
+>
+> However since we already added the first (or part thereof) delta to the
+> initial state, we account this double. Thus we can be up to
+> NR_CPUS*TICK_NSEC ahead.
+>
+> On every timer tick we evaluate the cputimer state using
+> cpu_timer_sample_group() which adds the current tasks delta. This can
+> thus be up to (NR_CPUS-1)*TICK_NSEC behind.
+>
+> The combination of the timeline behind ahead and the sample being
+> behind make it a virtual guarantee we'll hit early by almost
+> 2*NR_CPUS*TICK_NSEC.
+>
+> This is what you've been saying right?
+>
+>
+> So how about we do not include the deltas into the initial sum, so that
+> we're up to NR_CPUS*TICK_NSEC behind. That way, with the sample up to
+> (NR_CPUS-1)*TICK_NSEC behind, we're in the order of TICK_NSEC late with
+> firing.
+>
+> Hmm?
 
-Don't we have a macro to get the revision given the amba device?
-amba_rev().
+I feel we are hitting the same issue than this patch:
+https://lkml.org/lkml/2013/4/5/116
+
+I'm adding Kosaki in Cc, who proposed roughly the same fix.
+
+Thanks.
+
+       Frederic.
+
+>
+> ---
+>  include/linux/sched.h     |  5 +++--
+>  kernel/posix-cpu-timers.c | 15 ++++++++++-----
+>  kernel/sched/core.c       |  6 ++++--
+>  kernel/sched/cputime.c    |  8 ++++----
+>  4 files changed, 21 insertions(+), 13 deletions(-)
+>
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 88ec7f4..abe5870 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1832,7 +1832,7 @@ static inline void disable_sched_clock_irqtime(void) {}
+>  #endif
+>
+>  extern unsigned long long
+> -task_sched_runtime(struct task_struct *task);
+> +task_sched_runtime(struct task_struct *task, bool add_delta);
+>
+>  /* sched_exec is called by processes performing an exec */
+>  #ifdef CONFIG_SMP
+> @@ -2496,7 +2496,8 @@ static inline void current_clr_polling(void) { }
+>  /*
+>   * Thread group CPU time accounting.
+>   */
+> -void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times);
+> +void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times,
+> +                         bool add_delta);
+>  void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
+>
+>  static inline void thread_group_cputime_init(struct signal_struct *sig)
+> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+> index 8fd709c..d8133ad 100644
+> --- a/kernel/posix-cpu-timers.c
+> +++ b/kernel/posix-cpu-timers.c
+> @@ -220,7 +220,7 @@ static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
+>                 cpu->cpu = virt_ticks(p);
+>                 break;
+>         case CPUCLOCK_SCHED:
+> -               cpu->sched = task_sched_runtime(p);
+> +               cpu->sched = task_sched_runtime(p, true);
+>                 break;
+>         }
+>         return 0;
+> @@ -250,8 +250,13 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
+>                  * values through the TIMER_ABSTIME flag, therefore we have
+>                  * to synchronize the timer to the clock every time we start
+>                  * it.
+> +                *
+> +                * Do no add the current delta, because
+> +                * account_group_exec_runtime() will also add this delta and we
+> +                * wouldn't want to double account time and get ahead of
+> +                * ourselves.
+>                  */
+> -               thread_group_cputime(tsk, &sum);
+> +               thread_group_cputime(tsk, &sum, false);
+>                 raw_spin_lock_irqsave(&cputimer->lock, flags);
+>                 cputimer->running = 1;
+>                 update_gt_cputime(&cputimer->cputime, &sum);
+> @@ -275,15 +280,15 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
+>         default:
+>                 return -EINVAL;
+>         case CPUCLOCK_PROF:
+> -               thread_group_cputime(p, &cputime);
+> +               thread_group_cputime(p, &cputime, true);
+>                 cpu->cpu = cputime.utime + cputime.stime;
+>                 break;
+>         case CPUCLOCK_VIRT:
+> -               thread_group_cputime(p, &cputime);
+> +               thread_group_cputime(p, &cputime, true);
+>                 cpu->cpu = cputime.utime;
+>                 break;
+>         case CPUCLOCK_SCHED:
+> -               thread_group_cputime(p, &cputime);
+> +               thread_group_cputime(p, &cputime, true);
+>                 cpu->sched = cputime.sum_exec_runtime;
+>                 break;
+>         }
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index e8167e3..704fa44 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2677,14 +2677,16 @@ unsigned long long task_delta_exec(struct task_struct *p)
+>   * In case the task is currently running, return the runtime plus current's
+>   * pending runtime that have not been accounted yet.
+>   */
+> -unsigned long long task_sched_runtime(struct task_struct *p)
+> +unsigned long long task_sched_runtime(struct task_struct *p, bool add_delta)
+>  {
+>         unsigned long flags;
+>         struct rq *rq;
+>         u64 ns = 0;
+>
+>         rq = task_rq_lock(p, &flags);
+> -       ns = p->se.sum_exec_runtime + do_task_delta_exec(p, rq);
+> +       ns = p->se.sum_exec_runtime;
+> +        if (add_delta)
+> +               ns += do_task_delta_exec(p, rq);
+>         task_rq_unlock(rq, p, &flags);
+>
+>         return ns;
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index ea32f02..c3495e1 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -277,7 +277,7 @@ static __always_inline bool steal_account_process_tick(void)
+>   * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
+>   * tasks (sum on group iteration) belonging to @tsk's group.
+>   */
+> -void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+> +void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times, bool add_delta)
+>  {
+>         struct signal_struct *sig = tsk->signal;
+>         cputime_t utime, stime;
+> @@ -297,7 +297,7 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+>                 task_cputime(t, &utime, &stime);
+>                 times->utime += utime;
+>                 times->stime += stime;
+> -               times->sum_exec_runtime += task_sched_runtime(t);
+> +               times->sum_exec_runtime += task_sched_runtime(t, add_delta);
+>         } while_each_thread(tsk, t);
+>  out:
+>         rcu_read_unlock();
+> @@ -444,7 +444,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
+>  {
+>         struct task_cputime cputime;
+>
+> -       thread_group_cputime(p, &cputime);
+> +       thread_group_cputime(p, &cputime, true);
+>
+>         *ut = cputime.utime;
+>         *st = cputime.stime;
+> @@ -606,7 +606,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
+>  {
+>         struct task_cputime cputime;
+>
+> -       thread_group_cputime(p, &cputime);
+> +       thread_group_cputime(p, &cputime, true);
+>         cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
+>  }
+>  #endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+>
+>
