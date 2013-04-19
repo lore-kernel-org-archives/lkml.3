@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab3DSRPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 13:15:19 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39349 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751211Ab3DSRPP (ORCPT
+	id S1752202Ab3DSRU4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 13:20:56 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:57878 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab3DSRUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 13:15:15 -0400
-Date: Fri, 19 Apr 2013 18:14:56 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Peter Maydell <peter.maydell@linaro.org>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console
- devices.
-Message-ID: <20130419171455.GA43450@MacBook-Pro.local>
-References: <CAAHg+HipCX2ma6brxj9Kgc3ew39b5e30grLwyun9CViif-5wZQ@mail.gmail.com>
- <20130419092752.GB13283@mudshark.cambridge.arm.com>
- <CAFEAcA8j124G=vaHObJ_w5wOhUiS3KYKbjMnigbnr6mgwFxZUg@mail.gmail.com>
- <CAAHg+Hg=t97SJ0JPZYgrZaL+zimo-wbezwaj1BQvHqE-vf4VDA@mail.gmail.com>
- <20130419093953.GD13283@mudshark.cambridge.arm.com>
- <CAFEAcA_WfYpyvq54rZqS8JZkmDF5JXB+CNHFH5CnrhKun52uzA@mail.gmail.com>
- <20130419161201.GA5383@localhost.cambridge.arm.com>
- <CAFEAcA-F18kR4JihdxaLTm3qb4n51tsygG1RW4djwJ0u9+FQqw@mail.gmail.com>
- <20130419162226.GB5383@localhost.cambridge.arm.com>
- <CAFEAcA_vdXbtK=U2gauC=DsrB=_cSfcUTaNCiB0Ts4YOq_pXEg@mail.gmail.com>
+	Fri, 19 Apr 2013 13:20:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFEAcA_vdXbtK=U2gauC=DsrB=_cSfcUTaNCiB0Ts4YOq_pXEg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <SNT138-W13141195F26C221B6DE805D7C80@phx.gbl>
+References: <SNT138-W13141195F26C221B6DE805D7C80@phx.gbl>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 19 Apr 2013 11:20:33 -0600
+Message-ID: <CAErSpo4ENvyxHhg8H=Qs3DcsyDn5MOi4mv669YGWGZvMTkXtWw@mail.gmail.com>
+Subject: Re: Kernel bug: opensuse 12.3, lenovo 3000 n100 laptop
+To: Scott Simpson <simpson1000@live.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bryan Gartner <bgartner@suse.com>, Zhang Rui <rui.zhang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 05:33:18PM +0100, Peter Maydell wrote:
-> On 19 April 2013 17:22, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> > earlyprintk is used for debugging early problems, like DT parsing. You
-> > don't have to use it unless you are debugging something. Without
-> > earlyprintk you just get a normal console during boot, based on the DT
-> > description.
-> 
-> The command line lives in the DTB anyway so if you can't look
-> in the DTB you can't get at earlyprintk config either way.
+[+cc Bryan, Zhang]
 
-Linux indeed looks in the DT for the command line and that's what's
-triggering the earlyprintk console but at that stage the DT is flat.
-Unflattening the DT happens later (it requires slab allocator). I
-initially thought about extracting the early console device from the DT
-but when it is flat you can't parse the full hierarchy to get its
-address.
+On Fri, Apr 19, 2013 at 8:51 AM, Scott Simpson <simpson1000@live.com> wrote:
+> Stack trace is here: http://www.flickr.com/photos/94373754@N06/8662259093/                                        --
 
--- 
-Catalin
+Hi Scott,
+
+This is an openSUSE bug, so you'll probably get more help there.  I
+added a CC: for that, and you can look here as well:
+http://en.opensuse.org/openSUSE:Submitting_bug_reports
+
+Is this easy to reproduce?  Do you know whether the same thing happens
+with an upstream kernel, e.g., v3.8 or v3.9-rc7?  If it turns out that
+this bug still exists in the upstream kernel, Zhang will probably be
+interested in it.
+
+Transcribed from the screen shot:
+
+    kernel BUG at
+/home/abuild/rpmbuild/BUILD/kernel-desktop-3.7.10/linux-3.7/kernel/sched/core.c:1465!
+    Pid: 3742, comm: kworker/0:0 Not tainted 3.7.10-1.1-desktop #1
+LENOVO 0768DCU/CAPELL VALLEY(NAPA) CRB
+    Call Trace:
+      schedule_timeout
+      wait_for_common
+      stop_one_cpu
+      set_cpus_allowed_ptr
+      acpi_processor_set_throttling
+      thermal_zone_device_update
+      process_one_work
+      worker_thread
+      kthread
+      ret_from_kernel_thread
+      kthread_create_on_node
+    Kernel panic -- not syncing: Watchdog detected hard LOCKUP on cpu 1
+
+Bjorn
