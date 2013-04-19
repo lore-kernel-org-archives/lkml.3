@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934470Ab3DSVsv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 17:48:51 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:57147 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933583Ab3DSVst (ORCPT
+	id S964919Ab3DSWBX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 18:01:23 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:34469 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933335Ab3DSWBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 17:48:49 -0400
+	Fri, 19 Apr 2013 18:01:21 -0400
+Date: Fri, 19 Apr 2013 15:01:21 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: Randy Dunlap <rdunlap@infradead.org>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: Re: [PATCH -next] ceph: fix printk format warnings in file.c
+In-Reply-To: <5171B507.4030808@infradead.org>
+Message-ID: <alpine.DEB.2.00.1304191501160.13036@cobra.newdream.net>
+References: <20130419181924.a035efe6d5e73fe0db9ddb84@canb.auug.org.au> <5171B507.4030808@infradead.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20130419213152.GD11866@zurbaran>
-References: <1366304318-29620-1-git-send-email-andrew.smirnov@gmail.com>
-	<20130419213152.GD11866@zurbaran>
-Date: Fri, 19 Apr 2013 14:48:48 -0700
-Message-ID: <CAHQ1cqFO7PBLchW6bQJ-t07dmhneyzpVY=MMAft0Se9cYZ2gTw@mail.gmail.com>
-Subject: Re: [PATCH v9 00/12] Driver for Si476x series of chips
-From: Andrey Smirnov <andrew.smirnov@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 2:31 PM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> Hi Andrey,
->
-> On Thu, Apr 18, 2013 at 09:58:26AM -0700, Andrey Smirnov wrote:
->> Driver for Si476x series of chips
->>
->> This is a eight version of the patchset originaly posted here:
->> https://lkml.org/lkml/2012/9/13/590
->>
->> Second version of the patch was posted here:
->> https://lkml.org/lkml/2012/10/5/598
->>
->> Third version of the patch was posted here:
->> https://lkml.org/lkml/2012/10/23/510
->>
->> Fourth version of the patch was posted here:
->> https://lkml.org/lkml/2013/2/18/572
->>
->> Fifth version of the patch was posted here:
->> https://lkml.org/lkml/2013/2/26/45
->>
->> Sixth version of the patch was posted here:
->> https://lkml.org/lkml/2013/2/26/257
->>
->> Seventh version of the patch was posted here:
->> https://lkml.org/lkml/2013/2/27/22
->>
->> Eighth version of the patch was posted here:
->> https://lkml.org/lkml/2013/3/26/891
->>
->> To save everyone's time I'll repost the original description of it:
->>
->> This patchset contains a driver for a Silicon Laboratories 476x series
->> of radio tuners. The driver itself is implemented as an MFD devices
->> comprised of three parts:
->>  1. Core device that provides all the other devices with basic
->> functionality and locking scheme.
->>  2. Radio device that translates between V4L2 subsystem requests into
->> Core device commands.
->>  3. Codec device that does similar to the earlier described task, but
->> for ALSA SoC subsystem.
->>
->> v9 of this driver has following changes:
->>    - MFD part of the driver no longer depends on the header file added
->>      by the radio driver(media/si476x.h) which should potential
->>      restore the bisectability of the patches
-> I applied all the MFD patches from this patchset (All 4 first ones), plus a
-> follow up one for fixing the i2c related warning.
-> I also squashed the REGMAP_I2C dependency into patch #4.
-> It's all in mfd-next now, I'd appreciate if you could double check it's all
-> fine.
->
-> Mauro will take the rest, we made sure there won't be any merge conflict
-> between our trees.
->
+Applied, thanks!
 
-Thanks, I will try to test it today or tomorrow(20/04) at the latest.
+sage
 
-> Cheers,
-> Samuel.
->
+On Fri, 19 Apr 2013, Randy Dunlap wrote:
+
+> From: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Fix printk format warnings by using %zd for 'ssize_t' variables:
+> 
+> fs/ceph/file.c:751:2: warning: format '%ld' expects argument of type 'long int', but argument 11 has type 'ssize_t' [-Wformat]
+> fs/ceph/file.c:762:2: warning: format '%ld' expects argument of type 'long int', but argument 11 has type 'ssize_t' [-Wformat]
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc:	Sage Weil <sage@inktank.com>
+> Cc:	ceph-devel@vger.kernel.org
+> ---
+>  fs/ceph/file.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> --- linux-next-20130419.orig/fs/ceph/file.c
+> +++ linux-next-20130419/fs/ceph/file.c
+> @@ -748,7 +748,7 @@ retry_snap:
+>  		goto out;
+>  	}
+>  
+> -	dout("aio_write %p %llx.%llx %llu~%ld getting caps. i_size %llu\n",
+> +	dout("aio_write %p %llx.%llx %llu~%zd getting caps. i_size %llu\n",
+>  	     inode, ceph_vinop(inode), pos, count, inode->i_size);
+>  	if (fi->fmode & CEPH_FILE_MODE_LAZY)
+>  		want = CEPH_CAP_FILE_BUFFER | CEPH_CAP_FILE_LAZYIO;
+> @@ -759,7 +759,7 @@ retry_snap:
+>  	if (err < 0)
+>  		goto out;
+>  
+> -	dout("aio_write %p %llx.%llx %llu~%ld got cap refs on %s\n",
+> +	dout("aio_write %p %llx.%llx %llu~%zd got cap refs on %s\n",
+>  	     inode, ceph_vinop(inode), pos, count, ceph_cap_string(got));
+>  
+>  	if ((got & (CEPH_CAP_FILE_BUFFER|CEPH_CAP_FILE_LAZYIO)) == 0 ||
 > --
-> Intel Open Source Technology Centre
-> http://oss.intel.com/
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
