@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030828Ab3DSOu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 10:50:56 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:38914 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030593Ab3DSOuz (ORCPT
+	id S1030836Ab3DSOvr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 10:51:47 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:60968 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030552Ab3DSOvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 10:50:55 -0400
-Message-ID: <51715988.9060606@cogentembedded.com>
-Date: Fri, 19 Apr 2013 18:49:44 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: linux-arm-kernel@lists.infradead.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org, tanzilli@acmesystems.it,
-        dgilbert@interlog.com, robertcnelson@gmail.com
-Subject: Re: [PATCH 1/5] ARM: at91: at91sam9x5 RTC is not compatible with
- at91rm9200 one
-References: <cover.1366289869.git.nicolas.ferre@atmel.com> <864f10566b35864d469f6ff2913b9afaa0c69350.1366289869.git.nicolas.ferre@atmel.com> <51714C74.2030907@cogentembedded.com> <51714F47.5040006@atmel.com>
-In-Reply-To: <51714F47.5040006@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Apr 2013 10:51:46 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [GIT PULL v2] nohz: Posix cpu timers handling on full dynticks
+Date: Fri, 19 Apr 2013 16:51:37 +0200
+Message-Id: <1366383100-17053-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19-04-2013 18:05, Nicolas Ferre wrote:
+Ingo,
 
->>> Due to a bug with RTC IMR, we cannot consider at91sam9x5 RTC compatible
->>> with the previous one. Modify DT compatibility string, even if the driver
->>> is not yet modified to take it into account.
+Please pull this second version of the dynticks handling of posix cpu
+timers from:
 
->>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>> ---
->>>    arch/arm/boot/dts/at91sam9x5.dtsi | 2 +-
->>>    1 file changed, 1 insertion(+), 1 deletion(-)
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	timers/nohz-posix-timers-v2
 
->>> diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi
->>> b/arch/arm/boot/dts/at91sam9x5.dtsi
->>> index a3d4464..58747f3 100644
->>> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
->>> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
->>> @@ -564,7 +564,7 @@
->>>                };
->>>
->>>                rtc@fffffeb0 {
->>> -                compatible = "atmel,at91rm9200-rtc";
->>> +                compatible = "atmel,at91sam9x5-rtc";
+This fixes an issue with a race between run_posix_cpu_timers() and full
+dynticks CPUs that we found while discussing a patch with Olivier Langlois.
 
->>     Do not use wildcards in the "compatible" prop values (I guess 'x' is
->> a wildcard).
+As a bonus, it also provides the other side of posix cpu timers handling
+in dynticks with the new helper to check before stopping the tick.
 
-> Well, it is for naming a series of hardware, not for giving a generic
-> name that could cover different hardware.
+Thanks.
 
-> In the sense of Atmel it is our way to call the at91sam9x5 series of
-> SoC: you will see that the code that covers these SoCs is always named
-> like this.
-> In fact, the hardware contained in these SoC cannot be different from
-> one flavor of the family to the other.
+Frederic Weisbecker (3):
+  nohz: New APIs to re-evaluate the tick on full dynticks CPUs
+  posix_timers: Kick full dynticks CPUs when a posix cpu timer is armed
+  posix_timers: New API to prevent from stopping the tick when timers
+    are running
 
-    Nevertheless, the wildcards shouldn't be used. Use the name of e.g. the 
-first member of the family.
+ include/linux/posix-timers.h |    2 +
+ include/linux/tick.h         |    4 ++
+ kernel/posix-cpu-timers.c    |   76 +++++++++++++++++++++++++++++++++---------
+ kernel/time/Kconfig          |    1 +
+ kernel/time/tick-sched.c     |   51 ++++++++++++++++++++++++++++
+ 5 files changed, 118 insertions(+), 16 deletions(-)
 
-> Best regards,
-
-WBR, Sergei
+-- 
+1.7.5.4
 
