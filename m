@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab3DSVUZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 17:20:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52638 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754545Ab3DSVUX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 17:20:23 -0400
-Message-ID: <5171B507.4030808@infradead.org>
-Date: Fri, 19 Apr 2013 14:20:07 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S933421Ab3DSVVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 17:21:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40478 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754413Ab3DSVVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 17:21:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,512,1363158000"; 
+   d="scan'208";a="321090470"
+Message-ID: <54738.10.252.10.81.1366406459.squirrel@linux.intel.com>
+In-Reply-To: <5171AC7D.70503@nexus-software.ie>
+References: <alpine.DEB.2.02.1304191859570.17829@localhost>
+    <5171AC7D.70503@nexus-software.ie>
+Date: Fri, 19 Apr 2013 14:20:59 -0700 (PDT)
+Subject: Re: [PATCH] i2c-designware: fix RX FIFO overrun
+From: "Josef Ahmad" <josef.ahmad@linux.intel.com>
+To: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
+Cc: "Josef Ahmad" <josef.ahmad@linux.intel.com>,
+        "Wolfram Sang" <wsa@the-dreams.de>, "Ben Dooks" <ben-linux@fluff.org>,
+        "Jean Delvare" <khali@linux-fr.org>, "Stefan Roese" <sr@denx.de>,
+        "Axel Lin" <axel.lin@gmail.com>,
+        "Mika Westerberg" <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Dirk Brandewie" <dirk.brandewie@gmail.com>
+User-Agent: SquirrelMail/1.4.8-5.el4.centos.8
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, ceph-devel@vger.kernel.org
-Subject: [PATCH -next] ceph: fix printk format warnings in file.c
-References: <20130419181924.a035efe6d5e73fe0db9ddb84@canb.auug.org.au>
-In-Reply-To: <20130419181924.a035efe6d5e73fe0db9ddb84@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+It does.
+The bug appears with fairly-sized read transactions (in the order of kB)
+returning corrupted data.
 
-Fix printk format warnings by using %zd for 'ssize_t' variables:
+Josef
 
-fs/ceph/file.c:751:2: warning: format '%ld' expects argument of type 'long int', but argument 11 has type 'ssize_t' [-Wformat]
-fs/ceph/file.c:762:2: warning: format '%ld' expects argument of type 'long int', but argument 11 has type 'ssize_t' [-Wformat]
+> Josef.
+>
+> This fixes a real bug for us does it not, some failure case with a
+> sustained amount of traffic ?
+>
+>
+> Bryan
+>
+>
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc:	Sage Weil <sage@inktank.com>
-Cc:	ceph-devel@vger.kernel.org
----
- fs/ceph/file.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- linux-next-20130419.orig/fs/ceph/file.c
-+++ linux-next-20130419/fs/ceph/file.c
-@@ -748,7 +748,7 @@ retry_snap:
- 		goto out;
- 	}
- 
--	dout("aio_write %p %llx.%llx %llu~%ld getting caps. i_size %llu\n",
-+	dout("aio_write %p %llx.%llx %llu~%zd getting caps. i_size %llu\n",
- 	     inode, ceph_vinop(inode), pos, count, inode->i_size);
- 	if (fi->fmode & CEPH_FILE_MODE_LAZY)
- 		want = CEPH_CAP_FILE_BUFFER | CEPH_CAP_FILE_LAZYIO;
-@@ -759,7 +759,7 @@ retry_snap:
- 	if (err < 0)
- 		goto out;
- 
--	dout("aio_write %p %llx.%llx %llu~%ld got cap refs on %s\n",
-+	dout("aio_write %p %llx.%llx %llu~%zd got cap refs on %s\n",
- 	     inode, ceph_vinop(inode), pos, count, ceph_cap_string(got));
- 
- 	if ((got & (CEPH_CAP_FILE_BUFFER|CEPH_CAP_FILE_LAZYIO)) == 0 ||
