@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967967Ab3DSIMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 04:12:36 -0400
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:39720 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S967935Ab3DSIMb (ORCPT
+	id S1757418Ab3DSINl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 04:13:41 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37643 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab3DSINj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 04:12:31 -0400
-From: Chao Xie <chao.xie@marvell.com>
-To: <thierry.reding@avionic-design.de>, <linux-kernel@vger.kernel.org>,
-        <xiechao.mail@gmail.com>
-CC: Chao Xie <chao.xie@marvell.com>
-Subject: [PATCH V2  2/3] pwm: pxa: use module_platform_driver for driver register
-Date: Fri, 19 Apr 2013 04:08:40 -0400
-Message-ID: <1366358921-24478-3-git-send-email-chao.xie@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1366358921-24478-1-git-send-email-chao.xie@marvell.com>
-References: <1366358921-24478-1-git-send-email-chao.xie@marvell.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 19 Apr 2013 04:13:39 -0400
+Date: Fri, 19 Apr 2013 18:13:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Antonio Quartulli <ordex@autistici.org>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Martin =?UTF-8?B?SHVuZGViw7hsbA==?= <martin@hundeboll.net>,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        b.a.t.m.a.n@lists.open-mesh.org
+Subject: Re: linux-next: build failure after merge of the net-next tree
+Message-Id: <20130419181334.3e042702caa9c2ad9171b4c2@canb.auug.org.au>
+In-Reply-To: <20130419073409.GH20819@ritirata.org>
+References: <20130419132127.05ea53adec329ca794d62be7@canb.auug.org.au>
+	<20130419073409.GH20819@ritirata.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__19_Apr_2013_18_13_34_+1000_e2CbsKAP_mvcYz.V"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- drivers/pwm/pwm-pxa.c |   12 +-----------
- 1 files changed, 1 insertions(+), 11 deletions(-)
+--Signature=_Fri__19_Apr_2013_18_13_34_+1000_e2CbsKAP_mvcYz.V
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
-index dee6ab55..aa4bea7 100644
---- a/drivers/pwm/pwm-pxa.c
-+++ b/drivers/pwm/pwm-pxa.c
-@@ -187,16 +187,6 @@ static struct platform_driver pwm_driver = {
- 	.id_table	= pwm_id_table,
- };
- 
--static int __init pwm_init(void)
--{
--	return platform_driver_register(&pwm_driver);
--}
--arch_initcall(pwm_init);
--
--static void __exit pwm_exit(void)
--{
--	platform_driver_unregister(&pwm_driver);
--}
--module_exit(pwm_exit);
-+module_platform_driver(pwm_driver);
- 
- MODULE_LICENSE("GPL v2");
--- 
-1.7.4.1
+Hi Antonio,
 
+On Fri, 19 Apr 2013 09:34:09 +0200 Antonio Quartulli <ordex@autistici.org> =
+wrote:
+>
+> Your patch looks good, but I'd prefer to send my already prepared pull re=
+quest.
+>=20
+> Is it ok with you?
+
+Its entirely up to Dave how/if he fixes this up.  He could just leave it
+to Linus, though he would usually pull the net tree into the net-next
+tree after Linus merges the net tree - in which case, this should be
+fixed in that merge.
+
+i.e. ask Dave :-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__19_Apr_2013_18_13_34_+1000_e2CbsKAP_mvcYz.V
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRcPyuAAoJEECxmPOUX5FEXtQQAKhPfqx7n2tBZ/1BM2g3rXRZ
+ltM4N9ueIWnvzLnfOwdoBEsWmgZ1RjhTx7/kxEla02hUw69VrHtpmo5aYZmu2vcl
+bx9jiOzPk3FEGSmbsQyV6gnRBuyA6KwwpkUNF7VApdUzaTnd+qBAT0cRf1T/l5PN
+Nn6VjxVg4fnfqsy1FhOhPuTV8xE7t/sVRpY46jLSQdMGpNWQo7ro/bbwchdEFFgI
+E1Iqf+BKBTBd77ckW4Wr8kGOdBLawBMcuR9sMQPpxWhfkxYGD84bZPQ7npqxk6j4
+h03svuHcYl6OkJorjtc4e8j7MiH6wLMukjOlgGoEuRO4lHjqUHq6cHRQvFZwNZ16
+VkZzejJ5itg9v1C+mIykk9F6igncBm7T7GSzz3MvADhrjvRZuFkGw0PCXTGU0Bpe
+iyYUA5LapCtTcc8vvIULyDvAIaPrNP/hPoG3d3JhFAbTkom5xQjNQDlyb4BQmVtT
+6NxEu7HKGR6nbwypWcgjV0mjDq+prgHsGXWV20gQPlh9BOQ0RZOTscIIDL2Pq6mw
+RZQnbKOVVleFe4RV0yztjaynS1atH2GkVSZnNIvug1+MSMBqGqZzNpwT2HkZrWLm
+tef+yqe3fcU9WG9jhdyH4otdDuTnvUxy3mOXjHIbZzz3+P83s841YVIW+b/O7tzv
+R+nAToOPGvv+ifMyREuB
+=lkP4
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__19_Apr_2013_18_13_34_+1000_e2CbsKAP_mvcYz.V--
