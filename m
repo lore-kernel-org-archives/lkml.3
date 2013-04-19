@@ -1,46 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab3DSSMB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 14:12:01 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:35443 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab3DSSMA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 14:12:00 -0400
-Date: Fri, 19 Apr 2013 11:11:55 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <eag0628@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: Re: [PATCH 0/8] workqueue: advance concurrency management
-Message-ID: <20130419181155.GA13811@mtj.dyndns.org>
-References: <1365957716-7631-1-git-send-email-laijs@cn.fujitsu.com>
- <CACvQF509UnU5RLtoxhnwmfdkudAR+_oWDKLfpq28WeKcUst5qw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACvQF509UnU5RLtoxhnwmfdkudAR+_oWDKLfpq28WeKcUst5qw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753052Ab3DSSSN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 14:18:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1876 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752603Ab3DSSSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 14:18:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,510,1363158000"; 
+   d="scan'208";a="297630461"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 1/3] mei: revamp mei_amthif_irq_read_message
+Date: Fri, 19 Apr 2013 21:16:53 +0300
+Message-Id: <1366395415-13031-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+Rename the function to mei_amthif_irq_read_msg
+and change parameters order
 
-On Fri, Apr 19, 2013 at 06:10:57AM +0800, Lai Jiangshan wrote:
-> Ping.
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/amthif.c    | 10 +++++-----
+ drivers/misc/mei/interrupt.c |  2 +-
+ drivers/misc/mei/mei_dev.h   |  9 +++++++++
+ 3 files changed, 15 insertions(+), 6 deletions(-)
 
-Sorry, I've been at collab summit / lsf.  Plus, it's a bit too late
-for for-3.10 anyway.  Anyways, after glancing over it, here are my
-preliminary thoughts.  The first one looks good but I'm not sure about
-dropping nr_running adjustment.  The only real benefit coming from
-that is dropping a sched callback and if there's any performance /
-overhead impact, I'm afraid it's gonna be negative.  There are actual
-benefits in using as few tasks as possible - the cache footprint gets
-smaller, so unless there's a clear indication that the suggested
-behavior is better in some way, I'm not sure what we're buying with
-the proposed changes.
-
-Thanks.
-
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index 9a5e8c7..31a6212 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -505,14 +505,15 @@ int mei_amthif_irq_write_complete(struct mei_device *dev, s32 *slots,
+  * mei_amthif_irq_read_message - read routine after ISR to
+  *			handle the read amthif message
+  *
+- * @complete_list: An instance of our list structure
+  * @dev: the device structure
+  * @mei_hdr: header of amthif message
++ * @complete_list: An instance of our list structure
+  *
+  * returns 0 on success, <0 on failure.
+  */
+-int mei_amthif_irq_read_message(struct mei_cl_cb *complete_list,
+-		struct mei_device *dev, struct mei_msg_hdr *mei_hdr)
++int mei_amthif_irq_read_msg(struct mei_device *dev,
++			    struct mei_msg_hdr *mei_hdr,
++			    struct mei_cl_cb *complete_list)
+ {
+ 	struct mei_cl_cb *cb;
+ 	unsigned char *buffer;
+@@ -530,8 +531,7 @@ int mei_amthif_irq_read_message(struct mei_cl_cb *complete_list,
+ 	if (!mei_hdr->msg_complete)
+ 		return 0;
+ 
+-	dev_dbg(&dev->pdev->dev,
+-			"amthif_message_buffer_index =%d\n",
++	dev_dbg(&dev->pdev->dev, "amthif_message_buffer_index =%d\n",
+ 			mei_hdr->length);
+ 
+ 	dev_dbg(&dev->pdev->dev, "completed amthif read.\n ");
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 653fcfb..9bf64c0 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -427,7 +427,7 @@ int mei_irq_read_handler(struct mei_device *dev,
+ 		dev_dbg(&dev->pdev->dev, "call mei_irq_thread_read_iamthif_message.\n");
+ 		dev_dbg(&dev->pdev->dev, MEI_HDR_FMT, MEI_HDR_PRM(mei_hdr));
+ 
+-		ret = mei_amthif_irq_read_message(cmpl_list, dev, mei_hdr);
++		ret = mei_amthif_irq_read_msg(dev, mei_hdr, cmpl_list);
+ 		if (ret)
+ 			goto end;
+ 	} else {
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 56dee56..c91c492 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -502,6 +502,15 @@ struct mei_cl_cb *mei_amthif_find_read_list_entry(struct mei_device *dev,
+ 
+ void mei_amthif_run_next_cmd(struct mei_device *dev);
+ 
++int mei_amthif_irq_write_complete(struct mei_device *dev, s32 *slots,
++			struct mei_cl_cb *cb, struct mei_cl_cb *cmpl_list);
++
++void mei_amthif_complete(struct mei_device *dev, struct mei_cl_cb *cb);
++int mei_amthif_irq_read_msg(struct mei_device *dev,
++			    struct mei_msg_hdr *mei_hdr,
++			    struct mei_cl_cb *complete_list);
++int mei_amthif_irq_read(struct mei_device *dev, s32 *slots);
++
+ /*
+  * NFC functions
+  */
 -- 
-tejun
+1.8.1.2
+
