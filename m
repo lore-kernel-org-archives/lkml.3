@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030404Ab3DSN2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 09:28:51 -0400
-Received: from mx09.lb01.inode.at ([62.99.145.9]:59633 "EHLO mx.inode.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1030254Ab3DSN2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 09:28:50 -0400
-From: Michal Bachraty <michal.bachraty@streamunlimited.com>
-To: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Cc: broonie@opensource.wolfsonmicro.com, lgirdwood@gmail.com,
-        marek.belisko@streamunlimited.com,
-        Michal Bachraty <michal.bachraty@streamunlimited.com>
-Subject: [PATCH 2/2] ALSA: ASoc: davinci-mcasp: Add Support BCLK-to-LRCLK ratio for TDM modes
-Date: Fri, 19 Apr 2013 15:28:44 +0200
-Message-Id: <1366378124-14368-1-git-send-email-michal.bachraty@streamunlimited.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Authenticated-Sender: michal.bachraty@streamunlimited.com
+	id S1030422Ab3DSN3X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 09:29:23 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:34800 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030254Ab3DSN3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 09:29:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAFTL4hx+N9vx-k8FXQcwK_AaAHfXPEKrYSc8e6q2wuYhLVZ_bw@mail.gmail.com>
+References: <1366220466.2855.14.camel@Wailaba2>
+	<CAFTL4hx+N9vx-k8FXQcwK_AaAHfXPEKrYSc8e6q2wuYhLVZ_bw@mail.gmail.com>
+Date: Fri, 19 Apr 2013 15:29:20 +0200
+Message-ID: <CAFTL4hy0+W1bA+_BL72XdsxTjqtD6Mx+iDabaRgwS2U6LP8wYA@mail.gmail.com>
+Subject: Re: [PATCH] Remove spurious cputimer restart and eliminate its drift
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Olivier Langlois <olivier@trillion01.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For TDM mode, BCLK-to-LCLK ratio is computed as (tdm_slots) x (word_length).
-I2S mode is only subset of TDM mode with specific tdm_slots = 2 channels.
-Also bclk_lrclk_ratio can be greater than 255, therefore u16 need to be used.
+2013/4/19 Frederic Weisbecker <fweisbec@gmail.com>:
+>>         if (!task_cputime_zero(&tsk->cputime_expires)) {
+>>                 struct task_cputime task_sample = {
+>> -                       .utime = utime,
+>> -                       .stime = stime,
+>>                         .sum_exec_runtime = tsk->se.sum_exec_runtime
+>>                 };
+>> +               task_cputime(tsk, &task_sample.utime, &task_sample.stime);
+>
+> That too needs to be in another patch. It's a bug that concerns full
+> dynticks cputime accounting :)
 
-Signed-off-by: Michal Bachraty <michal.bachraty@streamunlimited.com>
----
- sound/soc/davinci/davinci-mcasp.c |    7 ++++---
- sound/soc/davinci/davinci-mcasp.h |    2 +-
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-index 63633e9..d54e0d9 100644
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -636,11 +636,12 @@ static int davinci_config_channel_size(struct davinci_audio_dev *dev,
- 	 * callback, take it into account here. That allows us to for example
- 	 * send 32 bits per channel to the codec, while only 16 of them carry
- 	 * audio payload.
--	 * The clock ratio is given for a full period of data (both left and
--	 * right channels), so it has to be divided by 2.
-+	 * The clock ratio is given for a full period of data (for I2S format
-+	 * both left and right channels), so it has to be divided by number of
-+	 * tdm-slots (for I2S - divided by 2).
- 	 */
- 	if (dev->bclk_lrclk_ratio)
--		word_length = dev->bclk_lrclk_ratio / 2;
-+		word_length = dev->bclk_lrclk_ratio / dev->tdm_slots;
- 
- 	/* mapping of the XSSZ bit-field as described in the datasheet */
- 	fmt = (word_length >> 1) - 1;
-diff --git a/sound/soc/davinci/davinci-mcasp.h b/sound/soc/davinci/davinci-mcasp.h
-index 0edd3b5..a9ac0c1 100644
---- a/sound/soc/davinci/davinci-mcasp.h
-+++ b/sound/soc/davinci/davinci-mcasp.h
-@@ -38,7 +38,7 @@ struct davinci_audio_dev {
- 	u8	num_serializer;
- 	u8	*serial_dir;
- 	u8	version;
--	u8	bclk_lrclk_ratio;
-+	u16	bclk_lrclk_ratio;
- 
- 	/* McASP FIFO related */
- 	u8	txnumevt;
--- 
-1.7.9.5
-
+Oops, misread, it's just moving the function, I thought it was
+missing. Nevermind.
