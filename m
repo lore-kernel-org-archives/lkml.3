@@ -1,63 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030565Ab3DSOO2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 10:14:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49805 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030503Ab3DSOO1 (ORCPT
+	id S1030576Ab3DSOSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 10:18:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34853 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030473Ab3DSOSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 10:14:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH v3] irqchip: Add support for ARMv7-M's NVIC
-Date: Fri, 19 Apr 2013 16:14:19 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, kernel@pengutronix.de,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-References: <1366214540-31166-1-git-send-email-u.kleine-koenig@pengutronix.de> <201304181138.13599.arnd@arndb.de> <20130419135107.GD15233@pengutronix.de>
-In-Reply-To: <20130419135107.GD15233@pengutronix.de>
+	Fri, 19 Apr 2013 10:18:41 -0400
+Date: Fri, 19 Apr 2013 15:17:49 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jongsung Kim <neidhard.kim@lge.com>
+Cc: gregkh@linuxfoundation.org, jslaby@suse.cz, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RESEND][PATCH] ARM: PL011: add support for extended FIFO-size
+	of PL011-r1p5
+Message-ID: <20130419141748.GU14496@n2100.arm.linux.org.uk>
+References: <201304151445.25151.neidhard.kim@lge.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201304191614.19821.arnd@arndb.de>
-X-Provags-ID: V02:K0:FHUWdb1Sml9eXv8r6ctaNZQUmQeXsy4gJIKqoJEDmYn
- 0PNsdVFG9IYtrhVrlgLJQvP+XTKhUxcU2YeIwC6e+KOpxEiylD
- h4HdhQuVZYmI+7MSKKJO9hQUKm807DyAVDqnD4JbT8bfrQWTiO
- lGOKh/0HxB6KGlqP6lXJ+dqd3AvkoXF1mDCIrTBnLJDl1tFbpw
- Rs5ixjfAXQqiPSPp2CnmVaQoXMoE9cMC3USvQW9MYpdxCx4iyZ
- VwI9uNjcf6jgCKxOvPeU7CIXweXgcKX/87+CFtLQAt/mXVn+bz
- iR1nQODGHEmNvjwpiAAoHUxxDUFp/DOSbNK1sU3sYY2W/1jFag
- fW5X+2EFHbXvp65776zg=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201304151445.25151.neidhard.kim@lge.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 April 2013, Uwe Kleine-König wrote:
-> On Thu, Apr 18, 2013 at 11:38:13AM +0200, Arnd Bergmann wrote:
-> > On Thursday 18 April 2013, Uwe Kleine-König wrote:
-> > > That is, there are (INTLINESNUM + 1) * 32 irqs for INTLINESNUM < 15. For
-> > > INTLINESNUM == 15 there are only 496 and not 16 * 32 == 512. That's the
-> > > same on the gic (just with bigger numbers).
-> > 
-> > Ok, but since you are now using a linear domain, it doesn't actually hurt
-> > to register 512 in that special case, right?
-> Well, it depends if allocating space for 16 unused unsigned ints hurts
-> (maybe not).
+On Mon, Apr 15, 2013 at 02:45:25PM +0900, Jongsung Kim wrote:
+> The latest r1p5-revision of the ARM PL011 UART has 32-byte FIFOs,
+> while all earlier ones have 16-byte FIFOs. This patch suggests
+> a way to set the FIFO-size correctly & flexibly by using a member
+> function named get_fifosize, rather than using the fifosize member
+> variable. The function takes the UARTPeriphID, and returns the
+> correct FIFO size.
 
-As long as SPARSE_IRQ is enabled, the space won't actually be allocated.
-
-> And it makes mapping some irqs successfull while the irq
-> doesn't really exist. But probably this doesn't hurt either because the
-> problem already exists.
-> 
-> I don't care much. Is there another advantage beside saving a few source
-> lines/instructions?
-
-It just feels strange to read the value from hardware and then override
-it anyway. But I agree it's not important either way.
-
-	Arnd
+Same comments as previous version.
