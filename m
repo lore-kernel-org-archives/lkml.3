@@ -1,215 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968163Ab3DSLSV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 07:18:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43020 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967984Ab3DSLSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 07:18:20 -0400
-Date: Fri, 19 Apr 2013 08:18:01 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Prabhakar lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Pawel Osciak <pawel@osciak.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>
-Subject: Re: [PATCH RFC] media: videobuf2: fix the length check for mmap
-Message-ID: <20130419081801.0af7ad73@redhat.com>
-In-Reply-To: <1366364816-3567-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1366364816-3567-1-git-send-email-prabhakar.csengg@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S968182Ab3DSLZb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 07:25:31 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:63776 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968097Ab3DSLZ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 07:25:29 -0400
+X-Spam-Score: -100.8
+Message-ID: <51712975.8030104@asianux.com>
+Date: Fri, 19 Apr 2013 19:24:37 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+MIME-Version: 1.0
+To: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ARM64: kernel: compiling issue: need define readq and writeq
+ for driver module using.
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, 19 Apr 2013 15:16:56 +0530
-Prabhakar lad <prabhakar.csengg@gmail.com> escreveu:
 
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> 
-> From commit 068a0df76023926af958a336a78bef60468d2033
-> "[media] media: vb2: add length check for mmap"
-> patch verifies that the mmap() size requested by userspace
-> doesn't exceed the buffer size.
-> 
-> As the mmap() size is rounded up to the next page boundary
-> the check will fail for buffer sizes that are not multiple
-> of the page size.
-> 
-> This patch fixes the check by aligning the buffer size to page
-> size during the check. Alongside fixes the vmalloc allocator
-> to round up the size.
-> 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: Seung-Woo Kim <sw0312.kim@samsung.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  drivers/media/v4l2-core/videobuf2-core.c    |    2 +-
->  drivers/media/v4l2-core/videobuf2-vmalloc.c |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-> index 58c1744..223fcd4 100644
-> --- a/drivers/media/v4l2-core/videobuf2-core.c
-> +++ b/drivers/media/v4l2-core/videobuf2-core.c
-> @@ -1886,7 +1886,7 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
->  
->  	vb = q->bufs[buffer];
->  
-> -	if (vb->v4l2_planes[plane].length < (vma->vm_end - vma->vm_start)) {
-> +	if (PAGE_ALIGN(vb->v4l2_planes[plane].length) < (vma->vm_end - vma->vm_start)) {
->  		dprintk(1, "Invalid length\n");
->  		return -EINVAL;
->  	}
+  when compiling with allmodconfig, CONFIG_64BIT=y
+    the file drivers/base/regmap/regmap-mmio.c will use readq and writeq.
 
-That is tricky, as it assumes that vb->v4l2_planes[plane].length was round
-up to PAGE_SIZE at each memops driver, but the vb2 core doesn't enforce it.
+  so we need implement these functions.
 
-IMO, it would be cleaner to round vb->v4l2_planes[plane].length up
-at VB2 core, before calling the memops alloc functions at the drivers.
+BTW:
+  the coding style can not pass ./scripts/checkpatch.pl.
+  it seems better to provide additional patch for beautifying code.
 
-Also, VB2 is already complex enough to put it there without proper
-comments (and there's a minor codingstyle issue there: line is bigger
-than 80 cols).
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/arm64/include/asm/io.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-> diff --git a/drivers/media/v4l2-core/videobuf2-vmalloc.c b/drivers/media/v4l2-core/videobuf2-vmalloc.c
-> index 313d977..bf3b95c 100644
-> --- a/drivers/media/v4l2-core/videobuf2-vmalloc.c
-> +++ b/drivers/media/v4l2-core/videobuf2-vmalloc.c
-> @@ -44,7 +44,7 @@ static void *vb2_vmalloc_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fl
->  		return NULL;
->  
->  	buf->size = size;
-> -	buf->vaddr = vmalloc_user(buf->size);
-> +	buf->vaddr = vmalloc_user(PAGE_ALIGN(buf->size));
-
-See? You needed to put an alignment here as well, not because vmalloc
-needs it, but because this is needed by VB2 core.
-
-Also, on the other drivers, buf->size is stored page aligned, while
-here, you're doing different, without any documented reason for doing
-that, instead of doing the same as on the other memops drivers.
-
-That mistake reflects, for example, when the driver prints the failure:
-
-        if (!buf->vaddr) {
-                pr_debug("vmalloc of size %ld failed\n", buf->size);
-
-as it will show a different size than what you actually required.
-As those memory starving errors can also produce a dump at the mm
-core, the size there won't match the size on the above printed message.
-
-Also, it is a very bad idea to delegate the core's requirement of
-do page alignment from the core to the memops drivers, as other
-patches may change the logic there, or a new memops could be added,
-and the same problem will hit again (and unnoticed, as the check
-routine do page alignments).
-
->  	buf->handler.refcount = &buf->refcount;
->  	buf->handler.put = vb2_vmalloc_put;
->  	buf->handler.arg = buf;
-
-IMO, a cleaner version would be the following (untested) code.
-
--
-
-[media] videobuf2: fix the length check for mmap
-
-Memory maps typically require that the buffer size to be page
-aligned. Currently, two memops drivers do such alignment
-internally, but videobuf-vmalloc doesn't.
-
-Also, the buffer overflow check doesn't take it into account.
-
-So, instead of doing it at each memops driver, enforce it at
-VB2 core.
-
-Reported-by: Prabhakar lad <prabhakar.csengg@gmail.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
-index 58c1744..7d833ee 100644
---- a/drivers/media/v4l2-core/videobuf2-core.c
-+++ b/drivers/media/v4l2-core/videobuf2-core.c
-@@ -54,10 +54,15 @@ static int __vb2_buf_mem_alloc(struct vb2_buffer *vb)
- 	void *mem_priv;
- 	int plane;
+diff --git a/arch/arm64/include/asm/io.h b/arch/arm64/include/asm/io.h
+index 57f12c9..2e12258 100644
+--- a/arch/arm64/include/asm/io.h
++++ b/arch/arm64/include/asm/io.h
+@@ -92,10 +92,12 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
+ #define readb_relaxed(c)	({ u8  __v = __raw_readb(c); __v; })
+ #define readw_relaxed(c)	({ u16 __v = le16_to_cpu((__force __le16)__raw_readw(c)); __v; })
+ #define readl_relaxed(c)	({ u32 __v = le32_to_cpu((__force __le32)__raw_readl(c)); __v; })
++#define readq_relaxed(c)	({ u64 __v = le64_to_cpu((__force __le64)__raw_readq(c)); __v; })
  
--	/* Allocate memory for all planes in this buffer */
-+	/*
-+	 * Allocate memory for all planes in this buffer
-+	 * NOTE: mmapped areas should be page aligned
-+	 */
- 	for (plane = 0; plane < vb->num_planes; ++plane) {
-+		unsigned long size = PAGE_ALIGN(q->plane_sizes[plane]);
-+
- 		mem_priv = call_memop(q, alloc, q->alloc_ctx[plane],
--				      q->plane_sizes[plane], q->gfp_flags);
-+				      size, q->gfp_flags);
- 		if (IS_ERR_OR_NULL(mem_priv))
- 			goto free;
+ #define writeb_relaxed(v,c)	((void)__raw_writeb((v),(c)))
+ #define writew_relaxed(v,c)	((void)__raw_writew((__force u16)cpu_to_le16(v),(c)))
+ #define writel_relaxed(v,c)	((void)__raw_writel((__force u32)cpu_to_le32(v),(c)))
++#define writeq_relaxed(v,c)	((void)__raw_writeq((__force u64)cpu_to_le64(v),(c)))
  
-@@ -1852,6 +1857,7 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
- 	struct vb2_buffer *vb;
- 	unsigned int buffer, plane;
- 	int ret;
-+	unsigned long length;
+ /*
+  * I/O memory access primitives. Reads are ordered relative to any
+@@ -105,10 +107,12 @@ static inline u64 __raw_readq(const volatile void __iomem *addr)
+ #define readb(c)		({ u8  __v = readb_relaxed(c); __iormb(); __v; })
+ #define readw(c)		({ u16 __v = readw_relaxed(c); __iormb(); __v; })
+ #define readl(c)		({ u32 __v = readl_relaxed(c); __iormb(); __v; })
++#define readq(c)		({ u64 __v = readq_relaxed(c); __iormb(); __v; })
  
- 	if (q->memory != V4L2_MEMORY_MMAP) {
- 		dprintk(1, "Queue is not currently set up for mmap\n");
-@@ -1886,8 +1892,15 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
+ #define writeb(v,c)		({ __iowmb(); writeb_relaxed((v),(c)); })
+ #define writew(v,c)		({ __iowmb(); writew_relaxed((v),(c)); })
+ #define writel(v,c)		({ __iowmb(); writel_relaxed((v),(c)); })
++#define writeq(v,c)		({ __iowmb(); writeq_relaxed((v),(c)); })
  
- 	vb = q->bufs[buffer];
- 
--	if (vb->v4l2_planes[plane].length < (vma->vm_end - vma->vm_start)) {
--		dprintk(1, "Invalid length\n");
-+	/*
-+	 * MMAP requires page_aligned buffers.
-+	 * The buffer length was page_aligned at __vb2_buf_mem_alloc(),
-+	 * so, we need to do the same here.
-+	 */
-+	length = PAGE_ALIGN(vb->v4l2_planes[plane].length);
-+	if (length < (vma->vm_end - vma->vm_start)) {
-+		dprintk(1,
-+			"MMAP invalid, as it would overflow buffer length\n");
- 		return -EINVAL;
- 	}
- 
-diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c b/drivers/media/v4l2-core/videobuf2-dma-contig.c
-index ae35d25..fd56f25 100644
---- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
-+++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
-@@ -162,9 +162,6 @@ static void *vb2_dc_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_flags)
- 	if (!buf)
- 		return ERR_PTR(-ENOMEM);
- 
--	/* align image size to PAGE_SIZE */
--	size = PAGE_ALIGN(size);
--
- 	buf->vaddr = dma_alloc_coherent(dev, size, &buf->dma_addr,
- 						GFP_KERNEL | gfp_flags);
- 	if (!buf->vaddr) {
-diff --git a/drivers/media/v4l2-core/videobuf2-dma-sg.c b/drivers/media/v4l2-core/videobuf2-dma-sg.c
-index 59522b2..16ae3dc 100644
---- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
-+++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
-@@ -55,7 +55,8 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fla
- 	buf->write = 0;
- 	buf->offset = 0;
- 	buf->sg_desc.size = size;
--	buf->sg_desc.num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-+	/* size is already page aligned */
-+	buf->sg_desc.num_pages = size >> PAGE_SHIFT;
- 
- 	buf->sg_desc.sglist = vzalloc(buf->sg_desc.num_pages *
- 				      sizeof(*buf->sg_desc.sglist));
-
+ /*
+  *  I/O port access primitives.
+-- 
+1.7.7.6
