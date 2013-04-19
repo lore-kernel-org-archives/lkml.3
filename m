@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934570Ab3DSW05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 18:26:57 -0400
-Received: from mail-da0-f41.google.com ([209.85.210.41]:65022 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934370Ab3DSW04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 18:26:56 -0400
-Message-ID: <5171C4AD.2070905@gmail.com>
-Date: Sat, 20 Apr 2013 06:26:53 +0800
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S934628Ab3DSW33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 18:29:29 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47436 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933870Ab3DSW32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 18:29:28 -0400
+Message-ID: <5171C541.1040305@ti.com>
+Date: Fri, 19 Apr 2013 17:29:21 -0500
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        spruce-project@linuxtesting.org
-Subject: Re: [PATCH] ext4: unregister extents status shrinker if mount failed
-References: <1366409133-27567-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1366409133-27567-1-git-send-email-khoroshilov@ispras.ru>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Lars-Peter Clausen <lars@metafoo.de>, Vinod Koul <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] dma: of: Fix of_node reference leak
+References: <1366364534-3298-1-git-send-email-lars@metafoo.de> <201304191210.27151.arnd@arndb.de>
+In-Reply-To: <201304191210.27151.arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.24.0.117]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2013 06:05 AM, Alexey Khoroshilov wrote:
-> If ext4_fill_super() failed after extents status shrinker
-> has been registered, the shrinker is left in a global list
-> while the memory, it sits in, is already freed.
-> Oops is not so bad scenario after that.
-> 
-> Found by Linux File System Verification project (linuxtesting.org).
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-Thanks for your patch.  This problem has been fixed in dev branch of
-ext4 tree, but has not push into mainline kernel yet.  Here is the
-commit id (a75ae78f087f933ab3432e98bb4dbbf2196cf6d5).
-
-Thanks,
-						- Zheng
-
-> ---
->  fs/ext4/super.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+On 04/19/2013 05:10 AM, Arnd Bergmann wrote:
+> On Friday 19 April 2013, Lars-Peter Clausen wrote:
+>> of_dma_request_slave_channel() currently does not drop the reference to the
+>> dma_spec of_node if no DMA controller matching the of_node could be found. This
+>> patch fixes it by always calling of_node_put().
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 > 
-> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> index 5d6d5357..5f9cb30 100644
-> --- a/fs/ext4/super.c
-> +++ b/fs/ext4/super.c
-> @@ -3757,7 +3757,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
->  	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_MMP) &&
->  	    !(sb->s_flags & MS_RDONLY))
->  		if (ext4_multi_mount_protect(sb, le64_to_cpu(es->s_mmp_block)))
-> -			goto failed_mount3;
-> +			goto failed_mount_shr;
->  
->  	/*
->  	 * The first inode we look at is the journal inode.  Don't try
-> @@ -3766,7 +3766,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
->  	if (!test_opt(sb, NOLOAD) &&
->  	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL)) {
->  		if (ext4_load_journal(sb, es, journal_devnum))
-> -			goto failed_mount3;
-> +			goto failed_mount_shr;
->  	} else if (test_opt(sb, NOLOAD) && !(sb->s_flags & MS_RDONLY) &&
->  	      EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_RECOVER)) {
->  		ext4_msg(sb, KERN_ERR, "required journal recovery "
-> @@ -4009,6 +4009,8 @@ failed_mount_wq:
->  		jbd2_journal_destroy(sbi->s_journal);
->  		sbi->s_journal = NULL;
->  	}
-> +failed_mount_shr:
-> +	ext4_es_unregister_shrinker(sb);
->  failed_mount3:
->  	del_timer(&sbi->s_err_report);
->  	if (sbi->s_flex_groups)
-> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+
+Thanks! FWIW ...
+
+Reviewed-by: Jon Hunter <jon-hunter@ti.com>
+
+Cheers
+Jon
 
