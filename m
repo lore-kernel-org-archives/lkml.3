@@ -1,224 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967950Ab3DSKJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 06:09:33 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:32776 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756780Ab3DSKJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 06:09:31 -0400
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: X86 ML <x86@kernel.org>, linux-edac <linux-edac@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH] amd64_edac: Add Family 16h support
-Date: Fri, 19 Apr 2013 12:09:18 +0200
-Message-Id: <1366366158-22232-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 1.8.2.135.g7b592fa
-In-Reply-To: <20130419072615.GB20897@gmail.com>
-References: <20130419072615.GB20897@gmail.com>
+	id S1757505Ab3DSKKf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 06:10:35 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:61708 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755929Ab3DSKKe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 06:10:34 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH 1/2] dma: of: Fix of_node reference leak
+Date: Fri, 19 Apr 2013 12:10:26 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Vinod Koul <vinod.koul@intel.com>, Jon Hunter <jon-hunter@ti.com>,
+        linux-kernel@vger.kernel.org
+References: <1366364534-3298-1-git-send-email-lars@metafoo.de>
+In-Reply-To: <1366364534-3298-1-git-send-email-lars@metafoo.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304191210.27151.arnd@arndb.de>
+X-Provags-ID: V02:K0:3tp9MMRadmbjzGnZ6yTDY4RKeSDr4eVgPUCEqlzz5Gm
+ J+2Y8toDdAem3Wbhp2fQuyY4e4NP4swObc5WtFfJ2UYlpIJTjG
+ O9/wU8/NkQt+rUgvz7y1mXvrP3Dv6Pp9VD9NZ0tsCVYN7Ek5u5
+ gAtPXWU1FrdBRIEMynA7ruIp+gN02Hr7T2AqAPL99FKAIp/pMK
+ 3Xb8avISyfvdAM3syqRrcXEjPTmHtl05XE0dX9rNTbJtNdT9h9
+ PA14WWYoSPayEgCa6v0tbDL6HmHDxI/0E9AuaJ647J/HbarzVT
+ omasuEpqzFgdKL3JQY1yv9xuL+zFMw2aRgUZeiVamJHAuJ5l7z
+ PIRGjihrmA63DyM55i2I=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+On Friday 19 April 2013, Lars-Peter Clausen wrote:
+> of_dma_request_slave_channel() currently does not drop the reference to the
+> dma_spec of_node if no DMA controller matching the of_node could be found. This
+> patch fixes it by always calling of_node_put().
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-Add code to handle DRAM ECC errors decoding for Fam16h.
-
-Tested on Fam16h with ECC turned on using the mce_amd_inj facility and
-works fine.
-
-Signed-off-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-[ Boris: cleanups and clarifications ]
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/kernel/amd_nb.c  |  3 ++-
- drivers/edac/amd64_edac.c | 65 ++++++++++++++++++++++++++++++++++++++++++++++-
- drivers/edac/amd64_edac.h |  4 ++-
- include/linux/pci_ids.h   |  2 ++
- 4 files changed, 71 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index 3684129be947..3048ded1b598 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -20,12 +20,14 @@ const struct pci_device_id amd_nb_misc_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F3) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_M10H_F3) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F3) },
- 	{}
- };
- EXPORT_SYMBOL(amd_nb_misc_ids);
- 
- static const struct pci_device_id amd_nb_link_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
- 	{}
- };
- 
-@@ -81,7 +83,6 @@ int amd_cache_northbridges(void)
- 			next_northbridge(link, amd_nb_link_ids);
-         }
- 
--	/* some CPU families (e.g. family 0x11) do not support GART */
- 	if (boot_cpu_data.x86 == 0xf || boot_cpu_data.x86 == 0x10 ||
- 	    boot_cpu_data.x86 == 0x15)
- 		amd_northbridges.flags |= AMD_NB_GART;
-diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
-index e1d13c463c90..8b6a0343c220 100644
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -98,6 +98,7 @@ int __amd64_write_pci_cfg_dword(struct pci_dev *pdev, int offset,
-  *
-  * F15h: we select which DCT we access using F1x10C[DctCfgSel]
-  *
-+ * F16h: has only 1 DCT
-  */
- static int k8_read_dct_pci_cfg(struct amd64_pvt *pvt, int addr, u32 *val,
- 			       const char *func)
-@@ -340,6 +341,27 @@ static void get_cs_base_and_mask(struct amd64_pvt *pvt, int csrow, u8 dct,
- 		base_bits	= GENMASK(21, 31) | GENMASK(9, 15);
- 		mask_bits	= GENMASK(21, 29) | GENMASK(9, 15);
- 		addr_shift	= 4;
-+
-+	/*
-+	* F16h needs two addr_shift values: 8 for high and 6 for low
-+	* (cf. F16h BKDG).
-+	*/
-+	} else if (boot_cpu_data.x86 == 0x16) {
-+		csbase          = pvt->csels[dct].csbases[csrow];
-+		csmask          = pvt->csels[dct].csmasks[csrow >> 1];
-+
-+		*base  = (csbase & GENMASK(5,  15)) << 6;
-+		*base |= (csbase & GENMASK(19, 30)) << 8;
-+
-+		*mask = ~0ULL;
-+		/* poke holes for the csmask */
-+		*mask &= ~((GENMASK(5, 15)  << 6) |
-+			   (GENMASK(19, 30) << 8));
-+
-+		*mask |= (csmask & GENMASK(5, 15))  << 6;
-+		*mask |= (csmask & GENMASK(19, 30)) << 8;
-+
-+		return;
- 	} else {
- 		csbase		= pvt->csels[dct].csbases[csrow];
- 		csmask		= pvt->csels[dct].csmasks[csrow >> 1];
-@@ -1150,6 +1172,21 @@ static int f15_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
- 	return ddr3_cs_size(cs_mode, false);
- }
- 
-+/*
-+ * F16h has only limited cs_modes
-+ */
-+static int f16_dbam_to_chip_select(struct amd64_pvt *pvt, u8 dct,
-+				unsigned cs_mode)
-+{
-+	WARN_ON(cs_mode > 12);
-+
-+	if (cs_mode == 6 || cs_mode == 8 ||
-+	    cs_mode == 9 || cs_mode == 12)
-+		return -1;
-+	else
-+		return ddr3_cs_size(cs_mode, false);
-+}
-+
- static void read_dram_ctl_register(struct amd64_pvt *pvt)
- {
- 
-@@ -1587,6 +1624,17 @@ static struct amd64_family_type amd64_family_types[] = {
- 			.read_dct_pci_cfg	= f15_read_dct_pci_cfg,
- 		}
- 	},
-+	[F16_CPUS] = {
-+		.ctl_name = "F16h",
-+		.f1_id = PCI_DEVICE_ID_AMD_16H_NB_F1,
-+		.f3_id = PCI_DEVICE_ID_AMD_16H_NB_F3,
-+		.ops = {
-+			.early_channel_count	= f1x_early_channel_count,
-+			.map_sysaddr_to_csrow	= f1x_map_sysaddr_to_csrow,
-+			.dbam_to_cs		= f16_dbam_to_chip_select,
-+			.read_dct_pci_cfg	= f10_read_dct_pci_cfg,
-+		}
-+	},
- };
- 
- /*
-@@ -1939,7 +1987,9 @@ static void read_mc_regs(struct amd64_pvt *pvt)
- 
- 	if (c->x86 >= 0x10) {
- 		amd64_read_pci_cfg(pvt->F3, EXT_NB_MCA_CFG, &tmp);
--		amd64_read_dct_pci_cfg(pvt, DBAM1, &pvt->dbam1);
-+		if (c->x86 != 0x16)
-+			/* F16h has only DCT0 */
-+			amd64_read_dct_pci_cfg(pvt, DBAM1, &pvt->dbam1);
- 
- 		/* F10h, revD and later can do x8 ECC too */
- 		if ((c->x86 > 0x10 || c->x86_model > 7) && tmp & BIT(25))
-@@ -2356,6 +2406,11 @@ static struct amd64_family_type *amd64_per_family_init(struct amd64_pvt *pvt)
- 		pvt->ops		= &amd64_family_types[F15_CPUS].ops;
- 		break;
- 
-+	case 0x16:
-+		fam_type		= &amd64_family_types[F16_CPUS];
-+		pvt->ops		= &amd64_family_types[F16_CPUS].ops;
-+		break;
-+
- 	default:
- 		amd64_err("Unsupported family!\n");
- 		return NULL;
-@@ -2581,6 +2636,14 @@ static DEFINE_PCI_DEVICE_TABLE(amd64_pci_table) = {
- 		.class		= 0,
- 		.class_mask	= 0,
- 	},
-+	{
-+		.vendor		= PCI_VENDOR_ID_AMD,
-+		.device		= PCI_DEVICE_ID_AMD_16H_NB_F2,
-+		.subvendor	= PCI_ANY_ID,
-+		.subdevice	= PCI_ANY_ID,
-+		.class		= 0,
-+		.class_mask	= 0,
-+	},
- 
- 	{0, }
- };
-diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-index 35637d83f235..2c6f113bae2b 100644
---- a/drivers/edac/amd64_edac.h
-+++ b/drivers/edac/amd64_edac.h
-@@ -172,7 +172,8 @@
-  */
- #define PCI_DEVICE_ID_AMD_15H_NB_F1	0x1601
- #define PCI_DEVICE_ID_AMD_15H_NB_F2	0x1602
--
-+#define PCI_DEVICE_ID_AMD_16H_NB_F1	0x1531
-+#define PCI_DEVICE_ID_AMD_16H_NB_F2	0x1532
- 
- /*
-  * Function 1 - Address Map
-@@ -296,6 +297,7 @@ enum amd_families {
- 	K8_CPUS = 0,
- 	F10_CPUS,
- 	F15_CPUS,
-+	F16_CPUS,
- 	NUM_FAMILIES,
- };
- 
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index f11c1c2609d5..9b3b85822302 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -524,6 +524,8 @@
- #define PCI_DEVICE_ID_AMD_15H_NB_F3	0x1603
- #define PCI_DEVICE_ID_AMD_15H_NB_F4	0x1604
- #define PCI_DEVICE_ID_AMD_15H_NB_F5	0x1605
-+#define PCI_DEVICE_ID_AMD_16H_NB_F3	0x1533
-+#define PCI_DEVICE_ID_AMD_16H_NB_F4	0x1534
- #define PCI_DEVICE_ID_AMD_CNB17H_F3	0x1703
- #define PCI_DEVICE_ID_AMD_LANCE		0x2000
- #define PCI_DEVICE_ID_AMD_LANCE_HOME	0x2001
--- 
-1.8.2.135.g7b592fa
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
