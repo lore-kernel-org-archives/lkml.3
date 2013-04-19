@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030783Ab3DSPM2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 11:12:28 -0400
-Received: from [195.130.65.41] ([195.130.65.41]:3688 "EHLO teihal.gr"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1030512Ab3DSPM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 11:12:27 -0400
-X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Apr 2013 11:12:27 EDT
-DomainKey-Signature: a=rsa-sha1; s=MDaemon; d=teihal.gr;
-	c=simple; q=dns; h=from:message-id;
-	b=s4ZzL5d7NPBa6yigtkalb6LG8f7942hsBy1Ujptnqrb1P9kUIDy12s9goKGC
-	CnYlrWc44oHgNByT41xiBHIjO+/Jmw05i7VGoCCgHHc3JKqG84ys6XPHt
-	PkOoCo4GHFMsF8r/MYoiu0uHjszkOgjwXXQ0zHgS2+eAXfnfzDRXkg=;
-X-Spam-Processed: teihal.gr, Fri, 19 Apr 2013 18:00:25 +0300
-	(not processed: message was sent from localhost)
-X-Authenticated-Sender: kapetanios@teihal.gr
-X-MDRemoteIP: 195.130.65.41
-X-Return-Path: prvs=182128c78c=kapetanios@teihal.gr
-X-Envelope-From: kapetanios@teihal.gr
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Date: Fri, 19 Apr 2013 17:59:59 +0300
-From: "Giorgos Kapetanios" <kapetanios@teihal.gr>
-Reply-To: support_admin@mail2webmaster.com
-Subject: Webmail Account Service Team Management.
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Message-ID: <WC20130419145959.901DC6@teihal.gr>
-X-Mailer: WorldClient 10.0.5
-To: unlisted-recipients:; (no To-header on input)
+	id S1030770Ab3DSPOr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 11:14:47 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:55922 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030715Ab3DSPOq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 11:14:46 -0400
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 0/3] rtc: rtc-hid-sensor-time
+Date: Fri, 19 Apr 2013 17:14:09 +0200
+Message-Id: <1366384452-14367-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Hello,
 
-Dear Account Owner,
+as I'm not sure if the maintainer of the RTC subsystem is active again,
+I've added the people which where involved with rtc-hid-sensor-time
+before to cc too. That might be a good idea even he is active again,
+as the driver depends on hid-sensor-hub and as such works a bit
+outside the stuff other RTC drivers do use.
 
-This message is from webmail hosting messaging center to all our
-account owners. We are currently upgrading our data base and e-mail center
-for this year 2013. We are deleting all unused account to create more
-space for new one and to prevent spam mails. To prevent your account from
-closing you will have to update it below so that we will know that it's a
-present used account.
+This small series of patches do extend the driver a bit. They make
+the driver more standard (draft) compliant and I've added a replacement
+for the usual hctosys, because that isn't usable with this driver.
 
-Warning!!! E-mail owner that refuses to update his or her Email, within
-48hrs of receiving this warning will lose his or her E-mail permanently.
-You are required to send us the below information via email below.
+I've already send the first patch two weeks before (unchanged) therefor
+I've marked it as RESEND (see https://lkml.org/lkml/2013/4/5/177 ).
 
-CONFIRM YOUR E-MAIL IDENTITY BELOW:
+Actually I wanted to have added another patch to adjust the system time
+too (when the clock sends HID reports which are including milliseconds
+regulary by itself), but I have to read about the in-kernel timekeeping
+(kernel/time/timekeeping.c, kernel/time/ntp.c) for that and I don't know
+if I will find the time without missing the next merge window.
 
-First Name: ____________________________
-Last Name: _____________________________
-E-mail Username: ________________________
-E-mail Password: _______________________
-Click on reply and send us the above details.
+Personally I would like if they went into 3.9 too, but beeing realistic,
+I'm happy if they end up in 3.11. ;)
 
-Warning!!!
+If someone is curious about my other side of that driver, I've setup a
+website with explanations and source which should make it easy build a
+similiar hot-pluggable RTC: http://ahsoftware.de/dcf77-hid-usb-rtc/
 
-In failure to verify your account within 48hrs on receiving this
-notification, your account will automatically be deactivated.
-Thank you for using webmail Account.
-Warning Code: QATO8B52AXV
+Regards,
 
-Kind Regards,
-Webmail Account Service Team Management.
-Thanks for your co-operation.
-Copyright @2013 WEBMAIL OFFICE all rights reserved.
-
-
+Alexander
