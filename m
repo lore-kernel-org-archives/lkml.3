@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967873Ab3DSCnD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 22:43:03 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47637 "EHLO mga01.intel.com"
+	id S967869Ab3DSCpM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 22:45:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41385 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967836Ab3DSCnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 22:43:01 -0400
+	id S967790Ab3DSCpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 22:45:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,505,1363158000"; 
-   d="scan'208";a="321483917"
-Message-ID: <5170AF2B.80600@linux.intel.com>
-Date: Thu, 18 Apr 2013 19:42:51 -0700
+   d="scan'208";a="321484441"
+Message-ID: <5170AFAC.9050602@linux.intel.com>
+Date: Thu, 18 Apr 2013 19:45:00 -0700
 From: Darren Hart <dvhart@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
@@ -24,88 +24,17 @@ References: <OF79A40956.94F46B9C-ON48257B50.00320F73-48257B50.0036925D@zte.com.c
 In-Reply-To: <OFD8FA3C9D.ACFCFB28-ON48257B52.0008A691-48257B52.000C4DFB@zte.com.cn>
 X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 07:13 PM, zhang.yi20@zte.com.cn wrote:
-> Darren Hart <dvhart@linux.intel.com> wrote on 2013/04/18 22:34:29:
 > 
->> On 04/18/2013 01:05 AM, zhang.yi20@zte.com.cn wrote:
->>>
->>> I have run futextest/performance/futex_wait for testing, 
->>>  5 times before make it long:
->>> futex_wait: Measure FUTEX_WAIT operations per second
->>>         Arguments: iterations=100000000 threads=256
->>> Result: 10215 Kiter/s
->>>
->>> futex_wait: Measure FUTEX_WAIT operations per second
->>>         Arguments: iterations=100000000 threads=256
->>> Result: 9862 Kiter/s
->>>
->>> futex_wait: Measure FUTEX_WAIT operations per second
->>>         Arguments: iterations=100000000 threads=256
->>> Result: 10081 Kiter/s
->>>
->>> futex_wait: Measure FUTEX_WAIT operations per second
->>>         Arguments: iterations=100000000 threads=256
->>> Result: 10060 Kiter/s
->>>
->>> futex_wait: Measure FUTEX_WAIT operations per second
->>>         Arguments: iterations=100000000 threads=256
->>> Result: 10081 Kiter/s
->>>
->>>
->>> And 5 times after make it long:
->>> futex_wait: Measure FUTEX_WAIT operations per second
->>>         Arguments: iterations=100000000 threads=256
->>> Result: 9940 Kiter/s
->>>
->>> futex_wait: Measure FUTEX_WAIT operations per second
->>>         Arguments: iterations=100000000 threads=256
->>> Result: 10204 Kiter/s
->>>
->>> futex_wait: Measure FUTEX_WAIT operations per second
->>>         Arguments: iterations=100000000 threads=256
->>> Result: 9901 Kiter/s
->>>
->>> futex_wait: Measure FUTEX_WAIT operations per second
->>>         Arguments: iterations=100000000 threads=256
->>> Result: 10152 Kiter/s
->>>
->>> futex_wait: Measure FUTEX_WAIT operations per second
->>>         Arguments: iterations=100000000 threads=256
->>> Result: 10060 Kiter/s
->>>
->>>
->>> Seems OK, is it?
->>>
->>
->> Changes appear to be in the noise, no impact with this load 
->> anyway.
->> How many CPUs on your test machine? I presume not 256?
->>
->> -- 
-> 
-> There are 16 CPUs£¬ and mode is:
-> Intel(R) Xeon(R) CPU           C5528  @ 2.13GHz
-> 
-> Shall I make the number of threads as the CPUS? I test again with argument 
-> '-n 16', the result is similar.
-
-No, I just wanted to be sure you weren't running 256 threads on 1 CPU as
-you wouldn't be likely to be stressing the bucket list much :-)
-
 > BTW, have you seen the testcase in my other mail?  It seems to be rejected 
 > by LKML.
+> 
 
-Might have something to do with what appears to still be HTML email. You
-really need to fix your email client.
-
-See:  http://www.tux.org/lkml/
-#12 in particular.
-
+I did not receive it, did you also CC me?
 
 -- 
 Darren Hart
