@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030831Ab3DSQVP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:21:15 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:29414 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757168Ab3DSQTu (ORCPT
+	id S1030665Ab3DSQVN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:21:13 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:13957 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757581Ab3DSQTu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Apr 2013 12:19:50 -0400
 X-IronPort-AV: E=Sophos;i="4.87,510,1363158000"; 
-   d="scan'208";a="39797391"
+   d="scan'208";a="39954137"
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: arm@kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCHv5 04/11] ARM: smp_twd: Divorce smp_twd from local timer API
-Date: Fri, 19 Apr 2013 09:19:38 -0700
-Message-Id: <1366388385-30722-5-git-send-email-sboyd@codeaurora.org>
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Subject: [PATCHv5 06/11] ARM: EXYNOS4: Divorce mct from local timer API
+Date: Fri, 19 Apr 2013 09:19:40 -0700
+Message-Id: <1366388385-30722-7-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.2.1.392.g85e7e81
 In-Reply-To: <1366388385-30722-1-git-send-email-sboyd@codeaurora.org>
 References: <1366388385-30722-1-git-send-email-sboyd@codeaurora.org>
@@ -25,365 +25,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate the smp_twd timers from the local timer API. This will
+Separate the mct local timers from the local timer API. This will
 allow us to remove ARM local timer support in the near future and
 gets us closer to moving this driver to drivers/clocksource.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Tony Lindgren <tony@atomide.com>
-Tested-by: Mark Rutland <mark.rutland@arm.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/Kconfig               |  2 +-
- arch/arm/kernel/smp_twd.c      | 64 ++++++++++++++++++++++++++++--------------
- arch/arm/mach-highbank/Kconfig |  2 +-
- arch/arm/mach-imx/Kconfig      |  2 +-
- arch/arm/mach-omap2/Kconfig    |  2 +-
- arch/arm/mach-realview/Kconfig |  8 +++---
- arch/arm/mach-spear/Kconfig    |  2 +-
- arch/arm/mach-tegra/Kconfig    |  2 +-
- arch/arm/mach-ux500/Kconfig    |  2 +-
- arch/arm/mach-vexpress/Kconfig |  2 +-
- arch/arm/mach-zynq/Kconfig     |  2 +-
- 11 files changed, 56 insertions(+), 34 deletions(-)
+ drivers/clocksource/exynos_mct.c | 61 ++++++++++++++++++++++++++++------------
+ 1 file changed, 43 insertions(+), 18 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 10c3466..14c0a3d 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -634,7 +634,7 @@ config ARCH_SHMOBILE
- 	select CLKDEV_LOOKUP
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_CLK
- 	select HAVE_MACH_CLKDEV
- 	select HAVE_SMP
-diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
-index 90525d9..aac1495 100644
---- a/arch/arm/kernel/smp_twd.c
-+++ b/arch/arm/kernel/smp_twd.c
-@@ -11,6 +11,7 @@
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/clk.h>
-+#include <linux/cpu.h>
- #include <linux/delay.h>
- #include <linux/device.h>
+diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+index a5e9b48..ed4f463 100644
+--- a/drivers/clocksource/exynos_mct.c
++++ b/drivers/clocksource/exynos_mct.c
+@@ -16,6 +16,7 @@
  #include <linux/err.h>
-@@ -24,7 +25,6 @@
+ #include <linux/clk.h>
+ #include <linux/clockchips.h>
++#include <linux/cpu.h>
+ #include <linux/platform_device.h>
+ #include <linux/delay.h>
+ #include <linux/percpu.h>
+@@ -24,8 +25,6 @@
+ #include <linux/of_address.h>
+ #include <linux/clocksource.h>
  
- #include <asm/smp_plat.h>
- #include <asm/smp_twd.h>
 -#include <asm/localtimer.h>
+-
+ #include <plat/cpu.h>
  
- /* set up by the platform code */
- static void __iomem *twd_base;
-@@ -33,7 +33,7 @@ static struct clk *twd_clk;
- static unsigned long twd_timer_rate;
- static DEFINE_PER_CPU(bool, percpu_setup_called);
+ #include <mach/map.h>
+@@ -85,7 +84,7 @@ static unsigned int mct_int_type;
+ static int mct_irqs[MCT_NR_IRQS];
  
--static struct clock_event_device __percpu **twd_evt;
-+static struct clock_event_device __percpu *twd_evt;
- static int twd_ppi;
- 
- static void twd_set_mode(enum clock_event_mode mode,
-@@ -90,8 +90,10 @@ static int twd_timer_ack(void)
- 	return 0;
+ struct mct_clock_event_device {
+-	struct clock_event_device *evt;
++	struct clock_event_device evt;
+ 	unsigned long base;
+ 	char name[10];
+ };
+@@ -300,8 +299,6 @@ static void exynos4_clockevent_init(void)
+ 	setup_irq(mct_irqs[MCT_G0_IRQ], &mct_comp_event_irq);
  }
  
--static void twd_timer_stop(struct clock_event_device *clk)
-+static void twd_timer_stop(void)
+-#ifdef CONFIG_LOCAL_TIMERS
+-
+ static DEFINE_PER_CPU(struct mct_clock_event_device, percpu_mct_tick);
+ 
+ /* Clock event handling */
+@@ -374,7 +371,7 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
+ 
+ static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
  {
-+	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
-+
- 	twd_set_mode(CLOCK_EVT_MODE_UNUSED, clk);
- 	disable_percpu_irq(clk->irq);
- }
-@@ -106,7 +108,7 @@ static void twd_update_frequency(void *new_rate)
- {
- 	twd_timer_rate = *((unsigned long *) new_rate);
- 
--	clockevents_update_freq(*__this_cpu_ptr(twd_evt), twd_timer_rate);
-+	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
- }
- 
- static int twd_rate_change(struct notifier_block *nb,
-@@ -132,7 +134,7 @@ static struct notifier_block twd_clk_nb = {
- 
- static int twd_clk_init(void)
- {
--	if (twd_evt && *__this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
-+	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
- 		return clk_notifier_register(twd_clk, &twd_clk_nb);
- 
- 	return 0;
-@@ -151,7 +153,7 @@ static void twd_update_frequency(void *data)
- {
- 	twd_timer_rate = clk_get_rate(twd_clk);
- 
--	clockevents_update_freq(*__this_cpu_ptr(twd_evt), twd_timer_rate);
-+	clockevents_update_freq(__this_cpu_ptr(twd_evt), twd_timer_rate);
- }
- 
- static int twd_cpufreq_transition(struct notifier_block *nb,
-@@ -177,7 +179,7 @@ static struct notifier_block twd_cpufreq_nb = {
- 
- static int twd_cpufreq_init(void)
- {
--	if (twd_evt && *__this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
-+	if (twd_evt && __this_cpu_ptr(twd_evt) && !IS_ERR(twd_clk))
- 		return cpufreq_register_notifier(&twd_cpufreq_nb,
- 			CPUFREQ_TRANSITION_NOTIFIER);
- 
-@@ -228,7 +230,7 @@ static void __cpuinit twd_calibrate_rate(void)
- 
- static irqreturn_t twd_handler(int irq, void *dev_id)
- {
--	struct clock_event_device *evt = *(struct clock_event_device **)dev_id;
-+	struct clock_event_device *evt = dev_id;
- 
- 	if (twd_timer_ack()) {
- 		evt->event_handler(evt);
-@@ -265,9 +267,9 @@ static void twd_get_clock(struct device_node *np)
- /*
-  * Setup the local clock events for a CPU.
-  */
--static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
-+static void __cpuinit twd_timer_setup(void)
- {
--	struct clock_event_device **this_cpu_clk;
-+	struct clock_event_device *clk = __this_cpu_ptr(twd_evt);
- 	int cpu = smp_processor_id();
+-	struct clock_event_device *evt = mevt->evt;
++	struct clock_event_device *evt = &mevt->evt;
  
  	/*
-@@ -276,9 +278,9 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- 	 */
- 	if (per_cpu(percpu_setup_called, cpu)) {
- 		__raw_writel(0, twd_base + TWD_TIMER_CONTROL);
--		clockevents_register_device(*__this_cpu_ptr(twd_evt));
-+		clockevents_register_device(clk);
- 		enable_percpu_irq(clk->irq, 0);
--		return 0;
-+		return;
- 	}
- 	per_cpu(percpu_setup_called, cpu) = true;
+ 	 * This is for supporting oneshot mode.
+@@ -396,7 +393,7 @@ static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
+ static irqreturn_t exynos4_mct_tick_isr(int irq, void *dev_id)
+ {
+ 	struct mct_clock_event_device *mevt = dev_id;
+-	struct clock_event_device *evt = mevt->evt;
++	struct clock_event_device *evt = &mevt->evt;
  
-@@ -297,27 +299,37 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
- 	clk->set_mode = twd_set_mode;
- 	clk->set_next_event = twd_set_next_event;
- 	clk->irq = twd_ppi;
--
--	this_cpu_clk = __this_cpu_ptr(twd_evt);
--	*this_cpu_clk = clk;
-+	clk->cpumask = cpumask_of(cpu);
+ 	exynos4_mct_tick_clear(mevt);
  
- 	clockevents_config_and_register(clk, twd_timer_rate,
- 					0xf, 0xffffffff);
- 	enable_percpu_irq(clk->irq, 0);
-+}
+@@ -422,8 +419,7 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
+ 	struct mct_clock_event_device *mevt;
+ 	unsigned int cpu = smp_processor_id();
  
--	return 0;
-+static int __cpuinit twd_timer_cpu_notify(struct notifier_block *self,
+-	mevt = this_cpu_ptr(&percpu_mct_tick);
+-	mevt->evt = evt;
++	mevt = container_of(evt, struct mct_clock_event_device, evt);
+ 
+ 	mevt->base = EXYNOS4_MCT_L_BASE(cpu);
+ 	sprintf(mevt->name, "mct_tick%d", cpu);
+@@ -457,7 +453,7 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
+ 	return 0;
+ }
+ 
+-static void exynos4_local_timer_stop(struct clock_event_device *evt)
++static void __cpuinit exynos4_local_timer_stop(struct clock_event_device *evt)
+ {
+ 	unsigned int cpu = smp_processor_id();
+ 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
+@@ -470,14 +466,37 @@ static void exynos4_local_timer_stop(struct clock_event_device *evt)
+ 		disable_percpu_irq(mct_irqs[MCT_L0_IRQ]);
+ }
+ 
+-static struct local_timer_ops exynos4_mct_tick_ops __cpuinitdata = {
+-	.setup	= exynos4_local_timer_setup,
+-	.stop	= exynos4_local_timer_stop,
++static int __cpuinit exynos4_mct_cpu_notify(struct notifier_block *self,
 +					   unsigned long action, void *hcpu)
 +{
++	struct mct_clock_event_device *mevt;
++
++	/*
++	 * Grab cpu pointer in each case to avoid spurious
++	 * preemptible warnings
++	 */
 +	switch (action & ~CPU_TASKS_FROZEN) {
 +	case CPU_STARTING:
-+		twd_timer_setup();
++		mevt = this_cpu_ptr(&percpu_mct_tick);
++		exynos4_local_timer_setup(&mevt->evt);
 +		break;
 +	case CPU_DYING:
-+		twd_timer_stop();
++		mevt = this_cpu_ptr(&percpu_mct_tick);
++		exynos4_local_timer_stop(&mevt->evt);
 +		break;
 +	}
 +
 +	return NOTIFY_OK;
- }
- 
--static struct local_timer_ops twd_lt_ops __cpuinitdata = {
--	.setup	= twd_timer_setup,
--	.stop	= twd_timer_stop,
-+static struct notifier_block twd_timer_cpu_nb __cpuinitdata = {
-+	.notifier_call = twd_timer_cpu_notify,
++}
++
++static struct notifier_block exynos4_mct_cpu_nb __cpuinitdata = {
++	.notifier_call = exynos4_mct_cpu_notify,
  };
+-#endif /* CONFIG_LOCAL_TIMERS */
  
- static int __init twd_local_timer_common_register(struct device_node *np)
+ static void __init exynos4_timer_resources(struct device_node *np, void __iomem *base)
  {
- 	int err;
++	int err;
++	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
+ 	struct clk *mct_clk, *tick_clk;
  
--	twd_evt = alloc_percpu(struct clock_event_device *);
-+	twd_evt = alloc_percpu(struct clock_event_device);
- 	if (!twd_evt) {
- 		err = -ENOMEM;
- 		goto out_free;
-@@ -329,12 +341,22 @@ static int __init twd_local_timer_common_register(struct device_node *np)
- 		goto out_free;
+ 	tick_clk = np ? of_clk_get_by_name(np, "fin_pll") :
+@@ -495,9 +514,7 @@ static void __init exynos4_timer_resources(struct device_node *np, void __iomem
+ 	if (!reg_base)
+ 		panic("%s: unable to ioremap mct address space\n", __func__);
+ 
+-#ifdef CONFIG_LOCAL_TIMERS
+ 	if (mct_int_type == MCT_INT_PPI) {
+-		int err;
+ 
+ 		err = request_percpu_irq(mct_irqs[MCT_L0_IRQ],
+ 					 exynos4_mct_tick_isr, "MCT",
+@@ -506,8 +523,16 @@ static void __init exynos4_timer_resources(struct device_node *np, void __iomem
+ 		     mct_irqs[MCT_L0_IRQ], err);
  	}
  
--	err = local_timer_register(&twd_lt_ops);
-+	err = register_cpu_notifier(&twd_timer_cpu_nb);
- 	if (err)
- 		goto out_irq;
- 
- 	twd_get_clock(np);
- 
-+	/*
-+	 * Immediately configure the timer on the boot CPU, unless we need
-+	 * jiffies to be incrementing to calibrate the rate in which case
-+	 * setup the timer in late_time_init.
-+	 */
-+	if (twd_timer_rate)
-+		twd_timer_setup();
-+	else
-+		late_time_init = twd_timer_setup;
+-	local_timer_register(&exynos4_mct_tick_ops);
+-#endif /* CONFIG_LOCAL_TIMERS */
++	err = register_cpu_notifier(&exynos4_mct_cpu_nb);
++	if (err)
++		goto out_irq;
 +
- 	return 0;
++	/* Immediately configure the timer on the boot CPU */
++	exynos4_local_timer_setup(&mevt->evt);
++	return;
++
++out_irq:
++	free_percpu_irq(mct_irqs[MCT_L0_IRQ], &percpu_mct_tick);
+ }
  
- out_irq:
-diff --git a/arch/arm/mach-highbank/Kconfig b/arch/arm/mach-highbank/Kconfig
-index cd9fcb1..6acbdab 100644
---- a/arch/arm/mach-highbank/Kconfig
-+++ b/arch/arm/mach-highbank/Kconfig
-@@ -12,7 +12,7 @@ config ARCH_HIGHBANK
- 	select CPU_V7
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_ARM_SCU
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_SMP
- 	select MAILBOX
- 	select PL320_MBOX
-diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
-index 78f795d..bd5a922 100644
---- a/arch/arm/mach-imx/Kconfig
-+++ b/arch/arm/mach-imx/Kconfig
-@@ -801,7 +801,7 @@ config SOC_IMX6Q
- 	select COMMON_CLK
- 	select CPU_V7
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_CAN_FLEXCAN if CAN
- 	select HAVE_IMX_ANATOP
- 	select HAVE_IMX_GPC
-diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
-index 9ef5e9e..568bb74 100644
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -89,7 +89,7 @@ config ARCH_OMAP4
- 	select CACHE_L2X0
- 	select CPU_V7
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_SMP
- 	select LOCAL_TIMERS if SMP
- 	select OMAP_INTERCONNECT
-diff --git a/arch/arm/mach-realview/Kconfig b/arch/arm/mach-realview/Kconfig
-index d210c0f9..9db2029 100644
---- a/arch/arm/mach-realview/Kconfig
-+++ b/arch/arm/mach-realview/Kconfig
-@@ -13,7 +13,7 @@ config REALVIEW_EB_A9MP
- 	depends on MACH_REALVIEW_EB
- 	select CPU_V7
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
- 	help
-@@ -26,7 +26,7 @@ config REALVIEW_EB_ARM11MP
- 	select ARCH_HAS_BARRIERS if SMP
- 	select CPU_V6K
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
- 	help
-@@ -48,7 +48,7 @@ config MACH_REALVIEW_PB11MP
- 	select ARM_GIC
- 	select CPU_V6K
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_PATA_PLATFORM
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
-@@ -92,7 +92,7 @@ config MACH_REALVIEW_PBX
- 	select ARCH_SPARSEMEM_ENABLE if CPU_V7 && !REALVIEW_HIGH_PHYS_OFFSET
- 	select ARM_GIC
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_PATA_PLATFORM
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
-diff --git a/arch/arm/mach-spear/Kconfig b/arch/arm/mach-spear/Kconfig
-index 442917e..df0d59a 100644
---- a/arch/arm/mach-spear/Kconfig
-+++ b/arch/arm/mach-spear/Kconfig
-@@ -23,7 +23,7 @@ config ARCH_SPEAR13XX
- 	select CPU_V7
- 	select GPIO_SPEAR_SPICS
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
- 	select PINCTRL
-diff --git a/arch/arm/mach-tegra/Kconfig b/arch/arm/mach-tegra/Kconfig
-index 20c3b37..686d6b5 100644
---- a/arch/arm/mach-tegra/Kconfig
-+++ b/arch/arm/mach-tegra/Kconfig
-@@ -8,7 +8,7 @@ config ARCH_TEGRA
- 	select COMMON_CLK
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_CLK
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
-diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
-index f66d7de..ed33ec1 100644
---- a/arch/arm/mach-ux500/Kconfig
-+++ b/arch/arm/mach-ux500/Kconfig
-@@ -8,7 +8,7 @@ config ARCH_U8500
- 	select CPU_V7
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_SMP
- 	select MIGHT_HAVE_CACHE_L2X0
- 	help
-diff --git a/arch/arm/mach-vexpress/Kconfig b/arch/arm/mach-vexpress/Kconfig
-index 5907e10..5bfdd73 100644
---- a/arch/arm/mach-vexpress/Kconfig
-+++ b/arch/arm/mach-vexpress/Kconfig
-@@ -10,7 +10,7 @@ config ARCH_VEXPRESS
- 	select CPU_V7
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select HAVE_CLK
- 	select HAVE_PATA_PLATFORM
- 	select HAVE_SMP
-diff --git a/arch/arm/mach-zynq/Kconfig b/arch/arm/mach-zynq/Kconfig
-index c1d61f2..04f8a4a 100644
---- a/arch/arm/mach-zynq/Kconfig
-+++ b/arch/arm/mach-zynq/Kconfig
-@@ -6,7 +6,7 @@ config ARCH_ZYNQ
- 	select CPU_V7
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_ARM_SCU if SMP
--	select HAVE_ARM_TWD if LOCAL_TIMERS
-+	select HAVE_ARM_TWD if SMP
- 	select ICST
- 	select MIGHT_HAVE_CACHE_L2X0
- 	select USE_OF
+ void __init mct_init(void)
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
