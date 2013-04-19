@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030475Ab3DSMre (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:47:34 -0400
-Received: from mail.neotion.com ([91.121.222.125]:56092 "EHLO mail.neotion.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030341Ab3DSMrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 08:47:33 -0400
-X-Greylist: delayed 355 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Apr 2013 08:47:32 EDT
-Message-ID: <51713B86.2090001@neotion.com>
-Date: Fri, 19 Apr 2013 14:41:42 +0200
-From: Neil Armstrong <narmstrong@neotion.com>
-Reply-To: narmstrong@neotion.com
-Organization: Neotion
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S968363Ab3DSMvn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 08:51:43 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:57850 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968346Ab3DSMvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 08:51:42 -0400
 MIME-Version: 1.0
-To: linux-mmc@vger.kernel.org
-CC: Chris Ball <cjb@laptop.org>, Namjae Jeon <linkinjeon@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Subhash Jadavani <subhashj@codeaurora.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] Add boot_enable attribute to eMMC device for boot mode
- operation selection
-X-Enigmail-Version: 1.5.1
-OpenPGP: id=1166F485
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <1366305822-5499-1-git-send-email-fweisbec@gmail.com>
+References: <1366305822-5499-1-git-send-email-fweisbec@gmail.com>
+Date: Fri, 19 Apr 2013 14:51:40 +0200
+Message-ID: <CAFTL4hzW_r37so=f7VhA39tKP4-M+4j=QCULkyB2pJTZia4puQ@mail.gmail.com>
+Subject: Re: [RFC GIT PULL] nohz: Posix cpu timers handling on full dynticks
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since eMMC 4.3 a special boot mode operation was introduced to retrieve
-data from the eMMC device with a very simple procedure. Since the Linux
-kernel exports these device boot partitions, it may be useful to select
-the boot partition from the user space.
+2013/4/18 Frederic Weisbecker <fweisbec@gmail.com>:
+> Ingo,
+>
+> Please consider the following branch:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+>         timers/nohz-posix-timers
 
-The patch has been tested on a Toshiba eMMC conforming with eMMC 4.5
-specifications.
+So please wait for a v2. I need to drop patch 2 and fix
+posix_cpu_timers_schedule() through another way.
+But the other pull request reviewed by Paul is still valid.
 
-Neil Armstrong (3):
-  Add BOOT_PARTITION_ENABLE definition to MMC EXT_CSD PART_CONFIG
-  Add boot_enable sysfs attribute to select MMC boot operation
-    partition
-  Add Documentation for MMC boot_enable attribute
-
- Documentation/mmc/mmc-dev-parts.txt |    6 +++
- drivers/mmc/card/block.c            |   72
-++++++++++++++++++++++++++++++++++-
- include/linux/mmc/mmc.h             |    1 +
- 3 files changed, 78 insertions(+), 1 deletions(-)
-
-
+Thanks.
