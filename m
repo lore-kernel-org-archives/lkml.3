@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967760Ab3DSBRq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 21:17:46 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55974 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967266Ab3DSBRp (ORCPT
+	id S967790Ab3DSBhb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 21:37:31 -0400
+Received: from mail-gg0-f169.google.com ([209.85.161.169]:40552 "EHLO
+	mail-gg0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967641Ab3DSBh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 21:17:45 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51709B0D.9000900@jp.fujitsu.com>
-Date: Fri, 19 Apr 2013 10:17:01 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Thu, 18 Apr 2013 21:37:29 -0400
+Message-ID: <51709FD7.8050408@gmail.com>
+Date: Thu, 18 Apr 2013 20:37:27 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [Bug fix PATCH] numa, cpu hotplug: Change links of CPU and node
- when changing node number by onlining CPU
-References: <516FA0B9.8080308@jp.fujitsu.com> <CAHGf_=qcV=R_O5fpjpRQh5Tu9=nz1jVR9r=55fYODds8TQm7vw@mail.gmail.com>
-In-Reply-To: <CAHGf_=qcV=R_O5fpjpRQh5Tu9=nz1jVR9r=55fYODds8TQm7vw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] clocksource: arm_arch_timer: unify sched_clock init
+References: <1366313410-16692-1-git-send-email-robherring2@gmail.com> <51708918.1070501@codeaurora.org>
+In-Reply-To: <51708918.1070501@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/04/19 1:32, KOSAKI Motohiro wrote:
->>   #ifdef CONFIG_HOTPLUG_CPU
->> +static void change_cpu_under_node(struct cpu *cpu,
->> +                       unsigned int from_nid, unsigned int to_nid)
->> +{
->> +       int cpuid = cpu->dev.id;
->> +       unregister_cpu_under_node(cpuid, from_nid);
->> +       register_cpu_under_node(cpuid, to_nid);
->> +       cpu->node_id = to_nid;
->> +}
+On 04/18/2013 07:00 PM, Stephen Boyd wrote:
+> On 04/18/13 12:30, Rob Herring wrote:
+>> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+>> index 122ff05..17ed8e4 100644
+>> --- a/drivers/clocksource/arm_arch_timer.c
+>> +++ b/drivers/clocksource/arm_arch_timer.c
+>> @@ -266,6 +266,15 @@ static struct notifier_block arch_timer_cpu_nb __cpuinitdata = {
+>>  	.notifier_call = arch_timer_cpu_notify,
+>>  };
+>>  
+>> +static u64 sched_clock_mult __read_mostly;
 >> +
->
+>> +unsigned long long notrace arch_timer_sched_clock(void)
+>> +{
+>> +	return arch_timer_read_counter() * sched_clock_mult;
+>> +}
+>> +unsigned long long sched_clock(void) \
+>> +	__attribute__((weak, alias("arch_timer_sched_clock")));
+> 
+> I'm still lost, how does this prevent the timer in ARM's 32 bit
+> sched_clock code from getting setup in sched_clock_postinit()? That
+> print is still there right? Who owns sched_clock() in multi-target builds?
 
-> Where is stub for !CONFIG_HOTPLUG_CPU?
+For arm64, it does not define sched_clock, so it will get
+arch_timer_sched_clock.
 
-This function is called by only store_online(). And the store_online() is
-defined only when CONFIG_HOTPLUG_CPU enables. Thus change_cpu_under_node()
-is not necessary for !CONFIG_HOTPLUG_CPU.
+For arm, sched_clock is defined in arch/arm/kernel/sched_clock.c and the
+weak alias is not used. The arm sched_clock function just calls a
+function pointer which defaults to sched_clock_32 (which is the original
+arm sched_clock implementation). If the arch timer is present, then the
+function pointer is set to arch_timer_sched_clock and any calls to
+setup_sched_clock and the sched_clock_postinit have no effect.
+Otherwise, the functionality is basically unchanged for <=32-bit
+sched_clock implementations.
 
->
->
->>   static ssize_t show_online(struct device *dev,
->>                             struct device_attribute *attr,
->>                             char *buf)
->> @@ -39,17 +48,23 @@ static ssize_t __ref store_online(struct device *dev,
->>                                    const char *buf, size_t count)
->>   {
->>          struct cpu *cpu = container_of(dev, struct cpu, dev);
->> +       int num = cpu->dev.id;
->
+> Why can't we play along with the sched_clock code that lives in arm?
+> Maybe we should resurrect those clocksource sched_clock patches again.
+> Or maybe we should add support for setup_sched_clock_64() in arm's sched
+> clock code.
 
-> "num" is wrong name. cpuid may be better.
+That's what I originally had which Russell objected to. The needs for
+the arch timer is a bit different since we don't need to deal with
+wrapping. And we need the same boot time offset and suspend handling in
+both arm and arm64.
 
-I'll update it.
-
->
->
->> +       int from_nid, to_nid;
->>          ssize_t ret;
->>
->>          cpu_hotplug_driver_lock();
->>          switch (buf[0]) {
->>          case '0':
->> -               ret = cpu_down(cpu->dev.id);
->> +               ret = cpu_down(num);
->>                  if (!ret)
->>                          kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
->>                  break;
->>          case '1':
->> -               ret = cpu_up(cpu->dev.id);
->> +               from_nid = cpu_to_node(num);
->> +               ret = cpu_up(num);
->> +               to_nid = cpu_to_node(num);
->> +               if (from_nid != to_nid)
->> +                       change_cpu_under_node(cpu, from_nid, to_nid);
->
-> You need to add several comments. this code is not straightforward.
-
-O.K. I'll update it.
-
-Thanks,
-Yasuaki Ishimatsu
-
+Rob
 
