@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072Ab3DSRow (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 13:44:52 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45963 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751310Ab3DSRov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 13:44:51 -0400
-Message-ID: <1366393490.3901.32.camel@joe-AO722>
-Subject: Re: [PATCH] usb: storage: Convert US_DEBUGP to usb_stor_dbg
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        linux-usb <linux-usb@vger.kernel.org>,
-        usb-storage <usb-storage@lists.one-eyed-alien.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Apr 2013 10:44:50 -0700
-In-Reply-To: <20130419173503.GA27495@kroah.com>
-References: <Pine.LNX.4.44L0.1304171426460.1623-100000@iolanthe.rowland.org>
-	 <1366254055.28609.61.camel@joe-AO722> <20130419173503.GA27495@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752423Ab3DSR6t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 13:58:49 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:52076 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697Ab3DSR6s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 13:58:48 -0400
+Date: Fri, 19 Apr 2013 10:58:45 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: Bill Nottingham <notting@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mei: reseting -> resetting
+Message-ID: <20130419175845.GA11486@kroah.com>
+References: <1366318791-10509-1-git-send-email-notting@redhat.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B01F01AA9@HASMSX106.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B01F01AA9@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-19 at 10:35 -0700, Greg Kroah-Hartman wrote:
-> On Wed, Apr 17, 2013 at 08:00:55PM -0700, Joe Perches wrote:
-> > Use a more current logging style with dev_printk
-> > where possible.
-[]
-> With your other patch applied, this one seems to not apply to my tree:
+On Thu, Apr 18, 2013 at 09:01:25PM +0000, Winkler, Tomas wrote:
+> > 
+> > This enum leaks out to userspace via error messages, so fix the spelling.
+> > 
+> > Signed-off-by: Bill Nottingham <notting@redhat.com>
+> ACK
 
-I'll respin and resubmit.
+Why do you ack a patch that doesn't apply?  :)
 
+thanks,
+
+greg k-h
