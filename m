@@ -1,79 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710Ab3DSIO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 04:14:59 -0400
-Received: from mout.gmx.net ([212.227.15.19]:63541 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757683Ab3DSIO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 04:14:56 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX185+eUtwNI5PYbLrb0WMhuqijDTowIH7fk609FK5l
-	5MyQtbShl0jY1+
-Message-ID: <1366359290.4708.48.camel@marge.simpson.net>
-Subject: Re: [PATCH Resend v6] sched: fix wrong rq's runnable_avg update
- with rt tasks
-From: Mike Galbraith <efault@gmx.de>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Date: Fri, 19 Apr 2013 10:14:50 +0200
-In-Reply-To: <CAKfTPtAaUG4Yi5xienLRvnO7Q8nTWjk9a0azRWwdqmvCu3NSrA@mail.gmail.com>
-References: <1366302867-5055-1-git-send-email-vincent.guittot@linaro.org>
-	 <1366345833.4708.17.camel@marge.simpson.net>
-	 <CAKfTPtAaUG4Yi5xienLRvnO7Q8nTWjk9a0azRWwdqmvCu3NSrA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1757765Ab3DSIPN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 04:15:13 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:37427 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757719Ab3DSIPD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 04:15:03 -0400
+Message-ID: <5170FC47.9050001@linux.vnet.ibm.com>
+Date: Fri, 19 Apr 2013 13:41:51 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+CC: akpm@linux-foundation.org, mgorman@suse.de, matthew.garrett@nebula.com,
+        dave@sr71.net, rientjes@google.com, riel@redhat.com,
+        arjan@linux.intel.com, maxime.coquelin@stericsson.com,
+        loic.pallardy@stericsson.com, kamezawa.hiroyu@jp.fujitsu.com,
+        lenb@kernel.org, rjw@sisk.pl, gargankita@gmail.com,
+        paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
+        svaidy@linux.vnet.ibm.com, andi@firstfloor.org, wujianguo@huawei.com,
+        kmpark@infradead.org, thomas.abraham@linaro.org,
+        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 00/15][Sorted-buddy] mm: Memory Power Management
+References: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com> <516ED378.2000406@linux.intel.com> <516FC2D1.9020809@linux.vnet.ibm.com> <51700DB2.5090506@linux.intel.com>
+In-Reply-To: <51700DB2.5090506@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13041908-4790-0000-0000-000007ECA890
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-04-19 at 09:49 +0200, Vincent Guittot wrote: 
-> On 19 April 2013 06:30, Mike Galbraith <efault@gmx.de> wrote:
-> > On Thu, 2013-04-18 at 18:34 +0200, Vincent Guittot wrote:
-> >> The current update of the rq's load can be erroneous when RT tasks are
-> >> involved
-> >>
-> >> The update of the load of a rq that becomes idle, is done only if the avg_idle
-> >> is less than sysctl_sched_migration_cost. If RT tasks and short idle duration
-> >> alternate, the runnable_avg will not be updated correctly and the time will be
-> >> accounted as idle time when a CFS task wakes up.
-> >>
-> >> A new idle_enter function is called when the next task is the idle function
-> >> so the elapsed time will be accounted as run time in the load of the rq,
-> >> whatever the average idle time is. The function update_rq_runnable_avg is
-> >> removed from idle_balance.
-> >>
-> >> When a RT task is scheduled on an idle CPU, the update of the rq's load is
-> >> not done when the rq exit idle state because CFS's functions are not
-> >> called. Then, the idle_balance, which is called just before entering the
-> >> idle function, updates the rq's load and makes the assumption that the
-> >> elapsed time since the last update, was only running time.
-> >>
-> >> As a consequence, the rq's load of a CPU that only runs a periodic RT task,
-> >> is close to LOAD_AVG_MAX whatever the running duration of the RT task is.
-> >
-> > Why do we care what rq's load says, if the only thing running is a
-> > periodic RT task?  I _think_ I recall that stuff being put under the
-> 
-> cfs scheduler will use a wrong rq load the next time it wants to schedule a task
-> 
-> > throttle specifically to not waste cycles doing that on every
-> > microscopic idle.
-> 
-> yes but this lead to the wrong computation of runnable_avg_sum. To be
-> more precise, we only need to call __update_entity_runnable_avg,
-> __update_tg_runnable_avg is not mandatory in this step.
+On 04/18/2013 08:43 PM, Srinivas Pandruvada wrote:
+> On 04/18/2013 02:54 AM, Srivatsa S. Bhat wrote:
+>> On 04/17/2013 10:23 PM, Srinivas Pandruvada wrote:
+>>> On 04/09/2013 02:45 PM, Srivatsa S. Bhat wrote:
+>>>> [I know, this cover letter is a little too long, but I wanted to
+>>>> clearly
+>>>> explain the overall goals and the high-level design of this patchset in
+>>>> detail. I hope this helps more than it annoys, and makes it easier for
+>>>> reviewers to relate to the background and the goals of this patchset.]
+>>>>
+>>>>
+>>>> Overview of Memory Power Management and its implications to the
+>>>> Linux MM
+>>>> ========================================================================
+>>>>
+>>>>
+>> [...]
+>>> One thing you need to prevent is boot time allocation. You have to make
+>>> sure that frequently accessed per node data stored at the end of memory
+>>> will keep all ranks of memory active.
+>>>
+> When I was experimenting I did something like this.
 
-If it only scares fair class tasks away from the periodic rt load, that
-seems like a benefit to me, not a liability.  If we really really need
-perfect load numbers, fine, we have to eat some cycles, but when I look
-at it, it looks like one of those "Perfect is the enemy of good" things.
+Thanks a lot for sharing this, Srinivas!
 
--Mike
+Regards,
+Srivatsa S. Bhat
+
+> /////////////////////////////////
+> 
+> 
+> +/*
+> + * Experimental MPST implemenentation
+> + * Copyright (c) 2012, Intel Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+> License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> along with
+> + * this program; if not, write to the Free Software Foundation, Inc.,
+> + * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+> + *
+> + */
+> +#include <linux/kernel.h>
+> +#include <linux/types.h>
+> +#include <linux/init.h>
+> +#include <linux/kthread.h>
+> +#include <linux/acpi.h>
+> +#include <linux/export.h>
+> +#include <linux/bootmem.h>
+> +#include <linux/delay.h>
+> +#include <linux/pfn.h>
+> +#include <linux/suspend.h>
+> +#include <linux/acpi.h>
+> +#include <linux/memblock.h>
+> +#include <linux/mm.h>
+> +#include <linux/mmzone.h>
+> +#include <linux/migrate.h>
+> +#include <linux/mm_inline.h>
+> +#include <linux/page-isolation.h>
+> +#include <linux/vmalloc.h>
+> +#include <linux/compaction.h>
+> +#include "internal.h"
+> +
+> +#define phys_to_pfn(p) ((p) >> PAGE_SHIFT)
+> +#define pfn_to_phys(p) ((p) << PAGE_SHIFT)
+> +#define MAX_MPST_ZONES 16
+> +/* Atleast 4G of non MPST memory. */
+> +#define MINIMAL_NON_MPST_MEMORY_PFN (0x100000000 >> PAGE_SHIFT)
+> +
+> +struct mpst_mem_zone {
+> +       phys_addr_t start_addr;
+> +       phys_addr_t end_addr;
+> +};
+> +
+> +static struct mpst_mem_zone mpst_zones[MAX_MPST_ZONES];
+> +static int mpst_zone_cnt;
+> +static unsigned long mpst_start_pfn;
+> +static unsigned long mpst_end_pfn;
+> +static bool mpst_enabled;
+> +
+> +/* Minimal parsing for just getting node ranges */
+> +static int __init acpi_parse_mpst_table(struct acpi_table_header *table)
+> +{
+> +       struct acpi_table_mpst *mpst;
+> +       struct acpi_mpst_power_node *node;
+> +       u16 node_count;
+> +       int i;
+> +
+> +       mpst = (struct acpi_table_mpst *)table;
+> +       if (!mpst) {
+> +               pr_warn("Unable to map MPST\n");
+> +               return -ENODEV;
+> +       }
+> +       node_count = mpst->power_node_count;
+> +       node = (struct acpi_mpst_power_node *)((u8 *)mpst + sizeof(*mpst));
+> +
+> +       for (i = mpst_zone_cnt; (i < node_count) && (i < MAX_MPST_ZONES);
+> + ++i) {
+> +               if ((node->flags & ACPI_MPST_ENABLED) &&
+> +                       (node->flags & ACPI_MPST_POWER_MANAGED)) {
+> +                       mpst_zones[mpst_zone_cnt].start_addr =
+> +                               node->range_address;
+> +                       mpst_zones[mpst_zone_cnt].end_addr =
+> +                               node->range_address + node->range_length;
+> +                       ++mpst_zone_cnt;
+> +               }
+> +               ++node;
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static unsigned long local_ahex_to_long(const char *name)
+> +{
+> +       unsigned long val = 0;
+> +
+> +       for (;; name++) {
+> +               switch (*name) {
+> +               case '0' ... '9':
+> +                       val = 16*val+(*name-'0');
+> +                       break;
+> +               case 'A' ... 'F':
+> +                       val = 16*val+(*name-'A'+10);
+> +                       break;
+> +               case 'a' ... 'f':
+> +                       val = 16*val+(*name-'a'+10);
+> +                       break;
+> +               default:
+> +                       return val;
+> +               }
+> +       }
+> +
+> +       return val;
+> +}
+> +
+> +/* Specify MPST range by command line for test till ACPI - MPST is
+> available */
+> +static int __init parse_mpst_opt(char *str)
+> +{
+> +       char *ptr;
+> +       phys_addr_t start_at = 0, end_at = 0;
+> +       u64  mem_size = 0;
+> +
+> +       if (!str)
+> +               return -EINVAL;
+> +       ptr = str;
+> +       while (1) {
+> +               if (*str == '-') {
+> +                       *str = '\0';
+> +                       start_at = local_ahex_to_long(ptr);
+> +                       ++str;
+> +                       ptr = str;
+> +               }
+> +               if (start_at && (*str == '\0' || *str == ',' || *str ==
+> ' ')) {
+> +                       *str = '\0';
+> +                       end_at = local_ahex_to_long(ptr);
+> +                       mem_size = end_at-start_at;
+> +                       ++str;
+> +                       ptr = str;
+> +                       pr_info("-mpst[%#018Lx-%#018Lx size: %#018Lx]\n",
+> +                                               start_at, end_at,
+> mem_size);
+> +                       if (IS_ALIGNED(phys_to_pfn(start_at),
+> +                                       pageblock_nr_pages) &&
+> + IS_ALIGNED(phys_to_pfn(end_at),
+> +                                       pageblock_nr_pages)) {
+> +                               mpst_zones[mpst_zone_cnt].start_addr =
+> + start_at;
+> +                               mpst_zones[mpst_zone_cnt].end_addr =
+> + end_at;
+> +                       } else {
+> +                               pr_err("mpst invalid range\n");
+> +                               return -EINVAL;
+> +                       }
+> +                       mpst_zone_cnt++;
+> +                       start_at = mem_size = end_at = 0;
+> +               }
+> +               if (*str == '\0')
+> +                       break;
+> +               else
+> +                       ++str;
+> +       }
+> +
+> +       return 0;
+> +}
+> +early_param("mpst_range", parse_mpst_opt);
+> +
+> +/* Specify MPST range by command line for test till ACPI - MPST is
+> available */
+> +static int __init parse_mpst_enable_opt(char *str)
+> +{
+> +       long value;
+> +       if (kstrtol(str, 10, &value))
+> +               return -EINVAL;
+> +       mpst_enabled = value ? true : false;
+> +
+> +       return 0;
+> +}
+> +early_param("mpst_enable", parse_mpst_enable_opt);
+> +
+> +/* Set the minimum and maximum PFN */
+> +static void mpst_set_min_max_pfn(void)
+> +{
+> +       int i;
+> +
+> +       if (!mpst_zone_cnt)
+> +               return;
+> +
+> +       mpst_start_pfn = phys_to_pfn(mpst_zones[0].start_addr);
+> +       mpst_end_pfn = phys_to_pfn(mpst_zones[0].end_addr);
+> +
+> +       for (i = 1; i < mpst_zone_cnt; ++i) {
+> +               if (mpst_start_pfn > phys_to_pfn(mpst_zones[i].start_addr))
+> +                       mpst_start_pfn =
+> phys_to_pfn(mpst_zones[i].start_addr);
+> +               if (mpst_end_pfn < phys_to_pfn(mpst_zones[i].end_addr))
+> +                       mpst_end_pfn = phys_to_pfn(mpst_zones[i].end_addr);
+> +       }
+> +}
+> +
+> +/* Change migrate type for the MPST ranges */
+> +int mpst_set_migrate_type(void)
+> +{
+> +       int i;
+> +       struct page *page;
+> +       unsigned long start_pfn, end_pfn;
+> +
+> +       if (!mpst_start_pfn || !mpst_end_pfn)
+> +               return -EINVAL;
+> +       if (!IS_ALIGNED(mpst_start_pfn, pageblock_nr_pages))
+> +               return -EINVAL;
+> +       if (!IS_ALIGNED(mpst_end_pfn, pageblock_nr_pages))
+> +               return -EINVAL;
+> +       memblock_free(pfn_to_phys(mpst_start_pfn),
+> +               pfn_to_phys(mpst_end_pfn) - pfn_to_phys(mpst_start_pfn));
+> +       for (i = 0; i < mpst_zone_cnt; ++i) {
+> +               start_pfn = phys_to_pfn(mpst_zones[i].start_addr);
+> +               end_pfn = phys_to_pfn(mpst_zones[i].end_addr);
+> +               for (; start_pfn < end_pfn; ++start_pfn) {
+> +                       page = pfn_to_page(start_pfn);
+> +                       if (page)
+> +                               set_pageblock_migratetype(page,
+> +                                               MIGRATE_LP_MEMORY);
+> +               }
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +/* Parse ACPI table and find start and end of MPST zone.
+> +Assuming zones are contiguous */
+> +int mpst_init(void)
+> +{
+> +       if (!mpst_enabled) {
+> +               pr_info("mpst not enabled in command line\n");
+> +               return 0;
+> +       }
+> +
+> +       acpi_table_parse(ACPI_SIG_MPST, acpi_parse_mpst_table);
+> +       mpst_set_min_max_pfn();
+> +       if (mpst_zone_cnt) {
+> +
+> +               if (mpst_start_pfn < MINIMAL_NON_MPST_MEMORY_PFN) {
+> +                       pr_err("Not enough memory: Ignore MPST\n");
+> +                       mpst_start_pfn = mpst_end_pfn = 0;
+> +                       return -EINVAL;
+> +               }
+> +               memblock_reserve(pfn_to_phys(mpst_start_pfn),
+> +                                       pfn_to_phys(mpst_end_pfn) -
+> + pfn_to_phys(mpst_start_pfn));
+> +               pr_info("mpst_init memblock limit set to pfn %lu
+> 0x%#018lx\n",
+> +                       mpst_start_pfn, pfn_to_phys(mpst_start_pfn));
+> +       }
+> +
+> +       return 0;
+> +}
+> 
+> 
+> 
+> 
+> 
+> /////////////////////////////
 
