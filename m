@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030850Ab3DSPn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 11:43:29 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50518 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1030656Ab3DSPn2 (ORCPT
+	id S1030863Ab3DSPny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 11:43:54 -0400
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:39725 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030656Ab3DSPnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 11:43:28 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/8KDyv0Wvsr6HkZroTuChT
-Date: Fri, 19 Apr 2013 08:43:22 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Roger Quadros <rogerq@ti.com>
-Cc: b-cousson@ti.com, nm@ti.com, paul@pwsan.com, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH v3 0/4] ARM: dts: Add USB host support for Panda and
- Beagle-xm
-Message-ID: <20130419154321.GG10155@atomide.com>
-References: <1366365457-28972-1-git-send-email-rogerq@ti.com>
+	Fri, 19 Apr 2013 11:43:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366365457-28972-1-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
+References: <CA+55aFyK2EEPuBPrqu3AGRbW+8TdP=kLLz4opvynNRcrSWC2ww@mail.gmail.com>
+Date: Fri, 19 Apr 2013 08:43:52 -0700
+Message-ID: <CANN689Ey14vPAiENzRaW19wTzYcJrWmX9GeBcOpGLTQg_gHRsw@mail.gmail.com>
+Subject: Re: Device driver memory 'mmap()' function helper cleanup
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Clemens Ladisch <clemens@ladisch.de>, Arnd Bergmann <arnd@arndb.de>,
+        Takashi Iwai <tiwai@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Roger Quadros <rogerq@ti.com> [130419 03:02]:
-> Hi Benoit/Tony
-> 
-> I've consolidated all the USB host device tree patches for Panda and Beagles
-> to one place and addressed Tony's comments.
-> 
-> NOTE: patch 1 depends on OMAP clock binding introduced in
-> https://lkml.org/lkml/2013/4/12/407
-> 
-> v3:
-> - updated mux mode to use pulldowns on panda as non-DT boot uses pulldowns.
-> - fixed usb pin naming for panda, beagle and beagle-xm
+On Tue, Apr 16, 2013 at 8:12 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Guys, I just pushed out a new helper function intended for cleaning up
+> various device driver mmap functions, because they are rather messy,
+> and at least part of the problem was the bad impedance between what a
+> driver author would want to have, and the VM interfaces to map a
+> memory range into user space with mmap.
 
-Cool. Sounds like we should be able to make omap4 DT only for v3.11
-then. For that we also need USB on 4430-sdp working, but it now
-does:
+I have not had a detailed look yet (am at LSF/MM workshop right now).
 
-ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-ehci-omap 4a064c00.ehci: failed to get phys phandle in /ocp/usbhshost@4a064000/ehci@4a064c00 node
-ehci-omap 4a064c00.ehci: failed to get phys phandle in /ocp/usbhshost@4a064000/ehci@4a064c00 node
-...
+Just a suggestion: when file->f_op->mmap returns an error code,
+mmap_region() currently has to call unmap_region() to undo any partial
+mappings that might have been created by the device driver. Would it
+make more sense to ask that the few drivers that create such messes to
+clean up after themselves on their error paths ?
 
-As I have mine in a rack I don't have anything plugged into the
-USB port there though, but sounds like the phy is not initialized?
-
-Regards,
-
-Tony
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
