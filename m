@@ -1,95 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968007Ab3DSKTN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 06:19:13 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:51675 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967957Ab3DSKTL (ORCPT
+	id S1757429Ab3DSKTx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 06:19:53 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:24567 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756664Ab3DSKTw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 06:19:11 -0400
+	Fri, 19 Apr 2013 06:19:52 -0400
+Message-ID: <51711A41.50209@atmel.com>
+Date: Fri, 19 Apr 2013 12:19:45 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUWQEiGecR8jgw4P-2YCKyqSDMMP0Ufwn8aBU_-AOf0a-Q@mail.gmail.com>
-References: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
-	<CAKMK7uFEaiT_1siQBcp_-S0RwLvy3XSjqLn1ksq70VhNTZSfLw@mail.gmail.com>
-	<CA+icZUWQEiGecR8jgw4P-2YCKyqSDMMP0Ufwn8aBU_-AOf0a-Q@mail.gmail.com>
-Date: Fri, 19 Apr 2013 12:19:08 +0200
-Message-ID: <CA+icZUWcwvFFVesJDoFNT3DbgRMXvDp7QLn+S5Ze_5d8gJRx1g@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 18 [ call-trace: drm | x86 | smp | rcu
- related? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Alessandro Zummo <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>
+CC: Johan Hovold <jhovold@gmail.com>, <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] rtc: rtc-at91rm9200: fix missing iounmap
+References: <1365691116-8882-1-git-send-email-jhovold@gmail.com>
+In-Reply-To: <1365691116-8882-1-git-send-email-jhovold@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 11:59 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Thu, Apr 18, 2013 at 9:48 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->> On Thu, Apr 18, 2013 at 3:05 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> On Thu, Apr 18, 2013 at 10:28 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>>> Hi all,
->>>>
->>>> Changes since 20130417:
->>>>
->>>> New Trees:      rpmsg (actually added yesterday)
->>>>                 ppc-temp (replacing powerpc for this week)
->>>>
->>>> The ceph tree gained a conflict against Linus' tree.
->>>>
->>>> The net-next tree gained a conflict against the infiniband tree.
->>>>
->>>> The usb tree gained a build failure so I used the version from
->>>> next-20130417.
->>>>
->>>> I added two merge fix patches after the gen-gpio tree.
->>>>
->>>> The ppc-temp tree gained a conflict against the metag tree.
->>>>
->>>> The akpm tree lost a patch that turned up elsewhere.
->>>>
->>>> ----------------------------------------------------------------------------
->>>>
->>>
->>> Not sure what the root-cause for this call-trace is (see screenshot).
->>>
->>> This is reproducible when running my kernel build-script (4 parallel-make-jobs).
->>>
->>> Any hints welcome!
->>
->> The panic handlers in our modeset code are pretty decent fubar - they
->> take mutexes all over the place. So I think the backtrace you see
->> there is actually a secondary effect. I've looked into fixing this up,
->> but the issue is that drivers themselves have tons of state protected
->> with mutexes, which all potentially affects the panic handler. So I've
->> given up on that for now ...
->
-> Thanks for taking care.
->
-> On suspicion [1] I have reverted [2]... NOPE.
->
-> - Sedat -
->
-> [1] http://marc.info/?l=linux-kernel&m=136631921208895&w=2
-> [2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=5a90d1a95356de7a32acb2e5309ac579a891af8f
->
+On 04/11/2013 04:38 PM, Johan Hovold :
+> Add missing iounmap to probe error path and remove.
+> 
+> Cc: stable <stable@vger.kernel.org>
+> Signed-off-by: Johan Hovold <jhovold@gmail.com>
 
-Hmmm, the issue seems to be gone with today's Linux-Next (next-20130419).
-My kernel-build is still running with no call-trace...
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-- Sedat -
+Andrew, can you take this one please?
+(https://patchwork.kernel.org/patch/2429031/)
 
->> -Daniel
->> --
->> Daniel Vetter
->> Software Engineer, Intel Corporation
->> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+
+Best regards,
+
+> ---
+>  drivers/rtc/rtc-at91rm9200.c | 14 +++++++++++---
+>  1 file changed, 11 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/rtc/rtc-at91rm9200.c b/drivers/rtc/rtc-at91rm9200.c
+> index 434ebc3..eebd8ac 100644
+> --- a/drivers/rtc/rtc-at91rm9200.c
+> +++ b/drivers/rtc/rtc-at91rm9200.c
+> @@ -297,7 +297,7 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
+>  				"at91_rtc", pdev);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "IRQ %d already in use.\n", irq);
+> -		return ret;
+> +		goto err_unmap;
+>  	}
+>  
+>  	/* cpu init code should really have flagged this device as
+> @@ -309,13 +309,20 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
+>  	rtc = rtc_device_register(pdev->name, &pdev->dev,
+>  				&at91_rtc_ops, THIS_MODULE);
+>  	if (IS_ERR(rtc)) {
+> -		free_irq(irq, pdev);
+> -		return PTR_ERR(rtc);
+> +		ret = PTR_ERR(rtc);
+> +		goto err_free_irq;
+>  	}
+>  	platform_set_drvdata(pdev, rtc);
+>  
+>  	dev_info(&pdev->dev, "AT91 Real Time Clock driver.\n");
+>  	return 0;
+> +
+> +err_free_irq:
+> +	free_irq(irq, pdev);
+> +err_unmap:
+> +	iounmap(at91_rtc_regs);
+> +
+> +	return ret;
+>  }
+>  
+>  /*
+> @@ -332,6 +339,7 @@ static int __exit at91_rtc_remove(struct platform_device *pdev)
+>  	free_irq(irq, pdev);
+>  
+>  	rtc_device_unregister(rtc);
+> +	iounmap(at91_rtc_regs);
+>  	platform_set_drvdata(pdev, NULL);
+>  
+>  	return 0;
+> 
+
+
+-- 
+Nicolas Ferre
