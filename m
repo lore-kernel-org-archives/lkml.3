@@ -1,37 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416Ab3DSUwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 16:52:16 -0400
-Received: from mail.imentarabar.com ([89.144.129.18]:1453 "EHLO host2-askiran"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754071Ab3DSUwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 16:52:14 -0400
-Reply-To: <info@webmail.co>
-From: "Web-Mail Helpdesk" <p.imanzadeh@iautalesh.ac.ir>
-Subject: Warning!! 99% of your mail box quota used
-Date: Fri, 19 Apr 2013 20:59:13 +0100
+	id S1754551Ab3DSUwn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 16:52:43 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:35826 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab3DSUwl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 16:52:41 -0400
+Date: Fri, 19 Apr 2013 13:52:38 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Vasiliy Tolstov <v.tolstov@selfip.ru>
+Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: mdadm raid1 regression
+Message-ID: <20130419205238.GB1347@kroah.com>
+References: <CACaajQv+HhzStC-U1RGz4ZWdn0-w4X3MyMM9GTJPOFeyrxtP3w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-X-Antivirus: avast! (VPS 130419-0, 04/19/2013), Outbound message
-X-Antivirus-Status: Clean
-Message-ID: <auto-000006192652@host2-askiran>
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACaajQv+HhzStC-U1RGz4ZWdn0-w4X3MyMM9GTJPOFeyrxtP3w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Warning!! You are currently operating at 99% of your mail box quota. You need to upgrade your email limit quota to 2GB within the next 48 hours to enable you store and 
-receive large numbers of emails in your mailbox. Use the below web link to upgrade to 2GB: click link below:
+On Thu, Apr 18, 2013 at 02:38:53PM +0400, Vasiliy Tolstov wrote:
+> Hello. I'm using linux 3.8.6 and mdadm 3.2.6 (from git).
+> I have many raid1 arrays that have data offset 2048 (metadata 1.2,
+> created with various mdadm versions but mostly 3.2.1 on linux 2.6.32).
+> If i create raid1 with never mdadm on 3.8.6 i have data offset 8192?? Why?
 
-  http://www.2013emailcustomercarecenter.com/
+Please try asking this on the mailing list for the raid developers
+(linux-raid@vger.kernel.org).
 
-Failure to update this account after three days of receiving this warning will be tantamount to losing this account permanently
-
-Thank you for using our email.
-Copyright 2013 Email Administrator
