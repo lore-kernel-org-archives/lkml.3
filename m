@@ -1,49 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab3DSJbG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 05:31:06 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:39558 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758023Ab3DSJbD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 05:31:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130419092752.GB13283@mudshark.cambridge.arm.com>
-References: <1366264344-28025-1-git-send-email-pranavkumar@linaro.org>
- <ede8ee08bb2616c2ed642200e3357367@localhost> <CAAHg+HhajHFC=1nh6YQNgpf=Na2FqcsYJ=t+ag9QiTg6TxUz9w@mail.gmail.com>
- <bb1193983de3ea9f4df1a570441df34c@localhost> <CAAHg+HhtCorArCmx=ha0=64+SJZiizzrDUKSPLV=N+OzO8zAxQ@mail.gmail.com>
- <20130419090558.GA13283@mudshark.cambridge.arm.com> <CAAHg+HipCX2ma6brxj9Kgc3ew39b5e30grLwyun9CViif-5wZQ@mail.gmail.com>
- <20130419092752.GB13283@mudshark.cambridge.arm.com>
-From: Peter Maydell <peter.maydell@linaro.org>
-Date: Fri, 19 Apr 2013 10:30:40 +0100
-Message-ID: <CAFEAcA8j124G=vaHObJ_w5wOhUiS3KYKbjMnigbnr6mgwFxZUg@mail.gmail.com>
-Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console devices.
-To: Will Deacon <will.deacon@arm.com>
-Cc: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1757965Ab3DSJa4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 05:30:56 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31313 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S968006Ab3DSJ3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 05:29:25 -0400
+X-IronPort-AV: E=Sophos;i="4.87,508,1363104000"; 
+   d="scan'208";a="7095293"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: rob@landley.net, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        dhowells@redhat.com, davej@redhat.com, agordeev@redhat.com,
+        suresh.b.siddha@intel.com, mst@redhat.com, yinghai@kernel.org,
+        penberg@kernel.org, jacob.shin@amd.com, wency@cn.fujitsu.com,
+        trenn@suse.de, liwanp@linux.vnet.ibm.com,
+        isimatu.yasuaki@jp.fujitsu.com, rientjes@google.com, tj@kernel.org,
+        laijs@cn.fujitsu.com, hannes@cmpxchg.org, davem@davemloft.net,
+        mgorman@suse.de, minchan@kernel.org, m.szyprowski@samsung.com,
+        mina86@mina86.com
+Cc: x86@kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH v1 04/12] x86, numa, acpi, memory-hotplug: Introduce hotplug info into struct numa_meminfo.
+Date: Fri, 19 Apr 2013 17:31:41 +0800
+Message-Id: <1366363909-12771-5-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1366363909-12771-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1366363909-12771-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/19 17:27:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/04/19 17:27:28,
+	Serialize complete at 2013/04/19 17:27:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 April 2013 10:27, Will Deacon <will.deacon@arm.com> wrote:
-> On Fri, Apr 19, 2013 at 10:25:35AM +0100, Pranavkumar Sawargaonkar wrote:
->> I am not against using 8250 emulation (as far as it solves printk
->> issues for kernel booting logs), but my point is why not to add early
->> read-write support for virtio console, which also can be useful in
->> emulation less mach-virt environment also ?
->
-> We can have both, but only one of those requires a change to the virtio
-> specification.
+Since Yinghai has implement "Allocate pagetable pages in local node", for a
+node with hotpluggable memory, we have to allocate pagetable pages first, and
+then reserve the rest as hotpluggable memory in memblock.
 
-I don't think avoiding writing a spec is necessarily a good reason
-for insisting on emulation of a lump of hardware 95% of whose
-capabilities you aren't going to use...
+But the kernel parse SRAT first, and then initialize memory mapping. So we have
+to remember the which memory ranges are hotpluggable for future usage.
 
--- PMM
+When parsing SRAT, we added each memory range to numa_meminfo. So we can store
+hotpluggable info in numa_meminfo.
+
+This patch introduces a "bool hotpluggable" member into struct
+numa_meminfo.
+
+And modifies the following APIs' prototypes to support it:
+   - numa_add_memblk()
+   - numa_add_memblk_to()
+
+And the following callers:
+   - numaq_register_node()
+   - dummy_numa_init()
+   - amd_numa_init()
+   - acpi_numa_memory_affinity_init() in x86
+
+Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+---
+ arch/x86/include/asm/numa.h     |    3 ++-
+ arch/x86/kernel/apic/numaq_32.c |    2 +-
+ arch/x86/mm/amdtopology.c       |    3 ++-
+ arch/x86/mm/numa.c              |   10 +++++++---
+ arch/x86/mm/numa_internal.h     |    1 +
+ arch/x86/mm/srat.c              |    2 +-
+ 6 files changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
+index 1b99ee5..73096b2 100644
+--- a/arch/x86/include/asm/numa.h
++++ b/arch/x86/include/asm/numa.h
+@@ -31,7 +31,8 @@ extern int numa_off;
+ extern s16 __apicid_to_node[MAX_LOCAL_APIC];
+ extern nodemask_t numa_nodes_parsed __initdata;
+ 
+-extern int __init numa_add_memblk(int nodeid, u64 start, u64 end);
++extern int __init numa_add_memblk(int nodeid, u64 start, u64 end,
++				  bool hotpluggable);
+ extern void __init numa_set_distance(int from, int to, int distance);
+ 
+ static inline void set_apicid_to_node(int apicid, s16 node)
+diff --git a/arch/x86/kernel/apic/numaq_32.c b/arch/x86/kernel/apic/numaq_32.c
+index d661ee9..7a9c542 100644
+--- a/arch/x86/kernel/apic/numaq_32.c
++++ b/arch/x86/kernel/apic/numaq_32.c
+@@ -82,7 +82,7 @@ static inline void numaq_register_node(int node, struct sys_cfg_data *scd)
+ 	int ret;
+ 
+ 	node_set(node, numa_nodes_parsed);
+-	ret = numa_add_memblk(node, start, end);
++	ret = numa_add_memblk(node, start, end, false);
+ 	BUG_ON(ret < 0);
+ }
+ 
+diff --git a/arch/x86/mm/amdtopology.c b/arch/x86/mm/amdtopology.c
+index 5247d01..d521471 100644
+--- a/arch/x86/mm/amdtopology.c
++++ b/arch/x86/mm/amdtopology.c
+@@ -167,7 +167,8 @@ int __init amd_numa_init(void)
+ 			nodeid, base, limit);
+ 
+ 		prevbase = base;
+-		numa_add_memblk(nodeid, base, limit);
++		/* Do not support memory hotplug for AMD cpu. */
++		numa_add_memblk(nodeid, base, limit, false);
+ 		node_set(nodeid, numa_nodes_parsed);
+ 	}
+ 
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 4f754e6..ecf37fd 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -134,6 +134,7 @@ void __init setup_node_to_cpumask_map(void)
+ }
+ 
+ static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
++				     bool hotpluggable,
+ 				     struct numa_meminfo *mi)
+ {
+ 	/* ignore zero length blks */
+@@ -155,6 +156,7 @@ static int __init numa_add_memblk_to(int nid, u64 start, u64 end,
+ 	mi->blk[mi->nr_blks].start = start;
+ 	mi->blk[mi->nr_blks].end = end;
+ 	mi->blk[mi->nr_blks].nid = nid;
++	mi->blk[mi->nr_blks].hotpluggable = hotpluggable;
+ 	mi->nr_blks++;
+ 	return 0;
+ }
+@@ -179,15 +181,17 @@ void __init numa_remove_memblk_from(int idx, struct numa_meminfo *mi)
+  * @nid: NUMA node ID of the new memblk
+  * @start: Start address of the new memblk
+  * @end: End address of the new memblk
++ * @hotpluggable: True if memblk is hotpluggable
+  *
+  * Add a new memblk to the default numa_meminfo.
+  *
+  * RETURNS:
+  * 0 on success, -errno on failure.
+  */
+-int __init numa_add_memblk(int nid, u64 start, u64 end)
++int __init numa_add_memblk(int nid, u64 start, u64 end,
++			   bool hotpluggable)
+ {
+-	return numa_add_memblk_to(nid, start, end, &numa_meminfo);
++	return numa_add_memblk_to(nid, start, end, hotpluggable, &numa_meminfo);
+ }
+ 
+ /* Initialize NODE_DATA for a node on the local memory */
+@@ -631,7 +635,7 @@ static int __init dummy_numa_init(void)
+ 	       0LLU, PFN_PHYS(max_pfn) - 1);
+ 
+ 	node_set(0, numa_nodes_parsed);
+-	numa_add_memblk(0, 0, PFN_PHYS(max_pfn));
++	numa_add_memblk(0, 0, PFN_PHYS(max_pfn), false);
+ 
+ 	return 0;
+ }
+diff --git a/arch/x86/mm/numa_internal.h b/arch/x86/mm/numa_internal.h
+index bb2fbcc..1ce4e6b 100644
+--- a/arch/x86/mm/numa_internal.h
++++ b/arch/x86/mm/numa_internal.h
+@@ -8,6 +8,7 @@ struct numa_memblk {
+ 	u64			start;
+ 	u64			end;
+ 	int			nid;
++	bool			hotpluggable;
+ };
+ 
+ struct numa_meminfo {
+diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
+index 5055fa7..f7f6fd4 100644
+--- a/arch/x86/mm/srat.c
++++ b/arch/x86/mm/srat.c
+@@ -171,7 +171,7 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
+ 		goto out_err_bad_srat;
+ 	}
+ 
+-	if (numa_add_memblk(node, start, end) < 0)
++	if (numa_add_memblk(node, start, end, hotpluggable) < 0)
+ 		goto out_err_bad_srat;
+ 
+ 	node_set(node, numa_nodes_parsed);
+-- 
+1.7.1
+
