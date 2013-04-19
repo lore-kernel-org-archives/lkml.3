@@ -1,56 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831Ab3DSRkk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 13:40:40 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:45847 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab3DSRkj (ORCPT
+	id S1752273Ab3DSRm1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 13:42:27 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:45601 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab3DSRm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 13:40:39 -0400
+	Fri, 19 Apr 2013 13:42:26 -0400
+Message-ID: <51718209.4000809@gmail.com>
+Date: Fri, 19 Apr 2013 19:42:33 +0200
+From: Daniel Mack <zonque@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130402 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130419171455.GA43450@MacBook-Pro.local>
-References: <CAAHg+HipCX2ma6brxj9Kgc3ew39b5e30grLwyun9CViif-5wZQ@mail.gmail.com>
- <20130419092752.GB13283@mudshark.cambridge.arm.com> <CAFEAcA8j124G=vaHObJ_w5wOhUiS3KYKbjMnigbnr6mgwFxZUg@mail.gmail.com>
- <CAAHg+Hg=t97SJ0JPZYgrZaL+zimo-wbezwaj1BQvHqE-vf4VDA@mail.gmail.com>
- <20130419093953.GD13283@mudshark.cambridge.arm.com> <CAFEAcA_WfYpyvq54rZqS8JZkmDF5JXB+CNHFH5CnrhKun52uzA@mail.gmail.com>
- <20130419161201.GA5383@localhost.cambridge.arm.com> <CAFEAcA-F18kR4JihdxaLTm3qb4n51tsygG1RW4djwJ0u9+FQqw@mail.gmail.com>
- <20130419162226.GB5383@localhost.cambridge.arm.com> <CAFEAcA_vdXbtK=U2gauC=DsrB=_cSfcUTaNCiB0Ts4YOq_pXEg@mail.gmail.com>
- <20130419171455.GA43450@MacBook-Pro.local>
-From: Peter Maydell <peter.maydell@linaro.org>
-Date: Fri, 19 Apr 2013 18:40:18 +0100
-Message-ID: <CAFEAcA_Xhe2ggxUf=Ezrjozf2Y4h4BtCNPyVG=QD8b6kcqrUnQ@mail.gmail.com>
-Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console devices.
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Patch Tracking <patches@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+To: Michal Bachraty <michal.bachraty@streamunlimited.com>
+CC: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, marek.belisko@streamunlimited.com,
+        broonie@opensource.wolfsonmicro.com, lgirdwood@gmail.com
+Subject: Re: [alsa-devel] [PATCH 1/2] ALSA: ASoC davinci-pcm, davinci-mcasp
+ Clean up active_serializers
+References: <1366378083-14325-1-git-send-email-michal.bachraty@streamunlimited.com>
+In-Reply-To: <1366378083-14325-1-git-send-email-michal.bachraty@streamunlimited.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 April 2013 18:14, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On Fri, Apr 19, 2013 at 05:33:18PM +0100, Peter Maydell wrote:
->> The command line lives in the DTB anyway so if you can't look
->> in the DTB you can't get at earlyprintk config either way.
->
-> Linux indeed looks in the DT for the command line and that's what's
-> triggering the earlyprintk console but at that stage the DT is flat.
-> Unflattening the DT happens later (it requires slab allocator). I
-> initially thought about extracting the early console device from the DT
-> but when it is flat you can't parse the full hierarchy to get its
-> address.
+On 19.04.2013 15:28, Michal Bachraty wrote:
+> As pointed of by Vaibhav, commit message: "ASoC: davinci-mcasp: Add support for multichannel playback"
+> number of active serializers can be hidden into fifo_level variable, which is set in davimci-mcasp.
 
-So you could add a DT property that specifies the information in a
-format that you can get at at the right time. That's annoying
-duplication, but at least it's not in the command line (which is
-a raw ascii string that QEMU &co shouldn't have to be parsing or
-editing). "/console/type" and "/console/address" or something?
+You need to reformat the commit log so it does not exceed 80 characters
+per line. Also, as you're on it, you can omit "ALSA" in the subject and
+add two colons (after 'ASoC' and 'mcasp') for better readability.
 
--- PMM
+Other than that, looks good to me. I've been using that patch for a
+while now and it works fine for me.
+
+
+Thanks,
+Daniel
+
+
+> 
+> Signed-off-by: Michal Bachraty <michal.bachraty@streamunlimited.com>
+> ---
+>  sound/soc/davinci/davinci-mcasp.c |    8 +++++---
+>  sound/soc/davinci/davinci-pcm.c   |   11 +++++------
+>  sound/soc/davinci/davinci-pcm.h   |    1 -
+>  3 files changed, 10 insertions(+), 10 deletions(-)
+> 
+> diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
+> index 8a9c0ee..63633e9 100644
+> --- a/sound/soc/davinci/davinci-mcasp.c
+> +++ b/sound/soc/davinci/davinci-mcasp.c
+> @@ -834,17 +834,20 @@ static int davinci_mcasp_hw_params(struct snd_pcm_substream *substream,
+>  	int word_length;
+>  	u8 fifo_level;
+>  	u8 slots = dev->tdm_slots;
+> +	u8 active_serializers;
+>  	int channels;
+>  	struct snd_interval *pcm_channels = hw_param_interval(params,
+>  					SNDRV_PCM_HW_PARAM_CHANNELS);
+>  	channels = pcm_channels->min;
+>  
+> +	active_serializers = (channels + slots - 1) / slots;
+> +
+>  	if (davinci_hw_common_param(dev, substream->stream, channels) == -EINVAL)
+>  		return -EINVAL;
+>  	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+> -		fifo_level = dev->txnumevt;
+> +		fifo_level = dev->txnumevt * active_serializers;
+>  	else
+> -		fifo_level = dev->rxnumevt;
+> +		fifo_level = dev->rxnumevt * active_serializers;
+>  
+>  	if (dev->op_mode == DAVINCI_MCASP_DIT_MODE)
+>  		davinci_hw_dit_param(dev);
+> @@ -889,7 +892,6 @@ static int davinci_mcasp_hw_params(struct snd_pcm_substream *substream,
+>  		dma_params->acnt = dma_params->data_type;
+>  
+>  	dma_params->fifo_level = fifo_level;
+> -	dma_params->active_serializers = (channels + slots - 1) / slots;
+>  	davinci_config_channel_size(dev, word_length);
+>  
+>  	return 0;
+> diff --git a/sound/soc/davinci/davinci-pcm.c b/sound/soc/davinci/davinci-pcm.c
+> index 0161579..8460edc 100644
+> --- a/sound/soc/davinci/davinci-pcm.c
+> +++ b/sound/soc/davinci/davinci-pcm.c
+> @@ -182,7 +182,6 @@ static void davinci_pcm_enqueue_dma(struct snd_pcm_substream *substream)
+>  	unsigned short acnt;
+>  	unsigned int count;
+>  	unsigned int fifo_level;
+> -	unsigned char serializers = prtd->params->active_serializers;
+>  
+>  	period_size = snd_pcm_lib_period_bytes(substream);
+>  	dma_offset = prtd->period * period_size;
+> @@ -196,14 +195,14 @@ static void davinci_pcm_enqueue_dma(struct snd_pcm_substream *substream)
+>  	data_type = prtd->params->data_type;
+>  	count = period_size / data_type;
+>  	if (fifo_level)
+> -		count /= fifo_level * serializers;
+> +		count /= fifo_level;
+>  
+>  	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+>  		src = dma_pos;
+>  		dst = prtd->params->dma_addr;
+>  		src_bidx = data_type;
+>  		dst_bidx = 4;
+> -		src_cidx = data_type * fifo_level * serializers;
+> +		src_cidx = data_type * fifo_level;
+>  		dst_cidx = 0;
+>  	} else {
+>  		src = prtd->params->dma_addr;
+> @@ -211,7 +210,7 @@ static void davinci_pcm_enqueue_dma(struct snd_pcm_substream *substream)
+>  		src_bidx = 0;
+>  		dst_bidx = data_type;
+>  		src_cidx = 0;
+> -		dst_cidx = data_type * fifo_level * serializers;
+> +		dst_cidx = data_type * fifo_level;
+>  	}
+>  
+>  	acnt = prtd->params->acnt;
+> @@ -226,8 +225,8 @@ static void davinci_pcm_enqueue_dma(struct snd_pcm_substream *substream)
+>  							ASYNC);
+>  	else
+>  		edma_set_transfer_params(prtd->asp_link[0], acnt,
+> -						fifo_level * serializers,
+> -						count, fifo_level * serializers,
+> +						fifo_level,
+> +						count, fifo_level,
+>  						ABSYNC);
+>  }
+>  
+> diff --git a/sound/soc/davinci/davinci-pcm.h b/sound/soc/davinci/davinci-pcm.h
+> index 0d84d32..fbb710c 100644
+> --- a/sound/soc/davinci/davinci-pcm.h
+> +++ b/sound/soc/davinci/davinci-pcm.h
+> @@ -27,7 +27,6 @@ struct davinci_pcm_dma_params {
+>  	unsigned char data_type;	/* xfer data type */
+>  	unsigned char convert_mono_stereo;
+>  	unsigned int fifo_level;
+> -	unsigned char active_serializers; /* num. of active audio serializers */
+>  };
+>  
+>  int davinci_soc_platform_register(struct device *dev);
+> 
+
