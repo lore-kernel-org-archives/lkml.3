@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab3DSJiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 05:38:05 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:17452 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757677Ab3DSJiD (ORCPT
+	id S1758246Ab3DSJjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 05:39:51 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:30904 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757677Ab3DSJju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 05:38:03 -0400
-Message-ID: <51711076.7000503@atmel.com>
-Date: Fri, 19 Apr 2013 11:37:58 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 19 Apr 2013 05:39:50 -0400
+X-Spam-Score: -100.8
+Message-ID: <517110BA.5070806@asianux.com>
+Date: Fri, 19 Apr 2013 17:39:06 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Josh Wu <josh.wu@atmel.com>
-Subject: Re: [PATCH] ARM: at91/sama5d34ek.dts: remove not needed compatibility
- string
-References: <1366364129-15974-1-git-send-email-nicolas.ferre@atmel.com>
-In-Reply-To: <1366364129-15974-1-git-send-email-nicolas.ferre@atmel.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kernel/audit_tree.c: tree will memory leak when failure occurs
+ for audit_trim_trees()
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2013 11:35 AM, Nicolas Ferre :
-> "atmel,sama5ek" compatibility sting does not correspond to a
-> useful board configuration. This d35ek.dts is the only sama5d3
 
-s/d35/d34/
+in audit_trim_trees(), has called get_tree() before failure occurs,
+so need also call put_tree after go to skip_it:
 
-sorry.
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ kernel/audit_tree.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> .dts file affected.
-> 
-> Reported-by: Josh Wu <josh.wu@atmel.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  arch/arm/boot/dts/sama5d34ek.dts | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/boot/dts/sama5d34ek.dts b/arch/arm/boot/dts/sama5d34ek.dts
-> index d2739f8..6bebfcd 100644
-> --- a/arch/arm/boot/dts/sama5d34ek.dts
-> +++ b/arch/arm/boot/dts/sama5d34ek.dts
-> @@ -12,7 +12,7 @@
->  
->  / {
->  	model = "Atmel SAMA5D34-EK";
-> -	compatible = "atmel,sama5d34ek", "atmel,sama5ek", "atmel,sama5d3xmb", "atmel,sama5d3xcm", "atmel,sama5d3", "atmel,sama5";
-> +	compatible = "atmel,sama5d34ek", "atmel,sama5d3xmb", "atmel,sama5d3xcm", "atmel,sama5d3", "atmel,sama5";
->  
->  	ahb {
->  		apb {
-> 
-
-
+diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
+index 642a89c..de46ec0 100644
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -617,10 +617,10 @@ void audit_trim_trees(void)
+ 		}
+ 		spin_unlock(&hash_lock);
+ 		trim_marked(tree);
+-		put_tree(tree);
+ 		drop_collected_mounts(root_mnt);
+ skip_it:
+ 		mutex_lock(&audit_filter_mutex);
++		put_tree(tree);
+ 	}
+ 	list_del(&cursor);
+ 	mutex_unlock(&audit_filter_mutex);
 -- 
-Nicolas Ferre
+1.7.7.6
