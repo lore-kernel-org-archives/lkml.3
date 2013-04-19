@@ -1,98 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab3DSEaL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 00:30:11 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:43496 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751015Ab3DSEaK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 00:30:10 -0400
-Message-ID: <1366345802.2855.38.camel@Wailaba2>
-Subject: Re: [PATCH 2/3] posix_timers: Defer per process timer stop after
- timers processing
-From: Olivier Langlois <olivier@trillion01.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Kevin Hilman <khilman@linaro.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 19 Apr 2013 00:30:02 -0400
-In-Reply-To: <1366305822-5499-3-git-send-email-fweisbec@gmail.com>
-References: <1366305822-5499-1-git-send-email-fweisbec@gmail.com>
-	 <1366305822-5499-3-git-send-email-fweisbec@gmail.com>
-Organization: Trillion01 Inc
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4 
-Mime-Version: 1.0
+	id S1751609Ab3DSEan (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 00:30:43 -0400
+Received: from mout.gmx.net ([212.227.15.15]:62711 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772Ab3DSEal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 00:30:41 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+oMLVSpaWo7Jqsvgwg7/KQpC+0iWm8pl5GbShkoG
+	P/TgSnEn5XtKJC
+Message-ID: <1366345833.4708.17.camel@marge.simpson.net>
+Subject: Re: [PATCH Resend v6] sched: fix wrong rq's runnable_avg update
+ with rt tasks
+From: Mike Galbraith <efault@gmx.de>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, pjt@google.com,
+        rostedt@goodmis.org, fweisbec@gmail.com
+Date: Fri, 19 Apr 2013 06:30:33 +0200
+In-Reply-To: <1366302867-5055-1-git-send-email-vincent.guittot@linaro.org>
+References: <1366302867-5055-1-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {5686:box610.bluehost.com:olivierl:trillion01.com} {sentby:smtp auth 173.178.230.31 authed with olivier@trillion01.com}
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
->  /*
-> @@ -1279,6 +1277,7 @@ void run_posix_cpu_timers(struct task_struct *tsk)
->  	LIST_HEAD(firing);
->  	struct k_itimer *timer, *next;
->  	unsigned long flags;
-> +	struct signal_struct *sig;
->  
->  	BUG_ON(!irqs_disabled());
->  
-> @@ -1336,6 +1335,10 @@ void run_posix_cpu_timers(struct task_struct *tsk)
->  			cpu_timer_fire(timer);
->  		spin_unlock(&timer->it_lock);
->  	}
-> +
-> +	sig = tsk->signal;
-> +	if (task_cputime_zero(&sig->cputime_expires))
-> +		stop_process_timers(sig);
->  }
->  
->  /*
-I have proposed a different modification for the same problem yesterday:
+On Thu, 2013-04-18 at 18:34 +0200, Vincent Guittot wrote: 
+> The current update of the rq's load can be erroneous when RT tasks are
+> involved
+> 
+> The update of the load of a rq that becomes idle, is done only if the avg_idle
+> is less than sysctl_sched_migration_cost. If RT tasks and short idle duration
+> alternate, the runnable_avg will not be updated correctly and the time will be
+> accounted as idle time when a CFS task wakes up.
+> 
+> A new idle_enter function is called when the next task is the idle function
+> so the elapsed time will be accounted as run time in the load of the rq,
+> whatever the average idle time is. The function update_rq_runnable_avg is
+> removed from idle_balance.
+> 
+> When a RT task is scheduled on an idle CPU, the update of the rq's load is
+> not done when the rq exit idle state because CFS's functions are not
+> called. Then, the idle_balance, which is called just before entering the
+> idle function, updates the rq's load and makes the assumption that the
+> elapsed time since the last update, was only running time.
+> 
+> As a consequence, the rq's load of a CPU that only runs a periodic RT task,
+> is close to LOAD_AVG_MAX whatever the running duration of the RT task is.
 
-https://lkml.org/lkml/2013/4/17/351
+Why do we care what rq's load says, if the only thing running is a
+periodic RT task?  I _think_ I recall that stuff being put under the
+throttle specifically to not waste cycles doing that on every
+microscopic idle.
 
-I might be mistaken but I believe that firing timers are not rescheduled
-in the current interrupt context. They are going to be rescheduled later
-from the task context handling the timer generated signal.
+Seems to me when scheduling an rt task, you want to do as little other
+than switching to/from the rt task as possible.  I don't let rt tasks do
+idle balancing either, their job isn't to balance fair class on the way
+out the door, it's to get off/onto the cpu ASAP, and do rt work.
 
-Also, if the cputimer is started by posix_cpu_timer_set() without arming
-any timer, the stop_process_timers() function will never be reached.
-
-My methodology to test the modifications that I have proposed is by
-adding a printk() statement inside thread_group_cputimer() where the
-cputimer is initialized and run
-
-glibc-2.17/rt/tst-cputimer1 unittest.
-
-Before the changes, the cputimer is initialized 4 times!
-I was expecting with the proposed changes to see that number reduced to
-2 but it ended up to be even better and be only 1 because the second
-waves of posix cpu timers is set within 1 tick.
-
-If you do the same test with your changes, I think that there is a
-chance that it will not get the same positive result for the reason that
-I have stated above.
-
-To conclude, I would be very interested to get your input in posix cpu
-timer modification proposal that I did last week. My proposal is either
-too complex or I am very bad explaining it so since your knowledgable in
-the area, your input would be very helpful.
-
-https://lkml.org/lkml/2013/4/5/370
-
-Thank you!!!
-Olivier
-
-
+-Mike
 
