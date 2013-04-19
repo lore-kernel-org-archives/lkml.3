@@ -1,147 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005Ab3DSGx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 02:53:56 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:33243 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756901Ab3DSGxy (ORCPT
+	id S1757107Ab3DSG7u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 02:59:50 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34362 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756725Ab3DSG7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 02:53:54 -0400
-Message-ID: <5170E93B.5090902@linux.vnet.ibm.com>
-Date: Fri, 19 Apr 2013 12:20:35 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>
-CC: akpm@linux-foundation.org, mgorman@suse.de, matthew.garrett@nebula.com,
-        rientjes@google.com, riel@redhat.com, arjan@linux.intel.com,
-        srinivas.pandruvada@linux.intel.com, maxime.coquelin@stericsson.com,
-        loic.pallardy@stericsson.com, kamezawa.hiroyu@jp.fujitsu.com,
-        lenb@kernel.org, rjw@sisk.pl, gargankita@gmail.com,
-        paulmck@linux.vnet.ibm.com, amit.kachhap@linaro.org,
-        svaidy@linux.vnet.ibm.com, andi@firstfloor.org, wujianguo@huawei.com,
-        kmpark@infradead.org, thomas.abraham@linaro.org,
-        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 00/15][Sorted-buddy] mm: Memory Power Management
-References: <20130409214443.4500.44168.stgit@srivatsabhat.in.ibm.com> <517028F1.6000002@sr71.net>
-In-Reply-To: <517028F1.6000002@sr71.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041906-9264-0000-0000-000003908D7D
+	Fri, 19 Apr 2013 02:59:49 -0400
+Date: Fri, 19 Apr 2013 16:59:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Simon Horman <horms@verge.net.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>,
+        Bastian Hecht <hechtb@gmail.com>
+Subject: linux-next: manual merge of the renesas tree with the arm-soc tree
+Message-Id: <20130419165931.740d243c82497664e6bd95b1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__19_Apr_2013_16_59_31_+1000_YFeUdkA_AdOyYuOR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2013 10:40 PM, Dave Hansen wrote:
-> On 04/09/2013 02:45 PM, Srivatsa S. Bhat wrote:
->> 2. Performance overhead is expected to be low: Since we retain the simplicity
->>    of the algorithm in the page allocation path, page allocation can
->>    potentially remain as fast as it would be without memory regions. The
->>    overhead is pushed to the page-freeing paths which are not that critical.
-> 
-> Numbers, please.  The problem with pushing the overhead to frees is that
-> they, believe it or not, actually average out to the same as the number
-> of allocs.  Think kernel compile, or a large dd.  Both of those churn
-> through a lot of memory, and both do an awful lot of allocs _and_ frees.
->  We need to know both the overhead on a system that does *no* memory
-> power management, and the overhead on a system which is carved and
-> actually using this code.
-> 
->> Kernbench results didn't show any noticeable performance degradation with
->> this patchset as compared to vanilla 3.9-rc5.
-> 
-> Surely this code isn't magical and there's overhead _somewhere_, and
-> such overhead can be quantified _somehow_.  Have you made an effort to
-> find those cases, even with microbenchmarks?
->
+--Signature=_Fri__19_Apr_2013_16_59_31_+1000_YFeUdkA_AdOyYuOR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sorry for not posting the numbers explicitly. It really shows no difference in
-kernbench, see below.
+Hi Simon,
 
-[For the following run, I reverted patch 14, since it seems to be intermittently
-causing kernel-instability at high loads. So the numbers below show the effect
-of only the sorted-buddy part of the patchset, and not the compaction part.]
+Today's linux-next merge of the renesas tree got a conflict in
+arch/arm/mach-shmobile/setup-r8a7740.c between commit 0583fe478a7d ("ARM:
+convert arm/arm64 arch timer to use CLKSRC_OF init") from the arm-soc
+tree and commit 74d6523995cc ("ARM: shmobile: r8a7740: Prepare for
+reference DT setup") from the renesas tree.
 
-Kernbench was run on a 2 socket 8 core machine (HT disabled) with 128 GB RAM,
-with allyesconfig on 3.9-rc5 kernel source. 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Vanilla 3.9-rc5:
----------------
-Fri Apr 19 08:30:12 IST 2013
-3.9.0-rc5
-Average Optimal load -j 16 Run (std deviation):
-Elapsed Time 574.66 (2.31846)
-User Time 3919.12 (3.71256)
-System Time 339.296 (0.73694)
-Percent CPU 740.4 (2.50998)
-Context Switches 1.2183e+06 (4019.47)
-Sleeps 1.61239e+06 (2657.33)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-This patchset (minus patch 14): [Region size = 512 MB]
-------------------------------
-Fri Apr 19 09:42:38 IST 2013
-3.9.0-rc5-mpmv2-nowq
-Average Optimal load -j 16 Run (std deviation):
-Elapsed Time 575.668 (2.01583)
-User Time 3916.77 (3.48345)
-System Time 337.406 (0.701591)
-Percent CPU 738.4 (3.36155)
-Context Switches 1.21683e+06 (6980.13)
-Sleeps 1.61474e+06 (4906.23)
+diff --cc arch/arm/mach-shmobile/setup-r8a7740.c
+index 326a4ab,00c5a70..0000000
+--- a/arch/arm/mach-shmobile/setup-r8a7740.c
++++ b/arch/arm/mach-shmobile/setup-r8a7740.c
+@@@ -1027,9 -1016,10 +1016,9 @@@ static const char *r8a7740_boards_compa
+ =20
+  DT_MACHINE_START(R8A7740_DT, "Generic R8A7740 (Flattened Device Tree)")
+  	.map_io		=3D r8a7740_map_io,
+- 	.init_early	=3D r8a7740_add_early_devices_dt,
+- 	.init_irq	=3D r8a7740_init_irq,
+- 	.init_machine	=3D r8a7740_add_standard_devices_dt,
++ 	.init_early	=3D r8a7740_init_delay,
++ 	.init_irq	=3D r8a7740_init_irq_of,
++ 	.init_machine	=3D r8a7740_generic_init,
+ -	.init_time	=3D shmobile_timer_init,
+  	.dt_compat	=3D r8a7740_boards_compat_dt,
+  MACHINE_END
+ =20
 
+--Signature=_Fri__19_Apr_2013_16_59_31_+1000_YFeUdkA_AdOyYuOR
+Content-Type: application/pgp-signature
 
-So, that shows almost no degradation due to the sorted-buddy logic (considering
-the elapsed time).
- 
-> I still also want to see some hard numbers on:
->> However, memory consumes a significant amount of power, potentially upto
->> more than a third of total system power on server systems.
-> and
->> It had been demonstrated on a Samsung Exynos board
->> (with 2 GB RAM) that upto 6 percent of total system power can be saved by
->> making the Linux kernel MM subsystem power-aware[4]. 
-> 
-> That was *NOT* with this code, and it's nearing being two years old.
-> What can *this* *patch* do?
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Please let me clarify that. My intention behind quoting that 6% power-savings
-number was _not_ to trick reviewers into believing that _this_ patchset provides
-that much power-savings. It was only to show that this whole effort of doing memory
-power management is not worthless, and we do have some valuable/tangible
-benefits to gain from it. IOW, it was only meant to show an _estimate_ of how
-much we can potentially save and thus justify the effort behind managing memory
-power-efficiently.
+iQIcBAEBCAAGBQJRcOtTAAoJEECxmPOUX5FEtFUP/jyojXRCgZFAS5lSSA9ltr5f
+9Jltfu2bQmsLehIsUQb1QuXWnUzTe0Nrp5oe2BTLTH4Tt9R2Mq1JR79/fyEqvtBU
+W/2JiHrRtoKGGo5QHAp656umQ+b9PIctVs3PNncmrYJubDuQpNek4+k3hqISeQ6/
+ktmvJN5bSvzJ1w1z3Y0tNg/j4GHIix5mVeoAKbIyzQco9r3k7ON5NrUJnr/5QYnL
+F4MNAI5+3dUxHR+zxn8sX8HRbX0HOTOC7m2BMdhCOGSxjk74bLI/S81TFXn5r1ue
+B2ZKkiFY8F1R+kJy9v+meqlkZEwF/tO0uuSm+nMgFysLQv7MtCaicN6/dA24+oHT
+MlLP1vOFQwBwoGezeuloFIzpQ+uCkGNfkcG/yfmELgiCVbywjcAGCJqzTMNfhbi4
+O58S7CEfMritrvGJ0mc8BPz6eaZiUN/m2vBmRdPrksYFLfn9RoiQ/L1mbLJeiKih
+tl/9KjVu011jg2wdvTLkPMW3Up6gGCYSzJFzg9bVzuEsTmgk3eEQjgatMEqEgkhE
+FqV4WAiyh/rg7k9fxYXKrOqv3pyjZW0pMIBdE7n6aucxU3koHvhdAx+7kmLu5uSQ
+k8bYPvzagtVuuXZaROTaiiDEgAvaacZnttJCs97e5mobcmTQsBVYinJ3lvoHHvnl
+vhZgHYmdy42L6s96BEwv
+=yxli
+-----END PGP SIGNATURE-----
 
-As I had mentioned in the cover-letter, I don't have the the exact power-savings
-number for this particular patchset yet. I'll definitely work towards getting
-those numbers soon.
-
-> I think there are three scenarios to look at.  Let's say you have an 8GB
-> system with 1GB regions:
-> 1. Normal unpatched kernel, booted with  mem=1G...8G (in 1GB increments
->    perhaps) running some benchmark which sees performance scale with
->    the amount of memory present in the system.
-> 2. Kernel patched with this set, running the same test, but with single
->    memory regions.
-> 3. Kernel patched with this set.  But, instead of using mem=, you run
->    it trying to evacuate equivalent amount of memory to the amounts you
->    removed using mem=.
-> 
-> That will tell us both what the overhead is, and how effective it is.
-> I'd much rather see actual numbers and a description of the test than
-> some hand waving that it "didn't show any noticeable performance
-> degradation".
-> 
-
-Sure, I'll perform more extensive tests to evaluate the performance overhead
-more thoroughly. I'll first fix the compaction logic that seems to be buggy
-and run benchmarks again.
-
-Thanks a lot for your all invaluable inputs, Dave!
-
-Regards,
-Srivatsa S. Bhat
-
+--Signature=_Fri__19_Apr_2013_16_59_31_+1000_YFeUdkA_AdOyYuOR--
