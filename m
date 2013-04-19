@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967611Ab3DRXww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 19:52:52 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65161 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967289Ab3DRXwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 19:52:50 -0400
-X-ExtLoop1: 1
+	id S967587Ab3DSAA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 20:00:26 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:20548 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967325Ab3DSAAZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 20:00:25 -0400
 X-IronPort-AV: E=Sophos;i="4.87,504,1363158000"; 
-   d="scan'208";a="320599348"
-Date: Thu, 18 Apr 2013 16:52:45 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Rob Landley <rob@landley.net>
-Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC 5/7] Docs: Expectations for bug reporters and maintainers
-Message-ID: <20130418235245.GA3565@xanatos>
-References: <20130417182328.GA7690@xanatos>
- <1366242580.18069.116@driftwood>
+   d="scan'208";a="39750057"
+Message-ID: <51708918.1070501@codeaurora.org>
+Date: Thu, 18 Apr 2013 17:00:24 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1366242580.18069.116@driftwood>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Herring <robherring2@gmail.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] clocksource: arm_arch_timer: unify sched_clock init
+References: <1366313410-16692-1-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1366313410-16692-1-git-send-email-robherring2@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 17, 2013 at 06:49:40PM -0500, Rob Landley wrote:
-> On 04/17/2013 01:23:28 PM, Sarah Sharp wrote:
-> >On Tue, Apr 16, 2013 at 09:15:06PM -0500, Rob Landley wrote:
-> >> On 04/15/2013 12:33:34 PM, Sarah Sharp wrote:
-> >> >Outline how often it's polite to ping kernel maintainers about
-> >> >bugs, and
-> >> >suggest that kernel maintainers should respond to bugs in 1 to 5
-> >> >business days.
-> >>
-> >> Is there anything in here about the four-level nature of modern
-> >> maintainership?
-> >>
-> >> Patches go from the developer, to the maintainer, to one of Linus's
-> >> lieutenants, to Linus himself. If you submit a patch to a maintainer
-> >> they owe you a response. The lieutenant (subsystem maintainer) owes
-> >> that maintainer a response, and Linus (the project's architect) owes
-> >> the lieutenant a response.
-> >
-> >Do we want to go into this much detail in a document meant for
-> >frustrated bug reporters?  Or perhaps we should create a separate
-> >document about the kernel maintainer hierarchy and reference it here?
-> 
-> My point was that you have to contact the right person to
-> semi-reliably get a response, but you're right. That's more about
-> getting patches in than getting problems reproduced and diagnosed.
+On 04/18/13 12:30, Rob Herring wrote:
+> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
+> index 122ff05..17ed8e4 100644
+> --- a/drivers/clocksource/arm_arch_timer.c
+> +++ b/drivers/clocksource/arm_arch_timer.c
+> @@ -266,6 +266,15 @@ static struct notifier_block arch_timer_cpu_nb __cpuinitdata = {
+>  	.notifier_call = arch_timer_cpu_notify,
+>  };
+>  
+> +static u64 sched_clock_mult __read_mostly;
+> +
+> +unsigned long long notrace arch_timer_sched_clock(void)
+> +{
+> +	return arch_timer_read_counter() * sched_clock_mult;
+> +}
+> +unsigned long long sched_clock(void) \
+> +	__attribute__((weak, alias("arch_timer_sched_clock")));
 
-No worries!  I think it's really useful for patch submitters to get
-their work to the right maintainers as well.  That description just
-doesn't belong here. :)
+I'm still lost, how does this prevent the timer in ARM's 32 bit
+sched_clock code from getting setup in sched_clock_postinit()? That
+print is still there right? Who owns sched_clock() in multi-target builds?
 
-> >This file is about bug reporting, not submitting patches.
-> ...
-> >TLDR version: Yes, it would be nice if bug reporters could go up the
-> >hierarchy, but they don't have an easy way to know which subsystem
-> >maintainers to contact.  Perhaps a new line in MAINTAINERS for the
-> >subsystem maintainer would be helpful?
-> 
-> It seemed related at the time (general interacting with the
-> kernel developers), but I guess not.
+Why can't we play along with the sched_clock code that lives in arm?
+Maybe we should resurrect those clocksource sched_clock patches again.
+Or maybe we should add support for setup_sched_clock_64() in arm's sched
+clock code.
 
-Ok.  Do you think the new line in MAINTAINERS would be useful as a
-separate patch?  Possibly if it came from the subsystem maintainers
-themselves?
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
-> Eh, this has gone undocumented for a full decade and nobody but me's
-> cared.
-
-I think it's less "nobody but me's cared" and more "no one with
-knowledge of the community is willing to write basic documentation that
-is needed".  People care, just not the ones with enough expertise to
-write docs.
-
-I do care about good documentation, so I suspect you'll be getting
-more patches from me in the future. :)
-
-Any other feedback on this patchset?  If not, are you going to send
-it to Linus for 3.10 or should I?
-
-Sarah Sharp
