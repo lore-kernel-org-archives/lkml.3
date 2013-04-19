@@ -1,114 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab3DSTCE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 15:02:04 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:54513 "EHLO e9.ny.us.ibm.com"
+	id S932811Ab3DSTC7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 15:02:59 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47770 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753655Ab3DSTCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 15:02:01 -0400
-Date: Fri, 19 Apr 2013 12:01:51 -0700
-From: Nishanth Aravamudan <nacc@linux.vnet.ibm.com>
-To: netdev@vger.kernel.org
-Cc: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: tg3: possible irq lock inversion dependency detected
-Message-ID: <20130419190150.GA15355@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux 3.5.0-27-generic (x86_64)
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13041919-7182-0000-0000-000006515CD4
+	id S1753274Ab3DSTC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 15:02:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,510,1363158000"; 
+   d="scan'208";a="288738719"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 1/3] mei: revamp mei_irq_read_client_message function
+Date: Fri, 19 Apr 2013 22:01:34 +0300
+Message-Id: <1366398096-14756-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running 3.9-rc7-ish, tripped the following (also being seen in FC19
-alpha) on ppc64:
+1. Rename the function and change parameters order,
+ so that first parameter is mei_device
+2. Simplify the function code flow
+3. Rename helper functions to more self descriptive names
+4. Use helpers common functions where possible
 
-[  117.026196] =========================================================
-[  117.026216] [ INFO: possible irq lock inversion dependency detected ]
-[  117.026238] 3.9.0-rc7+ #8 Not tainted
-[  117.026251] ---------------------------------------------------------
-[  117.026271] swapper/7/0 just changed the state of lock:
-[  117.026286]  (&(&tp->lock)->rlock){+.-...}, at: [<c00000000064effc>] .tg3_timer+0x9c/0x10f0
-[  117.026334] but this lock took another, SOFTIRQ-unsafe lock in the past:
-[  117.026353]  (devtree_lock){+.+...}
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/interrupt.c | 124 +++++++++++++++++++++++--------------------
+ 1 file changed, 66 insertions(+), 58 deletions(-)
+
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 8e4db3d..9bf64c0 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -82,80 +82,90 @@ void mei_irq_compl_handler(struct mei_device *dev, struct mei_cl_cb *compl_list)
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(mei_irq_compl_handler);
++
+ /**
+- * _mei_irq_thread_state_ok - checks if mei header matches file private data
++ * mei_cl_hbm_equal - check if hbm is addressed to the client
+  *
+- * @cl: private data of the file object
++ * @cl: host client
+  * @mei_hdr: header of mei client message
+  *
+- * returns !=0 if matches, 0 if no match.
++ * returns true if matches, false otherwise
++ */
++static inline int mei_cl_hbm_equal(struct mei_cl *cl,
++			struct mei_msg_hdr *mei_hdr)
++{
++	return cl->host_client_id == mei_hdr->host_addr &&
++		cl->me_client_id == mei_hdr->me_addr;
++}
++/**
++ * mei_cl_is_reading - checks if the client
++		is the one to read this message
++ *
++ * @cl: mei client
++ * @mei_hdr: header of mei message
++ *
++ * returns true on match and false otherwise
+  */
+-static int _mei_irq_thread_state_ok(struct mei_cl *cl,
+-				struct mei_msg_hdr *mei_hdr)
++static bool mei_cl_is_reading(struct mei_cl *cl, struct mei_msg_hdr *mei_hdr)
+ {
+-	return (cl->host_client_id == mei_hdr->host_addr &&
+-		cl->me_client_id == mei_hdr->me_addr &&
++	return mei_cl_hbm_equal(cl, mei_hdr) &&
+ 		cl->state == MEI_FILE_CONNECTED &&
+-		MEI_READ_COMPLETE != cl->reading_state);
++		cl->reading_state != MEI_READ_COMPLETE;
+ }
  
-and interrupts could create inverse lock ordering between them.
+ /**
+- * mei_irq_thread_read_client_message - bottom half read routine after ISR to
+- * handle the read mei client message data processing.
++ * mei_irq_read_client_message - process client message
+  *
+- * @complete_list: An instance of our list structure
+  * @dev: the device structure
+  * @mei_hdr: header of mei client message
++ * @complete_list: An instance of our list structure
+  *
+  * returns 0 on success, <0 on failure.
+  */
+-static int mei_irq_thread_read_client_message(struct mei_cl_cb *complete_list,
+-		struct mei_device *dev,
+-		struct mei_msg_hdr *mei_hdr)
++static int mei_cl_irq_read_msg(struct mei_device *dev,
++			       struct mei_msg_hdr *mei_hdr,
++			       struct mei_cl_cb *complete_list)
+ {
+ 	struct mei_cl *cl;
+-	struct mei_cl_cb *cb_pos = NULL, *cb_next = NULL;
++	struct mei_cl_cb *cb, *next;
+ 	unsigned char *buffer = NULL;
  
-[  117.026389]
-other info that might help us debug this:
-[  117.026409] Chain exists of:
-  &(&tp->lock)->rlock --> pci_lock --> devtree_lock
+-	dev_dbg(&dev->pdev->dev, "start client msg\n");
+-	if (list_empty(&dev->read_list.list))
+-		goto quit;
+-
+-	list_for_each_entry_safe(cb_pos, cb_next, &dev->read_list.list, list) {
+-		cl = cb_pos->cl;
+-		if (cl && _mei_irq_thread_state_ok(cl, mei_hdr)) {
+-			cl->reading_state = MEI_READING;
+-			buffer = cb_pos->response_buffer.data + cb_pos->buf_idx;
+-
+-			if (cb_pos->response_buffer.size <
+-					mei_hdr->length + cb_pos->buf_idx) {
+-				dev_dbg(&dev->pdev->dev, "message overflow.\n");
+-				list_del(&cb_pos->list);
+-				return -ENOMEM;
+-			}
+-			if (buffer)
+-				mei_read_slots(dev, buffer, mei_hdr->length);
+-
+-			cb_pos->buf_idx += mei_hdr->length;
+-			if (mei_hdr->msg_complete) {
+-				cl->status = 0;
+-				list_del(&cb_pos->list);
+-				dev_dbg(&dev->pdev->dev,
+-					"completed read H cl = %d, ME cl = %d, length = %lu\n",
+-					cl->host_client_id,
+-					cl->me_client_id,
+-					cb_pos->buf_idx);
+-
+-				list_add_tail(&cb_pos->list,
+-						&complete_list->list);
+-			}
++	list_for_each_entry_safe(cb, next, &dev->read_list.list, list) {
++		cl = cb->cl;
++		if (!cl || !mei_cl_is_reading(cl, mei_hdr))
++			continue;
  
-[  117.026452]  Possible interrupt unsafe locking scenario:
+-			break;
++		cl->reading_state = MEI_READING;
++
++		if (cb->response_buffer.size == 0 ||
++		    cb->response_buffer.data == NULL) {
++			dev_err(&dev->pdev->dev, "response buffer is not allocated.\n");
++			list_del(&cb->list);
++			return -ENOMEM;
++		}
++
++		if (cb->response_buffer.size < mei_hdr->length + cb->buf_idx) {
++			dev_warn(&dev->pdev->dev, "message overflow.\n");
++			list_del(&cb->list);
++			return -ENOMEM;
+ 		}
  
-[  117.026472]        CPU0                    CPU1
-[  117.026488]        ----                    ----
-[  117.026503]   lock(devtree_lock);
-[  117.026521]                                local_irq_disable();
-[  117.026540]                                lock(&(&tp->lock)->rlock);
-[  117.026567]                                lock(pci_lock);
-[  117.026591]   <Interrupt>
-[  117.026600]     lock(&(&tp->lock)->rlock);
-[  117.026621]
- *** DEADLOCK ***
++		buffer = cb->response_buffer.data + cb->buf_idx;
++		mei_read_slots(dev, buffer, mei_hdr->length);
++
++		cb->buf_idx += mei_hdr->length;
++		if (mei_hdr->msg_complete) {
++			cl->status = 0;
++			list_del(&cb->list);
++			dev_dbg(&dev->pdev->dev, "completed read H cl = %d, ME cl = %d, length = %lu\n",
++				cl->host_client_id,
++				cl->me_client_id,
++				cb->buf_idx);
++			list_add_tail(&cb->list, &complete_list->list);
++		}
++		break;
+ 	}
  
-[  117.026644] 1 lock held by swapper/7/0:
-[  117.026657]  #0:  ((&tp->timer)){+.-...}, at: [<c0000000000bbc50>] .call_timer_fn+0x0/0x3e0
-[  117.026698]
-the shortest dependencies between 2nd lock and 1st lock:
-[  117.026722]   -> (devtree_lock){+.+...} ops: 13864154431488 {
-[  117.026758]      HARDIRQ-ON-W at:
-[  117.026772]      SOFTIRQ-ON-W at:
-[  117.026786]      INITIAL USE at:
-[  117.026799]    }
-[  117.026809]    ... key      at: [<c00000000159b208>] devtree_lock+0x18/0x48
-[  117.026835]    ... acquired at:
+-quit:
+ 	dev_dbg(&dev->pdev->dev, "message read\n");
+ 	if (!buffer) {
+ 		mei_read_slots(dev, dev->rd_msg_buf, mei_hdr->length);
+@@ -386,8 +396,7 @@ int mei_irq_read_handler(struct mei_device *dev,
+ 					" client = %d, ME client = %d\n",
+ 					cl_pos->host_client_id,
+ 					cl_pos->me_client_id);
+-			if (cl_pos->host_client_id == mei_hdr->host_addr &&
+-			    cl_pos->me_client_id == mei_hdr->me_addr)
++			if (mei_cl_hbm_equal(cl_pos, mei_hdr))
+ 				break;
+ 		}
  
-[  117.026857]  -> (pci_lock){......} ops: 3955664879616 {
-[  117.026893]     INITIAL USE at:
-[  117.026906]   }
-[  117.026915]   ... key      at: [<c00000000157abe8>] pci_lock+0x18/0x48
-[  117.026942]   ... acquired at:
+@@ -398,7 +407,7 @@ int mei_irq_read_handler(struct mei_device *dev,
+ 		}
+ 	}
+ 	if (((*slots) * sizeof(u32)) < mei_hdr->length) {
+-		dev_dbg(&dev->pdev->dev,
++		dev_err(&dev->pdev->dev,
+ 				"we can't read the message slots =%08x.\n",
+ 				*slots);
+ 		/* we can't read the message */
+@@ -414,20 +423,19 @@ int mei_irq_read_handler(struct mei_device *dev,
+ 	} else if (mei_hdr->host_addr == dev->iamthif_cl.host_client_id &&
+ 		   (MEI_FILE_CONNECTED == dev->iamthif_cl.state) &&
+ 		   (dev->iamthif_state == MEI_IAMTHIF_READING)) {
+-		dev_dbg(&dev->pdev->dev, "call mei_irq_thread_read_iamthif_message.\n");
  
-[  117.026963] -> (&(&tp->lock)->rlock){+.-...} ops: 154618822656 {
-[  117.027001]    HARDIRQ-ON-W at:
-[  117.027015]    IN-SOFTIRQ-W at:
-[  117.027029]    INITIAL USE at:
-[  117.027042]  }
-[  117.027051]  ... key      at: [<c0000000023a0311>] __key.48770+0x0/0x8
-[  117.027078]  ... acquired at:
++		dev_dbg(&dev->pdev->dev, "call mei_irq_thread_read_iamthif_message.\n");
+ 		dev_dbg(&dev->pdev->dev, MEI_HDR_FMT, MEI_HDR_PRM(mei_hdr));
  
-[  117.027100]
-stack backtrace:
-[  117.027116] Call Trace:
-[  117.027129] [c0000003a7c7ad10] [c000000000016ee0] .show_stack+0xd0/0x1f0 (unreliable)
-[  117.027161] [c0000003a7c7ade0] [c000000000137d78] .print_irq_inversion_bug+0x298/0x2f0
-[  117.027189] [c0000003a7c7ae80] [c000000000137e70] .check_usage_forwards+0xa0/0x150
-[  117.027217] [c0000003a7c7af70] [c000000000138b68] .mark_lock+0x258/0x7b0
-[  117.027242] [c0000003a7c7b030] [c0000000001396f8] .__lock_acquire+0x638/0x1c20
-[  117.027270] [c0000003a7c7b1b0] [c00000000013b480] .lock_acquire+0xb0/0x250
-[  117.027296] [c0000003a7c7b290] [c00000000093a1cc] ._raw_spin_lock+0x5c/0xc0
-[  117.027321] [c0000003a7c7b320] [c00000000064effc] .tg3_timer+0x9c/0x10f0
-[  117.027345] [c0000003a7c7b3d0] [c0000000000bbd0c] .call_timer_fn+0xbc/0x3e0
-[  117.027369] [c0000003a7c7b4b0] [c0000000000bc328] .run_timer_softirq+0x2f8/0x440
-[  117.027398] [c0000003a7c7b5c0] [c0000000000afef8] .__do_softirq+0x1b8/0x540
-[  117.027423] [c0000003a7c7b6f0] [c0000000000b04e8] .irq_exit+0xe8/0x100
-[  117.027448] [c0000003a7c7b770] [c000000000020464] .timer_interrupt+0x174/0x510
-[  117.027477] [c0000003a7c7b830] [c0000000000024f4] decrementer_common+0x174/0x180
-[  117.027509] --- Exception: 901 at .plpar_hcall_norets+0x84/0xd4
-    LR = .check_and_cede_processor+0x48/0x80
-[  117.027544] [c0000003a7c7bb20] [c000000000085168] .check_and_cede_processor+0x18/0x80 (unreliable)
-[  117.027577] [c0000003a7c7bb90] [c000000000085258] .dedicated_cede_loop+0x88/0x150
-[  117.027606] [c0000003a7c7bc50] [c00000000075808c] .cpuidle_enter+0x2c/0x40
-[  117.027632] [c0000003a7c7bcc0] [c0000000007589bc] .cpuidle_idle_call+0xfc/0x4e0
-[  117.027660] [c0000003a7c7bd70] [c000000000074be8] .pSeries_idle+0x18/0x40
-[  117.027685] [c0000003a7c7bde0] [c000000000018ec0] .cpu_idle+0x180/0x360
-[  117.027711] [c0000003a7c7bea0] [c00000000095391c] .start_secondary+0x534/0x53c
-[  117.027739] [c0000003a7c7bf90] [c0000000000097fc] .start_secondary_prolog+0x10/0x14
+ 		ret = mei_amthif_irq_read_msg(dev, mei_hdr, cmpl_list);
+ 		if (ret)
+ 			goto end;
+ 	} else {
+-		dev_dbg(&dev->pdev->dev, "call mei_irq_thread_read_client_message.\n");
+-		ret = mei_irq_thread_read_client_message(cmpl_list,
+-							 dev, mei_hdr);
++		dev_dbg(&dev->pdev->dev, "call mei_cl_irq_read_msg.\n");
++		dev_dbg(&dev->pdev->dev, MEI_HDR_FMT, MEI_HDR_PRM(mei_hdr));
++		ret = mei_cl_irq_read_msg(dev, mei_hdr, cmpl_list);
+ 		if (ret)
+ 			goto end;
+-
+ 	}
+ 
+ 	/* reset the number of slots and header */
+@@ -436,7 +444,7 @@ int mei_irq_read_handler(struct mei_device *dev,
+ 
+ 	if (*slots == -EOVERFLOW) {
+ 		/* overflow - reset */
+-		dev_dbg(&dev->pdev->dev, "resetting due to slots overflow.\n");
++		dev_err(&dev->pdev->dev, "resetting due to slots overflow.\n");
+ 		/* set the event since message has been read */
+ 		ret = -ERANGE;
+ 		goto end;
+-- 
+1.8.1.2
 
