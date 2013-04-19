@@ -1,174 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab3DSIKj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 04:10:39 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:50536 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757357Ab3DSIKX (ORCPT
+	id S967913Ab3DSIL1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 04:11:27 -0400
+Received: from na3sys009aog138.obsmtp.com ([74.125.149.19]:37071 "EHLO
+	na3sys009aog138.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757416Ab3DSILX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 04:10:23 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <5170FBD7.8060605@jp.fujitsu.com>
-Date: Fri, 19 Apr 2013 17:09:59 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Fri, 19 Apr 2013 04:11:23 -0400
+From: Chao Xie <chao.xie@marvell.com>
+To: <thierry.reding@avionic-design.de>, <linux-kernel@vger.kernel.org>,
+        <xiechao.mail@gmail.com>
+CC: Chao Xie <chao.xie@marvell.com>
+Subject: [PATCH V2  3/3] pwm: pxa: add device tree support
+Date: Fri, 19 Apr 2013 04:08:41 -0400
+Message-ID: <1366358921-24478-4-git-send-email-chao.xie@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1366358921-24478-1-git-send-email-chao.xie@marvell.com>
+References: <1366358921-24478-1-git-send-email-chao.xie@marvell.com>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: <akpm@linux-foundation.org>, <linuxram@us.ibm.com>, <rientjes@google.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>
-Subject: Re: [Bug fix PATCH v4] Reusing a resource structure allocated by
- bootmem
-References: <516FB07C.9010603@jp.fujitsu.com> <1366295000.3824.47.camel@misato.fc.hp.com> <517082B9.7050708@jp.fujitsu.com>
-In-Reply-To: <517082B9.7050708@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Toshi,
+Add the deice tree support for pwm-pxa.
 
-2013/04/19 8:33, Yasuaki Ishimatsu wrote:
-> Hi Toshi,
->
-> 2013/04/18 23:23, Toshi Kani wrote:
->> On Thu, 2013-04-18 at 17:36 +0900, Yasuaki Ishimatsu wrote:
->>> When hot removing memory presented at boot time, following messages are shown:
->>   :
->>> diff --git a/kernel/resource.c b/kernel/resource.c
->>> index 4aef886..637e8d2 100644
->>> --- a/kernel/resource.c
->>> +++ b/kernel/resource.c
->>> @@ -21,6 +21,7 @@
->>>   #include <linux/seq_file.h>
->>>   #include <linux/device.h>
->>>   #include <linux/pfn.h>
->>> +#include <linux/mm.h>
->>>   #include <asm/io.h>
->>>
->>>
->>> @@ -50,6 +51,16 @@ struct resource_constraint {
->>>
->>>   static DEFINE_RWLOCK(resource_lock);
->>>
->>> +/*
->>> + * For memory hotplug, there is no way to free resource entries allocated
->>> + * by boot mem after the system is up. So for reusing the resource entry
->>> + * we need to remember the resource.
->>> + */
->>> +struct resource bootmem_resource = {
->>> +    .sibling = NULL,
->>> +};
->>
->
+Signed-off-by: Chao Xie <chao.xie@marvell.com>
+---
+ drivers/pwm/pwm-pxa.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 53 insertions(+), 2 deletions(-)
 
->> This should be a pointer of struct resource and declared as static, such
->> as:
->>
->> static struct resource *bootmem_resource_free;
->
-> O.K. I'll update it.
-
-Oh, I missed "should be pointer of struct resource" part.
-Please teach me your detailed idea. If this is defined as pointer,
-how do we initialize this and manage bootmem resources?
-
-I'm thinking it but have no idea.
-
-Thanks,
-Yasuaki Ishimatsu
-
->
->>
->>> +static DEFINE_SPINLOCK(bootmem_resource_lock);
->>> +
->>>   static void *r_next(struct seq_file *m, void *v, loff_t *pos)
->>>   {
->>>       struct resource *p = v;
->>> @@ -151,6 +162,39 @@ __initcall(ioresources_init);
->>>
->>>   #endif /* CONFIG_PROC_FS */
->>>
->>> +static void free_resource(struct resource *res)
->>> +{
->>> +    if (!res)
->>> +        return;
->>> +
->>> +    if (PageSlab(virt_to_head_page(res))) {
->>> +        spin_lock(&bootmem_resource_lock);
->>> +        res->sibling = bootmem_resource.sibling;
->>> +        bootmem_resource.sibling = res;
->>> +        spin_unlock(&bootmem_resource_lock);
->>> +    } else {
->>> +        kfree(res);
->>> +    }
->>> +}
->>
->
->> I second with Johannes.
->
-> I'll update it.
->
->>
->>> +static struct resource *get_resource(gfp_t flags)
->>> +{
->>> +    struct resource *res = NULL;
->>> +
->>> +    spin_lock(&bootmem_resource_lock);
->>> +    if (bootmem_resource.sibling) {
->>> +        res = bootmem_resource.sibling;
->>> +        bootmem_resource.sibling = res->sibling;
->>> +        memset(res, 0, sizeof(struct resource));
->>> +    }
->>> +    spin_unlock(&bootmem_resource_lock);
->>
->
->> I prefer to keep memset() outside of the spin lock.
->>
->> spin_lock(&bootmem_resource_lock);
->> if (..) {
->>     :
->>     spin_unlock(&bootmem_resource_lock);
->>     memset(res, 0, sizeof(struct resource));
->> } else {
->>     spin_unlock(&bootmem_resource_lock);
->>     res = kzalloc(sizeof(struct resource), flags);
->> }
->
-> Hmm. It is a little ugly. How about it?
->
-> spin_lock(&bootmem_resource_lock);
-> if (bootmem_resource.sibling) {
->      res = bootmem_resource.sibling;
->      bootmem_resource.sibling = res->sibling;
-> }
-> spin_unlock(&bootmem_resource_lock);
->
-> if (res)
->      memset(res, 0, sizeof(struct resource));
-> else
->      res = kzalloc(sizeof(struct resource), flags);
->
-> Thanks,
-> Yasuaki Ishimatsu
->
->>
->> Thanks,
->> -Toshi
->>
->>> +
->>> +
->>> +    return res;
->>> +}
->>> +
->>
->>
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/drivers/pwm/pwm-pxa.c b/drivers/pwm/pwm-pxa.c
+index aa4bea7..c942f01 100644
+--- a/drivers/pwm/pwm-pxa.c
++++ b/drivers/pwm/pwm-pxa.c
+@@ -18,6 +18,8 @@
+ #include <linux/err.h>
+ #include <linux/clk.h>
+ #include <linux/io.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ #include <linux/pwm.h>
+ 
+ #include <asm/div64.h>
+@@ -124,9 +126,52 @@ static struct pwm_ops pxa_pwm_ops = {
+ 	.owner = THIS_MODULE,
+ };
+ 
+-static int pwm_probe(struct platform_device *pdev)
++static struct of_device_id pxa_pwm_of_match[] = {
++	{
++		.compatible = "mrvl,pxa25x-pwm",
++	}, {
++		.compatible = "mrvl,pxa27x-pwm",
++		.data = (void *)HAS_SECONDARY_PWM
++	}, {
++		.compatible = "mrvl,pxa168-pwm",
++	}, {
++		.compatible = "mrvl,pxa910-pwm",
++	},
++	{}
++};
++
++MODULE_DEVICE_TABLE(of, pxa_pwm_of_match);
++
++#ifdef CONFIG_OF
++static int pxa_pwm_parse_data(struct platform_device *pdev,
++				struct pxa_pwm_chip *pwm)
++{
++	const struct of_device_id *of_id =
++			of_match_device(pxa_pwm_of_match, &pdev->dev);
++	unsigned int npwm;
++
++	if (!of_id)
++		return -ENODEV;
++
++	npwm = (unsigned int)(of_id->data);
++	pwm->chip.npwm = (npwm & HAS_SECONDARY_PWM) ? 2 : 1;
++
++	return 0;
++}
++#else
++static int pxa_pwm_parse_data(struct platform_device *pdev,
++				struct pxa_pwm_chip *pwm)
+ {
+ 	const struct platform_device_id *id = platform_get_device_id(pdev);
++
++	pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
++
++	return 0;
++}
++#endif
++
++static int pwm_probe(struct platform_device *pdev)
++{
+ 	struct pxa_pwm_chip *pwm;
+ 	struct resource *r;
+ 	int ret = 0;
+@@ -144,7 +189,6 @@ static int pwm_probe(struct platform_device *pdev)
+ 	pwm->chip.dev = &pdev->dev;
+ 	pwm->chip.ops = &pxa_pwm_ops;
+ 	pwm->chip.base = -1;
+-	pwm->chip.npwm = (id->driver_data & HAS_SECONDARY_PWM) ? 2 : 1;
+ 
+ 	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (r == NULL) {
+@@ -156,6 +200,12 @@ static int pwm_probe(struct platform_device *pdev)
+ 	if (IS_ERR(pwm->mmio_base))
+ 		return PTR_ERR(pwm->mmio_base);
+ 
++	ret = pxa_pwm_parse_data(pdev, pwm);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to parse data from device id\n");
++		return ret;
++	}
++
+ 	ret = pwmchip_add(&pwm->chip);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "pwmchip_add() failed: %d\n", ret);
+@@ -181,6 +231,7 @@ static struct platform_driver pwm_driver = {
+ 	.driver		= {
+ 		.name	= "pxa25x-pwm",
+ 		.owner	= THIS_MODULE,
++		.of_match_table	= pxa_pwm_of_match,
+ 	},
+ 	.probe		= pwm_probe,
+ 	.remove		= pwm_remove,
+-- 
+1.7.4.1
 
