@@ -1,42 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967869Ab3DSCpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 22:45:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:41385 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967790Ab3DSCpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 22:45:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,505,1363158000"; 
-   d="scan'208";a="321484441"
-Message-ID: <5170AFAC.9050602@linux.intel.com>
-Date: Thu, 18 Apr 2013 19:45:00 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: zhang.yi20@zte.com.cn
-CC: Dave Hansen <dave@sr71.net>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] futex: bugfix for futex-key conflict when futex use hugepage
-References: <OF79A40956.94F46B9C-ON48257B50.00320F73-48257B50.0036925D@zte.com.cn> <516EAF31.8000107@linux.intel.com> <516EBF23.2090600@sr71.net> <516EC508.6070200@linux.intel.com> <OF7B3DF162.973A9AD7-ON48257B51.00299512-48257B51.002C7D65@zte.com.cn> <51700475.7050102@linux.intel.com> <OFD8FA3C9D.ACFCFB28-ON48257B52.0008A691-48257B52.000C4DFB@zte.com.cn>
-In-Reply-To: <OFD8FA3C9D.ACFCFB28-ON48257B52.0008A691-48257B52.000C4DFB@zte.com.cn>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+	id S967888Ab3DSCxV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 22:53:21 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46246 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967843Ab3DSCxT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Apr 2013 22:53:19 -0400
+Date: Fri, 19 Apr 2013 12:53:04 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Antonio Quartulli <ordex@autistici.org>,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Martin =?UTF-8?B?SHVuZGViw7hsbA==?= <martin@hundeboll.net>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20130419125304.9980f9b037abf00bef7b6f8c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__19_Apr_2013_12_53_04_+1000_pinOPf3L1G/h48ph"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> BTW, have you seen the testcase in my other mail?  It seems to be rejected 
-> by LKML.
-> 
+--Signature=_Fri__19_Apr_2013_12_53_04_+1000_pinOPf3L1G/h48ph
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I did not receive it, did you also CC me?
+Hi all,
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Technical Lead - Linux Kernel
+Today's linux-next merge of the net-next tree got a conflict in
+net/batman-adv/routing.c between commit fe8a93b95145 ("batman-adv: make
+is_my_mac() check for the current mesh only") from the net tree and
+commits f86ce0ad107b ("batman-adv: Return reason for failure in
+batadv_check_unicast_packet()") and 612d2b4fe0a1 ("batman-adv: network
+coding - save overheard and tx packets for decoding") from the net-next
+tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc net/batman-adv/routing.c
+index 319f290,8f88967..0000000
+--- a/net/batman-adv/routing.c
++++ b/net/batman-adv/routing.c
+@@@ -548,8 -549,17 +549,19 @@@ batadv_find_ifalter_router(struct batad
+  	return router;
+  }
+ =20
++ /**
++  * batadv_check_unicast_packet - Check for malformed unicast packets
+++ * @batpriv: some description ...
++  * @skb: packet to check
++  * @hdr_size: size of header to pull
++  *
++  * Check for short header and bad addresses in given packet. Returns nega=
+tive
++  * value when check fails and 0 otherwise. The negative value depends on =
+the
++  * reason: -ENODATA for bad header, -EBADR for broadcast destination or s=
+ource,
++  * and -EREMOTE for non-local (other host) destination.
++  */
+ -static int batadv_check_unicast_packet(struct sk_buff *skb, int hdr_size)
+ +static int batadv_check_unicast_packet(struct batadv_priv *bat_priv,
+ +				       struct sk_buff *skb, int hdr_size)
+  {
+  	struct ethhdr *ethhdr;
+ =20
+@@@ -565,11 -575,11 +577,11 @@@
+ =20
+  	/* packet with broadcast sender address */
+  	if (is_broadcast_ether_addr(ethhdr->h_source))
+- 		return -1;
++ 		return -EBADR;
+ =20
+  	/* not for me */
+ -	if (!batadv_is_my_mac(ethhdr->h_dest))
+ +	if (!batadv_is_my_mac(bat_priv, ethhdr->h_dest))
+- 		return -1;
++ 		return -EREMOTE;
+ =20
+  	return 0;
+  }
+@@@ -1046,7 -1058,16 +1061,16 @@@ int batadv_recv_unicast_packet(struct s
+  	if (is4addr)
+  		hdr_size =3D sizeof(*unicast_4addr_packet);
+ =20
+- 	if (batadv_check_unicast_packet(bat_priv, skb, hdr_size) < 0)
++ 	/* function returns -EREMOTE for promiscuous packets */
+ -	check =3D batadv_check_unicast_packet(skb, hdr_size);
+++	check =3D batadv_check_unicast_packet(bat_priv, skb, hdr_size);
++=20
++ 	/* Even though the packet is not for us, we might save it to use for
++ 	 * decoding a later received coded packet
++ 	 */
++ 	if (check =3D=3D -EREMOTE)
++ 		batadv_nc_skb_store_sniffed_unicast(bat_priv, skb);
++=20
++ 	if (check < 0)
+  		return NET_RX_DROP;
+ =20
+  	if (!batadv_check_unicast_ttvn(bat_priv, skb))
+
+--Signature=_Fri__19_Apr_2013_12_53_04_+1000_pinOPf3L1G/h48ph
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRcLGQAAoJEECxmPOUX5FEW/MP/2MTNpJyYB09OH+f1KMI4Vra
+R1LtHLig3DFwCeAff9FMIt659C7XJIQLTERXO4SL6YLz742uJMU9D6edBl1H2acJ
+zcz24mMgjIAqAWN8VxndCzGxA6GAmXU2l/b7kYUyGWjFVq3TAnM7MrgxM7uMzipU
+uV3vd6dJlvbdST83Tj0NuzdvNBwVo2luVSdtnj3UW6x8w9TOUMD3HN+k0mD3l5iE
+fvipSzsJ/WjTiISAiixoA6cOMx2RF3NsBtO985LDbZMXAnMknECkYHnZYSwbIck7
+WOrJ3AU4M+Z1YOLCWHdTLfJLU4kW4gLvcboogq6FwRFGQVjOvkrsYlhY5lVI8tKm
+5TNYNu4FTXRfvu35CZvJVcn/vd8wGkQvJDZTEsTryYyoXz7MHgCqIX9NZJAxPgj2
+n/VXnlzzoKVqGhigPziddSzHQai8zL3OwOaNd7vLN0wt9ZQNYJRUpiYQZEbFHBOe
+wzYnnJhwT0Nz5pK6vGrpSnH9PyP9+nxZjdrKVnhO0g4q4VUAMxjinjjIxYnjPrce
+QDyowgum5nPEqtQRFEb1A35lYO0DHECOeWcIuadPQDU6obh3/2xwwC6eL477levQ
+rX0EOB+5Yv8BYylHiD8xvZVradu3R9JAuwq9ctJ47sDxWJrZ1g7zGbb5yvnrN0Pc
+Z5X4UMmPAOjwNJtzPE42
+=k11x
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__19_Apr_2013_12_53_04_+1000_pinOPf3L1G/h48ph--
