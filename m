@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030246Ab3DSMPh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:15:37 -0400
-Received: from dkim1.fusionio.com ([66.114.96.53]:41564 "EHLO
-	dkim1.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968240Ab3DSMPf convert rfc822-to-8bit (ORCPT
+	id S968350Ab3DSMPj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 08:15:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:52832 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968240Ab3DSMPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 08:15:35 -0400
-X-ASG-Debug-ID: 1366373734-03d6a52ac02fe0c0001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Content-Type: text/plain; charset="utf-8"
+	Fri, 19 Apr 2013 08:15:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chen Gang <gang.chen@asianux.com>
+Subject: Re: [PATCH] ARM64: kernel: compiling issue, duplicate definition of early_console
+Date: Fri, 19 Apr 2013 14:15:31 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Christopher Covington <cov@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "anup.patel@linaro.org" <anup.patel@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <5152DB83.8080703@asianux.com> <516E66F9.9070904@asianux.com> <51712213.4060607@asianux.com>
+In-Reply-To: <51712213.4060607@asianux.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Tejun Heo <tj@kernel.org>, Wanlong Gao <gaowanlong@cn.fujitsu.com>
-From: Chris Mason <clmason@fusionio.com>
-In-Reply-To: <20130419055754.GA9691@mtj.dyndns.org>
-CC: Jens Axboe <axboe@kernel.dk>, Steven Rostedt <rostedt@goodmis.org>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "agk@redhat.com" <agk@redhat.com>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "neilb@suse.de" <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-References: <516E5EF8.9090507@cn.fujitsu.com>
- <1366209997.8817.12.camel@pippen.local.home>
- <20130418123738.GV4816@kernel.dk> <516FED09.1040008@cn.fujitsu.com>
- <20130418133546.GX4816@kernel.dk> <516FFFAC.8040103@cn.fujitsu.com>
- <20130418143014.GZ4816@kernel.dk> <5170BB00.8080200@cn.fujitsu.com>
- <20130419055754.GA9691@mtj.dyndns.org>
-Message-ID: <20130419121532.30947.69296@localhost.localdomain>
-User-Agent: alot/0.3.4
-Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
-Date: Fri, 19 Apr 2013 08:15:32 -0400
-X-ASG-Orig-Subj: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1366373734
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.128566
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201304191415.31986.arnd@arndb.de>
+X-Provags-ID: V02:K0:ukO5pxvyFik4Qh3zPS0V9MJ5EvX+VV3ms2r/HNSeFmz
+ xLQk3uZV7YBssRUg302Xeh9hbAeyKdzCjVWMdg6ZkJU1jeBGg+
+ DBrUAm13lCulDpZk81GA4g+pqmLIqEJFt6HTU7FW/tfIW04yi4
+ rg/huLUYaJFPd+/hSd1t8ikjNWeS6znQZiBg60o6Et5DmdGgvN
+ 3Zmr5Wij7xy9FVjRtuP4VmtI3ZCiY5wIFrTvydJKTOUrgY7KFP
+ 3NFB9m84JyiGyFZMPJT1GSNBFDdh/R3nMqIm5nm6EI/uVtWDeW
+ 7B40i5Ltw8kxBjPKfXoHtTSyDEMGGATJscDAEHVCKSucbodQSz
+ wTUXnygwPU7uswVl/HSg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tejun Heo (2013-04-19 01:57:54)
+On Friday 19 April 2013, Chen Gang wrote:
+>   when compiling with allmodconfig.
+>     early_console is already defined as an extern global pointer.
 > 
-> Ewweeeeeeeeeeeeeeeeeehh........
+>   need let it point to the object which we intend to (like ARM32 done).
 > 
-> No wonder this thing crashes.  Chris, can't the original bio carry
-> bbio in bi_private and let end_bio_extent_readpage() free the bbio
-> instead of abusing bi_bdev like this?
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-Yes, we can definitely carry bbio up higher in the stack.  I'll patch it
-up right now.  I do agree that it'll be too big for -final, but we'll
-have it either way.
-
--chris
-
+Acked-by: Arnd Bergmann <arnd@arndb.de>
