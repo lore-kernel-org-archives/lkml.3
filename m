@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968448Ab3DSQ33 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:29:29 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:39903 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967799Ab3DSQ30 (ORCPT
+	id S1030874Ab3DSQ3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:29:40 -0400
+Received: from mail-da0-f52.google.com ([209.85.210.52]:43264 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S967799Ab3DSQ3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 12:29:26 -0400
+	Fri, 19 Apr 2013 12:29:38 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
 To: jaegeuk.kim@samsung.com, rostedt@goodmis.org
 Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
         Namjae Jeon <namjae.jeon@samsung.com>,
         Pankaj Kumar <pankaj.km@samsung.com>
-Subject: [PATCH v4 4/7] f2fs: add tracepoints for GC threads
-Date: Sat, 20 Apr 2013 01:29:18 +0900
-Message-Id: <1366388958-18915-1-git-send-email-linkinjeon@gmail.com>
+Subject: [PATCH v4 5/7] f2fs: add tracepoints to debug the block allocation & fallocate
+Date: Sat, 20 Apr 2013 01:29:30 +0900
+Message-Id: <1366388970-18949-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,88 +23,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Add tracepoints for tracing the garbage collector
-threads in f2fs with status of collection & type.
+Add tracepoints to debug the block allocation & fallocate.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
 Acked-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/f2fs/gc.c                |    2 ++
- include/trace/events/f2fs.h |   38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 40 insertions(+)
+ fs/f2fs/data.c              |    1 +
+ fs/f2fs/file.c              |    6 ++++-
+ include/trace/events/f2fs.h |   59 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 65 insertions(+), 1 deletion(-)
 
-diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
-index 37b05e1..935ca8c 100644
---- a/fs/f2fs/gc.c
-+++ b/fs/f2fs/gc.c
-@@ -23,6 +23,7 @@
- #include "node.h"
- #include "segment.h"
- #include "gc.h"
-+#include <trace/events/f2fs.h>
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 394ab68..503b5bf 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -56,6 +56,7 @@ int reserve_new_block(struct dnode_of_data *dn)
+ 	if (!inc_valid_block_count(sbi, dn->inode, 1))
+ 		return -ENOSPC;
  
- static struct kmem_cache *winode_slab;
++	trace_f2fs_reserve_new_block(dn->inode, dn->nid, dn->ofs_in_node);
+ 	__set_data_blkaddr(dn, NEW_ADDR);
+ 	dn->data_blkaddr = NEW_ADDR;
+ 	sync_inode_page(dn);
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 31176d5..64eeb5a 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -532,8 +532,10 @@ static long f2fs_fallocate(struct file *file, int mode,
+ 	struct inode *inode = file_inode(file);
+ 	long ret;
  
-@@ -304,6 +305,7 @@ got_it:
+-	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
++	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE)) {
++		trace_f2fs_fallocate(inode, offset, len, mode, -EOPNOTSUPP);
+ 		return -EOPNOTSUPP;
++	}
+ 
+ 	if (mode & FALLOC_FL_PUNCH_HOLE)
+ 		ret = punch_hole(inode, offset, len, mode);
+@@ -544,6 +546,8 @@ static long f2fs_fallocate(struct file *file, int mode,
+ 		inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ 		mark_inode_dirty(inode);
  	}
- 	mutex_unlock(&dirty_i->seglist_lock);
- 
-+	trace_f2fs_get_victim(sbi->sb, gc_type, type, &p, sbi->cur_victim_sec);
- 	return (p.min_segno == NULL_SEGNO) ? 0 : 1;
++
++	trace_f2fs_fallocate(inode, offset, len, mode, ret);
+ 	return ret;
  }
  
 diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index c7e71f9..57b6487 100644
+index 57b6487..cf1bcdf8 100644
 --- a/include/trace/events/f2fs.h
 +++ b/include/trace/events/f2fs.h
-@@ -6,6 +6,7 @@
- 
- #include <linux/tracepoint.h>
- 
-+struct victim_sel_policy;
- 
- TRACE_EVENT(f2fs_sync_file_enter,
- 	TP_PROTO(struct file *file, char advise, int datasync),
-@@ -471,6 +472,43 @@ TRACE_EVENT(f2fs_get_data_block,
- 			 (unsigned long long) __entry->bh_block,
- 					__entry->size,  __entry->ret)
+@@ -509,6 +509,65 @@ TRACE_EVENT(f2fs_get_victim,
+ 			__entry->victim)
  );
+ 
++TRACE_EVENT(f2fs_fallocate,
++	TP_PROTO(struct inode *inode, loff_t offset, loff_t len,
++						 int mode, int ret),
 +
-+TRACE_EVENT(f2fs_get_victim,
-+	TP_PROTO(struct super_block *sb, int gc_type, int type,
-+			 struct victim_sel_policy *p, unsigned int victim),
-+
-+	TP_ARGS(sb, gc_type, type, p, victim),
++	TP_ARGS(inode, offset, len, mode, ret),
 +
 +	TP_STRUCT__entry(
 +		__field(dev_t,	dev)
-+		__field(int,	gc_type)
-+		__field(int,	type)
-+		__field(int,	alloc_mode)
-+		__field(int,	gc_mode)
-+		__field(unsigned int,	ofs_unit)
-+		__field(unsigned int,	min_segno)
-+		__field(unsigned int,	victim)
++		__field(ino_t,	ino)
++		__field(loff_t,	pos)
++		__field(loff_t,	len)
++		__field(int,	mode)
++		__field(blkcnt_t, blocks)
++		__field(loff_t, size)
++		__field(int,	ret)
 +	),
 +
 +	TP_fast_assign(
-+		__entry->dev		= sb->s_dev;
-+		__entry->gc_type	= gc_type;
-+		__entry->type		= type;
-+		__entry->alloc_mode	= p->alloc_mode;
-+		__entry->gc_mode	= p->gc_mode;
-+		__entry->ofs_unit	= p->ofs_unit;
-+		__entry->min_segno	= p->min_segno;
-+		__entry->victim		= victim;
++		__entry->dev	= inode->i_sb->s_dev;
++		__entry->ino	= inode->i_ino;
++		__entry->pos	= offset;
++		__entry->len	= len;
++		__entry->mode	= mode;
++		__entry->blocks = inode->i_blocks;
++		__entry->size	= inode->i_size;
++		__entry->ret	= ret;
 +	),
 +
-+	TP_printk("dev %d,%d  GC_type %d Data type %d Alloc_mode %d Gc_mode %d "
-+			"Bitmap %u Segment No %u Victim %u" ,
++	TP_printk("dev %d,%d ino %lu pos %lld len %lld mode %d block %llu"
++			"Size %lld ret %d",
 +		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		   __entry->gc_type, __entry->type, __entry->alloc_mode,
-+		 __entry->gc_mode, __entry->ofs_unit, __entry->min_segno,
-+			__entry->victim)
++		  (unsigned long) __entry->ino, __entry->pos,
++		  __entry->len, __entry->mode,
++			 (unsigned long long)__entry->blocks, __entry->size,
++			__entry->ret)
++);
++
++TRACE_EVENT(f2fs_reserve_new_block,
++	TP_PROTO(struct inode *inode, unsigned int nid, unsigned int ofs_node),
++
++	TP_ARGS(inode, nid, ofs_node),
++
++	TP_STRUCT__entry(
++		__field(dev_t,	dev)
++		__field(unsigned int, nid)
++		__field(unsigned int, ofs_node)
++	),
++
++	TP_fast_assign(
++		__entry->dev	= inode->i_sb->s_dev;
++		__entry->nid	= nid;
++		__entry->ofs_node = ofs_node;
++	),
++
++	TP_printk("dev %d,%d: with Nid %u Node page offset %u",
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		   __entry->nid, __entry->ofs_node)
 +);
 +
  #endif /* _TRACE_F2FS_H */
