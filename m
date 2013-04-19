@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757018Ab3DSQLt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:11:49 -0400
-Received: from smtp2-g21.free.fr ([212.27.42.2]:53634 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab3DSQLs convert rfc822-to-8bit (ORCPT
+	id S1757287Ab3DSQMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:12:30 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38261 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755656Ab3DSQM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 12:11:48 -0400
-X-Greylist: delayed 3993 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Apr 2013 12:11:47 EDT
-Date: Fri, 19 Apr 2013 18:11:34 +0200
-From: Eric =?UTF-8?B?QsOpbmFyZA==?= <eric@eukrea.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, shawn.guo@linaro.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Subject: Re: [PATCH] ARM: mx28: add dma channels for all auarts
-Message-ID: <20130419181134.06eded8f@e6520eb>
-In-Reply-To: <CAOMZO5B9mL9rzYc9zHjJ_994u=HVerHGa+C+Lqc8VJmse8ak2Q@mail.gmail.com>
-References: <1366383906-25747-1-git-send-email-eric@eukrea.com>
-	<CAOMZO5B9mL9rzYc9zHjJ_994u=HVerHGa+C+Lqc8VJmse8ak2Q@mail.gmail.com>
-Organization: =?UTF-8?B?RXVrcsOpYQ==?= Electromatique
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 19 Apr 2013 12:12:29 -0400
+Date: Fri, 19 Apr 2013 17:12:01 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Peter Maydell <peter.maydell@linaro.org>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console
+ devices.
+Message-ID: <20130419161201.GA5383@localhost.cambridge.arm.com>
+References: <CAAHg+HhajHFC=1nh6YQNgpf=Na2FqcsYJ=t+ag9QiTg6TxUz9w@mail.gmail.com>
+ <bb1193983de3ea9f4df1a570441df34c@localhost>
+ <CAAHg+HhtCorArCmx=ha0=64+SJZiizzrDUKSPLV=N+OzO8zAxQ@mail.gmail.com>
+ <20130419090558.GA13283@mudshark.cambridge.arm.com>
+ <CAAHg+HipCX2ma6brxj9Kgc3ew39b5e30grLwyun9CViif-5wZQ@mail.gmail.com>
+ <20130419092752.GB13283@mudshark.cambridge.arm.com>
+ <CAFEAcA8j124G=vaHObJ_w5wOhUiS3KYKbjMnigbnr6mgwFxZUg@mail.gmail.com>
+ <CAAHg+Hg=t97SJ0JPZYgrZaL+zimo-wbezwaj1BQvHqE-vf4VDA@mail.gmail.com>
+ <20130419093953.GD13283@mudshark.cambridge.arm.com>
+ <CAFEAcA_WfYpyvq54rZqS8JZkmDF5JXB+CNHFH5CnrhKun52uzA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFEAcA_WfYpyvq54rZqS8JZkmDF5JXB+CNHFH5CnrhKun52uzA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fabio,
-
-Le Fri, 19 Apr 2013 12:26:33 -0300,
-Fabio Estevam <festevam@gmail.com> a écrit :
-> On Fri, Apr 19, 2013 at 12:05 PM, Eric Bénard <eric@eukrea.com> wrote:
-> > Only auart0 was filled.
-> > Tested on a custom i.MX283 board for ttyAPP1/2/3/4.
+On Fri, Apr 19, 2013 at 11:05:47AM +0100, Peter Maydell wrote:
+> On 19 April 2013 10:39, Will Deacon <will.deacon@arm.com> wrote:
+> > The point of mach-virt is that it is completely parameterised. So, if you're
+> > not emulating an 8250, then don't tell the kernel that you have one!
+> > Similarly, if you *do* emulate it, then either create a device-tree node for
+> > it or pass the appropriate earlyprintk= string on the command line.
 > >
-> > Signed-off-by: Eric Bénard <eric@eukrea.com>
-> > ---
-> >  arch/arm/boot/dts/imx28.dtsi | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> >
-> > diff --git a/arch/arm/boot/dts/imx28.dtsi b/arch/arm/boot/dts/imx28.dtsi
-> > index 25f2243..15933ed 100644
-> > --- a/arch/arm/boot/dts/imx28.dtsi
-> > +++ b/arch/arm/boot/dts/imx28.dtsi
-> > @@ -886,6 +886,7 @@
-> >                                 compatible = "fsl,imx28-auart", "fsl,imx23-auart";
-> >                                 reg = <0x8006c000 0x2000>;
-> >                                 interrupts = <113 72 73>;
-> > +                               fsl,auart-dma-channel = <10 11>;
+> > As far as kvmtool is concerned, we'd probably have a new command-line option
+> > for arm64, allowing you to specify the early console device.
 > 
-> Now we use the generic 'dmas' binding to passing such information.
-> 
-> If you look at linux-next tree these UART dma channels are already
-> been passed via the new 'dmas' method:
-> 
-> 			auart1: serial@8006c000 {
-> 				compatible = "fsl,imx28-auart", "fsl,imx23-auart";
-> 				reg = <0x8006c000 0x2000>;
-> 				interrupts = <113 72 73>;
-> 				dmas = <&dma_apbx 10>, <&dma_apbx 11>;
-> 				dma-names = "rx", "tx";
-> 				clocks = <&clks 45>;
-> 				status = "disabled";
-> 			};
+> Please make the kernel pick the device out of the device tree
+> blob. The whole point of device tree is that it's how to tell
+> the kernel where things live -- making kvmtool/QEMU and/or the
+> user also have to mess with the kernel command line is awkward
+> and annoying.
 
-OK so forget my patch it was against 3.9-rc
+For a normal console device, it indeed needs to get it from the DT. For
+early console, you want it earlier than DT parsing so we pass it on the
+kernel command line via the earlyprintk= parameter.
 
-Eric
+arm64 earlyprintk support for 8250 is already queued for 3.10 (and in
+-next).
+
+-- 
+Catalin
