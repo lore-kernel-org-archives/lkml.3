@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab3DSIog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 04:44:36 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:64911 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab3DSIod (ORCPT
+	id S1757757Ab3DSIpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 04:45:47 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46249 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757304Ab3DSIpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 04:44:33 -0400
-Date: Fri, 19 Apr 2013 10:44:28 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Borislav Petkov <bp@alien8.de>, Robin Holt <holt@sgi.com>,
-        Ingo Molnar <mingo@redhat.com>, Russ Anderson <rja@sgi.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Joe Perches <joe@perches.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Michel Lespinasse <walken@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        Tejun Heo <tj@kernel.org>, the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: Re: [Patch -v4 1/4] Migrate shutdown/reboot to boot cpu.
-Message-ID: <20130419084428.GB27023@gmail.com>
-References: <20130416095827.GJ3672@sgi.com>
- <20130416113256.GA10452@gmail.com>
- <20130416120624.GO3658@sgi.com>
- <20130416140101.GS3658@sgi.com>
- <20130417074653.GA31607@gmail.com>
- <20130417092737.GA12402@pd.tnic>
- <20130419075629.GE20897@gmail.com>
- <5171006D.40600@linux.vnet.ibm.com>
+	Fri, 19 Apr 2013 04:45:44 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <51710422.60704@jp.fujitsu.com>
+Date: Fri, 19 Apr 2013 17:45:22 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5171006D.40600@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Petr Tesarik <ptesarik@suse.cz>
+CC: kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
+        ebiederm@xmission.com, vgoyal@redhat.com,
+        kumagai-atsushi@mxc.nes.nec.co.jp, Fenghua Yu <fenghua.yu@intel.com>
+Subject: Re: [PATCH 0/2] kdump: Enter 2nd kernel with BSP for enabling multiple
+ CPUs
+References: <20120416021951.9303.58568.stgit@localhost6.localdomain6> <20130418134148.53704982@azariah.suse.cz>
+In-Reply-To: <20130418134148.53704982@azariah.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2013/04/18 20:41), Petr Tesarik wrote:
+> On Mon, 16 Apr 2012 11:21:28 +0900
+> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
+>
+>> Currently, booting up 2nd kernel with multiple CPUs fails in most
+>> cases since it enters 2nd kernel with AP if the crash happens on the
+>> AP. The problem is to signal startup IPI from AP to BSP. Typical
+>> result of the operation I saw is the machine hanging during the 2nd
+>> kernel boot.
+>>
+>> To solve this issue, always enter 2nd kernel with BSP. To do this, I
+>> modify logic for shooting down CPUs. I use simple existing logic only
+>> in this mechanism, not complicating crash path to machine_kexec().
+>
+> These patches looked pretty good. I seem to recall that Fenghua (from
+> Intel) had an alternative solution for booting from AP. Unfortunately I
+> can't find his mails in my kexec mailbox...
+>
+> Anyway, what's the latest upstream status?
 
-* Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+It's still in experimental state.
 
-> On 04/19/2013 01:26 PM, Ingo Molnar wrote:
-> > 
-> > * Borislav Petkov <bp@alien8.de> wrote:
-> > 
-> >> On Wed, Apr 17, 2013 at 09:46:53AM +0200, Ingo Molnar wrote:
-> >>
-> >>> What you mention here should indeed already be handled by the architecture 
-> >>> hotplug code (for example on x86 the boot CPU cannot be hot-removed).
-> >>
-> >> Supposedly, some new Intels (I think Ivybridge or so) can actually be 
-> >> hot-removed.
-> > 
-> > There are WIP patches in existence that remove the limitations on the kernel side, 
-> > but they are not upstream yet, so currently the constraint exists upstream.
-> > 
-> 
-> I thought Fenghua Yu's upstream commits were supposed to handle that. Don't they?
+The patch itself was nacked by Erick since switching the CPU that 
+entered 2nd kenrel through NMI reduced reliability of kdump.
 
-Hm, I thought there were more patches needed to support actual hardware - the 
-feature also has various limitations related suspend/resume. Are these 
-CPU0-hotplug commits all that was needed to support the new hot-pluggable 
-hardware?
+At the discussion of my 2nd patch set that tried to reset BSP flag at 
+boot on the 2nd kernel, Erick suggested that BSP flag could be changed 
+at runtime and then behaviour when INIT was received varied and first we 
+should discuss how unsetting BSP flag affects system.
 
-In any case, you are right - it's indeed possible upstream as well.
+I'm now going in this direction and the patch I posted a month ago is:
 
-Thanks,
+[PATCH] x86, apic: Add unset_bsp parameter to unset BSP flag at boot time
+https://lkml.org/lkml/2013/3/18/107
 
-	Ingo
+According to Fenghua, some kind of firmware assumes that BSP flag is 
+being kept throughout system is running. I have yet to see difference of 
+behaviour when unsetting BSP flag on top of the patch on my machine. I 
+think this is system dependent and it might be better to assign each 
+user to decide whether to unset BSP flag or not.
+
+BTW, the work of software cpu hotplug for BSP by Fenghua is orthogonal 
+to my case. His work is for system including firmware that is affected 
+if BSP flag is unset and assumes healthy system that cpu#0 is always 
+BSP. On the other hand, our case is for crash kernel and we can no 
+longer assume cpu#0 is BSP and can no longer use NMI to wake up other 
+CPUs since we cannot use logic that depends on the state of CPUs 
+sleeping in the 1st kernel.
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
+
