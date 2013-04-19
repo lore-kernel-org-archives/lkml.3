@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab3DSS1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 14:27:15 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:42349 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab3DSS1O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 14:27:14 -0400
-Date: Fri, 19 Apr 2013 11:27:10 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH 04/10] cpuset: remove cpuset_test_cpumask()
-Message-ID: <20130419182710.GB13811@mtj.dyndns.org>
-References: <517137A7.4020605@huawei.com>
- <517137E7.20505@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <517137E7.20505@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753472Ab3DSS1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 14:27:35 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:58672 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753097Ab3DSS1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 14:27:34 -0400
+Message-ID: <1366396053.3901.40.camel@joe-AO722>
+Subject: Re: [PATCH] mtd: Convert logging messages
+From: Joe Perches <joe@perches.com>
+To: =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: Joern Engel <joern@lazybastard.org>, David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Apr 2013 11:27:33 -0700
+In-Reply-To: <20130419165516.GA19480@logfs.org>
+References: <1366394375.3901.36.camel@joe-AO722>
+	 <20130419165516.GA19480@logfs.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 08:26:15PM +0800, Li Zefan wrote:
-> The test is done in set_cpus_allowed_ptr(), so it's redundant.
+On Fri, 2013-04-19 at 12:55 -0400, Jörn Engel wrote:
+> On Fri, 19 April 2013 10:59:35 -0700, Joe Perches wrote:
+> >  	}
+> >  	list_add(&dev->list, &blkmtd_device_list);
+> > -	INFO("mtd%d: [%s] erase_size = %dKiB [%d]", dev->mtd.index,
+> > -			dev->mtd.name + strlen("block2mtd: "),
+> > -			dev->mtd.erasesize >> 10, dev->mtd.erasesize);
+> > +	pr_info("mtd%d: [%s] erase_size = %dKiB [%d]\n",
+> > +		dev->mtd.index,
+> > +		dev->mtd.name + strlen("block2mtd: "),
+> > +		dev->mtd.erasesize >> 10, dev->mtd.erasesize);
 > 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> I personally dislike the indent-to-braces style because it causes
+> unnecessary churn in patches like this.
 
-For 0001-0004,
+It comes from an automated emacs conversion.
 
- Acked-by: Tejun Heo <tj@kernel.org>
+> The reindenting improves nothing at all.
 
-I'll apply these into for-3.11 once v3.10-rc1 drops.
+Debatable.
 
-Thanks.
+> It will waste time when people care about revision history because
+> they encounter a bug, want a fix quick and are pressed for time.
 
--- 
-tejun
+Not really if you use existing tools with options.
+
+Try:
+	git diff -w
+	git blame -w
+
+> If you care about my ack, please remove random churn.  This is not a
+> competition about who gets the most lines in git blame.
+
+I care not at all about commit counts,
+nor things like lines added or removed.
+
