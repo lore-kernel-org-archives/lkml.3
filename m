@@ -1,220 +1,440 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030315Ab3DSNDZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 09:03:25 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:40659 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968302Ab3DSNDY (ORCPT
+	id S1030351Ab3DSNLO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 09:11:14 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:40104 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968294Ab3DSNLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 09:03:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1365782115.17140.68.camel@laptop>
-References: <1365184746.874.103.camel@Wailaba2>
-	<1365593710.30071.52.camel@laptop>
-	<1365608911.707.65.camel@Wailaba2>
-	<1365763837.17140.52.camel@laptop>
-	<1365782115.17140.68.camel@laptop>
-Date: Fri, 19 Apr 2013 15:03:22 +0200
-Message-ID: <CAFTL4hwQ4FZs0VCNXP37f=+DBW7Q2EQc6PW_EtYiVnZCPWN4OQ@mail.gmail.com>
-Subject: Re: [PATCH] process cputimer is moving faster than its corresponding clock
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Motohiro KOSAKI <kosaki.motohiro@gmail.com>
-Cc: Olivier Langlois <olivier@trillion01.com>, mingo@redhat.com,
-        tglx@linutronix.de, schwidefsky@de.ibm.com, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 19 Apr 2013 09:11:12 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        peterz@infradead.org, mingo@kernel.org, fweisbec@gmail.com,
+        pjt@google.com, rostedt@goodmis.org, efault@gmx.de
+Cc: Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v6] sched: fix init NOHZ_IDLE flag
+Date: Fri, 19 Apr 2013 15:10:44 +0200
+Message-Id: <1366377044-23989-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/4/12 Peter Zijlstra <peterz@infradead.org>:
-> On Fri, 2013-04-12 at 12:50 +0200, Peter Zijlstra wrote:
->
->> I'll try and dig through the rest of your email later.. sorry for
->> being
->> a tad slow etc.
->
->
-> So at thread_group_cputimer() we initialize the cputimer->cputime state
-> by using thread_group_cputime() which iterates all tasks of the process
-> and calls task_sched_runtime() upon them (which includes the current
-> delta).
->
-> Upon subsequent account_group_exec_runtime() calls (from all schedule
-> events and timer ticks) we add the current delta to cputimer->cputime.
->
-> However since we already added the first (or part thereof) delta to the
-> initial state, we account this double. Thus we can be up to
-> NR_CPUS*TICK_NSEC ahead.
->
-> On every timer tick we evaluate the cputimer state using
-> cpu_timer_sample_group() which adds the current tasks delta. This can
-> thus be up to (NR_CPUS-1)*TICK_NSEC behind.
->
-> The combination of the timeline behind ahead and the sample being
-> behind make it a virtual guarantee we'll hit early by almost
-> 2*NR_CPUS*TICK_NSEC.
->
-> This is what you've been saying right?
->
->
-> So how about we do not include the deltas into the initial sum, so that
-> we're up to NR_CPUS*TICK_NSEC behind. That way, with the sample up to
-> (NR_CPUS-1)*TICK_NSEC behind, we're in the order of TICK_NSEC late with
-> firing.
->
-> Hmm?
+On my smp platform which is made of 5 cores in 2 clusters, I have the
+nr_busy_cpu field of sched_group_power struct that is not null when the
+platform is fully idle. The root cause is:
+During the boot sequence, some CPUs reach the idle loop and set their
+NOHZ_IDLE flag while waiting for others CPUs to boot. But the nr_busy_cpus
+field is initialized later with the assumption that all CPUs are in the busy
+state whereas some CPUs have already set their NOHZ_IDLE flag.
 
-I feel we are hitting the same issue than this patch:
-https://lkml.org/lkml/2013/4/5/116
+More generally, the NOHZ_IDLE flag must be initialized when new sched_domains
+are created in order to ensure that NOHZ_IDLE and nr_busy_cpus are aligned.
 
-I'm adding Kosaki in Cc, who proposed roughly the same fix.
+This condition can be ensured by adding a synchronize_rcu between the
+destruction of old sched_domains and the creation of new ones so the NOHZ_IDLE
+flag will not be updated with old sched_domain once it has been initialized.
+But this solution introduces a additionnal latency in the rebuild sequence
+that is called during cpu hotplug.
 
-Thanks.
+As suggested by Frederic Weisbecker, another solution is to have the same
+rcu lifecycle for both NOHZ_IDLE and sched_domain struct. I have introduce
+a new sched_domain_rq struct that is the entry point for both sched_domains
+and objects that must follow the same lifecycle like NOHZ_IDLE flags. They
+will share the same RCU lifecycle and will be always synchronized.
 
-       Frederic.
+The synchronization is done at the cost of :
+ - an additional indirection for accessing the first sched_domain level
+ - an additional indirection and a rcu_dereference before accessing to the
+   NOHZ_IDLE flag.
 
->
-> ---
->  include/linux/sched.h     |  5 +++--
->  kernel/posix-cpu-timers.c | 15 ++++++++++-----
->  kernel/sched/core.c       |  6 ++++--
->  kernel/sched/cputime.c    |  8 ++++----
->  4 files changed, 21 insertions(+), 13 deletions(-)
->
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 88ec7f4..abe5870 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1832,7 +1832,7 @@ static inline void disable_sched_clock_irqtime(void) {}
->  #endif
->
->  extern unsigned long long
-> -task_sched_runtime(struct task_struct *task);
-> +task_sched_runtime(struct task_struct *task, bool add_delta);
->
->  /* sched_exec is called by processes performing an exec */
->  #ifdef CONFIG_SMP
-> @@ -2496,7 +2496,8 @@ static inline void current_clr_polling(void) { }
->  /*
->   * Thread group CPU time accounting.
->   */
-> -void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times);
-> +void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times,
-> +                         bool add_delta);
->  void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times);
->
->  static inline void thread_group_cputime_init(struct signal_struct *sig)
-> diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-> index 8fd709c..d8133ad 100644
-> --- a/kernel/posix-cpu-timers.c
-> +++ b/kernel/posix-cpu-timers.c
-> @@ -220,7 +220,7 @@ static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
->                 cpu->cpu = virt_ticks(p);
->                 break;
->         case CPUCLOCK_SCHED:
-> -               cpu->sched = task_sched_runtime(p);
-> +               cpu->sched = task_sched_runtime(p, true);
->                 break;
->         }
->         return 0;
-> @@ -250,8 +250,13 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
->                  * values through the TIMER_ABSTIME flag, therefore we have
->                  * to synchronize the timer to the clock every time we start
->                  * it.
-> +                *
-> +                * Do no add the current delta, because
-> +                * account_group_exec_runtime() will also add this delta and we
-> +                * wouldn't want to double account time and get ahead of
-> +                * ourselves.
->                  */
-> -               thread_group_cputime(tsk, &sum);
-> +               thread_group_cputime(tsk, &sum, false);
->                 raw_spin_lock_irqsave(&cputimer->lock, flags);
->                 cputimer->running = 1;
->                 update_gt_cputime(&cputimer->cputime, &sum);
-> @@ -275,15 +280,15 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
->         default:
->                 return -EINVAL;
->         case CPUCLOCK_PROF:
-> -               thread_group_cputime(p, &cputime);
-> +               thread_group_cputime(p, &cputime, true);
->                 cpu->cpu = cputime.utime + cputime.stime;
->                 break;
->         case CPUCLOCK_VIRT:
-> -               thread_group_cputime(p, &cputime);
-> +               thread_group_cputime(p, &cputime, true);
->                 cpu->cpu = cputime.utime;
->                 break;
->         case CPUCLOCK_SCHED:
-> -               thread_group_cputime(p, &cputime);
-> +               thread_group_cputime(p, &cputime, true);
->                 cpu->sched = cputime.sum_exec_runtime;
->                 break;
->         }
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index e8167e3..704fa44 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2677,14 +2677,16 @@ unsigned long long task_delta_exec(struct task_struct *p)
->   * In case the task is currently running, return the runtime plus current's
->   * pending runtime that have not been accounted yet.
->   */
-> -unsigned long long task_sched_runtime(struct task_struct *p)
-> +unsigned long long task_sched_runtime(struct task_struct *p, bool add_delta)
->  {
->         unsigned long flags;
->         struct rq *rq;
->         u64 ns = 0;
->
->         rq = task_rq_lock(p, &flags);
-> -       ns = p->se.sum_exec_runtime + do_task_delta_exec(p, rq);
-> +       ns = p->se.sum_exec_runtime;
-> +        if (add_delta)
-> +               ns += do_task_delta_exec(p, rq);
->         task_rq_unlock(rq, p, &flags);
->
->         return ns;
-> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-> index ea32f02..c3495e1 100644
-> --- a/kernel/sched/cputime.c
-> +++ b/kernel/sched/cputime.c
-> @@ -277,7 +277,7 @@ static __always_inline bool steal_account_process_tick(void)
->   * Accumulate raw cputime values of dead tasks (sig->[us]time) and live
->   * tasks (sum on group iteration) belonging to @tsk's group.
->   */
-> -void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
-> +void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times, bool add_delta)
->  {
->         struct signal_struct *sig = tsk->signal;
->         cputime_t utime, stime;
-> @@ -297,7 +297,7 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
->                 task_cputime(t, &utime, &stime);
->                 times->utime += utime;
->                 times->stime += stime;
-> -               times->sum_exec_runtime += task_sched_runtime(t);
-> +               times->sum_exec_runtime += task_sched_runtime(t, add_delta);
->         } while_each_thread(tsk, t);
->  out:
->         rcu_read_unlock();
-> @@ -444,7 +444,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
->  {
->         struct task_cputime cputime;
->
-> -       thread_group_cputime(p, &cputime);
-> +       thread_group_cputime(p, &cputime, true);
->
->         *ut = cputime.utime;
->         *st = cputime.stime;
-> @@ -606,7 +606,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
->  {
->         struct task_cputime cputime;
->
-> -       thread_group_cputime(p, &cputime);
-> +       thread_group_cputime(p, &cputime, true);
->         cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
->  }
->  #endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
->
->
+Change since v5:
+ - minor variable and function name change.
+ - remove a useless null check before kfree
+ - fix a compilation error when NO_HZ is not set.
+
+Change since v4:
+ - link both sched_domain and NOHZ_IDLE flag in one RCU object so
+   their states are always synchronized.
+
+Change since V3;
+ - NOHZ flag is not cleared if a NULL domain is attached to the CPU
+ - Remove patch 2/2 which becomes useless with latest modifications
+
+Change since V2:
+ - change the initialization to idle state instead of busy state so a CPU that
+   enters idle during the build of the sched_domain will not corrupt the
+   initialization state
+
+Change since V1:
+ - remove the patch for SCHED softirq on an idle core use case as it was
+   a side effect of the other use cases.
+
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ include/linux/sched.h |   12 ++++++
+ kernel/sched/core.c   |  106 ++++++++++++++++++++++++++++++++++++++++++++-----
+ kernel/sched/fair.c   |   35 +++++++++++-----
+ kernel/sched/sched.h  |   24 +++++++++--
+ 4 files changed, 152 insertions(+), 25 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d35d2b6..61ad5f1 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -959,6 +959,18 @@ struct sched_domain {
+ 	unsigned long span[0];
+ };
+ 
++/*
++ * Some flags must stay synchronized with fields of sched_group_power and as a
++ * consequence they must follow the same lifecycle for the lockless scheme.
++ * sched_domain_rq encapsulates those flags and sched_domains in one RCU
++ * object.
++ */
++struct sched_domain_rq {
++	struct sched_domain *sd;
++	unsigned long flags;
++	struct rcu_head rcu;	/* used during destruction */
++};
++
+ static inline struct cpumask *sched_domain_span(struct sched_domain *sd)
+ {
+ 	return to_cpumask(sd->span);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 67d0465..d0d3020 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5604,6 +5604,15 @@ static void destroy_sched_domains(struct sched_domain *sd, int cpu)
+ 		destroy_sched_domain(sd, cpu);
+ }
+ 
++static void destroy_sched_domain_rq(struct sched_domain_rq *sd_rq, int cpu)
++{
++	if (!sd_rq)
++		return;
++
++	destroy_sched_domains(sd_rq->sd, cpu);
++	kfree_rcu(sd_rq, rcu);
++}
++
+ /*
+  * Keep a special pointer to the highest sched_domain that has
+  * SD_SHARE_PKG_RESOURCE set (Last Level Cache Domain) for this
+@@ -5634,10 +5643,23 @@ static void update_top_cache_domain(int cpu)
+  * hold the hotplug lock.
+  */
+ static void
+-cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
++cpu_attach_domain(struct sched_domain_rq *sd_rq, struct root_domain *rd,
++		int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+-	struct sched_domain *tmp;
++	struct sched_domain_rq *old_sd_rq;
++	struct sched_domain *tmp, *sd = NULL;
++
++	/*
++	 * If we don't have any sched_domain and associated object, we can
++	 * directly jump to the attach sequence otherwise we try to degenerate
++	 * the sched_domain
++	 */
++	if (!sd_rq)
++		goto attach;
++
++	/* Get a pointer to the 1st sched_domain */
++	sd = sd_rq->sd;
+ 
+ 	/* Remove the sched domains which do not contribute to scheduling. */
+ 	for (tmp = sd; tmp; ) {
+@@ -5660,14 +5682,17 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
+ 		destroy_sched_domain(tmp, cpu);
+ 		if (sd)
+ 			sd->child = NULL;
++		/* update sched_domain_rq */
++		sd_rq->sd = sd;
+ 	}
+ 
++attach:
+ 	sched_domain_debug(sd, cpu);
+ 
+ 	rq_attach_root(rq, rd);
+-	tmp = rq->sd;
+-	rcu_assign_pointer(rq->sd, sd);
+-	destroy_sched_domains(tmp, cpu);
++	old_sd_rq = rq->sd_rq;
++	rcu_assign_pointer(rq->sd_rq, sd_rq);
++	destroy_sched_domain_rq(old_sd_rq, cpu);
+ 
+ 	update_top_cache_domain(cpu);
+ }
+@@ -5697,12 +5722,14 @@ struct sd_data {
+ };
+ 
+ struct s_data {
++	struct sched_domain_rq ** __percpu sd_rq;
+ 	struct sched_domain ** __percpu sd;
+ 	struct root_domain	*rd;
+ };
+ 
+ enum s_alloc {
+ 	sa_rootdomain,
++	sa_sd_rq,
+ 	sa_sd,
+ 	sa_sd_storage,
+ 	sa_none,
+@@ -5937,7 +5964,7 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
+ 		return;
+ 
+ 	update_group_power(sd, cpu);
+-	atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
++	atomic_set(&sg->sgp->nr_busy_cpus, 0);
+ }
+ 
+ int __weak arch_sd_sibling_asym_packing(void)
+@@ -6013,6 +6040,8 @@ static void set_domain_attribute(struct sched_domain *sd,
+ 
+ static void __sdt_free(const struct cpumask *cpu_map);
+ static int __sdt_alloc(const struct cpumask *cpu_map);
++static void __sdrq_free(const struct cpumask *cpu_map, struct s_data *d);
++static int __sdrq_alloc(const struct cpumask *cpu_map, struct s_data *d);
+ 
+ static void __free_domain_allocs(struct s_data *d, enum s_alloc what,
+ 				 const struct cpumask *cpu_map)
+@@ -6021,6 +6050,9 @@ static void __free_domain_allocs(struct s_data *d, enum s_alloc what,
+ 	case sa_rootdomain:
+ 		if (!atomic_read(&d->rd->refcount))
+ 			free_rootdomain(&d->rd->rcu); /* fall through */
++	case sa_sd_rq:
++		__sdrq_free(cpu_map, d); /* fall through */
++		free_percpu(d->sd_rq); /* fall through */
+ 	case sa_sd:
+ 		free_percpu(d->sd); /* fall through */
+ 	case sa_sd_storage:
+@@ -6040,9 +6072,14 @@ static enum s_alloc __visit_domain_allocation_hell(struct s_data *d,
+ 	d->sd = alloc_percpu(struct sched_domain *);
+ 	if (!d->sd)
+ 		return sa_sd_storage;
++	d->sd_rq = alloc_percpu(struct sched_domain_rq *);
++	if (!d->sd_rq)
++		return sa_sd;
++	if (__sdrq_alloc(cpu_map, d))
++		return sa_sd_rq;
+ 	d->rd = alloc_rootdomain();
+ 	if (!d->rd)
+-		return sa_sd;
++		return sa_sd_rq;
+ 	return sa_rootdomain;
+ }
+ 
+@@ -6468,6 +6505,47 @@ static void __sdt_free(const struct cpumask *cpu_map)
+ 	}
+ }
+ 
++static int __sdrq_alloc(const struct cpumask *cpu_map, struct s_data *d)
++{
++	int j;
++
++	for_each_cpu(j, cpu_map) {
++		struct sched_domain_rq *sd_rq;
++
++		sd_rq = kzalloc_node(sizeof(struct sched_domain_rq),
++				GFP_KERNEL, cpu_to_node(j));
++		if (!sd_rq)
++			return -ENOMEM;
++
++		*per_cpu_ptr(d->sd_rq, j) = sd_rq;
++	}
++
++	return 0;
++}
++
++static void __sdrq_free(const struct cpumask *cpu_map, struct s_data *d)
++{
++	int j;
++
++	for_each_cpu(j, cpu_map)
++		kfree(*per_cpu_ptr(d->sd_rq, j));
++}
++
++static void build_sched_domain_rq(struct s_data *d, int cpu)
++{
++	struct sched_domain_rq *sd_rq;
++	struct sched_domain *sd;
++
++	/* Attach sched_domain to sched_domain_rq */
++	sd = *per_cpu_ptr(d->sd, cpu);
++	sd_rq = *per_cpu_ptr(d->sd_rq, cpu);
++	sd_rq->sd = sd;
++#ifdef NO_HZ
++	/* Init flags */
++	set_bit(NOHZ_IDLE, rq_domain_flags(sd_rq));
++#endif
++}
++
+ struct sched_domain *build_sched_domain(struct sched_domain_topology_level *tl,
+ 		struct s_data *d, const struct cpumask *cpu_map,
+ 		struct sched_domain_attr *attr, struct sched_domain *child,
+@@ -6497,6 +6575,7 @@ static int build_sched_domains(const struct cpumask *cpu_map,
+ 			       struct sched_domain_attr *attr)
+ {
+ 	enum s_alloc alloc_state = sa_none;
++	struct sched_domain_rq *sd_rq;
+ 	struct sched_domain *sd;
+ 	struct s_data d;
+ 	int i, ret = -ENOMEM;
+@@ -6549,11 +6628,18 @@ static int build_sched_domains(const struct cpumask *cpu_map,
+ 		}
+ 	}
+ 
++	/* Init objects that must follow the sched_domain lifecycle */
++	for_each_cpu(i, cpu_map) {
++		build_sched_domain_rq(&d, i);
++	}
++
+ 	/* Attach the domains */
+ 	rcu_read_lock();
+ 	for_each_cpu(i, cpu_map) {
+-		sd = *per_cpu_ptr(d.sd, i);
+-		cpu_attach_domain(sd, d.rd, i);
++		sd_rq = *per_cpu_ptr(d.sd_rq, i);
++		cpu_attach_domain(sd_rq, d.rd, i);
++		/* claim allocation of sched_domain_rq object */
++		*per_cpu_ptr(d.sd_rq, i) = NULL;
+ 	}
+ 	rcu_read_unlock();
+ 
+@@ -6984,7 +7070,7 @@ void __init sched_init(void)
+ 		rq->last_load_update_tick = jiffies;
+ 
+ #ifdef CONFIG_SMP
+-		rq->sd = NULL;
++		rq->sd_rq = NULL;
+ 		rq->rd = NULL;
+ 		rq->cpu_power = SCHED_POWER_SCALE;
+ 		rq->post_schedule = 0;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7a33e59..2b294f1 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -5392,31 +5392,39 @@ static inline void nohz_balance_exit_idle(int cpu)
+ 
+ static inline void set_cpu_sd_state_busy(void)
+ {
++	struct sched_domain_rq *sd_rq;
+ 	struct sched_domain *sd;
+ 	int cpu = smp_processor_id();
+ 
+-	if (!test_bit(NOHZ_IDLE, nohz_flags(cpu)))
+-		return;
+-	clear_bit(NOHZ_IDLE, nohz_flags(cpu));
+-
+ 	rcu_read_lock();
+-	for_each_domain(cpu, sd)
++	sd_rq = rcu_dereference_domain_rq(cpu);
++
++	if (!sd_rq || !test_bit(NOHZ_IDLE, rq_domain_flags(sd_rq)))
++		goto unlock;
++	clear_bit(NOHZ_IDLE, rq_domain_flags(sd_rq));
++
++	for_each_domain_from_rq(sd_rq, sd)
+ 		atomic_inc(&sd->groups->sgp->nr_busy_cpus);
++unlock:
+ 	rcu_read_unlock();
+ }
+ 
+ void set_cpu_sd_state_idle(void)
+ {
++	struct sched_domain_rq *sd_rq;
+ 	struct sched_domain *sd;
+ 	int cpu = smp_processor_id();
+ 
+-	if (test_bit(NOHZ_IDLE, nohz_flags(cpu)))
+-		return;
+-	set_bit(NOHZ_IDLE, nohz_flags(cpu));
+-
+ 	rcu_read_lock();
+-	for_each_domain(cpu, sd)
++	sd_rq = rcu_dereference_domain_rq(cpu);
++
++	if (!sd_rq || test_bit(NOHZ_IDLE, rq_domain_flags(sd_rq)))
++		goto unlock;
++	set_bit(NOHZ_IDLE, rq_domain_flags(sd_rq));
++
++	for_each_domain_from_rq(sd_rq, sd)
+ 		atomic_dec(&sd->groups->sgp->nr_busy_cpus);
++unlock:
+ 	rcu_read_unlock();
+ }
+ 
+@@ -5673,7 +5681,12 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 
+ static inline int on_null_domain(int cpu)
+ {
+-	return !rcu_dereference_sched(cpu_rq(cpu)->sd);
++	struct sched_domain_rq *sd_rq =
++		rcu_dereference_sched(cpu_rq(cpu)->sd_rq);
++	struct sched_domain *sd = NULL;
++	if (sd_rq)
++		sd = sd_rq->sd;
++	return !sd;
+ }
+ 
+ /*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index cc03cfd..ce27e3b 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -417,7 +417,7 @@ struct rq {
+ 
+ #ifdef CONFIG_SMP
+ 	struct root_domain *rd;
+-	struct sched_domain *sd;
++	struct sched_domain_rq *sd_rq;
+ 
+ 	unsigned long cpu_power;
+ 
+@@ -505,21 +505,37 @@ DECLARE_PER_CPU(struct rq, runqueues);
+ 
+ #ifdef CONFIG_SMP
+ 
+-#define rcu_dereference_check_sched_domain(p) \
++#define rcu_dereference_check_sched_domain_rq(p) \
+ 	rcu_dereference_check((p), \
+ 			      lockdep_is_held(&sched_domains_mutex))
+ 
++#define rcu_dereference_domain_rq(cpu) \
++	rcu_dereference_check_sched_domain_rq(cpu_rq(cpu)->sd_rq)
++
++#define rcu_dereference_check_sched_domain(cpu) ({ \
++	struct sched_domain_rq *__sd_rq = rcu_dereference_domain_rq(cpu); \
++	struct sched_domain *__sd = NULL; \
++	if (__sd_rq) \
++		__sd = __sd_rq->sd; \
++	__sd; \
++})
++
++#define rq_domain_flags(sd_rq) (&sd_rq->flags)
++
+ /*
+- * The domain tree (rq->sd) is protected by RCU's quiescent state transition.
++ * The domain tree (rq->sd_rq) is protected by RCU's quiescent state transition.
+  * See detach_destroy_domains: synchronize_sched for details.
+  *
+  * The domain tree of any CPU may only be accessed from within
+  * preempt-disabled sections.
+  */
+ #define for_each_domain(cpu, __sd) \
+-	for (__sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd); \
++	for (__sd = rcu_dereference_check_sched_domain(cpu); \
+ 			__sd; __sd = __sd->parent)
+ 
++#define for_each_domain_from_rq(sd_rq, __sd) \
++	for (__sd = sd_rq->sd; __sd; __sd = __sd->parent)
++
+ #define for_each_lower_domain(sd) for (; sd; sd = sd->child)
+ 
+ /**
+-- 
+1.7.9.5
+
