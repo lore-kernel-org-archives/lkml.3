@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab3DSUlN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 16:41:13 -0400
-Received: from relay2.blacknight.com ([78.153.203.205]:41724 "EHLO
-	relay2.blacknight.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777Ab3DSUlM (ORCPT
+	id S933087Ab3DSUuK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 16:50:10 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47800 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754071Ab3DSUuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 16:41:12 -0400
-Message-ID: <5171AC7D.70503@nexus-software.ie>
-Date: Fri, 19 Apr 2013 21:43:41 +0100
-From: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Josef Ahmad <josef.ahmad@linux.intel.com>
-CC: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
-        Jean Delvare <khali@linux-fr.org>, Stefan Roese <sr@denx.de>,
-        Axel Lin <axel.lin@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: Re: [PATCH] i2c-designware: fix RX FIFO overrun
-References: <alpine.DEB.2.02.1304191859570.17829@localhost>
-In-Reply-To: <alpine.DEB.2.02.1304191859570.17829@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 19 Apr 2013 16:50:08 -0400
+Date: Fri, 19 Apr 2013 16:50:06 -0400 (EDT)
+Message-Id: <20130419.165006.1200833792933507239.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH net] hyperv: Fix a compiler warning in netvsc_send()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1366151150-14859-1-git-send-email-haiyangz@microsoft.com>
+References: <1366151150-14859-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 19 Apr 2013 13:50:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Josef.
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Tue, 16 Apr 2013 15:25:50 -0700
 
-This fixes a real bug for us does it not, some failure case with a 
-sustained amount of traffic ?
+> Fixed: warning: cast from pointer to integer of different size
+> 
+> The Hyper-V hosts always use 64 bit request id. The guests can have 32 or 64
+> bit pointers which equal to the ulong type size. So we cast it to ulong type.
+> And, assigning 32bit integer to 64 bit variable works fine.
+> 
+> The VMBus returns the same id in the completion packet. But the value has no
+> effect on the host side.
+> 
+> Reported-by: kbuild test robot <fengguang.wu@intel.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
-
-Bryan
-
+Such build warning fixes are not appropriate for 'net' at this time, and
+this patch does not apply to 'net-next', so I'm dropping this entirely.
