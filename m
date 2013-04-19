@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030844Ab3DSPm4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 11:42:56 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34500 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030656Ab3DSPmz (ORCPT
+	id S1030850Ab3DSPn3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 11:43:29 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50518 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1030656Ab3DSPn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 11:42:55 -0400
+	Fri, 19 Apr 2013 11:43:28 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/8KDyv0Wvsr6HkZroTuChT
+Date: Fri, 19 Apr 2013 08:43:22 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: b-cousson@ti.com, nm@ti.com, paul@pwsan.com, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH v3 0/4] ARM: dts: Add USB host support for Panda and
+ Beagle-xm
+Message-ID: <20130419154321.GG10155@atomide.com>
+References: <1366365457-28972-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20130419140938.GT14496@n2100.arm.linux.org.uk>
-References: <1365651547-11583-1-git-send-email-zhangwm@marvell.com>
-	<CAN1soZxCX1oUg69MTy0ZAL2vH8SOywDBaZHJ7wgnwgasxPAPdQ@mail.gmail.com>
-	<20130419140938.GT14496@n2100.arm.linux.org.uk>
-Date: Fri, 19 Apr 2013 23:42:53 +0800
-Message-ID: <CAN1soZwsC6yjH3nG7zUvRf9x9SLuEC4b9DtqsTGWQhacu78EbQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] ARM: mmp: add SMP support for pxa988
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Neil Zhang <zhangwm@marvell.com>, Grant Likely <grant.likely@secretlab.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Chao Xie <chao.xie@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366365457-28972-1-git-send-email-rogerq@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 10:09 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sat, Apr 13, 2013 at 09:08:12PM +0800, Haojian Zhuang wrote:
->> On Thu, Apr 11, 2013 at 11:39 AM, Neil Zhang <zhangwm@marvell.com> wrote:
->> > +       /*
->> > +        * Synchronise with the boot thread.
->> > +        */
->> > +       spin_lock(&boot_lock);
->> > +       spin_unlock(&boot_lock);
->> Lock & unlock without protecting anything. If so, you can remove this.
->
-> ... which means you don't understand what is going on in this code,
-> and probably didn't read the comment above this fragment.  The above
-> is to synchronise with the code below - again, read the comment at
-> the spin unlock in this function, remembering that the above code
-> and the code below runs concurrently on two different CPUs:
->
-Yes, I misunderstood it. Thanks for your correction.
+* Roger Quadros <rogerq@ti.com> [130419 03:02]:
+> Hi Benoit/Tony
+> 
+> I've consolidated all the USB host device tree patches for Panda and Beagles
+> to one place and addressed Tony's comments.
+> 
+> NOTE: patch 1 depends on OMAP clock binding introduced in
+> https://lkml.org/lkml/2013/4/12/407
+> 
+> v3:
+> - updated mux mode to use pulldowns on panda as non-DT boot uses pulldowns.
+> - fixed usb pin naming for panda, beagle and beagle-xm
 
-Regards
-Haojian
+Cool. Sounds like we should be able to make omap4 DT only for v3.11
+then. For that we also need USB on 4430-sdp working, but it now
+does:
+
+ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+ehci-omap 4a064c00.ehci: failed to get phys phandle in /ocp/usbhshost@4a064000/ehci@4a064c00 node
+ehci-omap 4a064c00.ehci: failed to get phys phandle in /ocp/usbhshost@4a064000/ehci@4a064c00 node
+...
+
+As I have mine in a rack I don't have anything plugged into the
+USB port there though, but sounds like the phy is not initialized?
+
+Regards,
+
+Tony
