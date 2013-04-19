@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968164Ab3DSKsc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 06:48:32 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:51603
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S968140Ab3DSKsa (ORCPT
+	id S968259Ab3DSKtr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 06:49:47 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:7068 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S968140Ab3DSKsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 06:48:30 -0400
+	Fri, 19 Apr 2013 06:48:33 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
 From: Zhao Chenhui <chenhui.zhao@freescale.com>
 To: <linuxppc-dev@lists.ozlabs.org>
 CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 11/15] powerpc/rcpm: add struct ccsr_rcpm_v2
-Date: Fri, 19 Apr 2013 18:47:44 +0800
-Message-ID: <1366368468-29143-11-git-send-email-chenhui.zhao@freescale.com>
+Subject: [PATCH v2 13/15] powerpc/85xx: add support for e6500 L1 cache operation
+Date: Fri, 19 Apr 2013 18:47:46 +0800
+Message-ID: <1366368468-29143-13-git-send-email-chenhui.zhao@freescale.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
 References: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
@@ -28,93 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Chen-Hui Zhao <chenhui.zhao@freescale.com>
 
-Add struct ccsr_rcpm_v2 to descibe the v2 RCPM register map on some SoCs,
-such as T4240, etc.
+The L1 Data Cache of e6500 contains no modified data, no flush
+is required.
 
 Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
 Signed-off-by: Li Yang <leoli@freescale.com>
 Signed-off-by: Andy Fleming <afleming@freescale.com>
 ---
- arch/powerpc/include/asm/fsl_guts.h |   66 +++++++++++++++++++++++++++++++++++
- 1 files changed, 66 insertions(+), 0 deletions(-)
+ arch/powerpc/kernel/fsl_booke_cache.S |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/fsl_guts.h b/arch/powerpc/include/asm/fsl_guts.h
-index b8a08d5..193d1f1 100644
---- a/arch/powerpc/include/asm/fsl_guts.h
-+++ b/arch/powerpc/include/asm/fsl_guts.h
-@@ -145,6 +145,72 @@ struct ccsr_rcpm {
- 	__be32	cmcpmaskcr;	/* 0x00a4 - Core machine check mask control register */
- };
+diff --git a/arch/powerpc/kernel/fsl_booke_cache.S b/arch/powerpc/kernel/fsl_booke_cache.S
+index 232c47b..24a52bb 100644
+--- a/arch/powerpc/kernel/fsl_booke_cache.S
++++ b/arch/powerpc/kernel/fsl_booke_cache.S
+@@ -65,13 +65,22 @@ _GLOBAL(flush_dcache_L1)
  
-+struct ccsr_rcpm_v2 {
-+	u8	res_00[12];
-+	u32	tph10sr0;	/* Thread PH10 Status Register */
-+	u8	res_10[12];
-+	u32	tph10setr0;	/* Thread PH10 Set Control Register */
-+	u8	res_20[12];
-+	u32	tph10clrr0;	/* Thread PH10 Clear Control Register */
-+	u8	res_30[12];
-+	u32	tph10psr0;	/* Thread PH10 Previous Status Register */
-+	u8	res_40[12];
-+	u32	twaitsr0;	/* Thread Wait Status Register */
-+	u8	res_50[96];
-+	u32	pcph15sr;	/* Physical Core PH15 Status Register */
-+	u32	pcph15setr;	/* Physical Core PH15 Set Control Register */
-+	u32	pcph15clrr;	/* Physical Core PH15 Clear Control Register */
-+	u32	pcph15psr;	/* Physical Core PH15 Prev Status Register */
-+	u8	res_c0[16];
-+	u32	pcph20sr;	/* Physical Core PH20 Status Register */
-+	u32	pcph20setr;	/* Physical Core PH20 Set Control Register */
-+	u32	pcph20clrr;	/* Physical Core PH20 Clear Control Register */
-+	u32	pcph20psr;	/* Physical Core PH20 Prev Status Register */
-+	u32	pcpw20sr;	/* Physical Core PW20 Status Register */
-+	u8	res_e0[12];
-+	u32	pcph30sr;	/* Physical Core PH30 Status Register */
-+	u32	pcph30setr;	/* Physical Core PH30 Set Control Register */
-+	u32	pcph30clrr;	/* Physical Core PH30 Clear Control Register */
-+	u32	pcph30psr;	/* Physical Core PH30 Prev Status Register */
-+	u8	res_100[32];
-+	u32	ippwrgatecr;	/* IP Power Gating Control Register */
-+	u8	res_124[12];
-+	u32	powmgtcsr;	/* Power Management Control & Status Reg */
-+#define RCPM_POWMGTCSR_LPM20_RQ		0x00100000
-+#define RCPM_POWMGTCSR_LPM20_ST		0x00000200
-+#define RCPM_POWMGTCSR_P_LPM20_ST	0x00000100
-+	u8	res_134[12];
-+	u32	ippdexpcr[4];	/* IP Powerdown Exception Control Reg */
-+	u8	res_150[12];
-+	u32	tpmimr0;	/* Thread PM Interrupt Mask Reg */
-+	u8	res_160[12];
-+	u32	tpmcimr0;	/* Thread PM Crit Interrupt Mask Reg */
-+	u8	res_170[12];
-+	u32	tpmmcmr0;	/* Thread PM Machine Check Interrupt Mask Reg */
-+	u8	res_180[12];
-+	u32	tpmnmimr0;	/* Thread PM NMI Mask Reg */
-+	u8	res_190[12];
-+	u32	tmcpmaskcr0;	/* Thread Machine Check Mask Control Reg */
-+	u32	pctbenr;	/* Physical Core Time Base Enable Reg */
-+	u32	pctbclkselr;	/* Physical Core Time Base Clock Select */
-+	u32	tbclkdivr;	/* Time Base Clock Divider Register */
-+	u8	res_1ac[4];
-+	u32	ttbhltcr[4];	/* Thread Time Base Halt Control Register */
-+	u32	clpcl10sr;	/* Cluster PCL10 Status Register */
-+	u32	clpcl10setr;	/* Cluster PCL30 Set Control Register */
-+	u32	clpcl10clrr;	/* Cluster PCL30 Clear Control Register */
-+	u32	clpcl10psr;	/* Cluster PCL30 Prev Status Register */
-+	u32	cddslpsetr;	/* Core Domain Deep Sleep Set Register */
-+	u32	cddslpclrr;	/* Core Domain Deep Sleep Clear Register */
-+	u32	cdpwroksetr;	/* Core Domain Power OK Set Register */
-+	u32	cdpwrokclrr;	/* Core Domain Power OK Clear Register */
-+	u32	cdpwrensr;	/* Core Domain Power Enable Status Register */
-+	u32	cddslsr;	/* Core Domain Deep Sleep Status Register */
-+	u8	res_1e8[8];
-+	u32	dslpcntcr[8];	/* Deep Sleep Counter Cfg Register */
-+	u8	res_300[3568];
-+};
+ 	blr
+ 
++#define PVR_E6500	0x8040
 +
- #ifdef CONFIG_PPC_86xx
+ /* Flush L1 d-cache, invalidate and disable d-cache and i-cache */
+ _GLOBAL(__flush_disable_L1)
++/* L1 Data Cache of e6500 contains no modified data, no flush is required */
++	mfspr	r3, SPRN_PVR
++	rlwinm	r4, r3, 16, 0xffff
++	lis	r5, 0
++	ori	r5, r5, PVR_E6500@l
++	cmpw	r4, r5
++	beq	2f
+ 	mflr	r10
+ 	bl	flush_dcache_L1	/* Flush L1 d-cache */
+ 	mtlr	r10
  
- #define CCSR_GUTS_DMACR_DEV_SSI	0	/* DMA controller/channel set to SSI */
+-	msync
++2:	msync
+ 	mfspr	r4, SPRN_L1CSR0	/* Invalidate and disable d-cache */
+ 	li	r5, 2
+ 	rlwimi	r4, r5, 0, 3
 -- 
 1.7.3
 
