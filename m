@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964919Ab3DSWBX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 18:01:23 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:34469 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933335Ab3DSWBV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 18:01:21 -0400
-Date: Fri, 19 Apr 2013 15:01:21 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Randy Dunlap <rdunlap@infradead.org>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: Re: [PATCH -next] ceph: fix printk format warnings in file.c
-In-Reply-To: <5171B507.4030808@infradead.org>
-Message-ID: <alpine.DEB.2.00.1304191501160.13036@cobra.newdream.net>
-References: <20130419181924.a035efe6d5e73fe0db9ddb84@canb.auug.org.au> <5171B507.4030808@infradead.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S965006Ab3DSWDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 18:03:17 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55562 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964936Ab3DSWDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 18:03:16 -0400
+Message-ID: <5171BF0A.8010402@zytor.com>
+Date: Fri, 19 Apr 2013 15:02:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
+CC: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, fenghua.yu@intel.com
+Subject: Re: [PATCH] x86: Add check for P5 to microcode_intel_early
+References: <1366392183-4149-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <20130419191128.GA21991@pd.tnic> <5171AA86.604@nexus-software.ie> <20130419205515.GA3075@pd.tnic> <20130419212514.GC3075@pd.tnic> <5171BAD6.4040003@nexus-software.ie>
+In-Reply-To: <5171BAD6.4040003@nexus-software.ie>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied, thanks!
+On 04/19/2013 02:44 PM, Bryan O'Donoghue wrote:
+> On 19/04/13 22:25, Borislav Petkov wrote:
+>> On Fri, Apr 19, 2013 at 10:55:15PM +0200, Borislav Petkov wrote:
+>>> Just filter out P5 and earlier. The code already does that for CPUs
+>>> which don't have CPUID.
+>>
+>> Actually, an alternative - more practical albeit not very accurate
+> 
+> More practical ? Hmm - the MSRs don't exist for < P5
 
-sage
+Yes, and that is definitional.
 
-On Fri, 19 Apr 2013, Randy Dunlap wrote:
+I like doing this check before boring down in the code too far, however,
+I want to make it so that it is structurally clear that this is for
+Intel; other CPU vendors might theoretically have other criteria.
 
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Fix printk format warnings by using %zd for 'ssize_t' variables:
-> 
-> fs/ceph/file.c:751:2: warning: format '%ld' expects argument of type 'long int', but argument 11 has type 'ssize_t' [-Wformat]
-> fs/ceph/file.c:762:2: warning: format '%ld' expects argument of type 'long int', but argument 11 has type 'ssize_t' [-Wformat]
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Cc:	Sage Weil <sage@inktank.com>
-> Cc:	ceph-devel@vger.kernel.org
-> ---
->  fs/ceph/file.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- linux-next-20130419.orig/fs/ceph/file.c
-> +++ linux-next-20130419/fs/ceph/file.c
-> @@ -748,7 +748,7 @@ retry_snap:
->  		goto out;
->  	}
->  
-> -	dout("aio_write %p %llx.%llx %llu~%ld getting caps. i_size %llu\n",
-> +	dout("aio_write %p %llx.%llx %llu~%zd getting caps. i_size %llu\n",
->  	     inode, ceph_vinop(inode), pos, count, inode->i_size);
->  	if (fi->fmode & CEPH_FILE_MODE_LAZY)
->  		want = CEPH_CAP_FILE_BUFFER | CEPH_CAP_FILE_LAZYIO;
-> @@ -759,7 +759,7 @@ retry_snap:
->  	if (err < 0)
->  		goto out;
->  
-> -	dout("aio_write %p %llx.%llx %llu~%ld got cap refs on %s\n",
-> +	dout("aio_write %p %llx.%llx %llu~%zd got cap refs on %s\n",
->  	     inode, ceph_vinop(inode), pos, count, ceph_cap_string(got));
->  
->  	if ((got & (CEPH_CAP_FILE_BUFFER|CEPH_CAP_FILE_LAZYIO)) == 0 ||
-> --
-> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+Architecturally, I would prefer to do this check early in
+load_ucode_intel_{bsp,ap}() but I would be okay with putting it in
+load_ucode_bsp()/local_ucode_ap() as well as long as the test is
+conditional on the Intel vendor check.
+
+More importantly, though: I really would like to get a fix *today*.
+
+	-hpa
+
