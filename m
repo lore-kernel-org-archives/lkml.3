@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967724Ab3DSBFa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Apr 2013 21:05:30 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:3830 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966825Ab3DSBF3 convert rfc822-to-8bit (ORCPT
+	id S1756234Ab3DSBQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Apr 2013 21:16:47 -0400
+Received: from smtprelay0073.hostedemail.com ([216.40.44.73]:46543 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751625Ab3DSBQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Apr 2013 21:05:29 -0400
-From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
-To: Yan Vugenfirer <yvugenfi@redhat.com>, Gleb Natapov <gleb@redhat.com>
-CC: kvm list <kvm@vger.kernel.org>, "mst@redhat.com" <mst@redhat.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Luonengjun <luonengjun@huawei.com>,
-        Zanghongyong <zanghongyong@huawei.com>,
-        "Huangweidong (C)" <weidong.huang@huawei.com>,
-        "Wangrui (K)" <moon.wangrui@huawei.com>
-Subject: Re: KVM VM(windows xp) reseted when running geekbench for about 2
- days
-Thread-Topic: KVM VM(windows xp) reseted when running geekbench for about 2
- days
-Thread-Index: Ac48LEpguUL++1wxQxiPGnnKCoktbv//iVQAgAAIdQD//rsf4A==
-Date: Fri, 19 Apr 2013 01:05:08 +0000
-Message-ID: <D3E216785288A145B7BC975F83A2ED103FE1F16A@szxeml556-mbx.china.huawei.com>
-References: <D3E216785288A145B7BC975F83A2ED103FE1E7A5@szxeml556-mbx.china.huawei.com>
- <20130418125532.GW8997@redhat.com>
- <9C764699-6F9C-4AD8-A6C9-34D818753452@redhat.com>
-In-Reply-To: <9C764699-6F9C-4AD8-A6C9-34D818753452@redhat.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.135.68.97]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 18 Apr 2013 21:16:45 -0400
+X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Apr 2013 21:16:45 EDT
+X-Session-Marker: 726F737465647440676F6F646D69732E6F7267
+X-Panda: scanned!
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::,RULES_HIT:152:355:379:599:800:960:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1431:1437:1515:1516:1518:1534:1538:1567:1593:1594:1711:1714:1730:1747:1777:1792:2196:2199:2393:2559:2562:3138:3139:3140:3141:3142:3865:3866:3868:3872:4385:5007:6119:7652:7875:7903:9413:10004:10400:10848:11658:11914:12517:12519:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: join19_6b8797157f427
+X-Filterd-Recvd-Size: 1852
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130418203705.GJ4816@kernel.dk>
+References: <516FED09.1040008@cn.fujitsu.com> <20130418133546.GX4816@kernel.dk> <516FFFAC.8040103@cn.fujitsu.com> <20130418143014.GZ4816@kernel.dk> <CA+55aFwA8njGh4v8ZfR_o4s4m=Hugnadeir=uxbeE4yxHiBKLg@mail.gmail.com> <20130418172732.GB9897@mtj.dyndns.org> <20130418173811.GF4816@kernel.dk> <20130418180752.GD9897@mtj.dyndns.org> <20130418181318.GH4816@kernel.dk> <CA+55aFxEThMJid_PiL=ko3duRPzzynkhMovsrm3TR_UXxUGciA@mail.gmail.com> <20130418203705.GJ4816@kernel.dk>
 MIME-Version: 1.0
-X-CFilter-Loop: Reflected
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [BUG REPORT] Kernel panic on 3.9.0-rc7-4-gbb33db7
+From: "srostedt@gmail.com" <rostedt@goodmis.org>
+Date: Thu, 18 Apr 2013 21:08:54 -0400
+To: Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: Tejun Heo <tj@kernel.org>, Wanlong Gao <gaowanlong@cn.fujitsu.com>,
+        Namhyung Kim <namhyung@gmail.com>, Alasdair G Kergon <agk@redhat.com>,
+        "dm-devel@redhat.com" <dm-devel@redhat.com>,
+        Neil Brown <neilb@suse.de>, LKML <linux-kernel@vger.kernel.org>
+Message-ID: <292ec4c2-f2d3-47fc-816f-472e83c10959@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> On Thu, Apr 18, 2013 at 12:00:49PM +0000, Zhanghaoyu (A) wrote:
->>> I start 10 VMs(windows xp), then running geekbench tool on them, 
->>> about 2 days, one of them was reset, I found the reset operation is 
->>> done by int kvm_cpu_exec(CPUArchState *env) {
->>>    ...
->>>       switch (run->exit_reason)
->>>       ...
->>>        case KVM_EXIT_SHUTDOWN:
->>>            DPRINTF("shutdown\n");
->>>            qemu_system_reset_request();
->>>            ret = EXCP_INTERRUPT;
->>>            break;
->>>    ...
->>> }
->>> 
->>> KVM_EXIT_SHUTDOWN exit reason was set previously in triple fault handle handle_triple_fault().
->>> 
->> How do you know that reset was done here? This is not the only place 
->> where qemu_system_reset_request() is called.
-I used gdb to debug QEMU process, and add a breakpoint in qemu_system_reset_request(), when the case occurred, backtrace shown as below,
-(gdb) bt
-#0  qemu_system_reset_request () at vl.c:1964
-#1  0x00007f9ef9dc5991 in kvm_cpu_exec (env=0x7f9efac47100)
-    at /gt/qemu-kvm-1.4/qemu-kvm-1.4/kvm-all.c:1602
-#2  0x00007f9ef9d5b229 in qemu_kvm_cpu_thread_fn (arg=0x7f9efac47100)
-    at /gt/qemu-kvm-1.4/qemu-kvm-1.4/cpus.c:759
-#3  0x00007f9ef898b5f0 in start_thread () from /lib64/libpthread.so.0
-#4  0x00007f9ef86fa84d in clone () from /lib64/libc.so.6
-#5  0x0000000000000000 in ?? ()
+Could it be a module not recompiled with a newer kernel?
 
-And, I add printk log in all place where KVM_EXIT_SHUTDOWN exit reason is set, only handle_triple_fault() was called.
->
->Make sure XP is not set to auto-reset in case of BSOD. 
-No, winxp is not set to auto-reset in case of BSOD. No Winxp event log reported.
->
->Best regards,
->Yan.
->
->> 
->>> What causes the triple fault?
->>> 
->> Are you asking what is triple fault or why it happened in your case?
-What I asked is why triple fault happened in my case.
->> For the former see here: http://en.wikipedia.org/wiki/Triple_fault
->> For the later it is to late to tell after VM reset. You can run QEMU 
->> with -no-reboot -no-shutdown. VM will pause instead of rebooting and 
->> then you can examine what is going on.
-Great thanks, I'll run QEMU with -no-reboot -no-shutdown options, if VM paused in my case, what should I examined?
+-- Steve
 
-Thanks,
-Zhang Haoyu
+
+Jens Axboe <axboe@kernel.dk> wrote:
+
+
+>
+>Hmm dunno. It happens right after we've completed the bio, which
+>touches
+>a lot of fields too. bi_bdev sits between bi_next (which we definitely
+>used) and bi_flags.
+>
+>But adding slab use-after-free debugging would show for sure.
+
+-- 
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
