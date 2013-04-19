@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab3DSSbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 14:31:04 -0400
-Received: from sauhun.de ([89.238.76.85]:54382 "EHLO pokefinder.org"
+	id S1753563Ab3DSSdA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 14:33:00 -0400
+Received: from sauhun.de ([89.238.76.85]:54596 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753203Ab3DSSbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 14:31:02 -0400
-Date: Fri, 19 Apr 2013 20:30:57 +0200
+	id S1753171Ab3DSSc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 14:32:59 -0400
+Date: Fri, 19 Apr 2013 20:32:58 +0200
 From: Wolfram Sang <wsa@the-dreams.de>
-To: =?utf-8?B?7Iah7J2A67SJ?= <eunb.song@samsung.com>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] I2C: Fix i2c fail problem when a process is terminated
- by a signal on octeon in 3.8
-Message-ID: <20130419183057.GA3702@the-dreams.de>
-References: <11412343.361631366270816380.JavaMail.weblogic@epv6ml12>
+To: EUNBONG SONG <eunb.song@samsung.com>
+Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Re: [PATCH]  I2C: Change the value of octeon i2c adapter timeout
+ value
+Message-ID: <20130419183258.GB3702@the-dreams.de>
+References: <33288064.110491366362833968.JavaMail.weblogic@epv6ml06>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <11412343.361631366270816380.JavaMail.weblogic@epv6ml12>
+In-Reply-To: <33288064.110491366362833968.JavaMail.weblogic@epv6ml06>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 18, 2013 at 07:40:16AM +0000, 송은봉 wrote:
+On Fri, Apr 19, 2013 at 09:13:54AM +0000, EUNBONG SONG wrote:
 > 
-> I rewrite my patch because the patch before i sent have many white space.
-> Thanks!
-
-This should have been below the "---" after the sigend-off.
-
-> ---
-> I've been debugging the abnormal operation of i2c on octeon.
-> If a process is terminated by signal in the middle of i2c operation,
-> next i2c read operation which is done by another process was failed.
-> So i changed to ignore signal in the middle of i2c operation.
-> After that the problem was not reproduced.
 > 
-> Signed-off-by: Eunbong Song <eunb.song@samsung.com>
+> On Fri, Apr 19, 2013 at 12:01:04AM +0000, EUNBONG SONG wrote:
+> >> 
+> >>  I think HZ/50 is better than 2 for adapter timeout.
+> 
+> > Basically OK. But why HZ/50? Most drivers use HZ.
+> 
+> Actually, I just translated 2 jiffies because HZ is 100 in default cavium config. 
+> You can find that in "arch/mips/configs/cavium_octeon_defconfig". 
+> And i have been using this value over 1 year in octeon board without problem.
 
-Applied to for-next, thanks!
+Have you been writing to EEPROMS? Their erase/write cycle might be
+longer. But I am not forcing you to change the value, just giving some
+suggestions.
 
