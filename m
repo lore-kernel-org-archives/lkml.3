@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968410Ab3DSQWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:22:38 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:29403 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757159Ab3DSQTt (ORCPT
+	id S968435Ab3DSQW6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:22:58 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38400 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S967726Ab3DSQW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 12:19:49 -0400
-X-IronPort-AV: E=Sophos;i="4.87,510,1363158000"; 
-   d="scan'208";a="39797390"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: arm@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCHv5 03/11] ARM: smp: Remove duplicate dummy timer implementation
-Date: Fri, 19 Apr 2013 09:19:37 -0700
-Message-Id: <1366388385-30722-4-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1.392.g85e7e81
-In-Reply-To: <1366388385-30722-1-git-send-email-sboyd@codeaurora.org>
-References: <1366388385-30722-1-git-send-email-sboyd@codeaurora.org>
+	Fri, 19 Apr 2013 12:22:56 -0400
+Date: Fri, 19 Apr 2013 17:22:26 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Peter Maydell <peter.maydell@linaro.org>
+Cc: Will Deacon <Will.Deacon@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console
+ devices.
+Message-ID: <20130419162226.GB5383@localhost.cambridge.arm.com>
+References: <CAAHg+HhtCorArCmx=ha0=64+SJZiizzrDUKSPLV=N+OzO8zAxQ@mail.gmail.com>
+ <20130419090558.GA13283@mudshark.cambridge.arm.com>
+ <CAAHg+HipCX2ma6brxj9Kgc3ew39b5e30grLwyun9CViif-5wZQ@mail.gmail.com>
+ <20130419092752.GB13283@mudshark.cambridge.arm.com>
+ <CAFEAcA8j124G=vaHObJ_w5wOhUiS3KYKbjMnigbnr6mgwFxZUg@mail.gmail.com>
+ <CAAHg+Hg=t97SJ0JPZYgrZaL+zimo-wbezwaj1BQvHqE-vf4VDA@mail.gmail.com>
+ <20130419093953.GD13283@mudshark.cambridge.arm.com>
+ <CAFEAcA_WfYpyvq54rZqS8JZkmDF5JXB+CNHFH5CnrhKun52uzA@mail.gmail.com>
+ <20130419161201.GA5383@localhost.cambridge.arm.com>
+ <CAFEAcA-F18kR4JihdxaLTm3qb4n51tsygG1RW4djwJ0u9+FQqw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFEAcA-F18kR4JihdxaLTm3qb4n51tsygG1RW4djwJ0u9+FQqw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop ARM's version of the dummy timer now that we have a generic
-implementation in drivers/clocksource.
+On Fri, Apr 19, 2013 at 05:14:36PM +0100, Peter Maydell wrote:
+> On 19 April 2013 17:12, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > On Fri, Apr 19, 2013 at 11:05:47AM +0100, Peter Maydell wrote:
+> >> Please make the kernel pick the device out of the device tree
+> >> blob. The whole point of device tree is that it's how to tell
+> >> the kernel where things live -- making kvmtool/QEMU and/or the
+> >> user also have to mess with the kernel command line is awkward
+> >> and annoying.
+> >
+> > For a normal console device, it indeed needs to get it from the DT. For
+> > early console, you want it earlier than DT parsing so we pass it on the
+> > kernel command line via the earlyprintk= parameter.
+> 
+> You should fix your DT handling code so you can get at the info
+> when you need it rather than pushing the problem into bootloaders
+> and QEMU, please. DT is your data structure so feel free to
+> (re)design it so relevant information can be accessed early
+> if that's useful.
 
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/kernel/smp.c | 22 ++--------------------
- 1 file changed, 2 insertions(+), 20 deletions(-)
+earlyprintk is used for debugging early problems, like DT parsing. You
+don't have to use it unless you are debugging something. Without
+earlyprintk you just get a normal console during boot, based on the DT
+description.
 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 4619177..806b84d 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -469,24 +469,6 @@ void tick_broadcast(const struct cpumask *mask)
- }
- #endif
- 
--static void broadcast_timer_set_mode(enum clock_event_mode mode,
--	struct clock_event_device *evt)
--{
--}
--
--static void __cpuinit broadcast_timer_setup(struct clock_event_device *evt)
--{
--	evt->name	= "dummy_timer";
--	evt->features	= CLOCK_EVT_FEAT_ONESHOT |
--			  CLOCK_EVT_FEAT_PERIODIC |
--			  CLOCK_EVT_FEAT_DUMMY;
--	evt->rating	= 100;
--	evt->mult	= 1;
--	evt->set_mode	= broadcast_timer_set_mode;
--
--	clockevents_register_device(evt);
--}
--
- static struct local_timer_ops *lt_ops;
- 
- #ifdef CONFIG_LOCAL_TIMERS
-@@ -510,8 +492,8 @@ static void __cpuinit percpu_timer_setup(void)
- 
- 	evt->cpumask = cpumask_of(cpu);
- 
--	if (!lt_ops || lt_ops->setup(evt))
--		broadcast_timer_setup(evt);
-+	if (lt_ops)
-+		lt_ops->setup(evt);
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Catalin
