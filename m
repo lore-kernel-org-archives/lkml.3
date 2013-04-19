@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030345Ab3DSMZl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 08:25:41 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:45601 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030195Ab3DSMZj (ORCPT
+	id S1030359Ab3DSMZw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 08:25:52 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:63786 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030195Ab3DSMZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 08:25:39 -0400
-Message-ID: <517137BD.4060203@huawei.com>
-Date: Fri, 19 Apr 2013 20:25:33 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	Fri, 19 Apr 2013 08:25:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH 2/2] dma:of: Use a mutex to protect the of_dma_list
+Date: Fri, 19 Apr 2013 14:25:44 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-18-generic; KDE/4.3.2; x86_64; ; )
+Cc: Vinod Koul <vinod.koul@intel.com>, Jon Hunter <jon-hunter@ti.com>,
+        linux-kernel@vger.kernel.org
+References: <1366364534-3298-1-git-send-email-lars@metafoo.de> <201304191213.48631.arnd@arndb.de> <517124D6.7090008@metafoo.de>
+In-Reply-To: <517124D6.7090008@metafoo.de>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: [PATCH 01/10] cpuset: remove redundant check in cpuset_cpus_allowed_fallback()
-References: <517137A7.4020605@huawei.com>
-In-Reply-To: <517137A7.4020605@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Message-Id: <201304191425.44963.arnd@arndb.de>
+X-Provags-ID: V02:K0:sdaGwQu3qqMzxs14BjpkHaeqT+IcR8TCWt5Y8uw7cW9
+ qfwA3hyfY3ZKzkxMOu7R4hpWD7OEHvwjufoQmNW8EY70Yx0D5/
+ SwgPt+tftdweIAg5oYHMu0cS7RMFcx7IU8uWO1tAzYpNRbr1ev
+ e7ybS5goxszG3bGNwRj3LWuxgZeL7OvXjD+OYsTTgbGonkpyAE
+ nHyLIqvToAQJUWbSmA3lFCHqE4qVD+5Wpfnzaouez40s5zi7F+
+ LFXhQEqD5OAGTRm5EHkp2YFdodjUebWLCiVBDI7qsr+javCJLM
+ qXW5pqD8eC3cBN9Si+Id2VHpDROSzw8EvDI36b3bWxXN14G/4r
+ Vdyro2bPMCpG7AmqumYg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_cs() will never return NULL.
+On Friday 19 April 2013, Lars-Peter Clausen wrote:
+> Well, It's not only about the of_dma struct, e.g. the of_dma's of_dma_data
+> field usually points to some driver allocated data. If we do not block in
+> of_dma_controller_free() this data might be freed while the controller is
+> still in use.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/cpuset.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Right, makes sense. This could of course be worked around using a destructor
+in the of_dma struct, but your approach is much simpler.
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 866d78e..4a62dcc 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2259,8 +2259,7 @@ void cpuset_cpus_allowed_fallback(struct task_struct *tsk)
- 
- 	rcu_read_lock();
- 	cs = task_cs(tsk);
--	if (cs)
--		do_set_cpus_allowed(tsk, cs->cpus_allowed);
-+	do_set_cpus_allowed(tsk, cs->cpus_allowed);
- 	rcu_read_unlock();
- 
- 	/*
--- 
-1.8.0.2
-
+	Arnd
