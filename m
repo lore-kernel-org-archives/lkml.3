@@ -1,86 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab3DSIuY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 04:50:24 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:45199 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758109Ab3DSIuV (ORCPT
+	id S967946Ab3DSI6D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 04:58:03 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47788 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758248Ab3DSI57 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 04:50:21 -0400
+	Fri, 19 Apr 2013 04:57:59 -0400
+Date: Fri, 19 Apr 2013 01:57:17 -0700
+From: tip-bot for Waiman Long <tipbot@zytor.com>
+Message-ID: <tip-41fcb9f230bf773656d1768b73000ef720bf00c3@git.kernel.org>
+Cc: mingo@kernel.org, williams@redhat.com, a.p.zijlstra@chello.nl,
+        torvalds@linux-foundation.org, peterz@infradead.org, riel@redhat.com,
+        Waiman.Long@hp.com, akpm@linux-foundation.org, tglx@linutronix.de,
+        scott.norton@hp.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        davidlohr.bueso@hp.com, davej@redhat.com, paulmck@linux.vnet.ibm.com,
+        dhowells@redhat.com, aswin@hp.com
+Reply-To: mingo@kernel.org, torvalds@linux-foundation.org,
+        a.p.zijlstra@chello.nl, williams@redhat.com, peterz@infradead.org,
+        riel@redhat.com, Waiman.Long@hp.com, akpm@linux-foundation.org,
+        tglx@linutronix.de, scott.norton@hp.com, linux-kernel@vger.kernel.org,
+        hpa@zytor.com, davidlohr.bueso@hp.com, davej@redhat.com,
+        paulmck@linux.vnet.ibm.com, dhowells@redhat.com, aswin@hp.com
+In-Reply-To: <1366226594-5506-2-git-send-email-Waiman.Long@hp.com>
+References: <1366226594-5506-2-git-send-email-Waiman.Long@hp.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/locking] mutex: Move mutex spinning code from sched/
+ core.c back to mutex.c
+Git-Commit-ID: 41fcb9f230bf773656d1768b73000ef720bf00c3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1366359290.4708.48.camel@marge.simpson.net>
-References: <1366302867-5055-1-git-send-email-vincent.guittot@linaro.org>
-	<1366345833.4708.17.camel@marge.simpson.net>
-	<CAKfTPtAaUG4Yi5xienLRvnO7Q8nTWjk9a0azRWwdqmvCu3NSrA@mail.gmail.com>
-	<1366359290.4708.48.camel@marge.simpson.net>
-Date: Fri, 19 Apr 2013 10:50:19 +0200
-Message-ID: <CAKfTPtBuAwyiNYk17SnW066FhvGF18n+HaiKwhKLgsii8ntcHA@mail.gmail.com>
-Subject: Re: [PATCH Resend v6] sched: fix wrong rq's runnable_avg update with
- rt tasks
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 19 Apr 2013 01:57:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 April 2013 10:14, Mike Galbraith <efault@gmx.de> wrote:
-> On Fri, 2013-04-19 at 09:49 +0200, Vincent Guittot wrote:
->> On 19 April 2013 06:30, Mike Galbraith <efault@gmx.de> wrote:
->> > On Thu, 2013-04-18 at 18:34 +0200, Vincent Guittot wrote:
->> >> The current update of the rq's load can be erroneous when RT tasks are
->> >> involved
->> >>
->> >> The update of the load of a rq that becomes idle, is done only if the avg_idle
->> >> is less than sysctl_sched_migration_cost. If RT tasks and short idle duration
->> >> alternate, the runnable_avg will not be updated correctly and the time will be
->> >> accounted as idle time when a CFS task wakes up.
->> >>
->> >> A new idle_enter function is called when the next task is the idle function
->> >> so the elapsed time will be accounted as run time in the load of the rq,
->> >> whatever the average idle time is. The function update_rq_runnable_avg is
->> >> removed from idle_balance.
->> >>
->> >> When a RT task is scheduled on an idle CPU, the update of the rq's load is
->> >> not done when the rq exit idle state because CFS's functions are not
->> >> called. Then, the idle_balance, which is called just before entering the
->> >> idle function, updates the rq's load and makes the assumption that the
->> >> elapsed time since the last update, was only running time.
->> >>
->> >> As a consequence, the rq's load of a CPU that only runs a periodic RT task,
->> >> is close to LOAD_AVG_MAX whatever the running duration of the RT task is.
->> >
->> > Why do we care what rq's load says, if the only thing running is a
->> > periodic RT task?  I _think_ I recall that stuff being put under the
->>
->> cfs scheduler will use a wrong rq load the next time it wants to schedule a task
->>
->> > throttle specifically to not waste cycles doing that on every
->> > microscopic idle.
->>
->> yes but this lead to the wrong computation of runnable_avg_sum. To be
->> more precise, we only need to call __update_entity_runnable_avg,
->> __update_tg_runnable_avg is not mandatory in this step.
->
-> If it only scares fair class tasks away from the periodic rt load, that
-> seems like a benefit to me, not a liability.  If we really really need
+Commit-ID:  41fcb9f230bf773656d1768b73000ef720bf00c3
+Gitweb:     http://git.kernel.org/tip/41fcb9f230bf773656d1768b73000ef720bf00c3
+Author:     Waiman Long <Waiman.Long@hp.com>
+AuthorDate: Wed, 17 Apr 2013 15:23:11 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 19 Apr 2013 09:33:34 +0200
 
-I'm not sure that such behavior that is only based on erroneous value,
-is good one.
+mutex: Move mutex spinning code from sched/core.c back to mutex.c
 
-> perfect load numbers, fine, we have to eat some cycles, but when I look
-> at it, it looks like one of those "Perfect is the enemy of good" things.
+As mentioned by Ingo, the SCHED_FEAT_OWNER_SPIN scheduler
+feature bit was really just an early hack to make with/without
+mutex-spinning testable. So it is no longer necessary.
 
-The target is not perfect number but good enough to be usable. The
-systctl_migration_cost threshold is good for idle balancing but can
-generates wrong load value
+This patch removes the SCHED_FEAT_OWNER_SPIN feature bit and
+move the mutex spinning code from kernel/sched/core.c back to
+kernel/mutex.c which is where they should belong.
 
-Vincent
->
-> -Mike
->
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Chandramouleeswaran Aswin <aswin@hp.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Norton Scott J <scott.norton@hp.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Clark Williams <williams@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1366226594-5506-2-git-send-email-Waiman.Long@hp.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/sched.h   |  1 -
+ kernel/mutex.c          | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/sched/core.c     | 45 ---------------------------------------------
+ kernel/sched/features.h |  7 -------
+ 4 files changed, 46 insertions(+), 53 deletions(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index d35d2b6..aefe45d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -320,7 +320,6 @@ extern signed long schedule_timeout_killable(signed long timeout);
+ extern signed long schedule_timeout_uninterruptible(signed long timeout);
+ asmlinkage void schedule(void);
+ extern void schedule_preempt_disabled(void);
+-extern int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner);
+ 
+ struct nsproxy;
+ struct user_namespace;
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index 52f2301..262d717 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -95,6 +95,52 @@ void __sched mutex_lock(struct mutex *lock)
+ EXPORT_SYMBOL(mutex_lock);
+ #endif
+ 
++#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
++/*
++ * Mutex spinning code migrated from kernel/sched/core.c
++ */
++
++static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
++{
++	if (lock->owner != owner)
++		return false;
++
++	/*
++	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
++	 * lock->owner still matches owner, if that fails, owner might
++	 * point to free()d memory, if it still matches, the rcu_read_lock()
++	 * ensures the memory stays valid.
++	 */
++	barrier();
++
++	return owner->on_cpu;
++}
++
++/*
++ * Look out! "owner" is an entirely speculative pointer
++ * access and not reliable.
++ */
++static noinline
++int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
++{
++	rcu_read_lock();
++	while (owner_running(lock, owner)) {
++		if (need_resched())
++			break;
++
++		arch_mutex_cpu_relax();
++	}
++	rcu_read_unlock();
++
++	/*
++	 * We break out the loop above on need_resched() and when the
++	 * owner changed, which is a sign for heavy contention. Return
++	 * success only when lock->owner is NULL.
++	 */
++	return lock->owner == NULL;
++}
++#endif
++
+ static __used noinline void __sched __mutex_unlock_slowpath(atomic_t *lock_count);
+ 
+ /**
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 7f12624..b37a22b 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2997,51 +2997,6 @@ void __sched schedule_preempt_disabled(void)
+ 	preempt_disable();
+ }
+ 
+-#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-
+-static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
+-{
+-	if (lock->owner != owner)
+-		return false;
+-
+-	/*
+-	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
+-	 * lock->owner still matches owner, if that fails, owner might
+-	 * point to free()d memory, if it still matches, the rcu_read_lock()
+-	 * ensures the memory stays valid.
+-	 */
+-	barrier();
+-
+-	return owner->on_cpu;
+-}
+-
+-/*
+- * Look out! "owner" is an entirely speculative pointer
+- * access and not reliable.
+- */
+-int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
+-{
+-	if (!sched_feat(OWNER_SPIN))
+-		return 0;
+-
+-	rcu_read_lock();
+-	while (owner_running(lock, owner)) {
+-		if (need_resched())
+-			break;
+-
+-		arch_mutex_cpu_relax();
+-	}
+-	rcu_read_unlock();
+-
+-	/*
+-	 * We break out the loop above on need_resched() and when the
+-	 * owner changed, which is a sign for heavy contention. Return
+-	 * success only when lock->owner is NULL.
+-	 */
+-	return lock->owner == NULL;
+-}
+-#endif
+-
+ #ifdef CONFIG_PREEMPT
+ /*
+  * this is the entry point to schedule() from in-kernel preemption
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index 1ad1d2b..99399f8 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -46,13 +46,6 @@ SCHED_FEAT(DOUBLE_TICK, false)
+ SCHED_FEAT(LB_BIAS, true)
+ 
+ /*
+- * Spin-wait on mutex acquisition when the mutex owner is running on
+- * another cpu -- assumes that when the owner is running, it will soon
+- * release the lock. Decreases scheduling overhead.
+- */
+-SCHED_FEAT(OWNER_SPIN, true)
+-
+-/*
+  * Decrement CPU power based on time not spent running tasks
+  */
+ SCHED_FEAT(NONTASK_POWER, true)
