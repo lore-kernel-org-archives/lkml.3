@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087Ab3DSUuK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 16:50:10 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47800 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab3DSUuI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 16:50:08 -0400
-Date: Fri, 19 Apr 2013 16:50:06 -0400 (EDT)
-Message-Id: <20130419.165006.1200833792933507239.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org
-Subject: Re: [PATCH net] hyperv: Fix a compiler warning in netvsc_send()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1366151150-14859-1-git-send-email-haiyangz@microsoft.com>
-References: <1366151150-14859-1-git-send-email-haiyangz@microsoft.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1754416Ab3DSUwQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 16:52:16 -0400
+Received: from mail.imentarabar.com ([89.144.129.18]:1453 "EHLO host2-askiran"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754071Ab3DSUwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 16:52:14 -0400
+Reply-To: <info@webmail.co>
+From: "Web-Mail Helpdesk" <p.imanzadeh@iautalesh.ac.ir>
+Subject: Warning!! 99% of your mail box quota used
+Date: Fri, 19 Apr 2013 20:59:13 +0100
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.7 (shards.monkeyblade.net [0.0.0.0]); Fri, 19 Apr 2013 13:50:08 -0700 (PDT)
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+X-Antivirus: avast! (VPS 130419-0, 04/19/2013), Outbound message
+X-Antivirus-Status: Clean
+Message-ID: <auto-000006192652@host2-askiran>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Tue, 16 Apr 2013 15:25:50 -0700
+Warning!! You are currently operating at 99% of your mail box quota. You need to upgrade your email limit quota to 2GB within the next 48 hours to enable you store and 
+receive large numbers of emails in your mailbox. Use the below web link to upgrade to 2GB: click link below:
 
-> Fixed: warning: cast from pointer to integer of different size
-> 
-> The Hyper-V hosts always use 64 bit request id. The guests can have 32 or 64
-> bit pointers which equal to the ulong type size. So we cast it to ulong type.
-> And, assigning 32bit integer to 64 bit variable works fine.
-> 
-> The VMBus returns the same id in the completion packet. But the value has no
-> effect on the host side.
-> 
-> Reported-by: kbuild test robot <fengguang.wu@intel.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
+  http://www.2013emailcustomercarecenter.com/
 
-Such build warning fixes are not appropriate for 'net' at this time, and
-this patch does not apply to 'net-next', so I'm dropping this entirely.
+Failure to update this account after three days of receiving this warning will be tantamount to losing this account permanently
+
+Thank you for using our email.
+Copyright 2013 Email Administrator
