@@ -1,145 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030798Ab3DSOro (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 10:47:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53094 "EHLO mx1.redhat.com"
+	id S1030812Ab3DSOsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 10:48:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43706 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030593Ab3DSOrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 10:47:43 -0400
-Date: Fri, 19 Apr 2013 10:46:55 -0400
-From: "Frank Ch. Eigler" <fche@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        SystemTap <systemtap@sourceware.org>
-Subject: Re: systemtap broken by removal of register_timer_hook
-Message-ID: <20130419144655.GD8308@redhat.com>
-References: <20130403075017.GA2534@suse.de> <CAFTL4hyYezB2ZxM-GJ70VoxOeRSG64V6u+nX2hTuhF30R-GdPg__32168.962484184$1364986928$gmane$org@mail.gmail.com> <y0mvc83u79f.fsf@fche.csb> <CAFTL4hxx_GHoa4uguSAtY0A=cC43qJPKvpqaoguS-WAjFj+HSw@mail.gmail.com> <20130403144428.GA15432@redhat.com> <CAFTL4hy+U-dLPwGR8BcZt=C8Tug-jvh+24epadfte7Ci2cDU5Q@mail.gmail.com>
-Mime-Version: 1.0
+	id S1030593Ab3DSOsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 10:48:23 -0400
+Date: Fri, 19 Apr 2013 16:48:19 +0200
+From: Jan Kara <jack@suse.cz>
+To: majianpeng <majianpeng@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
+        tytso@mit.edu, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] fs/buffer.c: Remove the unnecessary init operation
+ after allocating buffer_head.
+Message-ID: <20130419144819.GB26647@quack.suse.cz>
+References: <5170AC10.60504@gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFTL4hy+U-dLPwGR8BcZt=C8Tug-jvh+24epadfte7Ci2cDU5Q@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <5170AC10.60504@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Frederic -
-
-
-> > How about this?
-> >
-> > Author: Frank Ch. Eigler <fche@redhat.com>
-> > Date:   Wed Apr 3 10:35:21 2013 -0400
-> >
-> >     profiling: add profile_tick tracepoint
-> > [...]
-
-> It would be better not to tie this to CONFIG_PROFILING.
-> A tracepoint in update_process_times() instead would be great but it's
-> sometimes called several times in a tick from some archs.
-> Probably we need something like:
+On Fri 19-04-13 10:29:36, majianpeng wrote:
+> Because alloc struct buffer_head using kmem_cache_zalloc,so it's not need to
+> call 'init_buffer(bh, NULL, NULL)'.
 > 
-> static inline tick_trace(struct pt_regs *regs)
-> {
->     trace_timer_tick(regs);
->     profile_tick(CPU_PROFILING);
-> }
+> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+> ---
+>  fs/buffer.c       | 2 --
+>  fs/jbd/journal.c  | 1 -
+>  fs/jbd2/journal.c | 1 -
+>  3 files changed, 4 deletions(-)
+> 
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index b4dcb34..52b7739 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -865,8 +865,6 @@ try_again:
+>  
+>          /* Link the buffer to its page */
+>          set_bh_page(bh, page, offset);
+> -
+> -        init_buffer(bh, NULL, NULL);
+>      }
+>      return head;
+>  /*
+> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+> index 81cc7ea..0c3fe90 100644
+> --- a/fs/jbd/journal.c
+> +++ b/fs/jbd/journal.c
+> @@ -311,7 +311,6 @@ int journal_write_metadata_buffer(transaction_t *transaction,
+>      new_bh = alloc_buffer_head(GFP_NOFS|__GFP_NOFAIL);
+>      /* keep subsequent assertions sane */
+>      new_bh->b_state = 0;
+> -    init_buffer(new_bh, NULL, NULL);
+  You can also remove b_state = 0 , can't you?
 
-I looked into this, but found no natural place to define such an
-inline function from which to call into a tracepoint, without having
-to #include the <event/FOO.h> file many times.  Nor does it seem
-appropriate to do the identical #define CREATE_TRACE_POINTS part from
-all the different arch/.../*.c files that may call into that inline.
-If you'd like to stick to this idea, please advise further where you
-think the tracepoint definition & declarations should go.
+>      atomic_set(&new_bh->b_count, 1);
+>      new_jh = journal_add_journal_head(new_bh);    /* This sleeps */
+>  
+> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+> index ed10991..95120c6 100644
+> --- a/fs/jbd2/journal.c
+> +++ b/fs/jbd2/journal.c
+> @@ -368,7 +368,6 @@ retry_alloc:
+>  
+>      /* keep subsequent assertions sane */
+>      new_bh->b_state = 0;
+> -    init_buffer(new_bh, NULL, NULL);
+  And the same here. Otherwise the patch looks OK.
 
-In the alternative, here is v2 of the patch, just changing the
-tracepoint-printing argument as suggested by jistone.
-
-- FChE
-
----------------
-
-Author: Frank Ch. Eigler <fche@redhat.com>
-Date:   Wed Apr 3 10:35:21 2013 -0400
-
-    profiling: add profile_tick tracepoint
-    
-    Commit ba6fdda4 removed the timer_hook mechanism for modules to listen
-    to profiling timer ticks (without having to set up more complicated
-    perf mechanisms).  To reduce the impact on out-of-tree users such as
-    systemtap, a TRACE_EVENT-flavoured tracepoint is added in its place.
-    Tested with perf and systemtap.
-    
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Cc: Ingo Molnar <mingo@kernel.org>
-    Cc: Mel Gorman <mgorman@suse.de>
-    Signed-off-by: Frank Ch. Eigler <fche@redhat.com>
-
-diff --git a/include/trace/events/profile.h b/include/trace/events/profile.h
-new file mode 100644
-index 0000000..445aee7
---- /dev/null
-+++ b/include/trace/events/profile.h
-@@ -0,0 +1,37 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM profile
-+
-+#if !defined(_TRACE_PROFILE_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_PROFILE_H
-+
-+#include <linux/tracepoint.h>
-+
-+
-+struct pt_regs;
-+
-+/**
-+ * profile_tick - called when the profiling timer ticks
-+ * @type:	profiling tick type, generally @CPU_PROFILING
-+ * @regs:	pointer to struct pt_regs*
-+ */
-+
-+TRACE_EVENT(profile_tick,
-+	TP_PROTO(int type, struct pt_regs *regs),
-+	TP_ARGS(type, regs),
-+	TP_STRUCT__entry(
-+		__field( int,			type	)
-+		__field( struct pt_regs*,	regs	)
-+	),
-+	TP_fast_assign(
-+		__entry->type	= type;
-+		__entry->regs	= regs;
-+	),
-+	TP_printk("type=%d ip=%p", __entry->type,
-+		  instruction_pointer(__entry->regs))
-+);
-+
-+
-+#endif /*  _TRACE_PROFILE_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/kernel/profile.c b/kernel/profile.c
-index dc3384e..d61f921 100644
---- a/kernel/profile.c
-+++ b/kernel/profile.c
-@@ -29,6 +29,9 @@
- #include <asm/irq_regs.h>
- #include <asm/ptrace.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/profile.h>
-+
- struct profile_hit {
- 	u32 pc, hits;
- };
-@@ -414,6 +417,8 @@ void profile_tick(int type)
- {
- 	struct pt_regs *regs = get_irq_regs();
- 
-+	trace_profile_tick(type, regs);
-+
- 	if (!user_mode(regs) && prof_cpu_mask != NULL &&
- 	    cpumask_test_cpu(smp_processor_id(), prof_cpu_mask))
- 		profile_hit(type, (void *)profile_pc(regs));
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
