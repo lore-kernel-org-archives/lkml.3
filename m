@@ -1,151 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab3DSHfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 03:35:39 -0400
-Received: from spfilter-3.mschosting.com ([110.4.43.200]:51377 "EHLO
-	spfilter-3.mschosting.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755309Ab3DSHfh (ORCPT
+	id S1757314Ab3DSHk5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 03:40:57 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51374 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756763Ab3DSHkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 03:35:37 -0400
-X-Greylist: delayed 1823 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Apr 2013 03:35:36 EDT
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
- boundary="=_44fefd15aabb49ddcf1c94d22c95989d"
-Date: Fri, 19 Apr 2013 00:03:00 -0700
-From: JOHN AKAN <john.akan@live.com>
-To: undisclosed-recipients:;
-Subject: CAN I TRUST =?UTF-8?Q?YOU=3F=3F=3F=2E=2E=2E=2E?=
-Reply-To: <ken26martin21@gmail.com>
-Mail-Reply-To: <ken26martin21@gmail.com>
-Message-ID: <ff44e581766f286cfa8c516370b9ea78@clinchfastener.com>
-User-Agent: Roundcube Webmail/0.8.4
-X-Filter-ID: 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
-X-Originating-IP: 110.4.45.103
-X-SpamExperts-Domain: cpanelfilter.mschosting.com
-X-SpamExperts-Username: filter
-Authentication-Results: mschosting.com; auth=pass (login) smtp.auth=filter
-X-SpamExperts-Outgoing-Class: unsure
-X-SpamExperts-Outgoing-Evidence: Combined (0.78)
-X-Recommended-Action: accept
+	Fri, 19 Apr 2013 03:40:55 -0400
+Date: Fri, 19 Apr 2013 17:40:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kent Overstreet <koverstreet@google.com>,
+        Minchan Kim <minchan@kernel.org>
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20130419174041.f0f8f47ae745896a6857000d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__19_Apr_2013_17_40_41_+1000_BgeF2Eu/uyHfv=PI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=_44fefd15aabb49ddcf1c94d22c95989d
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
+--Signature=_Fri__19_Apr_2013_17_40_41_+1000_BgeF2Eu/uyHfv=PI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Andrew,
 
-Dear,
+Today's linux-next merge of the akpm tree got a conflict in fs/bio.c
+between commit 0a82a8d132b2 ("Revert "block: add missing
+block_bio_complete() tracepoint"") from Linus' tree and commit "block,
+aio: batch completion for bios/kiocbs" from the akpm tree.
 
-Proposal letter attached!! Kindly read the attached letter for more
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-details.
-Yours truly,
-John Akan
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-mercantile investment
-+44 7700097432
---=_44fefd15aabb49ddcf1c94d22c95989d
-Content-Transfer-Encoding: base64
-Content-Type: text/plain;
- name=PRPOSAL.txt
-Content-Disposition: attachment;
- filename=PRPOSAL.txt;
- size=1546
+diff --cc fs/bio.c
+index e082907,a8081ae..0000000
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@@ -1688,31 -1689,42 +1689,40 @@@ void bio_flush_dcache_pages(struct bio=20
+  EXPORT_SYMBOL(bio_flush_dcache_pages);
+  #endif
+ =20
+- /**
+-  * bio_endio - end I/O on a bio
+-  * @bio:	bio
+-  * @error:	error, if any
+-  *
+-  * Description:
+-  *   bio_endio() will end I/O on the whole bio. bio_endio() is the
+-  *   preferred way to end I/O on a bio, it takes care of clearing
+-  *   BIO_UPTODATE on error. @error is 0 on success, and and one of the
+-  *   established -Exxxx (-EIO, for instance) error values in case
+-  *   something went wrong. No one should call bi_end_io() directly on a
+-  *   bio unless they own it and thus know that it has an end_io
+-  *   function.
+-  **/
+- void bio_endio(struct bio *bio, int error)
++ static inline void __bio_endio(struct bio *bio, struct batch_complete *ba=
+tch)
+  {
+- 	if (error)
++ 	if (bio->bi_error)
+  		clear_bit(BIO_UPTODATE, &bio->bi_flags);
+  	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+- 		error =3D -EIO;
++ 		bio->bi_error =3D -EIO;
+ =20
+  	if (bio->bi_end_io)
+- 		bio->bi_end_io(bio, error, NULL);
++ 		bio->bi_end_io(bio, bio->bi_error, batch);
++ }
++=20
++ void bio_endio_batch(struct bio *bio, int error, struct batch_complete *b=
+atch)
++ {
++ 	if (error)
++ 		bio->bi_error =3D error;
++=20
+ -	trace_block_bio_complete(bio, error);
+ -
++ 	if (batch)
++ 		bio_list_add(&batch->bio, bio);
++ 	else
++ 		__bio_endio(bio, batch);
++=20
++ }
++ EXPORT_SYMBOL(bio_endio_batch);
++=20
++ void batch_complete(struct batch_complete *batch)
++ {
++ 	struct bio *bio;
++=20
++ 	while ((bio =3D bio_list_pop(&batch->bio)))
++ 		__bio_endio(bio, batch);
++=20
++ 	batch_complete_aio(batch);
+  }
+- EXPORT_SYMBOL(bio_endio);
++ EXPORT_SYMBOL(batch_complete);
+ =20
+  void bio_pair_release(struct bio_pair *bp)
+  {
 
-SSBhbSBNUi4gSm9obiBBa2FuIG9uZSBvZiBUaGUgZnVuZCBtYW5hZ2VyIG9mIFRoZSBNZXJjYW50
-aWxlIEludmVzdG1lbnQgVHJ1c3QgcGxjLmEgZ3JvdXAgb2YgSlAgTW9yZ2FuIElOVkVTVE1FTlQg
-SU5URVJOQVRJT05BTC4gSSBoYW5kbGUgYWxsDQpJbnZlc3RvcnMgd2l0aGluIG15IG1hbmFnZW1l
-bnQgcG9ydGZvbGlvIERpcmVjdCBDYXBpdGFsIEZ1bmRzICh0aGVyZSBpbnZlc3RtZW50IGZ1bmRz
-KS4NCg0KDQpBcyBhIHJvdXRpbmUgZXZlcnkgaW52ZXN0b3IgZ2V0cyB0aGUgcGVyY2VudGFnZSBw
-cm9maXQgb3IgZGl2aWRlbmQgZnJvbSB0aGUgdG90YWwgY2FzaCBoZSBvciBzaGUgaW52ZXN0ZWQg
-aW50byB0aGUgY29tcGFueSBhbm51YWxseS4uIExhc3QgeWVhcg0KaXQgd2FzIGFubm91bmNlZCB0
-aGF0IHRoZSBwcm9maXQgbWFyZ2luIHdhcyAxOC45JSBhZnRlciBjYWxjdWxhdGluZyBjYXJlZnVs
-bHkgSSBmb3VuZCBvdXQgdGhhdCB0aGUgcHJvZml0IG1hcmdpbiB3YXMgMjAuMSUgdGhhdCBpcyBh
-biBleGNlc3MNCm9mIDEuMiUgb24gZWFjaCBpbnZlc3RvciBzbyBJIHNlY3JldGx5IGV4dHJhY3Rl
-ZCAxLjIlIEV4Y2VzcyBNYXhpbXVtIFJldHVybiBDYXBpdGFsIFByb2ZpdCAoRU1SQ1ApIHBlciBh
-bm51bSBvbiBlYWNoIG9mIHRoZSBJbnZlc3RvcidzDQpNYXJnaW5hbCBDYXBpdGFsIEZ1bmQgYW5k
-IGNyZWF0ZWQgYSBzZXBhcmF0ZSBhY2NvdW50IHdoZXJlIHRoZSB0b3RhbCBzdW0gb2YgdGhlIGV4
-dHJhY3Rpb24gd2FzIGtlcHQgQXMgYW4gZXhwZXJ0LCB0aGUgYWNjb3VudCBoYXMgYSB2YWx1ZWQg
-Zm9yDQozNyw2MDAsMDAwLjAwLnBvdW5kcyAodGhpcnR5IHNldmVuIG1pbGxpb24sIHNpeCBodW5k
-cmVkIHRob3VzYW5kIFBvdW5kcykNCg0KDQpOb3csIEkgYW0gbG9va2luZyBmb3Igc29tZW9uZSB3
-aG8gSSBjYW4gdHJ1c3QgdG8gc3RhbmQgYXMgYW4gSW52ZXN0b3IgdG8gcmVjZWl2ZSB0aGUgZnVu
-ZCBhcyBBbm51YWwgSW52ZXN0bWVudCBQcm9jZWVkcyBmcm9tIFRoZSBNZXJjYW50aWxlDQpJbnZl
-c3RtZW50IFRydXN0IHBsYy4gQWxsIGxlZ2FsIGRvY3VtZW50cyB0byBiYWNrIHVwIHRoZSBjbGFp
-bXMgd2lsbCBiZSBtYWRlIGF2YWlsYWJsZSB0byB5b3UgcHJpb3IgdG8geW91ciBhY2NlcHRhbmNl
-Lg0KDQoNCk1lYW53aGlsZSwgSSBoYXZlIHdvcmtlZCBvdXQgdGhlIG1vZGFsaXRpZXMgYW5kIHRl
-Y2huaWNhbGl0aWVzIHdoZXJlYnkgdGhlIGZ1bmRzIGNhbiBiZSBjbGFpbWVkIGluIGFueSBvZiBv
-dXIgNiBDbGVhcmluZyBIb3VzZXMgd2l0aG91dCBhbnkNCmhpdGNoZXMuIE91ciBzaGFyaW5nIHJh
-dGlvIHdpbGwgYmUgNTAtNTAuIElmIHlvdSBhcmUgaW50ZXJlc3RlZCwgeW91IHNob3VsZCBzZW5k
-IHlvdXIgZGlyZWN0IHBob25lIG51bWJlciBzbyB3ZSBjb3VsZCBkaXNjdXNzIG1vcmUgb24gcGhv
-bmUgYXMNCnJlZ2FyZCB0aGUgdHJhbnNhY3Rpb24uDQoNCktpbmRseSBjb250YWN0IG1lIG9uIHRo
-aXMgZW1haWw6ICAgam9obi5ha2FuQG91dGxvb2suY29tDQoNCg0KDQoNClNpbmNlcmVseSwNCkpv
-aG4gQWthbg==
---=_44fefd15aabb49ddcf1c94d22c95989d--
+--Signature=_Fri__19_Apr_2013_17_40_41_+1000_BgeF2Eu/uyHfv=PI
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJRcPT5AAoJEECxmPOUX5FENsUP/iCghpLoIf9Yjh9Z8nTGtk1J
+ctdVZZ+448EHB9YnC6nUesbbmjG9VeAmBDHMjSmkwB4y7sDPhJL8doGrptRuunMv
+wTP0cPn+r6bTqkMKgdZBUhrVXkTHvNaOUCcq2IBfSAbVVVcrCHJeOZnwd6yKNZv9
+6q3OiVSsL2riXk4sq54VK5BJStX5eMTGG0QPKoim+I3WB55fGbfGTupwzDvUtAGP
+f5QxXZdeUfdkJvnBHfdRlzNDwl4DYEOajgtpzBD9eCa97MZ2rg3AehdYBKj/KtjQ
+t1i8fiaSiLt6qTwLhvwxf9pNXxvZz+Ra3Fr5rggyekJz+Y8cFFRaQcaschHpBICC
++ltJZTL9eNZ/0zNIIRWZgcXZXxbA4eqEXORjSJKpPLx19qtUFGFoWtg1fOlHy6Do
+WWJLPykoIKt/yUxF+S1KlUazQ2Xet6hFaYklbNMKFmJoZFzmgmwFD5ppUylk/dV/
+aga4EdHdLWcyCg/wX9yZskt3zUjLz5/3NRhvWqD88DSdIWOG3jn9XB27wBh+/O2P
+W2YaZCFSXZGqczTabK1f1vh1SUV/mp0HgISyZvyFhAXmA9FfUUAGjpKGdM7GuY72
+I7c0HHuQ6uHAVffIDoiZaaNv5EZoIfWREFlLhw99Ml9BFPKl4W/gcqLx1eJEL6dJ
+d8nGJrennXFNwyz7TMwf
+=ZqR7
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__19_Apr_2013_17_40_41_+1000_BgeF2Eu/uyHfv=PI--
