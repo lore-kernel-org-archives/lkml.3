@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965161Ab3DSWz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 18:55:59 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:64878 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964935Ab3DSWz5 (ORCPT
+	id S965229Ab3DSXCu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 19:02:50 -0400
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:59267 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964948Ab3DSXCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 18:55:57 -0400
+	Fri, 19 Apr 2013 19:02:48 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+55aFxsMRKn8kkMr7Q1vGryR=E-E2hPJfdf2XUh6WLMZ3wLNw@mail.gmail.com>
+In-Reply-To: <CA+icZUWhB=BTaQp0XuC8+PocQf3FzxBoytbzYFh=kup0LsapRg@mail.gmail.com>
 References: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
 	<CAKMK7uFEaiT_1siQBcp_-S0RwLvy3XSjqLn1ksq70VhNTZSfLw@mail.gmail.com>
 	<CA+icZUWQEiGecR8jgw4P-2YCKyqSDMMP0Ufwn8aBU_-AOf0a-Q@mail.gmail.com>
@@ -24,12 +23,14 @@ References: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
 	<CA+icZUV+Y90uuEoBXQWGsZTYT5h4HXqWvAW_fU4vxL-N2TmXhQ@mail.gmail.com>
 	<CA+icZUVuU9Cbx+d=uyDk=csH01re56NsvBo-wHjjLg1gOt5uzw@mail.gmail.com>
 	<CA+55aFxsMRKn8kkMr7Q1vGryR=E-E2hPJfdf2XUh6WLMZ3wLNw@mail.gmail.com>
-Date: Sat, 20 Apr 2013 00:55:55 +0200
-Message-ID: <CA+icZUWhB=BTaQp0XuC8+PocQf3FzxBoytbzYFh=kup0LsapRg@mail.gmail.com>
+	<CA+icZUWhB=BTaQp0XuC8+PocQf3FzxBoytbzYFh=kup0LsapRg@mail.gmail.com>
+Date: Fri, 19 Apr 2013 16:02:47 -0700
+X-Google-Sender-Auth: J6RPha0hTV22MHrwW9B744-IGJk
+Message-ID: <CA+55aFx0ogTF9F6wsk2ECkB41Ufd1SzcTYWE0aW3RQ2ijdsJ3A@mail.gmail.com>
 Subject: Re: linux-next: Tree for Apr 18 [ call-trace: drm | x86 | smp | rcu
  related? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sedat Dilek <sedat.dilek@gmail.com>
 Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>, Rik van Riel <riel@surriel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
@@ -47,27 +48,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 20, 2013 at 12:50 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Apr 19, 2013 at 3:34 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>
->> See attached dmesg.
+On Fri, Apr 19, 2013 at 3:55 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
 >
-> This still has the bug Davidlohr pointed at:
+> Davidlohr pointed to this patch (tested the triplet):
 >
->>> This looks like what Emmanuel was/is running into:
->>> https://lkml.org/lkml/2013/3/30/1
+> ipc, sem: do not call sem_lock when bogus sma:
+> https://lkml.org/lkml/2013/3/31/12
 >
-> you need to move the "IS_ERR()" check before the sem_lock.
->
+> Is that what you mean?
 
-Davidlohr pointed to this patch (tested the triplet):
+Yup.
 
-ipc, sem: do not call sem_lock when bogus sma:
-https://lkml.org/lkml/2013/3/31/12
-
-Is that what you mean?
-
-- Sedat -
-
->               Linus
+    Linus
