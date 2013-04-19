@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030239Ab3DSKv6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 06:51:58 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:65130 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968140Ab3DSKv4 (ORCPT
+	id S1030253Ab3DSKxw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 06:53:52 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:19360 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757313Ab3DSKxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 06:51:56 -0400
+	Fri, 19 Apr 2013 06:53:51 -0400
+X-Spam-Score: -100.8
+Message-ID: <51712213.4060607@asianux.com>
+Date: Fri, 19 Apr 2013 18:53:07 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXSbzxYjC2JWdso-OPVjjaoFkFX-t9f8CqJdVuPeE7vJw@mail.gmail.com>
-References: <CA+icZUXSbzxYjC2JWdso-OPVjjaoFkFX-t9f8CqJdVuPeE7vJw@mail.gmail.com>
-Date: Fri, 19 Apr 2013 12:51:54 +0200
-Message-ID: <CA+icZUXMBthFSzvEW887NocNsOG1D6KVJK7mc3sTjBNhxxZ2tA@mail.gmail.com>
-Subject: Re: [Q] Diff of two successive -next releases?
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Christopher Covington <cov@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+CC: "anup.patel@linaro.org" <anup.patel@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH] ARM64: kernel: compiling issue, duplicate definition of early_console
+References: <5152DB83.8080703@asianux.com> <20130327115509.GA1603@MacBook-Pro.local> <5152DFF1.2090000@asianux.com> <515BE49C.8040601@asianux.com> <515C14FD.4040703@codeaurora.org> <515C2808.70406@asianux.com> <516E66F9.9070904@asianux.com>
+In-Reply-To: <516E66F9.9070904@asianux.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 12:35 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> Hi,
->
-> I would like to do a diff between a problematic next-yyyymmdd and
-> next-[yyyymmdd+1].
-> How can I do this easily?
->
-> My old style was to checkout a specific Linux-Next release and then
-> create a diff against the latest -rcX (of mainline).
-> So, I have two diffs and try to compare them.
->
 
-I was not precise enough... not only a diff also a list of changed
-commits (commit subject) to possibly identify a problematic commit
-(for later test with a revert).
+  when compiling with allmodconfig.
+    early_console is already defined as an extern global pointer.
 
-- Sedat -
+  need let it point to the object which we intend to (like ARM32 done).
 
-> Thanks in advance.
->
-> Regards,
-> - Sedat -
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/arm64/kernel/early_printk.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/kernel/early_printk.c
+b/arch/arm64/kernel/early_printk.c
+index ac974f4..fbb6e18 100644
+--- a/arch/arm64/kernel/early_printk.c
++++ b/arch/arm64/kernel/early_printk.c
+@@ -95,7 +95,7 @@ static void early_write(struct console *con, const
+char *s, unsigned n)
+ 	}
+ }
+
+-static struct console early_console = {
++static struct console early_console_dev = {
+ 	.name =		"earlycon",
+ 	.write =	early_write,
+ 	.flags =	CON_PRINTBUFFER | CON_BOOT,
+@@ -145,7 +145,8 @@ static int __init setup_early_printk(char *buf)
+ 		early_base = early_io_map(paddr, EARLYCON_IOBASE);
+
+ 	printch = match->printch;
+-	register_console(&early_console);
++	early_console = &early_console_dev;
++	register_console(&early_console_dev);
+
+ 	return 0;
+ }
+-- 
+1.7.7.6
