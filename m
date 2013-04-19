@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab3DSU61 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 16:58:27 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:37350 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab3DSU6Z (ORCPT
+	id S933525Ab3DSVB4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 17:01:56 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:37521 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932474Ab3DSVBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 16:58:25 -0400
-Date: Fri, 19 Apr 2013 13:58:21 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>
-Subject: Re: [PATCH 09/10] cpuset: allow to keep tasks in empty cpusets
-Message-ID: <20130419205821.GA15543@mtj.dyndns.org>
-References: <517137A7.4020605@huawei.com>
- <517138A4.3070209@huawei.com>
+	Fri, 19 Apr 2013 17:01:54 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH documentation 1/2] nohz1: Add documentation.
+References: <20130411160524.GA30384@linux.vnet.ibm.com>
+	<1365696359-30958-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Date: Fri, 19 Apr 2013 14:01:49 -0700
+In-Reply-To: <1365696359-30958-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	(Paul E. McKenney's message of "Thu, 11 Apr 2013 09:05:58 -0700")
+Message-ID: <877gjyxmiq.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <517138A4.3070209@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
 
-On Fri, Apr 19, 2013 at 08:29:24PM +0800, Li Zefan wrote:
-> +static void update_tasks_cpumask_hier(struct cpuset *root_cs,
-> +				      bool update_root, struct ptr_heap *heap)
-> +{
-> +	struct cpuset *cp;
-> +	struct cgroup *pos_cgrp;
-> +
-> +	if (update_root)
-> +		update_tasks_cpumask(root_cs, heap);
-> +
-> +	rcu_read_lock();
-> +	cpuset_for_each_descendant_pre(cp, pos_cgrp, root_cs) {
-> +		/* skip the whole subtree if @cp have some CPU */
-> +		if (!cpumask_empty(cp->cpus_allowed)) {
-> +			pos_cgrp = cgroup_rightmost_descendant(pos_cgrp);
-> +			continue;
-> +		}
-> +
-> +		update_tasks_cpumask(cp, heap);
-> +	}
-> +	rcu_read_unlock();
+> +KNOWN ISSUES
 
-I don't think we can call update_tasks_cpumask() under
-rcu_read_lock().  It calls into set_cpus_allowed_ptr() which may
-block, so you'll probably have to punt it to a work item like how
-migration is being done.  Another approach would be converting cgroup
-to use SRCU instead, which would lessen pain on other places too.  The
-only problem there would be that srcu_read_lock() is a bit more
-expensive than rcu_read_lock().  I'm not sure whether that'd show up
-in some hot path or not.  Ideas?
+[...]
 
-Thanks.
+> +o	Unless all CPUs are idle, at least one CPU must keep the
+> +	scheduling-clock interrupt going in order to support accurate
+> +	timekeeping.
 
--- 
-tejun
+At least with the implementation I'm using (Frederic's 3.9-nohz1
+branch), at least one CPU is forced to stay out of dyntick-idle
+*always*, even if all CPUs are idle.
+
+IMO, this is important to list as a known issue since this will have
+its own power implications when the system is mostly idle.
+
+Otherwise, document looks great.  
+
+Reviewed-by: Kevin Hilman <khilman@linaro.org>
+
+Kevin
+
