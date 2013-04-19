@@ -1,87 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab3DSFWP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 01:22:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49757 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752277Ab3DSFVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 01:21:53 -0400
-Date: Fri, 19 Apr 2013 07:15:02 +0200
-From: Jan Kara <jack@suse.cz>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH v3 15/18] ext4: remove unused code from
- ext4_remove_blocks()
-Message-ID: <20130419051502.GF19244@quack.suse.cz>
-References: <1365498867-27782-1-git-send-email-lczerner@redhat.com>
- <1365498867-27782-16-git-send-email-lczerner@redhat.com>
+	id S1756153Ab3DSFXz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 01:23:55 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36054 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429Ab3DSFXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 01:23:54 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5170D4CB.20900@jp.fujitsu.com>
+Date: Fri, 19 Apr 2013 14:23:23 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1365498867-27782-16-git-send-email-lczerner@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: <kosaki.motohiro@gmail.com>, <mingo@kernel.org>, <hpa@zytor.com>,
+        <srivatsa.bhat@linux.vnet.ibm.com>, <akpm@linux-foundation.org>
+CC: <linux-kernel@vger.kernel.org>, <x86@kernel.org>, <linux-mm@kvack.org>
+Subject: [Bug fix PATCH v2] numa, cpu hotplug: Change links of CPU and node
+ when changing node number by onlining CPU
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 09-04-13 11:14:24, Lukas Czerner wrote:
-> The "head removal" branch in the condition is never used in any code
-> path in ext4 since the function only caller ext4_ext_rm_leaf() will make
-> sure that the extent is properly split before removing blocks. Note that
-> there is a bug in this branch anyway.
-> 
-> This commit removes the unused code completely and makes use of
-> ext4_error() instead of printk if dubious range is provided.
-> 
-> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-  Looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+When booting x86 system contains memoryless node, node numbers of CPUs
+on memoryless node were changed to nearest online node number by
+init_cpu_to_node() because the node is not online.
 
-								Honza
-> ---
->  fs/ext4/extents.c |   21 ++++-----------------
->  1 files changed, 4 insertions(+), 17 deletions(-)
-> 
-> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-> index 6c5a70a..4adaa8a 100644
-> --- a/fs/ext4/extents.c
-> +++ b/fs/ext4/extents.c
-> @@ -2435,23 +2435,10 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
->  			*partial_cluster = EXT4_B2C(sbi, pblk);
->  		else
->  			*partial_cluster = 0;
-> -	} else if (from == le32_to_cpu(ex->ee_block)
-> -		   && to <= le32_to_cpu(ex->ee_block) + ee_len - 1) {
-> -		/* head removal */
-> -		ext4_lblk_t num;
-> -		ext4_fsblk_t start;
-> -
-> -		num = to - from;
-> -		start = ext4_ext_pblock(ex);
-> -
-> -		ext_debug("free first %u blocks starting %llu\n", num, start);
-> -		ext4_free_blocks(handle, inode, NULL, start, num, flags);
-> -
-> -	} else {
-> -		printk(KERN_INFO "strange request: removal(2) "
-> -				"%u-%u from %u:%u\n",
-> -				from, to, le32_to_cpu(ex->ee_block), ee_len);
-> -	}
-> +	} else
-> +		ext4_error(sbi->s_sb, "strange request: removal(2) "
-> +			   "%u-%u from %u:%u\n",
-> +			   from, to, le32_to_cpu(ex->ee_block), ee_len);
->  	return 0;
->  }
->  
-> -- 
-> 1.7.7.6
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+In my system, node numbers of cpu#30-44 and 75-89 were changed from 2 to 0
+as follows:
+
+$ numactl --hardware
+available: 2 nodes (0-1)
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 30 31 32 33 34 35 36 37 38 39 40
+41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 75 76 77 78 79 80 81 82
+83 84 85 86 87 88 89
+node 0 size: 32394 MB
+node 0 free: 27898 MB
+node 1 cpus: 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 60 61 62 63 64 65 66
+67 68 69 70 71 72 73 74
+node 1 size: 32768 MB
+node 1 free: 30335 MB
+
+If we hot add memory to memoryless node and offine/online all CPUs on
+the node, node numbers of these CPUs are changed to correct node numbers
+by srat_detect_node() because the node become online.
+
+In this case, node numbers of cpu#30-44 and 75-89 were changed from 0 to 2
+in my system as follows:
+
+$ numactl --hardware
+available: 3 nodes (0-2)
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 45 46 47 48 49 50 51 52 53 54 55
+56 57 58 59
+node 0 size: 32394 MB
+node 0 free: 27218 MB
+node 1 cpus: 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 60 61 62 63 64 65 66
+67 68 69 70 71 72 73 74
+node 1 size: 32768 MB
+node 1 free: 30014 MB
+node 2 cpus: 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 75 76 77 78 79 80 81
+82 83 84 85 86 87 88 89
+node 2 size: 16384 MB
+node 2 free: 16384 MB
+
+But "cpu to node" and "node to cpu" links were not changed as follows:
+
+$ ls /sys/devices/system/cpu/cpu30/|grep node
+node0
+$ ls /sys/devices/system/node/node0/|grep cpu30
+cpu30
+
+"numactl --hardware" shows that cpu30 belongs to node 2. But sysfs links
+does  not change.
+
+This patch changes "cpu to node" and "node to cpu" links when node number
+changed by onlining CPU.
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+---
+v2:
+Change argument's name from num to cpuid in store_online()
+Add comments for explaining why node number change
+---
+ drivers/base/cpu.c |   25 +++++++++++++++++++++++--
+ 1 files changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index fb10728..229d6e7 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -25,6 +25,15 @@ EXPORT_SYMBOL_GPL(cpu_subsys);
+ static DEFINE_PER_CPU(struct device *, cpu_sys_devices);
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
++static void change_cpu_under_node(struct cpu *cpu,
++			unsigned int from_nid, unsigned int to_nid)
++{
++	int cpuid = cpu->dev.id;
++	unregister_cpu_under_node(cpuid, from_nid);
++	register_cpu_under_node(cpuid, to_nid);
++	cpu->node_id = to_nid;
++}
++
+ static ssize_t show_online(struct device *dev,
+ 			   struct device_attribute *attr,
+ 			   char *buf)
+@@ -39,17 +48,29 @@ static ssize_t __ref store_online(struct device *dev,
+ 				  const char *buf, size_t count)
+ {
+ 	struct cpu *cpu = container_of(dev, struct cpu, dev);
++	int cpuid = cpu->dev.id;
++	int from_nid, to_nid;
+ 	ssize_t ret;
+ 
+ 	cpu_hotplug_driver_lock();
+ 	switch (buf[0]) {
+ 	case '0':
+-		ret = cpu_down(cpu->dev.id);
++		ret = cpu_down(cpuid);
+ 		if (!ret)
+ 			kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
+ 		break;
+ 	case '1':
+-		ret = cpu_up(cpu->dev.id);
++		from_nid = cpu_to_node(cpuid);
++		ret = cpu_up(cpuid);
++
++		/*
++		 * When hot adding memory to memoryless node and enabling a cpu
++		 * on the node, node number of the cpu may internally change.
++		 */
++		to_nid = cpu_to_node(cpuid);
++		if (from_nid != to_nid)
++			change_cpu_under_node(cpu, from_nid, to_nid);
++
+ 		if (!ret)
+ 			kobject_uevent(&dev->kobj, KOBJ_ONLINE);
+ 		break;
+
