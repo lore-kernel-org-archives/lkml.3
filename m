@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030406Ab3DSNR0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 09:17:26 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:64323 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030323Ab3DSNRY (ORCPT
+	id S968359Ab3DSNUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 09:20:31 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:44537 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968294Ab3DSNUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 09:17:24 -0400
+	Fri, 19 Apr 2013 09:20:30 -0400
 MIME-Version: 1.0
 In-Reply-To: <51713A25.308@yahoo.es>
 References: <51713A25.308@yahoo.es>
 From: Eric Miao <eric.y.miao@gmail.com>
-Date: Fri, 19 Apr 2013 21:17:03 +0800
-Message-ID: <CAMPhdO-NVW5Wwa7OVWQB5yiT2ahdfzhzrrGp9pBeer9vH561CQ@mail.gmail.com>
+Date: Fri, 19 Apr 2013 21:20:10 +0800
+Message-ID: <CAMPhdO-JikYPS8v5icF69QRCsvspSfBSUvTfUwYyuhUOg4LNOQ@mail.gmail.com>
 Subject: Re: [PATCH] platform: fall-back to driver name check if there is no
  id found
 To: Hein Tibosch <hein_tibosch@yahoo.es>
