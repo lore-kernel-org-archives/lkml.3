@@ -1,131 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab3DSTDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 15:03:21 -0400
-Received: from mga03.intel.com ([143.182.124.21]:47770 "EHLO mga03.intel.com"
+	id S1753543Ab3DSTDT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 15:03:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:2768 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933015Ab3DSTDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 15:03:03 -0400
+	id S1753246Ab3DSTDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 15:03:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,510,1363158000"; 
-   d="scan'208";a="288738902"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Bill Nottingham <notting@redhat.com>,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 3/3 V2 RESEND] mei: reseting -> resetting
-Date: Fri, 19 Apr 2013 22:01:36 +0300
-Message-Id: <1366398096-14756-3-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1366398096-14756-1-git-send-email-tomas.winkler@intel.com>
-References: <1366398096-14756-1-git-send-email-tomas.winkler@intel.com>
+   d="scan'208,223";a="325043314"
+Date: Fri, 19 Apr 2013 19:05:30 +0100 (IST)
+From: Josef Ahmad <josef.ahmad@linux.intel.com>
+X-X-Sender: joey@localhost
+To: Wolfram Sang <wsa@the-dreams.de>, Ben Dooks <ben-linux@fluff.org>,
+        Jean Delvare <khali@linux-fr.org>, Stefan Roese <sr@denx.de>,
+        Axel Lin <axel.lin@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: [PATCH] i2c-designware: fix RX FIFO overrun
+Message-ID: <alpine.DEB.2.02.1304191859570.17829@localhost>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bill Nottingham <notting@redhat.com>
+>From a969728248c3b439dc97a69e7dac133b5efa34e7 Mon Sep 17 00:00:00 2001
+From: Josef Ahmad <josef.ahmad@linux.intel.com>
+Date: Fri, 19 Apr 2013 17:28:10 +0100
+Subject: [PATCH] i2c-designware: fix RX FIFO overrun
 
-This enum leaks out to userspace via error messages, so fix the spelling.
+i2c_dw_xfer_msg() pushes a number of bytes to transmit/receive
+to/from the bus into the TX FIFO.
+For master-rx transactions, the maximum amount of data that can be
+received is calculated depending solely on TX and RX FIFO load.
 
-Signed-off-by: Bill Nottingham <notting@redhat.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+This is racy - TX FIFO may contain master-rx data yet to be
+processed, which will eventually land into the RX FIFO. This
+data is not taken into account and the function may request more
+data than the controller is actually capable of storing.
+
+This patch ensures the driver takes into account the outstanding
+master-rx data in TX FIFO to prevent RX FIFO overrun.
+
+Signed-off-by: Josef Ahmad <josef.ahmad@linux.intel.com>
 ---
-V2: rebased
- drivers/misc/mei/hbm.c     | 8 ++++----
- drivers/misc/mei/hw-me.c   | 2 +-
- drivers/misc/mei/init.c    | 4 ++--
- drivers/misc/mei/mei_dev.h | 2 +-
- 4 files changed, 8 insertions(+), 8 deletions(-)
+  drivers/i2c/busses/i2c-designware-core.c |   11 ++++++++++-
+  drivers/i2c/busses/i2c-designware-core.h |    2 ++
+  2 files changed, 12 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 4de80d9..db605f5 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -52,7 +52,7 @@ static void mei_hbm_me_cl_allocate(struct mei_device *dev)
- 			sizeof(struct mei_me_client), GFP_KERNEL);
- 	if (!clients) {
- 		dev_err(&dev->pdev->dev, "memory allocation for ME clients failed.\n");
--		dev->dev_state = MEI_DEV_RESETING;
-+		dev->dev_state = MEI_DEV_RESETTING;
- 		mei_reset(dev, 1);
- 		return;
- 	}
-@@ -167,7 +167,7 @@ int mei_hbm_start_req(struct mei_device *dev)
- 	dev->hbm_state = MEI_HBM_IDLE;
- 	if (mei_write_message(dev, mei_hdr, dev->wr_msg.data)) {
- 		dev_err(&dev->pdev->dev, "version message writet failed\n");
--		dev->dev_state = MEI_DEV_RESETING;
-+		dev->dev_state = MEI_DEV_RESETTING;
- 		mei_reset(dev, 1);
- 		return -ENODEV;
- 	}
-@@ -196,7 +196,7 @@ static void mei_hbm_enum_clients_req(struct mei_device *dev)
- 	enum_req->hbm_cmd = HOST_ENUM_REQ_CMD;
- 
- 	if (mei_write_message(dev, mei_hdr, dev->wr_msg.data)) {
--		dev->dev_state = MEI_DEV_RESETING;
-+		dev->dev_state = MEI_DEV_RESETTING;
- 		dev_err(&dev->pdev->dev, "enumeration request write failed.\n");
- 		mei_reset(dev, 1);
- 	}
-@@ -249,7 +249,7 @@ static int mei_hbm_prop_req(struct mei_device *dev)
- 	prop_req->address = next_client_index;
- 
- 	if (mei_write_message(dev, mei_hdr, dev->wr_msg.data)) {
--		dev->dev_state = MEI_DEV_RESETING;
-+		dev->dev_state = MEI_DEV_RESETTING;
- 		dev_err(&dev->pdev->dev, "properties request write failed\n");
- 		mei_reset(dev, 1);
- 
-diff --git a/drivers/misc/mei/hw-me.c b/drivers/misc/mei/hw-me.c
-index 3d6dfa3..fc03227 100644
---- a/drivers/misc/mei/hw-me.c
-+++ b/drivers/misc/mei/hw-me.c
-@@ -481,7 +481,7 @@ irqreturn_t mei_me_irq_thread_handler(int irq, void *dev_id)
- 
- 	/* check if ME wants a reset */
- 	if (!mei_hw_is_ready(dev) &&
--	    dev->dev_state != MEI_DEV_RESETING &&
-+	    dev->dev_state != MEI_DEV_RESETTING &&
- 	    dev->dev_state != MEI_DEV_INITIALIZING) {
- 		dev_dbg(&dev->pdev->dev, "FW not ready.\n");
- 		mei_reset(dev, 1);
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 59159e0..713d89f 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -33,7 +33,7 @@ const char *mei_dev_state_str(int state)
- 	MEI_DEV_STATE(INITIALIZING);
- 	MEI_DEV_STATE(INIT_CLIENTS);
- 	MEI_DEV_STATE(ENABLED);
--	MEI_DEV_STATE(RESETING);
-+	MEI_DEV_STATE(RESETTING);
- 	MEI_DEV_STATE(DISABLED);
- 	MEI_DEV_STATE(POWER_DOWN);
- 	MEI_DEV_STATE(POWER_UP);
-@@ -146,7 +146,7 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
- 	if (dev->dev_state != MEI_DEV_INITIALIZING) {
- 		if (dev->dev_state != MEI_DEV_DISABLED &&
- 		    dev->dev_state != MEI_DEV_POWER_DOWN)
--			dev->dev_state = MEI_DEV_RESETING;
-+			dev->dev_state = MEI_DEV_RESETTING;
- 
- 		mei_cl_all_disconnect(dev);
- 
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index c91c492..4de5140 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -97,7 +97,7 @@ enum mei_dev_state {
- 	MEI_DEV_INITIALIZING = 0,
- 	MEI_DEV_INIT_CLIENTS,
- 	MEI_DEV_ENABLED,
--	MEI_DEV_RESETING,
-+	MEI_DEV_RESETTING,
- 	MEI_DEV_DISABLED,
- 	MEI_DEV_POWER_DOWN,
- 	MEI_DEV_POWER_UP
+diff --git a/drivers/i2c/busses/i2c-designware-core.c b/drivers/i2c/busses/i2c-designware-core.c
+index 94fd818..8dbeef1 100644
+--- a/drivers/i2c/busses/i2c-designware-core.c
++++ b/drivers/i2c/busses/i2c-designware-core.c
+@@ -426,8 +426,14 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
+  				cmd |= BIT(9);
+
+  			if (msgs[dev->msg_write_idx].flags & I2C_M_RD) {
++
++				/* avoid rx buffer overrun */
++				if (rx_limit - dev->rx_outstanding <= 0)
++					break;
++
+  				dw_writel(dev, cmd | 0x100, DW_IC_DATA_CMD);
+  				rx_limit--;
++				dev->rx_outstanding++;
+  			} else
+  				dw_writel(dev, cmd | *buf++, DW_IC_DATA_CMD);
+  			tx_limit--; buf_len--;
+@@ -480,8 +486,10 @@ i2c_dw_read(struct dw_i2c_dev *dev)
+
+  		rx_valid = dw_readl(dev, DW_IC_RXFLR);
+
+-		for (; len > 0 && rx_valid > 0; len--, rx_valid--)
++		for (; len > 0 && rx_valid > 0; len--, rx_valid--) {
+  			*buf++ = dw_readl(dev, DW_IC_DATA_CMD);
++			dev->rx_outstanding--;
++		}
+
+  		if (len > 0) {
+  			dev->status |= STATUS_READ_IN_PROGRESS;
+@@ -539,6 +547,7 @@ i2c_dw_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
+  	dev->msg_err = 0;
+  	dev->status = STATUS_IDLE;
+  	dev->abort_source = 0;
++	dev->rx_outstanding = 0;
+
+  	ret = i2c_dw_wait_bus_not_busy(dev);
+  	if (ret < 0)
+diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
+index 9c1840e..e761ad1 100644
+--- a/drivers/i2c/busses/i2c-designware-core.h
++++ b/drivers/i2c/busses/i2c-designware-core.h
+@@ -60,6 +60,7 @@
+   * @adapter: i2c subsystem adapter node
+   * @tx_fifo_depth: depth of the hardware tx fifo
+   * @rx_fifo_depth: depth of the hardware rx fifo
++ * @rx_outstanding: current master-rx elements in tx fifo
+   */
+  struct dw_i2c_dev {
+  	struct device		*dev;
+@@ -88,6 +89,7 @@ struct dw_i2c_dev {
+  	u32			master_cfg;
+  	unsigned int		tx_fifo_depth;
+  	unsigned int		rx_fifo_depth;
++	int			rx_outstanding;
+  };
+
+  #define ACCESS_SWAP		0x00000001
 -- 
-1.8.1.2
+1.7.0.7
 
