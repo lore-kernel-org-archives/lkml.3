@@ -1,123 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031138Ab3DSQn0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:43:26 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50257 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1031065Ab3DSQnW (ORCPT
+	id S1751222Ab3DSQyQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:54:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35021 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab3DSQyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 12:43:22 -0400
+	Fri, 19 Apr 2013 12:54:15 -0400
+Date: Fri, 19 Apr 2013 17:52:08 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Howells <dhowells@redhat.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, Mark Salter <msalter@redhat.com>,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [PATCH v4, part3 01/15] mm: fix build warnings caused by
+	free_reserved_area()
+Message-ID: <20130419165208.GZ14496@n2100.arm.linux.org.uk>
+References: <1365256509-29024-1-git-send-email-jiang.liu@huawei.com> <1365256509-29024-2-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXjTGSG+tejOAFgXr8EpKd7dL=-W41ha_-0N=roAxN3eg@mail.gmail.com>
-References: <CA+icZUVWC+Rgd9wh4Z4CPZkEa9Pm2=2udnY5=UD1nnH0Wot1pQ@mail.gmail.com>
-	<CAKMK7uFEaiT_1siQBcp_-S0RwLvy3XSjqLn1ksq70VhNTZSfLw@mail.gmail.com>
-	<CA+icZUWQEiGecR8jgw4P-2YCKyqSDMMP0Ufwn8aBU_-AOf0a-Q@mail.gmail.com>
-	<CA+icZUWcwvFFVesJDoFNT3DbgRMXvDp7QLn+S5Ze_5d8gJRx1g@mail.gmail.com>
-	<CA+icZUXjTGSG+tejOAFgXr8EpKd7dL=-W41ha_-0N=roAxN3eg@mail.gmail.com>
-Date: Fri, 19 Apr 2013 18:43:20 +0200
-Message-ID: <CA+icZUVE-ikxEp65bUHMp0WEPX_MDbA06ykzeSxygJv=9f45ig@mail.gmail.com>
-Subject: Re: linux-next: Tree for Apr 18 [ call-trace: drm | x86 | smp | rcu
- related? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1365256509-29024-2-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 12:27 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Fri, Apr 19, 2013 at 12:19 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Thu, Apr 18, 2013 at 11:59 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> On Thu, Apr 18, 2013 at 9:48 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->>>> On Thu, Apr 18, 2013 at 3:05 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>>> On Thu, Apr 18, 2013 at 10:28 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>>>>> Hi all,
->>>>>>
->>>>>> Changes since 20130417:
->>>>>>
->>>>>> New Trees:      rpmsg (actually added yesterday)
->>>>>>                 ppc-temp (replacing powerpc for this week)
->>>>>>
->>>>>> The ceph tree gained a conflict against Linus' tree.
->>>>>>
->>>>>> The net-next tree gained a conflict against the infiniband tree.
->>>>>>
->>>>>> The usb tree gained a build failure so I used the version from
->>>>>> next-20130417.
->>>>>>
->>>>>> I added two merge fix patches after the gen-gpio tree.
->>>>>>
->>>>>> The ppc-temp tree gained a conflict against the metag tree.
->>>>>>
->>>>>> The akpm tree lost a patch that turned up elsewhere.
->>>>>>
->>>>>> ----------------------------------------------------------------------------
->>>>>>
->>>>>
->>>>> Not sure what the root-cause for this call-trace is (see screenshot).
->>>>>
->>>>> This is reproducible when running my kernel build-script (4 parallel-make-jobs).
->>>>>
->>>>> Any hints welcome!
->>>>
->>>> The panic handlers in our modeset code are pretty decent fubar - they
->>>> take mutexes all over the place. So I think the backtrace you see
->>>> there is actually a secondary effect. I've looked into fixing this up,
->>>> but the issue is that drivers themselves have tons of state protected
->>>> with mutexes, which all potentially affects the panic handler. So I've
->>>> given up on that for now ...
->>>
->>> Thanks for taking care.
->>>
->>> On suspicion [1] I have reverted [2]... NOPE.
->>>
->>> - Sedat -
->>>
->>> [1] http://marc.info/?l=linux-kernel&m=136631921208895&w=2
->>> [2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=5a90d1a95356de7a32acb2e5309ac579a891af8f
->>>
->>
->> Hmmm, the issue seems to be gone with today's Linux-Next (next-20130419).
->> My kernel-build is still running with no call-trace...
->>
->
-> NO, It's no good.
->
+On Sat, Apr 06, 2013 at 09:54:55PM +0800, Jiang Liu wrote:
+> Fix following build warnings cuased by free_reserved_area():
+> 
+> arch/arm/mm/init.c: In function 'mem_init':
+> arch/arm/mm/init.c:603:2: warning: passing argument 1 of 'free_reserved_area' makes integer from pointer without a cast [enabled by default]
+>   free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
+>   ^
+> In file included from include/linux/mman.h:4:0,
+>                  from arch/arm/mm/init.c:15:
+> include/linux/mm.h:1301:22: note: expected 'long unsigned int' but argument is of type 'void *'
+>  extern unsigned long free_reserved_area(unsigned long start, unsigned long end,
+> 
+>    mm/page_alloc.c: In function 'free_reserved_area':
+> >> mm/page_alloc.c:5134:3: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast [enabled by default]
+>    In file included from arch/mips/include/asm/page.h:49:0,
+>                     from include/linux/mmzone.h:20,
+>                     from include/linux/gfp.h:4,
+>                     from include/linux/mm.h:8,
+>                     from mm/page_alloc.c:18:
+>    arch/mips/include/asm/io.h:119:29: note: expected 'const volatile void *' but argument is of type 'long unsigned int'
+>    mm/page_alloc.c: In function 'free_area_init_nodes':
+>    mm/page_alloc.c:5030:34: warning: array subscript is below array bounds [-Warray-bounds]
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-mm@kvack.org
+> ---
+>  arch/arm/mm/init.c |    6 ++++--
+>  mm/page_alloc.c    |    2 +-
+>  2 files changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
+> index 9a5cdc0..7a82fcd 100644
+> --- a/arch/arm/mm/init.c
+> +++ b/arch/arm/mm/init.c
+> @@ -600,7 +600,8 @@ void __init mem_init(void)
+>  
+>  #ifdef CONFIG_SA1111
+>  	/* now that our DMA memory is actually so designated, we can free it */
+> -	free_reserved_area(__va(PHYS_PFN_OFFSET), swapper_pg_dir, 0, NULL);
+> +	free_reserved_area((unsigned long)__va(PHYS_PFN_OFFSET),
+> +			   (unsigned long)swapper_pg_dir, 0, NULL);
+>  #endif
+>  
+>  	free_highpages();
+> @@ -728,7 +729,8 @@ void free_initmem(void)
+>  	extern char __tcm_start, __tcm_end;
+>  
+>  	poison_init_mem(&__tcm_start, &__tcm_end - &__tcm_start);
+> -	free_reserved_area(&__tcm_start, &__tcm_end, 0, "TCM link");
+> +	free_reserved_area((unsigned long)&__tcm_start,
+> +			   (unsigned long)&__tcm_end, 0, "TCM link");
+>  #endif
+>  
+>  	poison_init_mem(__init_begin, __init_end - __init_begin);
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index e4923e9..8bf7956 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5196,7 +5196,7 @@ unsigned long free_reserved_area(unsigned long start, unsigned long end,
+>  	for (pages = 0; pos < end; pos += PAGE_SIZE, pages++) {
+>  		if (poison)
+>  			memset((void *)pos, poison, PAGE_SIZE);
+> -		free_reserved_page(virt_to_page(pos));
+> +		free_reserved_page(virt_to_page((void *)pos));
 
-I tried to switch from SLUB to SLAB...
-
-...and also from VIRT_CPU_ACCOUNTING_GEN to TICK_CPU_ACCOUNTING.
-
-2x NOPE.
-
-In one kernel-build I saw in my console...
-
-     semop(1): encountered an error: Identifier removed
-
-...if this says sth. to you.
-
-- Sedat -
-
-- Sedat -
-
-> - Sedat -
->
-> [1] http://www.youtube.com/watch?v=LwicaralvS0
->
->> - Sedat -
->>
->>>> -Daniel
->>>> --
->>>> Daniel Vetter
->>>> Software Engineer, Intel Corporation
->>>> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Don't all these casts suggest to you that you may have the type wrong
+in the first place?
