@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030812Ab3DSOsY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 10:48:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43706 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030593Ab3DSOsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 10:48:23 -0400
-Date: Fri, 19 Apr 2013 16:48:19 +0200
-From: Jan Kara <jack@suse.cz>
-To: majianpeng <majianpeng@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, akpm@linux-foundation.org,
-        tytso@mit.edu, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] fs/buffer.c: Remove the unnecessary init operation
- after allocating buffer_head.
-Message-ID: <20130419144819.GB26647@quack.suse.cz>
-References: <5170AC10.60504@gmail.com>
+	id S1030828Ab3DSOu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 10:50:56 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:38914 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030593Ab3DSOuz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 10:50:55 -0400
+Message-ID: <51715988.9060606@cogentembedded.com>
+Date: Fri, 19 Apr 2013 18:49:44 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5170AC10.60504@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: linux-arm-kernel@lists.infradead.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org, tanzilli@acmesystems.it,
+        dgilbert@interlog.com, robertcnelson@gmail.com
+Subject: Re: [PATCH 1/5] ARM: at91: at91sam9x5 RTC is not compatible with
+ at91rm9200 one
+References: <cover.1366289869.git.nicolas.ferre@atmel.com> <864f10566b35864d469f6ff2913b9afaa0c69350.1366289869.git.nicolas.ferre@atmel.com> <51714C74.2030907@cogentembedded.com> <51714F47.5040006@atmel.com>
+In-Reply-To: <51714F47.5040006@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 19-04-13 10:29:36, majianpeng wrote:
-> Because alloc struct buffer_head using kmem_cache_zalloc,so it's not need to
-> call 'init_buffer(bh, NULL, NULL)'.
-> 
-> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-> ---
->  fs/buffer.c       | 2 --
->  fs/jbd/journal.c  | 1 -
->  fs/jbd2/journal.c | 1 -
->  3 files changed, 4 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index b4dcb34..52b7739 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -865,8 +865,6 @@ try_again:
->  
->          /* Link the buffer to its page */
->          set_bh_page(bh, page, offset);
-> -
-> -        init_buffer(bh, NULL, NULL);
->      }
->      return head;
->  /*
-> diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-> index 81cc7ea..0c3fe90 100644
-> --- a/fs/jbd/journal.c
-> +++ b/fs/jbd/journal.c
-> @@ -311,7 +311,6 @@ int journal_write_metadata_buffer(transaction_t *transaction,
->      new_bh = alloc_buffer_head(GFP_NOFS|__GFP_NOFAIL);
->      /* keep subsequent assertions sane */
->      new_bh->b_state = 0;
-> -    init_buffer(new_bh, NULL, NULL);
-  You can also remove b_state = 0 , can't you?
+On 19-04-2013 18:05, Nicolas Ferre wrote:
 
->      atomic_set(&new_bh->b_count, 1);
->      new_jh = journal_add_journal_head(new_bh);    /* This sleeps */
->  
-> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-> index ed10991..95120c6 100644
-> --- a/fs/jbd2/journal.c
-> +++ b/fs/jbd2/journal.c
-> @@ -368,7 +368,6 @@ retry_alloc:
->  
->      /* keep subsequent assertions sane */
->      new_bh->b_state = 0;
-> -    init_buffer(new_bh, NULL, NULL);
-  And the same here. Otherwise the patch looks OK.
+>>> Due to a bug with RTC IMR, we cannot consider at91sam9x5 RTC compatible
+>>> with the previous one. Modify DT compatibility string, even if the driver
+>>> is not yet modified to take it into account.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>> ---
+>>>    arch/arm/boot/dts/at91sam9x5.dtsi | 2 +-
+>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+
+>>> diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi
+>>> b/arch/arm/boot/dts/at91sam9x5.dtsi
+>>> index a3d4464..58747f3 100644
+>>> --- a/arch/arm/boot/dts/at91sam9x5.dtsi
+>>> +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+>>> @@ -564,7 +564,7 @@
+>>>                };
+>>>
+>>>                rtc@fffffeb0 {
+>>> -                compatible = "atmel,at91rm9200-rtc";
+>>> +                compatible = "atmel,at91sam9x5-rtc";
+
+>>     Do not use wildcards in the "compatible" prop values (I guess 'x' is
+>> a wildcard).
+
+> Well, it is for naming a series of hardware, not for giving a generic
+> name that could cover different hardware.
+
+> In the sense of Atmel it is our way to call the at91sam9x5 series of
+> SoC: you will see that the code that covers these SoCs is always named
+> like this.
+> In fact, the hardware contained in these SoC cannot be different from
+> one flavor of the family to the other.
+
+    Nevertheless, the wildcards shouldn't be used. Use the name of e.g. the 
+first member of the family.
+
+> Best regards,
+
+WBR, Sergei
+
