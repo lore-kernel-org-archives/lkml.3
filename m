@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968096Ab3DSLFu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 07:05:50 -0400
-Received: from smtp-out-143.synserver.de ([212.40.185.143]:1141 "EHLO
-	smtp-out-141.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S967914Ab3DSLFt (ORCPT
+	id S968059Ab3DSLLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 07:11:25 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:61285 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757087Ab3DSLLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 07:05:49 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 20002
-Message-ID: <517124D6.7090008@metafoo.de>
-Date: Fri, 19 Apr 2013 13:04:54 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Fri, 19 Apr 2013 07:11:24 -0400
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Vinod Koul <vinod.koul@intel.com>, Jon Hunter <jon-hunter@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] dma:of: Use a mutex to protect the of_dma_list
-References: <1366364534-3298-1-git-send-email-lars@metafoo.de> <1366364534-3298-2-git-send-email-lars@metafoo.de> <201304191213.48631.arnd@arndb.de>
-In-Reply-To: <201304191213.48631.arnd@arndb.de>
+In-Reply-To: <1366363304.4708.75.camel@marge.simpson.net>
+References: <1366302867-5055-1-git-send-email-vincent.guittot@linaro.org>
+	<1366345833.4708.17.camel@marge.simpson.net>
+	<CAKfTPtAaUG4Yi5xienLRvnO7Q8nTWjk9a0azRWwdqmvCu3NSrA@mail.gmail.com>
+	<1366359290.4708.48.camel@marge.simpson.net>
+	<CAKfTPtBuAwyiNYk17SnW066FhvGF18n+HaiKwhKLgsii8ntcHA@mail.gmail.com>
+	<1366363304.4708.75.camel@marge.simpson.net>
+Date: Fri, 19 Apr 2013 13:11:22 +0200
+Message-ID: <CAKfTPtDSNfFw-vuYGfdCDJcUqzNpoE535AGk3h3vBM3zYJ+uJg@mail.gmail.com>
+Subject: Re: [PATCH Resend v6] sched: fix wrong rq's runnable_avg update with
+ rt tasks
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2013 12:13 PM, Arnd Bergmann wrote:
-> On Friday 19 April 2013, Lars-Peter Clausen wrote:
-> 
->> This is rather ugly and unnecessary and non of the current users of
->> of_dma_controller_free() check it's return value anyway. Instead protect the
->> list by a mutex. The mutex will be held as long as a request operation is in
->> progress. So if of_dma_controller_free() is called while a request operation is
->> in progress it will be put to sleep and only wake up once the request operation
->> has finished.
+On 19 April 2013 11:21, Mike Galbraith <efault@gmx.de> wrote:
+> On Fri, 2013-04-19 at 10:50 +0200, Vincent Guittot wrote:
+>> On 19 April 2013 10:14, Mike Galbraith <efault@gmx.de> wrote:
+>> > On Fri, 2013-04-19 at 09:49 +0200, Vincent Guittot wrote:
+>> >> On 19 April 2013 06:30, Mike Galbraith <efault@gmx.de> wrote:
+>> >> > On Thu, 2013-04-18 at 18:34 +0200, Vincent Guittot wrote:
+>> >> >> The current update of the rq's load can be erroneous when RT tasks are
+>> >> >> involved
+>> >> >>
+>> >> >> The update of the load of a rq that becomes idle, is done only if the avg_idle
+>> >> >> is less than sysctl_sched_migration_cost. If RT tasks and short idle duration
+>> >> >> alternate, the runnable_avg will not be updated correctly and the time will be
+>> >> >> accounted as idle time when a CFS task wakes up.
+>> >> >>
+>> >> >> A new idle_enter function is called when the next task is the idle function
+>> >> >> so the elapsed time will be accounted as run time in the load of the rq,
+>> >> >> whatever the average idle time is. The function update_rq_runnable_avg is
+>> >> >> removed from idle_balance.
+>> >> >>
+>> >> >> When a RT task is scheduled on an idle CPU, the update of the rq's load is
+>> >> >> not done when the rq exit idle state because CFS's functions are not
+>> >> >> called. Then, the idle_balance, which is called just before entering the
+>> >> >> idle function, updates the rq's load and makes the assumption that the
+>> >> >> elapsed time since the last update, was only running time.
+>> >> >>
+>> >> >> As a consequence, the rq's load of a CPU that only runs a periodic RT task,
+>> >> >> is close to LOAD_AVG_MAX whatever the running duration of the RT task is.
+>> >> >
+>> >> > Why do we care what rq's load says, if the only thing running is a
+>> >> > periodic RT task?  I _think_ I recall that stuff being put under the
+>> >>
+>> >> cfs scheduler will use a wrong rq load the next time it wants to schedule a task
+>> >>
+>> >> > throttle specifically to not waste cycles doing that on every
+>> >> > microscopic idle.
+>> >>
+>> >> yes but this lead to the wrong computation of runnable_avg_sum. To be
+>> >> more precise, we only need to call __update_entity_runnable_avg,
+>> >> __update_tg_runnable_avg is not mandatory in this step.
+>> >
+>> > If it only scares fair class tasks away from the periodic rt load, that
+>> > seems like a benefit to me, not a liability.  If we really really need
 >>
->> This means that it is no longer possible to register or unregister OF DMA
->> controllers from a context where it's not possible to sleep. But I doubt that
->> we'll ever need this.
+>> I'm not sure that such behavior that is only based on erroneous value,
+>> is good one.
 >>
->> Also rename of_dma_get_controller back to of_dma_find_controller.
+>> > perfect load numbers, fine, we have to eat some cycles, but when I look
+>> > at it, it looks like one of those "Perfect is the enemy of good" things.
 >>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> 
-> I guess we could also fix it by turning the reference count into a proper
-> kref with kref_put calling the destructor, but your solution seems to solve
-> the problem just as well.
+>> The target is not perfect number but good enough to be usable. The
+>> systctl_migration_cost threshold is good for idle balancing but can
+>> generates wrong load value
+>
+> But again, why do we care?  To be able to mix rt and fair loads and
+> still make pretty mixed load utilization numbers?  Paying a general case
 
-Well, It's not only about the of_dma struct, e.g. the of_dma's of_dma_data
-field usually points to some driver allocated data. If we do not block in
-of_dma_controller_free() this data might be freed while the controller is
-still in use.
+If runnable_avg_sum can be wrong, it becomes unusable and all the
+stuff around becomes useless.
+
+> fast path price to make strange (to me) load utilization numbers pretty
+> is not very attractive.  If you muck about with rt classes, you need to
+> have a good reason for doing that.  If you do have a good reason, you
+> also allocated all resources, including CPU, so don't need the kernel to
+
+Some tasks have responsiveness constraints so they use rt class but
+they also live with cfs tasks.
+
+Vincent
+
+> balance the load for you.  Paying any fast path price to make the kernel
+> balance a mixed rt/fair load just seems fundamentally wrong to me.
+>
+> -Mike
+>
