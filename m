@@ -1,70 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718Ab3DSLNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 07:13:19 -0400
-Received: from relay3.blacknight.com ([78.153.203.206]:41057 "EHLO
-	relay3.blacknight.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757162Ab3DSLNS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 07:13:18 -0400
-Message-ID: <5171274B.7090500@nexus-software.ie>
-Date: Fri, 19 Apr 2013 12:15:23 +0100
-From: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: matt@console-pimps.org, matthew.garrett@nebula.com,
-        linux-efi@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, darren.hart@intel.com,
-        josh@joshtriplett.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de
-Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode V2
-References: <1366236341-22615-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <20130419055813.GA16443@kroah.com>
-In-Reply-To: <20130419055813.GA16443@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S968163Ab3DSLSV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 07:18:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43020 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967984Ab3DSLSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 07:18:20 -0400
+Date: Fri, 19 Apr 2013 08:18:01 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Prabhakar lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>, Pawel Osciak <pawel@osciak.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>
+Subject: Re: [PATCH RFC] media: videobuf2: fix the length check for mmap
+Message-ID: <20130419081801.0af7ad73@redhat.com>
+In-Reply-To: <1366364816-3567-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1366364816-3567-1-git-send-email-prabhakar.csengg@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/04/13 06:58, Greg KH wrote:
->> This patch gives the option to switch off that behavior - if your BIOS
->> has neither BGRT - nor bugs that require mapping of EFI boot code/data
->
-> No, never add new boot options, no users, or distros, know to set them.
-> Isn't there some way we can dynamically determine this instead?
+Em Fri, 19 Apr 2013 15:16:56 +0530
+Prabhakar lad <prabhakar.csengg@gmail.com> escreveu:
 
-Peter, Greg.
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> From commit 068a0df76023926af958a336a78bef60468d2033
+> "[media] media: vb2: add length check for mmap"
+> patch verifies that the mmap() size requested by userspace
+> doesn't exceed the buffer size.
+> 
+> As the mmap() size is rounded up to the next page boundary
+> the check will fail for buffer sizes that are not multiple
+> of the page size.
+> 
+> This patch fixes the check by aligning the buffer size to page
+> size during the check. Alongside fixes the vmalloc allocator
+> to round up the size.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Seung-Woo Kim <sw0312.kim@samsung.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+> ---
+>  drivers/media/v4l2-core/videobuf2-core.c    |    2 +-
+>  drivers/media/v4l2-core/videobuf2-vmalloc.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+> index 58c1744..223fcd4 100644
+> --- a/drivers/media/v4l2-core/videobuf2-core.c
+> +++ b/drivers/media/v4l2-core/videobuf2-core.c
+> @@ -1886,7 +1886,7 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
+>  
+>  	vb = q->bufs[buffer];
+>  
+> -	if (vb->v4l2_planes[plane].length < (vma->vm_end - vma->vm_start)) {
+> +	if (PAGE_ALIGN(vb->v4l2_planes[plane].length) < (vma->vm_end - vma->vm_start)) {
+>  		dprintk(1, "Invalid length\n");
+>  		return -EINVAL;
+>  	}
 
-There are three issues to consider here
+That is tricky, as it assumes that vb->v4l2_planes[plane].length was round
+up to PAGE_SIZE at each memops driver, but the vb2 core doesn't enforce it.
 
-1: Some UEFI BIOS is buggy and the EFI_RUNTIME_SERVICES code - actually 
-touches EFI_BOOT_MEMORY. Boot memory should be completely untouched 
-after an entity calls ExitBootServices() - typically done by an EFI 
-aware bootloader before handing off to Linux.
+IMO, it would be cleaner to round vb->v4l2_planes[plane].length up
+at VB2 core, before calling the memops alloc functions at the drivers.
 
-2: Existing code maps EFI_BOOT_MEMORY in arch/x86/platform/efi/efi.c.
-Initially it looked to me as though you could probe for ACPI::BGRT - 
-look for an ACPI object sometimes stored in EFI_BOOT_MEMORY and use that 
-to determine if EFI_BOOT_MEMORY should be mapped. I wasn't aware #1 
-above was also a concern. So just probing for something - doesn't appear 
-to fly
+Also, VB2 is already complex enough to put it there without proper
+comments (and there's a minor codingstyle issue there: line is bigger
+than 80 cols).
 
-3: Standards compliant EFI BIOS - like the reference EFI 2.3.1 code we 
-have on my project, has neither of the two above problems to work around
+> diff --git a/drivers/media/v4l2-core/videobuf2-vmalloc.c b/drivers/media/v4l2-core/videobuf2-vmalloc.c
+> index 313d977..bf3b95c 100644
+> --- a/drivers/media/v4l2-core/videobuf2-vmalloc.c
+> +++ b/drivers/media/v4l2-core/videobuf2-vmalloc.c
+> @@ -44,7 +44,7 @@ static void *vb2_vmalloc_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fl
+>  		return NULL;
+>  
+>  	buf->size = size;
+> -	buf->vaddr = vmalloc_user(buf->size);
+> +	buf->vaddr = vmalloc_user(PAGE_ALIGN(buf->size));
 
-So we can.
+See? You needed to put an alignment here as well, not because vmalloc
+needs it, but because this is needed by VB2 core.
 
-1. Just silently map EFI_BOOT_MEMORY - even on unbuggy platforms like #3 
-- or we can
+Also, on the other drivers, buf->size is stored page aligned, while
+here, you're doing different, without any documented reason for doing
+that, instead of doing the same as on the other memops drivers.
 
-2. Introduce some sort of intelligence - a parameter somewhere to tell 
-the efi_enter_virtual mode if/when to map EFI_BOOT_MEMORY.
+That mistake reflects, for example, when the driver prints the failure:
 
-3. Just go the suggested route from Josh
-#ifdef CONFIG_X86_64
-			if (md->type != EFI_BOOT_SERVICES_CODE &&
-			    md->type != EFI_BOOT_SERVICES_DATA)
-#endif
+        if (!buf->vaddr) {
+                pr_debug("vmalloc of size %ld failed\n", buf->size);
 
-Option #3 - so long as it doesn't break ia32::BGRT systems works for me.
+as it will show a different size than what you actually required.
+As those memory starving errors can also produce a dump at the mm
+core, the size there won't match the size on the above printed message.
+
+Also, it is a very bad idea to delegate the core's requirement of
+do page alignment from the core to the memops drivers, as other
+patches may change the logic there, or a new memops could be added,
+and the same problem will hit again (and unnoticed, as the check
+routine do page alignments).
+
+>  	buf->handler.refcount = &buf->refcount;
+>  	buf->handler.put = vb2_vmalloc_put;
+>  	buf->handler.arg = buf;
+
+IMO, a cleaner version would be the following (untested) code.
+
+-
+
+[media] videobuf2: fix the length check for mmap
+
+Memory maps typically require that the buffer size to be page
+aligned. Currently, two memops drivers do such alignment
+internally, but videobuf-vmalloc doesn't.
+
+Also, the buffer overflow check doesn't take it into account.
+
+So, instead of doing it at each memops driver, enforce it at
+VB2 core.
+
+Reported-by: Prabhakar lad <prabhakar.csengg@gmail.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index 58c1744..7d833ee 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -54,10 +54,15 @@ static int __vb2_buf_mem_alloc(struct vb2_buffer *vb)
+ 	void *mem_priv;
+ 	int plane;
+ 
+-	/* Allocate memory for all planes in this buffer */
++	/*
++	 * Allocate memory for all planes in this buffer
++	 * NOTE: mmapped areas should be page aligned
++	 */
+ 	for (plane = 0; plane < vb->num_planes; ++plane) {
++		unsigned long size = PAGE_ALIGN(q->plane_sizes[plane]);
++
+ 		mem_priv = call_memop(q, alloc, q->alloc_ctx[plane],
+-				      q->plane_sizes[plane], q->gfp_flags);
++				      size, q->gfp_flags);
+ 		if (IS_ERR_OR_NULL(mem_priv))
+ 			goto free;
+ 
+@@ -1852,6 +1857,7 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
+ 	struct vb2_buffer *vb;
+ 	unsigned int buffer, plane;
+ 	int ret;
++	unsigned long length;
+ 
+ 	if (q->memory != V4L2_MEMORY_MMAP) {
+ 		dprintk(1, "Queue is not currently set up for mmap\n");
+@@ -1886,8 +1892,15 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
+ 
+ 	vb = q->bufs[buffer];
+ 
+-	if (vb->v4l2_planes[plane].length < (vma->vm_end - vma->vm_start)) {
+-		dprintk(1, "Invalid length\n");
++	/*
++	 * MMAP requires page_aligned buffers.
++	 * The buffer length was page_aligned at __vb2_buf_mem_alloc(),
++	 * so, we need to do the same here.
++	 */
++	length = PAGE_ALIGN(vb->v4l2_planes[plane].length);
++	if (length < (vma->vm_end - vma->vm_start)) {
++		dprintk(1,
++			"MMAP invalid, as it would overflow buffer length\n");
+ 		return -EINVAL;
+ 	}
+ 
+diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+index ae35d25..fd56f25 100644
+--- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+@@ -162,9 +162,6 @@ static void *vb2_dc_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_flags)
+ 	if (!buf)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	/* align image size to PAGE_SIZE */
+-	size = PAGE_ALIGN(size);
+-
+ 	buf->vaddr = dma_alloc_coherent(dev, size, &buf->dma_addr,
+ 						GFP_KERNEL | gfp_flags);
+ 	if (!buf->vaddr) {
+diff --git a/drivers/media/v4l2-core/videobuf2-dma-sg.c b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+index 59522b2..16ae3dc 100644
+--- a/drivers/media/v4l2-core/videobuf2-dma-sg.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-sg.c
+@@ -55,7 +55,8 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fla
+ 	buf->write = 0;
+ 	buf->offset = 0;
+ 	buf->sg_desc.size = size;
+-	buf->sg_desc.num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
++	/* size is already page aligned */
++	buf->sg_desc.num_pages = size >> PAGE_SHIFT;
+ 
+ 	buf->sg_desc.sglist = vzalloc(buf->sg_desc.num_pages *
+ 				      sizeof(*buf->sg_desc.sglist));
+
