@@ -1,146 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030874Ab3DSQ3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:29:40 -0400
-Received: from mail-da0-f52.google.com ([209.85.210.52]:43264 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967799Ab3DSQ3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 12:29:38 -0400
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com, rostedt@goodmis.org
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Pankaj Kumar <pankaj.km@samsung.com>
-Subject: [PATCH v4 5/7] f2fs: add tracepoints to debug the block allocation & fallocate
-Date: Sat, 20 Apr 2013 01:29:30 +0900
-Message-Id: <1366388970-18949-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S968504Ab3DSQaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:30:10 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:16450 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S968397Ab3DSQaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 12:30:01 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: Mike Turquette <mturquette@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, James Hogan <james.hogan@imgtec.com>
+Subject: [PATCH v2 1/3] clk: abstract parent cache
+Date: Fri, 19 Apr 2013 17:28:22 +0100
+Message-ID: <1366388904-13903-2-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com>
+References: <1366388904-13903-1-git-send-email-james.hogan@imgtec.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01181__2013_04_19_17_29_55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+Abstract access to the clock parent cache by defining
+__clk_get_parent_by_index(clk, index). This allows access to parent
+clocks from clock drivers.
 
-Add tracepoints to debug the block allocation & fallocate.
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Pankaj Kumar <pankaj.km@samsung.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- fs/f2fs/data.c              |    1 +
- fs/f2fs/file.c              |    6 ++++-
- include/trace/events/f2fs.h |   59 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 65 insertions(+), 1 deletion(-)
+ drivers/clk/clk.c            | 21 ++++++++++++++-------
+ include/linux/clk-provider.h |  1 +
+ 2 files changed, 15 insertions(+), 7 deletions(-)
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 394ab68..503b5bf 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -56,6 +56,7 @@ int reserve_new_block(struct dnode_of_data *dn)
- 	if (!inc_valid_block_count(sbi, dn->inode, 1))
- 		return -ENOSPC;
- 
-+	trace_f2fs_reserve_new_block(dn->inode, dn->nid, dn->ofs_in_node);
- 	__set_data_blkaddr(dn, NEW_ADDR);
- 	dn->data_blkaddr = NEW_ADDR;
- 	sync_inode_page(dn);
-diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
-index 31176d5..64eeb5a 100644
---- a/fs/f2fs/file.c
-+++ b/fs/f2fs/file.c
-@@ -532,8 +532,10 @@ static long f2fs_fallocate(struct file *file, int mode,
- 	struct inode *inode = file_inode(file);
- 	long ret;
- 
--	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
-+	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE)) {
-+		trace_f2fs_fallocate(inode, offset, len, mode, -EOPNOTSUPP);
- 		return -EOPNOTSUPP;
-+	}
- 
- 	if (mode & FALLOC_FL_PUNCH_HOLE)
- 		ret = punch_hole(inode, offset, len, mode);
-@@ -544,6 +546,8 @@ static long f2fs_fallocate(struct file *file, int mode,
- 		inode->i_mtime = inode->i_ctime = CURRENT_TIME;
- 		mark_inode_dirty(inode);
- 	}
-+
-+	trace_f2fs_fallocate(inode, offset, len, mode, ret);
- 	return ret;
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index ed87b24..79d5deb 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -415,6 +415,19 @@ struct clk *__clk_get_parent(struct clk *clk)
+ 	return !clk ? NULL : clk->parent;
  }
  
-diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index 57b6487..cf1bcdf8 100644
---- a/include/trace/events/f2fs.h
-+++ b/include/trace/events/f2fs.h
-@@ -509,6 +509,65 @@ TRACE_EVENT(f2fs_get_victim,
- 			__entry->victim)
- );
++struct clk *__clk_get_parent_by_index(struct clk *clk, u8 index)
++{
++	if (!clk || index >= clk->num_parents)
++		return NULL;
++	else if (!clk->parents)
++		return __clk_lookup(clk->parent_names[index]);
++	else if (!clk->parents[index])
++		return clk->parents[index] =
++			__clk_lookup(clk->parent_names[index]);
++	else
++		return clk->parents[index];
++}
++
+ unsigned int __clk_get_enable_count(struct clk *clk)
+ {
+ 	return !clk ? 0 : clk->enable_count;
+@@ -1150,13 +1163,7 @@ static struct clk *__clk_init_parent(struct clk *clk)
+ 			kzalloc((sizeof(struct clk*) * clk->num_parents),
+ 					GFP_KERNEL);
  
-+TRACE_EVENT(f2fs_fallocate,
-+	TP_PROTO(struct inode *inode, loff_t offset, loff_t len,
-+						 int mode, int ret),
-+
-+	TP_ARGS(inode, offset, len, mode, ret),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(ino_t,	ino)
-+		__field(loff_t,	pos)
-+		__field(loff_t,	len)
-+		__field(int,	mode)
-+		__field(blkcnt_t, blocks)
-+		__field(loff_t, size)
-+		__field(int,	ret)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= inode->i_sb->s_dev;
-+		__entry->ino	= inode->i_ino;
-+		__entry->pos	= offset;
-+		__entry->len	= len;
-+		__entry->mode	= mode;
-+		__entry->blocks = inode->i_blocks;
-+		__entry->size	= inode->i_size;
-+		__entry->ret	= ret;
-+	),
-+
-+	TP_printk("dev %d,%d ino %lu pos %lld len %lld mode %d block %llu"
-+			"Size %lld ret %d",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  (unsigned long) __entry->ino, __entry->pos,
-+		  __entry->len, __entry->mode,
-+			 (unsigned long long)__entry->blocks, __entry->size,
-+			__entry->ret)
-+);
-+
-+TRACE_EVENT(f2fs_reserve_new_block,
-+	TP_PROTO(struct inode *inode, unsigned int nid, unsigned int ofs_node),
-+
-+	TP_ARGS(inode, nid, ofs_node),
-+
-+	TP_STRUCT__entry(
-+		__field(dev_t,	dev)
-+		__field(unsigned int, nid)
-+		__field(unsigned int, ofs_node)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	= inode->i_sb->s_dev;
-+		__entry->nid	= nid;
-+		__entry->ofs_node = ofs_node;
-+	),
-+
-+	TP_printk("dev %d,%d: with Nid %u Node page offset %u",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		   __entry->nid, __entry->ofs_node)
-+);
-+
- #endif /* _TRACE_F2FS_H */
+-	if (!clk->parents)
+-		ret = __clk_lookup(clk->parent_names[index]);
+-	else if (!clk->parents[index])
+-		ret = clk->parents[index] =
+-			__clk_lookup(clk->parent_names[index]);
+-	else
+-		ret = clk->parents[index];
++	ret = __clk_get_parent_by_index(clk, index);
  
-  /* This part must be outside protection */
+ out:
+ 	return ret;
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 7f197d7..4e0b634 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -347,6 +347,7 @@ const char *__clk_get_name(struct clk *clk);
+ struct clk_hw *__clk_get_hw(struct clk *clk);
+ u8 __clk_get_num_parents(struct clk *clk);
+ struct clk *__clk_get_parent(struct clk *clk);
++struct clk *__clk_get_parent_by_index(struct clk *clk, u8 index);
+ unsigned int __clk_get_enable_count(struct clk *clk);
+ unsigned int __clk_get_prepare_count(struct clk *clk);
+ unsigned long __clk_get_rate(struct clk *clk);
 -- 
-1.7.9.5
+1.8.1.2
+
 
