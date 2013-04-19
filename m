@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968261Ab3DSLmt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 07:42:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47602 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757287Ab3DSLmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 07:42:47 -0400
-Date: Fri, 19 Apr 2013 14:42:43 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
-Cc: Yan Vugenfirer <yvugenfi@redhat.com>, kvm list <kvm@vger.kernel.org>,
-        "mst@redhat.com" <mst@redhat.com>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Luonengjun <luonengjun@huawei.com>,
-        Zanghongyong <zanghongyong@huawei.com>,
-        "Huangweidong (C)" <weidong.huang@huawei.com>,
-        "Wangrui (K)" <moon.wangrui@huawei.com>
-Subject: Re: KVM VM(windows xp) reseted when running geekbench for about 2
- days
-Message-ID: <20130419114242.GK5807@redhat.com>
-References: <D3E216785288A145B7BC975F83A2ED103FE1E7A5@szxeml556-mbx.china.huawei.com>
- <20130418125532.GW8997@redhat.com>
- <9C764699-6F9C-4AD8-A6C9-34D818753452@redhat.com>
- <D3E216785288A145B7BC975F83A2ED103FE1F16A@szxeml556-mbx.china.huawei.com>
+	id S968284Ab3DSLqX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 07:46:23 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:32677 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968230Ab3DSLqW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 07:46:22 -0400
+X-Spam-Score: -100.8
+Message-ID: <51712E5E.2020809@asianux.com>
+Date: Fri, 19 Apr 2013 19:45:34 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D3E216785288A145B7BC975F83A2ED103FE1F16A@szxeml556-mbx.china.huawei.com>
+To: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [Suggestion] ARM64: kernel: compiling issue, need implement cmpxchg64
+ with assembler language.
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 19, 2013 at 01:05:08AM +0000, Zhanghaoyu (A) wrote:
-> >> On Thu, Apr 18, 2013 at 12:00:49PM +0000, Zhanghaoyu (A) wrote:
-> >>> I start 10 VMs(windows xp), then running geekbench tool on them, 
-> >>> about 2 days, one of them was reset, I found the reset operation is 
-> >>> done by int kvm_cpu_exec(CPUArchState *env) {
-> >>>    ...
-> >>>       switch (run->exit_reason)
-> >>>       ...
-> >>>        case KVM_EXIT_SHUTDOWN:
-> >>>            DPRINTF("shutdown\n");
-> >>>            qemu_system_reset_request();
-> >>>            ret = EXCP_INTERRUPT;
-> >>>            break;
-> >>>    ...
-> >>> }
-> >>> 
-> >>> KVM_EXIT_SHUTDOWN exit reason was set previously in triple fault handle handle_triple_fault().
-> >>> 
-> >> How do you know that reset was done here? This is not the only place 
-> >> where qemu_system_reset_request() is called.
-> I used gdb to debug QEMU process, and add a breakpoint in qemu_system_reset_request(), when the case occurred, backtrace shown as below,
-> (gdb) bt
-> #0  qemu_system_reset_request () at vl.c:1964
-> #1  0x00007f9ef9dc5991 in kvm_cpu_exec (env=0x7f9efac47100)
->     at /gt/qemu-kvm-1.4/qemu-kvm-1.4/kvm-all.c:1602
-> #2  0x00007f9ef9d5b229 in qemu_kvm_cpu_thread_fn (arg=0x7f9efac47100)
->     at /gt/qemu-kvm-1.4/qemu-kvm-1.4/cpus.c:759
-> #3  0x00007f9ef898b5f0 in start_thread () from /lib64/libpthread.so.0
-> #4  0x00007f9ef86fa84d in clone () from /lib64/libc.so.6
-> #5  0x0000000000000000 in ?? ()
-> 
-> And, I add printk log in all place where KVM_EXIT_SHUTDOWN exit reason is set, only handle_triple_fault() was called.
-> >
-> >Make sure XP is not set to auto-reset in case of BSOD. 
-> No, winxp is not set to auto-reset in case of BSOD. No Winxp event log reported.
-> >
-> >Best regards,
-> >Yan.
-> >
-> >> 
-> >>> What causes the triple fault?
-> >>> 
-> >> Are you asking what is triple fault or why it happened in your case?
-> What I asked is why triple fault happened in my case.
-> >> For the former see here: http://en.wikipedia.org/wiki/Triple_fault
-> >> For the later it is to late to tell after VM reset. You can run QEMU 
-> >> with -no-reboot -no-shutdown. VM will pause instead of rebooting and 
-> >> then you can examine what is going on.
-> Great thanks, I'll run QEMU with -no-reboot -no-shutdown options, if VM paused in my case, what should I examined?
-> 
-Register state "info registers" in the monitor for each vcpu. Code
-around the instruction that faulted.
 
---
-			Gleb.
+in arch/arm64/include/asm, not define the function cmpxchg64
+
+  when compiling with allmodconfig,
+    drivers/block/blockconsole.c will need this function.
+
+  I am not quite familiar with ARM64 (neither ARM64 assembler)
+
+  can any member helps to send related patch ?
+    if no one have time to send related patch, I should try.
+    and I am glad to try, but need additional time resources,
+    if I try, I should finish it within this month (2013-4-30).
+
+  welcome any suggestions or completions.
+
+  thanks.
+
+
+gchen.
