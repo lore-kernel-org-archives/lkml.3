@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968130Ab3DSKs1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 06:48:27 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:14263
+	id S968215Ab3DSKsg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 06:48:36 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:14372
 	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S968050Ab3DSKsV (ORCPT
+	by vger.kernel.org with ESMTP id S968050Ab3DSKs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 06:48:21 -0400
+	Fri, 19 Apr 2013 06:48:28 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc8kzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
 From: Zhao Chenhui <chenhui.zhao@freescale.com>
 To: <linuxppc-dev@lists.ozlabs.org>
 CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 06/15] powerpc/85xx: add support to JOG feature using cpufreq interface
-Date: Fri, 19 Apr 2013 18:47:39 +0800
-Message-ID: <1366368468-29143-6-git-send-email-chenhui.zhao@freescale.com>
+Subject: [PATCH v2 10/15] powerpc/85xx: fix 64-bit support for cpu hotplug
+Date: Fri, 19 Apr 2013 18:47:43 +0800
+Message-ID: <1366368468-29143-10-git-send-email-chenhui.zhao@freescale.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
 References: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
@@ -26,476 +26,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: chenhui zhao <chenhui.zhao@freescale.com>
+From: Chen-Hui Zhao <chenhui.zhao@freescale.com>
 
-Some 85xx silicons like MPC8536 and P1022 have a JOG feature, which provides
-a dynamic mechanism to lower or raise the CPU core clock at runtime.
+* The paca[cpu].cpu_start is used as a signal to indicate if the cpu
+  should start. So it should be cleard in .cpu_die().
+* The limit memory routine only needs to be ran once at boot time
+  by the boot cpu. Prevent other cpus running it again.
+* Rearrange the code segment in smp_85xx_kick_cpu() to share codes
+  between PPC64 and PPC32 as far as possible.
 
-This patch adds the support to change CPU frequency using the standard
-cpufreq interface. The ratio CORE to CCB can be 1:1(except MPC8536), 3:2,
-2:1, 5:2, 3:1, 7:2 and 4:1.
-
-Two CPU cores on P1022 must not in the low power state during the frequency
-transition. The driver uses a atomic counter to meet the requirement.
-
-The jog mode frequency transition process on the MPC8536 is similar to
-the deep sleep process. The driver need save the CPU state and restore
-it after CPU warm reset.
-
-Note:
- * The I/O peripherals such as PCIe and eTSEC may lose packets during
-   the jog mode frequency transition.
- * The driver doesn't support MPC8536 Rev 1.0 due to a JOG erratum.
-   Subsequent revisions of MPC8536 have corrected the erratum.
-
-Signed-off-by: Dave Liu <daveliu@freescale.com>
-Signed-off-by: Li Yang <leoli@freescale.com>
-Signed-off-by: Jerry Huang <Chang-Ming.Huang@freescale.com>
 Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
-CC: Scott Wood <scottwood@freescale.com>
+Signed-off-by: Li Yang <leoli@freescale.com>
+Signed-off-by: Andy Fleming <afleming@freescale.com>
 ---
- arch/powerpc/platforms/85xx/Makefile |    1 +
- drivers/cpufreq/Kconfig.powerpc      |   10 +
- drivers/cpufreq/Makefile             |    1 +
- drivers/cpufreq/mpc85xx-cpufreq.c    |  390 ++++++++++++++++++++++++++++++++++
- 4 files changed, 402 insertions(+), 0 deletions(-)
- create mode 100644 drivers/cpufreq/mpc85xx-cpufreq.c
+ arch/powerpc/Kconfig              |    2 +-
+ arch/powerpc/kernel/smp.c         |    3 +++
+ arch/powerpc/mm/tlb_nohash.c      |    6 ++++--
+ arch/powerpc/platforms/85xx/smp.c |   23 +++++++++++------------
+ 4 files changed, 19 insertions(+), 15 deletions(-)
 
-diff --git a/arch/powerpc/platforms/85xx/Makefile b/arch/powerpc/platforms/85xx/Makefile
-index a35bab7..da53bde 100644
---- a/arch/powerpc/platforms/85xx/Makefile
-+++ b/arch/powerpc/platforms/85xx/Makefile
-@@ -3,6 +3,7 @@
- #
- obj-$(CONFIG_SMP) += smp.o
- obj-$(CONFIG_FSL_PMC)	+= sleep.o
-+obj-$(CONFIG_CPU_FREQ_MPC85xx)	+= sleep.o
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 0ad6e30..aa5794b 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -347,7 +347,7 @@ config SWIOTLB
+ config HOTPLUG_CPU
+ 	bool "Support for enabling/disabling CPUs"
+ 	depends on SMP && HOTPLUG && (PPC_PSERIES || \
+-	PPC_PMAC || PPC_POWERNV || PPC_85xx)
++	PPC_PMAC || PPC_POWERNV || FSL_SOC_BOOKE)
+ 	---help---
+ 	  Say Y here to be able to disable and re-enable individual
+ 	  CPUs at runtime on SMP machines.
+diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+index 386c7ea..c8aa739 100644
+--- a/arch/powerpc/kernel/smp.c
++++ b/arch/powerpc/kernel/smp.c
+@@ -401,6 +401,9 @@ void generic_cpu_die(unsigned int cpu)
+ 		smp_rmb();
+ 		if (per_cpu(cpu_state, cpu) == CPU_DEAD) {
+ 			platform_cpu_die(cpu);
++#ifdef CONFIG_PPC64
++			paca[cpu].cpu_start = 0;
++#endif
+ 			return;
+ 		}
+ 		msleep(100);
+diff --git a/arch/powerpc/mm/tlb_nohash.c b/arch/powerpc/mm/tlb_nohash.c
+index 6888cad..de7bf06 100644
+--- a/arch/powerpc/mm/tlb_nohash.c
++++ b/arch/powerpc/mm/tlb_nohash.c
+@@ -627,8 +627,10 @@ static void __early_init_mmu(int boot_cpu)
+ 		num_cams = (mfspr(SPRN_TLB1CFG) & TLBnCFG_N_ENTRY) / 4;
+ 		linear_map_top = map_mem_in_cams(linear_map_top, num_cams);
  
- obj-y += common.o
+-		/* limit memory so we dont have linear faults */
+-		memblock_enforce_memory_limit(linear_map_top);
++		if (boot_cpu) {
++			/* limit memory so we dont have linear faults */
++			memblock_enforce_memory_limit(linear_map_top);
++		}
  
-diff --git a/drivers/cpufreq/Kconfig.powerpc b/drivers/cpufreq/Kconfig.powerpc
-index e76992f..ba06a00 100644
---- a/drivers/cpufreq/Kconfig.powerpc
-+++ b/drivers/cpufreq/Kconfig.powerpc
-@@ -5,3 +5,13 @@ config CPU_FREQ_MAPLE
- 	help
- 	  This adds support for frequency switching on Maple 970FX
- 	  Evaluation Board and compatible boards (IBM JS2x blades).
-+
-+config CPU_FREQ_MPC85xx
-+	bool "Support for Freescale MPC85xx CPU freq"
-+	depends on PPC_85xx && PPC32 && !PPC_E500MC
-+	select CPU_FREQ_TABLE
-+	help
-+	  This adds support for dynamic frequency switching on
-+	  Freescale MPC85xx by cpufreq interface. MPC8536 and P1022
-+	  have a JOG feature, which provides a dynamic mechanism
-+	  to lower or raise the CPU core clock at runtime.
-diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-index 863fd18..e7aecc5 100644
---- a/drivers/cpufreq/Makefile
-+++ b/drivers/cpufreq/Makefile
-@@ -61,3 +61,4 @@ obj-$(CONFIG_ARM_IMX6Q_CPUFREQ)		+= imx6q-cpufreq.o
- ##################################################################################
- # PowerPC platform drivers
- obj-$(CONFIG_CPU_FREQ_MAPLE)		+= maple-cpufreq.o
-+obj-$(CONFIG_CPU_FREQ_MPC85xx)		+= mpc85xx-cpufreq.o
-diff --git a/drivers/cpufreq/mpc85xx-cpufreq.c b/drivers/cpufreq/mpc85xx-cpufreq.c
-new file mode 100644
-index 0000000..f56c826
---- /dev/null
-+++ b/drivers/cpufreq/mpc85xx-cpufreq.c
-@@ -0,0 +1,390 @@
-+/*
-+ * Copyright (C) 2008-2012 Freescale Semiconductor, Inc.
-+ * Author: Dave Liu <daveliu@freescale.com>
-+ * Modifier: Chenhui Zhao <chenhui.zhao@freescale.com>
-+ *
-+ * The cpufreq driver is for Freescale 85xx processor,
-+ * based on arch/powerpc/platforms/cell/cbe_cpufreq.c
-+ * (C) Copyright IBM Deutschland Entwicklung GmbH 2005-2007
-+ *	Christian Krafft <krafft@de.ibm.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2, or (at your option)
-+ * any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/cpufreq.h>
-+#include <linux/of_platform.h>
-+#include <linux/suspend.h>
-+#include <linux/cpu.h>
-+#include <linux/time.h>
-+#include <linux/io.h>
-+#include <linux/smp.h>
-+
-+#include <asm/prom.h>
-+#include <asm/reg.h>
-+#include <asm/machdep.h>
-+
-+#include <sysdev/fsl_soc.h>
-+
-+static DEFINE_MUTEX(mpc85xx_switch_mutex);
-+static void __iomem *guts;
-+
-+static u32 sysfreq;
-+static unsigned int max_pll[2];
-+static atomic_t in_jog_process;
-+static struct cpufreq_frequency_table *mpc85xx_freqs;
-+static int (*set_pll)(unsigned int cpu, unsigned int pll);
-+
-+static struct cpufreq_frequency_table mpc8536_freqs_table[] = {
-+	{3,	0},
-+	{4,	0},
-+	{5,	0},
-+	{6,	0},
-+	{7,	0},
-+	{8,	0},
-+	{0,	CPUFREQ_TABLE_END},
-+};
-+
-+static struct cpufreq_frequency_table p1022_freqs_table[] = {
-+	{2,	0},
-+	{3,	0},
-+	{4,	0},
-+	{5,	0},
-+	{6,	0},
-+	{7,	0},
-+	{8,	0},
-+	{0,	CPUFREQ_TABLE_END},
-+};
-+
-+#define FREQ_500MHz	500000000
-+#define FREQ_800MHz	800000000
-+
-+#define CORE_RATIO_STRIDE	8
-+#define CORE_RATIO_MASK		0x3f
-+#define CORE_RATIO_SHIFT	16
-+
-+#define PORPLLSR	0x0	/* Power-On Reset PLL ratio status register */
-+
-+#define PMJCR		0x7c	/* Power Management Jog Control Register */
-+#define PMJCR_CORE0_SPD	0x00001000
-+#define PMJCR_CORE_SPD	0x00002000
-+
-+#define POWMGTCSR	0x80 /* Power management control and status register */
-+#define POWMGTCSR_JOG		0x00200000
-+#define POWMGTCSR_INT_MASK	0x00000f00
-+
-+static void spin_while_jogging(void *dummy)
-+{
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+
-+	atomic_inc(&in_jog_process);
-+
-+	while (atomic_read(&in_jog_process) != 0)
-+		barrier();
-+
-+	local_irq_restore(flags);
-+}
-+
-+static int get_pll(int hw_cpu)
-+{
-+	int shift;
-+	u32 val = in_be32(guts + PORPLLSR);
-+
-+	shift = hw_cpu * CORE_RATIO_STRIDE + CORE_RATIO_SHIFT;
-+
-+	return (val >> shift) & CORE_RATIO_MASK;
-+}
-+
-+static int mpc8536_set_pll(unsigned int cpu, unsigned int pll)
-+{
-+	u32 corefreq, val, mask;
-+	unsigned int cur_pll = get_pll(0);
-+	unsigned long flags;
-+
-+	if (pll == cur_pll)
-+		return 0;
-+
-+	val = (pll & CORE_RATIO_MASK) << CORE_RATIO_SHIFT;
-+
-+	corefreq = sysfreq * pll / 2;
-+	/*
-+	 * Set the COREx_SPD bit if the requested core frequency
-+	 * is larger than the threshold frequency.
-+	 */
-+	if (corefreq > FREQ_800MHz)
-+			val |= PMJCR_CORE_SPD;
-+
-+	mask = (CORE_RATIO_MASK << CORE_RATIO_SHIFT) | PMJCR_CORE_SPD;
-+	clrsetbits_be32(guts + PMJCR, mask, val);
-+
-+	/* readback to sync write */
-+	in_be32(guts + PMJCR);
-+
-+	local_irq_save(flags);
-+	mpc85xx_enter_deep_sleep(get_immrbase(), POWMGTCSR_JOG);
-+	local_irq_restore(flags);
-+
-+	/* verify */
-+	cur_pll =  get_pll(0);
-+	if (cur_pll != pll) {
-+		pr_err("%s: error. The current PLL is %d instead of %d.\n",
-+				__func__, cur_pll, pll);
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static int p1022_set_pll(unsigned int cpu, unsigned int pll)
-+{
-+	int index, hw_cpu = get_hard_smp_processor_id(cpu);
-+	int shift;
-+	u32 corefreq, val, mask = 0;
-+	unsigned int cur_pll = get_pll(hw_cpu);
-+	unsigned long flags;
-+	int ret = 0;
-+
-+	if (pll == cur_pll)
-+		return 0;
-+
-+	shift = hw_cpu * CORE_RATIO_STRIDE + CORE_RATIO_SHIFT;
-+	val = (pll & CORE_RATIO_MASK) << shift;
-+
-+	corefreq = sysfreq * pll / 2;
-+	/*
-+	 * Set the COREx_SPD bit if the requested core frequency
-+	 * is larger than the threshold frequency.
-+	 */
-+	if (corefreq > FREQ_500MHz)
-+		val |= PMJCR_CORE0_SPD << hw_cpu;
-+
-+	mask = (CORE_RATIO_MASK << shift) | (PMJCR_CORE0_SPD << hw_cpu);
-+	clrsetbits_be32(guts + PMJCR, mask, val);
-+
-+	/* readback to sync write */
-+	in_be32(guts + PMJCR);
-+
-+	get_online_cpus();
-+	/*
-+	 * A Jog request can not be asserted when any core is in a low
-+	 * power state on P1022. Before executing a jog request, any
-+	 * core which is in a low power state must be waked by a
-+	 * interrupt, and keep waking up until the sequence is
-+	 * finished.
-+	 */
-+	for_each_present_cpu(index) {
-+		if (!cpu_online(index)) {
-+			put_online_cpus();
-+			pr_err("%s: error, core%d is down.\n", __func__, index);
-+			return -1;
-+		}
-+	}
-+
-+	atomic_set(&in_jog_process, 0);
-+	smp_call_function(spin_while_jogging, NULL, 0);
-+
-+	local_irq_save(flags);
-+
-+	/* Wait for the other core to wake. */
-+	if (!spin_event_timeout(atomic_read(&in_jog_process) == 1, 1000, 100)) {
-+		pr_err("%s: timeout, the other core is not at running state.\n",
-+					__func__);
-+		ret = -1;
-+		goto err;
-+	}
-+
-+	out_be32(guts + POWMGTCSR, POWMGTCSR_JOG | POWMGTCSR_INT_MASK);
-+
-+	if (!spin_event_timeout(
-+		(in_be32(guts + POWMGTCSR) & POWMGTCSR_JOG) == 0, 1000, 100)) {
-+		pr_err("%s: timeout, fail to switch the core frequency.\n",
-+				__func__);
-+		ret = -1;
-+		goto err;
-+	}
-+
-+	clrbits32(guts + POWMGTCSR, POWMGTCSR_INT_MASK);
-+	in_be32(guts + POWMGTCSR);
-+
-+	atomic_set(&in_jog_process, 0);
-+err:
-+	local_irq_restore(flags);
-+	put_online_cpus();
-+
-+	/* verify */
-+	cur_pll =  get_pll(hw_cpu);
-+	if (cur_pll != pll) {
-+		pr_err("%s: error, the current PLL of core %d is %d instead of %d.\n",
-+				__func__, hw_cpu, cur_pll, pll);
-+		return -1;
-+	}
-+
-+	return ret;
-+}
-+
-+/*
-+ * cpufreq functions
-+ */
-+static int mpc85xx_cpufreq_cpu_init(struct cpufreq_policy *policy)
-+{
-+	unsigned int i, cur_pll;
-+	int hw_cpu = get_hard_smp_processor_id(policy->cpu);
-+
-+	if (!cpu_present(policy->cpu))
-+		return -ENODEV;
-+
-+	/* the latency of a transition, the unit is ns */
-+	policy->cpuinfo.transition_latency = 2000;
-+
-+	cur_pll = get_pll(hw_cpu);
-+
-+	/* initialize frequency table */
-+	pr_debug("core%d frequency table:\n", hw_cpu);
-+	for (i = 0; mpc85xx_freqs[i].frequency != CPUFREQ_TABLE_END; i++) {
-+		if (mpc85xx_freqs[i].index <= max_pll[hw_cpu]) {
-+			/* The frequency unit is kHz. */
-+			mpc85xx_freqs[i].frequency =
-+				(sysfreq * mpc85xx_freqs[i].index / 2) / 1000;
-+		} else {
-+			mpc85xx_freqs[i].frequency = CPUFREQ_ENTRY_INVALID;
-+		}
-+
-+		pr_debug("%d: %dkHz\n", i, mpc85xx_freqs[i].frequency);
-+
-+		if (mpc85xx_freqs[i].index == cur_pll)
-+			policy->cur = mpc85xx_freqs[i].frequency;
-+	}
-+	pr_debug("current pll is at %d, and core freq is%d\n",
-+			cur_pll, policy->cur);
-+
-+	cpufreq_frequency_table_get_attr(mpc85xx_freqs, policy->cpu);
-+
-+	/*
-+	 * This ensures that policy->cpuinfo_min
-+	 * and policy->cpuinfo_max are set correctly.
-+	 */
-+	return cpufreq_frequency_table_cpuinfo(policy, mpc85xx_freqs);
-+}
-+
-+static int mpc85xx_cpufreq_cpu_exit(struct cpufreq_policy *policy)
-+{
-+	cpufreq_frequency_table_put_attr(policy->cpu);
-+
-+	return 0;
-+}
-+
-+static int mpc85xx_cpufreq_verify(struct cpufreq_policy *policy)
-+{
-+	return cpufreq_frequency_table_verify(policy, mpc85xx_freqs);
-+}
-+
-+static int mpc85xx_cpufreq_target(struct cpufreq_policy *policy,
-+			      unsigned int target_freq,
-+			      unsigned int relation)
-+{
-+	struct cpufreq_freqs freqs;
-+	unsigned int new;
-+	int ret = 0;
-+
-+	if (!set_pll)
-+		return -ENODEV;
-+
-+	cpufreq_frequency_table_target(policy,
-+				       mpc85xx_freqs,
-+				       target_freq,
-+				       relation,
-+				       &new);
-+
-+	freqs.old = policy->cur;
-+	freqs.new = mpc85xx_freqs[new].frequency;
-+	freqs.cpu = policy->cpu;
-+
-+	mutex_lock(&mpc85xx_switch_mutex);
-+	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
-+
-+	ret = set_pll(policy->cpu, mpc85xx_freqs[new].index);
-+	if (!ret) {
-+		pr_info("cpufreq: Setting core%d frequency to %d kHz and PLL ratio to %d:2\n",
-+			 policy->cpu, mpc85xx_freqs[new].frequency,
-+			 mpc85xx_freqs[new].index);
-+
-+		ppc_proc_freq = freqs.new * 1000ul;
-+	}
-+	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
-+	mutex_unlock(&mpc85xx_switch_mutex);
-+
-+	return ret;
-+}
-+
-+static struct cpufreq_driver mpc85xx_cpufreq_driver = {
-+	.verify		= mpc85xx_cpufreq_verify,
-+	.target		= mpc85xx_cpufreq_target,
-+	.init		= mpc85xx_cpufreq_cpu_init,
-+	.exit		= mpc85xx_cpufreq_cpu_exit,
-+	.name		= "mpc85xx-JOG",
-+	.owner		= THIS_MODULE,
-+	.flags		= CPUFREQ_CONST_LOOPS,
-+};
-+
-+static struct of_device_id mpc85xx_jog_ids[] = {
-+	{ .compatible = "fsl,mpc8536-guts", },
-+	{ .compatible = "fsl,p1022-guts", },
-+	{}
-+};
-+
-+static int __init mpc85xx_jog_init(void)
-+{
-+	struct device_node *np;
-+	unsigned int svr;
-+
-+	np = of_find_matching_node(NULL, mpc85xx_jog_ids);
-+	if (!np)
-+		return -ENODEV;
-+
-+	guts = of_iomap(np, 0);
-+	if (!guts) {
-+		of_node_put(np);
-+		return -ENODEV;
-+	}
-+
-+	sysfreq = fsl_get_sys_freq();
-+
-+	if (of_device_is_compatible(np, "fsl,mpc8536-guts")) {
-+		svr = mfspr(SPRN_SVR);
-+		if ((svr & 0x7fff) == 0x10) {
-+			pr_err("MPC8536 Rev 1.0 does not support cpufreq(JOG).\n");
-+			of_node_put(np);
-+			return -ENODEV;
-+		}
-+		mpc85xx_freqs = mpc8536_freqs_table;
-+		set_pll = mpc8536_set_pll;
-+		max_pll[0] = get_pll(0);
-+
-+	} else if (of_device_is_compatible(np, "fsl,p1022-guts")) {
-+		mpc85xx_freqs = p1022_freqs_table;
-+		set_pll = p1022_set_pll;
-+		max_pll[0] = get_pll(0);
-+		max_pll[1] = get_pll(1);
-+	}
-+
-+	pr_info("Freescale MPC85xx cpufreq(JOG) driver\n");
-+
-+	of_node_put(np);
-+	return cpufreq_register_driver(&mpc85xx_cpufreq_driver);
-+}
-+
-+device_initcall(mpc85xx_jog_init);
+ 		patch_exception(0x1c0, exc_data_tlb_miss_bolted_book3e);
+ 		patch_exception(0x1e0, exc_instruction_tlb_miss_bolted_book3e);
+diff --git a/arch/powerpc/platforms/85xx/smp.c b/arch/powerpc/platforms/85xx/smp.c
+index 6eae2e0..74d8cde 100644
+--- a/arch/powerpc/platforms/85xx/smp.c
++++ b/arch/powerpc/platforms/85xx/smp.c
+@@ -251,10 +251,6 @@ static int __cpuinit smp_85xx_kick_cpu(int nr)
+ 		spin_table = phys_to_virt(*cpu_rel_addr);
+ 
+ 	local_irq_save(flags);
+-#ifdef CONFIG_PPC32
+-#ifdef CONFIG_HOTPLUG_CPU
+-	/* Corresponding to generic_set_cpu_dead() */
+-	generic_set_cpu_up(nr);
+ 
+ 	if (system_state == SYSTEM_RUNNING) {
+ 		/*
+@@ -298,12 +294,19 @@ static int __cpuinit smp_85xx_kick_cpu(int nr)
+ 		/*  clear the acknowledge status */
+ 		__secondary_hold_acknowledge = -1;
+ 	}
+-#endif
+ 	flush_spin_table(spin_table);
+ 	out_be32(&spin_table->pir, hw_cpu);
++#ifdef CONFIG_PPC32
+ 	out_be32(&spin_table->addr_l, __pa(__early_start));
++#else
++	out_be32(&spin_table->addr_h,
++		__pa(*(u64 *)generic_secondary_smp_init) >> 32);
++	out_be32(&spin_table->addr_l,
++		__pa(*(u64 *)generic_secondary_smp_init) & 0xffffffff);
++#endif
+ 	flush_spin_table(spin_table);
+ 
++#ifdef CONFIG_PPC32
+ 	/* Wait a bit for the CPU to ack. */
+ 	if (!spin_event_timeout(__secondary_hold_acknowledge == hw_cpu,
+ 					10000, 100)) {
+@@ -312,18 +315,14 @@ static int __cpuinit smp_85xx_kick_cpu(int nr)
+ 		ret = -ENOENT;
+ 		goto out;
+ 	}
+-out:
+ #else
+ 	smp_generic_kick_cpu(nr);
+-
+-	flush_spin_table(spin_table);
+-	out_be32(&spin_table->pir, hw_cpu);
+-	out_be64((u64 *)(&spin_table->addr_h),
+-	  __pa((u64)*((unsigned long long *)generic_secondary_smp_init)));
+-	flush_spin_table(spin_table);
+ #endif
++	/* Corresponding to generic_set_cpu_dead() */
++	generic_set_cpu_up(nr);
+ 	cur_booting_core = hw_cpu;
+ 
++out:
+ 	local_irq_restore(flags);
+ 
+ 	if (ioremappable)
 -- 
 1.7.3
 
