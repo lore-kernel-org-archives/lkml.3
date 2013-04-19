@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968284Ab3DSLqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 07:46:23 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:32677 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S968230Ab3DSLqW (ORCPT
+	id S1030197Ab3DSLrk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 07:47:40 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52187
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S968126Ab3DSLrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 07:46:22 -0400
-X-Spam-Score: -100.8
-Message-ID: <51712E5E.2020809@asianux.com>
-Date: Fri, 19 Apr 2013 19:45:34 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Tony Lindgren <tony@atomide.com>, "olof@lixom.net" <olof@lixom.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Suggestion] ARM64: kernel: compiling issue, need implement cmpxchg64
- with assembler language.
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 19 Apr 2013 07:47:39 -0400
+Message-ID: <1366372036.24945.1.camel@laptop>
+Subject: Re: [PATCH Resend v6] sched: fix wrong rq's runnable_avg update
+ with rt tasks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        mingo@kernel.org, pjt@google.com, rostedt@goodmis.org,
+        fweisbec@gmail.com, efault@gmx.de
+Date: Fri, 19 Apr 2013 13:47:16 +0200
+In-Reply-To: <1366302867-5055-1-git-send-email-vincent.guittot@linaro.org>
+References: <1366302867-5055-1-git-send-email-vincent.guittot@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-04-18 at 18:34 +0200, Vincent Guittot wrote:
+> The current update of the rq's load can be erroneous when RT tasks are
+> involved
+> 
+> The update of the load of a rq that becomes idle, is done only if the avg_idle
+> is less than sysctl_sched_migration_cost. If RT tasks and short idle duration
+> alternate, the runnable_avg will not be updated correctly and the time will be
+> accounted as idle time when a CFS task wakes up.
+> 
+> A new idle_enter function is called when the next task is the idle function
+> so the elapsed time will be accounted as run time in the load of the rq,
+> whatever the average idle time is. The function update_rq_runnable_avg is
+> removed from idle_balance.
+> 
+> When a RT task is scheduled on an idle CPU, the update of the rq's load is
+> not done when the rq exit idle state because CFS's functions are not
+> called. Then, the idle_balance, which is called just before entering the
+> idle function, updates the rq's load and makes the assumption that the
+> elapsed time since the last update, was only running time.
+> 
+> As a consequence, the rq's load of a CPU that only runs a periodic RT task,
+> is close to LOAD_AVG_MAX whatever the running duration of the RT task is.
+> 
+> A new idle_exit function is called when the prev task is the idle function
+> so the elapsed time will be accounted as idle time in the rq's load.
 
-in arch/arm64/include/asm, not define the function cmpxchg64
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-  when compiling with allmodconfig,
-    drivers/block/blockconsole.c will need this function.
+Thanks Vince!
 
-  I am not quite familiar with ARM64 (neither ARM64 assembler)
-
-  can any member helps to send related patch ?
-    if no one have time to send related patch, I should try.
-    and I am glad to try, but need additional time resources,
-    if I try, I should finish it within this month (2013-4-30).
-
-  welcome any suggestions or completions.
-
-  thanks.
-
-
-gchen.
