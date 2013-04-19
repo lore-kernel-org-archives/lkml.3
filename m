@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab3DSSFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 14:05:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53528 "EHLO mx1.redhat.com"
+	id S1752802Ab3DSSHX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 14:07:23 -0400
+Received: from plane.gmane.org ([80.91.229.3]:53169 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751741Ab3DSSFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 14:05:54 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20130419173434.GA15612@Krystal>
-References: <20130419173434.GA15612@Krystal>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: dhowells@redhat.com, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Issue with upgrade path from include/linux/version.h to uapi
-Date: Fri, 19 Apr 2013 19:05:31 +0100
-Message-ID: <29752.1366394731@warthog.procyon.org.uk>
+	id S1751697Ab3DSSHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 14:07:21 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Sebastian Gottschall <s.gottschall@dd-wrt.com>
+Subject: arm: ARM_VIRT_EXT is not supported by all v7 platforms, so it should
+ not be enabled by default
+Date: Fri, 19 Apr 2013 20:07:15 +0200
+Message-ID: <kks14c$e4p$1@ger.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: svn.dd-wrt.com
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+Cc: linux-arm-kernel@lists.infradead.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
+introduced in kernel 3.9 CONFIG_ARM_VIRT_EXT is default for all V7 arm 
+cpu's. this is wrong and breaks smp support on BCM4708 for example.
+so keep it optional since no all v7 cpu's seem to support it. BCM4708 
+for instance is a arm cortex-a9. please merge this into one of the next 
+patches.
 
-> This leads to very unfortunate consequences for any user relying on
-> version.h to expose the kernel version accurately, since the old "stale"
-> kernel version will be seen by the build.
-> 
-> Sadly, make clean does not even take care of removing this stale file.
 
-I wonder if a simple approach would work - just add:
+Index: arch/arm/mm/Kconfig
+===================================================================
+--- arch/arm/mm/Kconfig     (revision 21211)
++++ arch/arm/mm/Kconfig     (working copy)
+@@ -640,8 +640,7 @@
 
-	$(shell rm include/linux/version.h)
+  config ARM_VIRT_EXT
+         bool
+-       depends on MMU
+-       default y if CPU_V7
++       depends on MMU && CPU_V7
+         help
+           Enable the kernel to make use of the ARM Virtualization
+           Extensions to install hypervisors without run-time firmware
 
-to an appropriate header, perhaps the top-level Makefile.
 
-Failing that, it might be worth adding it to the make-clean list.
-
-David
