@@ -1,190 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab3DSG3U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 02:29:20 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52045 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757007Ab3DSG26 convert rfc822-to-8bit (ORCPT
+	id S1756849Ab3DSG33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 02:29:29 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53008 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480Ab3DSG30 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 02:28:58 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/5] backlight: lp855x: move backlight mode platform data
-Thread-Topic: [PATCH 2/5] backlight: lp855x: move backlight mode platform
- data
-Thread-Index: Ac48xxzUF+qIvMRCSo+5scqGnzZThg==
-Date: Fri, 19 Apr 2013 06:28:32 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E562A6@DQHE06.ent.ti.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 19 Apr 2013 02:29:26 -0400
+Date: Fri, 19 Apr 2013 16:29:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: linux-next: manual merge of the arm-soc tree with the gen-gpio tree
+Message-Id: <20130419162908.69aa0cbccc708ea1ca563a11@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__19_Apr_2013_16_29_08_+1000_CCugxtMk_e=L.RdE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The brightness of LP855x devices is controlled by I2C register or PWM input.
-This mode was selected through the platform data, but it can be chosen by
-the driver internally without platform data configuration.
+--Signature=_Fri__19_Apr_2013_16_29_08_+1000_CCugxtMk_e=L.RdE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How to decide the control mode:
-  If the PWM period has specific value, the mode is PWM input.
-  On the other hand, the mode is register-based.
-  This mode selection is done on the _probe().
+Hi all,
 
-Move 'mode' from a header file to the driver private data structure, 'lp855x'.
-And correlated code was replaced.
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/plat-orion/Makefile between commit 43b426d6fae8 ("arm:
+plat-orion: use GPIO driver on CONFIG_GPIOLIB") from the gen-gpio tree
+and various commits from the arm-soc tree.
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- Documentation/backlight/lp855x-driver.txt |    3 ---
- drivers/video/backlight/lp855x_bl.c       |   21 +++++++++++++++------
- include/linux/platform_data/lp855x.h      |    7 -------
- 3 files changed, 15 insertions(+), 16 deletions(-)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-diff --git a/Documentation/backlight/lp855x-driver.txt b/Documentation/backlight/lp855x-driver.txt
-index 18b06ca..72e2a67 100644
---- a/Documentation/backlight/lp855x-driver.txt
-+++ b/Documentation/backlight/lp855x-driver.txt
-@@ -32,7 +32,6 @@ Platform data for lp855x
- For supporting platform specific data, the lp855x platform data can be used.
- 
- * name : Backlight driver name. If it is not defined, default name is set.
--* mode : Brightness control mode. PWM or register based.
- * device_control : Value of DEVICE CONTROL register.
- * initial_brightness : Initial value of backlight brightness.
- * period_ns : Platform specific PWM period value. unit is nano.
-@@ -54,7 +53,6 @@ static struct lp855x_rom_data lp8552_eeprom_arr[] = {
- 
- static struct lp855x_platform_data lp8552_pdata = {
- 	.name = "lcd-bl",
--	.mode = REGISTER_BASED,
- 	.device_control = I2C_CONFIG(LP8552),
- 	.initial_brightness = INITIAL_BRT,
- 	.load_new_rom_data = 1,
-@@ -65,7 +63,6 @@ static struct lp855x_platform_data lp8552_pdata = {
- example 2) lp8556 platform data : pwm input mode with default rom data
- 
- static struct lp855x_platform_data lp8556_pdata = {
--	.mode = PWM_BASED,
- 	.device_control = PWM_CONFIG(LP8556),
- 	.initial_brightness = INITIAL_BRT,
- 	.period_ns = 1000000,
-diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
-index df937ce..b94dc00 100644
---- a/drivers/video/backlight/lp855x_bl.c
-+++ b/drivers/video/backlight/lp855x_bl.c
-@@ -38,6 +38,11 @@
- #define DEFAULT_BL_NAME		"lcd-backlight"
- #define MAX_BRIGHTNESS		255
- 
-+enum lp855x_brightness_ctrl_mode {
-+	PWM_BASED = 1,
-+	REGISTER_BASED,
-+};
-+
- struct lp855x;
- 
- /*
-@@ -57,6 +62,7 @@ struct lp855x_device_config {
- struct lp855x {
- 	const char *chipname;
- 	enum lp855x_chip_id chip_id;
-+	enum lp855x_brightness_ctrl_mode mode;
- 	struct lp855x_device_config *cfg;
- 	struct i2c_client *client;
- 	struct backlight_device *bl;
-@@ -238,18 +244,17 @@ static void lp855x_pwm_ctrl(struct lp855x *lp, int br, int max_br)
- static int lp855x_bl_update_status(struct backlight_device *bl)
- {
- 	struct lp855x *lp = bl_get_data(bl);
--	enum lp855x_brightness_ctrl_mode mode = lp->pdata->mode;
- 
- 	if (bl->props.state & BL_CORE_SUSPENDED)
- 		bl->props.brightness = 0;
- 
--	if (mode == PWM_BASED) {
-+	if (lp->mode == PWM_BASED) {
- 		int br = bl->props.brightness;
- 		int max_br = bl->props.max_brightness;
- 
- 		lp855x_pwm_ctrl(lp, br, max_br);
- 
--	} else if (mode == REGISTER_BASED) {
-+	} else if (lp->mode == REGISTER_BASED) {
- 		u8 val = bl->props.brightness;
- 		lp855x_write_byte(lp, lp->cfg->reg_brightness, val);
- 	}
-@@ -310,12 +315,11 @@ static ssize_t lp855x_get_bl_ctl_mode(struct device *dev,
- 				     struct device_attribute *attr, char *buf)
- {
- 	struct lp855x *lp = dev_get_drvdata(dev);
--	enum lp855x_brightness_ctrl_mode mode = lp->pdata->mode;
- 	char *strmode = NULL;
- 
--	if (mode == PWM_BASED)
-+	if (lp->mode == PWM_BASED)
- 		strmode = "pwm based";
--	else if (mode == REGISTER_BASED)
-+	else if (lp->mode == REGISTER_BASED)
- 		strmode = "register based";
- 
- 	return scnprintf(buf, PAGE_SIZE, "%s\n", strmode);
-@@ -352,6 +356,11 @@ static int lp855x_probe(struct i2c_client *cl, const struct i2c_device_id *id)
- 	if (!lp)
- 		return -ENOMEM;
- 
-+	if (pdata->period_ns > 0)
-+		lp->mode = PWM_BASED;
-+	else
-+		lp->mode = REGISTER_BASED;
-+
- 	lp->client = cl;
- 	lp->dev = &cl->dev;
- 	lp->pdata = pdata;
-diff --git a/include/linux/platform_data/lp855x.h b/include/linux/platform_data/lp855x.h
-index d135939..e0954df 100644
---- a/include/linux/platform_data/lp855x.h
-+++ b/include/linux/platform_data/lp855x.h
-@@ -69,11 +69,6 @@ enum lp855x_chip_id {
- 	LP8557,
- };
- 
--enum lp855x_brightness_ctrl_mode {
--	PWM_BASED = 1,
--	REGISTER_BASED,
--};
--
- enum lp8550_brighntess_source {
- 	LP8550_PWM_ONLY,
- 	LP8550_I2C_ONLY = 2,
-@@ -116,7 +111,6 @@ struct lp855x_rom_data {
- /**
-  * struct lp855x_platform_data
-  * @name : Backlight driver name. If it is not defined, default name is set.
-- * @mode : brightness control by pwm or lp855x register
-  * @device_control : value of DEVICE CONTROL register
-  * @initial_brightness : initial value of backlight brightness
-  * @period_ns : platform specific pwm period value. unit is nano.
-@@ -129,7 +123,6 @@ struct lp855x_rom_data {
-  */
- struct lp855x_platform_data {
- 	const char *name;
--	enum lp855x_brightness_ctrl_mode mode;
- 	u8 device_control;
- 	int initial_brightness;
- 	unsigned int period_ns;
--- 
-1.7.9.5
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/arm/plat-orion/Makefile
+index bbc0d6b,2eca54b..0000000
+--- a/arch/arm/plat-orion/Makefile
++++ b/arch/arm/plat-orion/Makefile
+@@@ -3,8 -3,6 +3,6 @@@
+  #
+  ccflags-$(CONFIG_ARCH_MULTIPLATFORM) :=3D -I$(srctree)/$(src)/include
+ =20
+- obj-y                             +=3D addr-map.o
+-=20
+ -orion-gpio-$(CONFIG_GENERIC_GPIO) +=3D gpio.o
+ +orion-gpio-$(CONFIG_GPIOLIB)      +=3D gpio.o
+  obj-$(CONFIG_PLAT_ORION_LEGACY)   +=3D irq.o pcie.o time.o common.o mpp.o
+  obj-$(CONFIG_PLAT_ORION_LEGACY)   +=3D $(orion-gpio-y)
 
-Best Regards,
-Milo
+--Signature=_Fri__19_Apr_2013_16_29_08_+1000_CCugxtMk_e=L.RdE
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJRcOQ0AAoJEECxmPOUX5FEX70P/2WSNBoA6Q/Gb4XCxtvhoEVu
+m8OPgKU3pn/NtpPXajjMhcPS+L9lMr2Role/4zPtSSmXyH1q5tf9HyTBtizraBdO
+Ij3S/JonmJnQBYmHsjestYExMo6XbH+PcGUQTeKV+yCOeELBqjc5TO55vtcfRk95
+QUHo76/qCkWGNiQkw4SJPBirZwu90OHmSB5XN6CVmDCvArJrlId6dWV14DkZU3x6
+vKpwfW2I2s+qeMawAMqBxHyMQ01etx86da1ZFwMFDmR7DuMUabsOMsQAH4R87d2+
+gzambO0hTt0o5YjXzFxncWl5zF3bVFUPt+Hz6zSgsrHRkE2F+NgxatGuSLUvTgmZ
+MEMA/cq/F3MAHz99L1togsQ55Ce+/SEiL3/thUndDHxhj98CbdODwifyK3AtI3Zi
+Ci4ed7l/sWXbteVnzi0UUH7MHxv/3hTIoPlazikGtjB4ZikiA1LzesgPJeo2gLvU
+BxwB70zHxvU27US0nZ/9sw1/LDn3tNuMrB1Rx46W7R1FVUQ89N7tYEgLq4Pl+FGt
+B8BdIBHe1Cr/07z/8hgMiJ9t32JpNCoG2veO1qvbVLlTVJIINLIRxljhOTVXqmcF
+Jidj8IM0pyGRQdKazo7XWPOtpiqseu+UC9HYPlHjjBSAtRr1CbOus4UjXDUxUxTC
+vYUPVDpeQwo3rhvWffAM
+=dGug
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__19_Apr_2013_16_29_08_+1000_CCugxtMk_e=L.RdE--
