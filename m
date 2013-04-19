@@ -1,148 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758514Ab3DSJpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 05:45:47 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:43745 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757794Ab3DSJpp (ORCPT
+	id S968132Ab3DSJrP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 05:47:15 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:47198 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758536Ab3DSJrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 05:45:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <1366360406.3901.10.camel@joe-AO722>
-References: <1366360406.3901.10.camel@joe-AO722>
-Date: Fri, 19 Apr 2013 11:45:44 +0200
-Message-ID: <CAL1gcdOMtbzxCVLNvDK_CD-M+_SdAeL3Sja9khO9+G2bNOCz1g@mail.gmail.com>
-Subject: Re: [PATCH wireless-next] rt2x00: Use more current logging styles,
- shrink object size
-From: Gertjan van Wingerde <gwingerde@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Ivo van Doorn <IvDoorn@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        rt2x00 Users List <users@rt2x00.serialmonkey.com>,
-        netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 19 Apr 2013 05:47:13 -0400
+From: Prabhakar lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>, Pawel Osciak <pawel@osciak.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>
+Subject: [PATCH RFC] media: videobuf2: fix the length check for mmap
+Date: Fri, 19 Apr 2013 15:16:56 +0530
+Message-Id: <1366364816-3567-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 
-On Fri, Apr 19, 2013 at 10:33 AM, Joe Perches <joe@perches.com> wrote:
-> Reduce object size ~2% using more current logging styles.
->
-> Neaten and simplify logging macros.
-> Use wiphy_<level> where appropriate.
-> Coalesce formats.
->
-> Convert ERROR/WARNING/INFO macros and uses to rt2x00_<level>
-> Convert EEPROM to rt2x00_eeprom_dbg
-> Convert PROBE_ERROR to rt2x00_probe_err
->
-> $ size drivers/net/wireless/rt2x00/built-in.o*
->    text    data     bss     dec     hex filename
->  245537   71696   69584  386817   5e701 drivers/net/wireless/rt2x00/built-in.o.new
->  240609   70096   68944  379649   5cb01 drivers/net/wireless/rt2x00/built-in.o.new.no_dyn_debug
->  240609   70096   68944  379649   5cb01 drivers/net/wireless/rt2x00/built-in.o.new.no_rt2x00_debug
->  249198   70096   70352  389646   5f20e drivers/net/wireless/rt2x00/built-in.o.old
->  249198   70096   70352  389646   5f20e drivers/net/wireless/rt2x00/built-in.o.old.no_dyn_debug
->  244222   70096   69712  384030   5dc1e drivers/net/wireless/rt2x00/built-in.o.old.no_rt2x00_debug
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+>From commit 068a0df76023926af958a336a78bef60468d2033
+"[media] media: vb2: add length check for mmap"
+patch verifies that the mmap() size requested by userspace
+doesn't exceed the buffer size.
 
-Thanks for doing this. I have some observations below, though.
+As the mmap() size is rounded up to the next page boundary
+the check will fail for buffer sizes that are not multiple
+of the page size.
 
-> diff --git a/drivers/net/wireless/rt2x00/rt2x00.h b/drivers/net/wireless/rt2x00/rt2x00.h
-> index 0d02d16..249d416 100644
-> --- a/drivers/net/wireless/rt2x00/rt2x00.h
-> +++ b/drivers/net/wireless/rt2x00/rt2x00.h
-> @@ -54,47 +54,40 @@
->  #define DRV_VERSION    "2.3.0"
->  #define DRV_PROJECT    "http://rt2x00.serialmonkey.com"
->
-> -/*
-> - * Debug definitions.
-> - * Debug output has to be enabled during compile time.
-> +/* Utility printing macros */
-> +#define rt2x00_err(dev, fmt, ...)                                      \
-> +       wiphy_err((dev)->hw->wiphy, "%s: Error - " fmt,                 \
-> +                 __func__, ##__VA_ARGS__)
-> +#define rt2x00_warn(dev, fmt, ...)                                     \
-> +       wiphy_err((dev)->hw->wiphy, "%s: Warning - " fmt,               \
-> +                 __func__, ##__VA_ARGS__)
+This patch fixes the check by aligning the buffer size to page
+size during the check. Alongside fixes the vmalloc allocator
+to round up the size.
 
-Shouldn't this use wiphy_warn instead of wiphy_err?
-
-> +#define rt2x00_info(dev, fmt, ...)                                     \
-> +       wiphy_err((dev)->hw->wiphy, "%s: Info - " fmt,                  \
-> +                 __func__, ##__VA_ARGS__)
-
-Shouldn't this use wiphy_info instead of wiphy_err?
-
-> +
-> +/* The special rt2x00_probe_err message form is used
-> + * when the rt2x00_dev is not yet initialized.
->   */
-> -#define DEBUG_PRINTK_MSG(__dev, __kernlvl, __lvl, __msg, __args...)    \
-> -       printk(__kernlvl "%s -> %s: %s - " __msg,                       \
-> -              wiphy_name((__dev)->hw->wiphy), __func__, __lvl, ##__args)
-> -
-> -#define DEBUG_PRINTK_PROBE(__kernlvl, __lvl, __msg, __args...) \
-> -       printk(__kernlvl "%s -> %s: %s - " __msg,               \
-> -              KBUILD_MODNAME, __func__, __lvl, ##__args)
-> +#define rt2x00_probe_err(fmt, ...)                                     \
-> +       printk(KERN_ERR KBUILD_MODNAME ": %s: Error - " fmt,            \
-> +              __func__, ##__VA_ARGS__)
->
-> +/* Debug definitions.
-> + * Debug output has to be enabled during compile time.
-> + */
->  #ifdef CONFIG_RT2X00_DEBUG
-> -#define DEBUG_PRINTK(__dev, __kernlvl, __lvl, __msg, __args...)        \
-> -       DEBUG_PRINTK_MSG(__dev, __kernlvl, __lvl, __msg, ##__args)
-> -#else
-> -#define DEBUG_PRINTK(__dev, __kernlvl, __lvl, __msg, __args...)        \
-> -       do { } while (0)
-> +#define DEBUG
->  #endif /* CONFIG_RT2X00_DEBUG */
->
->  /*
->   * Various debug levels.
-> - * The debug levels PANIC and ERROR both indicate serious problems,
-> - * for this reason they should never be ignored.
-> - * The special ERROR_PROBE message is for messages that are generated
-> - * when the rt2x00_dev is not yet initialized.
->   */
-> -#define PANIC(__dev, __msg, __args...) \
-> -       DEBUG_PRINTK_MSG(__dev, KERN_CRIT, "Panic", __msg, ##__args)
-> -#define ERROR(__dev, __msg, __args...) \
-> -       DEBUG_PRINTK_MSG(__dev, KERN_ERR, "Error", __msg, ##__args)
-> -#define ERROR_PROBE(__msg, __args...) \
-> -       DEBUG_PRINTK_PROBE(KERN_ERR, "Error", __msg, ##__args)
-> -#define WARNING(__dev, __msg, __args...) \
-> -       DEBUG_PRINTK_MSG(__dev, KERN_WARNING, "Warning", __msg, ##__args)
-> -#define INFO(__dev, __msg, __args...) \
-> -       DEBUG_PRINTK_MSG(__dev, KERN_INFO, "Info", __msg, ##__args)
-> -#define DEBUG(__dev, __msg, __args...) \
-> -       DEBUG_PRINTK(__dev, KERN_DEBUG, "Debug", __msg, ##__args)
-> -#define EEPROM(__dev, __msg, __args...) \
-> -       DEBUG_PRINTK(__dev, KERN_DEBUG, "EEPROM recovery", __msg, ##__args)
-> +#define rt2x00_dbg(dev, fmt, ...)                                      \
-> +       wiphy_dbg((dev)->hw->wiphy, "%s: Debug - " fmt,                 \
-> +                 __func__, ##__VA_ARGS__)
-> +#define rt2x00_eeprom_dbg(dev, fmt, ...)                               \
-> +       wiphy_dbg((dev)->hw->wiphy, "%s: %s - " fmt,                    \
-> +                 __func__, "EEPROM recovery", ##__VA_ARGS__)
->
-
-Why do you give the "EEPROM recovery" string as extra argument instead
-of embedding it in the format string, like you do in the rt2x00_dbg
-macro for the "Debug" string?
-
-
-Also, please put all rt2x00_<level> next to each other, instead of
-scattering them around with the "#define DEBUG" in between them.
-
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Seung-Woo Kim <sw0312.kim@samsung.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
 ---
-Gertjan
+ drivers/media/v4l2-core/videobuf2-core.c    |    2 +-
+ drivers/media/v4l2-core/videobuf2-vmalloc.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/v4l2-core/videobuf2-core.c b/drivers/media/v4l2-core/videobuf2-core.c
+index 58c1744..223fcd4 100644
+--- a/drivers/media/v4l2-core/videobuf2-core.c
++++ b/drivers/media/v4l2-core/videobuf2-core.c
+@@ -1886,7 +1886,7 @@ int vb2_mmap(struct vb2_queue *q, struct vm_area_struct *vma)
+ 
+ 	vb = q->bufs[buffer];
+ 
+-	if (vb->v4l2_planes[plane].length < (vma->vm_end - vma->vm_start)) {
++	if (PAGE_ALIGN(vb->v4l2_planes[plane].length) < (vma->vm_end - vma->vm_start)) {
+ 		dprintk(1, "Invalid length\n");
+ 		return -EINVAL;
+ 	}
+diff --git a/drivers/media/v4l2-core/videobuf2-vmalloc.c b/drivers/media/v4l2-core/videobuf2-vmalloc.c
+index 313d977..bf3b95c 100644
+--- a/drivers/media/v4l2-core/videobuf2-vmalloc.c
++++ b/drivers/media/v4l2-core/videobuf2-vmalloc.c
+@@ -44,7 +44,7 @@ static void *vb2_vmalloc_alloc(void *alloc_ctx, unsigned long size, gfp_t gfp_fl
+ 		return NULL;
+ 
+ 	buf->size = size;
+-	buf->vaddr = vmalloc_user(buf->size);
++	buf->vaddr = vmalloc_user(PAGE_ALIGN(buf->size));
+ 	buf->handler.refcount = &buf->refcount;
+ 	buf->handler.put = vb2_vmalloc_put;
+ 	buf->handler.arg = buf;
+-- 
+1.7.4.1
+
