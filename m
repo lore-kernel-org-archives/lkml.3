@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968187Ab3DSKse (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 06:48:34 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:16064
+	id S968164Ab3DSKsc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 06:48:32 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:51603
 	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S968139Ab3DSKs3 (ORCPT
+	by vger.kernel.org with ESMTP id S968140Ab3DSKsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 06:48:29 -0400
+	Fri, 19 Apr 2013 06:48:30 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc8kzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1fc6h1ee6h1de0h1fdah1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1155h)
 From: Zhao Chenhui <chenhui.zhao@freescale.com>
 To: <linuxppc-dev@lists.ozlabs.org>
 CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 09/15] powerpc/rcpm: add sleep feature for SoCs using RCPM
-Date: Fri, 19 Apr 2013 18:47:42 +0800
-Message-ID: <1366368468-29143-9-git-send-email-chenhui.zhao@freescale.com>
+Subject: [PATCH v2 11/15] powerpc/rcpm: add struct ccsr_rcpm_v2
+Date: Fri, 19 Apr 2013 18:47:44 +0800
+Message-ID: <1366368468-29143-11-git-send-email-chenhui.zhao@freescale.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
 References: <1366368468-29143-1-git-send-email-chenhui.zhao@freescale.com>
@@ -26,203 +26,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SoCs which have a RCPM (Run Control/Power Management) module
-support power management feature. This patch implements sleep feature.
+From: Chen-Hui Zhao <chenhui.zhao@freescale.com>
 
-In sleep mode, the clocks of cores and unused IP blocks will be
-turned off. The IP blocks which are allowed to wake up the system
-are still running.
+Add struct ccsr_rcpm_v2 to descibe the v2 RCPM register map on some SoCs,
+such as T4240, etc.
 
 Signed-off-by: Zhao Chenhui <chenhui.zhao@freescale.com>
 Signed-off-by: Li Yang <leoli@freescale.com>
+Signed-off-by: Andy Fleming <afleming@freescale.com>
 ---
- arch/powerpc/Kconfig                |    4 +-
- arch/powerpc/include/asm/fsl_guts.h |    1 +
- arch/powerpc/platforms/85xx/Kconfig |    1 +
- arch/powerpc/sysdev/Kconfig         |    5 ++
- arch/powerpc/sysdev/Makefile        |    1 +
- arch/powerpc/sysdev/fsl_rcpm.c      |  101 +++++++++++++++++++++++++++++++++++
- 6 files changed, 111 insertions(+), 2 deletions(-)
- create mode 100644 arch/powerpc/sysdev/fsl_rcpm.c
+ arch/powerpc/include/asm/fsl_guts.h |   66 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 66 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index b6851be..0ad6e30 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -220,7 +220,7 @@ config ARCH_HIBERNATION_POSSIBLE
- config ARCH_SUSPEND_POSSIBLE
- 	def_bool y
- 	depends on ADB_PMU || PPC_EFIKA || PPC_LITE5200 || PPC_83xx || \
--		   (PPC_85xx && !PPC_E500MC) || PPC_86xx || PPC_PSERIES \
-+		   FSL_SOC_BOOKE || PPC_86xx || PPC_PSERIES \
- 		   || 44x || 40x
- 
- config PPC_DCR_NATIVE
-@@ -694,7 +694,7 @@ config FSL_PCI
- config FSL_PMC
- 	bool
- 	default y
--	depends on SUSPEND && (PPC_85xx || PPC_86xx)
-+	depends on SUSPEND && ((PPC_85xx && !PPC_E500MC) || PPC_86xx)
- 	help
- 	  Freescale MPC85xx/MPC86xx power management controller support
- 	  (suspend/resume). For MPC83xx see platforms/83xx/suspend.c
 diff --git a/arch/powerpc/include/asm/fsl_guts.h b/arch/powerpc/include/asm/fsl_guts.h
-index 4eac1cf..b8a08d5 100644
+index b8a08d5..193d1f1 100644
 --- a/arch/powerpc/include/asm/fsl_guts.h
 +++ b/arch/powerpc/include/asm/fsl_guts.h
-@@ -124,6 +124,7 @@ struct ccsr_rcpm {
- 	u8	res0038[4];
- 	__be32	cwdtdsr;	/* 0x003c - Core watchdog detect status register */
- 	__be32	powmgtcsr;	/* 0x0040 - Power Mangement Control & Status Register */
-+#define RCPM_POWMGTCSR_SLP	0x00020000
- 	u8	res0044[12];
- 	__be32	ippdexpcr;	/* 0x0050 - IP Powerdown Exception Control Register */
- 	u8	res0054[16];
-diff --git a/arch/powerpc/platforms/85xx/Kconfig b/arch/powerpc/platforms/85xx/Kconfig
-index 8f02b05..c0aa36e 100644
---- a/arch/powerpc/platforms/85xx/Kconfig
-+++ b/arch/powerpc/platforms/85xx/Kconfig
-@@ -8,6 +8,7 @@ menuconfig FSL_SOC_BOOKE
- 	select FSL_PCI if PCI
- 	select SERIAL_8250_EXTENDED if SERIAL_8250
- 	select SERIAL_8250_SHARE_IRQ if SERIAL_8250
-+	select FSL_CORENET_RCPM if SUSPEND && PPC_E500MC
- 	default y
+@@ -145,6 +145,72 @@ struct ccsr_rcpm {
+ 	__be32	cmcpmaskcr;	/* 0x00a4 - Core machine check mask control register */
+ };
  
- if FSL_SOC_BOOKE
-diff --git a/arch/powerpc/sysdev/Kconfig b/arch/powerpc/sysdev/Kconfig
-index a84fecf..6c22d91 100644
---- a/arch/powerpc/sysdev/Kconfig
-+++ b/arch/powerpc/sysdev/Kconfig
-@@ -33,3 +33,8 @@ config SCOM_DEBUGFS
- config GE_FPGA
- 	bool
- 	default n
-+
-+config FSL_CORENET_RCPM
-+	bool
-+	help
-+	 This option enables support for RCPM (Run Control/Power Management).
-diff --git a/arch/powerpc/sysdev/Makefile b/arch/powerpc/sysdev/Makefile
-index b0a518e..f12b856 100644
---- a/arch/powerpc/sysdev/Makefile
-+++ b/arch/powerpc/sysdev/Makefile
-@@ -18,6 +18,7 @@ obj-$(CONFIG_MMIO_NVRAM)	+= mmio_nvram.o
- obj-$(CONFIG_FSL_SOC)		+= fsl_soc.o fsl_mpic_err.o
- obj-$(CONFIG_FSL_PCI)		+= fsl_pci.o $(fsl-msi-obj-y)
- obj-$(CONFIG_FSL_PMC)		+= fsl_pmc.o
-+obj-$(CONFIG_FSL_CORENET_RCPM)	+= fsl_rcpm.o
- obj-$(CONFIG_FSL_LBC)		+= fsl_lbc.o
- obj-$(CONFIG_FSL_IFC)		+= fsl_ifc.o
- obj-$(CONFIG_FSL_GTM)		+= fsl_gtm.o
-diff --git a/arch/powerpc/sysdev/fsl_rcpm.c b/arch/powerpc/sysdev/fsl_rcpm.c
-new file mode 100644
-index 0000000..fd789da
---- /dev/null
-+++ b/arch/powerpc/sysdev/fsl_rcpm.c
-@@ -0,0 +1,101 @@
-+/*
-+ * RCPM(Run Control/Power Management) support
-+ *
-+ * Copyright 2012-2013 Freescale Semiconductor Inc.
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+#include <linux/types.h>
-+#include <linux/errno.h>
-+#include <linux/suspend.h>
-+#include <linux/device.h>
-+#include <linux/delay.h>
-+#include <linux/of_platform.h>
-+
-+#include <asm/io.h>
-+#include <asm/cacheflush.h>
-+#include <asm/fsl_guts.h>
-+
-+static struct ccsr_rcpm __iomem *rcpm_regs;
-+
-+static int rcpm_suspend_enter(suspend_state_t state)
-+{
-+	int ret = 0;
-+
-+	switch (state) {
-+	case PM_SUSPEND_STANDBY:
-+
-+		flush_dcache_L1();
-+		flush_backside_L2_cache();
-+
-+		setbits32(&rcpm_regs->powmgtcsr, RCPM_POWMGTCSR_SLP);
-+
-+		/* At this point, the device is in sleep mode. */
-+
-+		/* Upon resume, wait for SLP bit to be clear. */
-+		ret = spin_event_timeout(
-+		  (in_be32(&rcpm_regs->powmgtcsr) & RCPM_POWMGTCSR_SLP) == 0,
-+		  10000, 10);
-+		if (!ret) {
-+			pr_err("%s: timeout waiting for SLP bit to be cleared\n",
-+				__func__);
-+			ret = -EINVAL;
-+		}
-+		break;
-+
-+	default:
-+		ret = -EINVAL;
-+
-+	}
-+	return ret;
-+}
-+
-+static int rcpm_suspend_valid(suspend_state_t state)
-+{
-+	if (state == PM_SUSPEND_STANDBY)
-+		return 1;
-+	else
-+		return 0;
-+}
-+
-+static const struct platform_suspend_ops rcpm_suspend_ops = {
-+	.valid = rcpm_suspend_valid,
-+	.enter = rcpm_suspend_enter,
++struct ccsr_rcpm_v2 {
++	u8	res_00[12];
++	u32	tph10sr0;	/* Thread PH10 Status Register */
++	u8	res_10[12];
++	u32	tph10setr0;	/* Thread PH10 Set Control Register */
++	u8	res_20[12];
++	u32	tph10clrr0;	/* Thread PH10 Clear Control Register */
++	u8	res_30[12];
++	u32	tph10psr0;	/* Thread PH10 Previous Status Register */
++	u8	res_40[12];
++	u32	twaitsr0;	/* Thread Wait Status Register */
++	u8	res_50[96];
++	u32	pcph15sr;	/* Physical Core PH15 Status Register */
++	u32	pcph15setr;	/* Physical Core PH15 Set Control Register */
++	u32	pcph15clrr;	/* Physical Core PH15 Clear Control Register */
++	u32	pcph15psr;	/* Physical Core PH15 Prev Status Register */
++	u8	res_c0[16];
++	u32	pcph20sr;	/* Physical Core PH20 Status Register */
++	u32	pcph20setr;	/* Physical Core PH20 Set Control Register */
++	u32	pcph20clrr;	/* Physical Core PH20 Clear Control Register */
++	u32	pcph20psr;	/* Physical Core PH20 Prev Status Register */
++	u32	pcpw20sr;	/* Physical Core PW20 Status Register */
++	u8	res_e0[12];
++	u32	pcph30sr;	/* Physical Core PH30 Status Register */
++	u32	pcph30setr;	/* Physical Core PH30 Set Control Register */
++	u32	pcph30clrr;	/* Physical Core PH30 Clear Control Register */
++	u32	pcph30psr;	/* Physical Core PH30 Prev Status Register */
++	u8	res_100[32];
++	u32	ippwrgatecr;	/* IP Power Gating Control Register */
++	u8	res_124[12];
++	u32	powmgtcsr;	/* Power Management Control & Status Reg */
++#define RCPM_POWMGTCSR_LPM20_RQ		0x00100000
++#define RCPM_POWMGTCSR_LPM20_ST		0x00000200
++#define RCPM_POWMGTCSR_P_LPM20_ST	0x00000100
++	u8	res_134[12];
++	u32	ippdexpcr[4];	/* IP Powerdown Exception Control Reg */
++	u8	res_150[12];
++	u32	tpmimr0;	/* Thread PM Interrupt Mask Reg */
++	u8	res_160[12];
++	u32	tpmcimr0;	/* Thread PM Crit Interrupt Mask Reg */
++	u8	res_170[12];
++	u32	tpmmcmr0;	/* Thread PM Machine Check Interrupt Mask Reg */
++	u8	res_180[12];
++	u32	tpmnmimr0;	/* Thread PM NMI Mask Reg */
++	u8	res_190[12];
++	u32	tmcpmaskcr0;	/* Thread Machine Check Mask Control Reg */
++	u32	pctbenr;	/* Physical Core Time Base Enable Reg */
++	u32	pctbclkselr;	/* Physical Core Time Base Clock Select */
++	u32	tbclkdivr;	/* Time Base Clock Divider Register */
++	u8	res_1ac[4];
++	u32	ttbhltcr[4];	/* Thread Time Base Halt Control Register */
++	u32	clpcl10sr;	/* Cluster PCL10 Status Register */
++	u32	clpcl10setr;	/* Cluster PCL30 Set Control Register */
++	u32	clpcl10clrr;	/* Cluster PCL30 Clear Control Register */
++	u32	clpcl10psr;	/* Cluster PCL30 Prev Status Register */
++	u32	cddslpsetr;	/* Core Domain Deep Sleep Set Register */
++	u32	cddslpclrr;	/* Core Domain Deep Sleep Clear Register */
++	u32	cdpwroksetr;	/* Core Domain Power OK Set Register */
++	u32	cdpwrokclrr;	/* Core Domain Power OK Clear Register */
++	u32	cdpwrensr;	/* Core Domain Power Enable Status Register */
++	u32	cddslsr;	/* Core Domain Deep Sleep Status Register */
++	u8	res_1e8[8];
++	u32	dslpcntcr[8];	/* Deep Sleep Counter Cfg Register */
++	u8	res_300[3568];
 +};
 +
-+static int rcpm_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+
-+	rcpm_regs = of_iomap(np, 0);
-+	if (!rcpm_regs)
-+		return -ENOMEM;
-+
-+	suspend_set_ops(&rcpm_suspend_ops);
-+
-+	dev_info(&pdev->dev, "Freescale RCPM driver\n");
-+	return 0;
-+}
-+
-+static const struct of_device_id rcpm_ids[] = {
-+	{ .compatible = "fsl,qoriq-rcpm-1.0", },
-+	{ },
-+};
-+
-+static struct platform_driver rcpm_driver = {
-+	.driver = {
-+		.name = "fsl-rcpm",
-+		.of_match_table = rcpm_ids,
-+	},
-+	.probe = rcpm_probe,
-+};
-+
-+static int __init rcpm_init(void)
-+{
-+	return platform_driver_register(&rcpm_driver);
-+}
-+
-+device_initcall(rcpm_init);
+ #ifdef CONFIG_PPC_86xx
+ 
+ #define CCSR_GUTS_DMACR_DEV_SSI	0	/* DMA controller/channel set to SSI */
 -- 
 1.7.3
 
