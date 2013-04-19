@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab3DSGoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 02:44:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13470 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756318Ab3DSGon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 02:44:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,507,1363158000"; 
-   d="asc'?scan'208";a="320733425"
-Message-ID: <1366353879.15587.4.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] e1000e: fix mismatch in mutex lock-unlock in
- e1000_reset_hw_82571()
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Date: Thu, 18 Apr 2013 23:44:39 -0700
-In-Reply-To: <1366348518-5594-1-git-send-email-khoroshilov@ispras.ru>
-References: <1366348518-5594-1-git-send-email-khoroshilov@ispras.ru>
-Organization: Intel Corporation
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-XNn6EdDikOAzvLHf/8sQ"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	id S1756851Ab3DSGqp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 02:46:45 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40118 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756479Ab3DSGqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 02:46:44 -0400
+Date: Fri, 19 Apr 2013 16:46:36 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: linux-next: build failure after merge of the arm-soc tree
+Message-Id: <20130419164636.0d2405ca5fd927f1ba31fe40@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__19_Apr_2013_16_46_36_+1000_dI5P+PfW_KVhrBgQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-XNn6EdDikOAzvLHf/8sQ
-Content-Type: text/plain; charset="UTF-8"
+--Signature=_Fri__19_Apr_2013_16_46_36_+1000_dI5P+PfW_KVhrBgQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, 2013-04-18 at 22:15 -0700, Alexey Khoroshilov wrote:
-> If e1000_get_hw_semaphore_82574() succeed, it acquires swflag_mutex,
-> otherwise it does not. But the returned value of
-> e1000_get_hw_semaphore_82574() is ignored, so unlocking of
-> swflag_mutex
-> happens anyway.
->=20
-> The patch fixes the issue by breaking reset if MIC ownership is not
-> acquired.
->=20
-> Found by Linux Driver Verification project (linuxtesting.org).
->=20
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> ---
->  drivers/net/ethernet/intel/e1000e/82571.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)=20
+Hi all,
 
-Thanks Alexey, I have added your patch to my queue.
+After merging the arm-soc tree, today's linux-next build (powerpc ppc64_def=
+config)
+failed like this:
 
---=-XNn6EdDikOAzvLHf/8sQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+powerpc64-linux-ld: cannot find drivers/pci/host/built-in.o: No such file o=
+r directory
+
+Caused by commit 9ecbe03ae85b ("pci: infrastructure to add drivers in
+drivers/pci/host").
+
+I have used the arm-soc tree from next-20130418 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__19_Apr_2013_16_46_36_+1000_dI5P+PfW_KVhrBgQ
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAABCgAGBQJRcOfXAAoJEOVv75VaS+3OJm8P/j9JlZ1HT88QIs8e0eJDO7hO
-qx1+zgLvGZ3vnrWGecWwQVEJ8HUwcPDzwwRjah9Up1ybXhZkVQuVTtxhlylRzLao
-H0MdPH5mADbr9oa2JKo5JXgjcpfIUrV+nzYvujylCYHy5ozyHA73EBzRNwB8h8Ci
-0jTkpvjqO7Kv2SkYIErc400AGenew6F6cYA2hYujxXc/X2N+GHS/BOi1ImO1mb5L
-z9QzDMRNt6u/H/CnPmY/SkQ/xWwmqaLHMHZ696A5rBYhojDj6PNJUgi0JnSql1NM
-JaauE7wpsJvuc4dwf9Xditw2FK1aG9bSzygUsogkDaIl8QVZ8Onyur6DuMlF4nfx
-qLeK++InEvp7MnUkQcyXSxKMC7IHjTTWQKuGlspfsA3adhzbEvqqHTCyNO8iAc3l
-ZKfIwg0WDyMrZpXHk9E236FAEJd5nb1UleA5eQ3fD3A1FBW0TztS88Qm7U2kOFWG
-OfCR33J3SFIXRYVLRcTVpaiRCp3vdth+mw2CYG03bGXDLxzMpbVeTw1+A1qlG4Dw
-BMc9d6zo/3+NcksB5jiJ+H8D4F8F5+DM0V++qPlaBx5lsrOUyG2HUhICxWPGp09G
-25qHL06zKKqvfC94QEjp4X9y1o6usdjz/PeRW9SHX6x8uALRcwVebKMXeHFVKmZy
-MllP/4NoOIFEWROdcqlE
-=S0ff
+iQIcBAEBCAAGBQJRcOhMAAoJEECxmPOUX5FE56UP/jEsJfqzf/BntE6DhkKUnHYw
+XnDFAxk/8pW0GMTd8iwqSqitmdtPutViX5BtO36m7abiYA9OJyTl1rYaELpSFeGU
+kE0eDAXZamCdGc+/A7sDWikl894kCD7XLC+UxFDq9JAeiaxiKB7tRwIzEvhrhZGK
+rELP1FDkDPY66NiTRIC+D02qs8gGNNLtBxJOqYHEhpJCXNXF/ImAkhaBnct8PUcF
+sGDSyYODP0cODsdMzA7z5nqZZDfZAGRovXrtIycAN6OibXHv465f+xfXUyg8+K70
+f9OwdnyktrQoOrXaYpHy+c947kC080AaPT3vrJIiqBRhK1sDks8v2Fov0rgO7t8y
+FzZemWqBe5MQPX+KJqRrZLaYzgPREVR7hvVGZ/sz/U804nMG8atpgQh/lKDF7cBz
+qJb53uL0DKrDKIP3R0rlzaBDLEGjenKVvQzBYPkjFbdtX75ZqjILhfx23Z7MIivU
+EUqcrakyrMFyV92Im5S4XJrJW3IJX1TwWPL1iDNSgpfpdxiDb6adk3X1N8eLsF0+
+OJP+VPWg2N8spuj7tRPseXdN0AiQS4UPNCugHoAIuSJdz41Uemxfm+vGszlnwE8W
+pljGP9E+umBoqxhRXM5fX7SWq4ICtGZaE6B29KyEBe7dpgC+sV+iWpQPAEruH5LI
+WpQ9y3O6M1LEsmvYnehK
+=4N0v
 -----END PGP SIGNATURE-----
 
---=-XNn6EdDikOAzvLHf/8sQ--
-
+--Signature=_Fri__19_Apr_2013_16_46_36_+1000_dI5P+PfW_KVhrBgQ--
