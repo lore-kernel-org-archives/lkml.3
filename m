@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030290Ab3DSKyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 06:54:07 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42904 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030265Ab3DSKyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 06:54:04 -0400
-Message-ID: <51712208.5090403@ti.com>
-Date: Fri, 19 Apr 2013 16:22:56 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130328 Thunderbird/17.0.5
+	id S1030306Ab3DSK7B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 06:59:01 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:54762 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S968169Ab3DSK7A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Apr 2013 06:59:00 -0400
+Date: Fri, 19 Apr 2013 12:58:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/2] sched: move content out of core files for load
+ average
+Message-ID: <20130419105855.GA30060@gmail.com>
+References: <1365811457-31924-1-git-send-email-paul.gortmaker@windriver.com>
+ <20130415093330.GC17715@gmail.com>
+ <1366283681.19383.5.camel@laptop>
+ <51701722.1070407@windriver.com>
+ <20130419082546.GA25370@gmail.com>
+ <1366368694.19383.22.camel@laptop>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <akpm@linux-foundation.org>, <rob@landley.net>,
-        <broonie@opensource.wolfsonmicro.com>, <linux@arm.linux.org.uk>,
-        <b-cousson@ti.com>, <linux-doc@vger.kernel.org>, <tony@atomide.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rob.herring@calxeda.com>,
-        <grant.likely@secretlab.ca>, <eballetbo@gmail.com>,
-        <santosh.shilimkar@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <swarren@nvidia.com>, <javier@dowhile0.org>,
-        <linux-omap@vger.kernel.org>, <davem@davemloft.net>,
-        <cesarb@cesarb.net>, <mchehab@redhat.com>
-Subject: Re: [PATCH v3 0/6] Generic PHY Framework
-References: <1363770725-13717-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1363770725-13717-1-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366368694.19383.22.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
 
-On 3/20/2013 2:41 PM, Kishon Vijay Abraham I wrote:
-> Added a generic PHY framework that provides a set of APIs for the PHY drivers
-> to create/destroy a PHY and APIs for the PHY users to obtain a reference to
-> the PHY with or without using phandle. To obtain a reference to the PHY
-> without using phandle, the platform specfic intialization code (say from board
-> file) should have already called phy_bind with the binding information. The
-> binding information consists of phy's device name, phy user device name and an
-> index. The index is used when the same phy user binds to mulitple phys.
+* Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Fri, 2013-04-19 at 10:25 +0200, Ingo Molnar wrote:
+> > It might eventually make sense to integrate the 'average load'
+> > calculation as well 
+> > with all this - as they really have a similar purpose, the avenload[]
+> > vector of 
+> > averages is conceptually similar to the rq->cpu_load[] vector of
+> > averages.
 > 
-> This framework will be of use only to devices that uses external PHY (PHY
-> functionality is not embedded within the controller).
+> The /proc/loadavg definition isn't useful for anything remotely sane
+> wrt load-balancing or otherwise, so I don't really see that integration
+> happening (its a measure of how many tasks are blocked, where the
+> load-balancer needs a measure of how many tasks are wanting to run).
 
->From a top level what you are doing looks closely related to External
-connector (extcon).
+Well, loadavg also includes running tasks:
 
-I understand a connector is not the same as a phy, but it will still be
-useful to know why extcon framework (or some extension of it) will not
-suffice your needs.
+        nr_active = this_rq->nr_running;
+        nr_active += (long) this_rq->nr_uninterruptible;
 
-You can probably note it in the cover-letter so folks like me get their
-answer.
+but yeah, the two are not the same. It could at least integrate in terms 
+of averaging code, working on two different instances of data structures - 
+but yeah, full integration is indeed not possible.
 
 Thanks,
-Sekhar
+
+	Ingo
