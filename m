@@ -1,107 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968059Ab3DSLLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 07:11:25 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:61285 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757087Ab3DSLLY (ORCPT
+	id S1757718Ab3DSLNT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 07:13:19 -0400
+Received: from relay3.blacknight.com ([78.153.203.206]:41057 "EHLO
+	relay3.blacknight.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757162Ab3DSLNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 07:11:24 -0400
+	Fri, 19 Apr 2013 07:13:18 -0400
+Message-ID: <5171274B.7090500@nexus-software.ie>
+Date: Fri, 19 Apr 2013 12:15:23 +0100
+From: "Bryan O'Donoghue" <bryan.odonoghue.lkml@nexus-software.ie>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <1366363304.4708.75.camel@marge.simpson.net>
-References: <1366302867-5055-1-git-send-email-vincent.guittot@linaro.org>
-	<1366345833.4708.17.camel@marge.simpson.net>
-	<CAKfTPtAaUG4Yi5xienLRvnO7Q8nTWjk9a0azRWwdqmvCu3NSrA@mail.gmail.com>
-	<1366359290.4708.48.camel@marge.simpson.net>
-	<CAKfTPtBuAwyiNYk17SnW066FhvGF18n+HaiKwhKLgsii8ntcHA@mail.gmail.com>
-	<1366363304.4708.75.camel@marge.simpson.net>
-Date: Fri, 19 Apr 2013 13:11:22 +0200
-Message-ID: <CAKfTPtDSNfFw-vuYGfdCDJcUqzNpoE535AGk3h3vBM3zYJ+uJg@mail.gmail.com>
-Subject: Re: [PATCH Resend v6] sched: fix wrong rq's runnable_avg update with
- rt tasks
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Paul Turner <pjt@google.com>, Steven Rostedt <rostedt@goodmis.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: matt@console-pimps.org, matthew.garrett@nebula.com,
+        linux-efi@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, darren.hart@intel.com,
+        josh@joshtriplett.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de
+Subject: Re: [PATCH] Remove warning in efi_enter_virtual_mode V2
+References: <1366236341-22615-1-git-send-email-bryan.odonoghue.lkml@nexus-software.ie> <20130419055813.GA16443@kroah.com>
+In-Reply-To: <20130419055813.GA16443@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 April 2013 11:21, Mike Galbraith <efault@gmx.de> wrote:
-> On Fri, 2013-04-19 at 10:50 +0200, Vincent Guittot wrote:
->> On 19 April 2013 10:14, Mike Galbraith <efault@gmx.de> wrote:
->> > On Fri, 2013-04-19 at 09:49 +0200, Vincent Guittot wrote:
->> >> On 19 April 2013 06:30, Mike Galbraith <efault@gmx.de> wrote:
->> >> > On Thu, 2013-04-18 at 18:34 +0200, Vincent Guittot wrote:
->> >> >> The current update of the rq's load can be erroneous when RT tasks are
->> >> >> involved
->> >> >>
->> >> >> The update of the load of a rq that becomes idle, is done only if the avg_idle
->> >> >> is less than sysctl_sched_migration_cost. If RT tasks and short idle duration
->> >> >> alternate, the runnable_avg will not be updated correctly and the time will be
->> >> >> accounted as idle time when a CFS task wakes up.
->> >> >>
->> >> >> A new idle_enter function is called when the next task is the idle function
->> >> >> so the elapsed time will be accounted as run time in the load of the rq,
->> >> >> whatever the average idle time is. The function update_rq_runnable_avg is
->> >> >> removed from idle_balance.
->> >> >>
->> >> >> When a RT task is scheduled on an idle CPU, the update of the rq's load is
->> >> >> not done when the rq exit idle state because CFS's functions are not
->> >> >> called. Then, the idle_balance, which is called just before entering the
->> >> >> idle function, updates the rq's load and makes the assumption that the
->> >> >> elapsed time since the last update, was only running time.
->> >> >>
->> >> >> As a consequence, the rq's load of a CPU that only runs a periodic RT task,
->> >> >> is close to LOAD_AVG_MAX whatever the running duration of the RT task is.
->> >> >
->> >> > Why do we care what rq's load says, if the only thing running is a
->> >> > periodic RT task?  I _think_ I recall that stuff being put under the
->> >>
->> >> cfs scheduler will use a wrong rq load the next time it wants to schedule a task
->> >>
->> >> > throttle specifically to not waste cycles doing that on every
->> >> > microscopic idle.
->> >>
->> >> yes but this lead to the wrong computation of runnable_avg_sum. To be
->> >> more precise, we only need to call __update_entity_runnable_avg,
->> >> __update_tg_runnable_avg is not mandatory in this step.
->> >
->> > If it only scares fair class tasks away from the periodic rt load, that
->> > seems like a benefit to me, not a liability.  If we really really need
->>
->> I'm not sure that such behavior that is only based on erroneous value,
->> is good one.
->>
->> > perfect load numbers, fine, we have to eat some cycles, but when I look
->> > at it, it looks like one of those "Perfect is the enemy of good" things.
->>
->> The target is not perfect number but good enough to be usable. The
->> systctl_migration_cost threshold is good for idle balancing but can
->> generates wrong load value
+On 19/04/13 06:58, Greg KH wrote:
+>> This patch gives the option to switch off that behavior - if your BIOS
+>> has neither BGRT - nor bugs that require mapping of EFI boot code/data
 >
-> But again, why do we care?  To be able to mix rt and fair loads and
-> still make pretty mixed load utilization numbers?  Paying a general case
+> No, never add new boot options, no users, or distros, know to set them.
+> Isn't there some way we can dynamically determine this instead?
 
-If runnable_avg_sum can be wrong, it becomes unusable and all the
-stuff around becomes useless.
+Peter, Greg.
 
-> fast path price to make strange (to me) load utilization numbers pretty
-> is not very attractive.  If you muck about with rt classes, you need to
-> have a good reason for doing that.  If you do have a good reason, you
-> also allocated all resources, including CPU, so don't need the kernel to
+There are three issues to consider here
 
-Some tasks have responsiveness constraints so they use rt class but
-they also live with cfs tasks.
+1: Some UEFI BIOS is buggy and the EFI_RUNTIME_SERVICES code - actually 
+touches EFI_BOOT_MEMORY. Boot memory should be completely untouched 
+after an entity calls ExitBootServices() - typically done by an EFI 
+aware bootloader before handing off to Linux.
 
-Vincent
+2: Existing code maps EFI_BOOT_MEMORY in arch/x86/platform/efi/efi.c.
+Initially it looked to me as though you could probe for ACPI::BGRT - 
+look for an ACPI object sometimes stored in EFI_BOOT_MEMORY and use that 
+to determine if EFI_BOOT_MEMORY should be mapped. I wasn't aware #1 
+above was also a concern. So just probing for something - doesn't appear 
+to fly
 
-> balance the load for you.  Paying any fast path price to make the kernel
-> balance a mixed rt/fair load just seems fundamentally wrong to me.
->
-> -Mike
->
+3: Standards compliant EFI BIOS - like the reference EFI 2.3.1 code we 
+have on my project, has neither of the two above problems to work around
+
+So we can.
+
+1. Just silently map EFI_BOOT_MEMORY - even on unbuggy platforms like #3 
+- or we can
+
+2. Introduce some sort of intelligence - a parameter somewhere to tell 
+the efi_enter_virtual mode if/when to map EFI_BOOT_MEMORY.
+
+3. Just go the suggested route from Josh
+#ifdef CONFIG_X86_64
+			if (md->type != EFI_BOOT_SERVICES_CODE &&
+			    md->type != EFI_BOOT_SERVICES_DATA)
+#endif
+
+Option #3 - so long as it doesn't break ia32::BGRT systems works for me.
