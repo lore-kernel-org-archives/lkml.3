@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S968380Ab3DSQ1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 12:27:51 -0400
-Received: from mail-da0-f54.google.com ([209.85.210.54]:32872 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757924Ab3DSQ1s (ORCPT
+	id S1757995Ab3DSQ2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 12:28:32 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:56309 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756945Ab3DSQ2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 12:27:48 -0400
+	Fri, 19 Apr 2013 12:28:31 -0400
 From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
+To: jaegeuk.kim@samsung.com, rostedt@goodmis.org
 Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 2/2] f2fs: add REQ_META about metadata requests for submit bio
-Date: Sat, 20 Apr 2013 01:27:40 +0900
-Message-Id: <1366388860-18735-1-git-send-email-linkinjeon@gmail.com>
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: [PATCH v4 0/7] f2fs: Add tracepoints support in f2fs filesystem
+Date: Sat, 20 Apr 2013 01:28:11 +0900
+Message-Id: <1366388891-18778-1-git-send-email-linkinjeon@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,33 +22,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namjae Jeon <namjae.jeon@samsung.com>
 
-Adding REQ_META for all the metadata requests can help in improving the
-FS performance, if the underlying device supports TAGGING.
-So, when considering the submit_bio path for all the f2fs requests. We can
-add REQ_META for all the META requests.
-As a precursor to this change we considered the commit
-4265900e0be653f5b78baf2816857ef57cf1332f 'mmc: MMC-4.5 Data Tag Support'
+Add tracepoints in f2fs filesystem for tracing the filesystem
+operations for information/debugging purpose if needed. All the
+tracepoints are clubbed with respect to functionalities.
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- fs/f2fs/segment.c |    3 +++
- 1 file changed, 3 insertions(+)
+Change Log:
+v4: Modified the tracepoints as per the review comments of
+Jaegeuk Kim. Following tracepoints are added newly:
 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 1193a26..a2e5de7 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -689,6 +689,9 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
- 	if (type >= META_FLUSH)
- 		rw = WRITE_FLUSH_FUA;
- 
-+	if (type == META)
-+		rw |= REQ_META;
-+
- 	if (sbi->bio[btype]) {
- 		struct bio_private *p = sbi->bio[btype]->bi_private;
- 		trace_f2fs_do_submit_bio(sbi->sb, btype, sync,
+trace_f2fs_truncate_blocks_enter
+trace_f2fs_truncate_blocks_exit
+trace_f2fs_truncate_inode_blocks_enter 
+trace_f2fs_truncate_inode_blocks_exit
+trace_f2fs_truncate_node
+trace_f2fs_submit_write_page
+trace_f2fs_do_submit_bio
+trace_f2fs_write_checkpoint
+
+While some of the tracepoints are modified to add new 
+parameters.
+
+v3: Introduced TRACE_EVENT_CONDITION() macro for checking the
+condition page->mapping inside the trace point function call as
+per Steve's review comment for the patch
+
+v2: Added DECLARE_EVENT_CLASS() macro for combining the similar
+type of trace function calls which has same type of arguments.
+
+v1: Introduced the tracepoint functions in f2fs filesystem.
+
+Namjae Jeon (7):
+  f2fs: add tracepoints for sync & Inode operations
+  f2fs: add tracepoints for truncate operation
+  f2fs: add tracepoint for tracing the page i/o operations
+  f2fs: add tracepoints for GC threads
+  f2fs: add tracepoints to debug the block allocation & fallocate
+  f2fs: add tracepoints for write page operations
+  f2fs: add tracepoints to debug checkpoint request
 -- 
 1.7.9.5
 
