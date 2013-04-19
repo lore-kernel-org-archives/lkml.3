@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758246Ab3DSJjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Apr 2013 05:39:51 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:30904 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757677Ab3DSJju (ORCPT
+	id S1758271Ab3DSJkY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Apr 2013 05:40:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60964 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756008Ab3DSJkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Apr 2013 05:39:50 -0400
-X-Spam-Score: -100.8
-Message-ID: <517110BA.5070806@asianux.com>
-Date: Fri, 19 Apr 2013 17:39:06 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 19 Apr 2013 05:40:23 -0400
+Date: Fri, 19 Apr 2013 10:39:53 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Pranavkumar Sawargaonkar <pranavkumar@linaro.org>
+Cc: Peter Maydell <peter.maydell@linaro.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Patch Tracking <patches@linaro.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC] arm64: Early printk support for virtio-mmio console
+ devices.
+Message-ID: <20130419093953.GD13283@mudshark.cambridge.arm.com>
+References: <1366264344-28025-1-git-send-email-pranavkumar@linaro.org>
+ <ede8ee08bb2616c2ed642200e3357367@localhost>
+ <CAAHg+HhajHFC=1nh6YQNgpf=Na2FqcsYJ=t+ag9QiTg6TxUz9w@mail.gmail.com>
+ <bb1193983de3ea9f4df1a570441df34c@localhost>
+ <CAAHg+HhtCorArCmx=ha0=64+SJZiizzrDUKSPLV=N+OzO8zAxQ@mail.gmail.com>
+ <20130419090558.GA13283@mudshark.cambridge.arm.com>
+ <CAAHg+HipCX2ma6brxj9Kgc3ew39b5e30grLwyun9CViif-5wZQ@mail.gmail.com>
+ <20130419092752.GB13283@mudshark.cambridge.arm.com>
+ <CAFEAcA8j124G=vaHObJ_w5wOhUiS3KYKbjMnigbnr6mgwFxZUg@mail.gmail.com>
+ <CAAHg+Hg=t97SJ0JPZYgrZaL+zimo-wbezwaj1BQvHqE-vf4VDA@mail.gmail.com>
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel/audit_tree.c: tree will memory leak when failure occurs
- for audit_trim_trees()
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAHg+Hg=t97SJ0JPZYgrZaL+zimo-wbezwaj1BQvHqE-vf4VDA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 19, 2013 at 10:34:56AM +0100, Pranavkumar Sawargaonkar wrote:
+> On 19 April 2013 15:00, Peter Maydell <peter.maydell@linaro.org> wrote:
+> > On 19 April 2013 10:27, Will Deacon <will.deacon@arm.com> wrote:
+> >> On Fri, Apr 19, 2013 at 10:25:35AM +0100, Pranavkumar Sawargaonkar wrote:
+> >>> I am not against using 8250 emulation (as far as it solves printk
+> >>> issues for kernel booting logs), but my point is why not to add early
+> >>> read-write support for virtio console, which also can be useful in
+> >>> emulation less mach-virt environment also ?
+> >>
+> >> We can have both, but only one of those requires a change to the virtio
+> >> specification.
+> >
+> > I don't think avoiding writing a spec is necessarily a good reason
+> > for insisting on emulation of a lump of hardware 95% of whose
+> > capabilities you aren't going to use...
+> 
+> True.
+> Also 8250 will require emulation of registers, and i am not sure about
+> if mach-virt will have any emulation of real hw ?
 
-in audit_trim_trees(), has called get_tree() before failure occurs,
-so need also call put_tree after go to skip_it:
+The point of mach-virt is that it is completely parameterised. So, if you're
+not emulating an 8250, then don't tell the kernel that you have one!
+Similarly, if you *do* emulate it, then either create a device-tree node for
+it or pass the appropriate earlyprintk= string on the command line.
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- kernel/audit_tree.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+As far as kvmtool is concerned, we'd probably have a new command-line option
+for arm64, allowing you to specify the early console device.
 
-diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-index 642a89c..de46ec0 100644
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -617,10 +617,10 @@ void audit_trim_trees(void)
- 		}
- 		spin_unlock(&hash_lock);
- 		trim_marked(tree);
--		put_tree(tree);
- 		drop_collected_mounts(root_mnt);
- skip_it:
- 		mutex_lock(&audit_filter_mutex);
-+		put_tree(tree);
- 	}
- 	list_del(&cursor);
- 	mutex_unlock(&audit_filter_mutex);
--- 
-1.7.7.6
+Will
